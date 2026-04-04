@@ -33,7 +33,6 @@ If you want to build, fork or adapt a plugin, start here:
 - [Contributing](./CONTRIBUTING.md)
 - [Plugin template](./docs/PLUGIN_TEMPLATE.md)
 - [Repository structure](./docs/repo-structure.md)
-- [Private plugin strategy](./docs/private-plugins.md)
 
 These docs explain:
 
