@@ -13,7 +13,15 @@ This is useful when:
 - a power user wants their own quota
 - a user wants a separate Google project for YouTube usage
 
-## Step by step
+## Which client type should I create?
+
+- `Desktop app`
+  Use this if you are building your own packaged Lumio desktop app and want your own core YouTube credentials.
+
+- `Web application`
+  Use this if you only want a personal override for browser or localhost use.
+
+## Personal browser / localhost override
 
 1. Create a Google Cloud project
 2. Enable `YouTube Data API v3`
@@ -31,6 +39,16 @@ This is useful when:
    - Google OAuth Client ID
    - YouTube API key
 11. Press `Connect YouTube`
+
+## Packaged desktop build
+
+1. Create a Google Cloud project
+2. Enable `YouTube Data API v3`
+3. Configure the OAuth consent screen
+4. Create an `OAuth client ID` for `Desktop app`
+5. Create an `API key`
+6. Restrict that key to `YouTube Data API v3`
+7. Add the desktop client ID and API key to Lumio core configuration
 
 ## Important note
 

@@ -1,43 +1,41 @@
 # YouTube Plugin
 
-Official Lumio YouTube plugin.
+YouTube for Lumio Media Player.
 
-## Features
+This plugin lets Lumio connect to a user’s YouTube account and surface personal
+content directly inside the app.
 
-- connect with YouTube / Google
-- subscriptions feed
-- channels view
-- playlists
-- watch later
-- home rows
-- channel drill-down
-- optional `Hide shorts`
+## What it does
 
-## Auth model
+- sign in with YouTube / Google
+- show a feed from followed channels
+- browse subscribed channels
+- open channel-specific video views
+- browse playlists and Watch later
+- add YouTube rows to the Lumio home screen
+- optionally hide shorts from video grids
 
-This plugin supports two auth modes:
+## Sign-in model
 
-1. `Use Lumio app`
-   Uses core-managed credentials configured once in Lumio.
-2. `Use my own Google app`
-   Lets a user override the auth client and API key with their own Google app.
+By default, the plugin can use Lumio's built-in app credentials.
 
-## Personal override
-
-YouTube quotas can be tight for shared apps.
-
-Personal override gives advanced users a way to:
-
-- use their own Google OAuth client
-- use their own YouTube Data API quota
-- keep the plugin usable even if the shared Lumio quota is exhausted
-
-## User flow
-
-For normal users:
+That gives users a simple flow:
 
 `Install plugin -> Connect YouTube -> done`
 
-For advanced users:
+For users who want their own quota budget or a separate Google project, the
+plugin also supports a personal app override.
 
-`Enable personal override -> paste own client ID/API key -> Connect YouTube`
+See:
+
+- [Personal app override guide](../../docs/youtube-own-app.md)
+- [Privacy policy](./PRIVACY.md)
+- [Terms](./TERMS.md)
+
+## Notes for Google setup
+
+If you are using this plugin with a packaged Lumio desktop build, the relevant
+OAuth client type is `Desktop app`.
+
+If you are only testing a personal override in a local browser environment, you
+can still use a `Web application` client for that override flow.
