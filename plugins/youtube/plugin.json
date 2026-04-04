@@ -1,0 +1,21 @@
+{
+  "id": "com.lumio.youtube",
+  "slug": "youtube",
+  "name": "YouTube",
+  "version": "1.0.0",
+  "description": "Browse subscriptions, watch later, playlists and channels from YouTube.",
+  "official": true,
+  "bundled": true,
+  "removable": true,
+  "managedAuthProviderId": "google-youtube",
+  "supportsPersonalAuthOverride": true,
+  "sdkCapabilities": [
+    "settings-section",
+    "browse-pages",
+    "main-menu",
+    "topbar-group",
+    "home-rows",
+    "managed-auth"
+  ]
+}
+
