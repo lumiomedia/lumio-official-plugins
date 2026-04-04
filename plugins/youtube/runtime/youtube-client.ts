@@ -2,7 +2,6 @@
 
 import type { YouTubeChannel, YouTubePlaylist, YouTubeSession, YouTubeVideo } from './youtube-types'
 import { getYouTubeSettings, isYouTubeSessionValid, readYouTubeCache, readYouTubeCacheStale, writeYouTubeCache } from './youtube-storage'
-import { getManagedAuthProviderConfig } from '@/lib/managed-auth'
 
 const API_BASE = 'https://www.googleapis.com/youtube/v3'
 const SUBSCRIPTIONS_CACHE_TTL_MS = 6 * 60 * 60 * 1000
@@ -66,8 +65,7 @@ async function youtubeApi<T>(
 
   if (!options.accessToken) {
     const settings = getYouTubeSettings()
-    const managedApiKey = settings.usePersonalApp ? '' : getManagedAuthProviderConfig('google-youtube').apiKey
-    const apiKey = options.apiKey ?? settings.apiKey ?? managedApiKey
+    const apiKey = options.apiKey ?? settings.apiKey
     if (apiKey) query.set('key', apiKey)
   }
 

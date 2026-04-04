@@ -11,13 +11,6 @@ import {
   onYouTubePluginChanged,
   setYouTubeSettings,
 } from './youtube-storage'
-import {
-  getManagedAuthProviderConfig,
-  onManagedAuthChanged,
-  refreshManagedAuthConfigs,
-  type ManagedAuthProviderConfig,
-} from '@/lib/managed-auth'
-import { isTauriEnv } from '@/lib/tauri-mpv'
 
 const inputClassNames = {
   base: 'w-full',
@@ -39,7 +32,6 @@ const settingsPrimaryActionButtonClass =
 export function YouTubeSettingsSection() {
   const [clientId, setClientId] = useState('')
   const [apiKey, setApiKey] = useState('')
-  const [managedConfig, setManagedConfig] = useState<ManagedAuthProviderConfig>(() => getManagedAuthProviderConfig('google-youtube'))
   const [sessionLabel, setSessionLabel] = useState('Not connected')
   const [busy, setBusy] = useState<'idle' | 'connecting' | 'disconnecting'>('idle')
   const [error, setError] = useState('')
@@ -48,19 +40,14 @@ export function YouTubeSettingsSection() {
     watchLater: true,
     playlists: true,
   })
-  const [usePersonalApp, setUsePersonalApp] = useState(false)
   const [hideShorts, setHideShorts] = useState(false)
-  const usingManagedCore = managedConfig.configured && !usePersonalApp
-  const browserNeedsOverride = usingManagedCore && managedConfig.mode === 'desktop' && !isTauriEnv
 
   useEffect(() => {
     const sync = () => {
       const settings = getYouTubeSettings()
       const session = getYouTubeSession()
-      setManagedConfig(getManagedAuthProviderConfig('google-youtube'))
       setClientId(settings.clientId)
       setApiKey(settings.apiKey)
-      setUsePersonalApp(settings.usePersonalApp)
       setHideShorts(settings.hideShorts)
       setHomeRows(settings.homeRows)
       setSessionLabel(
@@ -70,19 +57,15 @@ export function YouTubeSettingsSection() {
       )
     }
     sync()
-    void refreshManagedAuthConfigs().then(sync).catch(() => {})
     const offPlugin = onYouTubePluginChanged(sync)
-    const offManaged = onManagedAuthChanged(sync)
     return () => {
       offPlugin()
-      offManaged()
     }
   }, [])
 
   function persist(next: {
     clientId?: string
     apiKey?: string
-    usePersonalApp?: boolean
     hideShorts?: boolean
     homeRows?: typeof homeRows
   }) {
@@ -90,7 +73,6 @@ export function YouTubeSettingsSection() {
     setYouTubeSettings({
       clientId: next.clientId ?? current.clientId,
       apiKey: next.apiKey ?? current.apiKey,
-      usePersonalApp: next.usePersonalApp ?? current.usePersonalApp,
       hideShorts: next.hideShorts ?? current.hideShorts,
       homeRows: next.homeRows ?? current.homeRows,
     })
@@ -99,10 +81,9 @@ export function YouTubeSettingsSection() {
   async function handleConnect() {
     setBusy('connecting')
     setError('')
-    persist({ clientId, apiKey, usePersonalApp, hideShorts, homeRows })
+    persist({ clientId, apiKey, hideShorts, homeRows })
     try {
-      const effectiveClientId = managedConfig.configured && !usePersonalApp ? managedConfig.clientId : clientId
-      await connectYouTube(effectiveClientId)
+      await connectYouTube(clientId)
       setSessionLabel(`Connected as ${getYouTubeSession()?.channelTitle ?? 'YouTube'}`)
     } catch (connectError) {
       setError(connectError instanceof Error ? connectError.message : 'Could not connect YouTube.')
@@ -130,80 +111,54 @@ export function YouTubeSettingsSection() {
         <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Connection</p>
         <p className="mt-2 text-sm text-slate-300">{sessionLabel}</p>
         <p className="mt-2 text-xs text-slate-500">
-          {managedConfig.configured
-            ? 'Lumio credentials are configured for this plugin.'
-            : 'This plugin uses Google Identity Services and the official YouTube Data API.'}
+          This plugin uses your own Google Desktop Client ID and YouTube Data API key.
         </p>
       </div>
+      <div className="space-y-1.5">
+        <label className="block text-xs text-slate-400">Google OAuth Client ID</label>
+        <Input
+          type="text"
+          value={clientId}
+          onValueChange={(value) => {
+            setClientId(value)
+            persist({ clientId: value, apiKey, hideShorts, homeRows })
+          }}
+          placeholder="1234567890-xxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com"
+          radius="lg"
+          classNames={inputClassNames}
+        />
+      </div>
 
-      {managedConfig.configured ? (
-        <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-4">
-          <p className="text-xs uppercase tracking-[0.2em] text-emerald-300">Managed by core</p>
-          <p className="mt-2 text-sm text-slate-300">
-            This plugin can sign in using Lumio&apos;s built-in app credentials. If you want your own YouTube quota
-            and less reliance on shared rate limits, you can optionally use your own Google client instead.
-          </p>
-          <label className="mt-4 flex items-center gap-3 text-sm text-slate-300">
-            <input
-              type="checkbox"
-              checked={usePersonalApp}
-              onChange={(event) => {
-                const next = event.target.checked
-                setUsePersonalApp(next)
-                persist({ clientId, apiKey, usePersonalApp: next, hideShorts, homeRows })
-              }}
-              className="h-4 w-4 accent-amber-400"
-            />
-            Override with my own Google app
-          </label>
-        </div>
-      ) : null}
+      <div className="space-y-1.5">
+        <label className="block text-xs text-slate-400">YouTube API Key</label>
+        <Input
+          type="password"
+          value={apiKey}
+          onValueChange={(value) => {
+            setApiKey(value)
+            persist({ clientId, apiKey: value, hideShorts, homeRows })
+          }}
+          placeholder="AIza..."
+          radius="lg"
+          classNames={inputClassNames}
+        />
+      </div>
 
-      {!managedConfig.configured || usePersonalApp ? (
-        <>
-          <div className="space-y-1.5">
-            <label className="block text-xs text-slate-400">Google OAuth Client ID</label>
-            <Input
-              type="text"
-              value={clientId}
-              onValueChange={(value) => {
-                setClientId(value)
-                persist({ clientId: value, apiKey, usePersonalApp, hideShorts, homeRows })
-              }}
-              placeholder="1234567890-xxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com"
-              radius="lg"
-              classNames={inputClassNames}
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="block text-xs text-slate-400">YouTube API Key (optional fallback)</label>
-            <Input
-              type="password"
-              value={apiKey}
-              onValueChange={(value) => {
-                setApiKey(value)
-                persist({ clientId, apiKey: value, usePersonalApp, hideShorts, homeRows })
-              }}
-              placeholder="AIza..."
-              radius="lg"
-              classNames={inputClassNames}
-            />
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">How to create your own app</p>
-            <ol className="mt-3 space-y-2 text-sm text-slate-300">
-              <li>1. Create a Google Cloud project.</li>
-              <li>2. Enable YouTube Data API v3.</li>
-              <li>3. Configure the OAuth consent screen.</li>
-              <li>4. Create an OAuth Client ID for Desktop app.</li>
-              <li>5. Create an API key restricted to YouTube Data API v3.</li>
-              <li>6. Paste the client ID and API key here, then reconnect YouTube.</li>
-            </ol>
-          </div>
-        </>
-      ) : null}
+      <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-4">
+        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">How to create your own app</p>
+        <ol className="mt-3 space-y-2 text-sm text-slate-300">
+          <li>1. Create a Google Cloud project.</li>
+          <li>2. Enable YouTube Data API v3.</li>
+          <li>3. Configure the OAuth consent screen.</li>
+          <li>4. Create an OAuth Client ID for Desktop app.</li>
+          <li>5. Create an API key restricted to YouTube Data API v3.</li>
+          <li>6. Paste the client ID and API key here, then reconnect YouTube.</li>
+        </ol>
+        <p className="mt-3 text-xs text-slate-500">
+          For private use you do not need your own domain. For localhost/browser development you can also create a Web
+          application client, but normal plugin use should rely on a Desktop app client.
+        </p>
+      </div>
 
       <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-4">
         <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Home rows</p>
@@ -223,7 +178,7 @@ export function YouTubeSettingsSection() {
                     [key]: event.target.checked,
                   }
                   setHomeRows(next)
-                  persist({ clientId, apiKey, usePersonalApp, hideShorts, homeRows: next })
+                  persist({ clientId, apiKey, hideShorts, homeRows: next })
                 }}
                 className="h-4 w-4 accent-amber-400"
               />
@@ -244,7 +199,7 @@ export function YouTubeSettingsSection() {
                 const next = event.target.checked
                 setHideShorts(next)
                 clearYouTubeCache()
-                persist({ clientId, apiKey, usePersonalApp, hideShorts: next, homeRows })
+                persist({ clientId, apiKey, hideShorts: next, homeRows })
               }}
               className="h-4 w-4 accent-amber-400"
             />
@@ -262,7 +217,7 @@ export function YouTubeSettingsSection() {
         <button
           type="button"
           onClick={handleConnect}
-          disabled={busy !== 'idle' || browserNeedsOverride || !(usingManagedCore ? managedConfig.clientId.trim() : clientId.trim())}
+          disabled={busy !== 'idle' || !clientId.trim()}
           className={settingsPrimaryActionButtonClass}
         >
           {busy === 'connecting' ? 'Connecting…' : 'Connect YouTube'}

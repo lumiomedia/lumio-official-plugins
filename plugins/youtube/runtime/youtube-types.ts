@@ -45,7 +45,6 @@ export interface YouTubeSession {
 export interface YouTubePluginSettings {
   clientId: string
   apiKey: string
-  usePersonalApp: boolean
   hideShorts: boolean
   homeRows: {
     following: boolean

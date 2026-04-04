@@ -19,12 +19,6 @@ import {
   onYouTubePluginChanged,
 } from './youtube-storage'
 import type { YouTubeChannel, YouTubePlaylist, YouTubeSession, YouTubeVideo } from './youtube-types'
-import {
-  getManagedAuthProviderConfig,
-  onManagedAuthChanged,
-  refreshManagedAuthConfigs,
-  type ManagedAuthProviderConfig,
-} from '@/lib/managed-auth'
 
 type YouTubeBrowseMode = 'following' | 'channels' | 'playlists' | 'watch-later' | 'playlist' | 'channel'
 type YouTubeHomeRowKind = 'following' | 'watch-later' | 'playlists'
@@ -49,28 +43,22 @@ function getBrowseMode(pageId: string): YouTubeBrowseMode {
 function useYouTubeSessionState() {
   const [session, setSession] = useState<YouTubeSession | null>(() => getYouTubeSession())
   const [settings, setSettings] = useState(() => getYouTubeSettings())
-  const [managedConfig, setManagedConfig] = useState<ManagedAuthProviderConfig>(() => getManagedAuthProviderConfig('google-youtube'))
 
   useEffect(() => {
     const sync = () => {
       setSession(getYouTubeSession())
       setSettings(getYouTubeSettings())
-      setManagedConfig(getManagedAuthProviderConfig('google-youtube'))
     }
     sync()
-    void refreshManagedAuthConfigs().then(sync).catch(() => {})
     const offPlugin = onYouTubePluginChanged(sync)
-    const offManaged = onManagedAuthChanged(sync)
     return () => {
       offPlugin()
-      offManaged()
     }
   }, [])
 
   return {
     session,
     settings,
-    managedConfig,
     connected: isYouTubeSessionValid(session),
   }
 }
@@ -441,7 +429,7 @@ function useYouTubeData(pageId: string, params?: Record<string, string>, videoLi
 }
 
 export function YouTubeBrowsePage({ pageId, params, onNavigate }: BrowsePageProps) {
-  const { session, settings, managedConfig, connected } = useYouTubeSessionState()
+  const { session, settings, connected } = useYouTubeSessionState()
   const [visibleCount, setVisibleCount] = useState(VIDEO_PAGE_SIZE)
   const [refreshNonce, setRefreshNonce] = useState(0)
   const { loading, error, channels, playlists, videos } = useYouTubeData(pageId, { ...(params ?? {}), __refresh: String(refreshNonce) }, visibleCount, settings.hideShorts)
@@ -529,8 +517,8 @@ export function YouTubeBrowsePage({ pageId, params, onNavigate }: BrowsePageProp
           ? (params?.title ?? 'Playlist')
           : 'Playlists'
 
-  if (!managedConfig.configured && !settings.clientId.trim()) {
-    return <SectionPlaceholder title="YouTube" text="Core-managed auth is not configured yet. Add YouTube credentials in core settings or use the plugin fallback fields." />
+  if (!settings.clientId.trim()) {
+    return <SectionPlaceholder title="YouTube" text="Add your Google Desktop Client ID and YouTube API key in the YouTube plugin settings to get started." />
   }
 
   if (!connected || !session) {

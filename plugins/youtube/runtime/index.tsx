@@ -10,12 +10,6 @@ export const YouTubePlugin: LumioPlugin = {
   preinstalled: true,
 
   register(ctx) {
-    ctx.registerManagedAuthConsumer({
-      id: 'youtube-managed-auth',
-      label: 'YouTube',
-      providerId: 'google-youtube',
-    })
-
     ctx.registerSettingsSection({
       id: 'youtube',
       label: 'YouTube',

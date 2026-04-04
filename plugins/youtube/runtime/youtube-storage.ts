@@ -11,7 +11,6 @@ const CACHE_PREFIX = 'plugin_youtube_cache'
 const DEFAULT_SETTINGS: YouTubePluginSettings = {
   clientId: '',
   apiKey: '',
-  usePersonalApp: false,
   hideShorts: false,
   homeRows: {
     following: true,
@@ -35,7 +34,6 @@ export function getYouTubeSettings(): YouTubePluginSettings {
     return {
       clientId: typeof parsed.clientId === 'string' ? parsed.clientId : '',
       apiKey: typeof parsed.apiKey === 'string' ? parsed.apiKey : '',
-      usePersonalApp: parsed.usePersonalApp === true,
       hideShorts: parsed.hideShorts === true,
       homeRows: {
         following: parsed.homeRows?.following !== false,

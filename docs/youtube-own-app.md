@@ -1,27 +1,39 @@
-# YouTube Personal App Override
+# YouTube Google Project Setup
 
-The official YouTube plugin supports a personal auth override.
+The YouTube plugin is designed around a bring-your-own Google project setup.
 
-That means a user can choose between:
+Each user supplies:
 
-- Lumio-managed YouTube credentials
-- their own Google OAuth + YouTube Data API app
+- their own Google OAuth client
+- their own YouTube Data API key
 
-This is useful when:
+This keeps quota separate per user and avoids a shared app-wide rate limit.
 
-- the shared Lumio quota is exhausted
-- a power user wants their own quota
-- a user wants a separate Google project for YouTube usage
+For normal private use, you do not need your own domain.
 
 ## Which client type should I create?
 
 - `Desktop app`
-  Use this if you are building your own packaged Lumio desktop app and want your own core YouTube credentials.
+  Use this for normal YouTube plugin usage inside Lumio.
 
 - `Web application`
-  Use this if you only want a personal override for browser or localhost use.
+  Use this only if you are testing in localhost or a browser environment.
 
-## Personal browser / localhost override
+## Normal Lumio usage
+
+1. Create a Google Cloud project
+2. Enable `YouTube Data API v3`
+3. Configure the OAuth consent screen
+4. Create an `OAuth client ID` for `Desktop app`
+5. Create an `API key`
+6. Restrict that key to `YouTube Data API v3`
+7. In Lumio, open the YouTube plugin settings
+8. Paste:
+   - Google OAuth Client ID
+   - YouTube API key
+9. Press `Connect YouTube`
+
+## Localhost / browser testing
 
 1. Create a Google Cloud project
 2. Enable `YouTube Data API v3`
@@ -34,30 +46,14 @@ This is useful when:
 6. Create an `API key`
 7. Restrict that key to `YouTube Data API v3`
 8. In Lumio, open the YouTube plugin settings
-9. Enable `Override with my own Google app`
-10. Paste:
+9. Paste:
    - Google OAuth Client ID
    - YouTube API key
-11. Press `Connect YouTube`
-
-## Packaged desktop build
-
-1. Create a Google Cloud project
-2. Enable `YouTube Data API v3`
-3. Configure the OAuth consent screen
-4. Create an `OAuth client ID` for `Desktop app`
-5. Create an `API key`
-6. Restrict that key to `YouTube Data API v3`
-7. Add the desktop client ID and API key to Lumio core configuration
+10. Press `Connect YouTube`
 
 ## Important note
 
-Even with personal auth, YouTube Data API calls still consume quota.
+YouTube Data API calls still consume quota.
 
-Personal override does not remove quota limits.
-It simply moves usage to the user's own Google project instead of Lumio's shared one.
-
-## Why this exists
-
-This keeps the default experience simple for normal users while still giving advanced
-users a fallback when shared quota is tight.
+This setup does not remove quota limits.
+It simply puts usage on the user's own Google project instead of a shared app-wide budget.
