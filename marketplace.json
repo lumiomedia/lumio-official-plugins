@@ -30,6 +30,7 @@
       "version": "1.0.0",
       "description": "Browse and play media from your Plex Media Server.",
       "path": "plugins/plex",
+      "runtimeBundlePath": "dist/runtime.js",
       "readmePath": "plugins/plex/README.md",
       "changelogPath": "plugins/plex/CHANGELOG.md",
       "official": true,
