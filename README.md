@@ -22,9 +22,6 @@ one by one.
 - `youtube`
 - `plex`
 
-`streams-scraper` is intentionally not listed here. It should live in a separate
-private repo later.
-
 ## Why one repo for multiple plugins?
 
 One shared repo keeps official plugins easier to manage:
