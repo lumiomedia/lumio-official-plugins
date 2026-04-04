@@ -22,6 +22,24 @@ one by one.
 - `youtube`
 - `plex`
 
+## For developers
+
+This repository is also the starting point for developers who want to understand
+how Lumio plugins are structured.
+
+If you want to build, fork or adapt a plugin, start here:
+
+- [SDK overview](./docs/sdk.md)
+- [Repository structure](./docs/repo-structure.md)
+- [Private plugin strategy](./docs/private-plugins.md)
+
+These docs explain:
+
+- what the Lumio plugin SDK exposes
+- how browse pages, menu items and home rows work
+- how managed auth fits into the plugin model
+- how multiple plugins live in one marketplace repo
+
 ## Why one repo for multiple plugins?
 
 One shared repo keeps official plugins easier to manage:
