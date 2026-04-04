@@ -12,6 +12,8 @@
       "version": "1.0.0",
       "description": "Browse subscriptions, watch later, playlists and channels from YouTube.",
       "path": "plugins/youtube",
+      "readmePath": "plugins/youtube/README.md",
+      "changelogPath": "plugins/youtube/CHANGELOG.md",
       "official": true,
       "bundled": true,
       "removable": true,
@@ -27,6 +29,8 @@
       "version": "1.0.0",
       "description": "Browse and play media from your Plex Media Server.",
       "path": "plugins/plex",
+      "readmePath": "plugins/plex/README.md",
+      "changelogPath": "plugins/plex/CHANGELOG.md",
       "official": true,
       "bundled": true,
       "removable": true
