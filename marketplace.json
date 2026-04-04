@@ -2,7 +2,7 @@
   "id": "lumio-official",
   "name": "Lumio Official",
   "description": "Official Lumio plugin marketplace. One repository can publish multiple plugins through this manifest.",
-  "repoUrl": "https://github.com/lumioplayer/lumio-plugins",
+  "repoUrl": "https://github.com/lumiomedia/lumio-official-plugins",
   "visibility": "private-for-now",
   "plugins": [
     {
@@ -33,4 +33,3 @@
     }
   ]
 }
-

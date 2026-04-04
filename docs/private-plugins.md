@@ -18,7 +18,7 @@ Use separate private repos for:
 
 ## Example
 
-- `lumio-plugins` -> official marketplace repo
+- `lumio-official-plugins` -> official marketplace repo
 - `lumio-private-plugins` -> private marketplace repo
 - `lumio-scrapers-private` -> private scraper/plugin repo
 
