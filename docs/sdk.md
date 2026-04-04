@@ -1,8 +1,8 @@
 # Lumio Plugin SDK
 
-This repo documents the current Lumio plugin SDK as it exists in the app today.
+This document describes the Lumio plugin SDK used by official plugins in this marketplace.
 
-The important design goal is:
+The design goal is:
 
 - core stays neutral and legally clean
 - plugins register capabilities through the SDK
@@ -28,7 +28,7 @@ In practice that means a plugin can:
 - add home rows on the front page
 - consume core-managed auth like `google-youtube`
 
-## Core design rules
+## Design principles
 
 Plugins should describe capabilities, not reach into core internals.
 
@@ -64,14 +64,6 @@ Every marketplace plugin should have:
 - a clear version
 - a `plugin.json`
 - a README
+- ideally a changelog
 
 The marketplace manifest should be treated as the install/update index.
-
-## Recommended next SDK steps
-
-- remote marketplace manifest loading
-- install/update flows from manifest
-- external runtime loading for non-bundled plugins
-- plugin capability badges in settings
-- plugin update notes / changelog support
-

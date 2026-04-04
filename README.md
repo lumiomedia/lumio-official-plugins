@@ -52,14 +52,15 @@ lumio-official-plugins/
       README.md
 ```
 
-## Lumio integration notes
+## Marketplace model
 
-Lumio core should:
+Lumio reads one marketplace manifest and treats each entry as a separate installable plugin.
 
-- read one marketplace manifest
-- show install/remove/update per plugin
-- keep bundled/private-compatible plugins separate from official marketplace ones
-- allow manual install metadata for private plugin repos
+That means users can:
+
+- browse official plugins in one place
+- install or remove plugins one by one
+- see plugin metadata, README content and changelog notes per plugin
 
 See [docs/sdk.md](./docs/sdk.md) and [docs/repo-structure.md](./docs/repo-structure.md).
 For YouTube personal auth override, see [docs/youtube-own-app.md](./docs/youtube-own-app.md).

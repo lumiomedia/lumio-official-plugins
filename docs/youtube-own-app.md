@@ -11,7 +11,7 @@ This is useful when:
 
 - the shared Lumio quota is exhausted
 - a power user wants their own quota
-- a developer is testing privately
+- a user wants a separate Google project for YouTube usage
 
 ## Step by step
 
@@ -39,7 +39,7 @@ Even with personal auth, YouTube Data API calls still consume quota.
 Personal override does not remove quota limits.
 It simply moves usage to the user's own Google project instead of Lumio's shared one.
 
-## Why this matters
+## Why this exists
 
 This keeps the default experience simple for normal users while still giving advanced
 users a fallback when shared quota is tight.

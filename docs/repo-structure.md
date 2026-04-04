@@ -1,6 +1,6 @@
 # Repo Structure
 
-This repo is a marketplace repo, not a single plugin repo.
+This repo is a marketplace repo, not a single-plugin repo.
 
 ## Multiple plugins in one git repo
 
@@ -22,7 +22,7 @@ plugins/
     README.md
 ```
 
-Lumio should read `marketplace.json`, then install plugins by entry.
+Lumio reads `marketplace.json`, then treats each entry as a separate plugin.
 
 That means:
 
@@ -38,10 +38,9 @@ That means:
 - one raw manifest URL in Lumio core
 - better for screenshots, docs and badges later
 
-## Recommended future additions
+## Typical additions over time
 
 - `CHANGELOG.md` per plugin
 - screenshots/assets per plugin
 - compatibility metadata per plugin
 - plugin signing / trust metadata later
-

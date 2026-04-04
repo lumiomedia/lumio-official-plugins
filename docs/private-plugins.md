@@ -2,7 +2,7 @@
 
 Not every plugin belongs in the public or official marketplace.
 
-## Recommended split
+## A clean split
 
 Use this repo for:
 
@@ -16,15 +16,15 @@ Use separate private repos for:
 - staging plugins
 - legally sensitive integrations
 
-## Example
+## Example structure
 
 - `lumio-official-plugins` -> official marketplace repo
 - `lumio-private-plugins` -> private marketplace repo
 - `lumio-scrapers-private` -> private scraper/plugin repo
 
-## How Lumio should handle this
+## How Lumio can support this
 
-Lumio should support:
+Lumio can support:
 
 - one official marketplace URL
 - optional extra manifest URLs
@@ -32,4 +32,3 @@ Lumio should support:
 - manual install by git URL
 
 That keeps the official experience clean while still allowing private installs.
-

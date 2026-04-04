@@ -22,11 +22,11 @@ This plugin supports two auth modes:
 2. `Use my own Google app`
    Lets a user override the auth client and API key with their own Google app.
 
-## Why personal override exists
+## Personal override
 
 YouTube quotas can be tight for shared apps.
 
-Personal override gives power users a way to:
+Personal override gives advanced users a way to:
 
 - use their own Google OAuth client
 - use their own YouTube Data API quota
@@ -41,4 +41,3 @@ For normal users:
 For advanced users:
 
 `Enable personal override -> paste own client ID/API key -> Connect YouTube`
-

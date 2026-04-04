@@ -10,5 +10,4 @@ Official Lumio Plex plugin.
 
 ## Notes
 
-Plex is a good example of an official plugin that belongs in the shared marketplace
-repo even though its current runtime code is bundled in the app today.
+Plex is an official Lumio plugin distributed through the shared marketplace repository.
