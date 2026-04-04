@@ -4,6 +4,7 @@
   "name": "YouTube",
   "version": "1.0.0",
   "description": "Browse subscriptions, watch later, playlists and channels from YouTube.",
+  "runtimeBundlePath": "dist/runtime.js",
   "official": true,
   "bundled": true,
   "removable": true,
@@ -18,4 +19,3 @@
     "managed-auth"
   ]
 }
-

@@ -12,6 +12,7 @@
       "version": "1.0.0",
       "description": "Browse subscriptions, watch later, playlists and channels from YouTube.",
       "path": "plugins/youtube",
+      "runtimeBundlePath": "dist/runtime.js",
       "readmePath": "plugins/youtube/README.md",
       "changelogPath": "plugins/youtube/CHANGELOG.md",
       "official": true,
