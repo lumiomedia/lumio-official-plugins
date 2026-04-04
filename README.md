@@ -52,32 +52,6 @@ lumio-official-plugins/
       README.md
 ```
 
-## Private repo setup for now
-
-Recommended while this is still in flux:
-
-1. Create a new private GitHub repo called `lumio-official-plugins`
-2. Push this folder to it
-3. Point Lumio's official marketplace URL to the raw `marketplace.json`
-4. Keep `streams-scraper` in a separate private repo later
-
-## First push
-
-```bash
-cd "/Users/jerry/Local Sites/lumio-official-plugins"
-git add .
-git commit -m "Initial Lumio official plugin marketplace"
-git branch -M main
-git remote add origin git@github.com:lumiomedia/lumio-official-plugins.git
-git push -u origin main
-```
-
-If you prefer HTTPS:
-
-```bash
-git remote add origin https://github.com/lumiomedia/lumio-official-plugins.git
-```
-
 ## Lumio integration notes
 
 Lumio core should:
