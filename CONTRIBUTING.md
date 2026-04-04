@@ -25,6 +25,12 @@ Make sure the plugin has:
 - a `README.md`
 - ideally a `CHANGELOG.md`
 
+If the plugin is executable as an external runtime, it should also have:
+
+- `runtime/`
+- `dist/runtime.js`
+- `runtimeBundlePath` in metadata
+
 ## Repository model
 
 This repository can host multiple plugins at once.
@@ -42,6 +48,11 @@ That means a new plugin usually requires:
 1. a new plugin folder
 2. plugin metadata files
 3. a marketplace entry
+
+For executable plugins, it also usually requires:
+
+4. a `runtime/` source entry
+5. a built `dist/runtime.js`
 
 ## Plugin design expectations
 
@@ -77,20 +88,16 @@ When you fork a plugin:
 
 This avoids ID collisions and keeps installs predictable inside Lumio.
 
-## Official vs private plugins
+## Runtime publishing
 
-Use this repository for official, user-facing Lumio plugins.
+The preferred runtime flow is:
 
-If a plugin is:
+1. edit plugin source in `runtime/`
+2. build the published runtime bundle to `dist/runtime.js`
+3. point both `plugin.json` and the root `marketplace.json` to that file with `runtimeBundlePath`
 
-- experimental
-- internal
-- scraper-related
-- legally sensitive
-
-it is usually better placed in a private marketplace repo instead.
-
-See [docs/private-plugins.md](./docs/private-plugins.md).
+If a plugin is not ready to publish runtime yet, keep it metadata-only until the
+bundle is available.
 
 ## Documentation quality
 
@@ -110,3 +117,4 @@ Try to keep:
 - marketplace entry is accurate
 - version is updated
 - auth requirements are documented
+- runtime metadata is accurate if the plugin publishes executable runtime

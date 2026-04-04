@@ -59,6 +59,8 @@ A typical plugin has:
 - a stable plugin ID
 - metadata in `plugin.json`
 - one entry in `marketplace.json`
+- runtime source in `runtime/`
+- a published runtime bundle in `dist/runtime.js` when the plugin is installable as executable external runtime
 - one or more UI surfaces registered through the SDK
 
 Typical surfaces include:
@@ -67,6 +69,21 @@ Typical surfaces include:
 - browse pages
 - menu groups
 - home rows
+
+## Runtime model
+
+Lumio plugins now use a source-and-bundle model:
+
+- `runtime/` contains the editable plugin source
+- `dist/runtime.js` is the published browser bundle Lumio can install and cache
+- `plugin.json` and `marketplace.json` use `runtimeBundlePath` to tell Lumio where the bundle lives
+
+This keeps the plugin repository as the source of truth while avoiding direct
+filesystem imports into the app during development or runtime.
+
+If a plugin has not published a runtime bundle yet, it can still exist in a
+metadata-first state and be discovered by Lumio, but external runtime loading
+will not be attempted until `runtimeBundlePath` is present.
 
 ## Browse, menu and home rows
 
@@ -130,6 +147,12 @@ Every marketplace plugin should have:
 - a `plugin.json`
 - a README
 - ideally a changelog
+
+If the plugin is ready for external runtime loading, it should also have:
+
+- `runtime/`
+- `dist/runtime.js`
+- `runtimeBundlePath` in both `plugin.json` and the root `marketplace.json`
 
 The marketplace manifest should be treated as the install/update index.
 

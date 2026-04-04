@@ -4,6 +4,7 @@
   "name": "Example Plugin Template",
   "version": "0.1.0",
   "description": "Reference plugin metadata for developers building a Lumio plugin.",
+  "runtimeBundlePath": "dist/runtime.js",
   "official": false,
   "bundled": false,
   "removable": true,
@@ -14,4 +15,3 @@
     "home-rows"
   ]
 }
-

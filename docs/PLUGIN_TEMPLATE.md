@@ -9,7 +9,13 @@ plugins/<slug>/
   plugin.json
   README.md
   CHANGELOG.md
+  runtime/
+    index.tsx
+  dist/
+    runtime.js
 ```
+
+If your plugin is still metadata-only, `runtime/` and `dist/` can be added later.
 
 ## `plugin.json`
 
@@ -20,6 +26,7 @@ plugins/<slug>/
   "name": "My Plugin",
   "version": "1.0.0",
   "description": "Short description of what the plugin adds to Lumio.",
+  "runtimeBundlePath": "dist/runtime.js",
   "official": false,
   "bundled": false,
   "removable": true,
@@ -82,6 +89,7 @@ Example:
   "version": "1.0.0",
   "description": "Short description of what the plugin adds to Lumio.",
   "path": "plugins/my-plugin",
+  "runtimeBundlePath": "dist/runtime.js",
   "readmePath": "plugins/my-plugin/README.md",
   "changelogPath": "plugins/my-plugin/CHANGELOG.md",
   "official": false,
@@ -89,6 +97,13 @@ Example:
   "removable": true
 }
 ```
+
+## Runtime notes
+
+- `runtime/index.tsx` is a good default entry for plugin source
+- `dist/runtime.js` is the published bundle Lumio installs from GitHub source or ZIP
+- only include `runtimeBundlePath` when the bundle is actually published
+- metadata-only plugins can omit `runtimeBundlePath` until runtime packaging is ready
 
 ## Capability hints
 
@@ -103,4 +118,3 @@ Common capability labels used in this repository:
 - `stream-provider`
 
 Choose only the ones your plugin actually exposes.
-
