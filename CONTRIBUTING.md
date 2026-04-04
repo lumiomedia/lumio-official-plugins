@@ -59,6 +59,11 @@ Common capabilities include:
 If you are building a plugin, the SDK overview in [docs/sdk.md](./docs/sdk.md)
 is the best place to start.
 
+For a concrete starting point, see:
+
+- [Plugin template](./docs/PLUGIN_TEMPLATE.md)
+- `plugins/example-template/`
+
 ## Forking an existing plugin
 
 Forking is a valid way to start a new plugin.
@@ -105,4 +110,3 @@ Try to keep:
 - marketplace entry is accurate
 - version is updated
 - auth requirements are documented
-
