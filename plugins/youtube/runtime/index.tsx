@@ -1,84 +1,78 @@
 import type { LumioPlugin } from '@/lib/plugin-sdk'
-import { YouTubeBrowsePage, YouTubeHomeRow } from './youtube-browser'
+import { YouTubeBackgroundBootstrap, YouTubeBrowsePage, YouTubeHeroBanner, YouTubeHomeRow } from './youtube-browser'
 import { YouTubeSettingsSection } from './youtube-settings-section'
 
 export const YouTubePlugin: LumioPlugin = {
   id: 'com.lumio.youtube',
-  name: 'YouTube',
+  name: { en: 'YouTube', sv: 'YouTube' },
   version: '1.0.0',
-  description: 'Browse subscriptions, watch later, playlists and channels from YouTube.',
+  description: {
+    en: 'Browse subscriptions, playlists and channels from YouTube.',
+    sv: 'Bladdra bland prenumerationer, spellistor och kanaler från YouTube.',
+  },
   preinstalled: true,
 
   register(ctx) {
     ctx.registerSettingsSection({
       id: 'youtube',
-      label: 'YouTube',
+      label: { en: 'YouTube', sv: 'YouTube' },
       Section: YouTubeSettingsSection,
+    })
+    ctx.registerBootstrap({
+      id: 'youtube-background-bootstrap',
+      Mount: YouTubeBackgroundBootstrap,
+    })
+    ctx.registerHero({
+      id: 'youtube-hero',
+      Hero: YouTubeHeroBanner,
     })
 
     ctx.registerBrowsePage({
       id: 'youtube-following',
-      label: 'Following',
+      label: { en: 'Following', sv: 'Följer' },
       Page: YouTubeBrowsePage,
     })
     ctx.registerBrowsePage({
       id: 'youtube-channels',
-      label: 'Channels',
+      label: { en: 'Channels', sv: 'Kanaler' },
       Page: YouTubeBrowsePage,
     })
     ctx.registerBrowsePage({
       id: 'youtube-playlists',
-      label: 'Playlists',
-      Page: YouTubeBrowsePage,
-    })
-    ctx.registerBrowsePage({
-      id: 'youtube-watch-later',
-      label: 'Watch later',
+      label: { en: 'Playlists', sv: 'Spellistor' },
       Page: YouTubeBrowsePage,
     })
     ctx.registerBrowsePage({
       id: 'youtube-playlist',
-      label: 'Playlist',
+      label: { en: 'Playlist', sv: 'Spellista' },
       Page: YouTubeBrowsePage,
     })
     ctx.registerBrowsePage({
       id: 'youtube-channel',
-      label: 'Channel',
+      label: { en: 'Channel', sv: 'Kanal' },
       Page: YouTubeBrowsePage,
     })
 
-    const youtubeGroup = {
+    const youtubeEntry = {
       id: 'youtube',
-      label: 'YouTube',
+      label: { en: 'YouTube', sv: 'YouTube' },
       defaultEnabled: true,
-      items: [
-        { id: 'youtube-following-item', label: 'Following', target: { pageId: 'youtube-following' } },
-        { id: 'youtube-channels-item', label: 'Channels', target: { pageId: 'youtube-channels' } },
-        { id: 'youtube-playlists-item', label: 'Playlists', target: { pageId: 'youtube-playlists' } },
-        { id: 'youtube-watch-later-item', label: 'Watch later', target: { pageId: 'youtube-watch-later' } },
-      ],
+      target: { pageId: 'youtube-following' },
     }
 
-    ctx.registerMainMenuItem(youtubeGroup)
-    ctx.registerTopbarItem(youtubeGroup)
+    ctx.registerMainMenuItem(youtubeEntry)
+    ctx.registerTopbarItem(youtubeEntry)
 
     ctx.registerHomeRow({
       id: 'youtube-following-row',
-      title: 'YouTube following',
-      position: 'bottom',
-      Row: (props) => <YouTubeHomeRow {...props} kind="following" />,
+      title: { en: 'YouTube following', sv: 'YouTube följer' },
+      showOnHome: false,
+      Row: (props) => <YouTubeHomeRow {...props} />,
     })
-    ctx.registerHomeRow({
-      id: 'youtube-watch-later-row',
-      title: 'Watch later',
-      position: 'bottom',
-      Row: (props) => <YouTubeHomeRow {...props} kind="watch-later" />,
-    })
-    ctx.registerHomeRow({
-      id: 'youtube-playlists-row',
-      title: 'YouTube playlists',
-      position: 'bottom',
-      Row: (props) => <YouTubeHomeRow {...props} kind="playlists" />,
+    ctx.registerHomeSource({
+      id: 'youtube-following',
+      label: { en: 'YouTube following', sv: 'YouTube följer' },
+      rowId: 'youtube-following-row',
     })
   },
 }

@@ -1,28 +1,33 @@
 'use client'
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import type { BrowsePageProps, HomeRowProps } from '@/lib/plugin-sdk'
+import { useLang } from '@/lib/i18n'
+import type { BrowsePageProps, HomeRowProps, PluginHeroProps } from '@/lib/plugin-sdk'
 import {
   fetchYouTubeChannelVideos,
   fetchYouTubeLatestFromSubscriptions,
   fetchYouTubePlaylistVideos,
   fetchYouTubePlaylists,
   fetchYouTubeSubscriptions,
+  searchYouTubeChannels,
   subscribeToYouTubeChannel,
   unsubscribeFromYouTubeChannel,
+  warmYouTubeBackgroundCaches,
 } from './youtube-client'
 import {
   clearYouTubeCache,
+  getDismissedYouTubeHeroVideoId,
   getYouTubeSettings,
   getYouTubeSession,
   isYouTubeSessionValid,
   onYouTubePluginChanged,
+  setDismissedYouTubeHeroVideoId,
+  readYouTubeCacheStale,
 } from './youtube-storage'
 import type { YouTubeChannel, YouTubePlaylist, YouTubeSession, YouTubeVideo } from './youtube-types'
 
-type YouTubeBrowseMode = 'following' | 'channels' | 'playlists' | 'watch-later' | 'playlist' | 'channel'
-type YouTubeHomeRowKind = 'following' | 'watch-later' | 'playlists'
-const VIDEO_PAGE_SIZE = 18
+type YouTubeBrowseMode = 'following' | 'channels' | 'playlists' | 'playlist' | 'channel'
+const VIDEO_PAGE_SIZE = 16
 const ENTITY_MAP: Record<string, string> = {
   '&amp;': '&',
   '&#39;': "'",
@@ -31,10 +36,14 @@ const ENTITY_MAP: Record<string, string> = {
   '&gt;': '>',
 }
 
+function getLatestFollowingHeroVideo(session: YouTubeSession, hideShorts: boolean): YouTubeVideo | null {
+  const cached = readYouTubeCacheStale<YouTubeVideo[]>(`following-latest:${session.channelId}`) ?? []
+  return filterShorts(cached, hideShorts)[0] ?? null
+}
+
 function getBrowseMode(pageId: string): YouTubeBrowseMode {
   if (pageId === 'youtube-following') return 'following'
   if (pageId === 'youtube-channels') return 'channels'
-  if (pageId === 'youtube-watch-later') return 'watch-later'
   if (pageId === 'youtube-playlist') return 'playlist'
   if (pageId === 'youtube-channel') return 'channel'
   return 'playlists'
@@ -101,7 +110,7 @@ function formatVideoMeta(video: YouTubeVideo) {
   if (video.publishedAt) {
     const date = new Date(video.publishedAt)
     if (!Number.isNaN(date.getTime())) {
-      parts.push(date.toLocaleDateString('sv-SE', { day: 'numeric', month: 'short', year: 'numeric' }))
+      parts.push(date.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }))
     }
   }
   return parts.join(' · ') || 'YouTube'
@@ -116,9 +125,10 @@ function YouTubePlayerModal({
   title: string
   onClose: () => void
 }) {
+  const { t } = useLang()
   return (
     <div className="fixed inset-0 z-[220] flex items-center justify-center bg-slate-950/80 p-6 backdrop-blur-sm">
-      <button type="button" className="absolute inset-0" aria-label="Close video" onClick={onClose} />
+      <button type="button" className="absolute inset-0" aria-label={t('close')} onClick={onClose} />
       <div className="relative z-10 w-full max-w-5xl overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#090e1d] shadow-[0_30px_120px_rgba(0,0,0,0.5)]">
         <div className="flex items-center justify-between gap-4 border-b border-white/10 px-5 py-4">
           <div className="min-w-0">
@@ -168,6 +178,7 @@ function ChannelCard({
   busy?: boolean
   onOpen?: (channel: YouTubeChannel) => void
 }) {
+  const { t } = useLang()
   return (
     <div
       role="button"
@@ -195,7 +206,7 @@ function ChannelCard({
           ) : null}
           <div className="mt-3 flex flex-wrap gap-2">
             <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-slate-300">
-              {channel.subscriptionId ? 'Following' : 'Channel'}
+              {channel.subscriptionId ? t('following') : t('pluginYoutubeChannelBadge')}
             </span>
             {onToggleFollow ? (
               <button
@@ -207,7 +218,7 @@ function ChannelCard({
                 disabled={busy}
                 className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-slate-200 transition hover:border-white/20 hover:text-white disabled:opacity-50"
               >
-                {channel.subscriptionId ? 'Unfollow' : 'Follow'}
+                {channel.subscriptionId ? t('pluginYoutubeUnfollow') : t('follow')}
               </button>
             ) : null}
           </div>
@@ -224,6 +235,7 @@ function PlaylistCard({
   playlist: YouTubePlaylist
   onOpen: (playlist: YouTubePlaylist) => void
 }) {
+  const { t } = useLang()
   return (
     <button
       type="button"
@@ -240,12 +252,12 @@ function PlaylistCard({
         ) : null}
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent opacity-90 transition group-hover:opacity-100" />
         <div className="absolute left-2 top-2 rounded-full border border-white/12 bg-black/50 px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-slate-200 backdrop-blur-sm">
-          Playlist
+          {t('pluginYoutubePlaylistBadge')}
         </div>
       </div>
       <div className="p-2.5">
         <p className="text-[9px] uppercase tracking-[0.22em] text-slate-300/60">
-          {playlist.itemCount != null ? `${playlist.itemCount} videos` : 'Playlist'}
+          {playlist.itemCount != null ? `${playlist.itemCount} ${t('pluginYoutubeVideos')}` : t('pluginYoutubePlaylistBadge')}
         </p>
         <h3 className="mt-0.5 line-clamp-2 text-[0.8rem] font-semibold leading-snug text-white">{decodeHtmlEntities(playlist.title)}</h3>
       </div>
@@ -262,6 +274,7 @@ function VideoCard({
   onPlay: (video: YouTubeVideo) => void
   onOpenChannel?: (video: YouTubeVideo) => void
 }) {
+  const { t } = useLang()
   return (
     <div
       role="button"
@@ -307,11 +320,11 @@ function VideoCard({
             }}
             className="absolute left-2 top-2 rounded-full border border-white/12 bg-black/50 px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-slate-200 backdrop-blur-sm transition hover:border-white/20 hover:bg-black/65 hover:text-white"
           >
-            Kanal
+            {t('pluginYoutubeChannelBadge')}
           </div>
         ) : (
           <div className="absolute left-2 top-2 rounded-full border border-white/12 bg-black/50 px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-slate-200 backdrop-blur-sm">
-            Video
+            {t('pluginYoutubeVideoBadge')}
           </div>
         )}
       </div>
@@ -349,6 +362,7 @@ function YouTubeGridShell({
 }
 
 function useYouTubeData(pageId: string, params?: Record<string, string>, videoLimit = VIDEO_PAGE_SIZE, hideShorts = false) {
+  const { t } = useLang()
   const { session, connected } = useYouTubeSessionState()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -379,9 +393,9 @@ function useYouTubeData(pageId: string, params?: Record<string, string>, videoLi
         }
         if (mode === 'following') {
           const nextVideos = await fetchYouTubeLatestFromSubscriptions(activeSession, {
-            totalLimit: videoLimit,
-            channelLimit: Math.max(8, Math.ceil(videoLimit / 3)),
-            maxResultsPerChannel: 4,
+            totalLimit: Math.max(videoLimit + 18, 36),
+            channelLimit: Math.max(12, Math.ceil(videoLimit / 2)),
+            maxResultsPerChannel: 6,
           })
           if (!cancelled) setVideos(filterShorts(nextVideos, hideShorts))
         }
@@ -389,30 +403,23 @@ function useYouTubeData(pageId: string, params?: Record<string, string>, videoLi
           const nextPlaylists = await fetchYouTubePlaylists(activeSession)
           if (!cancelled) setPlaylists(nextPlaylists)
         }
-        if (mode === 'watch-later') {
-          if (!activeSession.watchLaterPlaylistId) {
-            throw new Error('Watch later is not available for this account.')
-          }
-          const nextVideos = await fetchYouTubePlaylistVideos(activeSession, activeSession.watchLaterPlaylistId, videoLimit)
-          if (!cancelled) setVideos(filterShorts(nextVideos, hideShorts))
-        }
         if (mode === 'playlist') {
           if (!params?.id) {
             throw new Error('Missing playlist id.')
           }
-          const nextVideos = await fetchYouTubePlaylistVideos(activeSession, params.id, videoLimit)
+          const nextVideos = await fetchYouTubePlaylistVideos(activeSession, params.id, Math.max(videoLimit + 12, 36))
           if (!cancelled) setVideos(filterShorts(nextVideos, hideShorts))
         }
         if (mode === 'channel') {
           if (!params?.id) {
             throw new Error('Missing channel id.')
           }
-          const nextVideos = await fetchYouTubeChannelVideos(activeSession, params.id, videoLimit)
+          const nextVideos = await fetchYouTubeChannelVideos(activeSession, params.id, Math.max(videoLimit + 12, 36))
           if (!cancelled) setVideos(filterShorts(nextVideos, hideShorts))
         }
       } catch (loadError) {
         if (!cancelled) {
-          setError(loadError instanceof Error ? loadError.message : 'Failed to load YouTube data.')
+          setError(loadError instanceof Error ? loadError.message : t('pluginYoutubeLoadError'))
         }
       } finally {
         if (!cancelled) setLoading(false)
@@ -423,12 +430,13 @@ function useYouTubeData(pageId: string, params?: Record<string, string>, videoLi
     return () => {
       cancelled = true
     }
-  }, [pageId, params?.id, connected, session, videoLimit, hideShorts])
+  }, [pageId, params?.id, connected, session, videoLimit, hideShorts, t])
 
   return { session, connected, loading, error, channels, playlists, videos }
 }
 
 export function YouTubeBrowsePage({ pageId, params, onNavigate }: BrowsePageProps) {
+  const { t } = useLang()
   const { session, settings, connected } = useYouTubeSessionState()
   const [visibleCount, setVisibleCount] = useState(VIDEO_PAGE_SIZE)
   const [refreshNonce, setRefreshNonce] = useState(0)
@@ -449,19 +457,31 @@ export function YouTubeBrowsePage({ pageId, params, onNavigate }: BrowsePageProp
 
   useEffect(() => {
     if (pageId !== 'youtube-channels') return
-    const query = searchQuery.trim().toLowerCase()
+    const query = searchQuery.trim()
     if (!query) {
       setSearchResults([])
       return
     }
 
-    setSearchResults(
-      channels.filter((channel) => {
-        const haystack = `${channel.title} ${channel.description ?? ''}`.toLowerCase()
-        return haystack.includes(query)
-      }),
-    )
-  }, [searchQuery, pageId, channels])
+    if (!session || !connected) {
+      setSearchResults([])
+      return
+    }
+
+    let cancelled = false
+    const timeoutId = window.setTimeout(() => {
+      void searchYouTubeChannels(session, query, channels).then((next) => {
+        if (!cancelled) setSearchResults(next)
+      }).catch(() => {
+        if (!cancelled) setSearchResults([])
+      })
+    }, 250)
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timeoutId)
+    }
+  }, [searchQuery, pageId, channels, session, connected])
 
   async function handleToggleFollow(channel: YouTubeChannel) {
     if (!session) return
@@ -495,7 +515,7 @@ export function YouTubeBrowsePage({ pageId, params, onNavigate }: BrowsePageProp
       pageId: 'youtube-channel',
       params: {
         id: video.channelId,
-        title: video.channelTitle ?? 'Channel',
+        title: video.channelTitle ?? t('pluginYoutubeChannelPage'),
       },
     })
   }
@@ -505,49 +525,87 @@ export function YouTubeBrowsePage({ pageId, params, onNavigate }: BrowsePageProp
     setRefreshNonce((value) => value + 1)
   }
 
+  const navButtons: Array<{ id: 'youtube-following' | 'youtube-channels' | 'youtube-playlists'; label: string; params?: Record<string, string> }> = [
+    { id: 'youtube-following', label: t('pluginYoutubeFollowingPage'), params: { __force: '1' } },
+    { id: 'youtube-channels', label: t('pluginYoutubeChannelsPage') },
+    { id: 'youtube-playlists', label: t('pluginYoutubePlaylistsPage') },
+  ]
+
+  const browseActions = (
+    <div className="flex flex-wrap items-center justify-end gap-3">
+      {navButtons.map((button) => {
+        const active = pageId === button.id
+        return (
+          <button
+            key={button.id}
+            type="button"
+            onClick={() => onNavigate({ pageId: button.id, params: button.params })}
+            className={`h-9 rounded-full border px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] transition-all whitespace-nowrap ${
+              active
+                ? 'border-white/[0.16] bg-white/[0.08] text-white'
+                : 'border-white/[0.1] bg-white/[0.04] text-slate-200 hover:border-white/[0.16] hover:bg-white/[0.06] hover:text-white'
+            }`}
+          >
+            {button.label}
+          </button>
+        )
+      })}
+      <button
+        type="button"
+        onClick={handleRefresh}
+        className="h-9 rounded-full border border-white/[0.1] bg-white/[0.04] px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all whitespace-nowrap hover:border-white/[0.16] hover:bg-white/[0.06] hover:text-white"
+      >
+        {t('refreshStatus')}
+      </button>
+    </div>
+  )
+
   const pageTitle = pageId === 'youtube-following'
-    ? 'Following'
+    ? t('pluginYoutubeFollowingPage')
     : pageId === 'youtube-channels'
-      ? 'Channels'
-      : pageId === 'youtube-watch-later'
-        ? 'Watch later'
-        : pageId === 'youtube-channel'
-          ? (params?.title ?? 'Channel')
+      ? t('pluginYoutubeChannelsPage')
+      : pageId === 'youtube-channel'
+          ? (params?.title ?? t('pluginYoutubeChannelPage'))
         : pageId === 'youtube-playlist'
-          ? (params?.title ?? 'Playlist')
-          : 'Playlists'
+          ? (params?.title ?? t('pluginYoutubePlaylistPage'))
+          : t('pluginYoutubePlaylistsPage')
 
   if (!settings.clientId.trim()) {
-    return <SectionPlaceholder title="YouTube" text="Add your Google Desktop Client ID and YouTube API key in the YouTube plugin settings to get started." />
+    return <SectionPlaceholder title="YouTube" text={t('pluginYoutubeSetupPrompt')} />
   }
 
   if (!connected || !session) {
-    return <SectionPlaceholder title="YouTube" text="Connect YouTube in Settings to browse your subscriptions, playlists and Watch later." />
+    return <SectionPlaceholder title="YouTube" text={t('pluginYoutubeConnectPrompt')} />
   }
 
   if (loading) {
-    return <SectionPlaceholder title={pageTitle} text="Loading your YouTube data…" />
+    return <SectionPlaceholder title={pageTitle} text={t('pluginYoutubeLoading')} />
   }
 
   if (error) {
     return <SectionPlaceholder title={pageTitle} text={error} />
   }
 
+  const subscriptionHeader = (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <p className="text-sm text-slate-400">{t('pluginYoutubeYourSubscriptions')}</p>
+      <input
+        type="search"
+        value={searchQuery}
+        onChange={(event) => setSearchQuery(event.target.value)}
+        placeholder={t('pluginYoutubeSearchChannels')}
+        className="w-full max-w-[320px] rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-white/20"
+      />
+    </div>
+  )
+
   return (
     <div className="space-y-8">
       {pageId === 'youtube-following' ? (
         <YouTubeGridShell
-          title="Following"
-          subtitle="Latest videos from channels you follow."
-          actions={(
-            <button
-              type="button"
-              onClick={handleRefresh}
-              className="h-10 rounded-full border border-white/[0.1] bg-white/[0.04] px-5 text-[0.65rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:border-white/[0.16] hover:bg-white/[0.06] hover:text-white"
-            >
-              Refresh
-            </button>
-          )}
+          title={t('pluginYoutubeFollowingPage')}
+          subtitle={t('pluginYoutubeFollowingSubtitle')}
+          actions={browseActions}
         >
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {videos.map((video) => (
@@ -564,30 +622,14 @@ export function YouTubeBrowsePage({ pageId, params, onNavigate }: BrowsePageProp
 
       {pageId === 'youtube-channels' ? (
         <YouTubeGridShell
-          title="Channels"
-          subtitle="Search for new channels and manage who you follow."
-          actions={(
-            <div className="flex flex-wrap gap-3">
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Filter your channels…"
-                className="min-w-[240px] rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-white/20"
-              />
-              <button
-                type="button"
-                onClick={handleRefresh}
-                className="h-10 rounded-full border border-white/[0.1] bg-white/[0.04] px-5 text-[0.65rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:border-white/[0.16] hover:bg-white/[0.06] hover:text-white"
-              >
-                Refresh
-              </button>
-            </div>
-          )}
+          title={t('pluginYoutubeChannelsPage')}
+          subtitle={t('pluginYoutubeChannelsSubtitle')}
+          actions={browseActions}
         >
+          {subscriptionHeader}
           {searchQuery.trim() ? (
             <div className="space-y-4">
-              <p className="text-sm text-slate-400">Matching channels</p>
+              <p className="text-sm text-slate-400">{t('pluginYoutubeMatchingChannels')}</p>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {searchResults.map((channel) => (
                   <ChannelCard
@@ -603,7 +645,6 @@ export function YouTubeBrowsePage({ pageId, params, onNavigate }: BrowsePageProp
           ) : null}
 
           <div className="space-y-4">
-            <p className="text-sm text-slate-400">Your subscriptions</p>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {channels.slice(0, visibleCount).map((channel) => (
                 <ChannelCard
@@ -620,15 +661,7 @@ export function YouTubeBrowsePage({ pageId, params, onNavigate }: BrowsePageProp
       ) : null}
 
       {pageId === 'youtube-playlists' ? (
-        <YouTubeGridShell title="Playlists" subtitle="Your saved YouTube playlists." actions={(
-          <button
-            type="button"
-            onClick={handleRefresh}
-            className="h-10 rounded-full border border-white/[0.1] bg-white/[0.04] px-5 text-[0.65rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:border-white/[0.16] hover:bg-white/[0.06] hover:text-white"
-          >
-            Refresh
-          </button>
-        )}>
+        <YouTubeGridShell title={t('pluginYoutubePlaylistsPage')} subtitle={t('pluginYoutubePlaylistsSubtitle')} actions={browseActions}>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {playlists.slice(0, visibleCount).map((playlist) => (
               <PlaylistCard
@@ -647,25 +680,15 @@ export function YouTubeBrowsePage({ pageId, params, onNavigate }: BrowsePageProp
         </YouTubeGridShell>
       ) : null}
 
-      {pageId === 'youtube-watch-later' || pageId === 'youtube-playlist' || pageId === 'youtube-channel' ? (
+      {pageId === 'youtube-playlist' || pageId === 'youtube-channel' ? (
         <YouTubeGridShell
           title={pageTitle}
           subtitle={
-            pageId === 'youtube-watch-later'
-              ? 'Your saved queue for later.'
-              : pageId === 'youtube-channel'
-                ? 'Latest videos from this channel.'
-                : 'Playlist videos'
+            pageId === 'youtube-channel'
+              ? t('pluginYoutubeChannelSubtitle')
+              : t('pluginYoutubePlaylistSubtitle')
           }
-          actions={(
-            <button
-              type="button"
-              onClick={handleRefresh}
-              className="h-10 rounded-full border border-white/[0.1] bg-white/[0.04] px-5 text-[0.65rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:border-white/[0.16] hover:bg-white/[0.06] hover:text-white"
-            >
-              Refresh
-            </button>
-          )}
+          actions={browseActions}
         >
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {videos.map((video) => (
@@ -683,7 +706,6 @@ export function YouTubeBrowsePage({ pageId, params, onNavigate }: BrowsePageProp
       {(
         (pageId === 'youtube-following' && videos.length >= visibleCount) ||
         (pageId === 'youtube-channel' && videos.length >= visibleCount) ||
-        (pageId === 'youtube-watch-later' && videos.length >= visibleCount) ||
         (pageId === 'youtube-playlist' && videos.length >= visibleCount) ||
         (pageId === 'youtube-channels' && !searchQuery.trim() && channels.length > visibleCount) ||
         (pageId === 'youtube-playlists' && playlists.length > visibleCount)
@@ -694,11 +716,178 @@ export function YouTubeBrowsePage({ pageId, params, onNavigate }: BrowsePageProp
             onClick={() => setVisibleCount((count) => count + VIDEO_PAGE_SIZE)}
             className="h-10 rounded-full border border-white/[0.1] bg-white/[0.04] px-5 text-[0.65rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:border-white/[0.16] hover:bg-white/[0.06] hover:text-white"
           >
-            Load more
+            {t('loadMore')}
           </button>
         </div>
       ) : null}
 
+      {playerVideo ? (
+        <YouTubePlayerModal
+          videoId={playerVideo.id}
+          title={playerVideo.title}
+          onClose={() => setPlayerVideo(null)}
+        />
+      ) : null}
+    </div>
+  )
+}
+
+export function YouTubeBackgroundBootstrap() {
+  const { session, connected } = useYouTubeSessionState()
+
+  useEffect(() => {
+    if (!connected || !session) return
+
+    let cancelled = false
+    const run = () => {
+      void warmYouTubeBackgroundCaches(session).catch(() => {})
+    }
+
+    const idleId = typeof window !== 'undefined' && 'requestIdleCallback' in window
+      ? window.requestIdleCallback(() => {
+          if (!cancelled) run()
+        }, { timeout: 3000 })
+      : null
+
+    const timeoutId = idleId == null
+      ? window.setTimeout(() => {
+          if (!cancelled) run()
+        }, 1200)
+      : null
+
+    return () => {
+      cancelled = true
+      if (idleId != null && 'cancelIdleCallback' in window) window.cancelIdleCallback(idleId)
+      if (timeoutId != null) window.clearTimeout(timeoutId)
+    }
+  }, [connected, session])
+
+  return null
+}
+
+export function YouTubeHeroBanner({ onNavigate, onActiveChange, onBackdropChange }: PluginHeroProps) {
+  const { t } = useLang()
+  const { settings, session, connected } = useYouTubeSessionState()
+  const [video, setVideo] = useState<YouTubeVideo | null>(null)
+  const [playerVideo, setPlayerVideo] = useState<YouTubeVideo | null>(null)
+
+  useEffect(() => {
+    const sync = () => {
+      if (!connected || !session || !settings.hero) {
+        setVideo(null)
+        return
+      }
+      const latest = getLatestFollowingHeroVideo(session, settings.hideShorts)
+      const dismissedId = getDismissedYouTubeHeroVideoId()
+      if (!latest || (!settings.keepHero && latest.id === dismissedId)) {
+        setVideo(null)
+        return
+      }
+      setVideo(latest)
+    }
+
+    sync()
+    const off = onYouTubePluginChanged(sync)
+    return () => off()
+  }, [connected, session, settings.hero, settings.hideShorts, settings.keepHero])
+
+  useEffect(() => {
+    onActiveChange(Boolean(video))
+    onBackdropChange(video?.thumbnailUrl ?? null)
+    return () => {
+      onActiveChange(false)
+      onBackdropChange(null)
+    }
+  }, [video, onActiveChange, onBackdropChange])
+
+  if (!video) return null
+
+  const openVideo = () => {
+    if (!settings.keepHero) setDismissedYouTubeHeroVideoId(video.id)
+    setPlayerVideo(video)
+    if (!settings.keepHero) setVideo(null)
+  }
+
+  const openFollowing = () => {
+    if (!settings.keepHero) setDismissedYouTubeHeroVideoId(video.id)
+    if (!settings.keepHero) setVideo(null)
+    onNavigate({ pageId: 'youtube-following', params: { __force: '1' } })
+  }
+
+  const openChannel = () => {
+    if (!video.channelId) return
+    if (!settings.keepHero) setDismissedYouTubeHeroVideoId(video.id)
+    if (!settings.keepHero) setVideo(null)
+    onNavigate({
+      pageId: 'youtube-channel',
+      params: {
+        id: video.channelId,
+        title: video.channelTitle ?? t('pluginYoutubeChannelPage'),
+      },
+    })
+  }
+
+  return (
+    <div className="relative mb-4" style={{ minHeight: 380 }}>
+      <div className="flex h-full min-h-[380px] flex-col justify-end p-6 sm:p-8 md:max-w-[60%]">
+        <div className="mb-3 flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            onClick={openFollowing}
+            className="rounded-full border border-white/15 bg-white/10 px-2.5 py-0.5 text-[10px] uppercase tracking-[0.18em] text-slate-300 transition hover:border-white/30 hover:bg-white/20 hover:text-white"
+          >
+            YouTube
+          </button>
+          {video.channelTitle ? (
+            <button
+              type="button"
+              onClick={openChannel}
+              className="rounded-full border border-white/15 bg-white/10 px-2.5 py-0.5 text-[10px] uppercase tracking-[0.18em] text-slate-300 transition hover:border-white/30 hover:bg-white/20 hover:text-white"
+            >
+              {video.channelTitle}
+            </button>
+          ) : null}
+        </div>
+
+        <h2 className="mb-1 text-3xl font-bold leading-tight text-white drop-shadow-lg sm:text-4xl">
+          {decodeHtmlEntities(video.title)}
+        </h2>
+
+        <div className="mb-3 flex items-center gap-3 text-sm text-slate-300">
+          {video.channelTitle ? <span>{video.channelTitle}</span> : null}
+          {video.publishedAt ? (
+            <span>
+              {new Date(video.publishedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+            </span>
+          ) : null}
+        </div>
+
+        {video.description ? (
+          <p className="mb-4 line-clamp-2 text-sm leading-relaxed text-slate-300/80 sm:text-base">
+            {decodeHtmlEntities(video.description)}
+          </p>
+        ) : null}
+
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={openVideo}
+            className="flex h-10 items-center rounded-full bg-accent-500 px-6 text-sm font-semibold text-white transition hover:bg-accent-400"
+          >
+            <svg className="mr-1.5 h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+            {t('play')}
+          </button>
+          <button
+            type="button"
+            onClick={openFollowing}
+            className="h-10 rounded-full border border-white/20 bg-white/[0.06] px-6 text-sm font-semibold text-white transition hover:bg-white/10"
+          >
+            {t('pluginYoutubeOpenFeed')}
+          </button>
+        </div>
+      </div>
       {playerVideo ? (
         <YouTubePlayerModal
           videoId={playerVideo.id}
@@ -721,6 +910,7 @@ function YouTubeHomeRowShell({
   children: ReactNode
   onOpenAll: () => void
 }) {
+  const { t } = useLang()
   return (
     <section>
       <div className="mb-3 flex items-end justify-between">
@@ -733,7 +923,7 @@ function YouTubeHomeRowShell({
           onClick={onOpenAll}
           className="flex h-9 items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.03] px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:border-white/[0.16] hover:bg-white/[0.05] hover:text-white"
         >
-          Show all
+          {t('showAll')}
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <polyline points="9 18 15 12 9 6" />
           </svg>
@@ -745,48 +935,35 @@ function YouTubeHomeRowShell({
 }
 
 export function YouTubeHomeRow({
-  kind,
   onNavigate,
-}: HomeRowProps & {
-  kind: YouTubeHomeRowKind
-}) {
+  layout = 'slider',
+  count = 16,
+  sliderCardWidth = 'calc((100% - 3 * 0.75rem) / 4)',
+}: HomeRowProps) {
+  const { t } = useLang()
   const { settings, session, connected } = useYouTubeSessionState()
   const { active, setNode } = useDeferredActivation()
-  const [channels, setChannels] = useState<YouTubeChannel[]>([])
-  const [playlists, setPlaylists] = useState<YouTubePlaylist[]>([])
   const [videos, setVideos] = useState<YouTubeVideo[]>([])
   const [playerVideo, setPlayerVideo] = useState<YouTubeVideo | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const rowEnabled = kind === 'following'
-    ? settings.homeRows.following
-    : kind === 'watch-later'
-      ? settings.homeRows.watchLater
-      : settings.homeRows.playlists
-
   useEffect(() => {
-    if (!connected || !session || !rowEnabled || !active) return
+    if (!connected || !session || !active) return
     let cancelled = false
     const activeSession = session
 
     async function load() {
       setError(null)
       try {
-        if (kind === 'following') {
-          const next = await fetchYouTubeSubscriptions(activeSession)
-          if (!cancelled) setChannels(next.slice(0, 12))
-        }
-        if (kind === 'playlists') {
-          const next = await fetchYouTubePlaylists(activeSession)
-          if (!cancelled) setPlaylists(next.slice(0, 8))
-        }
-        if (kind === 'watch-later' && activeSession.watchLaterPlaylistId) {
-          const next = await fetchYouTubePlaylistVideos(activeSession, activeSession.watchLaterPlaylistId, 12)
-          if (!cancelled) setVideos(next)
-        }
+        const next = await fetchYouTubeLatestFromSubscriptions(activeSession, {
+          totalLimit: Math.max(count + 8, 24),
+          channelLimit: Math.max(10, Math.ceil(count / 2)),
+          maxResultsPerChannel: 4,
+        })
+        if (!cancelled) setVideos(filterShorts(next, settings.hideShorts))
       } catch (loadError) {
         if (!cancelled) {
-          setError(loadError instanceof Error ? loadError.message : 'Failed to load YouTube row.')
+          setError(loadError instanceof Error ? loadError.message : t('pluginYoutubeRowLoadError'))
         }
       }
     }
@@ -795,79 +972,49 @@ export function YouTubeHomeRow({
     return () => {
       cancelled = true
     }
-  }, [connected, session, rowEnabled, kind, active])
+  }, [connected, session, active, settings.hideShorts, count, t])
 
-  if (!rowEnabled || !connected || !session) return null
+  if (!connected || !session) return null
   if (error) return null
-
-  if (kind === 'following') {
-    return (
-      <div ref={setNode}>
-      <YouTubeHomeRowShell title="YouTube following" subtitle="Channels you follow" onOpenAll={() => onNavigate({ pageId: 'youtube-following' })}>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {active ? channels.map((channel) => (
-            <ChannelCard
-              key={channel.id}
-              channel={channel}
-              onOpen={(entry) => onNavigate({
-                pageId: 'youtube-channel',
-                params: { id: entry.id, title: entry.title },
-              })}
-            />
-          )) : Array.from({ length: 4 }).map((_, index) => (
-            <div key={index} className="aspect-[3/1] animate-pulse rounded-[1.5rem] bg-slate-800/50" />
-          ))}
-        </div>
-      </YouTubeHomeRowShell>
-      </div>
-    )
-  }
-
-  if (kind === 'playlists') {
-    return (
-      <div ref={setNode}>
-      <YouTubeHomeRowShell title="YouTube playlists" subtitle="Your saved lists" onOpenAll={() => onNavigate({ pageId: 'youtube-playlists' })}>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {active ? playlists.map((playlist) => (
-            <PlaylistCard
-              key={playlist.id}
-              playlist={playlist}
-              onOpen={(entry) => onNavigate({
-                pageId: 'youtube-playlist',
-                params: { id: entry.id, title: entry.title },
-              })}
-            />
-          )) : Array.from({ length: 4 }).map((_, index) => (
-            <div key={index} className="aspect-video animate-pulse rounded-[1.5rem] bg-slate-800/50" />
-          ))}
-        </div>
-      </YouTubeHomeRowShell>
-      </div>
-    )
-  }
 
   return (
     <div ref={setNode}>
-      <YouTubeHomeRowShell title="Watch later" subtitle="Your YouTube queue" onOpenAll={() => onNavigate({ pageId: 'youtube-watch-later' })}>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {active ? videos.map((video) => (
-            <VideoCard
+      <YouTubeHomeRowShell
+        title={t('pluginYoutubeFollowingRow')}
+        subtitle={t('pluginYoutubeFollowingSubtitle')}
+        onOpenAll={() => onNavigate({ pageId: 'youtube-following', params: { __force: '1' } })}
+      >
+        <div
+          className={layout === 'slider' ? 'flex gap-3 overflow-x-auto pb-3' : 'grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4'}
+          style={layout === 'slider' ? { scrollbarWidth: 'none', msOverflowStyle: 'none' } : undefined}
+        >
+          {active ? videos.slice(0, count).map((video) => (
+            <div
               key={video.id}
-              video={video}
-              onPlay={setPlayerVideo}
-              onOpenChannel={(entry) => {
-                if (!entry.channelId) return
-                onNavigate({
-                  pageId: 'youtube-channel',
-                  params: {
-                    id: entry.channelId,
-                    title: entry.channelTitle ?? 'Channel',
-                  },
-                })
-              }}
-            />
+              className={layout === 'slider' ? 'flex-none' : 'w-full'}
+              style={layout === 'slider' ? { width: sliderCardWidth } : undefined}
+            >
+              <VideoCard
+                video={video}
+                onPlay={setPlayerVideo}
+                onOpenChannel={(entry) => {
+                  if (!entry.channelId) return
+                  onNavigate({
+                    pageId: 'youtube-channel',
+                    params: {
+                      id: entry.channelId,
+                      title: entry.channelTitle ?? t('pluginYoutubeChannelPage'),
+                    },
+                  })
+                }}
+              />
+            </div>
           )) : Array.from({ length: 4 }).map((_, index) => (
-            <div key={index} className="aspect-video animate-pulse rounded-[1.5rem] bg-slate-800/50" />
+            <div
+              key={index}
+              className={`animate-pulse rounded-[1.5rem] bg-slate-800/50 ${layout === 'slider' ? 'aspect-video flex-none' : 'aspect-video'}`}
+              style={layout === 'slider' ? { width: sliderCardWidth } : undefined}
+            />
           ))}
         </div>
       </YouTubeHomeRowShell>

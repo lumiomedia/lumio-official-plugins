@@ -2,6 +2,7 @@
 
 import { Input } from '@heroui/react'
 import { useEffect, useState } from 'react'
+import { useLang } from '@/lib/i18n'
 import { connectYouTube, disconnectYouTube } from './youtube-auth'
 import {
   clearYouTubeCache,
@@ -30,17 +31,15 @@ const settingsPrimaryActionButtonClass =
   'rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-slate-200 transition hover:border-white/20 hover:text-white disabled:opacity-40'
 
 export function YouTubeSettingsSection() {
+  const { t } = useLang()
   const [clientId, setClientId] = useState('')
   const [apiKey, setApiKey] = useState('')
-  const [sessionLabel, setSessionLabel] = useState('Not connected')
+  const [sessionLabel, setSessionLabel] = useState('')
   const [busy, setBusy] = useState<'idle' | 'connecting' | 'disconnecting'>('idle')
   const [error, setError] = useState('')
-  const [homeRows, setHomeRows] = useState({
-    following: true,
-    watchLater: true,
-    playlists: true,
-  })
   const [hideShorts, setHideShorts] = useState(false)
+  const [hero, setHero] = useState(false)
+  const [keepHero, setKeepHero] = useState(false)
 
   useEffect(() => {
     const sync = () => {
@@ -49,11 +48,12 @@ export function YouTubeSettingsSection() {
       setClientId(settings.clientId)
       setApiKey(settings.apiKey)
       setHideShorts(settings.hideShorts)
-      setHomeRows(settings.homeRows)
+      setHero(settings.hero)
+      setKeepHero(settings.keepHero)
       setSessionLabel(
         isYouTubeSessionValid(session)
-          ? `Connected as ${session?.channelTitle ?? 'YouTube'}`
-          : 'Not connected',
+          ? `${t('connectedAs')} ${session?.channelTitle ?? 'YouTube'}`
+          : t('pluginYoutubeNotConnected'),
       )
     }
     sync()
@@ -67,26 +67,28 @@ export function YouTubeSettingsSection() {
     clientId?: string
     apiKey?: string
     hideShorts?: boolean
-    homeRows?: typeof homeRows
+    hero?: boolean
+    keepHero?: boolean
   }) {
     const current = getYouTubeSettings()
     setYouTubeSettings({
       clientId: next.clientId ?? current.clientId,
       apiKey: next.apiKey ?? current.apiKey,
       hideShorts: next.hideShorts ?? current.hideShorts,
-      homeRows: next.homeRows ?? current.homeRows,
+      hero: next.hero ?? current.hero,
+      keepHero: next.keepHero ?? current.keepHero,
     })
   }
 
   async function handleConnect() {
     setBusy('connecting')
     setError('')
-    persist({ clientId, apiKey, hideShorts, homeRows })
+    persist({ clientId, apiKey, hideShorts, hero, keepHero })
     try {
       await connectYouTube(clientId)
-      setSessionLabel(`Connected as ${getYouTubeSession()?.channelTitle ?? 'YouTube'}`)
+      setSessionLabel(`${t('connectedAs')} ${getYouTubeSession()?.channelTitle ?? 'YouTube'}`)
     } catch (connectError) {
-      setError(connectError instanceof Error ? connectError.message : 'Could not connect YouTube.')
+      setError(connectError instanceof Error ? connectError.message : t('pluginYoutubeConnectError'))
     } finally {
       setBusy('idle')
     }
@@ -97,9 +99,9 @@ export function YouTubeSettingsSection() {
     setError('')
     try {
       await disconnectYouTube()
-      setSessionLabel('Not connected')
+      setSessionLabel(t('pluginYoutubeNotConnected'))
     } catch (disconnectError) {
-      setError(disconnectError instanceof Error ? disconnectError.message : 'Could not disconnect YouTube.')
+      setError(disconnectError instanceof Error ? disconnectError.message : t('pluginYoutubeDisconnectError'))
     } finally {
       setBusy('idle')
     }
@@ -108,20 +110,20 @@ export function YouTubeSettingsSection() {
   return (
     <div className="space-y-5">
       <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Connection</p>
+        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t('pluginYoutubeConnection')}</p>
         <p className="mt-2 text-sm text-slate-300">{sessionLabel}</p>
         <p className="mt-2 text-xs text-slate-500">
-          This plugin uses your own Google Desktop Client ID and YouTube Data API key.
+          {t('pluginYoutubeConnectionNote')}
         </p>
       </div>
       <div className="space-y-1.5">
-        <label className="block text-xs text-slate-400">Google OAuth Client ID</label>
+        <label className="block text-xs text-slate-400">{t('pluginYoutubeClientId')}</label>
         <Input
           type="text"
           value={clientId}
           onValueChange={(value) => {
             setClientId(value)
-            persist({ clientId: value, apiKey, hideShorts, homeRows })
+            persist({ clientId: value, apiKey, hideShorts, hero, keepHero })
           }}
           placeholder="1234567890-xxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com"
           radius="lg"
@@ -130,13 +132,13 @@ export function YouTubeSettingsSection() {
       </div>
 
       <div className="space-y-1.5">
-        <label className="block text-xs text-slate-400">YouTube API Key</label>
+        <label className="block text-xs text-slate-400">{t('pluginYoutubeApiKey')}</label>
         <Input
           type="password"
           value={apiKey}
           onValueChange={(value) => {
             setApiKey(value)
-            persist({ clientId, apiKey: value, hideShorts, homeRows })
+            persist({ clientId, apiKey: value, hideShorts, hero, keepHero })
           }}
           placeholder="AIza..."
           radius="lg"
@@ -145,52 +147,55 @@ export function YouTubeSettingsSection() {
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-4">
-        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">How to create your own app</p>
+        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t('pluginYoutubeOwnAppTitle')}</p>
         <ol className="mt-3 space-y-2 text-sm text-slate-300">
-          <li>1. Create a Google Cloud project.</li>
-          <li>2. Enable YouTube Data API v3.</li>
-          <li>3. Configure the OAuth consent screen.</li>
-          <li>4. Create an OAuth Client ID for Desktop app.</li>
-          <li>5. Create an API key restricted to YouTube Data API v3.</li>
-          <li>6. Paste the client ID and API key here, then reconnect YouTube.</li>
+          <li>{t('pluginYoutubeOwnAppStep1')}</li>
+          <li>{t('pluginYoutubeOwnAppStep2')}</li>
+          <li>{t('pluginYoutubeOwnAppStep3')}</li>
+          <li>{t('pluginYoutubeOwnAppStep4')}</li>
+          <li>{t('pluginYoutubeOwnAppStep5')}</li>
+          <li>{t('pluginYoutubeOwnAppStep6')}</li>
         </ol>
         <p className="mt-3 text-xs text-slate-500">
-          For private use you do not need your own domain. For localhost/browser development you can also create a Web
-          application client, but normal plugin use should rely on a Desktop app client.
+          {t('pluginYoutubeOwnAppNote')}
         </p>
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-4">
-        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Home rows</p>
+        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t('pluginYoutubeVideoOptions')}</p>
         <div className="mt-4 space-y-3">
-          {([
-            ['following', 'Following'],
-            ['watchLater', 'Watch later'],
-            ['playlists', 'Playlists'],
-          ] as const).map(([key, label]) => (
-            <label key={key} className="flex items-center gap-3 text-sm text-slate-300">
-              <input
-                type="checkbox"
-                checked={homeRows[key]}
-                onChange={(event) => {
-                  const next = {
-                    ...homeRows,
-                    [key]: event.target.checked,
-                  }
-                  setHomeRows(next)
-                  persist({ clientId, apiKey, hideShorts, homeRows: next })
-                }}
-                className="h-4 w-4 accent-amber-400"
-              />
-              {label}
-            </label>
-          ))}
-        </div>
-      </div>
-
-      <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-4">
-        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Video filters</p>
-        <div className="mt-4 space-y-3">
+          <label className="flex items-center gap-3 text-sm text-slate-300">
+            <input
+              type="checkbox"
+              checked={hero}
+              onChange={(event) => {
+                const next = event.target.checked
+                setHero(next)
+                persist({ clientId, apiKey, hideShorts, hero: next, keepHero })
+              }}
+              className="h-4 w-4 accent-amber-400"
+            />
+            {t('pluginYoutubeHero')}
+          </label>
+          <p className="text-xs text-slate-500">
+            {t('pluginYoutubeHeroHelp')}
+          </p>
+          <label className="flex items-center gap-3 text-sm text-slate-300">
+            <input
+              type="checkbox"
+              checked={keepHero}
+              onChange={(event) => {
+                const next = event.target.checked
+                setKeepHero(next)
+                persist({ clientId, apiKey, hideShorts, hero, keepHero: next })
+              }}
+              className="h-4 w-4 accent-amber-400"
+            />
+            {t('pluginYoutubeKeepHero')}
+          </label>
+          <p className="text-xs text-slate-500">
+            {t('pluginYoutubeKeepHeroHelp')}
+          </p>
           <label className="flex items-center gap-3 text-sm text-slate-300">
             <input
               type="checkbox"
@@ -199,14 +204,14 @@ export function YouTubeSettingsSection() {
                 const next = event.target.checked
                 setHideShorts(next)
                 clearYouTubeCache()
-                persist({ clientId, apiKey, hideShorts: next, homeRows })
+                persist({ clientId, apiKey, hideShorts: next, hero, keepHero })
               }}
               className="h-4 w-4 accent-amber-400"
             />
-            Dölj shorts
+            {t('pluginYoutubeHideShorts')}
           </label>
           <p className="text-xs text-slate-500">
-            Hides short-form YouTube videos from grids when duration data is available.
+            {t('pluginYoutubeHideShortsHelp')}
           </p>
         </div>
       </div>
@@ -220,7 +225,7 @@ export function YouTubeSettingsSection() {
           disabled={busy !== 'idle' || !clientId.trim()}
           className={settingsPrimaryActionButtonClass}
         >
-          {busy === 'connecting' ? 'Connecting…' : 'Connect YouTube'}
+          {busy === 'connecting' ? t('pluginYoutubeConnecting') : t('pluginYoutubeConnect')}
         </button>
         <button
           type="button"
@@ -228,14 +233,14 @@ export function YouTubeSettingsSection() {
           disabled={busy !== 'idle'}
           className={settingsActionButtonClass}
         >
-          {busy === 'disconnecting' ? 'Disconnecting…' : 'Disconnect'}
+          {busy === 'disconnecting' ? t('pluginYoutubeDisconnecting') : t('pluginYoutubeDisconnect')}
         </button>
         <button
           type="button"
           onClick={() => clearYouTubeCache()}
           className={settingsActionButtonClass}
         >
-          Clear cache
+          {t('pluginYoutubeClearCache')}
         </button>
       </div>
     </div>

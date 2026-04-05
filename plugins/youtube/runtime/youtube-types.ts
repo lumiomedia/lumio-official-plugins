@@ -46,9 +46,6 @@ export interface YouTubePluginSettings {
   clientId: string
   apiKey: string
   hideShorts: boolean
-  homeRows: {
-    following: boolean
-    watchLater: boolean
-    playlists: boolean
-  }
+  hero: boolean
+  keepHero: boolean
 }

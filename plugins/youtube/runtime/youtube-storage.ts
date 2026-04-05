@@ -5,6 +5,7 @@ import type { YouTubePluginSettings, YouTubeSession } from './youtube-types'
 
 const SETTINGS_KEY = 'plugin_youtube_settings'
 const SESSION_KEY = 'plugin_youtube_session'
+const HERO_DISMISSED_VIDEO_KEY = 'plugin_youtube_hero_dismissed_video'
 const EVENT = 'lumio-youtube-plugin-changed'
 const CACHE_PREFIX = 'plugin_youtube_cache'
 
@@ -12,11 +13,8 @@ const DEFAULT_SETTINGS: YouTubePluginSettings = {
   clientId: '',
   apiKey: '',
   hideShorts: false,
-  homeRows: {
-    following: true,
-    watchLater: true,
-    playlists: true,
-  },
+  hero: false,
+  keepHero: false,
 }
 
 function emitChanged(): void {
@@ -35,11 +33,8 @@ export function getYouTubeSettings(): YouTubePluginSettings {
       clientId: typeof parsed.clientId === 'string' ? parsed.clientId : '',
       apiKey: typeof parsed.apiKey === 'string' ? parsed.apiKey : '',
       hideShorts: parsed.hideShorts === true,
-      homeRows: {
-        following: parsed.homeRows?.following !== false,
-        watchLater: parsed.homeRows?.watchLater !== false,
-        playlists: parsed.homeRows?.playlists !== false,
-      },
+      hero: parsed.hero === true,
+      keepHero: parsed.keepHero === true,
     }
   } catch {
     return DEFAULT_SETTINGS
@@ -133,6 +128,21 @@ export function writeYouTubeCache<T>(key: string, data: T): void {
       data,
     }),
   )
+}
+
+export function notifyYouTubePluginChanged(): void {
+  emitChanged()
+}
+
+export function getDismissedYouTubeHeroVideoId(): string | null {
+  if (typeof window === 'undefined') return null
+  const raw = getScopedStorageItem(HERO_DISMISSED_VIDEO_KEY)
+  return raw?.trim() ? raw : null
+}
+
+export function setDismissedYouTubeHeroVideoId(videoId: string | null): void {
+  setScopedStorageItem(HERO_DISMISSED_VIDEO_KEY, videoId ?? '')
+  emitChanged()
 }
 
 export function clearYouTubeCache(): void {

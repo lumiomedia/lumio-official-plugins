@@ -1,13 +1,26 @@
 'use client'
 
 import type { YouTubeChannel, YouTubePlaylist, YouTubeSession, YouTubeVideo } from './youtube-types'
-import { getYouTubeSettings, isYouTubeSessionValid, readYouTubeCache, readYouTubeCacheStale, writeYouTubeCache } from './youtube-storage'
+import {
+  getYouTubeSettings,
+  isYouTubeSessionValid,
+  notifyYouTubePluginChanged,
+  readYouTubeCache,
+  readYouTubeCacheStale,
+  writeYouTubeCache,
+} from './youtube-storage'
 
 const API_BASE = 'https://www.googleapis.com/youtube/v3'
 const SUBSCRIPTIONS_CACHE_TTL_MS = 6 * 60 * 60 * 1000
 const PLAYLISTS_CACHE_TTL_MS = 2 * 60 * 60 * 1000
+const SEARCH_CACHE_TTL_MS = 12 * 60 * 60 * 1000
 const VIDEO_LIST_CACHE_TTL_MS = 30 * 60 * 1000
 const SHORTS_MAX_SECONDS = 180
+const BACKGROUND_WARM_TTL_MS = 20 * 60 * 1000
+const MAX_VIDEO_BATCH_RESULTS = 72
+const FOLLOWING_FEED_RESULTS = 36
+
+const inflightRequests = new Map<string, Promise<unknown>>()
 
 interface YouTubeApiOptions {
   accessToken?: string | null
@@ -51,6 +64,17 @@ function parseIsoDurationSeconds(value?: string): number | null {
 function inferShortFromMetadata(video: YouTubeVideo): boolean {
   const haystack = `${video.title} ${video.description ?? ''}`.toLowerCase()
   return haystack.includes('#shorts') || haystack.includes(' shorts')
+}
+
+function dedupeRequest<T>(key: string, factory: () => Promise<T>): Promise<T> {
+  const existing = inflightRequests.get(key) as Promise<T> | undefined
+  if (existing) return existing
+
+  const request = factory().finally(() => {
+    inflightRequests.delete(key)
+  })
+  inflightRequests.set(key, request)
+  return request
 }
 
 async function youtubeApi<T>(
@@ -249,6 +273,67 @@ export async function fetchYouTubeSubscriptions(session: YouTubeSession): Promis
   }
 }
 
+export async function searchYouTubeChannels(
+  session: YouTubeSession,
+  query: string,
+  existingSubscriptions: YouTubeChannel[] = [],
+  limit = 12,
+): Promise<YouTubeChannel[]> {
+  const normalizedQuery = query.trim()
+  if (!normalizedQuery) return []
+  const cacheKey = `channel-search:${session.channelId}:${normalizedQuery.toLowerCase()}:${limit}`
+  const cached = readYouTubeCache<YouTubeChannel[]>(cacheKey, SEARCH_CACHE_TTL_MS)
+  if (cached) return cached
+  const stale = readYouTubeCacheStale<YouTubeChannel[]>(cacheKey)
+
+  const subscriptionMap = new Map(existingSubscriptions.map((channel) => [channel.id, channel]))
+  try {
+    const results = await dedupeRequest(cacheKey, async () => {
+      const data = await youtubeApi<{
+        items?: Array<{
+          id?: { channelId?: string }
+          snippet?: {
+            title?: string
+            description?: string
+            thumbnails?: Record<string, { url?: string }>
+          }
+        }>
+      }>('search', {
+        part: 'snippet',
+        type: 'channel',
+        q: normalizedQuery,
+        maxResults: Math.max(1, Math.min(limit, 25)),
+      }, {
+        accessToken: getSessionAccessToken(session),
+      })
+
+      const items = (data.items ?? []).flatMap((item) => {
+        const channelId = item.id?.channelId
+        const title = item.snippet?.title
+        if (!channelId || !title) return []
+        const existing = subscriptionMap.get(channelId)
+        return [{
+          id: channelId,
+          title,
+          description: item.snippet?.description,
+          thumbnailUrl: getBestThumbnail(item.snippet?.thumbnails),
+          subscriptionId: existing?.subscriptionId ?? null,
+          subscriberCount: existing?.subscriberCount ?? null,
+          videoCount: existing?.videoCount ?? null,
+        }]
+      })
+
+      writeYouTubeCache(cacheKey, items)
+      return items
+    })
+
+    return results
+  } catch (error) {
+    if (stale) return stale
+    throw error
+  }
+}
+
 export async function fetchYouTubePlaylists(session: YouTubeSession): Promise<YouTubePlaylist[]> {
   const cacheKey = `playlists:${session.channelId}`
   const cached = readYouTubeCache<YouTubePlaylist[]>(cacheKey, PLAYLISTS_CACHE_TTL_MS)
@@ -305,52 +390,68 @@ export async function fetchYouTubePlaylistVideos(
   playlistId: string,
   maxResults = 24,
 ): Promise<YouTubeVideo[]> {
-  const cacheKey = `playlist:${session.channelId}:${playlistId}:${maxResults}`
+  const cacheKey = `playlist:${session.channelId}:${playlistId}`
   const cached = readYouTubeCache<YouTubeVideo[]>(cacheKey, VIDEO_LIST_CACHE_TTL_MS)
-  if (cached) return cached
+  if (cached && cached.length >= maxResults) return cached.slice(0, maxResults)
   const stale = readYouTubeCacheStale<YouTubeVideo[]>(cacheKey)
 
-  const data = await youtubeApi<{
-    items?: Array<{
-      id?: string
-      snippet?: {
-        title?: string
-        description?: string
-        channelTitle?: string
-        channelId?: string
-        publishedAt?: string
-        resourceId?: { videoId?: string }
-        thumbnails?: Record<string, { url?: string }>
-      }
-    }>
-  }>('playlistItems', {
-    part: 'snippet',
-    playlistId,
-    maxResults,
-  }, { accessToken: getSessionAccessToken(session) })
-
-  const items = (data.items ?? []).flatMap((item) => {
-    const videoId = item.snippet?.resourceId?.videoId
-    const title = item.snippet?.title
-    if (!videoId || !title || title === 'Deleted video' || title === 'Private video') return []
-    return [{
-      id: videoId,
-      title,
-      description: item.snippet?.description,
-      channelId: item.snippet?.channelId ?? null,
-      channelTitle: item.snippet?.channelTitle ?? null,
-      publishedAt: item.snippet?.publishedAt ?? null,
-      thumbnailUrl: getBestThumbnail(item.snippet?.thumbnails),
-      playlistItemId: item.id ?? null,
-    }]
-  })
-
   try {
-    const enriched = await enrichVideosWithDetails(session, items)
-    writeYouTubeCache(cacheKey, enriched)
-    return enriched
+    const enriched = await dedupeRequest(cacheKey, async () => {
+      let pageToken: string | undefined
+      const items: YouTubeVideo[] = []
+
+      while (items.length < maxResults && items.length < MAX_VIDEO_BATCH_RESULTS) {
+        const remaining = Math.min(50, Math.max(maxResults, MAX_VIDEO_BATCH_RESULTS) - items.length)
+        const data = await youtubeApi<{
+          nextPageToken?: string
+          items?: Array<{
+            id?: string
+            snippet?: {
+              title?: string
+              description?: string
+              channelTitle?: string
+              channelId?: string
+              publishedAt?: string
+              resourceId?: { videoId?: string }
+              thumbnails?: Record<string, { url?: string }>
+            }
+          }>
+        }>('playlistItems', {
+          part: 'snippet',
+          playlistId,
+          maxResults: Math.min(50, Math.max(maxResults, MAX_VIDEO_BATCH_RESULTS) - items.length),
+          pageToken,
+        }, { accessToken: getSessionAccessToken(session) })
+
+        items.push(
+          ...(data.items ?? []).flatMap((item) => {
+            const videoId = item.snippet?.resourceId?.videoId
+            const title = item.snippet?.title
+            if (!videoId || !title || title === 'Deleted video' || title === 'Private video') return []
+            return [{
+              id: videoId,
+              title,
+              description: item.snippet?.description,
+              channelId: item.snippet?.channelId ?? null,
+              channelTitle: item.snippet?.channelTitle ?? null,
+              publishedAt: item.snippet?.publishedAt ?? null,
+              thumbnailUrl: getBestThumbnail(item.snippet?.thumbnails),
+              playlistItemId: item.id ?? null,
+            }]
+          }),
+        )
+
+        if (!data.nextPageToken) break
+        pageToken = data.nextPageToken
+      }
+
+      const next = await enrichVideosWithDetails(session, items)
+      writeYouTubeCache(cacheKey, next)
+      return next
+    })
+    return enriched.slice(0, maxResults)
   } catch (error) {
-    if (stale) return stale
+    if (stale) return stale.slice(0, maxResults)
     throw error
   }
 }
@@ -360,60 +461,75 @@ export async function fetchYouTubeChannelVideos(
   channelId: string,
   maxResults = 24,
 ): Promise<YouTubeVideo[]> {
-  const cacheKey = `channel-videos:${session.channelId}:${channelId}:${maxResults}`
+  const cacheKey = `channel-videos:${session.channelId}:${channelId}`
   const cached = readYouTubeCache<YouTubeVideo[]>(cacheKey, VIDEO_LIST_CACHE_TTL_MS)
-  if (cached) return cached
+  if (cached && cached.length >= maxResults) return cached.slice(0, maxResults)
   const stale = readYouTubeCacheStale<YouTubeVideo[]>(cacheKey)
 
-  const uploadsByChannel = await fetchUploadsPlaylistIds(session, [channelId])
-  const uploadsPlaylistId = uploadsByChannel.get(channelId)
-  if (!uploadsPlaylistId) {
-    throw new Error('Could not load this channel playlist.')
-  }
-
-  const data = await youtubeApi<{
-    items?: Array<{
-      id?: string
-      snippet?: {
-        title?: string
-        description?: string
-        channelTitle?: string
-        channelId?: string
-        publishedAt?: string
-        resourceId?: { videoId?: string }
-        thumbnails?: Record<string, { url?: string }>
-      }
-    }>
-  }>('playlistItems', {
-    part: 'snippet',
-    playlistId: uploadsPlaylistId,
-    maxResults,
-  }, {
-    accessToken: getSessionAccessToken(session),
-  })
-
-  const items = (data.items ?? []).flatMap((item) => {
-    const videoId = item.snippet?.resourceId?.videoId
-    const title = item.snippet?.title
-    if (!videoId || !title || title === 'Deleted video' || title === 'Private video') return []
-    return [{
-      id: videoId,
-      title,
-      description: item.snippet?.description,
-      channelId: item.snippet?.channelId ?? channelId,
-      channelTitle: item.snippet?.channelTitle ?? null,
-      publishedAt: item.snippet?.publishedAt ?? null,
-      thumbnailUrl: getBestThumbnail(item.snippet?.thumbnails),
-      playlistItemId: null,
-    }]
-  })
-
   try {
-    const enriched = await enrichVideosWithDetails(session, items)
-    writeYouTubeCache(cacheKey, enriched)
-    return enriched
+    const enriched = await dedupeRequest(cacheKey, async () => {
+      const uploadsByChannel = await fetchUploadsPlaylistIds(session, [channelId])
+      const uploadsPlaylistId = uploadsByChannel.get(channelId)
+      if (!uploadsPlaylistId) {
+        throw new Error('Could not load this channel playlist.')
+      }
+
+      let pageToken: string | undefined
+      const items: YouTubeVideo[] = []
+
+      while (items.length < maxResults && items.length < MAX_VIDEO_BATCH_RESULTS) {
+        const data = await youtubeApi<{
+          nextPageToken?: string
+          items?: Array<{
+            id?: string
+            snippet?: {
+              title?: string
+              description?: string
+              channelTitle?: string
+              channelId?: string
+              publishedAt?: string
+              resourceId?: { videoId?: string }
+              thumbnails?: Record<string, { url?: string }>
+            }
+          }>
+        }>('playlistItems', {
+          part: 'snippet',
+          playlistId: uploadsPlaylistId,
+          maxResults: Math.min(50, Math.max(maxResults, MAX_VIDEO_BATCH_RESULTS) - items.length),
+          pageToken,
+        }, {
+          accessToken: getSessionAccessToken(session),
+        })
+
+        items.push(
+          ...(data.items ?? []).flatMap((item) => {
+            const videoId = item.snippet?.resourceId?.videoId
+            const title = item.snippet?.title
+            if (!videoId || !title || title === 'Deleted video' || title === 'Private video') return []
+            return [{
+              id: videoId,
+              title,
+              description: item.snippet?.description,
+              channelId: item.snippet?.channelId ?? channelId,
+              channelTitle: item.snippet?.channelTitle ?? null,
+              publishedAt: item.snippet?.publishedAt ?? null,
+              thumbnailUrl: getBestThumbnail(item.snippet?.thumbnails),
+              playlistItemId: null,
+            }]
+          }),
+        )
+
+        if (!data.nextPageToken) break
+        pageToken = data.nextPageToken
+      }
+
+      const next = await enrichVideosWithDetails(session, items)
+      writeYouTubeCache(cacheKey, next)
+      return next
+    })
+    return enriched.slice(0, maxResults)
   } catch (error) {
-    if (stale) return stale
+    if (stale) return stale.slice(0, maxResults)
     throw error
   }
 }
@@ -426,91 +542,73 @@ export async function fetchYouTubeLatestFromSubscriptions(
     totalLimit?: number
   } = {},
 ): Promise<YouTubeVideo[]> {
-  const channelLimit = options.channelLimit ?? 8
-  const maxResultsPerChannel = options.maxResultsPerChannel ?? 4
-  const totalLimit = options.totalLimit ?? 24
-  const cacheKey = `following-latest:${session.channelId}:${channelLimit}:${maxResultsPerChannel}:${totalLimit}`
+  const totalLimit = Math.min(MAX_VIDEO_BATCH_RESULTS, options.totalLimit ?? FOLLOWING_FEED_RESULTS)
+  const cacheKey = `following-latest:${session.channelId}`
   const cached = readYouTubeCache<YouTubeVideo[]>(cacheKey, VIDEO_LIST_CACHE_TTL_MS)
-  if (cached) return cached
+  if (cached && cached.length >= totalLimit) return cached.slice(0, totalLimit)
   const stale = readYouTubeCacheStale<YouTubeVideo[]>(cacheKey)
 
-  const subscriptions = await fetchYouTubeSubscriptions(session)
-  const selectedChannels = subscriptions.slice(0, channelLimit)
-  const uploadsByChannel = await fetchUploadsPlaylistIds(
-    session,
-    selectedChannels.map((channel) => channel.id),
-  )
-  const batches = await Promise.all(
-    selectedChannels.map(async (channel) => {
-      try {
-        const uploadsPlaylistId = uploadsByChannel.get(channel.id)
-        if (!uploadsPlaylistId) return []
-        return await fetchYouTubePlaylistVideos(session, uploadsPlaylistId, maxResultsPerChannel)
-      } catch {
-        return []
-      }
-    }),
-  )
-
-  const deduped = new Map<string, YouTubeVideo>()
-  for (const video of batches.flat()) {
-    if (!deduped.has(video.id)) deduped.set(video.id, video)
-  }
-
-  const items = [...deduped.values()]
-    .sort((a, b) => {
-      const aTime = a.publishedAt ? Date.parse(a.publishedAt) : 0
-      const bTime = b.publishedAt ? Date.parse(b.publishedAt) : 0
-      return bTime - aTime
-    })
-    .slice(0, totalLimit)
-
   try {
-    const enriched = await enrichVideosWithDetails(session, items)
-    writeYouTubeCache(cacheKey, enriched)
-    return enriched
+    const videos = await dedupeRequest(cacheKey, async () => {
+      const subscriptions = await fetchYouTubeSubscriptions(session)
+      const channelTarget = Math.min(
+        subscriptions.length,
+        Math.max(options.channelLimit ?? 12, Math.ceil(totalLimit / Math.max(options.maxResultsPerChannel ?? 6, 1))),
+      )
+      const maxResultsPerChannel = Math.max(options.maxResultsPerChannel ?? 6, Math.ceil(totalLimit / Math.max(channelTarget, 1)))
+      const selectedChannels = subscriptions.slice(0, channelTarget)
+      const uploadsByChannel = await fetchUploadsPlaylistIds(
+        session,
+        selectedChannels.map((channel) => channel.id),
+      )
+
+      const deduped = new Map<string, YouTubeVideo>()
+      for (const channel of selectedChannels) {
+        try {
+          const uploadsPlaylistId = uploadsByChannel.get(channel.id)
+          if (!uploadsPlaylistId) continue
+          const next = await fetchYouTubePlaylistVideos(session, uploadsPlaylistId, maxResultsPerChannel)
+          for (const video of next) {
+            if (!deduped.has(video.id)) deduped.set(video.id, video)
+          }
+          if (deduped.size >= MAX_VIDEO_BATCH_RESULTS) break
+        } catch {
+          continue
+        }
+      }
+
+      const items = [...deduped.values()]
+        .sort((a, b) => {
+          const aTime = a.publishedAt ? Date.parse(a.publishedAt) : 0
+          const bTime = b.publishedAt ? Date.parse(b.publishedAt) : 0
+          return bTime - aTime
+        })
+        .slice(0, MAX_VIDEO_BATCH_RESULTS)
+
+      writeYouTubeCache(cacheKey, items)
+      return items
+    })
+
+    return videos.slice(0, totalLimit)
   } catch (error) {
-    if (stale) return stale
+    if (stale) return stale.slice(0, totalLimit)
     throw error
   }
 }
 
-export async function searchYouTubeChannels(query: string, session?: YouTubeSession | null): Promise<YouTubeChannel[]> {
-  if (!query.trim()) return []
-  const cacheKey = `channel-search:${query.trim().toLowerCase()}`
-  const cached = readYouTubeCache<YouTubeChannel[]>(cacheKey, PLAYLISTS_CACHE_TTL_MS)
-  if (cached) return cached
-  const data = await youtubeApi<{
-    items?: Array<{
-      id?: { channelId?: string }
-      snippet?: {
-        title?: string
-        description?: string
-        thumbnails?: Record<string, { url?: string }>
-      }
-    }>
-  }>('search', {
-    part: 'snippet',
-    type: 'channel',
-    q: query.trim(),
-    maxResults: 12,
-  }, {
-    accessToken: session && isYouTubeSessionValid(session) ? session.accessToken : null,
-  })
+export async function warmYouTubeBackgroundCaches(session: YouTubeSession): Promise<void> {
+  const warmKey = `background-warm:${session.channelId}`
+  const warmedRecently = readYouTubeCache<boolean>(warmKey, BACKGROUND_WARM_TTL_MS)
+  if (warmedRecently) return
 
-  const items = (data.items ?? []).flatMap((item) => {
-    const channelId = item.id?.channelId
-    const title = item.snippet?.title
-    if (!channelId || !title) return []
-    return [{
-      id: channelId,
-      title,
-      description: item.snippet?.description,
-      thumbnailUrl: getBestThumbnail(item.snippet?.thumbnails),
-    }]
+  await fetchYouTubeSubscriptions(session)
+  await fetchYouTubeLatestFromSubscriptions(session, {
+    totalLimit: 54,
+    channelLimit: 14,
+    maxResultsPerChannel: 6,
   })
-  writeYouTubeCache(cacheKey, items)
-  return items
+  writeYouTubeCache(warmKey, true)
+  notifyYouTubePluginChanged()
 }
 
 export async function subscribeToYouTubeChannel(session: YouTubeSession, channelId: string): Promise<void> {
