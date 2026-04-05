@@ -14,7 +14,6 @@ import {
   unsubscribeFromYouTubeChannel,
   warmYouTubeBackgroundCaches,
 } from './youtube-client'
-import { tryRestoreYouTubeSession } from './youtube-auth'
 import {
   clearYouTubeCache,
   getDismissedYouTubeHeroVideoId,
@@ -54,7 +53,6 @@ function getBrowseMode(pageId: string): YouTubeBrowseMode {
 function useYouTubeSessionState() {
   const [session, setSession] = useState<YouTubeSession | null>(() => getYouTubeSession())
   const [settings, setSettings] = useState(() => getYouTubeSettings())
-  const [restoreTried, setRestoreTried] = useState(false)
 
   useEffect(() => {
     const sync = () => {
@@ -67,23 +65,6 @@ function useYouTubeSessionState() {
       offPlugin()
     }
   }, [])
-
-  useEffect(() => {
-    setRestoreTried(false)
-  }, [settings.clientId])
-
-  useEffect(() => {
-    if (restoreTried || !settings.clientId.trim() || isYouTubeSessionValid(session)) return
-    let cancelled = false
-    setRestoreTried(true)
-    void tryRestoreYouTubeSession(settings.clientId).then((nextSession) => {
-      if (cancelled || !nextSession) return
-      setSession(nextSession)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [restoreTried, settings.clientId, session])
 
   return {
     session,

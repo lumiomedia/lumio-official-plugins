@@ -2,13 +2,12 @@
 
 import { Input } from '@heroui/react'
 import { useEffect, useState } from 'react'
+import { resolveAuthCapabilityStatus } from '@/lib/auth-capabilities'
 import { useLang } from '@/lib/i18n'
-import { connectYouTube, disconnectYouTube } from './youtube-auth'
+import { loadGoogleIdentityServices } from './youtube-auth'
 import {
   clearYouTubeCache,
-  getYouTubeSession,
   getYouTubeSettings,
-  isYouTubeSessionValid,
   onYouTubePluginChanged,
   setYouTubeSettings,
 } from './youtube-storage'
@@ -31,10 +30,11 @@ const settingsPrimaryActionButtonClass =
   'rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-slate-200 transition hover:border-white/20 hover:text-white disabled:opacity-40'
 
 export function YouTubeSettingsSection() {
-  const { t } = useLang()
+  const { lang, t } = useLang()
   const [clientId, setClientId] = useState('')
   const [apiKey, setApiKey] = useState('')
   const [sessionLabel, setSessionLabel] = useState('')
+  const [sessionDetail, setSessionDetail] = useState('')
   const [busy, setBusy] = useState<'idle' | 'connecting' | 'disconnecting'>('idle')
   const [error, setError] = useState('')
   const [hideShorts, setHideShorts] = useState(false)
@@ -44,17 +44,29 @@ export function YouTubeSettingsSection() {
   useEffect(() => {
     const sync = () => {
       const settings = getYouTubeSettings()
-      const session = getYouTubeSession()
       setClientId(settings.clientId)
       setApiKey(settings.apiKey)
       setHideShorts(settings.hideShorts)
       setHero(settings.hero)
       setKeepHero(settings.keepHero)
-      setSessionLabel(
-        isYouTubeSessionValid(session)
-          ? `${t('connectedAs')} ${session?.channelTitle ?? 'YouTube'}`
-          : t('pluginYoutubeNotConnected'),
-      )
+      void resolveAuthCapabilityStatus('youtube-auth').then((status) => {
+        if (!status) {
+          setSessionLabel(t('pluginYoutubeNotConnected'))
+          setSessionDetail('')
+          return
+        }
+        if (status.state === 'connected' && status.accountLabel) {
+          setSessionLabel(`${t('connectedAs')} ${status.accountLabel}`)
+        } else if (status.state === 'expired') {
+          setSessionLabel(t('pluginYoutubeNotConnected'))
+        } else {
+          setSessionLabel(t('pluginYoutubeNotConnected'))
+        }
+        setSessionDetail(status.detail ? (typeof status.detail === 'string' ? status.detail : status.detail[lang] ?? status.detail.en ?? status.detail.sv ?? '') : '')
+      }).catch(() => {
+        setSessionLabel(t('pluginYoutubeNotConnected'))
+        setSessionDetail('')
+      })
     }
     sync()
     const offPlugin = onYouTubePluginChanged(sync)
@@ -62,6 +74,11 @@ export function YouTubeSettingsSection() {
       offPlugin()
     }
   }, [])
+
+  useEffect(() => {
+    if (!clientId.trim()) return
+    void loadGoogleIdentityServices().catch(() => {})
+  }, [clientId])
 
   function persist(next: {
     clientId?: string
@@ -85,8 +102,15 @@ export function YouTubeSettingsSection() {
     setError('')
     persist({ clientId, apiKey, hideShorts, hero, keepHero })
     try {
-      await connectYouTube(clientId)
-      setSessionLabel(`${t('connectedAs')} ${getYouTubeSession()?.channelTitle ?? 'YouTube'}`)
+      const providerStatus = await resolveAuthCapabilityStatus('youtube-auth')
+      await providerStatus?.provider.connect?.()
+      const nextStatus = await resolveAuthCapabilityStatus('youtube-auth')
+      setSessionLabel(
+        nextStatus?.state === 'connected' && nextStatus.accountLabel
+          ? `${t('connectedAs')} ${nextStatus.accountLabel}`
+          : t('pluginYoutubeNotConnected'),
+      )
+      setSessionDetail(nextStatus?.detail ? (typeof nextStatus.detail === 'string' ? nextStatus.detail : nextStatus.detail[lang] ?? nextStatus.detail.en ?? nextStatus.detail.sv ?? '') : '')
     } catch (connectError) {
       setError(connectError instanceof Error ? connectError.message : t('pluginYoutubeConnectError'))
     } finally {
@@ -98,8 +122,10 @@ export function YouTubeSettingsSection() {
     setBusy('disconnecting')
     setError('')
     try {
-      await disconnectYouTube()
+      const providerStatus = await resolveAuthCapabilityStatus('youtube-auth')
+      await providerStatus?.provider.disconnect?.()
       setSessionLabel(t('pluginYoutubeNotConnected'))
+      setSessionDetail('')
     } catch (disconnectError) {
       setError(disconnectError instanceof Error ? disconnectError.message : t('pluginYoutubeDisconnectError'))
     } finally {
@@ -112,6 +138,9 @@ export function YouTubeSettingsSection() {
       <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
         <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t('pluginYoutubeConnection')}</p>
         <p className="mt-2 text-sm text-slate-300">{sessionLabel}</p>
+        {sessionDetail ? (
+          <p className="mt-2 text-xs text-amber-300">{sessionDetail}</p>
+        ) : null}
         <p className="mt-2 text-xs text-slate-500">
           {t('pluginYoutubeConnectionNote')}
         </p>

@@ -38,7 +38,7 @@ function getStatus(): AuthCapabilityStatus {
       requiresUserGesture: true,
       supportsSilentReconnect: false,
       accountLabel: session.channelTitle ?? 'YouTube',
-      detail: { en: 'Session expired. Reconnect required.', sv: 'Sessionen har gatt ut. Ateranslut kravs.' },
+      detail: { en: 'Session expired. Reconnect required.', sv: 'Sessionen har gått ut. Återanslut krävs.' },
     }
   }
 

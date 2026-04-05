@@ -1,5 +1,6 @@
 'use client'
 
+import { notifyAuthCapabilitiesChanged } from '@/lib/auth-capabilities'
 import { getScopedStorageItem, setScopedStorageItem } from '@/lib/profile-storage'
 import type { YouTubePluginSettings, YouTubeSession, YouTubeVideo } from './youtube-types'
 
@@ -23,6 +24,7 @@ function emitChanged(): void {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent(EVENT))
   }
+  notifyAuthCapabilitiesChanged()
 }
 
 export function getYouTubeSettings(): YouTubePluginSettings {
