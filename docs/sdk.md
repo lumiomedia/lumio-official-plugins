@@ -1,11 +1,13 @@
 # Lumio Plugin SDK
 
-This document describes the Lumio plugin SDK used by official plugins in this marketplace.
+This document describes the plugin-facing contracts used by official Lumio
+plugins.
 
 The design goal is:
 
 - core stays neutral and legally clean
 - plugins register capabilities through the SDK
+- playback and auth logic stay provider-driven instead of hardcoded in UI
 - official and private plugins can share the same contracts
 
 ## Who this is for
@@ -21,21 +23,24 @@ This page is for:
 
 The current SDK supports:
 
-- stream providers
 - settings sections
 - home rows
 - browse pages
 - main menu items
-- topbar dropdown groups
-- managed auth consumers
+- topbar items
+- bootstrap mounts
+- hero contributions
+- playback capability providers
+- auth capability providers
 
 In practice that means a plugin can:
 
 - add a settings section
-- add a menu group like `YouTube`
+- add a menu entry like `YouTube`
 - add browse pages like `Following`, `Channels`, `Playlists`
 - add home rows on the front page
-- consume core-managed auth like `google-youtube`
+- register a playback source such as Plex
+- register a connect or reconnect experience such as YouTube auth
 
 ## How a plugin fits into Lumio
 
@@ -47,7 +52,8 @@ Common examples:
 - a topbar or menu contribution
 - one or more browse pages
 - home rows on the start page
-- a managed auth consumer
+- a playback capability provider
+- an auth capability provider
 
 The plugin does not need to own navigation or app state directly. Instead, it
 declares what it contributes and Lumio renders those capabilities in the right places.
@@ -69,10 +75,12 @@ Typical surfaces include:
 - browse pages
 - menu groups
 - home rows
+- playback providers
+- auth providers
 
 ## Runtime model
 
-Lumio plugins now use a source-and-bundle model:
+Lumio plugins use a source-and-bundle model:
 
 - `runtime/` contains the editable plugin source
 - `dist/runtime.js` is the published browser bundle Lumio can install and cache
@@ -85,30 +93,53 @@ If a plugin has not published a runtime bundle yet, it can still exist in a
 metadata-first state and be discovered by Lumio, but external runtime loading
 will not be attempted until `runtimeBundlePath` is present.
 
-## Browse, menu and home rows
+## Playback capabilities
 
-These three parts usually work together:
+Playback is resolved by core through registered providers.
 
-- browse pages provide full plugin-owned views
-- menu items and dropdown groups link to those views
-- home rows surface content on the main Lumio home page
+Providers report values such as:
 
-The YouTube plugin is a good reference for this pattern:
+- `canPlay`
+- `showPlayButton`
+- `playVia`
+- `reason`
+- `matchedItem`
+- `priority`
 
-- menu group: `YouTube`
-- browse pages: `Following`, `Channels`, `Playlists`, `Watch later`
-- home rows: YouTube-based rows on the main home screen
+Core uses this summary in:
 
-## Managed auth
+- detail cards
+- hero actions
+- watchlists
+- recently watched
+- Zapp
 
-Managed auth lets Lumio core own credentials for first-party plugins while still
-keeping the plugin interface clean.
+### Current playback priority
 
-That means a plugin can say:
+- scraper or stream plugins are the primary playback path when enabled
+- Plex is a library-backed playback path
+- local files are handled as directly playable from their own UI flows
 
-- “I consume `google-youtube`”
+Zapp follows the same rule:
 
-without hardcoding app credentials into the plugin itself.
+- if scraper providers are active, they are master
+- if only Plex is active, Zapp should browse only playable Plex movies
+- if no provider can play, Zapp should fall back to opening the full detail card
+
+## Auth capabilities
+
+Auth-capable plugins register through auth providers instead of hardcoded
+settings UI behavior.
+
+Providers expose:
+
+- current auth state
+- whether connect or disconnect is possible
+- whether silent reconnect is supported
+- whether auth requires an explicit user gesture
+
+Core can then render a generic auth status area without needing plugin-specific
+special cases.
 
 ## Design principles
 
@@ -118,24 +149,14 @@ Good:
 
 - `registerBrowsePage(...)`
 - `registerHomeRow(...)`
-- `registerManagedAuthConsumer(...)`
+- `registerPlaybackCapabilityProvider(...)`
+- `registerAuthCapabilityProvider(...)`
 
 Bad:
 
 - importing registry internals directly
-- naming provider-specific playback logic in core
+- naming provider-specific playback logic in core UI
 - assuming a plugin owns app-level navigation outside the SDK
-
-## Managed auth
-
-Official plugins can consume a core-managed auth provider.
-
-Example:
-
-- `google-youtube`
-
-The YouTube plugin also supports a personal auth override, so advanced users can
-connect their own Google app instead of Lumio's managed credentials.
 
 ## Marketplace expectations
 
@@ -154,7 +175,7 @@ If the plugin is ready for external runtime loading, it should also have:
 - `dist/runtime.js`
 - `runtimeBundlePath` in both `plugin.json` and the root `marketplace.json`
 
-The marketplace manifest should be treated as the install/update index.
+The marketplace manifest should be treated as the install and update index.
 
 ## Forking a plugin
 

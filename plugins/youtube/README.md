@@ -13,6 +13,7 @@ content directly inside the app.
 - open channel-specific video views
 - browse playlists and Watch later
 - add YouTube rows to the Lumio home screen
+- register YouTube auth status through the shared Lumio auth capability layer
 - optionally hide shorts from video grids
 
 ## Sign-in model

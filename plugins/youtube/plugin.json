@@ -14,8 +14,10 @@
     "settings-section",
     "browse-pages",
     "main-menu",
-    "topbar-group",
+    "topbar-item",
     "home-rows",
-    "managed-auth"
+    "bootstrap",
+    "hero",
+    "auth-capability"
   ]
 }

@@ -17,9 +17,11 @@ plugins/
   youtube/
     plugin.json
     README.md
+    runtime/
   plex/
     plugin.json
     README.md
+    runtime/
 ```
 
 Lumio reads `marketplace.json`, then treats each entry as a separate plugin.
@@ -41,6 +43,8 @@ That means:
 ## Typical additions over time
 
 - `CHANGELOG.md` per plugin
+- `runtime/` source per plugin
+- `dist/runtime.js` bundles for published plugin runtimes
 - screenshots/assets per plugin
 - compatibility metadata per plugin
 - plugin signing / trust metadata later

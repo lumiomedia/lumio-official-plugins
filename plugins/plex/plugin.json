@@ -9,6 +9,7 @@
   "bundled": true,
   "removable": true,
   "sdkCapabilities": [
-    "settings-section"
+    "settings-section",
+    "playback-capability"
   ]
 }

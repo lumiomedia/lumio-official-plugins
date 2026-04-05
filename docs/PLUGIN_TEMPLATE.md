@@ -112,9 +112,11 @@ Common capability labels used in this repository:
 - `settings-section`
 - `browse-pages`
 - `main-menu`
-- `topbar-group`
+- `topbar-item`
 - `home-rows`
-- `managed-auth`
-- `stream-provider`
+- `bootstrap`
+- `hero`
+- `playback-capability`
+- `auth-capability`
 
 Choose only the ones your plugin actually exposes.

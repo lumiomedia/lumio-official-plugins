@@ -1,5 +1,6 @@
 import type { LumioPlugin } from '@/lib/plugin-sdk'
 import { YouTubeBackgroundBootstrap, YouTubeBrowsePage, YouTubeHeroBanner, YouTubeHomeRow } from './youtube-browser'
+import { youtubeAuthCapabilityProvider } from './youtube-auth-capability-provider'
 import { YouTubeSettingsSection } from './youtube-settings-section'
 
 export const YouTubePlugin: LumioPlugin = {
@@ -13,6 +14,7 @@ export const YouTubePlugin: LumioPlugin = {
   preinstalled: true,
 
   register(ctx) {
+    ctx.registerAuthCapabilityProvider(youtubeAuthCapabilityProvider)
     ctx.registerSettingsSection({
       id: 'youtube',
       label: { en: 'YouTube', sv: 'YouTube' },

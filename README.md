@@ -38,7 +38,7 @@ These docs explain:
 
 - what the Lumio plugin SDK exposes
 - how browse pages, menu items and home rows work
-- how managed auth fits into the plugin model
+- how playback and auth providers fit into the plugin model
 - how multiple plugins live in one marketplace repo
 - how to structure a new plugin or fork
 
@@ -67,9 +67,11 @@ lumio-official-plugins/
     youtube/
       plugin.json
       README.md
+      runtime/
     plex/
       plugin.json
       README.md
+      runtime/
 ```
 
 ## Marketplace model
