@@ -14,12 +14,14 @@ import {
   unsubscribeFromYouTubeChannel,
   warmYouTubeBackgroundCaches,
 } from './youtube-client'
+import { tryRestoreYouTubeSession } from './youtube-auth'
 import {
   clearYouTubeCache,
   getDismissedYouTubeHeroVideoId,
   getYouTubeSettings,
   getYouTubeSession,
   isYouTubeSessionValid,
+  markYouTubeVideoOpened,
   onYouTubePluginChanged,
   setDismissedYouTubeHeroVideoId,
   readYouTubeCacheStale,
@@ -52,6 +54,7 @@ function getBrowseMode(pageId: string): YouTubeBrowseMode {
 function useYouTubeSessionState() {
   const [session, setSession] = useState<YouTubeSession | null>(() => getYouTubeSession())
   const [settings, setSettings] = useState(() => getYouTubeSettings())
+  const [restoreTried, setRestoreTried] = useState(false)
 
   useEffect(() => {
     const sync = () => {
@@ -64,6 +67,23 @@ function useYouTubeSessionState() {
       offPlugin()
     }
   }, [])
+
+  useEffect(() => {
+    setRestoreTried(false)
+  }, [settings.clientId])
+
+  useEffect(() => {
+    if (restoreTried || !settings.clientId.trim() || isYouTubeSessionValid(session)) return
+    let cancelled = false
+    setRestoreTried(true)
+    void tryRestoreYouTubeSession(settings.clientId).then((nextSession) => {
+      if (cancelled || !nextSession) return
+      setSession(nextSession)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [restoreTried, settings.clientId, session])
 
   return {
     session,
@@ -102,6 +122,11 @@ function useDeferredActivation() {
 
 function decodeHtmlEntities(value: string) {
   return value.replace(/(&amp;|&#39;|&quot;|&lt;|&gt;)/g, (match) => ENTITY_MAP[match] ?? match)
+}
+
+function playYouTubeVideo(video: YouTubeVideo, onPlay: (video: YouTubeVideo) => void) {
+  markYouTubeVideoOpened(video.id)
+  onPlay(video)
 }
 
 function formatVideoMeta(video: YouTubeVideo) {
@@ -612,7 +637,7 @@ export function YouTubeBrowsePage({ pageId, params, onNavigate }: BrowsePageProp
               <VideoCard
                 key={video.id}
                 video={video}
-                onPlay={setPlayerVideo}
+                onPlay={(entry) => playYouTubeVideo(entry, setPlayerVideo)}
                 onOpenChannel={openChannelFromVideo}
               />
             ))}
@@ -695,7 +720,7 @@ export function YouTubeBrowsePage({ pageId, params, onNavigate }: BrowsePageProp
               <VideoCard
                 key={video.id}
                 video={video}
-                onPlay={setPlayerVideo}
+                onPlay={(entry) => playYouTubeVideo(entry, setPlayerVideo)}
                 onOpenChannel={openChannelFromVideo}
               />
             ))}
@@ -996,7 +1021,7 @@ export function YouTubeHomeRow({
             >
               <VideoCard
                 video={video}
-                onPlay={setPlayerVideo}
+                onPlay={(entry) => playYouTubeVideo(entry, setPlayerVideo)}
                 onOpenChannel={(entry) => {
                   if (!entry.channelId) return
                   onNavigate({

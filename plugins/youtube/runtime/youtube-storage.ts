@@ -1,11 +1,13 @@
 'use client'
 
 import { getScopedStorageItem, setScopedStorageItem } from '@/lib/profile-storage'
-import type { YouTubePluginSettings, YouTubeSession } from './youtube-types'
+import type { YouTubePluginSettings, YouTubeSession, YouTubeVideo } from './youtube-types'
 
 const SETTINGS_KEY = 'plugin_youtube_settings'
 const SESSION_KEY = 'plugin_youtube_session'
 const HERO_DISMISSED_VIDEO_KEY = 'plugin_youtube_hero_dismissed_video'
+const AUTO_RECONNECT_KEY = 'plugin_youtube_auto_reconnect'
+const LAST_RECONNECT_ATTEMPT_KEY = 'plugin_youtube_last_reconnect_attempt'
 const EVENT = 'lumio-youtube-plugin-changed'
 const CACHE_PREFIX = 'plugin_youtube_cache'
 
@@ -89,6 +91,28 @@ export function clearYouTubeSession(): void {
   setYouTubeSession(null)
 }
 
+export function getYouTubeAutoReconnectEnabled(): boolean {
+  if (typeof window === 'undefined') return false
+  return getScopedStorageItem(AUTO_RECONNECT_KEY) === '1'
+}
+
+export function setYouTubeAutoReconnectEnabled(enabled: boolean): void {
+  setScopedStorageItem(AUTO_RECONNECT_KEY, enabled ? '1' : '')
+  emitChanged()
+}
+
+export function canAttemptYouTubeReconnect(cooldownMs = 60_000): boolean {
+  if (typeof window === 'undefined') return false
+  const raw = getScopedStorageItem(LAST_RECONNECT_ATTEMPT_KEY)
+  const lastAttempt = raw ? Number(raw) : 0
+  if (!Number.isFinite(lastAttempt)) return true
+  return Date.now() - lastAttempt > cooldownMs
+}
+
+export function markYouTubeReconnectAttempt(): void {
+  setScopedStorageItem(LAST_RECONNECT_ATTEMPT_KEY, String(Date.now()))
+}
+
 export function isYouTubeSessionValid(session: YouTubeSession | null = getYouTubeSession()): boolean {
   return Boolean(session && session.expiresAt > Date.now() + 30_000)
 }
@@ -143,6 +167,34 @@ export function getDismissedYouTubeHeroVideoId(): string | null {
 export function setDismissedYouTubeHeroVideoId(videoId: string | null): void {
   setScopedStorageItem(HERO_DISMISSED_VIDEO_KEY, videoId ?? '')
   emitChanged()
+}
+
+function filterShortVideosForIndicator(videos: YouTubeVideo[], hideShorts: boolean): YouTubeVideo[] {
+  if (!hideShorts) return videos
+  return videos.filter((video) => {
+    if (video.isShort === true) return false
+    const haystack = `${video.title} ${video.description ?? ''}`.toLowerCase()
+    return !haystack.includes('#shorts') && !haystack.includes(' shorts')
+  })
+}
+
+export function getLatestCachedYouTubeFollowingVideo(): YouTubeVideo | null {
+  const session = getYouTubeSession()
+  if (!isYouTubeSessionValid(session) || !session) return null
+  const settings = getYouTubeSettings()
+  const cached = readYouTubeCacheStale<YouTubeVideo[]>(`following-latest:${session.channelId}`) ?? []
+  return filterShortVideosForIndicator(cached, settings.hideShorts)[0] ?? null
+}
+
+export function hasNewYouTubeVideos(): boolean {
+  const latest = getLatestCachedYouTubeFollowingVideo()
+  if (!latest) return false
+  return latest.id !== getDismissedYouTubeHeroVideoId()
+}
+
+export function markYouTubeVideoOpened(videoId: string | null): void {
+  if (!videoId) return
+  setDismissedYouTubeHeroVideoId(videoId)
 }
 
 export function clearYouTubeCache(): void {

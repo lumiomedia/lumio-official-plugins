@@ -1,7 +1,14 @@
 'use client'
 
 import { fetchMyYouTubeChannel } from './youtube-client'
-import { getYouTubeSession, setYouTubeSession } from './youtube-storage'
+import {
+  canAttemptYouTubeReconnect,
+  getYouTubeAutoReconnectEnabled,
+  getYouTubeSession,
+  markYouTubeReconnectAttempt,
+  setYouTubeAutoReconnectEnabled,
+  setYouTubeSession,
+} from './youtube-storage'
 import type { YouTubeSession } from './youtube-types'
 
 declare global {
@@ -62,15 +69,13 @@ export function loadGoogleIdentityServices(): Promise<void> {
   return gisLoader
 }
 
-export async function connectYouTube(clientId: string): Promise<YouTubeSession> {
+async function requestYouTubeAccessToken(clientId: string, prompt: '' | 'consent'): Promise<{ access_token: string; expires_in?: number; scope?: string }> {
   if (!clientId.trim()) {
     throw new Error('Add a Google OAuth client ID first.')
   }
 
   await loadGoogleIdentityServices()
-  const previousSession = getYouTubeSession()
-
-  const authResponse = await new Promise<{ access_token: string; expires_in?: number; scope?: string }>((resolve, reject) => {
+  return new Promise<{ access_token: string; expires_in?: number; scope?: string }>((resolve, reject) => {
     const tokenClient = window.google?.accounts?.oauth2?.initTokenClient({
       client_id: clientId.trim(),
       scope: YOUTUBE_SCOPES.join(' '),
@@ -92,19 +97,27 @@ export async function connectYouTube(clientId: string): Promise<YouTubeSession> 
       return
     }
 
-    tokenClient.requestAccessToken({
-      prompt: previousSession?.accessToken ? '' : 'consent',
-    })
+    tokenClient.requestAccessToken({ prompt })
   })
+}
+
+async function buildYouTubeSession(clientId: string, prompt: '' | 'consent'): Promise<YouTubeSession> {
+  const authResponse = await requestYouTubeAccessToken(clientId, prompt)
 
   const channel = await fetchMyYouTubeChannel(authResponse.access_token)
-  const session: YouTubeSession = {
+  return {
     ...channel,
     accessToken: authResponse.access_token,
     scope: authResponse.scope ?? '',
     expiresAt: Date.now() + (authResponse.expires_in ?? 3600) * 1000,
   }
+}
+
+export async function connectYouTube(clientId: string): Promise<YouTubeSession> {
+  const previousSession = getYouTubeSession()
+  const session = await buildYouTubeSession(clientId, previousSession?.accessToken ? '' : 'consent')
   setYouTubeSession(session)
+  setYouTubeAutoReconnectEnabled(true)
   return session
 }
 
@@ -115,5 +128,22 @@ export async function disconnectYouTube(): Promise<void> {
       window.google?.accounts?.oauth2?.revoke(session.accessToken, () => resolve())
     })
   }
+  setYouTubeAutoReconnectEnabled(false)
   setYouTubeSession(null)
+}
+
+export async function tryRestoreYouTubeSession(clientId: string): Promise<YouTubeSession | null> {
+  if (!clientId.trim() || !getYouTubeAutoReconnectEnabled() || !canAttemptYouTubeReconnect()) {
+    return null
+  }
+
+  markYouTubeReconnectAttempt()
+
+  try {
+    const session = await buildYouTubeSession(clientId, '')
+    setYouTubeSession(session)
+    return session
+  } catch {
+    return null
+  }
 }
