@@ -1,0 +1,14 @@
+{
+  "id": "com.lumio.homekit",
+  "slug": "homekit",
+  "name": "HomeKit",
+  "version": "0.1.0",
+  "description": "Connect Lumio playback events to HomeKit scenes and automations.",
+  "official": true,
+  "bundled": false,
+  "removable": true,
+  "sdkCapabilities": [
+    "settings-section",
+    "bootstrap"
+  ]
+}

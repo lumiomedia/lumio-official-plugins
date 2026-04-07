@@ -1,0 +1,16 @@
+{
+  "id": "com.lumio.trakt",
+  "slug": "trakt",
+  "name": "Trakt",
+  "version": "0.1.0",
+  "description": "Sync watched history, watchlists and collection data with Trakt.",
+  "official": true,
+  "bundled": false,
+  "removable": true,
+  "sdkCapabilities": [
+    "settings-section",
+    "bootstrap",
+    "home-rows",
+    "auth-capability"
+  ]
+}

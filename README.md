@@ -21,6 +21,9 @@ one by one.
 
 - `youtube`
 - `plex`
+- `live-tv` (metadata scaffold)
+- `homekit` (metadata scaffold)
+- `trakt` (metadata scaffold)
 
 ## For developers
 

@@ -33,6 +33,12 @@ The current SDK supports:
 - playback capability providers
 - auth capability providers
 
+Planned next contracts for the current migration work:
+
+- playback event consumers for integrations such as HomeKit
+- sync services for watch history, watchlist and collection providers such as Trakt
+- live source providers for integrations such as M3U / Live TV
+
 In practice that means a plugin can:
 
 - add a settings section
@@ -41,6 +47,10 @@ In practice that means a plugin can:
 - add home rows on the front page
 - register a playback source such as Plex
 - register a connect or reconnect experience such as YouTube auth
+
+The remaining core-owned integrations are being moved toward the same model.
+At the moment, HomeKit, Trakt and Live TV still depend on app-local services
+that are not fully exposed through the SDK yet.
 
 ## How a plugin fits into Lumio
 

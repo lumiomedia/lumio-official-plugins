@@ -36,6 +36,45 @@
       "official": true,
       "bundled": true,
       "removable": true
+    },
+    {
+      "id": "com.lumio.live-tv",
+      "slug": "live-tv",
+      "name": "Live TV",
+      "version": "0.1.0",
+      "description": "Manage M3U sources and browse live TV channels inside Lumio.",
+      "path": "plugins/live-tv",
+      "readmePath": "plugins/live-tv/README.md",
+      "changelogPath": "plugins/live-tv/CHANGELOG.md",
+      "official": true,
+      "bundled": false,
+      "removable": true
+    },
+    {
+      "id": "com.lumio.homekit",
+      "slug": "homekit",
+      "name": "HomeKit",
+      "version": "0.1.0",
+      "description": "Connect Lumio playback events to HomeKit scenes and automations.",
+      "path": "plugins/homekit",
+      "readmePath": "plugins/homekit/README.md",
+      "changelogPath": "plugins/homekit/CHANGELOG.md",
+      "official": true,
+      "bundled": false,
+      "removable": true
+    },
+    {
+      "id": "com.lumio.trakt",
+      "slug": "trakt",
+      "name": "Trakt",
+      "version": "0.1.0",
+      "description": "Sync watched history, watchlists and collection data with Trakt.",
+      "path": "plugins/trakt",
+      "readmePath": "plugins/trakt/README.md",
+      "changelogPath": "plugins/trakt/CHANGELOG.md",
+      "official": true,
+      "bundled": false,
+      "removable": true
     }
   ]
 }
