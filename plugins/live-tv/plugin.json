@@ -2,7 +2,7 @@
   "id": "com.lumio.live-tv",
   "slug": "live-tv",
   "name": "Live TV",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Manage M3U sources and browse live TV channels inside Lumio.",
   "official": true,
   "bundled": true,
@@ -10,6 +10,7 @@
   "runtimeBundlePath": "dist/runtime.js",
   "sdkCapabilities": [
     "settings-section",
-    "home-override"
+    "home-override",
+    "browse-page"
   ]
 }
