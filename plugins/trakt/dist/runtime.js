@@ -121,7 +121,7 @@
     TraktPlugin: () => TraktPlugin
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-CAHOy3/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-24RbDl/react-shim.ts
   var react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
   var Activity = react.Activity;
   var Children = react.Children;
@@ -202,7 +202,7 @@
     localStorage.removeItem(getProfileStorageKey(baseKey));
   }
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-CAHOy3/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-24RbDl/jsx-runtime-shim.ts
   var runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
   var Fragment2 = runtime.Fragment;
   var jsx = runtime.jsx;
@@ -2373,6 +2373,9 @@
     };
   }
 
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-24RbDl/auth-capabilities-shim.ts
+  var sdk = globalThis.__lumioPluginRuntime?.sdk;
+
   // lib/tauri-mpv.ts
   init_core();
   init_event();
@@ -2559,7 +2562,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-CAHOy3/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-24RbDl/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

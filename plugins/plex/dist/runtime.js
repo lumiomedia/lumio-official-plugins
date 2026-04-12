@@ -39,7 +39,7 @@
   ));
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-tyk3oG/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-8PjO0Y/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -88,7 +88,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-tyk3oG/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-8PjO0Y/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -29273,7 +29273,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-tyk3oG/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-8PjO0Y/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -29283,7 +29283,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-tyk3oG/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-8PjO0Y/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -110202,6 +110202,14 @@
   var DEBUG_EVENT = "lumio-plex-debug-changed";
   var CACHE_TTL_MS = 20 * 60 * 1e3;
   var DEBUG_LIMIT = 200;
+  var DEFAULT_PLEX_SETTINGS = {
+    serverId: null,
+    serverName: null,
+    serverUri: null,
+    serverUris: [],
+    serverAccessToken: null,
+    libraries: []
+  };
   function emit(name) {
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent(name));
@@ -110238,6 +110246,30 @@
       normalized.push(candidate);
     }
     return normalized.sort((a, b) => rankPlexUri(a) - rankPlexUri(b));
+  }
+  function parsePlexSettings(raw) {
+    if (!raw) return DEFAULT_PLEX_SETTINGS;
+    try {
+      const parsed = JSON.parse(raw);
+      const normalizedUris = normalizePlexUris(
+        typeof parsed.serverUri === "string" ? parsed.serverUri : null,
+        Array.isArray(parsed.serverUris) ? parsed.serverUris.filter((value) => typeof value === "string" && value.length > 0) : []
+      );
+      return {
+        serverId: typeof parsed.serverId === "string" ? parsed.serverId : null,
+        serverName: typeof parsed.serverName === "string" ? parsed.serverName : null,
+        serverUri: normalizedUris[0] ?? null,
+        serverUris: normalizedUris,
+        serverAccessToken: typeof parsed.serverAccessToken === "string" ? parsed.serverAccessToken : null,
+        libraries: Array.isArray(parsed.libraries) ? parsed.libraries.filter(
+          (library) => Boolean(
+            library && typeof library === "object" && typeof library.key === "string" && typeof library.title === "string" && (library.type === "movie" || library.type === "show")
+          )
+        ) : []
+      };
+    } catch {
+      return DEFAULT_PLEX_SETTINGS;
+    }
   }
   function getCacheSignature(settings, limit) {
     return JSON.stringify({
@@ -110311,55 +110343,18 @@
     setPlexAuth(null);
   }
   function getPlexSettings() {
-    if (typeof window === "undefined") {
-      return {
-        serverId: null,
-        serverName: null,
-        serverUri: null,
-        serverUris: [],
-        serverAccessToken: null,
-        libraries: []
-      };
+    if (typeof window === "undefined") return DEFAULT_PLEX_SETTINGS;
+    return parsePlexSettings(getScopedStorageItem(SETTINGS_KEY));
+  }
+  function ensureCanonicalPlexSettings() {
+    if (typeof window === "undefined") return DEFAULT_PLEX_SETTINGS;
+    const currentRaw = getScopedStorageItem(SETTINGS_KEY);
+    const normalizedSettings = parsePlexSettings(currentRaw);
+    const normalizedRaw = JSON.stringify(normalizedSettings);
+    if (currentRaw !== normalizedRaw) {
+      setScopedStorageItem(SETTINGS_KEY, normalizedRaw);
     }
-    try {
-      const raw = getScopedStorageItem(SETTINGS_KEY);
-      if (!raw) {
-        return {
-          serverId: null,
-          serverName: null,
-          serverUri: null,
-          serverUris: [],
-          serverAccessToken: null,
-          libraries: []
-        };
-      }
-      const parsed = JSON.parse(raw);
-      const normalizedUris = normalizePlexUris(
-        typeof parsed.serverUri === "string" ? parsed.serverUri : null,
-        Array.isArray(parsed.serverUris) ? parsed.serverUris.filter((value) => typeof value === "string" && value.length > 0) : []
-      );
-      return {
-        serverId: typeof parsed.serverId === "string" ? parsed.serverId : null,
-        serverName: typeof parsed.serverName === "string" ? parsed.serverName : null,
-        serverUri: normalizedUris[0] ?? null,
-        serverUris: normalizedUris,
-        serverAccessToken: typeof parsed.serverAccessToken === "string" ? parsed.serverAccessToken : null,
-        libraries: Array.isArray(parsed.libraries) ? parsed.libraries.filter(
-          (library) => Boolean(
-            library && typeof library === "object" && typeof library.key === "string" && typeof library.title === "string" && (library.type === "movie" || library.type === "show")
-          )
-        ) : []
-      };
-    } catch {
-      return {
-        serverId: null,
-        serverName: null,
-        serverUri: null,
-        serverUris: [],
-        serverAccessToken: null,
-        libraries: []
-      };
-    }
+    return normalizedSettings;
   }
   function setPlexSettings(settings) {
     if (typeof window === "undefined") return;
@@ -110962,53 +110957,29 @@
   }
   async function fetchPlexLibraryItems(limit = 240) {
     const auth = getPlexAuth();
-    const settings = getPlexSettings();
+    const settings = ensureCanonicalPlexSettings();
     if (!auth || !settings.serverUri || settings.libraries.length === 0) return getCachedPlexLibraryItems(limit) ?? [];
-    const normalizedSettings = {
-      ...settings,
-      serverUri: normalizePlexUris2(settings.serverUris && settings.serverUris.length > 0 ? settings.serverUris : settings.serverUri)[0] ?? settings.serverUri,
-      serverUris: normalizePlexUris2(settings.serverUris && settings.serverUris.length > 0 ? settings.serverUris : settings.serverUri)
-    };
-    const currentSettingsSignature = JSON.stringify({
-      serverId: settings.serverId,
-      serverName: settings.serverName,
-      serverUri: settings.serverUri,
-      serverUris: settings.serverUris ?? [],
-      serverAccessToken: settings.serverAccessToken,
-      libraries: settings.libraries
-    });
-    const normalizedSettingsSignature = JSON.stringify({
-      serverId: normalizedSettings.serverId,
-      serverName: normalizedSettings.serverName,
-      serverUri: normalizedSettings.serverUri,
-      serverUris: normalizedSettings.serverUris ?? [],
-      serverAccessToken: normalizedSettings.serverAccessToken,
-      libraries: normalizedSettings.libraries
-    });
-    if (currentSettingsSignature !== normalizedSettingsSignature) {
-      setPlexSettings(normalizedSettings);
-    }
     const requestKey = JSON.stringify({
-      serverId: normalizedSettings.serverId,
-      serverUri: normalizedSettings.serverUri,
-      serverUris: normalizedSettings.serverUris,
-      libraries: normalizedSettings.libraries.map((l) => `${l.type}:${l.key}`).sort(),
+      serverId: settings.serverId,
+      serverUri: settings.serverUri,
+      serverUris: settings.serverUris,
+      libraries: settings.libraries.map((l) => `${l.type}:${l.key}`).sort(),
       authToken: auth.authToken,
       limit
     });
     const existingRequest = plexLibraryInFlight.get(requestKey);
     if (existingRequest) {
       logPlexDebug("[plex-sync] server fetch deduped", {
-        serverUri: normalizedSettings.serverUri,
+        serverUri: settings.serverUri,
         limit
       });
       return existingRequest;
     }
     const request = (async () => {
       logPlexDebug("[plex-sync] server fetch start", {
-        serverUri: normalizedSettings.serverUri,
-        serverUris: normalizedSettings.serverUris,
-        libraries: normalizedSettings.libraries.map((l) => `${l.type}:${l.key}:${l.title}`),
+        serverUri: settings.serverUri,
+        serverUris: settings.serverUris,
+        libraries: settings.libraries.map((l) => `${l.type}:${l.key}:${l.title}`),
         limit
       });
       async function fetchRecentlyAddedFallback() {
@@ -111020,7 +110991,7 @@
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 auth,
-                settings: normalizedSettings,
+                settings,
                 limit
               })
             },
@@ -111059,10 +111030,10 @@
         return fetchRecentlyAddedFallback();
       }
       console.warn("[plex-sync] fetchPlexLibraryItems: starting", {
-        serverUri: normalizedSettings.serverUri,
-        libraries: normalizedSettings.libraries.map((l) => `${l.type}:${l.key}:${l.title}`),
+        serverUri: settings.serverUri,
+        libraries: settings.libraries.map((l) => `${l.type}:${l.key}:${l.title}`),
         hasAuth: Boolean(auth.authToken),
-        hasServerAccessToken: Boolean(normalizedSettings.serverAccessToken)
+        hasServerAccessToken: Boolean(settings.serverAccessToken)
       });
       try {
         const response = await fetchWithTimeoutAndRetry(
@@ -111072,7 +111043,7 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               auth,
-              settings: normalizedSettings,
+              settings,
               limit
             })
           },
@@ -114105,7 +114076,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-tyk3oG/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-8PjO0Y/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");
