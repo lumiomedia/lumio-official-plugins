@@ -1,7 +1,10 @@
 'use client'
 
-import { notifyAuthCapabilitiesChanged } from '@/lib/auth-capabilities'
-import { getScopedStorageItem, setScopedStorageItem } from '@/lib/profile-storage'
+import {
+  getScopedStorageItem,
+  notifyAuthCapabilitiesChanged,
+  setScopedStorageItem,
+} from '@/lib/plugin-sdk'
 import type { YouTubePluginSettings, YouTubeSession, YouTubeVideo } from './youtube-types'
 
 const SETTINGS_KEY = 'plugin_youtube_settings'

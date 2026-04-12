@@ -9,6 +9,7 @@ The design goal is:
 - plugins register capabilities through the SDK
 - playback and auth logic stay provider-driven instead of hardcoded in UI
 - official and private plugins can share the same contracts
+- runtime code stays inside the SDK boundary instead of importing app internals
 
 ## Who this is for
 
@@ -51,6 +52,12 @@ In practice that means a plugin can:
 The remaining core-owned integrations are being moved toward the same model.
 At the moment, HomeKit, Trakt and Live TV still depend on app-local services
 that are not fully exposed through the SDK yet.
+
+The runtime boundary rules live in:
+
+- [runtime-boundary.md](./runtime-boundary.md)
+
+That document is the contract for what runtime code is allowed to import.
 
 ## How a plugin fits into Lumio
 

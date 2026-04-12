@@ -2,14 +2,14 @@
 
 import { Input } from '@heroui/react'
 import { useEffect, useState } from 'react'
-import { resolveAuthCapabilityStatus } from '@/lib/auth-capabilities'
 import {
+  resolveAuthCapabilityStatus,
   disableHomeOverridePlugin,
   getHomeOverridePluginId,
   onHomeOverridePluginChanged,
   tryEnableHomeOverridePlugin,
-} from '@/lib/home-override-settings'
-import { useLang } from '@/lib/i18n'
+  useLang,
+} from '@/lib/plugin-sdk'
 import { loadGoogleIdentityServices } from './youtube-auth'
 import {
   clearYouTubeCache,

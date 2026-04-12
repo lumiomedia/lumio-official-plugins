@@ -6,6 +6,14 @@ This repo is designed to hold multiple plugins in one place. Lumio reads a singl
 `marketplace.json` file at the repo root, then installs or updates plugin entries
 one by one.
 
+Runtime source in this repository is expected to stay inside the plugin boundary:
+
+- import from `@/lib/plugin-sdk`
+- import from relative plugin-local files
+- do not import app-specific Lumio core modules
+
+See [docs/runtime-boundary.md](./docs/runtime-boundary.md).
+
 ## What lives here
 
 - `marketplace.json`
@@ -40,6 +48,7 @@ If you want to build, fork or adapt a plugin, start here:
 These docs explain:
 
 - what the Lumio plugin SDK exposes
+- where the runtime/core boundary is enforced
 - how browse pages, menu items and home rows work
 - how playback and auth providers fit into the plugin model
 - how multiple plugins live in one marketplace repo

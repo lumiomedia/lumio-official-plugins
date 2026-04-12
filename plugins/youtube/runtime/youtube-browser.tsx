@@ -1,8 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { useLang } from '@/lib/i18n'
-import type { BrowsePageProps, HomeOverrideProps, HomeRowProps, PluginHeroProps } from '@/lib/plugin-sdk'
+import { useLang, type BrowsePageProps, type HomeOverrideProps, type HomeRowProps, type PluginHeroProps } from '@/lib/plugin-sdk'
 import {
   fetchYouTubeChannelVideos,
   fetchYouTubeLatestFromSubscriptions,
