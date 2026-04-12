@@ -3,6 +3,12 @@
 import { Input } from '@heroui/react'
 import { useEffect, useState } from 'react'
 import { resolveAuthCapabilityStatus } from '@/lib/auth-capabilities'
+import {
+  disableHomeOverridePlugin,
+  getHomeOverridePluginId,
+  onHomeOverridePluginChanged,
+  tryEnableHomeOverridePlugin,
+} from '@/lib/home-override-settings'
 import { useLang } from '@/lib/i18n'
 import { loadGoogleIdentityServices } from './youtube-auth'
 import {
@@ -28,6 +34,7 @@ const settingsActionButtonClass =
 
 const settingsPrimaryActionButtonClass =
   'rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-slate-200 transition hover:border-white/20 hover:text-white disabled:opacity-40'
+const HOME_OVERRIDE_PLUGIN_ID = 'com.lumio.youtube'
 
 export function YouTubeSettingsSection() {
   const { lang, t } = useLang()
@@ -40,6 +47,8 @@ export function YouTubeSettingsSection() {
   const [hideShorts, setHideShorts] = useState(false)
   const [hero, setHero] = useState(false)
   const [keepHero, setKeepHero] = useState(false)
+  const [homeOverrideEnabled, setHomeOverrideEnabled] = useState(false)
+  const [homeOverrideError, setHomeOverrideError] = useState('')
 
   useEffect(() => {
     const sync = () => {
@@ -73,6 +82,15 @@ export function YouTubeSettingsSection() {
     return () => {
       offPlugin()
     }
+  }, [])
+
+  useEffect(() => {
+    const sync = () => {
+      setHomeOverrideEnabled(getHomeOverridePluginId() === HOME_OVERRIDE_PLUGIN_ID)
+      setHomeOverrideError('')
+    }
+    sync()
+    return onHomeOverridePluginChanged(sync)
   }, [])
 
   useEffect(() => {
@@ -133,8 +151,35 @@ export function YouTubeSettingsSection() {
     }
   }
 
+  function handleHomeOverrideToggle(checked: boolean) {
+    setHomeOverrideError('')
+    if (!checked) {
+      disableHomeOverridePlugin(HOME_OVERRIDE_PLUGIN_ID)
+      return
+    }
+    const result = tryEnableHomeOverridePlugin(HOME_OVERRIDE_PLUGIN_ID)
+    if (!result.ok) {
+      setHomeOverrideError('Det finns redan en egen startsida satt. Avmarkera den först innan du valjer en annan plugin.')
+    }
+  }
+
   return (
     <div className="space-y-5">
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+        <label className="flex items-center gap-3 text-sm text-slate-200">
+          <input
+            type="checkbox"
+            checked={homeOverrideEnabled}
+            onChange={(event) => handleHomeOverrideToggle(event.target.checked)}
+            className="h-4 w-4 accent-amber-400"
+          />
+          Anvand som startsida
+        </label>
+        <p className="mt-2 text-xs text-slate-500">
+          Ersatter vanliga Home-rader med YouTube-vyn men behaller hero och resten av startsidan.
+        </p>
+        {homeOverrideError ? <p className="mt-2 text-xs text-rose-300">{homeOverrideError}</p> : null}
+      </div>
       <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
         <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t('pluginYoutubeConnection')}</p>
         <p className="mt-2 text-sm text-slate-300">{sessionLabel}</p>

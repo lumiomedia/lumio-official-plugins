@@ -1,5 +1,5 @@
 import type { LumioPlugin } from '@/lib/plugin-sdk'
-import { YouTubeBackgroundBootstrap, YouTubeBrowsePage, YouTubeHeroBanner, YouTubeHomeRow } from './youtube-browser'
+import { YouTubeBackgroundBootstrap, YouTubeBrowsePage, YouTubeHeroBanner, YouTubeHomeOverride, YouTubeHomeRow } from './youtube-browser'
 import { youtubeAuthCapabilityProvider } from './youtube-auth-capability-provider'
 import { YouTubeSettingsSection } from './youtube-settings-section'
 
@@ -27,6 +27,11 @@ export const YouTubePlugin: LumioPlugin = {
     ctx.registerHero({
       id: 'youtube-hero',
       Hero: YouTubeHeroBanner,
+    })
+    ctx.registerHomeOverride({
+      id: 'youtube-home',
+      label: { en: 'YouTube', sv: 'YouTube' },
+      View: YouTubeHomeOverride,
     })
 
     ctx.registerBrowsePage({
@@ -63,7 +68,6 @@ export const YouTubePlugin: LumioPlugin = {
     }
 
     ctx.registerMainMenuItem(youtubeEntry)
-    ctx.registerTopbarItem(youtubeEntry)
 
     ctx.registerHomeRow({
       id: 'youtube-following-row',

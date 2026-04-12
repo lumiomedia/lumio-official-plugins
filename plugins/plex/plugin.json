@@ -10,6 +10,8 @@
   "removable": true,
   "sdkCapabilities": [
     "settings-section",
-    "playback-capability"
+    "playback-capability",
+    "sync-identity",
+    "home-override"
   ]
 }

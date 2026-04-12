@@ -14,10 +14,10 @@
     "settings-section",
     "browse-pages",
     "main-menu",
-    "topbar-item",
     "home-rows",
     "bootstrap",
     "hero",
-    "auth-capability"
+    "auth-capability",
+    "home-override"
   ]
 }

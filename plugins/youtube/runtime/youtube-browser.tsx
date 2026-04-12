@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useLang } from '@/lib/i18n'
-import type { BrowsePageProps, HomeRowProps, PluginHeroProps } from '@/lib/plugin-sdk'
+import type { BrowsePageProps, HomeOverrideProps, HomeRowProps, PluginHeroProps } from '@/lib/plugin-sdk'
 import {
   fetchYouTubeChannelVideos,
   fetchYouTubeLatestFromSubscriptions,
@@ -769,6 +769,15 @@ export function YouTubeBackgroundBootstrap() {
   }, [connected, session])
 
   return null
+}
+
+export function YouTubeHomeOverride({ onNavigate }: HomeOverrideProps) {
+  return (
+    <YouTubeBrowsePage
+      pageId="youtube-following"
+      onNavigate={onNavigate}
+    />
+  )
 }
 
 export function YouTubeHeroBanner({ onNavigate, onActiveChange, onBackdropChange }: PluginHeroProps) {

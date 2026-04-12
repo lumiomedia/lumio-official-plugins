@@ -4,7 +4,9 @@
 
 import type { LumioPlugin } from '@/lib/plugin-sdk'
 import { PlexSection } from '@/components/settings/plex-section'
+import { PlexHomeOverride } from '@/lib/plugins/plex/plex-home-override'
 import { plexPlaybackCapabilityProvider } from './playback-capability-provider'
+import { plexSyncIdentityProvider } from '@/lib/plugins/plex/sync-identity-provider'
 
 export const PlexPlugin: LumioPlugin = {
   id: 'com.lumio.plex',
@@ -18,10 +20,16 @@ export const PlexPlugin: LumioPlugin = {
 
   register(ctx) {
     ctx.registerPlaybackCapabilityProvider(plexPlaybackCapabilityProvider)
+    ctx.registerSyncIdentityProvider(plexSyncIdentityProvider)
     ctx.registerSettingsSection({
       id: 'plex',
       label: { en: 'Plex', sv: 'Plex' },
       Section: PlexSection,
+    })
+    ctx.registerHomeOverride({
+      id: 'plex-home',
+      label: { en: 'Plex', sv: 'Plex' },
+      View: PlexHomeOverride,
     })
   },
 }
