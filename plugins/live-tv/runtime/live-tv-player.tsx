@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import {
+  getHls,
   lockBodyScroll,
   unlockBodyScroll,
   useLang,
@@ -84,9 +85,9 @@ export function LiveTvPlayer({ channel, onClose }: LiveTvPlayerProps) {
         )
 
         if (shouldUseHls) {
-          const Hls = (await import('hls.js')).default
+          const Hls = getHls()
           if (cancelled) return
-          if (!Hls.isSupported()) throw new Error('This browser does not support HLS playback.')
+          if (!Hls || !Hls.isSupported()) throw new Error('This browser does not support HLS playback.')
 
           const hls = new Hls({
             enableWorker: false,
