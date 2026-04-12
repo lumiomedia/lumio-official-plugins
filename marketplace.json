@@ -9,7 +9,7 @@
       "id": "com.lumio.youtube",
       "slug": "youtube",
       "name": "YouTube",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "description": "Browse subscriptions, watch later, playlists and channels from YouTube.",
       "path": "plugins/youtube",
       "runtimeBundlePath": "dist/runtime.js",

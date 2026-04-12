@@ -10,7 +10,7 @@ import {
   tryEnableHomeOverridePlugin,
   useLang,
 } from '@/lib/plugin-sdk'
-import { loadGoogleIdentityServices } from './youtube-auth'
+import { connectYouTube, disconnectYouTube, loadGoogleIdentityServices } from './youtube-auth'
 import {
   clearYouTubeCache,
   getYouTubeSettings,
@@ -120,8 +120,7 @@ export function YouTubeSettingsSection() {
     setError('')
     persist({ clientId, apiKey, hideShorts, hero, keepHero })
     try {
-      const providerStatus = await resolveAuthCapabilityStatus('youtube-auth')
-      await providerStatus?.provider.connect?.()
+      await connectYouTube(clientId)
       const nextStatus = await resolveAuthCapabilityStatus('youtube-auth')
       setSessionLabel(
         nextStatus?.state === 'connected' && nextStatus.accountLabel
@@ -140,8 +139,7 @@ export function YouTubeSettingsSection() {
     setBusy('disconnecting')
     setError('')
     try {
-      const providerStatus = await resolveAuthCapabilityStatus('youtube-auth')
-      await providerStatus?.provider.disconnect?.()
+      await disconnectYouTube()
       setSessionLabel(t('pluginYoutubeNotConnected'))
       setSessionDetail('')
     } catch (disconnectError) {
