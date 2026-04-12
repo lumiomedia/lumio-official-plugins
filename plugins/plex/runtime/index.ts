@@ -11,7 +11,7 @@ import { plexSyncIdentityProvider } from '@/lib/plugins/plex/sync-identity-provi
 export const PlexPlugin: LumioPlugin = {
   id: 'com.lumio.plex',
   name: { en: 'Plex', sv: 'Plex' },
-  version: '1.0.0',
+  version: '1.0.2',
   description: {
     en: 'Browse and play media from your Plex Media Server.',
     sv: 'Bladdra i och spela upp media från din Plex Media Server.',
