@@ -1,5 +1,5 @@
 import type { LumioPlugin } from '@/lib/plugin-sdk'
-import { HomeKitSection } from '@/components/settings/homekit-section'
+import { HomeKitSettingsSection } from './homekit-settings-section'
 
 export const HomeKitPlugin: LumioPlugin = {
   id: 'com.lumio.homekit',
@@ -15,7 +15,7 @@ export const HomeKitPlugin: LumioPlugin = {
     ctx.registerSettingsSection({
       id: 'homekit',
       label: { en: 'HomeKit', sv: 'HomeKit' },
-      Section: HomeKitSection,
+      Section: HomeKitSettingsSection,
     })
   },
 }
