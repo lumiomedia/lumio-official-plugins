@@ -1,9 +1,119 @@
 (() => {
   var __defProp = Object.defineProperty;
+  var __getOwnPropNames = Object.getOwnPropertyNames;
+  var __esm = (fn, res) => function __init() {
+    return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+  };
   var __export = (target, all) => {
     for (var name in all)
       __defProp(target, name, { get: all[name], enumerable: true });
   };
+
+  // node_modules/@tauri-apps/api/external/tslib/tslib.es6.js
+  function __classPrivateFieldGet(receiver, state, kind, f) {
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
+  }
+  function __classPrivateFieldSet(receiver, state, value, kind, f) {
+    if (kind === "m") throw new TypeError("Private method is not writable");
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
+    return kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value), value;
+  }
+  var init_tslib_es6 = __esm({
+    "node_modules/@tauri-apps/api/external/tslib/tslib.es6.js"() {
+    }
+  });
+
+  // node_modules/@tauri-apps/api/core.js
+  function transformCallback(callback, once = false) {
+    return window.__TAURI_INTERNALS__.transformCallback(callback, once);
+  }
+  var _Channel_onmessage, _Channel_nextMessageIndex, _Channel_pendingMessages, _Channel_messageEndIndex, _Resource_rid, SERIALIZE_TO_IPC_FN, Channel;
+  var init_core = __esm({
+    "node_modules/@tauri-apps/api/core.js"() {
+      init_tslib_es6();
+      SERIALIZE_TO_IPC_FN = "__TAURI_TO_IPC_KEY__";
+      Channel = class {
+        constructor(onmessage) {
+          _Channel_onmessage.set(this, void 0);
+          _Channel_nextMessageIndex.set(this, 0);
+          _Channel_pendingMessages.set(this, []);
+          _Channel_messageEndIndex.set(this, void 0);
+          __classPrivateFieldSet(this, _Channel_onmessage, onmessage || (() => {
+          }), "f");
+          this.id = transformCallback((rawMessage) => {
+            const index = rawMessage.index;
+            if ("end" in rawMessage) {
+              if (index == __classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")) {
+                this.cleanupCallback();
+              } else {
+                __classPrivateFieldSet(this, _Channel_messageEndIndex, index, "f");
+              }
+              return;
+            }
+            const message = rawMessage.message;
+            if (index == __classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")) {
+              __classPrivateFieldGet(this, _Channel_onmessage, "f").call(this, message);
+              __classPrivateFieldSet(this, _Channel_nextMessageIndex, __classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") + 1, "f");
+              while (__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") in __classPrivateFieldGet(this, _Channel_pendingMessages, "f")) {
+                const message2 = __classPrivateFieldGet(this, _Channel_pendingMessages, "f")[__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")];
+                __classPrivateFieldGet(this, _Channel_onmessage, "f").call(this, message2);
+                delete __classPrivateFieldGet(this, _Channel_pendingMessages, "f")[__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")];
+                __classPrivateFieldSet(this, _Channel_nextMessageIndex, __classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") + 1, "f");
+              }
+              if (__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") === __classPrivateFieldGet(this, _Channel_messageEndIndex, "f")) {
+                this.cleanupCallback();
+              }
+            } else {
+              __classPrivateFieldGet(this, _Channel_pendingMessages, "f")[index] = message;
+            }
+          });
+        }
+        cleanupCallback() {
+          window.__TAURI_INTERNALS__.unregisterCallback(this.id);
+        }
+        set onmessage(handler) {
+          __classPrivateFieldSet(this, _Channel_onmessage, handler, "f");
+        }
+        get onmessage() {
+          return __classPrivateFieldGet(this, _Channel_onmessage, "f");
+        }
+        [(_Channel_onmessage = /* @__PURE__ */ new WeakMap(), _Channel_nextMessageIndex = /* @__PURE__ */ new WeakMap(), _Channel_pendingMessages = /* @__PURE__ */ new WeakMap(), _Channel_messageEndIndex = /* @__PURE__ */ new WeakMap(), SERIALIZE_TO_IPC_FN)]() {
+          return `__CHANNEL__:${this.id}`;
+        }
+        toJSON() {
+          return this[SERIALIZE_TO_IPC_FN]();
+        }
+      };
+      _Resource_rid = /* @__PURE__ */ new WeakMap();
+    }
+  });
+
+  // node_modules/@tauri-apps/api/event.js
+  var TauriEvent;
+  var init_event = __esm({
+    "node_modules/@tauri-apps/api/event.js"() {
+      init_core();
+      (function(TauriEvent2) {
+        TauriEvent2["WINDOW_RESIZED"] = "tauri://resize";
+        TauriEvent2["WINDOW_MOVED"] = "tauri://move";
+        TauriEvent2["WINDOW_CLOSE_REQUESTED"] = "tauri://close-requested";
+        TauriEvent2["WINDOW_DESTROYED"] = "tauri://destroyed";
+        TauriEvent2["WINDOW_FOCUS"] = "tauri://focus";
+        TauriEvent2["WINDOW_BLUR"] = "tauri://blur";
+        TauriEvent2["WINDOW_SCALE_FACTOR_CHANGED"] = "tauri://scale-change";
+        TauriEvent2["WINDOW_THEME_CHANGED"] = "tauri://theme-changed";
+        TauriEvent2["WINDOW_CREATED"] = "tauri://window-created";
+        TauriEvent2["WEBVIEW_CREATED"] = "tauri://webview-created";
+        TauriEvent2["DRAG_ENTER"] = "tauri://drag-enter";
+        TauriEvent2["DRAG_OVER"] = "tauri://drag-over";
+        TauriEvent2["DRAG_DROP"] = "tauri://drag-drop";
+        TauriEvent2["DRAG_LEAVE"] = "tauri://drag-leave";
+      })(TauriEvent || (TauriEvent = {}));
+    }
+  });
 
   // ../lumio-official-plugins/plugins/trakt/runtime/index.ts
   var runtime_exports = {};
@@ -11,7 +121,7 @@
     TraktPlugin: () => TraktPlugin
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-wvYH2B/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-CAHOy3/react-shim.ts
   var react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
   var Activity = react.Activity;
   var Children = react.Children;
@@ -56,7 +166,43 @@
   var useTransition = react.useTransition;
   var version = react.version;
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-wvYH2B/jsx-runtime-shim.ts
+  // lib/profile-storage.ts
+  var PROFILES_KEY = "app_profiles";
+  var ACTIVE_PROFILE_KEY = "app_active_profile";
+  var PROFILE_EVENT = "lumio-profile-changed";
+  var PROFILE_PREFIX = "profile:";
+  function readProfiles() {
+    if (typeof window === "undefined") return [];
+    try {
+      return JSON.parse(localStorage.getItem(PROFILES_KEY) ?? "[]");
+    } catch {
+      return [];
+    }
+  }
+  function onProfileChanged(listener) {
+    window.addEventListener(PROFILE_EVENT, listener);
+    return () => window.removeEventListener(PROFILE_EVENT, listener);
+  }
+  function getActiveProfileId() {
+    if (typeof window === "undefined") return null;
+    const value = localStorage.getItem(ACTIVE_PROFILE_KEY);
+    return value && readProfiles().some((profile) => profile.id === value) ? value : null;
+  }
+  function getProfileStorageKey(baseKey, profileId = getActiveProfileId()) {
+    return profileId ? `${PROFILE_PREFIX}${profileId}:${baseKey}` : baseKey;
+  }
+  function getScopedStorageItem(baseKey) {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem(getProfileStorageKey(baseKey));
+  }
+  function setScopedStorageItem(baseKey, value) {
+    localStorage.setItem(getProfileStorageKey(baseKey), value);
+  }
+  function removeScopedStorageItem(baseKey) {
+    localStorage.removeItem(getProfileStorageKey(baseKey));
+  }
+
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-CAHOy3/jsx-runtime-shim.ts
   var runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
   var Fragment2 = runtime.Fragment;
   var jsx = runtime.jsx;
@@ -1530,42 +1676,6 @@
     return useContext(LangContext);
   }
 
-  // lib/profile-storage.ts
-  var PROFILES_KEY = "app_profiles";
-  var ACTIVE_PROFILE_KEY = "app_active_profile";
-  var PROFILE_EVENT = "lumio-profile-changed";
-  var PROFILE_PREFIX = "profile:";
-  function readProfiles() {
-    if (typeof window === "undefined") return [];
-    try {
-      return JSON.parse(localStorage.getItem(PROFILES_KEY) ?? "[]");
-    } catch {
-      return [];
-    }
-  }
-  function onProfileChanged(listener) {
-    window.addEventListener(PROFILE_EVENT, listener);
-    return () => window.removeEventListener(PROFILE_EVENT, listener);
-  }
-  function getActiveProfileId() {
-    if (typeof window === "undefined") return null;
-    const value = localStorage.getItem(ACTIVE_PROFILE_KEY);
-    return value && readProfiles().some((profile) => profile.id === value) ? value : null;
-  }
-  function getProfileStorageKey(baseKey, profileId = getActiveProfileId()) {
-    return profileId ? `${PROFILE_PREFIX}${profileId}:${baseKey}` : baseKey;
-  }
-  function getScopedStorageItem(baseKey) {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem(getProfileStorageKey(baseKey));
-  }
-  function setScopedStorageItem(baseKey, value) {
-    localStorage.setItem(getProfileStorageKey(baseKey), value);
-  }
-  function removeScopedStorageItem(baseKey) {
-    localStorage.removeItem(getProfileStorageKey(baseKey));
-  }
-
   // lib/trakt-storage.ts
   var AUTH_KEY = "trakt_auth";
   var EVENT = "lumio-trakt-auth-changed";
@@ -2263,10 +2373,25 @@
     };
   }
 
-  // components/settings/trakt-section.tsx
+  // lib/tauri-mpv.ts
+  init_core();
+  init_event();
+  function detectTauriEnv() {
+    if (typeof window === "undefined") return false;
+    const maybeTauriWindow = window;
+    if (maybeTauriWindow.__TAURI_INTERNALS__ || maybeTauriWindow.__TAURI__) {
+      return true;
+    }
+    const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "";
+    if (userAgent.includes("Tauri")) return true;
+    return window.location.hostname === "127.0.0.1" && window.location.port === "32145";
+  }
+  var isTauriEnv = detectTauriEnv();
+
+  // ../lumio-official-plugins/plugins/trakt/runtime/trakt-settings-section.tsx
   var settingsActionButtonClass = "rounded-full border border-white/10 px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-slate-300 transition hover:border-white/20 hover:text-white disabled:opacity-50";
   var settingsDangerActionButtonClass = "rounded-full border border-red-400/30 px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-red-300 transition hover:border-red-400/40 hover:text-red-300 disabled:opacity-50";
-  function TraktSection() {
+  function TraktSettingsSection() {
     const { t } = useLang();
     const [traktAuth, setTraktAuthState] = useState(() => getTraktAuth());
     const [traktLoginState, setTraktLoginState] = useState("idle");
@@ -2429,12 +2554,12 @@
       ctx.registerSettingsSection({
         id: "trakt",
         label: { en: "Trakt", sv: "Trakt" },
-        Section: TraktSection
+        Section: TraktSettingsSection
       });
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-wvYH2B/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-CAHOy3/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

@@ -69,7 +69,7 @@
       "id": "com.lumio.trakt",
       "slug": "trakt",
       "name": "Trakt",
-      "version": "0.1.1",
+      "version": "0.2.0",
       "description": "Sync watched history, watchlists and collection data with Trakt.",
       "path": "plugins/trakt",
       "runtimeBundlePath": "dist/runtime.js",

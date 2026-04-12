@@ -1,5 +1,5 @@
 import type { LumioPlugin } from '@/lib/plugin-sdk'
-import { TraktSection } from '@/components/settings/trakt-section'
+import { TraktSettingsSection } from './trakt-settings-section'
 
 export const TraktPlugin: LumioPlugin = {
   id: 'com.lumio.trakt',
@@ -15,7 +15,7 @@ export const TraktPlugin: LumioPlugin = {
     ctx.registerSettingsSection({
       id: 'trakt',
       label: { en: 'Trakt', sv: 'Trakt' },
-      Section: TraktSection,
+      Section: TraktSettingsSection,
     })
   },
 }
