@@ -11,14 +11,10 @@ const STRICT = process.argv.includes('--strict')
 const ALLOWED_APP_ALIAS_IMPORTS = new Set(['@/lib/plugin-sdk'])
 
 const LEGACY_ALLOWLIST = new Map([
-  ['plugins/homekit/runtime/index.ts::@/components/settings/homekit-section', 'Move HomeKit settings UI into the plugin runtime.'],
-  ['plugins/live-tv/runtime/index.ts::@/components/settings/live-tv-settings-section', 'Move Live TV settings UI into the plugin runtime.'],
-  ['plugins/live-tv/runtime/index.ts::@/lib/plugins/live-tv/live-tv-home-override', 'Move Live TV home override into the plugin runtime.'],
   ['plugins/plex/runtime/index.ts::@/components/settings/plex-section', 'Move Plex settings UI into the plugin runtime.'],
   ['plugins/plex/runtime/index.ts::@/lib/plugins/plex/plex-home-override', 'Move Plex home override into the plugin runtime.'],
   ['plugins/plex/runtime/index.ts::@/lib/plugins/plex/sync-identity-provider', 'Move Plex sync identity provider into the plugin runtime or expose a generic host contract.'],
   ['plugins/plex/runtime/playback-capability-provider.ts::@/lib/playback-capabilities', 'Move Plex matching/playability logic into the plugin runtime or a generic host contract.'],
-  ['plugins/trakt/runtime/index.ts::@/components/settings/trakt-section', 'Move Trakt settings UI into the plugin runtime.'],
 ])
 
 const IMPORT_PATTERN =
