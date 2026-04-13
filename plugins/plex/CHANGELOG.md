@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.8
+
+- Restored a safe random ID fallback chain so Plex no longer crashes in non-secure contexts (e.g. Tauri webview).
+- Keeps behavior identical in secure contexts while avoiding `crypto.randomUUID()` TypeErrors.
+
 ## 1.0.7
 
 - Replaced the Plex profile PIN field from HeroUI `Input` to native `<input>` to avoid client runtime crashes when opening Plex settings.
