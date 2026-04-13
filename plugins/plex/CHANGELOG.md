@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.7
+
+- Replaced the Plex profile PIN field from HeroUI `Input` to native `<input>` to avoid client runtime crashes when opening Plex settings.
+- No behavior change for auth flow; this is a stability-only UI dependency reduction.
+
 ## 1.0.6
 
 - Hotfix: reverted an unstable client cache gate that could trigger startup/runtime crashes when opening Plex.
