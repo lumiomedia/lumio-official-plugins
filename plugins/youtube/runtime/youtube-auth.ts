@@ -199,10 +199,11 @@ async function buildYouTubeSession(clientId: string, prompt: '' | 'consent'): Pr
 }
 
 export async function connectYouTube(clientId: string): Promise<YouTubeSession> {
-  const previousSession = getYouTubeSession()
   const session = isPluginDesktopHost()
     ? await startDesktopYouTubeOauth(clientId)
-    : await buildYouTubeSession(clientId, previousSession?.accessToken ? '' : 'consent')
+    // Explicit connect should always open an interactive OAuth flow.
+    // Silent re-auth is handled by tryRestoreYouTubeSession().
+    : await buildYouTubeSession(clientId, 'consent')
   setYouTubeSession(session)
   setYouTubeAutoReconnectEnabled(true)
   return session
