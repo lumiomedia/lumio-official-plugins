@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Input } from '@heroui/react'
 import {
   disableHomeOverridePlugin,
   getHomeOverridePluginId,
@@ -33,17 +32,6 @@ import {
 } from '@/lib/plugin-sdk'
 
 // ── Local style constants (mirrors settings-panel.tsx) ──────────────────────
-
-const heroInputClassNames = {
-  base: 'w-full',
-  inputWrapper: [
-    'bg-white/8 border border-white/10 !shadow-none rounded-[1.1rem]',
-    'hover:bg-white/10 hover:!border-white/10',
-    'group-data-[focus=true]:bg-white/10 group-data-[focus=true]:!border-white/10 group-data-[focus=true]:!shadow-none',
-    'transition-all duration-200 min-h-12',
-  ].join(' '),
-  input: 'text-sm text-slate-50 placeholder:text-slate-500 !shadow-none outline-none',
-}
 
 const settingsSelectClassName =
   'rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-300 outline-none transition hover:border-white/20'
@@ -576,13 +564,12 @@ export function PlexSection() {
               </label>
               <label className="space-y-1.5">
                 <span className="block text-[10px] uppercase tracking-[0.16em] text-slate-500">{t('plexProfilePin')}</span>
-                <Input
+                <input
                   type="password"
                   value={plexProfilePin}
-                  onValueChange={setPlexProfilePin}
+                  onChange={(event) => setPlexProfilePin(event.target.value)}
                   placeholder={t('plexProfilePinPlaceholder')}
-                  radius="lg"
-                  classNames={heroInputClassNames}
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-100 outline-none transition hover:border-white/20 focus:border-white/30"
                 />
               </label>
               <div className="flex items-end 2xl:justify-end">
