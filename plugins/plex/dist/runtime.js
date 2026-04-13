@@ -39,7 +39,7 @@
   ));
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-FeOQlK/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-bfivx2/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -88,7 +88,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-FeOQlK/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-bfivx2/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -136,7 +136,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-FeOQlK/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-bfivx2/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -146,7 +146,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-FeOQlK/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-bfivx2/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -112183,11 +112183,7 @@
   // lib/plugins/plex/plex-sync.ts
   var plexLibraryInFlight = /* @__PURE__ */ new Map();
   var plexLibraryCooldownUntil = /* @__PURE__ */ new Map();
-  var plexLibraryDedupedLogAt = /* @__PURE__ */ new Map();
-  var plexLibraryCooldownLogAt = /* @__PURE__ */ new Map();
   var PLEX_LIBRARY_RETRY_COOLDOWN_MS = 15e3;
-  var PLEX_LIBRARY_DEDUPED_LOG_INTERVAL_MS = 3e4;
-  var PLEX_LIBRARY_COOLDOWN_LOG_INTERVAL_MS = 3e4;
   function isTauriRuntime() {
     if (typeof window === "undefined") return false;
     const w = window;
@@ -112623,28 +112619,10 @@
     const now2 = Date.now();
     const cooldownUntil = plexLibraryCooldownUntil.get(cooldownKey) ?? 0;
     if (cooldownUntil > now2) {
-      const lastCooldownLogAt = plexLibraryCooldownLogAt.get(cooldownKey) ?? 0;
-      if (now2 - lastCooldownLogAt >= PLEX_LIBRARY_COOLDOWN_LOG_INTERVAL_MS) {
-        plexLibraryCooldownLogAt.set(cooldownKey, now2);
-        logPlexDebug("[plex-sync] server fetch cooldown active", {
-          serverUri: settings.serverUri,
-          waitMs: cooldownUntil - now2,
-          limit
-        });
-      }
       return getCachedPlexLibraryItems(limit) ?? [];
     }
     const existingRequest = plexLibraryInFlight.get(cooldownKey);
     if (existingRequest) {
-      const nowMs = Date.now();
-      const lastLogAt = plexLibraryDedupedLogAt.get(cooldownKey) ?? 0;
-      if (nowMs - lastLogAt >= PLEX_LIBRARY_DEDUPED_LOG_INTERVAL_MS) {
-        plexLibraryDedupedLogAt.set(cooldownKey, nowMs);
-        logPlexDebug("[plex-sync] server fetch deduped", {
-          serverUri: settings.serverUri,
-          limit
-        });
-      }
       return existingRequest;
     }
     const request = (async () => {
@@ -112750,13 +112728,11 @@
       const result = await request;
       if (result.length > 0) {
         plexLibraryCooldownUntil.delete(cooldownKey);
-        plexLibraryCooldownLogAt.delete(cooldownKey);
       } else {
         plexLibraryCooldownUntil.set(cooldownKey, Date.now() + PLEX_LIBRARY_RETRY_COOLDOWN_MS);
       }
       return result;
     } finally {
-      plexLibraryDedupedLogAt.delete(cooldownKey);
       if (plexLibraryInFlight.get(cooldownKey) === request) {
         plexLibraryInFlight.delete(cooldownKey);
       }
@@ -113097,7 +113073,7 @@
     ) });
   }
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-FeOQlK/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-bfivx2/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
 
   // lib/tauri-mpv.ts
@@ -114242,7 +114218,7 @@
   var PlexPlugin = {
     id: "com.lumio.plex",
     name: { en: "Plex", sv: "Plex" },
-    version: "1.0.5",
+    version: "1.0.6",
     description: {
       en: "Browse and play media from your Plex Media Server.",
       sv: "Bladdra i och spela upp media fr\xE5n din Plex Media Server."
@@ -114264,7 +114240,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-FeOQlK/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-bfivx2/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

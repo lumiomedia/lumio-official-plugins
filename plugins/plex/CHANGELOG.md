@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.6
+
+- Hotfix: reverted an unstable client cache gate that could trigger startup/runtime crashes when opening Plex.
+- Kept the sync-noise reductions from earlier releases while restoring the previous stable fetch flow.
+
 ## 1.0.5
 
 - Stabilized Plex library sync singleflight keying so parallel refreshes collapse into one request per server/library scope.
