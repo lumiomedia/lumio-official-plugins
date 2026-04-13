@@ -1,5 +1,8 @@
-import { findBestPlexMatch, isPlexItemPlayable } from '@/lib/playback-capabilities'
-import type { PlaybackCapabilityProvider } from '@/lib/plugin-sdk'
+import {
+  findBestPlexMatch,
+  isPlexItemPlayable,
+  type PlaybackCapabilityProvider,
+} from '@/lib/plugin-sdk'
 
 export const plexPlaybackCapabilityProvider: PlaybackCapabilityProvider = {
   id: 'plex-playback',

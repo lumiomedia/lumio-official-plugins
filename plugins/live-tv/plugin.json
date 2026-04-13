@@ -2,7 +2,7 @@
   "id": "com.lumio.live-tv",
   "slug": "live-tv",
   "name": "Live TV",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Manage M3U sources and browse live TV channels inside Lumio.",
   "official": true,
   "bundled": true,

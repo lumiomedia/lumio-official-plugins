@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { PlexGrid } from '@/components/results/plex-grid'
 import type { FilterOptions, HomeOverrideProps, MediaFilters } from '@/lib/plugin-sdk'
+import { PlexGrid } from './plex-grid'
 
 const defaultFilterOptions: FilterOptions = {
   providers: [],

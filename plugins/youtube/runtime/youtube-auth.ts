@@ -107,7 +107,12 @@ async function openDesktopOauthBrowser(url: string): Promise<void> {
   await launchPluginProgram(command.program, command.args)
 }
 
-async function startDesktopYouTubeOauth(clientId: string): Promise<YouTubeSession> {
+function preopenOauthWindow(): Window | null {
+  if (typeof window === 'undefined') return null
+  return window.open('', '_blank', 'noopener,noreferrer')
+}
+
+async function startDesktopYouTubeOauth(clientId: string, oauthWindow: Window | null): Promise<YouTubeSession> {
   const startResponse = await fetch('/api/plugins/youtube/oauth/start', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -122,7 +127,18 @@ async function startDesktopYouTubeOauth(clientId: string): Promise<YouTubeSessio
     throw new Error(startPayload.error || 'Could not start desktop YouTube login.')
   }
 
-  await openDesktopOauthBrowser(startPayload.authUrl)
+  let opened = false
+  if (oauthWindow && !oauthWindow.closed) {
+    try {
+      oauthWindow.location.href = startPayload.authUrl
+      opened = true
+    } catch {
+      opened = false
+    }
+  }
+  if (!opened) {
+    await openDesktopOauthBrowser(startPayload.authUrl)
+  }
 
   const startedAt = Date.now()
   while (Date.now() - startedAt < DESKTOP_OAUTH_TIMEOUT_MS) {
@@ -199,8 +215,9 @@ async function buildYouTubeSession(clientId: string, prompt: '' | 'consent'): Pr
 }
 
 export async function connectYouTube(clientId: string): Promise<YouTubeSession> {
+  const oauthWindow = isPluginDesktopHost() ? preopenOauthWindow() : null
   const session = isPluginDesktopHost()
-    ? await startDesktopYouTubeOauth(clientId)
+    ? await startDesktopYouTubeOauth(clientId, oauthWindow)
     // Explicit connect should always open an interactive OAuth flow.
     // Silent re-auth is handled by tryRestoreYouTubeSession().
     : await buildYouTubeSession(clientId, 'consent')

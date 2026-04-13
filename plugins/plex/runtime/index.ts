@@ -3,9 +3,9 @@
 // PlexSection will be extracted from settings-panel.tsx in Task 5.
 
 import type { LumioPlugin } from '@/lib/plugin-sdk'
-import { PlexSection } from '@/components/settings/plex-section'
 import { plexPlaybackCapabilityProvider } from './playback-capability-provider'
 import { PlexHomeOverride } from './plex-home-override'
+import { PlexSection } from './plex-section'
 import { plexSyncIdentityProvider } from './sync-identity-provider'
 
 export const PlexPlugin: LumioPlugin = {
