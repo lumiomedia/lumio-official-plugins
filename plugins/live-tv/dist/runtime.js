@@ -39,7 +39,7 @@
   ));
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-zFao7K/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-cVJYMS/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -88,7 +88,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-zFao7K/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-cVJYMS/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -29273,7 +29273,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-zFao7K/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-cVJYMS/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -29283,7 +29283,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-zFao7K/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-cVJYMS/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -110616,6 +110616,28 @@
           pluginYoutubeUnfollow: "Unfollow",
           pluginYoutubeOpenFeed: "Open feed",
           pluginYoutubeFollowingRow: "YouTube following",
+          plexConnect: "Connect Plex",
+          plexDisconnect: "Disconnect",
+          plexWaiting: "Waiting\u2026",
+          plexRequestFailed: "Plex request failed.",
+          plexNoServers: "No Plex servers found.",
+          plexChooseServer: "Server",
+          plexRefreshLibraries: "Refresh libraries",
+          plexRefreshingLibrariesButton: "Refreshing\u2026",
+          plexRefreshLibrariesDone: "Libraries refreshed.",
+          plexRefreshLibrariesEmpty: "No libraries found for this server.",
+          plexRefreshLibrariesFailed: "Could not refresh libraries.",
+          plexSignedInAs: "Connected as",
+          plexSignedInFallback: "Plex user",
+          plexChooseProfile: "Profile",
+          plexProfilePin: "Profile PIN",
+          plexProfilePinPlaceholder: "Enter Plex profile PIN",
+          plexRefreshingProfiles: "Refreshing profiles\u2026",
+          plexApplyProfile: "Apply profile",
+          plexProfileApplied: "Profile applied.",
+          plexChooseLibraries: "Libraries",
+          plexNoLibraries: "No libraries found.",
+          plexOpenLinkAndCode: "Open the link and enter the code",
           pluginSectionIntro: "Manage installed plugins, browse the official marketplace and add plugin sources from GitHub or ZIP files.",
           pluginRestartRequired: "Restart required for plugin changes to fully apply.",
           pluginRestartNow: "Restart now",
@@ -111316,6 +111338,28 @@
           pluginYoutubeUnfollow: "Avf\xF6lj",
           pluginYoutubeOpenFeed: "\xD6ppna fl\xF6de",
           pluginYoutubeFollowingRow: "YouTube f\xF6ljer",
+          plexConnect: "Anslut Plex",
+          plexDisconnect: "Koppla fr\xE5n",
+          plexWaiting: "V\xE4ntar\u2026",
+          plexRequestFailed: "Plex-f\xF6rfr\xE5gan misslyckades.",
+          plexNoServers: "Inga Plex-servrar hittades.",
+          plexChooseServer: "Server",
+          plexRefreshLibraries: "Uppdatera bibliotek",
+          plexRefreshingLibrariesButton: "Uppdaterar\u2026",
+          plexRefreshLibrariesDone: "Bibliotek uppdaterade.",
+          plexRefreshLibrariesEmpty: "Inga bibliotek hittades f\xF6r den h\xE4r servern.",
+          plexRefreshLibrariesFailed: "Kunde inte uppdatera bibliotek.",
+          plexSignedInAs: "Ansluten som",
+          plexSignedInFallback: "Plex-anv\xE4ndare",
+          plexChooseProfile: "Profil",
+          plexProfilePin: "Profil-PIN",
+          plexProfilePinPlaceholder: "Ange Plex profil-PIN",
+          plexRefreshingProfiles: "Uppdaterar profiler\u2026",
+          plexApplyProfile: "Anv\xE4nd profil",
+          plexProfileApplied: "Profilen \xE4r uppdaterad.",
+          plexChooseLibraries: "Bibliotek",
+          plexNoLibraries: "Inga bibliotek hittades.",
+          plexOpenLinkAndCode: "\xD6ppna l\xE4nken och ange koden",
           pluginSectionIntro: "Hantera installerade plugins, bl\xE4ddra i den officiella marketplace-listan och l\xE4gg till plugin-k\xE4llor fr\xE5n GitHub eller ZIP-filer.",
           pluginRestartRequired: "Omstart kr\xE4vs f\xF6r att plugin\xE4ndringar ska sl\xE5 igenom helt.",
           pluginRestartNow: "Starta om nu",
@@ -112088,10 +112132,10 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-zFao7K/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-cVJYMS/auth-capabilities-shim.ts
   var sdk;
   var init_auth_capabilities_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-zFao7K/auth-capabilities-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-cVJYMS/auth-capabilities-shim.ts"() {
       sdk = globalThis.__lumioPluginRuntime?.sdk;
     }
   });
@@ -113637,7 +113681,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-zFao7K/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-cVJYMS/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

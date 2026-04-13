@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.14
+
+- Added a Plex browse page and top menu entry for quicker navigation.
+- Allows Plex items to open the core details view from plugin browse pages.
+
 ## 1.0.13
 
 - Moved Plex runtime helpers into the plugin package to keep core separation intact.
