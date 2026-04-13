@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1
+
+- Runtime bundle refresh for latest SDK contract and separation updates
+
 ## 0.2.0
 
 - Full self-contained runtime with all UI components (grid, player, settings, logo, pagination)

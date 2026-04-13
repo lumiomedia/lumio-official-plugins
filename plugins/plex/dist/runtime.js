@@ -39,7 +39,7 @@
   ));
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-lowJQk/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-OGpfmH/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -88,7 +88,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-lowJQk/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-OGpfmH/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -133,6 +133,25 @@
       useSyncExternalStore = react.useSyncExternalStore;
       useTransition = react.useTransition;
       version = react.version;
+    }
+  });
+
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-OGpfmH/jsx-runtime-shim.ts
+  var jsx_runtime_shim_exports = {};
+  __export(jsx_runtime_shim_exports, {
+    Fragment: () => Fragment2,
+    jsx: () => jsx,
+    jsxDEV: () => jsxDEV,
+    jsxs: () => jsxs
+  });
+  var runtime, Fragment2, jsx, jsxs, jsxDEV;
+  var init_jsx_runtime_shim = __esm({
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-OGpfmH/jsx-runtime-shim.ts"() {
+      runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
+      Fragment2 = runtime.Fragment;
+      jsx = runtime.jsx;
+      jsxs = runtime.jsxs;
+      jsxDEV = runtime.jsxDEV;
     }
   });
 
@@ -18693,9 +18712,9 @@
         toIterator: () => toIterator2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function forwardRef3(component) {
-        return (0, import_react61.forwardRef)(component);
+        return (0, import_react62.forwardRef)(component);
       }
       var toIterator2 = (obj) => {
         return {
@@ -29270,25 +29289,6 @@
       $parcel$export(module.exports, "useCollator", () => $27a5ce66022270ad$exports.useCollator);
       $parcel$export(module.exports, "useFilter", () => $832d079b867c7223$exports.useFilter);
       $parcel$export(module.exports, "isRTL", () => $4d65847630a056a8$exports.isRTL);
-    }
-  });
-
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-lowJQk/jsx-runtime-shim.ts
-  var jsx_runtime_shim_exports = {};
-  __export(jsx_runtime_shim_exports, {
-    Fragment: () => Fragment2,
-    jsx: () => jsx,
-    jsxDEV: () => jsxDEV,
-    jsxs: () => jsxs
-  });
-  var runtime, Fragment2, jsx, jsxs, jsxDEV;
-  var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-lowJQk/jsx-runtime-shim.ts"() {
-      runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
-      Fragment2 = runtime.Fragment;
-      jsx = runtime.jsx;
-      jsxs = runtime.jsxs;
-      jsxDEV = runtime.jsxDEV;
     }
   });
 
@@ -46048,17 +46048,17 @@
         renderFn: () => renderFn2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function getValidChildren2(children) {
-        return import_react61.Children.toArray(children).filter(
-          (child) => (0, import_react61.isValidElement)(child)
+        return import_react62.Children.toArray(children).filter(
+          (child) => (0, import_react62.isValidElement)(child)
         );
       }
       var pickChildren2 = (children, targetChild) => {
         var _a;
         let target = [];
-        const withoutTargetChildren = (_a = import_react61.Children.map(children, (item) => {
-          if (!(0, import_react61.isValidElement)(item)) return item;
+        const withoutTargetChildren = (_a = import_react62.Children.map(children, (item) => {
+          if (!(0, import_react62.isValidElement)(item)) return item;
           if (item.type === targetChild) {
             target.push(item);
             return null;
@@ -46400,7 +46400,7 @@
           refs.forEach((ref) => assignRef(ref, node));
         };
       }
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function canUseDOM() {
         return !!(typeof window !== "undefined" && window.document && window.document.createElement);
       }
@@ -46486,17 +46486,17 @@
         };
       }
       function useDOMRef(ref) {
-        const domRef = (0, import_react61.useRef)(null);
-        (0, import_react61.useImperativeHandle)(ref, () => domRef.current);
+        const domRef = (0, import_react62.useRef)(null);
+        (0, import_react62.useImperativeHandle)(ref, () => domRef.current);
         return domRef;
       }
       function useFocusableRef(ref, focusableRef) {
-        const domRef = (0, import_react61.useRef)(null);
-        (0, import_react61.useImperativeHandle)(ref, () => createFocusableRef(domRef, focusableRef));
+        const domRef = (0, import_react62.useRef)(null);
+        (0, import_react62.useImperativeHandle)(ref, () => createFocusableRef(domRef, focusableRef));
         return domRef;
       }
       function useSyncRef(context, ref) {
-        (0, import_react61.useLayoutEffect)(() => {
+        (0, import_react62.useLayoutEffect)(() => {
           if (context && context.ref && ref && ref.current) {
             context.ref.current = ref.current;
             return () => {
@@ -46577,8 +46577,8 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_system_rsc = require_dist4();
-      var import_i18n3 = require_main9();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_i18n2 = require_main9();
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_motion2 = require_cjs4();
       var import_utils8 = require_main7();
       var import_overlays = require_main13();
@@ -46610,7 +46610,7 @@
         if (navigate) {
           contents = /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(import_utils8.RouterProvider, { navigate, useHref, children: contents });
         }
-        const context = (0, import_react61.useMemo)(() => {
+        const context = (0, import_react62.useMemo)(() => {
           if (disableAnimation && skipFramerMotionAnimations) {
             import_framer_motion2.MotionGlobalConfig.skipAnimations = true;
           }
@@ -46633,7 +46633,7 @@
           labelPlacement,
           spinnerVariant
         ]);
-        return /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(ProviderContext, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(import_i18n3.I18nProvider, { locale, children: /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(import_framer_motion2.MotionConfig, { reducedMotion, children: /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(import_overlays.OverlayProvider, { ...otherProps, children: contents }) }) }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(ProviderContext, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(import_i18n2.I18nProvider, { locale, children: /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(import_framer_motion2.MotionConfig, { reducedMotion, children: /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(import_overlays.OverlayProvider, { ...otherProps, children: contents }) }) }) });
       };
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useLabelPlacement(props) {
@@ -47387,7 +47387,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_system_rsc = require_dist4();
       var import_theme = require_dist3();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_rsc_utils = require_dist5();
       function useSeparator(props) {
         let domProps = (0, import_react_rsc_utils.filterDOMProps)(props, {
@@ -47418,14 +47418,14 @@
           elementType: typeof Component2 === "string" ? Component2 : "hr",
           orientation
         });
-        const styles = (0, import_react61.useMemo)(
+        const styles = (0, import_react62.useMemo)(
           () => (0, import_theme.divider)({
             orientation,
             className
           }),
           [orientation, className]
         );
-        const getDividerProps = (0, import_react61.useCallback)(
+        const getDividerProps = (0, import_react62.useCallback)(
           (props2 = {}) => ({
             className: styles,
             role: "separator",
@@ -49253,22 +49253,22 @@
         };
       }
       var import_focus2 = require_main11();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_button = require_main19();
       function useReactAriaAccordionItem(props, state, ref) {
         let { item, isDisabled: isDisabledProp } = props;
         let key = item.key;
         let manager = state.selectionManager;
-        let buttonId = (0, import_react61.useId)();
-        let regionId = (0, import_react61.useId)();
+        let buttonId = (0, import_react62.useId)();
+        let regionId = (0, import_react62.useId)();
         let isDisabled = state.disabledKeys.has(item.key) || isDisabledProp;
-        (0, import_react61.useEffect)(() => {
+        (0, import_react62.useEffect)(() => {
           let isFocused = key === state.focusedKey;
           if (isFocused && document.activeElement !== ref.current) {
             ref.current && (0, import_focus2.focusSafely)(ref.current);
           }
         }, [ref, key, state.focusedKey]);
-        let onSelect = (0, import_react61.useCallback)(
+        let onSelect = (0, import_react62.useCallback)(
           (e) => {
             if (!manager.canSelectItem(key)) {
               return;
@@ -49278,7 +49278,7 @@
           },
           [key, manager]
         );
-        const extendFocusSelection = (0, import_react61.useCallback)(
+        const extendFocusSelection = (0, import_react62.useCallback)(
           (toKey) => {
             if (manager.selectionBehavior === "replace") {
               manager.extendSelection(toKey);
@@ -49287,7 +49287,7 @@
           },
           [manager]
         );
-        const onKeyDown = (0, import_react61.useCallback)(
+        const onKeyDown = (0, import_react62.useCallback)(
           (event) => {
             const keyMap = {
               ArrowDown: () => {
@@ -52606,14 +52606,14 @@
         useMeasure: () => useMeasure
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useMeasure() {
-        const [dimensions, setDimensions] = (0, import_react61.useState)({
+        const [dimensions, setDimensions] = (0, import_react62.useState)({
           width: null,
           height: null
         });
-        const previousObserver = (0, import_react61.useRef)(null);
-        const customRef = (0, import_react61.useCallback)((node) => {
+        const previousObserver = (0, import_react62.useRef)(null);
+        const customRef = (0, import_react62.useCallback)((node) => {
           if (previousObserver.current) {
             previousObserver.current.disconnect();
             previousObserver.current = null;
@@ -52809,11 +52809,11 @@
           }
         }
       };
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_motion2 = require_cjs4();
       var import_use_measure = require_dist12();
       var import_jsx_runtime19 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var ResizablePanel2 = (0, import_react61.forwardRef)(
+      var ResizablePanel2 = (0, import_react62.forwardRef)(
         (originalProps, ref) => {
           const { children, ...props } = originalProps;
           let [measureRef, bounds] = (0, import_use_measure.useMeasure)();
@@ -68444,7 +68444,7 @@
       var import_react510 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist7();
       var import_react_utils = require_dist6();
-      var import_react61 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
+      var import_react62 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
       var import_tree = require_main16();
       var import_shared_utils = require_dist2();
       var import_theme = require_dist3();
@@ -68496,10 +68496,10 @@
         );
         const children = (0, import_react210.useMemo)(() => {
           let treeChildren = [];
-          import_react61.default.Children.map(childrenProp, (child) => {
+          import_react62.default.Children.map(childrenProp, (child) => {
             var _a2;
-            if (import_react61.default.isValidElement(child) && typeof ((_a2 = child.props) == null ? void 0 : _a2.children) !== "string") {
-              const clonedChild = import_react61.default.cloneElement(child, {
+            if (import_react62.default.isValidElement(child) && typeof ((_a2 = child.props) == null ? void 0 : _a2.children) !== "string") {
+              const clonedChild = import_react62.default.cloneElement(child, {
                 // @ts-ignore
                 hasChildItems: false
               });
@@ -68570,7 +68570,7 @@
             motionProps
           ]
         );
-        const getBaseProps = (0, import_react61.useCallback)((props2 = {}) => {
+        const getBaseProps = (0, import_react62.useCallback)((props2 = {}) => {
           return {
             ref: domRef,
             className: classNames,
@@ -68584,7 +68584,7 @@
             )
           };
         }, []);
-        const handleFocusChanged = (0, import_react61.useCallback)((isFocused, key) => {
+        const handleFocusChanged = (0, import_react62.useCallback)((isFocused, key) => {
           isFocused && setFocusedKey(key);
         }, []);
         return {
@@ -68996,8 +68996,8 @@
         useSafeLayoutEffect: () => useSafeLayoutEffect
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var useSafeLayoutEffect = Boolean(globalThis == null ? void 0 : globalThis.document) ? import_react61.useLayoutEffect : import_react61.useEffect;
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var useSafeLayoutEffect = Boolean(globalThis == null ? void 0 : globalThis.document) ? import_react62.useLayoutEffect : import_react62.useEffect;
     }
   });
 
@@ -69028,7 +69028,7 @@
         useImage: () => useImage
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_utils = require_dist6();
       var import_use_safe_layout_effect = require_dist15();
       function useImage(props = {}) {
@@ -69044,16 +69044,16 @@
           shouldBypassImageLoad = false
         } = props;
         const isHydrated = (0, import_react_utils.useIsHydrated)();
-        const imageRef = (0, import_react61.useRef)(null);
-        const [status, setStatus] = (0, import_react61.useState)("pending");
-        const flush = (0, import_react61.useCallback)(() => {
+        const imageRef = (0, import_react62.useRef)(null);
+        const [status, setStatus] = (0, import_react62.useState)("pending");
+        const flush = (0, import_react62.useCallback)(() => {
           if (imageRef.current) {
             imageRef.current.onload = null;
             imageRef.current.onerror = null;
             imageRef.current = null;
           }
         }, []);
-        const load = (0, import_react61.useCallback)(() => {
+        const load = (0, import_react62.useCallback)(() => {
           if (!src) return "pending";
           if (ignoreFallback || shouldBypassImageLoad) return "loaded";
           flush();
@@ -69172,7 +69172,7 @@
       var import_react_utils2 = require_dist6();
       var import_shared_utils = require_dist2();
       var import_focus2 = require_main11();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_image = require_dist16();
       var import_interactions = require_main10();
       var import_react_utils = require_dist6();
@@ -69227,7 +69227,7 @@
         const isImgLoaded = imageStatus === "loaded";
         const shouldFilterDOMProps = !isHeroImage;
         const showFallback = (!src || !isImgLoaded) && showFallbackProp;
-        const slots = (0, import_react61.useMemo)(
+        const slots = (0, import_react62.useMemo)(
           () => {
             var _a2;
             return (0, import_theme.avatar)({
@@ -69253,10 +69253,10 @@
           ]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const canBeFocused = (0, import_react61.useMemo)(() => {
+        const canBeFocused = (0, import_react62.useMemo)(() => {
           return isFocusable || as === "button";
         }, [isFocusable, as]);
-        const getAvatarProps = (0, import_react61.useCallback)(
+        const getAvatarProps = (0, import_react62.useCallback)(
           (props = {}) => ({
             ref: domRef,
             tabIndex: canBeFocused ? 0 : -1,
@@ -69270,7 +69270,7 @@
           }),
           [canBeFocused, slots, baseStyles, focusProps, otherProps]
         );
-        const getImageProps = (0, import_react61.useCallback)(
+        const getImageProps = (0, import_react62.useCallback)(
           (props = {}) => ({
             ref: imgRef,
             src,
@@ -69473,7 +69473,7 @@
       var import_theme = require_dist3();
       var import_system = require_dist7();
       var import_shared_utils = require_dist2();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useBadge(originalProps) {
         var _a, _b;
         const globalContext = (0, import_system.useProviderContext)();
@@ -69481,19 +69481,19 @@
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.badge.variantKeys);
         const { as, children, className, content, classNames, ...otherProps } = props;
         const Component2 = as || "span";
-        const isOneChar = (0, import_react61.useMemo)(
+        const isOneChar = (0, import_react62.useMemo)(
           () => {
             var _a2;
             return ((_a2 = String(content)) == null ? void 0 : _a2.length) === 1 || (originalProps == null ? void 0 : originalProps.isOneChar);
           },
           [content, originalProps == null ? void 0 : originalProps.isOneChar]
         );
-        const isDot = (0, import_react61.useMemo)(() => {
+        const isDot = (0, import_react62.useMemo)(() => {
           var _a2;
           return ((_a2 = String(content)) == null ? void 0 : _a2.length) === 0;
         }, [content]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.badge, className);
-        const slots = (0, import_react61.useMemo)(
+        const slots = (0, import_react62.useMemo)(
           () => (0, import_theme.badge)({
             ...variantProps2,
             showOutline: !!(originalProps == null ? void 0 : originalProps.disableOutline) ? !(originalProps == null ? void 0 : originalProps.disableOutline) : originalProps == null ? void 0 : originalProps.showOutline,
@@ -69567,7 +69567,7 @@
       var import_system_rsc = require_dist4();
       var import_theme = require_dist3();
       var import_shared_utils = require_dist2();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist7();
       function useSpinner(originalProps) {
         var _a, _b;
@@ -69575,19 +69575,19 @@
         const globalContext = (0, import_system.useProviderContext)();
         const variant = (_b = (_a = originalProps == null ? void 0 : originalProps.variant) != null ? _a : globalContext == null ? void 0 : globalContext.spinnerVariant) != null ? _b : "default";
         const { children, className, classNames, label: labelProp, ...otherProps } = props;
-        const slots = (0, import_react61.useMemo)(
+        const slots = (0, import_react62.useMemo)(
           () => (0, import_theme.spinner)({ ...variantProps2, variant }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), variant]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
         const label = labelProp || children;
-        const ariaLabel = (0, import_react61.useMemo)(() => {
+        const ariaLabel = (0, import_react62.useMemo)(() => {
           if (label && typeof label === "string") {
             return label;
           }
           return !otherProps["aria-label"] ? "Loading" : "";
         }, [children, label, otherProps["aria-label"]]);
-        const getSpinnerProps = (0, import_react61.useCallback)(
+        const getSpinnerProps = (0, import_react62.useCallback)(
           () => ({
             "aria-label": ariaLabel,
             className: slots.base({
@@ -69754,10 +69754,10 @@
       Ripple.displayName = "HeroUI.Ripple";
       var ripple_default = Ripple;
       var import_shared_utils2 = require_dist2();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useRipple(props = {}) {
-        const [ripples, setRipples] = (0, import_react61.useState)([]);
-        const onPress = (0, import_react61.useCallback)((event) => {
+        const [ripples, setRipples] = (0, import_react62.useState)([]);
+        const onPress = (0, import_react62.useCallback)((event) => {
           const trigger = event.target;
           const size = Math.max(trigger.clientWidth, trigger.clientHeight);
           setRipples((prevRipples) => [
@@ -69770,7 +69770,7 @@
             }
           ]);
         }, []);
-        const onClear = (0, import_react61.useCallback)((key) => {
+        const onClear = (0, import_react62.useCallback)((key) => {
           setRipples((prevState) => prevState.filter((ripple) => ripple.key !== key));
         }, []);
         return { ripples, onClear, onPress, ...props };
@@ -69917,7 +69917,7 @@
       var import_system2 = require_dist7();
       var import_system = require_dist7();
       var import_shared_utils = require_dist2();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main11();
       var import_react_utils2 = require_dist6();
       var import_theme = require_dist3();
@@ -69994,7 +69994,7 @@
           ]
         );
         const { onPress: onRipplePressHandler, onClear: onClearRipple, ripples } = (0, import_ripple.useRipple)();
-        const handlePress = (0, import_react61.useCallback)(
+        const handlePress = (0, import_react62.useCallback)(
           (e) => {
             if (disableRipple || isDisabled || disableAnimation) return;
             domRef.current && onRipplePressHandler(e);
@@ -70012,7 +70012,7 @@
           domRef
         );
         const { isHovered, hoverProps } = (0, import_interactions.useHover)({ isDisabled });
-        const getButtonProps = (0, import_react61.useCallback)(
+        const getButtonProps = (0, import_react62.useCallback)(
           (props2 = {}) => ({
             "data-disabled": (0, import_shared_utils.dataAttr)(isDisabled),
             "data-focus": (0, import_shared_utils.dataAttr)(isFocused),
@@ -70061,7 +70061,7 @@
           };
           return buttonSpinnerSizeMap[size];
         }, [size]);
-        const getRippleProps = (0, import_react61.useCallback)(
+        const getRippleProps = (0, import_react62.useCallback)(
           () => ({ ripples, onClear: onClearRipple }),
           [ripples, onClearRipple]
         );
@@ -70231,7 +70231,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_theme = require_dist3();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main11();
       var import_interactions = require_main10();
       var import_use_aria_button = require_dist21();
@@ -70263,7 +70263,7 @@
         const disableRipple = (_d = (_c = originalProps.disableRipple) != null ? _c : globalContext == null ? void 0 : globalContext.disableRipple) != null ? _d : false;
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
         const { onClear: onClearRipple, onPress: onRipplePressHandler, ripples } = (0, import_ripple.useRipple)();
-        const handlePress = (0, import_react61.useCallback)(
+        const handlePress = (0, import_react62.useCallback)(
           (e) => {
             if (disableRipple || disableAnimation) return;
             domRef.current && onRipplePressHandler(e);
@@ -70288,14 +70288,14 @@
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)({
           autoFocus
         });
-        const slots = (0, import_react61.useMemo)(
+        const slots = (0, import_react62.useMemo)(
           () => (0, import_theme.card)({
             ...variantProps2,
             disableAnimation
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation]
         );
-        const context = (0, import_react61.useMemo)(
+        const context = (0, import_react62.useMemo)(
           () => ({
             slots,
             classNames,
@@ -70313,7 +70313,7 @@
             originalProps.fullWidth
           ]
         );
-        const getCardProps = (0, import_react61.useCallback)(
+        const getCardProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ref: domRef,
@@ -70351,7 +70351,7 @@
             otherProps
           ]
         );
-        const getRippleProps = (0, import_react61.useCallback)(
+        const getRippleProps = (0, import_react62.useCallback)(
           () => ({ ripples, onClear: onClearRipple }),
           [ripples, onClearRipple]
         );
@@ -70482,7 +70482,7 @@
       var import_theme = require_dist3();
       var import_react_utils = require_dist6();
       var import_shared_utils = require_dist2();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useChip(originalProps) {
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.chip.variantKeys);
         const {
@@ -70503,13 +70503,13 @@
         const isCloseable = !!onClose;
         const isDotVariant = originalProps.variant === "dot";
         const { focusProps: closeFocusProps, isFocusVisible: isCloseButtonFocusVisible } = (0, import_focus2.useFocusRing)();
-        const isOneChar = (0, import_react61.useMemo)(
+        const isOneChar = (0, import_react62.useMemo)(
           () => typeof children === "string" && (children == null ? void 0 : children.length) === 1,
           [children]
         );
-        const hasStartContent = (0, import_react61.useMemo)(() => !!avatar || !!startContent, [avatar, startContent]);
-        const hasEndContent = (0, import_react61.useMemo)(() => !!endContent || isCloseable, [endContent, isCloseable]);
-        const slots = (0, import_react61.useMemo)(
+        const hasStartContent = (0, import_react62.useMemo)(() => !!avatar || !!startContent, [avatar, startContent]);
+        const hasEndContent = (0, import_react62.useMemo)(() => !!endContent || isCloseable, [endContent, isCloseable]);
+        const slots = (0, import_react62.useMemo)(
           () => (0, import_theme.chip)({
             ...variantProps2,
             hasStartContent,
@@ -70548,13 +70548,13 @@
           };
         };
         const getAvatarClone = (avatar2) => {
-          if (!(0, import_react61.isValidElement)(avatar2)) return null;
-          return (0, import_react61.cloneElement)(avatar2, {
+          if (!(0, import_react62.isValidElement)(avatar2)) return null;
+          return (0, import_react62.cloneElement)(avatar2, {
             // @ts-ignore
             className: slots.avatar({ class: classNames == null ? void 0 : classNames.avatar })
           });
         };
-        const getContentClone = (content) => (0, import_react61.isValidElement)(content) ? (0, import_react61.cloneElement)(content, {
+        const getContentClone = (content) => (0, import_react62.isValidElement)(content) ? (0, import_react62.cloneElement)(content, {
           // @ts-ignore
           className: (0, import_theme.cn)("max-h-[80%]", content.props.className)
         }) : null;
@@ -70723,14 +70723,14 @@
         useCallbackRef: () => useCallbackRef
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_safe_layout_effect = require_dist15();
       function useCallbackRef(fn, deps = []) {
-        const ref = (0, import_react61.useRef)(fn);
+        const ref = (0, import_react62.useRef)(fn);
         (0, import_use_safe_layout_effect.useSafeLayoutEffect)(() => {
           ref.current = fn;
         });
-        return (0, import_react61.useCallback)((...args) => {
+        return (0, import_react62.useCallback)((...args) => {
           var _a;
           return (_a = ref.current) == null ? void 0 : _a.call(ref, ...args);
         }, deps);
@@ -71462,13 +71462,13 @@
         useSlottedContext: () => useSlottedContext
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       var DEFAULT_SLOT = /* @__PURE__ */ Symbol("default");
       function useObjectRef(ref) {
-        const objRef = (0, import_react61.useRef)(null);
-        const cleanupRef = (0, import_react61.useRef)(void 0);
-        const refEffect = (0, import_react61.useCallback)(
+        const objRef = (0, import_react62.useRef)(null);
+        const cleanupRef = (0, import_react62.useRef)(void 0);
+        const refEffect = (0, import_react62.useCallback)(
           (instance) => {
             if (typeof ref === "function") {
               const refCallback = ref;
@@ -71489,7 +71489,7 @@
           },
           [ref]
         );
-        return (0, import_react61.useMemo)(
+        return (0, import_react62.useMemo)(
           () => ({
             get current() {
               return objRef.current;
@@ -71509,7 +71509,7 @@
         );
       }
       function useSlottedContext(context, slot) {
-        let ctx = (0, import_react61.useContext)(context);
+        let ctx = (0, import_react62.useContext)(context);
         if (slot === null) {
           return null;
         }
@@ -71529,7 +71529,7 @@
       function useContextProps(props, ref, context) {
         let ctx = useSlottedContext(context, props.slot) || {};
         let { ref: contextRef, ...contextProps } = ctx;
-        let mergedRef = useObjectRef((0, import_react61.useMemo)(() => (0, import_shared_utils.mergeRefs)(ref, contextRef), [ref, contextRef]));
+        let mergedRef = useObjectRef((0, import_react62.useMemo)(() => (0, import_shared_utils.mergeRefs)(ref, contextRef), [ref, contextRef]));
         let mergedProps = (0, import_shared_utils.mergeProps)(contextProps, props);
         if ("style" in contextProps && contextProps.style && "style" in props && props.style) {
           if (typeof contextProps.style === "function" || typeof props.style === "function") {
@@ -71681,7 +71681,7 @@
       var import_system2 = require_dist7();
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist7();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_toggle = require_main20();
       var import_theme = require_dist3();
@@ -71756,7 +71756,7 @@
           };
           onChange = (0, import_shared_utils.chain)(dispatch, onChange);
         }
-        const labelId = (0, import_react61.useId)();
+        const labelId = (0, import_react62.useId)();
         const ariaCheckboxProps = (0, import_react210.useMemo)(
           () => ({
             name,
@@ -71845,7 +71845,7 @@
           toggleState.setSelected(isInputRefChecked);
         }, [inputRef.current]);
         const onChangeProp = (0, import_use_callback_ref.useCallbackRef)(onChange);
-        const handleCheckboxChange = (0, import_react61.useCallback)(
+        const handleCheckboxChange = (0, import_react62.useCallback)(
           (event) => {
             if (isReadOnly || isDisabled) {
               event.preventDefault();
@@ -71856,7 +71856,7 @@
           [isReadOnly, isDisabled, onChangeProp]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getBaseProps = (0, import_react61.useCallback)(() => {
+        const getBaseProps = (0, import_react62.useCallback)(() => {
           return {
             ref: domRef,
             className: slots.base({ class: baseStyles }),
@@ -71886,7 +71886,7 @@
           hoverProps,
           otherProps
         ]);
-        const getWrapperProps = (0, import_react61.useCallback)(
+        const getWrapperProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -71896,7 +71896,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.wrapper]
         );
-        const getInputProps = (0, import_react61.useCallback)(() => {
+        const getInputProps = (0, import_react62.useCallback)(() => {
           return {
             ref: (0, import_react_utils2.mergeRefs)(inputRef, ref),
             ...(0, import_shared_utils.mergeProps)(inputProps, focusProps),
@@ -71904,14 +71904,14 @@
             onChange: (0, import_shared_utils.chain)(inputProps.onChange, handleCheckboxChange)
           };
         }, [inputProps, focusProps, handleCheckboxChange, classNames == null ? void 0 : classNames.hiddenInput]);
-        const getLabelProps = (0, import_react61.useCallback)(
+        const getLabelProps = (0, import_react62.useCallback)(
           () => ({
             id: labelId,
             className: slots.label({ class: classNames == null ? void 0 : classNames.label })
           }),
           [slots, classNames == null ? void 0 : classNames.label, isDisabled, isSelected, isInvalid]
         );
-        const getIconProps = (0, import_react61.useCallback)(
+        const getIconProps = (0, import_react62.useCallback)(
           () => ({
             isSelected,
             isIndeterminate,
@@ -72220,13 +72220,13 @@
       var import_system_rsc2 = require_dist4();
       var import_theme = require_dist3();
       var import_system_rsc = require_dist4();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       function useCode(originalProps) {
         const [props, variantProps2] = (0, import_system_rsc.mapPropsVariants)(originalProps, import_theme.code.variantKeys);
         const { as, children, className, ...otherProps } = props;
         const Component2 = as || "code";
-        const styles = (0, import_react61.useMemo)(
+        const styles = (0, import_react62.useMemo)(
           () => (0, import_theme.code)({
             ...variantProps2,
             className
@@ -72367,7 +72367,7 @@
       var import_react_utils = require_dist6();
       var import_focus2 = require_main11();
       var import_shared_utils = require_dist2();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useLink(originalProps) {
         var _a, _b, _c, _d;
         const globalContext = (0, import_system.useProviderContext)();
@@ -72410,7 +72410,7 @@
           otherProps.rel = (_c = otherProps.rel) != null ? _c : "noopener noreferrer";
           otherProps.target = (_d = otherProps.target) != null ? _d : "_blank";
         }
-        const styles = (0, import_react61.useMemo)(
+        const styles = (0, import_react62.useMemo)(
           () => (0, import_theme.link)({
             ...variantProps2,
             disableAnimation,
@@ -72418,7 +72418,7 @@
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation, className]
         );
-        const getLinkProps = (0, import_react61.useCallback)(() => {
+        const getLinkProps = (0, import_react62.useCallback)(() => {
           return {
             ref: domRef,
             className: styles,
@@ -72503,8 +72503,8 @@
         usePagination: () => usePagination
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var import_i18n3 = require_main9();
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_i18n2 = require_main9();
       var import_shared_utils = require_dist2();
       var PaginationItemType2 = /* @__PURE__ */ ((PaginationItemType22) => {
         PaginationItemType22["DOTS"] = "dots";
@@ -72522,19 +72522,19 @@
           showControls = false,
           onChange
         } = props;
-        const [activePage, setActivePage] = (0, import_react61.useState)(page || initialPage);
-        const { direction } = (0, import_i18n3.useLocale)();
+        const [activePage, setActivePage] = (0, import_react62.useState)(page || initialPage);
+        const { direction } = (0, import_i18n2.useLocale)();
         const isRTL = direction === "rtl";
         const onChangeActivePage = (newPage) => {
           setActivePage(newPage);
           onChange && onChange(newPage);
         };
-        (0, import_react61.useEffect)(() => {
+        (0, import_react62.useEffect)(() => {
           if (page && page !== activePage) {
             setActivePage(page);
           }
         }, [page]);
-        const setPage = (0, import_react61.useCallback)(
+        const setPage = (0, import_react62.useCallback)(
           (pageNumber) => {
             if (pageNumber <= 0) {
               onChangeActivePage(1);
@@ -72550,7 +72550,7 @@
         const previous = () => setPage(activePage - 1);
         const first = () => setPage(1);
         const last = () => setPage(total);
-        const formatRange = (0, import_react61.useCallback)(
+        const formatRange = (0, import_react62.useCallback)(
           (range2) => {
             if (showControls) {
               return [
@@ -72564,7 +72564,7 @@
           },
           [isRTL, showControls]
         );
-        const paginationRange = (0, import_react61.useMemo)(() => {
+        const paginationRange = (0, import_react62.useMemo)(() => {
           const totalPageNumbers = siblings * 2 + 3 + boundaries * 2;
           if (totalPageNumbers >= total) {
             return formatRange((0, import_shared_utils.range)(1, total));
@@ -72726,7 +72726,7 @@
         useIntersectionObserver: () => useIntersectionObserver
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useIntersectionObserver({
         threshold: threshold2 = 0,
         root = null,
@@ -72737,15 +72737,15 @@
         onChange
       } = {}) {
         var _a;
-        const [ref, setRef2] = (0, import_react61.useState)(null);
-        const [state, setState] = (0, import_react61.useState)(() => ({
+        const [ref, setRef2] = (0, import_react62.useState)(null);
+        const [state, setState] = (0, import_react62.useState)(() => ({
           isIntersecting: initialIsIntersecting,
           entry: void 0
         }));
-        const callbackRef = (0, import_react61.useRef)();
+        const callbackRef = (0, import_react62.useRef)();
         callbackRef.current = onChange;
         const frozen = ((_a = state.entry) == null ? void 0 : _a.isIntersecting) && freezeOnceVisible;
-        (0, import_react61.useEffect)(() => {
+        (0, import_react62.useEffect)(() => {
           if (!isEnabled) return;
           if (!ref) return;
           if (!("IntersectionObserver" in window)) return;
@@ -72773,8 +72773,8 @@
             observer2.disconnect();
           };
         }, [ref, isEnabled, JSON.stringify(threshold2), root, rootMargin, frozen, freezeOnceVisible]);
-        const prevRef = (0, import_react61.useRef)(null);
-        (0, import_react61.useEffect)(() => {
+        const prevRef = (0, import_react62.useRef)(null);
+        (0, import_react62.useEffect)(() => {
           var _a2;
           if (!ref && ((_a2 = state.entry) == null ? void 0 : _a2.target) && !freezeOnceVisible && !frozen && prevRef.current !== state.entry.target) {
             prevRef.current = state.entry.target;
@@ -72833,7 +72833,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var import_i18n3 = require_main9();
+      var import_i18n2 = require_main9();
       var import_system4 = require_dist7();
       var import_use_pagination3 = require_dist31();
       var import_shared_icons = require_dist11();
@@ -72841,7 +72841,7 @@
       var import_theme3 = require_dist3();
       var import_shared_utils = require_dist2();
       var import_use_pagination = require_dist31();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist7();
       var import_use_pagination2 = require_dist31();
       var import_scroll_into_view_if_needed = __toESM2(require_dist33());
@@ -72874,9 +72874,9 @@
         } = props;
         const Component2 = as || "nav";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const cursorRef = (0, import_react61.useRef)(null);
-        const itemsRef = (0, import_react61.useRef)();
-        const cursorTimer = (0, import_react61.useRef)();
+        const cursorRef = (0, import_react62.useRef)(null);
+        const itemsRef = (0, import_react62.useRef)();
+        const cursorTimer = (0, import_react62.useRef)();
         const disableAnimation = (_b = (_a = originalProps == null ? void 0 : originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
         const disableCursorAnimation = (_d = (_c = originalProps == null ? void 0 : originalProps.disableCursorAnimation) != null ? _c : disableAnimation) != null ? _d : false;
         function getItemsRefMap() {
@@ -72934,13 +72934,13 @@
           onChange
         });
         const [setRef2, isVisible] = (0, import_use_intersection_observer.useIntersectionObserver)();
-        (0, import_react61.useEffect)(() => {
+        (0, import_react62.useEffect)(() => {
           if (domRef.current) {
             setRef2(domRef.current);
           }
         }, [domRef.current]);
-        const activePageRef = (0, import_react61.useRef)(activePage);
-        (0, import_react61.useEffect)(() => {
+        const activePageRef = (0, import_react62.useRef)(activePage);
+        (0, import_react62.useEffect)(() => {
           if (activePage && !disableAnimation && isVisible) {
             scrollTo(activePage, activePage === activePageRef.current);
           }
@@ -72955,7 +72955,7 @@
           originalProps.isCompact,
           originalProps.showControls
         ]);
-        const slots = (0, import_react61.useMemo)(
+        const slots = (0, import_react62.useMemo)(
           () => (0, import_theme.pagination)({
             ...variantProps2,
             disableAnimation,
@@ -73185,7 +73185,7 @@
           getItemProps,
           getCursorProps
         } = usePagination({ ...props, ref });
-        const { direction } = (0, import_i18n3.useLocale)();
+        const { direction } = (0, import_i18n2.useLocale)();
         const isRTL = direction === "rtl";
         const renderChevronIcon = (0, import_react310.useCallback)(
           (key) => {
@@ -73685,7 +73685,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_system2 = require_dist7();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main11();
       var import_interactions = require_main10();
@@ -73731,8 +73731,8 @@
         const Component2 = as || "label";
         const domRef = (0, import_react_utils2.useDOMRef)(ref);
         const inputRef = (0, import_react210.useRef)(null);
-        const labelId = (0, import_react61.useId)();
-        const descriptionId = (0, import_react61.useId)();
+        const labelId = (0, import_react62.useId)();
+        const descriptionId = (0, import_react62.useId)();
         const isRequired = (0, import_react210.useMemo)(() => {
           var _a2;
           return (_a2 = groupContext.isRequired) != null ? _a2 : false;
@@ -73786,7 +73786,7 @@
           [color2, size, isDisabled, isInvalid, disableAnimation]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getBaseProps = (0, import_react61.useCallback)(
+        const getBaseProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -73821,7 +73821,7 @@
             otherProps
           ]
         );
-        const getWrapperProps = (0, import_react61.useCallback)(
+        const getWrapperProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -73831,7 +73831,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.wrapper]
         );
-        const getInputProps = (0, import_react61.useCallback)(
+        const getInputProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ref: inputRef,
@@ -73842,7 +73842,7 @@
           },
           [inputProps, focusProps, onChange]
         );
-        const getLabelProps = (0, import_react61.useCallback)(
+        const getLabelProps = (0, import_react62.useCallback)(
           (props2 = {}) => ({
             ...props2,
             id: labelId,
@@ -73850,21 +73850,21 @@
           }),
           [slots, classNames == null ? void 0 : classNames.label, isDisabled, isSelected, isInvalid]
         );
-        const getLabelWrapperProps = (0, import_react61.useCallback)(
+        const getLabelWrapperProps = (0, import_react62.useCallback)(
           (props2 = {}) => ({
             ...props2,
             className: slots.labelWrapper({ class: classNames == null ? void 0 : classNames.labelWrapper })
           }),
           [slots, classNames == null ? void 0 : classNames.labelWrapper]
         );
-        const getControlProps = (0, import_react61.useCallback)(
+        const getControlProps = (0, import_react62.useCallback)(
           (props2 = {}) => ({
             ...props2,
             className: slots.control({ class: classNames == null ? void 0 : classNames.control })
           }),
           [slots, classNames == null ? void 0 : classNames.control]
         );
-        const getDescriptionProps = (0, import_react61.useCallback)(
+        const getDescriptionProps = (0, import_react62.useCallback)(
           (props2 = {}) => ({
             ...props2,
             id: descriptionId,
@@ -74137,20 +74137,20 @@
         useClipboard: () => useClipboard
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var transformValue2 = (text) => {
         return text.replace(/[\u00A0]/g, " ");
       };
       function useClipboard({ timeout = 2e3 } = {}) {
-        const [error, setError] = (0, import_react61.useState)(null);
-        const [copied, setCopied] = (0, import_react61.useState)(false);
-        const [copyTimeout, setCopyTimeout] = (0, import_react61.useState)(null);
-        const onClearTimeout = (0, import_react61.useCallback)(() => {
+        const [error, setError] = (0, import_react62.useState)(null);
+        const [copied, setCopied] = (0, import_react62.useState)(false);
+        const [copyTimeout, setCopyTimeout] = (0, import_react62.useState)(null);
+        const onClearTimeout = (0, import_react62.useCallback)(() => {
           if (copyTimeout) {
             clearTimeout(copyTimeout);
           }
         }, [copyTimeout]);
-        const handleCopyResult = (0, import_react61.useCallback)(
+        const handleCopyResult = (0, import_react62.useCallback)(
           (value) => {
             onClearTimeout();
             setCopyTimeout(setTimeout(() => setCopied(false), timeout));
@@ -74158,7 +74158,7 @@
           },
           [onClearTimeout, timeout]
         );
-        const copy = (0, import_react61.useCallback)(
+        const copy = (0, import_react62.useCallback)(
           (valueToCopy) => {
             if ("clipboard" in navigator) {
               const transformedValue = typeof valueToCopy === "string" ? transformValue2(valueToCopy) : valueToCopy;
@@ -74169,7 +74169,7 @@
           },
           [handleCopyResult]
         );
-        const reset = (0, import_react61.useCallback)(() => {
+        const reset = (0, import_react62.useCallback)(() => {
           setCopied(false);
           setError(null);
           onClearTimeout();
@@ -74510,7 +74510,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_focus2 = require_main11();
       var import_interactions = require_main10();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var visibleOverlays = [];
       function useAriaOverlay(props, ref) {
         const {
@@ -74522,7 +74522,7 @@
           shouldCloseOnBlur,
           shouldCloseOnInteractOutside
         } = props;
-        (0, import_react61.useEffect)(() => {
+        (0, import_react62.useEffect)(() => {
           if (isOpen && !visibleOverlays.includes(ref)) {
             visibleOverlays.push(ref);
             return () => {
@@ -74652,7 +74652,7 @@
       var import_shared_utils2 = require_dist2();
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_aria_utils2 = require_dist8();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_tooltip = require_main30();
       var import_tooltip2 = require_main31();
       var import_overlays = require_main13();
@@ -74716,9 +74716,9 @@
         });
         const triggerRef = (0, import_react210.useRef)(null);
         const overlayRef = (0, import_react210.useRef)(null);
-        const tooltipId = (0, import_react61.useId)();
+        const tooltipId = (0, import_react62.useId)();
         const isOpen = state.isOpen && !isDisabled;
-        (0, import_react61.useImperativeHandle)(
+        (0, import_react62.useImperativeHandle)(
           ref,
           () => (
             // @ts-ignore
@@ -74947,7 +74947,7 @@
       var import_shared_utils = require_dist2();
       var import_use_clipboard = require_dist37();
       var import_focus2 = require_main11();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useSnippet(originalProps) {
         var _a, _b, _c, _d;
         const globalContext = (0, import_system.useProviderContext)();
@@ -74985,26 +74985,26 @@
           ...userTooltipProps
         };
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const preRef = (0, import_react61.useRef)(null);
+        const preRef = (0, import_react62.useRef)(null);
         const { copy, copied } = (0, import_use_clipboard.useClipboard)({ timeout });
         const isMultiLine = children && Array.isArray(children);
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)({
           autoFocus
         });
-        const slots = (0, import_react61.useMemo)(
+        const slots = (0, import_react62.useMemo)(
           () => (0, import_theme.snippet)({
             ...variantProps2,
             disableAnimation
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation]
         );
-        const symbolBefore = (0, import_react61.useMemo)(() => {
+        const symbolBefore = (0, import_react62.useMemo)(() => {
           if (!symbol || typeof symbol !== "string") return symbol;
           const str = symbol.trim();
           return str ? `${str} ` : "";
         }, [symbol]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getSnippetProps = (0, import_react61.useCallback)(
+        const getSnippetProps = (0, import_react62.useCallback)(
           () => ({
             className: slots.base({
               class: baseStyles
@@ -75015,7 +75015,7 @@
           }),
           [slots, baseStyles, isMultiLine, otherProps]
         );
-        const onCopy = (0, import_react61.useCallback)(() => {
+        const onCopy = (0, import_react62.useCallback)(() => {
           var _a2;
           if (disableCopy) {
             return;
@@ -75045,7 +75045,7 @@
           isIconOnly: true,
           ...userButtonProps
         };
-        const getCopyButtonProps = (0, import_react61.useCallback)(
+        const getCopyButtonProps = (0, import_react62.useCallback)(
           () => ({
             ...copyButtonProps,
             "data-copied": (0, import_shared_utils.dataAttr)(copied),
@@ -75235,7 +75235,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist7();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist7();
       var import_react_utils = require_dist6();
       var import_use_safe_layout_effect = require_dist15();
@@ -75270,10 +75270,10 @@
           ...otherProps
         } = props;
         const Component2 = as || "label";
-        const domRef = (0, import_react61.useRef)(null);
-        const inputRef = (0, import_react61.useRef)(null);
+        const domRef = (0, import_react62.useRef)(null);
+        const inputRef = (0, import_react62.useRef)(null);
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        const labelId = (0, import_react61.useId)();
+        const labelId = (0, import_react62.useId)();
         const ariaSwitchProps = (0, import_react210.useMemo)(() => {
           const ariaLabel = otherProps["aria-label"] || typeof children === "string" ? children : void 0;
           return {
@@ -75340,7 +75340,7 @@
             "data-pressed": (0, import_shared_utils.dataAttr)(pressed)
           };
         };
-        const getWrapperProps = (0, import_react61.useCallback)(
+        const getWrapperProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -75359,14 +75359,14 @@
             onChange: (0, import_shared_utils.chain)(onChange, inputProps.onChange)
           };
         };
-        const getThumbProps = (0, import_react61.useCallback)(
+        const getThumbProps = (0, import_react62.useCallback)(
           (props2 = {}) => ({
             ...props2,
             className: slots.thumb({ class: (0, import_theme.cn)(classNames == null ? void 0 : classNames.thumb, props2 == null ? void 0 : props2.className) })
           }),
           [slots, classNames == null ? void 0 : classNames.thumb]
         );
-        const getLabelProps = (0, import_react61.useCallback)(
+        const getLabelProps = (0, import_react62.useCallback)(
           (props2 = {}) => ({
             ...props2,
             id: labelId,
@@ -75374,7 +75374,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.label, isDisabled, isSelected]
         );
-        const getThumbIconProps = (0, import_react61.useCallback)(
+        const getThumbIconProps = (0, import_react62.useCallback)(
           (props2 = {
             includeStateProps: false
           }) => (0, import_shared_utils.mergeProps)(
@@ -75389,7 +75389,7 @@
           ),
           [slots, classNames == null ? void 0 : classNames.thumbIcon, isSelected]
         );
-        const getStartContentProps = (0, import_react61.useCallback)(
+        const getStartContentProps = (0, import_react62.useCallback)(
           (props2 = {}) => ({
             width: "1em",
             height: "1em",
@@ -75398,7 +75398,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.startContent, isSelected]
         );
-        const getEndContentProps = (0, import_react61.useCallback)(
+        const getEndContentProps = (0, import_react62.useCallback)(
           (props2 = {}) => ({
             width: "1em",
             height: "1em",
@@ -75495,7 +75495,7 @@
         useUser: () => useUser
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main11();
       var import_theme = require_dist3();
       var import_shared_utils = require_dist2();
@@ -75521,12 +75521,12 @@
         const shouldFilterDOMProps = typeof Component2 === "string";
         const domRef = (0, import_react_utils2.useDOMRef)(ref);
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)({});
-        const canBeFocused = (0, import_react61.useMemo)(() => {
+        const canBeFocused = (0, import_react62.useMemo)(() => {
           return isFocusable || as === "button";
         }, [isFocusable, as]);
-        const slots = (0, import_react61.useMemo)(() => (0, import_theme.user)(), []);
+        const slots = (0, import_react62.useMemo)(() => (0, import_theme.user)(), []);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getUserProps = (0, import_react61.useCallback)(
+        const getUserProps = (0, import_react62.useCallback)(
           () => ({
             ref: domRef,
             tabIndex: canBeFocused ? 0 : -1,
@@ -75603,12 +75603,12 @@
         useIsMounted: () => useIsMounted2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useIsMounted2(props = {}) {
         const { rerender = false, delay: delay2 = 0 } = props;
-        const isMountedRef = (0, import_react61.useRef)(false);
-        const [isMounted, setIsMounted] = (0, import_react61.useState)(false);
-        (0, import_react61.useEffect)(() => {
+        const isMountedRef = (0, import_react62.useRef)(false);
+        const [isMounted, setIsMounted] = (0, import_react62.useState)(false);
+        (0, import_react62.useEffect)(() => {
           isMountedRef.current = true;
           let timer = null;
           if (rerender) {
@@ -75630,7 +75630,7 @@
             }
           };
         }, [rerender]);
-        return [(0, import_react61.useCallback)(() => isMountedRef.current, []), isMounted];
+        return [(0, import_react62.useCallback)(() => isMountedRef.current, []), isMounted];
       }
     }
   });
@@ -75725,7 +75725,7 @@
       var import_theme = require_dist3();
       var import_react_utils = require_dist6();
       var import_shared_utils = require_dist2();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_is_mounted2 = require_dist43();
       var import_progress2 = require_dist44();
       function useProgress(originalProps) {
@@ -75770,7 +75770,7 @@
           "aria-labelledby": originalProps["aria-labelledby"],
           "aria-label": originalProps["aria-label"]
         });
-        const slots = (0, import_react61.useMemo)(
+        const slots = (0, import_react62.useMemo)(
           () => (0, import_theme.progress)({
             ...variantProps2,
             disableAnimation
@@ -75778,11 +75778,11 @@
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation]
         );
         const selfMounted = disableAnimation ? true : isMounted;
-        const percentage = (0, import_react61.useMemo)(
+        const percentage = (0, import_react62.useMemo)(
           () => isIndeterminate || !selfMounted ? void 0 : (0, import_shared_utils.clampPercentage)((value - minValue) / (maxValue - minValue) * 100),
           [selfMounted, isIndeterminate, value, minValue, maxValue]
         );
-        const getProgressBarProps = (0, import_react61.useCallback)(
+        const getProgressBarProps = (0, import_react62.useCallback)(
           (props2 = {}) => ({
             ref: domRef,
             "data-indeterminate": (0, import_shared_utils.dataAttr)(isIndeterminate),
@@ -75800,7 +75800,7 @@
             otherProps
           ]
         );
-        const getLabelProps = (0, import_react61.useCallback)(
+        const getLabelProps = (0, import_react62.useCallback)(
           (props2 = {}) => ({
             className: slots.label({ class: classNames == null ? void 0 : classNames.label }),
             ...(0, import_shared_utils.mergeProps)(labelProps, props2)
@@ -76587,7 +76587,7 @@
       var import_interactions = require_main10();
       var import_shared_utils = require_dist2();
       var import_utils8 = require_main6();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_textfield = require_main33();
       var import_form = require_dist26();
       function useInput(originalProps) {
@@ -76617,13 +76617,13 @@
           },
           ...otherProps
         } = props;
-        const handleValueChange = (0, import_react61.useCallback)(
+        const handleValueChange = (0, import_react62.useCallback)(
           (value) => {
             onValueChange(value != null ? value : "");
           },
           [onValueChange]
         );
-        const [isFocusWithin, setFocusWithin] = (0, import_react61.useState)(false);
+        const [isFocusWithin, setFocusWithin] = (0, import_react62.useState)(false);
         const Component2 = as || "div";
         const disableAnimation = (_c = (_b = originalProps.disableAnimation) != null ? _b : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _c : false;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
@@ -76643,7 +76643,7 @@
         const isHiddenType = type === "hidden";
         const isMultiline = originalProps.isMultiline;
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className, isFilled ? "is-filled" : "");
-        const handleClear = (0, import_react61.useCallback)(() => {
+        const handleClear = (0, import_react62.useCallback)(() => {
           var _a2;
           if (isFileTypeInput) {
             domRef.current.value = "";
@@ -76720,7 +76720,7 @@
         const hasStartContent = !!startContent;
         const isLabelOutside = shouldLabelBeOutside ? isOutsideLeft || isOutsideTop || hasPlaceholder || labelPlacement === "outside" && hasStartContent : false;
         const isLabelOutsideAsPlaceholder = labelPlacement === "outside" && !hasPlaceholder && !hasStartContent;
-        const slots = (0, import_react61.useMemo)(
+        const slots = (0, import_react62.useMemo)(
           () => (0, import_theme.input)({
             ...variantProps2,
             isInvalid,
@@ -76737,7 +76737,7 @@
             disableAnimation
           ]
         );
-        const getBaseProps = (0, import_react61.useCallback)(
+        const getBaseProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ref: baseDomRef,
@@ -76790,7 +76790,7 @@
             originalProps.isDisabled
           ]
         );
-        const getLabelProps = (0, import_react61.useCallback)(
+        const getLabelProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "label",
@@ -76800,7 +76800,7 @@
           },
           [slots, isLabelHovered, labelProps, classNames == null ? void 0 : classNames.label]
         );
-        const handleKeyDown = (0, import_react61.useCallback)(
+        const handleKeyDown = (0, import_react62.useCallback)(
           (e) => {
             if (e.key === "Escape" && inputValue && (isClearable || onClear) && !originalProps.isReadOnly) {
               setInputValue("");
@@ -76809,7 +76809,7 @@
           },
           [inputValue, setInputValue, onClear, isClearable, originalProps.isReadOnly]
         );
-        const getInputProps = (0, import_react61.useCallback)(
+        const getInputProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "input",
@@ -76859,7 +76859,7 @@
             handleKeyDown
           ]
         );
-        const getInputWrapperProps = (0, import_react61.useCallback)(
+        const getInputWrapperProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ref: inputWrapperRef,
@@ -76892,7 +76892,7 @@
             classNames == null ? void 0 : classNames.inputWrapper
           ]
         );
-        const getInnerWrapperProps = (0, import_react61.useCallback)(
+        const getInnerWrapperProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -76910,7 +76910,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.innerWrapper]
         );
-        const getMainWrapperProps = (0, import_react61.useCallback)(
+        const getMainWrapperProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -76922,7 +76922,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.mainWrapper]
         );
-        const getHelperWrapperProps = (0, import_react61.useCallback)(
+        const getHelperWrapperProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -76934,7 +76934,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getDescriptionProps = (0, import_react61.useCallback)(
+        const getDescriptionProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -76945,7 +76945,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.description]
         );
-        const getErrorMessageProps = (0, import_react61.useCallback)(
+        const getErrorMessageProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -76956,7 +76956,7 @@
           },
           [slots, errorMessageProps, classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getClearButtonProps = (0, import_react61.useCallback)(
+        const getClearButtonProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -77323,7 +77323,7 @@
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_aria_utils = require_dist8();
       var import_overlays = require_main13();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       var import_use_safe_layout_effect = require_dist15();
       var import_use_aria_overlay = require_dist38();
@@ -77391,7 +77391,7 @@
           if (!updatePositionDeps.length) return;
           updatePosition();
         }, updatePositionDeps);
-        (0, import_react61.useEffect)(() => {
+        (0, import_react62.useEffect)(() => {
           var _a, _b;
           if (state.isOpen && popoverRef.current) {
             if (isNonModal) {
@@ -79021,7 +79021,7 @@
       var import_theme = require_dist3();
       var import_tree = require_main16();
       var import_react_utils = require_dist6();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme2 = require_dist3();
       function useMenu(props) {
         var _a;
@@ -79054,7 +79054,7 @@
         const innerState = (0, import_tree.useTreeState)({ ...otherProps, ...userMenuProps, children });
         const state = propState || innerState;
         const { menuProps } = (0, import_menu.useMenu)({ ...otherProps, ...userMenuProps, onAction }, state, domRef);
-        const slots = (0, import_react61.useMemo)(() => (0, import_theme.menu)({ className }), [className]);
+        const slots = (0, import_react62.useMemo)(() => (0, import_theme.menu)({ className }), [className]);
         const baseStyles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.base, className);
         const getBaseProps = (props2 = {}) => {
           return {
@@ -79712,7 +79712,7 @@
       var import_theme = require_dist3();
       var import_shared_utils = require_dist2();
       var import_react_utils2 = require_dist6();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var getMenuItem = (props, key) => {
         if (props) {
           const mergedChildren = Array.isArray(props.children) ? props.children : [...(props == null ? void 0 : props.items) || []];
@@ -79756,10 +79756,10 @@
           ...otherProps
         } = props;
         const Component2 = as || "div";
-        const triggerRef = (0, import_react61.useRef)(null);
+        const triggerRef = (0, import_react62.useRef)(null);
         const menuTriggerRef = triggerRefProp || triggerRef;
-        const menuRef = (0, import_react61.useRef)(null);
-        const popoverRef = (0, import_react61.useRef)(null);
+        const menuRef = (0, import_react62.useRef)(null);
+        const popoverRef = (0, import_react62.useRef)(null);
         const state = (0, import_menu.useMenuTriggerState)({
           trigger,
           isOpen,
@@ -79776,7 +79776,7 @@
           state,
           menuTriggerRef
         );
-        const styles = (0, import_react61.useMemo)(
+        const styles = (0, import_react62.useMemo)(
           () => (0, import_theme.dropdown)({
             className
           }),
@@ -79903,7 +79903,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist7();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist7();
       var import_theme = require_dist3();
       var import_react_utils = require_dist6();
@@ -79988,7 +79988,7 @@
             }
           };
         };
-        const getWrapperProps = (0, import_react61.useCallback)(() => {
+        const getWrapperProps = (0, import_react62.useCallback)(() => {
           const fallbackStyle = showFallback ? {
             backgroundImage: `url(${fallbackSrc})`
           } : {};
@@ -80000,7 +80000,7 @@
             }
           };
         }, [slots, showFallback, fallbackSrc, classNames == null ? void 0 : classNames.wrapper, w]);
-        const getBlurredImgProps = (0, import_react61.useCallback)(() => {
+        const getBlurredImgProps = (0, import_react62.useCallback)(() => {
           return {
             src,
             "aria-hidden": (0, import_shared_utils.dataAttr)(true),
@@ -80094,7 +80094,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_overlays = require_main13();
       var import_utils8 = require_main7();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_aria_overlay = require_dist38();
       function useAriaModalOverlay(props = {
         shouldBlockScroll: true
@@ -80111,7 +80111,7 @@
           isDisabled: !state.isOpen || !props.shouldBlockScroll
         });
         (0, import_overlays.useOverlayFocusContain)();
-        (0, import_react61.useEffect)(() => {
+        (0, import_react62.useEffect)(() => {
           if (state.isOpen && ref.current) {
             return (0, import_overlays.ariaHideOutside)([ref.current]);
           }
@@ -80161,9 +80161,9 @@
         useViewportSize: () => useViewportSize
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react61 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
+      var import_react62 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
       var visualViewport = typeof document !== "undefined" && window.visualViewport;
-      var IsSSRContext = import_react61.default.createContext(false);
+      var IsSSRContext = import_react62.default.createContext(false);
       function getSnapshot() {
         return false;
       }
@@ -80175,15 +80175,15 @@
         };
       }
       function useIsSSR() {
-        if (typeof import_react61.default["useSyncExternalStore"] === "function") {
-          return import_react61.default["useSyncExternalStore"](subscribe, getSnapshot, getServerSnapshot);
+        if (typeof import_react62.default["useSyncExternalStore"] === "function") {
+          return import_react62.default["useSyncExternalStore"](subscribe, getSnapshot, getServerSnapshot);
         }
-        return (0, import_react61.useContext)(IsSSRContext);
+        return (0, import_react62.useContext)(IsSSRContext);
       }
       function useViewportSize() {
         let isSSR = useIsSSR();
-        let [size, setSize] = (0, import_react61.useState)(() => isSSR ? { width: 0, height: 0 } : getViewportSize());
-        (0, import_react61.useEffect)(() => {
+        let [size, setSize] = (0, import_react62.useState)(() => isSSR ? { width: 0, height: 0 } : getViewportSize());
+        (0, import_react62.useEffect)(() => {
           let onResize = () => {
             setSize((size2) => {
               let newSize = getViewportSize();
@@ -80246,7 +80246,7 @@
       var import_utils8 = require_main7();
       var import_utils22 = require_main6();
       var import_use_callback_ref = require_dist25();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useDisclosure2(props = {}) {
         const {
           id: idProp,
@@ -80260,22 +80260,22 @@
         const onOpenPropCallbackRef = (0, import_use_callback_ref.useCallbackRef)(onOpenProp);
         const onClosePropCallbackRef = (0, import_use_callback_ref.useCallbackRef)(onCloseProp);
         const [isOpen, setIsOpen] = (0, import_utils22.useControlledState)(isOpenProp, defaultOpen || false, onChange);
-        const reactId = (0, import_react61.useId)();
+        const reactId = (0, import_react62.useId)();
         const id4 = idProp || reactId;
         const isControlled = isOpenProp !== void 0;
-        const onClose = (0, import_react61.useCallback)(() => {
+        const onClose = (0, import_react62.useCallback)(() => {
           if (!isControlled) {
             setIsOpen(false);
           }
           onClosePropCallbackRef == null ? void 0 : onClosePropCallbackRef();
         }, [isControlled, onClosePropCallbackRef]);
-        const onOpen = (0, import_react61.useCallback)(() => {
+        const onOpen = (0, import_react62.useCallback)(() => {
           if (!isControlled) {
             setIsOpen(true);
           }
           onOpenPropCallbackRef == null ? void 0 : onOpenPropCallbackRef();
         }, [isControlled, onOpenPropCallbackRef]);
-        const onOpenChange = (0, import_react61.useCallback)(() => {
+        const onOpenChange = (0, import_react62.useCallback)(() => {
           const action = isOpen ? onClose : onOpen;
           action();
         }, [isOpen, onOpen, onClose]);
@@ -80327,15 +80327,15 @@
         useDraggable: () => useDraggable2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_interactions = require_main10();
       function useDraggable2(props) {
         const { targetRef, isDisabled = false, canOverflow = false } = props;
-        const boundary = (0, import_react61.useRef)({ minLeft: 0, minTop: 0, maxLeft: 0, maxTop: 0 });
-        const isDragging2 = (0, import_react61.useRef)(false);
-        const transform2 = (0, import_react61.useRef)({ offsetX: 0, offsetY: 0 });
-        const prevTargetRef = (0, import_react61.useRef)(null);
-        (0, import_react61.useEffect)(() => {
+        const boundary = (0, import_react62.useRef)({ minLeft: 0, minTop: 0, maxLeft: 0, maxTop: 0 });
+        const isDragging2 = (0, import_react62.useRef)(false);
+        const transform2 = (0, import_react62.useRef)({ offsetX: 0, offsetY: 0 });
+        const prevTargetRef = (0, import_react62.useRef)(null);
+        (0, import_react62.useEffect)(() => {
           var _a;
           const currentTarget = (_a = targetRef == null ? void 0 : targetRef.current) != null ? _a : null;
           if (prevTargetRef.current !== currentTarget) {
@@ -80343,7 +80343,7 @@
             prevTargetRef.current = currentTarget;
           }
         }, [targetRef == null ? void 0 : targetRef.current]);
-        const onMoveStart = (0, import_react61.useCallback)(() => {
+        const onMoveStart = (0, import_react62.useCallback)(() => {
           var _a, _b, _c, _d, _e;
           isDragging2.current = true;
           const { offsetX, offsetY } = transform2.current;
@@ -80365,7 +80365,7 @@
             maxTop
           };
         }, [targetRef]);
-        const onMove = (0, import_react61.useCallback)(
+        const onMove = (0, import_react62.useCallback)(
           (e) => {
             if (isDisabled) {
               return;
@@ -80388,7 +80388,7 @@
           },
           [isDisabled, canOverflow, targetRef]
         );
-        const onMoveEnd = (0, import_react61.useCallback)(() => {
+        const onMoveEnd = (0, import_react62.useCallback)(() => {
           isDragging2.current = false;
         }, []);
         const { moveProps } = (0, import_interactions.useMove)({
@@ -80396,12 +80396,12 @@
           onMove,
           onMoveEnd
         });
-        const preventDefault = (0, import_react61.useCallback)((e) => {
+        const preventDefault = (0, import_react62.useCallback)((e) => {
           if (isDragging2.current) {
             e.preventDefault();
           }
         }, []);
-        (0, import_react61.useEffect)(() => {
+        (0, import_react62.useEffect)(() => {
           if (!isDisabled) {
             document.body.addEventListener("touchmove", preventDefault, { passive: false });
           }
@@ -80459,7 +80459,7 @@
       var import_overlays2 = require_main13();
       var import_system2 = require_dist7();
       var import_use_aria_modal_overlay = require_dist52();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist3();
       var import_system = require_dist7();
       var import_use_aria_button = require_dist21();
@@ -80491,13 +80491,13 @@
         } = props;
         const Component2 = as || "section";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const closeButtonRef = (0, import_react61.useRef)(null);
-        const [headerMounted, setHeaderMounted] = (0, import_react61.useState)(false);
-        const [bodyMounted, setBodyMounted] = (0, import_react61.useState)(false);
+        const closeButtonRef = (0, import_react62.useRef)(null);
+        const [headerMounted, setHeaderMounted] = (0, import_react62.useState)(false);
+        const [bodyMounted, setBodyMounted] = (0, import_react62.useState)(false);
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        const dialogId = (0, import_react61.useId)();
-        const headerId = (0, import_react61.useId)();
-        const bodyId = (0, import_react61.useId)();
+        const dialogId = (0, import_react62.useId)();
+        const headerId = (0, import_react62.useId)();
+        const bodyId = (0, import_react62.useId)();
         const state = (0, import_overlays.useOverlayTriggerState)({
           isOpen,
           defaultOpen,
@@ -80520,7 +80520,7 @@
         const { buttonProps: closeButtonProps } = (0, import_use_aria_button.useAriaButton)({ onPress: state.close }, closeButtonRef);
         const { isFocusVisible: isCloseButtonFocusVisible, focusProps: closeButtonFocusProps } = (0, import_focus2.useFocusRing)();
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react61.useMemo)(
+        const slots = (0, import_react62.useMemo)(
           () => (0, import_theme.modal)({
             ...variantProps2,
             disableAnimation
@@ -80542,7 +80542,7 @@
             "aria-describedby": bodyMounted ? bodyId : void 0
           };
         };
-        const getBackdropProps = (0, import_react61.useCallback)(
+        const getBackdropProps = (0, import_react62.useCallback)(
           (props2 = {}) => ({
             className: slots.backdrop({ class: classNames == null ? void 0 : classNames.backdrop }),
             ...underlayProps,
@@ -80837,7 +80837,7 @@
         useScrollPosition: () => useScrollPosition
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var isBrowser3 = typeof window !== "undefined";
       function getScrollPosition(element) {
         if (!isBrowser3) return { x: 0, y: 0 };
@@ -80848,11 +80848,11 @@
       }
       var useScrollPosition = (props) => {
         const { elementRef, delay: delay2 = 30, callback, isEnabled } = props;
-        const position = (0, import_react61.useRef)(
+        const position = (0, import_react62.useRef)(
           isEnabled ? getScrollPosition(elementRef == null ? void 0 : elementRef.current) : { x: 0, y: 0 }
         );
-        const throttleTimeout = (0, import_react61.useRef)(null);
-        const handler = (0, import_react61.useCallback)(() => {
+        const throttleTimeout = (0, import_react62.useRef)(null);
+        const handler = (0, import_react62.useCallback)(() => {
           const currPos = getScrollPosition(elementRef == null ? void 0 : elementRef.current);
           if (typeof callback === "function") {
             callback({ prevPos: position.current, currPos });
@@ -80860,7 +80860,7 @@
           position.current = currPos;
           throttleTimeout.current = null;
         }, [callback, elementRef]);
-        (0, import_react61.useEffect)(() => {
+        (0, import_react62.useEffect)(() => {
           if (!isEnabled) return;
           const handleScroll = () => {
             if (delay2) {
@@ -80914,9 +80914,9 @@
         useResizeObserver: () => useResizeObserver
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useResize(callback, immediatelyInvoke = true) {
-        (0, import_react61.useEffect)(() => {
+        (0, import_react62.useEffect)(() => {
           const fn = () => callback();
           if (immediatelyInvoke) {
             fn();
@@ -80930,7 +80930,7 @@
       }
       function useResizeObserver(options) {
         const { ref, box, onResize } = options;
-        (0, import_react61.useEffect)(() => {
+        (0, import_react62.useEffect)(() => {
           let element = ref == null ? void 0 : ref.current;
           if (!element) {
             return;
@@ -80995,7 +80995,7 @@
         useNavbarContext: () => useNavbarContext
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist7();
       var import_theme = require_dist3();
       var import_react_utils = require_dist6();
@@ -81029,10 +81029,10 @@
         const Component2 = as || "nav";
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const prevWidth = (0, import_react61.useRef)(0);
-        const navHeight = (0, import_react61.useRef)(0);
-        const [isHidden, setIsHidden] = (0, import_react61.useState)(false);
-        const handleMenuOpenChange = (0, import_react61.useCallback)(
+        const prevWidth = (0, import_react62.useRef)(0);
+        const navHeight = (0, import_react62.useRef)(0);
+        const [isHidden, setIsHidden] = (0, import_react62.useState)(false);
+        const handleMenuOpenChange = (0, import_react62.useCallback)(
           (isOpen) => {
             onMenuOpenChange(isOpen || false);
           },
@@ -81069,12 +81069,12 @@
             }
           }
         });
-        (0, import_react61.useEffect)(() => {
+        (0, import_react62.useEffect)(() => {
           var _a2;
           updateWidth();
           navHeight.current = ((_a2 = domRef.current) == null ? void 0 : _a2.offsetHeight) || 0;
         }, []);
-        const slots = (0, import_react61.useMemo)(
+        const slots = (0, import_react62.useMemo)(
           () => (0, import_theme.navbar)({
             ...variantProps2,
             disableAnimation,
@@ -86699,7 +86699,7 @@
         useTable: () => useTable
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_table = require_main38();
       var import_table2 = require_main41();
       var import_system = require_dist7();
@@ -86801,7 +86801,7 @@
             onCellAction
           ]
         );
-        const getBaseProps = (0, import_react61.useCallback)(
+        const getBaseProps = (0, import_react62.useCallback)(
           (props2) => ({
             ...props2,
             ref: domBaseRef,
@@ -86809,7 +86809,7 @@
           }),
           [baseStyles, slots]
         );
-        const getWrapperProps = (0, import_react61.useCallback)(
+        const getWrapperProps = (0, import_react62.useCallback)(
           (props2) => ({
             ...props2,
             ref: domBaseRef,
@@ -86817,7 +86817,7 @@
           }),
           [classNames == null ? void 0 : classNames.wrapper, slots]
         );
-        const getTableProps = (0, import_react61.useCallback)(
+        const getTableProps = (0, import_react62.useCallback)(
           (props2) => ({
             ...(0, import_shared_utils.mergeProps)(
               gridProps,
@@ -87110,7 +87110,7 @@
       });
       TableRow.displayName = "HeroUI.TableRow";
       var table_row_default = TableRow;
-      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react63 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system6 = require_dist7();
       var import_react_utils7 = require_dist6();
       var import_shared_utils7 = require_dist2();
@@ -87128,7 +87128,7 @@
         const tdStyles = (0, import_theme7.cn)(classNames == null ? void 0 : classNames.td, className, (_a = node.props) == null ? void 0 : _a.className);
         const { isFocusVisible, focusProps } = (0, import_focus4.useFocusRing)();
         const isRowSelected = state.selectionManager.isSelected(rowKey);
-        const cell = (0, import_react62.useMemo)(() => {
+        const cell = (0, import_react63.useMemo)(() => {
           const cellType = typeof node.rendered;
           return cellType !== "object" && cellType !== "function" ? /* @__PURE__ */ (0, import_jsx_runtime62.jsx)("span", { children: node.rendered }) : node.rendered;
         }, [node.rendered]);
@@ -87748,7 +87748,7 @@
       var import_system_rsc = require_dist4();
       var import_theme = require_dist3();
       var import_shared_utils = require_dist2();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var spacing = {
         px: "1px",
         0: "0px",
@@ -87794,7 +87794,7 @@
         const [props, variantProps2] = (0, import_system_rsc.mapPropsVariants)(originalProps, import_theme.spacer.variantKeys);
         const { as, className, x = 1, y = 1, ...otherProps } = props;
         const Component2 = as || "span";
-        const styles = (0, import_react61.useMemo)(
+        const styles = (0, import_react62.useMemo)(
           () => (0, import_theme.spacer)({
             ...variantProps2,
             className
@@ -87859,12 +87859,12 @@
       var import_system_rsc = require_dist4();
       var import_theme = require_dist3();
       var import_shared_utils = require_dist2();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useKbd(originalProps) {
         const [props, variantProps2] = (0, import_system_rsc.mapPropsVariants)(originalProps, import_theme.kbd.variantKeys);
         const { as, children, className, keys: keys2, title, classNames, ...otherProps } = props;
         const Component2 = as || "kbd";
-        const slots = (0, import_react61.useMemo)(
+        const slots = (0, import_react62.useMemo)(
           () => (0, import_theme.kbd)({
             ...variantProps2
           }),
@@ -88539,7 +88539,7 @@
       var import_react_utils = require_dist6();
       var import_shared_utils = require_dist2();
       var import_react_utils2 = require_dist6();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_tabs = require_main43();
       var import_tabs2 = require_main44();
       function useTabs(originalProps) {
@@ -88573,7 +88573,7 @@
           state,
           domRef
         );
-        const slots = (0, import_react61.useMemo)(
+        const slots = (0, import_react62.useMemo)(
           () => (0, import_theme.tabs)({
             ...variantProps2,
             disableAnimation,
@@ -88582,7 +88582,7 @@
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation, isVertical]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const values = (0, import_react61.useMemo)(
+        const values = (0, import_react62.useMemo)(
           () => ({
             state,
             slots,
@@ -88604,7 +88604,7 @@
             classNames
           ]
         );
-        const getBaseProps = (0, import_react61.useCallback)(
+        const getBaseProps = (0, import_react62.useCallback)(
           (props2) => ({
             "data-slot": "base",
             className: slots.base({ class: (0, import_theme.cn)(baseStyles, props2 == null ? void 0 : props2.className) }),
@@ -88617,7 +88617,7 @@
           }),
           [baseStyles, otherProps, slots]
         );
-        const getWrapperProps = (0, import_react61.useCallback)(
+        const getWrapperProps = (0, import_react62.useCallback)(
           (props2) => ({
             "data-slot": "tabWrapper",
             className: slots.tabWrapper({ class: (0, import_theme.cn)(classNames == null ? void 0 : classNames.tabWrapper, props2 == null ? void 0 : props2.className) }),
@@ -88626,7 +88626,7 @@
           }),
           [classNames, slots, placement, isVertical]
         );
-        const getTabListProps = (0, import_react61.useCallback)(
+        const getTabListProps = (0, import_react62.useCallback)(
           (props2) => ({
             ref: domRef,
             "data-slot": "tabList",
@@ -88635,7 +88635,7 @@
           }),
           [domRef, tabListProps, classNames, slots]
         );
-        const getTabCursorProps = (0, import_react61.useCallback)(
+        const getTabCursorProps = (0, import_react62.useCallback)(
           (props2) => ({
             "data-slot": "cursor",
             className: slots.cursor({
@@ -88983,7 +88983,7 @@
       var import_system = require_dist7();
       var import_theme = require_dist3();
       var import_shared_utils = require_dist2();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist7();
       function useSkeleton(originalProps) {
         var _a, _b;
@@ -88992,7 +88992,7 @@
         const { as, children, isLoaded = false, className, classNames, ...otherProps } = props;
         const Component2 = as || "div";
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        const slots = (0, import_react61.useMemo)(
+        const slots = (0, import_react62.useMemo)(
           () => (0, import_theme.skeleton)({
             ...variantProps2,
             disableAnimation
@@ -89051,7 +89051,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_shared_utils = require_dist2();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useDataScrollOverflow(props = {}) {
         const {
           domRef,
@@ -89062,8 +89062,8 @@
           onVisibilityChange,
           updateDeps = []
         } = props;
-        const visibleRef = (0, import_react61.useRef)(visibility);
-        (0, import_react61.useEffect)(() => {
+        const visibleRef = (0, import_react62.useRef)(visibility);
+        (0, import_react62.useEffect)(() => {
           const el = domRef == null ? void 0 : domRef.current;
           if (!el || !isEnabled) return;
           const setAttributes = (direction, hasBefore, hasAfter, prefix, suffix) => {
@@ -89165,7 +89165,7 @@
       var import_theme = require_dist3();
       var import_react_utils = require_dist6();
       var import_use_data_scroll_overflow = require_dist65();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       function useScrollShadow(originalProps) {
         var _a;
@@ -89194,7 +89194,7 @@
           updateDeps: [children],
           overflowCheck: (_a = originalProps.orientation) != null ? _a : "vertical"
         });
-        const styles = (0, import_react61.useMemo)(
+        const styles = (0, import_react62.useMemo)(
           () => (0, import_theme.scrollShadow)({
             ...variantProps2,
             className
@@ -89506,7 +89506,7 @@
       var import_theme = require_dist3();
       var import_list = require_main42();
       var import_react_utils = require_dist6();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme2 = require_dist3();
       function useListbox(props) {
         var _a;
@@ -89538,7 +89538,7 @@
         const innerState = (0, import_list.useListState)({ ...props, children, onSelectionChange });
         const state = propState || innerState;
         const { listBoxProps } = (0, import_listbox.useListBox)({ ...props, onAction }, state, domRef);
-        const slots = (0, import_react61.useMemo)(() => (0, import_theme.listbox)(), []);
+        const slots = (0, import_react62.useMemo)(() => (0, import_theme.listbox)(), []);
         const baseStyles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.base, className);
         const getBaseProps = (props2 = {}) => {
           return {
@@ -90008,7 +90008,7 @@
           };
         }, [...updateDeps, isEnabled, visibility, overflowCheck, onVisibilityChange, domRef]);
       }
-      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react63 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils4 = require_dist2();
       function useScrollShadow(originalProps) {
         var _a;
@@ -90037,7 +90037,7 @@
           updateDeps: [children],
           overflowCheck: (_a = originalProps.orientation) != null ? _a : "vertical"
         });
-        const styles = (0, import_react62.useMemo)(
+        const styles = (0, import_react63.useMemo)(
           () => (0, import_theme5.scrollShadow)({
             ...variantProps2,
             className
@@ -90336,27 +90336,27 @@
         useLayoutEffect: () => useLayoutEffect2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react61 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
-      var useLayoutEffect2 = typeof document !== "undefined" ? import_react61.default.useLayoutEffect : () => {
+      var import_react62 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
+      var useLayoutEffect2 = typeof document !== "undefined" ? import_react62.default.useLayoutEffect : () => {
       };
       function useEffectEvent2(fn) {
-        const ref = (0, import_react61.useRef)(null);
+        const ref = (0, import_react62.useRef)(null);
         useLayoutEffect2(() => {
           ref.current = fn;
         }, [fn]);
-        return (0, import_react61.useCallback)((...args) => {
+        return (0, import_react62.useCallback)((...args) => {
           const f = ref.current;
           return f == null ? void 0 : f(...args);
         }, []);
       }
       function useFormReset(ref, initialValue, onReset) {
-        let resetValue = (0, import_react61.useRef)(initialValue);
+        let resetValue = (0, import_react62.useRef)(initialValue);
         let handleReset = useEffectEvent2(() => {
           if (onReset) {
             onReset(resetValue.current);
           }
         });
-        (0, import_react61.useEffect)(() => {
+        (0, import_react62.useEffect)(() => {
           var _a;
           let form = (_a = ref == null ? void 0 : ref.current) == null ? void 0 : _a.form;
           form == null ? void 0 : form.addEventListener("reset", handleReset);
@@ -90396,17 +90396,17 @@
         useMultiSelectState: () => useMultiSelectState
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_i18n3 = require_main9();
+      var import_i18n2 = require_main9();
       var import_interactions = require_main10();
       var import_label = require_main24();
       var import_menu = require_main35();
       var import_selection = require_main17();
       var import_utils8 = require_main7();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useMultiSelect(props, state, ref) {
         const { disallowEmptySelection, isDisabled } = props;
-        const collator = (0, import_i18n3.useCollator)({ usage: "search", sensitivity: "base" });
-        const delegate = (0, import_react61.useMemo)(
+        const collator = (0, import_i18n2.useCollator)({ usage: "search", sensitivity: "base" });
+        const delegate = (0, import_react62.useMemo)(
           () => new import_selection.ListKeyboardDelegate(state.collection, state.disabledKeys, null, collator),
           [state.collection, state.disabledKeys, collator]
         );
@@ -90681,7 +90681,7 @@
       var import_system = require_dist7();
       var import_theme = require_dist3();
       var import_react_utils = require_dist6();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_aria_button = require_dist21();
       var import_focus2 = require_main11();
       var import_shared_utils = require_dist2();
@@ -90765,9 +90765,9 @@
         const Component2 = as || "button";
         const shouldFilterDOMProps = typeof Component2 === "string";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const triggerRef = (0, import_react61.useRef)(null);
-        const listBoxRef = (0, import_react61.useRef)(null);
-        const popoverRef = (0, import_react61.useRef)(null);
+        const triggerRef = (0, import_react62.useRef)(null);
+        const listBoxRef = (0, import_react62.useRef)(null);
+        const popoverRef = (0, import_react62.useRef)(null);
         let state = (0, import_use_aria_multiselect.useMultiSelectState)({
           ...props,
           isOpen,
@@ -90828,7 +90828,7 @@
           state,
           triggerRef
         );
-        const handleClear = (0, import_react61.useCallback)(() => {
+        const handleClear = (0, import_react62.useCallback)(() => {
           var _a2;
           state.setSelectedKeys(/* @__PURE__ */ new Set([]));
           onClear == null ? void 0 : onClear();
@@ -90857,7 +90857,7 @@
         const hasLabel = !!label;
         const hasLabelOutside = hasLabel && (isOutsideLeft || shouldLabelBeOutside && hasPlaceholder);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react61.useMemo)(
+        const slots = (0, import_react62.useMemo)(
           () => (0, import_theme.select)({
             ...variantProps2,
             isInvalid,
@@ -90873,14 +90873,14 @@
         const errorMessage = typeof props.errorMessage === "function" ? props.errorMessage({ isInvalid, validationErrors, validationDetails }) : props.errorMessage || (validationErrors == null ? void 0 : validationErrors.join(" "));
         const hasHelper = !!description || !!errorMessage;
         const hasEndContent = !!endContent;
-        (0, import_react61.useEffect)(() => {
+        (0, import_react62.useEffect)(() => {
           if (state.isOpen && popoverRef.current && triggerRef.current) {
             let selectRect = triggerRef.current.getBoundingClientRect();
             let popover = popoverRef.current;
             popover.style.width = selectRect.width + "px";
           }
         }, [state.isOpen]);
-        (0, import_react61.useEffect)(() => {
+        (0, import_react62.useEffect)(() => {
           if (state.isOpen && popoverRef.current && listBoxRef.current) {
             let selectedItem = listBoxRef.current.querySelector("[aria-selected=true] [data-label=true]");
             let scrollShadow = scrollShadowRef.current;
@@ -90891,7 +90891,7 @@
             }
           }
         }, [state.isOpen, disableAnimation]);
-        const getBaseProps = (0, import_react61.useCallback)(
+        const getBaseProps = (0, import_react62.useCallback)(
           (props2 = {}) => ({
             "data-slot": "base",
             "data-filled": (0, import_shared_utils.dataAttr)(isFilled),
@@ -90908,7 +90908,7 @@
           }),
           [slots, hasHelper, hasValue, hasLabel, hasLabelOutside, isFilled, baseStyles]
         );
-        const getTriggerProps = (0, import_react61.useCallback)(
+        const getTriggerProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ref: triggerRef,
@@ -90948,7 +90948,7 @@
             shouldFilterDOMProps
           ]
         );
-        const getHiddenSelectProps = (0, import_react61.useCallback)(
+        const getHiddenSelectProps = (0, import_react62.useCallback)(
           (props2 = {}) => ({
             state,
             triggerRef,
@@ -90973,7 +90973,7 @@
             triggerRef
           ]
         );
-        const getLabelProps = (0, import_react61.useCallback)(
+        const getLabelProps = (0, import_react62.useCallback)(
           (props2 = {}) => ({
             "data-slot": "label",
             className: slots.label({
@@ -90984,7 +90984,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.label, labelProps]
         );
-        const getValueProps = (0, import_react61.useCallback)(
+        const getValueProps = (0, import_react62.useCallback)(
           (props2 = {}) => ({
             "data-slot": "value",
             className: slots.value({
@@ -90995,7 +90995,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.value, valueProps]
         );
-        const getListboxWrapperProps = (0, import_react61.useCallback)(
+        const getListboxWrapperProps = (0, import_react62.useCallback)(
           (props2 = {}) => ({
             "data-slot": "listboxWrapper",
             className: slots.listboxWrapper({
@@ -91032,7 +91032,7 @@
             ...(0, import_shared_utils.mergeProps)(slotsProps.listboxProps, props2, menuProps)
           };
         };
-        const getPopoverProps = (0, import_react61.useCallback)(
+        const getPopoverProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             var _a2, _b2;
             const popoverProps2 = (0, import_shared_utils.mergeProps)(slotsProps.popoverProps, props2);
@@ -91064,7 +91064,7 @@
             state.selectedItems
           ]
         );
-        const getSelectorIconProps = (0, import_react61.useCallback)(
+        const getSelectorIconProps = (0, import_react62.useCallback)(
           () => ({
             "data-slot": "selectorIcon",
             "aria-hidden": (0, import_shared_utils.dataAttr)(true),
@@ -91073,7 +91073,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.selectorIcon, state.isOpen]
         );
-        const getInnerWrapperProps = (0, import_react61.useCallback)(
+        const getInnerWrapperProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -91085,7 +91085,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.innerWrapper]
         );
-        const getHelperWrapperProps = (0, import_react61.useCallback)(
+        const getHelperWrapperProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -91097,7 +91097,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getDescriptionProps = (0, import_react61.useCallback)(
+        const getDescriptionProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -91108,7 +91108,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.description]
         );
-        const getMainWrapperProps = (0, import_react61.useCallback)(
+        const getMainWrapperProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -91120,7 +91120,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.mainWrapper]
         );
-        const getEndWrapperProps = (0, import_react61.useCallback)(
+        const getEndWrapperProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -91132,7 +91132,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.endWrapper]
         );
-        const getEndContentProps = (0, import_react61.useCallback)(
+        const getEndContentProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -91144,7 +91144,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.endContent]
         );
-        const getErrorMessageProps = (0, import_react61.useCallback)(
+        const getErrorMessageProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -91155,7 +91155,7 @@
           },
           [slots, errorMessageProps, classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getSpinnerProps = (0, import_react61.useCallback)(
+        const getSpinnerProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               "aria-hidden": (0, import_shared_utils.dataAttr)(true),
@@ -91170,7 +91170,7 @@
           },
           [slots, spinnerRef, spinnerProps, classNames == null ? void 0 : classNames.spinner]
         );
-        const getClearButtonProps = (0, import_react61.useCallback)(
+        const getClearButtonProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -92010,11 +92010,11 @@
       var import_visually_hidden = require_main12();
       var import_slider = require_main46();
       var import_react_utils = require_dist6();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_interactions = require_main10();
       var import_focus2 = require_main11();
       var import_shared_utils = require_dist2();
-      var import_i18n3 = require_main9();
+      var import_i18n2 = require_main9();
       function useSliderThumb(props) {
         const {
           ref,
@@ -92034,8 +92034,8 @@
         } = props;
         const Component2 = as || "div";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const inputRef = (0, import_react61.useRef)(null);
-        const numberFormatter = (0, import_i18n3.useNumberFormatter)(formatOptions);
+        const inputRef = (0, import_react62.useRef)(null);
+        const numberFormatter = (0, import_i18n2.useNumberFormatter)(formatOptions);
         const { thumbProps, inputProps, isDragging: isDragging2, isFocused } = (0, import_slider.useSliderThumb)(
           {
             index: index3,
@@ -93042,7 +93042,7 @@
       var import_react_utils = require_dist6();
       var import_breadcrumbs = require_main49();
       var import_shared_utils = require_dist2();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useBreadcrumbItem(originalProps) {
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.breadcrumbItem.variantKeys);
         const {
@@ -93069,7 +93069,7 @@
           domRef
         );
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)();
-        const slots = (0, import_react61.useMemo)(
+        const slots = (0, import_react62.useMemo)(
           () => (0, import_theme.breadcrumbItem)({
             ...variantProps2,
             isCurrent,
@@ -94967,10 +94967,10 @@
       var import_input = require_dist46();
       var import_framer_motion2 = require_cjs4();
       var import_shared_utils = require_dist2();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_utils = require_dist6();
       var import_combobox = require_main50();
-      var import_i18n3 = require_main9();
+      var import_i18n2 = require_main9();
       var import_theme = require_dist3();
       var import_use_safe_layout_effect = require_dist15();
       var import_system = require_dist7();
@@ -95022,7 +95022,7 @@
           isReadOnly = false,
           ...otherProps
         } = props;
-        const { contains } = (0, import_i18n3.useFilter)(filterOptions);
+        const { contains } = (0, import_i18n2.useFilter)(filterOptions);
         const { onChange: _onChange, ...restProps } = originalProps;
         let state = (0, import_combobox.useComboBoxState)({
           ...restProps,
@@ -95061,10 +95061,10 @@
             disabledKeys: /* @__PURE__ */ new Set([...state.collection.getKeys()])
           }
         };
-        const buttonRef = (0, import_react61.useRef)(null);
-        const inputWrapperRef = (0, import_react61.useRef)(null);
-        const listBoxRef = (0, import_react61.useRef)(null);
-        const popoverRef = (0, import_react61.useRef)(null);
+        const buttonRef = (0, import_react62.useRef)(null);
+        const inputWrapperRef = (0, import_react62.useRef)(null);
+        const listBoxRef = (0, import_react62.useRef)(null);
+        const popoverRef = (0, import_react62.useRef)(null);
         const inputRef = (0, import_react_utils.useDOMRef)(ref);
         const scrollShadowRef = (0, import_react_utils.useDOMRef)(scrollRefProp);
         const {
@@ -95163,7 +95163,7 @@
             state.setInputValue(item.textValue);
           }
         }, [inputRef.current]);
-        (0, import_react61.useEffect)(() => {
+        (0, import_react62.useEffect)(() => {
           let keyToFocus;
           if (state.value && state.collection.getItem(state.value) && !state.disabledKeys.has(state.value)) {
             keyToFocus = state.value;
@@ -95176,7 +95176,7 @@
           }
           state.selectionManager.setFocusedKey(keyToFocus);
         }, [state.collection, state.disabledKeys, state.value, state.isOpen, state.inputValue]);
-        (0, import_react61.useEffect)(() => {
+        (0, import_react62.useEffect)(() => {
           if (state.isOpen && popoverRef.current && listBoxRef.current) {
             let selectedItem = listBoxRef.current.querySelector("[aria-selected=true] [data-label=true]");
             let scrollShadow = scrollShadowRef.current;
@@ -95188,7 +95188,7 @@
             }
           }
         }, [state.isOpen, disableAnimation]);
-        (0, import_react61.useEffect)(() => {
+        (0, import_react62.useEffect)(() => {
           if (isOpen) {
             if (popoverRef.current && inputWrapperRef.current) {
               let rect = inputWrapperRef.current.getBoundingClientRect();
@@ -95208,7 +95208,7 @@
           };
         }
         const Component2 = as || "div";
-        const slots = (0, import_react61.useMemo)(
+        const slots = (0, import_react62.useMemo)(
           () => (0, import_theme.autocomplete)({
             ...variantProps2,
             isClearable,
@@ -97397,17 +97397,17 @@
       var import_theme2 = require_dist3();
       var import_date = require_main4();
       var import_system = require_dist7();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist3();
       var import_utils8 = require_main6();
       var import_react_utils = require_dist6();
-      var import_i18n3 = require_main9();
+      var import_i18n2 = require_main9();
       var import_shared_utils = require_dist2();
       function useCalendarBase(originalProps) {
         var _a, _b, _c, _d, _e, _f, _g;
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.calendar.variantKeys);
         const globalContext = (0, import_system.useProviderContext)();
-        const { locale, direction } = (0, import_i18n3.useLocale)();
+        const { locale, direction } = (0, import_i18n2.useLocale)();
         const isRTL = direction === "rtl";
         const calendarProp = (0, import_date.createCalendar)(
           new import_date.DateFormatter(locale).resolvedOptions().calendar
@@ -97443,7 +97443,7 @@
         const visibleMonths = (0, import_shared_utils.clamp)(visibleMonthsProp, 1, 3);
         const showMonthAndYearPickers = originalProps.showMonthAndYearPickers && visibleMonths === 1;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const handleHeaderExpandedChange = (0, import_react61.useCallback)(
+        const handleHeaderExpandedChange = (0, import_react62.useCallback)(
           (isExpanded) => {
             onHeaderExpandedChange(isExpanded || false);
           },
@@ -97454,10 +97454,10 @@
           isHeaderDefaultExpanded != null ? isHeaderDefaultExpanded : false,
           handleHeaderExpandedChange
         );
-        const visibleDuration = (0, import_react61.useMemo)(() => ({ months: visibleMonths }), [visibleMonths]);
+        const visibleDuration = (0, import_react62.useMemo)(() => ({ months: visibleMonths }), [visibleMonths]);
         const hasMultipleMonths = visibleMonths > 1;
         const shouldFilterDOMProps = typeof Component2 === "string";
-        const slots = (0, import_react61.useMemo)(
+        const slots = (0, import_react62.useMemo)(
           () => (0, import_theme.calendar)({
             ...variantProps2,
             showMonthAndYearPickers,
@@ -97709,7 +97709,7 @@
         }
       );
       var import_date4 = require_main4();
-      var import_i18n32 = require_main9();
+      var import_i18n3 = require_main9();
       var import_calendar4 = require_main52();
       var import_framer_motion2 = require_cjs4();
       var import_shared_utils4 = require_dist2();
@@ -97799,7 +97799,7 @@
       var import_jsx_runtime42 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       function CalendarMonth(props) {
         const { startDate, direction, currentMonth, firstDayOfWeek } = props;
-        const { locale } = (0, import_i18n32.useLocale)();
+        const { locale } = (0, import_i18n3.useLocale)();
         const weeksInMonth = (0, import_date4.getWeeksInMonth)(startDate, locale, firstDayOfWeek);
         const { state, slots, weekdayStyle, isHeaderExpanded, disableAnimation, classNames } = useCalendarContext();
         const { gridProps, headerProps, weekDays } = (0, import_calendar4.useCalendarGrid)(
@@ -98042,7 +98042,7 @@
       });
       CalendarPickerItem.displayName = "CalendarPickerItem";
       var import_i18n5 = require_main9();
-      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react63 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils6 = require_dist2();
       var import_scroll_into_view_if_needed = __toESM2(require_dist33());
       var import_date5 = require_main4();
@@ -98075,12 +98075,12 @@
         var _a;
         const { date, currentMonth } = props;
         const { slots, state, headerRef, isHeaderExpanded, setIsHeaderExpanded, classNames } = useCalendarContext();
-        const highlightRef = (0, import_react62.useRef)(null);
-        const yearsListRef = (0, import_react62.useRef)(null);
-        const monthsListRef = (0, import_react62.useRef)(null);
-        const monthsItemsRef = (0, import_react62.useRef)();
-        const yearsItemsRef = (0, import_react62.useRef)();
-        const focusedDateRef = (0, import_react62.useRef)(state.focusedDate);
+        const highlightRef = (0, import_react63.useRef)(null);
+        const yearsListRef = (0, import_react63.useRef)(null);
+        const monthsListRef = (0, import_react63.useRef)(null);
+        const monthsItemsRef = (0, import_react63.useRef)();
+        const yearsItemsRef = (0, import_react63.useRef)();
+        const focusedDateRef = (0, import_react63.useRef)(state.focusedDate);
         const monthDateFormatter = (0, import_i18n5.useDateFormatter)({
           month: "long",
           era: currentMonth.calendar.identifier === "gregory" && currentMonth.era === "BC" ? "short" : void 0,
@@ -98113,7 +98113,7 @@
             map.delete(value);
           }
         }
-        const handleListScroll = (0, import_react62.useCallback)(
+        const handleListScroll = (0, import_react63.useCallback)(
           (e, highlightEl, list) => {
             if (!(e.target instanceof HTMLElement) || !highlightEl) return;
             const map = getItemsRefMap(list === "months" ? monthsItemsRef : yearsItemsRef);
@@ -98148,15 +98148,15 @@
           },
           [isHeaderExpanded]
         );
-        (0, import_react62.useEffect)(() => {
+        (0, import_react63.useEffect)(() => {
           focusedDateRef.current = state.focusedDate;
         }, [state.focusedDate]);
-        (0, import_react62.useEffect)(() => {
+        (0, import_react63.useEffect)(() => {
           if (!isHeaderExpanded) return;
           scrollTo(date.month, "months", false);
           scrollTo(date.year, "years", false);
         }, [isHeaderExpanded]);
-        (0, import_react62.useEffect)(() => {
+        (0, import_react63.useEffect)(() => {
           const monthsList = monthsListRef.current;
           const yearsList = yearsListRef.current;
           const highlightEl = highlightRef.current;
@@ -98192,7 +98192,7 @@
             boundary: listRef.current
           });
         }
-        const onPickerItemPressed = (0, import_react62.useCallback)(
+        const onPickerItemPressed = (0, import_react63.useCallback)(
           (e, list) => {
             const target = e.target;
             const value = Number(target.getAttribute("data-value"));
@@ -98201,7 +98201,7 @@
           },
           [state]
         );
-        const onPickerItemKeyDown = (0, import_react62.useCallback)(
+        const onPickerItemKeyDown = (0, import_react63.useCallback)(
           (e, value, list) => {
             var _a2;
             const map = getItemsRefMap(list === "months" ? monthsItemsRef : yearsItemsRef);
@@ -103350,7 +103350,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_system4 = require_dist7();
-      var import_i18n3 = require_main9();
+      var import_i18n2 = require_main9();
       var import_date = require_main4();
       var import_system = require_dist7();
       var import_system2 = require_dist7();
@@ -103359,14 +103359,14 @@
       var import_datepicker2 = require_main56();
       var import_shared_utils = require_dist2();
       var import_theme = require_dist3();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_form = require_dist26();
       function useDateInput(originalProps) {
         var _a, _b, _c, _d, _e, _f, _g;
         const globalContext = (0, import_system.useProviderContext)();
         const { validationBehavior: formValidationBehavior } = (0, import_form.useSlottedContext)(import_form.FormContext) || {};
         const [props, variantProps2] = (0, import_system2.mapPropsVariants)(originalProps, import_theme.dateInput.variantKeys);
-        const { locale } = (0, import_i18n3.useLocale)();
+        const { locale } = (0, import_i18n2.useLocale)();
         const calendarProp = (0, import_date.createCalendar)(
           new import_date.DateFormatter(locale).resolvedOptions().calendar
         );
@@ -103426,7 +103426,7 @@
           label
         });
         const shouldLabelBeOutside = labelPlacement === "outside" || labelPlacement === "outside-left" || labelPlacement === "outside-top";
-        const slots = (0, import_react61.useMemo)(
+        const slots = (0, import_react62.useMemo)(
           () => (0, import_theme.dateInput)({
             ...variantProps2,
             disableAnimation,
@@ -103924,10 +103924,10 @@
       var import_form = require_dist26();
       var import_shared_utils = require_dist2();
       var import_theme = require_dist3();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist7();
       var import_react_utils = require_dist6();
-      var import_i18n3 = require_main9();
+      var import_i18n2 = require_main9();
       var import_utils8 = require_main6();
       var messages_default = {
         "ar-AE": {
@@ -104139,7 +104139,7 @@
           onHeaderExpandedChange,
           ...restUserCalendarProps
         } = userCalendarProps;
-        const handleHeaderExpandedChange = (0, import_react61.useCallback)(
+        const handleHeaderExpandedChange = (0, import_react62.useCallback)(
           (isExpanded) => {
             onHeaderExpandedChange == null ? void 0 : onHeaderExpandedChange(isExpanded || false);
           },
@@ -104148,7 +104148,7 @@
         const [isCalendarHeaderExpanded, setIsCalendarHeaderExpanded] = (0, import_utils8.useControlledState)(isHeaderExpanded, isHeaderDefaultExpanded != null ? isHeaderDefaultExpanded : false, handleHeaderExpandedChange);
         const domRef = (0, import_react_utils.useDOMRef)(ref);
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        let stringFormatter = (0, import_i18n3.useLocalizedStringFormatter)(messages_default);
+        let stringFormatter = (0, import_i18n2.useLocalizedStringFormatter)(messages_default);
         const isDefaultColor = originalProps.color === "default" || !originalProps.color;
         const hasMultipleMonths = visibleMonths > 1;
         const placeholder = originalProps == null ? void 0 : originalProps.placeholderValue;
@@ -104545,7 +104545,7 @@
       });
       var date_range_picker_field_default = DateRangePickerField;
       var import_system4 = require_dist7();
-      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react63 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_datepicker5 = require_main56();
       var import_datepicker6 = require_main55();
       var import_shared_utils4 = require_dist2();
@@ -104593,7 +104593,7 @@
           validationBehavior,
           shouldCloseOnSelect: () => !state.hasTime
         });
-        const popoverTriggerRef = (0, import_react62.useRef)(null);
+        const popoverTriggerRef = (0, import_react63.useRef)(null);
         let {
           groupProps,
           labelProps,
@@ -104608,11 +104608,11 @@
           errorMessageProps,
           isInvalid: isAriaInvalid
         } = (0, import_datepicker6.useDateRangePicker)({ ...originalProps, validationBehavior }, state, domRef);
-        (0, import_react62.useEffect)(() => {
+        (0, import_react63.useEffect)(() => {
           state.commitValidation();
         }, [state.value, state.commitValidation]);
         const isInvalid = isInvalidProp || isAriaInvalid;
-        const slots = (0, import_react62.useMemo)(
+        const slots = (0, import_react63.useMemo)(
           () => (0, import_theme3.dateRangePicker)({
             ...variantProps2,
             className
@@ -104722,7 +104722,7 @@
           };
         };
         const baseStyles = (0, import_theme3.cn)(classNames == null ? void 0 : classNames.base, className);
-        const dateInputSlots = (0, import_react62.useMemo)(
+        const dateInputSlots = (0, import_react63.useMemo)(
           () => (0, import_theme3.dateInput)({
             ...variantProps2,
             labelPlacement
@@ -104985,7 +104985,7 @@
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist7();
       var import_react_utils = require_dist6();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist3();
       var import_utils8 = require_main6();
       var import_shared_utils = require_dist2();
@@ -105020,16 +105020,16 @@
         const Component2 = as || "div";
         const shouldFilterDOMProps = typeof Component2 === "string";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const handleClose = (0, import_react61.useCallback)(() => {
+        const handleClose = (0, import_react62.useCallback)(() => {
           setIsVisible(false);
           onClose == null ? void 0 : onClose();
         }, [setIsVisible, onClose]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react61.useMemo)(
+        const slots = (0, import_react62.useMemo)(
           () => (0, import_theme.alert)({ hasContent: !(0, import_shared_utils.isEmpty)(description) || !(0, import_shared_utils.isEmpty)(children), ...variantProps2 }),
           [description, (0, import_shared_utils.objectToDeps)(variantProps2)]
         );
-        const getBaseProps = (0, import_react61.useCallback)(() => {
+        const getBaseProps = (0, import_react62.useCallback)(() => {
           return {
             "data-visible": (0, import_shared_utils.dataAttr)(isVisible),
             "data-closeable": (0, import_shared_utils.dataAttr)(isClosable),
@@ -105044,35 +105044,35 @@
             className: slots.base({ class: baseStyles })
           };
         }, [slots, baseStyles]);
-        const getMainWrapperProps = (0, import_react61.useCallback)(() => {
+        const getMainWrapperProps = (0, import_react62.useCallback)(() => {
           return {
             className: slots.mainWrapper({ class: classNames == null ? void 0 : classNames.mainWrapper })
           };
         }, [slots, classNames == null ? void 0 : classNames.mainWrapper]);
-        const getDescriptionProps = (0, import_react61.useCallback)(() => {
+        const getDescriptionProps = (0, import_react62.useCallback)(() => {
           return {
             className: slots.description({ class: classNames == null ? void 0 : classNames.description })
           };
         }, [slots, classNames == null ? void 0 : classNames.description]);
-        const getTitleProps = (0, import_react61.useCallback)(() => {
+        const getTitleProps = (0, import_react62.useCallback)(() => {
           return {
             className: slots.title({ class: classNames == null ? void 0 : classNames.title })
           };
         }, [slots, classNames == null ? void 0 : classNames.title]);
-        const getCloseButtonProps = (0, import_react61.useCallback)(
+        const getCloseButtonProps = (0, import_react62.useCallback)(
           () => ({
             ...closeButtonProps,
             className: slots.closeButton({ class: classNames == null ? void 0 : classNames.closeButton })
           }),
           [slots, classNames == null ? void 0 : classNames.closeButton]
         );
-        const getAlertIconProps = (0, import_react61.useCallback)(
+        const getAlertIconProps = (0, import_react62.useCallback)(
           () => ({
             className: slots.alertIcon({ class: classNames == null ? void 0 : classNames.alertIcon })
           }),
           [slots, classNames == null ? void 0 : classNames.alertIcon]
         );
-        const getIconWrapperProps = (0, import_react61.useCallback)(
+        const getIconWrapperProps = (0, import_react62.useCallback)(
           () => ({
             className: slots.iconWrapper({ class: classNames == null ? void 0 : classNames.iconWrapper })
           }),
@@ -105198,7 +105198,7 @@
       var import_modal = require_dist56();
       var import_theme = require_dist3();
       var import_react_utils = require_dist6();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_utils = require_dist13();
       var import_shared_utils = require_dist2();
       function useDrawer(originalProps) {
@@ -105213,7 +105213,7 @@
           ...otherProps
         } = originalProps;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const motionProps = (0, import_react61.useMemo)(() => {
+        const motionProps = (0, import_react62.useMemo)(() => {
           if (!(0, import_shared_utils.isEmpty)(drawerMotionProps)) return drawerMotionProps;
           const key = placement === "left" || placement === "right" ? "x" : "y";
           return {
@@ -105240,14 +105240,14 @@
           };
         }, [placement, drawerMotionProps]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react61.useMemo)(
+        const slots = (0, import_react62.useMemo)(
           () => (0, import_theme.drawer)({
             size,
             placement
           }),
           [size, placement]
         );
-        const getModalProps = (0, import_react61.useCallback)(() => {
+        const getModalProps = (0, import_react62.useCallback)(() => {
           return {
             classNames: {
               ...classNames,
@@ -105534,7 +105534,7 @@
       var import_react_utils = require_dist6();
       var import_shared_utils = require_dist2();
       var import_use_form_reset = require_dist68();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_utils8 = require_main6();
       var import_form = require_main21();
       var import_form2 = require_main22();
@@ -105580,7 +105580,7 @@
           autoFocus,
           isTextInput: true
         });
-        const handleValueChange = (0, import_react61.useCallback)(
+        const handleValueChange = (0, import_react62.useCallback)(
           (value2) => {
             onValueChange(value2 != null ? value2 : "");
           },
@@ -105612,7 +105612,7 @@
         const errorMessage = typeof props.errorMessage === "function" ? props.errorMessage({ isInvalid, validationErrors, validationDetails }) : props.errorMessage || (validationErrors == null ? void 0 : validationErrors.join(" "));
         const description = props.description;
         const hasHelper = !!description || !!errorMessage;
-        const slots = (0, import_react61.useMemo)(
+        const slots = (0, import_react62.useMemo)(
           () => (0, import_theme.inputOtp)({
             ...variantProps2,
             disableAnimation,
@@ -105621,7 +105621,7 @@
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation, isInvalid, isReadOnly]
         );
-        const getBaseProps = (0, import_react61.useCallback)(
+        const getBaseProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ref: baseDomRef,
@@ -105656,7 +105656,7 @@
           },
           [baseDomRef, slots, baseStyles, isDisabled, isInvalid, isRequired, isReadOnly, value, length]
         );
-        const getInputOtpProps = (0, import_react61.useCallback)(
+        const getInputOtpProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             var _a2;
             const otpProps = {
@@ -105700,7 +105700,7 @@
             autoFocus
           ]
         );
-        const getSegmentWrapperProps = (0, import_react61.useCallback)(
+        const getSegmentWrapperProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.segmentWrapper({
@@ -105714,7 +105714,7 @@
           },
           [classNames == null ? void 0 : classNames.segmentWrapper, isDisabled]
         );
-        const getHelperWrapperProps = (0, import_react61.useCallback)(
+        const getHelperWrapperProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.helperWrapper({
@@ -105726,7 +105726,7 @@
           },
           [classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getErrorMessageProps = (0, import_react61.useCallback)(
+        const getErrorMessageProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.errorMessage({
@@ -105738,7 +105738,7 @@
           },
           [classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getDescriptionProps = (0, import_react61.useCallback)(
+        const getDescriptionProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.description({
@@ -106786,11 +106786,11 @@
       var import_theme = require_dist3();
       var import_react_utils = require_dist6();
       var import_interactions = require_main10();
-      var import_i18n3 = require_main9();
+      var import_i18n2 = require_main9();
       var import_shared_utils = require_dist2();
       var import_numberfield = require_main57();
       var import_numberfield2 = require_main58();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_form = require_dist26();
       function useNumberInput(originalProps) {
         var _a, _b, _c;
@@ -106818,14 +106818,14 @@
           hideStepper,
           ...otherProps
         } = props;
-        const [isFocusWithin, setFocusWithin] = (0, import_react61.useState)(false);
+        const [isFocusWithin, setFocusWithin] = (0, import_react62.useState)(false);
         const Component2 = as || "div";
         const disableAnimation = (_c = (_b = originalProps.disableAnimation) != null ? _b : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _c : false;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
         const baseDomRef = (0, import_react_utils.useDOMRef)(baseRef);
         const inputWrapperRef = (0, import_react_utils.useDOMRef)(wrapperRef);
         const innerWrapperRef = (0, import_react_utils.useDOMRef)(innerWrapperRefProp);
-        const { locale } = (0, import_i18n3.useLocale)();
+        const { locale } = (0, import_i18n2.useLocale)();
         const state = (0, import_numberfield.useNumberFieldState)({
           ...originalProps,
           validationBehavior,
@@ -106848,7 +106848,7 @@
         const isFilled = !(0, import_shared_utils.isEmpty)(state.inputValue) && !(0, import_shared_utils.isEmpty)(inputValue);
         const isFilledWithin = isFilled || isFocusWithin;
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className, isFilled ? "is-filled" : "");
-        const handleClear = (0, import_react61.useCallback)(() => {
+        const handleClear = (0, import_react62.useCallback)(() => {
           var _a2;
           state.setInputValue("");
           onClear == null ? void 0 : onClear();
@@ -106892,7 +106892,7 @@
         const hasStartContent = !!startContent;
         const isLabelOutside = shouldLabelBeOutside ? labelPlacement === "outside-left" || isOutsideTop || hasPlaceholder || labelPlacement === "outside" && hasStartContent : false;
         const isLabelOutsideAsPlaceholder = labelPlacement === "outside" && !hasPlaceholder && !hasStartContent;
-        const slots = (0, import_react61.useMemo)(
+        const slots = (0, import_react62.useMemo)(
           () => (0, import_theme.numberInput)({
             ...variantProps2,
             isInvalid,
@@ -106909,7 +106909,7 @@
             disableAnimation
           ]
         );
-        const handleKeyDown = (0, import_react61.useCallback)(
+        const handleKeyDown = (0, import_react62.useCallback)(
           (e) => {
             var _a2, _b2;
             const inputElement = e.currentTarget;
@@ -106939,7 +106939,7 @@
           },
           [inputValue, state, onClear, isClearable, originalProps.isReadOnly]
         );
-        const getBaseProps = (0, import_react61.useCallback)(
+        const getBaseProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ref: baseDomRef,
@@ -106989,7 +106989,7 @@
             originalProps.isDisabled
           ]
         );
-        const getLabelProps = (0, import_react61.useCallback)(
+        const getLabelProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "label",
@@ -106999,7 +106999,7 @@
           },
           [slots, isLabelHovered, labelProps, classNames == null ? void 0 : classNames.label]
         );
-        const getNumberInputProps = (0, import_react61.useCallback)(
+        const getNumberInputProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "input",
@@ -107041,7 +107041,7 @@
             handleKeyDown
           ]
         );
-        const getHiddenNumberInputProps = (0, import_react61.useCallback)(
+        const getHiddenNumberInputProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               name: originalProps.name,
@@ -107053,7 +107053,7 @@
           },
           [inputValue, originalProps.name]
         );
-        const getInputWrapperProps = (0, import_react61.useCallback)(
+        const getInputWrapperProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ref: inputWrapperRef,
@@ -107086,7 +107086,7 @@
             classNames == null ? void 0 : classNames.inputWrapper
           ]
         );
-        const getInnerWrapperProps = (0, import_react61.useCallback)(
+        const getInnerWrapperProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ref: innerWrapperRef,
@@ -107104,7 +107104,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.innerWrapper]
         );
-        const getMainWrapperProps = (0, import_react61.useCallback)(
+        const getMainWrapperProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -107116,7 +107116,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.mainWrapper]
         );
-        const getHelperWrapperProps = (0, import_react61.useCallback)(
+        const getHelperWrapperProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -107128,7 +107128,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getDescriptionProps = (0, import_react61.useCallback)(
+        const getDescriptionProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -107139,7 +107139,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.description]
         );
-        const getErrorMessageProps = (0, import_react61.useCallback)(
+        const getErrorMessageProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -107150,7 +107150,7 @@
           },
           [slots, errorMessageProps, classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getClearButtonProps = (0, import_react61.useCallback)(
+        const getClearButtonProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -107166,7 +107166,7 @@
           },
           [slots, isClearButtonFocusVisible, clearPressProps, clearFocusProps, classNames == null ? void 0 : classNames.clearButton]
         );
-        const getStepperWrapperProps = (0, import_react61.useCallback)(
+        const getStepperWrapperProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -107178,7 +107178,7 @@
           },
           [slots]
         );
-        const getStepperIncreaseButtonProps = (0, import_react61.useCallback)(
+        const getStepperIncreaseButtonProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -107193,7 +107193,7 @@
           },
           [slots, incrementButtonProps, classNames == null ? void 0 : classNames.stepperButton]
         );
-        const getStepperDecreaseButtonProps = (0, import_react61.useCallback)(
+        const getStepperDecreaseButtonProps = (0, import_react62.useCallback)(
           (props2 = {}) => {
             return {
               type: "button",
@@ -108815,10 +108815,10 @@
       Ripple.displayName = "HeroUI.Ripple";
       var ripple_default = Ripple;
       var import_shared_utils2 = require_dist2();
-      var import_react61 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useRipple(props = {}) {
-        const [ripples, setRipples] = (0, import_react61.useState)([]);
-        const onPress = (0, import_react61.useCallback)((event) => {
+        const [ripples, setRipples] = (0, import_react62.useState)([]);
+        const onPress = (0, import_react62.useCallback)((event) => {
           const trigger = event.target;
           const size = Math.max(trigger.clientWidth, trigger.clientHeight);
           setRipples((prevRipples) => [
@@ -108831,7 +108831,7 @@
             }
           ]);
         }, []);
-        const onClear = (0, import_react61.useCallback)((key) => {
+        const onClear = (0, import_react62.useCallback)((key) => {
           setRipples((prevState) => prevState.filter((ripple) => ripple.key !== key));
         }, []);
         return { ripples, onClear, onPress, ...props };
@@ -109302,7 +109302,7 @@
       var import_theme2 = require_dist3();
       var import_react_utils3 = require_dist6();
       var import_shared_utils4 = require_dist2();
-      var import_react62 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react63 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_toast = require_main60();
       var import_interactions5 = require_main10();
       var import_use_is_mobile = require_dist48();
@@ -109358,32 +109358,32 @@
             placement = "bottom-center";
           }
         }
-        const animationRef = (0, import_react62.useRef)(null);
-        const startTime = (0, import_react62.useRef)(null);
-        const progressRef = (0, import_react62.useRef)(0);
-        const progressBarRef = (0, import_react62.useRef)(null);
-        const pausedTime = (0, import_react62.useRef)(0);
-        const timeElapsed = (0, import_react62.useRef)(0);
-        (0, import_react62.useEffect)(() => {
+        const animationRef = (0, import_react63.useRef)(null);
+        const startTime = (0, import_react63.useRef)(null);
+        const progressRef = (0, import_react63.useRef)(0);
+        const progressBarRef = (0, import_react63.useRef)(null);
+        const pausedTime = (0, import_react63.useRef)(0);
+        const timeElapsed = (0, import_react63.useRef)(0);
+        (0, import_react63.useEffect)(() => {
           if (progressBarRef.current) {
             progressBarRef.current.style.width = "0%";
           }
         }, []);
-        const [isLoading, setIsLoading] = (0, import_react62.useState)(!!promiseProp);
-        const [isToastExiting, setIsToastExiting] = (0, import_react62.useState)(false);
-        const hasCalledOnCloseRef = (0, import_react62.useRef)(false);
-        (0, import_react62.useEffect)(() => {
+        const [isLoading, setIsLoading] = (0, import_react63.useState)(!!promiseProp);
+        const [isToastExiting, setIsToastExiting] = (0, import_react63.useState)(false);
+        const hasCalledOnCloseRef = (0, import_react63.useRef)(false);
+        (0, import_react63.useEffect)(() => {
           if (!promiseProp) return;
           promiseProp.finally(() => {
             setIsLoading(false);
           });
         }, [promiseProp]);
-        (0, import_react62.useEffect)(() => {
+        (0, import_react63.useEffect)(() => {
           if (isClosing && !isToastExiting) {
             setIsToastExiting(true);
           }
         }, [isClosing, isToastExiting]);
-        (0, import_react62.useEffect)(() => {
+        (0, import_react63.useEffect)(() => {
           if (isToastExiting && disableAnimation) {
             state.close(toast.key);
             if (!hasCalledOnCloseRef.current) {
@@ -109392,7 +109392,7 @@
             }
           }
         }, [isToastExiting, disableAnimation, state, toast.key, onClose]);
-        (0, import_react62.useEffect)(() => {
+        (0, import_react63.useEffect)(() => {
           const updateProgress = (timestamp) => {
             if (!timeout || isLoading) {
               return;
@@ -109444,12 +109444,12 @@
           state,
           domRef
         );
-        const [mounted, setMounted] = (0, import_react62.useState)(false);
-        (0, import_react62.useEffect)(() => {
+        const [mounted, setMounted] = (0, import_react63.useState)(false);
+        (0, import_react63.useEffect)(() => {
           setMounted(true);
         }, []);
-        const [initialHeight, setInitialHeight] = (0, import_react62.useState)(0);
-        (0, import_react62.useLayoutEffect)(() => {
+        const [initialHeight, setInitialHeight] = (0, import_react63.useState)(0);
+        (0, import_react63.useLayoutEffect)(() => {
           if (!domRef.current || !mounted || isToastExiting) {
             return;
           }
@@ -109475,7 +109475,7 @@
           liftHeight += heights[idx] || 0;
         }
         const frontHeight = heights[heights.length - 1];
-        const slots = (0, import_react62.useMemo)(
+        const slots = (0, import_react63.useMemo)(
           () => (0, import_theme2.toast)({
             ...variantProps2,
             disableAnimation
@@ -109488,8 +109488,8 @@
           visible: { opacity: 1, y: 0 },
           exit: { opacity: 0, y: -INITIAL_POSITION * multiplier }
         };
-        const [drag2, setDrag] = (0, import_react62.useState)(false);
-        const [dragValue, setDragValue] = (0, import_react62.useState)(0);
+        const [drag2, setDrag] = (0, import_react63.useState)(false);
+        const [dragValue, setDragValue] = (0, import_react63.useState)(0);
         const shouldCloseToast = (offsetX, offsetY) => {
           const isRight = placement.includes("right");
           const isLeft = placement.includes("left");
@@ -109527,7 +109527,7 @@
         } else if (drag2) {
           opacityValue = Math.max(0, 1 - dragValue / (SWIPE_THRESHOLD_X + 20));
         }
-        const getToastProps = (0, import_react62.useCallback)(
+        const getToastProps = (0, import_react63.useCallback)(
           (props2 = {}) => {
             const topExtension = 16;
             const bottomExtension = 16;
@@ -109574,14 +109574,14 @@
             disableAnimation
           ]
         );
-        const getWrapperProps = (0, import_react62.useCallback)(
+        const getWrapperProps = (0, import_react63.useCallback)(
           (props2 = {}) => ({
             className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }),
             ...props2
           }),
           []
         );
-        const getIconProps = (0, import_react62.useCallback)(
+        const getIconProps = (0, import_react63.useCallback)(
           (props2 = {}) => ({
             "aria-label": "descriptionIcon",
             className: slots.icon({ class: classNames == null ? void 0 : classNames.icon }),
@@ -109589,7 +109589,7 @@
           }),
           []
         );
-        const getLoadingComponentProps = (0, import_react62.useCallback)(
+        const getLoadingComponentProps = (0, import_react63.useCallback)(
           (props2 = {}) => ({
             className: slots.loadingComponent({ class: classNames == null ? void 0 : classNames.loadingComponent }),
             "aria-label": "loadingIcon",
@@ -109598,7 +109598,7 @@
           }),
           []
         );
-        const getSpinnerComponentProps = (0, import_react62.useCallback)(
+        const getSpinnerComponentProps = (0, import_react63.useCallback)(
           (props2 = {}) => ({
             classNames: { wrapper: slots.loadingComponent({ class: classNames == null ? void 0 : classNames.loadingComponent }) },
             "aria-label": "loadingIcon",
@@ -109607,28 +109607,28 @@
           }),
           []
         );
-        const getContentProps = (0, import_react62.useCallback)(
+        const getContentProps = (0, import_react63.useCallback)(
           (props2 = {}) => ({
             className: slots.content({ class: classNames == null ? void 0 : classNames.content }),
             ...(0, import_shared_utils4.mergeProps)(props2, otherProps, contentProps)
           }),
           [contentProps]
         );
-        const getTitleProps = (0, import_react62.useCallback)(
+        const getTitleProps = (0, import_react63.useCallback)(
           (props2 = {}) => ({
             className: slots.title({ class: classNames == null ? void 0 : classNames.title }),
             ...(0, import_shared_utils4.mergeProps)(props2, otherProps, titleProps)
           }),
           [titleProps]
         );
-        const getDescriptionProps = (0, import_react62.useCallback)(
+        const getDescriptionProps = (0, import_react63.useCallback)(
           (props2 = {}) => ({
             className: slots.description({ class: classNames == null ? void 0 : classNames.description }),
             ...(0, import_shared_utils4.mergeProps)(props2, otherProps, descriptionProps)
           }),
           [descriptionProps]
         );
-        const getCloseButtonProps = (0, import_react62.useCallback)(
+        const getCloseButtonProps = (0, import_react63.useCallback)(
           (props2 = {}) => ({
             className: slots.closeButton({ class: classNames == null ? void 0 : classNames.closeButton }),
             "aria-label": "closeButton",
@@ -109646,7 +109646,7 @@
           }),
           [setIsToastExiting, onClose]
         );
-        const getCloseIconProps = (0, import_react62.useCallback)(
+        const getCloseIconProps = (0, import_react63.useCallback)(
           (props2 = {}) => ({
             className: slots.closeIcon({ class: classNames == null ? void 0 : classNames.closeIcon }),
             "aria-label": "closeIcon",
@@ -109654,7 +109654,7 @@
           }),
           []
         );
-        const getMotionDivProps = (0, import_react62.useCallback)(
+        const getMotionDivProps = (0, import_react63.useCallback)(
           (props2 = {}) => {
             const comparingValue = isRegionExpanded ? maxVisibleToasts - 1 : Math.min(2, maxVisibleToasts - 1);
             const isCloseToEnd = total - index3 - 1 <= comparingValue;
@@ -110097,15 +110097,117 @@
     }
   });
 
+  // node_modules/@tauri-apps/api/external/tslib/tslib.es6.js
+  function __classPrivateFieldGet2(receiver, state, kind, f) {
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
+  }
+  function __classPrivateFieldSet2(receiver, state, value, kind, f) {
+    if (kind === "m") throw new TypeError("Private method is not writable");
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
+    return kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value), value;
+  }
+  var init_tslib_es62 = __esm({
+    "node_modules/@tauri-apps/api/external/tslib/tslib.es6.js"() {
+    }
+  });
+
+  // node_modules/@tauri-apps/api/core.js
+  function transformCallback(callback, once = false) {
+    return window.__TAURI_INTERNALS__.transformCallback(callback, once);
+  }
+  var _Channel_onmessage, _Channel_nextMessageIndex, _Channel_pendingMessages, _Channel_messageEndIndex, _Resource_rid, SERIALIZE_TO_IPC_FN, Channel;
+  var init_core = __esm({
+    "node_modules/@tauri-apps/api/core.js"() {
+      init_tslib_es62();
+      SERIALIZE_TO_IPC_FN = "__TAURI_TO_IPC_KEY__";
+      Channel = class {
+        constructor(onmessage) {
+          _Channel_onmessage.set(this, void 0);
+          _Channel_nextMessageIndex.set(this, 0);
+          _Channel_pendingMessages.set(this, []);
+          _Channel_messageEndIndex.set(this, void 0);
+          __classPrivateFieldSet2(this, _Channel_onmessage, onmessage || (() => {
+          }), "f");
+          this.id = transformCallback((rawMessage) => {
+            const index3 = rawMessage.index;
+            if ("end" in rawMessage) {
+              if (index3 == __classPrivateFieldGet2(this, _Channel_nextMessageIndex, "f")) {
+                this.cleanupCallback();
+              } else {
+                __classPrivateFieldSet2(this, _Channel_messageEndIndex, index3, "f");
+              }
+              return;
+            }
+            const message = rawMessage.message;
+            if (index3 == __classPrivateFieldGet2(this, _Channel_nextMessageIndex, "f")) {
+              __classPrivateFieldGet2(this, _Channel_onmessage, "f").call(this, message);
+              __classPrivateFieldSet2(this, _Channel_nextMessageIndex, __classPrivateFieldGet2(this, _Channel_nextMessageIndex, "f") + 1, "f");
+              while (__classPrivateFieldGet2(this, _Channel_nextMessageIndex, "f") in __classPrivateFieldGet2(this, _Channel_pendingMessages, "f")) {
+                const message2 = __classPrivateFieldGet2(this, _Channel_pendingMessages, "f")[__classPrivateFieldGet2(this, _Channel_nextMessageIndex, "f")];
+                __classPrivateFieldGet2(this, _Channel_onmessage, "f").call(this, message2);
+                delete __classPrivateFieldGet2(this, _Channel_pendingMessages, "f")[__classPrivateFieldGet2(this, _Channel_nextMessageIndex, "f")];
+                __classPrivateFieldSet2(this, _Channel_nextMessageIndex, __classPrivateFieldGet2(this, _Channel_nextMessageIndex, "f") + 1, "f");
+              }
+              if (__classPrivateFieldGet2(this, _Channel_nextMessageIndex, "f") === __classPrivateFieldGet2(this, _Channel_messageEndIndex, "f")) {
+                this.cleanupCallback();
+              }
+            } else {
+              __classPrivateFieldGet2(this, _Channel_pendingMessages, "f")[index3] = message;
+            }
+          });
+        }
+        cleanupCallback() {
+          window.__TAURI_INTERNALS__.unregisterCallback(this.id);
+        }
+        set onmessage(handler) {
+          __classPrivateFieldSet2(this, _Channel_onmessage, handler, "f");
+        }
+        get onmessage() {
+          return __classPrivateFieldGet2(this, _Channel_onmessage, "f");
+        }
+        [(_Channel_onmessage = /* @__PURE__ */ new WeakMap(), _Channel_nextMessageIndex = /* @__PURE__ */ new WeakMap(), _Channel_pendingMessages = /* @__PURE__ */ new WeakMap(), _Channel_messageEndIndex = /* @__PURE__ */ new WeakMap(), SERIALIZE_TO_IPC_FN)]() {
+          return `__CHANNEL__:${this.id}`;
+        }
+        toJSON() {
+          return this[SERIALIZE_TO_IPC_FN]();
+        }
+      };
+      _Resource_rid = /* @__PURE__ */ new WeakMap();
+    }
+  });
+
+  // node_modules/@tauri-apps/api/event.js
+  var TauriEvent;
+  var init_event = __esm({
+    "node_modules/@tauri-apps/api/event.js"() {
+      init_core();
+      (function(TauriEvent2) {
+        TauriEvent2["WINDOW_RESIZED"] = "tauri://resize";
+        TauriEvent2["WINDOW_MOVED"] = "tauri://move";
+        TauriEvent2["WINDOW_CLOSE_REQUESTED"] = "tauri://close-requested";
+        TauriEvent2["WINDOW_DESTROYED"] = "tauri://destroyed";
+        TauriEvent2["WINDOW_FOCUS"] = "tauri://focus";
+        TauriEvent2["WINDOW_BLUR"] = "tauri://blur";
+        TauriEvent2["WINDOW_SCALE_FACTOR_CHANGED"] = "tauri://scale-change";
+        TauriEvent2["WINDOW_THEME_CHANGED"] = "tauri://theme-changed";
+        TauriEvent2["WINDOW_CREATED"] = "tauri://window-created";
+        TauriEvent2["WEBVIEW_CREATED"] = "tauri://webview-created";
+        TauriEvent2["DRAG_ENTER"] = "tauri://drag-enter";
+        TauriEvent2["DRAG_OVER"] = "tauri://drag-over";
+        TauriEvent2["DRAG_DROP"] = "tauri://drag-drop";
+        TauriEvent2["DRAG_LEAVE"] = "tauri://drag-leave";
+      })(TauriEvent || (TauriEvent = {}));
+    }
+  });
+
   // ../lumio-official-plugins/plugins/plex/runtime/index.ts
   var runtime_exports = {};
   __export(runtime_exports, {
     PlexPlugin: () => PlexPlugin
   });
-
-  // components/settings/plex-section.tsx
-  init_react_shim();
-  var import_react56 = __toESM(require_dist82());
 
   // lib/profile-storage.ts
   var PROFILES_KEY = "app_profiles";
@@ -110141,6 +110243,1475 @@
   }
   function removeScopedStorageItem(baseKey) {
     localStorage.removeItem(getProfileStorageKey(baseKey));
+  }
+
+  // lib/i18n.tsx
+  init_react_shim();
+  init_jsx_runtime_shim();
+  var strings = {
+    en: {
+      // Nav
+      calendar: "Calendar",
+      releases: "Releases",
+      settings: "Settings",
+      lastWatched: "Last watched",
+      popularStreaming: "On Streaming",
+      popularOnTv: "Series",
+      popularCinema: "In theaters",
+      popularTrendingMovies: "Movies",
+      popularTrailers: "Trailers",
+      popularLiveTv: "Live TV",
+      m3uUrls: "M3U Playlist URLs",
+      m3uUrlsDesc: "Enter one M3U URL per line. Channels are stored in your browser.",
+      m3uUrlsPlaceholder: "https://example.com/playlist.m3u",
+      m3uFetchList: "Fetch list",
+      m3uFetchListDone: "List fetched",
+      m3uFetchListError: "Could not fetch list",
+      liveTvLists: "Channel lists",
+      liveTvCreateList: "Create list",
+      liveTvListName: "List name",
+      liveTvNoLists: "No channel lists yet.",
+      liveTvAddToList: "Add to active list",
+      liveTvRemoveFromList: "Remove from active list",
+      liveTvDeleteList: "Delete list",
+      liveTvSelectListFirst: "Select a list first",
+      liveTvHomeSource: "Live TV source",
+      liveTvAllChannels: "All channels",
+      m3uNoUrl: "No M3U URL configured. Add one in Settings.",
+      m3uLoading: "Loading channels\u2026",
+      m3uError: "Failed to load channels.",
+      m3uChannels: "channels",
+      m3uSearch: "Search channels\u2026",
+      m3uNoResults: "No channels match your search.",
+      // Hero
+      subtitle: "Search movies, series, or cast in Sweden.",
+      brandTagline: "Movie & Series Finder",
+      myFiles: "My Files",
+      trending: "Trending",
+      homeTrendingSubtitle: "Across movies and series this week",
+      popularMoviesTitle: "Popular Movies",
+      popularMoviesSubtitle: "Current movie picks with the biggest momentum",
+      popularSeriesTitle: "Popular Series",
+      popularSeriesSubtitle: "Top series on streaming right now",
+      showAllTrending: "Show all trending",
+      showAllMovies: "Show all movies",
+      showAllSeries: "Show all series",
+      searchPlaceholder: "Search titles or cast names",
+      searchTitlePlaceholder: "Search title",
+      sampleData: "Sample data",
+      tmdbLive: "TMDb live",
+      castSearch: "Cast search",
+      titleSearch: "Title search",
+      showingCastResults: "Showing cast results",
+      showingTitleResults: "Showing title results.",
+      for: "for",
+      // Recently watched
+      recentlyStreamed: "Recently streamed",
+      lastWatchedTitle: "Last Watched",
+      continueWhereLeftOff: "Continue where you left off",
+      showAll: "Show all",
+      all: "All",
+      close: "Close",
+      trailerLabel: "Trailer",
+      closeTrailer: "Close trailer",
+      liveTvStreamError: "Could not load stream.",
+      liveTvStreamErrorHelp: "The stream may be geo-blocked, offline, or unsupported.",
+      allCategories: "All categories",
+      sceneReleases: "Scene Releases",
+      activeFiltersTitle: "Active filters",
+      activeFiltersHintPrefix: "Provider availability is scoped to Sweden (",
+      activeFiltersHintSuffix: "), and multiple selected chips match any of the chosen labels, not all of them at once.",
+      streamProviderGlobalDefaults: "Stream provider defaults",
+      streamProviderApiKey: "API key",
+      streamProviderApiKeyPlaceholder: "Your API key",
+      streamProviderApiKeyPerSource: "API key (per provider)",
+      streamProviderUsingGlobalKey: "Using global API key",
+      apiKeyLabel: "API key",
+      streamProviderDefaultQualityFilter: "Default quality filter (exclude)",
+      streamProviderDefaultLanguages: "Default languages",
+      streamProviderDefaultSource: "Default stream provider",
+      streamProviderDefaultMaxResults: "Default max results per quality",
+      streamProviderQualityFilter: "Quality filter (exclude)",
+      streamProviderLanguages: "Languages",
+      streamProviderSources: "Providers (empty = all)",
+      streamProviderSelectQualities: "Select qualities",
+      streamProviderSelectLanguages: "Select languages",
+      streamProviderSelectSources: "Select providers",
+      streamProviderMaxResults: "Max results",
+      streamProviderMaxSize: "Max size (MB, 0 = no limit)",
+      streamProviderSelection: "Stream provider",
+      streamProviderManifestUrl: "Manifest URL (stremio:// or https://)",
+      streamProviderCustomUrl: "Custom URL",
+      streamProviderNoUrl: "No URL set",
+      streamProviderAddIndexed: "+ TorrentsDB",
+      streamProviderAddStandard: "+ Standard",
+      streamProviderAddComet: "+ Comet",
+      streamProviderAddMediaFusion: "+ MediaFusion",
+      streamProviderAddCustom: "+ Custom URL",
+      useGlobal: "Use global",
+      clearFilters: "Clear filters",
+      moviesOnly: "Movies only",
+      seriesOnly: "Series only",
+      titleLabel: "Title",
+      ratingLabel: "Rating",
+      ratingLabelTmdb: "TMDb",
+      noStreamsYet: "No streamed movies or audiobooks found yet.",
+      noScrapersEnabled: "No stream providers enabled.",
+      streamNotCached: "Stream not cached \u2014 try another",
+      downloadTimeout: "Download timeout \u2014 try another stream",
+      openToContinue: "\u2014 open to continue",
+      timeLeft: "left",
+      resume: "Resume",
+      listenedAt: "at",
+      streamAvailable: "Cached",
+      streamDownload: "Download",
+      startingMovie: "Starting movie...",
+      findingMovie: "Finding movie...",
+      startingEpisode: "Starting episode...",
+      // Media card / details
+      movie: "Movie",
+      series: "Series",
+      audiobook: "Audiobook",
+      synopsis: "Synopsis",
+      genres: "Genres",
+      filterProviders: "Services",
+      streamingIn: "Streaming in Sweden",
+      noProviders: "No streaming providers found",
+      tmdbRating: "Rating",
+      tmdbVoteAverage: "TMDb vote average",
+      keywords: "Keywords",
+      showLess: "Show less",
+      recommendations: "Recommendations",
+      follow: "Follow",
+      following: "Following \u2713",
+      movieWatchlistAdd: "My list",
+      movieWatchlistAdded: "My list \u2713",
+      moreInfo: "More info",
+      watchTrailer: "Watch Trailer",
+      openOnImdb: "Open on IMDb",
+      seasons: "Seasons:",
+      matchedOnTitle: "Matched on title:",
+      localFallback: "Local fallback",
+      // Streams
+      streams: "Streams",
+      rdStreams: "Stream provider streams",
+      configureRd: "Configure your stream provider API key in Settings.",
+      loadingSeasons: "Loading seasons\u2026",
+      loadingEpisodes: "Loading episodes\u2026",
+      noSeasons: "No seasons found.",
+      noEpisodes: "No episodes found.",
+      cached: "Cached",
+      notCached: "not cached (will download)",
+      play: "Play",
+      noStreamsAvailable: "No streams",
+      noStreamYet: "No stream yet",
+      addAndPlay: "Add & Play",
+      searchingStreams: "Searching for streams\u2026",
+      noStreams: "No streams found.",
+      allFiltered: "All streams filtered by quality settings.",
+      preparingPlayback: "Preparing playback\u2026",
+      downloading: "Downloading\u2026",
+      downloadingFile: "Downloading file...",
+      queued: "Queued on stream provider\u2026",
+      convertingMagnet: "Converting magnet\u2026",
+      selectingFiles: "Selecting files\u2026",
+      addingToRd: "Adding to stream provider\u2026",
+      unrestrictingLinks: "Unrestricting links\u2026",
+      selectFile: "Select file to play:",
+      noVideoFiles: "No video files detected.",
+      markWatched: "Mark as watched",
+      markUnwatched: "Mark as unwatched",
+      watched: "\u2713 Watched",
+      watchedQ: "Watched?",
+      markAllWatched: "Mark all as watched",
+      addManually: "Add magnet / direct link manually",
+      hideManual: "Hide manual input",
+      pasteManual: "Paste magnet link manually",
+      manualPlaceholder: "magnet:? or https://\u2026",
+      go: "Go",
+      tryAgain: "Try again",
+      cancel: "Cancel",
+      copyLink: "Copy link",
+      copied: "Copied \u2713",
+      moreActions: "More actions",
+      copyStreamLink: "Copy stream link",
+      downloadThisVideo: "Download this video",
+      openInVlc: "Play in VLC",
+      preparingDownload: "Preparing download...",
+      downloadComplete: "Download complete",
+      downloadFailed: "Download failed",
+      backToStreams: "Back to streams",
+      instantPlay: "instant play",
+      continueFrom: "Continue:",
+      retry: "Retry",
+      // Audiobook
+      audiobooks: "Audiobook",
+      resumeAudiobook: "Resume audiobook",
+      searchingAudiobooks: "Searching for audiobooks\u2026",
+      noAudiobooks: "No audiobooks found for",
+      dismiss: "Dismiss",
+      // Filters
+      filters: "Filters",
+      refine: "Refine",
+      reset: "Reset",
+      type: "Type",
+      movieGenres: "Movie genres",
+      seriesGenres: "TV genres",
+      moreFilters: "More filters",
+      year: "Year",
+      rating: "Rating",
+      languages: "Languages",
+      originalLanguage: "Original language",
+      noLanguagesSelected: "No original languages selected yet.",
+      languageSearchPlaceholder: "Search languages, for example Swedish, Danish, or en",
+      languageSearchHelper: "Search by language name or code. Multiple selections mean the title can match any of the chosen original languages.",
+      noLanguageMatches: "No language matches for",
+      noKeywordsSelected: "No keywords selected yet.",
+      keywordsPlaceholderTmdb: "Keyword",
+      keywordsPlaceholderCatalog: "Keyword",
+      clearSearch: "Clear search",
+      keywordsHelperTmdb: "Type at least 2 characters. Use the arrow keys and Enter to select faster. You can only add keywords that exist in TMDb.",
+      keywordsHelperCatalog: "Type at least 2 characters. Use the arrow keys and Enter to select faster. You can only add keywords that exist in the catalog.",
+      searchingKeywords: "Searching keywords...",
+      noKeywordMatches: "No keyword matches for",
+      add: "Add",
+      selected: "selected",
+      sortBy: "Sort by",
+      sortMostPopular: "Most popular",
+      sortMostRelevant: "Most relevant",
+      sortHighestRating: "Highest rating",
+      sortHighestTmdb: "Highest TMDb rating",
+      sortNewest: "Newest to Oldest",
+      sortOldest: "Oldest to Newest",
+      // Results
+      aboutResults: "About",
+      results: "results",
+      page: "Page",
+      of: "of",
+      previous: "Previous",
+      next: "Next",
+      showingPagedResults: "Showing paged results from the strongest available matches.",
+      usingFallback: "Using sample fallback",
+      sampleCatalog: "Sample catalog",
+      noResults: "No matches",
+      // Subtitle menu
+      subtitleLanguages: "Subtitle Languages",
+      subtitleVariants: "Subtitles Variants",
+      subtitleSettings: "Subtitles Settings",
+      selectLanguage: "Select a language",
+      off: "Off",
+      delay: "Delay",
+      subtitleAutoSync: "Auto-sync",
+      subtitleAutoSyncAnalyzing: "Analyzing...",
+      subtitleAutoSyncApplied: "Applied offset",
+      subtitleAutoSyncFailed: "Could not auto-sync subtitles",
+      subtitleAutoSyncNoMatch: "Could not find a reliable subtitle match",
+      subtitleAutoSyncNeedsGroq: "Add a Groq API key in Settings first",
+      subtitleAutoSyncNeedsSubtitle: "Pick a subtitle track first",
+      subtitleAutoSyncNotEnoughSpeech: "Try again during a scene with more dialogue",
+      size: "Size",
+      verticalPosition: "Vertical Position",
+      subtitlesLabel: "Subtitles",
+      subtitleProvider: "OpenSubtitles v3",
+      undo: "Undo",
+      audio: "Audio",
+      audioLanguage: "Audio language",
+      currentAudioOutput: "Current audio output",
+      info: "Info",
+      actor: "Actor",
+      readMore: "Read more",
+      readLess: "Read less",
+      knownFor: "Known for",
+      credits: "Credits",
+      gender: "Gender",
+      birth: "Birth",
+      bornIn: "Born in:",
+      alsoKnownAs: "Also known as:",
+      noBiography: "No biography available on TMDb.",
+      soundtrack: "Soundtrack",
+      soundtrackLoadError: "Could not load soundtrack",
+      noSoundtrackFound: "No soundtrack found on Spotify",
+      searchOnSpotify: "Search on Spotify",
+      searching: "Searching\u2026",
+      instantPlayTitle: "Instant play",
+      zappFindTitle: "Find a movie",
+      // Settings
+      settingsTitle: "Settings",
+      settingsDesc: "Configure integrations for this app.",
+      profilesTitle: "Profiles",
+      profilesDesc: "Create separate local profiles with their own browser cache and playback history.",
+      profileName: "Profile name",
+      profileNamePlaceholder: "For example Family or Kids",
+      createProfile: "Create profile",
+      deleteProfile: "Delete profile",
+      resetProfile: "Reset profile",
+      activeProfile: "Active profile",
+      switchProfile: "Switch profile",
+      profileSwitcher: "Profile",
+      streamProviderTitle: "Stream provider",
+      streamProviderDesc: "Choose which Stremio-compatible stream provider is used to find streams.",
+      configure: "Configure",
+      customScraper: "Custom",
+      customScraperDesc: "Any Stremio-compatible stream provider.",
+      rdApiKeyLabel: "Stream provider API key",
+      streamProviderManifestPlaceholder: "Paste manifest URL here...",
+      customManifestPlaceholder: "https://your-stream-provider.example.com/manifest.json",
+      hevcTitle: "HEVC / H.265 Codec",
+      hevcDesc: "Required to play MKV/HEVC streams in the browser. Installs the Microsoft HEVC Video Extension via PowerShell.",
+      installHevc: "Install HEVC Codec",
+      installed: "Installed",
+      checking: "Checking\u2026",
+      installing: "Installing\u2026",
+      hevcRestart: "Restart your browser for the codec to take effect.",
+      tmdbApiToken: "API Token (Bearer)",
+      tmdbApiKey: "API Key (v3)",
+      language: "Language",
+      region: "Region",
+      tmdbEnvNote: "",
+      homekitTitle: "HomeKit",
+      homekitDesc: "Expose Lumio as its own HomeKit accessory and manage pairing from here.",
+      homekitEnableAccessory: "Enable HomeKit accessory",
+      name: "Name",
+      homekitStatusLabel: "Status",
+      homekitNotConnected: "Not connected",
+      homekitDisabled: "Disabled",
+      homekitReady: "Ready for pairing",
+      homekitNotPublished: "Not published",
+      homekitStatusFetchError: "Could not fetch HomeKit status",
+      homekitServerError: "Could not contact HomeKit server",
+      homekitActionFailed: "HomeKit operation failed",
+      homekitResetInfo: "Pairing reset. A new HomeKit identity was created for a fresh pairing.",
+      homekitEventRules: "Event rules",
+      movieStarts: "Movie starts",
+      moviePaused: "Movie pauses",
+      videoClosed: "Video closes",
+      openGuide: "Open guide",
+      closeGuide: "Close guide",
+      startPairing: "Start pairing",
+      resetPairing: "Reset pairing",
+      refreshStatus: "Refresh status",
+      starting: "Starting...",
+      resetting: "Resetting...",
+      homekitGuideTitle: "HomeKit guide",
+      homekitGuideStep1: "Press Start pairing.",
+      homekitGuideStep2: "Add the accessory in the Home app and enter the PIN code from the field above.",
+      homekitGuideStep3: "Name the switches the same as the event rules.",
+      homekitGuideStep4: "Create one automation per switch with the trigger Turns on.",
+      homekitGuideStep5: "Choose your lights and set brightness/scene for each event.",
+      homekitSwitchesToUse: "Switches to use",
+      homekitSwitchesList: "Movie starts, Movie pauses, Video closes",
+      groqTitle: "Groq AI Search",
+      groqDescPrefix: "Enable AI search with natural language.",
+      spotifyTitle: "Spotify",
+      localFilesTitle: "Local files",
+      localFilesDesc: "Choose a folder with video files. Lumio matches filenames to TMDb and shows them in a separate library.",
+      chooseFolder: "Choose folder",
+      removeFolder: "Remove folder",
+      playbackTitle: "Playback",
+      playbackDesc: "Settings for video playback.",
+      homeSectionsTitle: "Homepage",
+      homeSectionsDesc: "Choose order, layout and card count for each homepage section. Up to 3 custom sections are supported.",
+      homeBackgroundTitle: "Homepage background",
+      homeBackgroundDesc: "Use your own image URLs instead of the random homepage backdrop.",
+      homeBackgroundPlaceholder: "https://example.com/background-1.jpg\nhttps://example.com/background-2.jpg",
+      uploadImages: "Upload images",
+      enabled: "Enabled",
+      uploadedImage: "Uploaded image",
+      localUploadStored: "Saved locally in Lumio",
+      remove: "Remove",
+      drag: "Drag",
+      moveUp: "Move up",
+      moveDown: "Move down",
+      moveUpShort: "Up",
+      moveDownShort: "Down",
+      homeRowRecent: "Last watched",
+      homeRowTrending: "Trending",
+      homeRowMovies: "Popular movies",
+      homeRowSeries: "Popular series",
+      homeRowTrailers: "Trailers",
+      homeRowLiveTv: "Live TV",
+      homeRowTraktCollection: "Watchlist",
+      homeRowCustom1: "Custom section 1",
+      homeRowCustom2: "Custom section 2",
+      homeRowCustom3: "Custom section 3",
+      homeSearchTitle: "Homepage search",
+      homeSearchDesc: "Show or hide the large search field on the homepage.",
+      homeSearchToggleLabel: "Hide search field on homepage",
+      homeTopMenuTitle: "Top menu",
+      homeTopMenuDesc: "Choose which top buttons to show and change their order.",
+      homeTopMenuSettingsShortcut: "Settings can always be opened with Cmd+, on Mac or Ctrl+, on other keyboards.",
+      homeMainMenuTitle: "Homepage menu",
+      homeMainMenuDesc: "Choose which menu buttons to show and change their order with up and down.",
+      profileSelector: "Profile selector",
+      alwaysVisible: "Always visible",
+      collapseSection: "Collapse section",
+      expandSection: "Expand section",
+      homeSource: "Source",
+      homeSourceMovies: "Movies",
+      homeSourceSeries: "Series",
+      homeSourceSeriesWatchlist: "New episodes",
+      homeSourceSeriesWatchlistSubtitle: "Watchlist",
+      homeSourceMovieWatchlist: "My list",
+      homeSourceTraktCollection: "Watchlist",
+      homeWatchlistList: "List",
+      homeWatchlistType: "Type",
+      homeSourcePlexRecentAdded: "Plex recently added",
+      pluginYoutubeNotConnected: "Not connected",
+      pluginYoutubeConnection: "Connection",
+      pluginYoutubeConnectionNote: "This plugin uses your own Google Desktop Client ID and YouTube Data API key.",
+      pluginYoutubeClientId: "Google OAuth Client ID",
+      pluginYoutubeApiKey: "YouTube API Key",
+      pluginYoutubeOwnAppTitle: "How to create your own app",
+      pluginYoutubeOwnAppStep1: "1. Create a Google Cloud project.",
+      pluginYoutubeOwnAppStep2: "2. Enable YouTube Data API v3.",
+      pluginYoutubeOwnAppStep3: "3. Configure the OAuth consent screen.",
+      pluginYoutubeOwnAppStep4: "4. Create an OAuth Client ID for Desktop app.",
+      pluginYoutubeOwnAppStep5: "5. Create an API key restricted to YouTube Data API v3.",
+      pluginYoutubeOwnAppStep6: "6. Paste the client ID and API key here, then reconnect YouTube.",
+      pluginYoutubeOwnAppNote: "For private use you do not need your own domain. For localhost/browser development you can also create a Web application client, but normal plugin use should rely on a Desktop app client.",
+      pluginYoutubeVideoOptions: "Video options",
+      pluginYoutubeHero: "Hero",
+      pluginYoutubeHeroHelp: "Uses the latest followed video as the Home hero. Once opened, that video stays hidden until a newer one appears.",
+      pluginYoutubeKeepHero: "Keep hero visible",
+      pluginYoutubeKeepHeroHelp: "Keeps the latest YouTube hero visible after opening it, and only replaces it when a newer video appears during startup warmup.",
+      pluginYoutubeHideShorts: "Hide shorts",
+      pluginYoutubeHideShortsHelp: "Hides short-form YouTube videos from grids when duration data is available.",
+      pluginYoutubeConnect: "Connect YouTube",
+      pluginYoutubeConnecting: "Connecting\u2026",
+      pluginYoutubeRefresh: "Refresh",
+      pluginYoutubeRefreshing: "Refreshing\u2026",
+      pluginYoutubeReconnect: "Reconnect",
+      pluginYoutubeDisconnect: "Disconnect",
+      pluginYoutubeDisconnecting: "Disconnecting\u2026",
+      pluginYoutubeClearCache: "Clear cache",
+      pluginYoutubeConnectError: "Could not connect YouTube.",
+      pluginYoutubeDisconnectError: "Could not disconnect YouTube.",
+      pluginYoutubeLoadError: "Failed to load YouTube data.",
+      pluginYoutubeRowLoadError: "Failed to load YouTube row.",
+      pluginYoutubeFollowingPage: "Following",
+      pluginYoutubeChannelsPage: "Channels",
+      pluginYoutubePlaylistsPage: "Playlists",
+      pluginYoutubeChannelPage: "Channel",
+      pluginYoutubePlaylistPage: "Playlist",
+      pluginYoutubeFollowingSubtitle: "Latest videos from channels you follow.",
+      pluginYoutubeChannelsSubtitle: "Search for new channels and manage who you follow.",
+      pluginYoutubePlaylistsSubtitle: "Your saved YouTube playlists.",
+      pluginYoutubeChannelSubtitle: "Latest videos from this channel.",
+      pluginYoutubePlaylistSubtitle: "Playlist videos",
+      pluginYoutubeMatchingChannels: "Matching channels",
+      pluginYoutubeYourSubscriptions: "Your subscriptions",
+      pluginYoutubeSearchChannels: "Search channels",
+      pluginYoutubeSetupPrompt: "Add your Google Desktop Client ID and YouTube API key in the YouTube plugin settings to get started.",
+      pluginYoutubeConnectPrompt: "Connect YouTube in Settings to browse your subscriptions, channels and playlists.",
+      pluginYoutubeLoading: "Loading your YouTube data\u2026",
+      pluginYoutubePlaylistBadge: "Playlist",
+      pluginYoutubeChannelBadge: "Channel",
+      pluginYoutubeVideoBadge: "Video",
+      pluginYoutubeVideos: "videos",
+      pluginYoutubeUnfollow: "Unfollow",
+      pluginYoutubeOpenFeed: "Open feed",
+      pluginYoutubeFollowingRow: "YouTube following",
+      pluginSectionIntro: "Manage installed plugins, browse the official marketplace and add plugin sources from GitHub or ZIP files.",
+      pluginRestartRequired: "Restart required for plugin changes to fully apply.",
+      pluginRestartNow: "Restart now",
+      pluginInstalledTitle: "Installed plugins",
+      pluginPreinstalled: "Pre-installed",
+      pluginOfficialBadge: "Official",
+      pluginManualSourceBadge: "Manual source",
+      pluginInactiveBadge: "Inactive",
+      pluginUpdateAvailable: "Update available",
+      pluginMetadataOnly: "Metadata only",
+      pluginRepoLabel: "Repo",
+      pluginManifestLabel: "Manifest",
+      pluginUpdateNotice: "A newer plugin version is available in the marketplace source.",
+      pluginActiveState: "Active",
+      pluginInactiveState: "Inactive",
+      pluginDeactivate: "Deactivate",
+      pluginActivate: "Activate",
+      pluginUninstall: "Uninstall",
+      pluginMarketplaceTitle: "Official marketplace",
+      pluginMarketplaceIntro: "Install official Lumio plugins from the shared marketplace repository.",
+      pluginMarketplaceFallback: "Using fallback marketplace data",
+      pluginMarketplaceLive: "Live manifest",
+      pluginMarketplaceStatic: "Fallback manifest",
+      pluginMarketplaceChecked: "Checked",
+      pluginCheckUpdates: "Check updates",
+      pluginBundledRuntime: "Bundled runtime",
+      pluginSharedRepoSuffix: "in shared marketplace repo",
+      pluginInstall: "Install",
+      pluginNoReadmePreview: "No README preview available.",
+      pluginNoChangelogPreview: "No changelog preview available.",
+      pluginAllOfficialInstalled: "All official marketplace plugins are installed.",
+      pluginAddSourceTitle: "Add plugin source",
+      pluginAddSourceIntro: "Add a GitHub repository that contains a Lumio plugin marketplace manifest, or upload a plugin ZIP. Discovered plugins will appear below as installable options.",
+      pluginGithubRepoUrl: "GitHub repo URL",
+      pluginAddGithubSource: "Add GitHub source",
+      pluginChooseReleaseZip: "Choose a release ZIP",
+      pluginChooseReleaseZipHelp: "This repository has multiple release ZIPs. Pick which asset Lumio should inspect.",
+      pluginUploadZipTitle: "Upload plugin ZIP",
+      pluginUploadZipHelp: "Import a plugin ZIP directly, for example a downloaded stream provider package or a zipped plugin repository. You can also drag and drop a ZIP here.",
+      pluginUploadZip: "Upload ZIP",
+      pluginLastZipPreview: "Last ZIP preview",
+      pluginSourceHelp: "GitHub sources should ideally expose a root marketplace.json. If that is missing, Lumio also tries the latest GitHub release ZIP automatically. ZIP imports can contain either a marketplace.json or one or more plugin.json files.",
+      pluginAddedSources: "Added sources",
+      pluginGithubSourceBadge: "GitHub source",
+      pluginZipSourceBadge: "ZIP source",
+      pluginAddedAt: "Added",
+      pluginRemoveSource: "Remove source",
+      pluginReleaseAssets: "Release assets",
+      pluginFilesFound: "Files found",
+      pluginInstallAllFromSource: "Install all from source",
+      pluginAllSourceInstalled: "All plugins from this source are already installed.",
+      pluginRuntimeAvailable: "Runtime available",
+      pluginMetadataOnlyNow: "Metadata only for now",
+      open: "Open",
+      clear: "Clear",
+      homeSourceLiveTvLists: "Live TV lists",
+      homeSourceMyFiles: "My files",
+      liveTvList: "Live TV list",
+      liveTvChooseList: "Choose a Live TV list",
+      homeMenuPremiereStar: "Premiere star",
+      plexMenu: "Plex",
+      traktTitle: "Trakt",
+      traktDesc: "Sign in with Trakt to sync watched TV episodes, watchlists, and your collection with Lumio. Plex cards are not reliably supported for Trakt sync yet.",
+      traktSignedInAs: "Signed in as",
+      traktSignedInFallback: "Trakt user",
+      traktSyncDesc: "Sync pulls data from Trakt into Lumio and also pushes your local Lumio watchlists and watched episodes back to Trakt. Plex follow/My list is currently not guaranteed to sync correctly.",
+      traktImportData: "Sync Trakt data",
+      traktImporting: "Syncing...",
+      traktImportDone: "Trakt sync complete",
+      traktDisconnect: "Disconnect",
+      traktConnect: "Sign in with Trakt",
+      traktWaiting: "Waiting for Trakt...",
+      traktOpenLinkAndCode: "Open the link and enter the code",
+      traktStartLoginFailed: "Failed to start Trakt login",
+      traktLoginFailed: "Trakt login failed",
+      traktImportFailed: "Failed to sync with Trakt",
+      plexTitle: "Plex",
+      plexDesc: "Sign in with Plex, choose a server and libraries, and use Plex recently added as a homepage row.",
+      plexSignedInAs: "Connected as",
+      plexSignedInFallback: "Plex user",
+      plexConnect: "Sign in with Plex",
+      plexWaiting: "Waiting for Plex...",
+      plexOpenLinkAndCode: "Open the link and approve Lumio",
+      plexChooseProfile: "Profile",
+      plexProfilePin: "Profile PIN",
+      plexProfilePinPlaceholder: "Enter Plex profile PIN",
+      plexApplyProfile: "Apply profile",
+      plexRefreshingProfiles: "Refreshing profiles...",
+      plexProfileApplied: "Plex profile activated",
+      plexChooseServer: "Server",
+      plexChooseLibraries: "Libraries",
+      plexRefreshLibraries: "Refresh libraries",
+      plexRefreshingLibrariesButton: "Refreshing libraries...",
+      plexRefreshLibrariesDone: "Plex libraries updated",
+      plexRefreshLibrariesEmpty: "No movie or show libraries were found on this server.",
+      plexRefreshLibrariesFailed: "Failed to refresh Plex libraries",
+      plexRequestFailed: "Could not reach Plex. Check that the selected server is online and reachable.",
+      plexDisconnect: "Disconnect",
+      plexNoServers: "No Plex servers found.",
+      plexNoLibraries: "No movie or show libraries found on this server.",
+      plexRecentlyAdded: "Plex recently added",
+      homeSourceCinemaMovies: "In theaters",
+      homeSourceTopRatedMovies: "Top rated movies",
+      homeSourceTopRatedSeries: "Top rated series",
+      homeSourceReleaseRecentMovies: "Releases: recently movies",
+      homeSourceReleaseRecentSeries: "Releases: recently series",
+      homeSourceReleaseUpcomingMovies: "Releases: upcoming movies",
+      homeSourceReleaseUpcomingSeries: "Releases: upcoming series",
+      homeSourceStreamingMovies: "Trending movies (streaming)",
+      homeSourceStreamingSeries: "Trending series (streaming)",
+      homeLayout: "Layout",
+      homeLayoutSlider: "Slider",
+      homeLayoutGrid: "Grid",
+      homeLayoutFull: "Show all",
+      homeCount: "Cards",
+      homeCountDesc: "Maximum cards shown in this section.",
+      homeSliderGlobal: "Slider cards",
+      homeSliderGlobalDesc: "How many cards a slider shows at most on wide screens.",
+      homeSliderOverride: "Slider override",
+      homeSliderDisplay: "Display",
+      homeSliderUseGlobal: "Global value",
+      homeFullModeNote: "Only one section can use Show all. Last watched can still stay above as a slider.",
+      pinChannel: "Pin channel",
+      unpinChannel: "Unpin channel",
+      aspectRatio: "Aspect ratio",
+      aspectRatioDesc: "Choose how the video should fit in the player.",
+      cropZoom: "Zoom / crop",
+      cropZoomOff: "Off",
+      cropZoomCrop: "Crop",
+      cropZoomZoom: "Zoom",
+      cropZoomZoomPlus: "Zoom +",
+      rememberAspectRatio: "Remember aspect ratio",
+      rememberAspectRatioDesc: "Uses your chosen aspect ratio as the default for new movies and episodes.",
+      autoSkipIntro: "Auto-skip intro",
+      autoSkipIntroDesc: "When enabled, intros are skipped automatically. When disabled, a Skip intro button is shown if IntroDB has a match.",
+      autoplayStreamOnPlay: "Auto-play on Play button",
+      autoplayStreamOnPlayDesc: "For non-Plex cards, Play tries up to 3 streams automatically. Known mismatches on audio language and oversized files are skipped when possible.",
+      hideWatchedMoviesHome: "Hide watched movies on Home",
+      hideWatchedMoviesHomeDesc: "Exclude movies marked as watched from Home grids and sliders, including Plex rows.",
+      stillWatching: "Still watching?",
+      stillWatchingDesc: "For TV series only. Pause playback after the chosen time without control interaction, once at least 3 episodes have played in the same session.",
+      stillWatchingMaxMinutes: "Still watching max time",
+      stillWatchingMaxMinutesDesc: "Default matches Netflix timing: 90 minutes. Prompt appears only for TV series after at least 3 episodes.",
+      stillWatchingContinue: "Continue watching",
+      stillWatchingExit: "Close player",
+      autoplayMaxStreamSize: "Max stream size",
+      autoplayMaxStreamSizeDesc: "Optional limit in GB for auto-play attempts. Empty means no size cap.",
+      introDebugReady: "IntroDB ready",
+      introDebugLoading: "IntroDB loading",
+      introDebugFound: "Intro found",
+      introDebugMissing: "No intro match",
+      introDebugAutoOn: "Auto-skip on",
+      introDebugAutoOff: "Auto-skip off",
+      aspectAuto: "Auto",
+      aspectContain: "Fit",
+      aspectFill: "Fill",
+      aspect16_9: "16:9",
+      aspect4_3: "4:3",
+      audioMode: "Audio mode",
+      audioModeDesc: "Choose between maximum compatibility or the best possible multichannel audio in proxy playback.",
+      audioModeCompatible: "Compatible",
+      audioModeCompatibleDesc: "Safest playback. Proxy audio is encoded to stereo AAC.",
+      audioModeBest: "Best possible",
+      audioModeBestDesc: "Keeps multichannel audio in the proxy when possible. Tauri/mpv continues to use the original track directly.",
+      nightMode: "Night mode / DRC",
+      nightModeDesc: "Reduces loud peaks and makes dialogue easier to hear at lower volume.",
+      nightModeOff: "Off",
+      nightModeMild: "Mild night mode",
+      nightModeStrong: "Strong night mode",
+      defaultSubtitleLanguage: "Default subtitles language",
+      defaultSubtitleLanguageDesc: "Selected automatically when subtitles are available.",
+      fallbackSubtitleLanguage: "Fallback subtitles language",
+      fallbackSubtitleLanguageDesc: "Used only if the primary subtitle language is not available.",
+      defaultAudioTrack: "Default audio track",
+      defaultAudioTrackDesc: "Tries to choose the language automatically when multiple audio tracks exist.",
+      disableSubtitlesWhenAudioMatches: "Turn off subtitles when audio matches",
+      disableSubtitlesWhenAudioMatchesDesc: "If your selected default audio language is found, subtitles stay off by default.",
+      subtitleSize: "Subtitle size",
+      subtitleSizeDesc: "Used by default for new movies and episodes.",
+      subtitleVerticalPositionDesc: "How high above the controls bar the subtitles are placed.",
+      subtitleOpacity: "Opacity",
+      subtitleOpacityDesc: "Applies to the whole subtitle including the background.",
+      subtitleTextColor: "Subtitle color",
+      subtitleTextColorDesc: "Default color for subtitles.",
+      subtitleBackgroundColor: "Subtitle background color",
+      subtitleBackgroundColorDesc: "Transparent matches the current style.",
+      subtitleOutlineColor: "Subtitle outline color",
+      subtitleOutlineColorDesc: "Used for the text outline/shadow.",
+      subtitlePreviewText: "This is how your subtitles will look",
+      subtitlePreviewCaption: "Preview of the default look",
+      skipIntro: "Skip intro",
+      originalFirst: "Original / first",
+      noFallback: "No fallback",
+      autoplayNextEpisode: "Auto-play next episode",
+      autoplayNextEpisodeDesc: "Preloads the next episode and plays it automatically at the end of the series.",
+      showPopup: "Show popup",
+      showPopupDesc: "How many seconds before the end the next-episode card is shown.",
+      preloadBeforePopup: "Preload before popup",
+      preloadBeforePopupDesc: "How many seconds before the popup we start fetching the next episode.",
+      seconds: "seconds",
+      rdApiKey: "Stream provider API key",
+      rdApiPlaceholder: "Your stream provider API key",
+      rdApiNote: "Stored only in your browser (localStorage).",
+      streamQuality: "Stream quality filters",
+      streamQualityDesc: "Hide low-quality or undesirable stream sources.",
+      hideCam: "Hide CAM / CAMRIP",
+      hideCamDesc: "Filmed in cinema \u2014 very low quality",
+      hideTs: "Hide TeleSync / TeleCine (TS/TC)",
+      hideTsDesc: "Low-quality pre-release copies",
+      hideScr: "Hide Screener (SCR)",
+      hideScrDesc: "DVD/streaming screener copies",
+      hideBelow720p: "Hide below 720p",
+      hideBelow720pDesc: "480p, 360p and lower resolutions",
+      clearCache: "Clear cache",
+      clearing: "Clearing\u2026",
+      cleared: "Cleared \u2014 restart server",
+      save: "Save",
+      checkKey: "Check Key",
+      testingConnection: "Testing connection\u2026",
+      enterApiKeyFirst: "Enter an API key first.",
+      connectedAs: "Connected as",
+      // Calendar
+      seriesCalendar: "Series Calendar",
+      today: "Today",
+      followSeries: "Follow a series to see episodes here",
+      noEpisodesDay: "No episodes this day.",
+      openStreams: "Open Streams",
+      more: "more",
+      // Media type chips
+      both: "Both",
+      movies: "Movies",
+      // Release calendar
+      releaseCalendar: "Release Calendar",
+      recent: "Recent",
+      upcoming: "Upcoming",
+      allServices: "All services",
+      premiere: "Premiere",
+      newBadge: "New",
+      newPremiere: "New premiere",
+      loadMore: "Load more",
+      allLanguages: "All languages",
+      hideFilters: "Hide filters",
+      sort: "Sort",
+      // Watchlist
+      addToWatchlist: "Add to watchlist",
+      removeFromWatchlist: "Remove from watchlist",
+      watchlistNewPremieres: "Watchlist \u2013 new premieres",
+      watchlistAllLists: "Watchlist",
+      watchlistEmpty: "No starred titles yet.",
+      watchlistEmptyHint: "Star titles in the release calendar to follow premieres.",
+      seriesWatchlistEmpty: "No followed series yet.",
+      newEpisodeBadge: "New ep",
+      // Date presets
+      days7: "7 days",
+      days30: "30 days",
+      days60: "60 days",
+      days90: "90 days",
+      thisYear: "This year",
+      dateFrom: "From",
+      // Settings
+      spotifyDesc: "Used to display soundtracks in the details panel. Create an app at developer.spotify.com and copy the Client ID and Client Secret.",
+      clearCacheDesc: "Clear app cache and build artifacts if something behaves oddly.",
+      // Soundtrack
+      openOnSpotify: "Open on Spotify"
+    },
+    sv: {
+      // Nav
+      calendar: "Kalender",
+      releases: "Releases",
+      settings: "Inst\xE4llningar",
+      lastWatched: "Senast sett",
+      popularStreaming: "P\xE5 Streaming",
+      popularOnTv: "Serier",
+      popularCinema: "P\xE5 bio",
+      popularTrendingMovies: "Filmer",
+      popularTrailers: "Trailers",
+      popularLiveTv: "Live TV",
+      m3uUrls: "M3U-spellistor",
+      m3uUrlsDesc: "Ange en M3U-l\xE4nk per rad.",
+      m3uUrlsPlaceholder: "https://exempel.se/spellista.m3u",
+      m3uFetchList: "H\xE4mta lista",
+      m3uFetchListDone: "Listan h\xE4mtad",
+      m3uFetchListError: "Kunde inte h\xE4mta listan",
+      liveTvLists: "Kanallistor",
+      liveTvCreateList: "Skapa lista",
+      liveTvListName: "Listnamn",
+      liveTvNoLists: "Inga kanallistor \xE4nnu.",
+      liveTvAddToList: "L\xE4gg till i aktiv lista",
+      liveTvRemoveFromList: "Ta bort fr\xE5n aktiv lista",
+      liveTvDeleteList: "Radera lista",
+      liveTvSelectListFirst: "V\xE4lj en lista f\xF6rst",
+      liveTvHomeSource: "K\xE4lla f\xF6r Live TV",
+      liveTvAllChannels: "Alla kanaler",
+      m3uNoUrl: "Ingen M3U-l\xE4nk konfigurerad. L\xE4gg till en i Inst\xE4llningar.",
+      m3uLoading: "Laddar kanaler\u2026",
+      m3uError: "Kunde inte ladda kanaler.",
+      m3uChannels: "kanaler",
+      m3uSearch: "S\xF6k kanaler\u2026",
+      m3uNoResults: "Inga kanaler matchar din s\xF6kning.",
+      // Hero
+      subtitle: "S\xF6k filmer, serier eller sk\xE5despelare i Sverige.",
+      brandTagline: "Film- & serieguiden",
+      myFiles: "Mina filer",
+      trending: "Trendar",
+      homeTrendingSubtitle: "Bland filmer och serier den h\xE4r veckan",
+      popularMoviesTitle: "Popul\xE4ra filmer",
+      popularMoviesSubtitle: "Aktuella filmtips med mest momentum",
+      popularSeriesTitle: "Popul\xE4ra serier",
+      popularSeriesSubtitle: "Toppserier p\xE5 streaming just nu",
+      showAllTrending: "Visa alla trender",
+      showAllMovies: "Visa alla filmer",
+      showAllSeries: "Visa alla serier",
+      searchPlaceholder: "S\xF6k titlar eller sk\xE5despelarnamn",
+      searchTitlePlaceholder: "S\xF6k titel",
+      sampleData: "Exempeldata",
+      tmdbLive: "TMDb live",
+      castSearch: "Sk\xE5despelars\xF6kning",
+      titleSearch: "Titels\xF6kning",
+      showingCastResults: "Visar sk\xE5despelarresultat",
+      showingTitleResults: "Visar titelresultat.",
+      for: "f\xF6r",
+      // Recently watched
+      recentlyStreamed: "Senast streamade",
+      lastWatchedTitle: "Senast sett",
+      continueWhereLeftOff: "Forts\xE4tt d\xE4r du slutade",
+      showAll: "Visa alla",
+      all: "Alla",
+      close: "St\xE4ng",
+      trailerLabel: "Trailer",
+      closeTrailer: "St\xE4ng trailer",
+      liveTvStreamError: "Kunde inte ladda str\xF6mmen.",
+      liveTvStreamErrorHelp: "Str\xF6mmen kan vara geoblockerad, offline eller ej st\xF6dd.",
+      allCategories: "Alla kategorier",
+      sceneReleases: "Scene-releaser",
+      activeFiltersTitle: "Aktiva filter",
+      activeFiltersHintPrefix: "Tillg\xE4nglighet f\xF6r tj\xE4nster \xE4r begr\xE4nsad till Sverige (",
+      activeFiltersHintSuffix: "), och flera valda chips matchar valfritt av etiketterna, inte alla samtidigt.",
+      streamProviderGlobalDefaults: "Globala standarder f\xF6r stream providers",
+      streamProviderApiKey: "API-nyckel",
+      streamProviderApiKeyPlaceholder: "Din API-nyckel",
+      streamProviderApiKeyPerSource: "API-nyckel (per provider)",
+      streamProviderUsingGlobalKey: "Anv\xE4nder global API-nyckel",
+      apiKeyLabel: "API-nyckel",
+      streamProviderDefaultQualityFilter: "Standard kvalitetsfilter (uteslut)",
+      streamProviderDefaultLanguages: "Standard spr\xE5k",
+      streamProviderDefaultSource: "Standard stream provider",
+      streamProviderDefaultMaxResults: "Standard maxresultat per kvalitet",
+      streamProviderQualityFilter: "Kvalitetsfilter (uteslut)",
+      streamProviderLanguages: "Spr\xE5k",
+      streamProviderSources: "Leverant\xF6rer (tomt = alla)",
+      streamProviderSelectQualities: "V\xE4lj kvaliteter",
+      streamProviderSelectLanguages: "V\xE4lj spr\xE5k",
+      streamProviderSelectSources: "V\xE4lj leverant\xF6rer",
+      streamProviderMaxResults: "Maxresultat",
+      streamProviderMaxSize: "Maxstorlek (MB, 0 = ingen gr\xE4ns)",
+      streamProviderSelection: "Stream provider",
+      streamProviderManifestUrl: "Manifest-URL (stremio:// eller https://)",
+      streamProviderCustomUrl: "Egen URL",
+      streamProviderNoUrl: "Ingen URL angiven",
+      streamProviderAddIndexed: "+ TorrentsDB",
+      streamProviderAddStandard: "+ Standard",
+      streamProviderAddComet: "+ Comet",
+      streamProviderAddMediaFusion: "+ MediaFusion",
+      streamProviderAddCustom: "+ Egen URL",
+      useGlobal: "Anv\xE4nd globalt",
+      clearFilters: "Rensa filter",
+      moviesOnly: "Endast filmer",
+      seriesOnly: "Endast serier",
+      titleLabel: "Titel",
+      ratingLabel: "Betyg",
+      ratingLabelTmdb: "TMDb",
+      noStreamsYet: "Inga streamade filmer eller ljudb\xF6cker hittades \xE4nnu.",
+      noScrapersEnabled: "Inga stream providers \xE4r aktiverade.",
+      streamNotCached: "Streamen \xE4r inte cachad \u2014 prova en annan",
+      downloadTimeout: "Nedladdningen tog f\xF6r l\xE5ng tid \u2014 prova en annan stream",
+      openToContinue: "\u2014 \xF6ppna f\xF6r att forts\xE4tta",
+      timeLeft: "kvar",
+      resume: "Forts\xE4tt",
+      listenedAt: "vid",
+      streamAvailable: "Cachad",
+      streamDownload: "Ladda ned",
+      startingMovie: "Startar film...",
+      findingMovie: "Hittar film...",
+      startingEpisode: "Startar avsnitt...",
+      // Media card / details
+      movie: "Film",
+      series: "Serie",
+      audiobook: "Ljudbok",
+      synopsis: "Synopsis",
+      genres: "Genrer",
+      filterProviders: "Tj\xE4nster",
+      streamingIn: "Streaming i Sverige",
+      noProviders: "Inga streamingtj\xE4nster hittades",
+      tmdbRating: "Betyg",
+      tmdbVoteAverage: "TMDb genomsnittsbetyg",
+      keywords: "Nyckelord",
+      showLess: "Visa mindre",
+      recommendations: "Rekommendationer",
+      follow: "F\xF6lj",
+      following: "F\xF6ljer \u2713",
+      movieWatchlistAdd: "Min lista",
+      movieWatchlistAdded: "Min lista \u2713",
+      moreInfo: "Mer info",
+      watchTrailer: "Se trailer",
+      openOnImdb: "\xD6ppna p\xE5 IMDb",
+      seasons: "S\xE4songer:",
+      matchedOnTitle: "Matchad p\xE5 titel:",
+      localFallback: "Lokal reserv",
+      // Streams
+      streams: "Str\xF6mmar",
+      rdStreams: "Str\xF6mmar fr\xE5n stream provider",
+      configureRd: "Konfigurera din API-nyckel f\xF6r stream provider i Inst\xE4llningar.",
+      loadingSeasons: "Laddar s\xE4songer\u2026",
+      loadingEpisodes: "Laddar avsnitt\u2026",
+      noSeasons: "Inga s\xE4songer hittades.",
+      noEpisodes: "Inga avsnitt hittades.",
+      cached: "Cachad",
+      notCached: "ej cachad (laddas ned)",
+      play: "Spela",
+      noStreamsAvailable: "Inga streams",
+      noStreamYet: "Ingen stream \xE4n",
+      addAndPlay: "L\xE4gg till & Spela",
+      searchingStreams: "S\xF6ker str\xF6mmar\u2026",
+      noStreams: "Inga str\xF6mmar hittades.",
+      allFiltered: "Alla str\xF6mmar filtrerade bort av kvalitetsinst\xE4llningar.",
+      preparingPlayback: "F\xF6rbereder uppspelning\u2026",
+      downloading: "Laddar ned\u2026",
+      downloadingFile: "Laddar ner fil...",
+      queued: "I k\xF6 hos stream provider\u2026",
+      convertingMagnet: "Konverterar magnet\u2026",
+      selectingFiles: "V\xE4ljer filer\u2026",
+      addingToRd: "L\xE4gger till hos stream provider\u2026",
+      unrestrictingLinks: "Avbegr\xE4nsar l\xE4nkar\u2026",
+      selectFile: "V\xE4lj fil att spela:",
+      noVideoFiles: "Inga videofiler hittades.",
+      markWatched: "Markera som sedd",
+      markUnwatched: "Markera som osedd",
+      watched: "\u2713 Sedd",
+      watchedQ: "Sedd?",
+      markAllWatched: "Markera alla som sedda",
+      addManually: "L\xE4gg till magnet / direktl\xE4nk manuellt",
+      hideManual: "D\xF6lj manuell inmatning",
+      pasteManual: "Klistra in magnet-l\xE4nk manuellt",
+      manualPlaceholder: "magnet:? eller https://\u2026",
+      go: "K\xF6r",
+      tryAgain: "F\xF6rs\xF6k igen",
+      cancel: "Avbryt",
+      copyLink: "Kopiera l\xE4nk",
+      copied: "Kopierat \u2713",
+      moreActions: "Fler val",
+      copyStreamLink: "Kopiera streaml\xE4nk",
+      downloadThisVideo: "Ladda ner videon",
+      openInVlc: "Spela i VLC",
+      preparingDownload: "F\xF6rbereder nedladdning...",
+      downloadComplete: "Nedladdning klar",
+      downloadFailed: "Nedladdning misslyckades",
+      backToStreams: "Tillbaka till str\xF6mmar",
+      instantPlay: "spelas direkt",
+      continueFrom: "Forts\xE4tt:",
+      retry: "F\xF6rs\xF6k igen",
+      // Audiobook
+      audiobooks: "Ljudbok",
+      resumeAudiobook: "Forts\xE4tt lyssna",
+      searchingAudiobooks: "S\xF6ker ljudb\xF6cker\u2026",
+      noAudiobooks: "Inga ljudb\xF6cker hittades f\xF6r",
+      dismiss: "St\xE4ng",
+      // Filters
+      filters: "Filter",
+      refine: "F\xF6rfina",
+      reset: "\xC5terst\xE4ll",
+      type: "Typ",
+      movieGenres: "Filmgenrer",
+      seriesGenres: "TV-genrer",
+      moreFilters: "Fler filter",
+      year: "\xC5r",
+      rating: "Betyg",
+      languages: "Spr\xE5k",
+      originalLanguage: "Originalspr\xE5k",
+      noLanguagesSelected: "Inga originalspr\xE5k valda \xE4nnu.",
+      languageSearchPlaceholder: "S\xF6k spr\xE5k, t.ex. svenska, danska eller en",
+      languageSearchHelper: "S\xF6k p\xE5 spr\xE5knamn eller kod. Flera val inneb\xE4r att titeln kan matcha n\xE5got av de valda originalspr\xE5ken.",
+      noLanguageMatches: "Inga spr\xE5ktr\xE4ffar f\xF6r",
+      noKeywordsSelected: "Inga nyckelord valda \xE4nnu.",
+      keywordsPlaceholderTmdb: "Keyword",
+      keywordsPlaceholderCatalog: "Keyword",
+      clearSearch: "Rensa s\xF6kning",
+      keywordsHelperTmdb: "Skriv minst 2 tecken. Anv\xE4nd piltangenterna och Enter f\xF6r att v\xE4lja snabbare. Du kan bara l\xE4gga till nyckelord som finns i TMDb.",
+      keywordsHelperCatalog: "Skriv minst 2 tecken. Anv\xE4nd piltangenterna och Enter f\xF6r att v\xE4lja snabbare. Du kan bara l\xE4gga till nyckelord som finns i katalogen.",
+      searchingKeywords: "S\xF6ker nyckelord...",
+      noKeywordMatches: "Inga nyckelordstr\xE4ffar f\xF6r",
+      add: "L\xE4gg till",
+      selected: "valda",
+      sortBy: "Sortera",
+      sortMostPopular: "Mest popul\xE4ra",
+      sortMostRelevant: "Mest relevant",
+      sortHighestRating: "H\xF6gst betyg",
+      sortHighestTmdb: "H\xF6gst TMDb-betyg",
+      sortNewest: "Nyast till \xE4ldst",
+      sortOldest: "\xC4ldst till nyast",
+      // Results
+      aboutResults: "Ungef\xE4r",
+      results: "resultat",
+      page: "Sida",
+      of: "av",
+      previous: "F\xF6reg\xE5ende",
+      next: "N\xE4sta",
+      showingPagedResults: "Visar sidade resultat fr\xE5n de starkaste tr\xE4ffarna.",
+      usingFallback: "Anv\xE4nder exempeldata",
+      sampleCatalog: "Exempelkatalog",
+      noResults: "Inga tr\xE4ffar",
+      // Subtitle menu
+      subtitleLanguages: "Undertextspr\xE5k",
+      subtitleVariants: "Undertextvarianter",
+      subtitleSettings: "Undertextinst\xE4llningar",
+      selectLanguage: "V\xE4lj ett spr\xE5k",
+      off: "Av",
+      delay: "F\xF6rdr\xF6jning",
+      subtitleAutoSync: "Auto-sync",
+      subtitleAutoSyncAnalyzing: "Analyserar...",
+      subtitleAutoSyncApplied: "La p\xE5 offset",
+      subtitleAutoSyncFailed: "Kunde inte auto-synca undertexterna",
+      subtitleAutoSyncNoMatch: "Kunde inte hitta en tillr\xE4ckligt bra matchning",
+      subtitleAutoSyncNeedsGroq: "L\xE4gg till en Groq API-nyckel i inst\xE4llningar f\xF6rst",
+      subtitleAutoSyncNeedsSubtitle: "V\xE4lj ett undertextsp\xE5r f\xF6rst",
+      subtitleAutoSyncNotEnoughSpeech: "F\xF6rs\xF6k igen i en scen med mer dialog",
+      size: "Storlek",
+      verticalPosition: "Vertikal position",
+      subtitlesLabel: "Undertexter",
+      subtitleProvider: "OpenSubtitles v3",
+      undo: "\xC5ngra",
+      audio: "Ljud",
+      audioLanguage: "Ljudspr\xE5k",
+      currentAudioOutput: "Aktuellt ljudl\xE4ge",
+      info: "Info",
+      actor: "Sk\xE5dis",
+      readMore: "L\xE4s mer",
+      readLess: "Visa mindre",
+      knownFor: "K\xE4nd f\xF6r",
+      credits: "Credits",
+      gender: "K\xF6n",
+      birth: "F\xF6dd",
+      bornIn: "F\xF6dd i:",
+      alsoKnownAs: "\xC4ven k\xE4nd som:",
+      noBiography: "Ingen biografi finns p\xE5 TMDb.",
+      soundtrack: "Soundtrack",
+      soundtrackLoadError: "Kunde inte ladda soundtrack",
+      noSoundtrackFound: "Inget soundtrack hittades p\xE5 Spotify",
+      searchOnSpotify: "S\xF6k p\xE5 Spotify",
+      searching: "S\xF6ker\u2026",
+      instantPlayTitle: "Direktspelning",
+      zappFindTitle: "Hitta film",
+      // Settings
+      settingsTitle: "Inst\xE4llningar",
+      settingsDesc: "Konfigurera integrationer f\xF6r den h\xE4r appen.",
+      profilesTitle: "Profiler",
+      profilesDesc: "Skapa separata lokala profiler med egen browser-cache och egen uppspelningshistorik.",
+      profileName: "Profilnamn",
+      profileNamePlaceholder: "Till exempel Familj eller Barn",
+      createProfile: "Skapa profil",
+      deleteProfile: "Ta bort profil",
+      resetProfile: "Nollst\xE4ll profil",
+      activeProfile: "Aktiv profil",
+      switchProfile: "Byt profil",
+      profileSwitcher: "Profil",
+      streamProviderTitle: "Stream provider",
+      streamProviderDesc: "V\xE4lj vilken Stremio-kompatibel stream provider som anv\xE4nds f\xF6r att hitta streams.",
+      configure: "Konfigurera",
+      customScraper: "Anpassad",
+      customScraperDesc: "Valfri Stremio-kompatibel stream provider.",
+      rdApiKeyLabel: "API-nyckel f\xF6r stream provider",
+      streamProviderManifestPlaceholder: "Klistra in manifest-URL h\xE4r...",
+      customManifestPlaceholder: "https://din-stream-provider.example.com/manifest.json",
+      hevcTitle: "HEVC / H.265-kodek",
+      hevcDesc: "Kr\xE4vs f\xF6r att spela MKV/HEVC-str\xF6mmar i webbl\xE4saren. Installerar Microsoft HEVC-videotill\xE4gget via PowerShell.",
+      installHevc: "Installera HEVC-kodek",
+      installed: "Installerad",
+      checking: "Kontrollerar\u2026",
+      installing: "Installerar\u2026",
+      hevcRestart: "Starta om webbl\xE4saren f\xF6r att kodeken ska aktiveras.",
+      tmdbApiToken: "API-token (Bearer)",
+      tmdbApiKey: "API-nyckel (v3)",
+      language: "Spr\xE5k",
+      region: "Region",
+      tmdbEnvNote: "",
+      homekitTitle: "HomeKit",
+      homekitDesc: "Bygg in Lumio som ett eget HomeKit-tillbeh\xF6r och styr pairing h\xE4rifr\xE5n.",
+      homekitEnableAccessory: "Aktivera HomeKit-tillbeh\xF6r",
+      name: "Namn",
+      homekitStatusLabel: "Status",
+      homekitNotConnected: "Inte ansluten",
+      homekitDisabled: "Avst\xE4ngd",
+      homekitReady: "Redo f\xF6r pairing",
+      homekitNotPublished: "Ej publicerad",
+      homekitStatusFetchError: "Kunde inte h\xE4mta HomeKit-status",
+      homekitServerError: "Kunde inte kontakta HomeKit-servern",
+      homekitActionFailed: "HomeKit-operation misslyckades",
+      homekitResetInfo: "Pairing nollst\xE4lld. Ny HomeKit-identitet skapad f\xF6r ny parkoppling.",
+      homekitEventRules: "Event-regler",
+      movieStarts: "Film startar",
+      moviePaused: "Film pausas",
+      videoClosed: "Video st\xE4ngs",
+      openGuide: "\xD6ppna guide",
+      closeGuide: "St\xE4ng guide",
+      startPairing: "Starta pairing",
+      resetPairing: "Nollst\xE4ll pairing",
+      refreshStatus: "Uppdatera status",
+      starting: "Startar...",
+      resetting: "Nollst\xE4ller...",
+      homekitGuideTitle: "HomeKit-guide",
+      homekitGuideStep1: "Tryck p\xE5 Starta pairing.",
+      homekitGuideStep2: "L\xE4gg till tillbeh\xF6ret i Hem-appen och ange PIN-koden fr\xE5n f\xE4ltet ovan.",
+      homekitGuideStep3: "D\xF6p switcharna till samma namn som event-reglerna.",
+      homekitGuideStep4: "Skapa en automation per switch med triggern Sl\xE5s p\xE5.",
+      homekitGuideStep5: "V\xE4lj dina lampor och st\xE4ll in ljusstyrka/scen f\xF6r varje event.",
+      homekitSwitchesToUse: "Switchar att anv\xE4nda",
+      homekitSwitchesList: "Film startar, Film pausas, Video st\xE4ngs",
+      groqTitle: "Groq AI Search",
+      groqDescPrefix: "Aktiverar AI-s\xF6kning med naturligt spr\xE5k.",
+      spotifyTitle: "Spotify",
+      localFilesTitle: "Lokala filer",
+      localFilesDesc: "V\xE4lj en mapp med videofiler. Lumio matchar filnamn mot TMDb och visar dem i ett eget bibliotek.",
+      chooseFolder: "V\xE4lj mapp",
+      removeFolder: "Ta bort mapp",
+      playbackTitle: "Uppspelning",
+      playbackDesc: "Inst\xE4llningar f\xF6r videouppspelning.",
+      homeSectionsTitle: "Startsida",
+      homeSectionsDesc: "V\xE4lj ordning, layout och antal kort f\xF6r varje rad p\xE5 startsidan. Upp till 3 egna sektioner st\xF6ds.",
+      homeBackgroundTitle: "Bakgrund p\xE5 startsidan",
+      homeBackgroundDesc: "Anv\xE4nd egna bild-URL:er i st\xE4llet f\xF6r den slumpade bakgrunden.",
+      homeBackgroundPlaceholder: "https://exempel.se/bakgrund-1.jpg\nhttps://exempel.se/bakgrund-2.jpg",
+      uploadImages: "Ladda upp bilder",
+      enabled: "Aktiverad",
+      uploadedImage: "Uppladdad bild",
+      localUploadStored: "Sparas lokalt i Lumio",
+      remove: "Ta bort",
+      drag: "Dra",
+      moveUp: "Flytta upp",
+      moveDown: "Flytta ner",
+      moveUpShort: "Upp",
+      moveDownShort: "Ner",
+      homeRowRecent: "Senast sett",
+      homeRowTrending: "Trendar",
+      homeRowMovies: "Popul\xE4ra filmer",
+      homeRowSeries: "Popul\xE4ra serier",
+      homeRowTrailers: "Trailers",
+      homeRowLiveTv: "Live TV",
+      homeRowTraktCollection: "Watchlist",
+      homeRowCustom1: "Egen rad 1",
+      homeRowCustom2: "Egen rad 2",
+      homeRowCustom3: "Egen rad 3",
+      homeSearchTitle: "S\xF6kf\xE4lt p\xE5 startsidan",
+      homeSearchDesc: "Visa eller d\xF6lj det stora s\xF6kf\xE4ltet p\xE5 startsidan.",
+      homeSearchToggleLabel: "D\xF6lj s\xF6kf\xE4lt p\xE5 startsidan",
+      homeTopMenuTitle: "\xD6vre meny",
+      homeTopMenuDesc: "V\xE4lj vilka \xF6vre knappar som ska visas och \xE4ndra ordningen.",
+      homeTopMenuSettingsShortcut: "Inst\xE4llningar kan alltid \xF6ppnas med Cmd+, p\xE5 Mac eller Ctrl+, p\xE5 andra tangentbord.",
+      homeMainMenuTitle: "Startsidans meny",
+      homeMainMenuDesc: "V\xE4lj vilka menyknappar som ska visas och \xE4ndra ordningen med upp och ner.",
+      profileSelector: "Profilv\xE4ljare",
+      alwaysVisible: "Visas alltid",
+      collapseSection: "Kollapsa sektion",
+      expandSection: "Expandera sektion",
+      homeSource: "K\xE4lla",
+      homeSourceMovies: "Filmer",
+      homeSourceSeries: "Serier",
+      homeSourceSeriesWatchlist: "Nya avsnitt",
+      homeSourceSeriesWatchlistSubtitle: "Watchlist",
+      homeSourceMovieWatchlist: "Min lista",
+      homeSourceTraktCollection: "Watchlist",
+      homeWatchlistList: "Lista",
+      homeWatchlistType: "Typ",
+      homeSourcePlexRecentAdded: "Plex nyligen tillagt",
+      pluginYoutubeNotConnected: "Inte ansluten",
+      pluginYoutubeConnection: "Anslutning",
+      pluginYoutubeConnectionNote: "Det h\xE4r pluginet anv\xE4nder ditt eget Google Desktop Client ID och din YouTube Data API-nyckel.",
+      pluginYoutubeClientId: "Google OAuth Client ID",
+      pluginYoutubeApiKey: "YouTube API-nyckel",
+      pluginYoutubeOwnAppTitle: "S\xE5 skapar du din egen app",
+      pluginYoutubeOwnAppStep1: "1. Skapa ett Google Cloud-projekt.",
+      pluginYoutubeOwnAppStep2: "2. Aktivera YouTube Data API v3.",
+      pluginYoutubeOwnAppStep3: "3. Konfigurera OAuth consent screen.",
+      pluginYoutubeOwnAppStep4: "4. Skapa ett OAuth Client ID f\xF6r Desktop app.",
+      pluginYoutubeOwnAppStep5: "5. Skapa en API-nyckel begr\xE4nsad till YouTube Data API v3.",
+      pluginYoutubeOwnAppStep6: "6. Klistra in client ID och API-nyckel h\xE4r och anslut YouTube igen.",
+      pluginYoutubeOwnAppNote: "F\xF6r privat bruk beh\xF6ver du ingen egen dom\xE4n. F\xF6r localhost/webbutveckling kan du ocks\xE5 skapa en Web application client, men vanlig pluginanv\xE4ndning ska anv\xE4nda en Desktop app client.",
+      pluginYoutubeVideoOptions: "Videoalternativ",
+      pluginYoutubeHero: "Hero",
+      pluginYoutubeHeroHelp: "Anv\xE4nder den senaste videon fr\xE5n kanaler du f\xF6ljer som hero p\xE5 startsidan. N\xE4r den \xF6ppnas d\xF6ljs den tills en nyare video dyker upp.",
+      pluginYoutubeKeepHero: "Beh\xE5ll hero",
+      pluginYoutubeKeepHeroHelp: "Beh\xE5ller den senaste YouTube-heron synlig \xE4ven efter att du \xF6ppnat den, och byter bara n\xE4r en nyare video dyker upp vid uppstart/warmup.",
+      pluginYoutubeHideShorts: "D\xF6lj shorts",
+      pluginYoutubeHideShortsHelp: "D\xF6ljer korta YouTube-videor fr\xE5n grids n\xE4r durationsdata finns tillg\xE4nglig.",
+      pluginYoutubeConnect: "Anslut YouTube",
+      pluginYoutubeConnecting: "Ansluter\u2026",
+      pluginYoutubeRefresh: "Uppdatera",
+      pluginYoutubeRefreshing: "Uppdaterar\u2026",
+      pluginYoutubeReconnect: "Reconnect",
+      pluginYoutubeDisconnect: "Koppla fr\xE5n",
+      pluginYoutubeDisconnecting: "Kopplar fr\xE5n\u2026",
+      pluginYoutubeClearCache: "Rensa cache",
+      pluginYoutubeConnectError: "Kunde inte ansluta YouTube.",
+      pluginYoutubeDisconnectError: "Kunde inte koppla fr\xE5n YouTube.",
+      pluginYoutubeLoadError: "Kunde inte ladda YouTube-data.",
+      pluginYoutubeRowLoadError: "Kunde inte ladda YouTube-raden.",
+      pluginYoutubeFollowingPage: "F\xF6ljer",
+      pluginYoutubeChannelsPage: "Kanaler",
+      pluginYoutubePlaylistsPage: "Spellistor",
+      pluginYoutubeChannelPage: "Kanal",
+      pluginYoutubePlaylistPage: "Spellista",
+      pluginYoutubeFollowingSubtitle: "Senaste videorna fr\xE5n kanaler du f\xF6ljer.",
+      pluginYoutubeChannelsSubtitle: "S\xF6k efter nya kanaler och hantera vilka du f\xF6ljer.",
+      pluginYoutubePlaylistsSubtitle: "Dina sparade YouTube-spellistor.",
+      pluginYoutubeChannelSubtitle: "Senaste videorna fr\xE5n den h\xE4r kanalen.",
+      pluginYoutubePlaylistSubtitle: "Videor i spellistan",
+      pluginYoutubeMatchingChannels: "Matchande kanaler",
+      pluginYoutubeYourSubscriptions: "Dina prenumerationer",
+      pluginYoutubeSearchChannels: "S\xF6k kanaler",
+      pluginYoutubeSetupPrompt: "L\xE4gg in ditt Google Desktop Client ID och din YouTube API-nyckel i YouTube-pluginets inst\xE4llningar f\xF6r att komma ig\xE5ng.",
+      pluginYoutubeConnectPrompt: "Anslut YouTube i inst\xE4llningarna f\xF6r att bl\xE4ddra bland dina prenumerationer, kanaler och spellistor.",
+      pluginYoutubeLoading: "Laddar din YouTube-data\u2026",
+      pluginYoutubePlaylistBadge: "Spellista",
+      pluginYoutubeChannelBadge: "Kanal",
+      pluginYoutubeVideoBadge: "Video",
+      pluginYoutubeVideos: "videor",
+      pluginYoutubeUnfollow: "Avf\xF6lj",
+      pluginYoutubeOpenFeed: "\xD6ppna fl\xF6de",
+      pluginYoutubeFollowingRow: "YouTube f\xF6ljer",
+      pluginSectionIntro: "Hantera installerade plugins, bl\xE4ddra i den officiella marketplace-listan och l\xE4gg till plugin-k\xE4llor fr\xE5n GitHub eller ZIP-filer.",
+      pluginRestartRequired: "Omstart kr\xE4vs f\xF6r att plugin\xE4ndringar ska sl\xE5 igenom helt.",
+      pluginRestartNow: "Starta om nu",
+      pluginInstalledTitle: "Installerade plugins",
+      pluginPreinstalled: "F\xF6rinstallerad",
+      pluginOfficialBadge: "Officiell",
+      pluginManualSourceBadge: "Manuell k\xE4lla",
+      pluginInactiveBadge: "Inaktiv",
+      pluginUpdateAvailable: "Uppdatering finns",
+      pluginMetadataOnly: "Endast metadata",
+      pluginRepoLabel: "Repo",
+      pluginManifestLabel: "Manifest",
+      pluginUpdateNotice: "En nyare pluginversion finns i marketplace-k\xE4llan.",
+      pluginActiveState: "Aktiv",
+      pluginInactiveState: "Inaktiv",
+      pluginDeactivate: "Inaktivera",
+      pluginActivate: "Aktivera",
+      pluginUninstall: "Avinstallera",
+      pluginMarketplaceTitle: "Officiell marketplace",
+      pluginMarketplaceIntro: "Installera officiella Lumio-plugins fr\xE5n det delade marketplace-repot.",
+      pluginMarketplaceFallback: "Anv\xE4nder fallback-data f\xF6r marketplace",
+      pluginMarketplaceLive: "Live-manifest",
+      pluginMarketplaceStatic: "Fallback-manifest",
+      pluginMarketplaceChecked: "Kontrollerad",
+      pluginCheckUpdates: "S\xF6k uppdateringar",
+      pluginBundledRuntime: "Bundlad runtime",
+      pluginSharedRepoSuffix: "i delat marketplace-repo",
+      pluginInstall: "Installera",
+      pluginNoReadmePreview: "Ingen README-f\xF6rhandsvisning tillg\xE4nglig.",
+      pluginNoChangelogPreview: "Ingen changelog-f\xF6rhandsvisning tillg\xE4nglig.",
+      pluginAllOfficialInstalled: "Alla officiella marketplace-plugins \xE4r installerade.",
+      pluginAddSourceTitle: "L\xE4gg till plugin-k\xE4lla",
+      pluginAddSourceIntro: "L\xE4gg till ett GitHub-repo som inneh\xE5ller ett Lumio-pluginmanifest, eller ladda upp en plugin-ZIP. Uppt\xE4ckta plugins visas nedan som installerbara val.",
+      pluginGithubRepoUrl: "GitHub repo-URL",
+      pluginAddGithubSource: "L\xE4gg till GitHub-k\xE4lla",
+      pluginChooseReleaseZip: "V\xE4lj en release-ZIP",
+      pluginChooseReleaseZipHelp: "Det h\xE4r repot har flera release-ZIP-filer. V\xE4lj vilken asset Lumio ska inspektera.",
+      pluginUploadZipTitle: "Ladda upp plugin-ZIP",
+      pluginUploadZipHelp: "Importera en plugin-ZIP direkt, till exempel ett nedladdat stream provider-paket eller ett zippat pluginrepo. Du kan ocks\xE5 dra och sl\xE4ppa en ZIP h\xE4r.",
+      pluginUploadZip: "Ladda upp ZIP",
+      pluginLastZipPreview: "Senaste ZIP-f\xF6rhandsvisning",
+      pluginSourceHelp: "GitHub-k\xE4llor b\xF6r helst exponera en marketplace.json i roten. Om den saknas f\xF6rs\xF6ker Lumio ocks\xE5 automatiskt inspektera den senaste GitHub release-ZIP-filen. ZIP-importer kan inneh\xE5lla antingen en marketplace.json eller en eller flera plugin.json-filer.",
+      pluginAddedSources: "Tillagda k\xE4llor",
+      pluginGithubSourceBadge: "GitHub-k\xE4lla",
+      pluginZipSourceBadge: "ZIP-k\xE4lla",
+      pluginAddedAt: "Tillagd",
+      pluginRemoveSource: "Ta bort k\xE4lla",
+      pluginReleaseAssets: "Release-assets",
+      pluginFilesFound: "Hittade filer",
+      pluginInstallAllFromSource: "Installera alla fr\xE5n k\xE4llan",
+      pluginAllSourceInstalled: "Alla plugins fr\xE5n den h\xE4r k\xE4llan \xE4r redan installerade.",
+      pluginRuntimeAvailable: "Runtime tillg\xE4nglig",
+      pluginMetadataOnlyNow: "Endast metadata just nu",
+      open: "\xD6ppna",
+      clear: "Rensa",
+      homeSourceLiveTvLists: "Live TV-listor",
+      homeSourceMyFiles: "Mina filer",
+      liveTvList: "Live TV-lista",
+      liveTvChooseList: "V\xE4lj en Live TV-lista",
+      homeMenuPremiereStar: "Premi\xE4rstj\xE4rna",
+      plexMenu: "Plex",
+      traktTitle: "Trakt",
+      traktDesc: "Logga in med Trakt f\xF6r att synka sedda serieavsnitt, listor och din samling med Lumio. Plex-kort st\xF6ds \xE4nnu inte p\xE5litligt f\xF6r Trakt-synk.",
+      traktSignedInAs: "Inloggad som",
+      traktSignedInFallback: "Trakt-anv\xE4ndare",
+      traktSyncDesc: "Synk h\xE4mtar data fr\xE5n Trakt till Lumio och skickar ocks\xE5 upp dina lokala Lumio-listor och sedda avsnitt till Trakt. F\xF6lj/Min lista fr\xE5n Plex fungerar \xE4nnu inte garanterat mot Trakt.",
+      traktImportData: "Synka Trakt-data",
+      traktImporting: "Synkar...",
+      traktImportDone: "Trakt-synk klar",
+      traktDisconnect: "Koppla fr\xE5n",
+      traktConnect: "Logga in med Trakt",
+      traktWaiting: "V\xE4ntar p\xE5 Trakt...",
+      traktOpenLinkAndCode: "\xD6ppna l\xE4nken och skriv in koden",
+      traktStartLoginFailed: "Kunde inte starta Trakt-inloggning",
+      traktLoginFailed: "Trakt-inloggning misslyckades",
+      traktImportFailed: "Kunde inte synka med Trakt",
+      plexTitle: "Plex",
+      plexDesc: "Logga in med Plex, v\xE4lj server och bibliotek, och anv\xE4nd Plex nyligen tillagt som en rad p\xE5 startsidan.",
+      plexSignedInAs: "Ansluten som",
+      plexSignedInFallback: "Plex-anv\xE4ndare",
+      plexConnect: "Logga in med Plex",
+      plexWaiting: "V\xE4ntar p\xE5 Plex...",
+      plexOpenLinkAndCode: "\xD6ppna l\xE4nken och godk\xE4nn Lumio",
+      plexChooseProfile: "Profil",
+      plexProfilePin: "Profil-PIN",
+      plexProfilePinPlaceholder: "Ange Plex-profilens PIN",
+      plexApplyProfile: "Anv\xE4nd profil",
+      plexRefreshingProfiles: "Uppdaterar profiler...",
+      plexProfileApplied: "Plex-profil aktiverad",
+      plexChooseServer: "Server",
+      plexChooseLibraries: "Bibliotek",
+      plexRefreshLibraries: "Uppdatera bibliotek",
+      plexRefreshingLibrariesButton: "Uppdaterar bibliotek...",
+      plexRefreshLibrariesDone: "Plex-biblioteken uppdaterades",
+      plexRefreshLibrariesEmpty: "Inga film- eller seriebibliotek hittades p\xE5 den h\xE4r servern.",
+      plexRefreshLibrariesFailed: "Kunde inte uppdatera Plex-bibliotek",
+      plexRequestFailed: "Kunde inte n\xE5 Plex. Kontrollera att vald server \xE4r online och n\xE5bar.",
+      plexDisconnect: "Koppla fr\xE5n",
+      plexNoServers: "Inga Plex-servrar hittades.",
+      plexNoLibraries: "Inga film- eller seriebibliotek hittades p\xE5 den h\xE4r servern.",
+      plexRecentlyAdded: "Plex nyligen tillagt",
+      homeSourceCinemaMovies: "P\xE5 bio",
+      homeSourceTopRatedMovies: "H\xF6gst betyg filmer",
+      homeSourceTopRatedSeries: "H\xF6gst betyg serier",
+      homeSourceReleaseRecentMovies: "Releases: nyligen filmer",
+      homeSourceReleaseRecentSeries: "Releases: nyligen serier",
+      homeSourceReleaseUpcomingMovies: "Releases: kommande filmer",
+      homeSourceReleaseUpcomingSeries: "Releases: kommande serier",
+      homeSourceStreamingMovies: "Trendande filmer (streaming)",
+      homeSourceStreamingSeries: "Trendande serier (streaming)",
+      homeLayout: "Layout",
+      homeLayoutSlider: "Slider",
+      homeLayoutGrid: "Grid",
+      homeLayoutFull: "Visa allt",
+      homeCount: "Kort",
+      homeCountDesc: "Max antal kort som visas i den h\xE4r raden.",
+      homeSliderGlobal: "Sliderkort",
+      homeSliderGlobalDesc: "Hur m\xE5nga kort en slider max visar p\xE5 bred layout.",
+      homeSliderOverride: "Slider override",
+      homeSliderDisplay: "Visning",
+      homeSliderUseGlobal: "Globalt v\xE4rde",
+      homeFullModeNote: "Bara en sektion kan anv\xE4nda Visa allt. Senast sett kan fortfarande ligga kvar ovanf\xF6r som slider.",
+      pinChannel: "Pinna kanal",
+      unpinChannel: "Avpinna kanal",
+      aspectRatio: "Bildformat",
+      aspectRatioDesc: "V\xE4lj hur videon ska placeras i spelaren.",
+      cropZoom: "Zoom / besk\xE4r",
+      cropZoomOff: "Av",
+      cropZoomCrop: "Besk\xE4r",
+      cropZoomZoom: "Zoom",
+      cropZoomZoomPlus: "Zoom +",
+      rememberAspectRatio: "Kom ih\xE5g bildformat",
+      rememberAspectRatioDesc: "Anv\xE4nder ditt valda bildformat som standard f\xF6r nya filmer och avsnitt.",
+      autoSkipIntro: "Auto-skippa intro",
+      autoSkipIntroDesc: "Om det \xE4r p\xE5slaget hoppas intro \xF6ver automatiskt. Om det \xE4r av visas en Skippa intro-knapp n\xE4r IntroDB har en tr\xE4ff.",
+      autoplayStreamOnPlay: "Auto-spela fr\xE5n Play-knappen",
+      autoplayStreamOnPlayDesc: "F\xF6r vanliga kort testar Play upp till 3 streams automatiskt. K\xE4nda fel spr\xE5ksp\xE5r och f\xF6r stora filer hoppas \xF6ver n\xE4r det g\xE5r.",
+      hideWatchedMoviesHome: "D\xF6lj sedda filmer p\xE5 startsidan",
+      hideWatchedMoviesHomeDesc: "Exkludera filmer som markerats som sedda fr\xE5n startsidans gridar och sliders, \xE4ven Plex-rader.",
+      stillWatching: "Tittar du fortfarande?",
+      stillWatchingDesc: "G\xE4ller bara TV-serier. Pausar uppspelningen efter vald tid utan kontrollinteraktion, n\xE4r minst 3 avsnitt har spelats i samma session.",
+      stillWatchingMaxMinutes: "Max tid f\xF6r fortfarande tittar",
+      stillWatchingMaxMinutesDesc: "Standard matchar Netflix-tiden: 90 minuter. Prompten visas bara f\xF6r TV-serier efter minst 3 avsnitt.",
+      stillWatchingContinue: "Forts\xE4tt titta",
+      stillWatchingExit: "St\xE4ng spelaren",
+      autoplayMaxStreamSize: "Max storlek per stream",
+      autoplayMaxStreamSizeDesc: "Valfri gr\xE4ns i GB f\xF6r autoplay-f\xF6rs\xF6k. L\xE4mna tomt f\xF6r ingen storleksgr\xE4ns.",
+      introDebugReady: "IntroDB klar",
+      introDebugLoading: "IntroDB laddar",
+      introDebugFound: "Intro hittat",
+      introDebugMissing: "Ingen introtr\xE4ff",
+      introDebugAutoOn: "Auto-skip p\xE5",
+      introDebugAutoOff: "Auto-skip av",
+      aspectAuto: "Auto",
+      aspectContain: "Anpassa",
+      aspectFill: "Fyll",
+      aspect16_9: "16:9",
+      aspect4_3: "4:3",
+      audioMode: "Ljudl\xE4ge",
+      audioModeDesc: "V\xE4lj mellan maximal kompatibilitet eller b\xE4sta m\xF6jliga flerkanal i proxyspelning.",
+      audioModeCompatible: "Kompatibel",
+      audioModeCompatibleDesc: "S\xE4krast uppspelning. Proxyljud kodas till stereo AAC.",
+      audioModeBest: "B\xE4sta m\xF6jliga",
+      audioModeBestDesc: "Beh\xE5ller flerkanal i proxy n\xE4r m\xF6jligt. Tauri/mpv forts\xE4tter anv\xE4nda originalsp\xE5ret direkt.",
+      nightMode: "Nattl\xE4ge / DRC",
+      nightModeDesc: "D\xE4mpar h\xF6ga toppar och g\xF6r dialog l\xE4ttare att h\xF6ra p\xE5 l\xE5g volym.",
+      nightModeOff: "Av",
+      nightModeMild: "Mild nattl\xE4ge",
+      nightModeStrong: "Stark nattl\xE4ge",
+      defaultSubtitleLanguage: "Standard spr\xE5k f\xF6r textning",
+      defaultSubtitleLanguageDesc: "V\xE4ljs automatiskt n\xE4r undertexter finns tillg\xE4ngliga.",
+      fallbackSubtitleLanguage: "Sekund\xE4rt spr\xE5k f\xF6r textning",
+      fallbackSubtitleLanguageDesc: "Anv\xE4nds bara om det prim\xE4ra undertextspr\xE5ket inte finns.",
+      defaultAudioTrack: "Standard ljudsp\xE5r",
+      defaultAudioTrackDesc: "F\xF6rs\xF6ker v\xE4lja spr\xE5k automatiskt n\xE4r flera ljudsp\xE5r finns.",
+      disableSubtitlesWhenAudioMatches: "St\xE4ng av textning n\xE4r ljudspr\xE5ket matchar",
+      disableSubtitlesWhenAudioMatchesDesc: "Om ditt valda standardspr\xE5k f\xF6r ljud hittas, h\xE5lls textningen av som standard.",
+      subtitleSize: "Textstorlek",
+      subtitleSizeDesc: "Anv\xE4nds som standard f\xF6r nya filmer och avsnitt.",
+      subtitleVerticalPositionDesc: "Hur h\xF6gt \xF6ver kontrollbaren textningen placeras.",
+      subtitleOpacity: "Opacitet",
+      subtitleOpacityDesc: "G\xE4ller hela undertexten inklusive bakgrund.",
+      subtitleTextColor: "Textf\xE4rg",
+      subtitleTextColorDesc: "Standardf\xE4rg f\xF6r undertexten.",
+      subtitleBackgroundColor: "Bakgrundsf\xE4rg",
+      subtitleBackgroundColorDesc: "Transparent motsvarar dagens stil.",
+      subtitleOutlineColor: "Konturf\xE4rg",
+      subtitleOutlineColorDesc: "Anv\xE4nds f\xF6r textens outline/skugga.",
+      subtitlePreviewText: "S\xE5 h\xE4r kommer din textning att se ut",
+      subtitlePreviewCaption: "F\xF6rhandsvisning av standardutseende",
+      skipIntro: "Skippa intro",
+      originalFirst: "Original / f\xF6rsta",
+      noFallback: "Ingen fallback",
+      autoplayNextEpisode: "Auto-spela n\xE4sta avsnitt",
+      autoplayNextEpisodeDesc: "Laddar n\xE4sta avsnitt i f\xF6rv\xE4g och spelar det automatiskt vid seriens slut.",
+      showPopup: "Visa popup",
+      showPopupDesc: "Hur m\xE5nga sekunder f\xF6re slutet n\xE4sta-avsnitt-kortet visas.",
+      preloadBeforePopup: "F\xF6rladda innan popup",
+      preloadBeforePopupDesc: "Hur m\xE5nga sekunder f\xF6re popup vi b\xF6rjar h\xE4mta n\xE4sta avsnitt.",
+      seconds: "sekunder",
+      rdApiKey: "API-nyckel f\xF6r stream provider",
+      rdApiPlaceholder: "Din API-nyckel f\xF6r stream provider",
+      rdApiNote: "Nyckeln lagras bara i din webbl\xE4sare (localStorage).",
+      streamQuality: "Kvalitetsfilter f\xF6r str\xF6mmar",
+      streamQualityDesc: "D\xF6lj l\xE5gkvalitets- eller o\xF6nskade str\xF6mk\xE4llor.",
+      hideCam: "D\xF6lj CAM / CAMRIP",
+      hideCamDesc: "Filmad p\xE5 bio \u2014 mycket l\xE5g kvalitet",
+      hideTs: "D\xF6lj TeleSync / TeleCine (TS/TC)",
+      hideTsDesc: "L\xE5gkvalitets f\xF6rhandsutgivningskopior",
+      hideScr: "D\xF6lj Screener (SCR)",
+      hideScrDesc: "DVD/streaming screenerkopiyor",
+      hideBelow720p: "D\xF6lj under 720p",
+      hideBelow720pDesc: "480p, 360p och l\xE4gre uppl\xF6sningar",
+      clearCache: "Rensa cache",
+      clearing: "Rensar\u2026",
+      cleared: "Rensat \u2014 starta om servern",
+      save: "Spara",
+      checkKey: "Kontrollera nyckel",
+      testingConnection: "Testar anslutning\u2026",
+      enterApiKeyFirst: "Ange en API-nyckel f\xF6rst.",
+      connectedAs: "Ansluten som",
+      // Calendar
+      seriesCalendar: "Seriekalender",
+      today: "Idag",
+      followSeries: "F\xF6lj en serie f\xF6r att se avsnitt h\xE4r",
+      noEpisodesDay: "Inga avsnitt den h\xE4r dagen.",
+      openStreams: "\xD6ppna str\xF6mmar",
+      more: "till",
+      // Media type chips
+      both: "B\xE5da",
+      movies: "Filmer",
+      // Release calendar
+      releaseCalendar: "Releasekalender",
+      recent: "Nyligen",
+      upcoming: "Kommande",
+      allServices: "Alla tj\xE4nster",
+      premiere: "Premi\xE4r",
+      newBadge: "Ny",
+      newPremiere: "Ny premi\xE4r",
+      loadMore: "Ladda mer",
+      allLanguages: "Alla spr\xE5k",
+      hideFilters: "D\xF6lj filter",
+      sort: "Sortera",
+      // Watchlist
+      addToWatchlist: "L\xE4gg till i watchlist",
+      removeFromWatchlist: "Ta bort fr\xE5n watchlist",
+      watchlistNewPremieres: "Watchlist \u2013 nya premi\xE4rer",
+      watchlistAllLists: "Watchlist",
+      watchlistEmpty: "Inga stj\xE4rnm\xE4rkta titlar \xE4n.",
+      watchlistEmptyHint: "Stj\xE4rnm\xE4rk titlar i releasekalendern f\xF6r att f\xF6lja premi\xE4rer.",
+      seriesWatchlistEmpty: "Inga f\xF6ljda serier \xE4n.",
+      newEpisodeBadge: "Nytt avsnitt",
+      // Date presets
+      days7: "7 dagar",
+      days30: "30 dagar",
+      days60: "60 dagar",
+      days90: "90 dagar",
+      thisYear: "I \xE5r",
+      dateFrom: "Fr\xE5n",
+      // Settings
+      spotifyDesc: "Anv\xE4nds f\xF6r att visa soundtracks i detaljpanelen. Skapa en app p\xE5 developer.spotify.com och kopiera Client ID och Client Secret.",
+      clearCacheDesc: "Rensa app-cache och byggartefakter om n\xE5got beter sig konstigt.",
+      // Soundtrack
+      openOnSpotify: "\xD6ppna p\xE5 Spotify"
+    }
+  };
+  var LangContext = createContext2({
+    lang: "en",
+    setLang: () => {
+    },
+    t: (key) => strings.en[key]
+  });
+  function useLang() {
+    return useContext(LangContext);
   }
 
   // lib/home-override-settings.ts
@@ -110191,7 +111762,56 @@
     };
   }
 
-  // lib/plex-storage.ts
+  // lib/watched-movies.ts
+  var KEY_WATCHED_MOVIES = "watched_movies";
+  var EVENT_WATCHED_MOVIES_CHANGED = "lumio-watched-movies-changed";
+  function normalizeId(value) {
+    if (typeof value !== "string") return null;
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+  function normalizeTitle(value) {
+    if (typeof value !== "string") return null;
+    const normalized = value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+    return normalized.length > 0 ? normalized : null;
+  }
+  function normalizeYear(value) {
+    return typeof value === "number" && Number.isFinite(value) ? value : null;
+  }
+  function readEntries() {
+    if (typeof window === "undefined") return [];
+    try {
+      const raw = getScopedStorageItem(KEY_WATCHED_MOVIES);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter((entry) => Boolean(entry) && typeof entry === "object").map((entry) => ({
+        tmdbId: normalizeId(typeof entry.tmdbId === "string" ? entry.tmdbId : null),
+        imdbId: normalizeId(typeof entry.imdbId === "string" ? entry.imdbId : null),
+        title: typeof entry.title === "string" ? entry.title : null,
+        year: normalizeYear(typeof entry.year === "number" ? entry.year : null),
+        posterUrl: typeof entry.posterUrl === "string" ? entry.posterUrl : null,
+        watchedAt: typeof entry.watchedAt === "string" && entry.watchedAt.trim().length > 0 ? entry.watchedAt : (/* @__PURE__ */ new Date()).toISOString()
+      })).filter((entry) => Boolean(entry.tmdbId || entry.imdbId || normalizeTitle(entry.title) && entry.year != null));
+    } catch {
+      return [];
+    }
+  }
+  function getWatchedMovies() {
+    return readEntries();
+  }
+  function onWatchedMoviesChanged(listener) {
+    if (typeof window === "undefined") return () => {
+    };
+    const handle = (event) => {
+      const detail = event.detail;
+      listener(detail?.entries ?? readEntries());
+    };
+    window.addEventListener(EVENT_WATCHED_MOVIES_CHANGED, handle);
+    return () => window.removeEventListener(EVENT_WATCHED_MOVIES_CHANGED, handle);
+  }
+
+  // lib/plugins/plex/plex-storage.ts
   var AUTH_KEY = "plex_auth";
   var SETTINGS_KEY = "plex_settings";
   var CLIENT_KEY = "plex_client_identifier";
@@ -110429,6 +112049,35 @@
     return () => window.removeEventListener(DEBUG_EVENT, listener);
   }
 
+  // lib/plugins/streams-scraper/stream-provider-settings.ts
+  var SCRAPER_PRESETS = [
+    {
+      id: "torrentio",
+      name: "Torrentio",
+      url: "https://torrentio.strem.fun",
+      type: "torrentio",
+      description: "Publik scraper, stabil och snabb. Kr\xE4ver Real-Debrid API-nyckel.",
+      configUrl: "https://torrentio.strem.fun/configure"
+    },
+    {
+      id: "comet",
+      name: "Comet",
+      url: "",
+      type: "preconfigured",
+      description: "Snabb scraper med bra tr\xE4ffar. Kr\xE4ver konfiguration med RD-nyckel.",
+      configUrl: "https://comet.elfhosted.com"
+    },
+    {
+      id: "mediafusion",
+      name: "MediaFusion",
+      url: "",
+      type: "preconfigured",
+      description: "Snabb scraper med bra tr\xE4ffar. Kr\xE4ver konfiguration med RD-nyckel.",
+      configUrl: "https://mediafusion.elfhosted.com"
+    }
+  ];
+  var DEFAULT_SCRAPER_URL = SCRAPER_PRESETS[0].url;
+
   // lib/utils/search-text.ts
   function stripDiacritics(value) {
     return value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
@@ -110531,7 +112180,7 @@
     return [...options].sort((left, right) => left.label.localeCompare(right.label, "en"));
   }
 
-  // lib/plex-sync.ts
+  // lib/plugins/plex/plex-sync.ts
   var plexLibraryInFlight = /* @__PURE__ */ new Map();
   function isTauriRuntime() {
     if (typeof window === "undefined") return false;
@@ -111104,1476 +112753,760 @@
     });
   }
 
-  // lib/i18n.tsx
-  init_react_shim();
-  init_jsx_runtime_shim();
-  var strings = {
-    en: {
-      // Nav
-      calendar: "Calendar",
-      releases: "Releases",
-      settings: "Settings",
-      lastWatched: "Last watched",
-      popularStreaming: "On Streaming",
-      popularOnTv: "Series",
-      popularCinema: "In theaters",
-      popularTrendingMovies: "Movies",
-      popularTrailers: "Trailers",
-      popularLiveTv: "Live TV",
-      m3uUrls: "M3U Playlist URLs",
-      m3uUrlsDesc: "Enter one M3U URL per line. Channels are stored in your browser.",
-      m3uUrlsPlaceholder: "https://example.com/playlist.m3u",
-      m3uFetchList: "Fetch list",
-      m3uFetchListDone: "List fetched",
-      m3uFetchListError: "Could not fetch list",
-      liveTvLists: "Channel lists",
-      liveTvCreateList: "Create list",
-      liveTvListName: "List name",
-      liveTvNoLists: "No channel lists yet.",
-      liveTvAddToList: "Add to active list",
-      liveTvRemoveFromList: "Remove from active list",
-      liveTvDeleteList: "Delete list",
-      liveTvSelectListFirst: "Select a list first",
-      liveTvHomeSource: "Live TV source",
-      liveTvAllChannels: "All channels",
-      m3uNoUrl: "No M3U URL configured. Add one in Settings.",
-      m3uLoading: "Loading channels\u2026",
-      m3uError: "Failed to load channels.",
-      m3uChannels: "channels",
-      m3uSearch: "Search channels\u2026",
-      m3uNoResults: "No channels match your search.",
-      // Hero
-      subtitle: "Search movies, series, or cast in Sweden.",
-      brandTagline: "Movie & Series Finder",
-      myFiles: "My Files",
-      trending: "Trending",
-      homeTrendingSubtitle: "Across movies and series this week",
-      popularMoviesTitle: "Popular Movies",
-      popularMoviesSubtitle: "Current movie picks with the biggest momentum",
-      popularSeriesTitle: "Popular Series",
-      popularSeriesSubtitle: "Top series on streaming right now",
-      showAllTrending: "Show all trending",
-      showAllMovies: "Show all movies",
-      showAllSeries: "Show all series",
-      searchPlaceholder: "Search titles or cast names",
-      searchTitlePlaceholder: "Search title",
-      sampleData: "Sample data",
-      tmdbLive: "TMDb live",
-      castSearch: "Cast search",
-      titleSearch: "Title search",
-      showingCastResults: "Showing cast results",
-      showingTitleResults: "Showing title results.",
-      for: "for",
-      // Recently watched
-      recentlyStreamed: "Recently streamed",
-      lastWatchedTitle: "Last Watched",
-      continueWhereLeftOff: "Continue where you left off",
-      showAll: "Show all",
-      all: "All",
-      close: "Close",
-      trailerLabel: "Trailer",
-      closeTrailer: "Close trailer",
-      liveTvStreamError: "Could not load stream.",
-      liveTvStreamErrorHelp: "The stream may be geo-blocked, offline, or unsupported.",
-      allCategories: "All categories",
-      sceneReleases: "Scene Releases",
-      activeFiltersTitle: "Active filters",
-      activeFiltersHintPrefix: "Provider availability is scoped to Sweden (",
-      activeFiltersHintSuffix: "), and multiple selected chips match any of the chosen labels, not all of them at once.",
-      scraperGlobalDefaults: "Global defaults",
-      scraperRdApiKey: "API key",
-      scraperRdApiPlaceholder: "Your API key",
-      scraperRdApiKeyPerScraper: "API key (per scraper)",
-      scraperUsingGlobal: "Using global API key",
-      apiKeyLabel: "API key",
-      scraperDefaultQualityFilter: "Default quality filter (exclude)",
-      scraperDefaultLanguages: "Default languages",
-      scraperDefaultDebridProvider: "Default debrid provider",
-      scraperDefaultMaxResults: "Default max results per quality",
-      scraperQualityFilter: "Quality filter (exclude)",
-      scraperLanguages: "Languages",
-      scraperProviders: "Providers (empty = all)",
-      scraperSelectQualities: "Select qualities",
-      scraperSelectLanguages: "Select languages",
-      scraperSelectProviders: "Select providers",
-      scraperMaxResults: "Max results",
-      scraperMaxSize: "Max size (MB, 0 = no limit)",
-      scraperDebridProvider: "Debrid provider",
-      scraperManifestUrl: "Manifest URL (stremio:// or https://)",
-      scraperCustomUrl: "Custom URL",
-      scraperNoUrl: "No URL set",
-      scraperAddTorrentsDb: "+ TorrentsDB",
-      scraperAddTorrentio: "+ Torrentio",
-      scraperAddComet: "+ Comet",
-      scraperAddMediaFusion: "+ MediaFusion",
-      scraperAddCustom: "+ Custom URL",
-      useGlobal: "Use global",
-      clearFilters: "Clear filters",
-      moviesOnly: "Movies only",
-      seriesOnly: "Series only",
-      titleLabel: "Title",
-      ratingLabel: "Rating",
-      ratingLabelTmdb: "TMDb",
-      noStreamsYet: "No streamed movies or audiobooks found yet.",
-      noScrapersEnabled: "No scrapers enabled.",
-      streamNotCached: "Stream not cached \u2014 try another",
-      downloadTimeout: "Download timeout \u2014 try another stream",
-      openToContinue: "\u2014 open to continue",
-      timeLeft: "left",
-      resume: "Resume",
-      listenedAt: "at",
-      streamAvailable: "Cached",
-      streamDownload: "Download",
-      startingMovie: "Starting movie...",
-      findingMovie: "Finding movie...",
-      startingEpisode: "Starting episode...",
-      // Media card / details
-      movie: "Movie",
-      series: "Series",
-      audiobook: "Audiobook",
-      synopsis: "Synopsis",
-      genres: "Genres",
-      filterProviders: "Services",
-      streamingIn: "Streaming in Sweden",
-      noProviders: "No streaming providers found",
-      tmdbRating: "Rating",
-      tmdbVoteAverage: "TMDb vote average",
-      keywords: "Keywords",
-      showLess: "Show less",
-      recommendations: "Recommendations",
-      follow: "Follow",
-      following: "Following \u2713",
-      movieWatchlistAdd: "My list",
-      movieWatchlistAdded: "My list \u2713",
-      moreInfo: "More info",
-      watchTrailer: "Watch Trailer",
-      openOnImdb: "Open on IMDb",
-      seasons: "Seasons:",
-      matchedOnTitle: "Matched on title:",
-      localFallback: "Local fallback",
-      // Streams
-      streams: "Streams",
-      rdStreams: "Real-Debrid streams",
-      configureRd: "Configure your Real-Debrid API key in Settings.",
-      loadingSeasons: "Loading seasons\u2026",
-      loadingEpisodes: "Loading episodes\u2026",
-      noSeasons: "No seasons found.",
-      noEpisodes: "No episodes found.",
-      cached: "Cached",
-      notCached: "not cached (will download)",
-      play: "Play",
-      noStreamsAvailable: "No streams",
-      noStreamYet: "No stream yet",
-      addAndPlay: "Add & Play",
-      searchingStreams: "Searching for streams\u2026",
-      noStreams: "No streams found.",
-      allFiltered: "All streams filtered by quality settings.",
-      preparingPlayback: "Preparing playback\u2026",
-      downloading: "Downloading\u2026",
-      downloadingFile: "Downloading file...",
-      queued: "Queued on Real-Debrid\u2026",
-      convertingMagnet: "Converting magnet\u2026",
-      selectingFiles: "Selecting files\u2026",
-      addingToRd: "Adding to Real-Debrid\u2026",
-      unrestrictingLinks: "Unrestricting links\u2026",
-      selectFile: "Select file to play:",
-      noVideoFiles: "No video files detected.",
-      markWatched: "Mark as watched",
-      markUnwatched: "Mark as unwatched",
-      watched: "\u2713 Watched",
-      watchedQ: "Watched?",
-      markAllWatched: "Mark all as watched",
-      addManually: "Add magnet / direct link manually",
-      hideManual: "Hide manual input",
-      pasteManual: "Paste magnet link manually",
-      manualPlaceholder: "magnet:? or https://\u2026",
-      go: "Go",
-      tryAgain: "Try again",
-      cancel: "Cancel",
-      copyLink: "Copy link",
-      copied: "Copied \u2713",
-      moreActions: "More actions",
-      copyStreamLink: "Copy stream link",
-      downloadThisVideo: "Download this video",
-      openInVlc: "Play in VLC",
-      preparingDownload: "Preparing download...",
-      downloadComplete: "Download complete",
-      downloadFailed: "Download failed",
-      backToStreams: "Back to streams",
-      instantPlay: "instant play",
-      continueFrom: "Continue:",
-      retry: "Retry",
-      // Audiobook
-      audiobooks: "Audiobook",
-      resumeAudiobook: "Resume audiobook",
-      searchingAudiobooks: "Searching for audiobooks\u2026",
-      noAudiobooks: "No audiobooks found for",
-      dismiss: "Dismiss",
-      // Filters
-      filters: "Filters",
-      refine: "Refine",
-      reset: "Reset",
-      type: "Type",
-      movieGenres: "Movie genres",
-      seriesGenres: "TV genres",
-      moreFilters: "More filters",
-      year: "Year",
-      rating: "Rating",
-      languages: "Languages",
-      originalLanguage: "Original language",
-      noLanguagesSelected: "No original languages selected yet.",
-      languageSearchPlaceholder: "Search languages, for example Swedish, Danish, or en",
-      languageSearchHelper: "Search by language name or code. Multiple selections mean the title can match any of the chosen original languages.",
-      noLanguageMatches: "No language matches for",
-      noKeywordsSelected: "No keywords selected yet.",
-      keywordsPlaceholderTmdb: "Keyword",
-      keywordsPlaceholderCatalog: "Keyword",
-      clearSearch: "Clear search",
-      keywordsHelperTmdb: "Type at least 2 characters. Use the arrow keys and Enter to select faster. You can only add keywords that exist in TMDb.",
-      keywordsHelperCatalog: "Type at least 2 characters. Use the arrow keys and Enter to select faster. You can only add keywords that exist in the catalog.",
-      searchingKeywords: "Searching keywords...",
-      noKeywordMatches: "No keyword matches for",
-      add: "Add",
-      selected: "selected",
-      sortBy: "Sort by",
-      sortMostPopular: "Most popular",
-      sortMostRelevant: "Most relevant",
-      sortHighestRating: "Highest rating",
-      sortHighestTmdb: "Highest TMDb rating",
-      sortNewest: "Newest to Oldest",
-      sortOldest: "Oldest to Newest",
-      // Results
-      aboutResults: "About",
-      results: "results",
-      page: "Page",
-      of: "of",
-      previous: "Previous",
-      next: "Next",
-      showingPagedResults: "Showing paged results from the strongest available matches.",
-      usingFallback: "Using sample fallback",
-      sampleCatalog: "Sample catalog",
-      noResults: "No matches",
-      // Subtitle menu
-      subtitleLanguages: "Subtitle Languages",
-      subtitleVariants: "Subtitles Variants",
-      subtitleSettings: "Subtitles Settings",
-      selectLanguage: "Select a language",
-      off: "Off",
-      delay: "Delay",
-      subtitleAutoSync: "Auto-sync",
-      subtitleAutoSyncAnalyzing: "Analyzing...",
-      subtitleAutoSyncApplied: "Applied offset",
-      subtitleAutoSyncFailed: "Could not auto-sync subtitles",
-      subtitleAutoSyncNoMatch: "Could not find a reliable subtitle match",
-      subtitleAutoSyncNeedsGroq: "Add a Groq API key in Settings first",
-      subtitleAutoSyncNeedsSubtitle: "Pick a subtitle track first",
-      subtitleAutoSyncNotEnoughSpeech: "Try again during a scene with more dialogue",
-      size: "Size",
-      verticalPosition: "Vertical Position",
-      subtitlesLabel: "Subtitles",
-      subtitleProvider: "OpenSubtitles v3",
-      undo: "Undo",
-      audio: "Audio",
-      audioLanguage: "Audio language",
-      currentAudioOutput: "Current audio output",
-      info: "Info",
-      actor: "Actor",
-      readMore: "Read more",
-      readLess: "Read less",
-      knownFor: "Known for",
-      credits: "Credits",
-      gender: "Gender",
-      birth: "Birth",
-      bornIn: "Born in:",
-      alsoKnownAs: "Also known as:",
-      noBiography: "No biography available on TMDb.",
-      soundtrack: "Soundtrack",
-      soundtrackLoadError: "Could not load soundtrack",
-      noSoundtrackFound: "No soundtrack found on Spotify",
-      searchOnSpotify: "Search on Spotify",
-      searching: "Searching\u2026",
-      instantPlayTitle: "Instant play",
-      zappFindTitle: "Find a movie",
-      // Settings
-      settingsTitle: "Settings",
-      settingsDesc: "Configure integrations for this app.",
-      profilesTitle: "Profiles",
-      profilesDesc: "Create separate local profiles with their own browser cache and playback history.",
-      profileName: "Profile name",
-      profileNamePlaceholder: "For example Family or Kids",
-      createProfile: "Create profile",
-      deleteProfile: "Delete profile",
-      resetProfile: "Reset profile",
-      activeProfile: "Active profile",
-      switchProfile: "Switch profile",
-      profileSwitcher: "Profile",
-      scraperTitle: "Scraper",
-      scraperDesc: "Choose which Stremio scraper is used to find streams. Torrentio is enough with an RD key, but can be configured if needed.",
-      configure: "Configure",
-      customScraper: "Custom",
-      customScraperDesc: "Any Stremio-compatible scraper with RD support.",
-      rdApiKeyLabel: "Real-Debrid API key",
-      scraperManifestPlaceholder: "Paste manifest URL here...",
-      customManifestPlaceholder: "https://your-scraper.example.com/manifest.json",
-      hevcTitle: "HEVC / H.265 Codec",
-      hevcDesc: "Required to play MKV/HEVC streams in the browser. Installs the Microsoft HEVC Video Extension via PowerShell.",
-      installHevc: "Install HEVC Codec",
-      installed: "Installed",
-      checking: "Checking\u2026",
-      installing: "Installing\u2026",
-      hevcRestart: "Restart your browser for the codec to take effect.",
-      tmdbApiToken: "API Token (Bearer)",
-      tmdbApiKey: "API Key (v3)",
-      language: "Language",
-      region: "Region",
-      tmdbEnvNote: "",
-      homekitTitle: "HomeKit",
-      homekitDesc: "Expose Lumio as its own HomeKit accessory and manage pairing from here.",
-      homekitEnableAccessory: "Enable HomeKit accessory",
-      name: "Name",
-      homekitStatusLabel: "Status",
-      homekitNotConnected: "Not connected",
-      homekitDisabled: "Disabled",
-      homekitReady: "Ready for pairing",
-      homekitNotPublished: "Not published",
-      homekitStatusFetchError: "Could not fetch HomeKit status",
-      homekitServerError: "Could not contact HomeKit server",
-      homekitActionFailed: "HomeKit operation failed",
-      homekitResetInfo: "Pairing reset. A new HomeKit identity was created for a fresh pairing.",
-      homekitEventRules: "Event rules",
-      movieStarts: "Movie starts",
-      moviePaused: "Movie pauses",
-      videoClosed: "Video closes",
-      openGuide: "Open guide",
-      closeGuide: "Close guide",
-      startPairing: "Start pairing",
-      resetPairing: "Reset pairing",
-      refreshStatus: "Refresh status",
-      starting: "Starting...",
-      resetting: "Resetting...",
-      homekitGuideTitle: "HomeKit guide",
-      homekitGuideStep1: "Press Start pairing.",
-      homekitGuideStep2: "Add the accessory in the Home app and enter the PIN code from the field above.",
-      homekitGuideStep3: "Name the switches the same as the event rules.",
-      homekitGuideStep4: "Create one automation per switch with the trigger Turns on.",
-      homekitGuideStep5: "Choose your lights and set brightness/scene for each event.",
-      homekitSwitchesToUse: "Switches to use",
-      homekitSwitchesList: "Movie starts, Movie pauses, Video closes",
-      groqTitle: "Groq AI Search",
-      groqDescPrefix: "Enable AI search with natural language.",
-      spotifyTitle: "Spotify",
-      localFilesTitle: "Local files",
-      localFilesDesc: "Choose a folder with video files. Lumio matches filenames to TMDb and shows them in a separate library.",
-      chooseFolder: "Choose folder",
-      removeFolder: "Remove folder",
-      playbackTitle: "Playback",
-      playbackDesc: "Settings for video playback.",
-      homeSectionsTitle: "Homepage",
-      homeSectionsDesc: "Choose order, layout and card count for each homepage section. Up to 3 custom sections are supported.",
-      homeBackgroundTitle: "Homepage background",
-      homeBackgroundDesc: "Use your own image URLs instead of the random homepage backdrop.",
-      homeBackgroundPlaceholder: "https://example.com/background-1.jpg\nhttps://example.com/background-2.jpg",
-      uploadImages: "Upload images",
-      enabled: "Enabled",
-      uploadedImage: "Uploaded image",
-      localUploadStored: "Saved locally in Lumio",
-      remove: "Remove",
-      drag: "Drag",
-      moveUp: "Move up",
-      moveDown: "Move down",
-      moveUpShort: "Up",
-      moveDownShort: "Down",
-      homeRowRecent: "Last watched",
-      homeRowTrending: "Trending",
-      homeRowMovies: "Popular movies",
-      homeRowSeries: "Popular series",
-      homeRowTrailers: "Trailers",
-      homeRowLiveTv: "Live TV",
-      homeRowTraktCollection: "Watchlist",
-      homeRowCustom1: "Custom section 1",
-      homeRowCustom2: "Custom section 2",
-      homeRowCustom3: "Custom section 3",
-      homeSearchTitle: "Homepage search",
-      homeSearchDesc: "Show or hide the large search field on the homepage.",
-      homeSearchToggleLabel: "Hide search field on homepage",
-      homeTopMenuTitle: "Top menu",
-      homeTopMenuDesc: "Choose which top buttons to show and change their order.",
-      homeTopMenuSettingsShortcut: "Settings can always be opened with Cmd+, on Mac or Ctrl+, on other keyboards.",
-      homeMainMenuTitle: "Homepage menu",
-      homeMainMenuDesc: "Choose which menu buttons to show and change their order with up and down.",
-      profileSelector: "Profile selector",
-      alwaysVisible: "Always visible",
-      collapseSection: "Collapse section",
-      expandSection: "Expand section",
-      homeSource: "Source",
-      homeSourceMovies: "Movies",
-      homeSourceSeries: "Series",
-      homeSourceSeriesWatchlist: "New episodes",
-      homeSourceSeriesWatchlistSubtitle: "Watchlist",
-      homeSourceMovieWatchlist: "My list",
-      homeSourceTraktCollection: "Watchlist",
-      homeWatchlistList: "List",
-      homeWatchlistType: "Type",
-      homeSourcePlexRecentAdded: "Plex recently added",
-      pluginYoutubeNotConnected: "Not connected",
-      pluginYoutubeConnection: "Connection",
-      pluginYoutubeConnectionNote: "This plugin uses your own Google Desktop Client ID and YouTube Data API key.",
-      pluginYoutubeClientId: "Google OAuth Client ID",
-      pluginYoutubeApiKey: "YouTube API Key",
-      pluginYoutubeOwnAppTitle: "How to create your own app",
-      pluginYoutubeOwnAppStep1: "1. Create a Google Cloud project.",
-      pluginYoutubeOwnAppStep2: "2. Enable YouTube Data API v3.",
-      pluginYoutubeOwnAppStep3: "3. Configure the OAuth consent screen.",
-      pluginYoutubeOwnAppStep4: "4. Create an OAuth Client ID for Desktop app.",
-      pluginYoutubeOwnAppStep5: "5. Create an API key restricted to YouTube Data API v3.",
-      pluginYoutubeOwnAppStep6: "6. Paste the client ID and API key here, then reconnect YouTube.",
-      pluginYoutubeOwnAppNote: "For private use you do not need your own domain. For localhost/browser development you can also create a Web application client, but normal plugin use should rely on a Desktop app client.",
-      pluginYoutubeVideoOptions: "Video options",
-      pluginYoutubeHero: "Hero",
-      pluginYoutubeHeroHelp: "Uses the latest followed video as the Home hero. Once opened, that video stays hidden until a newer one appears.",
-      pluginYoutubeKeepHero: "Keep hero visible",
-      pluginYoutubeKeepHeroHelp: "Keeps the latest YouTube hero visible after opening it, and only replaces it when a newer video appears during startup warmup.",
-      pluginYoutubeHideShorts: "Hide shorts",
-      pluginYoutubeHideShortsHelp: "Hides short-form YouTube videos from grids when duration data is available.",
-      pluginYoutubeConnect: "Connect YouTube",
-      pluginYoutubeConnecting: "Connecting\u2026",
-      pluginYoutubeRefresh: "Refresh",
-      pluginYoutubeRefreshing: "Refreshing\u2026",
-      pluginYoutubeReconnect: "Reconnect",
-      pluginYoutubeDisconnect: "Disconnect",
-      pluginYoutubeDisconnecting: "Disconnecting\u2026",
-      pluginYoutubeClearCache: "Clear cache",
-      pluginYoutubeConnectError: "Could not connect YouTube.",
-      pluginYoutubeDisconnectError: "Could not disconnect YouTube.",
-      pluginYoutubeLoadError: "Failed to load YouTube data.",
-      pluginYoutubeRowLoadError: "Failed to load YouTube row.",
-      pluginYoutubeFollowingPage: "Following",
-      pluginYoutubeChannelsPage: "Channels",
-      pluginYoutubePlaylistsPage: "Playlists",
-      pluginYoutubeChannelPage: "Channel",
-      pluginYoutubePlaylistPage: "Playlist",
-      pluginYoutubeFollowingSubtitle: "Latest videos from channels you follow.",
-      pluginYoutubeChannelsSubtitle: "Search for new channels and manage who you follow.",
-      pluginYoutubePlaylistsSubtitle: "Your saved YouTube playlists.",
-      pluginYoutubeChannelSubtitle: "Latest videos from this channel.",
-      pluginYoutubePlaylistSubtitle: "Playlist videos",
-      pluginYoutubeMatchingChannels: "Matching channels",
-      pluginYoutubeYourSubscriptions: "Your subscriptions",
-      pluginYoutubeSearchChannels: "Search channels",
-      pluginYoutubeSetupPrompt: "Add your Google Desktop Client ID and YouTube API key in the YouTube plugin settings to get started.",
-      pluginYoutubeConnectPrompt: "Connect YouTube in Settings to browse your subscriptions, channels and playlists.",
-      pluginYoutubeLoading: "Loading your YouTube data\u2026",
-      pluginYoutubePlaylistBadge: "Playlist",
-      pluginYoutubeChannelBadge: "Channel",
-      pluginYoutubeVideoBadge: "Video",
-      pluginYoutubeVideos: "videos",
-      pluginYoutubeUnfollow: "Unfollow",
-      pluginYoutubeOpenFeed: "Open feed",
-      pluginYoutubeFollowingRow: "YouTube following",
-      pluginSectionIntro: "Manage installed plugins, browse the official marketplace and add plugin sources from GitHub or ZIP files.",
-      pluginRestartRequired: "Restart required for plugin changes to fully apply.",
-      pluginRestartNow: "Restart now",
-      pluginInstalledTitle: "Installed plugins",
-      pluginPreinstalled: "Pre-installed",
-      pluginOfficialBadge: "Official",
-      pluginManualSourceBadge: "Manual source",
-      pluginInactiveBadge: "Inactive",
-      pluginUpdateAvailable: "Update available",
-      pluginMetadataOnly: "Metadata only",
-      pluginRepoLabel: "Repo",
-      pluginManifestLabel: "Manifest",
-      pluginUpdateNotice: "A newer plugin version is available in the marketplace source.",
-      pluginActiveState: "Active",
-      pluginInactiveState: "Inactive",
-      pluginDeactivate: "Deactivate",
-      pluginActivate: "Activate",
-      pluginUninstall: "Uninstall",
-      pluginMarketplaceTitle: "Official marketplace",
-      pluginMarketplaceIntro: "Install official Lumio plugins from the shared marketplace repository.",
-      pluginMarketplaceFallback: "Using fallback marketplace data",
-      pluginMarketplaceLive: "Live manifest",
-      pluginMarketplaceStatic: "Fallback manifest",
-      pluginMarketplaceChecked: "Checked",
-      pluginCheckUpdates: "Check updates",
-      pluginBundledRuntime: "Bundled runtime",
-      pluginSharedRepoSuffix: "in shared marketplace repo",
-      pluginInstall: "Install",
-      pluginNoReadmePreview: "No README preview available.",
-      pluginNoChangelogPreview: "No changelog preview available.",
-      pluginAllOfficialInstalled: "All official marketplace plugins are installed.",
-      pluginAddSourceTitle: "Add plugin source",
-      pluginAddSourceIntro: "Add a GitHub repository that contains a Lumio plugin marketplace manifest, or upload a plugin ZIP. Discovered plugins will appear below as installable options.",
-      pluginGithubRepoUrl: "GitHub repo URL",
-      pluginAddGithubSource: "Add GitHub source",
-      pluginChooseReleaseZip: "Choose a release ZIP",
-      pluginChooseReleaseZipHelp: "This repository has multiple release ZIPs. Pick which asset Lumio should inspect.",
-      pluginUploadZipTitle: "Upload plugin ZIP",
-      pluginUploadZipHelp: "Import a plugin ZIP directly, for example a downloaded scraper package or a zipped plugin repository. You can also drag and drop a ZIP here.",
-      pluginUploadZip: "Upload ZIP",
-      pluginLastZipPreview: "Last ZIP preview",
-      pluginSourceHelp: "GitHub sources should ideally expose a root marketplace.json. If that is missing, Lumio also tries the latest GitHub release ZIP automatically. ZIP imports can contain either a marketplace.json or one or more plugin.json files.",
-      pluginAddedSources: "Added sources",
-      pluginGithubSourceBadge: "GitHub source",
-      pluginZipSourceBadge: "ZIP source",
-      pluginAddedAt: "Added",
-      pluginRemoveSource: "Remove source",
-      pluginReleaseAssets: "Release assets",
-      pluginFilesFound: "Files found",
-      pluginInstallAllFromSource: "Install all from source",
-      pluginAllSourceInstalled: "All plugins from this source are already installed.",
-      pluginRuntimeAvailable: "Runtime available",
-      pluginMetadataOnlyNow: "Metadata only for now",
-      open: "Open",
-      clear: "Clear",
-      homeSourceLiveTvLists: "Live TV lists",
-      homeSourceMyFiles: "My files",
-      liveTvList: "Live TV list",
-      liveTvChooseList: "Choose a Live TV list",
-      homeMenuPremiereStar: "Premiere star",
-      plexMenu: "Plex",
-      traktTitle: "Trakt",
-      traktDesc: "Sign in with Trakt to sync watched TV episodes, watchlists, and your collection with Lumio. Plex cards are not reliably supported for Trakt sync yet.",
-      traktSignedInAs: "Signed in as",
-      traktSignedInFallback: "Trakt user",
-      traktSyncDesc: "Sync pulls data from Trakt into Lumio and also pushes your local Lumio watchlists and watched episodes back to Trakt. Plex follow/My list is currently not guaranteed to sync correctly.",
-      traktImportData: "Sync Trakt data",
-      traktImporting: "Syncing...",
-      traktImportDone: "Trakt sync complete",
-      traktDisconnect: "Disconnect",
-      traktConnect: "Sign in with Trakt",
-      traktWaiting: "Waiting for Trakt...",
-      traktOpenLinkAndCode: "Open the link and enter the code",
-      traktStartLoginFailed: "Failed to start Trakt login",
-      traktLoginFailed: "Trakt login failed",
-      traktImportFailed: "Failed to sync with Trakt",
-      plexTitle: "Plex",
-      plexDesc: "Sign in with Plex, choose a server and libraries, and use Plex recently added as a homepage row.",
-      plexSignedInAs: "Connected as",
-      plexSignedInFallback: "Plex user",
-      plexConnect: "Sign in with Plex",
-      plexWaiting: "Waiting for Plex...",
-      plexOpenLinkAndCode: "Open the link and approve Lumio",
-      plexChooseProfile: "Profile",
-      plexProfilePin: "Profile PIN",
-      plexProfilePinPlaceholder: "Enter Plex profile PIN",
-      plexApplyProfile: "Apply profile",
-      plexRefreshingProfiles: "Refreshing profiles...",
-      plexProfileApplied: "Plex profile activated",
-      plexChooseServer: "Server",
-      plexChooseLibraries: "Libraries",
-      plexRefreshLibraries: "Refresh libraries",
-      plexRefreshingLibrariesButton: "Refreshing libraries...",
-      plexRefreshLibrariesDone: "Plex libraries updated",
-      plexRefreshLibrariesEmpty: "No movie or show libraries were found on this server.",
-      plexRefreshLibrariesFailed: "Failed to refresh Plex libraries",
-      plexRequestFailed: "Could not reach Plex. Check that the selected server is online and reachable.",
-      plexDisconnect: "Disconnect",
-      plexNoServers: "No Plex servers found.",
-      plexNoLibraries: "No movie or show libraries found on this server.",
-      plexRecentlyAdded: "Plex recently added",
-      homeSourceCinemaMovies: "In theaters",
-      homeSourceTopRatedMovies: "Top rated movies",
-      homeSourceTopRatedSeries: "Top rated series",
-      homeSourceReleaseRecentMovies: "Releases: recently movies",
-      homeSourceReleaseRecentSeries: "Releases: recently series",
-      homeSourceReleaseUpcomingMovies: "Releases: upcoming movies",
-      homeSourceReleaseUpcomingSeries: "Releases: upcoming series",
-      homeSourceStreamingMovies: "Trending movies (streaming)",
-      homeSourceStreamingSeries: "Trending series (streaming)",
-      homeLayout: "Layout",
-      homeLayoutSlider: "Slider",
-      homeLayoutGrid: "Grid",
-      homeLayoutFull: "Show all",
-      homeCount: "Cards",
-      homeCountDesc: "Maximum cards shown in this section.",
-      homeSliderGlobal: "Slider cards",
-      homeSliderGlobalDesc: "How many cards a slider shows at most on wide screens.",
-      homeSliderOverride: "Slider override",
-      homeSliderDisplay: "Display",
-      homeSliderUseGlobal: "Global value",
-      homeFullModeNote: "Only one section can use Show all. Last watched can still stay above as a slider.",
-      pinChannel: "Pin channel",
-      unpinChannel: "Unpin channel",
-      aspectRatio: "Aspect ratio",
-      aspectRatioDesc: "Choose how the video should fit in the player.",
-      cropZoom: "Zoom / crop",
-      cropZoomOff: "Off",
-      cropZoomCrop: "Crop",
-      cropZoomZoom: "Zoom",
-      cropZoomZoomPlus: "Zoom +",
-      rememberAspectRatio: "Remember aspect ratio",
-      rememberAspectRatioDesc: "Uses your chosen aspect ratio as the default for new movies and episodes.",
-      autoSkipIntro: "Auto-skip intro",
-      autoSkipIntroDesc: "When enabled, intros are skipped automatically. When disabled, a Skip intro button is shown if IntroDB has a match.",
-      autoplayStreamOnPlay: "Auto-play on Play button",
-      autoplayStreamOnPlayDesc: "For non-Plex cards, Play tries up to 3 streams automatically. Known mismatches on audio language and oversized files are skipped when possible.",
-      hideWatchedMoviesHome: "Hide watched movies on Home",
-      hideWatchedMoviesHomeDesc: "Exclude movies marked as watched from Home grids and sliders, including Plex rows.",
-      stillWatching: "Still watching?",
-      stillWatchingDesc: "For TV series only. Pause playback after the chosen time without control interaction, once at least 3 episodes have played in the same session.",
-      stillWatchingMaxMinutes: "Still watching max time",
-      stillWatchingMaxMinutesDesc: "Default matches Netflix timing: 90 minutes. Prompt appears only for TV series after at least 3 episodes.",
-      stillWatchingContinue: "Continue watching",
-      stillWatchingExit: "Close player",
-      autoplayMaxStreamSize: "Max stream size",
-      autoplayMaxStreamSizeDesc: "Optional limit in GB for auto-play attempts. Empty means no size cap.",
-      introDebugReady: "IntroDB ready",
-      introDebugLoading: "IntroDB loading",
-      introDebugFound: "Intro found",
-      introDebugMissing: "No intro match",
-      introDebugAutoOn: "Auto-skip on",
-      introDebugAutoOff: "Auto-skip off",
-      aspectAuto: "Auto",
-      aspectContain: "Fit",
-      aspectFill: "Fill",
-      aspect16_9: "16:9",
-      aspect4_3: "4:3",
-      audioMode: "Audio mode",
-      audioModeDesc: "Choose between maximum compatibility or the best possible multichannel audio in proxy playback.",
-      audioModeCompatible: "Compatible",
-      audioModeCompatibleDesc: "Safest playback. Proxy audio is encoded to stereo AAC.",
-      audioModeBest: "Best possible",
-      audioModeBestDesc: "Keeps multichannel audio in the proxy when possible. Tauri/mpv continues to use the original track directly.",
-      nightMode: "Night mode / DRC",
-      nightModeDesc: "Reduces loud peaks and makes dialogue easier to hear at lower volume.",
-      nightModeOff: "Off",
-      nightModeMild: "Mild night mode",
-      nightModeStrong: "Strong night mode",
-      defaultSubtitleLanguage: "Default subtitles language",
-      defaultSubtitleLanguageDesc: "Selected automatically when subtitles are available.",
-      fallbackSubtitleLanguage: "Fallback subtitles language",
-      fallbackSubtitleLanguageDesc: "Used only if the primary subtitle language is not available.",
-      defaultAudioTrack: "Default audio track",
-      defaultAudioTrackDesc: "Tries to choose the language automatically when multiple audio tracks exist.",
-      disableSubtitlesWhenAudioMatches: "Turn off subtitles when audio matches",
-      disableSubtitlesWhenAudioMatchesDesc: "If your selected default audio language is found, subtitles stay off by default.",
-      subtitleSize: "Subtitle size",
-      subtitleSizeDesc: "Used by default for new movies and episodes.",
-      subtitleVerticalPositionDesc: "How high above the controls bar the subtitles are placed.",
-      subtitleOpacity: "Opacity",
-      subtitleOpacityDesc: "Applies to the whole subtitle including the background.",
-      subtitleTextColor: "Subtitle color",
-      subtitleTextColorDesc: "Default color for subtitles.",
-      subtitleBackgroundColor: "Subtitle background color",
-      subtitleBackgroundColorDesc: "Transparent matches the current style.",
-      subtitleOutlineColor: "Subtitle outline color",
-      subtitleOutlineColorDesc: "Used for the text outline/shadow.",
-      subtitlePreviewText: "This is how your subtitles will look",
-      subtitlePreviewCaption: "Preview of the default look",
-      skipIntro: "Skip intro",
-      originalFirst: "Original / first",
-      noFallback: "No fallback",
-      autoplayNextEpisode: "Auto-play next episode",
-      autoplayNextEpisodeDesc: "Preloads the next episode and plays it automatically at the end of the series.",
-      showPopup: "Show popup",
-      showPopupDesc: "How many seconds before the end the next-episode card is shown.",
-      preloadBeforePopup: "Preload before popup",
-      preloadBeforePopupDesc: "How many seconds before the popup we start fetching the next episode.",
-      seconds: "seconds",
-      rdApiKey: "Real-Debrid API key",
-      rdApiPlaceholder: "Your API key from real-debrid.com",
-      rdApiNote: "Find your key at real-debrid.com \u203A Account \u203A API token. The key is stored only in your browser (localStorage).",
-      streamQuality: "Stream quality filters",
-      streamQualityDesc: "Hide low-quality or undesirable stream sources.",
-      hideCam: "Hide CAM / CAMRIP",
-      hideCamDesc: "Filmed in cinema \u2014 very low quality",
-      hideTs: "Hide TeleSync / TeleCine (TS/TC)",
-      hideTsDesc: "Low-quality pre-release copies",
-      hideScr: "Hide Screener (SCR)",
-      hideScrDesc: "DVD/streaming screener copies",
-      hideBelow720p: "Hide below 720p",
-      hideBelow720pDesc: "480p, 360p and lower resolutions",
-      clearCache: "Clear cache",
-      clearing: "Clearing\u2026",
-      cleared: "Cleared \u2014 restart server",
-      save: "Save",
-      checkKey: "Check Key",
-      testingConnection: "Testing connection\u2026",
-      enterApiKeyFirst: "Enter an API key first.",
-      connectedAs: "Connected as",
-      // Calendar
-      seriesCalendar: "Series Calendar",
-      today: "Today",
-      followSeries: "Follow a series to see episodes here",
-      noEpisodesDay: "No episodes this day.",
-      openStreams: "Open Streams",
-      more: "more",
-      // Media type chips
-      both: "Both",
-      movies: "Movies",
-      // Release calendar
-      releaseCalendar: "Release Calendar",
-      recent: "Recent",
-      upcoming: "Upcoming",
-      allServices: "All services",
-      premiere: "Premiere",
-      newBadge: "New",
-      newPremiere: "New premiere",
-      loadMore: "Load more",
-      allLanguages: "All languages",
-      hideFilters: "Hide filters",
-      sort: "Sort",
-      // Watchlist
-      addToWatchlist: "Add to watchlist",
-      removeFromWatchlist: "Remove from watchlist",
-      watchlistNewPremieres: "Watchlist \u2013 new premieres",
-      watchlistAllLists: "Watchlist",
-      watchlistEmpty: "No starred titles yet.",
-      watchlistEmptyHint: "Star titles in the release calendar to follow premieres.",
-      seriesWatchlistEmpty: "No followed series yet.",
-      newEpisodeBadge: "New ep",
-      // Date presets
-      days7: "7 days",
-      days30: "30 days",
-      days60: "60 days",
-      days90: "90 days",
-      thisYear: "This year",
-      dateFrom: "From",
-      // Settings
-      spotifyDesc: "Used to display soundtracks in the details panel. Create an app at developer.spotify.com and copy the Client ID and Client Secret.",
-      clearCacheDesc: "Clear app cache and build artifacts if something behaves oddly.",
-      // Soundtrack
-      openOnSpotify: "Open on Spotify"
-    },
-    sv: {
-      // Nav
-      calendar: "Kalender",
-      releases: "Releases",
-      settings: "Inst\xE4llningar",
-      lastWatched: "Senast sett",
-      popularStreaming: "P\xE5 Streaming",
-      popularOnTv: "Serier",
-      popularCinema: "P\xE5 bio",
-      popularTrendingMovies: "Filmer",
-      popularTrailers: "Trailers",
-      popularLiveTv: "Live TV",
-      m3uUrls: "M3U-spellistor",
-      m3uUrlsDesc: "Ange en M3U-l\xE4nk per rad.",
-      m3uUrlsPlaceholder: "https://exempel.se/spellista.m3u",
-      m3uFetchList: "H\xE4mta lista",
-      m3uFetchListDone: "Listan h\xE4mtad",
-      m3uFetchListError: "Kunde inte h\xE4mta listan",
-      liveTvLists: "Kanallistor",
-      liveTvCreateList: "Skapa lista",
-      liveTvListName: "Listnamn",
-      liveTvNoLists: "Inga kanallistor \xE4nnu.",
-      liveTvAddToList: "L\xE4gg till i aktiv lista",
-      liveTvRemoveFromList: "Ta bort fr\xE5n aktiv lista",
-      liveTvDeleteList: "Radera lista",
-      liveTvSelectListFirst: "V\xE4lj en lista f\xF6rst",
-      liveTvHomeSource: "K\xE4lla f\xF6r Live TV",
-      liveTvAllChannels: "Alla kanaler",
-      m3uNoUrl: "Ingen M3U-l\xE4nk konfigurerad. L\xE4gg till en i Inst\xE4llningar.",
-      m3uLoading: "Laddar kanaler\u2026",
-      m3uError: "Kunde inte ladda kanaler.",
-      m3uChannels: "kanaler",
-      m3uSearch: "S\xF6k kanaler\u2026",
-      m3uNoResults: "Inga kanaler matchar din s\xF6kning.",
-      // Hero
-      subtitle: "S\xF6k filmer, serier eller sk\xE5despelare i Sverige.",
-      brandTagline: "Film- & serieguiden",
-      myFiles: "Mina filer",
-      trending: "Trendar",
-      homeTrendingSubtitle: "Bland filmer och serier den h\xE4r veckan",
-      popularMoviesTitle: "Popul\xE4ra filmer",
-      popularMoviesSubtitle: "Aktuella filmtips med mest momentum",
-      popularSeriesTitle: "Popul\xE4ra serier",
-      popularSeriesSubtitle: "Toppserier p\xE5 streaming just nu",
-      showAllTrending: "Visa alla trender",
-      showAllMovies: "Visa alla filmer",
-      showAllSeries: "Visa alla serier",
-      searchPlaceholder: "S\xF6k titlar eller sk\xE5despelarnamn",
-      searchTitlePlaceholder: "S\xF6k titel",
-      sampleData: "Exempeldata",
-      tmdbLive: "TMDb live",
-      castSearch: "Sk\xE5despelars\xF6kning",
-      titleSearch: "Titels\xF6kning",
-      showingCastResults: "Visar sk\xE5despelarresultat",
-      showingTitleResults: "Visar titelresultat.",
-      for: "f\xF6r",
-      // Recently watched
-      recentlyStreamed: "Senast streamade",
-      lastWatchedTitle: "Senast sett",
-      continueWhereLeftOff: "Forts\xE4tt d\xE4r du slutade",
-      showAll: "Visa alla",
-      all: "Alla",
-      close: "St\xE4ng",
-      trailerLabel: "Trailer",
-      closeTrailer: "St\xE4ng trailer",
-      liveTvStreamError: "Kunde inte ladda str\xF6mmen.",
-      liveTvStreamErrorHelp: "Str\xF6mmen kan vara geoblockerad, offline eller ej st\xF6dd.",
-      allCategories: "Alla kategorier",
-      sceneReleases: "Scene-releaser",
-      activeFiltersTitle: "Aktiva filter",
-      activeFiltersHintPrefix: "Tillg\xE4nglighet f\xF6r tj\xE4nster \xE4r begr\xE4nsad till Sverige (",
-      activeFiltersHintSuffix: "), och flera valda chips matchar valfritt av etiketterna, inte alla samtidigt.",
-      scraperGlobalDefaults: "Globala standarder",
-      scraperRdApiKey: "API-nyckel",
-      scraperRdApiPlaceholder: "Din API-nyckel",
-      scraperRdApiKeyPerScraper: "API-nyckel (per skrapa)",
-      scraperUsingGlobal: "Anv\xE4nder global API-nyckel",
-      apiKeyLabel: "API-nyckel",
-      scraperDefaultQualityFilter: "Standard kvalitetsfilter (uteslut)",
-      scraperDefaultLanguages: "Standard spr\xE5k",
-      scraperDefaultDebridProvider: "Standard debrid-leverant\xF6r",
-      scraperDefaultMaxResults: "Standard maxresultat per kvalitet",
-      scraperQualityFilter: "Kvalitetsfilter (uteslut)",
-      scraperLanguages: "Spr\xE5k",
-      scraperProviders: "Leverant\xF6rer (tomt = alla)",
-      scraperSelectQualities: "V\xE4lj kvaliteter",
-      scraperSelectLanguages: "V\xE4lj spr\xE5k",
-      scraperSelectProviders: "V\xE4lj leverant\xF6rer",
-      scraperMaxResults: "Maxresultat",
-      scraperMaxSize: "Maxstorlek (MB, 0 = ingen gr\xE4ns)",
-      scraperDebridProvider: "Debrid-leverant\xF6r",
-      scraperManifestUrl: "Manifest-URL (stremio:// eller https://)",
-      scraperCustomUrl: "Egen URL",
-      scraperNoUrl: "Ingen URL angiven",
-      scraperAddTorrentsDb: "+ TorrentsDB",
-      scraperAddTorrentio: "+ Torrentio",
-      scraperAddComet: "+ Comet",
-      scraperAddMediaFusion: "+ MediaFusion",
-      scraperAddCustom: "+ Egen URL",
-      useGlobal: "Anv\xE4nd globalt",
-      clearFilters: "Rensa filter",
-      moviesOnly: "Endast filmer",
-      seriesOnly: "Endast serier",
-      titleLabel: "Titel",
-      ratingLabel: "Betyg",
-      ratingLabelTmdb: "TMDb",
-      noStreamsYet: "Inga streamade filmer eller ljudb\xF6cker hittades \xE4nnu.",
-      noScrapersEnabled: "Inga skrapor \xE4r aktiverade.",
-      streamNotCached: "Streamen \xE4r inte cachad \u2014 prova en annan",
-      downloadTimeout: "Nedladdningen tog f\xF6r l\xE5ng tid \u2014 prova en annan stream",
-      openToContinue: "\u2014 \xF6ppna f\xF6r att forts\xE4tta",
-      timeLeft: "kvar",
-      resume: "Forts\xE4tt",
-      listenedAt: "vid",
-      streamAvailable: "Cachad",
-      streamDownload: "Ladda ned",
-      startingMovie: "Startar film...",
-      findingMovie: "Hittar film...",
-      startingEpisode: "Startar avsnitt...",
-      // Media card / details
-      movie: "Film",
-      series: "Serie",
-      audiobook: "Ljudbok",
-      synopsis: "Synopsis",
-      genres: "Genrer",
-      filterProviders: "Tj\xE4nster",
-      streamingIn: "Streaming i Sverige",
-      noProviders: "Inga streamingtj\xE4nster hittades",
-      tmdbRating: "Betyg",
-      tmdbVoteAverage: "TMDb genomsnittsbetyg",
-      keywords: "Nyckelord",
-      showLess: "Visa mindre",
-      recommendations: "Rekommendationer",
-      follow: "F\xF6lj",
-      following: "F\xF6ljer \u2713",
-      movieWatchlistAdd: "Min lista",
-      movieWatchlistAdded: "Min lista \u2713",
-      moreInfo: "Mer info",
-      watchTrailer: "Se trailer",
-      openOnImdb: "\xD6ppna p\xE5 IMDb",
-      seasons: "S\xE4songer:",
-      matchedOnTitle: "Matchad p\xE5 titel:",
-      localFallback: "Lokal reserv",
-      // Streams
-      streams: "Str\xF6mmar",
-      rdStreams: "Real-Debrid-str\xF6mmar",
-      configureRd: "Konfigurera din Real-Debrid API-nyckel i Inst\xE4llningar.",
-      loadingSeasons: "Laddar s\xE4songer\u2026",
-      loadingEpisodes: "Laddar avsnitt\u2026",
-      noSeasons: "Inga s\xE4songer hittades.",
-      noEpisodes: "Inga avsnitt hittades.",
-      cached: "Cachad",
-      notCached: "ej cachad (laddas ned)",
-      play: "Spela",
-      noStreamsAvailable: "Inga streams",
-      noStreamYet: "Ingen stream \xE4n",
-      addAndPlay: "L\xE4gg till & Spela",
-      searchingStreams: "S\xF6ker str\xF6mmar\u2026",
-      noStreams: "Inga str\xF6mmar hittades.",
-      allFiltered: "Alla str\xF6mmar filtrerade bort av kvalitetsinst\xE4llningar.",
-      preparingPlayback: "F\xF6rbereder uppspelning\u2026",
-      downloading: "Laddar ned\u2026",
-      downloadingFile: "Laddar ner fil...",
-      queued: "I k\xF6 p\xE5 Real-Debrid\u2026",
-      convertingMagnet: "Konverterar magnet\u2026",
-      selectingFiles: "V\xE4ljer filer\u2026",
-      addingToRd: "L\xE4gger till p\xE5 Real-Debrid\u2026",
-      unrestrictingLinks: "Avbegr\xE4nsar l\xE4nkar\u2026",
-      selectFile: "V\xE4lj fil att spela:",
-      noVideoFiles: "Inga videofiler hittades.",
-      markWatched: "Markera som sedd",
-      markUnwatched: "Markera som osedd",
-      watched: "\u2713 Sedd",
-      watchedQ: "Sedd?",
-      markAllWatched: "Markera alla som sedda",
-      addManually: "L\xE4gg till magnet / direktl\xE4nk manuellt",
-      hideManual: "D\xF6lj manuell inmatning",
-      pasteManual: "Klistra in magnet-l\xE4nk manuellt",
-      manualPlaceholder: "magnet:? eller https://\u2026",
-      go: "K\xF6r",
-      tryAgain: "F\xF6rs\xF6k igen",
-      cancel: "Avbryt",
-      copyLink: "Kopiera l\xE4nk",
-      copied: "Kopierat \u2713",
-      moreActions: "Fler val",
-      copyStreamLink: "Kopiera streaml\xE4nk",
-      downloadThisVideo: "Ladda ner videon",
-      openInVlc: "Spela i VLC",
-      preparingDownload: "F\xF6rbereder nedladdning...",
-      downloadComplete: "Nedladdning klar",
-      downloadFailed: "Nedladdning misslyckades",
-      backToStreams: "Tillbaka till str\xF6mmar",
-      instantPlay: "spelas direkt",
-      continueFrom: "Forts\xE4tt:",
-      retry: "F\xF6rs\xF6k igen",
-      // Audiobook
-      audiobooks: "Ljudbok",
-      resumeAudiobook: "Forts\xE4tt lyssna",
-      searchingAudiobooks: "S\xF6ker ljudb\xF6cker\u2026",
-      noAudiobooks: "Inga ljudb\xF6cker hittades f\xF6r",
-      dismiss: "St\xE4ng",
-      // Filters
-      filters: "Filter",
-      refine: "F\xF6rfina",
-      reset: "\xC5terst\xE4ll",
-      type: "Typ",
-      movieGenres: "Filmgenrer",
-      seriesGenres: "TV-genrer",
-      moreFilters: "Fler filter",
-      year: "\xC5r",
-      rating: "Betyg",
-      languages: "Spr\xE5k",
-      originalLanguage: "Originalspr\xE5k",
-      noLanguagesSelected: "Inga originalspr\xE5k valda \xE4nnu.",
-      languageSearchPlaceholder: "S\xF6k spr\xE5k, t.ex. svenska, danska eller en",
-      languageSearchHelper: "S\xF6k p\xE5 spr\xE5knamn eller kod. Flera val inneb\xE4r att titeln kan matcha n\xE5got av de valda originalspr\xE5ken.",
-      noLanguageMatches: "Inga spr\xE5ktr\xE4ffar f\xF6r",
-      noKeywordsSelected: "Inga nyckelord valda \xE4nnu.",
-      keywordsPlaceholderTmdb: "Keyword",
-      keywordsPlaceholderCatalog: "Keyword",
-      clearSearch: "Rensa s\xF6kning",
-      keywordsHelperTmdb: "Skriv minst 2 tecken. Anv\xE4nd piltangenterna och Enter f\xF6r att v\xE4lja snabbare. Du kan bara l\xE4gga till nyckelord som finns i TMDb.",
-      keywordsHelperCatalog: "Skriv minst 2 tecken. Anv\xE4nd piltangenterna och Enter f\xF6r att v\xE4lja snabbare. Du kan bara l\xE4gga till nyckelord som finns i katalogen.",
-      searchingKeywords: "S\xF6ker nyckelord...",
-      noKeywordMatches: "Inga nyckelordstr\xE4ffar f\xF6r",
-      add: "L\xE4gg till",
-      selected: "valda",
-      sortBy: "Sortera",
-      sortMostPopular: "Mest popul\xE4ra",
-      sortMostRelevant: "Mest relevant",
-      sortHighestRating: "H\xF6gst betyg",
-      sortHighestTmdb: "H\xF6gst TMDb-betyg",
-      sortNewest: "Nyast till \xE4ldst",
-      sortOldest: "\xC4ldst till nyast",
-      // Results
-      aboutResults: "Ungef\xE4r",
-      results: "resultat",
-      page: "Sida",
-      of: "av",
-      previous: "F\xF6reg\xE5ende",
-      next: "N\xE4sta",
-      showingPagedResults: "Visar sidade resultat fr\xE5n de starkaste tr\xE4ffarna.",
-      usingFallback: "Anv\xE4nder exempeldata",
-      sampleCatalog: "Exempelkatalog",
-      noResults: "Inga tr\xE4ffar",
-      // Subtitle menu
-      subtitleLanguages: "Undertextspr\xE5k",
-      subtitleVariants: "Undertextvarianter",
-      subtitleSettings: "Undertextinst\xE4llningar",
-      selectLanguage: "V\xE4lj ett spr\xE5k",
-      off: "Av",
-      delay: "F\xF6rdr\xF6jning",
-      subtitleAutoSync: "Auto-sync",
-      subtitleAutoSyncAnalyzing: "Analyserar...",
-      subtitleAutoSyncApplied: "La p\xE5 offset",
-      subtitleAutoSyncFailed: "Kunde inte auto-synca undertexterna",
-      subtitleAutoSyncNoMatch: "Kunde inte hitta en tillr\xE4ckligt bra matchning",
-      subtitleAutoSyncNeedsGroq: "L\xE4gg till en Groq API-nyckel i inst\xE4llningar f\xF6rst",
-      subtitleAutoSyncNeedsSubtitle: "V\xE4lj ett undertextsp\xE5r f\xF6rst",
-      subtitleAutoSyncNotEnoughSpeech: "F\xF6rs\xF6k igen i en scen med mer dialog",
-      size: "Storlek",
-      verticalPosition: "Vertikal position",
-      subtitlesLabel: "Undertexter",
-      subtitleProvider: "OpenSubtitles v3",
-      undo: "\xC5ngra",
-      audio: "Ljud",
-      audioLanguage: "Ljudspr\xE5k",
-      currentAudioOutput: "Aktuellt ljudl\xE4ge",
-      info: "Info",
-      actor: "Sk\xE5dis",
-      readMore: "L\xE4s mer",
-      readLess: "Visa mindre",
-      knownFor: "K\xE4nd f\xF6r",
-      credits: "Credits",
-      gender: "K\xF6n",
-      birth: "F\xF6dd",
-      bornIn: "F\xF6dd i:",
-      alsoKnownAs: "\xC4ven k\xE4nd som:",
-      noBiography: "Ingen biografi finns p\xE5 TMDb.",
-      soundtrack: "Soundtrack",
-      soundtrackLoadError: "Kunde inte ladda soundtrack",
-      noSoundtrackFound: "Inget soundtrack hittades p\xE5 Spotify",
-      searchOnSpotify: "S\xF6k p\xE5 Spotify",
-      searching: "S\xF6ker\u2026",
-      instantPlayTitle: "Direktspelning",
-      zappFindTitle: "Hitta film",
-      // Settings
-      settingsTitle: "Inst\xE4llningar",
-      settingsDesc: "Konfigurera integrationer f\xF6r den h\xE4r appen.",
-      profilesTitle: "Profiler",
-      profilesDesc: "Skapa separata lokala profiler med egen browser-cache och egen uppspelningshistorik.",
-      profileName: "Profilnamn",
-      profileNamePlaceholder: "Till exempel Familj eller Barn",
-      createProfile: "Skapa profil",
-      deleteProfile: "Ta bort profil",
-      resetProfile: "Nollst\xE4ll profil",
-      activeProfile: "Aktiv profil",
-      switchProfile: "Byt profil",
-      profileSwitcher: "Profil",
-      scraperTitle: "Scraper",
-      scraperDesc: "V\xE4lj vilken Stremio-scraper som anv\xE4nds f\xF6r att hitta streams. Torrentio r\xE4cker med RD-nyckel, men kan konfigureras vid behov.",
-      configure: "Konfigurera",
-      customScraper: "Anpassad",
-      customScraperDesc: "Valfri Stremio-kompatibel scraper med RD-st\xF6d.",
-      rdApiKeyLabel: "Real-Debrid API-nyckel",
-      scraperManifestPlaceholder: "Klistra in manifest-URL h\xE4r...",
-      customManifestPlaceholder: "https://din-scraper.example.com/manifest.json",
-      hevcTitle: "HEVC / H.265-kodek",
-      hevcDesc: "Kr\xE4vs f\xF6r att spela MKV/HEVC-str\xF6mmar i webbl\xE4saren. Installerar Microsoft HEVC-videotill\xE4gget via PowerShell.",
-      installHevc: "Installera HEVC-kodek",
-      installed: "Installerad",
-      checking: "Kontrollerar\u2026",
-      installing: "Installerar\u2026",
-      hevcRestart: "Starta om webbl\xE4saren f\xF6r att kodeken ska aktiveras.",
-      tmdbApiToken: "API-token (Bearer)",
-      tmdbApiKey: "API-nyckel (v3)",
-      language: "Spr\xE5k",
-      region: "Region",
-      tmdbEnvNote: "",
-      homekitTitle: "HomeKit",
-      homekitDesc: "Bygg in Lumio som ett eget HomeKit-tillbeh\xF6r och styr pairing h\xE4rifr\xE5n.",
-      homekitEnableAccessory: "Aktivera HomeKit-tillbeh\xF6r",
-      name: "Namn",
-      homekitStatusLabel: "Status",
-      homekitNotConnected: "Inte ansluten",
-      homekitDisabled: "Avst\xE4ngd",
-      homekitReady: "Redo f\xF6r pairing",
-      homekitNotPublished: "Ej publicerad",
-      homekitStatusFetchError: "Kunde inte h\xE4mta HomeKit-status",
-      homekitServerError: "Kunde inte kontakta HomeKit-servern",
-      homekitActionFailed: "HomeKit-operation misslyckades",
-      homekitResetInfo: "Pairing nollst\xE4lld. Ny HomeKit-identitet skapad f\xF6r ny parkoppling.",
-      homekitEventRules: "Event-regler",
-      movieStarts: "Film startar",
-      moviePaused: "Film pausas",
-      videoClosed: "Video st\xE4ngs",
-      openGuide: "\xD6ppna guide",
-      closeGuide: "St\xE4ng guide",
-      startPairing: "Starta pairing",
-      resetPairing: "Nollst\xE4ll pairing",
-      refreshStatus: "Uppdatera status",
-      starting: "Startar...",
-      resetting: "Nollst\xE4ller...",
-      homekitGuideTitle: "HomeKit-guide",
-      homekitGuideStep1: "Tryck p\xE5 Starta pairing.",
-      homekitGuideStep2: "L\xE4gg till tillbeh\xF6ret i Hem-appen och ange PIN-koden fr\xE5n f\xE4ltet ovan.",
-      homekitGuideStep3: "D\xF6p switcharna till samma namn som event-reglerna.",
-      homekitGuideStep4: "Skapa en automation per switch med triggern Sl\xE5s p\xE5.",
-      homekitGuideStep5: "V\xE4lj dina lampor och st\xE4ll in ljusstyrka/scen f\xF6r varje event.",
-      homekitSwitchesToUse: "Switchar att anv\xE4nda",
-      homekitSwitchesList: "Film startar, Film pausas, Video st\xE4ngs",
-      groqTitle: "Groq AI Search",
-      groqDescPrefix: "Aktiverar AI-s\xF6kning med naturligt spr\xE5k.",
-      spotifyTitle: "Spotify",
-      localFilesTitle: "Lokala filer",
-      localFilesDesc: "V\xE4lj en mapp med videofiler. Lumio matchar filnamn mot TMDb och visar dem i ett eget bibliotek.",
-      chooseFolder: "V\xE4lj mapp",
-      removeFolder: "Ta bort mapp",
-      playbackTitle: "Uppspelning",
-      playbackDesc: "Inst\xE4llningar f\xF6r videouppspelning.",
-      homeSectionsTitle: "Startsida",
-      homeSectionsDesc: "V\xE4lj ordning, layout och antal kort f\xF6r varje rad p\xE5 startsidan. Upp till 3 egna sektioner st\xF6ds.",
-      homeBackgroundTitle: "Bakgrund p\xE5 startsidan",
-      homeBackgroundDesc: "Anv\xE4nd egna bild-URL:er i st\xE4llet f\xF6r den slumpade bakgrunden.",
-      homeBackgroundPlaceholder: "https://exempel.se/bakgrund-1.jpg\nhttps://exempel.se/bakgrund-2.jpg",
-      uploadImages: "Ladda upp bilder",
-      enabled: "Aktiverad",
-      uploadedImage: "Uppladdad bild",
-      localUploadStored: "Sparas lokalt i Lumio",
-      remove: "Ta bort",
-      drag: "Dra",
-      moveUp: "Flytta upp",
-      moveDown: "Flytta ner",
-      moveUpShort: "Upp",
-      moveDownShort: "Ner",
-      homeRowRecent: "Senast sett",
-      homeRowTrending: "Trendar",
-      homeRowMovies: "Popul\xE4ra filmer",
-      homeRowSeries: "Popul\xE4ra serier",
-      homeRowTrailers: "Trailers",
-      homeRowLiveTv: "Live TV",
-      homeRowTraktCollection: "Watchlist",
-      homeRowCustom1: "Egen rad 1",
-      homeRowCustom2: "Egen rad 2",
-      homeRowCustom3: "Egen rad 3",
-      homeSearchTitle: "S\xF6kf\xE4lt p\xE5 startsidan",
-      homeSearchDesc: "Visa eller d\xF6lj det stora s\xF6kf\xE4ltet p\xE5 startsidan.",
-      homeSearchToggleLabel: "D\xF6lj s\xF6kf\xE4lt p\xE5 startsidan",
-      homeTopMenuTitle: "\xD6vre meny",
-      homeTopMenuDesc: "V\xE4lj vilka \xF6vre knappar som ska visas och \xE4ndra ordningen.",
-      homeTopMenuSettingsShortcut: "Inst\xE4llningar kan alltid \xF6ppnas med Cmd+, p\xE5 Mac eller Ctrl+, p\xE5 andra tangentbord.",
-      homeMainMenuTitle: "Startsidans meny",
-      homeMainMenuDesc: "V\xE4lj vilka menyknappar som ska visas och \xE4ndra ordningen med upp och ner.",
-      profileSelector: "Profilv\xE4ljare",
-      alwaysVisible: "Visas alltid",
-      collapseSection: "Kollapsa sektion",
-      expandSection: "Expandera sektion",
-      homeSource: "K\xE4lla",
-      homeSourceMovies: "Filmer",
-      homeSourceSeries: "Serier",
-      homeSourceSeriesWatchlist: "Nya avsnitt",
-      homeSourceSeriesWatchlistSubtitle: "Watchlist",
-      homeSourceMovieWatchlist: "Min lista",
-      homeSourceTraktCollection: "Watchlist",
-      homeWatchlistList: "Lista",
-      homeWatchlistType: "Typ",
-      homeSourcePlexRecentAdded: "Plex nyligen tillagt",
-      pluginYoutubeNotConnected: "Inte ansluten",
-      pluginYoutubeConnection: "Anslutning",
-      pluginYoutubeConnectionNote: "Det h\xE4r pluginet anv\xE4nder ditt eget Google Desktop Client ID och din YouTube Data API-nyckel.",
-      pluginYoutubeClientId: "Google OAuth Client ID",
-      pluginYoutubeApiKey: "YouTube API-nyckel",
-      pluginYoutubeOwnAppTitle: "S\xE5 skapar du din egen app",
-      pluginYoutubeOwnAppStep1: "1. Skapa ett Google Cloud-projekt.",
-      pluginYoutubeOwnAppStep2: "2. Aktivera YouTube Data API v3.",
-      pluginYoutubeOwnAppStep3: "3. Konfigurera OAuth consent screen.",
-      pluginYoutubeOwnAppStep4: "4. Skapa ett OAuth Client ID f\xF6r Desktop app.",
-      pluginYoutubeOwnAppStep5: "5. Skapa en API-nyckel begr\xE4nsad till YouTube Data API v3.",
-      pluginYoutubeOwnAppStep6: "6. Klistra in client ID och API-nyckel h\xE4r och anslut YouTube igen.",
-      pluginYoutubeOwnAppNote: "F\xF6r privat bruk beh\xF6ver du ingen egen dom\xE4n. F\xF6r localhost/webbutveckling kan du ocks\xE5 skapa en Web application client, men vanlig pluginanv\xE4ndning ska anv\xE4nda en Desktop app client.",
-      pluginYoutubeVideoOptions: "Videoalternativ",
-      pluginYoutubeHero: "Hero",
-      pluginYoutubeHeroHelp: "Anv\xE4nder den senaste videon fr\xE5n kanaler du f\xF6ljer som hero p\xE5 startsidan. N\xE4r den \xF6ppnas d\xF6ljs den tills en nyare video dyker upp.",
-      pluginYoutubeKeepHero: "Beh\xE5ll hero",
-      pluginYoutubeKeepHeroHelp: "Beh\xE5ller den senaste YouTube-heron synlig \xE4ven efter att du \xF6ppnat den, och byter bara n\xE4r en nyare video dyker upp vid uppstart/warmup.",
-      pluginYoutubeHideShorts: "D\xF6lj shorts",
-      pluginYoutubeHideShortsHelp: "D\xF6ljer korta YouTube-videor fr\xE5n grids n\xE4r durationsdata finns tillg\xE4nglig.",
-      pluginYoutubeConnect: "Anslut YouTube",
-      pluginYoutubeConnecting: "Ansluter\u2026",
-      pluginYoutubeRefresh: "Uppdatera",
-      pluginYoutubeRefreshing: "Uppdaterar\u2026",
-      pluginYoutubeReconnect: "Reconnect",
-      pluginYoutubeDisconnect: "Koppla fr\xE5n",
-      pluginYoutubeDisconnecting: "Kopplar fr\xE5n\u2026",
-      pluginYoutubeClearCache: "Rensa cache",
-      pluginYoutubeConnectError: "Kunde inte ansluta YouTube.",
-      pluginYoutubeDisconnectError: "Kunde inte koppla fr\xE5n YouTube.",
-      pluginYoutubeLoadError: "Kunde inte ladda YouTube-data.",
-      pluginYoutubeRowLoadError: "Kunde inte ladda YouTube-raden.",
-      pluginYoutubeFollowingPage: "F\xF6ljer",
-      pluginYoutubeChannelsPage: "Kanaler",
-      pluginYoutubePlaylistsPage: "Spellistor",
-      pluginYoutubeChannelPage: "Kanal",
-      pluginYoutubePlaylistPage: "Spellista",
-      pluginYoutubeFollowingSubtitle: "Senaste videorna fr\xE5n kanaler du f\xF6ljer.",
-      pluginYoutubeChannelsSubtitle: "S\xF6k efter nya kanaler och hantera vilka du f\xF6ljer.",
-      pluginYoutubePlaylistsSubtitle: "Dina sparade YouTube-spellistor.",
-      pluginYoutubeChannelSubtitle: "Senaste videorna fr\xE5n den h\xE4r kanalen.",
-      pluginYoutubePlaylistSubtitle: "Videor i spellistan",
-      pluginYoutubeMatchingChannels: "Matchande kanaler",
-      pluginYoutubeYourSubscriptions: "Dina prenumerationer",
-      pluginYoutubeSearchChannels: "S\xF6k kanaler",
-      pluginYoutubeSetupPrompt: "L\xE4gg in ditt Google Desktop Client ID och din YouTube API-nyckel i YouTube-pluginets inst\xE4llningar f\xF6r att komma ig\xE5ng.",
-      pluginYoutubeConnectPrompt: "Anslut YouTube i inst\xE4llningarna f\xF6r att bl\xE4ddra bland dina prenumerationer, kanaler och spellistor.",
-      pluginYoutubeLoading: "Laddar din YouTube-data\u2026",
-      pluginYoutubePlaylistBadge: "Spellista",
-      pluginYoutubeChannelBadge: "Kanal",
-      pluginYoutubeVideoBadge: "Video",
-      pluginYoutubeVideos: "videor",
-      pluginYoutubeUnfollow: "Avf\xF6lj",
-      pluginYoutubeOpenFeed: "\xD6ppna fl\xF6de",
-      pluginYoutubeFollowingRow: "YouTube f\xF6ljer",
-      pluginSectionIntro: "Hantera installerade plugins, bl\xE4ddra i den officiella marketplace-listan och l\xE4gg till plugin-k\xE4llor fr\xE5n GitHub eller ZIP-filer.",
-      pluginRestartRequired: "Omstart kr\xE4vs f\xF6r att plugin\xE4ndringar ska sl\xE5 igenom helt.",
-      pluginRestartNow: "Starta om nu",
-      pluginInstalledTitle: "Installerade plugins",
-      pluginPreinstalled: "F\xF6rinstallerad",
-      pluginOfficialBadge: "Officiell",
-      pluginManualSourceBadge: "Manuell k\xE4lla",
-      pluginInactiveBadge: "Inaktiv",
-      pluginUpdateAvailable: "Uppdatering finns",
-      pluginMetadataOnly: "Endast metadata",
-      pluginRepoLabel: "Repo",
-      pluginManifestLabel: "Manifest",
-      pluginUpdateNotice: "En nyare pluginversion finns i marketplace-k\xE4llan.",
-      pluginActiveState: "Aktiv",
-      pluginInactiveState: "Inaktiv",
-      pluginDeactivate: "Inaktivera",
-      pluginActivate: "Aktivera",
-      pluginUninstall: "Avinstallera",
-      pluginMarketplaceTitle: "Officiell marketplace",
-      pluginMarketplaceIntro: "Installera officiella Lumio-plugins fr\xE5n det delade marketplace-repot.",
-      pluginMarketplaceFallback: "Anv\xE4nder fallback-data f\xF6r marketplace",
-      pluginMarketplaceLive: "Live-manifest",
-      pluginMarketplaceStatic: "Fallback-manifest",
-      pluginMarketplaceChecked: "Kontrollerad",
-      pluginCheckUpdates: "S\xF6k uppdateringar",
-      pluginBundledRuntime: "Bundlad runtime",
-      pluginSharedRepoSuffix: "i delat marketplace-repo",
-      pluginInstall: "Installera",
-      pluginNoReadmePreview: "Ingen README-f\xF6rhandsvisning tillg\xE4nglig.",
-      pluginNoChangelogPreview: "Ingen changelog-f\xF6rhandsvisning tillg\xE4nglig.",
-      pluginAllOfficialInstalled: "Alla officiella marketplace-plugins \xE4r installerade.",
-      pluginAddSourceTitle: "L\xE4gg till plugin-k\xE4lla",
-      pluginAddSourceIntro: "L\xE4gg till ett GitHub-repo som inneh\xE5ller ett Lumio-pluginmanifest, eller ladda upp en plugin-ZIP. Uppt\xE4ckta plugins visas nedan som installerbara val.",
-      pluginGithubRepoUrl: "GitHub repo-URL",
-      pluginAddGithubSource: "L\xE4gg till GitHub-k\xE4lla",
-      pluginChooseReleaseZip: "V\xE4lj en release-ZIP",
-      pluginChooseReleaseZipHelp: "Det h\xE4r repot har flera release-ZIP-filer. V\xE4lj vilken asset Lumio ska inspektera.",
-      pluginUploadZipTitle: "Ladda upp plugin-ZIP",
-      pluginUploadZipHelp: "Importera en plugin-ZIP direkt, till exempel ett nedladdat scraper-paket eller ett zippat pluginrepo. Du kan ocks\xE5 dra och sl\xE4ppa en ZIP h\xE4r.",
-      pluginUploadZip: "Ladda upp ZIP",
-      pluginLastZipPreview: "Senaste ZIP-f\xF6rhandsvisning",
-      pluginSourceHelp: "GitHub-k\xE4llor b\xF6r helst exponera en marketplace.json i roten. Om den saknas f\xF6rs\xF6ker Lumio ocks\xE5 automatiskt inspektera den senaste GitHub release-ZIP-filen. ZIP-importer kan inneh\xE5lla antingen en marketplace.json eller en eller flera plugin.json-filer.",
-      pluginAddedSources: "Tillagda k\xE4llor",
-      pluginGithubSourceBadge: "GitHub-k\xE4lla",
-      pluginZipSourceBadge: "ZIP-k\xE4lla",
-      pluginAddedAt: "Tillagd",
-      pluginRemoveSource: "Ta bort k\xE4lla",
-      pluginReleaseAssets: "Release-assets",
-      pluginFilesFound: "Hittade filer",
-      pluginInstallAllFromSource: "Installera alla fr\xE5n k\xE4llan",
-      pluginAllSourceInstalled: "Alla plugins fr\xE5n den h\xE4r k\xE4llan \xE4r redan installerade.",
-      pluginRuntimeAvailable: "Runtime tillg\xE4nglig",
-      pluginMetadataOnlyNow: "Endast metadata just nu",
-      open: "\xD6ppna",
-      clear: "Rensa",
-      homeSourceLiveTvLists: "Live TV-listor",
-      homeSourceMyFiles: "Mina filer",
-      liveTvList: "Live TV-lista",
-      liveTvChooseList: "V\xE4lj en Live TV-lista",
-      homeMenuPremiereStar: "Premi\xE4rstj\xE4rna",
-      plexMenu: "Plex",
-      traktTitle: "Trakt",
-      traktDesc: "Logga in med Trakt f\xF6r att synka sedda serieavsnitt, listor och din samling med Lumio. Plex-kort st\xF6ds \xE4nnu inte p\xE5litligt f\xF6r Trakt-synk.",
-      traktSignedInAs: "Inloggad som",
-      traktSignedInFallback: "Trakt-anv\xE4ndare",
-      traktSyncDesc: "Synk h\xE4mtar data fr\xE5n Trakt till Lumio och skickar ocks\xE5 upp dina lokala Lumio-listor och sedda avsnitt till Trakt. F\xF6lj/Min lista fr\xE5n Plex fungerar \xE4nnu inte garanterat mot Trakt.",
-      traktImportData: "Synka Trakt-data",
-      traktImporting: "Synkar...",
-      traktImportDone: "Trakt-synk klar",
-      traktDisconnect: "Koppla fr\xE5n",
-      traktConnect: "Logga in med Trakt",
-      traktWaiting: "V\xE4ntar p\xE5 Trakt...",
-      traktOpenLinkAndCode: "\xD6ppna l\xE4nken och skriv in koden",
-      traktStartLoginFailed: "Kunde inte starta Trakt-inloggning",
-      traktLoginFailed: "Trakt-inloggning misslyckades",
-      traktImportFailed: "Kunde inte synka med Trakt",
-      plexTitle: "Plex",
-      plexDesc: "Logga in med Plex, v\xE4lj server och bibliotek, och anv\xE4nd Plex nyligen tillagt som en rad p\xE5 startsidan.",
-      plexSignedInAs: "Ansluten som",
-      plexSignedInFallback: "Plex-anv\xE4ndare",
-      plexConnect: "Logga in med Plex",
-      plexWaiting: "V\xE4ntar p\xE5 Plex...",
-      plexOpenLinkAndCode: "\xD6ppna l\xE4nken och godk\xE4nn Lumio",
-      plexChooseProfile: "Profil",
-      plexProfilePin: "Profil-PIN",
-      plexProfilePinPlaceholder: "Ange Plex-profilens PIN",
-      plexApplyProfile: "Anv\xE4nd profil",
-      plexRefreshingProfiles: "Uppdaterar profiler...",
-      plexProfileApplied: "Plex-profil aktiverad",
-      plexChooseServer: "Server",
-      plexChooseLibraries: "Bibliotek",
-      plexRefreshLibraries: "Uppdatera bibliotek",
-      plexRefreshingLibrariesButton: "Uppdaterar bibliotek...",
-      plexRefreshLibrariesDone: "Plex-biblioteken uppdaterades",
-      plexRefreshLibrariesEmpty: "Inga film- eller seriebibliotek hittades p\xE5 den h\xE4r servern.",
-      plexRefreshLibrariesFailed: "Kunde inte uppdatera Plex-bibliotek",
-      plexRequestFailed: "Kunde inte n\xE5 Plex. Kontrollera att vald server \xE4r online och n\xE5bar.",
-      plexDisconnect: "Koppla fr\xE5n",
-      plexNoServers: "Inga Plex-servrar hittades.",
-      plexNoLibraries: "Inga film- eller seriebibliotek hittades p\xE5 den h\xE4r servern.",
-      plexRecentlyAdded: "Plex nyligen tillagt",
-      homeSourceCinemaMovies: "P\xE5 bio",
-      homeSourceTopRatedMovies: "H\xF6gst betyg filmer",
-      homeSourceTopRatedSeries: "H\xF6gst betyg serier",
-      homeSourceReleaseRecentMovies: "Releases: nyligen filmer",
-      homeSourceReleaseRecentSeries: "Releases: nyligen serier",
-      homeSourceReleaseUpcomingMovies: "Releases: kommande filmer",
-      homeSourceReleaseUpcomingSeries: "Releases: kommande serier",
-      homeSourceStreamingMovies: "Trendande filmer (streaming)",
-      homeSourceStreamingSeries: "Trendande serier (streaming)",
-      homeLayout: "Layout",
-      homeLayoutSlider: "Slider",
-      homeLayoutGrid: "Grid",
-      homeLayoutFull: "Visa allt",
-      homeCount: "Kort",
-      homeCountDesc: "Max antal kort som visas i den h\xE4r raden.",
-      homeSliderGlobal: "Sliderkort",
-      homeSliderGlobalDesc: "Hur m\xE5nga kort en slider max visar p\xE5 bred layout.",
-      homeSliderOverride: "Slider override",
-      homeSliderDisplay: "Visning",
-      homeSliderUseGlobal: "Globalt v\xE4rde",
-      homeFullModeNote: "Bara en sektion kan anv\xE4nda Visa allt. Senast sett kan fortfarande ligga kvar ovanf\xF6r som slider.",
-      pinChannel: "Pinna kanal",
-      unpinChannel: "Avpinna kanal",
-      aspectRatio: "Bildformat",
-      aspectRatioDesc: "V\xE4lj hur videon ska placeras i spelaren.",
-      cropZoom: "Zoom / besk\xE4r",
-      cropZoomOff: "Av",
-      cropZoomCrop: "Besk\xE4r",
-      cropZoomZoom: "Zoom",
-      cropZoomZoomPlus: "Zoom +",
-      rememberAspectRatio: "Kom ih\xE5g bildformat",
-      rememberAspectRatioDesc: "Anv\xE4nder ditt valda bildformat som standard f\xF6r nya filmer och avsnitt.",
-      autoSkipIntro: "Auto-skippa intro",
-      autoSkipIntroDesc: "Om det \xE4r p\xE5slaget hoppas intro \xF6ver automatiskt. Om det \xE4r av visas en Skippa intro-knapp n\xE4r IntroDB har en tr\xE4ff.",
-      autoplayStreamOnPlay: "Auto-spela fr\xE5n Play-knappen",
-      autoplayStreamOnPlayDesc: "F\xF6r vanliga kort testar Play upp till 3 streams automatiskt. K\xE4nda fel spr\xE5ksp\xE5r och f\xF6r stora filer hoppas \xF6ver n\xE4r det g\xE5r.",
-      hideWatchedMoviesHome: "D\xF6lj sedda filmer p\xE5 startsidan",
-      hideWatchedMoviesHomeDesc: "Exkludera filmer som markerats som sedda fr\xE5n startsidans gridar och sliders, \xE4ven Plex-rader.",
-      stillWatching: "Tittar du fortfarande?",
-      stillWatchingDesc: "G\xE4ller bara TV-serier. Pausar uppspelningen efter vald tid utan kontrollinteraktion, n\xE4r minst 3 avsnitt har spelats i samma session.",
-      stillWatchingMaxMinutes: "Max tid f\xF6r fortfarande tittar",
-      stillWatchingMaxMinutesDesc: "Standard matchar Netflix-tiden: 90 minuter. Prompten visas bara f\xF6r TV-serier efter minst 3 avsnitt.",
-      stillWatchingContinue: "Forts\xE4tt titta",
-      stillWatchingExit: "St\xE4ng spelaren",
-      autoplayMaxStreamSize: "Max storlek per stream",
-      autoplayMaxStreamSizeDesc: "Valfri gr\xE4ns i GB f\xF6r autoplay-f\xF6rs\xF6k. L\xE4mna tomt f\xF6r ingen storleksgr\xE4ns.",
-      introDebugReady: "IntroDB klar",
-      introDebugLoading: "IntroDB laddar",
-      introDebugFound: "Intro hittat",
-      introDebugMissing: "Ingen introtr\xE4ff",
-      introDebugAutoOn: "Auto-skip p\xE5",
-      introDebugAutoOff: "Auto-skip av",
-      aspectAuto: "Auto",
-      aspectContain: "Anpassa",
-      aspectFill: "Fyll",
-      aspect16_9: "16:9",
-      aspect4_3: "4:3",
-      audioMode: "Ljudl\xE4ge",
-      audioModeDesc: "V\xE4lj mellan maximal kompatibilitet eller b\xE4sta m\xF6jliga flerkanal i proxyspelning.",
-      audioModeCompatible: "Kompatibel",
-      audioModeCompatibleDesc: "S\xE4krast uppspelning. Proxyljud kodas till stereo AAC.",
-      audioModeBest: "B\xE4sta m\xF6jliga",
-      audioModeBestDesc: "Beh\xE5ller flerkanal i proxy n\xE4r m\xF6jligt. Tauri/mpv forts\xE4tter anv\xE4nda originalsp\xE5ret direkt.",
-      nightMode: "Nattl\xE4ge / DRC",
-      nightModeDesc: "D\xE4mpar h\xF6ga toppar och g\xF6r dialog l\xE4ttare att h\xF6ra p\xE5 l\xE5g volym.",
-      nightModeOff: "Av",
-      nightModeMild: "Mild nattl\xE4ge",
-      nightModeStrong: "Stark nattl\xE4ge",
-      defaultSubtitleLanguage: "Standard spr\xE5k f\xF6r textning",
-      defaultSubtitleLanguageDesc: "V\xE4ljs automatiskt n\xE4r undertexter finns tillg\xE4ngliga.",
-      fallbackSubtitleLanguage: "Sekund\xE4rt spr\xE5k f\xF6r textning",
-      fallbackSubtitleLanguageDesc: "Anv\xE4nds bara om det prim\xE4ra undertextspr\xE5ket inte finns.",
-      defaultAudioTrack: "Standard ljudsp\xE5r",
-      defaultAudioTrackDesc: "F\xF6rs\xF6ker v\xE4lja spr\xE5k automatiskt n\xE4r flera ljudsp\xE5r finns.",
-      disableSubtitlesWhenAudioMatches: "St\xE4ng av textning n\xE4r ljudspr\xE5ket matchar",
-      disableSubtitlesWhenAudioMatchesDesc: "Om ditt valda standardspr\xE5k f\xF6r ljud hittas, h\xE5lls textningen av som standard.",
-      subtitleSize: "Textstorlek",
-      subtitleSizeDesc: "Anv\xE4nds som standard f\xF6r nya filmer och avsnitt.",
-      subtitleVerticalPositionDesc: "Hur h\xF6gt \xF6ver kontrollbaren textningen placeras.",
-      subtitleOpacity: "Opacitet",
-      subtitleOpacityDesc: "G\xE4ller hela undertexten inklusive bakgrund.",
-      subtitleTextColor: "Textf\xE4rg",
-      subtitleTextColorDesc: "Standardf\xE4rg f\xF6r undertexten.",
-      subtitleBackgroundColor: "Bakgrundsf\xE4rg",
-      subtitleBackgroundColorDesc: "Transparent motsvarar dagens stil.",
-      subtitleOutlineColor: "Konturf\xE4rg",
-      subtitleOutlineColorDesc: "Anv\xE4nds f\xF6r textens outline/skugga.",
-      subtitlePreviewText: "S\xE5 h\xE4r kommer din textning att se ut",
-      subtitlePreviewCaption: "F\xF6rhandsvisning av standardutseende",
-      skipIntro: "Skippa intro",
-      originalFirst: "Original / f\xF6rsta",
-      noFallback: "Ingen fallback",
-      autoplayNextEpisode: "Auto-spela n\xE4sta avsnitt",
-      autoplayNextEpisodeDesc: "Laddar n\xE4sta avsnitt i f\xF6rv\xE4g och spelar det automatiskt vid seriens slut.",
-      showPopup: "Visa popup",
-      showPopupDesc: "Hur m\xE5nga sekunder f\xF6re slutet n\xE4sta-avsnitt-kortet visas.",
-      preloadBeforePopup: "F\xF6rladda innan popup",
-      preloadBeforePopupDesc: "Hur m\xE5nga sekunder f\xF6re popup vi b\xF6rjar h\xE4mta n\xE4sta avsnitt.",
-      seconds: "sekunder",
-      rdApiKey: "Real-Debrid API-nyckel",
-      rdApiPlaceholder: "Din API-nyckel fr\xE5n real-debrid.com",
-      rdApiNote: "Hitta din nyckel p\xE5 real-debrid.com \u203A Konto \u203A API-token. Nyckeln lagras bara i din webbl\xE4sare (localStorage).",
-      streamQuality: "Kvalitetsfilter f\xF6r str\xF6mmar",
-      streamQualityDesc: "D\xF6lj l\xE5gkvalitets- eller o\xF6nskade str\xF6mk\xE4llor.",
-      hideCam: "D\xF6lj CAM / CAMRIP",
-      hideCamDesc: "Filmad p\xE5 bio \u2014 mycket l\xE5g kvalitet",
-      hideTs: "D\xF6lj TeleSync / TeleCine (TS/TC)",
-      hideTsDesc: "L\xE5gkvalitets f\xF6rhandsutgivningskopior",
-      hideScr: "D\xF6lj Screener (SCR)",
-      hideScrDesc: "DVD/streaming screenerkopiyor",
-      hideBelow720p: "D\xF6lj under 720p",
-      hideBelow720pDesc: "480p, 360p och l\xE4gre uppl\xF6sningar",
-      clearCache: "Rensa cache",
-      clearing: "Rensar\u2026",
-      cleared: "Rensat \u2014 starta om servern",
-      save: "Spara",
-      checkKey: "Kontrollera nyckel",
-      testingConnection: "Testar anslutning\u2026",
-      enterApiKeyFirst: "Ange en API-nyckel f\xF6rst.",
-      connectedAs: "Ansluten som",
-      // Calendar
-      seriesCalendar: "Seriekalender",
-      today: "Idag",
-      followSeries: "F\xF6lj en serie f\xF6r att se avsnitt h\xE4r",
-      noEpisodesDay: "Inga avsnitt den h\xE4r dagen.",
-      openStreams: "\xD6ppna str\xF6mmar",
-      more: "till",
-      // Media type chips
-      both: "B\xE5da",
-      movies: "Filmer",
-      // Release calendar
-      releaseCalendar: "Releasekalender",
-      recent: "Nyligen",
-      upcoming: "Kommande",
-      allServices: "Alla tj\xE4nster",
-      premiere: "Premi\xE4r",
-      newBadge: "Ny",
-      newPremiere: "Ny premi\xE4r",
-      loadMore: "Ladda mer",
-      allLanguages: "Alla spr\xE5k",
-      hideFilters: "D\xF6lj filter",
-      sort: "Sortera",
-      // Watchlist
-      addToWatchlist: "L\xE4gg till i watchlist",
-      removeFromWatchlist: "Ta bort fr\xE5n watchlist",
-      watchlistNewPremieres: "Watchlist \u2013 nya premi\xE4rer",
-      watchlistAllLists: "Watchlist",
-      watchlistEmpty: "Inga stj\xE4rnm\xE4rkta titlar \xE4n.",
-      watchlistEmptyHint: "Stj\xE4rnm\xE4rk titlar i releasekalendern f\xF6r att f\xF6lja premi\xE4rer.",
-      seriesWatchlistEmpty: "Inga f\xF6ljda serier \xE4n.",
-      newEpisodeBadge: "Nytt avsnitt",
-      // Date presets
-      days7: "7 dagar",
-      days30: "30 dagar",
-      days60: "60 dagar",
-      days90: "90 dagar",
-      thisYear: "I \xE5r",
-      dateFrom: "Fr\xE5n",
-      // Settings
-      spotifyDesc: "Anv\xE4nds f\xF6r att visa soundtracks i detaljpanelen. Skapa en app p\xE5 developer.spotify.com och kopiera Client ID och Client Secret.",
-      clearCacheDesc: "Rensa app-cache och byggartefakter om n\xE5got beter sig konstigt.",
-      // Soundtrack
-      openOnSpotify: "\xD6ppna p\xE5 Spotify"
-    }
-  };
-  var LangContext = createContext2({
-    lang: "en",
-    setLang: () => {
-    },
-    t: (key) => strings.en[key]
-  });
-  function useLang() {
-    return useContext(LangContext);
+  // lib/playback-settings.ts
+  var KEY_HIDE_WATCHED_MOVIES_HOME = "playback_hideWatchedMoviesHome";
+  var PLAYBACK_SETTINGS_CHANGED_EVENT = "lumio-playback-settings-changed";
+  var DEFAULT_HIDE_WATCHED_MOVIES_HOME = false;
+  function onPlaybackSettingsChanged(listener) {
+    if (typeof window === "undefined") return () => {
+    };
+    window.addEventListener(PLAYBACK_SETTINGS_CHANGED_EVENT, listener);
+    return () => window.removeEventListener(PLAYBACK_SETTINGS_CHANGED_EVENT, listener);
+  }
+  function getHideWatchedMoviesHome() {
+    if (typeof window === "undefined") return DEFAULT_HIDE_WATCHED_MOVIES_HOME;
+    return (getScopedStorageItem(KEY_HIDE_WATCHED_MOVIES_HOME) ?? "0") === "1";
   }
 
-  // components/settings/plex-section.tsx
+  // lib/series-watchlist-feed.ts
+  var STREAM_CACHE_TTL_MS = 30 * 60 * 1e3;
+  var SERIES_STATUS_CACHE_TTL_MS = 15 * 60 * 1e3;
+
+  // lib/release-watchlist-feed.ts
+  var STREAM_CACHE_TTL_MS2 = 30 * 60 * 1e3;
+
+  // lib/utils/filter-media.ts
+  function matchesTitleQuery(item, titleQuery, ignoreTitleQuery = false) {
+    if (ignoreTitleQuery) {
+      return true;
+    }
+    if (normalizeSearchInput(titleQuery).length === 0) {
+      return true;
+    }
+    return matchesNormalizedText(item.title, titleQuery);
+  }
+  function matchesSelectedValues(itemValues, selectedValues) {
+    if (selectedValues.length === 0) {
+      return true;
+    }
+    const normalizedItemValues = itemValues.map((value) => normalizeSearchInput(value));
+    return selectedValues.some((value) => normalizedItemValues.includes(normalizeSearchInput(value)));
+  }
+  function matchesOriginalLanguages(item, selectedLanguages) {
+    if (selectedLanguages.length === 0) {
+      return true;
+    }
+    if (!item.originalLanguage?.code) {
+      return false;
+    }
+    return selectedLanguages.includes(item.originalLanguage.code);
+  }
+  function getMediaItemTitleMatchScore(item, query) {
+    const candidates = Array.from(new Set([item.title, ...item.searchTitles ?? []].filter(Boolean)));
+    return candidates.reduce((bestScore, candidate, index3) => {
+      const candidateScore = getTitleMatchScore(candidate, query) + (index3 > 0 ? 18 : 0);
+      return Math.max(bestScore, candidateScore);
+    }, 0);
+  }
+  function getComparableRatingScore(item) {
+    return item.discoveryScore ?? null;
+  }
+  function compareNullableNumberDesc(left, right) {
+    return (right ?? -1) - (left ?? -1);
+  }
+  function compareNullableNumberAsc(left, right) {
+    return (left ?? Number.MAX_SAFE_INTEGER) - (right ?? Number.MAX_SAFE_INTEGER);
+  }
+  function compareTitleMatchScore(left, right, query) {
+    return getMediaItemTitleMatchScore(right, query) - getMediaItemTitleMatchScore(left, query);
+  }
+  function matchesRatingRange(item, filters) {
+    const score = getComparableRatingScore(item);
+    if (score === null) {
+      return true;
+    }
+    return score >= filters.ratingMin && score <= filters.ratingMax;
+  }
+  function computeRelevance(item, filters) {
+    let score = item.popularity ?? 0;
+    const titleMatchScore = getMediaItemTitleMatchScore(item, filters.titleQuery);
+    if (filters.mediaType !== "all" && filters.mediaType === item.type) {
+      score += 15;
+    }
+    if (titleMatchScore > 0) {
+      score += titleMatchScore;
+    }
+    score += item.genres.filter((genre) => filters.genres.includes(genre)).length * 10;
+    score += item.providers.filter((provider) => filters.providers.includes(provider)).length * 9;
+    score += item.keywords.filter((keyword) => filters.keywords.includes(keyword)).length * 12;
+    const imdb = getComparableRatingScore(item);
+    if (imdb !== null) {
+      score += imdb * 4;
+    }
+    if (item.year !== null) {
+      const midpoint = (filters.yearMin + filters.yearMax) / 2;
+      score += Math.max(0, 10 - Math.abs(item.year - midpoint) / 2);
+    }
+    return score;
+  }
+  function applyFilters(items, filters, options = {}) {
+    const filtered = items.filter((item) => {
+      const matchesType = filters.mediaType === "all" || item.type === filters.mediaType;
+      const matchesYear = item.year === null || item.year >= filters.yearMin && item.year <= filters.yearMax;
+      return matchesTitleQuery(item, filters.titleQuery, options.ignoreTitleQuery) && matchesType && matchesYear && (options.ignoreProviders || matchesSelectedValues(item.providers, filters.providers)) && matchesSelectedValues(item.genres, filters.genres) && matchesSelectedValues(item.keywords, filters.keywords) && matchesOriginalLanguages(item, filters.originalLanguages) && matchesRatingRange(item, filters);
+    });
+    if (options.preserveOrder) {
+      return filtered;
+    }
+    return [...filtered].sort((left, right) => {
+      if (filters.sortBy === "year_desc") {
+        const yearDiff = compareNullableNumberDesc(left.year, right.year);
+        if (yearDiff !== 0) {
+          return yearDiff;
+        }
+        const ratingDiff = compareNullableNumberDesc(getComparableRatingScore(left), getComparableRatingScore(right));
+        if (ratingDiff !== 0) {
+          return ratingDiff;
+        }
+        return compareNullableNumberDesc(left.popularity, right.popularity);
+      }
+      if (filters.sortBy === "year_asc") {
+        const yearDiff = compareNullableNumberAsc(left.year, right.year);
+        if (yearDiff !== 0) {
+          return yearDiff;
+        }
+        const ratingDiff = compareNullableNumberDesc(getComparableRatingScore(left), getComparableRatingScore(right));
+        if (ratingDiff !== 0) {
+          return ratingDiff;
+        }
+        return compareNullableNumberDesc(left.popularity, right.popularity);
+      }
+      if (filters.sortBy === "rating_desc") {
+        const ratingDiff = compareNullableNumberDesc(getComparableRatingScore(left), getComparableRatingScore(right));
+        if (ratingDiff !== 0) {
+          return ratingDiff;
+        }
+        const yearDiff = compareNullableNumberDesc(left.year, right.year);
+        if (yearDiff !== 0) {
+          return yearDiff;
+        }
+        return compareNullableNumberDesc(left.popularity, right.popularity);
+      }
+      const titleScoreDiff = compareTitleMatchScore(left, right, filters.titleQuery);
+      if (titleScoreDiff !== 0) {
+        return titleScoreDiff;
+      }
+      const relevanceDiff = computeRelevance(right, filters) - computeRelevance(left, filters);
+      if (relevanceDiff !== 0) {
+        return relevanceDiff;
+      }
+      return compareNullableNumberDesc(left.popularity, right.popularity);
+    });
+  }
+
+  // lib/plugins/plex/playback-utils.ts
+  function normalizeTitle2(value) {
+    return (value ?? "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  }
+  function getTmdbId(item) {
+    return item.id.match(/^(?:movie|tv)-(\d+)$/)?.[1] ?? null;
+  }
+  function getConfiguredPlexServerUri(item) {
+    const settings = getPlexSettings();
+    const configuredUris = [
+      settings.serverUri,
+      ...settings.serverUris ?? [],
+      item.plexServerUri ?? null
+    ].filter((value) => typeof value === "string" && value.length > 0);
+    if (configuredUris.length === 0) return item.plexServerUri ?? null;
+    const uniqueUris = Array.from(new Set(configuredUris.map((uri) => uri.replace(/\/+$/, ""))));
+    const hostRank = (uri) => {
+      try {
+        const parsed = new URL(uri);
+        const host = parsed.hostname.toLowerCase();
+        const isPlexDirect = host.endsWith(".plex.direct");
+        const isPrivateIpv4 = /^10\./.test(host) || /^192\.168\./.test(host) || /^172\.(1[6-9]|2\d|3[0-1])\./.test(host);
+        if (isPrivateIpv4) return 3;
+        if (!isPlexDirect) return 2;
+        return 1;
+      } catch {
+        return 0;
+      }
+    };
+    const ranked = [...uniqueUris].sort((left, right) => hostRank(right) - hostRank(left));
+    return ranked[0] ?? null;
+  }
+  function isPlexPlaybackReady(item) {
+    const settings = getPlexSettings();
+    const auth = getPlexAuth();
+    const token = auth?.authToken ?? settings.serverAccessToken ?? null;
+    const serverUri = getConfiguredPlexServerUri(item);
+    if (!token || !serverUri) return false;
+    if (item.type === "movie") return Boolean(item.plexPartKey);
+    return Boolean(item.plexRatingKey);
+  }
+  async function getPlexLibraryItemsForMatching(fetchIfMissing) {
+    const cached = getCachedPlexLibraryItems(240) ?? [];
+    if (cached.length > 0 || !fetchIfMissing) return cached;
+    return fetchPlexLibraryItems(240);
+  }
+  async function findBestPlexMatch(item, options) {
+    if (item.source === "plex") return item;
+    const settings = getPlexSettings();
+    const auth = getPlexAuth();
+    if (!settings.serverUri || settings.libraries.length === 0 || !auth) return null;
+    const libraryItems = await getPlexLibraryItemsForMatching(options?.fetchIfMissing ?? true);
+    if (libraryItems.length === 0) return null;
+    const mediaType = item.type;
+    const tmdbId = getTmdbId(item);
+    const imdbId = item.imdbId?.trim() ?? "";
+    const titleKey = normalizeTitle2(item.title);
+    const year = item.year;
+    const candidates = libraryItems.filter((entry) => entry.type === mediaType);
+    if (tmdbId) {
+      const exactTmdb = candidates.find((entry) => getTmdbId(entry) === tmdbId);
+      if (exactTmdb) return exactTmdb;
+    }
+    if (imdbId) {
+      const exactImdb = candidates.find((entry) => (entry.imdbId?.trim() ?? "") === imdbId);
+      if (exactImdb) return exactImdb;
+    }
+    if (!titleKey) return null;
+    const exactTitleYear = candidates.find(
+      (entry) => normalizeTitle2(entry.title) === titleKey && (year == null || entry.year == null || entry.year === year)
+    );
+    if (exactTitleYear) return exactTitleYear;
+    return candidates.find((entry) => normalizeTitle2(entry.title) === titleKey) ?? null;
+  }
+  function isPlexItemPlayable(item) {
+    return Boolean(item && item.source === "plex" && isPlexPlaybackReady(item));
+  }
+
+  // components/results/results-loading-indicator.tsx
+  init_jsx_runtime_shim();
+  function ResultsLoadingIndicator({
+    title,
+    description,
+    compact = false
+  }) {
+    return /* @__PURE__ */ jsx(
+      "div",
+      {
+        className: `rounded-[1.5rem] border border-white/0 bg-white/[0.045] text-slate-100 shadow-[0_20px_70px_rgba(0,0,0,0.35)] backdrop-blur-xl ${compact ? "px-5 py-4" : "px-6 py-5"}`,
+        children: /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-center gap-3", children: [
+          /* @__PURE__ */ jsx("span", { className: "h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-amber-300/90" }),
+          /* @__PURE__ */ jsxs("div", { className: "min-w-0", children: [
+            /* @__PURE__ */ jsx("p", { className: "text-sm font-semibold text-white", children: title }),
+            description ? /* @__PURE__ */ jsx("p", { className: "mt-1 text-sm leading-6 text-slate-300", children: description }) : null
+          ] })
+        ] })
+      }
+    );
+  }
+
+  // components/results/results-state.tsx
+  init_jsx_runtime_shim();
+  function ResultsState({
+    title,
+    description,
+    suggestions,
+    actionLabel,
+    onAction
+  }) {
+    return /* @__PURE__ */ jsxs("div", { className: "flex min-h-[360px] flex-col items-center justify-center rounded-[2rem] border border-dashed border-white/10 bg-white/5 px-6 py-10 text-center", children: [
+      /* @__PURE__ */ jsx("p", { className: "text-xs uppercase tracking-[0.32em] text-accent-400", children: "Results" }),
+      /* @__PURE__ */ jsx("h3", { className: "mt-4 font-display text-4xl text-white", children: title }),
+      /* @__PURE__ */ jsx("p", { className: "mt-3 max-w-xl text-sm leading-7 text-slate-300", children: description }),
+      suggestions && suggestions.length > 0 ? /* @__PURE__ */ jsxs("div", { className: "mt-6 w-full max-w-2xl rounded-[1.5rem] border border-white/10 bg-slate-950/60 px-5 py-5 text-left", children: [
+        /* @__PURE__ */ jsx("p", { className: "text-xs uppercase tracking-[0.24em] text-slate-400", children: "Try this" }),
+        /* @__PURE__ */ jsx("ul", { className: "mt-3 space-y-3 text-sm leading-7 text-slate-200", children: suggestions.map((suggestion) => /* @__PURE__ */ jsxs("li", { className: "flex gap-3", children: [
+          /* @__PURE__ */ jsx("span", { className: "mt-2 h-2 w-2 rounded-full bg-accent-400", "aria-hidden": "true" }),
+          /* @__PURE__ */ jsx("span", { children: suggestion })
+        ] }, suggestion)) })
+      ] }) : null,
+      actionLabel && onAction ? /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          onClick: onAction,
+          className: "mt-6 rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm text-slate-100 transition hover:border-accent-400/40 hover:bg-white/10",
+          children: actionLabel
+        }
+      ) : null
+    ] });
+  }
+
+  // components/results/results-pagination.tsx
+  var import_react55 = __toESM(require_dist82());
+  init_jsx_runtime_shim();
+  function ResultsPagination({ currentPage, totalPages, onPageChange }) {
+    if (totalPages <= 1) return null;
+    return /* @__PURE__ */ jsx("div", { className: "flex items-center justify-center rounded-[1.75rem] border border-white/10 bg-slate-950/60 px-4 py-4", children: /* @__PURE__ */ jsx(
+      import_react55.Pagination,
+      {
+        total: totalPages,
+        page: currentPage,
+        onChange: onPageChange,
+        showControls: true,
+        siblings: 2,
+        boundaries: 1,
+        classNames: {
+          wrapper: "gap-2",
+          item: [
+            "bg-white/5 border border-white/10 text-slate-200",
+            "hover:bg-white/10 hover:!border-accent-400/30 hover:text-white",
+            "data-[active=true]:bg-accent-400/90 data-[active=true]:!border-accent-400/70 data-[active=true]:text-slate-950 data-[active=true]:font-semibold",
+            "transition-all duration-200"
+          ].join(" "),
+          prev: "bg-white/5 border border-white/10 text-slate-200 hover:bg-white/10 hover:!border-accent-400/30",
+          next: "bg-white/5 border border-white/10 text-slate-200 hover:bg-white/10 hover:!border-accent-400/30",
+          cursor: "bg-accent-400 text-slate-950 font-semibold shadow-sm shadow-accent-500/30"
+        }
+      }
+    ) });
+  }
+
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-OGpfmH/auth-capabilities-shim.ts
+  var sdk = globalThis.__lumioPluginRuntime?.sdk;
+
+  // lib/tauri-mpv.ts
+  init_core();
+  init_event();
+  init_react_shim();
+  function detectTauriEnv() {
+    if (typeof window === "undefined") return false;
+    const maybeTauriWindow = window;
+    if (maybeTauriWindow.__TAURI_INTERNALS__ || maybeTauriWindow.__TAURI__) {
+      return true;
+    }
+    const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "";
+    if (userAgent.includes("Tauri")) return true;
+    return window.location.hostname === "127.0.0.1" && window.location.port === "32145";
+  }
+  var isTauriEnv = detectTauriEnv();
+
+  // ../lumio-official-plugins/plugins/plex/runtime/playback-capability-provider.ts
+  var plexPlaybackCapabilityProvider = {
+    id: "plex-playback",
+    pluginId: "com.lumio.plex",
+    label: { en: "Plex", sv: "Plex" },
+    async getCapability({ item }) {
+      if (item.type === "tv" && item.source !== "plex") {
+        return {
+          canPlay: false,
+          showPlayButton: false,
+          playVia: "details",
+          reason: "not_in_library",
+          priority: 20
+        };
+      }
+      const matchedItem = await findBestPlexMatch(item, { fetchIfMissing: true });
+      if (!matchedItem) {
+        return {
+          canPlay: false,
+          showPlayButton: false,
+          playVia: "details",
+          reason: "not_in_library",
+          priority: 20
+        };
+      }
+      const canPlay = isPlexItemPlayable(matchedItem);
+      return {
+        canPlay,
+        showPlayButton: canPlay,
+        playVia: "plex",
+        matchedItem,
+        reason: canPlay ? void 0 : "not_playable",
+        priority: matchedItem.source === "plex" && item.source === "plex" ? 100 : 50
+      };
+    }
+  };
+
+  // ../lumio-official-plugins/plugins/plex/runtime/plex-home-override.tsx
+  init_react_shim();
+
+  // ../lumio-official-plugins/plugins/plex/runtime/plex-grid.tsx
+  init_react_shim();
+  var import_react58 = __toESM(require_dist82());
+  init_jsx_runtime_shim();
+  function uniqueSorted(values) {
+    return Array.from(new Set(values.filter(Boolean))).sort(
+      (left, right) => left.localeCompare(right, void 0, { sensitivity: "base" })
+    );
+  }
+  function buildPlexLoadSignature() {
+    const auth = getPlexAuth();
+    const settings = getPlexSettings();
+    return JSON.stringify({
+      hasAuth: Boolean(auth?.authToken),
+      serverId: settings.serverId,
+      serverUri: settings.serverUri,
+      libraries: settings.libraries.map((library) => `${library.type}:${library.key}`).sort()
+    });
+  }
+  function buildWatchedMovieKeys() {
+    const keys2 = /* @__PURE__ */ new Set();
+    const titleYears = /* @__PURE__ */ new Set();
+    for (const entry of getWatchedMovies()) {
+      const tmdbId = typeof entry.tmdbId === "string" ? entry.tmdbId.trim() : "";
+      const imdbId = typeof entry.imdbId === "string" ? entry.imdbId.trim() : "";
+      if (tmdbId) keys2.add(`tmdb:${tmdbId}`);
+      if (imdbId) keys2.add(`imdb:${imdbId}`);
+      if (typeof entry.title === "string" && entry.title.trim() && typeof entry.year === "number" && Number.isFinite(entry.year)) {
+        titleYears.add(`${entry.title.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()}::${entry.year}`);
+      }
+    }
+    return { keys: keys2, titleYears };
+  }
+  function isWatchedMovieItem(item, watchedMovieKeys, watchedMovieTitleYears) {
+    if (item.type !== "movie") return false;
+    const tmdbId = item.id.match(/^movie-(\d+)$/)?.[1] ?? null;
+    const imdbId = typeof item.imdbId === "string" ? item.imdbId.trim() : "";
+    const titleYear = typeof item.title === "string" && item.title.trim() && typeof item.year === "number" && Number.isFinite(item.year) ? `${item.title.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()}::${item.year}` : null;
+    return Boolean(
+      tmdbId && watchedMovieKeys.has(`tmdb:${tmdbId}`) || imdbId && watchedMovieKeys.has(`imdb:${imdbId}`) || titleYear && watchedMovieTitleYears.has(titleYear)
+    );
+  }
+  function ScoreBadge({ score }) {
+    const pct = Math.round(score * 10);
+    const colorClass = pct >= 70 ? "border-emerald-400/60 text-emerald-400 bg-black/70" : pct >= 50 ? "border-yellow-400/60 text-yellow-400 bg-black/70" : "border-red-400/60 text-red-400 bg-black/70";
+    return /* @__PURE__ */ jsx("div", { className: `flex h-6 w-6 items-center justify-center rounded-full border backdrop-blur-sm text-[9px] font-bold ${colorClass}`, children: pct });
+  }
+  function PlexPosterCard({
+    item,
+    onPlay,
+    onGenreSelect
+  }) {
+    const { t } = useLang();
+    const metaLine = `${item.type === "movie" ? t("movie") : t("series")}${item.year ? ` \xB7 ${item.year}` : ""}`;
+    return /* @__PURE__ */ jsxs(
+      "button",
+      {
+        type: "button",
+        onClick: () => onPlay(item),
+        className: "group w-full cursor-pointer overflow-hidden bg-transparent text-left transition-all duration-300 hover:-translate-y-1",
+        children: [
+          /* @__PURE__ */ jsxs("div", { className: "relative aspect-[2/3] overflow-hidden", children: [
+            item.posterUrl ? /* @__PURE__ */ jsx(
+              "img",
+              {
+                src: item.posterUrl,
+                alt: `${item.title} poster`,
+                className: "h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]",
+                loading: "lazy"
+              }
+            ) : /* @__PURE__ */ jsx("div", { className: "flex h-full items-end bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 p-4", children: /* @__PURE__ */ jsx("span", { className: "text-base font-semibold text-slate-100", children: item.title }) }),
+            item.genres.length > 0 && /* @__PURE__ */ jsx("div", { className: "absolute inset-x-0 bottom-0 flex flex-wrap gap-1 p-2", children: item.genres.slice(0, 2).map((genre) => /* @__PURE__ */ jsx(
+              import_react58.Chip,
+              {
+                size: "sm",
+                variant: "flat",
+                onClick: onGenreSelect ? (e) => {
+                  e.stopPropagation();
+                  onGenreSelect(genre);
+                } : void 0,
+                classNames: {
+                  base: `bg-white/8 border border-white/12 h-5 backdrop-blur-sm ${onGenreSelect ? "cursor-pointer hover:bg-white/15 hover:border-accent-400/40 transition-colors" : ""}`,
+                  content: "text-[10px] text-slate-300 px-1.5"
+                },
+                children: genre
+              },
+              genre
+            )) }),
+            item.discoveryScore != null && item.discoveryScore > 0 && /* @__PURE__ */ jsx("div", { className: "absolute right-2 top-2", children: /* @__PURE__ */ jsx(ScoreBadge, { score: item.discoveryScore }) })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "p-2.5", children: [
+            /* @__PURE__ */ jsx("p", { className: "text-[9px] uppercase tracking-[0.22em] text-slate-300/60", children: metaLine }),
+            /* @__PURE__ */ jsx("h3", { className: "mt-0.5 line-clamp-2 text-[0.8rem] font-semibold leading-snug text-white", children: item.title })
+          ] })
+        ]
+      }
+    );
+  }
+  function PlexGrid({
+    filters,
+    onOpenDetails,
+    onGenreSelect,
+    onFilterOptionsChange
+  }) {
+    const { t } = useLang();
+    const initialCache = getCachedPlexLibrarySnapshot(240);
+    const [items, setItems] = useState(() => initialCache?.items ?? []);
+    const [loading, setLoading] = useState(() => (initialCache?.items.length ?? 0) === 0);
+    const [refreshing, setRefreshing] = useState(false);
+    const [error, setError] = useState(null);
+    const [localPage, setLocalPage] = useState(1);
+    const [hideWatchedMovies, setHideWatchedMovies] = useState(false);
+    const [watchedMovieKeys, setWatchedMovieKeys] = useState(() => /* @__PURE__ */ new Set());
+    const [watchedMovieTitleYears, setWatchedMovieTitleYears] = useState(() => /* @__PURE__ */ new Set());
+    const [plexLoadSignature, setPlexLoadSignature] = useState(() => buildPlexLoadSignature());
+    const loadIdRef = useRef(0);
+    const loadingRef = useRef(false);
+    const mountedRef = useRef(false);
+    async function load(options) {
+      if (loadingRef.current) return;
+      loadingRef.current = true;
+      const thisLoadId = ++loadIdRef.current;
+      const silent = options?.silent === true;
+      if (silent) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      setError(null);
+      const MAX_RETRIES = 2;
+      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        if (thisLoadId !== loadIdRef.current) break;
+        try {
+          const nextItems = await fetchPlexLibraryItems(240);
+          if (thisLoadId !== loadIdRef.current) break;
+          setItems(nextItems);
+          break;
+        } catch (nextError) {
+          const message = nextError instanceof Error ? nextError.message : "";
+          const isAbort = /abort/i.test(message);
+          if (isAbort && attempt < MAX_RETRIES) {
+            await new Promise((r) => setTimeout(r, 500));
+            continue;
+          }
+          if (thisLoadId === loadIdRef.current) {
+            setError(message || "Plex load failed");
+          }
+          break;
+        }
+      }
+      if (thisLoadId === loadIdRef.current) {
+        if (silent) {
+          setRefreshing(false);
+        } else {
+          setLoading(false);
+        }
+      }
+      loadingRef.current = false;
+    }
+    useEffect(() => {
+      if (mountedRef.current) return;
+      mountedRef.current = true;
+      if ((initialCache?.items.length ?? 0) > 0) {
+        setLoading(false);
+        return;
+      }
+      void load();
+    }, []);
+    useEffect(() => {
+      const sync2 = () => {
+        setPlexLoadSignature(buildPlexLoadSignature());
+      };
+      const offAuth = onPlexAuthChanged(sync2);
+      const offSettings = onPlexSettingsChanged(sync2);
+      return () => {
+        offAuth();
+        offSettings();
+      };
+    }, []);
+    const prevSignatureRef = useRef(plexLoadSignature);
+    useEffect(() => {
+      if (prevSignatureRef.current === plexLoadSignature) return;
+      prevSignatureRef.current = plexLoadSignature;
+      const auth = getPlexAuth();
+      const settings = getPlexSettings();
+      if (!auth?.authToken || !settings.serverUri || settings.libraries.length === 0) return;
+      void load({ silent: items.length > 0 });
+    }, [plexLoadSignature]);
+    useEffect(() => {
+      const sync2 = () => {
+        setHideWatchedMovies(getHideWatchedMoviesHome());
+        const next2 = buildWatchedMovieKeys();
+        setWatchedMovieKeys(next2.keys);
+        setWatchedMovieTitleYears(next2.titleYears);
+      };
+      sync2();
+      const offWatched = onWatchedMoviesChanged(() => {
+        const next2 = buildWatchedMovieKeys();
+        setWatchedMovieKeys(next2.keys);
+        setWatchedMovieTitleYears(next2.titleYears);
+      });
+      const offSettings = onPlaybackSettingsChanged(() => setHideWatchedMovies(getHideWatchedMoviesHome()));
+      return () => {
+        offWatched();
+        offSettings();
+      };
+    }, []);
+    const derivedFilterOptions = useMemo(() => {
+      const movieGenres = uniqueSorted(items.filter((item) => item.type === "movie").flatMap((item) => item.genres));
+      const tvGenres = uniqueSorted(items.filter((item) => item.type === "tv").flatMap((item) => item.genres));
+      const languageMap = new Map(
+        items.flatMap((item) => item.originalLanguage?.code ? [[item.originalLanguage.code, createLanguageOption({ code: item.originalLanguage.code })]] : [])
+      );
+      const originalLanguages = sortLanguageOptions(Array.from(languageMap.values()));
+      const years = items.map((item) => item.year).filter((year) => typeof year === "number" && Number.isFinite(year));
+      return {
+        providers: uniqueSorted(items.flatMap((item) => item.providers)),
+        genres: uniqueSorted([...movieGenres, ...tvGenres]),
+        genreGroups: {
+          movie: movieGenres,
+          tv: tvGenres
+        },
+        keywords: [],
+        originalLanguages,
+        yearRange: years.length > 0 ? {
+          min: Math.min(...years),
+          max: Math.max(...years)
+        } : {
+          min: 1900,
+          max: (/* @__PURE__ */ new Date()).getFullYear()
+        }
+      };
+    }, [items]);
+    useEffect(() => {
+      onFilterOptionsChange?.(derivedFilterOptions);
+    }, [derivedFilterOptions, onFilterOptionsChange]);
+    const visibleSourceItems = useMemo(
+      () => hideWatchedMovies ? items.filter((item) => !isWatchedMovieItem(item, watchedMovieKeys, watchedMovieTitleYears)) : items,
+      [hideWatchedMovies, items, watchedMovieKeys, watchedMovieTitleYears]
+    );
+    const baseFiltered = useMemo(
+      () => applyFilters(visibleSourceItems, filters),
+      [visibleSourceItems, filters]
+    );
+    const filteredItems = baseFiltered;
+    const paginationSignature = useMemo(
+      () => JSON.stringify({
+        titleQuery: filters.titleQuery,
+        mediaType: filters.mediaType,
+        yearMin: filters.yearMin,
+        yearMax: filters.yearMax,
+        genres: filters.genres,
+        keywords: filters.keywords,
+        originalLanguages: filters.originalLanguages,
+        ratingMin: filters.ratingMin,
+        ratingMax: filters.ratingMax,
+        sortBy: filters.sortBy
+      }),
+      [
+        filters.titleQuery,
+        filters.mediaType,
+        filters.yearMin,
+        filters.yearMax,
+        filters.genres,
+        filters.keywords,
+        filters.originalLanguages,
+        filters.ratingMin,
+        filters.ratingMax,
+        filters.sortBy
+      ]
+    );
+    useEffect(() => {
+      setLocalPage(1);
+    }, [paginationSignature]);
+    const safeCurrentPage = Math.max(1, localPage);
+    const pageSize = Math.max(1, filters.pageSize);
+    const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize));
+    const currentPage = Math.min(safeCurrentPage, totalPages);
+    const pagedItems = filteredItems.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+    useEffect(() => {
+      if (safeCurrentPage !== currentPage) {
+        setLocalPage(currentPage);
+      }
+    }, [currentPage, safeCurrentPage]);
+    if (loading && items.length === 0) {
+      return /* @__PURE__ */ jsx("div", { className: "space-y-4", children: /* @__PURE__ */ jsx(ResultsLoadingIndicator, { title: "Loading Plex", description: "Fetching titles from your selected Plex libraries." }) });
+    }
+    if (!loading && items.length === 0) {
+      return /* @__PURE__ */ jsx(
+        ResultsState,
+        {
+          title: "No Plex titles",
+          description: error ?? "No Plex titles were found in the selected libraries.",
+          actionLabel: "Try again",
+          onAction: () => {
+            void load();
+          }
+        }
+      );
+    }
+    return /* @__PURE__ */ jsxs("div", { className: "space-y-4", children: [
+      error ? /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100", children: [
+        /* @__PURE__ */ jsx("span", { children: "Showing the latest Plex results. The refresh failed." }),
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            type: "button",
+            onClick: () => {
+              void load();
+            },
+            className: "rounded-full border border-rose-200/30 px-3 py-1.5 text-xs uppercase tracking-[0.2em] transition hover:bg-white/10",
+            children: "Try again"
+          }
+        )
+      ] }) : null,
+      /* @__PURE__ */ jsx("div", { className: "grid gap-x-4 gap-y-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6", children: pagedItems.map((item) => /* @__PURE__ */ jsx(
+        PlexPosterCard,
+        {
+          item,
+          onPlay: onOpenDetails,
+          onGenreSelect
+        },
+        item.id
+      )) }),
+      /* @__PURE__ */ jsx(ResultsPagination, { currentPage, totalPages, onPageChange: setLocalPage })
+    ] });
+  }
+
+  // ../lumio-official-plugins/plugins/plex/runtime/plex-home-override.tsx
+  init_jsx_runtime_shim();
+  var defaultFilterOptions = {
+    providers: [],
+    genres: [],
+    genreGroups: {
+      movie: [],
+      tv: []
+    },
+    keywords: [],
+    originalLanguages: [],
+    yearRange: {
+      min: 1900,
+      max: (/* @__PURE__ */ new Date()).getFullYear()
+    }
+  };
+  var defaultFilters = {
+    titleQuery: "",
+    mediaType: "all",
+    genres: [],
+    providers: [],
+    keywords: [],
+    originalLanguages: [],
+    yearMin: 1900,
+    yearMax: (/* @__PURE__ */ new Date()).getFullYear(),
+    ratingMin: 0,
+    ratingMax: 10,
+    sortBy: "rating_desc",
+    page: 1,
+    pageSize: 24,
+    popularMode: null
+  };
+  function PlexHomeOverride({ onOpenDetails }) {
+    const [filters, setFilters] = useState(defaultFilters);
+    const [, setFilterOptions] = useState(defaultFilterOptions);
+    return /* @__PURE__ */ jsx(
+      PlexGrid,
+      {
+        filters,
+        onOpenDetails,
+        onFilterOptionsChange: setFilterOptions,
+        onGenreSelect: (genre) => setFilters((current2) => ({
+          ...current2,
+          page: 1,
+          genres: current2.genres.includes(genre) ? current2.genres : [...current2.genres, genre]
+        })),
+        onClearFilters: () => setFilters(defaultFilters)
+      }
+    );
+  }
+
+  // ../lumio-official-plugins/plugins/plex/runtime/plex-section.tsx
+  init_react_shim();
+  var import_react61 = __toESM(require_dist82());
   init_jsx_runtime_shim();
   var heroInputClassNames = {
     base: "w-full",
@@ -113030,7 +113963,7 @@
           /* @__PURE__ */ jsxs("label", { className: "space-y-1.5", children: [
             /* @__PURE__ */ jsx("span", { className: "block text-[10px] uppercase tracking-[0.16em] text-slate-500", children: t("plexProfilePin") }),
             /* @__PURE__ */ jsx(
-              import_react56.Input,
+              import_react61.Input,
               {
                 type: "password",
                 value: plexProfilePin,
@@ -113212,782 +114145,6 @@
     ] });
   }
 
-  // lib/playback-capabilities.ts
-  function normalizeTitle(value) {
-    return (value ?? "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-  }
-  function getTmdbId(item) {
-    return item.id.match(/^(?:movie|tv)-(\d+)$/)?.[1] ?? null;
-  }
-  function getConfiguredPlexServerUri(item) {
-    const settings = getPlexSettings();
-    const configuredUris = [
-      settings.serverUri,
-      ...settings.serverUris ?? [],
-      item.plexServerUri ?? null
-    ].filter((value) => typeof value === "string" && value.length > 0);
-    if (configuredUris.length === 0) return item.plexServerUri ?? null;
-    const uniqueUris = Array.from(new Set(configuredUris.map((uri) => uri.replace(/\/+$/, ""))));
-    const hostRank = (uri) => {
-      try {
-        const parsed = new URL(uri);
-        const host = parsed.hostname.toLowerCase();
-        const isPlexDirect = host.endsWith(".plex.direct");
-        const isPrivateIpv4 = /^10\./.test(host) || /^192\.168\./.test(host) || /^172\.(1[6-9]|2\d|3[0-1])\./.test(host);
-        if (isPrivateIpv4) return 3;
-        if (!isPlexDirect) return 2;
-        return 1;
-      } catch {
-        return 0;
-      }
-    };
-    const ranked = [...uniqueUris].sort((left, right) => hostRank(right) - hostRank(left));
-    return ranked[0] ?? null;
-  }
-  function isPlexPlaybackReady(item) {
-    const settings = getPlexSettings();
-    const auth = getPlexAuth();
-    const token = auth?.authToken ?? settings.serverAccessToken ?? null;
-    const serverUri = getConfiguredPlexServerUri(item);
-    if (!token || !serverUri) return false;
-    if (item.type === "movie") return Boolean(item.plexPartKey);
-    return Boolean(item.plexRatingKey);
-  }
-  async function getPlexLibraryItemsForMatching(fetchIfMissing) {
-    const cached = getCachedPlexLibraryItems(240) ?? [];
-    if (cached.length > 0 || !fetchIfMissing) return cached;
-    return fetchPlexLibraryItems(240);
-  }
-  async function findBestPlexMatch(item, options) {
-    if (item.source === "plex") return item;
-    const settings = getPlexSettings();
-    const auth = getPlexAuth();
-    if (!settings.serverUri || settings.libraries.length === 0 || !auth) return null;
-    const libraryItems = await getPlexLibraryItemsForMatching(options?.fetchIfMissing ?? true);
-    if (libraryItems.length === 0) return null;
-    const mediaType = item.type;
-    const tmdbId = getTmdbId(item);
-    const imdbId = item.imdbId?.trim() ?? "";
-    const titleKey = normalizeTitle(item.title);
-    const year = item.year;
-    const candidates = libraryItems.filter((entry) => entry.type === mediaType);
-    if (tmdbId) {
-      const exactTmdb = candidates.find((entry) => getTmdbId(entry) === tmdbId);
-      if (exactTmdb) return exactTmdb;
-    }
-    if (imdbId) {
-      const exactImdb = candidates.find((entry) => (entry.imdbId?.trim() ?? "") === imdbId);
-      if (exactImdb) return exactImdb;
-    }
-    if (!titleKey) return null;
-    const exactTitleYear = candidates.find(
-      (entry) => normalizeTitle(entry.title) === titleKey && (year == null || entry.year == null || entry.year === year)
-    );
-    if (exactTitleYear) return exactTitleYear;
-    return candidates.find((entry) => normalizeTitle(entry.title) === titleKey) ?? null;
-  }
-  function isPlexItemPlayable(item) {
-    return Boolean(item && item.source === "plex" && isPlexPlaybackReady(item));
-  }
-
-  // ../lumio-official-plugins/plugins/plex/runtime/playback-capability-provider.ts
-  var plexPlaybackCapabilityProvider = {
-    id: "plex-playback",
-    pluginId: "com.lumio.plex",
-    label: { en: "Plex", sv: "Plex" },
-    async getCapability({ item }) {
-      if (item.type === "tv" && item.source !== "plex") {
-        return {
-          canPlay: false,
-          showPlayButton: false,
-          playVia: "details",
-          reason: "not_in_library",
-          priority: 20
-        };
-      }
-      const matchedItem = await findBestPlexMatch(item, { fetchIfMissing: true });
-      if (!matchedItem) {
-        return {
-          canPlay: false,
-          showPlayButton: false,
-          playVia: "details",
-          reason: "not_in_library",
-          priority: 20
-        };
-      }
-      const canPlay = isPlexItemPlayable(matchedItem);
-      return {
-        canPlay,
-        showPlayButton: canPlay,
-        playVia: "plex",
-        matchedItem,
-        reason: canPlay ? void 0 : "not_playable",
-        priority: matchedItem.source === "plex" && item.source === "plex" ? 100 : 50
-      };
-    }
-  };
-
-  // ../lumio-official-plugins/plugins/plex/runtime/plex-home-override.tsx
-  init_react_shim();
-
-  // components/results/plex-grid.tsx
-  init_react_shim();
-  var import_react59 = __toESM(require_dist82());
-
-  // lib/playback-settings.ts
-  var KEY_HIDE_WATCHED_MOVIES_HOME = "playback_hideWatchedMoviesHome";
-  var PLAYBACK_SETTINGS_CHANGED_EVENT = "lumio-playback-settings-changed";
-  var DEFAULT_HIDE_WATCHED_MOVIES_HOME = false;
-  function onPlaybackSettingsChanged(listener) {
-    if (typeof window === "undefined") return () => {
-    };
-    window.addEventListener(PLAYBACK_SETTINGS_CHANGED_EVENT, listener);
-    return () => window.removeEventListener(PLAYBACK_SETTINGS_CHANGED_EVENT, listener);
-  }
-  function getHideWatchedMoviesHome() {
-    if (typeof window === "undefined") return DEFAULT_HIDE_WATCHED_MOVIES_HOME;
-    return (getScopedStorageItem(KEY_HIDE_WATCHED_MOVIES_HOME) ?? "0") === "1";
-  }
-
-  // lib/watched-movies.ts
-  var KEY_WATCHED_MOVIES = "watched_movies";
-  var EVENT_WATCHED_MOVIES_CHANGED = "lumio-watched-movies-changed";
-  function normalizeId(value) {
-    if (typeof value !== "string") return null;
-    const trimmed = value.trim();
-    return trimmed.length > 0 ? trimmed : null;
-  }
-  function normalizeTitle2(value) {
-    if (typeof value !== "string") return null;
-    const normalized = value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-    return normalized.length > 0 ? normalized : null;
-  }
-  function normalizeYear(value) {
-    return typeof value === "number" && Number.isFinite(value) ? value : null;
-  }
-  function readEntries() {
-    if (typeof window === "undefined") return [];
-    try {
-      const raw = getScopedStorageItem(KEY_WATCHED_MOVIES);
-      if (!raw) return [];
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed)) return [];
-      return parsed.filter((entry) => Boolean(entry) && typeof entry === "object").map((entry) => ({
-        tmdbId: normalizeId(typeof entry.tmdbId === "string" ? entry.tmdbId : null),
-        imdbId: normalizeId(typeof entry.imdbId === "string" ? entry.imdbId : null),
-        title: typeof entry.title === "string" ? entry.title : null,
-        year: normalizeYear(typeof entry.year === "number" ? entry.year : null),
-        posterUrl: typeof entry.posterUrl === "string" ? entry.posterUrl : null,
-        watchedAt: typeof entry.watchedAt === "string" && entry.watchedAt.trim().length > 0 ? entry.watchedAt : (/* @__PURE__ */ new Date()).toISOString()
-      })).filter((entry) => Boolean(entry.tmdbId || entry.imdbId || normalizeTitle2(entry.title) && entry.year != null));
-    } catch {
-      return [];
-    }
-  }
-  function getWatchedMovies() {
-    return readEntries();
-  }
-  function onWatchedMoviesChanged(listener) {
-    if (typeof window === "undefined") return () => {
-    };
-    const handle = (event) => {
-      const detail = event.detail;
-      listener(detail?.entries ?? readEntries());
-    };
-    window.addEventListener(EVENT_WATCHED_MOVIES_CHANGED, handle);
-    return () => window.removeEventListener(EVENT_WATCHED_MOVIES_CHANGED, handle);
-  }
-
-  // lib/utils/filter-media.ts
-  function matchesTitleQuery(item, titleQuery, ignoreTitleQuery = false) {
-    if (ignoreTitleQuery) {
-      return true;
-    }
-    if (normalizeSearchInput(titleQuery).length === 0) {
-      return true;
-    }
-    return matchesNormalizedText(item.title, titleQuery);
-  }
-  function matchesSelectedValues(itemValues, selectedValues) {
-    if (selectedValues.length === 0) {
-      return true;
-    }
-    const normalizedItemValues = itemValues.map((value) => normalizeSearchInput(value));
-    return selectedValues.some((value) => normalizedItemValues.includes(normalizeSearchInput(value)));
-  }
-  function matchesOriginalLanguages(item, selectedLanguages) {
-    if (selectedLanguages.length === 0) {
-      return true;
-    }
-    if (!item.originalLanguage?.code) {
-      return false;
-    }
-    return selectedLanguages.includes(item.originalLanguage.code);
-  }
-  function getMediaItemTitleMatchScore(item, query) {
-    const candidates = Array.from(new Set([item.title, ...item.searchTitles ?? []].filter(Boolean)));
-    return candidates.reduce((bestScore, candidate, index3) => {
-      const candidateScore = getTitleMatchScore(candidate, query) + (index3 > 0 ? 18 : 0);
-      return Math.max(bestScore, candidateScore);
-    }, 0);
-  }
-  function getComparableRatingScore(item) {
-    return item.discoveryScore ?? null;
-  }
-  function compareNullableNumberDesc(left, right) {
-    return (right ?? -1) - (left ?? -1);
-  }
-  function compareNullableNumberAsc(left, right) {
-    return (left ?? Number.MAX_SAFE_INTEGER) - (right ?? Number.MAX_SAFE_INTEGER);
-  }
-  function compareTitleMatchScore(left, right, query) {
-    return getMediaItemTitleMatchScore(right, query) - getMediaItemTitleMatchScore(left, query);
-  }
-  function matchesRatingRange(item, filters) {
-    const score = getComparableRatingScore(item);
-    if (score === null) {
-      return true;
-    }
-    return score >= filters.ratingMin && score <= filters.ratingMax;
-  }
-  function computeRelevance(item, filters) {
-    let score = item.popularity ?? 0;
-    const titleMatchScore = getMediaItemTitleMatchScore(item, filters.titleQuery);
-    if (filters.mediaType !== "all" && filters.mediaType === item.type) {
-      score += 15;
-    }
-    if (titleMatchScore > 0) {
-      score += titleMatchScore;
-    }
-    score += item.genres.filter((genre) => filters.genres.includes(genre)).length * 10;
-    score += item.providers.filter((provider) => filters.providers.includes(provider)).length * 9;
-    score += item.keywords.filter((keyword) => filters.keywords.includes(keyword)).length * 12;
-    const imdb = getComparableRatingScore(item);
-    if (imdb !== null) {
-      score += imdb * 4;
-    }
-    if (item.year !== null) {
-      const midpoint = (filters.yearMin + filters.yearMax) / 2;
-      score += Math.max(0, 10 - Math.abs(item.year - midpoint) / 2);
-    }
-    return score;
-  }
-  function applyFilters(items, filters, options = {}) {
-    const filtered = items.filter((item) => {
-      const matchesType = filters.mediaType === "all" || item.type === filters.mediaType;
-      const matchesYear = item.year === null || item.year >= filters.yearMin && item.year <= filters.yearMax;
-      return matchesTitleQuery(item, filters.titleQuery, options.ignoreTitleQuery) && matchesType && matchesYear && (options.ignoreProviders || matchesSelectedValues(item.providers, filters.providers)) && matchesSelectedValues(item.genres, filters.genres) && matchesSelectedValues(item.keywords, filters.keywords) && matchesOriginalLanguages(item, filters.originalLanguages) && matchesRatingRange(item, filters);
-    });
-    if (options.preserveOrder) {
-      return filtered;
-    }
-    return [...filtered].sort((left, right) => {
-      if (filters.sortBy === "year_desc") {
-        const yearDiff = compareNullableNumberDesc(left.year, right.year);
-        if (yearDiff !== 0) {
-          return yearDiff;
-        }
-        const ratingDiff = compareNullableNumberDesc(getComparableRatingScore(left), getComparableRatingScore(right));
-        if (ratingDiff !== 0) {
-          return ratingDiff;
-        }
-        return compareNullableNumberDesc(left.popularity, right.popularity);
-      }
-      if (filters.sortBy === "year_asc") {
-        const yearDiff = compareNullableNumberAsc(left.year, right.year);
-        if (yearDiff !== 0) {
-          return yearDiff;
-        }
-        const ratingDiff = compareNullableNumberDesc(getComparableRatingScore(left), getComparableRatingScore(right));
-        if (ratingDiff !== 0) {
-          return ratingDiff;
-        }
-        return compareNullableNumberDesc(left.popularity, right.popularity);
-      }
-      if (filters.sortBy === "rating_desc") {
-        const ratingDiff = compareNullableNumberDesc(getComparableRatingScore(left), getComparableRatingScore(right));
-        if (ratingDiff !== 0) {
-          return ratingDiff;
-        }
-        const yearDiff = compareNullableNumberDesc(left.year, right.year);
-        if (yearDiff !== 0) {
-          return yearDiff;
-        }
-        return compareNullableNumberDesc(left.popularity, right.popularity);
-      }
-      const titleScoreDiff = compareTitleMatchScore(left, right, filters.titleQuery);
-      if (titleScoreDiff !== 0) {
-        return titleScoreDiff;
-      }
-      const relevanceDiff = computeRelevance(right, filters) - computeRelevance(left, filters);
-      if (relevanceDiff !== 0) {
-        return relevanceDiff;
-      }
-      return compareNullableNumberDesc(left.popularity, right.popularity);
-    });
-  }
-
-  // components/results/results-loading-indicator.tsx
-  init_jsx_runtime_shim();
-  function ResultsLoadingIndicator({
-    title,
-    description,
-    compact = false
-  }) {
-    return /* @__PURE__ */ jsx(
-      "div",
-      {
-        className: `rounded-[1.5rem] border border-white/0 bg-white/[0.045] text-slate-100 shadow-[0_20px_70px_rgba(0,0,0,0.35)] backdrop-blur-xl ${compact ? "px-5 py-4" : "px-6 py-5"}`,
-        children: /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-center gap-3", children: [
-          /* @__PURE__ */ jsx("span", { className: "h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-amber-300/90" }),
-          /* @__PURE__ */ jsxs("div", { className: "min-w-0", children: [
-            /* @__PURE__ */ jsx("p", { className: "text-sm font-semibold text-white", children: title }),
-            description ? /* @__PURE__ */ jsx("p", { className: "mt-1 text-sm leading-6 text-slate-300", children: description }) : null
-          ] })
-        ] })
-      }
-    );
-  }
-
-  // components/results/results-state.tsx
-  init_jsx_runtime_shim();
-  function ResultsState({
-    title,
-    description,
-    suggestions,
-    actionLabel,
-    onAction
-  }) {
-    return /* @__PURE__ */ jsxs("div", { className: "flex min-h-[360px] flex-col items-center justify-center rounded-[2rem] border border-dashed border-white/10 bg-white/5 px-6 py-10 text-center", children: [
-      /* @__PURE__ */ jsx("p", { className: "text-xs uppercase tracking-[0.32em] text-accent-400", children: "Results" }),
-      /* @__PURE__ */ jsx("h3", { className: "mt-4 font-display text-4xl text-white", children: title }),
-      /* @__PURE__ */ jsx("p", { className: "mt-3 max-w-xl text-sm leading-7 text-slate-300", children: description }),
-      suggestions && suggestions.length > 0 ? /* @__PURE__ */ jsxs("div", { className: "mt-6 w-full max-w-2xl rounded-[1.5rem] border border-white/10 bg-slate-950/60 px-5 py-5 text-left", children: [
-        /* @__PURE__ */ jsx("p", { className: "text-xs uppercase tracking-[0.24em] text-slate-400", children: "Try this" }),
-        /* @__PURE__ */ jsx("ul", { className: "mt-3 space-y-3 text-sm leading-7 text-slate-200", children: suggestions.map((suggestion) => /* @__PURE__ */ jsxs("li", { className: "flex gap-3", children: [
-          /* @__PURE__ */ jsx("span", { className: "mt-2 h-2 w-2 rounded-full bg-accent-400", "aria-hidden": "true" }),
-          /* @__PURE__ */ jsx("span", { children: suggestion })
-        ] }, suggestion)) })
-      ] }) : null,
-      actionLabel && onAction ? /* @__PURE__ */ jsx(
-        "button",
-        {
-          type: "button",
-          onClick: onAction,
-          className: "mt-6 rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm text-slate-100 transition hover:border-accent-400/40 hover:bg-white/10",
-          children: actionLabel
-        }
-      ) : null
-    ] });
-  }
-
-  // components/results/results-pagination.tsx
-  var import_react57 = __toESM(require_dist82());
-  init_jsx_runtime_shim();
-  function ResultsPagination({ currentPage, totalPages, onPageChange }) {
-    if (totalPages <= 1) return null;
-    return /* @__PURE__ */ jsx("div", { className: "flex items-center justify-center rounded-[1.75rem] border border-white/10 bg-slate-950/60 px-4 py-4", children: /* @__PURE__ */ jsx(
-      import_react57.Pagination,
-      {
-        total: totalPages,
-        page: currentPage,
-        onChange: onPageChange,
-        showControls: true,
-        siblings: 2,
-        boundaries: 1,
-        classNames: {
-          wrapper: "gap-2",
-          item: [
-            "bg-white/5 border border-white/10 text-slate-200",
-            "hover:bg-white/10 hover:!border-accent-400/30 hover:text-white",
-            "data-[active=true]:bg-accent-400/90 data-[active=true]:!border-accent-400/70 data-[active=true]:text-slate-950 data-[active=true]:font-semibold",
-            "transition-all duration-200"
-          ].join(" "),
-          prev: "bg-white/5 border border-white/10 text-slate-200 hover:bg-white/10 hover:!border-accent-400/30",
-          next: "bg-white/5 border border-white/10 text-slate-200 hover:bg-white/10 hover:!border-accent-400/30",
-          cursor: "bg-accent-400 text-slate-950 font-semibold shadow-sm shadow-accent-500/30"
-        }
-      }
-    ) });
-  }
-
-  // components/results/plex-grid.tsx
-  init_jsx_runtime_shim();
-  function uniqueSorted(values) {
-    return Array.from(new Set(values.filter(Boolean))).sort(
-      (left, right) => left.localeCompare(right, void 0, { sensitivity: "base" })
-    );
-  }
-  function buildPlexLoadSignature() {
-    const auth = getPlexAuth();
-    const settings = getPlexSettings();
-    return JSON.stringify({
-      hasAuth: Boolean(auth?.authToken),
-      serverId: settings.serverId,
-      serverUri: settings.serverUri,
-      libraries: settings.libraries.map((library) => `${library.type}:${library.key}`).sort()
-    });
-  }
-  function buildWatchedMovieKeys() {
-    const keys2 = /* @__PURE__ */ new Set();
-    const titleYears = /* @__PURE__ */ new Set();
-    for (const entry of getWatchedMovies()) {
-      const tmdbId = typeof entry.tmdbId === "string" ? entry.tmdbId.trim() : "";
-      const imdbId = typeof entry.imdbId === "string" ? entry.imdbId.trim() : "";
-      if (tmdbId) keys2.add(`tmdb:${tmdbId}`);
-      if (imdbId) keys2.add(`imdb:${imdbId}`);
-      if (typeof entry.title === "string" && entry.title.trim() && typeof entry.year === "number" && Number.isFinite(entry.year)) {
-        titleYears.add(`${entry.title.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()}::${entry.year}`);
-      }
-    }
-    return { keys: keys2, titleYears };
-  }
-  function isWatchedMovieItem(item, watchedMovieKeys, watchedMovieTitleYears) {
-    if (item.type !== "movie") return false;
-    const tmdbId = item.id.match(/^movie-(\d+)$/)?.[1] ?? null;
-    const imdbId = typeof item.imdbId === "string" ? item.imdbId.trim() : "";
-    const titleYear = typeof item.title === "string" && item.title.trim() && typeof item.year === "number" && Number.isFinite(item.year) ? `${item.title.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()}::${item.year}` : null;
-    return Boolean(
-      tmdbId && watchedMovieKeys.has(`tmdb:${tmdbId}`) || imdbId && watchedMovieKeys.has(`imdb:${imdbId}`) || titleYear && watchedMovieTitleYears.has(titleYear)
-    );
-  }
-  function ScoreBadge({ score }) {
-    const pct = Math.round(score * 10);
-    const colorClass = pct >= 70 ? "border-emerald-400/60 text-emerald-400 bg-black/70" : pct >= 50 ? "border-yellow-400/60 text-yellow-400 bg-black/70" : "border-red-400/60 text-red-400 bg-black/70";
-    return /* @__PURE__ */ jsx("div", { className: `flex h-6 w-6 items-center justify-center rounded-full border backdrop-blur-sm text-[9px] font-bold ${colorClass}`, children: pct });
-  }
-  function PlexPosterCard({
-    item,
-    onPlay,
-    onGenreSelect
-  }) {
-    const { t } = useLang();
-    const metaLine = `${item.type === "movie" ? t("movie") : t("series")}${item.year ? ` \xB7 ${item.year}` : ""}`;
-    return /* @__PURE__ */ jsxs(
-      "button",
-      {
-        type: "button",
-        onClick: () => onPlay(item),
-        className: "group w-full cursor-pointer overflow-hidden bg-transparent text-left transition-all duration-300 hover:-translate-y-1",
-        children: [
-          /* @__PURE__ */ jsxs("div", { className: "relative aspect-[2/3] overflow-hidden", children: [
-            item.posterUrl ? /* @__PURE__ */ jsx(
-              "img",
-              {
-                src: item.posterUrl,
-                alt: `${item.title} poster`,
-                className: "h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]",
-                loading: "lazy"
-              }
-            ) : /* @__PURE__ */ jsx("div", { className: "flex h-full items-end bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 p-4", children: /* @__PURE__ */ jsx("span", { className: "text-base font-semibold text-slate-100", children: item.title }) }),
-            item.genres.length > 0 && /* @__PURE__ */ jsx("div", { className: "absolute inset-x-0 bottom-0 flex flex-wrap gap-1 p-2", children: item.genres.slice(0, 2).map((genre) => /* @__PURE__ */ jsx(
-              import_react59.Chip,
-              {
-                size: "sm",
-                variant: "flat",
-                onClick: onGenreSelect ? (e) => {
-                  e.stopPropagation();
-                  onGenreSelect(genre);
-                } : void 0,
-                classNames: {
-                  base: `bg-white/8 border border-white/12 h-5 backdrop-blur-sm ${onGenreSelect ? "cursor-pointer hover:bg-white/15 hover:border-accent-400/40 transition-colors" : ""}`,
-                  content: "text-[10px] text-slate-300 px-1.5"
-                },
-                children: genre
-              },
-              genre
-            )) }),
-            item.discoveryScore != null && item.discoveryScore > 0 && /* @__PURE__ */ jsx("div", { className: "absolute right-2 top-2", children: /* @__PURE__ */ jsx(ScoreBadge, { score: item.discoveryScore }) })
-          ] }),
-          /* @__PURE__ */ jsxs("div", { className: "p-2.5", children: [
-            /* @__PURE__ */ jsx("p", { className: "text-[9px] uppercase tracking-[0.22em] text-slate-300/60", children: metaLine }),
-            /* @__PURE__ */ jsx("h3", { className: "mt-0.5 line-clamp-2 text-[0.8rem] font-semibold leading-snug text-white", children: item.title })
-          ] })
-        ]
-      }
-    );
-  }
-  function PlexGrid({
-    filters,
-    onOpenDetails,
-    onGenreSelect,
-    onFilterOptionsChange
-  }) {
-    const { t } = useLang();
-    const initialCache = getCachedPlexLibrarySnapshot(240);
-    const [items, setItems] = useState(() => initialCache?.items ?? []);
-    const [loading, setLoading] = useState(() => (initialCache?.items.length ?? 0) === 0);
-    const [refreshing, setRefreshing] = useState(false);
-    const [error, setError] = useState(null);
-    const [localPage, setLocalPage] = useState(1);
-    const [hideWatchedMovies, setHideWatchedMovies] = useState(false);
-    const [watchedMovieKeys, setWatchedMovieKeys] = useState(() => /* @__PURE__ */ new Set());
-    const [watchedMovieTitleYears, setWatchedMovieTitleYears] = useState(() => /* @__PURE__ */ new Set());
-    const [plexLoadSignature, setPlexLoadSignature] = useState(() => buildPlexLoadSignature());
-    const loadIdRef = useRef(0);
-    const loadingRef = useRef(false);
-    const mountedRef = useRef(false);
-    async function load(options) {
-      if (loadingRef.current) return;
-      loadingRef.current = true;
-      const thisLoadId = ++loadIdRef.current;
-      const silent = options?.silent === true;
-      if (silent) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-      setError(null);
-      const MAX_RETRIES = 2;
-      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-        if (thisLoadId !== loadIdRef.current) break;
-        try {
-          const nextItems = await fetchPlexLibraryItems(240);
-          if (thisLoadId !== loadIdRef.current) break;
-          setItems(nextItems);
-          break;
-        } catch (nextError) {
-          const message = nextError instanceof Error ? nextError.message : "";
-          const isAbort = /abort/i.test(message);
-          if (isAbort && attempt < MAX_RETRIES) {
-            await new Promise((r) => setTimeout(r, 500));
-            continue;
-          }
-          if (thisLoadId === loadIdRef.current) {
-            setError(message || "Plex load failed");
-          }
-          break;
-        }
-      }
-      if (thisLoadId === loadIdRef.current) {
-        if (silent) {
-          setRefreshing(false);
-        } else {
-          setLoading(false);
-        }
-      }
-      loadingRef.current = false;
-    }
-    useEffect(() => {
-      if (mountedRef.current) return;
-      mountedRef.current = true;
-      if ((initialCache?.items.length ?? 0) > 0) {
-        setLoading(false);
-        return;
-      }
-      void load();
-    }, []);
-    useEffect(() => {
-      const sync2 = () => {
-        setPlexLoadSignature(buildPlexLoadSignature());
-      };
-      const offAuth = onPlexAuthChanged(sync2);
-      const offSettings = onPlexSettingsChanged(sync2);
-      return () => {
-        offAuth();
-        offSettings();
-      };
-    }, []);
-    const prevSignatureRef = useRef(plexLoadSignature);
-    useEffect(() => {
-      if (prevSignatureRef.current === plexLoadSignature) return;
-      prevSignatureRef.current = plexLoadSignature;
-      const auth = getPlexAuth();
-      const settings = getPlexSettings();
-      if (!auth?.authToken || !settings.serverUri || settings.libraries.length === 0) return;
-      void load({ silent: items.length > 0 });
-    }, [plexLoadSignature]);
-    useEffect(() => {
-      const sync2 = () => {
-        setHideWatchedMovies(getHideWatchedMoviesHome());
-        const next2 = buildWatchedMovieKeys();
-        setWatchedMovieKeys(next2.keys);
-        setWatchedMovieTitleYears(next2.titleYears);
-      };
-      sync2();
-      const offWatched = onWatchedMoviesChanged(() => {
-        const next2 = buildWatchedMovieKeys();
-        setWatchedMovieKeys(next2.keys);
-        setWatchedMovieTitleYears(next2.titleYears);
-      });
-      const offSettings = onPlaybackSettingsChanged(() => setHideWatchedMovies(getHideWatchedMoviesHome()));
-      return () => {
-        offWatched();
-        offSettings();
-      };
-    }, []);
-    const derivedFilterOptions = useMemo(() => {
-      const movieGenres = uniqueSorted(items.filter((item) => item.type === "movie").flatMap((item) => item.genres));
-      const tvGenres = uniqueSorted(items.filter((item) => item.type === "tv").flatMap((item) => item.genres));
-      const languageMap = new Map(
-        items.flatMap((item) => item.originalLanguage?.code ? [[item.originalLanguage.code, createLanguageOption({ code: item.originalLanguage.code })]] : [])
-      );
-      const originalLanguages = sortLanguageOptions(Array.from(languageMap.values()));
-      const years = items.map((item) => item.year).filter((year) => typeof year === "number" && Number.isFinite(year));
-      return {
-        providers: uniqueSorted(items.flatMap((item) => item.providers)),
-        genres: uniqueSorted([...movieGenres, ...tvGenres]),
-        genreGroups: {
-          movie: movieGenres,
-          tv: tvGenres
-        },
-        keywords: [],
-        originalLanguages,
-        yearRange: years.length > 0 ? {
-          min: Math.min(...years),
-          max: Math.max(...years)
-        } : {
-          min: 1900,
-          max: (/* @__PURE__ */ new Date()).getFullYear()
-        }
-      };
-    }, [items]);
-    useEffect(() => {
-      onFilterOptionsChange?.(derivedFilterOptions);
-    }, [derivedFilterOptions, onFilterOptionsChange]);
-    const visibleSourceItems = useMemo(
-      () => hideWatchedMovies ? items.filter((item) => !isWatchedMovieItem(item, watchedMovieKeys, watchedMovieTitleYears)) : items,
-      [hideWatchedMovies, items, watchedMovieKeys, watchedMovieTitleYears]
-    );
-    const baseFiltered = useMemo(
-      () => applyFilters(visibleSourceItems, filters),
-      [visibleSourceItems, filters]
-    );
-    const filteredItems = baseFiltered;
-    const paginationSignature = useMemo(
-      () => JSON.stringify({
-        titleQuery: filters.titleQuery,
-        mediaType: filters.mediaType,
-        yearMin: filters.yearMin,
-        yearMax: filters.yearMax,
-        genres: filters.genres,
-        keywords: filters.keywords,
-        originalLanguages: filters.originalLanguages,
-        ratingMin: filters.ratingMin,
-        ratingMax: filters.ratingMax,
-        sortBy: filters.sortBy
-      }),
-      [
-        filters.titleQuery,
-        filters.mediaType,
-        filters.yearMin,
-        filters.yearMax,
-        filters.genres,
-        filters.keywords,
-        filters.originalLanguages,
-        filters.ratingMin,
-        filters.ratingMax,
-        filters.sortBy
-      ]
-    );
-    useEffect(() => {
-      setLocalPage(1);
-    }, [paginationSignature]);
-    const safeCurrentPage = Math.max(1, localPage);
-    const pageSize = Math.max(1, filters.pageSize);
-    const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize));
-    const currentPage = Math.min(safeCurrentPage, totalPages);
-    const pagedItems = filteredItems.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-    useEffect(() => {
-      if (safeCurrentPage !== currentPage) {
-        setLocalPage(currentPage);
-      }
-    }, [currentPage, safeCurrentPage]);
-    if (loading && items.length === 0) {
-      return /* @__PURE__ */ jsx("div", { className: "space-y-4", children: /* @__PURE__ */ jsx(ResultsLoadingIndicator, { title: "Loading Plex", description: "Fetching titles from your selected Plex libraries." }) });
-    }
-    if (!loading && items.length === 0) {
-      return /* @__PURE__ */ jsx(
-        ResultsState,
-        {
-          title: "No Plex titles",
-          description: error ?? "No Plex titles were found in the selected libraries.",
-          actionLabel: "Try again",
-          onAction: () => {
-            void load();
-          }
-        }
-      );
-    }
-    return /* @__PURE__ */ jsxs("div", { className: "space-y-4", children: [
-      error ? /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100", children: [
-        /* @__PURE__ */ jsx("span", { children: "Showing the latest Plex results. The refresh failed." }),
-        /* @__PURE__ */ jsx(
-          "button",
-          {
-            type: "button",
-            onClick: () => {
-              void load();
-            },
-            className: "rounded-full border border-rose-200/30 px-3 py-1.5 text-xs uppercase tracking-[0.2em] transition hover:bg-white/10",
-            children: "Try again"
-          }
-        )
-      ] }) : null,
-      /* @__PURE__ */ jsx("div", { className: "grid gap-x-4 gap-y-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6", children: pagedItems.map((item) => /* @__PURE__ */ jsx(
-        PlexPosterCard,
-        {
-          item,
-          onPlay: onOpenDetails,
-          onGenreSelect
-        },
-        item.id
-      )) }),
-      /* @__PURE__ */ jsx(ResultsPagination, { currentPage, totalPages, onPageChange: setLocalPage })
-    ] });
-  }
-
-  // ../lumio-official-plugins/plugins/plex/runtime/plex-home-override.tsx
-  init_jsx_runtime_shim();
-  var defaultFilterOptions = {
-    providers: [],
-    genres: [],
-    genreGroups: {
-      movie: [],
-      tv: []
-    },
-    keywords: [],
-    originalLanguages: [],
-    yearRange: {
-      min: 1900,
-      max: (/* @__PURE__ */ new Date()).getFullYear()
-    }
-  };
-  var defaultFilters = {
-    titleQuery: "",
-    mediaType: "all",
-    genres: [],
-    providers: [],
-    keywords: [],
-    originalLanguages: [],
-    yearMin: 1900,
-    yearMax: (/* @__PURE__ */ new Date()).getFullYear(),
-    ratingMin: 0,
-    ratingMax: 10,
-    sortBy: "rating_desc",
-    page: 1,
-    pageSize: 24,
-    popularMode: null
-  };
-  function PlexHomeOverride({ onOpenDetails }) {
-    const [filters, setFilters] = useState(defaultFilters);
-    const [, setFilterOptions] = useState(defaultFilterOptions);
-    return /* @__PURE__ */ jsx(
-      PlexGrid,
-      {
-        filters,
-        onOpenDetails,
-        onFilterOptionsChange: setFilterOptions,
-        onGenreSelect: (genre) => setFilters((current2) => ({
-          ...current2,
-          page: 1,
-          genres: current2.genres.includes(genre) ? current2.genres : [...current2.genres, genre]
-        })),
-        onClearFilters: () => setFilters(defaultFilters)
-      }
-    );
-  }
-
   // ../lumio-official-plugins/plugins/plex/runtime/sync-identity-provider.ts
   async function resolvePlexSyncIdentity(item) {
     let resolvedTmdbId = item.id.match(/^(?:movie|tv)-(\d+)$/)?.[1] ?? null;
@@ -114076,7 +114233,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-lowJQk/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-OGpfmH/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

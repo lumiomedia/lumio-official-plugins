@@ -39,7 +39,7 @@
   ));
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Wh1R3B/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-hWr1t5/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -88,7 +88,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Wh1R3B/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-hWr1t5/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -136,7 +136,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Wh1R3B/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-hWr1t5/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -146,7 +146,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Wh1R3B/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-hWr1t5/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -110397,40 +110397,33 @@
       activeFiltersTitle: "Active filters",
       activeFiltersHintPrefix: "Provider availability is scoped to Sweden (",
       activeFiltersHintSuffix: "), and multiple selected chips match any of the chosen labels, not all of them at once.",
-      scraperGlobalDefaults: "Stream provider defaults",
       streamProviderGlobalDefaults: "Stream provider defaults",
-      scraperRdApiKey: "API key",
       streamProviderApiKey: "API key",
-      scraperRdApiPlaceholder: "Your API key",
       streamProviderApiKeyPlaceholder: "Your API key",
-      scraperRdApiKeyPerScraper: "API key (per provider)",
       streamProviderApiKeyPerSource: "API key (per provider)",
-      scraperUsingGlobal: "Using global API key",
       streamProviderUsingGlobalKey: "Using global API key",
       apiKeyLabel: "API key",
-      scraperDefaultQualityFilter: "Default quality filter (exclude)",
-      scraperDefaultLanguages: "Default languages",
-      scraperDefaultDebridProvider: "Default stream provider",
+      streamProviderDefaultQualityFilter: "Default quality filter (exclude)",
+      streamProviderDefaultLanguages: "Default languages",
       streamProviderDefaultSource: "Default stream provider",
-      scraperDefaultMaxResults: "Default max results per quality",
-      scraperQualityFilter: "Quality filter (exclude)",
-      scraperLanguages: "Languages",
-      scraperProviders: "Providers (empty = all)",
-      scraperSelectQualities: "Select qualities",
-      scraperSelectLanguages: "Select languages",
-      scraperSelectProviders: "Select providers",
-      scraperMaxResults: "Max results",
-      scraperMaxSize: "Max size (MB, 0 = no limit)",
-      scraperDebridProvider: "Stream provider",
+      streamProviderDefaultMaxResults: "Default max results per quality",
+      streamProviderQualityFilter: "Quality filter (exclude)",
+      streamProviderLanguages: "Languages",
+      streamProviderSources: "Providers (empty = all)",
+      streamProviderSelectQualities: "Select qualities",
+      streamProviderSelectLanguages: "Select languages",
+      streamProviderSelectSources: "Select providers",
+      streamProviderMaxResults: "Max results",
+      streamProviderMaxSize: "Max size (MB, 0 = no limit)",
       streamProviderSelection: "Stream provider",
-      scraperManifestUrl: "Manifest URL (stremio:// or https://)",
-      scraperCustomUrl: "Custom URL",
-      scraperNoUrl: "No URL set",
-      scraperAddTorrentsDb: "+ TorrentsDB",
-      scraperAddTorrentio: "+ Torrentio",
-      scraperAddComet: "+ Comet",
-      scraperAddMediaFusion: "+ MediaFusion",
-      scraperAddCustom: "+ Custom URL",
+      streamProviderManifestUrl: "Manifest URL (stremio:// or https://)",
+      streamProviderCustomUrl: "Custom URL",
+      streamProviderNoUrl: "No URL set",
+      streamProviderAddIndexed: "+ TorrentsDB",
+      streamProviderAddStandard: "+ Standard",
+      streamProviderAddComet: "+ Comet",
+      streamProviderAddMediaFusion: "+ MediaFusion",
+      streamProviderAddCustom: "+ Custom URL",
       useGlobal: "Use global",
       clearFilters: "Clear filters",
       moviesOnly: "Movies only",
@@ -110631,14 +110624,14 @@
       activeProfile: "Active profile",
       switchProfile: "Switch profile",
       profileSwitcher: "Profile",
-      scraperTitle: "Stream provider",
-      scraperDesc: "Choose which Stremio-compatible stream provider is used to find streams.",
+      streamProviderTitle: "Stream provider",
+      streamProviderDesc: "Choose which Stremio-compatible stream provider is used to find streams.",
       configure: "Configure",
       customScraper: "Custom",
       customScraperDesc: "Any Stremio-compatible stream provider.",
       rdApiKeyLabel: "Stream provider API key",
-      scraperManifestPlaceholder: "Paste manifest URL here...",
-      customManifestPlaceholder: "https://your-scraper.example.com/manifest.json",
+      streamProviderManifestPlaceholder: "Paste manifest URL here...",
+      customManifestPlaceholder: "https://your-stream-provider.example.com/manifest.json",
       hevcTitle: "HEVC / H.265 Codec",
       hevcDesc: "Required to play MKV/HEVC streams in the browser. Installs the Microsoft HEVC Video Extension via PowerShell.",
       installHevc: "Install HEVC Codec",
@@ -110832,7 +110825,7 @@
       pluginChooseReleaseZip: "Choose a release ZIP",
       pluginChooseReleaseZipHelp: "This repository has multiple release ZIPs. Pick which asset Lumio should inspect.",
       pluginUploadZipTitle: "Upload plugin ZIP",
-      pluginUploadZipHelp: "Import a plugin ZIP directly, for example a downloaded scraper package or a zipped plugin repository. You can also drag and drop a ZIP here.",
+      pluginUploadZipHelp: "Import a plugin ZIP directly, for example a downloaded stream provider package or a zipped plugin repository. You can also drag and drop a ZIP here.",
       pluginUploadZip: "Upload ZIP",
       pluginLastZipPreview: "Last ZIP preview",
       pluginSourceHelp: "GitHub sources should ideally expose a root marketplace.json. If that is missing, Lumio also tries the latest GitHub release ZIP automatically. ZIP imports can contain either a marketplace.json or one or more plugin.json files.",
@@ -111131,40 +111124,33 @@
       activeFiltersTitle: "Aktiva filter",
       activeFiltersHintPrefix: "Tillg\xE4nglighet f\xF6r tj\xE4nster \xE4r begr\xE4nsad till Sverige (",
       activeFiltersHintSuffix: "), och flera valda chips matchar valfritt av etiketterna, inte alla samtidigt.",
-      scraperGlobalDefaults: "Globala standarder f\xF6r stream providers",
       streamProviderGlobalDefaults: "Globala standarder f\xF6r stream providers",
-      scraperRdApiKey: "API-nyckel",
       streamProviderApiKey: "API-nyckel",
-      scraperRdApiPlaceholder: "Din API-nyckel",
       streamProviderApiKeyPlaceholder: "Din API-nyckel",
-      scraperRdApiKeyPerScraper: "API-nyckel (per provider)",
       streamProviderApiKeyPerSource: "API-nyckel (per provider)",
-      scraperUsingGlobal: "Anv\xE4nder global API-nyckel",
       streamProviderUsingGlobalKey: "Anv\xE4nder global API-nyckel",
       apiKeyLabel: "API-nyckel",
-      scraperDefaultQualityFilter: "Standard kvalitetsfilter (uteslut)",
-      scraperDefaultLanguages: "Standard spr\xE5k",
-      scraperDefaultDebridProvider: "Standard stream provider",
+      streamProviderDefaultQualityFilter: "Standard kvalitetsfilter (uteslut)",
+      streamProviderDefaultLanguages: "Standard spr\xE5k",
       streamProviderDefaultSource: "Standard stream provider",
-      scraperDefaultMaxResults: "Standard maxresultat per kvalitet",
-      scraperQualityFilter: "Kvalitetsfilter (uteslut)",
-      scraperLanguages: "Spr\xE5k",
-      scraperProviders: "Leverant\xF6rer (tomt = alla)",
-      scraperSelectQualities: "V\xE4lj kvaliteter",
-      scraperSelectLanguages: "V\xE4lj spr\xE5k",
-      scraperSelectProviders: "V\xE4lj leverant\xF6rer",
-      scraperMaxResults: "Maxresultat",
-      scraperMaxSize: "Maxstorlek (MB, 0 = ingen gr\xE4ns)",
-      scraperDebridProvider: "Stream provider",
+      streamProviderDefaultMaxResults: "Standard maxresultat per kvalitet",
+      streamProviderQualityFilter: "Kvalitetsfilter (uteslut)",
+      streamProviderLanguages: "Spr\xE5k",
+      streamProviderSources: "Leverant\xF6rer (tomt = alla)",
+      streamProviderSelectQualities: "V\xE4lj kvaliteter",
+      streamProviderSelectLanguages: "V\xE4lj spr\xE5k",
+      streamProviderSelectSources: "V\xE4lj leverant\xF6rer",
+      streamProviderMaxResults: "Maxresultat",
+      streamProviderMaxSize: "Maxstorlek (MB, 0 = ingen gr\xE4ns)",
       streamProviderSelection: "Stream provider",
-      scraperManifestUrl: "Manifest-URL (stremio:// eller https://)",
-      scraperCustomUrl: "Egen URL",
-      scraperNoUrl: "Ingen URL angiven",
-      scraperAddTorrentsDb: "+ TorrentsDB",
-      scraperAddTorrentio: "+ Torrentio",
-      scraperAddComet: "+ Comet",
-      scraperAddMediaFusion: "+ MediaFusion",
-      scraperAddCustom: "+ Egen URL",
+      streamProviderManifestUrl: "Manifest-URL (stremio:// eller https://)",
+      streamProviderCustomUrl: "Egen URL",
+      streamProviderNoUrl: "Ingen URL angiven",
+      streamProviderAddIndexed: "+ TorrentsDB",
+      streamProviderAddStandard: "+ Standard",
+      streamProviderAddComet: "+ Comet",
+      streamProviderAddMediaFusion: "+ MediaFusion",
+      streamProviderAddCustom: "+ Egen URL",
       useGlobal: "Anv\xE4nd globalt",
       clearFilters: "Rensa filter",
       moviesOnly: "Endast filmer",
@@ -111365,14 +111351,14 @@
       activeProfile: "Aktiv profil",
       switchProfile: "Byt profil",
       profileSwitcher: "Profil",
-      scraperTitle: "Stream provider",
-      scraperDesc: "V\xE4lj vilken Stremio-kompatibel stream provider som anv\xE4nds f\xF6r att hitta streams.",
+      streamProviderTitle: "Stream provider",
+      streamProviderDesc: "V\xE4lj vilken Stremio-kompatibel stream provider som anv\xE4nds f\xF6r att hitta streams.",
       configure: "Konfigurera",
       customScraper: "Anpassad",
       customScraperDesc: "Valfri Stremio-kompatibel stream provider.",
       rdApiKeyLabel: "API-nyckel f\xF6r stream provider",
-      scraperManifestPlaceholder: "Klistra in manifest-URL h\xE4r...",
-      customManifestPlaceholder: "https://din-scraper.example.com/manifest.json",
+      streamProviderManifestPlaceholder: "Klistra in manifest-URL h\xE4r...",
+      customManifestPlaceholder: "https://din-stream-provider.example.com/manifest.json",
       hevcTitle: "HEVC / H.265-kodek",
       hevcDesc: "Kr\xE4vs f\xF6r att spela MKV/HEVC-str\xF6mmar i webbl\xE4saren. Installerar Microsoft HEVC-videotill\xE4gget via PowerShell.",
       installHevc: "Installera HEVC-kodek",
@@ -111566,7 +111552,7 @@
       pluginChooseReleaseZip: "V\xE4lj en release-ZIP",
       pluginChooseReleaseZipHelp: "Det h\xE4r repot har flera release-ZIP-filer. V\xE4lj vilken asset Lumio ska inspektera.",
       pluginUploadZipTitle: "Ladda upp plugin-ZIP",
-      pluginUploadZipHelp: "Importera en plugin-ZIP direkt, till exempel ett nedladdat scraper-paket eller ett zippat pluginrepo. Du kan ocks\xE5 dra och sl\xE4ppa en ZIP h\xE4r.",
+      pluginUploadZipHelp: "Importera en plugin-ZIP direkt, till exempel ett nedladdat stream provider-paket eller ett zippat pluginrepo. Du kan ocks\xE5 dra och sl\xE4ppa en ZIP h\xE4r.",
       pluginUploadZip: "Ladda upp ZIP",
       pluginLastZipPreview: "Senaste ZIP-f\xF6rhandsvisning",
       pluginSourceHelp: "GitHub-k\xE4llor b\xF6r helst exponera en marketplace.json i roten. Om den saknas f\xF6rs\xF6ker Lumio ocks\xE5 automatiskt inspektera den senaste GitHub release-ZIP-filen. ZIP-importer kan inneh\xE5lla antingen en marketplace.json eller en eller flera plugin.json-filer.",
@@ -111901,7 +111887,7 @@
   var import_react55 = __toESM(require_dist82());
   init_jsx_runtime_shim();
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Wh1R3B/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-hWr1t5/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
   function resolveAuthCapabilityStatus(providerId) {
     return sdk.resolveAuthCapabilityStatus(providerId);
@@ -113469,7 +113455,11 @@
     const command = getDesktopOpenCommand(url);
     await launchPluginProgram(command.program, command.args);
   }
-  async function startDesktopYouTubeOauth(clientId) {
+  function preopenOauthWindow() {
+    if (typeof window === "undefined") return null;
+    return window.open("", "_blank", "noopener,noreferrer");
+  }
+  async function startDesktopYouTubeOauth(clientId, oauthWindow) {
     const startResponse = await fetch("/api/plugins/youtube/oauth/start", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -113479,7 +113469,18 @@
     if (!startResponse.ok || !startPayload.sessionId || !startPayload.authUrl) {
       throw new Error(startPayload.error || "Could not start desktop YouTube login.");
     }
-    await openDesktopOauthBrowser(startPayload.authUrl);
+    let opened = false;
+    if (oauthWindow && !oauthWindow.closed) {
+      try {
+        oauthWindow.location.href = startPayload.authUrl;
+        opened = true;
+      } catch {
+        opened = false;
+      }
+    }
+    if (!opened) {
+      await openDesktopOauthBrowser(startPayload.authUrl);
+    }
     const startedAt = Date.now();
     while (Date.now() - startedAt < DESKTOP_OAUTH_TIMEOUT_MS) {
       await new Promise((resolve) => window.setTimeout(resolve, DESKTOP_OAUTH_POLL_INTERVAL_MS));
@@ -113545,7 +113546,8 @@
     };
   }
   async function connectYouTube(clientId) {
-    const session = isPluginDesktopHost() ? await startDesktopYouTubeOauth(clientId) : await buildYouTubeSession(clientId, "consent");
+    const oauthWindow = isPluginDesktopHost() ? preopenOauthWindow() : null;
+    const session = isPluginDesktopHost() ? await startDesktopYouTubeOauth(clientId, oauthWindow) : await buildYouTubeSession(clientId, "consent");
     setYouTubeSession(session);
     setYouTubeAutoReconnectEnabled(true);
     return session;
@@ -113986,7 +113988,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Wh1R3B/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-hWr1t5/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

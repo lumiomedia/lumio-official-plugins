@@ -10,11 +10,7 @@ const pluginsRoot = path.join(repoRoot, 'plugins')
 const STRICT = process.argv.includes('--strict')
 const ALLOWED_APP_ALIAS_IMPORTS = new Set(['@/lib/plugin-sdk'])
 
-const LEGACY_ALLOWLIST = new Map([
-  ['plugins/plex/runtime/index.ts::@/components/settings/plex-section', 'Move Plex settings UI into the plugin runtime.'],
-  ['plugins/plex/runtime/plex-home-override.tsx::@/components/results/plex-grid', 'Move Plex home grid into the plugin runtime or expose a generic host browse/grid contract.'],
-  ['plugins/plex/runtime/playback-capability-provider.ts::@/lib/playback-capabilities', 'Move Plex matching/playability logic into the plugin runtime or a generic host contract.'],
-])
+const LEGACY_ALLOWLIST = new Map([])
 
 const IMPORT_PATTERN =
   /import\s+(?:type\s+)?(?:[\w*\s{},]+?\s+from\s+)?['"]([^'"]+)['"]/g

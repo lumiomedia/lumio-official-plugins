@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.3
+
+- Refactored runtime to keep Plex UI and capability wiring fully plugin-contained
+- Synced runtime bundles with the new core/plugin separation adapter layer
+
 ## 1.0.2
 
 - Fixed Plex server URI prioritization so public `plex.direct` endpoints win over stale local LAN addresses during sync
