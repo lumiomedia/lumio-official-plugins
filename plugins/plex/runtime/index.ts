@@ -4,6 +4,7 @@
 
 import type { LumioPlugin } from '@/lib/plugin-sdk'
 import { plexPlaybackCapabilityProvider } from './playback-capability-provider'
+import { PlexBrowsePage } from './plex-browse-page'
 import { PlexHomeOverride } from './plex-home-override'
 import { PlexSection } from './plex-section'
 import { plexSyncIdentityProvider } from './sync-identity-provider'
@@ -11,7 +12,7 @@ import { plexSyncIdentityProvider } from './sync-identity-provider'
 export const PlexPlugin: LumioPlugin = {
   id: 'com.lumio.plex',
   name: { en: 'Plex', sv: 'Plex' },
-  version: '1.0.13',
+  version: '1.0.14',
   description: {
     en: 'Browse and play media from your Plex Media Server.',
     sv: 'Bladdra i och spela upp media från din Plex Media Server.',
@@ -25,6 +26,17 @@ export const PlexPlugin: LumioPlugin = {
       id: 'plex',
       label: { en: 'Plex', sv: 'Plex' },
       Section: PlexSection,
+    })
+    ctx.registerBrowsePage({
+      id: 'plex-browse',
+      label: { en: 'Plex', sv: 'Plex' },
+      Page: PlexBrowsePage,
+    })
+    ctx.registerMainMenuItem({
+      id: 'plex',
+      label: { en: 'Plex', sv: 'Plex' },
+      defaultEnabled: true,
+      target: { pageId: 'plex-browse' },
     })
     ctx.registerHomeOverride({
       id: 'plex-home',
