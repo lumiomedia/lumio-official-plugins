@@ -9,6 +9,7 @@ import {
   appendPlexDebugLog,
   clearPlexAuth,
   clearPlexDebugLog,
+  removeScopedStorageItem,
   ensurePlexClientIdentifier,
   getPlexDebugLog,
   getPlexAuth,
@@ -68,6 +69,7 @@ export function PlexSection() {
   const [homeOverrideEnabled, setHomeOverrideEnabled] = useState(false)
   const [homeOverrideError, setHomeOverrideError] = useState('')
   const [plexDebugLog, setPlexDebugLog] = useState<string[]>([])
+  const [plexCacheMessage, setPlexCacheMessage] = useState('')
   const plexPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const plexRefreshRequestRef = useRef(0)
 
@@ -504,6 +506,12 @@ export function PlexSection() {
     setPlexSelectedLibraryKeys([])
   }
 
+  function handleClearPlexCaches() {
+    removeScopedStorageItem('plex_library_cache')
+    removeScopedStorageItem('plex_recent_cache')
+    setPlexCacheMessage('Plex-cache rensad. Oppna Plex igen for att hamta nya bilder.')
+  }
+
   function handleHomeOverrideToggle(checked: boolean) {
     setHomeOverrideError('')
     if (!checked) {
@@ -622,6 +630,16 @@ export function PlexSection() {
               {plexRefreshMessage}
             </p>
           ) : null}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleClearPlexCaches}
+              className={settingsActionButtonClass}
+            >
+              Rensa Plex-cache
+            </button>
+            {plexCacheMessage ? <span className="text-xs text-slate-400">{plexCacheMessage}</span> : null}
+          </div>
 
           {plexServers.length === 0 ? (
             <p className="text-xs text-slate-500">{t('plexNoServers')}</p>
