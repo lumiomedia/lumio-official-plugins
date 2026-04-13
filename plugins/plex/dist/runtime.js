@@ -39,7 +39,7 @@
   ));
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ug5ZTc/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-KGE9XB/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -88,7 +88,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ug5ZTc/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-KGE9XB/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -136,7 +136,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ug5ZTc/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-KGE9XB/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -146,7 +146,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ug5ZTc/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-KGE9XB/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -110242,14 +110242,6 @@
     try {
       localStorage.setItem(getProfileStorageKey(baseKey), value);
     } catch {
-      try {
-        const keysToEvict = ["plex_library_cache", "plex_recent_cache", "plex_debug_log"];
-        for (const evictKey of keysToEvict) {
-          localStorage.removeItem(getProfileStorageKey(evictKey));
-        }
-        localStorage.setItem(getProfileStorageKey(baseKey), value);
-      } catch {
-      }
     }
   }
   function removeScopedStorageItem(baseKey) {
@@ -110666,7 +110658,6 @@
       homeSourceTraktCollection: "Watchlist",
       homeWatchlistList: "List",
       homeWatchlistType: "Type",
-      homeSourcePlexRecentAdded: "Plex recently added",
       pluginYoutubeNotConnected: "Not connected",
       pluginYoutubeConnection: "Connection",
       pluginYoutubeConnectionNote: "This plugin uses your own Google Desktop Client ID and YouTube Data API key.",
@@ -110782,12 +110773,11 @@
       liveTvList: "Live TV list",
       liveTvChooseList: "Choose a Live TV list",
       homeMenuPremiereStar: "Premiere star",
-      plexMenu: "Plex",
       traktTitle: "Trakt",
-      traktDesc: "Sign in with Trakt to sync watched TV episodes, watchlists, and your collection with Lumio. Plex cards are not reliably supported for Trakt sync yet.",
+      traktDesc: "Sign in with Trakt to sync watched TV episodes, watchlists, and your collection with Lumio.",
       traktSignedInAs: "Signed in as",
       traktSignedInFallback: "Trakt user",
-      traktSyncDesc: "Sync pulls data from Trakt into Lumio and also pushes your local Lumio watchlists and watched episodes back to Trakt. Plex follow/My list is currently not guaranteed to sync correctly.",
+      traktSyncDesc: "Sync pulls data from Trakt into Lumio and also pushes your local Lumio watchlists and watched episodes back to Trakt.",
       traktImportData: "Sync Trakt data",
       traktImporting: "Syncing...",
       traktImportDone: "Trakt sync complete",
@@ -110798,31 +110788,6 @@
       traktStartLoginFailed: "Failed to start Trakt login",
       traktLoginFailed: "Trakt login failed",
       traktImportFailed: "Failed to sync with Trakt",
-      plexTitle: "Plex",
-      plexDesc: "Sign in with Plex, choose a server and libraries, and use Plex recently added as a homepage row.",
-      plexSignedInAs: "Connected as",
-      plexSignedInFallback: "Plex user",
-      plexConnect: "Sign in with Plex",
-      plexWaiting: "Waiting for Plex...",
-      plexOpenLinkAndCode: "Open the link and approve Lumio",
-      plexChooseProfile: "Profile",
-      plexProfilePin: "Profile PIN",
-      plexProfilePinPlaceholder: "Enter Plex profile PIN",
-      plexApplyProfile: "Apply profile",
-      plexRefreshingProfiles: "Refreshing profiles...",
-      plexProfileApplied: "Plex profile activated",
-      plexChooseServer: "Server",
-      plexChooseLibraries: "Libraries",
-      plexRefreshLibraries: "Refresh libraries",
-      plexRefreshingLibrariesButton: "Refreshing libraries...",
-      plexRefreshLibrariesDone: "Plex libraries updated",
-      plexRefreshLibrariesEmpty: "No movie or show libraries were found on this server.",
-      plexRefreshLibrariesFailed: "Failed to refresh Plex libraries",
-      plexRequestFailed: "Could not reach Plex. Check that the selected server is online and reachable.",
-      plexDisconnect: "Disconnect",
-      plexNoServers: "No Plex servers found.",
-      plexNoLibraries: "No movie or show libraries found on this server.",
-      plexRecentlyAdded: "Plex recently added",
       homeSourceCinemaMovies: "In theaters",
       homeSourceTopRatedMovies: "Top rated movies",
       homeSourceTopRatedSeries: "Top rated series",
@@ -110858,9 +110823,9 @@
       autoSkipIntro: "Auto-skip intro",
       autoSkipIntroDesc: "When enabled, intros are skipped automatically. When disabled, a Skip intro button is shown if IntroDB has a match.",
       autoplayStreamOnPlay: "Auto-play on Play button",
-      autoplayStreamOnPlayDesc: "For non-Plex cards, Play tries up to 3 streams automatically. Known mismatches on audio language and oversized files are skipped when possible.",
+      autoplayStreamOnPlayDesc: "Play tries up to 3 streams automatically. Known mismatches on audio language and oversized files are skipped when possible.",
       hideWatchedMoviesHome: "Hide watched movies on Home",
-      hideWatchedMoviesHomeDesc: "Exclude movies marked as watched from Home grids and sliders, including Plex rows.",
+      hideWatchedMoviesHomeDesc: "Exclude movies marked as watched from Home grids and sliders.",
       stillWatching: "Still watching?",
       stillWatchingDesc: "For TV series only. Pause playback after the chosen time without control interaction, once at least 3 episodes have played in the same session.",
       stillWatchingMaxMinutes: "Still watching max time",
@@ -111393,7 +111358,6 @@
       homeSourceTraktCollection: "Watchlist",
       homeWatchlistList: "Lista",
       homeWatchlistType: "Typ",
-      homeSourcePlexRecentAdded: "Plex nyligen tillagt",
       pluginYoutubeNotConnected: "Inte ansluten",
       pluginYoutubeConnection: "Anslutning",
       pluginYoutubeConnectionNote: "Det h\xE4r pluginet anv\xE4nder ditt eget Google Desktop Client ID och din YouTube Data API-nyckel.",
@@ -111509,12 +111473,11 @@
       liveTvList: "Live TV-lista",
       liveTvChooseList: "V\xE4lj en Live TV-lista",
       homeMenuPremiereStar: "Premi\xE4rstj\xE4rna",
-      plexMenu: "Plex",
       traktTitle: "Trakt",
-      traktDesc: "Logga in med Trakt f\xF6r att synka sedda serieavsnitt, listor och din samling med Lumio. Plex-kort st\xF6ds \xE4nnu inte p\xE5litligt f\xF6r Trakt-synk.",
+      traktDesc: "Logga in med Trakt f\xF6r att synka sedda serieavsnitt, listor och din samling med Lumio.",
       traktSignedInAs: "Inloggad som",
       traktSignedInFallback: "Trakt-anv\xE4ndare",
-      traktSyncDesc: "Synk h\xE4mtar data fr\xE5n Trakt till Lumio och skickar ocks\xE5 upp dina lokala Lumio-listor och sedda avsnitt till Trakt. F\xF6lj/Min lista fr\xE5n Plex fungerar \xE4nnu inte garanterat mot Trakt.",
+      traktSyncDesc: "Synk h\xE4mtar data fr\xE5n Trakt till Lumio och skickar ocks\xE5 upp dina lokala Lumio-listor och sedda avsnitt till Trakt.",
       traktImportData: "Synka Trakt-data",
       traktImporting: "Synkar...",
       traktImportDone: "Trakt-synk klar",
@@ -111525,31 +111488,6 @@
       traktStartLoginFailed: "Kunde inte starta Trakt-inloggning",
       traktLoginFailed: "Trakt-inloggning misslyckades",
       traktImportFailed: "Kunde inte synka med Trakt",
-      plexTitle: "Plex",
-      plexDesc: "Logga in med Plex, v\xE4lj server och bibliotek, och anv\xE4nd Plex nyligen tillagt som en rad p\xE5 startsidan.",
-      plexSignedInAs: "Ansluten som",
-      plexSignedInFallback: "Plex-anv\xE4ndare",
-      plexConnect: "Logga in med Plex",
-      plexWaiting: "V\xE4ntar p\xE5 Plex...",
-      plexOpenLinkAndCode: "\xD6ppna l\xE4nken och godk\xE4nn Lumio",
-      plexChooseProfile: "Profil",
-      plexProfilePin: "Profil-PIN",
-      plexProfilePinPlaceholder: "Ange Plex-profilens PIN",
-      plexApplyProfile: "Anv\xE4nd profil",
-      plexRefreshingProfiles: "Uppdaterar profiler...",
-      plexProfileApplied: "Plex-profil aktiverad",
-      plexChooseServer: "Server",
-      plexChooseLibraries: "Bibliotek",
-      plexRefreshLibraries: "Uppdatera bibliotek",
-      plexRefreshingLibrariesButton: "Uppdaterar bibliotek...",
-      plexRefreshLibrariesDone: "Plex-biblioteken uppdaterades",
-      plexRefreshLibrariesEmpty: "Inga film- eller seriebibliotek hittades p\xE5 den h\xE4r servern.",
-      plexRefreshLibrariesFailed: "Kunde inte uppdatera Plex-bibliotek",
-      plexRequestFailed: "Kunde inte n\xE5 Plex. Kontrollera att vald server \xE4r online och n\xE5bar.",
-      plexDisconnect: "Koppla fr\xE5n",
-      plexNoServers: "Inga Plex-servrar hittades.",
-      plexNoLibraries: "Inga film- eller seriebibliotek hittades p\xE5 den h\xE4r servern.",
-      plexRecentlyAdded: "Plex nyligen tillagt",
       homeSourceCinemaMovies: "P\xE5 bio",
       homeSourceTopRatedMovies: "H\xF6gst betyg filmer",
       homeSourceTopRatedSeries: "H\xF6gst betyg serier",
@@ -111587,7 +111525,7 @@
       autoplayStreamOnPlay: "Auto-spela fr\xE5n Play-knappen",
       autoplayStreamOnPlayDesc: "F\xF6r vanliga kort testar Play upp till 3 streams automatiskt. K\xE4nda fel spr\xE5ksp\xE5r och f\xF6r stora filer hoppas \xF6ver n\xE4r det g\xE5r.",
       hideWatchedMoviesHome: "D\xF6lj sedda filmer p\xE5 startsidan",
-      hideWatchedMoviesHomeDesc: "Exkludera filmer som markerats som sedda fr\xE5n startsidans gridar och sliders, \xE4ven Plex-rader.",
+      hideWatchedMoviesHomeDesc: "Exkludera filmer som markerats som sedda fr\xE5n startsidans gridar och sliders.",
       stillWatching: "Tittar du fortfarande?",
       stillWatchingDesc: "G\xE4ller bara TV-serier. Pausar uppspelningen efter vald tid utan kontrollinteraktion, n\xE4r minst 3 avsnitt har spelats i samma session.",
       stillWatchingMaxMinutes: "Max tid f\xF6r fortfarande tittar",
@@ -111822,7 +111760,392 @@
     return () => window.removeEventListener(EVENT_WATCHED_MOVIES_CHANGED, handle);
   }
 
-  // lib/plugins/plex/plex-storage.ts
+  // lib/plugins/streams-scraper/stream-provider-settings.ts
+  var SCRAPER_PRESETS = [
+    {
+      id: "torrentio",
+      name: "Torrentio",
+      url: "https://torrentio.strem.fun",
+      type: "torrentio",
+      description: "Publik scraper, stabil och snabb. Kr\xE4ver Real-Debrid API-nyckel.",
+      configUrl: "https://torrentio.strem.fun/configure"
+    },
+    {
+      id: "comet",
+      name: "Comet",
+      url: "",
+      type: "preconfigured",
+      description: "Snabb scraper med bra tr\xE4ffar. Kr\xE4ver konfiguration med RD-nyckel.",
+      configUrl: "https://comet.elfhosted.com"
+    },
+    {
+      id: "mediafusion",
+      name: "MediaFusion",
+      url: "",
+      type: "preconfigured",
+      description: "Snabb scraper med bra tr\xE4ffar. Kr\xE4ver konfiguration med RD-nyckel.",
+      configUrl: "https://mediafusion.elfhosted.com"
+    }
+  ];
+  var DEFAULT_SCRAPER_URL = SCRAPER_PRESETS[0].url;
+
+  // lib/playback-settings.ts
+  var KEY_HIDE_WATCHED_MOVIES_HOME = "playback_hideWatchedMoviesHome";
+  var PLAYBACK_SETTINGS_CHANGED_EVENT = "lumio-playback-settings-changed";
+  var DEFAULT_HIDE_WATCHED_MOVIES_HOME = false;
+  function onPlaybackSettingsChanged(listener) {
+    if (typeof window === "undefined") return () => {
+    };
+    window.addEventListener(PLAYBACK_SETTINGS_CHANGED_EVENT, listener);
+    return () => window.removeEventListener(PLAYBACK_SETTINGS_CHANGED_EVENT, listener);
+  }
+  function getHideWatchedMoviesHome() {
+    if (typeof window === "undefined") return DEFAULT_HIDE_WATCHED_MOVIES_HOME;
+    return (getScopedStorageItem(KEY_HIDE_WATCHED_MOVIES_HOME) ?? "0") === "1";
+  }
+
+  // lib/series-watchlist-feed.ts
+  var STREAM_CACHE_TTL_MS = 30 * 60 * 1e3;
+  var SERIES_STATUS_CACHE_TTL_MS = 15 * 60 * 1e3;
+
+  // lib/release-watchlist-feed.ts
+  var STREAM_CACHE_TTL_MS2 = 30 * 60 * 1e3;
+
+  // lib/utils/search-text.ts
+  function stripDiacritics(value) {
+    return value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
+  }
+  function collapseWhitespace(value) {
+    return value.replace(/\s+/g, " ").trim();
+  }
+  function normalizePunctuation(value) {
+    return value.replace(/[\u2019'`]/g, "").replace(/&/g, " and ").replace(/[_:/\\|+.-]+/g, " ").replace(/[()[\]{}!?,"*]/g, " ");
+  }
+  function normalizeSearchInput(value) {
+    return collapseWhitespace(normalizePunctuation(stripDiacritics(value))).toLowerCase();
+  }
+  function isShortAmbiguousTitleQuery(value) {
+    const tokens = getSearchTokens(value);
+    return tokens.length === 1 && tokens[0].length >= 2 && tokens[0].length <= 4;
+  }
+  function createCompactSearchValue(value) {
+    return normalizeSearchInput(value).replace(/\s+/g, "");
+  }
+  function getSearchTokens(value) {
+    return normalizeSearchInput(value).split(" ").filter(Boolean);
+  }
+  function getTitleMatchScore(title, query) {
+    const normalizedTitle = normalizeSearchInput(title);
+    const normalizedQuery = normalizeSearchInput(query);
+    if (!normalizedQuery) {
+      return 0;
+    }
+    const compactTitle = createCompactSearchValue(title);
+    const compactQuery = createCompactSearchValue(query);
+    const titleTokens = getSearchTokens(title);
+    const queryTokens = getSearchTokens(query);
+    const isShortQuery = isShortAmbiguousTitleQuery(query);
+    let score = 0;
+    if (normalizedTitle === normalizedQuery) {
+      score += 260;
+    } else if (compactTitle === compactQuery) {
+      score += 240;
+    }
+    if (queryTokens.length === 1 && titleTokens.includes(queryTokens[0])) {
+      score += isShortQuery ? 210 : 170;
+    }
+    if (normalizedTitle.startsWith(normalizedQuery)) {
+      score += isShortQuery ? 170 : 110;
+    } else if (compactTitle.startsWith(compactQuery)) {
+      score += isShortQuery ? 145 : 96;
+    } else if (normalizedTitle.includes(normalizedQuery)) {
+      score += isShortQuery ? 72 : 58;
+    } else if (compactTitle.includes(compactQuery)) {
+      score += isShortQuery ? 64 : 52;
+    }
+    if (queryTokens.length > 0) {
+      const exactTokenMatches = queryTokens.filter((token) => titleTokens.includes(token)).length;
+      const prefixTokenMatches = queryTokens.filter(
+        (token) => titleTokens.some((titleToken) => titleToken.startsWith(token))
+      ).length;
+      const containsTokenMatches = queryTokens.filter(
+        (token) => titleTokens.some((titleToken) => titleToken.includes(token))
+      ).length;
+      score += exactTokenMatches * (isShortQuery ? 70 : 42);
+      score += prefixTokenMatches * (isShortQuery ? 34 : 22);
+      score += containsTokenMatches * 10;
+      if (exactTokenMatches === queryTokens.length) {
+        score += isShortQuery ? 52 : 34;
+      } else if (prefixTokenMatches === queryTokens.length) {
+        score += isShortQuery ? 28 : 18;
+      }
+    }
+    if (isShortQuery && !titleTokens.includes(queryTokens[0])) {
+      score -= Math.min(24, Math.max(0, normalizedTitle.length - normalizedQuery.length));
+    }
+    return score;
+  }
+  function matchesNormalizedText(value, query) {
+    return getTitleMatchScore(value, query) > 0;
+  }
+
+  // lib/utils/filter-media.ts
+  function matchesTitleQuery(item, titleQuery, ignoreTitleQuery = false) {
+    if (ignoreTitleQuery) {
+      return true;
+    }
+    if (normalizeSearchInput(titleQuery).length === 0) {
+      return true;
+    }
+    return matchesNormalizedText(item.title, titleQuery);
+  }
+  function matchesSelectedValues(itemValues, selectedValues) {
+    if (selectedValues.length === 0) {
+      return true;
+    }
+    const normalizedItemValues = itemValues.map((value) => normalizeSearchInput(value));
+    return selectedValues.some((value) => normalizedItemValues.includes(normalizeSearchInput(value)));
+  }
+  function matchesOriginalLanguages(item, selectedLanguages) {
+    if (selectedLanguages.length === 0) {
+      return true;
+    }
+    if (!item.originalLanguage?.code) {
+      return false;
+    }
+    return selectedLanguages.includes(item.originalLanguage.code);
+  }
+  function getMediaItemTitleMatchScore(item, query) {
+    const candidates = Array.from(new Set([item.title, ...item.searchTitles ?? []].filter(Boolean)));
+    return candidates.reduce((bestScore, candidate, index3) => {
+      const candidateScore = getTitleMatchScore(candidate, query) + (index3 > 0 ? 18 : 0);
+      return Math.max(bestScore, candidateScore);
+    }, 0);
+  }
+  function getComparableRatingScore(item) {
+    return item.discoveryScore ?? null;
+  }
+  function compareNullableNumberDesc(left, right) {
+    return (right ?? -1) - (left ?? -1);
+  }
+  function compareNullableNumberAsc(left, right) {
+    return (left ?? Number.MAX_SAFE_INTEGER) - (right ?? Number.MAX_SAFE_INTEGER);
+  }
+  function compareTitleMatchScore(left, right, query) {
+    return getMediaItemTitleMatchScore(right, query) - getMediaItemTitleMatchScore(left, query);
+  }
+  function matchesRatingRange(item, filters) {
+    const score = getComparableRatingScore(item);
+    if (score === null) {
+      return true;
+    }
+    return score >= filters.ratingMin && score <= filters.ratingMax;
+  }
+  function computeRelevance(item, filters) {
+    let score = item.popularity ?? 0;
+    const titleMatchScore = getMediaItemTitleMatchScore(item, filters.titleQuery);
+    if (filters.mediaType !== "all" && filters.mediaType === item.type) {
+      score += 15;
+    }
+    if (titleMatchScore > 0) {
+      score += titleMatchScore;
+    }
+    score += item.genres.filter((genre) => filters.genres.includes(genre)).length * 10;
+    score += item.providers.filter((provider) => filters.providers.includes(provider)).length * 9;
+    score += item.keywords.filter((keyword) => filters.keywords.includes(keyword)).length * 12;
+    const imdb = getComparableRatingScore(item);
+    if (imdb !== null) {
+      score += imdb * 4;
+    }
+    if (item.year !== null) {
+      const midpoint = (filters.yearMin + filters.yearMax) / 2;
+      score += Math.max(0, 10 - Math.abs(item.year - midpoint) / 2);
+    }
+    return score;
+  }
+  function applyFilters(items, filters, options = {}) {
+    const filtered = items.filter((item) => {
+      const matchesType = filters.mediaType === "all" || item.type === filters.mediaType;
+      const matchesYear = item.year === null || item.year >= filters.yearMin && item.year <= filters.yearMax;
+      return matchesTitleQuery(item, filters.titleQuery, options.ignoreTitleQuery) && matchesType && matchesYear && (options.ignoreProviders || matchesSelectedValues(item.providers, filters.providers)) && matchesSelectedValues(item.genres, filters.genres) && matchesSelectedValues(item.keywords, filters.keywords) && matchesOriginalLanguages(item, filters.originalLanguages) && matchesRatingRange(item, filters);
+    });
+    if (options.preserveOrder) {
+      return filtered;
+    }
+    return [...filtered].sort((left, right) => {
+      if (filters.sortBy === "year_desc") {
+        const yearDiff = compareNullableNumberDesc(left.year, right.year);
+        if (yearDiff !== 0) {
+          return yearDiff;
+        }
+        const ratingDiff = compareNullableNumberDesc(getComparableRatingScore(left), getComparableRatingScore(right));
+        if (ratingDiff !== 0) {
+          return ratingDiff;
+        }
+        return compareNullableNumberDesc(left.popularity, right.popularity);
+      }
+      if (filters.sortBy === "year_asc") {
+        const yearDiff = compareNullableNumberAsc(left.year, right.year);
+        if (yearDiff !== 0) {
+          return yearDiff;
+        }
+        const ratingDiff = compareNullableNumberDesc(getComparableRatingScore(left), getComparableRatingScore(right));
+        if (ratingDiff !== 0) {
+          return ratingDiff;
+        }
+        return compareNullableNumberDesc(left.popularity, right.popularity);
+      }
+      if (filters.sortBy === "rating_desc") {
+        const ratingDiff = compareNullableNumberDesc(getComparableRatingScore(left), getComparableRatingScore(right));
+        if (ratingDiff !== 0) {
+          return ratingDiff;
+        }
+        const yearDiff = compareNullableNumberDesc(left.year, right.year);
+        if (yearDiff !== 0) {
+          return yearDiff;
+        }
+        return compareNullableNumberDesc(left.popularity, right.popularity);
+      }
+      const titleScoreDiff = compareTitleMatchScore(left, right, filters.titleQuery);
+      if (titleScoreDiff !== 0) {
+        return titleScoreDiff;
+      }
+      const relevanceDiff = computeRelevance(right, filters) - computeRelevance(left, filters);
+      if (relevanceDiff !== 0) {
+        return relevanceDiff;
+      }
+      return compareNullableNumberDesc(left.popularity, right.popularity);
+    });
+  }
+
+  // lib/utils/languages.ts
+  function getEnglishLanguageDisplayName(code) {
+    try {
+      const displayNames = new Intl.DisplayNames(["en"], { type: "language" });
+      return displayNames.of(code) ?? null;
+    } catch {
+      return null;
+    }
+  }
+  function createLanguageOption(input) {
+    const { code, englishLabel, nativeLabel } = input;
+    const englishDisplayName = getEnglishLanguageDisplayName(code);
+    const label = englishLabel || englishDisplayName || nativeLabel || code;
+    return {
+      code,
+      label: label.charAt(0).toUpperCase() + label.slice(1),
+      englishLabel: englishLabel || null,
+      nativeLabel: nativeLabel || null
+    };
+  }
+  function sortLanguageOptions(options) {
+    return [...options].sort((left, right) => left.label.localeCompare(right.label, "en"));
+  }
+
+  // components/results/results-loading-indicator.tsx
+  init_jsx_runtime_shim();
+  function ResultsLoadingIndicator({
+    title,
+    description,
+    compact = false
+  }) {
+    return /* @__PURE__ */ jsx(
+      "div",
+      {
+        className: `rounded-[1.5rem] border border-white/0 bg-white/[0.045] text-slate-100 shadow-[0_20px_70px_rgba(0,0,0,0.35)] backdrop-blur-xl ${compact ? "px-5 py-4" : "px-6 py-5"}`,
+        children: /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-center gap-3", children: [
+          /* @__PURE__ */ jsx("span", { className: "h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-amber-300/90" }),
+          /* @__PURE__ */ jsxs("div", { className: "min-w-0", children: [
+            /* @__PURE__ */ jsx("p", { className: "text-sm font-semibold text-white", children: title }),
+            description ? /* @__PURE__ */ jsx("p", { className: "mt-1 text-sm leading-6 text-slate-300", children: description }) : null
+          ] })
+        ] })
+      }
+    );
+  }
+
+  // components/results/results-state.tsx
+  init_jsx_runtime_shim();
+  function ResultsState({
+    title,
+    description,
+    suggestions,
+    actionLabel,
+    onAction
+  }) {
+    return /* @__PURE__ */ jsxs("div", { className: "flex min-h-[360px] flex-col items-center justify-center rounded-[2rem] border border-dashed border-white/10 bg-white/5 px-6 py-10 text-center", children: [
+      /* @__PURE__ */ jsx("p", { className: "text-xs uppercase tracking-[0.32em] text-accent-400", children: "Results" }),
+      /* @__PURE__ */ jsx("h3", { className: "mt-4 font-display text-4xl text-white", children: title }),
+      /* @__PURE__ */ jsx("p", { className: "mt-3 max-w-xl text-sm leading-7 text-slate-300", children: description }),
+      suggestions && suggestions.length > 0 ? /* @__PURE__ */ jsxs("div", { className: "mt-6 w-full max-w-2xl rounded-[1.5rem] border border-white/10 bg-slate-950/60 px-5 py-5 text-left", children: [
+        /* @__PURE__ */ jsx("p", { className: "text-xs uppercase tracking-[0.24em] text-slate-400", children: "Try this" }),
+        /* @__PURE__ */ jsx("ul", { className: "mt-3 space-y-3 text-sm leading-7 text-slate-200", children: suggestions.map((suggestion) => /* @__PURE__ */ jsxs("li", { className: "flex gap-3", children: [
+          /* @__PURE__ */ jsx("span", { className: "mt-2 h-2 w-2 rounded-full bg-accent-400", "aria-hidden": "true" }),
+          /* @__PURE__ */ jsx("span", { children: suggestion })
+        ] }, suggestion)) })
+      ] }) : null,
+      actionLabel && onAction ? /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          onClick: onAction,
+          className: "mt-6 rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm text-slate-100 transition hover:border-accent-400/40 hover:bg-white/10",
+          children: actionLabel
+        }
+      ) : null
+    ] });
+  }
+
+  // components/results/results-pagination.tsx
+  var import_react55 = __toESM(require_dist82());
+  init_jsx_runtime_shim();
+  function ResultsPagination({ currentPage, totalPages, onPageChange }) {
+    if (totalPages <= 1) return null;
+    return /* @__PURE__ */ jsx("div", { className: "flex items-center justify-center rounded-[1.75rem] border border-white/10 bg-slate-950/60 px-4 py-4", children: /* @__PURE__ */ jsx(
+      import_react55.Pagination,
+      {
+        total: totalPages,
+        page: currentPage,
+        onChange: onPageChange,
+        showControls: true,
+        siblings: 2,
+        boundaries: 1,
+        classNames: {
+          wrapper: "gap-2",
+          item: [
+            "bg-white/5 border border-white/10 text-slate-200",
+            "hover:bg-white/10 hover:!border-accent-400/30 hover:text-white",
+            "data-[active=true]:bg-accent-400/90 data-[active=true]:!border-accent-400/70 data-[active=true]:text-slate-950 data-[active=true]:font-semibold",
+            "transition-all duration-200"
+          ].join(" "),
+          prev: "bg-white/5 border border-white/10 text-slate-200 hover:bg-white/10 hover:!border-accent-400/30",
+          next: "bg-white/5 border border-white/10 text-slate-200 hover:bg-white/10 hover:!border-accent-400/30",
+          cursor: "bg-accent-400 text-slate-950 font-semibold shadow-sm shadow-accent-500/30"
+        }
+      }
+    ) });
+  }
+
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-KGE9XB/auth-capabilities-shim.ts
+  var sdk = globalThis.__lumioPluginRuntime?.sdk;
+
+  // lib/tauri-mpv.ts
+  init_core();
+  init_event();
+  init_react_shim();
+  function detectTauriEnv() {
+    if (typeof window === "undefined") return false;
+    const maybeTauriWindow = window;
+    if (maybeTauriWindow.__TAURI_INTERNALS__ || maybeTauriWindow.__TAURI__) {
+      return true;
+    }
+    const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "";
+    if (userAgent.includes("Tauri")) return true;
+    return window.location.hostname === "127.0.0.1" && window.location.port === "32145";
+  }
+  var isTauriEnv = detectTauriEnv();
+
+  // ../lumio-official-plugins/plugins/plex/runtime/plex-storage.ts
   var AUTH_KEY = "plex_auth";
   var SETTINGS_KEY = "plex_settings";
   var CLIENT_KEY = "plex_client_identifier";
@@ -112079,138 +112402,7 @@
     return () => window.removeEventListener(DEBUG_EVENT, listener);
   }
 
-  // lib/plugins/streams-scraper/stream-provider-settings.ts
-  var SCRAPER_PRESETS = [
-    {
-      id: "torrentio",
-      name: "Torrentio",
-      url: "https://torrentio.strem.fun",
-      type: "torrentio",
-      description: "Publik scraper, stabil och snabb. Kr\xE4ver Real-Debrid API-nyckel.",
-      configUrl: "https://torrentio.strem.fun/configure"
-    },
-    {
-      id: "comet",
-      name: "Comet",
-      url: "",
-      type: "preconfigured",
-      description: "Snabb scraper med bra tr\xE4ffar. Kr\xE4ver konfiguration med RD-nyckel.",
-      configUrl: "https://comet.elfhosted.com"
-    },
-    {
-      id: "mediafusion",
-      name: "MediaFusion",
-      url: "",
-      type: "preconfigured",
-      description: "Snabb scraper med bra tr\xE4ffar. Kr\xE4ver konfiguration med RD-nyckel.",
-      configUrl: "https://mediafusion.elfhosted.com"
-    }
-  ];
-  var DEFAULT_SCRAPER_URL = SCRAPER_PRESETS[0].url;
-
-  // lib/utils/search-text.ts
-  function stripDiacritics(value) {
-    return value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
-  }
-  function collapseWhitespace(value) {
-    return value.replace(/\s+/g, " ").trim();
-  }
-  function normalizePunctuation(value) {
-    return value.replace(/[\u2019'`]/g, "").replace(/&/g, " and ").replace(/[_:/\\|+.-]+/g, " ").replace(/[()[\]{}!?,"*]/g, " ");
-  }
-  function normalizeSearchInput(value) {
-    return collapseWhitespace(normalizePunctuation(stripDiacritics(value))).toLowerCase();
-  }
-  function isShortAmbiguousTitleQuery(value) {
-    const tokens = getSearchTokens(value);
-    return tokens.length === 1 && tokens[0].length >= 2 && tokens[0].length <= 4;
-  }
-  function createCompactSearchValue(value) {
-    return normalizeSearchInput(value).replace(/\s+/g, "");
-  }
-  function getSearchTokens(value) {
-    return normalizeSearchInput(value).split(" ").filter(Boolean);
-  }
-  function getTitleMatchScore(title, query) {
-    const normalizedTitle = normalizeSearchInput(title);
-    const normalizedQuery = normalizeSearchInput(query);
-    if (!normalizedQuery) {
-      return 0;
-    }
-    const compactTitle = createCompactSearchValue(title);
-    const compactQuery = createCompactSearchValue(query);
-    const titleTokens = getSearchTokens(title);
-    const queryTokens = getSearchTokens(query);
-    const isShortQuery = isShortAmbiguousTitleQuery(query);
-    let score = 0;
-    if (normalizedTitle === normalizedQuery) {
-      score += 260;
-    } else if (compactTitle === compactQuery) {
-      score += 240;
-    }
-    if (queryTokens.length === 1 && titleTokens.includes(queryTokens[0])) {
-      score += isShortQuery ? 210 : 170;
-    }
-    if (normalizedTitle.startsWith(normalizedQuery)) {
-      score += isShortQuery ? 170 : 110;
-    } else if (compactTitle.startsWith(compactQuery)) {
-      score += isShortQuery ? 145 : 96;
-    } else if (normalizedTitle.includes(normalizedQuery)) {
-      score += isShortQuery ? 72 : 58;
-    } else if (compactTitle.includes(compactQuery)) {
-      score += isShortQuery ? 64 : 52;
-    }
-    if (queryTokens.length > 0) {
-      const exactTokenMatches = queryTokens.filter((token) => titleTokens.includes(token)).length;
-      const prefixTokenMatches = queryTokens.filter(
-        (token) => titleTokens.some((titleToken) => titleToken.startsWith(token))
-      ).length;
-      const containsTokenMatches = queryTokens.filter(
-        (token) => titleTokens.some((titleToken) => titleToken.includes(token))
-      ).length;
-      score += exactTokenMatches * (isShortQuery ? 70 : 42);
-      score += prefixTokenMatches * (isShortQuery ? 34 : 22);
-      score += containsTokenMatches * 10;
-      if (exactTokenMatches === queryTokens.length) {
-        score += isShortQuery ? 52 : 34;
-      } else if (prefixTokenMatches === queryTokens.length) {
-        score += isShortQuery ? 28 : 18;
-      }
-    }
-    if (isShortQuery && !titleTokens.includes(queryTokens[0])) {
-      score -= Math.min(24, Math.max(0, normalizedTitle.length - normalizedQuery.length));
-    }
-    return score;
-  }
-  function matchesNormalizedText(value, query) {
-    return getTitleMatchScore(value, query) > 0;
-  }
-
-  // lib/utils/languages.ts
-  function getEnglishLanguageDisplayName(code) {
-    try {
-      const displayNames = new Intl.DisplayNames(["en"], { type: "language" });
-      return displayNames.of(code) ?? null;
-    } catch {
-      return null;
-    }
-  }
-  function createLanguageOption(input) {
-    const { code, englishLabel, nativeLabel } = input;
-    const englishDisplayName = getEnglishLanguageDisplayName(code);
-    const label = englishLabel || englishDisplayName || nativeLabel || code;
-    return {
-      code,
-      label: label.charAt(0).toUpperCase() + label.slice(1),
-      englishLabel: englishLabel || null,
-      nativeLabel: nativeLabel || null
-    };
-  }
-  function sortLanguageOptions(options) {
-    return [...options].sort((left, right) => left.label.localeCompare(right.label, "en"));
-  }
-
-  // lib/plugins/plex/plex-sync.ts
+  // ../lumio-official-plugins/plugins/plex/runtime/plex-sync.ts
   var plexLibraryInFlight = /* @__PURE__ */ new Map();
   var plexLibraryCooldownUntil = /* @__PURE__ */ new Map();
   var PLEX_LIBRARY_RETRY_COOLDOWN_MS = 15e3;
@@ -112315,7 +112507,7 @@
   function buildPlexImageUrl(serverUri, thumb, authToken) {
     if (!thumb) return null;
     const directUrl = `${serverUri}${thumb}${thumb.includes("?") ? "&" : "?"}X-Plex-Token=${encodeURIComponent(authToken)}`;
-    return `/api/plex/image?url=${encodeURIComponent(directUrl)}`;
+    return `/api/plugins/plex/image?url=${encodeURIComponent(directUrl)}`;
   }
   function parsePlexGuid(guids, prefix) {
     const match = guids?.find((guid) => typeof guid.id === "string" && guid.id.startsWith(prefix));
@@ -112396,7 +112588,8 @@
       const rawFile = firstPart?.file ?? null;
       const filename = rawFile ? rawFile.split(/[\\/]/).pop() ?? null : firstPart?.key?.split("/").pop() ?? null;
       const castNames = (entry.Role ?? []).map((role) => (role.tag ?? "").trim()).filter((name) => Boolean(name));
-      return {
+      const source = "plex";
+      const mapped = {
         id: tmdbId ? `${type}-${tmdbId}` : `plex-${type}-${effectiveRatingKey ?? safeRandomId2()}`,
         title: effectiveTitle ?? "Untitled",
         searchTitles: [effectiveTitle, entry.title, entry.titleSort].filter((value) => Boolean(value)),
@@ -112416,7 +112609,7 @@
           rottenTomatoes: null
         },
         overview: entry.summary ?? "",
-        source: "plex",
+        source,
         discoveryScore: typeof entry.audienceRating === "number" ? entry.audienceRating : typeof entry.rating === "number" ? entry.rating : null,
         popularity: typeof entry.addedAt === "number" ? entry.addedAt : void 0,
         plexRatingKey: effectiveRatingKey ?? null,
@@ -112424,6 +112617,7 @@
         plexFilename: filename,
         plexServerUri: serverUri
       };
+      return mapped;
     });
   }
   function candidateTokens(...values) {
@@ -112552,7 +112746,7 @@
     throw lastError instanceof Error ? lastError : new Error("Network request failed");
   }
   async function startPlexLogin(clientIdentifier) {
-    const response = await fetch("/api/plex/pin/start", {
+    const response = await fetch("/api/plugins/plex/pin/start", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ clientIdentifier })
@@ -112564,7 +112758,7 @@
     return response.json();
   }
   async function pollPlexLogin(pinId, clientIdentifier) {
-    const response = await fetch("/api/plex/pin/poll", {
+    const response = await fetch("/api/plugins/plex/pin/poll", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ pinId, clientIdentifier })
@@ -112583,7 +112777,7 @@
     const auth = getPlexAuth();
     if (!auth) return [];
     const response = await fetchWithTimeoutAndRetry(
-      "/api/plex/resources",
+      "/api/plugins/plex/resources",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -112602,7 +112796,7 @@
     const auth = getPlexAuth();
     if (!auth) return [];
     const response = await fetchWithTimeoutAndRetry(
-      "/api/plex/resources",
+      "/api/plugins/plex/resources",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -112625,7 +112819,7 @@
   async function fetchPlexHomeUsers() {
     const auth = getPlexAuth();
     if (!auth) return [];
-    const response = await fetch("/api/plex/home-users", {
+    const response = await fetch("/api/plugins/plex/home-users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ auth })
@@ -112637,7 +112831,7 @@
   async function switchPlexHomeProfile(homeUserId, pin) {
     const auth = getPlexAuth();
     if (!auth) throw new Error("Plex auth required");
-    const response = await fetch("/api/plex/home-users", {
+    const response = await fetch("/api/plugins/plex/home-users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -112684,7 +112878,7 @@
       async function fetchRecentlyAddedFallback() {
         try {
           const recentlyAddedResponse = await fetchWithTimeoutAndRetry(
-            "/api/plex/recently-added",
+            "/api/plugins/plex/recently-added",
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -112736,7 +112930,7 @@
       });
       try {
         const response = await fetchWithTimeoutAndRetry(
-          "/api/plex/library",
+          "/api/plugins/plex/library",
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -112748,10 +112942,10 @@
           },
           { timeoutMs: 45e3, retries: 1, retryDelayMs: 500 }
         );
-        console.warn("[plex-sync] /api/plex/library response:", response.status);
+        console.warn("[plex-sync] /api/plugins/plex/library response:", response.status);
         if (!response.ok) {
           const errBody = await response.text().catch(() => "");
-          console.warn("[plex-sync] /api/plex/library error body:", errBody);
+          console.warn("[plex-sync] /api/plugins/plex/library error body:", errBody);
           logPlexDebug("[plex-sync] server fetch failed", {
             status: response.status,
             body: errBody.slice(0, 500)
@@ -112760,12 +112954,12 @@
         }
         const payload = await response.json();
         const items = payload.items ?? [];
-        console.warn("[plex-sync] /api/plex/library returned", items.length, "items");
+        console.warn("[plex-sync] /api/plugins/plex/library returned", items.length, "items");
         if (items.length > 0) {
           setCachedPlexLibraryItems(limit, items);
           return items;
         }
-        console.warn("[plex-sync] /api/plex/library returned 0 items, trying browser-direct fallback");
+        console.warn("[plex-sync] /api/plugins/plex/library returned 0 items, trying browser-direct fallback");
         return fetchDirectLibraryFallback();
       } catch (err) {
         console.warn("[plex-sync] fetchPlexLibraryItems catch:", err instanceof Error ? err.message : err);
@@ -112809,158 +113003,7 @@
     });
   }
 
-  // lib/playback-settings.ts
-  var KEY_HIDE_WATCHED_MOVIES_HOME = "playback_hideWatchedMoviesHome";
-  var PLAYBACK_SETTINGS_CHANGED_EVENT = "lumio-playback-settings-changed";
-  var DEFAULT_HIDE_WATCHED_MOVIES_HOME = false;
-  function onPlaybackSettingsChanged(listener) {
-    if (typeof window === "undefined") return () => {
-    };
-    window.addEventListener(PLAYBACK_SETTINGS_CHANGED_EVENT, listener);
-    return () => window.removeEventListener(PLAYBACK_SETTINGS_CHANGED_EVENT, listener);
-  }
-  function getHideWatchedMoviesHome() {
-    if (typeof window === "undefined") return DEFAULT_HIDE_WATCHED_MOVIES_HOME;
-    return (getScopedStorageItem(KEY_HIDE_WATCHED_MOVIES_HOME) ?? "0") === "1";
-  }
-
-  // lib/series-watchlist-feed.ts
-  var STREAM_CACHE_TTL_MS = 30 * 60 * 1e3;
-  var SERIES_STATUS_CACHE_TTL_MS = 15 * 60 * 1e3;
-
-  // lib/release-watchlist-feed.ts
-  var STREAM_CACHE_TTL_MS2 = 30 * 60 * 1e3;
-
-  // lib/utils/filter-media.ts
-  function matchesTitleQuery(item, titleQuery, ignoreTitleQuery = false) {
-    if (ignoreTitleQuery) {
-      return true;
-    }
-    if (normalizeSearchInput(titleQuery).length === 0) {
-      return true;
-    }
-    return matchesNormalizedText(item.title, titleQuery);
-  }
-  function matchesSelectedValues(itemValues, selectedValues) {
-    if (selectedValues.length === 0) {
-      return true;
-    }
-    const normalizedItemValues = itemValues.map((value) => normalizeSearchInput(value));
-    return selectedValues.some((value) => normalizedItemValues.includes(normalizeSearchInput(value)));
-  }
-  function matchesOriginalLanguages(item, selectedLanguages) {
-    if (selectedLanguages.length === 0) {
-      return true;
-    }
-    if (!item.originalLanguage?.code) {
-      return false;
-    }
-    return selectedLanguages.includes(item.originalLanguage.code);
-  }
-  function getMediaItemTitleMatchScore(item, query) {
-    const candidates = Array.from(new Set([item.title, ...item.searchTitles ?? []].filter(Boolean)));
-    return candidates.reduce((bestScore, candidate, index3) => {
-      const candidateScore = getTitleMatchScore(candidate, query) + (index3 > 0 ? 18 : 0);
-      return Math.max(bestScore, candidateScore);
-    }, 0);
-  }
-  function getComparableRatingScore(item) {
-    return item.discoveryScore ?? null;
-  }
-  function compareNullableNumberDesc(left, right) {
-    return (right ?? -1) - (left ?? -1);
-  }
-  function compareNullableNumberAsc(left, right) {
-    return (left ?? Number.MAX_SAFE_INTEGER) - (right ?? Number.MAX_SAFE_INTEGER);
-  }
-  function compareTitleMatchScore(left, right, query) {
-    return getMediaItemTitleMatchScore(right, query) - getMediaItemTitleMatchScore(left, query);
-  }
-  function matchesRatingRange(item, filters) {
-    const score = getComparableRatingScore(item);
-    if (score === null) {
-      return true;
-    }
-    return score >= filters.ratingMin && score <= filters.ratingMax;
-  }
-  function computeRelevance(item, filters) {
-    let score = item.popularity ?? 0;
-    const titleMatchScore = getMediaItemTitleMatchScore(item, filters.titleQuery);
-    if (filters.mediaType !== "all" && filters.mediaType === item.type) {
-      score += 15;
-    }
-    if (titleMatchScore > 0) {
-      score += titleMatchScore;
-    }
-    score += item.genres.filter((genre) => filters.genres.includes(genre)).length * 10;
-    score += item.providers.filter((provider) => filters.providers.includes(provider)).length * 9;
-    score += item.keywords.filter((keyword) => filters.keywords.includes(keyword)).length * 12;
-    const imdb = getComparableRatingScore(item);
-    if (imdb !== null) {
-      score += imdb * 4;
-    }
-    if (item.year !== null) {
-      const midpoint = (filters.yearMin + filters.yearMax) / 2;
-      score += Math.max(0, 10 - Math.abs(item.year - midpoint) / 2);
-    }
-    return score;
-  }
-  function applyFilters(items, filters, options = {}) {
-    const filtered = items.filter((item) => {
-      const matchesType = filters.mediaType === "all" || item.type === filters.mediaType;
-      const matchesYear = item.year === null || item.year >= filters.yearMin && item.year <= filters.yearMax;
-      return matchesTitleQuery(item, filters.titleQuery, options.ignoreTitleQuery) && matchesType && matchesYear && (options.ignoreProviders || matchesSelectedValues(item.providers, filters.providers)) && matchesSelectedValues(item.genres, filters.genres) && matchesSelectedValues(item.keywords, filters.keywords) && matchesOriginalLanguages(item, filters.originalLanguages) && matchesRatingRange(item, filters);
-    });
-    if (options.preserveOrder) {
-      return filtered;
-    }
-    return [...filtered].sort((left, right) => {
-      if (filters.sortBy === "year_desc") {
-        const yearDiff = compareNullableNumberDesc(left.year, right.year);
-        if (yearDiff !== 0) {
-          return yearDiff;
-        }
-        const ratingDiff = compareNullableNumberDesc(getComparableRatingScore(left), getComparableRatingScore(right));
-        if (ratingDiff !== 0) {
-          return ratingDiff;
-        }
-        return compareNullableNumberDesc(left.popularity, right.popularity);
-      }
-      if (filters.sortBy === "year_asc") {
-        const yearDiff = compareNullableNumberAsc(left.year, right.year);
-        if (yearDiff !== 0) {
-          return yearDiff;
-        }
-        const ratingDiff = compareNullableNumberDesc(getComparableRatingScore(left), getComparableRatingScore(right));
-        if (ratingDiff !== 0) {
-          return ratingDiff;
-        }
-        return compareNullableNumberDesc(left.popularity, right.popularity);
-      }
-      if (filters.sortBy === "rating_desc") {
-        const ratingDiff = compareNullableNumberDesc(getComparableRatingScore(left), getComparableRatingScore(right));
-        if (ratingDiff !== 0) {
-          return ratingDiff;
-        }
-        const yearDiff = compareNullableNumberDesc(left.year, right.year);
-        if (yearDiff !== 0) {
-          return yearDiff;
-        }
-        return compareNullableNumberDesc(left.popularity, right.popularity);
-      }
-      const titleScoreDiff = compareTitleMatchScore(left, right, filters.titleQuery);
-      if (titleScoreDiff !== 0) {
-        return titleScoreDiff;
-      }
-      const relevanceDiff = computeRelevance(right, filters) - computeRelevance(left, filters);
-      if (relevanceDiff !== 0) {
-        return relevanceDiff;
-      }
-      return compareNullableNumberDesc(left.popularity, right.popularity);
-    });
-  }
-
-  // lib/plugins/plex/playback-utils.ts
+  // ../lumio-official-plugins/plugins/plex/runtime/playback-utils.ts
   function normalizeTitle2(value) {
     return (value ?? "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
   }
@@ -113007,7 +113050,8 @@
     return fetchPlexLibraryItems(240);
   }
   async function findBestPlexMatch(item, options) {
-    if (item.source === "plex") return item;
+    const plexItem = item;
+    if (plexItem.source === "plex") return item;
     const settings = getPlexSettings();
     const auth = getPlexAuth();
     if (!settings.serverUri || settings.libraries.length === 0 || !auth) return null;
@@ -113035,111 +113079,9 @@
     return candidates.find((entry) => normalizeTitle2(entry.title) === titleKey) ?? null;
   }
   function isPlexItemPlayable(item) {
-    return Boolean(item && item.source === "plex" && isPlexPlaybackReady(item));
+    const plexItem = item;
+    return Boolean(plexItem && plexItem.source === "plex" && isPlexPlaybackReady(plexItem));
   }
-
-  // components/results/results-loading-indicator.tsx
-  init_jsx_runtime_shim();
-  function ResultsLoadingIndicator({
-    title,
-    description,
-    compact = false
-  }) {
-    return /* @__PURE__ */ jsx(
-      "div",
-      {
-        className: `rounded-[1.5rem] border border-white/0 bg-white/[0.045] text-slate-100 shadow-[0_20px_70px_rgba(0,0,0,0.35)] backdrop-blur-xl ${compact ? "px-5 py-4" : "px-6 py-5"}`,
-        children: /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-center gap-3", children: [
-          /* @__PURE__ */ jsx("span", { className: "h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-amber-300/90" }),
-          /* @__PURE__ */ jsxs("div", { className: "min-w-0", children: [
-            /* @__PURE__ */ jsx("p", { className: "text-sm font-semibold text-white", children: title }),
-            description ? /* @__PURE__ */ jsx("p", { className: "mt-1 text-sm leading-6 text-slate-300", children: description }) : null
-          ] })
-        ] })
-      }
-    );
-  }
-
-  // components/results/results-state.tsx
-  init_jsx_runtime_shim();
-  function ResultsState({
-    title,
-    description,
-    suggestions,
-    actionLabel,
-    onAction
-  }) {
-    return /* @__PURE__ */ jsxs("div", { className: "flex min-h-[360px] flex-col items-center justify-center rounded-[2rem] border border-dashed border-white/10 bg-white/5 px-6 py-10 text-center", children: [
-      /* @__PURE__ */ jsx("p", { className: "text-xs uppercase tracking-[0.32em] text-accent-400", children: "Results" }),
-      /* @__PURE__ */ jsx("h3", { className: "mt-4 font-display text-4xl text-white", children: title }),
-      /* @__PURE__ */ jsx("p", { className: "mt-3 max-w-xl text-sm leading-7 text-slate-300", children: description }),
-      suggestions && suggestions.length > 0 ? /* @__PURE__ */ jsxs("div", { className: "mt-6 w-full max-w-2xl rounded-[1.5rem] border border-white/10 bg-slate-950/60 px-5 py-5 text-left", children: [
-        /* @__PURE__ */ jsx("p", { className: "text-xs uppercase tracking-[0.24em] text-slate-400", children: "Try this" }),
-        /* @__PURE__ */ jsx("ul", { className: "mt-3 space-y-3 text-sm leading-7 text-slate-200", children: suggestions.map((suggestion) => /* @__PURE__ */ jsxs("li", { className: "flex gap-3", children: [
-          /* @__PURE__ */ jsx("span", { className: "mt-2 h-2 w-2 rounded-full bg-accent-400", "aria-hidden": "true" }),
-          /* @__PURE__ */ jsx("span", { children: suggestion })
-        ] }, suggestion)) })
-      ] }) : null,
-      actionLabel && onAction ? /* @__PURE__ */ jsx(
-        "button",
-        {
-          type: "button",
-          onClick: onAction,
-          className: "mt-6 rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm text-slate-100 transition hover:border-accent-400/40 hover:bg-white/10",
-          children: actionLabel
-        }
-      ) : null
-    ] });
-  }
-
-  // components/results/results-pagination.tsx
-  var import_react55 = __toESM(require_dist82());
-  init_jsx_runtime_shim();
-  function ResultsPagination({ currentPage, totalPages, onPageChange }) {
-    if (totalPages <= 1) return null;
-    return /* @__PURE__ */ jsx("div", { className: "flex items-center justify-center rounded-[1.75rem] border border-white/10 bg-slate-950/60 px-4 py-4", children: /* @__PURE__ */ jsx(
-      import_react55.Pagination,
-      {
-        total: totalPages,
-        page: currentPage,
-        onChange: onPageChange,
-        showControls: true,
-        siblings: 2,
-        boundaries: 1,
-        classNames: {
-          wrapper: "gap-2",
-          item: [
-            "bg-white/5 border border-white/10 text-slate-200",
-            "hover:bg-white/10 hover:!border-accent-400/30 hover:text-white",
-            "data-[active=true]:bg-accent-400/90 data-[active=true]:!border-accent-400/70 data-[active=true]:text-slate-950 data-[active=true]:font-semibold",
-            "transition-all duration-200"
-          ].join(" "),
-          prev: "bg-white/5 border border-white/10 text-slate-200 hover:bg-white/10 hover:!border-accent-400/30",
-          next: "bg-white/5 border border-white/10 text-slate-200 hover:bg-white/10 hover:!border-accent-400/30",
-          cursor: "bg-accent-400 text-slate-950 font-semibold shadow-sm shadow-accent-500/30"
-        }
-      }
-    ) });
-  }
-
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ug5ZTc/auth-capabilities-shim.ts
-  var sdk = globalThis.__lumioPluginRuntime?.sdk;
-
-  // lib/tauri-mpv.ts
-  init_core();
-  init_event();
-  init_react_shim();
-  function detectTauriEnv() {
-    if (typeof window === "undefined") return false;
-    const maybeTauriWindow = window;
-    if (maybeTauriWindow.__TAURI_INTERNALS__ || maybeTauriWindow.__TAURI__) {
-      return true;
-    }
-    const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "";
-    if (userAgent.includes("Tauri")) return true;
-    return window.location.hostname === "127.0.0.1" && window.location.port === "32145";
-  }
-  var isTauriEnv = detectTauriEnv();
 
   // ../lumio-official-plugins/plugins/plex/runtime/playback-capability-provider.ts
   var plexPlaybackCapabilityProvider = {
@@ -113147,7 +113089,8 @@
     pluginId: "com.lumio.plex",
     label: { en: "Plex", sv: "Plex" },
     async getCapability({ item }) {
-      if (item.type === "tv" && item.source !== "plex") {
+      const source = item.source;
+      if (item.type === "tv" && source !== "plex") {
         return {
           canPlay: false,
           showPlayButton: false,
@@ -113173,7 +113116,7 @@
         playVia: "plex",
         matchedItem,
         reason: canPlay ? void 0 : "not_playable",
-        priority: matchedItem.source === "plex" && item.source === "plex" ? 100 : 50
+        priority: matchedItem.source === "plex" && source === "plex" ? 100 : 50
       };
     }
   };
@@ -113601,7 +113544,7 @@
       }
       appendPlexDebugLog("[plex-debug] starting server debug...");
       try {
-        const response = await fetch("/api/plex/debug", {
+        const response = await fetch("/api/plugins/plex/debug", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -114256,7 +114199,8 @@
     label: { en: "Plex sync identity", sv: "Plex sync-identitet" },
     priority: 100,
     canResolve(item) {
-      return item.source === "plex";
+      const source = item.source;
+      return source === "plex";
     },
     async resolveIdentity(item) {
       const ids = await resolvePlexSyncIdentity(item);
@@ -114273,7 +114217,7 @@
   var PlexPlugin = {
     id: "com.lumio.plex",
     name: { en: "Plex", sv: "Plex" },
-    version: "1.0.12",
+    version: "1.0.13",
     description: {
       en: "Browse and play media from your Plex Media Server.",
       sv: "Bladdra i och spela upp media fr\xE5n din Plex Media Server."
@@ -114295,7 +114239,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ug5ZTc/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-KGE9XB/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

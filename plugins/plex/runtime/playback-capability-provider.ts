@@ -1,15 +1,13 @@
-import {
-  findBestPlexMatch,
-  isPlexItemPlayable,
-  type PlaybackCapabilityProvider,
-} from '@/lib/plugin-sdk'
+import { type PlaybackCapabilityProvider } from '@/lib/plugin-sdk'
+import { findBestPlexMatch, isPlexItemPlayable } from './playback-utils'
 
 export const plexPlaybackCapabilityProvider: PlaybackCapabilityProvider = {
   id: 'plex-playback',
   pluginId: 'com.lumio.plex',
   label: { en: 'Plex', sv: 'Plex' },
   async getCapability({ item }) {
-    if (item.type === 'tv' && item.source !== 'plex') {
+    const source = (item as { source?: string }).source
+    if (item.type === 'tv' && source !== 'plex') {
       return {
         canPlay: false,
         showPlayButton: false,
@@ -37,7 +35,10 @@ export const plexPlaybackCapabilityProvider: PlaybackCapabilityProvider = {
       playVia: 'plex',
       matchedItem,
       reason: canPlay ? undefined : 'not_playable',
-      priority: matchedItem.source === 'plex' && item.source === 'plex' ? 100 : 50,
+      priority:
+        (matchedItem as { source?: string }).source === 'plex' && source === 'plex'
+          ? 100
+          : 50,
     }
   },
 }

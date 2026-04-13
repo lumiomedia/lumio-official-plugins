@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.13
+
+- Moved Plex runtime helpers into the plugin package to keep core separation intact.
+- Updated Plex runtime API paths to use `/api/plugins/plex/*`.
+
 ## 1.0.12
 
 - Added a "Rensa Plex-cache" button in Plex settings to clear cached library data and refresh poster art.

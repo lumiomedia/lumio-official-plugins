@@ -6,10 +6,13 @@ import {
   getHomeOverridePluginId,
   onHomeOverridePluginChanged,
   tryEnableHomeOverridePlugin,
+  removeScopedStorageItem,
+  useLang,
+} from '@/lib/plugin-sdk'
+import {
   appendPlexDebugLog,
   clearPlexAuth,
   clearPlexDebugLog,
-  removeScopedStorageItem,
   ensurePlexClientIdentifier,
   getPlexDebugLog,
   getPlexAuth,
@@ -17,6 +20,12 @@ import {
   onPlexDebugLogChanged,
   onPlexAuthChanged,
   onPlexSettingsChanged,
+  type PlexAuthState,
+  type PlexHomeUserOption,
+  type PlexLibraryOption,
+  type PlexServerOption,
+} from './plex-storage'
+import {
   disconnectPlex,
   fetchPlexHomeUsers,
   fetchPlexLibraries,
@@ -25,12 +34,7 @@ import {
   savePlexSelection,
   startPlexLogin,
   switchPlexHomeProfile,
-  type PlexAuthState,
-  type PlexHomeUserOption,
-  type PlexLibraryOption,
-  type PlexServerOption,
-  useLang,
-} from '@/lib/plugin-sdk'
+} from './plex-sync'
 
 // ── Local style constants (mirrors settings-panel.tsx) ──────────────────────
 
@@ -83,7 +87,7 @@ export function PlexSection() {
 
     appendPlexDebugLog('[plex-debug] starting server debug...')
     try {
-      const response = await fetch('/api/plex/debug', {
+      const response = await fetch('/api/plugins/plex/debug', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

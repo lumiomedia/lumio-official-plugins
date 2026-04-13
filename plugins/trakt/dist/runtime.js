@@ -39,7 +39,7 @@
   ));
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-JLX0ZH/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-0zh3Bv/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -88,7 +88,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-JLX0ZH/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-0zh3Bv/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -136,7 +136,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-JLX0ZH/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-0zh3Bv/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -146,7 +146,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-JLX0ZH/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-0zh3Bv/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -110242,7 +110242,10 @@
     return localStorage.getItem(getProfileStorageKey(baseKey));
   }
   function setScopedStorageItem(baseKey, value) {
-    localStorage.setItem(getProfileStorageKey(baseKey), value);
+    try {
+      localStorage.setItem(getProfileStorageKey(baseKey), value);
+    } catch {
+    }
   }
   function removeScopedStorageItem(baseKey) {
     localStorage.removeItem(getProfileStorageKey(baseKey));
@@ -110658,7 +110661,6 @@
       homeSourceTraktCollection: "Watchlist",
       homeWatchlistList: "List",
       homeWatchlistType: "Type",
-      homeSourcePlexRecentAdded: "Plex recently added",
       pluginYoutubeNotConnected: "Not connected",
       pluginYoutubeConnection: "Connection",
       pluginYoutubeConnectionNote: "This plugin uses your own Google Desktop Client ID and YouTube Data API key.",
@@ -110774,12 +110776,11 @@
       liveTvList: "Live TV list",
       liveTvChooseList: "Choose a Live TV list",
       homeMenuPremiereStar: "Premiere star",
-      plexMenu: "Plex",
       traktTitle: "Trakt",
-      traktDesc: "Sign in with Trakt to sync watched TV episodes, watchlists, and your collection with Lumio. Plex cards are not reliably supported for Trakt sync yet.",
+      traktDesc: "Sign in with Trakt to sync watched TV episodes, watchlists, and your collection with Lumio.",
       traktSignedInAs: "Signed in as",
       traktSignedInFallback: "Trakt user",
-      traktSyncDesc: "Sync pulls data from Trakt into Lumio and also pushes your local Lumio watchlists and watched episodes back to Trakt. Plex follow/My list is currently not guaranteed to sync correctly.",
+      traktSyncDesc: "Sync pulls data from Trakt into Lumio and also pushes your local Lumio watchlists and watched episodes back to Trakt.",
       traktImportData: "Sync Trakt data",
       traktImporting: "Syncing...",
       traktImportDone: "Trakt sync complete",
@@ -110790,31 +110791,6 @@
       traktStartLoginFailed: "Failed to start Trakt login",
       traktLoginFailed: "Trakt login failed",
       traktImportFailed: "Failed to sync with Trakt",
-      plexTitle: "Plex",
-      plexDesc: "Sign in with Plex, choose a server and libraries, and use Plex recently added as a homepage row.",
-      plexSignedInAs: "Connected as",
-      plexSignedInFallback: "Plex user",
-      plexConnect: "Sign in with Plex",
-      plexWaiting: "Waiting for Plex...",
-      plexOpenLinkAndCode: "Open the link and approve Lumio",
-      plexChooseProfile: "Profile",
-      plexProfilePin: "Profile PIN",
-      plexProfilePinPlaceholder: "Enter Plex profile PIN",
-      plexApplyProfile: "Apply profile",
-      plexRefreshingProfiles: "Refreshing profiles...",
-      plexProfileApplied: "Plex profile activated",
-      plexChooseServer: "Server",
-      plexChooseLibraries: "Libraries",
-      plexRefreshLibraries: "Refresh libraries",
-      plexRefreshingLibrariesButton: "Refreshing libraries...",
-      plexRefreshLibrariesDone: "Plex libraries updated",
-      plexRefreshLibrariesEmpty: "No movie or show libraries were found on this server.",
-      plexRefreshLibrariesFailed: "Failed to refresh Plex libraries",
-      plexRequestFailed: "Could not reach Plex. Check that the selected server is online and reachable.",
-      plexDisconnect: "Disconnect",
-      plexNoServers: "No Plex servers found.",
-      plexNoLibraries: "No movie or show libraries found on this server.",
-      plexRecentlyAdded: "Plex recently added",
       homeSourceCinemaMovies: "In theaters",
       homeSourceTopRatedMovies: "Top rated movies",
       homeSourceTopRatedSeries: "Top rated series",
@@ -110850,9 +110826,9 @@
       autoSkipIntro: "Auto-skip intro",
       autoSkipIntroDesc: "When enabled, intros are skipped automatically. When disabled, a Skip intro button is shown if IntroDB has a match.",
       autoplayStreamOnPlay: "Auto-play on Play button",
-      autoplayStreamOnPlayDesc: "For non-Plex cards, Play tries up to 3 streams automatically. Known mismatches on audio language and oversized files are skipped when possible.",
+      autoplayStreamOnPlayDesc: "Play tries up to 3 streams automatically. Known mismatches on audio language and oversized files are skipped when possible.",
       hideWatchedMoviesHome: "Hide watched movies on Home",
-      hideWatchedMoviesHomeDesc: "Exclude movies marked as watched from Home grids and sliders, including Plex rows.",
+      hideWatchedMoviesHomeDesc: "Exclude movies marked as watched from Home grids and sliders.",
       stillWatching: "Still watching?",
       stillWatchingDesc: "For TV series only. Pause playback after the chosen time without control interaction, once at least 3 episodes have played in the same session.",
       stillWatchingMaxMinutes: "Still watching max time",
@@ -111385,7 +111361,6 @@
       homeSourceTraktCollection: "Watchlist",
       homeWatchlistList: "Lista",
       homeWatchlistType: "Typ",
-      homeSourcePlexRecentAdded: "Plex nyligen tillagt",
       pluginYoutubeNotConnected: "Inte ansluten",
       pluginYoutubeConnection: "Anslutning",
       pluginYoutubeConnectionNote: "Det h\xE4r pluginet anv\xE4nder ditt eget Google Desktop Client ID och din YouTube Data API-nyckel.",
@@ -111501,12 +111476,11 @@
       liveTvList: "Live TV-lista",
       liveTvChooseList: "V\xE4lj en Live TV-lista",
       homeMenuPremiereStar: "Premi\xE4rstj\xE4rna",
-      plexMenu: "Plex",
       traktTitle: "Trakt",
-      traktDesc: "Logga in med Trakt f\xF6r att synka sedda serieavsnitt, listor och din samling med Lumio. Plex-kort st\xF6ds \xE4nnu inte p\xE5litligt f\xF6r Trakt-synk.",
+      traktDesc: "Logga in med Trakt f\xF6r att synka sedda serieavsnitt, listor och din samling med Lumio.",
       traktSignedInAs: "Inloggad som",
       traktSignedInFallback: "Trakt-anv\xE4ndare",
-      traktSyncDesc: "Synk h\xE4mtar data fr\xE5n Trakt till Lumio och skickar ocks\xE5 upp dina lokala Lumio-listor och sedda avsnitt till Trakt. F\xF6lj/Min lista fr\xE5n Plex fungerar \xE4nnu inte garanterat mot Trakt.",
+      traktSyncDesc: "Synk h\xE4mtar data fr\xE5n Trakt till Lumio och skickar ocks\xE5 upp dina lokala Lumio-listor och sedda avsnitt till Trakt.",
       traktImportData: "Synka Trakt-data",
       traktImporting: "Synkar...",
       traktImportDone: "Trakt-synk klar",
@@ -111517,31 +111491,6 @@
       traktStartLoginFailed: "Kunde inte starta Trakt-inloggning",
       traktLoginFailed: "Trakt-inloggning misslyckades",
       traktImportFailed: "Kunde inte synka med Trakt",
-      plexTitle: "Plex",
-      plexDesc: "Logga in med Plex, v\xE4lj server och bibliotek, och anv\xE4nd Plex nyligen tillagt som en rad p\xE5 startsidan.",
-      plexSignedInAs: "Ansluten som",
-      plexSignedInFallback: "Plex-anv\xE4ndare",
-      plexConnect: "Logga in med Plex",
-      plexWaiting: "V\xE4ntar p\xE5 Plex...",
-      plexOpenLinkAndCode: "\xD6ppna l\xE4nken och godk\xE4nn Lumio",
-      plexChooseProfile: "Profil",
-      plexProfilePin: "Profil-PIN",
-      plexProfilePinPlaceholder: "Ange Plex-profilens PIN",
-      plexApplyProfile: "Anv\xE4nd profil",
-      plexRefreshingProfiles: "Uppdaterar profiler...",
-      plexProfileApplied: "Plex-profil aktiverad",
-      plexChooseServer: "Server",
-      plexChooseLibraries: "Bibliotek",
-      plexRefreshLibraries: "Uppdatera bibliotek",
-      plexRefreshingLibrariesButton: "Uppdaterar bibliotek...",
-      plexRefreshLibrariesDone: "Plex-biblioteken uppdaterades",
-      plexRefreshLibrariesEmpty: "Inga film- eller seriebibliotek hittades p\xE5 den h\xE4r servern.",
-      plexRefreshLibrariesFailed: "Kunde inte uppdatera Plex-bibliotek",
-      plexRequestFailed: "Kunde inte n\xE5 Plex. Kontrollera att vald server \xE4r online och n\xE5bar.",
-      plexDisconnect: "Koppla fr\xE5n",
-      plexNoServers: "Inga Plex-servrar hittades.",
-      plexNoLibraries: "Inga film- eller seriebibliotek hittades p\xE5 den h\xE4r servern.",
-      plexRecentlyAdded: "Plex nyligen tillagt",
       homeSourceCinemaMovies: "P\xE5 bio",
       homeSourceTopRatedMovies: "H\xF6gst betyg filmer",
       homeSourceTopRatedSeries: "H\xF6gst betyg serier",
@@ -111579,7 +111528,7 @@
       autoplayStreamOnPlay: "Auto-spela fr\xE5n Play-knappen",
       autoplayStreamOnPlayDesc: "F\xF6r vanliga kort testar Play upp till 3 streams automatiskt. K\xE4nda fel spr\xE5ksp\xE5r och f\xF6r stora filer hoppas \xF6ver n\xE4r det g\xE5r.",
       hideWatchedMoviesHome: "D\xF6lj sedda filmer p\xE5 startsidan",
-      hideWatchedMoviesHomeDesc: "Exkludera filmer som markerats som sedda fr\xE5n startsidans gridar och sliders, \xE4ven Plex-rader.",
+      hideWatchedMoviesHomeDesc: "Exkludera filmer som markerats som sedda fr\xE5n startsidans gridar och sliders.",
       stillWatching: "Tittar du fortfarande?",
       stillWatchingDesc: "G\xE4ller bara TV-serier. Pausar uppspelningen efter vald tid utan kontrollinteraktion, n\xE4r minst 3 avsnitt har spelats i samma session.",
       stillWatchingMaxMinutes: "Max tid f\xF6r fortfarande tittar",
@@ -112416,9 +112365,6 @@
     };
   }
 
-  // lib/plugins/plex/plex-storage.ts
-  var CACHE_TTL_MS = 20 * 60 * 1e3;
-
   // lib/plugins/streams-scraper/stream-provider-settings.ts
   var SCRAPER_PRESETS = [
     {
@@ -112465,7 +112411,7 @@
   var import_react55 = __toESM(require_dist82());
   init_jsx_runtime_shim();
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-JLX0ZH/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-0zh3Bv/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
 
   // lib/tauri-mpv.ts
@@ -112656,7 +112602,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-JLX0ZH/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-0zh3Bv/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");
