@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.9
+
+- Guarded `crypto.randomUUID()` in non-secure contexts with try/catch and safe fallback.
+- Prevents Tauri webview crashes when `randomUUID()` throws despite being present.
+
 ## 1.0.8
 
 - Restored a safe random ID fallback chain so Plex no longer crashes in non-secure contexts (e.g. Tauri webview).
