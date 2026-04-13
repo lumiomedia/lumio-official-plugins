@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.4
+
+- Reduced repeated Plex sync fetch storms by hardening in-flight dedupe behavior.
+- Improved server URI and token prioritization to recover faster from stale `plex.direct`/LAN endpoint combinations.
+- Synced runtime version metadata with marketplace/plugin manifest for reliable update detection.
+
 ## 1.0.3
 
 - Refactored runtime to keep Plex UI and capability wiring fully plugin-contained
