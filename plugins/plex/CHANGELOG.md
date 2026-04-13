@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.11
+
+- Added a "Rensa Plex-cache" button in Plex settings to clear cached library data and refresh poster art.
+
 ## 1.0.10
 
 - Sync with latest app-side Plex fixes and runtime bundle rebuild.
