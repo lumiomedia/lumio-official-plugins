@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.5
+
+- Stabilized Plex library sync singleflight keying so parallel refreshes collapse into one request per server/library scope.
+- Throttled repetitive `server fetch deduped` and `cooldown active` debug logs to reduce noise during retry windows.
+- Kept retry cooldown behavior intact while preventing high-frequency duplicate log bursts.
+
 ## 1.0.4
 
 - Reduced repeated Plex sync fetch storms by hardening in-flight dedupe behavior.
