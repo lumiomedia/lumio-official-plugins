@@ -9,6 +9,11 @@ import {
   setYouTubeAutoReconnectEnabled,
   setYouTubeSession,
 } from './youtube-storage'
+import {
+  fetchDesktopApiJson,
+  isPluginDesktopHost,
+  launchPluginProgram,
+} from '@/lib/plugin-sdk'
 import type { YouTubeSession } from './youtube-types'
 
 declare global {
@@ -35,6 +40,8 @@ const YOUTUBE_SCOPES = [
   'https://www.googleapis.com/auth/youtube.readonly',
   'https://www.googleapis.com/auth/youtube',
 ]
+const DESKTOP_OAUTH_POLL_INTERVAL_MS = 1250
+const DESKTOP_OAUTH_TIMEOUT_MS = 3 * 60 * 1000
 
 let gisLoader: Promise<void> | null = null
 
@@ -67,6 +74,84 @@ export function loadGoogleIdentityServices(): Promise<void> {
   })
 
   return gisLoader
+}
+
+type DesktopOauthStartResponse = {
+  sessionId: string
+  authUrl: string
+}
+
+type DesktopOauthPollResponse = {
+  status: 'pending' | 'complete' | 'error' | 'missing'
+  error?: string
+  token?: {
+    accessToken: string
+    expiresIn: number
+    scope: string
+  } | null
+}
+
+function getDesktopOpenCommand(url: string): { program: string; args: string[] } {
+  const platform = typeof navigator !== 'undefined' ? navigator.userAgent.toLowerCase() : ''
+  if (platform.includes('windows')) {
+    return { program: 'cmd', args: ['/c', 'start', '', url] }
+  }
+  if (platform.includes('linux')) {
+    return { program: 'xdg-open', args: [url] }
+  }
+  return { program: 'open', args: [url] }
+}
+
+async function openDesktopOauthBrowser(url: string): Promise<void> {
+  const command = getDesktopOpenCommand(url)
+  await launchPluginProgram(command.program, command.args)
+}
+
+async function startDesktopYouTubeOauth(clientId: string): Promise<YouTubeSession> {
+  const startResponse = await fetch('/api/plugins/youtube/oauth/start', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ clientId: clientId.trim() }),
+  })
+
+  const startPayload = (await startResponse.json().catch(() => ({}))) as Partial<DesktopOauthStartResponse> & {
+    error?: string
+  }
+
+  if (!startResponse.ok || !startPayload.sessionId || !startPayload.authUrl) {
+    throw new Error(startPayload.error || 'Could not start desktop YouTube login.')
+  }
+
+  await openDesktopOauthBrowser(startPayload.authUrl)
+
+  const startedAt = Date.now()
+  while (Date.now() - startedAt < DESKTOP_OAUTH_TIMEOUT_MS) {
+    await new Promise((resolve) => window.setTimeout(resolve, DESKTOP_OAUTH_POLL_INTERVAL_MS))
+
+    const pollPayload = await fetchDesktopApiJson<DesktopOauthPollResponse>(
+      `/api/plugins/youtube/oauth/poll?session=${encodeURIComponent(startPayload.sessionId)}`,
+      10_000,
+    )
+
+    if (!pollPayload || pollPayload.status === 'pending') continue
+    if (pollPayload.status === 'missing') {
+      throw new Error('YouTube login session expired. Start the connection again.')
+    }
+    if (pollPayload.status === 'error') {
+      throw new Error(pollPayload.error || 'YouTube login failed.')
+    }
+    if (pollPayload.status === 'complete' && pollPayload.token?.accessToken) {
+      const channel = await fetchMyYouTubeChannel(pollPayload.token.accessToken)
+      return {
+        ...channel,
+        accessToken: pollPayload.token.accessToken,
+        scope: pollPayload.token.scope ?? '',
+        expiresAt: Date.now() + (pollPayload.token.expiresIn ?? 3600) * 1000,
+      }
+    }
+  }
+
+  throw new Error('YouTube login timed out before Lumio received the session.')
 }
 
 async function requestYouTubeAccessToken(clientId: string, prompt: '' | 'consent'): Promise<{ access_token: string; expires_in?: number; scope?: string }> {
@@ -115,7 +200,9 @@ async function buildYouTubeSession(clientId: string, prompt: '' | 'consent'): Pr
 
 export async function connectYouTube(clientId: string): Promise<YouTubeSession> {
   const previousSession = getYouTubeSession()
-  const session = await buildYouTubeSession(clientId, previousSession?.accessToken ? '' : 'consent')
+  const session = isPluginDesktopHost()
+    ? await startDesktopYouTubeOauth(clientId)
+    : await buildYouTubeSession(clientId, previousSession?.accessToken ? '' : 'consent')
   setYouTubeSession(session)
   setYouTubeAutoReconnectEnabled(true)
   return session

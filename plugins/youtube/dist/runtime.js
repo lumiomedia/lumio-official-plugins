@@ -39,7 +39,7 @@
   ));
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-hkzZyw/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-vxP1Ov/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -88,7 +88,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-hkzZyw/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-vxP1Ov/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -136,7 +136,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-hkzZyw/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-vxP1Ov/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -146,7 +146,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-hkzZyw/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-vxP1Ov/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -173,10 +173,52 @@
   });
 
   // node_modules/@tauri-apps/api/core.js
+  var core_exports = {};
+  __export(core_exports, {
+    Channel: () => Channel,
+    PluginListener: () => PluginListener,
+    Resource: () => Resource,
+    SERIALIZE_TO_IPC_FN: () => SERIALIZE_TO_IPC_FN,
+    addPluginListener: () => addPluginListener,
+    checkPermissions: () => checkPermissions,
+    convertFileSrc: () => convertFileSrc,
+    invoke: () => invoke,
+    isTauri: () => isTauri,
+    requestPermissions: () => requestPermissions,
+    transformCallback: () => transformCallback
+  });
   function transformCallback(callback, once = false) {
     return window.__TAURI_INTERNALS__.transformCallback(callback, once);
   }
-  var _Channel_onmessage, _Channel_nextMessageIndex, _Channel_pendingMessages, _Channel_messageEndIndex, _Resource_rid, SERIALIZE_TO_IPC_FN, Channel;
+  async function addPluginListener(plugin2, event, cb) {
+    const handler = new Channel(cb);
+    try {
+      await invoke(`plugin:${plugin2}|register_listener`, {
+        event,
+        handler
+      });
+      return new PluginListener(plugin2, event, handler.id);
+    } catch {
+      await invoke(`plugin:${plugin2}|registerListener`, { event, handler });
+      return new PluginListener(plugin2, event, handler.id);
+    }
+  }
+  async function checkPermissions(plugin2) {
+    return invoke(`plugin:${plugin2}|check_permissions`);
+  }
+  async function requestPermissions(plugin2) {
+    return invoke(`plugin:${plugin2}|request_permissions`);
+  }
+  async function invoke(cmd, args = {}, options) {
+    return window.__TAURI_INTERNALS__.invoke(cmd, args, options);
+  }
+  function convertFileSrc(filePath, protocol = "asset") {
+    return window.__TAURI_INTERNALS__.convertFileSrc(filePath, protocol);
+  }
+  function isTauri() {
+    return !!(globalThis || window).isTauri;
+  }
+  var _Channel_onmessage, _Channel_nextMessageIndex, _Channel_pendingMessages, _Channel_messageEndIndex, _Resource_rid, SERIALIZE_TO_IPC_FN, Channel, PluginListener, Resource;
   var init_core = __esm({
     "node_modules/@tauri-apps/api/core.js"() {
       init_tslib_es6();
@@ -231,6 +273,37 @@
         }
         toJSON() {
           return this[SERIALIZE_TO_IPC_FN]();
+        }
+      };
+      PluginListener = class {
+        constructor(plugin2, event, channelId) {
+          this.plugin = plugin2;
+          this.event = event;
+          this.channelId = channelId;
+        }
+        async unregister() {
+          return invoke(`plugin:${this.plugin}|remove_listener`, {
+            event: this.event,
+            channelId: this.channelId
+          });
+        }
+      };
+      Resource = class {
+        get rid() {
+          return __classPrivateFieldGet(this, _Resource_rid, "f");
+        }
+        constructor(rid) {
+          _Resource_rid.set(this, void 0);
+          __classPrivateFieldSet(this, _Resource_rid, rid, "f");
+        }
+        /**
+         * Destroys and cleans up this resource from memory.
+         * **You should not call any method on this object anymore and should drop any reference to it.**
+         */
+        async close() {
+          return invoke("plugin:resources|close", {
+            rid: this.rid
+          });
         }
       };
       _Resource_rid = /* @__PURE__ */ new WeakMap();
@@ -111765,7 +111838,7 @@
     };
   }
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-hkzZyw/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-vxP1Ov/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
   function resolveAuthCapabilityStatus(providerId) {
     return sdk.resolveAuthCapabilityStatus(providerId);
@@ -111789,6 +111862,34 @@
     return window.location.hostname === "127.0.0.1" && window.location.port === "32145";
   }
   var isTauriEnv = detectTauriEnv();
+
+  // lib/plugin-sdk.ts
+  function isPluginDesktopHost() {
+    if (typeof window === "undefined") return false;
+    const maybeTauriWindow = window;
+    if (maybeTauriWindow.__LUMIO_DESKTOP_HOST__) return true;
+    if (maybeTauriWindow.__TAURI_INTERNALS__ || maybeTauriWindow.__TAURI__) return true;
+    const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "";
+    if (userAgent.includes("Tauri")) return true;
+    return window.location.hostname === "127.0.0.1" && window.location.port === "32145";
+  }
+  async function launchPluginProgram(program, args) {
+    if (!isPluginDesktopHost()) {
+      throw new Error("Program launch is only available in the desktop app.");
+    }
+    const { invoke: invoke2 } = await Promise.resolve().then(() => (init_core(), core_exports));
+    return invoke2("launch_program", { program, args });
+  }
+  async function fetchDesktopApiJson(pathAndQuery, timeoutMs) {
+    if (!isPluginDesktopHost()) return null;
+    const normalized = pathAndQuery.trim();
+    if (!normalized.startsWith("/api/")) return null;
+    const { invoke: invoke2 } = await Promise.resolve().then(() => (init_core(), core_exports));
+    return invoke2("desktop_api_query", {
+      pathAndQuery: normalized,
+      timeoutMs: timeoutMs ?? null
+    });
+  }
 
   // ../lumio-official-plugins/plugins/youtube/runtime/youtube-storage.ts
   var SETTINGS_KEY = "plugin_youtube_settings";
@@ -113247,6 +113348,8 @@
     "https://www.googleapis.com/auth/youtube.readonly",
     "https://www.googleapis.com/auth/youtube"
   ];
+  var DESKTOP_OAUTH_POLL_INTERVAL_MS = 1250;
+  var DESKTOP_OAUTH_TIMEOUT_MS = 3 * 60 * 1e3;
   var gisLoader = null;
   function loadGoogleIdentityServices() {
     if (typeof window === "undefined") {
@@ -113270,6 +113373,57 @@
       document.head.appendChild(script);
     });
     return gisLoader;
+  }
+  function getDesktopOpenCommand(url) {
+    const platform = typeof navigator !== "undefined" ? navigator.userAgent.toLowerCase() : "";
+    if (platform.includes("windows")) {
+      return { program: "cmd", args: ["/c", "start", "", url] };
+    }
+    if (platform.includes("linux")) {
+      return { program: "xdg-open", args: [url] };
+    }
+    return { program: "open", args: [url] };
+  }
+  async function openDesktopOauthBrowser(url) {
+    const command = getDesktopOpenCommand(url);
+    await launchPluginProgram(command.program, command.args);
+  }
+  async function startDesktopYouTubeOauth(clientId) {
+    const startResponse = await fetch("/api/plugins/youtube/oauth/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clientId: clientId.trim() })
+    });
+    const startPayload = await startResponse.json().catch(() => ({}));
+    if (!startResponse.ok || !startPayload.sessionId || !startPayload.authUrl) {
+      throw new Error(startPayload.error || "Could not start desktop YouTube login.");
+    }
+    await openDesktopOauthBrowser(startPayload.authUrl);
+    const startedAt = Date.now();
+    while (Date.now() - startedAt < DESKTOP_OAUTH_TIMEOUT_MS) {
+      await new Promise((resolve) => window.setTimeout(resolve, DESKTOP_OAUTH_POLL_INTERVAL_MS));
+      const pollPayload = await fetchDesktopApiJson(
+        `/api/plugins/youtube/oauth/poll?session=${encodeURIComponent(startPayload.sessionId)}`,
+        1e4
+      );
+      if (!pollPayload || pollPayload.status === "pending") continue;
+      if (pollPayload.status === "missing") {
+        throw new Error("YouTube login session expired. Start the connection again.");
+      }
+      if (pollPayload.status === "error") {
+        throw new Error(pollPayload.error || "YouTube login failed.");
+      }
+      if (pollPayload.status === "complete" && pollPayload.token?.accessToken) {
+        const channel = await fetchMyYouTubeChannel(pollPayload.token.accessToken);
+        return {
+          ...channel,
+          accessToken: pollPayload.token.accessToken,
+          scope: pollPayload.token.scope ?? "",
+          expiresAt: Date.now() + (pollPayload.token.expiresIn ?? 3600) * 1e3
+        };
+      }
+    }
+    throw new Error("YouTube login timed out before Lumio received the session.");
   }
   async function requestYouTubeAccessToken(clientId, prompt) {
     if (!clientId.trim()) {
@@ -113311,7 +113465,7 @@
   }
   async function connectYouTube(clientId) {
     const previousSession = getYouTubeSession2();
-    const session = await buildYouTubeSession(clientId, previousSession?.accessToken ? "" : "consent");
+    const session = isPluginDesktopHost() ? await startDesktopYouTubeOauth(clientId) : await buildYouTubeSession(clientId, previousSession?.accessToken ? "" : "consent");
     setYouTubeSession2(session);
     setYouTubeAutoReconnectEnabled2(true);
     return session;
@@ -113752,7 +113906,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-hkzZyw/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-vxP1Ov/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

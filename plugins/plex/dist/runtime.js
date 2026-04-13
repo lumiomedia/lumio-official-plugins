@@ -39,7 +39,7 @@
   ));
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-lTg1m6/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-lowJQk/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -88,7 +88,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-lTg1m6/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-lowJQk/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -29273,7 +29273,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-lTg1m6/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-lowJQk/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -29283,7 +29283,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-lTg1m6/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-lowJQk/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -113212,7 +113212,122 @@
     ] });
   }
 
-  // lib/plugins/plex/plex-home-override.tsx
+  // lib/playback-capabilities.ts
+  function normalizeTitle(value) {
+    return (value ?? "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  }
+  function getTmdbId(item) {
+    return item.id.match(/^(?:movie|tv)-(\d+)$/)?.[1] ?? null;
+  }
+  function getConfiguredPlexServerUri(item) {
+    const settings = getPlexSettings();
+    const configuredUris = [
+      settings.serverUri,
+      ...settings.serverUris ?? [],
+      item.plexServerUri ?? null
+    ].filter((value) => typeof value === "string" && value.length > 0);
+    if (configuredUris.length === 0) return item.plexServerUri ?? null;
+    const uniqueUris = Array.from(new Set(configuredUris.map((uri) => uri.replace(/\/+$/, ""))));
+    const hostRank = (uri) => {
+      try {
+        const parsed = new URL(uri);
+        const host = parsed.hostname.toLowerCase();
+        const isPlexDirect = host.endsWith(".plex.direct");
+        const isPrivateIpv4 = /^10\./.test(host) || /^192\.168\./.test(host) || /^172\.(1[6-9]|2\d|3[0-1])\./.test(host);
+        if (isPrivateIpv4) return 3;
+        if (!isPlexDirect) return 2;
+        return 1;
+      } catch {
+        return 0;
+      }
+    };
+    const ranked = [...uniqueUris].sort((left, right) => hostRank(right) - hostRank(left));
+    return ranked[0] ?? null;
+  }
+  function isPlexPlaybackReady(item) {
+    const settings = getPlexSettings();
+    const auth = getPlexAuth();
+    const token = auth?.authToken ?? settings.serverAccessToken ?? null;
+    const serverUri = getConfiguredPlexServerUri(item);
+    if (!token || !serverUri) return false;
+    if (item.type === "movie") return Boolean(item.plexPartKey);
+    return Boolean(item.plexRatingKey);
+  }
+  async function getPlexLibraryItemsForMatching(fetchIfMissing) {
+    const cached = getCachedPlexLibraryItems(240) ?? [];
+    if (cached.length > 0 || !fetchIfMissing) return cached;
+    return fetchPlexLibraryItems(240);
+  }
+  async function findBestPlexMatch(item, options) {
+    if (item.source === "plex") return item;
+    const settings = getPlexSettings();
+    const auth = getPlexAuth();
+    if (!settings.serverUri || settings.libraries.length === 0 || !auth) return null;
+    const libraryItems = await getPlexLibraryItemsForMatching(options?.fetchIfMissing ?? true);
+    if (libraryItems.length === 0) return null;
+    const mediaType = item.type;
+    const tmdbId = getTmdbId(item);
+    const imdbId = item.imdbId?.trim() ?? "";
+    const titleKey = normalizeTitle(item.title);
+    const year = item.year;
+    const candidates = libraryItems.filter((entry) => entry.type === mediaType);
+    if (tmdbId) {
+      const exactTmdb = candidates.find((entry) => getTmdbId(entry) === tmdbId);
+      if (exactTmdb) return exactTmdb;
+    }
+    if (imdbId) {
+      const exactImdb = candidates.find((entry) => (entry.imdbId?.trim() ?? "") === imdbId);
+      if (exactImdb) return exactImdb;
+    }
+    if (!titleKey) return null;
+    const exactTitleYear = candidates.find(
+      (entry) => normalizeTitle(entry.title) === titleKey && (year == null || entry.year == null || entry.year === year)
+    );
+    if (exactTitleYear) return exactTitleYear;
+    return candidates.find((entry) => normalizeTitle(entry.title) === titleKey) ?? null;
+  }
+  function isPlexItemPlayable(item) {
+    return Boolean(item && item.source === "plex" && isPlexPlaybackReady(item));
+  }
+
+  // ../lumio-official-plugins/plugins/plex/runtime/playback-capability-provider.ts
+  var plexPlaybackCapabilityProvider = {
+    id: "plex-playback",
+    pluginId: "com.lumio.plex",
+    label: { en: "Plex", sv: "Plex" },
+    async getCapability({ item }) {
+      if (item.type === "tv" && item.source !== "plex") {
+        return {
+          canPlay: false,
+          showPlayButton: false,
+          playVia: "details",
+          reason: "not_in_library",
+          priority: 20
+        };
+      }
+      const matchedItem = await findBestPlexMatch(item, { fetchIfMissing: true });
+      if (!matchedItem) {
+        return {
+          canPlay: false,
+          showPlayButton: false,
+          playVia: "details",
+          reason: "not_in_library",
+          priority: 20
+        };
+      }
+      const canPlay = isPlexItemPlayable(matchedItem);
+      return {
+        canPlay,
+        showPlayButton: canPlay,
+        playVia: "plex",
+        matchedItem,
+        reason: canPlay ? void 0 : "not_playable",
+        priority: matchedItem.source === "plex" && item.source === "plex" ? 100 : 50
+      };
+    }
+  };
+
+  // ../lumio-official-plugins/plugins/plex/runtime/plex-home-override.tsx
   init_react_shim();
 
   // components/results/plex-grid.tsx
@@ -113242,7 +113357,7 @@
     const trimmed = value.trim();
     return trimmed.length > 0 ? trimmed : null;
   }
-  function normalizeTitle(value) {
+  function normalizeTitle2(value) {
     if (typeof value !== "string") return null;
     const normalized = value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
     return normalized.length > 0 ? normalized : null;
@@ -113264,7 +113379,7 @@
         year: normalizeYear(typeof entry.year === "number" ? entry.year : null),
         posterUrl: typeof entry.posterUrl === "string" ? entry.posterUrl : null,
         watchedAt: typeof entry.watchedAt === "string" && entry.watchedAt.trim().length > 0 ? entry.watchedAt : (/* @__PURE__ */ new Date()).toISOString()
-      })).filter((entry) => Boolean(entry.tmdbId || entry.imdbId || normalizeTitle(entry.title) && entry.year != null));
+      })).filter((entry) => Boolean(entry.tmdbId || entry.imdbId || normalizeTitle2(entry.title) && entry.year != null));
     } catch {
       return [];
     }
@@ -113822,7 +113937,7 @@
     ] });
   }
 
-  // lib/plugins/plex/plex-home-override.tsx
+  // ../lumio-official-plugins/plugins/plex/runtime/plex-home-override.tsx
   init_jsx_runtime_shim();
   var defaultFilterOptions = {
     providers: [],
@@ -113873,122 +113988,7 @@
     );
   }
 
-  // lib/playback-capabilities.ts
-  function normalizeTitle2(value) {
-    return (value ?? "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-  }
-  function getTmdbId(item) {
-    return item.id.match(/^(?:movie|tv)-(\d+)$/)?.[1] ?? null;
-  }
-  function getConfiguredPlexServerUri(item) {
-    const settings = getPlexSettings();
-    const configuredUris = [
-      settings.serverUri,
-      ...settings.serverUris ?? [],
-      item.plexServerUri ?? null
-    ].filter((value) => typeof value === "string" && value.length > 0);
-    if (configuredUris.length === 0) return item.plexServerUri ?? null;
-    const uniqueUris = Array.from(new Set(configuredUris.map((uri) => uri.replace(/\/+$/, ""))));
-    const hostRank = (uri) => {
-      try {
-        const parsed = new URL(uri);
-        const host = parsed.hostname.toLowerCase();
-        const isPlexDirect = host.endsWith(".plex.direct");
-        const isPrivateIpv4 = /^10\./.test(host) || /^192\.168\./.test(host) || /^172\.(1[6-9]|2\d|3[0-1])\./.test(host);
-        if (isPrivateIpv4) return 3;
-        if (!isPlexDirect) return 2;
-        return 1;
-      } catch {
-        return 0;
-      }
-    };
-    const ranked = [...uniqueUris].sort((left, right) => hostRank(right) - hostRank(left));
-    return ranked[0] ?? null;
-  }
-  function isPlexPlaybackReady(item) {
-    const settings = getPlexSettings();
-    const auth = getPlexAuth();
-    const token = auth?.authToken ?? settings.serverAccessToken ?? null;
-    const serverUri = getConfiguredPlexServerUri(item);
-    if (!token || !serverUri) return false;
-    if (item.type === "movie") return Boolean(item.plexPartKey);
-    return Boolean(item.plexRatingKey);
-  }
-  async function getPlexLibraryItemsForMatching(fetchIfMissing) {
-    const cached = getCachedPlexLibraryItems(240) ?? [];
-    if (cached.length > 0 || !fetchIfMissing) return cached;
-    return fetchPlexLibraryItems(240);
-  }
-  async function findBestPlexMatch(item, options) {
-    if (item.source === "plex") return item;
-    const settings = getPlexSettings();
-    const auth = getPlexAuth();
-    if (!settings.serverUri || settings.libraries.length === 0 || !auth) return null;
-    const libraryItems = await getPlexLibraryItemsForMatching(options?.fetchIfMissing ?? true);
-    if (libraryItems.length === 0) return null;
-    const mediaType = item.type;
-    const tmdbId = getTmdbId(item);
-    const imdbId = item.imdbId?.trim() ?? "";
-    const titleKey = normalizeTitle2(item.title);
-    const year = item.year;
-    const candidates = libraryItems.filter((entry) => entry.type === mediaType);
-    if (tmdbId) {
-      const exactTmdb = candidates.find((entry) => getTmdbId(entry) === tmdbId);
-      if (exactTmdb) return exactTmdb;
-    }
-    if (imdbId) {
-      const exactImdb = candidates.find((entry) => (entry.imdbId?.trim() ?? "") === imdbId);
-      if (exactImdb) return exactImdb;
-    }
-    if (!titleKey) return null;
-    const exactTitleYear = candidates.find(
-      (entry) => normalizeTitle2(entry.title) === titleKey && (year == null || entry.year == null || entry.year === year)
-    );
-    if (exactTitleYear) return exactTitleYear;
-    return candidates.find((entry) => normalizeTitle2(entry.title) === titleKey) ?? null;
-  }
-  function isPlexItemPlayable(item) {
-    return Boolean(item && item.source === "plex" && isPlexPlaybackReady(item));
-  }
-
-  // ../lumio-official-plugins/plugins/plex/runtime/playback-capability-provider.ts
-  var plexPlaybackCapabilityProvider = {
-    id: "plex-playback",
-    pluginId: "com.lumio.plex",
-    label: { en: "Plex", sv: "Plex" },
-    async getCapability({ item }) {
-      if (item.type === "tv" && item.source !== "plex") {
-        return {
-          canPlay: false,
-          showPlayButton: false,
-          playVia: "details",
-          reason: "not_in_library",
-          priority: 20
-        };
-      }
-      const matchedItem = await findBestPlexMatch(item, { fetchIfMissing: true });
-      if (!matchedItem) {
-        return {
-          canPlay: false,
-          showPlayButton: false,
-          playVia: "details",
-          reason: "not_in_library",
-          priority: 20
-        };
-      }
-      const canPlay = isPlexItemPlayable(matchedItem);
-      return {
-        canPlay,
-        showPlayButton: canPlay,
-        playVia: "plex",
-        matchedItem,
-        reason: canPlay ? void 0 : "not_playable",
-        priority: matchedItem.source === "plex" && item.source === "plex" ? 100 : 50
-      };
-    }
-  };
-
-  // lib/plugins/plex/sync-identity-provider.ts
+  // ../lumio-official-plugins/plugins/plex/runtime/sync-identity-provider.ts
   async function resolvePlexSyncIdentity(item) {
     let resolvedTmdbId = item.id.match(/^(?:movie|tv)-(\d+)$/)?.[1] ?? null;
     let resolvedImdbId = item.imdbId?.trim() ?? null;
@@ -114076,7 +114076,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-lTg1m6/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-lowJQk/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

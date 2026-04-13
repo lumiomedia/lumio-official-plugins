@@ -121,7 +121,7 @@
     TraktPlugin: () => TraktPlugin
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-MbLTiq/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-UIFKzd/react-shim.ts
   var react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
   var Activity = react.Activity;
   var Children = react.Children;
@@ -202,7 +202,7 @@
     localStorage.removeItem(getProfileStorageKey(baseKey));
   }
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-MbLTiq/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-UIFKzd/jsx-runtime-shim.ts
   var runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
   var Fragment2 = runtime.Fragment;
   var jsx = runtime.jsx;
@@ -2373,7 +2373,7 @@
     };
   }
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-MbLTiq/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-UIFKzd/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
 
   // lib/tauri-mpv.ts
@@ -2562,7 +2562,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-MbLTiq/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-UIFKzd/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

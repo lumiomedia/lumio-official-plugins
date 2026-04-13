@@ -12,8 +12,7 @@ const ALLOWED_APP_ALIAS_IMPORTS = new Set(['@/lib/plugin-sdk'])
 
 const LEGACY_ALLOWLIST = new Map([
   ['plugins/plex/runtime/index.ts::@/components/settings/plex-section', 'Move Plex settings UI into the plugin runtime.'],
-  ['plugins/plex/runtime/index.ts::@/lib/plugins/plex/plex-home-override', 'Move Plex home override into the plugin runtime.'],
-  ['plugins/plex/runtime/index.ts::@/lib/plugins/plex/sync-identity-provider', 'Move Plex sync identity provider into the plugin runtime or expose a generic host contract.'],
+  ['plugins/plex/runtime/plex-home-override.tsx::@/components/results/plex-grid', 'Move Plex home grid into the plugin runtime or expose a generic host browse/grid contract.'],
   ['plugins/plex/runtime/playback-capability-provider.ts::@/lib/playback-capabilities', 'Move Plex matching/playability logic into the plugin runtime or a generic host contract.'],
 ])
 
