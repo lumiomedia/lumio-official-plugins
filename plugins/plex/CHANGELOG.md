@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.10
+
+- Sync with latest app-side Plex fixes and runtime bundle rebuild.
+
 ## 1.0.9
 
 - Guarded `crypto.randomUUID()` in non-secure contexts with try/catch and safe fallback.

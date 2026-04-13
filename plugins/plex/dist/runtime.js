@@ -39,7 +39,7 @@
   ));
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-sAyjDd/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-g51XNm/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -88,7 +88,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-sAyjDd/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-g51XNm/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -136,7 +136,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-sAyjDd/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-g51XNm/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -146,7 +146,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-sAyjDd/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-g51XNm/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -110239,7 +110239,18 @@
     return localStorage.getItem(getProfileStorageKey(baseKey));
   }
   function setScopedStorageItem(baseKey, value) {
-    localStorage.setItem(getProfileStorageKey(baseKey), value);
+    try {
+      localStorage.setItem(getProfileStorageKey(baseKey), value);
+    } catch {
+      try {
+        const keysToEvict = ["plex_library_cache", "plex_recent_cache", "plex_debug_log"];
+        for (const evictKey of keysToEvict) {
+          localStorage.removeItem(getProfileStorageKey(evictKey));
+        }
+        localStorage.setItem(getProfileStorageKey(baseKey), value);
+      } catch {
+      }
+    }
   }
   function removeScopedStorageItem(baseKey) {
     localStorage.removeItem(getProfileStorageKey(baseKey));
@@ -111821,7 +111832,7 @@
   var SETTINGS_EVENT = "lumio-plex-settings-changed";
   var DEBUG_EVENT = "lumio-plex-debug-changed";
   var CACHE_TTL_MS = 20 * 60 * 1e3;
-  var DEBUG_LIMIT = 200;
+  var DEBUG_LIMIT = 50;
   var DEFAULT_PLEX_SETTINGS = {
     serverId: null,
     serverName: null,
@@ -112303,7 +112314,8 @@
   }
   function buildPlexImageUrl(serverUri, thumb, authToken) {
     if (!thumb) return null;
-    return `${serverUri}${thumb}${thumb.includes("?") ? "&" : "?"}X-Plex-Token=${encodeURIComponent(authToken)}`;
+    const directUrl = `${serverUri}${thumb}${thumb.includes("?") ? "&" : "?"}X-Plex-Token=${encodeURIComponent(authToken)}`;
+    return `/api/plex/image?url=${encodeURIComponent(directUrl)}`;
   }
   function parsePlexGuid(guids, prefix) {
     const match = guids?.find((guid) => typeof guid.id === "string" && guid.id.startsWith(prefix));
@@ -112665,7 +112677,7 @@
     const request = (async () => {
       logPlexDebug("[plex-sync] server fetch start", {
         serverUri: settings.serverUri,
-        serverUris: settings.serverUris,
+        uriCount: settings.serverUris?.length ?? 0,
         libraries: settings.libraries.map((l) => `${l.type}:${l.key}:${l.title}`),
         limit
       });
@@ -113110,7 +113122,7 @@
     ) });
   }
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-sAyjDd/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-g51XNm/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
 
   // lib/tauri-mpv.ts
@@ -114265,7 +114277,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-sAyjDd/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-g51XNm/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");
