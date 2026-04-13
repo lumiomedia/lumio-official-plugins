@@ -56,7 +56,8 @@ export const plexSyncIdentityProvider: SyncIdentityProvider = {
   label: { en: 'Plex sync identity', sv: 'Plex sync-identitet' },
   priority: 100,
   canResolve(item) {
-    return item.source === 'plex'
+    const source = (item as { source?: string }).source
+    return source === 'plex'
   },
   async resolveIdentity(item) {
     const ids = await resolvePlexSyncIdentity(item)

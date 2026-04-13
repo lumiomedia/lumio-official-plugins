@@ -5,15 +5,9 @@ import { Chip } from '@heroui/react'
 import {
   applyFilters,
   createLanguageOption,
-  fetchPlexLibraryItems,
-  getCachedPlexLibrarySnapshot,
   getHideWatchedMoviesHome,
-  getPlexAuth,
-  getPlexSettings,
   getWatchedMovies,
   onPlaybackSettingsChanged,
-  onPlexAuthChanged,
-  onPlexSettingsChanged,
   onWatchedMoviesChanged,
   ResultsLoadingIndicator,
   ResultsPagination,
@@ -24,6 +18,16 @@ import {
   type MediaFilters,
   type MediaItem,
 } from '@/lib/plugin-sdk'
+import {
+  fetchPlexLibraryItems,
+} from './plex-sync'
+import {
+  getCachedPlexLibrarySnapshot,
+  getPlexAuth,
+  getPlexSettings,
+  onPlexAuthChanged,
+  onPlexSettingsChanged,
+} from './plex-storage'
 
 interface PlexGridProps {
   filters: MediaFilters
