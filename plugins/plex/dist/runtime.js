@@ -39,7 +39,7 @@
   ));
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-HswUlb/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-EnquOO/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -88,7 +88,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-HswUlb/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-EnquOO/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -136,7 +136,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-HswUlb/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-EnquOO/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -146,7 +146,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-HswUlb/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-EnquOO/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -112584,7 +112584,7 @@
     ) });
   }
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-HswUlb/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-EnquOO/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
 
   // lib/tauri-mpv.ts
@@ -119288,8 +119288,6 @@
   function getCacheSignature(settings, limit) {
     return JSON.stringify({
       serverId: settings.serverId,
-      serverUri: settings.serverUri,
-      serverUris: normalizePlexUris(settings.serverUri, settings.serverUris),
       libraries: settings.libraries.map((library) => `${library.type}:${library.key}`).sort(),
       limit
     });
@@ -120406,8 +120404,12 @@
       const auth = getPlexAuth();
       const settings = getPlexSettings();
       if (!auth?.authToken || !settings.serverUri || settings.libraries.length === 0) return;
-      void load({ silent: items.length > 0 });
-    }, [plexLoadSignature]);
+      if (items.length > 0) {
+        memoryCache = { items, signature: plexLoadSignature };
+        return;
+      }
+      void load();
+    }, [items, plexLoadSignature]);
     const prevRefreshRequestRef = useRef(refreshRequestToken ?? 0);
     useEffect(() => {
       if (refreshRequestToken == null) return;
@@ -121427,18 +121429,6 @@
       return null;
     }
   }
-  function readPlexPlaybackContext() {
-    try {
-      const authRaw = getScopedStorageItem("plex_auth");
-      const settingsRaw = getScopedStorageItem("plex_settings");
-      return {
-        auth: authRaw ? JSON.parse(authRaw) : null,
-        settings: settingsRaw ? JSON.parse(settingsRaw) : null
-      };
-    } catch {
-      return { auth: null, settings: null };
-    }
-  }
   function PlexEpisodeSidebar({
     item,
     resolvedTmdbId,
@@ -121476,7 +121466,6 @@
     const seasonEpisodesCacheRef = useRef(/* @__PURE__ */ new Map());
     const playbackStartTimerRef = useRef(null);
     const playbackStartedRef = useRef(false);
-    const playRequestSeqRef = useRef(0);
     const lastHandledPlayRequestRef = useRef(null);
     const plexConnectionRef = useRef(readPlexConnection());
     const plexItem = item;
@@ -121544,7 +121533,7 @@
       const match = episodes.find((episode) => episode.seasonIndex === playRequestSeasonNumber && episode.index === playRequestEpisodeNumber);
       if (match) {
         lastHandledPlayRequestRef.current = playRequestToken;
-        void playEpisode(match, { initialTime });
+        playEpisode(match, { initialTime });
       } else if (episodes.length > 0) {
         lastHandledPlayRequestRef.current = playRequestToken;
         onAutoPlayFallback?.();
@@ -121606,29 +121595,6 @@
         `${base}&download=1`
       ]));
     }
-    async function resolveEpisodeStreamUrl(ep) {
-      if (!ep.partKey) return null;
-      const { auth, settings } = readPlexPlaybackContext();
-      try {
-        const response = await fetch("/api/plugins/plex/playback-url", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            auth: auth ? { authToken: auth.authToken, baseAuthToken: auth.baseAuthToken, clientIdentifier: auth.clientIdentifier } : void 0,
-            settings: settings ? { serverId: settings.serverId, serverUri: settings.serverUri, serverUris: settings.serverUris, serverAccessToken: settings.serverAccessToken } : void 0,
-            item: {
-              plexPartKey: ep.partKey,
-              plexServerUri: conn?.serverUri ?? null
-            }
-          })
-        });
-        if (!response.ok) return buildStreamUrl(ep);
-        const payload = await response.json();
-        return payload.url ?? buildStreamUrl(ep);
-      } catch {
-        return buildStreamUrl(ep);
-      }
-    }
     function markWatched(ep, watched) {
       if (!resolvedTmdbId) return;
       setWatched(resolvedTmdbId, ep.seasonIndex, ep.index, watched, { imdbId: item.imdbId ?? null });
@@ -121651,22 +121617,14 @@
       setPlayerInitialTime(void 0);
       setPlayingEpisode(null);
     }
-    async function playEpisode(ep, options) {
-      const requestSeq = ++playRequestSeqRef.current;
-      const resolvedUrl = await resolveEpisodeStreamUrl(ep);
-      if (requestSeq !== playRequestSeqRef.current) return;
-      if (!resolvedUrl) {
-        onAutoPlayFallback?.();
-        return;
-      }
-      preferredStreamUrlByRatingKeyRef.current.set(ep.ratingKey, resolvedUrl);
+    function playEpisode(ep, options) {
       playingEpisodeRef.current = ep;
       sawEarlyPlaybackForEpisodeRef.current = false;
       armPlaybackStartGuard(ep);
       resetNextEpisodeState();
       watchedMarkedInSessionRef.current = false;
-      setPlayerHideStartSplash(options?.hideStartSplash === true);
-      setPlayerAutoFullscreen(options?.autoFullscreen === true);
+      setPlayerHideStartSplash(false);
+      setPlayerAutoFullscreen(false);
       setPlayerInitialTime(options?.initialTime ?? void 0);
       setPlayingEpisode(ep);
     }
@@ -121702,9 +121660,8 @@
           }
         }
       }
-      const streamUrl = candidate ? await resolveEpisodeStreamUrl(candidate) : null;
+      const streamUrl = candidate ? buildStreamUrl(candidate) : null;
       if (!candidate || !streamUrl) return;
-      preferredStreamUrlByRatingKeyRef.current.set(candidate.ratingKey, streamUrl);
       if (runId !== nextEpPreloadRunRef.current) return;
       nextEpisodeRef.current = candidate;
       setNextEpPreloadState("loading");
@@ -121802,7 +121759,15 @@
         const nextSeason = seasons.find((season) => season.index === nextEpisode.seasonIndex) ?? null;
         if (nextSeason) setSelectedSeason(nextSeason);
       }
-      void playEpisode(nextEpisode, { hideStartSplash: true, autoFullscreen: true });
+      playingEpisodeRef.current = nextEpisode;
+      sawEarlyPlaybackForEpisodeRef.current = false;
+      armPlaybackStartGuard(nextEpisode);
+      resetNextEpisodeState();
+      watchedMarkedInSessionRef.current = false;
+      setPlayerHideStartSplash(true);
+      setPlayerAutoFullscreen(true);
+      setPlayerInitialTime(void 0);
+      setPlayingEpisode(nextEpisode);
     }
     if (!conn) {
       return /* @__PURE__ */ jsxs("div", { className: "flex h-full flex-col", children: [
@@ -121843,9 +121808,7 @@
         return /* @__PURE__ */ jsxs("div", { className: `group flex items-center gap-3 rounded-xl p-2 transition hover:bg-white/[0.04] ${watched ? "opacity-50" : ""}`, children: [
           /* @__PURE__ */ jsxs("div", { className: "relative h-14 w-24 flex-none overflow-hidden rounded-lg bg-slate-800", children: [
             ep.thumb ? /* @__PURE__ */ jsx("img", { src: ep.thumb, alt: ep.title, className: "h-full w-full object-cover" }) : /* @__PURE__ */ jsx("div", { className: "flex h-full w-full items-center justify-center text-slate-600", children: /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) }),
-            streamUrl ? /* @__PURE__ */ jsx("button", { type: "button", onClick: () => {
-              void playEpisode(ep);
-            }, className: "absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition group-hover:opacity-100", children: /* @__PURE__ */ jsx("svg", { className: "h-6 w-6 text-white", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) }) : null
+            streamUrl ? /* @__PURE__ */ jsx("button", { type: "button", onClick: () => playEpisode(ep), className: "absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition group-hover:opacity-100", children: /* @__PURE__ */ jsx("svg", { className: "h-6 w-6 text-white", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) }) : null
           ] }),
           /* @__PURE__ */ jsxs("div", { className: "min-w-0 flex-1", children: [
             /* @__PURE__ */ jsxs("p", { className: "truncate text-[11px] font-medium text-white", children: [
@@ -121865,9 +121828,7 @@
               children: /* @__PURE__ */ jsx("svg", { className: "h-3 w-3", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2.5, children: /* @__PURE__ */ jsx("polyline", { points: "20 6 9 17 4 12" }) })
             }
           ) : null,
-          streamUrl ? /* @__PURE__ */ jsx("button", { type: "button", onClick: () => {
-            void playEpisode(ep);
-          }, className: "flex-none rounded-full border border-white/10 p-1.5 text-slate-400 transition hover:border-accent-400/40 hover:text-white", children: /* @__PURE__ */ jsx("svg", { className: "h-3.5 w-3.5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) }) : null
+          streamUrl ? /* @__PURE__ */ jsx("button", { type: "button", onClick: () => playEpisode(ep), className: "flex-none rounded-full border border-white/10 p-1.5 text-slate-400 transition hover:border-accent-400/40 hover:text-white", children: /* @__PURE__ */ jsx("svg", { className: "h-3.5 w-3.5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) }) : null
         ] }, ep.ratingKey);
       }) }) }),
       playingEpisode ? (() => {
@@ -122005,7 +121966,7 @@
   var PlexPlugin = {
     id: "com.lumio.plex",
     name: { en: "Plex", sv: "Plex" },
-    version: "1.0.22",
+    version: "1.0.23",
     description: {
       en: "Browse and play media from your Plex Media Server.",
       sv: "Bladdra i och spela upp media fr\xE5n din Plex Media Server."
@@ -122039,7 +122000,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-HswUlb/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-EnquOO/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

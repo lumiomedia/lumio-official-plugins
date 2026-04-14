@@ -290,8 +290,12 @@ export function PlexGrid({
     const auth = getPlexAuth()
     const settings = getPlexSettings()
     if (!auth?.authToken || !settings.serverUri || settings.libraries.length === 0) return
-    void load({ silent: items.length > 0 })
-  }, [plexLoadSignature])
+    if (items.length > 0) {
+      memoryCache = { items, signature: plexLoadSignature }
+      return
+    }
+    void load()
+  }, [items, plexLoadSignature])
 
   const prevRefreshRequestRef = useRef(refreshRequestToken ?? 0)
   useEffect(() => {

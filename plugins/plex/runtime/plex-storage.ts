@@ -199,8 +199,6 @@ function parsePlexSettings(raw: string | null): PlexSettingsState {
 function getCacheSignature(settings: PlexSettingsState, limit: number): string {
   return JSON.stringify({
     serverId: settings.serverId,
-    serverUri: settings.serverUri,
-    serverUris: normalizePlexUris(settings.serverUri, settings.serverUris),
     libraries: settings.libraries.map((library) => `${library.type}:${library.key}`).sort(),
     limit,
   })
