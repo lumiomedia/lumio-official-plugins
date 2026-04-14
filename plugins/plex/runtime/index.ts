@@ -7,12 +7,13 @@ import { plexPlaybackCapabilityProvider } from './playback-capability-provider'
 import { PlexBrowsePage } from './plex-browse-page'
 import { PlexHomeOverride } from './plex-home-override'
 import { PlexSection } from './plex-section'
+import { plexEpisodeSidebarProvider } from './episode-sidebar-provider'
 import { plexSyncIdentityProvider } from './sync-identity-provider'
 
 export const PlexPlugin: LumioPlugin = {
   id: 'com.lumio.plex',
   name: { en: 'Plex', sv: 'Plex' },
-  version: '1.0.18',
+  version: '1.0.20',
   description: {
     en: 'Browse and play media from your Plex Media Server.',
     sv: 'Bladdra i och spela upp media från din Plex Media Server.',
@@ -38,6 +39,7 @@ export const PlexPlugin: LumioPlugin = {
       defaultEnabled: true,
       target: { pageId: 'plex-browse' },
     })
+    ctx.registerEpisodeSidebarProvider(plexEpisodeSidebarProvider)
     ctx.registerHomeOverride({
       id: 'plex-home',
       label: { en: 'Plex', sv: 'Plex' },

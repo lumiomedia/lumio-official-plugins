@@ -1,10 +1,9 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { BrowsePageProps, FilterOptions, MediaFilters } from '@/lib/plugin-sdk'
 import { useLang } from '@/lib/plugin-sdk'
 import { PlexGrid } from './plex-grid'
-import { getPlexSettings } from './plex-storage'
 
 const defaultFilterOptions: FilterOptions = {
   providers: [],
@@ -38,27 +37,32 @@ const defaultFilters: MediaFilters = {
   popularMode: null,
 }
 
-export function PlexBrowsePage({ onOpenDetails }: BrowsePageProps) {
+export function PlexBrowsePage({ params, onOpenDetails }: BrowsePageProps) {
   const { lang } = useLang()
-  const [filters, setFilters] = useState<MediaFilters>(defaultFilters)
+  const [filters, setFilters] = useState<MediaFilters>(() => ({
+    ...defaultFilters,
+    titleQuery: params?.titleQuery ?? '',
+  }))
+  const [refreshRequestToken, setRefreshRequestToken] = useState(0)
+  const [refreshingGrid, setRefreshingGrid] = useState(false)
   const [, setFilterOptions] = useState<FilterOptions>(defaultFilterOptions)
-  const settings = getPlexSettings()
-
   const labels = useMemo(() => {
     const isSv = lang === 'sv'
     return {
       all: isSv ? 'Alla' : 'All',
       movies: isSv ? 'Filmer' : 'Movies',
       series: isSv ? 'Serier' : 'Series',
-      searchPlaceholder: isSv ? 'Sok titel' : 'Search title',
       clearFilters: isSv ? 'Rensa' : 'Clear',
-      server: isSv ? 'Server' : 'Server',
-      libraries: isSv ? 'Bibliotek' : 'Libraries',
+      refresh: isSv ? 'Uppdatera' : 'Refresh',
+      refreshing: isSv ? 'Uppdaterar…' : 'Refreshing…',
     }
   }, [lang])
 
-  const serverLabel = settings.serverName || settings.serverUri || ''
-  const libraryLabel = settings.libraries.map((library) => library.title).filter(Boolean).join(' / ')
+
+  useEffect(() => {
+    const incoming = params?.titleQuery ?? ''
+    setFilters((current) => current.titleQuery === incoming ? current : { ...current, titleQuery: incoming, page: 1 })
+  }, [params?.titleQuery])
 
   const buttonBase = 'rounded-full border border-white/10 px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] transition'
   const buttonActive = 'bg-white/15 text-white border-white/30'
@@ -66,7 +70,7 @@ export function PlexBrowsePage({ onOpenDetails }: BrowsePageProps) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-1">
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -91,15 +95,6 @@ export function PlexBrowsePage({ onOpenDetails }: BrowsePageProps) {
               {labels.series}
             </button>
           </div>
-          <div className="flex min-w-[180px] flex-1 items-center">
-            <input
-              type="search"
-              value={filters.titleQuery}
-              onChange={(event) => setFilters((current) => ({ ...current, titleQuery: event.target.value, page: 1 }))}
-              placeholder={labels.searchPlaceholder}
-              className="w-full rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 hover:border-white/20 focus:border-white/30"
-            />
-          </div>
           <button
             type="button"
             className={buttonBase + ' ' + buttonInactive}
@@ -108,18 +103,21 @@ export function PlexBrowsePage({ onOpenDetails }: BrowsePageProps) {
             {labels.clearFilters}
           </button>
         </div>
-        {(serverLabel || libraryLabel) ? (
-          <div className="mt-2 text-xs text-slate-400">
-            {serverLabel ? (labels.server + ': ' + serverLabel) : ''}
-            {serverLabel && libraryLabel ? ' / ' : ''}
-            {libraryLabel ? (labels.libraries + ': ' + libraryLabel) : ''}
-          </div>
-        ) : null}
+        <button
+          type="button"
+          disabled={refreshingGrid}
+          className={`${buttonBase} ${refreshingGrid ? 'text-slate-300/60 border-white/15 cursor-wait' : buttonInactive}`}
+          onClick={() => setRefreshRequestToken((value) => value + 1)}
+        >
+          {refreshingGrid ? labels.refreshing : labels.refresh}
+        </button>
       </div>
 
       <PlexGrid
         filters={filters}
         onOpenDetails={onOpenDetails}
+        refreshRequestToken={refreshRequestToken}
+        onRefreshStateChange={setRefreshingGrid}
         onFilterOptionsChange={setFilterOptions}
         onGenreSelect={(genre) =>
           setFilters((current) => ({

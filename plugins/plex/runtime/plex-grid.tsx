@@ -37,6 +37,8 @@ interface PlexGridProps {
   onGenreSelect?: (genre: string) => void
   onClearFilters: () => void
   onFilterOptionsChange?: (options: FilterOptions) => void
+  refreshRequestToken?: number
+  onRefreshStateChange?: (refreshing: boolean) => void
 }
 
 function uniqueSorted(values: string[]): string[] {
@@ -174,6 +176,8 @@ export function PlexGrid({
   onOpenDetails,
   onGenreSelect,
   onFilterOptionsChange,
+  refreshRequestToken,
+  onRefreshStateChange,
 }: PlexGridProps) {
   const { t } = useLang()
   const initialCache = getCachedPlexLibrarySnapshot(240)
@@ -191,7 +195,7 @@ export function PlexGrid({
   const loadingRef = useRef(false)
   const mountedRef = useRef(false)
 
-  async function load(options?: { silent?: boolean }) {
+  async function load(options?: { silent?: boolean; force?: boolean }) {
     // Prevent concurrent loads – only one at a time
     if (loadingRef.current) return
     loadingRef.current = true
@@ -211,7 +215,7 @@ export function PlexGrid({
       if (thisLoadId !== loadIdRef.current) break
 
       try {
-        const nextItems = await fetchPlexLibraryItems(240)
+        const nextItems = await fetchPlexLibraryItems(240, { force: options?.force === true })
         if (thisLoadId !== loadIdRef.current) break
         setItems(nextItems)
         break
@@ -278,6 +282,18 @@ export function PlexGrid({
     if (!auth?.authToken || !settings.serverUri || settings.libraries.length === 0) return
     void load({ silent: items.length > 0 })
   }, [plexLoadSignature])
+
+  const prevRefreshRequestRef = useRef(refreshRequestToken ?? 0)
+  useEffect(() => {
+    if (refreshRequestToken == null) return
+    if (refreshRequestToken === prevRefreshRequestRef.current) return
+    prevRefreshRequestRef.current = refreshRequestToken
+    void load({ silent: items.length > 0, force: true })
+  }, [refreshRequestToken, items.length])
+
+  useEffect(() => {
+    onRefreshStateChange?.(loading || refreshing)
+  }, [loading, refreshing, onRefreshStateChange])
 
   useEffect(() => {
     const sync = () => {

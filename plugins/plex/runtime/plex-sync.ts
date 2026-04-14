@@ -88,7 +88,6 @@ function isTauriRuntime(): boolean {
 function logPlexDebug(message: string, detail?: Record<string, unknown>) {
   const payload = detail ? `${message} ${JSON.stringify(detail)}` : message
   appendPlexDebugLog(payload)
-  console.warn(payload)
 }
 
 function plexHeaders(clientIdentifier: string, authToken?: string): HeadersInit {
@@ -769,9 +768,13 @@ export async function resolvePlexPlaybackUrl(item: MediaItem): Promise<string | 
   }
 }
 
-export async function fetchPlexLibraryItems(limit = 240): Promise<MediaItem[]> {
+export async function fetchPlexLibraryItems(
+  limit = 240,
+  options?: { force?: boolean },
+): Promise<MediaItem[]> {
   const auth = getPlexAuth()
   const settings = ensureCanonicalPlexSettings()
+  const forceRefresh = options?.force === true
   if (!auth || !settings.serverUri || settings.libraries.length === 0) return getCachedPlexLibraryItems(limit) ?? []
   const cooldownKey = JSON.stringify({
     serverId: settings.serverId,
@@ -779,14 +782,18 @@ export async function fetchPlexLibraryItems(limit = 240): Promise<MediaItem[]> {
     libraries: settings.libraries.map((l) => `${l.type}:${l.key}`).sort(),
     limit,
   })
-  const now = Date.now()
-  const cooldownUntil = plexLibraryCooldownUntil.get(cooldownKey) ?? 0
-  if (cooldownUntil > now) {
-    return getCachedPlexLibraryItems(limit) ?? []
-  }
   const existingRequest = plexLibraryInFlight.get(cooldownKey)
   if (existingRequest) {
     return existingRequest
+  }
+  if (!forceRefresh) {
+    const now = Date.now()
+    const cooldownUntil = plexLibraryCooldownUntil.get(cooldownKey) ?? 0
+    if (cooldownUntil > now) {
+      return getCachedPlexLibraryItems(limit) ?? []
+    }
+  } else {
+    plexLibraryCooldownUntil.delete(cooldownKey)
   }
 
   const request = (async (): Promise<MediaItem[]> => {
