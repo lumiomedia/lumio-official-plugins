@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.24
+
+- Restored Plex capability matching to fetch missing library cache when needed, fixing "series play shows splash but never starts" on cold cache.
+- Stabilized cached poster/backdrop URLs across refreshes by reusing existing artwork URLs for unchanged items, reducing full image redraws.
+- Synced runtime bundle + marketplace version for in-app update visibility.
+
 ## 1.0.23
 
 - Restored stable episode play flow (non-blocking click-to-play) to prevent "nothing happens" in series sidebar.

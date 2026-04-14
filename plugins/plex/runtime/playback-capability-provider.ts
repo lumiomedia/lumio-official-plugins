@@ -17,9 +17,7 @@ export const plexPlaybackCapabilityProvider: PlaybackCapabilityProvider = {
       }
     }
 
-    // Capability checks can run for many cards in parallel; avoid network fetches
-    // here to prevent repeated Plex sync bursts and log spam.
-    const matchedItem = await findBestPlexMatch(item, { fetchIfMissing: false })
+    const matchedItem = await findBestPlexMatch(item, { fetchIfMissing: true })
     if (!matchedItem) {
       return {
         canPlay: false,
