@@ -573,11 +573,10 @@ export function PlexEpisodeSidebar({
       {playingEpisode ? (() => {
         const streamUrl = buildStreamUrl(playingEpisode)
         if (!streamUrl) return null
-        const proxyUrl = `/api/proxy-stream?${new URLSearchParams({ url: streamUrl }).toString()}`
         return (
           <VideoPlayerModal
             key={`plex-episode-${playingEpisode.ratingKey}`}
-            url={proxyUrl}
+            url={streamUrl}
             filename={playingEpisode.filename ?? undefined}
             title={`${item.title} · S${playingEpisode.seasonIndex}E${playingEpisode.index} – ${playingEpisode.title}`}
             onClose={handlePlayerClose}
