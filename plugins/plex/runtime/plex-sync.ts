@@ -332,6 +332,20 @@ function mapPlexMetadataEntries(
   })
 }
 
+function stabilizeArtworkUrlsWithCache(nextItems: MediaItem[], cachedItems: MediaItem[]): MediaItem[] {
+  if (nextItems.length === 0 || cachedItems.length === 0) return nextItems
+  const cachedById = new Map(cachedItems.map((entry) => [entry.id, entry]))
+  return nextItems.map((entry) => {
+    const cached = cachedById.get(entry.id)
+    if (!cached) return entry
+    return {
+      ...entry,
+      posterUrl: cached.posterUrl ?? entry.posterUrl,
+      backdropUrl: cached.backdropUrl ?? entry.backdropUrl,
+    }
+  })
+}
+
 function candidateTokens(...values: Array<string | null | undefined>): string[] {
   const seen = new Set<string>()
   const tokens: string[] = []
@@ -826,7 +840,7 @@ export async function fetchPlexLibraryItems(
         )
         if (!recentlyAddedResponse.ok) return getCachedPlexLibraryItems(limit) ?? []
         const recentlyAddedPayload = (await recentlyAddedResponse.json()) as { items?: MediaItem[] }
-        const fallbackItems = recentlyAddedPayload.items ?? []
+        const fallbackItems = stabilizeArtworkUrlsWithCache(recentlyAddedPayload.items ?? [], cachedItems)
         if (fallbackItems.length > 0) {
           setCachedPlexLibraryItems(limit, fallbackItems)
           return fallbackItems
@@ -848,7 +862,7 @@ export async function fetchPlexLibraryItems(
         return fetchRecentlyAddedFallback()
       }
       try {
-        const directItems = await fetchPlexLibraryItemsDirect(limit)
+        const directItems = stabilizeArtworkUrlsWithCache(await fetchPlexLibraryItemsDirect(limit), cachedItems)
         if (directItems.length > 0) {
           setCachedPlexLibraryItems(limit, directItems)
           return directItems
@@ -889,7 +903,7 @@ export async function fetchPlexLibraryItems(
         items?: MediaItem[]
         debug?: { diagnostics?: Array<{ tokenLabel: string; serverUri: string; libraryKey: string; libraryTitle: string; status?: number; error?: string; result?: string }> }
       }
-      const items = payload.items ?? []
+      const items = stabilizeArtworkUrlsWithCache(payload.items ?? [], cachedItems)
       if (items.length > 0) {
         setPlexLibraryLastError(null)
         setCachedPlexLibraryItems(limit, items)

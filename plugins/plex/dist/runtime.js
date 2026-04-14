@@ -39,7 +39,7 @@
   ));
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-CBb8o9/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-M44eRa/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -88,7 +88,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-CBb8o9/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-M44eRa/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -136,7 +136,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-CBb8o9/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-M44eRa/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -146,7 +146,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-CBb8o9/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-M44eRa/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -112584,7 +112584,7 @@
     ) });
   }
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-CBb8o9/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-M44eRa/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
 
   // lib/tauri-mpv.ts
@@ -119690,6 +119690,19 @@
       return mapped;
     });
   }
+  function stabilizeArtworkUrlsWithCache(nextItems, cachedItems) {
+    if (nextItems.length === 0 || cachedItems.length === 0) return nextItems;
+    const cachedById = new Map(cachedItems.map((entry) => [entry.id, entry]));
+    return nextItems.map((entry) => {
+      const cached = cachedById.get(entry.id);
+      if (!cached) return entry;
+      return {
+        ...entry,
+        posterUrl: cached.posterUrl ?? entry.posterUrl,
+        backdropUrl: cached.backdropUrl ?? entry.backdropUrl
+      };
+    });
+  }
   function candidateTokens(...values) {
     const seen = /* @__PURE__ */ new Set();
     const tokens = [];
@@ -119971,7 +119984,7 @@
           );
           if (!recentlyAddedResponse.ok) return getCachedPlexLibraryItems(limit) ?? [];
           const recentlyAddedPayload = await recentlyAddedResponse.json();
-          const fallbackItems = recentlyAddedPayload.items ?? [];
+          const fallbackItems = stabilizeArtworkUrlsWithCache(recentlyAddedPayload.items ?? [], cachedItems);
           if (fallbackItems.length > 0) {
             setCachedPlexLibraryItems(limit, fallbackItems);
             return fallbackItems;
@@ -119990,7 +120003,7 @@
           return fetchRecentlyAddedFallback();
         }
         try {
-          const directItems = await fetchPlexLibraryItemsDirect(limit);
+          const directItems = stabilizeArtworkUrlsWithCache(await fetchPlexLibraryItemsDirect(limit), cachedItems);
           if (directItems.length > 0) {
             setCachedPlexLibraryItems(limit, directItems);
             return directItems;
@@ -120026,7 +120039,7 @@
           return fetchDirectLibraryFallback();
         }
         const payload = await response.json();
-        const items = payload.items ?? [];
+        const items = stabilizeArtworkUrlsWithCache(payload.items ?? [], cachedItems);
         if (items.length > 0) {
           setPlexLibraryLastError(null);
           setCachedPlexLibraryItems(limit, items);
@@ -120180,7 +120193,7 @@
           priority: 20
         };
       }
-      const matchedItem = await findBestPlexMatch(item, { fetchIfMissing: false });
+      const matchedItem = await findBestPlexMatch(item, { fetchIfMissing: true });
       if (!matchedItem) {
         return {
           canPlay: false,
@@ -122000,7 +122013,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-CBb8o9/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-M44eRa/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");
