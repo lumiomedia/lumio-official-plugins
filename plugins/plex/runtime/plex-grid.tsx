@@ -105,10 +105,12 @@ function PlexPosterCard({
   item,
   onPlay,
   onGenreSelect,
+  eager,
 }: {
   item: MediaItem
   onPlay: (item: MediaItem) => void
   onGenreSelect?: (genre: string) => void
+  eager?: boolean
 }) {
   const { t } = useLang()
   const metaLine = `${item.type === 'movie' ? t('movie') : t('series')}${item.year ? ` · ${item.year}` : ''}`
@@ -125,7 +127,7 @@ function PlexPosterCard({
             src={item.posterUrl}
             alt={`${item.title} poster`}
             className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
-            loading="lazy"
+            loading={eager ? 'eager' : 'lazy'}
           />
         ) : (
           <div className="flex h-full items-end bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 p-4">
@@ -463,12 +465,13 @@ export function PlexGrid({
       ) : null}
 
       <div className="grid gap-x-4 gap-y-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
-        {pagedItems.map((item) => (
+        {pagedItems.map((item: MediaItem, i: number) => (
           <PlexPosterCard
             key={item.id}
             item={item}
             onPlay={onOpenDetails}
             onGenreSelect={onGenreSelect}
+            eager={i < 18}
           />
         ))}
       </div>
