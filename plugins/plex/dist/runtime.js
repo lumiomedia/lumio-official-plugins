@@ -39,7 +39,7 @@
   ));
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-wjApI1/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-yhZZPy/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -88,7 +88,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-wjApI1/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-yhZZPy/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -136,7 +136,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-wjApI1/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-yhZZPy/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -146,7 +146,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-wjApI1/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-yhZZPy/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -112170,7 +112170,7 @@
     ) });
   }
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-wjApI1/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-yhZZPy/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
 
   // lib/tauri-mpv.ts
@@ -112194,10 +112194,12 @@
   var SETTINGS_KEY = "plex_settings";
   var CLIENT_KEY = "plex_client_identifier";
   var LIBRARY_CACHE_KEY = "plex_library_cache";
+  var LIBRARY_ERROR_KEY = "plex_library_last_error";
   var DEBUG_KEY = "plex_debug_log";
   var AUTH_EVENT = "lumio-plex-auth-changed";
   var SETTINGS_EVENT = "lumio-plex-settings-changed";
   var DEBUG_EVENT = "lumio-plex-debug-changed";
+  var LIBRARY_ERROR_EVENT = "lumio-plex-library-error-changed";
   var CACHE_TTL_MS = 20 * 60 * 1e3;
   var DEBUG_LIMIT = 50;
   var DEFAULT_PLEX_SETTINGS = {
@@ -112345,6 +112347,38 @@
     } catch {
       return null;
     }
+  }
+  function getPlexLibraryLastError() {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = getScopedStorageItem(LIBRARY_ERROR_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed.message !== "string" || typeof parsed.updatedAt !== "number") return null;
+      return { message: parsed.message, updatedAt: parsed.updatedAt };
+    } catch {
+      return null;
+    }
+  }
+  function setPlexLibraryLastError(message) {
+    if (typeof window === "undefined") return;
+    if (!message) {
+      removeScopedStorageItem(LIBRARY_ERROR_KEY);
+      emit(LIBRARY_ERROR_EVENT);
+      return;
+    }
+    const payload = {
+      message,
+      updatedAt: Date.now()
+    };
+    setScopedStorageItem(LIBRARY_ERROR_KEY, JSON.stringify(payload));
+    emit(LIBRARY_ERROR_EVENT);
+  }
+  function onPlexLibraryErrorChanged(listener) {
+    if (typeof window === "undefined") return () => {
+    };
+    window.addEventListener(LIBRARY_ERROR_EVENT, listener);
+    return () => window.removeEventListener(LIBRARY_ERROR_EVENT, listener);
   }
   function setPlexAuth(auth) {
     if (typeof window === "undefined") return;
@@ -112913,6 +112947,7 @@
       return existingRequest;
     }
     const request = (async () => {
+      setPlexLibraryLastError(null);
       logPlexDebug("[plex-sync] server fetch start", {
         serverUri: settings.serverUri,
         uriCount: settings.serverUris?.length ?? 0,
@@ -112994,19 +113029,31 @@
             status: response.status,
             body: errBody.slice(0, 500)
           });
+          setPlexLibraryLastError(`API ${response.status}: ${errBody.slice(0, 240) || "No response body"}`);
           return fetchDirectLibraryFallback();
         }
         const payload = await response.json();
         const items = payload.items ?? [];
         console.warn("[plex-sync] /api/plugins/plex/library returned", items.length, "items");
         if (items.length > 0) {
+          setPlexLibraryLastError(null);
           setCachedPlexLibraryItems(limit, items);
           return items;
         }
         console.warn("[plex-sync] /api/plugins/plex/library returned 0 items, trying browser-direct fallback");
+        if (payload.debug?.diagnostics?.length) {
+          const sample = payload.debug.diagnostics.find((entry) => entry.error || entry.status) ?? payload.debug.diagnostics[0];
+          if (sample) {
+            const detail = sample.error ?? (sample.status ? `HTTP ${sample.status}` : "No items");
+            setPlexLibraryLastError(`${detail} (${sample.libraryTitle || sample.libraryKey})`);
+          }
+        } else {
+          setPlexLibraryLastError("No items returned from Plex library.");
+        }
         return fetchDirectLibraryFallback();
       } catch (err) {
         console.warn("[plex-sync] fetchPlexLibraryItems catch:", err instanceof Error ? err.message : err);
+        setPlexLibraryLastError(err instanceof Error ? err.message : "Plex library fetch failed");
         return fetchDirectLibraryFallback();
       }
     })();
@@ -113278,6 +113325,7 @@
     const [loading, setLoading] = useState(() => (initialCache?.items.length ?? 0) === 0);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState(null);
+    const [lastSyncError, setLastSyncError] = useState(() => getPlexLibraryLastError()?.message ?? null);
     const [localPage, setLocalPage] = useState(1);
     const [hideWatchedMovies, setHideWatchedMovies] = useState(false);
     const [watchedMovieKeys, setWatchedMovieKeys] = useState(() => /* @__PURE__ */ new Set());
@@ -113342,9 +113390,13 @@
       };
       const offAuth = onPlexAuthChanged(sync2);
       const offSettings = onPlexSettingsChanged(sync2);
+      const offError = onPlexLibraryErrorChanged(() => {
+        setLastSyncError(getPlexLibraryLastError()?.message ?? null);
+      });
       return () => {
         offAuth();
         offSettings();
+        offError();
       };
     }, []);
     const prevSignatureRef = useRef(plexLoadSignature);
@@ -113460,7 +113512,7 @@
         ResultsState,
         {
           title: "No Plex titles",
-          description: error ?? "No Plex titles were found in the selected libraries.",
+          description: error ?? lastSyncError ?? "No Plex titles were found in the selected libraries.",
           actionLabel: "Try again",
           onAction: () => {
             void load();
@@ -114313,7 +114365,7 @@
   var PlexPlugin = {
     id: "com.lumio.plex",
     name: { en: "Plex", sv: "Plex" },
-    version: "1.0.14",
+    version: "1.0.15",
     description: {
       en: "Browse and play media from your Plex Media Server.",
       sv: "Bladdra i och spela upp media fr\xE5n din Plex Media Server."
@@ -114346,7 +114398,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-wjApI1/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-yhZZPy/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

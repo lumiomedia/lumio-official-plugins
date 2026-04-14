@@ -11,6 +11,7 @@ import {
   getPlexSettings,
   setCachedPlexLibraryItems,
   setCachedPlexRecentlyAdded,
+  setPlexLibraryLastError,
   setPlexAuth,
   setPlexSettings,
   type PlexAuthState,
@@ -790,6 +791,7 @@ export async function fetchPlexLibraryItems(limit = 240): Promise<MediaItem[]> {
 
   const request = (async (): Promise<MediaItem[]> => {
 
+    setPlexLibraryLastError(null)
     logPlexDebug('[plex-sync] server fetch start', {
       serverUri: settings.serverUri,
       uriCount: settings.serverUris?.length ?? 0,
@@ -878,20 +880,35 @@ export async function fetchPlexLibraryItems(limit = 240): Promise<MediaItem[]> {
           status: response.status,
           body: errBody.slice(0, 500),
         })
+        setPlexLibraryLastError(`API ${response.status}: ${errBody.slice(0, 240) || 'No response body'}`)
         return fetchDirectLibraryFallback()
       }
-      const payload = (await response.json()) as { items?: MediaItem[] }
+      const payload = (await response.json()) as {
+        items?: MediaItem[]
+        debug?: { diagnostics?: Array<{ tokenLabel: string; serverUri: string; libraryKey: string; libraryTitle: string; status?: number; error?: string; result?: string }> }
+      }
       const items = payload.items ?? []
       console.warn('[plex-sync] /api/plugins/plex/library returned', items.length, 'items')
       if (items.length > 0) {
+        setPlexLibraryLastError(null)
         setCachedPlexLibraryItems(limit, items)
         return items
       }
 
       console.warn('[plex-sync] /api/plugins/plex/library returned 0 items, trying browser-direct fallback')
+      if (payload.debug?.diagnostics?.length) {
+        const sample = payload.debug.diagnostics.find((entry) => entry.error || entry.status) ?? payload.debug.diagnostics[0]
+        if (sample) {
+          const detail = sample.error ?? (sample.status ? `HTTP ${sample.status}` : 'No items')
+          setPlexLibraryLastError(`${detail} (${sample.libraryTitle || sample.libraryKey})`)
+        }
+      } else {
+        setPlexLibraryLastError('No items returned from Plex library.')
+      }
       return fetchDirectLibraryFallback()
     } catch (err) {
       console.warn('[plex-sync] fetchPlexLibraryItems catch:', err instanceof Error ? err.message : err)
+      setPlexLibraryLastError(err instanceof Error ? err.message : 'Plex library fetch failed')
       return fetchDirectLibraryFallback()
     }
   })()
