@@ -170,8 +170,14 @@ function normalizePlexUris(serverUriOrUris: string | string[]): string[] {
 
 function buildPlexImageUrl(serverUri: string, thumb: string | null | undefined, authToken: string): string | null {
   if (!thumb) return null
-  const directUrl = `${serverUri}${thumb}${thumb.includes('?') ? '&' : '?'}X-Plex-Token=${encodeURIComponent(authToken)}`
-  return `/api/plugins/plex/image?url=${encodeURIComponent(directUrl)}`
+  // Keep token out of the cached posterUrl so browser cache keys stay stable
+  // across token rotations. The image proxy adds the token server-side.
+  const params = new URLSearchParams({
+    server: serverUri,
+    thumb,
+    token: authToken,
+  })
+  return `/api/plugins/plex/image?${params.toString()}`
 }
 
 function parsePlexGuid(guids: Array<{ id?: string | null }> | undefined, prefix: 'tmdb://' | 'imdb://'): string | null {
