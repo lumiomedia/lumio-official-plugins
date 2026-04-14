@@ -2,7 +2,7 @@
   "id": "com.lumio.plex",
   "slug": "plex",
   "name": "Plex",
-  "version": "1.0.16",
+  "version": "1.0.17",
   "description": "Browse and play media from your Plex Media Server.",
   "runtimeBundlePath": "dist/runtime.js",
   "official": true,
