@@ -248,9 +248,16 @@ export function PlexSection() {
       const settings = getPlexSettings()
       const preferredServerId = nextServerId ?? plexSelectedServerId ?? settings.serverId ?? ''
       const requestedSelectedOnly = options?.selectedOnly ?? Boolean(preferredServerId)
-      const selectedServer = preferredServerId
+      const selectedById = preferredServerId
         ? resources.find((entry) => entry.id === preferredServerId) ?? null
         : null
+      const selectedByUri = !selectedById && settings.serverUri
+        ? resources.find((entry) => entry.uri === settings.serverUri || (entry.uris ?? []).includes(settings.serverUri ?? '')) ?? null
+        : null
+      const selectedByName = !selectedById && !selectedByUri && settings.serverName
+        ? resources.find((entry) => entry.name === settings.serverName) ?? null
+        : null
+      const selectedServer = selectedById ?? selectedByUri ?? selectedByName ?? null
       // If the caller asked for selectedOnly but the saved server is no longer
       // in the fresh resource list (common after a home-profile switch or token
       // rotation), fall back to scanning all available servers instead of
