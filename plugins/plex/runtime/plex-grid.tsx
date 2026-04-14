@@ -23,9 +23,11 @@ import {
 } from './plex-sync'
 import {
   getCachedPlexLibrarySnapshot,
+  getPlexLibraryLastError,
   getPlexAuth,
   getPlexSettings,
   onPlexAuthChanged,
+  onPlexLibraryErrorChanged,
   onPlexSettingsChanged,
 } from './plex-storage'
 
@@ -179,6 +181,7 @@ export function PlexGrid({
   const [loading, setLoading] = useState(() => (initialCache?.items.length ?? 0) === 0)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [lastSyncError, setLastSyncError] = useState<string | null>(() => getPlexLibraryLastError()?.message ?? null)
   const [localPage, setLocalPage] = useState(1)
   const [hideWatchedMovies, setHideWatchedMovies] = useState(false)
   const [watchedMovieKeys, setWatchedMovieKeys] = useState<Set<string>>(() => new Set())
@@ -255,9 +258,13 @@ export function PlexGrid({
     }
     const offAuth = onPlexAuthChanged(sync)
     const offSettings = onPlexSettingsChanged(sync)
+    const offError = onPlexLibraryErrorChanged(() => {
+      setLastSyncError(getPlexLibraryLastError()?.message ?? null)
+    })
     return () => {
       offAuth()
       offSettings()
+      offError()
     }
   }, [])
 
@@ -401,7 +408,7 @@ export function PlexGrid({
     return (
       <ResultsState
         title="No Plex titles"
-        description={error ?? 'No Plex titles were found in the selected libraries.'}
+        description={error ?? lastSyncError ?? 'No Plex titles were found in the selected libraries.'}
         actionLabel="Try again"
         onAction={() => { void load() }}
       />

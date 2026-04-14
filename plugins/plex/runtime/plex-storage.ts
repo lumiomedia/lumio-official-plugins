@@ -7,10 +7,12 @@ const SETTINGS_KEY = 'plex_settings'
 const CLIENT_KEY = 'plex_client_identifier'
 const LIBRARY_CACHE_KEY = 'plex_library_cache'
 const RECENT_CACHE_KEY = 'plex_recent_cache'
+const LIBRARY_ERROR_KEY = 'plex_library_last_error'
 const DEBUG_KEY = 'plex_debug_log'
 const AUTH_EVENT = 'lumio-plex-auth-changed'
 const SETTINGS_EVENT = 'lumio-plex-settings-changed'
 const DEBUG_EVENT = 'lumio-plex-debug-changed'
+const LIBRARY_ERROR_EVENT = 'lumio-plex-library-error-changed'
 const CACHE_TTL_MS = 20 * 60 * 1000
 const DEBUG_LIMIT = 50
 
@@ -99,6 +101,11 @@ export interface PlexItemsCacheSnapshot {
   items: MediaItem[]
   updatedAt: number
   isFresh: boolean
+}
+
+export interface PlexLibraryErrorState {
+  message: string
+  updatedAt: number
 }
 
 function emit(name: string) {
@@ -255,6 +262,40 @@ export function getPlexAuth(): PlexAuthState | null {
   } catch {
     return null
   }
+}
+
+export function getPlexLibraryLastError(): PlexLibraryErrorState | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = getScopedStorageItem(LIBRARY_ERROR_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as Partial<PlexLibraryErrorState>
+    if (!parsed || typeof parsed.message !== 'string' || typeof parsed.updatedAt !== 'number') return null
+    return { message: parsed.message, updatedAt: parsed.updatedAt }
+  } catch {
+    return null
+  }
+}
+
+export function setPlexLibraryLastError(message: string | null): void {
+  if (typeof window === 'undefined') return
+  if (!message) {
+    removeScopedStorageItem(LIBRARY_ERROR_KEY)
+    emit(LIBRARY_ERROR_EVENT)
+    return
+  }
+  const payload: PlexLibraryErrorState = {
+    message,
+    updatedAt: Date.now(),
+  }
+  setScopedStorageItem(LIBRARY_ERROR_KEY, JSON.stringify(payload))
+  emit(LIBRARY_ERROR_EVENT)
+}
+
+export function onPlexLibraryErrorChanged(listener: () => void): () => void {
+  if (typeof window === 'undefined') return () => {}
+  window.addEventListener(LIBRARY_ERROR_EVENT, listener)
+  return () => window.removeEventListener(LIBRARY_ERROR_EVENT, listener)
 }
 
 export function setPlexAuth(auth: PlexAuthState | null): void {
