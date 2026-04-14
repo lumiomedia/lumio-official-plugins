@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.25
+
+- Made Plex browse grid cache-first on startup by falling back to the latest cached snapshot even when the current server signature differs.
+- Reduces "empty first paint" and repeated poster redraw behavior when reopening Plex.
+
 ## 1.0.24
 
 - Restored Plex capability matching to fetch missing library cache when needed, fixing "series play shows splash but never starts" on cold cache.

@@ -39,7 +39,7 @@
   ));
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Nc7EKE/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-a1sgPN/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -88,7 +88,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Nc7EKE/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-a1sgPN/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -136,7 +136,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Nc7EKE/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-a1sgPN/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -146,7 +146,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Nc7EKE/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-a1sgPN/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -112584,7 +112584,7 @@
     ) });
   }
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Nc7EKE/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-a1sgPN/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
 
   // lib/tauri-mpv.ts
@@ -119310,6 +119310,24 @@
       return null;
     }
   }
+  function readItemsCacheIgnoringSignature(baseKey) {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = getScopedStorageItem(baseKey);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (parsed.version !== 1 || typeof parsed.updatedAt !== "number" || !Array.isArray(parsed.items)) {
+        return null;
+      }
+      return {
+        items: parsed.items,
+        updatedAt: parsed.updatedAt,
+        isFresh: Date.now() - parsed.updatedAt <= CACHE_TTL_MS
+      };
+    } catch {
+      return null;
+    }
+  }
   function writeItemsCache(baseKey, settings, limit, items) {
     if (typeof window === "undefined") return;
     const payload = {
@@ -119422,6 +119440,9 @@
   }
   function getCachedPlexLibrarySnapshot(limit) {
     return readItemsCache(LIBRARY_CACHE_KEY, getPlexSettings(), limit);
+  }
+  function getAnyCachedPlexLibrarySnapshot() {
+    return readItemsCacheIgnoringSignature(LIBRARY_CACHE_KEY);
   }
   function ensurePlexClientIdentifier() {
     if (typeof window === "undefined") return "lumio-plex";
@@ -120327,13 +120348,14 @@
   }) {
     const { t } = useLang();
     const currentSignature = buildPlexLoadSignature();
-    const initialCache = memoryCache && memoryCache.signature === currentSignature ? memoryCache : getCachedPlexLibrarySnapshot(240);
-    const [items, setItemsRaw] = useState(() => initialCache?.items ?? []);
+    const signatureCache = memoryCache && memoryCache.signature === currentSignature ? memoryCache : getCachedPlexLibrarySnapshot(240);
+    const fallbackCache = signatureCache ?? getAnyCachedPlexLibrarySnapshot();
+    const [items, setItemsRaw] = useState(() => fallbackCache?.items ?? []);
     const setItems = (next2) => {
       setItemsRaw(next2);
       memoryCache = { items: next2, signature: buildPlexLoadSignature() };
     };
-    const [loading, setLoading] = useState(() => (initialCache?.items.length ?? 0) === 0);
+    const [loading, setLoading] = useState(() => (fallbackCache?.items.length ?? 0) === 0);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState(null);
     const [lastSyncError, setLastSyncError] = useState(() => getPlexLibraryLastError()?.message ?? null);
@@ -120389,7 +120411,7 @@
     useEffect(() => {
       if (mountedRef.current) return;
       mountedRef.current = true;
-      if ((initialCache?.items.length ?? 0) > 0) {
+      if ((fallbackCache?.items.length ?? 0) > 0) {
         setLoading(false);
         return;
       }
@@ -122013,7 +122035,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Nc7EKE/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-a1sgPN/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");
