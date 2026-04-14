@@ -870,7 +870,7 @@ export async function fetchPlexLibraryItems(limit = 240): Promise<MediaItem[]> {
             limit,
           }),
         },
-        { timeoutMs: 45_000, retries: 1, retryDelayMs: 500 },
+        { timeoutMs: 120_000, retries: 0, retryDelayMs: 500 },
       )
       console.warn('[plex-sync] /api/plugins/plex/library response:', response.status)
       if (!response.ok) {

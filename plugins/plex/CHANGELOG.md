@@ -5,6 +5,10 @@
 - Added a Plex browse page and top menu entry for quicker navigation.
 - Allows Plex items to open the core details view from plugin browse pages.
 
+## 1.0.16
+
+- Increased Plex library fetch timeout in the desktop app to prevent premature aborts.
+
 ## 1.0.15
 
 - Added explicit Plex sync diagnostics so empty libraries show the last failure cause.
