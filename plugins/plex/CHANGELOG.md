@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.21
+
+- Shipped latest Plex browse caching/refresh behavior and reduced sync log noise.
+- Synced plugin marketplace/runtime version for in-app update detection.
+
 ## 1.0.20
 
 - Added explicit Plex browse refresh button so server reload only happens when requested.

@@ -171,6 +171,9 @@ function PlexPosterCard({
   )
 }
 
+// Module-level in-memory cache that survives unmounts (avoids jank on re-mount)
+let memoryCache: { items: MediaItem[]; signature: string } | null = null
+
 export function PlexGrid({
   filters,
   onOpenDetails,
@@ -180,8 +183,15 @@ export function PlexGrid({
   onRefreshStateChange,
 }: PlexGridProps) {
   const { t } = useLang()
-  const initialCache = getCachedPlexLibrarySnapshot(240)
-  const [items, setItems] = useState<MediaItem[]>(() => initialCache?.items ?? [])
+  const currentSignature = buildPlexLoadSignature()
+  const initialCache = (memoryCache && memoryCache.signature === currentSignature)
+    ? memoryCache
+    : getCachedPlexLibrarySnapshot(240)
+  const [items, setItemsRaw] = useState<MediaItem[]>(() => initialCache?.items ?? [])
+  const setItems = (next: MediaItem[]) => {
+    setItemsRaw(next)
+    memoryCache = { items: next, signature: buildPlexLoadSignature() }
+  }
   const [loading, setLoading] = useState(() => (initialCache?.items.length ?? 0) === 0)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
