@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.23
+
+- Restored stable episode play flow (non-blocking click-to-play) to prevent "nothing happens" in series sidebar.
+- Kept Plex grid cache stable across server URI churn so opening Plex does not redraw from empty as often.
+- Improved direct-play resilience via app-side fallback when `/playback-url` resolution is slow or fails.
+
 ## 1.0.22
 
 - Fixed Plex series playback startup by resolving episode stream URLs through the same `/api/plugins/plex/playback-url` path as movies.
