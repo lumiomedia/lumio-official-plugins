@@ -39,7 +39,7 @@
   ));
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-okvK4d/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-JL4D3c/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -88,7 +88,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-okvK4d/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-JL4D3c/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -136,7 +136,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-okvK4d/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-JL4D3c/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -146,7 +146,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-okvK4d/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-JL4D3c/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -112170,7 +112170,7 @@
     ) });
   }
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-okvK4d/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-JL4D3c/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
 
   // lib/tauri-mpv.ts
@@ -113581,22 +113581,100 @@
     popularMode: null
   };
   function PlexBrowsePage({ onOpenDetails }) {
+    const { lang } = useLang();
     const [filters, setFilters] = useState(defaultFilters);
     const [, setFilterOptions] = useState(defaultFilterOptions);
-    return /* @__PURE__ */ jsx(
-      PlexGrid,
-      {
-        filters,
-        onOpenDetails,
-        onFilterOptionsChange: setFilterOptions,
-        onGenreSelect: (genre) => setFilters((current2) => ({
-          ...current2,
-          page: 1,
-          genres: current2.genres.includes(genre) ? current2.genres : [...current2.genres, genre]
-        })),
-        onClearFilters: () => setFilters(defaultFilters)
-      }
-    );
+    const settings = getPlexSettings();
+    const labels = useMemo(() => {
+      const isSv = lang === "sv";
+      return {
+        all: isSv ? "Alla" : "All",
+        movies: isSv ? "Filmer" : "Movies",
+        series: isSv ? "Serier" : "Series",
+        searchPlaceholder: isSv ? "Sok titel" : "Search title",
+        clearFilters: isSv ? "Rensa" : "Clear",
+        server: isSv ? "Server" : "Server",
+        libraries: isSv ? "Bibliotek" : "Libraries"
+      };
+    }, [lang]);
+    const serverLabel = settings.serverName || settings.serverUri || "";
+    const libraryLabel = settings.libraries.map((library) => library.title).filter(Boolean).join(" / ");
+    const buttonBase = "rounded-full border border-white/10 px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] transition";
+    const buttonActive = "bg-white/15 text-white border-white/30";
+    const buttonInactive = "text-slate-400 hover:border-white/25 hover:text-slate-200";
+    return /* @__PURE__ */ jsxs("div", { className: "space-y-4", children: [
+      /* @__PURE__ */ jsxs("div", { className: "rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3", children: [
+        /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
+          /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                type: "button",
+                className: buttonBase + " " + (filters.mediaType == "all" ? buttonActive : buttonInactive),
+                onClick: () => setFilters((current2) => ({ ...current2, mediaType: "all", page: 1 })),
+                children: labels.all
+              }
+            ),
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                type: "button",
+                className: buttonBase + " " + (filters.mediaType == "movie" ? buttonActive : buttonInactive),
+                onClick: () => setFilters((current2) => ({ ...current2, mediaType: "movie", page: 1 })),
+                children: labels.movies
+              }
+            ),
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                type: "button",
+                className: buttonBase + " " + (filters.mediaType == "tv" ? buttonActive : buttonInactive),
+                onClick: () => setFilters((current2) => ({ ...current2, mediaType: "tv", page: 1 })),
+                children: labels.series
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsx("div", { className: "flex min-w-[180px] flex-1 items-center", children: /* @__PURE__ */ jsx(
+            "input",
+            {
+              type: "search",
+              value: filters.titleQuery,
+              onChange: (event) => setFilters((current2) => ({ ...current2, titleQuery: event.target.value, page: 1 })),
+              placeholder: labels.searchPlaceholder,
+              className: "w-full rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 hover:border-white/20 focus:border-white/30"
+            }
+          ) }),
+          /* @__PURE__ */ jsx(
+            "button",
+            {
+              type: "button",
+              className: buttonBase + " " + buttonInactive,
+              onClick: () => setFilters(defaultFilters),
+              children: labels.clearFilters
+            }
+          )
+        ] }),
+        serverLabel || libraryLabel ? /* @__PURE__ */ jsxs("div", { className: "mt-2 text-xs text-slate-400", children: [
+          serverLabel ? labels.server + ": " + serverLabel : "",
+          serverLabel && libraryLabel ? " / " : "",
+          libraryLabel ? labels.libraries + ": " + libraryLabel : ""
+        ] }) : null
+      ] }),
+      /* @__PURE__ */ jsx(
+        PlexGrid,
+        {
+          filters,
+          onOpenDetails,
+          onFilterOptionsChange: setFilterOptions,
+          onGenreSelect: (genre) => setFilters((current2) => ({
+            ...current2,
+            page: 1,
+            genres: current2.genres.includes(genre) ? current2.genres : [...current2.genres, genre]
+          })),
+          onClearFilters: () => setFilters(defaultFilters)
+        }
+      )
+    ] });
   }
 
   // ../lumio-official-plugins/plugins/plex/runtime/plex-home-override.tsx
@@ -113825,7 +113903,10 @@
         const settings = getPlexSettings();
         const preferredServerId = nextServerId ?? plexSelectedServerId ?? settings.serverId ?? "";
         const requestedSelectedOnly = options?.selectedOnly ?? Boolean(preferredServerId);
-        const selectedServer = preferredServerId ? resources.find((entry) => entry.id === preferredServerId) ?? null : null;
+        const selectedById = preferredServerId ? resources.find((entry) => entry.id === preferredServerId) ?? null : null;
+        const selectedByUri = !selectedById && settings.serverUri ? resources.find((entry) => entry.uri === settings.serverUri || (entry.uris ?? []).includes(settings.serverUri ?? "")) ?? null : null;
+        const selectedByName = !selectedById && !selectedByUri && settings.serverName ? resources.find((entry) => entry.name === settings.serverName) ?? null : null;
+        const selectedServer = selectedById ?? selectedByUri ?? selectedByName ?? null;
         const selectedOnly = requestedSelectedOnly && Boolean(selectedServer);
         if (selectedOnly && !preferredServerId) {
           if (isStale()) return;
@@ -114365,7 +114446,7 @@
   var PlexPlugin = {
     id: "com.lumio.plex",
     name: { en: "Plex", sv: "Plex" },
-    version: "1.0.17",
+    version: "1.0.18",
     description: {
       en: "Browse and play media from your Plex Media Server.",
       sv: "Bladdra i och spela upp media fr\xE5n din Plex Media Server."
@@ -114398,7 +114479,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-okvK4d/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-JL4D3c/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

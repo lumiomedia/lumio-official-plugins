@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.18
+
+- Restore Plex browse controls (all/movies/series) and search input inside the Plex view.
+- Keep Plex server selection stable by matching by id, uri, or name on refresh.
+
 ## 1.0.17
 
 - Synced version metadata with the latest app-side Plex fetch improvements.
