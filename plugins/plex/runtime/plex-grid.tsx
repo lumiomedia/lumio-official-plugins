@@ -22,6 +22,7 @@ import {
   fetchPlexLibraryItems,
 } from './plex-sync'
 import {
+  getAnyCachedPlexLibrarySnapshot,
   getCachedPlexLibrarySnapshot,
   getPlexLibraryLastError,
   getPlexAuth,
@@ -184,15 +185,16 @@ export function PlexGrid({
 }: PlexGridProps) {
   const { t } = useLang()
   const currentSignature = buildPlexLoadSignature()
-  const initialCache = (memoryCache && memoryCache.signature === currentSignature)
+  const signatureCache = (memoryCache && memoryCache.signature === currentSignature)
     ? memoryCache
     : getCachedPlexLibrarySnapshot(240)
-  const [items, setItemsRaw] = useState<MediaItem[]>(() => initialCache?.items ?? [])
+  const fallbackCache = signatureCache ?? getAnyCachedPlexLibrarySnapshot()
+  const [items, setItemsRaw] = useState<MediaItem[]>(() => fallbackCache?.items ?? [])
   const setItems = (next: MediaItem[]) => {
     setItemsRaw(next)
     memoryCache = { items: next, signature: buildPlexLoadSignature() }
   }
-  const [loading, setLoading] = useState(() => (initialCache?.items.length ?? 0) === 0)
+  const [loading, setLoading] = useState(() => (fallbackCache?.items.length ?? 0) === 0)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [lastSyncError, setLastSyncError] = useState<string | null>(() => getPlexLibraryLastError()?.message ?? null)
@@ -258,7 +260,7 @@ export function PlexGrid({
   useEffect(() => {
     if (mountedRef.current) return
     mountedRef.current = true
-    if ((initialCache?.items.length ?? 0) > 0) {
+    if ((fallbackCache?.items.length ?? 0) > 0) {
       setLoading(false)
       return
     }

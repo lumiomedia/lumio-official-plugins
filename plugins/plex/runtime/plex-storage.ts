@@ -229,6 +229,29 @@ function readItemsCache(baseKey: string, settings: PlexSettingsState, limit: num
   }
 }
 
+function readItemsCacheIgnoringSignature(baseKey: string): PlexItemsCacheSnapshot | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = getScopedStorageItem(baseKey)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as Partial<PlexItemsCache>
+    if (
+      parsed.version !== 1
+      || typeof parsed.updatedAt !== 'number'
+      || !Array.isArray(parsed.items)
+    ) {
+      return null
+    }
+    return {
+      items: parsed.items as MediaItem[],
+      updatedAt: parsed.updatedAt,
+      isFresh: Date.now() - parsed.updatedAt <= CACHE_TTL_MS,
+    }
+  } catch {
+    return null
+  }
+}
+
 function writeItemsCache(baseKey: string, settings: PlexSettingsState, limit: number, items: MediaItem[]): void {
   if (typeof window === 'undefined') return
   const payload: PlexItemsCache = {
@@ -369,6 +392,10 @@ export function setCachedPlexRecentlyAdded(limit: number, items: MediaItem[]): v
 
 export function getCachedPlexLibrarySnapshot(limit: number): PlexItemsCacheSnapshot | null {
   return readItemsCache(LIBRARY_CACHE_KEY, getPlexSettings(), limit)
+}
+
+export function getAnyCachedPlexLibrarySnapshot(): PlexItemsCacheSnapshot | null {
+  return readItemsCacheIgnoringSignature(LIBRARY_CACHE_KEY)
 }
 
 export function getCachedPlexRecentlyAddedSnapshot(limit: number): PlexItemsCacheSnapshot | null {
