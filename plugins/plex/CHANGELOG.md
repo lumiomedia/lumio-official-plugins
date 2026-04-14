@@ -1,13 +1,17 @@
 # Changelog
 
-## 1.0.14
+## 1.0.17
 
-- Added a Plex browse page and top menu entry for quicker navigation.
-- Allows Plex items to open the core details view from plugin browse pages.
+- Synced version metadata with the latest app-side Plex fetch improvements.
 
 ## 1.0.16
 
 - Increased Plex library fetch timeout in the desktop app to prevent premature aborts.
+
+## 1.0.14
+
+- Added a Plex browse page and top menu entry for quicker navigation.
+- Allows Plex items to open the core details view from plugin browse pages.
 
 ## 1.0.15
 
