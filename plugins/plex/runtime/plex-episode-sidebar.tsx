@@ -73,6 +73,22 @@ function readPlexConnection(): { serverUri: string; token: string } | null {
   }
 }
 
+function readPlexPlaybackContext(): {
+  auth: { authToken?: string; baseAuthToken?: string | null; clientIdentifier?: string } | null
+  settings: { serverId?: string | null; serverUri?: string | null; serverUris?: string[]; serverAccessToken?: string | null } | null
+} {
+  try {
+    const authRaw = getScopedStorageItem('plex_auth')
+    const settingsRaw = getScopedStorageItem('plex_settings')
+    return {
+      auth: authRaw ? JSON.parse(authRaw) as { authToken?: string; baseAuthToken?: string | null; clientIdentifier?: string } : null,
+      settings: settingsRaw ? JSON.parse(settingsRaw) as { serverId?: string | null; serverUri?: string | null; serverUris?: string[]; serverAccessToken?: string | null } : null,
+    }
+  } catch {
+    return { auth: null, settings: null }
+  }
+}
+
 export function PlexEpisodeSidebar({
   item,
   resolvedTmdbId,
@@ -115,6 +131,7 @@ export function PlexEpisodeSidebar({
   const seasonEpisodesCacheRef = useRef<Map<string, PlexEpisode[]>>(new Map())
   const playbackStartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const playbackStartedRef = useRef(false)
+  const playRequestSeqRef = useRef(0)
   const lastHandledPlayRequestRef = useRef<number | null>(null)
   const plexConnectionRef = useRef(readPlexConnection())
 
@@ -201,7 +218,7 @@ export function PlexEpisodeSidebar({
     ))
     if (match) {
       lastHandledPlayRequestRef.current = playRequestToken
-      playEpisode(match, { initialTime })
+      void playEpisode(match, { initialTime })
     } else if (episodes.length > 0) {
       lastHandledPlayRequestRef.current = playRequestToken
       onAutoPlayFallback?.()
@@ -271,6 +288,30 @@ export function PlexEpisodeSidebar({
     ]))
   }
 
+  async function resolveEpisodeStreamUrl(ep: PlexEpisode): Promise<string | null> {
+    if (!ep.partKey) return null
+    const { auth, settings } = readPlexPlaybackContext()
+    try {
+      const response = await fetch('/api/plugins/plex/playback-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          auth: auth ? { authToken: auth.authToken, baseAuthToken: auth.baseAuthToken, clientIdentifier: auth.clientIdentifier } : undefined,
+          settings: settings ? { serverId: settings.serverId, serverUri: settings.serverUri, serverUris: settings.serverUris, serverAccessToken: settings.serverAccessToken } : undefined,
+          item: {
+            plexPartKey: ep.partKey,
+            plexServerUri: conn?.serverUri ?? null,
+          },
+        }),
+      })
+      if (!response.ok) return buildStreamUrl(ep)
+      const payload = (await response.json()) as { url?: string }
+      return payload.url ?? buildStreamUrl(ep)
+    } catch {
+      return buildStreamUrl(ep)
+    }
+  }
+
   function markWatched(ep: PlexEpisode, watched: boolean) {
     if (!resolvedTmdbId) return
     setWatched(resolvedTmdbId, ep.seasonIndex, ep.index, watched, { imdbId: item.imdbId ?? null })
@@ -295,14 +336,25 @@ export function PlexEpisodeSidebar({
     setPlayingEpisode(null)
   }
 
-  function playEpisode(ep: PlexEpisode, options?: { initialTime?: number | null }) {
+  async function playEpisode(
+    ep: PlexEpisode,
+    options?: { initialTime?: number | null; hideStartSplash?: boolean; autoFullscreen?: boolean },
+  ) {
+    const requestSeq = ++playRequestSeqRef.current
+    const resolvedUrl = await resolveEpisodeStreamUrl(ep)
+    if (requestSeq !== playRequestSeqRef.current) return
+    if (!resolvedUrl) {
+      onAutoPlayFallback?.()
+      return
+    }
+    preferredStreamUrlByRatingKeyRef.current.set(ep.ratingKey, resolvedUrl)
     playingEpisodeRef.current = ep
     sawEarlyPlaybackForEpisodeRef.current = false
     armPlaybackStartGuard(ep)
     resetNextEpisodeState()
     watchedMarkedInSessionRef.current = false
-    setPlayerHideStartSplash(false)
-    setPlayerAutoFullscreen(false)
+    setPlayerHideStartSplash(options?.hideStartSplash === true)
+    setPlayerAutoFullscreen(options?.autoFullscreen === true)
     setPlayerInitialTime(options?.initialTime ?? undefined)
     setPlayingEpisode(ep)
   }
@@ -345,8 +397,9 @@ export function PlexEpisodeSidebar({
       }
     }
 
-    const streamUrl = candidate ? buildStreamUrl(candidate) : null
+    const streamUrl = candidate ? await resolveEpisodeStreamUrl(candidate) : null
     if (!candidate || !streamUrl) return
+    preferredStreamUrlByRatingKeyRef.current.set(candidate.ratingKey, streamUrl)
 
     if (runId !== nextEpPreloadRunRef.current) return
     nextEpisodeRef.current = candidate
@@ -457,15 +510,7 @@ export function PlexEpisodeSidebar({
       const nextSeason = seasons.find((season) => season.index === nextEpisode.seasonIndex) ?? null
       if (nextSeason) setSelectedSeason(nextSeason)
     }
-    playingEpisodeRef.current = nextEpisode
-    sawEarlyPlaybackForEpisodeRef.current = false
-    armPlaybackStartGuard(nextEpisode)
-    resetNextEpisodeState()
-    watchedMarkedInSessionRef.current = false
-    setPlayerHideStartSplash(true)
-    setPlayerAutoFullscreen(true)
-    setPlayerInitialTime(undefined)
-    setPlayingEpisode(nextEpisode)
+    void playEpisode(nextEpisode, { hideStartSplash: true, autoFullscreen: true })
   }
 
   if (!conn) {
@@ -537,7 +582,7 @@ export function PlexEpisodeSidebar({
                       </div>
                     )}
                     {streamUrl ? (
-                      <button type="button" onClick={() => playEpisode(ep)} className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition group-hover:opacity-100">
+                      <button type="button" onClick={() => { void playEpisode(ep) }} className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition group-hover:opacity-100">
                         <svg className="h-6 w-6 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
                       </button>
                     ) : null}
@@ -559,7 +604,7 @@ export function PlexEpisodeSidebar({
                     </button>
                   ) : null}
                   {streamUrl ? (
-                    <button type="button" onClick={() => playEpisode(ep)} className="flex-none rounded-full border border-white/10 p-1.5 text-slate-400 transition hover:border-accent-400/40 hover:text-white">
+                    <button type="button" onClick={() => { void playEpisode(ep) }} className="flex-none rounded-full border border-white/10 p-1.5 text-slate-400 transition hover:border-accent-400/40 hover:text-white">
                       <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
                     </button>
                   ) : null}

@@ -39,7 +39,7 @@
   ));
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ZyYdqw/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-HswUlb/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -88,7 +88,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ZyYdqw/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-HswUlb/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -136,7 +136,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ZyYdqw/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-HswUlb/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -146,7 +146,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ZyYdqw/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-HswUlb/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -112584,7 +112584,7 @@
     ) });
   }
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ZyYdqw/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-HswUlb/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
 
   // lib/tauri-mpv.ts
@@ -116512,6 +116512,7 @@
     }
     const [playing, setPlaying] = useState(false);
     const [hasStarted, setHasStarted] = useState(false);
+    const [hasEverStarted, setHasEverStarted] = useState(false);
     const [hasEnded, setHasEnded] = useState(false);
     const mpvFreshStartGuardRef = useRef({
       pending: false,
@@ -116971,6 +116972,7 @@
         guard.pending = false;
       }
       setHasStarted(true);
+      setHasEverStarted(true);
       onFirstPlay?.();
     }, [hasStarted, mpv.paused, mpv.timePos, onFirstPlay, useMpv]);
     useEffect(() => {
@@ -117604,6 +117606,7 @@
       setDuration(0);
       setBuffered(0);
       setHasStarted(false);
+      setHasEverStarted(false);
       setProbedDuration(null);
       setVideoCodec(null);
       const contentChanged = prevResetUrlRef.current !== url;
@@ -118317,7 +118320,7 @@
       setSubtitleAutoSyncState({ type: "idle" });
     }, []);
     const content = /* @__PURE__ */ jsxs("div", { "data-lumio-player-open": "1", className: `fixed inset-0 z-[60] flex flex-col !mt-0 ${useMpv ? "" : "bg-black"}`, children: [
-      (!hasStarted || preparingProxySource) && !hideStartSplash && /* @__PURE__ */ jsxs("div", { className: "absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-950", children: [
+      !hasEverStarted && (!hasStarted || preparingProxySource) && !hideStartSplash && /* @__PURE__ */ jsxs("div", { className: "absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-950", children: [
         (backdropUrl ?? posterUrl) && /* @__PURE__ */ jsxs(Fragment2, { children: [
           /* @__PURE__ */ jsx(
             "div",
@@ -118398,6 +118401,7 @@
                   setPlaying(true);
                   if (!hasStarted) {
                     setHasStarted(true);
+                    setHasEverStarted(true);
                     onFirstPlay?.();
                   }
                   if (!firstFrameLoggedRef.current) {
@@ -119921,10 +119925,11 @@
     const auth = getPlexAuth();
     const settings = ensureCanonicalPlexSettings();
     const forceRefresh = options?.force === true;
-    if (!auth || !settings.serverUri || settings.libraries.length === 0) return getCachedPlexLibraryItems(limit) ?? [];
+    const cachedItems = getCachedPlexLibraryItems(limit) ?? [];
+    if (!auth || !settings.serverUri || settings.libraries.length === 0) return cachedItems;
+    if (!forceRefresh && cachedItems.length > 0) return cachedItems;
     const cooldownKey = JSON.stringify({
       serverId: settings.serverId,
-      serverUri: settings.serverUri,
       libraries: settings.libraries.map((l) => `${l.type}:${l.key}`).sort(),
       limit
     });
@@ -119943,12 +119948,14 @@
     }
     const request = (async () => {
       setPlexLibraryLastError(null);
-      logPlexDebug("[plex-sync] server fetch start", {
-        serverUri: settings.serverUri,
-        uriCount: settings.serverUris?.length ?? 0,
-        libraries: settings.libraries.map((l) => `${l.type}:${l.key}:${l.title}`),
-        limit
-      });
+      if (forceRefresh) {
+        logPlexDebug("[plex-sync] server fetch start", {
+          serverUri: settings.serverUri,
+          uriCount: settings.serverUris?.length ?? 0,
+          libraries: settings.libraries.map((l) => `${l.type}:${l.key}:${l.title}`),
+          limit
+        });
+      }
       async function fetchRecentlyAddedFallback() {
         try {
           const recentlyAddedResponse = await fetchWithTimeoutAndRetry(
@@ -119987,21 +119994,16 @@
         try {
           const directItems = await fetchPlexLibraryItemsDirect(limit);
           if (directItems.length > 0) {
-            console.warn("[plex-sync] browser-direct Plex fetch returned", directItems.length, "items");
             setCachedPlexLibraryItems(limit, directItems);
             return directItems;
           }
         } catch (error) {
-          console.warn("[plex-sync] browser-direct Plex fetch failed:", error instanceof Error ? error.message : error);
+          logPlexDebug("[plex-direct] browser direct failed", {
+            message: error instanceof Error ? error.message : String(error)
+          });
         }
         return fetchRecentlyAddedFallback();
       }
-      console.warn("[plex-sync] fetchPlexLibraryItems: starting", {
-        serverUri: settings.serverUri,
-        libraries: settings.libraries.map((l) => `${l.type}:${l.key}:${l.title}`),
-        hasAuth: Boolean(auth.authToken),
-        hasServerAccessToken: Boolean(settings.serverAccessToken)
-      });
       try {
         const response = await fetchWithTimeoutAndRetry(
           "/api/plugins/plex/library",
@@ -120016,10 +120018,8 @@
           },
           { timeoutMs: 12e4, retries: 0, retryDelayMs: 500 }
         );
-        console.warn("[plex-sync] /api/plugins/plex/library response:", response.status);
         if (!response.ok) {
           const errBody = await response.text().catch(() => "");
-          console.warn("[plex-sync] /api/plugins/plex/library error body:", errBody);
           logPlexDebug("[plex-sync] server fetch failed", {
             status: response.status,
             body: errBody.slice(0, 500)
@@ -120029,13 +120029,11 @@
         }
         const payload = await response.json();
         const items = payload.items ?? [];
-        console.warn("[plex-sync] /api/plugins/plex/library returned", items.length, "items");
         if (items.length > 0) {
           setPlexLibraryLastError(null);
           setCachedPlexLibraryItems(limit, items);
           return items;
         }
-        console.warn("[plex-sync] /api/plugins/plex/library returned 0 items, trying browser-direct fallback");
         if (payload.debug?.diagnostics?.length) {
           const sample = payload.debug.diagnostics.find((entry) => entry.error || entry.status) ?? payload.debug.diagnostics[0];
           if (sample) {
@@ -120047,7 +120045,6 @@
         }
         return fetchDirectLibraryFallback();
       } catch (err) {
-        console.warn("[plex-sync] fetchPlexLibraryItems catch:", err instanceof Error ? err.message : err);
         setPlexLibraryLastError(err instanceof Error ? err.message : "Plex library fetch failed");
         return fetchDirectLibraryFallback();
       }
@@ -121430,6 +121427,18 @@
       return null;
     }
   }
+  function readPlexPlaybackContext() {
+    try {
+      const authRaw = getScopedStorageItem("plex_auth");
+      const settingsRaw = getScopedStorageItem("plex_settings");
+      return {
+        auth: authRaw ? JSON.parse(authRaw) : null,
+        settings: settingsRaw ? JSON.parse(settingsRaw) : null
+      };
+    } catch {
+      return { auth: null, settings: null };
+    }
+  }
   function PlexEpisodeSidebar({
     item,
     resolvedTmdbId,
@@ -121467,6 +121476,7 @@
     const seasonEpisodesCacheRef = useRef(/* @__PURE__ */ new Map());
     const playbackStartTimerRef = useRef(null);
     const playbackStartedRef = useRef(false);
+    const playRequestSeqRef = useRef(0);
     const lastHandledPlayRequestRef = useRef(null);
     const plexConnectionRef = useRef(readPlexConnection());
     const plexItem = item;
@@ -121534,7 +121544,7 @@
       const match = episodes.find((episode) => episode.seasonIndex === playRequestSeasonNumber && episode.index === playRequestEpisodeNumber);
       if (match) {
         lastHandledPlayRequestRef.current = playRequestToken;
-        playEpisode(match, { initialTime });
+        void playEpisode(match, { initialTime });
       } else if (episodes.length > 0) {
         lastHandledPlayRequestRef.current = playRequestToken;
         onAutoPlayFallback?.();
@@ -121596,6 +121606,29 @@
         `${base}&download=1`
       ]));
     }
+    async function resolveEpisodeStreamUrl(ep) {
+      if (!ep.partKey) return null;
+      const { auth, settings } = readPlexPlaybackContext();
+      try {
+        const response = await fetch("/api/plugins/plex/playback-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            auth: auth ? { authToken: auth.authToken, baseAuthToken: auth.baseAuthToken, clientIdentifier: auth.clientIdentifier } : void 0,
+            settings: settings ? { serverId: settings.serverId, serverUri: settings.serverUri, serverUris: settings.serverUris, serverAccessToken: settings.serverAccessToken } : void 0,
+            item: {
+              plexPartKey: ep.partKey,
+              plexServerUri: conn?.serverUri ?? null
+            }
+          })
+        });
+        if (!response.ok) return buildStreamUrl(ep);
+        const payload = await response.json();
+        return payload.url ?? buildStreamUrl(ep);
+      } catch {
+        return buildStreamUrl(ep);
+      }
+    }
     function markWatched(ep, watched) {
       if (!resolvedTmdbId) return;
       setWatched(resolvedTmdbId, ep.seasonIndex, ep.index, watched, { imdbId: item.imdbId ?? null });
@@ -121618,14 +121651,22 @@
       setPlayerInitialTime(void 0);
       setPlayingEpisode(null);
     }
-    function playEpisode(ep, options) {
+    async function playEpisode(ep, options) {
+      const requestSeq = ++playRequestSeqRef.current;
+      const resolvedUrl = await resolveEpisodeStreamUrl(ep);
+      if (requestSeq !== playRequestSeqRef.current) return;
+      if (!resolvedUrl) {
+        onAutoPlayFallback?.();
+        return;
+      }
+      preferredStreamUrlByRatingKeyRef.current.set(ep.ratingKey, resolvedUrl);
       playingEpisodeRef.current = ep;
       sawEarlyPlaybackForEpisodeRef.current = false;
       armPlaybackStartGuard(ep);
       resetNextEpisodeState();
       watchedMarkedInSessionRef.current = false;
-      setPlayerHideStartSplash(false);
-      setPlayerAutoFullscreen(false);
+      setPlayerHideStartSplash(options?.hideStartSplash === true);
+      setPlayerAutoFullscreen(options?.autoFullscreen === true);
       setPlayerInitialTime(options?.initialTime ?? void 0);
       setPlayingEpisode(ep);
     }
@@ -121661,8 +121702,9 @@
           }
         }
       }
-      const streamUrl = candidate ? buildStreamUrl(candidate) : null;
+      const streamUrl = candidate ? await resolveEpisodeStreamUrl(candidate) : null;
       if (!candidate || !streamUrl) return;
+      preferredStreamUrlByRatingKeyRef.current.set(candidate.ratingKey, streamUrl);
       if (runId !== nextEpPreloadRunRef.current) return;
       nextEpisodeRef.current = candidate;
       setNextEpPreloadState("loading");
@@ -121760,15 +121802,7 @@
         const nextSeason = seasons.find((season) => season.index === nextEpisode.seasonIndex) ?? null;
         if (nextSeason) setSelectedSeason(nextSeason);
       }
-      playingEpisodeRef.current = nextEpisode;
-      sawEarlyPlaybackForEpisodeRef.current = false;
-      armPlaybackStartGuard(nextEpisode);
-      resetNextEpisodeState();
-      watchedMarkedInSessionRef.current = false;
-      setPlayerHideStartSplash(true);
-      setPlayerAutoFullscreen(true);
-      setPlayerInitialTime(void 0);
-      setPlayingEpisode(nextEpisode);
+      void playEpisode(nextEpisode, { hideStartSplash: true, autoFullscreen: true });
     }
     if (!conn) {
       return /* @__PURE__ */ jsxs("div", { className: "flex h-full flex-col", children: [
@@ -121809,7 +121843,9 @@
         return /* @__PURE__ */ jsxs("div", { className: `group flex items-center gap-3 rounded-xl p-2 transition hover:bg-white/[0.04] ${watched ? "opacity-50" : ""}`, children: [
           /* @__PURE__ */ jsxs("div", { className: "relative h-14 w-24 flex-none overflow-hidden rounded-lg bg-slate-800", children: [
             ep.thumb ? /* @__PURE__ */ jsx("img", { src: ep.thumb, alt: ep.title, className: "h-full w-full object-cover" }) : /* @__PURE__ */ jsx("div", { className: "flex h-full w-full items-center justify-center text-slate-600", children: /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) }),
-            streamUrl ? /* @__PURE__ */ jsx("button", { type: "button", onClick: () => playEpisode(ep), className: "absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition group-hover:opacity-100", children: /* @__PURE__ */ jsx("svg", { className: "h-6 w-6 text-white", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) }) : null
+            streamUrl ? /* @__PURE__ */ jsx("button", { type: "button", onClick: () => {
+              void playEpisode(ep);
+            }, className: "absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition group-hover:opacity-100", children: /* @__PURE__ */ jsx("svg", { className: "h-6 w-6 text-white", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) }) : null
           ] }),
           /* @__PURE__ */ jsxs("div", { className: "min-w-0 flex-1", children: [
             /* @__PURE__ */ jsxs("p", { className: "truncate text-[11px] font-medium text-white", children: [
@@ -121829,7 +121865,9 @@
               children: /* @__PURE__ */ jsx("svg", { className: "h-3 w-3", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2.5, children: /* @__PURE__ */ jsx("polyline", { points: "20 6 9 17 4 12" }) })
             }
           ) : null,
-          streamUrl ? /* @__PURE__ */ jsx("button", { type: "button", onClick: () => playEpisode(ep), className: "flex-none rounded-full border border-white/10 p-1.5 text-slate-400 transition hover:border-accent-400/40 hover:text-white", children: /* @__PURE__ */ jsx("svg", { className: "h-3.5 w-3.5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) }) : null
+          streamUrl ? /* @__PURE__ */ jsx("button", { type: "button", onClick: () => {
+            void playEpisode(ep);
+          }, className: "flex-none rounded-full border border-white/10 p-1.5 text-slate-400 transition hover:border-accent-400/40 hover:text-white", children: /* @__PURE__ */ jsx("svg", { className: "h-3.5 w-3.5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) }) : null
         ] }, ep.ratingKey);
       }) }) }),
       playingEpisode ? (() => {
@@ -121967,7 +122005,7 @@
   var PlexPlugin = {
     id: "com.lumio.plex",
     name: { en: "Plex", sv: "Plex" },
-    version: "1.0.21",
+    version: "1.0.22",
     description: {
       en: "Browse and play media from your Plex Media Server.",
       sv: "Bladdra i och spela upp media fr\xE5n din Plex Media Server."
@@ -122001,7 +122039,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ZyYdqw/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-HswUlb/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

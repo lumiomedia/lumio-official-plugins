@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.22
+
+- Fixed Plex series playback startup by resolving episode stream URLs through the same `/api/plugins/plex/playback-url` path as movies.
+- Added async episode play request de-duping to avoid race conditions when rapidly opening/changing episodes.
+- Reduced repetitive Plex sync "server fetch start" logs to explicit refreshes only.
+
 ## 1.0.21
 
 - Shipped latest Plex browse caching/refresh behavior and reduced sync log noise.
