@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.20
+
+- Added explicit Plex browse refresh button so server reload only happens when requested.
+- Keep Plex grid startup cache-first to avoid forced reload on every open.
+- Reduced repetitive Plex sync logging by avoiding network fetches during capability checks.
+
+## 1.0.19
+
+- Synced version bump for latest hero startup/randomization compatibility release.
+
 ## 1.0.18
 
 - Restore Plex browse controls (all/movies/series) and search input inside the Plex view.
