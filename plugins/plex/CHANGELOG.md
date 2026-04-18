@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.26
+
+- Removed the Plex debug panel from Plex settings (no more Test server / Copy / Clear controls in UI).
+- Version bump so the update is available via in-app source update flow.
+
 ## 1.0.25
 
 - Made Plex browse grid cache-first on startup by falling back to the latest cached snapshot even when the current server signature differs.

@@ -10,14 +10,10 @@ import {
   useLang,
 } from '@/lib/plugin-sdk'
 import {
-  appendPlexDebugLog,
   clearPlexAuth,
-  clearPlexDebugLog,
   ensurePlexClientIdentifier,
-  getPlexDebugLog,
   getPlexAuth,
   getPlexSettings,
-  onPlexDebugLogChanged,
   onPlexAuthChanged,
   onPlexSettingsChanged,
   type PlexAuthState,
@@ -72,60 +68,9 @@ export function PlexSection() {
   const [plexSelectedLibraryKeys, setPlexSelectedLibraryKeys] = useState<string[]>([])
   const [homeOverrideEnabled, setHomeOverrideEnabled] = useState(false)
   const [homeOverrideError, setHomeOverrideError] = useState('')
-  const [plexDebugLog, setPlexDebugLog] = useState<string[]>([])
   const [plexCacheMessage, setPlexCacheMessage] = useState('')
   const plexPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const plexRefreshRequestRef = useRef(0)
-
-  async function runPlexServerDebug() {
-    const auth = getPlexAuth()
-    const settings = getPlexSettings()
-    if (!auth?.authToken || !auth.clientIdentifier || !settings.serverId) {
-      appendPlexDebugLog('[plex-debug] missing auth or server selection')
-      return
-    }
-
-    appendPlexDebugLog('[plex-debug] starting server debug...')
-    try {
-      const response = await fetch('/api/plugins/plex/debug', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          auth,
-          serverId: settings.serverId,
-        }),
-      })
-      if (!response.ok) {
-        const text = await response.text().catch(() => '')
-        appendPlexDebugLog(`[plex-debug] server responded ${response.status}: ${text.slice(0, 500)}`)
-        return
-      }
-      const payload = await response.json() as {
-        selected?: { id?: string; name?: string; uri?: string | null; uris?: string[] }
-        attempts?: Array<{
-          uri?: string
-          ok?: boolean
-          libraryCount?: number
-          error?: string
-          tokenAttempts?: Array<{ tokenSource: string; ok: boolean; libraryCount?: number; error?: string }>
-        }>
-      }
-      appendPlexDebugLog('[plex-debug] selected server ' + JSON.stringify(payload.selected ?? {}))
-      for (const attempt of payload.attempts ?? []) {
-        appendPlexDebugLog('[plex-debug] uri ' + JSON.stringify({
-          uri: attempt.uri,
-          ok: attempt.ok,
-          libraryCount: attempt.libraryCount,
-          error: attempt.error,
-        }))
-        for (const tokenAttempt of attempt.tokenAttempts ?? []) {
-          appendPlexDebugLog('[plex-debug] token ' + JSON.stringify(tokenAttempt))
-        }
-      }
-    } catch (error) {
-      appendPlexDebugLog('[plex-debug] failed ' + (error instanceof Error ? error.message : String(error)))
-    }
-  }
 
   useEffect(() => {
     const syncPlexState = () => {
@@ -152,8 +97,6 @@ export function PlexSection() {
     syncPlexState()
     const stopPlexAuth = onPlexAuthChanged(syncPlexState)
     const stopPlexSettings = onPlexSettingsChanged(syncPlexState)
-    const stopPlexDebug = onPlexDebugLogChanged(() => setPlexDebugLog(getPlexDebugLog()))
-    setPlexDebugLog(getPlexDebugLog())
 
     return () => {
       if (plexPollRef.current) {
@@ -162,7 +105,6 @@ export function PlexSection() {
       }
       stopPlexAuth()
       stopPlexSettings()
-      stopPlexDebug()
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -725,45 +667,6 @@ export function PlexSection() {
             >
               {t('plexDisconnect')}
             </button>
-          </div>
-          <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-white">Plex debug</p>
-                <p className="text-xs text-slate-400">Visar senaste klientloggarna för Plex-hämtning.</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => void runPlexServerDebug()}
-                  className={settingsActionButtonClass}
-                >
-                  Testa server
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const text = plexDebugLog.join('\n')
-                    if (text) void navigator.clipboard.writeText(text)
-                  }}
-                  className={settingsActionButtonClass}
-                  disabled={plexDebugLog.length === 0}
-                >
-                  Kopiera
-                </button>
-                <button
-                  type="button"
-                  onClick={() => clearPlexDebugLog()}
-                  className={settingsDangerActionButtonClass}
-                  disabled={plexDebugLog.length === 0}
-                >
-                  Rensa
-                </button>
-              </div>
-            </div>
-            <pre className="mt-3 max-h-56 overflow-auto rounded-xl border border-white/10 bg-black/30 p-3 text-[11px] leading-relaxed text-slate-300">
-              {plexDebugLog.length > 0 ? plexDebugLog.join('\n') : 'Ingen debug-logg än.'}
-            </pre>
           </div>
         </div>
       ) : (

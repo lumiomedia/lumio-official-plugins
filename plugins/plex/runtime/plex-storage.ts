@@ -8,13 +8,10 @@ const CLIENT_KEY = 'plex_client_identifier'
 const LIBRARY_CACHE_KEY = 'plex_library_cache'
 const RECENT_CACHE_KEY = 'plex_recent_cache'
 const LIBRARY_ERROR_KEY = 'plex_library_last_error'
-const DEBUG_KEY = 'plex_debug_log'
 const AUTH_EVENT = 'lumio-plex-auth-changed'
 const SETTINGS_EVENT = 'lumio-plex-settings-changed'
-const DEBUG_EVENT = 'lumio-plex-debug-changed'
 const LIBRARY_ERROR_EVENT = 'lumio-plex-library-error-changed'
 const CACHE_TTL_MS = 20 * 60 * 1000
-const DEBUG_LIMIT = 50
 
 const DEFAULT_PLEX_SETTINGS: PlexSettingsState = {
   serverId: null,
@@ -436,36 +433,4 @@ export function onPlexSettingsChanged(listener: () => void): () => void {
   if (typeof window === 'undefined') return () => {}
   window.addEventListener(SETTINGS_EVENT, listener)
   return () => window.removeEventListener(SETTINGS_EVENT, listener)
-}
-
-export function getPlexDebugLog(): string[] {
-  if (typeof window === 'undefined') return []
-  try {
-    const raw = getScopedStorageItem(DEBUG_KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw) as unknown
-    if (!Array.isArray(parsed)) return []
-    return parsed.filter((entry): entry is string => typeof entry === 'string')
-  } catch {
-    return []
-  }
-}
-
-export function appendPlexDebugLog(line: string): void {
-  if (typeof window === 'undefined') return
-  const next = [...getPlexDebugLog(), line].slice(-DEBUG_LIMIT)
-  setScopedStorageItem(DEBUG_KEY, JSON.stringify(next))
-  emit(DEBUG_EVENT)
-}
-
-export function clearPlexDebugLog(): void {
-  if (typeof window === 'undefined') return
-  removeScopedStorageItem(DEBUG_KEY)
-  emit(DEBUG_EVENT)
-}
-
-export function onPlexDebugLogChanged(listener: () => void): () => void {
-  if (typeof window === 'undefined') return () => {}
-  window.addEventListener(DEBUG_EVENT, listener)
-  return () => window.removeEventListener(DEBUG_EVENT, listener)
 }

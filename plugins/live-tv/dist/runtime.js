@@ -39,7 +39,7 @@
   ));
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-UbAcGk/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-0HQYAU/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -88,7 +88,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-UbAcGk/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-0HQYAU/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -29273,7 +29273,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-UbAcGk/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-0HQYAU/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -29283,7 +29283,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-UbAcGk/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-0HQYAU/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -110306,6 +110306,9 @@
           loadingEpisodes: "Loading episodes\u2026",
           noSeasons: "No seasons found.",
           noEpisodes: "No episodes found.",
+          notAiredYet: "Not aired yet",
+          nextAirs: "Next",
+          noOverview: "No description available.",
           cached: "Cached",
           notCached: "not cached (will download)",
           play: "Play",
@@ -110722,6 +110725,9 @@
           homeSourceReleaseUpcomingSeries: "Releases: upcoming series",
           homeSourceStreamingMovies: "Trending movies (streaming)",
           homeSourceStreamingSeries: "Trending series (streaming)",
+          homeSourceAiringTodaySeries: "Airing today",
+          homeAiringTodaySubtitle: "New episodes today on your streaming services",
+          airingTodayProvidersLabel: "Streaming services",
           homeLayout: "Layout",
           homeLayoutSlider: "Slider",
           homeLayoutGrid: "Grid",
@@ -111028,6 +111034,9 @@
           loadingEpisodes: "Laddar avsnitt\u2026",
           noSeasons: "Inga s\xE4songer hittades.",
           noEpisodes: "Inga avsnitt hittades.",
+          notAiredYet: "Ej s\xE4nda",
+          nextAirs: "N\xE4sta",
+          noOverview: "Ingen beskrivning tillg\xE4nglig.",
           cached: "Cachad",
           notCached: "ej cachad (laddas ned)",
           play: "Spela",
@@ -111444,6 +111453,9 @@
           homeSourceReleaseUpcomingSeries: "Releases: kommande serier",
           homeSourceStreamingMovies: "Trendande filmer (streaming)",
           homeSourceStreamingSeries: "Trendande serier (streaming)",
+          homeSourceAiringTodaySeries: "Visas idag",
+          homeAiringTodaySubtitle: "Nya avsnitt idag p\xE5 dina streamingtj\xE4nster",
+          airingTodayProvidersLabel: "Streamingtj\xE4nster",
           homeLayout: "Layout",
           homeLayoutSlider: "Slider",
           homeLayoutGrid: "Grid",
@@ -111878,10 +111890,10 @@
     }
   });
 
-  // lib/plugins/streams-scraper/stream-provider-settings.ts
+  // lib/stream-provider-runtime/stream-provider-settings.ts
   var SCRAPER_PRESETS, DEFAULT_SCRAPER_URL;
   var init_stream_provider_settings = __esm({
-    "lib/plugins/streams-scraper/stream-provider-settings.ts"() {
+    "lib/stream-provider-runtime/stream-provider-settings.ts"() {
       init_profile_storage();
       SCRAPER_PRESETS = [
         {
@@ -111916,8 +111928,15 @@
   // lib/stream-provider/config.ts
   var init_config = __esm({
     "lib/stream-provider/config.ts"() {
-      "use strict";
       init_stream_provider_settings();
+    }
+  });
+
+  // lib/media-stream/config.ts
+  var init_config2 = __esm({
+    "lib/media-stream/config.ts"() {
+      "use strict";
+      init_config();
     }
   });
 
@@ -111929,9 +111948,9 @@
     }
   });
 
-  // lib/plugins/streams-scraper/stream-provider-storage.ts
+  // lib/stream-provider-runtime/stream-provider-storage.ts
   var init_stream_provider_storage = __esm({
-    "lib/plugins/streams-scraper/stream-provider-storage.ts"() {
+    "lib/stream-provider-runtime/stream-provider-storage.ts"() {
       init_stream_provider_settings();
     }
   });
@@ -111942,50 +111961,50 @@
     }
   });
 
-  // lib/plugins/streams-scraper/playback/providers/alldebrid-playback-provider.ts
+  // lib/stream-provider-runtime/playback/providers/alldebrid-playback-provider.ts
   var init_alldebrid_playback_provider = __esm({
-    "lib/plugins/streams-scraper/playback/providers/alldebrid-playback-provider.ts"() {
+    "lib/stream-provider-runtime/playback/providers/alldebrid-playback-provider.ts"() {
       "use strict";
       init_stream_provider_storage();
       init_async_utils();
     }
   });
 
-  // lib/plugins/streams-scraper/playback/providers/easydebrid-playback-provider.ts
+  // lib/stream-provider-runtime/playback/providers/easydebrid-playback-provider.ts
   var init_easydebrid_playback_provider = __esm({
-    "lib/plugins/streams-scraper/playback/providers/easydebrid-playback-provider.ts"() {
+    "lib/stream-provider-runtime/playback/providers/easydebrid-playback-provider.ts"() {
       "use strict";
       init_stream_provider_storage();
     }
   });
 
-  // lib/plugins/streams-scraper/real-debrid/rd-client.ts
+  // lib/stream-provider-runtime/real-debrid/rd-client.ts
   var init_rd_client = __esm({
-    "lib/plugins/streams-scraper/real-debrid/rd-client.ts"() {
+    "lib/stream-provider-runtime/real-debrid/rd-client.ts"() {
       init_stream_provider_settings();
       init_plugin_sdk();
     }
   });
 
-  // lib/plugins/streams-scraper/playback/providers/legacy-playback-provider.ts
+  // lib/stream-provider-runtime/playback/providers/legacy-playback-provider.ts
   var init_legacy_playback_provider = __esm({
-    "lib/plugins/streams-scraper/playback/providers/legacy-playback-provider.ts"() {
+    "lib/stream-provider-runtime/playback/providers/legacy-playback-provider.ts"() {
       "use strict";
       init_rd_client();
     }
   });
 
-  // lib/plugins/streams-scraper/playback/providers/offcloud-playback-provider.ts
+  // lib/stream-provider-runtime/playback/providers/offcloud-playback-provider.ts
   var init_offcloud_playback_provider = __esm({
-    "lib/plugins/streams-scraper/playback/providers/offcloud-playback-provider.ts"() {
+    "lib/stream-provider-runtime/playback/providers/offcloud-playback-provider.ts"() {
       "use strict";
       init_stream_provider_storage();
     }
   });
 
-  // lib/plugins/streams-scraper/playback/stream-provider-playback.ts
+  // lib/stream-provider-runtime/playback/stream-provider-playback.ts
   var init_stream_provider_playback = __esm({
-    "lib/plugins/streams-scraper/playback/stream-provider-playback.ts"() {
+    "lib/stream-provider-runtime/playback/stream-provider-playback.ts"() {
       init_stream_provider_storage();
       init_alldebrid_playback_provider();
       init_easydebrid_playback_provider();
@@ -111997,14 +112016,33 @@
   // lib/stream-provider/playback.ts
   var init_playback = __esm({
     "lib/stream-provider/playback.ts"() {
-      "use strict";
       init_stream_provider_playback();
     }
   });
 
-  // lib/plugins/streams-scraper/stream-filters.ts
+  // lib/media-stream/playback.ts
+  var init_playback2 = __esm({
+    "lib/media-stream/playback.ts"() {
+      "use strict";
+      init_playback();
+    }
+  });
+
+  // lib/plugin-registry.ts
+  var init_plugin_registry = __esm({
+    "lib/plugin-registry.ts"() {
+    }
+  });
+
+  // lib/plugin-state.ts
+  var init_plugin_state = __esm({
+    "lib/plugin-state.ts"() {
+    }
+  });
+
+  // lib/stream-provider-runtime/stream-filters.ts
   var init_stream_filters = __esm({
-    "lib/plugins/streams-scraper/stream-filters.ts"() {
+    "lib/stream-provider-runtime/stream-filters.ts"() {
       init_profile_storage();
     }
   });
@@ -112016,16 +112054,23 @@
     }
   });
 
-  // lib/plugins/streams-scraper/stream-provider-url-builder.ts
+  // lib/media-stream/filters.ts
+  var init_filters2 = __esm({
+    "lib/media-stream/filters.ts"() {
+      init_filters();
+    }
+  });
+
+  // lib/stream-provider-runtime/stream-provider-url-builder.ts
   var init_stream_provider_url_builder = __esm({
-    "lib/plugins/streams-scraper/stream-provider-url-builder.ts"() {
+    "lib/stream-provider-runtime/stream-provider-url-builder.ts"() {
       init_stream_provider_storage();
     }
   });
 
-  // lib/plugins/streams-scraper/stream-provider-request-context.ts
+  // lib/stream-provider-runtime/stream-provider-request-context.ts
   var init_stream_provider_request_context = __esm({
-    "lib/plugins/streams-scraper/stream-provider-request-context.ts"() {
+    "lib/stream-provider-runtime/stream-provider-request-context.ts"() {
       init_stream_provider_settings();
       init_stream_provider_url_builder();
       init_stream_filters();
@@ -112036,8 +112081,15 @@
   // lib/stream-provider/request-context.ts
   var init_request_context = __esm({
     "lib/stream-provider/request-context.ts"() {
-      "use strict";
       init_stream_provider_request_context();
+    }
+  });
+
+  // lib/media-stream/request-context.ts
+  var init_request_context2 = __esm({
+    "lib/media-stream/request-context.ts"() {
+      "use strict";
+      init_request_context();
     }
   });
 
@@ -112047,10 +112099,12 @@
     "lib/series-watchlist-feed.ts"() {
       "use strict";
       init_async_utils();
+      init_plugin_registry();
+      init_plugin_state();
       init_profile_storage();
-      init_filters();
+      init_filters2();
       init_plugin_sdk();
-      init_request_context();
+      init_request_context2();
       init_watched_episodes();
       STREAM_CACHE_TTL_MS = 30 * 60 * 1e3;
       SERIES_STATUS_CACHE_TTL_MS = 15 * 60 * 1e3;
@@ -112060,8 +112114,15 @@
   // lib/stream-provider/storage.ts
   var init_storage = __esm({
     "lib/stream-provider/storage.ts"() {
-      "use strict";
       init_stream_provider_storage();
+    }
+  });
+
+  // lib/media-stream/storage.ts
+  var init_storage2 = __esm({
+    "lib/media-stream/storage.ts"() {
+      "use strict";
+      init_storage();
     }
   });
 
@@ -112071,10 +112132,12 @@
     "lib/release-watchlist-feed.ts"() {
       "use strict";
       init_async_utils();
+      init_plugin_registry();
+      init_plugin_state();
       init_profile_storage();
-      init_filters();
+      init_filters2();
       init_plugin_sdk();
-      init_request_context();
+      init_request_context2();
       STREAM_CACHE_TTL_MS2 = 30 * 60 * 1e3;
     }
   });
@@ -112104,8 +112167,15 @@
   // lib/stream-provider/url-builder.ts
   var init_url_builder = __esm({
     "lib/stream-provider/url-builder.ts"() {
-      "use strict";
       init_stream_provider_url_builder();
+    }
+  });
+
+  // lib/media-stream/url-builder.ts
+  var init_url_builder2 = __esm({
+    "lib/media-stream/url-builder.ts"() {
+      "use strict";
+      init_url_builder();
     }
   });
 
@@ -112133,10 +112203,10 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-UbAcGk/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-0HQYAU/auth-capabilities-shim.ts
   var sdk;
   var init_auth_capabilities_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-UbAcGk/auth-capabilities-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-0HQYAU/auth-capabilities-shim.ts"() {
       sdk = globalThis.__lumioPluginRuntime?.sdk;
     }
   });
@@ -112298,6 +112368,22 @@
     "lib/autoplay-settings.ts"() {
       "use strict";
       init_profile_storage();
+    }
+  });
+
+  // lib/zapp-settings.ts
+  var init_zapp_settings = __esm({
+    "lib/zapp-settings.ts"() {
+      "use strict";
+      init_profile_storage();
+    }
+  });
+
+  // lib/zapp-runtime.ts
+  var init_zapp_runtime = __esm({
+    "lib/zapp-runtime.ts"() {
+      "use strict";
+      "use client";
     }
   });
 
@@ -112660,6 +112746,7 @@
       init_wiki_request_cache();
       init_soundtrack_request_cache();
       init_api_json_cache();
+      init_request_context2();
       PREFETCH_TTL_MS = 5 * 6e4;
     }
   });
@@ -112730,6 +112817,13 @@
     }
   });
 
+  // lib/lan-streaming-settings.ts
+  var init_lan_streaming_settings = __esm({
+    "lib/lan-streaming-settings.ts"() {
+      "use client";
+    }
+  });
+
   // components/player/video-player-modal.tsx
   var import_react_dom;
   var init_video_player_modal = __esm({
@@ -112755,6 +112849,7 @@
       init_plugin_sdk();
       init_playback_session_client();
       init_playback_settings();
+      init_lan_streaming_settings();
       init_tauri_mpv();
       init_jsx_runtime_shim();
     }
@@ -112784,17 +112879,17 @@
       init_home_override_settings();
       init_trakt_storage();
       init_trakt_sync();
-      init_config();
+      init_config2();
       init_playback_settings();
-      init_playback();
+      init_playback2();
       init_series_watchlist_feed();
-      init_storage();
-      init_request_context();
+      init_storage2();
+      init_request_context2();
       init_watched_movies();
       init_release_watchlist_feed();
       init_filter_media();
       init_languages();
-      init_url_builder();
+      init_url_builder2();
       init_results_loading_indicator();
       init_results_state();
       init_results_pagination();
@@ -112803,6 +112898,8 @@
       init_scroll_lock();
       init_watched_episodes();
       init_autoplay_settings();
+      init_zapp_settings();
+      init_zapp_runtime();
       init_video_player_modal();
       init_next_episode_card();
     }
@@ -113086,6 +113183,17 @@
   __export(live_tv_player_exports, {
     LiveTvPlayer: () => LiveTvPlayer
   });
+  function isIosWebKitBrowser() {
+    if (typeof navigator === "undefined") return false;
+    const ua = navigator.userAgent || "";
+    const isIOSDevice = /iPhone|iPad|iPod/i.test(ua) || navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+    const isWebKit = /AppleWebKit/i.test(ua) && !/CriOS|FxiOS|EdgiOS/i.test(ua);
+    return isIOSDevice && isWebKit;
+  }
+  function isMobileBrowser() {
+    if (typeof navigator === "undefined") return false;
+    return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || "");
+  }
   function proxyUrl(url) {
     return `/api/m3u?stream=${encodeURIComponent(url)}`;
   }
@@ -113097,6 +113205,29 @@
     const [portalEl, setPortalEl] = useState(null);
     const logoSrc = getLiveTvLogoSrc(channel.logo);
     const closingRef = useRef(false);
+    const mobileFullscreenAttemptedRef = useRef(false);
+    const tryEnterMobileFullscreen = useCallback(() => {
+      if (mobileFullscreenAttemptedRef.current) return;
+      if (!isMobileBrowser()) return;
+      const media = videoRef.current;
+      if (!media) return;
+      mobileFullscreenAttemptedRef.current = true;
+      try {
+        if (typeof media.requestFullscreen === "function" && !document.fullscreenElement) {
+          void media.requestFullscreen().catch(() => {
+          });
+          return;
+        }
+        const webkitMedia = media;
+        if (typeof webkitMedia.webkitEnterFullscreen === "function") {
+          webkitMedia.webkitEnterFullscreen();
+        }
+      } catch {
+      }
+    }, []);
+    useEffect(() => {
+      mobileFullscreenAttemptedRef.current = false;
+    }, [channel.url]);
     useEffect(() => {
       lockBodyScroll();
       function onKey(event) {
@@ -113135,6 +113266,16 @@
             probe.isPlaylist || probe.contentType?.includes("mpegurl") || probe.contentType?.includes("m3u")
           );
           if (shouldUseHls) {
+            const canNativeHls = media.canPlayType("application/vnd.apple.mpegurl") !== "";
+            if (canNativeHls || isIosWebKitBrowser()) {
+              media.src = proxied;
+              void media.play().then(() => {
+                setLoading(false);
+                tryEnterMobileFullscreen();
+              }).catch(() => {
+              });
+              return;
+            }
             const Hls = getHls();
             if (cancelled) return;
             if (!Hls || !Hls.isSupported()) throw new Error("This browser does not support HLS playback.");
@@ -113147,8 +113288,12 @@
             hls.loadSource(proxied);
             hls.attachMedia(media);
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
-              if (!cancelled) void media.play().catch(() => {
-              });
+              if (!cancelled) {
+                void media.play().then(() => {
+                  tryEnterMobileFullscreen();
+                }).catch(() => {
+                });
+              }
             });
             hls.on(Hls.Events.LEVEL_LOADED, () => {
               if (!cancelled) setLoading(false);
@@ -113164,7 +113309,9 @@
             return;
           }
           media.src = proxied;
-          void media.play().catch(() => {
+          void media.play().then(() => {
+            tryEnterMobileFullscreen();
+          }).catch(() => {
           });
         } catch (err) {
           if (!cancelled) setError(err instanceof Error ? err.message : "Playback failed");
@@ -113179,7 +113326,7 @@
         media.src = "";
         media.load();
       };
-    }, [channel.url, portalEl]);
+    }, [channel.url, portalEl, tryEnterMobileFullscreen]);
     const handleClose = useCallback(async () => {
       if (closingRef.current) return;
       closingRef.current = true;
@@ -113246,7 +113393,10 @@
                 setError(t("liveTvStreamError"));
               },
               onLoadedMetadata: () => setLoading(false),
-              onPlaying: () => setLoading(false),
+              onPlaying: () => {
+                setLoading(false);
+                tryEnterMobileFullscreen();
+              },
               onWaiting: () => {
                 if (!error) setLoading(true);
               },
@@ -113754,7 +113904,7 @@
     useEffect(() => {
       if (!activeChannel || LiveTvPlayerComponent) return;
       let cancelled = false;
-      void import("./live-tv-player-proxy").then((mod) => {
+      void Promise.resolve().then(() => (init_live_tv_player(), live_tv_player_exports)).then((mod) => {
         if (!cancelled) setLiveTvPlayerComponent(() => mod.LiveTvPlayer);
       }).catch(() => {
         if (!cancelled) setActiveChannel(null);
@@ -113782,7 +113932,7 @@
     if (loading) {
       return /* @__PURE__ */ jsxs("div", { className: "space-y-4", children: [
         /* @__PURE__ */ jsx("div", { className: "h-10 w-64 animate-pulse rounded-xl bg-slate-800" }),
-        /* @__PURE__ */ jsx("div", { className: "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4", children: Array.from({ length: CHANNELS_PER_PAGE }).map((_, i) => /* @__PURE__ */ jsx("div", { className: "h-40 animate-pulse rounded-2xl bg-slate-800" }, i)) })
+        /* @__PURE__ */ jsx("div", { className: "grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4", children: Array.from({ length: CHANNELS_PER_PAGE }).map((_, i) => /* @__PURE__ */ jsx("div", { className: "h-40 animate-pulse rounded-2xl bg-slate-800" }, i)) })
       ] });
     }
     if (error) {
@@ -113942,7 +114092,7 @@
           ] }, list.id))
         ] }) }),
         filtered.length === 0 ? /* @__PURE__ */ jsx("p", { className: "py-8 text-center text-slate-400", children: t("m3uNoResults") }) : /* @__PURE__ */ jsxs("div", { className: "space-y-4", children: [
-          /* @__PURE__ */ jsx("div", { className: `grid gap-4 ${isTauriEnv ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"}`, children: pagedChannels.map((channel, i) => {
+          /* @__PURE__ */ jsx("div", { className: `grid gap-4 ${isTauriEnv ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4"}`, children: pagedChannels.map((channel, i) => {
             const logoSrc = loadedLogoUrls[channel.url] ?? null;
             const channelListKey = `${channel.name}::${channel.url}`;
             const isListPickerOpen = listPickerChannelKey === channelListKey;
@@ -114138,7 +114288,7 @@
   var LiveTvPlugin = {
     id: "com.lumio.live-tv",
     name: { en: "Live TV", sv: "Live TV" },
-    version: "0.1.1",
+    version: "0.2.2",
     description: {
       en: "Manage M3U sources and browse live TV channels.",
       sv: "Hantera M3U-kallor och bladdra bland live-TV-kanaler."
@@ -114163,7 +114313,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-UbAcGk/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-0HQYAU/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

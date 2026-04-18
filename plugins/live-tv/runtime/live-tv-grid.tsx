@@ -433,7 +433,7 @@ export function LiveTvGrid({ initialChannel = null }: { initialChannel?: M3uChan
   useEffect(() => {
     if (!activeChannel || LiveTvPlayerComponent) return
     let cancelled = false
-    void import('./live-tv-player-proxy')
+    void import('./live-tv-player')
       .then((mod) => {
         if (!cancelled) setLiveTvPlayerComponent(() => mod.LiveTvPlayer)
       })
@@ -471,7 +471,7 @@ export function LiveTvGrid({ initialChannel = null }: { initialChannel?: M3uChan
     return (
       <div className="space-y-4">
         <div className="h-10 w-64 animate-pulse rounded-xl bg-slate-800" />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
           {Array.from({ length: CHANNELS_PER_PAGE }).map((_, i) => (
             <div key={i} className="h-40 animate-pulse rounded-2xl bg-slate-800" />
           ))}
@@ -657,7 +657,7 @@ export function LiveTvGrid({ initialChannel = null }: { initialChannel?: M3uChan
           <p className="py-8 text-center text-slate-400">{t('m3uNoResults')}</p>
         ) : (
           <div className="space-y-4">
-            <div className={`grid gap-4 ${isTauriEnv ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}`}>
+            <div className={`grid gap-4 ${isTauriEnv ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4'}`}>
               {pagedChannels.map((channel, i) => {
                 const logoSrc = loadedLogoUrls[channel.url] ?? null
                 const channelListKey = `${channel.name}::${channel.url}`

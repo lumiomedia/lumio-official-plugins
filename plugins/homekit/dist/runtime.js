@@ -39,7 +39,7 @@
   ));
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Cpd2uf/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-StvLas/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -88,7 +88,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Cpd2uf/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-StvLas/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -29273,7 +29273,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Cpd2uf/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-StvLas/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -29283,7 +29283,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Cpd2uf/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-StvLas/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -110375,6 +110375,9 @@
       loadingEpisodes: "Loading episodes\u2026",
       noSeasons: "No seasons found.",
       noEpisodes: "No episodes found.",
+      notAiredYet: "Not aired yet",
+      nextAirs: "Next",
+      noOverview: "No description available.",
       cached: "Cached",
       notCached: "not cached (will download)",
       play: "Play",
@@ -110791,6 +110794,9 @@
       homeSourceReleaseUpcomingSeries: "Releases: upcoming series",
       homeSourceStreamingMovies: "Trending movies (streaming)",
       homeSourceStreamingSeries: "Trending series (streaming)",
+      homeSourceAiringTodaySeries: "Airing today",
+      homeAiringTodaySubtitle: "New episodes today on your streaming services",
+      airingTodayProvidersLabel: "Streaming services",
       homeLayout: "Layout",
       homeLayoutSlider: "Slider",
       homeLayoutGrid: "Grid",
@@ -111097,6 +111103,9 @@
       loadingEpisodes: "Laddar avsnitt\u2026",
       noSeasons: "Inga s\xE4songer hittades.",
       noEpisodes: "Inga avsnitt hittades.",
+      notAiredYet: "Ej s\xE4nda",
+      nextAirs: "N\xE4sta",
+      noOverview: "Ingen beskrivning tillg\xE4nglig.",
       cached: "Cachad",
       notCached: "ej cachad (laddas ned)",
       play: "Spela",
@@ -111513,6 +111522,9 @@
       homeSourceReleaseUpcomingSeries: "Releases: kommande serier",
       homeSourceStreamingMovies: "Trendande filmer (streaming)",
       homeSourceStreamingSeries: "Trendande serier (streaming)",
+      homeSourceAiringTodaySeries: "Visas idag",
+      homeAiringTodaySubtitle: "Nya avsnitt idag p\xE5 dina streamingtj\xE4nster",
+      airingTodayProvidersLabel: "Streamingtj\xE4nster",
       homeLayout: "Layout",
       homeLayoutSlider: "Slider",
       homeLayoutGrid: "Grid",
@@ -111679,7 +111691,7 @@
     return useContext(LangContext);
   }
 
-  // lib/plugins/streams-scraper/stream-provider-settings.ts
+  // lib/stream-provider-runtime/stream-provider-settings.ts
   var SCRAPER_PRESETS = [
     {
       id: "torrentio",
@@ -111725,7 +111737,7 @@
   var import_react55 = __toESM(require_dist82());
   init_jsx_runtime_shim();
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Cpd2uf/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-StvLas/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
 
   // lib/tauri-mpv.ts
@@ -112318,7 +112330,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Cpd2uf/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-StvLas/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

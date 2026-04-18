@@ -29,7 +29,7 @@ function LiveTvBrowsePage({ params }: BrowsePageProps) {
 export const LiveTvPlugin: LumioPlugin = {
   id: 'com.lumio.live-tv',
   name: { en: 'Live TV', sv: 'Live TV' },
-  version: '0.1.1',
+  version: '0.2.2',
   description: {
     en: 'Manage M3U sources and browse live TV channels.',
     sv: 'Hantera M3U-kallor och bladdra bland live-TV-kanaler.',

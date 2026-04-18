@@ -39,7 +39,7 @@
   ));
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-FCOYq4/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ibItQZ/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -88,7 +88,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-FCOYq4/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ibItQZ/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -136,7 +136,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-FCOYq4/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ibItQZ/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -146,12 +146,167 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-FCOYq4/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ibItQZ/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
       jsxs = runtime.jsxs;
       jsxDEV = runtime.jsxDEV;
+    }
+  });
+
+  // node_modules/@tauri-apps/api/external/tslib/tslib.es6.js
+  function __classPrivateFieldGet(receiver, state, kind, f) {
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
+  }
+  function __classPrivateFieldSet(receiver, state, value, kind, f) {
+    if (kind === "m") throw new TypeError("Private method is not writable");
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
+    return kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value), value;
+  }
+  var init_tslib_es6 = __esm({
+    "node_modules/@tauri-apps/api/external/tslib/tslib.es6.js"() {
+    }
+  });
+
+  // node_modules/@tauri-apps/api/core.js
+  var core_exports = {};
+  __export(core_exports, {
+    Channel: () => Channel,
+    PluginListener: () => PluginListener,
+    Resource: () => Resource,
+    SERIALIZE_TO_IPC_FN: () => SERIALIZE_TO_IPC_FN,
+    addPluginListener: () => addPluginListener,
+    checkPermissions: () => checkPermissions,
+    convertFileSrc: () => convertFileSrc,
+    invoke: () => invoke,
+    isTauri: () => isTauri,
+    requestPermissions: () => requestPermissions,
+    transformCallback: () => transformCallback
+  });
+  function transformCallback(callback, once2 = false) {
+    return window.__TAURI_INTERNALS__.transformCallback(callback, once2);
+  }
+  async function addPluginListener(plugin2, event, cb) {
+    const handler = new Channel(cb);
+    try {
+      await invoke(`plugin:${plugin2}|register_listener`, {
+        event,
+        handler
+      });
+      return new PluginListener(plugin2, event, handler.id);
+    } catch {
+      await invoke(`plugin:${plugin2}|registerListener`, { event, handler });
+      return new PluginListener(plugin2, event, handler.id);
+    }
+  }
+  async function checkPermissions(plugin2) {
+    return invoke(`plugin:${plugin2}|check_permissions`);
+  }
+  async function requestPermissions(plugin2) {
+    return invoke(`plugin:${plugin2}|request_permissions`);
+  }
+  async function invoke(cmd, args = {}, options) {
+    return window.__TAURI_INTERNALS__.invoke(cmd, args, options);
+  }
+  function convertFileSrc(filePath, protocol = "asset") {
+    return window.__TAURI_INTERNALS__.convertFileSrc(filePath, protocol);
+  }
+  function isTauri() {
+    return !!(globalThis || window).isTauri;
+  }
+  var _Channel_onmessage, _Channel_nextMessageIndex, _Channel_pendingMessages, _Channel_messageEndIndex, _Resource_rid, SERIALIZE_TO_IPC_FN, Channel, PluginListener, Resource;
+  var init_core = __esm({
+    "node_modules/@tauri-apps/api/core.js"() {
+      init_tslib_es6();
+      SERIALIZE_TO_IPC_FN = "__TAURI_TO_IPC_KEY__";
+      Channel = class {
+        constructor(onmessage) {
+          _Channel_onmessage.set(this, void 0);
+          _Channel_nextMessageIndex.set(this, 0);
+          _Channel_pendingMessages.set(this, []);
+          _Channel_messageEndIndex.set(this, void 0);
+          __classPrivateFieldSet(this, _Channel_onmessage, onmessage || (() => {
+          }), "f");
+          this.id = transformCallback((rawMessage) => {
+            const index3 = rawMessage.index;
+            if ("end" in rawMessage) {
+              if (index3 == __classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")) {
+                this.cleanupCallback();
+              } else {
+                __classPrivateFieldSet(this, _Channel_messageEndIndex, index3, "f");
+              }
+              return;
+            }
+            const message = rawMessage.message;
+            if (index3 == __classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")) {
+              __classPrivateFieldGet(this, _Channel_onmessage, "f").call(this, message);
+              __classPrivateFieldSet(this, _Channel_nextMessageIndex, __classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") + 1, "f");
+              while (__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") in __classPrivateFieldGet(this, _Channel_pendingMessages, "f")) {
+                const message2 = __classPrivateFieldGet(this, _Channel_pendingMessages, "f")[__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")];
+                __classPrivateFieldGet(this, _Channel_onmessage, "f").call(this, message2);
+                delete __classPrivateFieldGet(this, _Channel_pendingMessages, "f")[__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")];
+                __classPrivateFieldSet(this, _Channel_nextMessageIndex, __classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") + 1, "f");
+              }
+              if (__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") === __classPrivateFieldGet(this, _Channel_messageEndIndex, "f")) {
+                this.cleanupCallback();
+              }
+            } else {
+              __classPrivateFieldGet(this, _Channel_pendingMessages, "f")[index3] = message;
+            }
+          });
+        }
+        cleanupCallback() {
+          window.__TAURI_INTERNALS__.unregisterCallback(this.id);
+        }
+        set onmessage(handler) {
+          __classPrivateFieldSet(this, _Channel_onmessage, handler, "f");
+        }
+        get onmessage() {
+          return __classPrivateFieldGet(this, _Channel_onmessage, "f");
+        }
+        [(_Channel_onmessage = /* @__PURE__ */ new WeakMap(), _Channel_nextMessageIndex = /* @__PURE__ */ new WeakMap(), _Channel_pendingMessages = /* @__PURE__ */ new WeakMap(), _Channel_messageEndIndex = /* @__PURE__ */ new WeakMap(), SERIALIZE_TO_IPC_FN)]() {
+          return `__CHANNEL__:${this.id}`;
+        }
+        toJSON() {
+          return this[SERIALIZE_TO_IPC_FN]();
+        }
+      };
+      PluginListener = class {
+        constructor(plugin2, event, channelId) {
+          this.plugin = plugin2;
+          this.event = event;
+          this.channelId = channelId;
+        }
+        async unregister() {
+          return invoke(`plugin:${this.plugin}|remove_listener`, {
+            event: this.event,
+            channelId: this.channelId
+          });
+        }
+      };
+      Resource = class {
+        get rid() {
+          return __classPrivateFieldGet(this, _Resource_rid, "f");
+        }
+        constructor(rid) {
+          _Resource_rid.set(this, void 0);
+          __classPrivateFieldSet(this, _Resource_rid, rid, "f");
+        }
+        /**
+         * Destroys and cleans up this resource from memory.
+         * **You should not call any method on this object anymore and should drop any reference to it.**
+         */
+        async close() {
+          return invoke("plugin:resources|close", {
+            rid: this.rid
+          });
+        }
+      };
+      _Resource_rid = /* @__PURE__ */ new WeakMap();
     }
   });
 
@@ -19225,9 +19380,9 @@
     __asyncValues: () => __asyncValues,
     __await: () => __await,
     __awaiter: () => __awaiter,
-    __classPrivateFieldGet: () => __classPrivateFieldGet,
+    __classPrivateFieldGet: () => __classPrivateFieldGet2,
     __classPrivateFieldIn: () => __classPrivateFieldIn,
-    __classPrivateFieldSet: () => __classPrivateFieldSet,
+    __classPrivateFieldSet: () => __classPrivateFieldSet2,
     __createBinding: () => __createBinding,
     __decorate: () => __decorate,
     __disposeResources: () => __disposeResources,
@@ -19576,12 +19731,12 @@
   function __importDefault(mod) {
     return mod && mod.__esModule ? mod : { default: mod };
   }
-  function __classPrivateFieldGet(receiver, state, kind, f) {
+  function __classPrivateFieldGet2(receiver, state, kind, f) {
     if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
     if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
     return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
   }
-  function __classPrivateFieldSet(receiver, state, value, kind, f) {
+  function __classPrivateFieldSet2(receiver, state, value, kind, f) {
     if (kind === "m") throw new TypeError("Private method is not writable");
     if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
     if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
@@ -19653,7 +19808,7 @@
     return path;
   }
   var extendStatics, __assign, __createBinding, __setModuleDefault, ownKeys, _SuppressedError, tslib_es6_default;
-  var init_tslib_es6 = __esm({
+  var init_tslib_es62 = __esm({
     "node_modules/tslib/tslib.es6.mjs"() {
       extendStatics = function(d, b) {
         extendStatics = Object.setPrototypeOf || { __proto__: [] } instanceof Array && function(d2, b2) {
@@ -19730,8 +19885,8 @@
         __makeTemplateObject,
         __importStar,
         __importDefault,
-        __classPrivateFieldGet,
-        __classPrivateFieldSet,
+        __classPrivateFieldGet: __classPrivateFieldGet2,
+        __classPrivateFieldSet: __classPrivateFieldSet2,
         __classPrivateFieldIn,
         __addDisposableResource,
         __disposeResources,
@@ -20097,7 +20252,7 @@
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.parseNumberSkeletonFromString = parseNumberSkeletonFromString;
       exports.parseNumberSkeleton = parseNumberSkeleton;
-      var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+      var tslib_1 = (init_tslib_es62(), __toCommonJS(tslib_es6_exports));
       var regex_generated_1 = require_regex_generated2();
       function parseNumberSkeletonFromString(skeleton) {
         if (skeleton.length === 0) {
@@ -20394,7 +20549,7 @@
     "node_modules/@formatjs/icu-skeleton-parser/index.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
-      var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+      var tslib_1 = (init_tslib_es62(), __toCommonJS(tslib_es6_exports));
       tslib_1.__exportStar(require_date_time(), exports);
       tslib_1.__exportStar(require_number(), exports);
     }
@@ -21901,7 +22056,7 @@
       var _a;
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.Parser = void 0;
-      var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+      var tslib_1 = (init_tslib_es62(), __toCommonJS(tslib_es6_exports));
       var error_1 = require_error();
       var types_1 = require_types();
       var regex_generated_1 = require_regex_generated();
@@ -22723,7 +22878,7 @@
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.hoistSelectors = hoistSelectors;
       exports.isStructurallySame = isStructurallySame;
-      var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+      var tslib_1 = (init_tslib_es62(), __toCommonJS(tslib_es6_exports));
       var types_1 = require_types();
       function cloneDeep(obj) {
         if (Array.isArray(obj)) {
@@ -22840,7 +22995,7 @@
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.isStructurallySame = exports._Parser = void 0;
       exports.parse = parse;
-      var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+      var tslib_1 = (init_tslib_es62(), __toCommonJS(tslib_es6_exports));
       var error_1 = require_error();
       var parser_1 = require_parser();
       var types_1 = require_types();
@@ -22893,7 +23048,7 @@
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.MissingValueError = exports.InvalidValueTypeError = exports.InvalidValueError = exports.FormatError = exports.ErrorCode = void 0;
-      var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+      var tslib_1 = (init_tslib_es62(), __toCommonJS(tslib_es6_exports));
       var ErrorCode;
       (function(ErrorCode2) {
         ErrorCode2["MISSING_VALUE"] = "MISSING_VALUE";
@@ -23110,7 +23265,7 @@
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.IntlMessageFormat = void 0;
-      var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+      var tslib_1 = (init_tslib_es62(), __toCommonJS(tslib_es6_exports));
       var fast_memoize_1 = require_fast_memoize();
       var icu_messageformat_parser_1 = require_icu_messageformat_parser();
       var formatters_1 = require_formatters();
@@ -23345,7 +23500,7 @@
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.IntlMessageFormat = void 0;
-      var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
+      var tslib_1 = (init_tslib_es62(), __toCommonJS(tslib_es6_exports));
       var core_1 = require_core();
       Object.defineProperty(exports, "IntlMessageFormat", { enumerable: true, get: function() {
         return core_1.IntlMessageFormat;
@@ -110097,161 +110252,6 @@
     }
   });
 
-  // node_modules/@tauri-apps/api/external/tslib/tslib.es6.js
-  function __classPrivateFieldGet2(receiver, state, kind, f) {
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
-    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
-  }
-  function __classPrivateFieldSet2(receiver, state, value, kind, f) {
-    if (kind === "m") throw new TypeError("Private method is not writable");
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
-    return kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value), value;
-  }
-  var init_tslib_es62 = __esm({
-    "node_modules/@tauri-apps/api/external/tslib/tslib.es6.js"() {
-    }
-  });
-
-  // node_modules/@tauri-apps/api/core.js
-  var core_exports = {};
-  __export(core_exports, {
-    Channel: () => Channel,
-    PluginListener: () => PluginListener,
-    Resource: () => Resource,
-    SERIALIZE_TO_IPC_FN: () => SERIALIZE_TO_IPC_FN,
-    addPluginListener: () => addPluginListener,
-    checkPermissions: () => checkPermissions,
-    convertFileSrc: () => convertFileSrc,
-    invoke: () => invoke,
-    isTauri: () => isTauri,
-    requestPermissions: () => requestPermissions,
-    transformCallback: () => transformCallback
-  });
-  function transformCallback(callback, once2 = false) {
-    return window.__TAURI_INTERNALS__.transformCallback(callback, once2);
-  }
-  async function addPluginListener(plugin2, event, cb) {
-    const handler = new Channel(cb);
-    try {
-      await invoke(`plugin:${plugin2}|register_listener`, {
-        event,
-        handler
-      });
-      return new PluginListener(plugin2, event, handler.id);
-    } catch {
-      await invoke(`plugin:${plugin2}|registerListener`, { event, handler });
-      return new PluginListener(plugin2, event, handler.id);
-    }
-  }
-  async function checkPermissions(plugin2) {
-    return invoke(`plugin:${plugin2}|check_permissions`);
-  }
-  async function requestPermissions(plugin2) {
-    return invoke(`plugin:${plugin2}|request_permissions`);
-  }
-  async function invoke(cmd, args = {}, options) {
-    return window.__TAURI_INTERNALS__.invoke(cmd, args, options);
-  }
-  function convertFileSrc(filePath, protocol = "asset") {
-    return window.__TAURI_INTERNALS__.convertFileSrc(filePath, protocol);
-  }
-  function isTauri() {
-    return !!(globalThis || window).isTauri;
-  }
-  var _Channel_onmessage, _Channel_nextMessageIndex, _Channel_pendingMessages, _Channel_messageEndIndex, _Resource_rid, SERIALIZE_TO_IPC_FN, Channel, PluginListener, Resource;
-  var init_core = __esm({
-    "node_modules/@tauri-apps/api/core.js"() {
-      init_tslib_es62();
-      SERIALIZE_TO_IPC_FN = "__TAURI_TO_IPC_KEY__";
-      Channel = class {
-        constructor(onmessage) {
-          _Channel_onmessage.set(this, void 0);
-          _Channel_nextMessageIndex.set(this, 0);
-          _Channel_pendingMessages.set(this, []);
-          _Channel_messageEndIndex.set(this, void 0);
-          __classPrivateFieldSet2(this, _Channel_onmessage, onmessage || (() => {
-          }), "f");
-          this.id = transformCallback((rawMessage) => {
-            const index3 = rawMessage.index;
-            if ("end" in rawMessage) {
-              if (index3 == __classPrivateFieldGet2(this, _Channel_nextMessageIndex, "f")) {
-                this.cleanupCallback();
-              } else {
-                __classPrivateFieldSet2(this, _Channel_messageEndIndex, index3, "f");
-              }
-              return;
-            }
-            const message = rawMessage.message;
-            if (index3 == __classPrivateFieldGet2(this, _Channel_nextMessageIndex, "f")) {
-              __classPrivateFieldGet2(this, _Channel_onmessage, "f").call(this, message);
-              __classPrivateFieldSet2(this, _Channel_nextMessageIndex, __classPrivateFieldGet2(this, _Channel_nextMessageIndex, "f") + 1, "f");
-              while (__classPrivateFieldGet2(this, _Channel_nextMessageIndex, "f") in __classPrivateFieldGet2(this, _Channel_pendingMessages, "f")) {
-                const message2 = __classPrivateFieldGet2(this, _Channel_pendingMessages, "f")[__classPrivateFieldGet2(this, _Channel_nextMessageIndex, "f")];
-                __classPrivateFieldGet2(this, _Channel_onmessage, "f").call(this, message2);
-                delete __classPrivateFieldGet2(this, _Channel_pendingMessages, "f")[__classPrivateFieldGet2(this, _Channel_nextMessageIndex, "f")];
-                __classPrivateFieldSet2(this, _Channel_nextMessageIndex, __classPrivateFieldGet2(this, _Channel_nextMessageIndex, "f") + 1, "f");
-              }
-              if (__classPrivateFieldGet2(this, _Channel_nextMessageIndex, "f") === __classPrivateFieldGet2(this, _Channel_messageEndIndex, "f")) {
-                this.cleanupCallback();
-              }
-            } else {
-              __classPrivateFieldGet2(this, _Channel_pendingMessages, "f")[index3] = message;
-            }
-          });
-        }
-        cleanupCallback() {
-          window.__TAURI_INTERNALS__.unregisterCallback(this.id);
-        }
-        set onmessage(handler) {
-          __classPrivateFieldSet2(this, _Channel_onmessage, handler, "f");
-        }
-        get onmessage() {
-          return __classPrivateFieldGet2(this, _Channel_onmessage, "f");
-        }
-        [(_Channel_onmessage = /* @__PURE__ */ new WeakMap(), _Channel_nextMessageIndex = /* @__PURE__ */ new WeakMap(), _Channel_pendingMessages = /* @__PURE__ */ new WeakMap(), _Channel_messageEndIndex = /* @__PURE__ */ new WeakMap(), SERIALIZE_TO_IPC_FN)]() {
-          return `__CHANNEL__:${this.id}`;
-        }
-        toJSON() {
-          return this[SERIALIZE_TO_IPC_FN]();
-        }
-      };
-      PluginListener = class {
-        constructor(plugin2, event, channelId) {
-          this.plugin = plugin2;
-          this.event = event;
-          this.channelId = channelId;
-        }
-        async unregister() {
-          return invoke(`plugin:${this.plugin}|remove_listener`, {
-            event: this.event,
-            channelId: this.channelId
-          });
-        }
-      };
-      Resource = class {
-        get rid() {
-          return __classPrivateFieldGet2(this, _Resource_rid, "f");
-        }
-        constructor(rid) {
-          _Resource_rid.set(this, void 0);
-          __classPrivateFieldSet2(this, _Resource_rid, rid, "f");
-        }
-        /**
-         * Destroys and cleans up this resource from memory.
-         * **You should not call any method on this object anymore and should drop any reference to it.**
-         */
-        async close() {
-          return invoke("plugin:resources|close", {
-            rid: this.rid
-          });
-        }
-      };
-      _Resource_rid = /* @__PURE__ */ new WeakMap();
-    }
-  });
-
   // node_modules/@tauri-apps/api/event.js
   async function _unlisten(event, eventId) {
     window.__TAURI_EVENT_PLUGIN_INTERNALS__.unregisterListener(event, eventId);
@@ -110514,6 +110514,9 @@
       loadingEpisodes: "Loading episodes\u2026",
       noSeasons: "No seasons found.",
       noEpisodes: "No episodes found.",
+      notAiredYet: "Not aired yet",
+      nextAirs: "Next",
+      noOverview: "No description available.",
       cached: "Cached",
       notCached: "not cached (will download)",
       play: "Play",
@@ -110930,6 +110933,9 @@
       homeSourceReleaseUpcomingSeries: "Releases: upcoming series",
       homeSourceStreamingMovies: "Trending movies (streaming)",
       homeSourceStreamingSeries: "Trending series (streaming)",
+      homeSourceAiringTodaySeries: "Airing today",
+      homeAiringTodaySubtitle: "New episodes today on your streaming services",
+      airingTodayProvidersLabel: "Streaming services",
       homeLayout: "Layout",
       homeLayoutSlider: "Slider",
       homeLayoutGrid: "Grid",
@@ -111236,6 +111242,9 @@
       loadingEpisodes: "Laddar avsnitt\u2026",
       noSeasons: "Inga s\xE4songer hittades.",
       noEpisodes: "Inga avsnitt hittades.",
+      notAiredYet: "Ej s\xE4nda",
+      nextAirs: "N\xE4sta",
+      noOverview: "Ingen beskrivning tillg\xE4nglig.",
       cached: "Cachad",
       notCached: "ej cachad (laddas ned)",
       play: "Spela",
@@ -111652,6 +111661,9 @@
       homeSourceReleaseUpcomingSeries: "Releases: kommande serier",
       homeSourceStreamingMovies: "Trendande filmer (streaming)",
       homeSourceStreamingSeries: "Trendande serier (streaming)",
+      homeSourceAiringTodaySeries: "Visas idag",
+      homeAiringTodaySubtitle: "Nya avsnitt idag p\xE5 dina streamingtj\xE4nster",
+      airingTodayProvidersLabel: "Streamingtj\xE4nster",
       homeLayout: "Layout",
       homeLayoutSlider: "Slider",
       homeLayoutGrid: "Grid",
@@ -112032,7 +112044,7 @@
     return () => window.removeEventListener(EVENT_WATCHED_MOVIES_CHANGED, handle);
   }
 
-  // lib/plugins/streams-scraper/stream-provider-settings.ts
+  // lib/stream-provider-runtime/stream-provider-settings.ts
   var SCRAPER_PRESETS = [
     {
       id: "torrentio",
@@ -112060,6 +112072,187 @@
     }
   ];
   var DEFAULT_SCRAPER_URL = SCRAPER_PRESETS[0].url;
+  var CONFIGS_KEY = "scraper_configs_v2";
+  var GLOBAL_STREAM_PROVIDER_TOKEN_KEY_PREFIX = "scraper_global_debrid_token_";
+  var GLOBAL_STREAM_PROVIDER_COOKIE_PREFIX = "lumio_provider_token_";
+  var LEGACY_STREAM_PROVIDER_COOKIE_PREFIX = "lumio_debrid_token_";
+  var LEGACY_RD_API_KEY = "rd_api_key";
+  var VALID_STREAM_PROVIDERS = /* @__PURE__ */ new Set([
+    "none",
+    "realdebrid",
+    "alldebrid",
+    "easydebrid",
+    "offcloud",
+    "torbox",
+    "putio"
+  ]);
+  function normalizeStreamProvider(provider) {
+    const normalized = provider?.trim().toLowerCase() || "realdebrid";
+    return VALID_STREAM_PROVIDERS.has(normalized) ? normalized : "realdebrid";
+  }
+  var DEFAULT_TORRENTIO_CONFIG = {
+    id: "torrentio",
+    preset: "torrentio",
+    enabled: true,
+    options: {
+      streamProvider: "realdebrid",
+      debridProvider: "realdebrid",
+      qualityFilter: [],
+      languages: [],
+      providers: [],
+      sort: "quality",
+      limit: 0
+    }
+  };
+  function getActiveStreamProviderId() {
+    if (typeof window === "undefined") return "realdebrid";
+    const configs = getScraperConfigs();
+    const first = configs.find((c) => {
+      if (!c.enabled) return false;
+      const provider = normalizeStreamProvider(c.options.debridProvider);
+      return provider && provider !== "none";
+    });
+    return normalizeStreamProvider(first?.options?.debridProvider);
+  }
+  function getGlobalStreamProviderTokenStorageKey(provider) {
+    const normalized = normalizeStreamProvider(provider);
+    return `${GLOBAL_STREAM_PROVIDER_TOKEN_KEY_PREFIX}${normalized}`;
+  }
+  function getGlobalStreamProviderCookieKey(provider) {
+    const normalized = normalizeStreamProvider(provider);
+    return `${GLOBAL_STREAM_PROVIDER_COOKIE_PREFIX}${normalized}`;
+  }
+  function getLegacyGlobalStreamProviderCookieKey(provider) {
+    const normalized = normalizeStreamProvider(provider);
+    return `${LEGACY_STREAM_PROVIDER_COOKIE_PREFIX}${normalized}`;
+  }
+  function readCookieValue(name) {
+    if (typeof document === "undefined") return "";
+    const prefix = `${encodeURIComponent(name)}=`;
+    const entry = document.cookie.split("; ").find((cookie) => cookie.startsWith(prefix));
+    if (!entry) return "";
+    try {
+      return decodeURIComponent(entry.slice(prefix.length));
+    } catch {
+      return "";
+    }
+  }
+  function getGlobalStreamProviderAccessKey(provider) {
+    if (typeof window === "undefined") return "";
+    const normalizedProvider = normalizeStreamProvider(provider);
+    const storageKey = getGlobalStreamProviderTokenStorageKey(normalizedProvider);
+    const key = getScopedStorageItem(storageKey) ?? "";
+    if (key.trim()) return key;
+    const unscopedKey = localStorage.getItem(storageKey) ?? "";
+    if (unscopedKey.trim()) return unscopedKey;
+    const cookieKey = readCookieValue(getGlobalStreamProviderCookieKey(normalizedProvider));
+    if (cookieKey.trim()) return cookieKey;
+    const legacyCookieKey = readCookieValue(getLegacyGlobalStreamProviderCookieKey(normalizedProvider));
+    if (legacyCookieKey.trim()) return legacyCookieKey;
+    if (normalizedProvider === "realdebrid") {
+      const legacy = getScopedStorageItem(LEGACY_RD_API_KEY) ?? localStorage.getItem(LEGACY_RD_API_KEY) ?? readCookieValue(LEGACY_RD_API_KEY) ?? "";
+      return legacy;
+    }
+    return "";
+  }
+  function getScraperConfigs() {
+    if (typeof window === "undefined") return [DEFAULT_TORRENTIO_CONFIG];
+    migrateScraperSettingsIfNeeded();
+    try {
+      const raw = getScopedStorageItem(CONFIGS_KEY) ?? localStorage.getItem(CONFIGS_KEY);
+      if (!raw) return [DEFAULT_TORRENTIO_CONFIG];
+      const parsed = JSON.parse(raw);
+      return parsed.map(normalizeScraperConfig);
+    } catch {
+      return [DEFAULT_TORRENTIO_CONFIG];
+    }
+  }
+  function migrateScraperSettingsIfNeeded() {
+    if (getScopedStorageItem(CONFIGS_KEY)) return;
+    const unscopedConfigs = localStorage.getItem(CONFIGS_KEY);
+    if (unscopedConfigs) {
+      setScopedStorageItem(CONFIGS_KEY, unscopedConfigs);
+      return;
+    }
+    setScopedStorageItem(CONFIGS_KEY, JSON.stringify([DEFAULT_TORRENTIO_CONFIG]));
+  }
+  function normalizeScraperConfig(config) {
+    switch (config.preset) {
+      case "torrentio": {
+        const opts = config.options;
+        return {
+          ...config,
+          options: {
+            streamProvider: normalizeStreamProvider(opts.streamProvider ?? opts.debridProvider),
+            debridProvider: normalizeStreamProvider(opts.streamProvider ?? opts.debridProvider),
+            qualityFilter: opts.qualityFilter ?? [],
+            languages: opts.languages ?? [],
+            providers: opts.providers ?? [],
+            sort: opts.sort ?? "quality",
+            limit: opts.limit ?? 0
+          }
+        };
+      }
+      case "torrentsdb": {
+        const opts = config.options;
+        return {
+          ...config,
+          options: {
+            streamProvider: normalizeStreamProvider(opts.streamProvider ?? opts.debridProvider),
+            debridProvider: normalizeStreamProvider(opts.streamProvider ?? opts.debridProvider),
+            qualityFilter: opts.qualityFilter ?? [],
+            languages: opts.languages ?? []
+          }
+        };
+      }
+      case "comet": {
+        const opts = config.options;
+        return {
+          ...config,
+          options: {
+            streamProvider: normalizeStreamProvider(opts.streamProvider ?? opts.debridProvider),
+            debridProvider: normalizeStreamProvider(opts.streamProvider ?? opts.debridProvider),
+            languages: opts.languages ?? [],
+            qualityFilter: opts.qualityFilter ?? [],
+            maxResults: opts.maxResults ?? 5,
+            maxSize: opts.maxSize ?? 0,
+            cachedOnly: opts.cachedOnly ?? false,
+            sortCachedUncachedTogether: opts.sortCachedUncachedTogether ?? false
+          }
+        };
+      }
+      case "mediafusion": {
+        const opts = config.options;
+        return {
+          ...config,
+          options: {
+            streamProvider: normalizeStreamProvider(opts.streamProvider ?? opts.debridProvider),
+            debridProvider: normalizeStreamProvider(opts.streamProvider ?? opts.debridProvider),
+            languages: opts.languages ?? [],
+            qualityFilter: opts.qualityFilter ?? ["BluRay/UHD", "WEB/HD", "DVD/TV/SAT", "CAM/Screener", "Unknown"],
+            maxStreams: opts.maxStreams ?? 25,
+            maxSize: opts.maxSize ?? 0
+          }
+        };
+      }
+      case "orion": {
+        const opts = config.options;
+        return {
+          ...config,
+          options: {
+            orionKey: opts.orionKey ?? "",
+            streamProvider: normalizeStreamProvider(opts.streamProvider ?? opts.debridProvider),
+            debridProvider: normalizeStreamProvider(opts.streamProvider ?? opts.debridProvider)
+          }
+        };
+      }
+      default:
+        return config;
+    }
+  }
+  function getStreamProviderConfigs() {
+    return getScraperConfigs();
+  }
 
   // lib/playback-settings.ts
   var KEY_DEFAULT_SUBTITLE_LANGUAGE = "playback_defaultSubtitleLanguage";
@@ -112260,6 +112453,1254 @@
   function getNightMode() {
     const stored = getStoredString(KEY_NIGHT_MODE, DEFAULT_NIGHT_MODE);
     return NIGHT_MODE_OPTIONS.includes(stored) ? stored : DEFAULT_NIGHT_MODE;
+  }
+
+  // lib/stream-provider-runtime/stream-provider-storage.ts
+  function getActiveStreamProvider() {
+    return getActiveStreamProviderId();
+  }
+  function getStreamProviderAccessKey(provider) {
+    return getGlobalStreamProviderAccessKey(provider);
+  }
+
+  // lib/async-utils.ts
+  async function mapWithConcurrency(items, concurrency, mapper) {
+    if (items.length === 0) return [];
+    const limit = Math.max(1, Math.floor(concurrency));
+    const results = new Array(items.length);
+    let nextIndex = 0;
+    async function worker() {
+      while (true) {
+        const currentIndex = nextIndex;
+        nextIndex += 1;
+        if (currentIndex >= items.length) return;
+        results[currentIndex] = await mapper(items[currentIndex], currentIndex);
+      }
+    }
+    const workers = Array.from({ length: Math.min(limit, items.length) }, () => worker());
+    await Promise.all(workers);
+    return results;
+  }
+
+  // lib/stream-provider-runtime/playback/providers/alldebrid-playback-provider.ts
+  var ALLDEBRID_PROXY = "/api/stream-providers/alldebrid";
+  function normalizeMagnets(value) {
+    if (Array.isArray(value)) return value;
+    if (value && typeof value === "object") return Object.values(value);
+    return [];
+  }
+  function pickMagnetById(magnets, id4) {
+    const normalized = normalizeMagnets(magnets);
+    if (normalized.length === 0) return null;
+    return normalized.find((entry) => String(entry.id) === id4) ?? normalized[0] ?? null;
+  }
+  function asRecord(value) {
+    return value && typeof value === "object" ? value : null;
+  }
+  function toNumber(value) {
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    if (typeof value === "string" && value.trim()) {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) return parsed;
+    }
+    return void 0;
+  }
+  function toStringValue(value) {
+    return typeof value === "string" && value.trim() ? value : void 0;
+  }
+  function asFileNodeArray(value) {
+    if (!Array.isArray(value)) return null;
+    if (value.every((entry) => {
+      const record2 = asRecord(entry);
+      return Boolean(record2 && typeof record2.n === "string");
+    })) {
+      return value;
+    }
+    return null;
+  }
+  function normalizeStatusMagnet(raw, requestedId) {
+    const directFiles = asFileNodeArray(raw);
+    if (directFiles) {
+      const flattened = flattenFiles(directFiles);
+      const totalBytes = flattened.reduce((sum, file) => sum + file.bytes, 0);
+      const primary = flattened[0];
+      return {
+        id: Number(requestedId) || 0,
+        filename: primary?.path ?? `magnet-${requestedId}`,
+        size: totalBytes,
+        status: "Ready",
+        statusCode: 4,
+        downloaded: totalBytes,
+        uploadDate: void 0
+      };
+    }
+    const record2 = asRecord(raw);
+    if (!record2) return null;
+    const nestedMagnet = asRecord(record2.magnet);
+    const source = nestedMagnet ?? record2;
+    const id4 = toNumber(source.id) ?? toNumber(record2.id) ?? Number(requestedId);
+    const filename = toStringValue(source.filename) ?? toStringValue(source.name) ?? toStringValue(record2.filename) ?? toStringValue(record2.name) ?? `magnet-${requestedId}`;
+    const size = toNumber(source.size) ?? toNumber(record2.size) ?? 0;
+    const status = toStringValue(source.status) ?? toStringValue(source.state) ?? toStringValue(record2.status) ?? toStringValue(record2.state) ?? "";
+    const statusCode = toNumber(source.statusCode) ?? toNumber(source.status_code) ?? toNumber(record2.statusCode) ?? toNumber(record2.status_code) ?? -1;
+    const hash = toStringValue(source.hash) ?? toStringValue(source.magnet) ?? toStringValue(record2.hash) ?? toStringValue(record2.magnet);
+    const downloaded = toNumber(source.downloaded) ?? toNumber(source.downloadedSize) ?? toNumber(record2.downloaded) ?? toNumber(record2.downloadedSize);
+    const uploadDate = toNumber(source.uploadDate) ?? toNumber(source.uploadedAt) ?? toNumber(record2.uploadDate) ?? toNumber(record2.uploadedAt);
+    return {
+      id: id4,
+      filename,
+      size,
+      status,
+      statusCode,
+      hash,
+      downloaded,
+      uploadDate
+    };
+  }
+  function parseMagnetLookupId(id4) {
+    const [remoteId, hash] = id4.split("|");
+    return {
+      remoteId: remoteId || id4,
+      hash: hash?.trim() || void 0
+    };
+  }
+  async function adJson(path, body) {
+    const token = getStreamProviderAccessKey("alldebrid").trim();
+    if (!token) throw new Error("Missing AllDebrid API key");
+    const res = await fetch(`${ALLDEBRID_PROXY}${path}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+        "x-ad-token": token
+      },
+      body: body?.toString() ?? ""
+    });
+    const data = await res.json();
+    if (!res.ok || data.status !== "success" || !data.data) {
+      const message = data.error?.message ?? data.error?.code ?? `HTTP ${res.status}`;
+      throw new Error(message);
+    }
+    return data.data;
+  }
+  function flattenFiles(nodes, parentPath = "") {
+    const flattened = [];
+    for (const node of nodes) {
+      const nextPath = parentPath ? `${parentPath}/${node.n}` : node.n;
+      if (node.e?.length) {
+        flattened.push(...flattenFiles(node.e, nextPath));
+        continue;
+      }
+      if (node.l) {
+        flattened.push({
+          path: nextPath,
+          bytes: node.s ?? 0,
+          link: node.l
+        });
+      }
+    }
+    return flattened;
+  }
+  function mapStatusCode(statusCode) {
+    if (statusCode === 0) return "queued";
+    if (statusCode === 1) return "downloading";
+    if (statusCode === 2) return "compressing";
+    if (statusCode === 3) return "uploading";
+    if (statusCode === 4) return "downloaded";
+    if (statusCode === 15) return "dead";
+    return "error";
+  }
+  function describeStatusCode(statusCode) {
+    switch (statusCode) {
+      case 0:
+        return "In queue";
+      case 1:
+        return "Downloading";
+      case 2:
+        return "Compressing / moving";
+      case 3:
+        return "Uploading";
+      case 4:
+        return "Ready";
+      case 5:
+        return "Upload fail";
+      case 6:
+        return "Internal error on unpacking";
+      case 7:
+        return "Not downloaded in 20 min";
+      case 8:
+        return "File too big";
+      case 9:
+        return "Internal error";
+      case 10:
+        return "Download took more than 72h";
+      case 11:
+        return "Deleted on the hoster website";
+      case 12:
+        return "Processing failed";
+      case 13:
+        return "Processing failed";
+      case 14:
+        return "Error while contacting tracker";
+      case 15:
+        return "File not available - no peer";
+      default:
+        return null;
+    }
+  }
+  function toIsoDate(timestamp) {
+    if (!timestamp) return (/* @__PURE__ */ new Date(0)).toISOString();
+    return new Date(timestamp * 1e3).toISOString();
+  }
+  function buildStatusLabel(status, statusCode) {
+    const description = describeStatusCode(statusCode);
+    if (description) return `${description} (code ${statusCode})`;
+    if (status) return `${status} (code ${statusCode})`;
+    return `Status code ${statusCode}`;
+  }
+  async function getMagnetFiles(id4) {
+    const body = new URLSearchParams();
+    body.append("id[]", id4);
+    const data = await adJson("/v4.1/magnet/files", body);
+    const magnet = pickMagnetById(data.magnets, id4);
+    if (!magnet) return [];
+    if (magnet.error) throw new Error(magnet.error.message ?? magnet.error.code ?? "Magnet files lookup failed");
+    return flattenFiles(magnet.files ?? []);
+  }
+  async function getMagnetStatus(id4) {
+    const lookup = parseMagnetLookupId(id4);
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      const targetedData = await adJson("/v4.1/magnet/status", new URLSearchParams({ id: lookup.remoteId }));
+      let normalized = normalizeMagnets(targetedData.magnets).map((entry) => normalizeStatusMagnet(entry, lookup.remoteId)).filter((entry) => Boolean(entry));
+      if (normalized.length === 0) {
+        const fullData = await adJson("/v4.1/magnet/status");
+        normalized = normalizeMagnets(fullData.magnets).map((entry) => normalizeStatusMagnet(entry, lookup.remoteId)).filter((entry) => Boolean(entry));
+      }
+      const magnet = normalized.find((entry) => String(entry.id) === lookup.remoteId) ?? (lookup.hash ? normalized.find((entry) => entry.hash?.toLowerCase() === lookup.hash?.toLowerCase()) : null) ?? normalized[0];
+      if (magnet) return magnet;
+      await new Promise((resolve) => setTimeout(resolve, 1e3));
+    }
+    return null;
+  }
+  async function pollDelayedLink(id4) {
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      const data = await adJson("/v4/link/delayed", new URLSearchParams({ id: String(id4) }));
+      if (data.status === 2 && data.link) return data.link;
+      if (data.status === 3) throw new Error("AllDebrid delayed link failed");
+      await new Promise((resolve) => setTimeout(resolve, 5e3));
+    }
+    throw new Error("AllDebrid delayed link timed out");
+  }
+  async function deleteMagnet(id4) {
+    const body = new URLSearchParams();
+    body.append("id", String(id4));
+    await adJson("/v4/magnet/delete", body);
+  }
+  async function lookupCachedStreams(candidates) {
+    const cachedHashes = /* @__PURE__ */ new Set();
+    const cachedTitles = /* @__PURE__ */ new Set();
+    const downloadableHashes = /* @__PURE__ */ new Set();
+    const downloadableTitles = /* @__PURE__ */ new Set();
+    await mapWithConcurrency(candidates, 2, async (candidate) => {
+      const body = new URLSearchParams();
+      body.append("magnets[]", candidate.infoHash);
+      let uploadedId = null;
+      try {
+        const data = await adJson("/v4/magnet/upload", body);
+        const uploaded = normalizeMagnets(data.magnets)[0];
+        if (!uploaded?.id) return;
+        uploadedId = Number(uploaded.id);
+        if (uploaded.ready) {
+          cachedHashes.add(candidate.infoHash);
+          downloadableHashes.add(candidate.infoHash);
+          if (candidate.title.trim()) {
+            cachedTitles.add(candidate.title.trim());
+            downloadableTitles.add(candidate.title.trim());
+          }
+          return;
+        }
+        const status = await getMagnetStatus(String(uploaded.id));
+        if (!status) return;
+        const mapped = mapStatusCode(status.statusCode);
+        if (mapped === "downloaded") {
+          cachedHashes.add(candidate.infoHash);
+          downloadableHashes.add(candidate.infoHash);
+          if (candidate.title.trim()) {
+            cachedTitles.add(candidate.title.trim());
+            downloadableTitles.add(candidate.title.trim());
+          }
+          return;
+        }
+        if (["queued", "downloading", "compressing", "uploading", "waiting_files_selection"].includes(mapped)) {
+          downloadableHashes.add(candidate.infoHash);
+          if (candidate.title.trim()) downloadableTitles.add(candidate.title.trim());
+        }
+      } catch {
+      } finally {
+        if (uploadedId && Number.isFinite(uploadedId)) {
+          await deleteMagnet(uploadedId).catch(() => void 0);
+        }
+      }
+    });
+    return { cachedHashes, cachedTitles, downloadableHashes, downloadableTitles };
+  }
+  async function unlockStreamSelection(unlockId, streams) {
+    const best = [...streams].sort((a, b) => (b.filesize ?? 0) - (a.filesize ?? 0))[0];
+    if (!best) throw new Error("No AllDebrid stream choices available");
+    return adJson(
+      "/v4/link/streaming",
+      new URLSearchParams({ id: unlockId, stream: best.id })
+    );
+  }
+  async function unlockLink(link) {
+    let data = await adJson("/v4/link/unlock", new URLSearchParams({ link }));
+    if (!data.link && data.streams?.length && data.id) {
+      data = await unlockStreamSelection(data.id, data.streams);
+    }
+    const finalLink = data.link ?? (data.delayed ? await pollDelayedLink(data.delayed) : null);
+    if (!finalLink) throw new Error("AllDebrid did not return a playable link");
+    return {
+      id: data.id ?? finalLink,
+      filename: data.filename ?? finalLink.split("/").pop()?.split("?")[0] ?? "video",
+      mimeType: "video/mp4",
+      filesize: data.filesize ?? 0,
+      link,
+      host: "alldebrid",
+      chunks: 1,
+      crc: 0,
+      download: finalLink,
+      streamable: 1
+    };
+  }
+  var alldebridPlaybackProvider = {
+    id: "alldebrid",
+    label: "AllDebrid",
+    getAccessKey() {
+      const token = getStreamProviderAccessKey("alldebrid").trim();
+      return token || null;
+    },
+    buildConfigSegment(accessKey, qualityFilter = "") {
+      const segments = qualityFilter ? [`qualityfilter=${qualityFilter}`] : [];
+      segments.push(`alldebrid=${accessKey}`);
+      return segments.join("|");
+    },
+    lookupCachedStreams,
+    hideUnknownStreamsFromList() {
+      return true;
+    },
+    isMagnetSource(input) {
+      return input.trim().toLowerCase().startsWith("magnet:");
+    },
+    async addMagnet(magnet) {
+      const body = new URLSearchParams();
+      body.append("magnets[]", magnet);
+      const data = await adJson("/v4/magnet/upload", body);
+      const uploaded = normalizeMagnets(data.magnets)[0];
+      if (!uploaded?.id) {
+        throw new Error(uploaded?.error?.message ?? uploaded?.error?.code ?? "AllDebrid magnet upload failed");
+      }
+      return {
+        id: uploaded.hash ? `${String(uploaded.id)}|${uploaded.hash}` : String(uploaded.id),
+        uri: uploaded.magnet ?? magnet,
+        hash: uploaded.hash
+      };
+    },
+    async getSourceInfo(id4) {
+      const magnet = await getMagnetStatus(id4);
+      if (!magnet) throw new Error("AllDebrid magnet not found");
+      const files = await getMagnetFiles(String(magnet.id));
+      const mappedFiles = files.map((file, index3) => ({
+        id: index3 + 1,
+        path: file.path,
+        bytes: file.bytes,
+        selected: 1
+      }));
+      return {
+        id: id4,
+        filename: magnet.filename,
+        hash: "",
+        bytes: magnet.size,
+        host: "alldebrid",
+        split: 0,
+        progress: magnet.size > 0 && magnet.downloaded ? Math.round(magnet.downloaded / magnet.size * 100) : 0,
+        status: mapStatusCode(magnet.statusCode),
+        statusLabel: buildStatusLabel(magnet.status, magnet.statusCode),
+        added: toIsoDate(magnet.uploadDate),
+        links: files.map((file) => file.link),
+        original_filename: magnet.filename,
+        original_bytes: magnet.size,
+        files: mappedFiles,
+        seeders: 0
+      };
+    },
+    async selectFiles() {
+    },
+    async resolveLink(link) {
+      return unlockLink(link);
+    }
+  };
+
+  // lib/stream-provider-runtime/playback/providers/easydebrid-playback-provider.ts
+  var EASYDEBRID_PROXY = "/api/stream-providers/easydebrid";
+  var sourceState = /* @__PURE__ */ new Map();
+  var generatedFileCache = /* @__PURE__ */ new Map();
+  var directLinkCache = /* @__PURE__ */ new Map();
+  function getAccessKey() {
+    const key = getStreamProviderAccessKey("easydebrid").trim();
+    return key || null;
+  }
+  async function easyDebridJson(path, init = {}) {
+    const token = getAccessKey();
+    if (!token) throw new Error("EasyDebrid key missing");
+    const headers = new Headers(init.headers);
+    headers.set("x-ed-token", token);
+    headers.set("Accept", "application/json");
+    if (init.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
+    const response = await fetch(`${EASYDEBRID_PROXY}${path}`, {
+      ...init,
+      headers
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) {
+      const message = data && typeof data === "object" && "error" in data && typeof data.error === "string" && data.error || data && typeof data === "object" && "message" in data && typeof data.message === "string" && data.message || `EasyDebrid request failed (${response.status})`;
+      throw new Error(message);
+    }
+    return data;
+  }
+  function extractInfoHash(input) {
+    const match = input.match(/btih:([a-f0-9]+)/i);
+    return match?.[1]?.toLowerCase() ?? input.trim().toLowerCase();
+  }
+  function buildSourceId(magnet) {
+    return `ed-${extractInfoHash(magnet)}`;
+  }
+  function normalizeLookupPath(file) {
+    const name = file.name?.trim() || "file";
+    const folder = file.folder?.trim();
+    return folder ? `${folder}/${name}` : name;
+  }
+  function normalizeGeneratedPath(file) {
+    const name = file.filename?.trim() || "file";
+    const directory = (file.directory ?? []).map((part) => part.trim()).filter(Boolean);
+    return directory.length > 0 ? `${directory.join("/")}/${name}` : name;
+  }
+  function toTorrentFiles(files, isSelected) {
+    return files.map((file, index3) => ({
+      id: index3 + 1,
+      path: "filename" in file ? normalizeGeneratedPath(file) : normalizeLookupPath(file),
+      bytes: file.size ?? 0,
+      selected: isSelected(index3 + 1) ? 1 : 0
+    }));
+  }
+  async function lookupSourceDetails(magnet) {
+    const data = await easyDebridJson("/link/lookupdetails", {
+      method: "POST",
+      body: JSON.stringify({ urls: [magnet] })
+    });
+    return data.result?.[0] ?? {};
+  }
+  async function lookupCachedStreams2(candidates) {
+    const magnets = candidates.map((candidate) => `magnet:?xt=urn:btih:${candidate.infoHash}`);
+    const data = await easyDebridJson("/link/lookupdetails", {
+      method: "POST",
+      body: JSON.stringify({ urls: magnets })
+    });
+    const cachedHashes = /* @__PURE__ */ new Set();
+    const cachedTitles = /* @__PURE__ */ new Set();
+    const downloadableHashes = /* @__PURE__ */ new Set();
+    const downloadableTitles = /* @__PURE__ */ new Set();
+    const results = data.result ?? [];
+    for (const [index3, result] of results.entries()) {
+      if (!result?.cached) continue;
+      const candidate = candidates[index3];
+      if (!candidate) continue;
+      cachedHashes.add(candidate.infoHash);
+      if (candidate.title.trim()) cachedTitles.add(candidate.title.trim());
+    }
+    return { cachedHashes, cachedTitles, downloadableHashes, downloadableTitles };
+  }
+  async function generateSourceFiles(magnet) {
+    const cached = generatedFileCache.get(magnet);
+    if (cached) return cached;
+    const data = await easyDebridJson("/link/generate", {
+      method: "POST",
+      body: JSON.stringify({ url: magnet })
+    });
+    const files = data.files ?? [];
+    generatedFileCache.set(magnet, files);
+    for (const file of files) {
+      if (!file.url) continue;
+      directLinkCache.set(file.url, {
+        filename: file.filename?.trim() || "download",
+        filesize: file.size ?? 0
+      });
+    }
+    return files;
+  }
+  function getSourceState(id4) {
+    const state = sourceState.get(id4);
+    if (!state) throw new Error("EasyDebrid source not found");
+    return state;
+  }
+  function buildTorrentInfo(state, files, status, statusLabel, links = []) {
+    const totalBytes = files.reduce((sum, file) => sum + file.bytes, 0);
+    const selectedFiles = files.filter((file) => file.selected === 1);
+    return {
+      id: buildSourceId(state.magnet),
+      filename: selectedFiles[0]?.path ?? files[0]?.path ?? state.hash,
+      hash: state.hash,
+      bytes: totalBytes,
+      host: "easydebrid",
+      split: 0,
+      progress: status === "downloaded" ? 100 : 0,
+      status,
+      statusLabel,
+      added: state.addedAt,
+      links,
+      original_filename: files[0]?.path ?? state.hash,
+      original_bytes: totalBytes,
+      files
+    };
+  }
+  var easyDebridPlaybackProvider = {
+    id: "easydebrid",
+    label: "EasyDebrid playback provider",
+    getAccessKey,
+    buildConfigSegment(accessKey, qualityFilter = "") {
+      const segments = qualityFilter ? [`qualityfilter=${qualityFilter}`] : [];
+      segments.push(`easydebrid=${accessKey}`);
+      return segments.join("|");
+    },
+    lookupCachedStreams: lookupCachedStreams2,
+    hideUncachedStreamsFromList() {
+      return true;
+    },
+    hideUnknownStreamsFromList() {
+      return true;
+    },
+    isMagnetSource(input) {
+      return input.trim().toLowerCase().startsWith("magnet:");
+    },
+    async addMagnet(magnet) {
+      const id4 = buildSourceId(magnet);
+      const hash = extractInfoHash(magnet);
+      sourceState.set(id4, {
+        magnet,
+        hash,
+        addedAt: (/* @__PURE__ */ new Date()).toISOString(),
+        selectedFileIds: null
+      });
+      return {
+        id: id4,
+        uri: magnet,
+        hash
+      };
+    },
+    async getSourceInfo(id4) {
+      const state = getSourceState(id4);
+      const details = await lookupSourceDetails(state.magnet);
+      const lookupFiles = details.files ?? [];
+      const isSelected = (fileId) => state.selectedFileIds === "all" || state.selectedFileIds instanceof Set && state.selectedFileIds.has(fileId);
+      if (!details.cached) {
+        return buildTorrentInfo(
+          state,
+          toTorrentFiles(lookupFiles, () => false),
+          "dead",
+          "Not cached on EasyDebrid"
+        );
+      }
+      if (state.selectedFileIds === null) {
+        return buildTorrentInfo(
+          state,
+          toTorrentFiles(lookupFiles, () => false),
+          "waiting_files_selection",
+          "Select files"
+        );
+      }
+      const generatedFiles = await generateSourceFiles(state.magnet);
+      const torrentFiles = toTorrentFiles(
+        generatedFiles.length > 0 ? generatedFiles : lookupFiles,
+        isSelected
+      );
+      const links = generatedFiles.map((file, index3) => ({ file, id: index3 + 1 })).filter(({ file, id: id5 }) => Boolean(file.url) && isSelected(id5)).map(({ file }) => file.url);
+      return buildTorrentInfo(state, torrentFiles, "downloaded", "Ready", links);
+    },
+    async selectFiles(id4, files = "all") {
+      const state = getSourceState(id4);
+      state.selectedFileIds = files === "all" ? "all" : new Set(
+        files.split(",").map((value) => Number.parseInt(value.trim(), 10)).filter((value) => Number.isFinite(value))
+      );
+    },
+    async resolveLink(link) {
+      const cached = directLinkCache.get(link);
+      return {
+        id: link,
+        filename: cached?.filename ?? link.split("/").pop()?.split("?")[0] ?? "download",
+        mimeType: "application/octet-stream",
+        filesize: cached?.filesize ?? 0,
+        link,
+        host: "easydebrid",
+        chunks: 1,
+        crc: 0,
+        download: link,
+        streamable: 0
+      };
+    }
+  };
+
+  // lib/stream-provider-runtime/real-debrid/rd-client.ts
+  var RD_PROXY = "/api/stream-providers/realdebrid";
+  var RD_API_BASE_URL = "https://api.real-debrid.com/rest/1.0";
+  function getRdApiKey() {
+    if (typeof window === "undefined") return null;
+    const key = getGlobalStreamProviderAccessKey("realdebrid").trim();
+    return key || null;
+  }
+  async function rdFetch(path, options = {}) {
+    const key = getRdApiKey();
+    const headers = {
+      ...options.headers
+    };
+    if (key) headers["x-stream-provider-token"] = key;
+    return fetch(`${RD_PROXY}${path}`, { ...options, headers });
+  }
+  async function rdDesktopJson(path, method = "GET", body) {
+    const token = getRdApiKey();
+    if (!token) throw new Error("No Real-Debrid API key configured");
+    const { invoke: invoke2 } = await Promise.resolve().then(() => (init_core(), core_exports));
+    const headers = [`Authorization: Bearer ${token}`];
+    if (body && body.trim().length > 0) {
+      headers.push("Content-Type: application/x-www-form-urlencoded");
+    }
+    return invoke2("desktop_external_api_request", {
+      baseUrl: RD_API_BASE_URL,
+      path,
+      method,
+      headers,
+      body: body ?? null,
+      timeoutMs: 5e3
+    });
+  }
+  function isTransientDesktopRdError(error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const normalized = message.toLowerCase();
+    return normalized.includes("timeout") || normalized.includes("timed out") || normalized.includes("failed to fetch") || normalized.includes("connection") || normalized.includes("network") || normalized.includes("reset by peer") || normalized.includes("could not resolve host") || normalized.includes("empty reply");
+  }
+  async function rdDesktopJsonWithRetry(path, method = "GET", body, attempts = 2) {
+    let lastError = null;
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
+      try {
+        return await rdDesktopJson(path, method, body);
+      } catch (error) {
+        lastError = error;
+        if (attempt >= attempts || !isTransientDesktopRdError(error)) break;
+        await new Promise((resolve) => setTimeout(resolve, 200 * attempt));
+      }
+    }
+    throw lastError instanceof Error ? lastError : new Error(String(lastError));
+  }
+  async function rdJson(path, options) {
+    if (isPluginDesktopHost()) {
+      const method = (options?.method ?? "GET").toUpperCase();
+      const rawBody = options?.body;
+      const body = typeof rawBody === "string" ? rawBody : rawBody instanceof URLSearchParams ? rawBody.toString() : void 0;
+      return rdDesktopJsonWithRetry(path, method, body, 2);
+    }
+    const res = await rdFetch(path, options);
+    const data = await res.json();
+    if (!res.ok) {
+      const msg = data.error ?? `HTTP ${res.status}`;
+      throw new Error(msg);
+    }
+    return data;
+  }
+  async function rdUnrestrictLink(link) {
+    return rdJson("/unrestrict/link", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ link }).toString()
+    });
+  }
+  async function rdAddMagnet(magnet) {
+    return rdJson("/torrents/addMagnet", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ magnet }).toString()
+    });
+  }
+  async function rdGetTorrentInfo(id4) {
+    return rdJson(`/torrents/info/${id4}`);
+  }
+  async function rdGetInstantAvailability(hashes) {
+    const cleaned = hashes.map((hash) => hash.trim().toLowerCase()).filter(Boolean);
+    if (cleaned.length === 0) return {};
+    return rdJson(
+      `/torrents/instantAvailability/${cleaned.join("/")}`
+    );
+  }
+  async function rdSelectFiles(id4, files = "all") {
+    if (isPluginDesktopHost()) {
+      await rdDesktopJson(
+        `/torrents/selectFiles/${id4}`,
+        "POST",
+        new URLSearchParams({ files }).toString()
+      );
+      return;
+    }
+    const res = await rdFetch(`/torrents/selectFiles/${id4}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ files }).toString()
+    });
+    if (!res.ok && res.status !== 204) {
+      const data = await res.json();
+      throw new Error(data.error ?? `HTTP ${res.status}`);
+    }
+  }
+  function isMagnetLink(input) {
+    return input.trim().toLowerCase().startsWith("magnet:");
+  }
+
+  // lib/stream-provider-runtime/playback/providers/legacy-playback-provider.ts
+  function chunk(items, size) {
+    const result = [];
+    for (let index3 = 0; index3 < items.length; index3 += size) {
+      result.push(items.slice(index3, index3 + size));
+    }
+    return result;
+  }
+  async function lookupCachedStreams3(candidates) {
+    const cachedHashes = /* @__PURE__ */ new Set();
+    const cachedTitles = /* @__PURE__ */ new Set();
+    const downloadableHashes = /* @__PURE__ */ new Set();
+    const downloadableTitles = /* @__PURE__ */ new Set();
+    const cachedStreamKeys = /* @__PURE__ */ new Set();
+    const downloadableStreamKeys = /* @__PURE__ */ new Set();
+    const byHash = /* @__PURE__ */ new Map();
+    for (const candidate of candidates) {
+      const hash = candidate.infoHash.trim().toLowerCase();
+      if (!hash) continue;
+      const bucket = byHash.get(hash);
+      if (bucket) {
+        bucket.push(candidate);
+      } else {
+        byHash.set(hash, [candidate]);
+      }
+    }
+    const chunks = chunk([...byHash.keys()], 40);
+    const chunkResults = await Promise.all(
+      chunks.map(async (hashes) => {
+        try {
+          return await rdGetInstantAvailability(hashes);
+        } catch {
+          return {};
+        }
+      })
+    );
+    for (let i = 0; i < chunks.length; i++) {
+      const hashes = chunks[i];
+      const availability = chunkResults[i];
+      for (const hash of hashes) {
+        const relatedCandidates = byHash.get(hash) ?? [];
+        const availabilityEntry = availability[hash];
+        const rdEntries = Array.isArray(availabilityEntry) ? availabilityEntry : availabilityEntry?.rd;
+        const cachedFileIds = /* @__PURE__ */ new Set();
+        for (const rdVariant of rdEntries ?? []) {
+          if (!rdVariant || typeof rdVariant !== "object") continue;
+          for (const fileIdRaw of Object.keys(rdVariant)) {
+            const fileId = Number.parseInt(fileIdRaw, 10);
+            if (!Number.isNaN(fileId) && fileId >= 0) cachedFileIds.add(fileId);
+          }
+        }
+        const hasPerFileAvailability = cachedFileIds.size > 0;
+        const isCached = hasPerFileAvailability || (rdEntries?.length ?? 0) > 0;
+        downloadableHashes.add(hash);
+        downloadableStreamKeys.add(`${hash}@*`);
+        if (isCached) cachedHashes.add(hash);
+        if (isCached && !hasPerFileAvailability) cachedStreamKeys.add(`${hash}@*`);
+        for (const candidate of relatedCandidates) {
+          const title = candidate.title.trim();
+          const fileIdx = Number.isFinite(candidate.fileIdx) ? Math.trunc(candidate.fileIdx) : null;
+          const streamKey = `${hash}@${fileIdx != null ? fileIdx : "*"}`;
+          downloadableStreamKeys.add(streamKey);
+          if (title) downloadableTitles.add(title);
+          const candidateCached = hasPerFileAvailability ? fileIdx != null ? cachedFileIds.has(fileIdx) || cachedFileIds.has(fileIdx + 1) : true : isCached;
+          if (candidateCached) {
+            cachedStreamKeys.add(streamKey);
+            if (title) cachedTitles.add(title);
+          }
+        }
+      }
+    }
+    return {
+      cachedHashes,
+      cachedTitles,
+      downloadableHashes,
+      downloadableTitles,
+      cachedStreamKeys,
+      downloadableStreamKeys
+    };
+  }
+  var legacyPlaybackProvider = {
+    id: "legacy",
+    label: "Legacy playback provider",
+    getAccessKey() {
+      return getRdApiKey();
+    },
+    buildConfigSegment(accessKey, qualityFilter = "") {
+      const segments = qualityFilter ? [`qualityfilter=${qualityFilter}`] : [];
+      segments.push(`realdebrid=${accessKey}`);
+      return segments.join("|");
+    },
+    lookupCachedStreams: lookupCachedStreams3,
+    hideUnknownStreamsFromList() {
+      return false;
+    },
+    isMagnetSource(input) {
+      return isMagnetLink(input);
+    },
+    addMagnet(magnet) {
+      return rdAddMagnet(magnet);
+    },
+    getSourceInfo(id4) {
+      return rdGetTorrentInfo(id4);
+    },
+    selectFiles(id4, files = "all") {
+      return rdSelectFiles(id4, files);
+    },
+    resolveLink(link) {
+      return rdUnrestrictLink(link);
+    }
+  };
+
+  // lib/stream-provider-runtime/playback/providers/offcloud-playback-provider.ts
+  var OFFCLOUD_PROXY = "/api/stream-providers/offcloud";
+  var sourceState2 = /* @__PURE__ */ new Map();
+  var linkCache = /* @__PURE__ */ new Map();
+  function getAccessKey2() {
+    const key = getStreamProviderAccessKey("offcloud").trim();
+    return key || null;
+  }
+  async function offcloudJson(path, init = {}) {
+    const token = getAccessKey2();
+    if (!token) throw new Error("Offcloud API key missing");
+    const headers = new Headers(init.headers);
+    headers.set("x-offcloud-key", token);
+    headers.set("Accept", "application/json");
+    if (init.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
+    const response = await fetch(`${OFFCLOUD_PROXY}${path}`, {
+      ...init,
+      headers
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) {
+      const message = data?.error || data?.not_available || `Offcloud request failed (${response.status})`;
+      throw new Error(message);
+    }
+    if (data && typeof data === "object" && ("error" in data || "not_available" in data)) {
+      const message = data.error || data.not_available;
+      if (message) throw new Error(message);
+    }
+    return data;
+  }
+  function extractInfoHash2(input) {
+    const match = input.match(/btih:([a-f0-9]+)/i);
+    return match?.[1]?.toLowerCase() ?? input.trim().toLowerCase();
+  }
+  function buildSourceId2(requestId) {
+    return `oc-${requestId}`;
+  }
+  function getSourceState2(id4) {
+    const state = sourceState2.get(id4);
+    if (!state) throw new Error("Offcloud source not found");
+    return state;
+  }
+  function parseFilenameFromUrl(link) {
+    try {
+      const url = new URL(link);
+      const lastSegment = url.pathname.split("/").filter(Boolean).pop();
+      return decodeURIComponent(lastSegment || "download");
+    } catch {
+      return link.split("/").pop()?.split("?")[0] ?? "download";
+    }
+  }
+  function toTrimmedString(value) {
+    if (typeof value === "string") return value.trim();
+    if (typeof value === "number" || typeof value === "boolean") return String(value).trim();
+    return "";
+  }
+  function toTorrentFile(link, index3, path, bytes = 0) {
+    return {
+      id: index3 + 1,
+      path: path || parseFilenameFromUrl(link),
+      bytes,
+      selected: 1
+    };
+  }
+  function mapStatus(status) {
+    switch (toTrimmedString(status).toLowerCase()) {
+      case "downloaded":
+        return "downloaded";
+      case "downloading":
+        return "downloading";
+      case "error":
+      case "canceled":
+        return "error";
+      case "queued":
+      case "created":
+      default:
+        return "queued";
+    }
+  }
+  async function getCloudStatus(requestId) {
+    return offcloudJson("/cloud/status", {
+      method: "POST",
+      body: JSON.stringify({ requestId })
+    });
+  }
+  async function getCacheEntry(magnet) {
+    const data = await offcloudJson("/cache", {
+      method: "POST",
+      body: JSON.stringify({
+        urls: [magnet],
+        includeFiles: true
+      })
+    });
+    if (!Array.isArray(data)) return null;
+    const entry = data[0];
+    if (!entry || typeof entry !== "object") return null;
+    return entry;
+  }
+  async function lookupCachedStreams4(candidates) {
+    const data = await offcloudJson("/cache", {
+      method: "POST",
+      body: JSON.stringify({
+        urls: candidates.map((candidate) => `magnet:?xt=urn:btih:${candidate.infoHash}`),
+        includeFiles: false
+      })
+    });
+    const cachedHashes = /* @__PURE__ */ new Set();
+    const cachedTitles = /* @__PURE__ */ new Set();
+    const downloadableHashes = /* @__PURE__ */ new Set();
+    const downloadableTitles = /* @__PURE__ */ new Set();
+    if (!Array.isArray(data)) {
+      return { cachedHashes, cachedTitles, downloadableHashes, downloadableTitles };
+    }
+    for (const [index3, entry] of data.entries()) {
+      if (!entry || typeof entry !== "object") continue;
+      if (!entry.cached) continue;
+      const candidate = candidates[index3];
+      if (!candidate) continue;
+      cachedHashes.add(candidate.infoHash);
+      if (candidate.title.trim()) cachedTitles.add(candidate.title.trim());
+    }
+    return { cachedHashes, cachedTitles, downloadableHashes, downloadableTitles };
+  }
+  async function getExploreFiles(requestId) {
+    const data = await offcloudJson(`/cloud/explore/${encodeURIComponent(requestId)}`);
+    return Array.isArray(data.files) ? data.files : [];
+  }
+  async function buildTorrentInfo2(id4) {
+    const state = getSourceState2(id4);
+    const status = await getCloudStatus(state.requestId);
+    const normalizedStatus = mapStatus(status.status);
+    const statusLabel = toTrimmedString(status.status) || normalizedStatus;
+    const fileName = toTrimmedString(status.fileName);
+    const createdOn = toTrimmedString(status.createdOn);
+    const directUrl = toTrimmedString(status.url);
+    const exploreFiles = normalizedStatus === "downloaded" ? await getExploreFiles(state.requestId) : [];
+    const directLinks = exploreFiles.map((file) => toTrimmedString(file.url)).filter(Boolean);
+    if (normalizedStatus === "downloaded" && directLinks.length === 0 && directUrl) {
+      directLinks.push(directUrl);
+    }
+    for (const file of exploreFiles) {
+      const link = toTrimmedString(file.url);
+      if (link && !linkCache.has(link)) {
+        linkCache.set(link, {
+          filename: toTrimmedString(file.path) || toTrimmedString(file.name) || parseFilenameFromUrl(link),
+          filesize: typeof file.size === "number" ? file.size : 0
+        });
+      }
+    }
+    if (normalizedStatus === "downloaded" && directUrl && !linkCache.has(directUrl)) {
+      linkCache.set(directUrl, {
+        filename: fileName || parseFilenameFromUrl(directUrl),
+        filesize: 0
+      });
+    }
+    const files = directLinks.map((link, index3) => {
+      const cached = linkCache.get(link);
+      return toTorrentFile(link, index3, cached?.filename, cached?.filesize ?? 0);
+    });
+    const totalBytes = files.reduce((sum, file) => sum + file.bytes, 0);
+    return {
+      id: id4,
+      filename: fileName || files[0]?.path || state.hash,
+      hash: state.hash,
+      bytes: totalBytes,
+      host: "offcloud",
+      split: 0,
+      progress: normalizedStatus === "downloaded" ? 100 : normalizedStatus === "downloading" ? 50 : 0,
+      status: normalizedStatus,
+      statusLabel,
+      added: createdOn || state.addedAt,
+      links: directLinks,
+      original_filename: fileName || state.hash,
+      original_bytes: totalBytes,
+      files
+    };
+  }
+  var offcloudPlaybackProvider = {
+    id: "offcloud",
+    label: "Offcloud playback provider",
+    getAccessKey: getAccessKey2,
+    buildConfigSegment(accessKey, qualityFilter = "") {
+      const segments = qualityFilter ? [`qualityfilter=${qualityFilter}`] : [];
+      segments.push(`offcloud=${accessKey}`);
+      return segments.join("|");
+    },
+    lookupCachedStreams: lookupCachedStreams4,
+    hideUncachedStreamsFromList() {
+      return true;
+    },
+    hideUnknownStreamsFromList() {
+      return true;
+    },
+    isMagnetSource(input) {
+      return input.trim().toLowerCase().startsWith("magnet:");
+    },
+    async addMagnet(magnet) {
+      const cacheEntry = await getCacheEntry(magnet);
+      if (!cacheEntry?.cached) {
+        throw new Error("Not cached on Offcloud");
+      }
+      const data = await offcloudJson("/cloud", {
+        method: "POST",
+        body: JSON.stringify({ url: magnet })
+      });
+      const requestId = toTrimmedString(data.requestId);
+      if (!requestId) throw new Error("Offcloud did not return a request ID");
+      const id4 = buildSourceId2(requestId);
+      sourceState2.set(id4, {
+        requestId,
+        magnet,
+        hash: extractInfoHash2(magnet),
+        addedAt: toTrimmedString(data.createdOn) || (/* @__PURE__ */ new Date()).toISOString()
+      });
+      return {
+        id: id4,
+        uri: magnet,
+        hash: extractInfoHash2(magnet)
+      };
+    },
+    async getSourceInfo(id4) {
+      return buildTorrentInfo2(id4);
+    },
+    async selectFiles() {
+    },
+    async resolveLink(link) {
+      const cached = linkCache.get(link);
+      return {
+        id: link,
+        filename: cached?.filename ?? parseFilenameFromUrl(link),
+        mimeType: "application/octet-stream",
+        filesize: cached?.filesize ?? 0,
+        link,
+        host: "offcloud",
+        chunks: 1,
+        crc: 0,
+        download: link,
+        streamable: 0
+      };
+    }
+  };
+
+  // lib/stream-provider-runtime/playback/stream-provider-playback.ts
+  var playbackProviders = /* @__PURE__ */ new Map([
+    ["alldebrid", alldebridPlaybackProvider],
+    ["easydebrid", easyDebridPlaybackProvider],
+    ["offcloud", offcloudPlaybackProvider],
+    ["realdebrid", legacyPlaybackProvider]
+  ]);
+  function findActivePlaybackProvider() {
+    const providerId = getActiveStreamProvider().trim().toLowerCase();
+    return playbackProviders.get(providerId) ?? null;
+  }
+  function getPlaybackAccessKey() {
+    return findActivePlaybackProvider()?.getAccessKey() ?? null;
+  }
+  function buildPlaybackProviderConfigSegment(qualityFilter = "") {
+    const accessKey = getPlaybackAccessKey();
+    if (!accessKey) return null;
+    const provider = findActivePlaybackProvider();
+    if (!provider) return null;
+    return provider.buildConfigSegment(accessKey, qualityFilter);
+  }
+
+  // lib/stream-provider-runtime/stream-filters.ts
+  var FILTER_KEY = "stream_provider_filters";
+  var LEGACY_FILTER_KEY = "rd_stream_filters";
+  var DEFAULT_FILTERS = {
+    hideCam: true,
+    hideTs: true,
+    hideScr: true,
+    hideBelow720p: true
+  };
+  function getStreamFilters() {
+    try {
+      if (typeof window === "undefined") return DEFAULT_FILTERS;
+      const raw = getScopedStorageItem(FILTER_KEY) ?? getScopedStorageItem(LEGACY_FILTER_KEY);
+      if (!raw) return DEFAULT_FILTERS;
+      return { ...DEFAULT_FILTERS, ...JSON.parse(raw) };
+    } catch {
+      return DEFAULT_FILTERS;
+    }
+  }
+  function buildTorrentioQualityFilter(filters) {
+    const parts = [];
+    if (filters.hideCam) parts.push("cam", "hdcam");
+    if (filters.hideTs) parts.push("ts", "tc");
+    if (filters.hideScr) parts.push("scr", "dvdscr", "r5");
+    return parts.join(",");
+  }
+
+  // lib/stream-provider-runtime/stream-provider-url-builder.ts
+  function buildScraperUrl(config) {
+    switch (config.preset) {
+      case "torrentio":
+        return buildTorrentioUrl(config.options);
+      case "torrentsdb":
+        return buildTorrentsDbUrl(config.options);
+      case "comet":
+        return buildCometUrl(config.options);
+      case "mediafusion":
+        return "";
+      // MediaFusion URLs require async encryption — use buildMediaFusionEncryptedUrl instead
+      case "orion":
+        return buildOrionUrl(config.options);
+      case "custom":
+        return buildCustomUrl(config.options);
+      default:
+        return "";
+    }
+  }
+  function getScraperTypeForApi(config) {
+    return config.preset === "torrentio" ? "torrentio" : "preconfigured";
+  }
+  function buildTorrentioSegments(options) {
+    const segments = [];
+    if (options.providers.length > 0) segments.push(`providers=${options.providers.join(",")}`);
+    if (options.sort && options.sort !== "quality") segments.push(`sort=${options.sort}`);
+    if (options.languages.length > 0) segments.push(`language=${options.languages.join(",")}`);
+    if (options.qualityFilter.length > 0) segments.push(`qualityfilter=${options.qualityFilter.join(",")}`);
+    if (options.limit > 0) segments.push(`limit=${options.limit}`);
+    return segments;
+  }
+  function buildTorrentioUrl(options) {
+    const segments = buildTorrentioSegments(options);
+    const base = "https://torrentio.strem.fun";
+    return segments.length > 0 ? `${base}/${segments.join("|")}` : base;
+  }
+  function buildTorrentsDbUrl(options) {
+    const streamProvider = (options.streamProvider ?? options.debridProvider).trim().toLowerCase();
+    const accessKey = getStreamProviderAccessKey(streamProvider);
+    const cfg = {};
+    if (accessKey && streamProvider !== "none") cfg[streamProvider] = accessKey;
+    const b64 = btoa(JSON.stringify(cfg));
+    return `https://torrentsdb.com/${b64}`;
+  }
+  var COMET_RESOLUTION_MAP = {
+    "240p": "r240p",
+    "360p": "r360p",
+    "480p": "r480p",
+    "576p": "r576p",
+    "720p": "r720p",
+    "1080p": "r1080p",
+    "1440p": "r1440p",
+    "2160p": "r2160p",
+    "unknown": "unknown"
+  };
+  function buildCometUrl(options) {
+    const streamProvider = (options.streamProvider ?? options.debridProvider).trim().toLowerCase();
+    const accessKey = getStreamProviderAccessKey(streamProvider);
+    const resolutions = {};
+    for (const q of options.qualityFilter) {
+      const key = COMET_RESOLUTION_MAP[q];
+      if (key) resolutions[key] = false;
+    }
+    const cfg = {
+      debridServices: accessKey && streamProvider !== "none" ? [{ service: streamProvider, apiKey: accessKey }] : [],
+      enableTorrent: !accessKey || streamProvider === "none",
+      deduplicateStreams: false,
+      scrapeDebridAccountTorrents: false,
+      maxResultsPerResolution: options.maxResults,
+      maxSize: options.maxSize > 0 ? options.maxSize * 1024 * 1024 * 1024 : 0,
+      cachedOnly: options.cachedOnly,
+      sortCachedUncachedTogether: options.sortCachedUncachedTogether,
+      removeTrash: true,
+      debridStreamProxyPassword: "",
+      resultFormat: ["all"],
+      resolutions,
+      languages: {
+        required: [],
+        allowed: [],
+        exclude: [],
+        preferred: options.languages
+      },
+      options: {
+        remove_ranks_under: -1e10,
+        allow_english_in_languages: false,
+        remove_unknown_languages: false
+      }
+    };
+    return `https://comet.elfhosted.com/${btoa(JSON.stringify(cfg))}`;
+  }
+  function buildOrionUrl(options) {
+    if (!options.orionKey.trim()) return "";
+    const streamProvider = (options.streamProvider ?? options.debridProvider).trim().toLowerCase();
+    const rdToken = getStreamProviderAccessKey(streamProvider);
+    const params = [];
+    if (rdToken && streamProvider !== "none") params.push(`${streamProvider}=${rdToken}`);
+    const key = options.orionKey.trim();
+    return params.length > 0 ? `https://addon.orionoid.com/${key}/${params.join("|")}` : `https://addon.orionoid.com/${key}`;
+  }
+  function buildCustomUrl(options) {
+    return options.rawUrl.trim().replace(/^stremio:\/\//, "https://").replace(/\/manifest\.json$/i, "").replace(/\/$/, "");
+  }
+  function buildStreamProviderUrl(config) {
+    return buildScraperUrl(config);
+  }
+  function getStreamProviderTypeForApi(config) {
+    return getScraperTypeForApi(config);
+  }
+
+  // lib/stream-provider-runtime/stream-provider-request-context.ts
+  var DEFAULT_STREAM_PROVIDER_URL = "https://torrentio.strem.fun";
+  function getPrimaryStreamProviderConfig() {
+    const configs = getStreamProviderConfigs().filter((config) => config.enabled);
+    return configs.find((config) => config.preset === "torrentio") ?? configs[0] ?? null;
+  }
+  function getPrimaryStreamProviderRequestContext() {
+    const primary = getPrimaryStreamProviderConfig();
+    const qualityFilter = buildTorrentioQualityFilter(getStreamFilters());
+    const streamProviderUrl = primary ? buildStreamProviderUrl(primary) || DEFAULT_STREAM_PROVIDER_URL : DEFAULT_STREAM_PROVIDER_URL;
+    const streamProviderType = primary ? getStreamProviderTypeForApi(primary) : "torrentio";
+    return {
+      streamProviderUrl,
+      streamProviderType,
+      qualityFilter,
+      streamHeaders: {
+        "x-stream-provider-url": streamProviderUrl,
+        "x-stream-provider-type": streamProviderType,
+        "x-quality-filter": qualityFilter
+      },
+      browserStreamUrl: ({ imdbId, mediaType, season, episode }) => {
+        if (streamProviderType !== "torrentio") return null;
+        const configSegment = buildPlaybackProviderConfigSegment(qualityFilter);
+        if (!configSegment) return null;
+        const streamPath = mediaType === "series" && season && episode ? `stream/series/${imdbId}:${season}:${episode}.json` : `stream/movie/${imdbId}.json`;
+        return `${streamProviderUrl}/${configSegment}/${streamPath}`;
+      }
+    };
   }
 
   // lib/series-watchlist-feed.ts
@@ -112584,7 +114025,7 @@
     ) });
   }
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-FCOYq4/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ibItQZ/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
 
   // lib/tauri-mpv.ts
@@ -115291,7 +116732,8 @@
         streamParams.set("type", "movie");
       }
       const streamTask = prefetchOnce("streams", streamParams.toString(), async () => {
-        await fetchJsonWithRetry(`/api/streams?${streamParams.toString()}`, {}, {
+        const { streamHeaders } = getPrimaryStreamProviderRequestContext();
+        await fetchJsonWithRetry(`/api/streams?${streamParams.toString()}`, { headers: streamHeaders }, {
           timeoutMs: 5400,
           retries: 1,
           retryDelayMs: 260
@@ -116227,6 +117669,19 @@
     return Boolean(result?.closed);
   }
 
+  // lib/lan-streaming-settings.ts
+  var ENABLED_KEY = "lan_streaming_enabled";
+  var MODE_KEY = "lan_streaming_mode";
+  function getLanStreamingEnabled() {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem(ENABLED_KEY) === "1";
+  }
+  function getLanStreamingMode() {
+    if (typeof window === "undefined") return "app";
+    const value = localStorage.getItem(MODE_KEY);
+    return value === "playback" ? "playback" : "app";
+  }
+
   // components/player/video-player-modal.tsx
   init_jsx_runtime_shim();
   var EMBEDDED_SUBTITLES_ENABLED = false;
@@ -116407,14 +117862,24 @@
       throw error;
     }
   }
+  function isIosWebKitBrowser() {
+    if (typeof navigator === "undefined") return false;
+    const ua = navigator.userAgent || "";
+    const isIOSDevice = /iPhone|iPad|iPod/i.test(ua) || navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+    const isWebKit = /AppleWebKit/i.test(ua) && !/CriOS|FxiOS|EdgiOS/i.test(ua);
+    return isIOSDevice && isWebKit;
+  }
   function VideoPlayerModal({ url, filename, title, onClose, imdbId, tmdbId, mediaType, season, episode, mediaId, mediaTitle, mediaSource, posterUrl, backdropUrl, year, initialTime, onFirstPlay, hideStartSplash, forceProxy, onTimeUpdate, skipHomeKitOnClose, skipHomeKitOnOpen, overlayContent, autoFullscreen, playbackTraceId }) {
     const STILL_WATCHING_CLOSE_SECONDS = 20;
     const [useMpv, setUseMpv] = useState(false);
     useEffect(() => {
       setUseMpv(isTauriEnv);
     }, []);
-    const shouldProxyPlayback = !useMpv && needsProxyForSource(url, filename, forceProxy);
+    const isLanClientSession = typeof window !== "undefined" && window.location.hostname !== "127.0.0.1" && window.location.hostname !== "localhost" && window.location.hostname !== "tauri.localhost";
+    const forceLanIosProxy = !useMpv && isLanClientSession && isIosWebKitBrowser();
+    const shouldProxyPlayback = !useMpv && (forceLanIosProxy || needsProxyForSource(url, filename, forceProxy));
     const isDirectLocalFileSource = !/^https?:\/\//i.test(url) && !url.startsWith("/api/");
+    const shouldForceProxyTranscode = forceLanIosProxy || shouldProxyPlayback && isDirectLocalFileSource;
     const [portalEl, setPortalEl] = useState(null);
     useLayoutEffect(() => {
       const div = document.createElement("div");
@@ -116453,6 +117918,16 @@
     const derivedTmdbId = mediaId && !mediaId.startsWith("local-") ? mediaId.replace(/^(movie|tv)-/, "") : null;
     const wikiTmdbId = tmdbId ?? derivedTmdbId;
     const inferredMediaType = mediaType ?? (season != null || episode != null ? "tv" : "movie");
+    const notifyLanPlaybackState = useCallback((active) => {
+      if (!getLanStreamingEnabled() || getLanStreamingMode() !== "playback") return;
+      const body = active ? { active: true, url, title, posterUrl, backdropUrl, mediaType, imdbId, tmdbId, season, episode } : { active: false };
+      void fetch("/api/lan-playback-state", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      }).catch(() => {
+      });
+    }, [url, title, posterUrl, backdropUrl, mediaType, imdbId, tmdbId, season, episode]);
     useEffect(() => {
       const controller = new AbortController();
       void prefetchMediaWarmup({
@@ -116513,6 +117988,7 @@
     const [playing, setPlaying] = useState(false);
     const [hasStarted, setHasStarted] = useState(false);
     const [hasEverStarted, setHasEverStarted] = useState(false);
+    const [requiresUserStart, setRequiresUserStart] = useState(false);
     const [hasEnded, setHasEnded] = useState(false);
     const mpvFreshStartGuardRef = useRef({
       pending: false,
@@ -116562,6 +118038,7 @@
     const [showCropZoomMenu, setShowCropZoomMenu] = useState(false);
     const [showMoreMenu, setShowMoreMenu] = useState(false);
     const [copiedLink, setCopiedLink] = useState(false);
+    const iosWebKitRef = useRef(false);
     const [downloadState, setDownloadState] = useState({ type: "idle" });
     const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
     const [introSegment, setIntroSegment] = useState(null);
@@ -116591,6 +118068,9 @@
     const subtitleDownloadRequestIdRef = useRef(0);
     const subtitlesSnapshotRef = useRef([]);
     const didApplyPreferredAudioRef = useRef(false);
+    useEffect(() => {
+      iosWebKitRef.current = isIosWebKitBrowser();
+    }, []);
     useEffect(() => {
       subtitlesSnapshotRef.current = subtitles;
     }, [subtitles]);
@@ -116799,26 +118279,56 @@
       return () => window.removeEventListener("mousedown", handleOutsideClick);
     }, [showMoreMenu]);
     useEffect(() => {
-      if (!useMpv) return;
-      const applyAspectAndZoom = () => {
-        const override = aspectRatioMode === "ratio_16_9" ? "16:9" : aspectRatioMode === "ratio_4_3" ? "4:3" : "-1";
-        const panscan = cropZoomMode === "crop" ? 1 : aspectRatioMode === "fill" ? 1 : 0;
-        const videoZoom = cropZoomMode === "zoom" ? 0.35 : cropZoomMode === "zoom_plus" ? 0.7 : 0;
-        void setMpvVideoGeometry({
-          aspectOverride: override,
-          panscan,
-          videoZoom
-        });
-      };
-      applyAspectAndZoom();
-      const t1 = window.setTimeout(applyAspectAndZoom, 150);
-      const t2 = window.setTimeout(applyAspectAndZoom, 700);
-      const t3 = window.setTimeout(applyAspectAndZoom, 1500);
-      return () => {
-        window.clearTimeout(t1);
-        window.clearTimeout(t2);
-        window.clearTimeout(t3);
-      };
+      if (useMpv) {
+        const applyAspectAndZoom = () => {
+          const override = aspectRatioMode === "ratio_16_9" ? "16:9" : aspectRatioMode === "ratio_4_3" ? "4:3" : "-1";
+          const panscan = cropZoomMode === "crop" ? 1 : aspectRatioMode === "fill" ? 1 : 0;
+          const videoZoom = cropZoomMode === "zoom" ? 0.35 : cropZoomMode === "zoom_plus" ? 0.7 : 0;
+          void setMpvVideoGeometry({
+            aspectOverride: override,
+            panscan,
+            videoZoom
+          });
+        };
+        applyAspectAndZoom();
+        const t1 = window.setTimeout(applyAspectAndZoom, 150);
+        const t2 = window.setTimeout(applyAspectAndZoom, 700);
+        const t3 = window.setTimeout(applyAspectAndZoom, 1500);
+        return () => {
+          window.clearTimeout(t1);
+          window.clearTimeout(t2);
+          window.clearTimeout(t3);
+        };
+      }
+      const video = videoRef.current;
+      if (!video) return;
+      switch (aspectRatioMode) {
+        case "contain":
+          video.style.objectFit = "contain";
+          video.style.transform = "";
+          video.style.aspectRatio = "";
+          break;
+        case "fill":
+          video.style.objectFit = "cover";
+          video.style.transform = "";
+          video.style.aspectRatio = "";
+          break;
+        case "ratio_16_9":
+          video.style.objectFit = "fill";
+          video.style.transform = "";
+          video.style.aspectRatio = "16/9";
+          break;
+        case "ratio_4_3":
+          video.style.objectFit = "fill";
+          video.style.transform = "";
+          video.style.aspectRatio = "4/3";
+          break;
+        default:
+          video.style.objectFit = "contain";
+          video.style.transform = "";
+          video.style.aspectRatio = "";
+          break;
+      }
     }, [useMpv, aspectRatioMode, cropZoomMode, url]);
     useEffect(() => {
       if (!hasStarted || !onTimeUpdateRef.current) return;
@@ -116839,6 +118349,30 @@
       if (v.paused) void safePlay(v);
       else v.pause();
     }, [useMpv, mpv.paused, realTime, showStillWatchingPrompt]);
+    const attemptHtml5Start = useCallback(async (userGesture) => {
+      if (useMpv) return;
+      const v = videoRef.current;
+      if (!v) return;
+      try {
+        if (iosWebKitRef.current && !userGesture && !hasStarted) {
+          v.muted = true;
+          setMuted(true);
+        }
+        if (iosWebKitRef.current && userGesture && v.muted) {
+          v.muted = false;
+          setMuted(false);
+        }
+        await safePlay(v);
+        setRequiresUserStart(false);
+      } catch (error) {
+        const name = error instanceof DOMException ? error.name : "";
+        const message = error instanceof Error ? error.message : "";
+        const blockedByAutoplayPolicy = name === "NotAllowedError" || /notallowed|user gesture|play\(\)/i.test(message);
+        if (iosWebKitRef.current || blockedByAutoplayPolicy) {
+          setRequiresUserStart(true);
+        }
+      }
+    }, [hasStarted, useMpv]);
     const seek = useCallback((delta) => {
       registerPlaybackInteraction();
       if (useMpv) {
@@ -116915,11 +118449,13 @@
         return;
       }
       if (typeof containerRef.current?.requestFullscreen !== "function") {
-        void toggleWindowFullscreen().then((fullscreen) => {
-          setDesktopFullscreen(fullscreen);
-          scheduleBoundsResync();
-        }).catch(() => {
-        });
+        if (isTauriEnv) {
+          void toggleWindowFullscreen().then((fullscreen) => {
+            setDesktopFullscreen(fullscreen);
+            scheduleBoundsResync();
+          }).catch(() => {
+          });
+        }
         return;
       }
       if (document.fullscreenElement) void document.exitFullscreen();
@@ -116976,6 +118512,7 @@
       onFirstPlay?.();
     }, [hasStarted, mpv.paused, mpv.timePos, onFirstPlay, useMpv]);
     useEffect(() => {
+      notifyLanPlaybackState(true);
       if (!isTauriEnv) return;
       let cancelled = false;
       playbackSessionClosedRef.current = false;
@@ -117000,7 +118537,7 @@
         playbackSessionIdRef.current = null;
         void tryClosePlaybackSession(sessionId, "modal_unmount").catch(() => false);
       };
-    }, [mediaId, mediaSource, title, url]);
+    }, [mediaId, mediaSource, title, url, notifyLanPlaybackState]);
     useEffect(() => {
       void emitDesktopPlaybackTelemetry({
         stage: "player.lifecycle",
@@ -117073,6 +118610,7 @@
       closeInProgressRef.current = true;
       let didFinishClose = false;
       const finishClose = () => {
+        notifyLanPlaybackState(false);
         if (didFinishClose) return;
         didFinishClose = true;
         downloadEsRef.current?.close();
@@ -117151,8 +118689,12 @@
         });
         return;
       }
+      if (!isTauriEnv && document.fullscreenElement) {
+        void document.exitFullscreen().catch(() => {
+        });
+      }
       finishClose();
-    }, [onClose, realTime, scheduleBoundsResync, skipHomeKitOnClose, syncDesktopFullscreenState, title, totalDuration, tryCloseDesktopPlaybackSession, useMpv]);
+    }, [notifyLanPlaybackState, onClose, realTime, scheduleBoundsResync, skipHomeKitOnClose, syncDesktopFullscreenState, title, totalDuration, tryCloseDesktopPlaybackSession, useMpv]);
     useEffect(() => {
       if (!showStillWatchingPrompt) {
         setStillWatchingCountdown(STILL_WATCHING_CLOSE_SECONDS);
@@ -117300,6 +118842,14 @@
         document.removeEventListener("fullscreenchange", onFullscreenChange);
       };
     }, [scheduleBoundsResync]);
+    useEffect(() => {
+      if (isTauriEnv) return;
+      function onFullscreenChange() {
+        setDesktopFullscreen(Boolean(document.fullscreenElement));
+      }
+      document.addEventListener("fullscreenchange", onFullscreenChange);
+      return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
+    }, []);
     useEffect(() => {
       const container = containerRef.current;
       if (!container) return;
@@ -117607,6 +119157,7 @@
       setBuffered(0);
       setHasStarted(false);
       setHasEverStarted(false);
+      setRequiresUserStart(false);
       setProbedDuration(null);
       setVideoCodec(null);
       const contentChanged = prevResetUrlRef.current !== url;
@@ -117679,6 +119230,20 @@
         stillWatchingEpisodeCountRef.current += 1;
       }
     }, [playbackSessionIdentity, url, inferredMediaType, mediaType, season, episode, shouldProxyPlayback, useMpv, initialTime, imdbId, tmdbId, wikiTmdbId, mediaId, title]);
+    useEffect(() => {
+      if (useMpv || hasStarted) return;
+      const timer = window.setInterval(() => {
+        const v = videoRef.current;
+        if (!v) return;
+        if (!v.paused && v.currentTime > 0.15) {
+          setHasStarted(true);
+          setHasEverStarted(true);
+          setRequiresUserStart(false);
+          onFirstPlay?.();
+        }
+      }, 350);
+      return () => window.clearInterval(timer);
+    }, [hasStarted, onFirstPlay, useMpv]);
     useEffect(() => {
       if (imdbId) {
         if (wikiTmdbId) resolvedImdbByTmdbRef.current.set(`${inferredMediaType}:${wikiTmdbId}`, imdbId);
@@ -117912,7 +119477,7 @@
       }
       const realNow = (videoRef.current?.currentTime ?? 0) + streamStartRef.current;
       const currentProxyUrl = videoSrc && isProxyUrl(videoSrc) ? new URL(videoSrc, window.location.href) : null;
-      const isTranscoding = currentProxyUrl?.searchParams.get("transcode") === "1" || shouldProxyPlayback && isDirectLocalFileSource;
+      const isTranscoding = currentProxyUrl?.searchParams.get("transcode") === "1" || shouldForceProxyTranscode;
       streamStartRef.current = realNow;
       setCurrentTime(0);
       setBuffered(0);
@@ -118065,7 +119630,7 @@
             getTrackChannels(activeAudioTrack),
             audioOutputMode,
             nightMode,
-            shouldProxyPlayback && isDirectLocalFileSource
+            shouldForceProxyTranscode
           )
         );
       }, 1500);
@@ -118090,7 +119655,7 @@
             getTrackChannels(activeAudioTrack),
             audioOutputMode,
             nightMode,
-            shouldProxyPlayback && isDirectLocalFileSource
+            shouldForceProxyTranscode
           ));
           return;
         }
@@ -118145,7 +119710,7 @@
             getTrackChannels(activeAudioTrack),
             audioOutputMode,
             nightMode,
-            shouldProxyPlayback && isDirectLocalFileSource
+            shouldForceProxyTranscode
           ));
           return;
         }
@@ -118229,7 +119794,7 @@
       }
       const currentProxyUrl = new URL(videoSrc, window.location.href);
       const origUrl = currentProxyUrl.searchParams.get("url") ?? url;
-      const isTranscoding = currentProxyUrl.searchParams.get("transcode") === "1";
+      const isTranscoding = currentProxyUrl.searchParams.get("transcode") === "1" || shouldForceProxyTranscode;
       streamStartRef.current = Math.max(0, targetTime);
       setCurrentTime(0);
       setBuffered(0);
@@ -118257,6 +119822,7 @@
     }
     const progress2 = totalDuration > 0 ? realTime / totalDuration * 100 : 0;
     const hasSubtitles = subtitleOptions.length > 0;
+    const canAutoSyncNow = Boolean(activeSubId) && cues.length >= 2;
     const activeIntro = introSegment ? realTime >= introSegment.startMs / 1e3 && realTime < introSegment.endMs / 1e3 ? introSegment : null : null;
     const shouldShowSkipIntroButton = Boolean(hasStarted && !autoSkipIntro && activeIntro && introDataReady);
     useEffect(() => {
@@ -118394,9 +119960,16 @@
                 ref: videoRef,
                 src: videoSrc,
                 autoPlay: true,
+                playsInline: true,
                 className: "block",
                 style: { ...videoPresentation.videoStyle, ...cropZoomVideoStyle },
                 ...{ "x-webkit-airplay": "allow" },
+                onLoadedMetadata: () => {
+                  if (!hasStarted) void attemptHtml5Start(false);
+                },
+                onCanPlay: () => {
+                  if (!hasStarted) void attemptHtml5Start(false);
+                },
                 onPlay: () => {
                   setPlaying(true);
                   if (!hasStarted) {
@@ -118419,6 +119992,7 @@
                       }
                     });
                   }
+                  setRequiresUserStart(false);
                   setControlsPaused(false);
                 },
                 onPause: () => {
@@ -118467,7 +120041,7 @@
                   const v = videoRef.current;
                   const currentReal = (v?.currentTime ?? 0) + streamStartRef.current;
                   if (!isProxyUrl(videoSrc)) {
-                    setVideoSrc(buildProxyUrl(url, null, currentReal, videoCodec, getTrackChannels(null), audioOutputMode, nightMode, shouldProxyPlayback && isDirectLocalFileSource));
+                    setVideoSrc(buildProxyUrl(url, null, currentReal, videoCodec, getTrackChannels(null), audioOutputMode, nightMode, shouldForceProxyTranscode));
                     return;
                   }
                   if (proxyRetryRef.current) return;
@@ -118484,6 +120058,17 @@
             ) }) }) : /* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-black" }),
             /* @__PURE__ */ jsx("div", { className: "absolute inset-0 z-10", onClick: togglePlay, onMouseMove: onMouseActivity }),
             hasStarted && !isPlaying && /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute inset-0 z-20 flex items-center justify-center", children: /* @__PURE__ */ jsx("div", { className: "rounded-full bg-black/40 p-5 backdrop-blur-sm", children: /* @__PURE__ */ jsx("svg", { className: "h-12 w-12 text-white", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) }) }),
+            !hasStarted && requiresUserStart && /* @__PURE__ */ jsx("div", { className: "absolute inset-0 z-40 flex items-center justify-center bg-black/35", children: /* @__PURE__ */ jsx(
+              "button",
+              {
+                type: "button",
+                onClick: () => {
+                  void attemptHtml5Start(true);
+                },
+                className: "rounded-full border border-white/20 bg-black/55 px-5 py-2 text-xs uppercase tracking-[0.18em] text-white transition hover:border-white/40",
+                children: "Tryck f\xF6r att starta"
+              }
+            ) }),
             activeCue && /* @__PURE__ */ jsx(
               "div",
               {
@@ -118588,8 +120173,8 @@
                           onClick: () => {
                             void runSubtitleAutoSync();
                           },
-                          disabled: subtitleAutoSyncState.type === "analyzing" || !activeSubId || cues.length < 2,
-                          className: `w-full rounded-lg border px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.18em] transition ${subtitleAutoSyncState.type === "analyzing" ? "cursor-wait border-white/15 bg-white/5 text-slate-300" : activeSubId && cues.length >= 2 ? "border-aurora-400/40 bg-aurora-400/10 text-aurora-200 hover:bg-aurora-400/15" : "cursor-not-allowed border-white/10 bg-white/5 text-slate-500"}`,
+                          disabled: subtitleAutoSyncState.type === "analyzing",
+                          className: `w-full rounded-lg border px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.18em] transition ${subtitleAutoSyncState.type === "analyzing" ? "cursor-wait border-white/15 bg-white/5 text-slate-300" : canAutoSyncNow ? "border-aurora-400/40 bg-aurora-400/10 text-aurora-200 hover:bg-aurora-400/15" : "border-white/10 bg-white/5 text-slate-500 hover:border-white/20"}`,
                           children: subtitleAutoSyncState.type === "analyzing" ? t("subtitleAutoSyncAnalyzing") : t("subtitleAutoSync")
                         }
                       ),
@@ -119190,13 +120775,10 @@
   var CLIENT_KEY = "plex_client_identifier";
   var LIBRARY_CACHE_KEY = "plex_library_cache";
   var LIBRARY_ERROR_KEY = "plex_library_last_error";
-  var DEBUG_KEY = "plex_debug_log";
   var AUTH_EVENT = "lumio-plex-auth-changed";
   var SETTINGS_EVENT = "lumio-plex-settings-changed";
-  var DEBUG_EVENT = "lumio-plex-debug-changed";
   var LIBRARY_ERROR_EVENT = "lumio-plex-library-error-changed";
   var CACHE_TTL_MS = 20 * 60 * 1e3;
-  var DEBUG_LIMIT = 50;
   var DEFAULT_PLEX_SETTINGS = {
     serverId: null,
     serverName: null,
@@ -119464,35 +121046,6 @@
     window.addEventListener(SETTINGS_EVENT, listener);
     return () => window.removeEventListener(SETTINGS_EVENT, listener);
   }
-  function getPlexDebugLog() {
-    if (typeof window === "undefined") return [];
-    try {
-      const raw = getScopedStorageItem(DEBUG_KEY);
-      if (!raw) return [];
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed)) return [];
-      return parsed.filter((entry) => typeof entry === "string");
-    } catch {
-      return [];
-    }
-  }
-  function appendPlexDebugLog(line) {
-    if (typeof window === "undefined") return;
-    const next2 = [...getPlexDebugLog(), line].slice(-DEBUG_LIMIT);
-    setScopedStorageItem(DEBUG_KEY, JSON.stringify(next2));
-    emit2(DEBUG_EVENT);
-  }
-  function clearPlexDebugLog() {
-    if (typeof window === "undefined") return;
-    removeScopedStorageItem(DEBUG_KEY);
-    emit2(DEBUG_EVENT);
-  }
-  function onPlexDebugLogChanged(listener) {
-    if (typeof window === "undefined") return () => {
-    };
-    window.addEventListener(DEBUG_EVENT, listener);
-    return () => window.removeEventListener(DEBUG_EVENT, listener);
-  }
 
   // ../lumio-official-plugins/plugins/plex/runtime/plex-sync.ts
   var plexLibraryInFlight = /* @__PURE__ */ new Map();
@@ -119529,8 +121082,8 @@
     return false;
   }
   function logPlexDebug(message, detail) {
-    const payload = detail ? `${message} ${JSON.stringify(detail)}` : message;
-    appendPlexDebugLog(payload);
+    void message;
+    void detail;
   }
   function plexHeaders(clientIdentifier, authToken) {
     return {
@@ -120587,7 +122140,7 @@
           }
         )
       ] }) : null,
-      /* @__PURE__ */ jsx("div", { className: "grid gap-x-4 gap-y-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6", children: pagedItems.map((item, i) => /* @__PURE__ */ jsx(
+      /* @__PURE__ */ jsx("div", { className: "grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6", children: pagedItems.map((item, i) => /* @__PURE__ */ jsx(
         PlexPosterCard,
         {
           item,
@@ -120696,7 +122249,7 @@
             "button",
             {
               type: "button",
-              className: buttonBase + " " + buttonInactive,
+              className: `${buttonBase} ${buttonInactive} hidden sm:inline-flex`,
               onClick: () => setFilters(defaultFilters),
               children: labels.clearFilters
             }
@@ -120812,49 +122365,9 @@
     const [plexSelectedLibraryKeys, setPlexSelectedLibraryKeys] = useState([]);
     const [homeOverrideEnabled, setHomeOverrideEnabled] = useState(false);
     const [homeOverrideError, setHomeOverrideError] = useState("");
-    const [plexDebugLog, setPlexDebugLog] = useState([]);
     const [plexCacheMessage, setPlexCacheMessage] = useState("");
     const plexPollRef = useRef(null);
     const plexRefreshRequestRef = useRef(0);
-    async function runPlexServerDebug() {
-      const auth = getPlexAuth();
-      const settings = getPlexSettings();
-      if (!auth?.authToken || !auth.clientIdentifier || !settings.serverId) {
-        appendPlexDebugLog("[plex-debug] missing auth or server selection");
-        return;
-      }
-      appendPlexDebugLog("[plex-debug] starting server debug...");
-      try {
-        const response = await fetch("/api/plugins/plex/debug", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            auth,
-            serverId: settings.serverId
-          })
-        });
-        if (!response.ok) {
-          const text = await response.text().catch(() => "");
-          appendPlexDebugLog(`[plex-debug] server responded ${response.status}: ${text.slice(0, 500)}`);
-          return;
-        }
-        const payload = await response.json();
-        appendPlexDebugLog("[plex-debug] selected server " + JSON.stringify(payload.selected ?? {}));
-        for (const attempt of payload.attempts ?? []) {
-          appendPlexDebugLog("[plex-debug] uri " + JSON.stringify({
-            uri: attempt.uri,
-            ok: attempt.ok,
-            libraryCount: attempt.libraryCount,
-            error: attempt.error
-          }));
-          for (const tokenAttempt of attempt.tokenAttempts ?? []) {
-            appendPlexDebugLog("[plex-debug] token " + JSON.stringify(tokenAttempt));
-          }
-        }
-      } catch (error) {
-        appendPlexDebugLog("[plex-debug] failed " + (error instanceof Error ? error.message : String(error)));
-      }
-    }
     useEffect(() => {
       const syncPlexState = () => {
         const nextAuth = getPlexAuth();
@@ -120880,8 +122393,6 @@
       syncPlexState();
       const stopPlexAuth = onPlexAuthChanged(syncPlexState);
       const stopPlexSettings = onPlexSettingsChanged(syncPlexState);
-      const stopPlexDebug = onPlexDebugLogChanged(() => setPlexDebugLog(getPlexDebugLog()));
-      setPlexDebugLog(getPlexDebugLog());
       return () => {
         if (plexPollRef.current) {
           clearInterval(plexPollRef.current);
@@ -120889,7 +122400,6 @@
         }
         stopPlexAuth();
         stopPlexSettings();
-        stopPlexDebug();
       };
     }, []);
     useEffect(() => {
@@ -121369,50 +122879,7 @@
             className: settingsDangerActionButtonClass,
             children: t("plexDisconnect")
           }
-        ) }),
-        /* @__PURE__ */ jsxs("div", { className: "rounded-2xl border border-white/10 bg-white/5 px-4 py-4", children: [
-          /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-3", children: [
-            /* @__PURE__ */ jsxs("div", { children: [
-              /* @__PURE__ */ jsx("p", { className: "text-sm font-semibold text-white", children: "Plex debug" }),
-              /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-400", children: "Visar senaste klientloggarna f\xF6r Plex-h\xE4mtning." })
-            ] }),
-            /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
-              /* @__PURE__ */ jsx(
-                "button",
-                {
-                  type: "button",
-                  onClick: () => void runPlexServerDebug(),
-                  className: settingsActionButtonClass,
-                  children: "Testa server"
-                }
-              ),
-              /* @__PURE__ */ jsx(
-                "button",
-                {
-                  type: "button",
-                  onClick: () => {
-                    const text = plexDebugLog.join("\n");
-                    if (text) void navigator.clipboard.writeText(text);
-                  },
-                  className: settingsActionButtonClass,
-                  disabled: plexDebugLog.length === 0,
-                  children: "Kopiera"
-                }
-              ),
-              /* @__PURE__ */ jsx(
-                "button",
-                {
-                  type: "button",
-                  onClick: () => clearPlexDebugLog(),
-                  className: settingsDangerActionButtonClass,
-                  disabled: plexDebugLog.length === 0,
-                  children: "Rensa"
-                }
-              )
-            ] })
-          ] }),
-          /* @__PURE__ */ jsx("pre", { className: "mt-3 max-h-56 overflow-auto rounded-xl border border-white/10 bg-black/30 p-3 text-[11px] leading-relaxed text-slate-300", children: plexDebugLog.length > 0 ? plexDebugLog.join("\n") : "Ingen debug-logg \xE4n." })
-        ] })
+        ) })
       ] }) : /* @__PURE__ */ jsxs("div", { className: "space-y-3", children: [
         /* @__PURE__ */ jsx(
           "button",
@@ -122006,7 +123473,7 @@
   var PlexPlugin = {
     id: "com.lumio.plex",
     name: { en: "Plex", sv: "Plex" },
-    version: "1.0.23",
+    version: "1.0.26",
     description: {
       en: "Browse and play media from your Plex Media Server.",
       sv: "Bladdra i och spela upp media fr\xE5n din Plex Media Server."
@@ -122040,7 +123507,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-FCOYq4/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ibItQZ/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");
