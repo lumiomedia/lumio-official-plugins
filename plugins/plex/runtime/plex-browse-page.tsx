@@ -97,7 +97,7 @@ export function PlexBrowsePage({ params, onOpenDetails }: BrowsePageProps) {
           </div>
           <button
             type="button"
-            className={buttonBase + ' ' + buttonInactive}
+            className={`${buttonBase} ${buttonInactive} hidden sm:inline-flex`}
             onClick={() => setFilters(defaultFilters)}
           >
             {labels.clearFilters}

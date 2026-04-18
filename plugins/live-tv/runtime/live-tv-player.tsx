@@ -23,6 +23,19 @@ interface LiveTvPlayerProps {
   onClose: () => void
 }
 
+function isIosWebKitBrowser(): boolean {
+  if (typeof navigator === 'undefined') return false
+  const ua = navigator.userAgent || ''
+  const isIOSDevice = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  const isWebKit = /AppleWebKit/i.test(ua) && !/CriOS|FxiOS|EdgiOS/i.test(ua)
+  return isIOSDevice && isWebKit
+}
+
+function isMobileBrowser(): boolean {
+  if (typeof navigator === 'undefined') return false
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '')
+}
+
 function proxyUrl(url: string): string {
   return `/api/m3u?stream=${encodeURIComponent(url)}`
 }
@@ -35,6 +48,31 @@ export function LiveTvPlayer({ channel, onClose }: LiveTvPlayerProps) {
   const [portalEl, setPortalEl] = useState<HTMLElement | null>(null)
   const logoSrc = getLiveTvLogoSrc(channel.logo)
   const closingRef = useRef(false)
+  const mobileFullscreenAttemptedRef = useRef(false)
+
+  const tryEnterMobileFullscreen = useCallback(() => {
+    if (mobileFullscreenAttemptedRef.current) return
+    if (!isMobileBrowser()) return
+    const media = videoRef.current
+    if (!media) return
+    mobileFullscreenAttemptedRef.current = true
+    try {
+      if (typeof media.requestFullscreen === 'function' && !document.fullscreenElement) {
+        void media.requestFullscreen().catch(() => {})
+        return
+      }
+      const webkitMedia = media as HTMLVideoElement & { webkitEnterFullscreen?: () => void }
+      if (typeof webkitMedia.webkitEnterFullscreen === 'function') {
+        webkitMedia.webkitEnterFullscreen()
+      }
+    } catch {
+      // Ignore: fullscreen availability depends on browser policies.
+    }
+  }, [])
+
+  useEffect(() => {
+    mobileFullscreenAttemptedRef.current = false
+  }, [channel.url])
 
   useEffect(() => {
     lockBodyScroll()
@@ -85,6 +123,16 @@ export function LiveTvPlayer({ channel, onClose }: LiveTvPlayerProps) {
         )
 
         if (shouldUseHls) {
+          const canNativeHls = media.canPlayType('application/vnd.apple.mpegurl') !== ''
+          if (canNativeHls || isIosWebKitBrowser()) {
+            media.src = proxied
+            void media.play().then(() => {
+              setLoading(false)
+              tryEnterMobileFullscreen()
+            }).catch(() => {})
+            return
+          }
+
           const Hls = getHls()
           if (cancelled) return
           if (!Hls || !Hls.isSupported()) throw new Error('This browser does not support HLS playback.')
@@ -98,7 +146,11 @@ export function LiveTvPlayer({ channel, onClose }: LiveTvPlayerProps) {
           hls.loadSource(proxied)
           hls.attachMedia(media)
           hls.on(Hls.Events.MANIFEST_PARSED, () => {
-            if (!cancelled) void media.play().catch(() => {})
+            if (!cancelled) {
+              void media.play().then(() => {
+                tryEnterMobileFullscreen()
+              }).catch(() => {})
+            }
           })
           hls.on(Hls.Events.LEVEL_LOADED, () => {
             if (!cancelled) setLoading(false)
@@ -115,7 +167,9 @@ export function LiveTvPlayer({ channel, onClose }: LiveTvPlayerProps) {
         }
 
         media.src = proxied
-        void media.play().catch(() => {})
+        void media.play().then(() => {
+          tryEnterMobileFullscreen()
+        }).catch(() => {})
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Playback failed')
       }
@@ -131,7 +185,7 @@ export function LiveTvPlayer({ channel, onClose }: LiveTvPlayerProps) {
       media.src = ''
       media.load()
     }
-  }, [channel.url, portalEl])
+  }, [channel.url, portalEl, tryEnterMobileFullscreen])
 
   const handleClose = useCallback(async () => {
     if (closingRef.current) return
@@ -206,7 +260,10 @@ export function LiveTvPlayer({ channel, onClose }: LiveTvPlayerProps) {
                 setError(t('liveTvStreamError'))
               }}
               onLoadedMetadata={() => setLoading(false)}
-              onPlaying={() => setLoading(false)}
+              onPlaying={() => {
+                setLoading(false)
+                tryEnterMobileFullscreen()
+              }}
               onWaiting={() => {
                 if (!error) setLoading(true)
               }}

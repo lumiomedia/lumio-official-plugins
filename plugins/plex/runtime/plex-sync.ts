@@ -2,7 +2,6 @@
 
 import { createLanguageOption, type MediaItem } from '@/lib/plugin-sdk'
 import {
-  appendPlexDebugLog,
   clearPlexAuth,
   ensureCanonicalPlexSettings,
   getCachedPlexLibraryItems,
@@ -86,8 +85,8 @@ function isTauriRuntime(): boolean {
 }
 
 function logPlexDebug(message: string, detail?: Record<string, unknown>) {
-  const payload = detail ? `${message} ${JSON.stringify(detail)}` : message
-  appendPlexDebugLog(payload)
+  void message
+  void detail
 }
 
 function plexHeaders(clientIdentifier: string, authToken?: string): HeadersInit {
