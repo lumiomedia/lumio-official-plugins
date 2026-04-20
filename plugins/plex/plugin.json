@@ -1,9 +1,15 @@
 {
   "id": "com.lumio.plex",
   "slug": "plex",
-  "name": "Plex",
-  "version": "1.0.26",
-  "description": "Browse and play media from your Plex Media Server.",
+  "name": {
+    "en": "Plex",
+    "sv": "Plex"
+  },
+  "version": "1.0.27",
+  "description": {
+    "en": "Browse and play media from your Plex Media Server.",
+    "sv": "Bläddra i och spela upp media från din Plex Media Server."
+  },
   "runtimeBundlePath": "dist/runtime.js",
   "official": true,
   "bundled": true,
