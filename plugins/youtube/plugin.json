@@ -1,9 +1,15 @@
 {
   "id": "com.lumio.youtube",
   "slug": "youtube",
-  "name": "YouTube",
-  "version": "1.0.3",
-  "description": "Browse subscriptions, watch later, playlists and channels from YouTube.",
+  "name": {
+    "en": "YouTube",
+    "sv": "YouTube"
+  },
+  "version": "1.0.5",
+  "description": {
+    "en": "Browse subscriptions, watch later, playlists and channels from YouTube.",
+    "sv": "Bläddra bland prenumerationer, titta senare, spellistor och kanaler från YouTube."
+  },
   "runtimeBundlePath": "dist/runtime.js",
   "official": true,
   "bundled": true,

@@ -39,7 +39,7 @@
   ));
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ibItQZ/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-7mWPVX/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -88,7 +88,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ibItQZ/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-7mWPVX/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -136,7 +136,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ibItQZ/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-7mWPVX/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -146,7 +146,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ibItQZ/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-7mWPVX/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -114025,7 +114025,7 @@
     ) });
   }
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ibItQZ/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-7mWPVX/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
 
   // lib/tauri-mpv.ts
@@ -118029,6 +118029,7 @@
     const [subBackgroundColor] = useState(() => getSubtitleBackgroundColor());
     const [subOutlineColor] = useState(() => getSubtitleOutlineColor());
     const [audioOutputMode] = useState(() => getAudioOutputMode());
+    const effectiveProxyAudioMode = forceLanIosProxy ? "compatible" : audioOutputMode;
     const [nightMode] = useState(() => getNightMode());
     const [autoSkipIntro] = useState(() => getAutoSkipIntro());
     const [rememberAspectRatio] = useState(() => getRememberAspectRatio());
@@ -118398,8 +118399,8 @@
       streamStartRef.current = targetTime;
       setCurrentTime(0);
       setBuffered(0);
-      setVideoSrc(buildProxyUrl(origUrl, trackIndex, targetTime, videoCodec, getTrackChannels(trackIndex), audioOutputMode, nightMode, isTranscoding));
-    }, [useMpv, videoSrc, url, videoCodec, audioTracks, audioOutputMode, nightMode, realTime, showStillWatchingPrompt]);
+      setVideoSrc(buildProxyUrl(origUrl, trackIndex, targetTime, videoCodec, getTrackChannels(trackIndex), effectiveProxyAudioMode, nightMode, isTranscoding));
+    }, [useMpv, videoSrc, url, videoCodec, audioTracks, effectiveProxyAudioMode, nightMode, realTime, showStillWatchingPrompt]);
     const toggleMute = useCallback(() => {
       registerPlaybackInteraction();
       if (useMpv) {
@@ -119141,7 +119142,7 @@
         const startAt = initialTime ?? 0;
         setPreparingProxySource(false);
         streamStartRef.current = startAt;
-        setVideoSrc(buildProxyUrl(url, null, startAt, null, null, audioOutputMode, nightMode, true));
+        setVideoSrc(buildProxyUrl(url, null, startAt, null, null, effectiveProxyAudioMode, nightMode, true));
       } else {
         setPreparingProxySource(false);
         setVideoSrc(resolveVideoUrl(url, filename, forceProxy));
@@ -119447,7 +119448,7 @@
           startAt,
           data.videoCodec ?? null,
           null,
-          audioOutputMode,
+          effectiveProxyAudioMode,
           nightMode,
           shouldTranscode
         ));
@@ -119459,13 +119460,13 @@
           return;
         }
         if (!shouldProxyPlayback) return;
-        setVideoSrc(buildProxyUrl(url, null, initialTime ?? 0, null, null, audioOutputMode, nightMode, true));
+        setVideoSrc(buildProxyUrl(url, null, initialTime ?? 0, null, null, effectiveProxyAudioMode, nightMode, true));
         setPreparingProxySource(false);
       });
       return () => {
         cancelled = true;
       };
-    }, [url, initialTime, audioOutputMode, nightMode, shouldProxyPlayback, isDirectLocalFileSource, useMpv]);
+    }, [url, initialTime, effectiveProxyAudioMode, nightMode, shouldProxyPlayback, isDirectLocalFileSource, useMpv]);
     const preferredAudioLangRef = useRef(getDefaultAudioLanguage() || null);
     function switchAudioTrack(track) {
       if (track.language) preferredAudioLangRef.current = toAudioLangGroup(track.language);
@@ -119481,7 +119482,7 @@
       streamStartRef.current = realNow;
       setCurrentTime(0);
       setBuffered(0);
-      setVideoSrc(buildProxyUrl(url, track.index, realNow, videoCodec, track.channels, audioOutputMode, nightMode, isTranscoding));
+      setVideoSrc(buildProxyUrl(url, track.index, realNow, videoCodec, track.channels, effectiveProxyAudioMode, nightMode, isTranscoding));
     }
     useEffect(() => {
       if (!isDirectLocalFileSource || audioTracks.length === 0 || activeAudioTrack !== null) return;
@@ -119628,7 +119629,7 @@
             currentReal,
             videoCodec,
             getTrackChannels(activeAudioTrack),
-            audioOutputMode,
+            effectiveProxyAudioMode,
             nightMode,
             shouldForceProxyTranscode
           )
@@ -119637,7 +119638,7 @@
       return () => {
         window.clearInterval(interval);
       };
-    }, [activeAudioTrack, audioOutputMode, hasStarted, isDirectLocalFileSource, isPlaying, nightMode, shouldProxyPlayback, url, useMpv, videoCodec, videoSrc]);
+    }, [activeAudioTrack, effectiveProxyAudioMode, hasStarted, isDirectLocalFileSource, isPlaying, nightMode, shouldProxyPlayback, url, useMpv, videoCodec, videoSrc]);
     useEffect(() => {
       if (useMpv || hasStarted || !videoSrc) return;
       if (startupRecoveryAttemptRef.current >= 2) return;
@@ -119653,7 +119654,7 @@
             currentReal,
             videoCodec,
             getTrackChannels(activeAudioTrack),
-            audioOutputMode,
+            effectiveProxyAudioMode,
             nightMode,
             shouldForceProxyTranscode
           ));
@@ -119671,7 +119672,7 @@
           currentReal,
           videoCodec,
           getTrackChannels(track),
-          audioOutputMode,
+          effectiveProxyAudioMode,
           nightMode,
           true
         ));
@@ -119679,7 +119680,7 @@
       return () => {
         window.clearTimeout(timer);
       };
-    }, [activeAudioTrack, audioOutputMode, hasStarted, isDirectLocalFileSource, nightMode, shouldProxyPlayback, url, useMpv, videoCodec, videoSrc]);
+    }, [activeAudioTrack, effectiveProxyAudioMode, hasStarted, isDirectLocalFileSource, nightMode, shouldProxyPlayback, url, useMpv, videoCodec, videoSrc]);
     useEffect(() => {
       if (useMpv) return;
       const interval = window.setInterval(() => {
@@ -119708,7 +119709,7 @@
             currentReal,
             videoCodec,
             getTrackChannels(activeAudioTrack),
-            audioOutputMode,
+            effectiveProxyAudioMode,
             nightMode,
             shouldForceProxyTranscode
           ));
@@ -119727,7 +119728,7 @@
           currentReal,
           videoCodec,
           getTrackChannels(track),
-          audioOutputMode,
+          effectiveProxyAudioMode,
           nightMode,
           true
         ));
@@ -119735,7 +119736,7 @@
       return () => {
         window.clearInterval(interval);
       };
-    }, [activeAudioTrack, audioOutputMode, hasStarted, isDirectLocalFileSource, isPlaying, nightMode, shouldProxyPlayback, url, useMpv, videoCodec, videoSrc]);
+    }, [activeAudioTrack, effectiveProxyAudioMode, hasStarted, isDirectLocalFileSource, isPlaying, nightMode, shouldProxyPlayback, url, useMpv, videoCodec, videoSrc]);
     const embeddedSubtitleOptions = useMemo(() => {
       if (!EMBEDDED_SUBTITLES_ENABLED) return [];
       if (useMpv && mpvSubtitleTracks.length > 0) {
@@ -119798,8 +119799,8 @@
       streamStartRef.current = Math.max(0, targetTime);
       setCurrentTime(0);
       setBuffered(0);
-      setVideoSrc(buildProxyUrl(origUrl, activeAudioTrack, streamStartRef.current, videoCodec, getTrackChannels(activeAudioTrack), audioOutputMode, nightMode, isTranscoding));
-    }, [useMpv, videoSrc, url, activeAudioTrack, videoCodec, audioOutputMode, nightMode]);
+      setVideoSrc(buildProxyUrl(origUrl, activeAudioTrack, streamStartRef.current, videoCodec, getTrackChannels(activeAudioTrack), effectiveProxyAudioMode, nightMode, isTranscoding));
+    }, [useMpv, videoSrc, url, activeAudioTrack, videoCodec, effectiveProxyAudioMode, nightMode]);
     function handleSeekClick(e) {
       if (!totalDuration) return;
       const rect = e.currentTarget.getBoundingClientRect();
@@ -120041,7 +120042,7 @@
                   const v = videoRef.current;
                   const currentReal = (v?.currentTime ?? 0) + streamStartRef.current;
                   if (!isProxyUrl(videoSrc)) {
-                    setVideoSrc(buildProxyUrl(url, null, currentReal, videoCodec, getTrackChannels(null), audioOutputMode, nightMode, shouldForceProxyTranscode));
+                    setVideoSrc(buildProxyUrl(url, null, currentReal, videoCodec, getTrackChannels(null), effectiveProxyAudioMode, nightMode, shouldForceProxyTranscode));
                     return;
                   }
                   if (proxyRetryRef.current) return;
@@ -120052,7 +120053,7 @@
                   const origUrl = currentUrl.searchParams.get("url") ?? url;
                   const trackRaw = currentUrl.searchParams.get("track");
                   const track = trackRaw ? parseInt(trackRaw, 10) : null;
-                  setVideoSrc(buildProxyUrl(origUrl, track, currentReal, videoCodec, getTrackChannels(track), audioOutputMode, nightMode, true));
+                  setVideoSrc(buildProxyUrl(origUrl, track, currentReal, videoCodec, getTrackChannels(track), effectiveProxyAudioMode, nightMode, true));
                 }
               }
             ) }) }) : /* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-black" }),
@@ -123507,7 +123508,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ibItQZ/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-7mWPVX/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

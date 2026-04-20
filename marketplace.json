@@ -8,9 +8,15 @@
     {
       "id": "com.lumio.youtube",
       "slug": "youtube",
-      "name": "YouTube",
-      "version": "1.0.4",
-      "description": "Browse subscriptions, watch later, playlists and channels from YouTube.",
+      "name": {
+        "en": "YouTube",
+        "sv": "YouTube"
+      },
+      "version": "1.0.5",
+      "description": {
+        "en": "Browse subscriptions, watch later, playlists and channels from YouTube.",
+        "sv": "Bläddra bland prenumerationer, titta senare, spellistor och kanaler från YouTube."
+      },
       "path": "plugins/youtube",
       "runtimeBundlePath": "dist/runtime.js",
       "readmePath": "plugins/youtube/README.md",
@@ -26,9 +32,15 @@
     {
       "id": "com.lumio.plex",
       "slug": "plex",
-      "name": "Plex",
-      "version": "1.0.26",
-      "description": "Browse and play media from your Plex Media Server.",
+      "name": {
+        "en": "Plex",
+        "sv": "Plex"
+      },
+      "version": "1.0.27",
+      "description": {
+        "en": "Browse and play media from your Plex Media Server.",
+        "sv": "Bläddra i och spela upp media från din Plex Media Server."
+      },
       "path": "plugins/plex",
       "runtimeBundlePath": "dist/runtime.js",
       "readmePath": "plugins/plex/README.md",
@@ -40,9 +52,15 @@
     {
       "id": "com.lumio.live-tv",
       "slug": "live-tv",
-      "name": "Live TV",
-      "version": "0.2.2",
-      "description": "Manage M3U sources and browse live TV channels inside Lumio.",
+      "name": {
+        "en": "Live TV",
+        "sv": "Live TV"
+      },
+      "version": "0.2.3",
+      "description": {
+        "en": "Manage M3U sources and browse live TV channels inside Lumio.",
+        "sv": "Hantera M3U-källor och live-tv-kanaler i Lumio."
+      },
       "path": "plugins/live-tv",
       "runtimeBundlePath": "dist/runtime.js",
       "readmePath": "plugins/live-tv/README.md",
@@ -54,9 +72,15 @@
     {
       "id": "com.lumio.homekit",
       "slug": "homekit",
-      "name": "HomeKit",
-      "version": "0.2.1",
-      "description": "Connect Lumio playback events to HomeKit scenes and automations.",
+      "name": {
+        "en": "HomeKit",
+        "sv": "HomeKit"
+      },
+      "version": "0.2.2",
+      "description": {
+        "en": "Connect Lumio playback events to HomeKit scenes and automations.",
+        "sv": "Koppla Lumios uppspelningshändelser till HomeKit-scener och automationer."
+      },
       "path": "plugins/homekit",
       "runtimeBundlePath": "dist/runtime.js",
       "readmePath": "plugins/homekit/README.md",
@@ -68,9 +92,15 @@
     {
       "id": "com.lumio.trakt",
       "slug": "trakt",
-      "name": "Trakt",
-      "version": "0.2.1",
-      "description": "Sync watched history, watchlists and collection data with Trakt.",
+      "name": {
+        "en": "Trakt",
+        "sv": "Trakt"
+      },
+      "version": "0.2.2",
+      "description": {
+        "en": "Sync watched history, watchlists and collection data with Trakt.",
+        "sv": "Synka visningshistorik, listor och samlingsdata med Trakt."
+      },
       "path": "plugins/trakt",
       "runtimeBundlePath": "dist/runtime.js",
       "readmePath": "plugins/trakt/README.md",

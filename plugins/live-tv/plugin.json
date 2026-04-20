@@ -1,9 +1,15 @@
 {
   "id": "com.lumio.live-tv",
   "slug": "live-tv",
-  "name": "Live TV",
-  "version": "0.2.2",
-  "description": "Manage M3U sources and browse live TV channels inside Lumio.",
+  "name": {
+    "en": "Live TV",
+    "sv": "Live TV"
+  },
+  "version": "0.2.3",
+  "description": {
+    "en": "Manage M3U sources and browse live TV channels inside Lumio.",
+    "sv": "Hantera M3U-källor och live-tv-kanaler i Lumio."
+  },
   "official": true,
   "bundled": true,
   "removable": true,

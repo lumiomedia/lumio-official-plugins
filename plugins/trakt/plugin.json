@@ -1,9 +1,15 @@
 {
   "id": "com.lumio.trakt",
   "slug": "trakt",
-  "name": "Trakt",
-  "version": "0.2.1",
-  "description": "Sync watched history, watchlists and collection data with Trakt.",
+  "name": {
+    "en": "Trakt",
+    "sv": "Trakt"
+  },
+  "version": "0.2.2",
+  "description": {
+    "en": "Sync watched history, watchlists and collection data with Trakt.",
+    "sv": "Synka visningshistorik, listor och samlingsdata med Trakt."
+  },
   "official": true,
   "bundled": true,
   "removable": true,
