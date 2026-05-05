@@ -3,8 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import {
+  closeMpvPlayer,
   getHls,
+  isTauriEnv,
   lockBodyScroll,
+  mpvSetBounds,
+  openMpvPlayer,
   unlockBodyScroll,
   useLang,
 } from '@/lib/plugin-sdk'
@@ -43,12 +47,17 @@ function proxyUrl(url: string): string {
 export function LiveTvPlayer({ channel, onClose }: LiveTvPlayerProps) {
   const { t } = useLang()
   const videoRef = useRef<HTMLVideoElement>(null)
+  const stageRef = useRef<HTMLDivElement>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [portalEl, setPortalEl] = useState<HTMLElement | null>(null)
   const logoSrc = getLiveTvLogoSrc(channel.logo)
   const closingRef = useRef(false)
   const mobileFullscreenAttemptedRef = useRef(false)
+  // Desktop (Tauri) routes through MPV: AVFoundation/hls.js cannot decode
+  // HEVC-in-MPEG-TS, which is common for IPTV streams (audio plays, video
+  // is black). libmpv handles it natively.
+  const useMpv = isTauriEnv
 
   const tryEnterMobileFullscreen = useCallback(() => {
     if (mobileFullscreenAttemptedRef.current) return
@@ -100,6 +109,42 @@ export function LiveTvPlayer({ channel, onClose }: LiveTvPlayerProps) {
   useEffect(() => {
     setError(null)
     setLoading(true)
+
+    if (useMpv) {
+      let cancelled = false
+      let resizeObs: ResizeObserver | null = null
+      const sync = () => {
+        const rect = stageRef.current?.getBoundingClientRect()
+        if (rect) mpvSetBounds(rect)
+      }
+
+      void openMpvPlayer({ url: channel.url })
+        .then(() => {
+          if (cancelled) return
+          sync()
+          if (stageRef.current) {
+            resizeObs = new ResizeObserver(sync)
+            resizeObs.observe(stageRef.current)
+          }
+          window.addEventListener('resize', sync)
+          window.addEventListener('scroll', sync, true)
+          setLoading(false)
+        })
+        .catch((err: unknown) => {
+          if (cancelled) return
+          setError(err instanceof Error ? err.message : 'Playback failed')
+          setLoading(false)
+        })
+
+      return () => {
+        cancelled = true
+        resizeObs?.disconnect()
+        window.removeEventListener('resize', sync)
+        window.removeEventListener('scroll', sync, true)
+        void closeMpvPlayer()
+      }
+    }
+
     const videoEl = videoRef.current
     if (!videoEl) return
     const media: HTMLVideoElement = videoEl
@@ -185,18 +230,22 @@ export function LiveTvPlayer({ channel, onClose }: LiveTvPlayerProps) {
       media.src = ''
       media.load()
     }
-  }, [channel.url, portalEl, tryEnterMobileFullscreen])
+  }, [channel.url, portalEl, tryEnterMobileFullscreen, useMpv])
 
   const handleClose = useCallback(async () => {
     if (closingRef.current) return
     closingRef.current = true
     try {
-      const media = videoRef.current
-      if (media) {
-        media.pause()
-        media.removeAttribute('src')
-        media.src = ''
-        media.load()
+      if (useMpv) {
+        await closeMpvPlayer().catch(() => {})
+      } else {
+        const media = videoRef.current
+        if (media) {
+          media.pause()
+          media.removeAttribute('src')
+          media.src = ''
+          media.load()
+        }
       }
     } finally {
       onClose()
@@ -204,7 +253,7 @@ export function LiveTvPlayer({ channel, onClose }: LiveTvPlayerProps) {
         closingRef.current = false
       }, 0)
     }
-  }, [onClose])
+  }, [onClose, useMpv])
 
   const content = (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -235,7 +284,7 @@ export function LiveTvPlayer({ channel, onClose }: LiveTvPlayerProps) {
             </button>
           </div>
 
-          <div className="relative aspect-video w-full overflow-hidden bg-black">
+          <div ref={stageRef} className="relative aspect-video w-full overflow-hidden bg-black">
             {loading && !error && (
               <div className="absolute inset-0 z-10 flex items-center justify-center">
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
@@ -247,28 +296,30 @@ export function LiveTvPlayer({ channel, onClose }: LiveTvPlayerProps) {
                 <p className="text-xs text-slate-500">{t('liveTvStreamErrorHelp')}</p>
               </div>
             )}
-            <video
-              key={channel.url}
-              ref={videoRef}
-              className="absolute inset-0 h-full w-full bg-black object-contain"
-              controls
-              autoPlay
-              playsInline
-              onCanPlay={() => setLoading(false)}
-              onError={() => {
-                setLoading(false)
-                setError(t('liveTvStreamError'))
-              }}
-              onLoadedMetadata={() => setLoading(false)}
-              onPlaying={() => {
-                setLoading(false)
-                tryEnterMobileFullscreen()
-              }}
-              onWaiting={() => {
-                if (!error) setLoading(true)
-              }}
-              {...{ 'x-webkit-airplay': 'allow' }}
-            />
+            {!useMpv && (
+              <video
+                key={channel.url}
+                ref={videoRef}
+                className="absolute inset-0 h-full w-full bg-black object-contain"
+                controls
+                autoPlay
+                playsInline
+                onCanPlay={() => setLoading(false)}
+                onError={() => {
+                  setLoading(false)
+                  setError(t('liveTvStreamError'))
+                }}
+                onLoadedMetadata={() => setLoading(false)}
+                onPlaying={() => {
+                  setLoading(false)
+                  tryEnterMobileFullscreen()
+                }}
+                onWaiting={() => {
+                  if (!error) setLoading(true)
+                }}
+                {...{ 'x-webkit-airplay': 'allow' }}
+              />
+            )}
           </div>
         </div>
       </div>

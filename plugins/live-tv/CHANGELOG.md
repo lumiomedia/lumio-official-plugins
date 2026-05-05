@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.4
+
+- Route live TV playback through MPV on desktop (Tauri) so HEVC-in-MPEG-TS streams play correctly. Previously native HLS / hls.js could decode only the AAC audio, leaving the video black on common IPTV streams.
+
 ## 0.2.1
 
 - Runtime bundle refresh for latest SDK contract and separation updates
