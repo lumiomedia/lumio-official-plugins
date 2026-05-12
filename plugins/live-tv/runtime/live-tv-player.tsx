@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import {
   closeMpvPlayer,
@@ -9,7 +9,10 @@ import {
   lockBodyScroll,
   mpvSetBounds,
   openMpvPlayer,
+  setMpvPause,
+  toggleWindowFullscreen,
   unlockBodyScroll,
+  useMpvPlayer,
   useLang,
 } from '@/lib/plugin-sdk'
 import { LiveTvLogoImage } from './live-tv-logo-image'
@@ -44,20 +47,45 @@ function proxyUrl(url: string): string {
   return `/api/m3u?stream=${encodeURIComponent(url)}`
 }
 
+function formatClock(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds <= 0) return '00:00'
+  const total = Math.floor(seconds)
+  const h = Math.floor(total / 3600)
+  const m = Math.floor((total % 3600) / 60)
+  const s = total % 60
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  return `${m}:${String(s).padStart(2, '0')}`
+}
+
 export function LiveTvPlayer({ channel, onClose }: LiveTvPlayerProps) {
   const { t } = useLang()
   const videoRef = useRef<HTMLVideoElement>(null)
   const stageRef = useRef<HTMLDivElement>(null)
+  const controlsHideTimerRef = useRef<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [portalEl, setPortalEl] = useState<HTMLElement | null>(null)
+  const [controlsVisible, setControlsVisible] = useState(true)
+  const [portalEl] = useState<HTMLElement | null>(() => {
+    if (typeof document === 'undefined') return null
+    const div = document.createElement('div')
+    div.className = isTauriEnv ? 'live-tv-player-portal mpv-player-portal' : 'live-tv-player-portal'
+    return div
+  })
   const logoSrc = getLiveTvLogoSrc(channel.logo)
   const closingRef = useRef(false)
   const mobileFullscreenAttemptedRef = useRef(false)
-  // Desktop (Tauri) routes through MPV: AVFoundation/hls.js cannot decode
-  // HEVC-in-MPEG-TS, which is common for IPTV streams (audio plays, video
-  // is black). libmpv handles it natively.
   const useMpv = isTauriEnv
+  const mpv = useMpvPlayer(useMpv)
+  const {
+    fileLoaded: mpvFileLoaded,
+    timePos: mpvTimePos,
+    paused: mpvPaused,
+    playbackRestarted: mpvPlaybackRestarted,
+    firstFrameRendered: mpvFirstFrameRendered,
+    resetFileLoaded,
+    resetPlaybackRestarted,
+    resetFirstFrameRendered,
+  } = mpv
 
   const tryEnterMobileFullscreen = useCallback(() => {
     if (mobileFullscreenAttemptedRef.current) return
@@ -83,28 +111,93 @@ export function LiveTvPlayer({ channel, onClose }: LiveTvPlayerProps) {
     mobileFullscreenAttemptedRef.current = false
   }, [channel.url])
 
+  const clearControlsHideTimer = useCallback(() => {
+    if (controlsHideTimerRef.current !== null) {
+      window.clearTimeout(controlsHideTimerRef.current)
+      controlsHideTimerRef.current = null
+    }
+  }, [])
+
+  const revealControls = useCallback(() => {
+    setControlsVisible(true)
+    clearControlsHideTimer()
+    if (!loading && !error) {
+      controlsHideTimerRef.current = window.setTimeout(() => {
+        setControlsVisible(false)
+        controlsHideTimerRef.current = null
+      }, 2400)
+    }
+  }, [clearControlsHideTimer, error, loading])
+
+  useEffect(() => {
+    if (!useMpv) return
+    revealControls()
+    return clearControlsHideTimer
+  }, [channel.url, clearControlsHideTimer, revealControls, useMpv])
+
   useEffect(() => {
     lockBodyScroll()
     function onKey(event: KeyboardEvent) {
       if (event.key === 'Escape') void handleClose()
+      if (useMpv && (event.key === ' ' || event.key === 'Spacebar')) {
+        event.preventDefault()
+        revealControls()
+        void setMpvPause(!mpvPaused)
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => {
       unlockBodyScroll()
       window.removeEventListener('keydown', onKey)
     }
-  }, [onClose])
+  }, [mpvPaused, onClose, useMpv])
 
-  useEffect(() => {
-    const div = document.createElement('div')
-    div.className = 'live-tv-player-portal'
-    document.body.appendChild(div)
-    setPortalEl(div)
+  useLayoutEffect(() => {
+    if (!portalEl) return
+    document.body.appendChild(portalEl)
     return () => {
-      document.body.removeChild(div)
-      setPortalEl(null)
+      if (portalEl.parentNode) portalEl.parentNode.removeChild(portalEl)
     }
-  }, [])
+  }, [portalEl])
+
+  useLayoutEffect(() => {
+    if (!useMpv) return
+    const root = document.documentElement
+    const body = document.body
+    const previousRootBackgroundColor = root.style.getPropertyValue('background-color')
+    const previousRootBackgroundColorPriority = root.style.getPropertyPriority('background-color')
+    const previousRootBackgroundImage = root.style.getPropertyValue('background-image')
+    const previousRootBackgroundImagePriority = root.style.getPropertyPriority('background-image')
+    const previousBodyBackgroundColor = body.style.getPropertyValue('background-color')
+    const previousBodyBackgroundColorPriority = body.style.getPropertyPriority('background-color')
+    const previousBodyBackgroundImage = body.style.getPropertyValue('background-image')
+    const previousBodyBackgroundImagePriority = body.style.getPropertyPriority('background-image')
+
+    const ensureMpvClass = () => {
+      root.classList.add('mpv-playing')
+      root.style.setProperty('background-color', 'transparent', 'important')
+      root.style.setProperty('background-image', 'none', 'important')
+      body.style.setProperty('background-color', 'transparent', 'important')
+      body.style.setProperty('background-image', 'none', 'important')
+    }
+    const restoreProperty = (target: HTMLElement, property: string, value: string, priority: string) => {
+      if (value) target.style.setProperty(property, value, priority)
+      else target.style.removeProperty(property)
+    }
+
+    ensureMpvClass()
+    const observer = new MutationObserver(ensureMpvClass)
+    observer.observe(root, { attributes: true, attributeFilter: ['class'] })
+
+    return () => {
+      observer.disconnect()
+      root.classList.remove('mpv-playing')
+      restoreProperty(root, 'background-color', previousRootBackgroundColor, previousRootBackgroundColorPriority)
+      restoreProperty(root, 'background-image', previousRootBackgroundImage, previousRootBackgroundImagePriority)
+      restoreProperty(body, 'background-color', previousBodyBackgroundColor, previousBodyBackgroundColorPriority)
+      restoreProperty(body, 'background-image', previousBodyBackgroundImage, previousBodyBackgroundImagePriority)
+    }
+  }, [useMpv])
 
   useEffect(() => {
     setError(null)
@@ -118,7 +211,17 @@ export function LiveTvPlayer({ channel, onClose }: LiveTvPlayerProps) {
         if (rect) mpvSetBounds(rect)
       }
 
-      void openMpvPlayer({ url: channel.url })
+      resetFileLoaded()
+      resetPlaybackRestarted()
+      resetFirstFrameRendered()
+
+      void closeMpvPlayer()
+        .catch(() => {})
+        .then(() => {
+          if (cancelled) return
+          sync()
+          return openMpvPlayer({ url: channel.url })
+        })
         .then(() => {
           if (cancelled) return
           sync()
@@ -128,7 +231,6 @@ export function LiveTvPlayer({ channel, onClose }: LiveTvPlayerProps) {
           }
           window.addEventListener('resize', sync)
           window.addEventListener('scroll', sync, true)
-          setLoading(false)
         })
         .catch((err: unknown) => {
           if (cancelled) return
@@ -230,22 +332,49 @@ export function LiveTvPlayer({ channel, onClose }: LiveTvPlayerProps) {
       media.src = ''
       media.load()
     }
-  }, [channel.url, portalEl, tryEnterMobileFullscreen, useMpv])
+  }, [
+    channel.url,
+    portalEl,
+    resetFileLoaded,
+    resetFirstFrameRendered,
+    resetPlaybackRestarted,
+    tryEnterMobileFullscreen,
+    useMpv,
+  ])
 
-  const handleClose = useCallback(async () => {
+  useEffect(() => {
+    if (!useMpv || !mpvFileLoaded) return
+    void setMpvPause(false)
+  }, [mpvFileLoaded, useMpv])
+
+  useEffect(() => {
+    if (!useMpv) return
+    if (mpvFirstFrameRendered || mpvPlaybackRestarted) {
+      setLoading(false)
+      return
+    }
+    if (!mpvFileLoaded) return
+    const timeout = window.setTimeout(() => setLoading(false), 900)
+    return () => window.clearTimeout(timeout)
+  }, [mpvFileLoaded, mpvFirstFrameRendered, mpvPlaybackRestarted, useMpv])
+
+  const handleClose = useCallback(() => {
     if (closingRef.current) return
     closingRef.current = true
+    if (useMpv) {
+      onClose()
+      window.requestAnimationFrame(() => {
+        void closeMpvPlayer().catch(() => {})
+      })
+      return
+    }
     try {
-      if (useMpv) {
-        await closeMpvPlayer().catch(() => {})
-      } else {
-        const media = videoRef.current
-        if (media) {
-          media.pause()
-          media.removeAttribute('src')
-          media.src = ''
-          media.load()
-        }
+      const media = videoRef.current
+      if (media) {
+        media.pause()
+        media.removeAttribute('src')
+        media.src = ''
+        media.load()
       }
     } finally {
       onClose()
@@ -255,12 +384,171 @@ export function LiveTvPlayer({ channel, onClose }: LiveTvPlayerProps) {
     }
   }, [onClose, useMpv])
 
+  if (useMpv) {
+    const toggleMpvPause = () => {
+      revealControls()
+      void setMpvPause(!mpvPaused)
+    }
+
+    const syncMpvBoundsSoon = () => {
+      window.setTimeout(() => {
+        const rect = stageRef.current?.getBoundingClientRect()
+        if (rect) mpvSetBounds(rect)
+      }, 120)
+    }
+
+    const toggleFullscreen = () => {
+      revealControls()
+      void toggleWindowFullscreen()
+        .then(syncMpvBoundsSoon)
+        .catch(() => {})
+    }
+
+    const controlsOpacity = controlsVisible ? 'opacity-100' : 'opacity-0'
+    const controlsPointerEvents = controlsVisible ? 'pointer-events-auto' : 'pointer-events-none'
+
+    const content = (
+      <div
+        className={`fixed inset-0 z-[70] bg-transparent ${controlsVisible ? 'cursor-default' : 'cursor-none'}`}
+        onMouseMove={revealControls}
+        onPointerMove={revealControls}
+        onFocusCapture={revealControls}
+      >
+        <div ref={stageRef} className="absolute inset-0 bg-transparent" />
+        {loading && !error && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+          </div>
+        )}
+        {error && (
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-black px-4 text-center">
+            <p className="text-sm text-red-400">{error}</p>
+            <p className="text-xs text-slate-500">{t('liveTvStreamErrorHelp')}</p>
+          </div>
+        )}
+        <div className={`pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-4 bg-gradient-to-b from-black/75 via-black/45 to-transparent px-5 py-4 transition-opacity duration-200 ${controlsOpacity}`}>
+          <div className="min-w-0 flex items-center gap-3">
+            {logoSrc && (
+              <LiveTvLogoImage
+                src={logoSrc}
+                alt=""
+                className="h-8 w-8 rounded object-contain bg-slate-800/90 p-0.5"
+              />
+            )}
+            <div className="min-w-0">
+              <p className="truncate font-semibold text-white">{channel.name}</p>
+              {channel.group && <p className="truncate text-xs text-slate-300">{channel.group}</p>}
+            </div>
+          </div>
+          <button
+            type="button"
+            onPointerUpCapture={(event) => {
+              event.preventDefault()
+              event.stopPropagation()
+              handleClose()
+            }}
+            onClick={(event) => {
+              event.preventDefault()
+              event.stopPropagation()
+            }}
+            className={`${controlsPointerEvents} rounded-full border border-white/15 bg-black/45 px-3 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-200 transition hover:border-white/35 hover:text-white`}
+          >
+            {t('close')}
+          </button>
+        </div>
+        <div className={`pointer-events-none absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-5 pb-5 pt-12 transition-opacity duration-200 ${controlsOpacity}`}>
+          <div className={`${controlsPointerEvents} flex items-center gap-4 rounded-2xl border border-white/10 bg-black/55 px-4 py-3 text-white shadow-2xl backdrop-blur-md`}>
+            <button
+              type="button"
+              onPointerUpCapture={(event) => {
+                event.preventDefault()
+                event.stopPropagation()
+                toggleMpvPause()
+              }}
+              onClick={(event) => {
+                event.preventDefault()
+                event.stopPropagation()
+              }}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/35 hover:bg-white/15"
+              aria-label={mpvPaused ? 'Play' : 'Pause'}
+              title={mpvPaused ? 'Play' : 'Pause'}
+            >
+              {mpvPaused ? (
+                <svg className="h-5 w-5 translate-x-0.5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              ) : (
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M7 5h4v14H7zM13 5h4v14h-4z" />
+                </svg>
+              )}
+            </button>
+            <button
+              type="button"
+              onPointerUpCapture={(event) => {
+                event.preventDefault()
+                event.stopPropagation()
+                toggleFullscreen()
+              }}
+              onClick={(event) => {
+                event.preventDefault()
+                event.stopPropagation()
+              }}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/35 hover:bg-white/15"
+              aria-label="Fullscreen"
+              title="Fullscreen"
+            >
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M8 3H3v5" />
+                <path d="M16 3h5v5" />
+                <path d="M21 16v5h-5" />
+                <path d="M3 16v5h5" />
+              </svg>
+            </button>
+
+            <div className="min-w-0 flex-1">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="inline-flex h-6 shrink-0 items-center rounded-full border border-red-400/35 bg-red-500/15 px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-red-200">
+                  Live
+                </span>
+                <p className="truncate text-sm font-semibold text-white">{channel.name}</p>
+              </div>
+              <div className="mt-1 flex min-w-0 items-center gap-3 text-xs text-slate-300">
+                <span>{mpvPaused ? 'Paused' : 'Playing'}</span>
+                <span className="text-slate-600">/</span>
+                <span>{formatClock(mpvTimePos)}</span>
+                {channel.group ? (
+                  <>
+                    <span className="text-slate-600">/</span>
+                    <span className="truncate">{channel.group}</span>
+                  </>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="hidden shrink-0 items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-slate-400 sm:flex">
+              <span>MPV</span>
+              <span className="h-1 w-1 rounded-full bg-slate-600" />
+              <span>Live TV</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+
+    return portalEl ? createPortal(content, portalEl) : content
+  }
+
+  const wrapperBg = 'bg-black/60 backdrop-blur-sm'
+  const cardBg = 'bg-slate-950/30'
+  const stageBg = 'bg-black'
+
   const content = (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div className={`fixed inset-0 z-[70] flex items-center justify-center ${wrapperBg}`}>
       <button type="button" aria-label={t('close')} onClick={() => void handleClose()} className="absolute inset-0" />
 
       <div className="relative z-10 w-full max-w-5xl px-4">
-        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-slate-950/30 shadow-2xl ring-1 ring-white/5">
+        <div className={`relative overflow-hidden rounded-3xl border border-white/10 ${cardBg} shadow-2xl ring-1 ring-white/5`}>
           <div className="absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-4 bg-gradient-to-b from-black/75 via-black/45 to-transparent px-4 py-3">
             <div className="min-w-0 flex items-center gap-3">
               {logoSrc && (
@@ -284,7 +572,7 @@ export function LiveTvPlayer({ channel, onClose }: LiveTvPlayerProps) {
             </button>
           </div>
 
-          <div ref={stageRef} className="relative aspect-video w-full overflow-hidden bg-black">
+          <div className={`relative aspect-video w-full overflow-hidden ${stageBg}`}>
             {loading && !error && (
               <div className="absolute inset-0 z-10 flex items-center justify-center">
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
@@ -296,30 +584,28 @@ export function LiveTvPlayer({ channel, onClose }: LiveTvPlayerProps) {
                 <p className="text-xs text-slate-500">{t('liveTvStreamErrorHelp')}</p>
               </div>
             )}
-            {!useMpv && (
-              <video
-                key={channel.url}
-                ref={videoRef}
-                className="absolute inset-0 h-full w-full bg-black object-contain"
-                controls
-                autoPlay
-                playsInline
-                onCanPlay={() => setLoading(false)}
-                onError={() => {
-                  setLoading(false)
-                  setError(t('liveTvStreamError'))
-                }}
-                onLoadedMetadata={() => setLoading(false)}
-                onPlaying={() => {
-                  setLoading(false)
-                  tryEnterMobileFullscreen()
-                }}
-                onWaiting={() => {
-                  if (!error) setLoading(true)
-                }}
-                {...{ 'x-webkit-airplay': 'allow' }}
-              />
-            )}
+            <video
+              key={channel.url}
+              ref={videoRef}
+              className="absolute inset-0 h-full w-full bg-black object-contain"
+              controls
+              autoPlay
+              playsInline
+              onCanPlay={() => setLoading(false)}
+              onError={() => {
+                setLoading(false)
+                setError(t('liveTvStreamError'))
+              }}
+              onLoadedMetadata={() => setLoading(false)}
+              onPlaying={() => {
+                setLoading(false)
+                tryEnterMobileFullscreen()
+              }}
+              onWaiting={() => {
+                if (!error) setLoading(true)
+              }}
+              {...{ 'x-webkit-airplay': 'allow' }}
+            />
           </div>
         </div>
       </div>

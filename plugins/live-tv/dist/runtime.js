@@ -46,7 +46,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-8C8gt5/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-WMt86n/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -95,7 +95,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-8C8gt5/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-WMt86n/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -29688,7 +29688,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-8C8gt5/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-WMt86n/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -29698,7 +29698,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-8C8gt5/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-WMt86n/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -165765,10 +165765,10 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-8C8gt5/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-WMt86n/auth-capabilities-shim.ts
   var sdk;
   var init_auth_capabilities_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-8C8gt5/auth-capabilities-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-WMt86n/auth-capabilities-shim.ts"() {
       sdk = globalThis.__lumioPluginRuntime?.sdk;
     }
   });
@@ -165859,6 +165859,24 @@
   });
 
   // node_modules/@tauri-apps/api/event.js
+  async function _unlisten(event, eventId) {
+    window.__TAURI_EVENT_PLUGIN_INTERNALS__.unregisterListener(event, eventId);
+    await invoke("plugin:event|unlisten", {
+      event,
+      eventId
+    });
+  }
+  async function listen(event, handler, options) {
+    var _a;
+    const target = typeof (options === null || options === void 0 ? void 0 : options.target) === "string" ? { kind: "AnyLabel", label: options.target } : (_a = options === null || options === void 0 ? void 0 : options.target) !== null && _a !== void 0 ? _a : { kind: "Any" };
+    return invoke("plugin:event|listen", {
+      event,
+      target,
+      handler: transformCallback(handler)
+    }).then((eventId) => {
+      return async () => _unlisten(event, eventId);
+    });
+  }
   var TauriEvent;
   var init_event = __esm({
     "node_modules/@tauri-apps/api/event.js"() {
@@ -165901,6 +165919,22 @@
   async function closeMpvPlayer() {
     return invoke("mpv_close");
   }
+  async function setMpvPause(paused) {
+    return invoke("mpv_set_pause", { paused });
+  }
+  async function setMpvAudioTrack(aid) {
+    return invoke("mpv_set_audio_track", { aid });
+  }
+  async function toggleWindowFullscreen() {
+    return invoke("toggle_window_fullscreen");
+  }
+  async function mpvCommand(args) {
+    try {
+      return await invoke("mpv_command_ts", { args });
+    } catch (e) {
+      console.warn("[mpv] command error:", args, e);
+    }
+  }
   function mpvSetBounds(rect) {
     if (rect.width <= 0 || rect.height <= 0) return;
     void invoke("mpv_set_bounds", {
@@ -165911,6 +165945,94 @@
       windowHeight: window.innerHeight,
       scale: window.devicePixelRatio
     });
+  }
+  function useMpvPlayer(enabled = true) {
+    const [timePos, setTimePos] = useState(0);
+    const [duration, setDuration] = useState(0);
+    const [paused, setPaused] = useState(false);
+    const [ended, setEnded] = useState(false);
+    const [sid, setSid] = useState(null);
+    const [fileLoaded, setFileLoaded] = useState(false);
+    const [fileLoadedToken, setFileLoadedToken] = useState(0);
+    const [playbackRestarted, setPlaybackRestarted] = useState(false);
+    const [playbackRestartedToken, setPlaybackRestartedToken] = useState(0);
+    const [pausedForCache, setPausedForCache] = useState(false);
+    const [coreIdle, setCoreIdle] = useState(true);
+    const [firstFrameRendered, setFirstFrameRendered] = useState(false);
+    useEffect(() => {
+      if (!isTauriEnv || !enabled) return;
+      const cleanups = [];
+      void listen("mpv://time-pos", (e) => setTimePos(e.payload)).then((u) => cleanups.push(u));
+      void listen("mpv://duration", (e) => setDuration(e.payload)).then((u) => cleanups.push(u));
+      void listen("mpv://paused", (e) => setPaused(e.payload)).then((u) => cleanups.push(u));
+      void listen("mpv://ended", () => setEnded(true)).then((u) => cleanups.push(u));
+      void listen("mpv://sid", (e) => setSid(e.payload)).then((u) => cleanups.push(u));
+      void listen("mpv://file-loaded", () => {
+        setFileLoaded(true);
+        setFileLoadedToken((t) => t + 1);
+      }).then((u) => cleanups.push(u));
+      void listen("mpv://playback-restart", () => {
+        setPlaybackRestarted(true);
+        setPlaybackRestartedToken((t) => t + 1);
+      }).then((u) => cleanups.push(u));
+      void listen("mpv://paused-for-cache", (e) => setPausedForCache(e.payload)).then((u) => cleanups.push(u));
+      void listen("mpv://core-idle", (e) => setCoreIdle(e.payload)).then((u) => cleanups.push(u));
+      void listen("mpv://first-frame-rendered", () => {
+        void fetch(`/api/debug-log?msg=${encodeURIComponent(`${performance.now().toFixed(0)} first-frame-rendered received`)}`);
+        setFirstFrameRendered(true);
+      }).then((u) => cleanups.push(u));
+      return () => cleanups.forEach((fn) => fn());
+    }, [enabled]);
+    const seek = useCallback((time2) => {
+      void mpvCommand(["seek", time2, "absolute"]);
+    }, []);
+    const seekRelative = useCallback((delta) => {
+      void mpvCommand(["seek", delta, "relative"]);
+    }, []);
+    const setPlayPause = useCallback((pause) => {
+      void mpvCommand(["set_property", "pause", pause]);
+    }, []);
+    const setVolume = useCallback((vol) => {
+      void mpvCommand(["set_property", "volume", Math.round(vol * 100)]);
+    }, []);
+    const setMuted = useCallback((muted) => {
+      void mpvCommand(["set_property", "mute", muted ? "yes" : "no"]);
+    }, []);
+    const setAudioTrack = useCallback((aid) => {
+      void setMpvAudioTrack(aid);
+    }, []);
+    const resetFileLoaded = useCallback(() => {
+      setFileLoaded(false);
+    }, []);
+    const resetPlaybackRestarted = useCallback(() => {
+      setPlaybackRestarted(false);
+    }, []);
+    const resetFirstFrameRendered = useCallback(() => {
+      setFirstFrameRendered(false);
+    }, []);
+    return {
+      timePos,
+      duration,
+      paused,
+      ended,
+      sid,
+      fileLoaded,
+      fileLoadedToken,
+      playbackRestarted,
+      playbackRestartedToken,
+      pausedForCache,
+      coreIdle,
+      firstFrameRendered,
+      seek,
+      seekRelative,
+      setPlayPause,
+      setVolume,
+      setMuted,
+      setAudioTrack,
+      resetFileLoaded,
+      resetPlaybackRestarted,
+      resetFirstFrameRendered
+    };
   }
   var isTauriEnv;
   var init_tauri_mpv = __esm({
@@ -166778,17 +166900,44 @@
   function proxyUrl(url) {
     return `/api/m3u?stream=${encodeURIComponent(url)}`;
   }
+  function formatClock(seconds) {
+    if (!Number.isFinite(seconds) || seconds <= 0) return "00:00";
+    const total = Math.floor(seconds);
+    const h = Math.floor(total / 3600);
+    const m2 = Math.floor(total % 3600 / 60);
+    const s = total % 60;
+    if (h > 0) return `${h}:${String(m2).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+    return `${m2}:${String(s).padStart(2, "0")}`;
+  }
   function LiveTvPlayer({ channel, onClose }) {
     const { t } = useLang();
     const videoRef = useRef(null);
     const stageRef = useRef(null);
+    const controlsHideTimerRef = useRef(null);
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [portalEl, setPortalEl] = useState(null);
+    const [controlsVisible, setControlsVisible] = useState(true);
+    const [portalEl] = useState(() => {
+      if (typeof document === "undefined") return null;
+      const div = document.createElement("div");
+      div.className = isTauriEnv ? "live-tv-player-portal mpv-player-portal" : "live-tv-player-portal";
+      return div;
+    });
     const logoSrc = getLiveTvLogoSrc(channel.logo);
     const closingRef = useRef(false);
     const mobileFullscreenAttemptedRef = useRef(false);
     const useMpv = isTauriEnv;
+    const mpv = useMpvPlayer(useMpv);
+    const {
+      fileLoaded: mpvFileLoaded,
+      timePos: mpvTimePos,
+      paused: mpvPaused,
+      playbackRestarted: mpvPlaybackRestarted,
+      firstFrameRendered: mpvFirstFrameRendered,
+      resetFileLoaded,
+      resetPlaybackRestarted,
+      resetFirstFrameRendered
+    } = mpv;
     const tryEnterMobileFullscreen = useCallback(() => {
       if (mobileFullscreenAttemptedRef.current) return;
       if (!isMobileBrowser()) return;
@@ -166811,27 +166960,85 @@
     useEffect(() => {
       mobileFullscreenAttemptedRef.current = false;
     }, [channel.url]);
+    const clearControlsHideTimer = useCallback(() => {
+      if (controlsHideTimerRef.current !== null) {
+        window.clearTimeout(controlsHideTimerRef.current);
+        controlsHideTimerRef.current = null;
+      }
+    }, []);
+    const revealControls = useCallback(() => {
+      setControlsVisible(true);
+      clearControlsHideTimer();
+      if (!loading && !error) {
+        controlsHideTimerRef.current = window.setTimeout(() => {
+          setControlsVisible(false);
+          controlsHideTimerRef.current = null;
+        }, 2400);
+      }
+    }, [clearControlsHideTimer, error, loading]);
+    useEffect(() => {
+      if (!useMpv) return;
+      revealControls();
+      return clearControlsHideTimer;
+    }, [channel.url, clearControlsHideTimer, revealControls, useMpv]);
     useEffect(() => {
       lockBodyScroll();
       function onKey(event) {
         if (event.key === "Escape") void handleClose();
+        if (useMpv && (event.key === " " || event.key === "Spacebar")) {
+          event.preventDefault();
+          revealControls();
+          void setMpvPause(!mpvPaused);
+        }
       }
       window.addEventListener("keydown", onKey);
       return () => {
         unlockBodyScroll();
         window.removeEventListener("keydown", onKey);
       };
-    }, [onClose]);
-    useEffect(() => {
-      const div = document.createElement("div");
-      div.className = "live-tv-player-portal";
-      document.body.appendChild(div);
-      setPortalEl(div);
+    }, [mpvPaused, onClose, useMpv]);
+    useLayoutEffect(() => {
+      if (!portalEl) return;
+      document.body.appendChild(portalEl);
       return () => {
-        document.body.removeChild(div);
-        setPortalEl(null);
+        if (portalEl.parentNode) portalEl.parentNode.removeChild(portalEl);
       };
-    }, []);
+    }, [portalEl]);
+    useLayoutEffect(() => {
+      if (!useMpv) return;
+      const root = document.documentElement;
+      const body = document.body;
+      const previousRootBackgroundColor = root.style.getPropertyValue("background-color");
+      const previousRootBackgroundColorPriority = root.style.getPropertyPriority("background-color");
+      const previousRootBackgroundImage = root.style.getPropertyValue("background-image");
+      const previousRootBackgroundImagePriority = root.style.getPropertyPriority("background-image");
+      const previousBodyBackgroundColor = body.style.getPropertyValue("background-color");
+      const previousBodyBackgroundColorPriority = body.style.getPropertyPriority("background-color");
+      const previousBodyBackgroundImage = body.style.getPropertyValue("background-image");
+      const previousBodyBackgroundImagePriority = body.style.getPropertyPriority("background-image");
+      const ensureMpvClass = () => {
+        root.classList.add("mpv-playing");
+        root.style.setProperty("background-color", "transparent", "important");
+        root.style.setProperty("background-image", "none", "important");
+        body.style.setProperty("background-color", "transparent", "important");
+        body.style.setProperty("background-image", "none", "important");
+      };
+      const restoreProperty = (target, property, value, priority) => {
+        if (value) target.style.setProperty(property, value, priority);
+        else target.style.removeProperty(property);
+      };
+      ensureMpvClass();
+      const observer2 = new MutationObserver(ensureMpvClass);
+      observer2.observe(root, { attributes: true, attributeFilter: ["class"] });
+      return () => {
+        observer2.disconnect();
+        root.classList.remove("mpv-playing");
+        restoreProperty(root, "background-color", previousRootBackgroundColor, previousRootBackgroundColorPriority);
+        restoreProperty(root, "background-image", previousRootBackgroundImage, previousRootBackgroundImagePriority);
+        restoreProperty(body, "background-color", previousBodyBackgroundColor, previousBodyBackgroundColorPriority);
+        restoreProperty(body, "background-image", previousBodyBackgroundImage, previousBodyBackgroundImagePriority);
+      };
+    }, [useMpv]);
     useEffect(() => {
       setError(null);
       setLoading(true);
@@ -166842,7 +167049,15 @@
           const rect = stageRef.current?.getBoundingClientRect();
           if (rect) mpvSetBounds(rect);
         };
-        void openMpvPlayer({ url: channel.url }).then(() => {
+        resetFileLoaded();
+        resetPlaybackRestarted();
+        resetFirstFrameRendered();
+        void closeMpvPlayer().catch(() => {
+        }).then(() => {
+          if (cancelled2) return;
+          sync2();
+          return openMpvPlayer({ url: channel.url });
+        }).then(() => {
           if (cancelled2) return;
           sync2();
           if (stageRef.current) {
@@ -166851,7 +167066,6 @@
           }
           window.addEventListener("resize", sync2);
           window.addEventListener("scroll", sync2, true);
-          setLoading(false);
         }).catch((err) => {
           if (cancelled2) return;
           setError(err instanceof Error ? err.message : "Playback failed");
@@ -166939,22 +167153,47 @@
         media.src = "";
         media.load();
       };
-    }, [channel.url, portalEl, tryEnterMobileFullscreen, useMpv]);
-    const handleClose = useCallback(async () => {
+    }, [
+      channel.url,
+      portalEl,
+      resetFileLoaded,
+      resetFirstFrameRendered,
+      resetPlaybackRestarted,
+      tryEnterMobileFullscreen,
+      useMpv
+    ]);
+    useEffect(() => {
+      if (!useMpv || !mpvFileLoaded) return;
+      void setMpvPause(false);
+    }, [mpvFileLoaded, useMpv]);
+    useEffect(() => {
+      if (!useMpv) return;
+      if (mpvFirstFrameRendered || mpvPlaybackRestarted) {
+        setLoading(false);
+        return;
+      }
+      if (!mpvFileLoaded) return;
+      const timeout = window.setTimeout(() => setLoading(false), 900);
+      return () => window.clearTimeout(timeout);
+    }, [mpvFileLoaded, mpvFirstFrameRendered, mpvPlaybackRestarted, useMpv]);
+    const handleClose = useCallback(() => {
       if (closingRef.current) return;
       closingRef.current = true;
-      try {
-        if (useMpv) {
-          await closeMpvPlayer().catch(() => {
+      if (useMpv) {
+        onClose();
+        window.requestAnimationFrame(() => {
+          void closeMpvPlayer().catch(() => {
           });
-        } else {
-          const media = videoRef.current;
-          if (media) {
-            media.pause();
-            media.removeAttribute("src");
-            media.src = "";
-            media.load();
-          }
+        });
+        return;
+      }
+      try {
+        const media = videoRef.current;
+        if (media) {
+          media.pause();
+          media.removeAttribute("src");
+          media.src = "";
+          media.load();
         }
       } finally {
         onClose();
@@ -166963,9 +167202,147 @@
         }, 0);
       }
     }, [onClose, useMpv]);
-    const content = /* @__PURE__ */ jsxs("div", { className: "fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm", children: [
+    if (useMpv) {
+      const toggleMpvPause = () => {
+        revealControls();
+        void setMpvPause(!mpvPaused);
+      };
+      const syncMpvBoundsSoon = () => {
+        window.setTimeout(() => {
+          const rect = stageRef.current?.getBoundingClientRect();
+          if (rect) mpvSetBounds(rect);
+        }, 120);
+      };
+      const toggleFullscreen = () => {
+        revealControls();
+        void toggleWindowFullscreen().then(syncMpvBoundsSoon).catch(() => {
+        });
+      };
+      const controlsOpacity = controlsVisible ? "opacity-100" : "opacity-0";
+      const controlsPointerEvents = controlsVisible ? "pointer-events-auto" : "pointer-events-none";
+      const content2 = /* @__PURE__ */ jsxs(
+        "div",
+        {
+          className: `fixed inset-0 z-[70] bg-transparent ${controlsVisible ? "cursor-default" : "cursor-none"}`,
+          onMouseMove: revealControls,
+          onPointerMove: revealControls,
+          onFocusCapture: revealControls,
+          children: [
+            /* @__PURE__ */ jsx("div", { ref: stageRef, className: "absolute inset-0 bg-transparent" }),
+            loading && !error && /* @__PURE__ */ jsx("div", { className: "absolute inset-0 z-10 flex items-center justify-center bg-black", children: /* @__PURE__ */ jsx("div", { className: "h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" }) }),
+            error && /* @__PURE__ */ jsxs("div", { className: "absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-black px-4 text-center", children: [
+              /* @__PURE__ */ jsx("p", { className: "text-sm text-red-400", children: error }),
+              /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500", children: t("liveTvStreamErrorHelp") })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: `pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-4 bg-gradient-to-b from-black/75 via-black/45 to-transparent px-5 py-4 transition-opacity duration-200 ${controlsOpacity}`, children: [
+              /* @__PURE__ */ jsxs("div", { className: "min-w-0 flex items-center gap-3", children: [
+                logoSrc && /* @__PURE__ */ jsx(
+                  LiveTvLogoImage,
+                  {
+                    src: logoSrc,
+                    alt: "",
+                    className: "h-8 w-8 rounded object-contain bg-slate-800/90 p-0.5"
+                  }
+                ),
+                /* @__PURE__ */ jsxs("div", { className: "min-w-0", children: [
+                  /* @__PURE__ */ jsx("p", { className: "truncate font-semibold text-white", children: channel.name }),
+                  channel.group && /* @__PURE__ */ jsx("p", { className: "truncate text-xs text-slate-300", children: channel.group })
+                ] })
+              ] }),
+              /* @__PURE__ */ jsx(
+                "button",
+                {
+                  type: "button",
+                  onPointerUpCapture: (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    handleClose();
+                  },
+                  onClick: (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                  },
+                  className: `${controlsPointerEvents} rounded-full border border-white/15 bg-black/45 px-3 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-200 transition hover:border-white/35 hover:text-white`,
+                  children: t("close")
+                }
+              )
+            ] }),
+            /* @__PURE__ */ jsx("div", { className: `pointer-events-none absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-5 pb-5 pt-12 transition-opacity duration-200 ${controlsOpacity}`, children: /* @__PURE__ */ jsxs("div", { className: `${controlsPointerEvents} flex items-center gap-4 rounded-2xl border border-white/10 bg-black/55 px-4 py-3 text-white shadow-2xl backdrop-blur-md`, children: [
+              /* @__PURE__ */ jsx(
+                "button",
+                {
+                  type: "button",
+                  onPointerUpCapture: (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    toggleMpvPause();
+                  },
+                  onClick: (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                  },
+                  className: "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/35 hover:bg-white/15",
+                  "aria-label": mpvPaused ? "Play" : "Pause",
+                  title: mpvPaused ? "Play" : "Pause",
+                  children: mpvPaused ? /* @__PURE__ */ jsx("svg", { className: "h-5 w-5 translate-x-0.5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M7 5h4v14H7zM13 5h4v14h-4z" }) })
+                }
+              ),
+              /* @__PURE__ */ jsx(
+                "button",
+                {
+                  type: "button",
+                  onPointerUpCapture: (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    toggleFullscreen();
+                  },
+                  onClick: (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                  },
+                  className: "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/35 hover:bg-white/15",
+                  "aria-label": "Fullscreen",
+                  title: "Fullscreen",
+                  children: /* @__PURE__ */ jsxs("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
+                    /* @__PURE__ */ jsx("path", { d: "M8 3H3v5" }),
+                    /* @__PURE__ */ jsx("path", { d: "M16 3h5v5" }),
+                    /* @__PURE__ */ jsx("path", { d: "M21 16v5h-5" }),
+                    /* @__PURE__ */ jsx("path", { d: "M3 16v5h5" })
+                  ] })
+                }
+              ),
+              /* @__PURE__ */ jsxs("div", { className: "min-w-0 flex-1", children: [
+                /* @__PURE__ */ jsxs("div", { className: "flex min-w-0 items-center gap-3", children: [
+                  /* @__PURE__ */ jsx("span", { className: "inline-flex h-6 shrink-0 items-center rounded-full border border-red-400/35 bg-red-500/15 px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-red-200", children: "Live" }),
+                  /* @__PURE__ */ jsx("p", { className: "truncate text-sm font-semibold text-white", children: channel.name })
+                ] }),
+                /* @__PURE__ */ jsxs("div", { className: "mt-1 flex min-w-0 items-center gap-3 text-xs text-slate-300", children: [
+                  /* @__PURE__ */ jsx("span", { children: mpvPaused ? "Paused" : "Playing" }),
+                  /* @__PURE__ */ jsx("span", { className: "text-slate-600", children: "/" }),
+                  /* @__PURE__ */ jsx("span", { children: formatClock(mpvTimePos) }),
+                  channel.group ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+                    /* @__PURE__ */ jsx("span", { className: "text-slate-600", children: "/" }),
+                    /* @__PURE__ */ jsx("span", { className: "truncate", children: channel.group })
+                  ] }) : null
+                ] })
+              ] }),
+              /* @__PURE__ */ jsxs("div", { className: "hidden shrink-0 items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-slate-400 sm:flex", children: [
+                /* @__PURE__ */ jsx("span", { children: "MPV" }),
+                /* @__PURE__ */ jsx("span", { className: "h-1 w-1 rounded-full bg-slate-600" }),
+                /* @__PURE__ */ jsx("span", { children: "Live TV" })
+              ] })
+            ] }) })
+          ]
+        }
+      );
+      return portalEl ? (0, import_react_dom2.createPortal)(content2, portalEl) : content2;
+    }
+    const wrapperBg = "bg-black/60 backdrop-blur-sm";
+    const cardBg = "bg-slate-950/30";
+    const stageBg = "bg-black";
+    const content = /* @__PURE__ */ jsxs("div", { className: `fixed inset-0 z-[70] flex items-center justify-center ${wrapperBg}`, children: [
       /* @__PURE__ */ jsx("button", { type: "button", "aria-label": t("close"), onClick: () => void handleClose(), className: "absolute inset-0" }),
-      /* @__PURE__ */ jsx("div", { className: "relative z-10 w-full max-w-5xl px-4", children: /* @__PURE__ */ jsxs("div", { className: "relative overflow-hidden rounded-3xl border border-white/10 bg-slate-950/30 shadow-2xl ring-1 ring-white/5", children: [
+      /* @__PURE__ */ jsx("div", { className: "relative z-10 w-full max-w-5xl px-4", children: /* @__PURE__ */ jsxs("div", { className: `relative overflow-hidden rounded-3xl border border-white/10 ${cardBg} shadow-2xl ring-1 ring-white/5`, children: [
         /* @__PURE__ */ jsxs("div", { className: "absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-4 bg-gradient-to-b from-black/75 via-black/45 to-transparent px-4 py-3", children: [
           /* @__PURE__ */ jsxs("div", { className: "min-w-0 flex items-center gap-3", children: [
             logoSrc && /* @__PURE__ */ jsx(
@@ -166991,13 +167368,13 @@
             }
           )
         ] }),
-        /* @__PURE__ */ jsxs("div", { ref: stageRef, className: "relative aspect-video w-full overflow-hidden bg-black", children: [
+        /* @__PURE__ */ jsxs("div", { className: `relative aspect-video w-full overflow-hidden ${stageBg}`, children: [
           loading && !error && /* @__PURE__ */ jsx("div", { className: "absolute inset-0 z-10 flex items-center justify-center", children: /* @__PURE__ */ jsx("div", { className: "h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" }) }),
           error && /* @__PURE__ */ jsxs("div", { className: "absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 px-4 text-center", children: [
             /* @__PURE__ */ jsx("p", { className: "text-sm text-red-400", children: error }),
             /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500", children: t("liveTvStreamErrorHelp") })
           ] }),
-          !useMpv && /* @__PURE__ */ jsx(
+          /* @__PURE__ */ jsx(
             "video",
             {
               ref: videoRef,
@@ -167550,7 +167927,7 @@
     if (loading) {
       return /* @__PURE__ */ jsxs("div", { className: "space-y-4", children: [
         /* @__PURE__ */ jsx("div", { className: "h-10 w-64 animate-pulse rounded-xl bg-slate-800" }),
-        /* @__PURE__ */ jsx("div", { className: "grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4", children: Array.from({ length: CHANNELS_PER_PAGE }).map((_, i) => /* @__PURE__ */ jsx("div", { className: "h-40 animate-pulse rounded-2xl bg-slate-800" }, i)) })
+        /* @__PURE__ */ jsx("div", { className: "live-tv-channel-grid grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5", children: Array.from({ length: CHANNELS_PER_PAGE }).map((_, i) => /* @__PURE__ */ jsx("div", { className: "h-40 animate-pulse rounded-2xl bg-slate-800" }, i)) })
       ] });
     }
     if (error) {
@@ -167710,7 +168087,7 @@
           ] }, list.id))
         ] }) }),
         filtered.length === 0 ? /* @__PURE__ */ jsx("p", { className: "py-8 text-center text-slate-400", children: t("m3uNoResults") }) : /* @__PURE__ */ jsxs("div", { className: "space-y-4", children: [
-          /* @__PURE__ */ jsx("div", { className: `grid gap-4 ${isTauriEnv ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4"}`, children: pagedChannels.map((channel, i) => {
+          /* @__PURE__ */ jsx("div", { className: "live-tv-channel-grid grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5", children: pagedChannels.map((channel, i) => {
             const logoSrc = loadedLogoUrls[channel.url] ?? null;
             const channelListKey = `${channel.name}::${channel.url}`;
             const isListPickerOpen = listPickerChannelKey === channelListKey;
@@ -167931,7 +168308,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-8C8gt5/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-WMt86n/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

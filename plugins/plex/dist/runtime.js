@@ -46,7 +46,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-CP74Nd/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Hq5SsE/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -95,7 +95,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-CP74Nd/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Hq5SsE/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -143,7 +143,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-CP74Nd/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Hq5SsE/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -153,7 +153,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-CP74Nd/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Hq5SsE/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -167654,7 +167654,7 @@
     ) });
   }
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-CP74Nd/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Hq5SsE/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
 
   // lib/tauri-mpv.ts
@@ -171687,11 +171687,12 @@
         "position: fixed",
         "inset: 0",
         "z-index: 999999",
-        "background-color: #050816",
+        "background-color: #000",
         "opacity: 1",
         "pointer-events: none",
         `transition: opacity ${fadeMs}ms linear`
       ].join("; ");
+      void cover.getBoundingClientRect();
       window.setTimeout(() => {
         if (cover.getAttribute(MPV_TRANSITION_COVER_ATTR) !== token) return;
         cover.style.opacity = "0";
@@ -172536,8 +172537,16 @@
       if (!container) return;
       const rect = container.getBoundingClientRect();
       setContainerSize({ width: rect.width, height: rect.height });
-      if (useMpv) mpvSetBounds(rect);
-    }, [useMpv]);
+      if (useMpv) {
+        const overscan = desktopFullscreen ? 0 : 2;
+        mpvSetBounds({
+          left: rect.left - overscan,
+          top: rect.top - overscan,
+          width: rect.width + overscan * 2,
+          height: rect.height + overscan * 2
+        });
+      }
+    }, [desktopFullscreen, useMpv]);
     const scheduleBoundsResync = useCallback(() => {
       if (boundsSyncFrameRef.current !== null) {
         window.cancelAnimationFrame(boundsSyncFrameRef.current);
@@ -172763,7 +172772,11 @@
         subtitleDownloadAbortRef.current = null;
         if (useMpv) {
           showMpvTransitionCover(1400, 400);
-          void closeMpvPlayer().catch(() => {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              void closeMpvPlayer().catch(() => {
+              });
+            });
           });
         } else {
           const video = videoRef.current;
@@ -172804,7 +172817,7 @@
         void tryCloseDesktopPlaybackSession("user_close").catch(() => true);
       };
       if (useMpv) {
-        const fullscreenSyncTimeout = window.setTimeout(finishClose, 450);
+        const fullscreenSyncTimeout = window.setTimeout(finishClose, 1500);
         void syncDesktopFullscreenState().then((fullscreen) => {
           if (!fullscreen) return;
           return setWindowFullscreen(false);
@@ -174092,6 +174105,7 @@
     const canAutoSyncNow = Boolean(activeSubId) && cues.length >= 2;
     const activeIntro = introSegment ? realTime >= introSegment.startMs / 1e3 && realTime < introSegment.endMs / 1e3 ? introSegment : null : null;
     const shouldShowSkipIntroButton = Boolean(hasStarted && !autoSkipIntro && activeIntro && introDataReady);
+    const controlsReady = useMpv ? hasEverStarted || hasStarted || mpv.firstFrameRendered || mpvRevealPlaybackReady : hasEverStarted;
     useEffect(() => {
       if (!autoSkipIntro || !activeIntro || !hasStarted || autoSkippedIntroRef.current) return;
       autoSkippedIntroRef.current = true;
@@ -174213,35 +174227,56 @@
       !(useMpv && desktopFullscreen) && /* @__PURE__ */ jsxs(
         "div",
         {
-          className: `flex items-center justify-between gap-4 border-b border-white/10 px-4 py-2.5 transition-opacity duration-300 ${useMpv ? "bg-black" : "bg-black/80"}`,
+          className: "absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-4 px-4 py-2.5 transition-colors duration-300",
           style: {
-            opacity: controlsVisible ? 1 : 0,
+            backgroundColor: useMpv ? "#000" : controlsVisible ? "rgba(0,0,0,0.8)" : "transparent",
             pointerEvents: controlsVisible ? "auto" : "none"
           },
           children: [
-            /* @__PURE__ */ jsx("span", { className: "truncate text-sm text-slate-300", children: title }),
-            /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
-              /* @__PURE__ */ jsx(
-                "button",
-                {
-                  type: "button",
-                  onClick: () => {
-                    void handleCopyStreamLink();
-                  },
-                  className: "rounded-full border border-white/10 px-3 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-300 transition hover:border-white/30 hover:text-white",
-                  children: t("copyLink")
-                }
-              ),
-              /* @__PURE__ */ jsx(
-                "button",
-                {
-                  type: "button",
-                  onClick: handleClose,
-                  className: "rounded-full border border-white/10 px-3 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-300 transition hover:border-white/30 hover:text-white",
-                  children: t("close")
-                }
-              )
-            ] })
+            /* @__PURE__ */ jsx(
+              "div",
+              {
+                className: "pointer-events-none absolute inset-x-0 bottom-0 border-b border-white/10 transition-opacity duration-300",
+                style: { opacity: controlsVisible ? 1 : 0 }
+              }
+            ),
+            /* @__PURE__ */ jsx(
+              "span",
+              {
+                className: "relative truncate text-sm text-slate-300 transition-opacity duration-300",
+                style: { opacity: controlsVisible ? 1 : 0 },
+                children: title
+              }
+            ),
+            /* @__PURE__ */ jsxs(
+              "div",
+              {
+                className: "relative flex items-center gap-2 transition-opacity duration-300",
+                style: { opacity: controlsVisible ? 1 : 0 },
+                children: [
+                  /* @__PURE__ */ jsx(
+                    "button",
+                    {
+                      type: "button",
+                      onClick: () => {
+                        void handleCopyStreamLink();
+                      },
+                      className: "rounded-full border border-white/10 px-3 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-300 transition hover:border-white/30 hover:text-white",
+                      children: t("copyLink")
+                    }
+                  ),
+                  /* @__PURE__ */ jsx(
+                    "button",
+                    {
+                      type: "button",
+                      onClick: handleClose,
+                      className: "rounded-full border border-white/10 px-3 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-300 transition hover:border-white/30 hover:text-white",
+                      children: t("close")
+                    }
+                  )
+                ]
+              }
+            )
           ]
         }
       ),
@@ -174595,8 +174630,8 @@
               "div",
               {
                 ref: controlsRef,
-                className: "vp-controls absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/80 via-black/30 to-transparent px-4 pb-3 pt-10",
-                style: { opacity: controlsVisible && hasEverStarted ? 1 : 0, pointerEvents: controlsVisible && hasEverStarted ? "auto" : "none" },
+                className: "vp-controls absolute inset-x-0 bottom-0 z-40 bg-gradient-to-t from-black/80 via-black/30 to-transparent px-4 pb-3 pt-10",
+                style: { opacity: controlsVisible && controlsReady ? 1 : 0, pointerEvents: controlsVisible && controlsReady ? "auto" : "none" },
                 onMouseMove: onMouseActivity,
                 onClick: (e) => e.stopPropagation(),
                 children: [
@@ -177841,7 +177876,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-CP74Nd/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Hq5SsE/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");
