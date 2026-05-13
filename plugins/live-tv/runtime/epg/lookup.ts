@@ -32,3 +32,20 @@ export function computeNowNextLater(
   const later = list[nextIdx + 1] ?? null
   return { now: nowProgramme, next, later }
 }
+
+/**
+ * Return all programmes for a channel overlapping the half-open window
+ * [fromMs, toMs). Sorted ascending by start time. Empty array when no
+ * cache / tvgId / programmes are available.
+ */
+export function getChannelSchedule(
+  cache: EpgCacheEntry | null,
+  tvgId: string | null,
+  fromMs: number,
+  toMs: number,
+): EpgProgramme[] {
+  if (!cache || !tvgId) return []
+  const list = cache.index[tvgId]
+  if (!list || list.length === 0) return []
+  return list.filter((p) => p.stop > fromMs && p.start < toMs)
+}

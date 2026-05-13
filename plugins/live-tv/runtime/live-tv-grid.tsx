@@ -98,6 +98,10 @@ export function LiveTvGrid({ initialChannel = null }: { initialChannel?: M3uChan
   const [activeListId, setActiveListId] = useState<string | null>(null)
   const [listPickerChannelKey, setListPickerChannelKey] = useState<string | null>(null)
   const [createListOpen, setCreateListOpen] = useState(false)
+  const [guideOpen, setGuideOpen] = useState(false)
+  const [LiveTvGuideComponent, setLiveTvGuideComponent] = useState<
+    null | typeof import('./live-tv-guide').LiveTvGuide
+  >(null)
   const [createListName, setCreateListName] = useState('')
   const [pendingChannelForNewList, setPendingChannelForNewList] = useState<M3uChannel | null>(null)
   const [LiveTvPlayerComponent, setLiveTvPlayerComponent] = useState<ComponentType<{
@@ -451,6 +455,21 @@ export function LiveTvGrid({ initialChannel = null }: { initialChannel?: M3uChan
   }, [activeChannel, LiveTvPlayerComponent])
 
   useEffect(() => {
+    if (!guideOpen || LiveTvGuideComponent) return
+    let cancelled = false
+    void import('./live-tv-guide')
+      .then((mod) => {
+        if (!cancelled) setLiveTvGuideComponent(() => mod.LiveTvGuide)
+      })
+      .catch(() => {
+        if (!cancelled) setGuideOpen(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [guideOpen, LiveTvGuideComponent])
+
+  useEffect(() => {
     if (!loading) {
       logLiveTvStage('render state ready', {
         channels: channels.length,
@@ -585,6 +604,23 @@ export function LiveTvGrid({ initialChannel = null }: { initialChannel?: M3uChan
           <div className="ml-auto flex items-center gap-3">
             <span className="text-xs text-white">{filtered.length} / {visibleChannels.length} {t('m3uChannels')}</span>
             {refreshing && visibleChannels.length > 0 ? <span className="text-xs text-slate-500">Uppdaterar...</span> : null}
+            <button
+              type="button"
+              onClick={() => setGuideOpen(true)}
+              className={`inline-flex h-9 items-center gap-2 px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] ${neutralPillClass}`}
+              aria-label="Öppna TV-tablå"
+              title="TV-tablå"
+            >
+              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="16" rx="2" />
+                <path d="M8 2v4" />
+                <path d="M16 2v4" />
+                <path d="M3 10h18" />
+                <path d="M7 14h4" />
+                <path d="M7 18h10" />
+              </svg>
+              Guide
+            </button>
             <button
               type="button"
               onClick={handleRefreshChannels}
@@ -812,6 +848,17 @@ export function LiveTvGrid({ initialChannel = null }: { initialChannel?: M3uChan
           />
         )
       })()}
+
+      {guideOpen && LiveTvGuideComponent ? (
+        <LiveTvGuideComponent
+          open={guideOpen}
+          onClose={() => setGuideOpen(false)}
+          onPlayChannel={(channel) => {
+            setGuideOpen(false)
+            setActiveChannel(channel)
+          }}
+        />
+      ) : null}
 
       {createListOpen ? (
         <div

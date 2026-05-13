@@ -23,6 +23,15 @@ describe('window.__LumioLiveTvEpg bridge', () => {
     expect(window.__LumioLiveTvEpg).toBeDefined()
     expect(typeof window.__LumioLiveTvEpg?.useEpgNowNextLater).toBe('function')
     expect(typeof window.__LumioLiveTvEpg?.useEpgLoadStatus).toBe('function')
-    expect(window.__LumioLiveTvEpg?.version).toBe('0.3.0')
+    expect(window.__LumioLiveTvEpg?.version).toBe('0.3.2')
+    expect(typeof window.__LumioLiveTvEpg?.useChannelSchedule).toBe('function')
+  })
+
+  it('dispatches lumio-live-tv-bridge-ready when the bridge is attached', async () => {
+    const handler = vi.fn()
+    window.addEventListener('lumio-live-tv-bridge-ready', handler)
+    await import('./index')
+    expect(handler).toHaveBeenCalledTimes(1)
+    window.removeEventListener('lumio-live-tv-bridge-ready', handler)
   })
 })
