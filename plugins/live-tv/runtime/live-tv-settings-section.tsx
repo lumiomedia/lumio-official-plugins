@@ -71,6 +71,12 @@ export function LiveTvSettingsSection() {
           body: JSON.stringify({ url }),
         })
         if (!response.ok) throw new Error('m3u fetch failed')
+        // Drain the body so callers can pick up `urlTvg` on the response in the
+        // future. Currently the settings panel only validates reachability, but
+        // the new shape (`{ channels, urlTvg, ... }`) is preserved here for the
+        // list-creation flow.
+        const { urlTvg } = (await response.json().catch(() => ({}))) as { urlTvg?: string | null }
+        void urlTvg
       }
 
       applyM3uUrls(urls)

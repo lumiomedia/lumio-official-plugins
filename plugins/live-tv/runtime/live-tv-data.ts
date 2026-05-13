@@ -19,6 +19,7 @@ interface M3uChannel {
   logo?: string | null
   group: string
   url: string
+  tvgId: string | null
 }
 
 export const LIVE_TV_PLUGIN_ID = 'com.lumio.live-tv'
@@ -34,6 +35,8 @@ export interface LiveTvList {
   name: string
   channels: M3uChannel[]
   createdAt: string
+  urlTvg: string | null
+  epgUrls: string[]
 }
 
 function sanitizeChannels(channels: unknown[]): M3uChannel[] {
@@ -44,8 +47,17 @@ function sanitizeChannels(channels: unknown[]): M3uChannel[] {
       logo: typeof channel.logo === 'string' && channel.logo.trim().length > 0 ? channel.logo.trim() : null,
       group: String(channel.group ?? 'Other').trim() || 'Other',
       url: String(channel.url ?? '').trim(),
+      tvgId: typeof channel.tvgId === 'string' && channel.tvgId.trim().length > 0 ? channel.tvgId.trim() : null,
     }))
     .filter((channel) => channel.url.length > 0)
+}
+
+function sanitizeEpgUrls(values: unknown): string[] {
+  if (!Array.isArray(values)) return []
+  return values
+    .filter((value): value is string => typeof value === 'string')
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0)
 }
 
 function sanitizeStringArray(values: unknown): string[] {
@@ -71,6 +83,8 @@ function readLists(): LiveTvList[] {
       name: String(entry.name ?? '').trim(),
       createdAt: String(entry.createdAt ?? ''),
       channels: sanitizeChannels(Array.isArray(entry.channels) ? entry.channels : []),
+      urlTvg: typeof entry.urlTvg === 'string' && entry.urlTvg.trim().length > 0 ? entry.urlTvg.trim() : null,
+      epgUrls: sanitizeEpgUrls(entry.epgUrls),
     }))
     .filter((entry) => entry.id.length > 0 && entry.name.length > 0)
 }
@@ -184,7 +198,7 @@ export function onLiveTvListsChanged(listener: () => void): () => void {
   return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, LIVE_TV_LISTS_KEY, listener)
 }
 
-export function createLiveTvList(name: string): LiveTvList {
+export function createLiveTvList(name: string, options?: { urlTvg?: string | null; epgUrls?: string[] }): LiveTvList {
   const trimmed = name.trim()
   if (!trimmed) throw new Error('List name is required')
   const next: LiveTvList = {
@@ -192,6 +206,8 @@ export function createLiveTvList(name: string): LiveTvList {
     name: trimmed,
     channels: [],
     createdAt: new Date().toISOString(),
+    urlTvg: typeof options?.urlTvg === 'string' && options.urlTvg.trim().length > 0 ? options.urlTvg.trim() : null,
+    epgUrls: sanitizeEpgUrls(options?.epgUrls ?? []),
   }
   writeLists([...readLists(), next])
   return next

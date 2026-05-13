@@ -9,6 +9,7 @@ interface M3uChannel {
   logo: string | null
   group: string
   url: string
+  tvgId: string | null
 }
 
 function decodeInitialChannel(params?: BrowsePageProps['params']): M3uChannel | null {
@@ -19,6 +20,7 @@ function decodeInitialChannel(params?: BrowsePageProps['params']): M3uChannel | 
     logo: params?.logo?.trim() || null,
     group: params?.group?.trim() || 'Other',
     url,
+    tvgId: params?.tvgId?.trim() || null,
   }
 }
 

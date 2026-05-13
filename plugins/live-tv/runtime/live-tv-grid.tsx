@@ -39,6 +39,7 @@ interface M3uChannel {
   logo: string | null
   group: string
   url: string
+  tvgId: string | null
 }
 
 const rememberedChannelLogoSrcs = new Map<string, string>()
@@ -71,6 +72,7 @@ function sanitizeChannels(channels: unknown[]): M3uChannel[] {
       logo: typeof channel.logo === 'string' && channel.logo.trim().length > 0 ? channel.logo.trim() : null,
       group: String(channel.group ?? 'Other').trim() || 'Other',
       url: String(channel.url ?? '').trim(),
+      tvgId: typeof channel.tvgId === 'string' && channel.tvgId.trim().length > 0 ? channel.tvgId.trim() : null,
     }))
     .filter((channel) => channel.url.length > 0)
 }
@@ -270,7 +272,7 @@ export function LiveTvGrid({ initialChannel = null }: { initialChannel?: M3uChan
             body: JSON.stringify({ url }),
           })
             .then((r) => r.json())
-            .then((data: { channels?: unknown[] }) => sanitizeChannels(data.channels ?? []))
+            .then((data: { channels?: unknown[]; urlTvg?: unknown }) => sanitizeChannels(data.channels ?? []))
             .catch(() => [] as M3uChannel[])
 
           if (cancelled) break
