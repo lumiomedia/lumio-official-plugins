@@ -7,6 +7,7 @@ import {
   useLang,
 } from '@/lib/plugin-sdk'
 import { LiveTvLogoImage } from './live-tv-logo-image'
+import { NowBadge } from './now-badge'
 import { ResultsPagination } from './results-pagination'
 import {
   addChannelToLiveTvList,
@@ -667,6 +668,17 @@ export function LiveTvGrid({ initialChannel = null }: { initialChannel?: M3uChan
                 const channelListKey = `${channel.name}::${channel.url}`
                 const isListPickerOpen = listPickerChannelKey === channelListKey
                 const isInAnyList = lists.some((list) => isChannelInLiveTvList(list.id, channel))
+                const tileList =
+                  activeList ??
+                  lists.find((list) =>
+                    list.channels.some(
+                      (entry) => entry.url === channel.url && entry.name === channel.name,
+                    ),
+                  ) ??
+                  null
+                const tileEpgUrls = tileList
+                  ? [tileList.urlTvg, ...tileList.epgUrls].filter((url): url is string => Boolean(url))
+                  : []
                 return (
                   <div
                     key={`${channel.url}-${i}-${pinVersion}`}
@@ -761,6 +773,11 @@ export function LiveTvGrid({ initialChannel = null }: { initialChannel?: M3uChan
                       <p className={`w-full text-center text-slate-300 ${isTauriEnv ? 'line-clamp-3 text-[14px] leading-5' : 'line-clamp-3 text-[13px] leading-5 group-hover:text-white'}`}>
                         {channel.name}
                       </p>
+                      <NowBadge
+                        channel={channel}
+                        listId={tileList?.id ?? null}
+                        urls={tileEpgUrls}
+                      />
                       {isTauriEnv && channel.group ? (
                         <p className="w-full truncate text-center text-[11px] text-slate-500">{channel.group}</p>
                       ) : null}
