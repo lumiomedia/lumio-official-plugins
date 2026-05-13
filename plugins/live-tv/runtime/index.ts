@@ -3,6 +3,26 @@ import type { BrowsePageProps, LumioPlugin } from '@/lib/plugin-sdk'
 import { LiveTvSettingsSection } from './live-tv-settings-section'
 import { LiveTvHomeOverride } from './live-tv-home-override'
 import { LiveTvGrid } from './live-tv-grid'
+import { useEpgNowNextLater } from './hooks/useEpgNowNextLater'
+import { useEpgLoadStatus } from './hooks/useEpgLoadStatus'
+
+declare global {
+  interface Window {
+    __LumioLiveTvEpg?: {
+      useEpgNowNextLater: typeof useEpgNowNextLater
+      useEpgLoadStatus: typeof useEpgLoadStatus
+      version: string
+    }
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.__LumioLiveTvEpg = {
+    useEpgNowNextLater,
+    useEpgLoadStatus,
+    version: '0.3.0',
+  }
+}
 
 interface M3uChannel {
   name: string
@@ -31,10 +51,10 @@ function LiveTvBrowsePage({ params }: BrowsePageProps) {
 export const LiveTvPlugin: LumioPlugin = {
   id: 'com.lumio.live-tv',
   name: { en: 'Live TV', sv: 'Live TV' },
-  version: '0.2.2',
+  version: '0.3.0',
   description: {
-    en: 'Manage M3U sources and browse live TV channels.',
-    sv: 'Hantera M3U-kallor och bladdra bland live-TV-kanaler.',
+    en: 'Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.',
+    sv: 'Hantera M3U-källor, bläddra bland live-TV-kanaler och se EPG (nu/härnäst) i Lumio.',
   },
   preinstalled: true,
 
