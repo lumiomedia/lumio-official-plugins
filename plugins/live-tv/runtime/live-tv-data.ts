@@ -213,6 +213,26 @@ export function createLiveTvList(name: string, options?: { urlTvg?: string | nul
   return next
 }
 
+export function updateLiveTvListEpg(
+  listId: string,
+  patch: { urlTvg?: string | null; epgUrls?: string[] },
+): void {
+  writeLists(
+    readLists().map((list) => {
+      if (list.id !== listId) return list
+      return {
+        ...list,
+        urlTvg: patch.urlTvg !== undefined
+          ? (typeof patch.urlTvg === 'string' && patch.urlTvg.trim().length > 0
+            ? patch.urlTvg.trim()
+            : null)
+          : list.urlTvg,
+        epgUrls: patch.epgUrls !== undefined ? sanitizeEpgUrls(patch.epgUrls) : list.epgUrls,
+      }
+    }),
+  )
+}
+
 export function deleteLiveTvList(listId: string): void {
   writeLists(readLists().filter((list) => list.id !== listId))
 }

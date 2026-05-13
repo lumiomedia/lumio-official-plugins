@@ -14,9 +14,14 @@ import {
   applyM3uUrls,
   clearLiveTvMemoryCache,
   clearStoredLiveTvChannels,
+  getLiveTvLists,
   getM3uDraftUrls,
+  onLiveTvListsChanged,
   setM3uDraftUrls,
+  updateLiveTvListEpg,
+  type LiveTvList,
 } from './live-tv-data'
+import { EpgSourcesSection } from './epg-sources-section'
 
 const textareaClassNames = {
   base: 'w-full',
@@ -39,6 +44,13 @@ export function LiveTvSettingsSection() {
   const [m3uFetchState, setM3uFetchState] = useState<'idle' | 'fetching' | 'done' | 'error'>('idle')
   const [homeOverrideEnabled, setHomeOverrideEnabled] = useState(false)
   const [homeOverrideError, setHomeOverrideError] = useState('')
+  const [lists, setLists] = useState<LiveTvList[]>([])
+
+  useEffect(() => {
+    const sync = () => setLists(getLiveTvLists())
+    sync()
+    return onLiveTvListsChanged(sync)
+  }, [])
 
   useEffect(() => {
     const sync = () => setM3uText(getM3uDraftUrls().join('\n'))
@@ -141,6 +153,25 @@ export function LiveTvSettingsSection() {
                 : t('m3uFetchList')}
         </button>
       </div>
+      {lists.length > 0 ? (
+        <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+          {lists.map((list) => (
+            <div key={list.id} className="space-y-2 border-b border-white/5 pb-4 last:border-b-0 last:pb-0">
+              <div className="flex items-baseline justify-between gap-2">
+                <h4 className="text-sm font-semibold text-white">{list.name}</h4>
+                <span className="text-[10px] uppercase tracking-wider text-slate-500">
+                  {list.channels.length} channels
+                </span>
+              </div>
+              <EpgSourcesSection
+                autoUrl={list.urlTvg}
+                manualUrls={list.epgUrls}
+                onChangeManual={(epgUrls) => updateLiveTvListEpg(list.id, { epgUrls })}
+              />
+            </div>
+          ))}
+        </div>
+      ) : null}
     </div>
   )
 }
