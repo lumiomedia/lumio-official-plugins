@@ -237,6 +237,44 @@ export function deleteLiveTvList(listId: string): void {
   writeLists(readLists().filter((list) => list.id !== listId))
 }
 
+function deriveListName(sourceUrl: string): string {
+  try {
+    const u = new URL(sourceUrl)
+    return u.hostname || sourceUrl
+  } catch {
+    return sourceUrl
+  }
+}
+
+export function upsertLiveTvListFromFetch(
+  sourceUrl: string,
+  urlTvg: string | null,
+  channels: M3uChannel[],
+): LiveTvList {
+  const trimmedSource = sourceUrl.trim()
+  if (!trimmedSource) throw new Error('sourceUrl is required')
+  const name = deriveListName(trimmedSource)
+  const existing = readLists().find((list) => list.name === name)
+  const cleanChannels = sanitizeChannels(channels)
+  const cleanUrlTvg = typeof urlTvg === 'string' && urlTvg.trim().length > 0 ? urlTvg.trim() : null
+
+  if (existing) {
+    const updated: LiveTvList = { ...existing, channels: cleanChannels, urlTvg: cleanUrlTvg }
+    writeLists(readLists().map((list) => (list.id === existing.id ? updated : list)))
+    return updated
+  }
+  const next: LiveTvList = {
+    id: crypto.randomUUID(),
+    name,
+    channels: cleanChannels,
+    createdAt: new Date().toISOString(),
+    urlTvg: cleanUrlTvg,
+    epgUrls: [],
+  }
+  writeLists([...readLists(), next])
+  return next
+}
+
 export function addChannelToLiveTvList(listId: string, channel: M3uChannel): void {
   writeLists(readLists().map((list) => (
     list.id !== listId

@@ -15,6 +15,7 @@ import {
   clearLiveTvMemoryCache,
   clearStoredLiveTvChannels,
   getLiveTvLists,
+  upsertLiveTvListFromFetch,
   getM3uDraftUrls,
   onLiveTvListsChanged,
   setM3uDraftUrls,
@@ -83,12 +84,20 @@ export function LiveTvSettingsSection() {
           body: JSON.stringify({ url }),
         })
         if (!response.ok) throw new Error('m3u fetch failed')
-        // Drain the body so callers can pick up `urlTvg` on the response in the
-        // future. Currently the settings panel only validates reachability, but
-        // the new shape (`{ channels, urlTvg, ... }`) is preserved here for the
-        // list-creation flow.
-        const { urlTvg } = (await response.json().catch(() => ({}))) as { urlTvg?: string | null }
-        void urlTvg
+        const parsed = (await response.json().catch(() => ({}))) as {
+          channels?: unknown[]
+          urlTvg?: string | null
+        }
+        const channels = Array.isArray(parsed.channels)
+          ? (parsed.channels as Array<{ name?: unknown; logo?: unknown; group?: unknown; url?: unknown; tvgId?: unknown }>).map((c) => ({
+              name: String(c.name ?? 'Unknown'),
+              logo: typeof c.logo === 'string' ? c.logo : null,
+              group: String(c.group ?? 'Other'),
+              url: String(c.url ?? ''),
+              tvgId: typeof c.tvgId === 'string' ? c.tvgId : null,
+            }))
+          : []
+        upsertLiveTvListFromFetch(url, parsed.urlTvg ?? null, channels)
       }
 
       applyM3uUrls(urls)
@@ -133,7 +142,8 @@ export function LiveTvSettingsSection() {
         value={m3uText}
         onValueChange={setM3uText}
         placeholder={t('m3uUrlsPlaceholder')}
-        minRows={6}
+        minRows={2}
+        maxRows={6}
         radius="lg"
         classNames={textareaClassNames}
       />
