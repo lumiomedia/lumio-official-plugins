@@ -14,7 +14,7 @@ import {
   writePluginJson,
 } from '@/lib/plugin-sdk'
 
-interface M3uChannel {
+export interface M3uChannel {
   name: string
   logo?: string | null
   group: string
