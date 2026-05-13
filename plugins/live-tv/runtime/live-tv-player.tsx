@@ -17,17 +17,21 @@ import {
 } from '@/lib/plugin-sdk'
 import { LiveTvLogoImage } from './live-tv-logo-image'
 import { getLiveTvLogoSrc } from './live-tv-data'
+import { PlayerNowOverlay } from './player-now-overlay'
 
 interface M3uChannel {
   name: string
   logo: string | null
   group: string
   url: string
+  tvgId: string | null
 }
 
 interface LiveTvPlayerProps {
   channel: M3uChannel
   onClose: () => void
+  listId?: string | null
+  epgUrls?: string[]
 }
 
 function isIosWebKitBrowser(): boolean {
@@ -57,7 +61,7 @@ function formatClock(seconds: number): string {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
-export function LiveTvPlayer({ channel, onClose }: LiveTvPlayerProps) {
+export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: LiveTvPlayerProps) {
   const { t } = useLang()
   const videoRef = useRef<HTMLVideoElement>(null)
   const stageRef = useRef<HTMLDivElement>(null)
@@ -456,6 +460,9 @@ export function LiveTvPlayer({ channel, onClose }: LiveTvPlayerProps) {
             {t('close')}
           </button>
         </div>
+        <div className={`transition-opacity duration-200 ${controlsOpacity}`}>
+          <PlayerNowOverlay channel={channel} listId={listId} urls={epgUrls} />
+        </div>
         <div className={`pointer-events-none absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-5 pb-5 pt-12 transition-opacity duration-200 ${controlsOpacity}`}>
           <div className={`${controlsPointerEvents} flex items-center gap-4 rounded-2xl border border-white/10 bg-black/55 px-4 py-3 text-white shadow-2xl backdrop-blur-md`}>
             <button
@@ -573,6 +580,7 @@ export function LiveTvPlayer({ channel, onClose }: LiveTvPlayerProps) {
           </div>
 
           <div className={`relative aspect-video w-full overflow-hidden ${stageBg}`}>
+            <PlayerNowOverlay channel={channel} listId={listId} urls={epgUrls} />
             {loading && !error && (
               <div className="absolute inset-0 z-10 flex items-center justify-center">
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />

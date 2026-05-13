@@ -102,6 +102,8 @@ export function LiveTvGrid({ initialChannel = null }: { initialChannel?: M3uChan
   const [LiveTvPlayerComponent, setLiveTvPlayerComponent] = useState<ComponentType<{
     channel: M3uChannel
     onClose: () => void
+    listId?: string | null
+    epgUrls?: string[]
   }> | null>(null)
   const urlsKey = getLiveTvUrlsKey(urls)
   const m3uErrorText = t('m3uError')
@@ -772,9 +774,27 @@ export function LiveTvGrid({ initialChannel = null }: { initialChannel?: M3uChan
         )}
       </div>
 
-      {activeChannel && LiveTvPlayerComponent && (
-        <LiveTvPlayerComponent channel={activeChannel} onClose={() => setActiveChannel(null)} />
-      )}
+      {activeChannel && LiveTvPlayerComponent && (() => {
+        const owningList =
+          (activeListId ? lists.find((list) => list.id === activeListId) : null) ??
+          lists.find((list) =>
+            list.channels.some(
+              (entry) => entry.url === activeChannel.url && entry.name === activeChannel.name,
+            ),
+          ) ??
+          null
+        const playerEpgUrls = owningList
+          ? [owningList.urlTvg, ...owningList.epgUrls].filter((url): url is string => Boolean(url))
+          : []
+        return (
+          <LiveTvPlayerComponent
+            channel={activeChannel}
+            onClose={() => setActiveChannel(null)}
+            listId={owningList?.id ?? null}
+            epgUrls={playerEpgUrls}
+          />
+        )
+      })()}
 
       {createListOpen ? (
         <div
