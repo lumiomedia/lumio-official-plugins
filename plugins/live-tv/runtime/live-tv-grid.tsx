@@ -334,7 +334,27 @@ export function LiveTvGrid({ initialChannel = null }: { initialChannel?: M3uChan
     ? (lists.find((list) => list.id === activeListId) ?? null)
     : null
 
-  const visibleChannels = activeList?.channels ?? channels
+  // For the "ALL" tab fall back to the union of channels stored in every
+  // list when the in-memory `channels` state is empty (e.g. immediately
+  // after a settings-driven re-fetch cleared the cache but before the
+  // grid's own /api/m3u fetch has completed). Without this fallback the
+  // ALL tab would render empty while the per-list tab still shows data.
+  const allListChannels = (() => {
+    if (lists.length === 0) return [] as M3uChannel[]
+    const seen = new Set<string>()
+    const out: M3uChannel[] = []
+    for (const list of lists) {
+      for (const c of list.channels) {
+        const key = `${c.name}::${c.url}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        out.push(c)
+      }
+    }
+    return out
+  })()
+
+  const visibleChannels = activeList?.channels ?? (channels.length > 0 ? channels : allListChannels)
 
   const categories = Array.from(
     new Set(

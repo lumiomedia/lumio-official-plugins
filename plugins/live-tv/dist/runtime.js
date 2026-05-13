@@ -46,7 +46,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-98Vm4d/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-aquzqy/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -95,7 +95,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-98Vm4d/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-aquzqy/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -29688,7 +29688,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-98Vm4d/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-aquzqy/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -29698,7 +29698,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-98Vm4d/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-aquzqy/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -165765,10 +165765,10 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-98Vm4d/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-aquzqy/auth-capabilities-shim.ts
   var sdk;
   var init_auth_capabilities_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-98Vm4d/auth-capabilities-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-aquzqy/auth-capabilities-shim.ts"() {
       sdk = globalThis.__lumioPluginRuntime?.sdk;
     }
   });
@@ -167078,11 +167078,45 @@
     }
   });
 
+  // ../lumio-official-plugins/plugins/live-tv/runtime/epg/name-match.ts
+  function normalizeChannelName(name) {
+    return name.toLowerCase().replace(COUNTRY_TAG_RE, " ").replace(COUNTRY_BARE_RE, " ").replace(QUALITY_RE, " ").replace(REGION_HINTS_RE, " ").replace(NON_ALNUM_RE, "").trim();
+  }
+  function normalizeTvgId(id4) {
+    return id4.toLowerCase().split(/[._@]/)[0].replace(NON_ALNUM_RE, "");
+  }
+  function buildNameToTvgIdIndex(tvgIds) {
+    const out = /* @__PURE__ */ new Map();
+    for (const id4 of tvgIds) {
+      const stem = normalizeTvgId(id4);
+      if (!stem || out.has(stem)) continue;
+      out.set(stem, id4);
+    }
+    return out;
+  }
+  function resolveTvgId(explicitTvgId, channelName, nameIndex) {
+    if (explicitTvgId) return explicitTvgId;
+    const stem = normalizeChannelName(channelName);
+    if (stem.length < 3) return null;
+    return nameIndex.get(stem) ?? null;
+  }
+  var COUNTRY_TAG_RE, COUNTRY_BARE_RE, QUALITY_RE, REGION_HINTS_RE, NON_ALNUM_RE;
+  var init_name_match = __esm({
+    "../lumio-official-plugins/plugins/live-tv/runtime/epg/name-match.ts"() {
+      "use strict";
+      COUNTRY_TAG_RE = /\[[a-z]{2,4}\]/g;
+      COUNTRY_BARE_RE = /\b(se|uk|us|dk|no|fi|de|fr|es|it|pl|nl|hr|gr|tr|ie|ca|au|nz)\b/g;
+      QUALITY_RE = /\b(hd|sd|fhd|uhd|4k|raw|original|backup|alt|alternative|opt|opt\d)\b/g;
+      REGION_HINTS_RE = /\b(skane|skåne|stockholm|göteborg|goteborg|malmö|malmo|öst|ost|väst|vast|nord|syd|riks|rikstv|sverige|sweden)\b/g;
+      NON_ALNUM_RE = /[^a-z0-9]/g;
+    }
+  });
+
   // ../lumio-official-plugins/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
   function useEpgNowNextLater(channel, listId, urls) {
     const [data, setData] = useState(EMPTY2);
     useEffect(() => {
-      if (!listId || !channel.tvgId) {
+      if (!listId) {
         setData(EMPTY2);
         return;
       }
@@ -167092,7 +167126,16 @@
       const recompute = () => {
         if (cancelled) return;
         const cache2 = readCache(listId);
-        const next2 = computeNowNextLater(cache2, channel.tvgId, Date.now());
+        const nameIndex = cache2 ? buildNameToTvgIdIndex(Object.keys(cache2.index)) : /* @__PURE__ */ new Map();
+        const resolvedTvgId = resolveTvgId(channel.tvgId, channel.name ?? "", nameIndex);
+        if (!resolvedTvgId) {
+          setData(EMPTY2);
+          cancelBoundary();
+          cancelBoundary = () => {
+          };
+          return;
+        }
+        const next2 = computeNowNextLater(cache2, resolvedTvgId, Date.now());
         setData(next2);
         cancelBoundary();
         cancelBoundary = scheduleNextBoundary(next2, recompute);
@@ -167105,7 +167148,7 @@
         cancelBoundary();
         off();
       };
-    }, [channel.tvgId, listId, urls.join("|")]);
+    }, [channel.tvgId, channel.name, listId, urls.join("|")]);
     return data;
   }
   var PLUGIN_ID2, EMPTY2;
@@ -167117,6 +167160,7 @@
       init_cache();
       init_lookup();
       init_auto_roll();
+      init_name_match();
       PLUGIN_ID2 = "com.lumio.live-tv";
       EMPTY2 = { now: null, next: null, later: null };
     }
@@ -167155,7 +167199,7 @@
   function useChannelSchedule(channel, listId, urls, hoursAhead = 12, hoursBack = 1) {
     const [programmes, setProgrammes] = useState([]);
     useEffect(() => {
-      if (!listId || !channel.tvgId) {
+      if (!listId) {
         setProgrammes([]);
         return;
       }
@@ -167163,10 +167207,16 @@
       const recompute = () => {
         if (cancelled) return;
         const cache2 = readCache(listId);
+        const nameIndex = cache2 ? buildNameToTvgIdIndex(Object.keys(cache2.index)) : /* @__PURE__ */ new Map();
+        const resolvedTvgId = resolveTvgId(channel.tvgId, channel.name ?? "", nameIndex);
+        if (!resolvedTvgId) {
+          setProgrammes([]);
+          return;
+        }
         const now2 = Date.now();
         const from = now2 - hoursBack * 36e5;
         const to = now2 + hoursAhead * 36e5;
-        setProgrammes(getChannelSchedule(cache2, channel.tvgId, from, to));
+        setProgrammes(getChannelSchedule(cache2, resolvedTvgId, from, to));
       };
       recompute();
       ensureFresh(listId, urls).then(recompute).catch(recompute);
@@ -167183,7 +167233,7 @@
         off();
         for (const fn of cleanup) fn();
       };
-    }, [channel.tvgId, listId, urls.join("|"), hoursAhead, hoursBack]);
+    }, [channel.tvgId, channel.name, listId, urls.join("|"), hoursAhead, hoursBack]);
     return programmes;
   }
   var PLUGIN_ID3;
@@ -167194,6 +167244,7 @@
       init_plugin_sdk();
       init_cache();
       init_lookup();
+      init_name_match();
       PLUGIN_ID3 = "com.lumio.live-tv";
     }
   });
@@ -167965,18 +168016,23 @@
       for (let t = windowStart; t < windowEnd; t += 30 * 6e4) slots.push(t);
       return slots;
     }, [windowStart, windowEnd]);
+    const nameIndex = useMemo(
+      () => cache2 ? buildNameToTvgIdIndex(Object.keys(cache2.index)) : /* @__PURE__ */ new Map(),
+      [cache2]
+    );
     const rows = useMemo(() => {
       if (!activeList) return [];
       const out = [];
       for (const channel of activeList.channels) {
-        if (!channel.tvgId) continue;
-        const programmes = cache2?.index[channel.tvgId] ?? [];
+        const tvgId = resolveTvgId(channel.tvgId, channel.name, nameIndex);
+        if (!tvgId) continue;
+        const programmes = cache2?.index[tvgId] ?? [];
         const sliced = programmes.filter((p) => p.stop > windowStart && p.start < windowEnd);
         if (sliced.length === 0) continue;
         out.push({ channel, list: activeList, programmes: sliced });
       }
       return out;
-    }, [activeList, cache2, windowStart, windowEnd]);
+    }, [activeList, cache2, nameIndex, windowStart, windowEnd]);
     useEffect(() => {
       if (!open) return;
       const target = bodyRef.current;
@@ -168185,6 +168241,7 @@
       init_react_shim();
       init_live_tv_logo_image();
       init_useLiveTvEpgCache();
+      init_name_match();
       init_live_tv_data();
       init_jsx_runtime_shim();
       ROW_HEIGHT = 56;
@@ -168727,7 +168784,21 @@
       setCurrentPage(1);
     }, [search, activeGroup, activeListId]);
     const activeList = activeListId ? lists.find((list) => list.id === activeListId) ?? null : null;
-    const visibleChannels = activeList?.channels ?? channels;
+    const allListChannels = (() => {
+      if (lists.length === 0) return [];
+      const seen = /* @__PURE__ */ new Set();
+      const out = [];
+      for (const list of lists) {
+        for (const c of list.channels) {
+          const key = `${c.name}::${c.url}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          out.push(c);
+        }
+      }
+      return out;
+    })();
+    const visibleChannels = activeList?.channels ?? (channels.length > 0 ? channels : allListChannels);
     const categories = Array.from(
       new Set(
         visibleChannels.flatMap(
@@ -169508,7 +169579,7 @@
       useEpgNowNextLater,
       useEpgLoadStatus,
       useChannelSchedule,
-      version: "0.3.2"
+      version: "0.3.3"
     };
     try {
       window.dispatchEvent(new CustomEvent("lumio-live-tv-bridge-ready"));
@@ -169532,7 +169603,7 @@
   var LiveTvPlugin = {
     id: "com.lumio.live-tv",
     name: { en: "Live TV", sv: "Live TV" },
-    version: "0.3.2",
+    version: "0.3.3",
     description: {
       en: "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",
       sv: "Hantera M3U-k\xE4llor, bl\xE4ddra bland live-TV-kanaler och se EPG (nu/h\xE4rn\xE4st) i Lumio."
@@ -169557,7 +169628,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-98Vm4d/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-aquzqy/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

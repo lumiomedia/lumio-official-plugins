@@ -3,6 +3,7 @@ import { onPluginStorageChanged } from '@/lib/plugin-sdk'
 import { ensureFresh, readCache } from '../epg/cache'
 import { computeNowNextLater } from '../epg/lookup'
 import { scheduleNextBoundary } from '../epg/auto-roll'
+import { buildNameToTvgIdIndex, resolveTvgId } from '../epg/name-match'
 import type { NowNextLater } from '../epg/types'
 
 const PLUGIN_ID = 'com.lumio.live-tv'
@@ -10,6 +11,7 @@ const EMPTY: NowNextLater = { now: null, next: null, later: null }
 
 interface ChannelLike {
   tvgId: string | null
+  name?: string
 }
 
 export function useEpgNowNextLater(
@@ -20,7 +22,7 @@ export function useEpgNowNextLater(
   const [data, setData] = useState<NowNextLater>(EMPTY)
 
   useEffect(() => {
-    if (!listId || !channel.tvgId) {
+    if (!listId) {
       setData(EMPTY)
       return
     }
@@ -29,7 +31,15 @@ export function useEpgNowNextLater(
     const recompute = () => {
       if (cancelled) return
       const cache = readCache(listId)
-      const next = computeNowNextLater(cache, channel.tvgId, Date.now())
+      const nameIndex = cache ? buildNameToTvgIdIndex(Object.keys(cache.index)) : new Map<string, string>()
+      const resolvedTvgId = resolveTvgId(channel.tvgId, channel.name ?? '', nameIndex)
+      if (!resolvedTvgId) {
+        setData(EMPTY)
+        cancelBoundary()
+        cancelBoundary = () => {}
+        return
+      }
+      const next = computeNowNextLater(cache, resolvedTvgId, Date.now())
       setData(next)
       cancelBoundary()
       cancelBoundary = scheduleNextBoundary(next, recompute)
@@ -42,7 +52,7 @@ export function useEpgNowNextLater(
       cancelBoundary()
       off()
     }
-  }, [channel.tvgId, listId, urls.join('|')])
+  }, [channel.tvgId, channel.name, listId, urls.join('|')])
 
   return data
 }

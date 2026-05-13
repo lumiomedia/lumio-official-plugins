@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { LiveTvLogoImage } from './live-tv-logo-image'
 import { useLiveTvEpgCache } from './hooks/useLiveTvEpgCache'
+import { buildNameToTvgIdIndex, resolveTvgId } from './epg/name-match'
 import {
   getLiveTvLists,
   getLiveTvLogoSrc,
@@ -112,18 +113,24 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
     return slots
   }, [windowStart, windowEnd])
 
+  const nameIndex = useMemo(
+    () => (cache ? buildNameToTvgIdIndex(Object.keys(cache.index)) : new Map<string, string>()),
+    [cache],
+  )
+
   const rows = useMemo<ChannelRow[]>(() => {
     if (!activeList) return []
     const out: ChannelRow[] = []
     for (const channel of activeList.channels) {
-      if (!channel.tvgId) continue
-      const programmes = cache?.index[channel.tvgId] ?? []
+      const tvgId = resolveTvgId(channel.tvgId, channel.name, nameIndex)
+      if (!tvgId) continue
+      const programmes = cache?.index[tvgId] ?? []
       const sliced = programmes.filter((p) => p.stop > windowStart && p.start < windowEnd)
       if (sliced.length === 0) continue
       out.push({ channel, list: activeList, programmes: sliced })
     }
     return out
-  }, [activeList, cache, windowStart, windowEnd])
+  }, [activeList, cache, nameIndex, windowStart, windowEnd])
 
   // Scroll timeline so "now" sits ~15% from the left when (re)opened.
   useEffect(() => {

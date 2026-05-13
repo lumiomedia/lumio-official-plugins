@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react'
 import { onPluginStorageChanged } from '@/lib/plugin-sdk'
 import { ensureFresh, readCache } from '../epg/cache'
 import { getChannelSchedule } from '../epg/lookup'
+import { buildNameToTvgIdIndex, resolveTvgId } from '../epg/name-match'
 import type { EpgProgramme } from '../epg/types'
 
 const PLUGIN_ID = 'com.lumio.live-tv'
 
 interface ChannelLike {
   tvgId: string | null
+  name?: string
 }
 
 /**
@@ -26,7 +28,7 @@ export function useChannelSchedule(
   const [programmes, setProgrammes] = useState<EpgProgramme[]>([])
 
   useEffect(() => {
-    if (!listId || !channel.tvgId) {
+    if (!listId) {
       setProgrammes([])
       return
     }
@@ -34,21 +36,24 @@ export function useChannelSchedule(
     const recompute = () => {
       if (cancelled) return
       const cache = readCache(listId)
+      const nameIndex = cache ? buildNameToTvgIdIndex(Object.keys(cache.index)) : new Map<string, string>()
+      const resolvedTvgId = resolveTvgId(channel.tvgId, channel.name ?? '', nameIndex)
+      if (!resolvedTvgId) {
+        setProgrammes([])
+        return
+      }
       const now = Date.now()
       const from = now - hoursBack * 3_600_000
       const to = now + hoursAhead * 3_600_000
-      setProgrammes(getChannelSchedule(cache, channel.tvgId, from, to))
+      setProgrammes(getChannelSchedule(cache, resolvedTvgId, from, to))
     }
     recompute()
     ensureFresh(listId, urls).then(recompute).catch(recompute)
     const off = onPluginStorageChanged(PLUGIN_ID, `epg_cache:${listId}`, recompute)
 
-    // Re-roll on the next minute boundary so progress bars / NOW selection
-    // stay accurate without per-second timers.
     const msToNextMinute = 60_000 - (Date.now() % 60_000)
     const tickId = window.setTimeout(function tick() {
       recompute()
-      // Re-arm every 60s after the first boundary.
       const next = window.setTimeout(tick, 60_000)
       cleanup.push(() => window.clearTimeout(next))
     }, msToNextMinute)
@@ -59,7 +64,7 @@ export function useChannelSchedule(
       off()
       for (const fn of cleanup) fn()
     }
-  }, [channel.tvgId, listId, urls.join('|'), hoursAhead, hoursBack])
+  }, [channel.tvgId, channel.name, listId, urls.join('|'), hoursAhead, hoursBack])
 
   return programmes
 }
