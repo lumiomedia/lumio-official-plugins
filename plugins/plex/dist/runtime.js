@@ -46,7 +46,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Hq5SsE/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-PzTEhY/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -95,7 +95,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Hq5SsE/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-PzTEhY/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -143,7 +143,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Hq5SsE/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-PzTEhY/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -153,7 +153,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Hq5SsE/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-PzTEhY/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -167654,7 +167654,7 @@
     ) });
   }
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Hq5SsE/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-PzTEhY/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
 
   // lib/tauri-mpv.ts
@@ -174106,6 +174106,7 @@
     const activeIntro = introSegment ? realTime >= introSegment.startMs / 1e3 && realTime < introSegment.endMs / 1e3 ? introSegment : null : null;
     const shouldShowSkipIntroButton = Boolean(hasStarted && !autoSkipIntro && activeIntro && introDataReady);
     const controlsReady = useMpv ? hasEverStarted || hasStarted || mpv.firstFrameRendered || mpvRevealPlaybackReady : hasEverStarted;
+    const collapseMpvTopBar = useMpv && !controlsVisible && !desktopFullscreen;
     useEffect(() => {
       if (!autoSkipIntro || !activeIntro || !hasStarted || autoSkippedIntroRef.current) return;
       autoSkippedIntroRef.current = true;
@@ -174227,7 +174228,7 @@
       !(useMpv && desktopFullscreen) && /* @__PURE__ */ jsxs(
         "div",
         {
-          className: "absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-4 px-4 py-2.5 transition-colors duration-300",
+          className: `absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-4 overflow-hidden transition-[height,padding,background-color] duration-300 ${collapseMpvTopBar ? "h-0 px-4 py-0" : "min-h-[44px] px-4 py-2.5"}`,
           style: {
             backgroundColor: useMpv ? "#000" : controlsVisible ? "rgba(0,0,0,0.8)" : "transparent",
             pointerEvents: controlsVisible ? "auto" : "none"
@@ -177876,7 +177877,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Hq5SsE/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-PzTEhY/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");
