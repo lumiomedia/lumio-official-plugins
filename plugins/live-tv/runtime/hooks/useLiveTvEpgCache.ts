@@ -29,9 +29,11 @@ export function useLiveTvEpgCache(
     }
     sync()
     ensureFresh(listId, urls).then(sync).catch(sync)
+    const syncTimer = window.setTimeout(sync, 750)
     const off = onPluginStorageChanged(PLUGIN_ID, `epg_cache:${listId}`, sync)
     return () => {
       cancelled = true
+      window.clearTimeout(syncTimer)
       off()
     }
   }, [listId, urls.join('|')])

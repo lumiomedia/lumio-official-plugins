@@ -132,6 +132,23 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
     return out
   }, [activeList, cache, nameIndex, windowStart, windowEnd])
 
+  const guideStats = useMemo(() => {
+    if (!activeList) return { matched: 0, totalProgrammes: 0, sourceChannels: 0 }
+    let matched = 0
+    let totalProgrammes = 0
+    for (const channel of activeList.channels) {
+      const tvgId = resolveTvgId(channel.tvgId, channel.name, nameIndex)
+      if (!tvgId) continue
+      matched += 1
+      totalProgrammes += cache?.index[tvgId]?.length ?? 0
+    }
+    return {
+      matched,
+      totalProgrammes,
+      sourceChannels: Object.keys(cache?.index ?? {}).length,
+    }
+  }, [activeList, cache, nameIndex])
+
   // Scroll timeline so "now" sits ~15% from the left when (re)opened.
   useEffect(() => {
     if (!open) return
@@ -145,6 +162,21 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
 
   const nowLineLeft = (Date.now() - windowStart) * PIXELS_PER_MS
   const timelineWidth = (windowEnd - windowStart) * PIXELS_PER_MS
+  const hasSources = epgUrls.length > 0
+  const failures = cache?.failures ?? []
+  const emptyMessage = !activeList
+    ? 'Ingen Live TV-lista vald.'
+    : !hasSources
+      ? 'Ingen EPG-källa är kopplad till den här Live TV-listan.'
+      : !cache
+        ? 'Hämtar guidedata...'
+        : failures.length > 0 && guideStats.sourceChannels === 0
+          ? `EPG-källan kunde inte hämtas: ${failures.map((failure) => failure.error).join(', ')}`
+          : guideStats.sourceChannels === 0
+            ? 'EPG-källan hämtades men innehöll inga program.'
+            : guideStats.matched === 0
+              ? `EPG hämtad (${guideStats.sourceChannels} kanaler), men inga av listans kanaler matchade.`
+              : `EPG hämtad (${guideStats.sourceChannels} kanaler, ${guideStats.matched} matchade), men inga program ligger i tidsfönstret.`
 
   return (
     <div className="fixed inset-0 z-[80] flex flex-col bg-slate-950/95 backdrop-blur-xl">
@@ -190,7 +222,7 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
 
       {rows.length === 0 ? (
         <div className="flex flex-1 items-center justify-center px-6 text-center text-sm text-white/50">
-          Ingen guidedata att visa. Lägg till en EPG-källa under inställningar → Live TV.
+          {emptyMessage}
         </div>
       ) : (
         <div className="flex flex-1 overflow-hidden">

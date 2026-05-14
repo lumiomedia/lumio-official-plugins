@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.21
+
+- Add a delayed EPG cache sync for the guide after opening, so already-fetched XMLTV data is picked up even when the storage event was missed.
+- Replace the generic empty guide copy with source-aware diagnostics: no source, fetching, fetch error, no matched channels, or no programmes in the visible time window.
+- Update the runtime bridge/plugin version from the old internal `0.3.3` value to the current release version.
+
 ## 0.3.20
 
 - Refresh EPG immediately when the configured XMLTV URL list changes instead of treating the previous cache as fresh for six hours.

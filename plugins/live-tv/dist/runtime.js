@@ -48,7 +48,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-1kB5hk/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-FGAJ4W/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -97,7 +97,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-1kB5hk/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-FGAJ4W/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -29690,7 +29690,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-1kB5hk/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-FGAJ4W/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -29700,7 +29700,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-1kB5hk/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-FGAJ4W/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -165767,10 +165767,10 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-1kB5hk/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-FGAJ4W/auth-capabilities-shim.ts
   var sdk;
   var init_auth_capabilities_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-1kB5hk/auth-capabilities-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-FGAJ4W/auth-capabilities-shim.ts"() {
       sdk = globalThis.__lumioPluginRuntime?.sdk;
     }
   });
@@ -166990,9 +166990,11 @@
       };
       sync2();
       ensureFresh(listId, urls).then(sync2).catch(sync2);
+      const syncTimer = window.setTimeout(sync2, 750);
       const off = onPluginStorageChanged(PLUGIN_ID2, `epg_cache:${listId}`, sync2);
       return () => {
         cancelled = true;
+        window.clearTimeout(syncTimer);
         off();
       };
     }, [listId, urls.join("|")]);
@@ -168155,6 +168157,22 @@
       }
       return out;
     }, [activeList, cache2, nameIndex, windowStart, windowEnd]);
+    const guideStats = useMemo(() => {
+      if (!activeList) return { matched: 0, totalProgrammes: 0, sourceChannels: 0 };
+      let matched = 0;
+      let totalProgrammes = 0;
+      for (const channel of activeList.channels) {
+        const tvgId = resolveTvgId(channel.tvgId, channel.name, nameIndex);
+        if (!tvgId) continue;
+        matched += 1;
+        totalProgrammes += cache2?.index[tvgId]?.length ?? 0;
+      }
+      return {
+        matched,
+        totalProgrammes,
+        sourceChannels: Object.keys(cache2?.index ?? {}).length
+      };
+    }, [activeList, cache2, nameIndex]);
     useEffect(() => {
       if (!open) return;
       const target = bodyRef.current;
@@ -168165,6 +168183,9 @@
     if (!open) return null;
     const nowLineLeft = (Date.now() - windowStart) * PIXELS_PER_MS;
     const timelineWidth = (windowEnd - windowStart) * PIXELS_PER_MS;
+    const hasSources = epgUrls.length > 0;
+    const failures = cache2?.failures ?? [];
+    const emptyMessage = !activeList ? "Ingen Live TV-lista vald." : !hasSources ? "Ingen EPG-k\xE4lla \xE4r kopplad till den h\xE4r Live TV-listan." : !cache2 ? "H\xE4mtar guidedata..." : failures.length > 0 && guideStats.sourceChannels === 0 ? `EPG-k\xE4llan kunde inte h\xE4mtas: ${failures.map((failure) => failure.error).join(", ")}` : guideStats.sourceChannels === 0 ? "EPG-k\xE4llan h\xE4mtades men inneh\xF6ll inga program." : guideStats.matched === 0 ? `EPG h\xE4mtad (${guideStats.sourceChannels} kanaler), men inga av listans kanaler matchade.` : `EPG h\xE4mtad (${guideStats.sourceChannels} kanaler, ${guideStats.matched} matchade), men inga program ligger i tidsf\xF6nstret.`;
     return /* @__PURE__ */ jsxs("div", { className: "fixed inset-0 z-[80] flex flex-col bg-slate-950/95 backdrop-blur-xl", children: [
       /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-4 border-b border-white/5 px-5 py-3", children: [
         /* @__PURE__ */ jsxs("div", { className: "flex min-w-0 items-center gap-3", children: [
@@ -168205,7 +168226,7 @@
           )
         ] })
       ] }),
-      rows.length === 0 ? /* @__PURE__ */ jsx("div", { className: "flex flex-1 items-center justify-center px-6 text-center text-sm text-white/50", children: "Ingen guidedata att visa. L\xE4gg till en EPG-k\xE4lla under inst\xE4llningar \u2192 Live TV." }) : /* @__PURE__ */ jsxs("div", { className: "flex flex-1 overflow-hidden", children: [
+      rows.length === 0 ? /* @__PURE__ */ jsx("div", { className: "flex flex-1 items-center justify-center px-6 text-center text-sm text-white/50", children: emptyMessage }) : /* @__PURE__ */ jsxs("div", { className: "flex flex-1 overflow-hidden", children: [
         /* @__PURE__ */ jsxs("div", { className: "flex shrink-0 flex-col border-r border-white/5", style: { width: CHANNEL_COL_WIDTH }, children: [
           /* @__PURE__ */ jsx("div", { className: "border-b border-white/5 bg-black/40", style: { height: HEAD_HEIGHT } }),
           /* @__PURE__ */ jsx(
@@ -169730,7 +169751,7 @@
       useEpgNowNextLater,
       useEpgLoadStatus,
       useChannelSchedule,
-      version: "0.3.3"
+      version: "0.3.21"
     };
     try {
       window.dispatchEvent(new CustomEvent("lumio-live-tv-bridge-ready"));
@@ -169754,7 +169775,7 @@
   var LiveTvPlugin = {
     id: "com.lumio.live-tv",
     name: { en: "Live TV", sv: "Live TV" },
-    version: "0.3.3",
+    version: "0.3.21",
     description: {
       en: "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",
       sv: "Hantera M3U-k\xE4llor, bl\xE4ddra bland live-TV-kanaler och se EPG (nu/h\xE4rn\xE4st) i Lumio."
@@ -169779,7 +169800,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-1kB5hk/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-FGAJ4W/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");
