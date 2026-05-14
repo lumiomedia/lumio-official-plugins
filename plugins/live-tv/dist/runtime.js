@@ -46,7 +46,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-hne58F/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-eLR2Bm/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -95,7 +95,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-hne58F/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-eLR2Bm/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -29688,7 +29688,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-hne58F/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-eLR2Bm/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -29698,7 +29698,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-hne58F/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-eLR2Bm/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -165765,10 +165765,10 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-hne58F/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-eLR2Bm/auth-capabilities-shim.ts
   var sdk;
   var init_auth_capabilities_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-hne58F/auth-capabilities-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-eLR2Bm/auth-capabilities-shim.ts"() {
       sdk = globalThis.__lumioPluginRuntime?.sdk;
     }
   });
@@ -167376,14 +167376,6 @@
   function proxyUrl(url) {
     return `/api/m3u?stream=${encodeURIComponent(url)}`;
   }
-  function shouldUseNativeHls(url) {
-    try {
-      const parsed = new URL(url);
-      return /\.m3u8(?:$|[?#])/i.test(parsed.pathname);
-    } catch {
-      return /\.m3u8(?:$|[?#])/i.test(url);
-    }
-  }
   function formatClock(seconds) {
     if (!Number.isFinite(seconds) || seconds <= 0) return "00:00";
     const total = Math.floor(seconds);
@@ -167406,12 +167398,13 @@
       if (typeof document === "undefined") return null;
       const div = document.createElement("div");
       div.className = isTauriEnv ? "live-tv-player-portal mpv-player-portal" : "live-tv-player-portal";
+      div.style.background = "transparent";
       return div;
     });
     const logoSrc = getLiveTvLogoSrc(channel.logo);
     const closingRef = useRef(false);
     const mobileFullscreenAttemptedRef = useRef(false);
-    const useMpv = isTauriEnv && !shouldUseNativeHls(channel.url);
+    const useMpv = isTauriEnv;
     const mpv = useMpvPlayer(useMpv);
     const {
       fileLoaded: mpvFileLoaded,
@@ -167455,13 +167448,13 @@
     const revealControls = useCallback(() => {
       setControlsVisible(true);
       clearControlsHideTimer();
-      if (!loading && !error && !scheduleOpen) {
+      if (!useMpv && !loading && !error && !scheduleOpen) {
         controlsHideTimerRef.current = window.setTimeout(() => {
           setControlsVisible(false);
           controlsHideTimerRef.current = null;
         }, 2400);
       }
-    }, [clearControlsHideTimer, error, loading, scheduleOpen]);
+    }, [clearControlsHideTimer, error, loading, scheduleOpen, useMpv]);
     const keepControlsVisible = useCallback(() => {
       setControlsVisible(true);
       clearControlsHideTimer();
@@ -167535,9 +167528,17 @@
       if (useMpv) {
         let cancelled2 = false;
         let resizeObs = null;
+        const boundsTimers = [];
         const sync2 = () => {
           const rect = stageRef.current?.getBoundingClientRect();
           if (rect) mpvSetBounds(rect);
+        };
+        const syncRepeatedly = () => {
+          sync2();
+          window.requestAnimationFrame(sync2);
+          for (const delay2 of [60, 160, 320, 700, 1200]) {
+            boundsTimers.push(window.setTimeout(sync2, delay2));
+          }
         };
         resetFileLoaded();
         resetPlaybackRestarted();
@@ -167545,11 +167546,11 @@
         void closeMpvPlayer().catch(() => {
         }).then(() => {
           if (cancelled2) return;
-          sync2();
+          syncRepeatedly();
           return openMpvPlayer({ url: channel.url });
         }).then(() => {
           if (cancelled2) return;
-          sync2();
+          syncRepeatedly();
           window.setTimeout(() => {
             if (!cancelled2) setLoading(false);
           }, 1200);
@@ -167566,6 +167567,7 @@
         });
         return () => {
           cancelled2 = true;
+          boundsTimers.forEach((timer) => window.clearTimeout(timer));
           resizeObs?.disconnect();
           window.removeEventListener("resize", sync2);
           window.removeEventListener("scroll", sync2, true);
@@ -167724,7 +167726,7 @@
       const content2 = /* @__PURE__ */ jsxs(
         "div",
         {
-          className: `fixed inset-0 z-[70] bg-transparent ${controlsVisible ? "cursor-default" : "cursor-none"}`,
+          className: "fixed inset-0 z-[70] bg-transparent cursor-default",
           onMouseEnter: revealControls,
           onMouseMove: revealControls,
           onPointerMove: revealControls,
@@ -167734,7 +167736,7 @@
               "div",
               {
                 ref: stageRef,
-                className: "absolute inset-x-0 bottom-32 top-20 bg-transparent"
+                className: "absolute inset-0 bg-transparent"
               }
             ),
             loading && !error && /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-transparent", children: /* @__PURE__ */ jsx("div", { className: "h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" }) }),
@@ -169686,7 +169688,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-hne58F/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-eLR2Bm/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

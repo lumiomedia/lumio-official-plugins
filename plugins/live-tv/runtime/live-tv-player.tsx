@@ -52,15 +52,6 @@ function proxyUrl(url: string): string {
   return `/api/m3u?stream=${encodeURIComponent(url)}`
 }
 
-function shouldUseNativeHls(url: string): boolean {
-  try {
-    const parsed = new URL(url)
-    return /\.m3u8(?:$|[?#])/i.test(parsed.pathname)
-  } catch {
-    return /\.m3u8(?:$|[?#])/i.test(url)
-  }
-}
-
 function formatClock(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds <= 0) return '00:00'
   const total = Math.floor(seconds)
@@ -86,12 +77,13 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
     if (typeof document === 'undefined') return null
     const div = document.createElement('div')
     div.className = isTauriEnv ? 'live-tv-player-portal mpv-player-portal' : 'live-tv-player-portal'
+    div.style.background = 'transparent'
     return div
   })
   const logoSrc = getLiveTvLogoSrc(channel.logo)
   const closingRef = useRef(false)
   const mobileFullscreenAttemptedRef = useRef(false)
-  const useMpv = isTauriEnv && !shouldUseNativeHls(channel.url)
+  const useMpv = isTauriEnv
   const mpv = useMpvPlayer(useMpv)
   const {
     fileLoaded: mpvFileLoaded,
@@ -139,13 +131,13 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
   const revealControls = useCallback(() => {
     setControlsVisible(true)
     clearControlsHideTimer()
-    if (!loading && !error && !scheduleOpen) {
+    if (!useMpv && !loading && !error && !scheduleOpen) {
       controlsHideTimerRef.current = window.setTimeout(() => {
         setControlsVisible(false)
         controlsHideTimerRef.current = null
       }, 2400)
     }
-  }, [clearControlsHideTimer, error, loading, scheduleOpen])
+  }, [clearControlsHideTimer, error, loading, scheduleOpen, useMpv])
 
   const keepControlsVisible = useCallback(() => {
     setControlsVisible(true)
@@ -229,9 +221,17 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
     if (useMpv) {
       let cancelled = false
       let resizeObs: ResizeObserver | null = null
+      const boundsTimers: number[] = []
       const sync = () => {
         const rect = stageRef.current?.getBoundingClientRect()
         if (rect) mpvSetBounds(rect)
+      }
+      const syncRepeatedly = () => {
+        sync()
+        window.requestAnimationFrame(sync)
+        for (const delay of [60, 160, 320, 700, 1200]) {
+          boundsTimers.push(window.setTimeout(sync, delay))
+        }
       }
 
       resetFileLoaded()
@@ -242,12 +242,12 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
         .catch(() => {})
         .then(() => {
           if (cancelled) return
-          sync()
+          syncRepeatedly()
           return openMpvPlayer({ url: channel.url })
         })
         .then(() => {
           if (cancelled) return
-          sync()
+          syncRepeatedly()
           window.setTimeout(() => {
             if (!cancelled) setLoading(false)
           }, 1200)
@@ -266,6 +266,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
 
       return () => {
         cancelled = true
+        boundsTimers.forEach((timer) => window.clearTimeout(timer))
         resizeObs?.disconnect()
         window.removeEventListener('resize', sync)
         window.removeEventListener('scroll', sync, true)
@@ -442,7 +443,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
 
     const content = (
       <div
-        className={`fixed inset-0 z-[70] bg-transparent ${controlsVisible ? 'cursor-default' : 'cursor-none'}`}
+        className="fixed inset-0 z-[70] bg-transparent cursor-default"
         onMouseEnter={revealControls}
         onMouseMove={revealControls}
         onPointerMove={revealControls}
@@ -450,7 +451,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
       >
         <div
           ref={stageRef}
-          className="absolute inset-x-0 bottom-32 top-20 bg-transparent"
+          className="absolute inset-0 bg-transparent"
         />
         {loading && !error && (
           <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-transparent">

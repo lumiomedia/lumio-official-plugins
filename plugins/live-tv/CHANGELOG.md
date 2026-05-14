@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.7
+
+- Keep Live TV on MPV for desktop playback, make the MPV video surface cover the player, and keep controls visible so the window can always be closed.
+
 ## 0.3.6
 
 - Play direct `.m3u8` live streams through the webview's native HLS player on desktop to avoid MPV native-surface click capture.
