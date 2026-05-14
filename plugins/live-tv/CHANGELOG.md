@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.9
+
+- Republish the Live TV MPV transparency fix so installations that already cached 0.3.8 can still detect a newer runtime update.
+
 ## 0.3.8
 
 - Match the main MPV player's transparent container structure for Live TV so the MPV video layer shows through instead of being covered by a black webview layer.
