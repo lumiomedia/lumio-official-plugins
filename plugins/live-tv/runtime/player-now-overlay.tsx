@@ -15,19 +15,22 @@ function formatRemaining(stopMs: number): string {
   if (mins >= 60) {
     const h = Math.floor(mins / 60)
     const m = mins % 60
-    return `${h}h ${m}m left`
+    return m > 0 ? `${h}h ${m}m kvar` : `${h}h kvar`
   }
-  return `${mins}m left`
+  return `${mins}m kvar`
 }
 
 export function PlayerNowOverlay({ channel, listId, urls }: Props) {
   const { now } = useEpgNowNextLater(channel, listId, urls)
   if (!now) return null
   return (
-    <div className="pointer-events-none absolute bottom-6 left-6 z-30 max-w-md rounded-xl bg-black/60 px-4 py-2 backdrop-blur">
-      <div className="text-xs uppercase tracking-wider text-emerald-300">Now</div>
-      <div className="text-base font-semibold text-white">{now.title}</div>
-      <div className="text-xs text-white/60">{formatRemaining(now.stop)}</div>
-    </div>
+    <span className="flex min-w-0 items-baseline gap-2 text-xs text-slate-300">
+      <span className="h-1 w-1 shrink-0 self-center rounded-full bg-slate-600" />
+      <span className="shrink-0 text-[9px] font-semibold uppercase tracking-[0.18em] text-emerald-300/80">
+        Nu
+      </span>
+      <span className="truncate font-medium text-white/90">{now.title}</span>
+      <span className="shrink-0 text-white/45">{formatRemaining(now.stop)}</span>
+    </span>
   )
 }

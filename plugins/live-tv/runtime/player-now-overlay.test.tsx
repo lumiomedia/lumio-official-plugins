@@ -25,8 +25,9 @@ describe('PlayerNowOverlay', () => {
       <PlayerNowOverlay channel={channel} listId="list-1" urls={['u']} />,
     )
     expect(screen.getByText('BBC News')).toBeInTheDocument()
-    expect(screen.getByText(/min left|m left/i)).toBeInTheDocument()
-    expect(container.querySelector('.absolute')).toBeTruthy()
+    expect(screen.getByText(/m kvar/i)).toBeInTheDocument()
+    expect(screen.getByText('Nu')).toBeInTheDocument()
+    expect(container.querySelector('.absolute')).toBeFalsy()
   })
 
   it('renders nothing when NOW is null', () => {

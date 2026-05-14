@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.24
+
+- Move the current programme text into the player channel-info row instead of drawing it as a separate overlay over the controls.
+- Keep the guide/calendar button behavior unchanged: it still opens the full schedule overlay for the current channel.
+
 ## 0.3.23
 
 - Make the full EPG guide sit flush to the top of the player window.

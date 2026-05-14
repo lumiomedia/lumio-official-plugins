@@ -489,7 +489,12 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
               />
             )}
             <div className="min-w-0">
-              <p className="truncate font-semibold text-white">{channel.name}</p>
+              <div className="flex min-w-0 items-center gap-2">
+                <p className="truncate font-semibold text-white">{channel.name}</p>
+                <div className="min-w-0">
+                  <PlayerNowOverlay channel={channel} listId={listId} urls={epgUrls} />
+                </div>
+              </div>
               {channel.group && <p className="truncate text-xs text-slate-300">{channel.group}</p>}
             </div>
           </div>
@@ -500,12 +505,6 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
           >
             {t('close')}
           </button>
-        </div>
-        <div
-          className="pointer-events-none absolute inset-0 transition-opacity duration-200"
-          style={{ opacity: controlsVisible ? 1 : 0 }}
-        >
-          <PlayerNowOverlay channel={channel} listId={listId} urls={epgUrls} />
         </div>
         <div
           className="absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-5 pb-5 pt-12 transition-opacity duration-200"
@@ -576,6 +575,9 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
                   Live
                 </span>
                 <p className="truncate text-sm font-semibold text-white">{channel.name}</p>
+                <div className="min-w-0 flex-1">
+                  <PlayerNowOverlay channel={channel} listId={listId} urls={epgUrls} />
+                </div>
               </div>
               <div className="mt-1 flex min-w-0 items-center gap-3 text-xs text-slate-300">
                 <span>{mpvPaused ? 'Paused' : 'Playing'}</span>
@@ -630,7 +632,12 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
                 />
               )}
               <div className="min-w-0">
-                <p className="truncate font-semibold text-white">{channel.name}</p>
+                <div className="flex min-w-0 items-center gap-2">
+                  <p className="truncate font-semibold text-white">{channel.name}</p>
+                  <div className="min-w-0">
+                    <PlayerNowOverlay channel={channel} listId={listId} urls={epgUrls} />
+                  </div>
+                </div>
                 {channel.group && <p className="truncate text-xs text-slate-300">{channel.group}</p>}
               </div>
             </div>
@@ -644,7 +651,6 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
           </div>
 
           <div className={`relative aspect-video w-full overflow-hidden ${stageBg}`}>
-            <PlayerNowOverlay channel={channel} listId={listId} urls={epgUrls} />
             {loading && !error && (
               <div className="absolute inset-0 z-10 flex items-center justify-center">
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
