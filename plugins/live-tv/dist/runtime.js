@@ -46,7 +46,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-aquzqy/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-omLfkU/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -95,7 +95,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-aquzqy/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-omLfkU/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -29688,7 +29688,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-aquzqy/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-omLfkU/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -29698,7 +29698,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-aquzqy/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-omLfkU/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -165765,10 +165765,10 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-aquzqy/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-omLfkU/auth-capabilities-shim.ts
   var sdk;
   var init_auth_capabilities_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-aquzqy/auth-capabilities-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-omLfkU/auth-capabilities-shim.ts"() {
       sdk = globalThis.__lumioPluginRuntime?.sdk;
     }
   });
@@ -167083,32 +167083,53 @@
     return name.toLowerCase().replace(COUNTRY_TAG_RE, " ").replace(COUNTRY_BARE_RE, " ").replace(QUALITY_RE, " ").replace(REGION_HINTS_RE, " ").replace(NON_ALNUM_RE, "").trim();
   }
   function normalizeTvgId(id4) {
-    return id4.toLowerCase().split(/[._@]/)[0].replace(NON_ALNUM_RE, "");
+    const source = id4.toLowerCase().replace(BRACKET_PREFIX_RE, "").replace(TVG_ID_SEPARATOR_RE, " ").replace(TVG_ID_QUALITY_SUFFIX_RE, "$1");
+    return normalizeChannelName(source);
+  }
+  function addAlias(index3, alias, id4) {
+    const trimmed = alias.trim();
+    if (!trimmed || index3.has(trimmed)) return;
+    index3.set(trimmed, id4);
   }
   function buildNameToTvgIdIndex(tvgIds) {
     const out = /* @__PURE__ */ new Map();
     for (const id4 of tvgIds) {
-      const stem = normalizeTvgId(id4);
-      if (!stem || out.has(stem)) continue;
-      out.set(stem, id4);
+      addAlias(out, id4, id4);
+      addAlias(out, id4.toLowerCase(), id4);
+      const tvgStem = normalizeTvgId(id4);
+      if (tvgStem.length >= 3) addAlias(out, tvgStem, id4);
+      const nameStem = normalizeChannelName(id4);
+      if (nameStem.length >= 3) addAlias(out, nameStem, id4);
     }
     return out;
   }
   function resolveTvgId(explicitTvgId, channelName, nameIndex) {
-    if (explicitTvgId) return explicitTvgId;
+    const explicit = explicitTvgId?.trim();
+    if (explicit) {
+      const exact = nameIndex.get(explicit) ?? nameIndex.get(explicit.toLowerCase());
+      if (exact) return exact;
+      const explicitStem = normalizeTvgId(explicit);
+      if (explicitStem.length >= 3) {
+        const resolved = nameIndex.get(explicitStem);
+        if (resolved) return resolved;
+      }
+    }
     const stem = normalizeChannelName(channelName);
     if (stem.length < 3) return null;
     return nameIndex.get(stem) ?? null;
   }
-  var COUNTRY_TAG_RE, COUNTRY_BARE_RE, QUALITY_RE, REGION_HINTS_RE, NON_ALNUM_RE;
+  var COUNTRY_TAG_RE, BRACKET_PREFIX_RE, COUNTRY_BARE_RE, QUALITY_RE, REGION_HINTS_RE, NON_ALNUM_RE, TVG_ID_SEPARATOR_RE, TVG_ID_QUALITY_SUFFIX_RE;
   var init_name_match = __esm({
     "../lumio-official-plugins/plugins/live-tv/runtime/epg/name-match.ts"() {
       "use strict";
       COUNTRY_TAG_RE = /\[[a-z]{2,4}\]/g;
+      BRACKET_PREFIX_RE = /^\[[^\]]+\][._\s-]*/g;
       COUNTRY_BARE_RE = /\b(se|uk|us|dk|no|fi|de|fr|es|it|pl|nl|hr|gr|tr|ie|ca|au|nz)\b/g;
       QUALITY_RE = /\b(hd|sd|fhd|uhd|4k|raw|original|backup|alt|alternative|opt|opt\d)\b/g;
       REGION_HINTS_RE = /\b(skane|skåne|stockholm|göteborg|goteborg|malmö|malmo|öst|ost|väst|vast|nord|syd|riks|rikstv|sverige|sweden)\b/g;
       NON_ALNUM_RE = /[^a-z0-9]/g;
+      TVG_ID_SEPARATOR_RE = /[._/@()[\]-]+/g;
+      TVG_ID_QUALITY_SUFFIX_RE = /\b([a-z0-9]+?)(?:fhd|uhd|hd|sd|4k)\b/g;
     }
   });
 
@@ -168311,7 +168332,7 @@
           "input",
           {
             type: "url",
-            placeholder: "XMLTV URL (e.g. https://iptv-org.github.io/epg/guides/se.xml)",
+            placeholder: "XMLTV URL (e.g. https://epgshare01.online/epgshare01/epg_ripper_SE1.xml.gz)",
             value: draft,
             onChange: (event) => setDraft(event.target.value),
             onKeyDown: (event) => {
@@ -168336,7 +168357,7 @@
       !hasAny ? /* @__PURE__ */ jsxs("p", { className: "text-xs text-white/40", children: [
         "No EPG sources yet. Try",
         " ",
-        /* @__PURE__ */ jsx("code", { className: "rounded bg-white/10 px-1", children: "https://iptv-org.github.io/epg/guides/se.xml" }),
+        /* @__PURE__ */ jsx("code", { className: "rounded bg-white/10 px-1", children: "https://epgshare01.online/epgshare01/epg_ripper_SE1.xml.gz" }),
         " ",
         "for Swedish channels."
       ] }) : null
@@ -169628,7 +169649,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-aquzqy/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-omLfkU/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

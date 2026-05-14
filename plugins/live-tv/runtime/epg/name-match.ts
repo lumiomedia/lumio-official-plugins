@@ -4,15 +4,19 @@
  * by the XMLTV channel id (e.g. "SVT1.se"). We compare channel names
  * against those ids after aggressive normalization.
  *
- * This is a heuristic — it WILL miss-match obscure channels. Always prefer
- * the explicit `tvg-id` attribute when the M3U provides one.
+ * This is a heuristic — it WILL miss-match obscure channels. Prefer an
+ * explicit `tvg-id` only when it resolves to something present in the cache;
+ * otherwise fall back to the display name.
  */
 
 const COUNTRY_TAG_RE = /\[[a-z]{2,4}\]/g
+const BRACKET_PREFIX_RE = /^\[[^\]]+\][._\s-]*/g
 const COUNTRY_BARE_RE = /\b(se|uk|us|dk|no|fi|de|fr|es|it|pl|nl|hr|gr|tr|ie|ca|au|nz)\b/g
 const QUALITY_RE = /\b(hd|sd|fhd|uhd|4k|raw|original|backup|alt|alternative|opt|opt\d)\b/g
 const REGION_HINTS_RE = /\b(skane|skåne|stockholm|göteborg|goteborg|malmö|malmo|öst|ost|väst|vast|nord|syd|riks|rikstv|sverige|sweden)\b/g
 const NON_ALNUM_RE = /[^a-z0-9]/g
+const TVG_ID_SEPARATOR_RE = /[._/@()[\]-]+/g
+const TVG_ID_QUALITY_SUFFIX_RE = /\b([a-z0-9]+?)(?:fhd|uhd|hd|sd|4k)\b/g
 
 /** Normalize a free-form channel name to its likely tvg-id stem. */
 export function normalizeChannelName(name: string): string {
@@ -28,10 +32,19 @@ export function normalizeChannelName(name: string): string {
 
 /** Normalize a tvg-id (e.g. "SVT1.se") to a comparable stem. */
 export function normalizeTvgId(id: string): string {
-  return id
+  const source = id
     .toLowerCase()
-    .split(/[._@]/)[0]
-    .replace(NON_ALNUM_RE, '')
+    .replace(BRACKET_PREFIX_RE, '')
+    .replace(TVG_ID_SEPARATOR_RE, ' ')
+    .replace(TVG_ID_QUALITY_SUFFIX_RE, '$1')
+
+  return normalizeChannelName(source)
+}
+
+function addAlias(index: Map<string, string>, alias: string, id: string): void {
+  const trimmed = alias.trim()
+  if (!trimmed || index.has(trimmed)) return
+  index.set(trimmed, id)
 }
 
 /**
@@ -43,9 +56,14 @@ export function normalizeTvgId(id: string): string {
 export function buildNameToTvgIdIndex(tvgIds: string[]): Map<string, string> {
   const out = new Map<string, string>()
   for (const id of tvgIds) {
-    const stem = normalizeTvgId(id)
-    if (!stem || out.has(stem)) continue
-    out.set(stem, id)
+    addAlias(out, id, id)
+    addAlias(out, id.toLowerCase(), id)
+
+    const tvgStem = normalizeTvgId(id)
+    if (tvgStem.length >= 3) addAlias(out, tvgStem, id)
+
+    const nameStem = normalizeChannelName(id)
+    if (nameStem.length >= 3) addAlias(out, nameStem, id)
   }
   return out
 }
@@ -61,7 +79,18 @@ export function resolveTvgId(
   channelName: string,
   nameIndex: Map<string, string>,
 ): string | null {
-  if (explicitTvgId) return explicitTvgId
+  const explicit = explicitTvgId?.trim()
+  if (explicit) {
+    const exact = nameIndex.get(explicit) ?? nameIndex.get(explicit.toLowerCase())
+    if (exact) return exact
+
+    const explicitStem = normalizeTvgId(explicit)
+    if (explicitStem.length >= 3) {
+      const resolved = nameIndex.get(explicitStem)
+      if (resolved) return resolved
+    }
+  }
+
   const stem = normalizeChannelName(channelName)
   if (stem.length < 3) return null
   return nameIndex.get(stem) ?? null

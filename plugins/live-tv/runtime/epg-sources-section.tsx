@@ -48,7 +48,7 @@ export function EpgSourcesSection({ autoUrl, manualUrls, onChangeManual }: Props
       <div className="flex gap-2">
         <input
           type="url"
-          placeholder="XMLTV URL (e.g. https://iptv-org.github.io/epg/guides/se.xml)"
+          placeholder="XMLTV URL (e.g. https://epgshare01.online/epgshare01/epg_ripper_SE1.xml.gz)"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={(event) => {
@@ -71,7 +71,7 @@ export function EpgSourcesSection({ autoUrl, manualUrls, onChangeManual }: Props
         <p className="text-xs text-white/40">
           No EPG sources yet. Try{' '}
           <code className="rounded bg-white/10 px-1">
-            https://iptv-org.github.io/epg/guides/se.xml
+            https://epgshare01.online/epgshare01/epg_ripper_SE1.xml.gz
           </code>{' '}
           for Swedish channels.
         </p>
