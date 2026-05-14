@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.6
+
+- Play direct `.m3u8` live streams through the webview's native HLS player on desktop to avoid MPV native-surface click capture.
+
 ## 0.3.5
 
 - Keep the MPV video surface away from Live TV controls and avoid a stuck black loading layer when MPV audio starts before frame events arrive.

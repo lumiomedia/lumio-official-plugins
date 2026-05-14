@@ -52,6 +52,15 @@ function proxyUrl(url: string): string {
   return `/api/m3u?stream=${encodeURIComponent(url)}`
 }
 
+function shouldUseNativeHls(url: string): boolean {
+  try {
+    const parsed = new URL(url)
+    return /\.m3u8(?:$|[?#])/i.test(parsed.pathname)
+  } catch {
+    return /\.m3u8(?:$|[?#])/i.test(url)
+  }
+}
+
 function formatClock(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds <= 0) return '00:00'
   const total = Math.floor(seconds)
@@ -82,7 +91,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
   const logoSrc = getLiveTvLogoSrc(channel.logo)
   const closingRef = useRef(false)
   const mobileFullscreenAttemptedRef = useRef(false)
-  const useMpv = isTauriEnv
+  const useMpv = isTauriEnv && !shouldUseNativeHls(channel.url)
   const mpv = useMpvPlayer(useMpv)
   const {
     fileLoaded: mpvFileLoaded,
