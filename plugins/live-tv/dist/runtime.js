@@ -46,7 +46,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-UvFAar/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-AWNt6e/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -95,7 +95,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-UvFAar/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-AWNt6e/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -29688,7 +29688,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-UvFAar/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-AWNt6e/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -29698,7 +29698,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-UvFAar/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-AWNt6e/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -165765,10 +165765,10 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-UvFAar/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-AWNt6e/auth-capabilities-shim.ts
   var sdk;
   var init_auth_capabilities_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-UvFAar/auth-capabilities-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-AWNt6e/auth-capabilities-shim.ts"() {
       sdk = globalThis.__lumioPluginRuntime?.sdk;
     }
   });
@@ -167727,162 +167727,168 @@
         "div",
         {
           "data-lumio-player-open": "1",
-          className: "fixed inset-0 z-[70] flex flex-col !mt-0 cursor-default",
-          style: { background: "transparent" },
-          onMouseEnter: revealControls,
+          className: "fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm cursor-default",
           onMouseMove: revealControls,
           onPointerMove: revealControls,
           onFocusCapture: revealControls,
           children: [
             /* @__PURE__ */ jsx(
-              "div",
+              "button",
               {
-                ref: stageRef,
-                className: "vp-container relative flex flex-1 items-center justify-center bg-transparent",
-                style: { background: "transparent" },
-                children: /* @__PURE__ */ jsx("div", { style: { width: "100%", height: "100%", background: "transparent" } })
+                type: "button",
+                "aria-label": t("close"),
+                onClick: handleClose,
+                className: "absolute inset-0"
               }
             ),
-            loading && !error && /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-transparent", children: /* @__PURE__ */ jsx("div", { className: "h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" }) }),
-            error && /* @__PURE__ */ jsxs("div", { className: "absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-black px-4 text-center", children: [
-              /* @__PURE__ */ jsx("p", { className: "text-sm text-red-400", children: error }),
-              /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500", children: t("liveTvStreamErrorHelp") })
-            ] }),
-            /* @__PURE__ */ jsxs(
-              "div",
-              {
-                className: "absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-4 bg-gradient-to-b from-black/75 via-black/45 to-transparent px-5 py-4 transition-opacity duration-200",
-                onMouseEnter: keepControlsVisible,
-                onMouseLeave: revealControls,
-                style: {
-                  opacity: controlsVisible ? 1 : 0,
-                  pointerEvents: controlsVisible ? "auto" : "none"
-                },
-                children: [
-                  /* @__PURE__ */ jsxs("div", { className: "min-w-0 flex items-center gap-3", children: [
-                    logoSrc && /* @__PURE__ */ jsx(
-                      LiveTvLogoImage,
+            /* @__PURE__ */ jsx("div", { className: "relative z-10 w-full max-w-5xl px-4", children: /* @__PURE__ */ jsxs("div", { className: "relative overflow-hidden rounded-3xl border border-white/10 bg-slate-950/30 shadow-2xl ring-1 ring-white/5", children: [
+              /* @__PURE__ */ jsxs(
+                "div",
+                {
+                  className: "absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-4 bg-gradient-to-b from-black/75 via-black/45 to-transparent px-5 py-4 transition-opacity duration-200",
+                  onMouseEnter: keepControlsVisible,
+                  onMouseLeave: revealControls,
+                  style: {
+                    opacity: controlsVisible ? 1 : 0,
+                    pointerEvents: controlsVisible ? "auto" : "none"
+                  },
+                  children: [
+                    /* @__PURE__ */ jsxs("div", { className: "min-w-0 flex items-center gap-3", children: [
+                      logoSrc && /* @__PURE__ */ jsx(
+                        LiveTvLogoImage,
+                        {
+                          src: logoSrc,
+                          alt: "",
+                          className: "h-8 w-8 rounded object-contain bg-slate-800/90 p-0.5"
+                        }
+                      ),
+                      /* @__PURE__ */ jsxs("div", { className: "min-w-0", children: [
+                        /* @__PURE__ */ jsx("p", { className: "truncate font-semibold text-white", children: channel.name }),
+                        channel.group && /* @__PURE__ */ jsx("p", { className: "truncate text-xs text-slate-300", children: channel.group })
+                      ] })
+                    ] }),
+                    /* @__PURE__ */ jsx(
+                      "button",
                       {
-                        src: logoSrc,
-                        alt: "",
-                        className: "h-8 w-8 rounded object-contain bg-slate-800/90 p-0.5"
+                        type: "button",
+                        onClick: handleClose,
+                        className: "rounded-full border border-white/15 bg-black/45 px-3 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-200 transition hover:border-white/35 hover:text-white",
+                        children: t("close")
+                      }
+                    )
+                  ]
+                }
+              ),
+              /* @__PURE__ */ jsxs(
+                "div",
+                {
+                  ref: stageRef,
+                  className: "relative aspect-video w-full overflow-hidden bg-transparent",
+                  children: [
+                    loading && !error && /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-transparent", children: /* @__PURE__ */ jsx("div", { className: "h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" }) }),
+                    error && /* @__PURE__ */ jsxs("div", { className: "absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-black px-4 text-center", children: [
+                      /* @__PURE__ */ jsx("p", { className: "text-sm text-red-400", children: error }),
+                      /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500", children: t("liveTvStreamErrorHelp") })
+                    ] }),
+                    /* @__PURE__ */ jsx(
+                      "div",
+                      {
+                        className: "pointer-events-none absolute inset-0 transition-opacity duration-200",
+                        style: { opacity: controlsVisible ? 1 : 0 },
+                        children: /* @__PURE__ */ jsx(PlayerNowOverlay, { channel, listId, urls: epgUrls })
+                      }
+                    )
+                  ]
+                }
+              ),
+              /* @__PURE__ */ jsx(
+                "div",
+                {
+                  className: "bg-slate-950/60 px-5 pb-5 pt-3 transition-opacity duration-200",
+                  onMouseEnter: keepControlsVisible,
+                  onMouseLeave: revealControls,
+                  style: { opacity: controlsVisible ? 1 : 0, pointerEvents: controlsVisible ? "auto" : "none" },
+                  children: /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-4 rounded-2xl border border-white/10 bg-black/55 px-4 py-3 text-white shadow-2xl backdrop-blur-md", children: [
+                    /* @__PURE__ */ jsx(
+                      "button",
+                      {
+                        type: "button",
+                        onClick: toggleMpvPause,
+                        className: "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/35 hover:bg-white/15",
+                        "aria-label": mpvPaused ? "Play" : "Pause",
+                        title: mpvPaused ? "Play" : "Pause",
+                        children: mpvPaused ? /* @__PURE__ */ jsx("svg", { className: "h-5 w-5 translate-x-0.5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M7 5h4v14H7zM13 5h4v14h-4z" }) })
                       }
                     ),
-                    /* @__PURE__ */ jsxs("div", { className: "min-w-0", children: [
-                      /* @__PURE__ */ jsx("p", { className: "truncate font-semibold text-white", children: channel.name }),
-                      channel.group && /* @__PURE__ */ jsx("p", { className: "truncate text-xs text-slate-300", children: channel.group })
-                    ] })
-                  ] }),
-                  /* @__PURE__ */ jsx(
-                    "button",
-                    {
-                      type: "button",
-                      onClick: handleClose,
-                      className: "rounded-full border border-white/15 bg-black/45 px-3 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-200 transition hover:border-white/35 hover:text-white",
-                      children: t("close")
-                    }
-                  )
-                ]
-              }
-            ),
-            /* @__PURE__ */ jsx(
-              "div",
-              {
-                className: "pointer-events-none transition-opacity duration-200",
-                style: { opacity: controlsVisible ? 1 : 0 },
-                children: /* @__PURE__ */ jsx(PlayerNowOverlay, { channel, listId, urls: epgUrls })
-              }
-            ),
-            /* @__PURE__ */ jsx(
-              "div",
-              {
-                className: "absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-5 pb-5 pt-12 transition-opacity duration-200",
-                onMouseEnter: keepControlsVisible,
-                onMouseLeave: revealControls,
-                style: {
-                  opacity: controlsVisible ? 1 : 0,
-                  pointerEvents: controlsVisible ? "auto" : "none"
-                },
-                children: /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-4 rounded-2xl border border-white/10 bg-black/55 px-4 py-3 text-white shadow-2xl backdrop-blur-md", children: [
-                  /* @__PURE__ */ jsx(
-                    "button",
-                    {
-                      type: "button",
-                      onClick: toggleMpvPause,
-                      className: "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/35 hover:bg-white/15",
-                      "aria-label": mpvPaused ? "Play" : "Pause",
-                      title: mpvPaused ? "Play" : "Pause",
-                      children: mpvPaused ? /* @__PURE__ */ jsx("svg", { className: "h-5 w-5 translate-x-0.5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M7 5h4v14H7zM13 5h4v14h-4z" }) })
-                    }
-                  ),
-                  /* @__PURE__ */ jsx(
-                    "button",
-                    {
-                      type: "button",
-                      onClick: toggleFullscreen,
-                      className: "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/35 hover:bg-white/15",
-                      "aria-label": "Fullscreen",
-                      title: "Fullscreen",
-                      children: /* @__PURE__ */ jsxs("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
-                        /* @__PURE__ */ jsx("path", { d: "M8 3H3v5" }),
-                        /* @__PURE__ */ jsx("path", { d: "M16 3h5v5" }),
-                        /* @__PURE__ */ jsx("path", { d: "M21 16v5h-5" }),
-                        /* @__PURE__ */ jsx("path", { d: "M3 16v5h5" })
-                      ] })
-                    }
-                  ),
-                  /* @__PURE__ */ jsx(
-                    "button",
-                    {
-                      type: "button",
-                      onClick: () => setScheduleOpen((open) => !open),
-                      className: `flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-white transition ${scheduleOpen ? "border-emerald-300/60 bg-emerald-400/20 hover:border-emerald-200/80" : "border-white/15 bg-white/10 hover:border-white/35 hover:bg-white/15"}`,
-                      "aria-label": "Guide",
-                      title: "Guide",
-                      "aria-pressed": scheduleOpen,
-                      children: /* @__PURE__ */ jsxs("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
-                        /* @__PURE__ */ jsx("rect", { x: "3", y: "4", width: "18", height: "16", rx: "2" }),
-                        /* @__PURE__ */ jsx("path", { d: "M8 2v4" }),
-                        /* @__PURE__ */ jsx("path", { d: "M16 2v4" }),
-                        /* @__PURE__ */ jsx("path", { d: "M3 10h18" }),
-                        /* @__PURE__ */ jsx("path", { d: "M7 14h4" }),
-                        /* @__PURE__ */ jsx("path", { d: "M7 18h10" })
-                      ] })
-                    }
-                  ),
-                  /* @__PURE__ */ jsxs("div", { className: "min-w-0 flex-1", children: [
-                    /* @__PURE__ */ jsxs("div", { className: "flex min-w-0 items-center gap-3", children: [
-                      /* @__PURE__ */ jsx("span", { className: "inline-flex h-6 shrink-0 items-center rounded-full border border-red-400/35 bg-red-500/15 px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-red-200", children: "Live" }),
-                      /* @__PURE__ */ jsx("p", { className: "truncate text-sm font-semibold text-white", children: channel.name })
-                    ] }),
-                    /* @__PURE__ */ jsxs("div", { className: "mt-1 flex min-w-0 items-center gap-3 text-xs text-slate-300", children: [
-                      /* @__PURE__ */ jsx("span", { children: mpvPaused ? "Paused" : "Playing" }),
-                      /* @__PURE__ */ jsx("span", { className: "text-slate-600", children: "/" }),
-                      /* @__PURE__ */ jsx("span", { children: formatClock(mpvTimePos) }),
-                      channel.group ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+                    /* @__PURE__ */ jsx(
+                      "button",
+                      {
+                        type: "button",
+                        onClick: toggleFullscreen,
+                        className: "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/35 hover:bg-white/15",
+                        "aria-label": "Fullscreen",
+                        title: "Fullscreen",
+                        children: /* @__PURE__ */ jsxs("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
+                          /* @__PURE__ */ jsx("path", { d: "M8 3H3v5" }),
+                          /* @__PURE__ */ jsx("path", { d: "M16 3h5v5" }),
+                          /* @__PURE__ */ jsx("path", { d: "M21 16v5h-5" }),
+                          /* @__PURE__ */ jsx("path", { d: "M3 16v5h5" })
+                        ] })
+                      }
+                    ),
+                    /* @__PURE__ */ jsx(
+                      "button",
+                      {
+                        type: "button",
+                        onClick: () => setScheduleOpen((open) => !open),
+                        className: `flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-white transition ${scheduleOpen ? "border-emerald-300/60 bg-emerald-400/20 hover:border-emerald-200/80" : "border-white/15 bg-white/10 hover:border-white/35 hover:bg-white/15"}`,
+                        "aria-label": "Guide",
+                        title: "Guide",
+                        "aria-pressed": scheduleOpen,
+                        children: /* @__PURE__ */ jsxs("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
+                          /* @__PURE__ */ jsx("rect", { x: "3", y: "4", width: "18", height: "16", rx: "2" }),
+                          /* @__PURE__ */ jsx("path", { d: "M8 2v4" }),
+                          /* @__PURE__ */ jsx("path", { d: "M16 2v4" }),
+                          /* @__PURE__ */ jsx("path", { d: "M3 10h18" }),
+                          /* @__PURE__ */ jsx("path", { d: "M7 14h4" }),
+                          /* @__PURE__ */ jsx("path", { d: "M7 18h10" })
+                        ] })
+                      }
+                    ),
+                    /* @__PURE__ */ jsxs("div", { className: "min-w-0 flex-1", children: [
+                      /* @__PURE__ */ jsxs("div", { className: "flex min-w-0 items-center gap-3", children: [
+                        /* @__PURE__ */ jsx("span", { className: "inline-flex h-6 shrink-0 items-center rounded-full border border-red-400/35 bg-red-500/15 px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-red-200", children: "Live" }),
+                        /* @__PURE__ */ jsx("p", { className: "truncate text-sm font-semibold text-white", children: channel.name })
+                      ] }),
+                      /* @__PURE__ */ jsxs("div", { className: "mt-1 flex min-w-0 items-center gap-3 text-xs text-slate-300", children: [
+                        /* @__PURE__ */ jsx("span", { children: mpvPaused ? "Paused" : "Playing" }),
                         /* @__PURE__ */ jsx("span", { className: "text-slate-600", children: "/" }),
-                        /* @__PURE__ */ jsx("span", { className: "truncate", children: channel.group })
-                      ] }) : null
+                        /* @__PURE__ */ jsx("span", { children: formatClock(mpvTimePos) }),
+                        channel.group ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+                          /* @__PURE__ */ jsx("span", { className: "text-slate-600", children: "/" }),
+                          /* @__PURE__ */ jsx("span", { className: "truncate", children: channel.group })
+                        ] }) : null
+                      ] })
+                    ] }),
+                    /* @__PURE__ */ jsxs("div", { className: "hidden shrink-0 items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-slate-400 sm:flex", children: [
+                      /* @__PURE__ */ jsx("span", { children: "MPV" }),
+                      /* @__PURE__ */ jsx("span", { className: "h-1 w-1 rounded-full bg-slate-600" }),
+                      /* @__PURE__ */ jsx("span", { children: "Live TV" })
                     ] })
-                  ] }),
-                  /* @__PURE__ */ jsxs("div", { className: "hidden shrink-0 items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-slate-400 sm:flex", children: [
-                    /* @__PURE__ */ jsx("span", { children: "MPV" }),
-                    /* @__PURE__ */ jsx("span", { className: "h-1 w-1 rounded-full bg-slate-600" }),
-                    /* @__PURE__ */ jsx("span", { children: "Live TV" })
                   ] })
-                ] })
-              }
-            ),
-            /* @__PURE__ */ jsx(
-              PlayerScheduleOverlay,
-              {
-                channel,
-                listId,
-                urls: epgUrls,
-                open: scheduleOpen,
-                onClose: () => setScheduleOpen(false)
-              }
-            )
+                }
+              ),
+              /* @__PURE__ */ jsx(
+                PlayerScheduleOverlay,
+                {
+                  channel,
+                  listId,
+                  urls: epgUrls,
+                  open: scheduleOpen,
+                  onClose: () => setScheduleOpen(false)
+                }
+              )
+            ] }) })
           ]
         }
       );
@@ -169692,7 +169698,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-UvFAar/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-AWNt6e/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

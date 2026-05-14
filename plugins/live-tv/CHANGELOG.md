@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.12
+
+- Restore the pre-EPG centered-card MPV layout. The 0.3.x fullscreen overlay caused the MPV NSView to span the whole window and show as an opaque black layer above the stream — fixed regression where audio played but video was hidden under a black mask, and controls became hard to click. Bottom controls and the Guide overlay now live inside the card alongside the aspect-video stage.
+
 ## 0.3.11
 
 - Cache-bust republish so installations that already wrote 0.3.10 into local plugin state can still detect a newer runtime update. No runtime changes.
