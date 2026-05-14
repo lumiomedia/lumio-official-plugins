@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.15
+
+- Identified and reverted the regression introduced in `aeba5a1` ("Keep Live TV MPV controls accessible"): that commit's diff actually re-broke clicks by reverting the stage from `inset-x-0 bottom-32 top-20` (the working layout from `6134c56`) to `inset-0`. Full-window stage meant MPV NSView covered the entire window, which on macOS-Tauri causes both (a) the native video layer's black CALayer background to show in letterbox regions and (b) clicks on the React controls to be swallowed by the NSView underneath transparent WebView regions.
+- Stage now uses `absolute inset-x-0 bottom-32 top-20 bg-transparent` again: MPV NSView only covers the middle band, leaving the top 80px and bottom 128px purely WebKit. Controls are clickable, right-click → Inspect works, and there's no black mask over the stream.
+- All EPG features (PlayerNowOverlay, PlayerScheduleOverlay, schedule grid, NOW badge, channel switcher) are preserved unchanged.
+
 ## 0.3.14
 
 - Root-cause fix: add transparent click-capture layer over the MPV stage, mirroring the main video-player-modal pattern. Without it WKWebView's hit-test returned nil over fully-transparent regions, causing every click (including right-click → Inspect Element and the player's own play/fullscreen/guide buttons) to fall through to the MPV NSView and get swallowed. The click layer gives WebKit a concrete hit target so all events reach React.

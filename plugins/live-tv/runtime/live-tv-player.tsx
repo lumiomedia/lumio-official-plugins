@@ -444,32 +444,22 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
     const content = (
       <div
         data-lumio-player-open="1"
-        className="fixed inset-0 z-[70] flex flex-col !mt-0 cursor-default"
+        className="fixed inset-0 z-[70] bg-transparent cursor-default"
         onMouseMove={revealControls}
         onPointerMove={revealControls}
         onFocusCapture={revealControls}
       >
         <div
           ref={stageRef}
-          className="vp-container relative flex flex-1 items-center justify-center bg-transparent"
-        >
-          <div style={{ width: '100%', height: '100%', background: 'transparent' }} />
-        </div>
-        {/* Transparent click layer — gives WKWebView a hit target above the
-            MPV NSView so right-click + control clicks reach WebKit instead
-            of being swallowed by the native video view. */}
-        <div
-          className="absolute inset-0 z-10"
-          onClick={toggleMpvPause}
-          onMouseMove={revealControls}
+          className="absolute inset-x-0 bottom-32 top-20 bg-transparent"
         />
         {loading && !error && (
-          <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-transparent">
+          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-transparent">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
           </div>
         )}
         {error && (
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-black/80 px-4 text-center">
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-black px-4 text-center">
             <p className="text-sm text-red-400">{error}</p>
             <p className="text-xs text-slate-500">{t('liveTvStreamErrorHelp')}</p>
           </div>
