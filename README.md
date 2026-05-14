@@ -54,6 +54,94 @@ These docs explain:
 - how multiple plugins live in one marketplace repo
 - how to structure a new plugin or fork
 
+## Publishing an update
+
+Use this checklist when pushing a plugin update that should appear in Lumio's
+Settings -> Plugins -> Check updates flow.
+
+1. Bump the plugin version everywhere.
+
+   For `plugins/<slug>` update:
+
+   - `plugins/<slug>/plugin.json`
+   - `plugins/<slug>/package.json`, if present
+   - `plugins/<slug>/package-lock.json`, if present
+   - the matching entry in root `marketplace.json`
+
+   Lumio compares the installed version with the marketplace version, so the
+   marketplace entry must be higher than the user's installed version.
+
+2. Keep the marketplace entry complete.
+
+   Every plugin entry in root `marketplace.json` must include both the legacy
+   `path` field and the app-facing `repoPath` field:
+
+   ```json
+   {
+     "id": "com.lumio.live-tv",
+     "slug": "live-tv",
+     "version": "0.3.9",
+     "path": "plugins/live-tv",
+     "repoPath": "plugins/live-tv",
+     "runtimeBundlePath": "dist/runtime.js"
+   }
+   ```
+
+   `repoPath` is required by Lumio's marketplace parser. If it is missing, the
+   app may fall back to bundled/static metadata and the update may not appear.
+
+3. Rebuild and commit the runtime bundle.
+
+   From the Lumio app repo:
+
+   ```bash
+   rtk node scripts/build-plugin-runtime.mjs ../lumio-official-plugins/plugins/<slug>
+   ```
+
+   Commit the generated `plugins/<slug>/dist/runtime.js` together with the
+   source and version changes. The `dist/` directory may be gitignored, so add
+   it explicitly when needed:
+
+   ```bash
+   rtk git add marketplace.json plugins/<slug>/plugin.json plugins/<slug>/package.json plugins/<slug>/package-lock.json plugins/<slug>/CHANGELOG.md plugins/<slug>/runtime
+   rtk git add -f plugins/<slug>/dist/runtime.js
+   ```
+
+4. Add a changelog note.
+
+   Put the new version at the top of `plugins/<slug>/CHANGELOG.md`. Lumio shows
+   a changelog excerpt in the marketplace UI, so this is the user's confirmation
+   that the fetched update is the one they expect.
+
+5. Push to `main`.
+
+   ```bash
+   rtk git commit -m "Update <plugin> to <version>"
+   rtk git push origin main
+   ```
+
+6. Verify GitHub and Lumio see the same version.
+
+   Check raw GitHub:
+
+   ```bash
+   rtk proxy curl -s https://raw.githubusercontent.com/lumiomedia/lumio-official-plugins/main/plugins/<slug>/plugin.json
+   rtk proxy curl -s https://raw.githubusercontent.com/lumiomedia/lumio-official-plugins/main/marketplace.json
+   ```
+
+   If Lumio is running locally, verify its marketplace endpoint too:
+
+   ```bash
+   rtk proxy curl -s 'http://127.0.0.1:3011/api/plugins/marketplace?refresh=1'
+   ```
+
+   The response should have `"live": true`, and the plugin entry should show the
+   new `version`, `repoPath`, and `runtimeBundleUrl`.
+
+GitHub raw responses are CDN-cached for a few minutes. If GitHub API shows the
+new commit but raw GitHub still returns the old version, wait for the raw cache
+to expire before assuming the app-side update flow is broken.
+
 ## Why one repo for multiple plugins?
 
 One shared repo keeps official plugins easier to manage:
