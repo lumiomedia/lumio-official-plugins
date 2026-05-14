@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.11
+
+- Cache-bust republish so installations that already wrote 0.3.10 into local plugin state can still detect a newer runtime update. No runtime changes.
+
+## 0.3.10
+
+- Bump alongside Moviefinder bundle refresh to pick up the transparent MPV stage + non-blocking loading overlay fixes. Resolves "black overlay covers live stream" regression.
+
 ## 0.3.9
 
 - Republish the Live TV MPV transparency fix so installations that already cached 0.3.8 can still detect a newer runtime update.
