@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.18
+
+- Restore auto-hide for the player chrome. Hiding controls during playback is the standard player UX. The underlying "hover stops working after a while" bug is fixed on the host side by a custom NSView subclass (`LumioMpvView`) in `mpv_embed.rs` whose `hitTest:` returns nil — so MPV's native video view can no longer steal first-responder status from WKWebView, and mousemove keeps flowing to WebKit for the entire session.
+
 ## 0.3.17
 
 - Disable controls auto-hide. After a few interactions in MPV mode, the native MPV NSView (positioned behind the transparent WKWebView) starts intercepting mouse events for the middle band. Once that happens, `revealControls` is no longer triggered by mousemove, and any hidden chrome becomes permanent — controls can never be revealed again until the channel is reopened. Solution: keep the player chrome always visible. The previous 2.4s auto-hide was a stale carry-over from the windowed-video UX where mouse events always reach WebKit.
