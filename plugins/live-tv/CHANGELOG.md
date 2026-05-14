@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.14
+
+- Root-cause fix: add transparent click-capture layer over the MPV stage, mirroring the main video-player-modal pattern. Without it WKWebView's hit-test returned nil over fully-transparent regions, causing every click (including right-click → Inspect Element and the player's own play/fullscreen/guide buttons) to fall through to the MPV NSView and get swallowed. The click layer gives WebKit a concrete hit target so all events reach React.
+
 ## 0.3.13
 
 - Match the main video-player-modal MPV layout exactly: drop the `bg-black/60` fullscreen dimmer and the `bg-slate-950/30` card backdrop. Both painted opaque WebView pixels on top of the MPV NSView and turned the stream into a black mask. Player is now a transparent fullscreen overlay with only the top/bottom gradient chrome painting any pixels — the rest of the WebView stays transparent so MPV shows through.
