@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.22
+
+- Make desktop plugin storage prefer Lumio's native storage snapshot so large EPG caches remain readable when WKWebView localStorage has a stale smaller value.
+
 ## 0.3.21
 
 - Add a delayed EPG cache sync for the guide after opening, so already-fetched XMLTV data is picked up even when the storage event was missed.
