@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.16
+
+- TRUE root cause: the host app's Tailwind `content` config does not scan plugin runtime sources (they live outside Moviefinder's tree at `lumio-official-plugins/plugins/*/runtime/`), so any Tailwind class used only by a plugin — including `top-20`/`bottom-32` on the live-tv stage — never gets generated into the compiled CSS bundle. The stage `<div>` then has no top/bottom rule, collapses to height=0, and `mpvSetBounds` skips its `if (rect.width <= 0 || rect.height <= 0) return` guard. The result: MPV NSView stays at its initial full-window frame, and what looks like a black overlay over the stream is actually the NSWindow's black background showing through the transparent WKWebView in regions where MPV is positioned outside the visible viewport rect.
+- Fix: stage uses inline `style={{ position: 'absolute', left: 0, right: 0, top: '5rem', bottom: '8rem', background: 'transparent' }}` so the geometry works regardless of which Tailwind classes the host happens to ship in its CSS bundle. Companion change in the host repo adds the plugin runtime path to Tailwind's `content` so future SPA builds also pick up plugin-unique class usage as a permanent fix.
+
 ## 0.3.15
 
 - Identified and reverted the regression introduced in `aeba5a1` ("Keep Live TV MPV controls accessible"): that commit's diff actually re-broke clicks by reverting the stage from `inset-x-0 bottom-32 top-20` (the working layout from `6134c56`) to `inset-0`. Full-window stage meant MPV NSView covered the entire window, which on macOS-Tauri causes both (a) the native video layer's black CALayer background to show in letterbox regions and (b) clicks on the React controls to be swallowed by the NSView underneath transparent WebView regions.

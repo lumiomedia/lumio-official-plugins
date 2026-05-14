@@ -451,7 +451,14 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
       >
         <div
           ref={stageRef}
-          className="absolute inset-x-0 bottom-32 top-20 bg-transparent"
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: '5rem',
+            bottom: '8rem',
+            background: 'transparent',
+          }}
         />
         {loading && !error && (
           <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-transparent">
