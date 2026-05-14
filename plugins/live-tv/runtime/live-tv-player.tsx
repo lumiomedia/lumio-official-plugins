@@ -131,13 +131,10 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
   const revealControls = useCallback(() => {
     setControlsVisible(true)
     clearControlsHideTimer()
-    if (!useMpv && !loading && !error && !scheduleOpen) {
-      controlsHideTimerRef.current = window.setTimeout(() => {
-        setControlsVisible(false)
-        controlsHideTimerRef.current = null
-      }, 2400)
-    }
-  }, [clearControlsHideTimer, error, loading, scheduleOpen, useMpv])
+    // Auto-hide disabled — when MPV NSView intercepts mouse events after a
+    // few interactions, `revealControls` stops firing, and any hidden state
+    // becomes permanent. Always-on chrome avoids the dead-end UX.
+  }, [clearControlsHideTimer])
 
   const keepControlsVisible = useCallback(() => {
     setControlsVisible(true)

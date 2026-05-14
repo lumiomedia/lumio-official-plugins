@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.17
+
+- Disable controls auto-hide. After a few interactions in MPV mode, the native MPV NSView (positioned behind the transparent WKWebView) starts intercepting mouse events for the middle band. Once that happens, `revealControls` is no longer triggered by mousemove, and any hidden chrome becomes permanent — controls can never be revealed again until the channel is reopened. Solution: keep the player chrome always visible. The previous 2.4s auto-hide was a stale carry-over from the windowed-video UX where mouse events always reach WebKit.
+
 ## 0.3.16
 
 - TRUE root cause: the host app's Tailwind `content` config does not scan plugin runtime sources (they live outside Moviefinder's tree at `lumio-official-plugins/plugins/*/runtime/`), so any Tailwind class used only by a plugin — including `top-20`/`bottom-32` on the live-tv stage — never gets generated into the compiled CSS bundle. The stage `<div>` then has no top/bottom rule, collapses to height=0, and `mpvSetBounds` skips its `if (rect.width <= 0 || rect.height <= 0) return` guard. The result: MPV NSView stays at its initial full-window frame, and what looks like a black overlay over the stream is actually the NSWindow's black background showing through the transparent WKWebView in regions where MPV is positioned outside the visible viewport rect.
