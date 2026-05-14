@@ -62,6 +62,8 @@ function formatClock(seconds: number): string {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
+const MPV_STARTUP_TIMEOUT_MS = 18_000
+
 export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: LiveTvPlayerProps) {
   const { t } = useLang()
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -135,6 +137,11 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
       }, 2400)
     }
   }, [clearControlsHideTimer, error, loading, scheduleOpen])
+
+  const keepControlsVisible = useCallback(() => {
+    setControlsVisible(true)
+    clearControlsHideTimer()
+  }, [clearControlsHideTimer])
 
   useEffect(() => {
     if (!useMpv) return
@@ -232,6 +239,9 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
         .then(() => {
           if (cancelled) return
           sync()
+          window.setTimeout(() => {
+            if (!cancelled) setLoading(false)
+          }, 1200)
           if (stageRef.current) {
             resizeObs = new ResizeObserver(sync)
             resizeObs.observe(stageRef.current)
@@ -355,6 +365,16 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
   }, [mpvFileLoaded, useMpv])
 
   useEffect(() => {
+    if (!useMpv || !loading || error || mpvFileLoaded || mpvPlaybackRestarted || mpvFirstFrameRendered) return
+    const timeout = window.setTimeout(() => {
+      setError('Streamen startade inte i MPV. Stäng spelaren och försök igen, eller testa en annan kanal.')
+      setLoading(false)
+      void closeMpvPlayer().catch(() => {})
+    }, MPV_STARTUP_TIMEOUT_MS)
+    return () => window.clearTimeout(timeout)
+  }, [error, loading, mpvFileLoaded, mpvFirstFrameRendered, mpvPlaybackRestarted, useMpv])
+
+  useEffect(() => {
     if (!useMpv) return
     if (mpvFirstFrameRendered || mpvPlaybackRestarted) {
       setLoading(false)
@@ -414,13 +434,17 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
     const content = (
       <div
         className={`fixed inset-0 z-[70] bg-transparent ${controlsVisible ? 'cursor-default' : 'cursor-none'}`}
+        onMouseEnter={revealControls}
         onMouseMove={revealControls}
         onPointerMove={revealControls}
         onFocusCapture={revealControls}
       >
-        <div ref={stageRef} className="absolute inset-0 bg-transparent" />
+        <div
+          ref={stageRef}
+          className="absolute inset-x-0 bottom-32 top-20 bg-transparent"
+        />
         {loading && !error && (
-          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black">
+          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-transparent">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
           </div>
         )}
@@ -432,6 +456,8 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
         )}
         <div
           className="absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-4 bg-gradient-to-b from-black/75 via-black/45 to-transparent px-5 py-4 transition-opacity duration-200"
+          onMouseEnter={keepControlsVisible}
+          onMouseLeave={revealControls}
           style={{
             opacity: controlsVisible ? 1 : 0,
             pointerEvents: controlsVisible ? 'auto' : 'none',
@@ -466,6 +492,8 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
         </div>
         <div
           className="absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-5 pb-5 pt-12 transition-opacity duration-200"
+          onMouseEnter={keepControlsVisible}
+          onMouseLeave={revealControls}
           style={{
             opacity: controlsVisible ? 1 : 0,
             pointerEvents: controlsVisible ? 'auto' : 'none',

@@ -46,7 +46,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-omLfkU/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-hWagFh/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -95,7 +95,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-omLfkU/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-hWagFh/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -29688,7 +29688,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-omLfkU/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-hWagFh/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -29698,7 +29698,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-omLfkU/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-hWagFh/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -165765,10 +165765,10 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-omLfkU/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-hWagFh/auth-capabilities-shim.ts
   var sdk;
   var init_auth_capabilities_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-omLfkU/auth-capabilities-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-hWagFh/auth-capabilities-shim.ts"() {
       sdk = globalThis.__lumioPluginRuntime?.sdk;
     }
   });
@@ -167454,6 +167454,10 @@
         }, 2400);
       }
     }, [clearControlsHideTimer, error, loading, scheduleOpen]);
+    const keepControlsVisible = useCallback(() => {
+      setControlsVisible(true);
+      clearControlsHideTimer();
+    }, [clearControlsHideTimer]);
     useEffect(() => {
       if (!useMpv) return;
       revealControls();
@@ -167538,6 +167542,9 @@
         }).then(() => {
           if (cancelled2) return;
           sync2();
+          window.setTimeout(() => {
+            if (!cancelled2) setLoading(false);
+          }, 1200);
           if (stageRef.current) {
             resizeObs = new ResizeObserver(sync2);
             resizeObs.observe(stageRef.current);
@@ -167645,6 +167652,16 @@
       void setMpvPause(false);
     }, [mpvFileLoaded, useMpv]);
     useEffect(() => {
+      if (!useMpv || !loading || error || mpvFileLoaded || mpvPlaybackRestarted || mpvFirstFrameRendered) return;
+      const timeout = window.setTimeout(() => {
+        setError("Streamen startade inte i MPV. St\xE4ng spelaren och f\xF6rs\xF6k igen, eller testa en annan kanal.");
+        setLoading(false);
+        void closeMpvPlayer().catch(() => {
+        });
+      }, MPV_STARTUP_TIMEOUT_MS);
+      return () => window.clearTimeout(timeout);
+    }, [error, loading, mpvFileLoaded, mpvFirstFrameRendered, mpvPlaybackRestarted, useMpv]);
+    useEffect(() => {
       if (!useMpv) return;
       if (mpvFirstFrameRendered || mpvPlaybackRestarted) {
         setLoading(false);
@@ -167700,12 +167717,19 @@
         "div",
         {
           className: `fixed inset-0 z-[70] bg-transparent ${controlsVisible ? "cursor-default" : "cursor-none"}`,
+          onMouseEnter: revealControls,
           onMouseMove: revealControls,
           onPointerMove: revealControls,
           onFocusCapture: revealControls,
           children: [
-            /* @__PURE__ */ jsx("div", { ref: stageRef, className: "absolute inset-0 bg-transparent" }),
-            loading && !error && /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black", children: /* @__PURE__ */ jsx("div", { className: "h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" }) }),
+            /* @__PURE__ */ jsx(
+              "div",
+              {
+                ref: stageRef,
+                className: "absolute inset-x-0 bottom-32 top-20 bg-transparent"
+              }
+            ),
+            loading && !error && /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-transparent", children: /* @__PURE__ */ jsx("div", { className: "h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" }) }),
             error && /* @__PURE__ */ jsxs("div", { className: "absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-black px-4 text-center", children: [
               /* @__PURE__ */ jsx("p", { className: "text-sm text-red-400", children: error }),
               /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500", children: t("liveTvStreamErrorHelp") })
@@ -167714,6 +167738,8 @@
               "div",
               {
                 className: "absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-4 bg-gradient-to-b from-black/75 via-black/45 to-transparent px-5 py-4 transition-opacity duration-200",
+                onMouseEnter: keepControlsVisible,
+                onMouseLeave: revealControls,
                 style: {
                   opacity: controlsVisible ? 1 : 0,
                   pointerEvents: controlsVisible ? "auto" : "none"
@@ -167757,6 +167783,8 @@
               "div",
               {
                 className: "absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-5 pb-5 pt-12 transition-opacity duration-200",
+                onMouseEnter: keepControlsVisible,
+                onMouseLeave: revealControls,
                 style: {
                   opacity: controlsVisible ? 1 : 0,
                   pointerEvents: controlsVisible ? "auto" : "none"
@@ -167914,7 +167942,7 @@
     ] });
     return portalEl ? (0, import_react_dom2.createPortal)(content, portalEl) : content;
   }
-  var import_react_dom2;
+  var import_react_dom2, MPV_STARTUP_TIMEOUT_MS;
   var init_live_tv_player = __esm({
     "../lumio-official-plugins/plugins/live-tv/runtime/live-tv-player.tsx"() {
       "use strict";
@@ -167927,6 +167955,7 @@
       init_player_now_overlay();
       init_player_schedule_overlay();
       init_jsx_runtime_shim();
+      MPV_STARTUP_TIMEOUT_MS = 18e3;
     }
   });
 
@@ -169649,7 +169678,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-omLfkU/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-hWagFh/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.5
+
+- Keep the MPV video surface away from Live TV controls and avoid a stuck black loading layer when MPV audio starts before frame events arrive.
+
 ## 0.3.4
 
 - Improve EPG channel matching for XMLTV sources with provider-specific ids, including EPGShare-style ids such as `[TV3HD].TV3.HD.se`.
