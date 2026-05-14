@@ -27,7 +27,8 @@
       "auth": {
         "managedProviderId": "google-youtube",
         "supportsPersonalOverride": true
-      }
+      },
+      "repoPath": "plugins/youtube"
     },
     {
       "id": "com.lumio.plex",
@@ -47,7 +48,8 @@
       "changelogPath": "plugins/plex/CHANGELOG.md",
       "official": true,
       "bundled": true,
-      "removable": true
+      "removable": true,
+      "repoPath": "plugins/plex"
     },
     {
       "id": "com.lumio.live-tv",
@@ -67,7 +69,8 @@
       "changelogPath": "plugins/live-tv/CHANGELOG.md",
       "official": true,
       "bundled": true,
-      "removable": true
+      "removable": true,
+      "repoPath": "plugins/live-tv"
     },
     {
       "id": "com.lumio.homekit",
@@ -87,7 +90,8 @@
       "changelogPath": "plugins/homekit/CHANGELOG.md",
       "official": true,
       "bundled": true,
-      "removable": true
+      "removable": true,
+      "repoPath": "plugins/homekit"
     },
     {
       "id": "com.lumio.trakt",
@@ -107,7 +111,8 @@
       "changelogPath": "plugins/trakt/CHANGELOG.md",
       "official": true,
       "bundled": true,
-      "removable": true
+      "removable": true,
+      "repoPath": "plugins/trakt"
     }
   ]
 }
