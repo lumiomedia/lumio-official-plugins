@@ -443,7 +443,9 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
 
     const content = (
       <div
-        className="fixed inset-0 z-[70] bg-transparent cursor-default"
+        data-lumio-player-open="1"
+        className="fixed inset-0 z-[70] flex flex-col !mt-0 cursor-default"
+        style={{ background: 'transparent' }}
         onMouseEnter={revealControls}
         onMouseMove={revealControls}
         onPointerMove={revealControls}
@@ -451,8 +453,11 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
       >
         <div
           ref={stageRef}
-          className="absolute inset-0 bg-transparent"
-        />
+          className="vp-container relative flex flex-1 items-center justify-center bg-transparent"
+          style={{ background: 'transparent' }}
+        >
+          <div style={{ width: '100%', height: '100%', background: 'transparent' }} />
+        </div>
         {loading && !error && (
           <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-transparent">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />

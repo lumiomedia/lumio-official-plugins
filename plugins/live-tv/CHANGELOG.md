@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.8
+
+- Match the main MPV player's transparent container structure for Live TV so the MPV video layer shows through instead of being covered by a black webview layer.
+
 ## 0.3.7
 
 - Keep Live TV on MPV for desktop playback, make the MPV video surface cover the player, and keep controls visible so the window can always be closed.
