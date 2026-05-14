@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.26
+
+- Treat EPG sources as shared Live TV metadata so All, custom lists, favorites and the player can all resolve programme data from the same XMLTV sources.
+- Add a Favorites tab from pinned channels; it appears only when channels are pinned and becomes the initial tab.
+- Replace automatic per-card NOW lookups with a small manual EPG button on each card to avoid loading guide data for every visible channel at once.
+
 ## 0.3.25
 
 - Keep the current programme text only in the bottom player channel-info row, so it cannot show through the schedule/guide overlay.

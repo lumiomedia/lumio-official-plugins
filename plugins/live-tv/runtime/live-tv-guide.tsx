@@ -5,8 +5,10 @@ import { LiveTvLogoImage } from './live-tv-logo-image'
 import { useLiveTvEpgCache } from './hooks/useLiveTvEpgCache'
 import { buildNameToTvgIdIndex, resolveTvgId } from './epg/name-match'
 import {
+  getAllLiveTvEpgUrls,
   getLiveTvLists,
   getLiveTvLogoSrc,
+  LIVE_TV_GLOBAL_EPG_ID,
   onLiveTvListsChanged,
   type LiveTvList,
   type M3uChannel,
@@ -81,12 +83,12 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
     return () => window.clearTimeout(id)
   }, [open])
 
-  // Pick the first list with content as default.
+  // Keep the current list selection valid; null means the full Live TV library.
   useEffect(() => {
     if (!open) return
-    if (activeListId && lists.some((list) => list.id === activeListId)) return
-    const first = lists.find((list) => list.channels.length > 0)
-    setActiveListId(first?.id ?? null)
+    if (!activeListId) return
+    if (lists.some((list) => list.id === activeListId)) return
+    setActiveListId(null)
   }, [open, lists, activeListId])
 
   const activeList = useMemo(
@@ -94,14 +96,9 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
     [lists, activeListId],
   )
 
-  const epgUrls = useMemo(() => {
-    if (!activeList) return [] as string[]
-    return [activeList.urlTvg, ...activeList.epgUrls].filter(
-      (url): url is string => Boolean(url),
-    )
-  }, [activeList])
+  const epgUrls = useMemo(() => getAllLiveTvEpgUrls(lists), [lists])
 
-  const cache = useLiveTvEpgCache(activeList?.id ?? null, epgUrls)
+  const cache = useLiveTvEpgCache(epgUrls.length > 0 ? LIVE_TV_GLOBAL_EPG_ID : null, epgUrls)
 
   const windowStart = useMemo(
     () => alignToHalfHour(nowTick - WINDOW_HOURS_BEFORE * 3_600_000),
@@ -121,18 +118,29 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
   )
 
   const allRows = useMemo<ChannelRow[]>(() => {
-    if (!activeList) return []
+    const sourceRows: Array<{ channel: M3uChannel; list: LiveTvList }> = []
+    const seen = new Set<string>()
+    const sourceLists = activeList ? [activeList] : lists
+    for (const list of sourceLists) {
+      for (const channel of list.channels) {
+        const key = `${channel.name}::${channel.url}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        sourceRows.push({ channel, list })
+      }
+    }
+
     const out: ChannelRow[] = []
-    for (const channel of activeList.channels) {
+    for (const { channel, list } of sourceRows) {
       const tvgId = resolveTvgId(channel.tvgId, channel.name, nameIndex)
       if (!tvgId) continue
       const programmes = cache?.index[tvgId] ?? []
       const sliced = programmes.filter((p) => p.stop > windowStart && p.start < windowEnd)
       if (sliced.length === 0) continue
-      out.push({ channel, list: activeList, programmes: sliced })
+      out.push({ channel, list, programmes: sliced })
     }
     return out
-  }, [activeList, cache, nameIndex, windowStart, windowEnd])
+  }, [activeList, lists, cache, nameIndex, windowStart, windowEnd])
 
   const rows = useMemo<ChannelRow[]>(() => {
     if (!channelFilter) return allRows
@@ -147,10 +155,16 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
   }, [allRows, channelFilter])
 
   const guideStats = useMemo(() => {
-    if (!activeList) return { matched: 0, totalProgrammes: 0, sourceChannels: 0 }
+    const sourceLists = activeList ? [activeList] : lists
+    const sourceChannels = new Map<string, M3uChannel>()
+    for (const list of sourceLists) {
+      for (const channel of list.channels) {
+        sourceChannels.set(`${channel.name}::${channel.url}`, channel)
+      }
+    }
     let matched = 0
     let totalProgrammes = 0
-    for (const channel of activeList.channels) {
+    for (const channel of sourceChannels.values()) {
       const tvgId = resolveTvgId(channel.tvgId, channel.name, nameIndex)
       if (!tvgId) continue
       matched += 1
@@ -161,7 +175,7 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
       totalProgrammes,
       sourceChannels: Object.keys(cache?.index ?? {}).length,
     }
-  }, [activeList, cache, nameIndex])
+  }, [activeList, lists, cache, nameIndex])
 
   // Scroll timeline so "now" sits ~15% from the left when (re)opened.
   useEffect(() => {
@@ -189,8 +203,8 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
   const timelineWidth = (windowEnd - windowStart) * PIXELS_PER_MS
   const hasSources = epgUrls.length > 0
   const failures = cache?.failures ?? []
-  const emptyMessage = !activeList
-    ? 'Ingen Live TV-lista vald.'
+  const emptyMessage = lists.length === 0
+    ? 'Ingen Live TV-lista finns ännu.'
     : !hasSources
       ? 'Ingen EPG-källa är kopplad till den här Live TV-listan.'
       : !cache
@@ -212,12 +226,13 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
         <div className="flex min-w-0 items-center gap-3">
           <span className="text-[10px] uppercase tracking-[0.24em] text-emerald-300/80">EPG</span>
           <h2 className="truncate text-base font-semibold text-white">TV-tablå</h2>
-          {lists.length > 1 ? (
+          {lists.length > 0 ? (
             <select
               value={activeListId ?? ''}
               onChange={(event) => setActiveListId(event.target.value || null)}
               className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-slate-200 outline-none transition hover:border-white/30 focus:border-white/40"
             >
+              <option value="" className="bg-slate-900">Alla</option>
               {lists.map((list) => (
                 <option key={list.id} value={list.id} className="bg-slate-900">
                   {list.name}

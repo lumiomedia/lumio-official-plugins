@@ -15,11 +15,13 @@ import {
   clearStoredLiveTvChannels,
   createLiveTvList,
   deleteLiveTvList,
+  getAllLiveTvEpgUrls,
   getLiveTvLists,
   getLiveTvLogoSrc,
   getLiveTvMemoryCache,
   getLiveTvUrlsKey,
   getM3uUrls,
+  LIVE_TV_GLOBAL_EPG_ID,
   isChannelInLiveTvList,
   isLiveTvLogoLoaded,
   isPinnedLiveTvChannel,
@@ -45,6 +47,7 @@ interface M3uChannel {
 
 const rememberedChannelLogoSrcs = new Map<string, string>()
 const CHANNELS_PER_PAGE = 28
+const FAVORITES_LIST_ID = '__favorites__'
 const neutralPillClass = 'rounded-full border border-white/[0.08] bg-white/[0.04] text-slate-300 transition hover:border-white/[0.14] hover:bg-white/[0.06] hover:text-white'
 const activePillClass = 'border-accent-400/50 bg-accent-400/10 text-accent-300'
 
@@ -99,6 +102,7 @@ export function LiveTvGrid({ initialChannel = null }: { initialChannel?: M3uChan
   const [listPickerChannelKey, setListPickerChannelKey] = useState<string | null>(null)
   const [createListOpen, setCreateListOpen] = useState(false)
   const [guideOpen, setGuideOpen] = useState(false)
+  const defaultTabAppliedRef = useRef(false)
   const [LiveTvGuideComponent, setLiveTvGuideComponent] = useState<
     null | typeof import('./live-tv-guide').LiveTvGuide
   >(null)
@@ -132,6 +136,7 @@ export function LiveTvGrid({ initialChannel = null }: { initialChannel?: M3uChan
       const nextLists = getLiveTvLists()
       setLists(nextLists)
       setActiveListId((current) => {
+        if (current === FAVORITES_LIST_ID) return current
         if (current === null) return null
         if (current && nextLists.some((list) => list.id === current)) return current
         return null
@@ -330,7 +335,7 @@ export function LiveTvGrid({ initialChannel = null }: { initialChannel?: M3uChan
     setCurrentPage(1)
   }, [search, activeGroup, activeListId])
 
-  const activeList = activeListId
+  const activeList = activeListId && activeListId !== FAVORITES_LIST_ID
     ? (lists.find((list) => list.id === activeListId) ?? null)
     : null
 
@@ -354,7 +359,24 @@ export function LiveTvGrid({ initialChannel = null }: { initialChannel?: M3uChan
     return out
   })()
 
-  const visibleChannels = activeList?.channels ?? (channels.length > 0 ? channels : allListChannels)
+  const allSourceChannels = channels.length > 0 ? channels : allListChannels
+  const pinnedChannels = sortChannelsWithPins(allSourceChannels.filter((channel) => isPinnedLiveTvChannel(channel)))
+  const globalEpgUrls = getAllLiveTvEpgUrls(lists)
+  const globalEpgListId = globalEpgUrls.length > 0 ? LIVE_TV_GLOBAL_EPG_ID : null
+  const visibleChannels = activeListId === FAVORITES_LIST_ID
+    ? pinnedChannels
+    : activeList?.channels ?? allSourceChannels
+
+  useEffect(() => {
+    if (!defaultTabAppliedRef.current && pinnedChannels.length > 0) {
+      defaultTabAppliedRef.current = true
+      setActiveListId(FAVORITES_LIST_ID)
+      return
+    }
+    if (activeListId === FAVORITES_LIST_ID && pinnedChannels.length === 0) {
+      setActiveListId(null)
+    }
+  }, [activeListId, pinnedChannels.length])
 
   const categories = Array.from(
     new Set(
@@ -673,6 +695,26 @@ export function LiveTvGrid({ initialChannel = null }: { initialChannel?: M3uChan
               >
                 {t('all')}
               </button>
+              {pinnedChannels.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => setActiveListId(FAVORITES_LIST_ID)}
+                  className={`inline-flex h-9 items-center gap-2 rounded-full border px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] whitespace-nowrap transition ${
+                    activeListId === FAVORITES_LIST_ID
+                      ? 'border-amber-400/50 bg-amber-400/10 text-amber-200'
+                      : neutralPillClass
+                  }`}
+                >
+                  <span>Favoriter</span>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] tracking-[0.08em] ${
+                    activeListId === FAVORITES_LIST_ID
+                      ? 'bg-amber-400/15 text-amber-100'
+                      : 'bg-white/5 text-slate-400'
+                  }`}>
+                    {pinnedChannels.length}
+                  </span>
+                </button>
+              ) : null}
               {lists.map((list) => (
                 <div key={list.id} className="relative">
                   <button
@@ -724,17 +766,6 @@ export function LiveTvGrid({ initialChannel = null }: { initialChannel?: M3uChan
                 const channelListKey = `${channel.name}::${channel.url}`
                 const isListPickerOpen = listPickerChannelKey === channelListKey
                 const isInAnyList = lists.some((list) => isChannelInLiveTvList(list.id, channel))
-                const tileList =
-                  activeList ??
-                  lists.find((list) =>
-                    list.channels.some(
-                      (entry) => entry.url === channel.url && entry.name === channel.name,
-                    ),
-                  ) ??
-                  null
-                const tileEpgUrls = tileList
-                  ? [tileList.urlTvg, ...tileList.epgUrls].filter((url): url is string => Boolean(url))
-                  : []
                 return (
                   <div
                     key={`${channel.url}-${i}-${pinVersion}`}
@@ -829,15 +860,15 @@ export function LiveTvGrid({ initialChannel = null }: { initialChannel?: M3uChan
                       <p className={`w-full text-center text-slate-300 ${isTauriEnv ? 'line-clamp-3 text-[14px] leading-5' : 'line-clamp-3 text-[13px] leading-5 group-hover:text-white'}`}>
                         {channel.name}
                       </p>
-                      <NowBadge
-                        channel={channel}
-                        listId={tileList?.id ?? null}
-                        urls={tileEpgUrls}
-                      />
                       {isTauriEnv && channel.group ? (
                         <p className="w-full truncate text-center text-[11px] text-slate-500">{channel.group}</p>
                       ) : null}
                     </button>
+                    <NowBadge
+                      channel={channel}
+                      listId={globalEpgListId}
+                      urls={globalEpgUrls}
+                    />
                   </div>
                 )
               })}
@@ -847,27 +878,14 @@ export function LiveTvGrid({ initialChannel = null }: { initialChannel?: M3uChan
         )}
       </div>
 
-      {activeChannel && LiveTvPlayerComponent && (() => {
-        const owningList =
-          (activeListId ? lists.find((list) => list.id === activeListId) : null) ??
-          lists.find((list) =>
-            list.channels.some(
-              (entry) => entry.url === activeChannel.url && entry.name === activeChannel.name,
-            ),
-          ) ??
-          null
-        const playerEpgUrls = owningList
-          ? [owningList.urlTvg, ...owningList.epgUrls].filter((url): url is string => Boolean(url))
-          : []
-        return (
-          <LiveTvPlayerComponent
-            channel={activeChannel}
-            onClose={() => setActiveChannel(null)}
-            listId={owningList?.id ?? null}
-            epgUrls={playerEpgUrls}
-          />
-        )
-      })()}
+      {activeChannel && LiveTvPlayerComponent ? (
+        <LiveTvPlayerComponent
+          channel={activeChannel}
+          onClose={() => setActiveChannel(null)}
+          listId={globalEpgListId}
+          epgUrls={globalEpgUrls}
+        />
+      ) : null}
 
       {guideOpen && LiveTvGuideComponent ? (
         <LiveTvGuideComponent

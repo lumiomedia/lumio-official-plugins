@@ -18,11 +18,12 @@ export function useEpgNowNextLater(
   channel: ChannelLike,
   listId: string | null,
   urls: string[],
+  enabled = true,
 ): NowNextLater {
   const [data, setData] = useState<NowNextLater>(EMPTY)
 
   useEffect(() => {
-    if (!listId) {
+    if (!enabled || !listId) {
       setData(EMPTY)
       return
     }
@@ -52,7 +53,7 @@ export function useEpgNowNextLater(
       cancelBoundary()
       off()
     }
-  }, [channel.tvgId, channel.name, listId, urls.join('|')])
+  }, [channel.tvgId, channel.name, listId, urls.join('|'), enabled])
 
   return data
 }

@@ -23,6 +23,7 @@ export interface M3uChannel {
 }
 
 export const LIVE_TV_PLUGIN_ID = 'com.lumio.live-tv'
+export const LIVE_TV_GLOBAL_EPG_ID = 'global'
 const M3U_URLS_KEY = 'm3u_urls'
 const M3U_DRAFT_URLS_KEY = 'm3u_urls_draft'
 const LIVE_TV_LISTS_KEY = 'lists'
@@ -192,6 +193,15 @@ export function clearStoredLiveTvChannels(urlsKey?: string): void {
 
 export function getLiveTvLists(): LiveTvList[] {
   return readLists()
+}
+
+export function getAllLiveTvEpgUrls(lists = readLists()): string[] {
+  const urls = new Set<string>()
+  for (const list of lists) {
+    if (list.urlTvg) urls.add(list.urlTvg)
+    for (const url of list.epgUrls) urls.add(url)
+  }
+  return [...urls]
 }
 
 export function onLiveTvListsChanged(listener: () => void): () => void {
