@@ -27,6 +27,7 @@ export interface EpgCacheEntry {
   index: Record<string, EpgProgramme[]>
   fetchedAt: number
   sources: string[]
+  requestedSources?: string[]
   sourceStats?: EpgSourceStat[]
   failures?: EpgSourceFailure[]
 }

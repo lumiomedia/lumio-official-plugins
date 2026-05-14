@@ -37,6 +37,19 @@ describe('useEpgLoadStatus', () => {
     await waitFor(() => expect(result.current).toBe('empty'))
   })
 
+  it('returns "error" when cache only contains source failures', () => {
+    vi.spyOn(cacheModule, 'readCache').mockReturnValue({
+      index: {},
+      fetchedAt: Date.now(),
+      sources: [],
+      requestedSources: ['https://bad.example/epg.xml'],
+      failures: [{ url: 'https://bad.example/epg.xml', error: 'HTTP 404' }],
+    })
+    vi.spyOn(cacheModule, 'ensureFresh').mockResolvedValue(null)
+    const { result } = renderHook(() => useEpgLoadStatus('list-1', ['https://bad.example/epg.xml']))
+    expect(result.current).toBe('error')
+  })
+
   it('returns "loading" briefly then transitions when cache lands', async () => {
     let cacheValue: ReturnType<typeof cacheModule.readCache> = null
     vi.spyOn(cacheModule, 'readCache').mockImplementation(() => cacheValue)

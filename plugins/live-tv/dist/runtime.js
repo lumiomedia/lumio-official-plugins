@@ -8,6 +8,7 @@
   var __typeError = (msg) => {
     throw TypeError(msg);
   };
+  var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
   var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, {
     get: (a, b) => (typeof require !== "undefined" ? require : a)[b]
   }) : x)(function(x) {
@@ -41,12 +42,13 @@
     mod
   ));
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+  var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
   var __accessCheck = (obj, member, msg) => member.has(obj) || __typeError("Cannot " + msg);
   var __privateGet = (obj, member, getter) => (__accessCheck(obj, member, "read from private field"), getter ? getter.call(obj) : member.get(obj));
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-BLzBZU/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-1kB5hk/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -95,7 +97,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-BLzBZU/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-1kB5hk/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -29688,7 +29690,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-BLzBZU/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-1kB5hk/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -29698,7 +29700,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-BLzBZU/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-1kB5hk/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -165765,10 +165767,10 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-BLzBZU/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-1kB5hk/auth-capabilities-shim.ts
   var sdk;
   var init_auth_capabilities_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-BLzBZU/auth-capabilities-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-1kB5hk/auth-capabilities-shim.ts"() {
       sdk = globalThis.__lumioPluginRuntime?.sdk;
     }
   });
@@ -166858,16 +166860,30 @@
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ urls })
     });
-    if (!res.ok) throw new Error(`/api/xmltv returned ${res.status}`);
-    const data = await res.json();
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      const failures = Array.isArray(data?.failures) ? data.failures : [];
+      throw new EpgFetchError(`/api/xmltv returned ${res.status}`, res.status, failures);
+    }
     if (!data || typeof data !== "object" || !data.index || typeof data.index !== "object") {
       throw new Error("Invalid response from /api/xmltv");
     }
-    return data;
+    return { ...data, requestedSources: urls };
   }
+  var EpgFetchError;
   var init_fetcher = __esm({
     "../lumio-official-plugins/plugins/live-tv/runtime/epg/fetcher.ts"() {
       "use strict";
+      EpgFetchError = class extends Error {
+        constructor(message, status, failures = []) {
+          super(message);
+          __publicField(this, "status");
+          __publicField(this, "failures");
+          this.name = "EpgFetchError";
+          this.status = status;
+          this.failures = failures;
+        }
+      };
     }
   });
 
@@ -166880,6 +166896,23 @@
   }
   function isFresh(entry, now2 = Date.now()) {
     return entry !== null && now2 - entry.fetchedAt < TTL_MS;
+  }
+  function sameSources(entry, urls) {
+    if (!entry) return false;
+    const cached = entry.requestedSources ?? entry.sources;
+    if (cached.length !== urls.length) return false;
+    return cached.every((url, index3) => url === urls[index3]);
+  }
+  function writeFailureCache(listId, urls, err) {
+    const entry = {
+      index: {},
+      fetchedAt: Date.now(),
+      sources: [],
+      requestedSources: urls,
+      failures: err.failures
+    };
+    writePluginJson(PLUGIN_ID, cacheKey(listId), entry);
+    emitPluginStorageChanged(PLUGIN_ID, cacheKey(listId));
   }
   async function refresh(listId, urls) {
     const existing = inflight.get(listId);
@@ -166897,6 +166930,9 @@
         retryScheduled.delete(listId);
       } catch (err) {
         console.warn(`[live-tv] EPG refresh failed for ${listId}`, err);
+        if (err instanceof EpgFetchError && err.failures.length > 0) {
+          writeFailureCache(listId, urls, err);
+        }
         if (!retryTimers.has(listId) && !retryScheduled.has(listId)) {
           retryScheduled.add(listId);
           const timer = setTimeout(() => {
@@ -166916,7 +166952,7 @@
   async function ensureFresh(listId, urls) {
     const existing = readCache(listId);
     if (urls.length === 0) return existing;
-    if (!isFresh(existing)) {
+    if (!isFresh(existing) || !sameSources(existing, urls)) {
       refresh(listId, urls).catch(() => {
       });
     }
@@ -169443,6 +169479,7 @@
     if (!listId) return "idle";
     const cache2 = readCache(listId);
     if (cache2 && Object.keys(cache2.index).length > 0) return "ready";
+    if (cache2?.failures && cache2.failures.length > 0) return "error";
     if (urls.length === 0) return "empty";
     return "loading";
   }
@@ -169742,7 +169779,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-BLzBZU/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-1kB5hk/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

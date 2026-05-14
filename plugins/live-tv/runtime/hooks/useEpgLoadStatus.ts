@@ -9,6 +9,7 @@ function deriveStatus(listId: string | null, urls: string[]): EpgLoadStatus {
   if (!listId) return 'idle'
   const cache = readCache(listId)
   if (cache && Object.keys(cache.index).length > 0) return 'ready'
+  if (cache?.failures && cache.failures.length > 0) return 'error'
   if (urls.length === 0) return 'empty'
   return 'loading'
 }

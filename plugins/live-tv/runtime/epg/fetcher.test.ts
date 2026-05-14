@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { fetchEpg } from './fetcher'
+import { EpgFetchError, fetchEpg } from './fetcher'
 
 beforeEach(() => {
   vi.useFakeTimers()
@@ -32,12 +32,23 @@ describe('fetchEpg', () => {
     const init = call[1]
     expect(init.method).toBe('POST')
     expect(JSON.parse(init.body)).toEqual({ urls: ['https://x/epg.xml'] })
-    expect(result).toEqual(responseBody)
+    expect(result).toEqual({ ...responseBody, requestedSources: ['https://x/epg.xml'] })
   })
 
   it('throws on non-OK response', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('boom', { status: 502 })))
     await expect(fetchEpg(['https://x/y'])).rejects.toThrow(/502/)
+  })
+
+  it('includes source failures from non-OK xmltv responses', async () => {
+    const failures = [{ url: 'https://x/y', error: 'HTTP 404' }]
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ failures }), { status: 502 })))
+
+    await expect(fetchEpg(['https://x/y'])).rejects.toMatchObject({
+      name: 'EpgFetchError',
+      status: 502,
+      failures,
+    } satisfies Partial<EpgFetchError>)
   })
 
   it('throws when response body lacks index field', async () => {

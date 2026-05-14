@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ensureFresh, readCache, __resetForTests } from './cache'
 import * as sdk from '@/lib/plugin-sdk'
+import { EpgFetchError } from './fetcher'
 import * as fetcherModule from './fetcher'
 import type { EpgCacheEntry } from './types'
 
@@ -35,6 +36,18 @@ describe('cache', () => {
     const fetchSpy = vi.spyOn(fetcherModule, 'fetchEpg')
     expect(await ensureFresh('L1', ['u'])).toEqual(fresh)
     expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it('refreshes immediately when urls changed even if cache is fresh', async () => {
+    const fresh = { ...sampleCache, fetchedAt: Date.now() - 60_000, requestedSources: ['u'] }
+    vi.spyOn(sdk, 'readPluginJson').mockReturnValue(fresh)
+    const next: EpgCacheEntry = { ...sampleCache, fetchedAt: Date.now(), sources: ['v'], requestedSources: ['v'] }
+    const fetchSpy = vi.spyOn(fetcherModule, 'fetchEpg').mockResolvedValue(next)
+    vi.spyOn(sdk, 'writePluginJson').mockImplementation(() => {})
+
+    expect(await ensureFresh('L1', ['v'])).toEqual(fresh)
+    await vi.runAllTimersAsync()
+    expect(fetchSpy).toHaveBeenCalledWith(['v'])
   })
 
   it('kicks background refresh on stale, returns stale immediately, writes fresh after', async () => {
@@ -75,5 +88,23 @@ describe('cache', () => {
     await vi.runAllTimersAsync()
     expect(immediate).toEqual(stale)
     expect(writeSpy).not.toHaveBeenCalled()
+  })
+
+  it('writes failed source diagnostics for xmltv 502 responses', async () => {
+    vi.spyOn(sdk, 'readPluginJson').mockReturnValue(null)
+    const failure = { url: 'https://bad.example/epg.xml', error: 'HTTP 404' }
+    vi.spyOn(fetcherModule, 'fetchEpg').mockRejectedValue(
+      new EpgFetchError('/api/xmltv returned 502', 502, [failure]),
+    )
+    const writeSpy = vi.spyOn(sdk, 'writePluginJson').mockImplementation(() => {})
+
+    await ensureFresh('L1', ['https://bad.example/epg.xml'])
+    await vi.runAllTimersAsync()
+    expect(writeSpy).toHaveBeenCalledWith('com.lumio.live-tv', 'epg_cache:L1', expect.objectContaining({
+      index: {},
+      sources: [],
+      requestedSources: ['https://bad.example/epg.xml'],
+      failures: [failure],
+    }))
   })
 })

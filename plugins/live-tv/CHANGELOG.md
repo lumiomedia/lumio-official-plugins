@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.20
+
+- Refresh EPG immediately when the configured XMLTV URL list changes instead of treating the previous cache as fresh for six hours.
+- Persist XMLTV fetch failures into the EPG cache so settings can show source-specific errors such as `HTTP 404` when all sources fail.
+
 ## 0.3.19
 
 - Improve EPG matching across XMLTV providers by using each source's `<channel><display-name>` values as aliases for provider-specific channel ids. This lets playlists with names like `TV3 FHD SE` match XMLTV feeds whose programme ids do not resemble the M3U channel name, as long as the XMLTV channel declares a useful display name.
