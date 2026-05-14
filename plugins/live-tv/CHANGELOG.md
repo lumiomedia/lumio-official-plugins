@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.23
+
+- Make the full EPG guide sit flush to the top of the player window.
+- Keep the channel column and programme timeline vertically scroll-synced.
+- Add an "Alla / vald kanal" filter for focusing the guide on the selected channel.
+
 ## 0.3.22
 
 - Make desktop plugin storage prefer Lumio's native storage snapshot so large EPG caches remain readable when WKWebView localStorage has a stale smaller value.

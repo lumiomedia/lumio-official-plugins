@@ -58,9 +58,12 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
   const [activeListId, setActiveListId] = useState<string | null>(null)
   const [nowTick, setNowTick] = useState(() => Date.now())
   const [selectedChannel, setSelectedChannel] = useState<M3uChannel | null>(null)
+  const [channelFilter, setChannelFilter] = useState<M3uChannel | null>(null)
   const [selectedProgramme, setSelectedProgramme] = useState<EpgProgramme | null>(null)
   const timelineRef = useRef<HTMLDivElement>(null)
   const bodyRef = useRef<HTMLDivElement>(null)
+  const channelListRef = useRef<HTMLDivElement>(null)
+  const syncingScrollRef = useRef(false)
 
   useEffect(() => {
     const sync = () => setLists(getLiveTvLists())
@@ -118,7 +121,7 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
     [cache],
   )
 
-  const rows = useMemo<ChannelRow[]>(() => {
+  const allRows = useMemo<ChannelRow[]>(() => {
     if (!activeList) return []
     const out: ChannelRow[] = []
     for (const channel of activeList.channels) {
@@ -131,6 +134,18 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
     }
     return out
   }, [activeList, cache, nameIndex, windowStart, windowEnd])
+
+  const rows = useMemo<ChannelRow[]>(() => {
+    if (!channelFilter) return allRows
+    return allRows.filter((row) => row.channel.url === channelFilter.url)
+  }, [allRows, channelFilter])
+
+  useEffect(() => {
+    if (!channelFilter) return
+    if (!allRows.some((row) => row.channel.url === channelFilter.url)) {
+      setChannelFilter(null)
+    }
+  }, [allRows, channelFilter])
 
   const guideStats = useMemo(() => {
     if (!activeList) return { matched: 0, totalProgrammes: 0, sourceChannels: 0 }
@@ -158,6 +173,22 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
     target.scrollLeft = Math.max(0, nowOffset - target.clientWidth * 0.15)
   }, [open, windowStart])
 
+  useEffect(() => {
+    if (!open) return
+    if (bodyRef.current) bodyRef.current.scrollTop = 0
+    if (channelListRef.current) channelListRef.current.scrollTop = 0
+  }, [open, channelFilter])
+
+  function syncVerticalScroll(source: 'body' | 'channels', scrollTop: number): void {
+    if (syncingScrollRef.current) return
+    syncingScrollRef.current = true
+    const target = source === 'body' ? channelListRef.current : bodyRef.current
+    if (target && target.scrollTop !== scrollTop) target.scrollTop = scrollTop
+    window.requestAnimationFrame(() => {
+      syncingScrollRef.current = false
+    })
+  }
+
   if (!open) return null
 
   const nowLineLeft = (Date.now() - windowStart) * PIXELS_PER_MS
@@ -179,7 +210,10 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
               : `EPG hämtad (${guideStats.sourceChannels} kanaler, ${guideStats.matched} matchade), men inga program ligger i tidsfönstret.`
 
   return (
-    <div className="fixed inset-0 z-[80] flex flex-col bg-slate-950/95 backdrop-blur-xl">
+    <div
+      className="fixed inset-x-0 bottom-0 z-[80] flex flex-col bg-slate-950/95 backdrop-blur-xl"
+      style={{ top: -1 }}
+    >
       <div className="flex items-center justify-between gap-4 border-b border-white/5 px-5 py-3">
         <div className="flex min-w-0 items-center gap-3">
           <span className="text-[10px] uppercase tracking-[0.24em] text-emerald-300/80">EPG</span>
@@ -199,6 +233,30 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
           ) : null}
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setChannelFilter(null)}
+            className={`rounded-full border px-3 py-1.5 text-[11px] uppercase tracking-[0.22em] transition ${
+              channelFilter
+                ? 'border-white/15 bg-white/5 text-slate-300 hover:border-white/35 hover:text-white'
+                : 'border-emerald-300/50 bg-emerald-400/15 text-emerald-200'
+            }`}
+          >
+            Alla
+          </button>
+          <button
+            type="button"
+            disabled={!selectedChannel}
+            onClick={() => selectedChannel && setChannelFilter(selectedChannel)}
+            className={`max-w-[14rem] truncate rounded-full border px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] transition disabled:cursor-not-allowed disabled:opacity-35 ${
+              channelFilter
+                ? 'border-emerald-300/50 bg-emerald-400/15 text-emerald-200'
+                : 'border-white/15 bg-white/5 text-slate-300 hover:border-white/35 hover:text-white'
+            }`}
+            title={selectedChannel?.name ?? 'Välj en kanal'}
+          >
+            {selectedChannel ? selectedChannel.name : 'Vald kanal'}
+          </button>
           <button
             type="button"
             onClick={() => {
@@ -230,9 +288,9 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
             <div className="border-b border-white/5 bg-black/40" style={{ height: HEAD_HEIGHT }} />
             <div
               className="thin-slider-scrollbar flex-1 overflow-y-auto"
-              ref={(el) => {
-                if (!el || !bodyRef.current) return
-                el.scrollTop = bodyRef.current.scrollTop
+              ref={channelListRef}
+              onScroll={(event) => {
+                syncVerticalScroll('channels', event.currentTarget.scrollTop)
               }}
             >
               {rows.map(({ channel, list }) => {
@@ -243,9 +301,15 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
                     key={`${list.id}::${channel.url}`}
                     type="button"
                     onClick={() => onPlayChannel(channel, list)}
+                    onDoubleClick={() => setChannelFilter(channel)}
                     onMouseEnter={() => setSelectedChannel(channel)}
+                    onFocus={() => setSelectedChannel(channel)}
                     className={`flex w-full items-center gap-3 border-b border-white/5 px-3 text-left transition ${
-                      isSelected ? 'bg-emerald-500/10' : 'hover:bg-white/5'
+                      channelFilter?.url === channel.url
+                        ? 'bg-emerald-500/15'
+                        : isSelected
+                          ? 'bg-emerald-500/10'
+                          : 'hover:bg-white/5'
                     }`}
                     style={{ height: ROW_HEIGHT }}
                   >
@@ -294,6 +358,7 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
                 if (timelineRef.current) {
                   timelineRef.current.scrollLeft = event.currentTarget.scrollLeft
                 }
+                syncVerticalScroll('body', event.currentTarget.scrollTop)
               }}
               className="thin-slider-scrollbar flex-1 overflow-auto"
               style={{ height: `calc(100% - ${HEAD_HEIGHT}px)` }}

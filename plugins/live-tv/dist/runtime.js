@@ -48,7 +48,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-pKPYRX/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-HQsd5n/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -97,7 +97,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-pKPYRX/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-HQsd5n/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -29690,7 +29690,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-pKPYRX/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-HQsd5n/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -29700,7 +29700,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-pKPYRX/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-HQsd5n/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -165771,10 +165771,10 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-pKPYRX/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-HQsd5n/auth-capabilities-shim.ts
   var sdk;
   var init_auth_capabilities_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-pKPYRX/auth-capabilities-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-HQsd5n/auth-capabilities-shim.ts"() {
       sdk = globalThis.__lumioPluginRuntime?.sdk;
     }
   });
@@ -168100,9 +168100,12 @@
     const [activeListId, setActiveListId] = useState(null);
     const [nowTick, setNowTick] = useState(() => Date.now());
     const [selectedChannel, setSelectedChannel] = useState(null);
+    const [channelFilter, setChannelFilter] = useState(null);
     const [selectedProgramme, setSelectedProgramme] = useState(null);
     const timelineRef = useRef(null);
     const bodyRef = useRef(null);
+    const channelListRef = useRef(null);
+    const syncingScrollRef = useRef(false);
     useEffect(() => {
       const sync2 = () => setLists(getLiveTvLists());
       sync2();
@@ -168148,7 +168151,7 @@
       () => cache2 ? buildNameToTvgIdIndex(cache2) : /* @__PURE__ */ new Map(),
       [cache2]
     );
-    const rows = useMemo(() => {
+    const allRows = useMemo(() => {
       if (!activeList) return [];
       const out = [];
       for (const channel of activeList.channels) {
@@ -168161,6 +168164,16 @@
       }
       return out;
     }, [activeList, cache2, nameIndex, windowStart, windowEnd]);
+    const rows = useMemo(() => {
+      if (!channelFilter) return allRows;
+      return allRows.filter((row) => row.channel.url === channelFilter.url);
+    }, [allRows, channelFilter]);
+    useEffect(() => {
+      if (!channelFilter) return;
+      if (!allRows.some((row) => row.channel.url === channelFilter.url)) {
+        setChannelFilter(null);
+      }
+    }, [allRows, channelFilter]);
     const guideStats = useMemo(() => {
       if (!activeList) return { matched: 0, totalProgrammes: 0, sourceChannels: 0 };
       let matched = 0;
@@ -168184,201 +168197,245 @@
       const nowOffset = (Date.now() - windowStart) * PIXELS_PER_MS;
       target.scrollLeft = Math.max(0, nowOffset - target.clientWidth * 0.15);
     }, [open, windowStart]);
+    useEffect(() => {
+      if (!open) return;
+      if (bodyRef.current) bodyRef.current.scrollTop = 0;
+      if (channelListRef.current) channelListRef.current.scrollTop = 0;
+    }, [open, channelFilter]);
+    function syncVerticalScroll(source, scrollTop) {
+      if (syncingScrollRef.current) return;
+      syncingScrollRef.current = true;
+      const target = source === "body" ? channelListRef.current : bodyRef.current;
+      if (target && target.scrollTop !== scrollTop) target.scrollTop = scrollTop;
+      window.requestAnimationFrame(() => {
+        syncingScrollRef.current = false;
+      });
+    }
     if (!open) return null;
     const nowLineLeft = (Date.now() - windowStart) * PIXELS_PER_MS;
     const timelineWidth = (windowEnd - windowStart) * PIXELS_PER_MS;
     const hasSources = epgUrls.length > 0;
     const failures = cache2?.failures ?? [];
     const emptyMessage = !activeList ? "Ingen Live TV-lista vald." : !hasSources ? "Ingen EPG-k\xE4lla \xE4r kopplad till den h\xE4r Live TV-listan." : !cache2 ? "H\xE4mtar guidedata..." : failures.length > 0 && guideStats.sourceChannels === 0 ? `EPG-k\xE4llan kunde inte h\xE4mtas: ${failures.map((failure) => failure.error).join(", ")}` : guideStats.sourceChannels === 0 ? "EPG-k\xE4llan h\xE4mtades men inneh\xF6ll inga program." : guideStats.matched === 0 ? `EPG h\xE4mtad (${guideStats.sourceChannels} kanaler), men inga av listans kanaler matchade.` : `EPG h\xE4mtad (${guideStats.sourceChannels} kanaler, ${guideStats.matched} matchade), men inga program ligger i tidsf\xF6nstret.`;
-    return /* @__PURE__ */ jsxs("div", { className: "fixed inset-0 z-[80] flex flex-col bg-slate-950/95 backdrop-blur-xl", children: [
-      /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-4 border-b border-white/5 px-5 py-3", children: [
-        /* @__PURE__ */ jsxs("div", { className: "flex min-w-0 items-center gap-3", children: [
-          /* @__PURE__ */ jsx("span", { className: "text-[10px] uppercase tracking-[0.24em] text-emerald-300/80", children: "EPG" }),
-          /* @__PURE__ */ jsx("h2", { className: "truncate text-base font-semibold text-white", children: "TV-tabl\xE5" }),
-          lists.length > 1 ? /* @__PURE__ */ jsx(
-            "select",
-            {
-              value: activeListId ?? "",
-              onChange: (event) => setActiveListId(event.target.value || null),
-              className: "rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-slate-200 outline-none transition hover:border-white/30 focus:border-white/40",
-              children: lists.map((list) => /* @__PURE__ */ jsx("option", { value: list.id, className: "bg-slate-900", children: list.name }, list.id))
-            }
-          ) : null
-        ] }),
-        /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
-          /* @__PURE__ */ jsx(
-            "button",
-            {
-              type: "button",
-              onClick: () => {
-                const target = bodyRef.current;
-                if (!target) return;
-                target.scrollLeft = Math.max(0, nowLineLeft - target.clientWidth * 0.15);
-              },
-              className: "rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[11px] uppercase tracking-[0.22em] text-slate-200 transition hover:border-white/35 hover:text-white",
-              children: "Nu"
-            }
-          ),
-          /* @__PURE__ */ jsx(
-            "button",
-            {
-              type: "button",
-              onClick: onClose,
-              className: "rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[11px] uppercase tracking-[0.22em] text-slate-200 transition hover:border-white/35 hover:text-white",
-              children: "St\xE4ng"
-            }
-          )
-        ] })
-      ] }),
-      rows.length === 0 ? /* @__PURE__ */ jsx("div", { className: "flex flex-1 items-center justify-center px-6 text-center text-sm text-white/50", children: emptyMessage }) : /* @__PURE__ */ jsxs("div", { className: "flex flex-1 overflow-hidden", children: [
-        /* @__PURE__ */ jsxs("div", { className: "flex shrink-0 flex-col border-r border-white/5", style: { width: CHANNEL_COL_WIDTH }, children: [
-          /* @__PURE__ */ jsx("div", { className: "border-b border-white/5 bg-black/40", style: { height: HEAD_HEIGHT } }),
-          /* @__PURE__ */ jsx(
-            "div",
-            {
-              className: "thin-slider-scrollbar flex-1 overflow-y-auto",
-              ref: (el) => {
-                if (!el || !bodyRef.current) return;
-                el.scrollTop = bodyRef.current.scrollTop;
-              },
-              children: rows.map(({ channel, list }) => {
-                const logoSrc = getLiveTvLogoSrc(channel.logo);
-                const isSelected = selectedChannel === channel;
-                return /* @__PURE__ */ jsxs(
-                  "button",
-                  {
-                    type: "button",
-                    onClick: () => onPlayChannel(channel, list),
-                    onMouseEnter: () => setSelectedChannel(channel),
-                    className: `flex w-full items-center gap-3 border-b border-white/5 px-3 text-left transition ${isSelected ? "bg-emerald-500/10" : "hover:bg-white/5"}`,
-                    style: { height: ROW_HEIGHT },
-                    children: [
-                      logoSrc ? /* @__PURE__ */ jsx(
-                        LiveTvLogoImage,
-                        {
-                          src: logoSrc,
-                          alt: "",
-                          className: "h-9 w-12 shrink-0 rounded object-contain bg-slate-800/90 p-0.5"
-                        }
-                      ) : /* @__PURE__ */ jsx("div", { className: "h-9 w-12 shrink-0 rounded bg-slate-800" }),
-                      /* @__PURE__ */ jsxs("div", { className: "min-w-0 flex-1", children: [
-                        /* @__PURE__ */ jsx("p", { className: "truncate text-[12px] font-semibold text-white", children: channel.name }),
-                        channel.group ? /* @__PURE__ */ jsx("p", { className: "truncate text-[10px] text-slate-500", children: channel.group }) : null
-                      ] })
-                    ]
+    return /* @__PURE__ */ jsxs(
+      "div",
+      {
+        className: "fixed inset-x-0 bottom-0 z-[80] flex flex-col bg-slate-950/95 backdrop-blur-xl",
+        style: { top: -1 },
+        children: [
+          /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-4 border-b border-white/5 px-5 py-3", children: [
+            /* @__PURE__ */ jsxs("div", { className: "flex min-w-0 items-center gap-3", children: [
+              /* @__PURE__ */ jsx("span", { className: "text-[10px] uppercase tracking-[0.24em] text-emerald-300/80", children: "EPG" }),
+              /* @__PURE__ */ jsx("h2", { className: "truncate text-base font-semibold text-white", children: "TV-tabl\xE5" }),
+              lists.length > 1 ? /* @__PURE__ */ jsx(
+                "select",
+                {
+                  value: activeListId ?? "",
+                  onChange: (event) => setActiveListId(event.target.value || null),
+                  className: "rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-slate-200 outline-none transition hover:border-white/30 focus:border-white/40",
+                  children: lists.map((list) => /* @__PURE__ */ jsx("option", { value: list.id, className: "bg-slate-900", children: list.name }, list.id))
+                }
+              ) : null
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
+              /* @__PURE__ */ jsx(
+                "button",
+                {
+                  type: "button",
+                  onClick: () => setChannelFilter(null),
+                  className: `rounded-full border px-3 py-1.5 text-[11px] uppercase tracking-[0.22em] transition ${channelFilter ? "border-white/15 bg-white/5 text-slate-300 hover:border-white/35 hover:text-white" : "border-emerald-300/50 bg-emerald-400/15 text-emerald-200"}`,
+                  children: "Alla"
+                }
+              ),
+              /* @__PURE__ */ jsx(
+                "button",
+                {
+                  type: "button",
+                  disabled: !selectedChannel,
+                  onClick: () => selectedChannel && setChannelFilter(selectedChannel),
+                  className: `max-w-[14rem] truncate rounded-full border px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] transition disabled:cursor-not-allowed disabled:opacity-35 ${channelFilter ? "border-emerald-300/50 bg-emerald-400/15 text-emerald-200" : "border-white/15 bg-white/5 text-slate-300 hover:border-white/35 hover:text-white"}`,
+                  title: selectedChannel?.name ?? "V\xE4lj en kanal",
+                  children: selectedChannel ? selectedChannel.name : "Vald kanal"
+                }
+              ),
+              /* @__PURE__ */ jsx(
+                "button",
+                {
+                  type: "button",
+                  onClick: () => {
+                    const target = bodyRef.current;
+                    if (!target) return;
+                    target.scrollLeft = Math.max(0, nowLineLeft - target.clientWidth * 0.15);
                   },
-                  `${list.id}::${channel.url}`
-                );
-              })
-            }
-          )
-        ] }),
-        /* @__PURE__ */ jsxs("div", { className: "relative flex-1 overflow-hidden", children: [
-          /* @__PURE__ */ jsx(
-            "div",
-            {
-              ref: timelineRef,
-              className: "thin-slider-scrollbar overflow-x-auto overflow-y-hidden border-b border-white/5 bg-black/40",
-              style: { height: HEAD_HEIGHT },
-              children: /* @__PURE__ */ jsx("div", { className: "relative flex", style: { width: timelineWidth, height: HEAD_HEIGHT }, children: halfHourSlots.map((slot) => /* @__PURE__ */ jsx(
+                  className: "rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[11px] uppercase tracking-[0.22em] text-slate-200 transition hover:border-white/35 hover:text-white",
+                  children: "Nu"
+                }
+              ),
+              /* @__PURE__ */ jsx(
+                "button",
+                {
+                  type: "button",
+                  onClick: onClose,
+                  className: "rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[11px] uppercase tracking-[0.22em] text-slate-200 transition hover:border-white/35 hover:text-white",
+                  children: "St\xE4ng"
+                }
+              )
+            ] })
+          ] }),
+          rows.length === 0 ? /* @__PURE__ */ jsx("div", { className: "flex flex-1 items-center justify-center px-6 text-center text-sm text-white/50", children: emptyMessage }) : /* @__PURE__ */ jsxs("div", { className: "flex flex-1 overflow-hidden", children: [
+            /* @__PURE__ */ jsxs("div", { className: "flex shrink-0 flex-col border-r border-white/5", style: { width: CHANNEL_COL_WIDTH }, children: [
+              /* @__PURE__ */ jsx("div", { className: "border-b border-white/5 bg-black/40", style: { height: HEAD_HEIGHT } }),
+              /* @__PURE__ */ jsx(
                 "div",
                 {
-                  className: "flex h-full shrink-0 items-center border-r border-white/5 px-2 text-[10px] uppercase tracking-[0.18em] text-slate-400",
-                  style: { width: HOUR_WIDTH / 2 },
-                  children: formatHour(slot)
-                },
-                slot
-              )) })
-            }
-          ),
-          /* @__PURE__ */ jsx(
-            "div",
-            {
-              ref: bodyRef,
-              onScroll: (event) => {
-                if (timelineRef.current) {
-                  timelineRef.current.scrollLeft = event.currentTarget.scrollLeft;
-                }
-              },
-              className: "thin-slider-scrollbar flex-1 overflow-auto",
-              style: { height: `calc(100% - ${HEAD_HEIGHT}px)` },
-              children: /* @__PURE__ */ jsxs("div", { className: "relative", style: { width: timelineWidth }, children: [
-                rows.map(({ channel, list, programmes }, rowIdx) => /* @__PURE__ */ jsx(
-                  "div",
-                  {
-                    className: "relative border-b border-white/5",
-                    style: { height: ROW_HEIGHT },
-                    children: programmes.map((p, i) => {
-                      const startClamped = Math.max(p.start, windowStart);
-                      const stopClamped = Math.min(p.stop, windowEnd);
-                      const left = (startClamped - windowStart) * PIXELS_PER_MS;
-                      const width = Math.max(8, (stopClamped - startClamped) * PIXELS_PER_MS);
-                      const isLive = p.start <= nowTick && p.stop > nowTick;
-                      const isPast = p.stop <= nowTick;
-                      const isSelected = selectedProgramme === p;
-                      const progress2 = isLive ? Math.min(100, Math.max(0, (nowTick - p.start) / (p.stop - p.start) * 100)) : 0;
-                      return /* @__PURE__ */ jsxs(
-                        "button",
-                        {
-                          type: "button",
-                          onClick: () => {
-                            setSelectedProgramme(p);
-                            setSelectedChannel(channel);
-                          },
-                          onDoubleClick: () => onPlayChannel(channel, list),
-                          className: `absolute top-1 flex flex-col justify-center overflow-hidden rounded-md border px-2 text-left transition ${isLive ? "border-emerald-300/60 bg-emerald-500/15 hover:bg-emerald-500/25" : isPast ? "border-white/5 bg-white/[0.02] text-white/40" : "border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"} ${isSelected ? "ring-2 ring-emerald-300/60" : ""}`,
-                          style: { left, width, height: ROW_HEIGHT - 8 },
-                          title: p.title,
-                          children: [
-                            /* @__PURE__ */ jsx("div", { className: `truncate text-[12px] font-semibold ${isLive ? "text-white" : "text-slate-100"}`, children: p.title }),
-                            /* @__PURE__ */ jsxs("div", { className: "truncate text-[10px] text-white/55", children: [
-                              formatHour(p.start),
-                              isLive ? ` \u2022 ${formatRemaining3(p.stop, nowTick)} kvar` : ""
-                            ] }),
-                            isLive ? /* @__PURE__ */ jsx(
-                              "div",
-                              {
-                                className: "absolute inset-x-0 bottom-0 h-0.5 bg-emerald-400",
-                                style: { width: `${progress2}%` }
-                              }
-                            ) : null
-                          ]
-                        },
-                        `${rowIdx}-${p.start}-${i}`
-                      );
-                    })
+                  className: "thin-slider-scrollbar flex-1 overflow-y-auto",
+                  ref: channelListRef,
+                  onScroll: (event) => {
+                    syncVerticalScroll("channels", event.currentTarget.scrollTop);
                   },
-                  `${list.id}::${channel.url}`
-                )),
-                nowLineLeft >= 0 && nowLineLeft <= timelineWidth ? /* @__PURE__ */ jsx(
-                  "div",
-                  {
-                    className: "pointer-events-none absolute top-0 bottom-0 z-[5] w-0.5 bg-red-500/80",
-                    style: { left: nowLineLeft },
-                    children: /* @__PURE__ */ jsx("div", { className: "absolute -top-1 -left-[5px] h-3 w-3 rounded-full bg-red-500/90 shadow-[0_0_12px_rgba(239,68,68,0.7)]" })
-                  }
-                ) : null
-              ] })
-            }
-          )
-        ] })
-      ] }),
-      selectedProgramme && selectedChannel ? /* @__PURE__ */ jsxs("div", { className: "border-t border-white/5 bg-black/60 px-5 py-3", children: [
-        /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3", children: [
-          /* @__PURE__ */ jsxs("div", { className: "text-[10px] uppercase tracking-[0.22em] text-emerald-300/80", children: [
-            formatHour(selectedProgramme.start),
-            " \u2013 ",
-            formatHour(selectedProgramme.stop)
+                  children: rows.map(({ channel, list }) => {
+                    const logoSrc = getLiveTvLogoSrc(channel.logo);
+                    const isSelected = selectedChannel === channel;
+                    return /* @__PURE__ */ jsxs(
+                      "button",
+                      {
+                        type: "button",
+                        onClick: () => onPlayChannel(channel, list),
+                        onDoubleClick: () => setChannelFilter(channel),
+                        onMouseEnter: () => setSelectedChannel(channel),
+                        onFocus: () => setSelectedChannel(channel),
+                        className: `flex w-full items-center gap-3 border-b border-white/5 px-3 text-left transition ${channelFilter?.url === channel.url ? "bg-emerald-500/15" : isSelected ? "bg-emerald-500/10" : "hover:bg-white/5"}`,
+                        style: { height: ROW_HEIGHT },
+                        children: [
+                          logoSrc ? /* @__PURE__ */ jsx(
+                            LiveTvLogoImage,
+                            {
+                              src: logoSrc,
+                              alt: "",
+                              className: "h-9 w-12 shrink-0 rounded object-contain bg-slate-800/90 p-0.5"
+                            }
+                          ) : /* @__PURE__ */ jsx("div", { className: "h-9 w-12 shrink-0 rounded bg-slate-800" }),
+                          /* @__PURE__ */ jsxs("div", { className: "min-w-0 flex-1", children: [
+                            /* @__PURE__ */ jsx("p", { className: "truncate text-[12px] font-semibold text-white", children: channel.name }),
+                            channel.group ? /* @__PURE__ */ jsx("p", { className: "truncate text-[10px] text-slate-500", children: channel.group }) : null
+                          ] })
+                        ]
+                      },
+                      `${list.id}::${channel.url}`
+                    );
+                  })
+                }
+              )
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: "relative flex-1 overflow-hidden", children: [
+              /* @__PURE__ */ jsx(
+                "div",
+                {
+                  ref: timelineRef,
+                  className: "thin-slider-scrollbar overflow-x-auto overflow-y-hidden border-b border-white/5 bg-black/40",
+                  style: { height: HEAD_HEIGHT },
+                  children: /* @__PURE__ */ jsx("div", { className: "relative flex", style: { width: timelineWidth, height: HEAD_HEIGHT }, children: halfHourSlots.map((slot) => /* @__PURE__ */ jsx(
+                    "div",
+                    {
+                      className: "flex h-full shrink-0 items-center border-r border-white/5 px-2 text-[10px] uppercase tracking-[0.18em] text-slate-400",
+                      style: { width: HOUR_WIDTH / 2 },
+                      children: formatHour(slot)
+                    },
+                    slot
+                  )) })
+                }
+              ),
+              /* @__PURE__ */ jsx(
+                "div",
+                {
+                  ref: bodyRef,
+                  onScroll: (event) => {
+                    if (timelineRef.current) {
+                      timelineRef.current.scrollLeft = event.currentTarget.scrollLeft;
+                    }
+                    syncVerticalScroll("body", event.currentTarget.scrollTop);
+                  },
+                  className: "thin-slider-scrollbar flex-1 overflow-auto",
+                  style: { height: `calc(100% - ${HEAD_HEIGHT}px)` },
+                  children: /* @__PURE__ */ jsxs("div", { className: "relative", style: { width: timelineWidth }, children: [
+                    rows.map(({ channel, list, programmes }, rowIdx) => /* @__PURE__ */ jsx(
+                      "div",
+                      {
+                        className: "relative border-b border-white/5",
+                        style: { height: ROW_HEIGHT },
+                        children: programmes.map((p, i) => {
+                          const startClamped = Math.max(p.start, windowStart);
+                          const stopClamped = Math.min(p.stop, windowEnd);
+                          const left = (startClamped - windowStart) * PIXELS_PER_MS;
+                          const width = Math.max(8, (stopClamped - startClamped) * PIXELS_PER_MS);
+                          const isLive = p.start <= nowTick && p.stop > nowTick;
+                          const isPast = p.stop <= nowTick;
+                          const isSelected = selectedProgramme === p;
+                          const progress2 = isLive ? Math.min(100, Math.max(0, (nowTick - p.start) / (p.stop - p.start) * 100)) : 0;
+                          return /* @__PURE__ */ jsxs(
+                            "button",
+                            {
+                              type: "button",
+                              onClick: () => {
+                                setSelectedProgramme(p);
+                                setSelectedChannel(channel);
+                              },
+                              onDoubleClick: () => onPlayChannel(channel, list),
+                              className: `absolute top-1 flex flex-col justify-center overflow-hidden rounded-md border px-2 text-left transition ${isLive ? "border-emerald-300/60 bg-emerald-500/15 hover:bg-emerald-500/25" : isPast ? "border-white/5 bg-white/[0.02] text-white/40" : "border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"} ${isSelected ? "ring-2 ring-emerald-300/60" : ""}`,
+                              style: { left, width, height: ROW_HEIGHT - 8 },
+                              title: p.title,
+                              children: [
+                                /* @__PURE__ */ jsx("div", { className: `truncate text-[12px] font-semibold ${isLive ? "text-white" : "text-slate-100"}`, children: p.title }),
+                                /* @__PURE__ */ jsxs("div", { className: "truncate text-[10px] text-white/55", children: [
+                                  formatHour(p.start),
+                                  isLive ? ` \u2022 ${formatRemaining3(p.stop, nowTick)} kvar` : ""
+                                ] }),
+                                isLive ? /* @__PURE__ */ jsx(
+                                  "div",
+                                  {
+                                    className: "absolute inset-x-0 bottom-0 h-0.5 bg-emerald-400",
+                                    style: { width: `${progress2}%` }
+                                  }
+                                ) : null
+                              ]
+                            },
+                            `${rowIdx}-${p.start}-${i}`
+                          );
+                        })
+                      },
+                      `${list.id}::${channel.url}`
+                    )),
+                    nowLineLeft >= 0 && nowLineLeft <= timelineWidth ? /* @__PURE__ */ jsx(
+                      "div",
+                      {
+                        className: "pointer-events-none absolute top-0 bottom-0 z-[5] w-0.5 bg-red-500/80",
+                        style: { left: nowLineLeft },
+                        children: /* @__PURE__ */ jsx("div", { className: "absolute -top-1 -left-[5px] h-3 w-3 rounded-full bg-red-500/90 shadow-[0_0_12px_rgba(239,68,68,0.7)]" })
+                      }
+                    ) : null
+                  ] })
+                }
+              )
+            ] })
           ] }),
-          /* @__PURE__ */ jsx("div", { className: "text-sm font-semibold text-white", children: selectedProgramme.title }),
-          /* @__PURE__ */ jsxs("span", { className: "text-[11px] text-slate-400", children: [
-            "p\xE5 ",
-            selectedChannel.name
-          ] })
-        ] }),
-        selectedProgramme.description ? /* @__PURE__ */ jsx("p", { className: "mt-1 line-clamp-2 text-xs text-white/60", children: selectedProgramme.description }) : null
-      ] }) : null
-    ] });
+          selectedProgramme && selectedChannel ? /* @__PURE__ */ jsxs("div", { className: "border-t border-white/5 bg-black/60 px-5 py-3", children: [
+            /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3", children: [
+              /* @__PURE__ */ jsxs("div", { className: "text-[10px] uppercase tracking-[0.22em] text-emerald-300/80", children: [
+                formatHour(selectedProgramme.start),
+                " \u2013 ",
+                formatHour(selectedProgramme.stop)
+              ] }),
+              /* @__PURE__ */ jsx("div", { className: "text-sm font-semibold text-white", children: selectedProgramme.title }),
+              /* @__PURE__ */ jsxs("span", { className: "text-[11px] text-slate-400", children: [
+                "p\xE5 ",
+                selectedChannel.name
+              ] })
+            ] }),
+            selectedProgramme.description ? /* @__PURE__ */ jsx("p", { className: "mt-1 line-clamp-2 text-xs text-white/60", children: selectedProgramme.description }) : null
+          ] }) : null
+        ]
+      }
+    );
   }
   var ROW_HEIGHT, HOUR_WIDTH, PIXELS_PER_MS, HEAD_HEIGHT, CHANNEL_COL_WIDTH, WINDOW_HOURS_BEFORE, WINDOW_HOURS_TOTAL;
   var init_live_tv_guide = __esm({
@@ -169755,7 +169812,7 @@
       useEpgNowNextLater,
       useEpgLoadStatus,
       useChannelSchedule,
-      version: "0.3.22"
+      version: "0.3.23"
     };
     try {
       window.dispatchEvent(new CustomEvent("lumio-live-tv-bridge-ready"));
@@ -169779,7 +169836,7 @@
   var LiveTvPlugin = {
     id: "com.lumio.live-tv",
     name: { en: "Live TV", sv: "Live TV" },
-    version: "0.3.22",
+    version: "0.3.23",
     description: {
       en: "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",
       sv: "Hantera M3U-k\xE4llor, bl\xE4ddra bland live-TV-kanaler och se EPG (nu/h\xE4rn\xE4st) i Lumio."
@@ -169804,7 +169861,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-pKPYRX/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-HQsd5n/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

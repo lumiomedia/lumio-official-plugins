@@ -23,7 +23,7 @@ if (typeof window !== 'undefined') {
     useEpgNowNextLater,
       useEpgLoadStatus,
       useChannelSchedule,
-    version: '0.3.22',
+    version: '0.3.23',
   }
   // Notify late-mounting consumers (e.g. core home-row badges that rendered
   // before the plugin runtime finished loading). The wrapper hook in core
@@ -62,7 +62,7 @@ function LiveTvBrowsePage({ params }: BrowsePageProps) {
 export const LiveTvPlugin: LumioPlugin = {
   id: 'com.lumio.live-tv',
   name: { en: 'Live TV', sv: 'Live TV' },
-  version: '0.3.22',
+  version: '0.3.23',
   description: {
     en: 'Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.',
     sv: 'Hantera M3U-källor, bläddra bland live-TV-kanaler och se EPG (nu/härnäst) i Lumio.',
