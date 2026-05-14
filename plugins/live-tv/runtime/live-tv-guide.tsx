@@ -63,7 +63,6 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
   const timelineRef = useRef<HTMLDivElement>(null)
   const bodyRef = useRef<HTMLDivElement>(null)
   const channelListRef = useRef<HTMLDivElement>(null)
-  const syncingScrollRef = useRef(false)
 
   useEffect(() => {
     const sync = () => setLists(getLiveTvLists())
@@ -180,13 +179,8 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
   }, [open, channelFilter])
 
   function syncVerticalScroll(source: 'body' | 'channels', scrollTop: number): void {
-    if (syncingScrollRef.current) return
-    syncingScrollRef.current = true
     const target = source === 'body' ? channelListRef.current : bodyRef.current
-    if (target && target.scrollTop !== scrollTop) target.scrollTop = scrollTop
-    window.requestAnimationFrame(() => {
-      syncingScrollRef.current = false
-    })
+    if (target && Math.abs(target.scrollTop - scrollTop) > 1) target.scrollTop = scrollTop
   }
 
   if (!open) return null
@@ -212,7 +206,7 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
   return (
     <div
       className="fixed inset-x-0 bottom-0 z-[80] flex flex-col bg-slate-950/95 backdrop-blur-xl"
-      style={{ top: -1 }}
+      style={{ top: -64, paddingTop: 64 }}
     >
       <div className="flex items-center justify-between gap-4 border-b border-white/5 px-5 py-3">
         <div className="flex min-w-0 items-center gap-3">
@@ -244,6 +238,23 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
           >
             Alla
           </button>
+          <select
+            value={channelFilter?.url ?? ''}
+            onChange={(event) => {
+              const next = allRows.find((row) => row.channel.url === event.target.value)?.channel ?? null
+              setChannelFilter(next)
+              if (next) setSelectedChannel(next)
+            }}
+            className="max-w-[16rem] rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[11px] uppercase tracking-[0.14em] text-slate-200 outline-none transition hover:border-white/35 focus:border-white/40"
+            title="Filtrera kanal"
+          >
+            <option value="" className="bg-slate-900">Alla kanaler</option>
+            {allRows.map(({ channel }) => (
+              <option key={channel.url} value={channel.url} className="bg-slate-900">
+                {channel.name}
+              </option>
+            ))}
+          </select>
           <button
             type="button"
             disabled={!selectedChannel}

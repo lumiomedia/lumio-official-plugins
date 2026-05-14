@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.25
+
+- Keep the current programme text only in the bottom player channel-info row, so it cannot show through the schedule/guide overlay.
+- Improve full-guide scroll synchronisation and add a direct channel filter dropdown.
+- Extend the full-guide backdrop above the webview content area to cover the visible titlebar gap.
+
 ## 0.3.24
 
 - Move the current programme text into the player channel-info row instead of drawing it as a separate overlay over the controls.

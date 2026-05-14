@@ -489,12 +489,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
               />
             )}
             <div className="min-w-0">
-              <div className="flex min-w-0 items-center gap-2">
-                <p className="truncate font-semibold text-white">{channel.name}</p>
-                <div className="min-w-0">
-                  <PlayerNowOverlay channel={channel} listId={listId} urls={epgUrls} />
-                </div>
-              </div>
+              <p className="truncate font-semibold text-white">{channel.name}</p>
               {channel.group && <p className="truncate text-xs text-slate-300">{channel.group}</p>}
             </div>
           </div>
@@ -574,7 +569,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
                 <span className="inline-flex h-6 shrink-0 items-center rounded-full border border-red-400/35 bg-red-500/15 px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-red-200">
                   Live
                 </span>
-                <p className="truncate text-sm font-semibold text-white">{channel.name}</p>
+                <p className="shrink-0 truncate text-sm font-semibold text-white">{channel.name}</p>
                 <div className="min-w-0 flex-1">
                   <PlayerNowOverlay channel={channel} listId={listId} urls={epgUrls} />
                 </div>
@@ -632,12 +627,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
                 />
               )}
               <div className="min-w-0">
-                <div className="flex min-w-0 items-center gap-2">
-                  <p className="truncate font-semibold text-white">{channel.name}</p>
-                  <div className="min-w-0">
-                    <PlayerNowOverlay channel={channel} listId={listId} urls={epgUrls} />
-                  </div>
-                </div>
+                <p className="truncate font-semibold text-white">{channel.name}</p>
                 {channel.group && <p className="truncate text-xs text-slate-300">{channel.group}</p>}
               </div>
             </div>

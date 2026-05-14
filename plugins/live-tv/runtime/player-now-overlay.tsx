@@ -24,7 +24,7 @@ export function PlayerNowOverlay({ channel, listId, urls }: Props) {
   const { now } = useEpgNowNextLater(channel, listId, urls)
   if (!now) return null
   return (
-    <span className="flex min-w-0 items-baseline gap-2 text-xs text-slate-300">
+    <span className="flex min-w-0 items-baseline gap-2 text-xs text-slate-300" title={now.title}>
       <span className="h-1 w-1 shrink-0 self-center rounded-full bg-slate-600" />
       <span className="shrink-0 text-[9px] font-semibold uppercase tracking-[0.18em] text-emerald-300/80">
         Nu
