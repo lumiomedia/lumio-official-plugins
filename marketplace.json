@@ -58,7 +58,7 @@
         "en": "Live TV",
         "sv": "Live TV"
       },
-      "version": "0.3.12",
+      "version": "0.3.13",
       "description": {
         "en": "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",
         "sv": "Hantera M3U-källor, bläddra bland live-TV-kanaler och se EPG (nu/härnäst) i Lumio."

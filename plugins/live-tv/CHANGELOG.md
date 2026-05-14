@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.13
+
+- Match the main video-player-modal MPV layout exactly: drop the `bg-black/60` fullscreen dimmer and the `bg-slate-950/30` card backdrop. Both painted opaque WebView pixels on top of the MPV NSView and turned the stream into a black mask. Player is now a transparent fullscreen overlay with only the top/bottom gradient chrome painting any pixels — the rest of the WebView stays transparent so MPV shows through.
+
 ## 0.3.12
 
 - Restore the pre-EPG centered-card MPV layout. The 0.3.x fullscreen overlay caused the MPV NSView to span the whole window and show as an opaque black layer above the stream — fixed regression where audio played but video was hidden under a black mask, and controls became hard to click. Bottom controls and the Guide overlay now live inside the card alongside the aspect-video stage.

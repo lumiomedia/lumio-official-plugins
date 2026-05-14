@@ -444,171 +444,159 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
     const content = (
       <div
         data-lumio-player-open="1"
-        className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm cursor-default"
+        className="fixed inset-0 z-[70] flex flex-col !mt-0 cursor-default"
         onMouseMove={revealControls}
         onPointerMove={revealControls}
         onFocusCapture={revealControls}
       >
-        <button
-          type="button"
-          aria-label={t('close')}
-          onClick={handleClose}
-          className="absolute inset-0"
+        <div
+          ref={stageRef}
+          className="vp-container relative flex flex-1 items-center justify-center bg-transparent"
         />
-
-        <div className="relative z-10 w-full max-w-5xl px-4">
-          <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-slate-950/30 shadow-2xl ring-1 ring-white/5">
-            <div
-              className="absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-4 bg-gradient-to-b from-black/75 via-black/45 to-transparent px-5 py-4 transition-opacity duration-200"
-              onMouseEnter={keepControlsVisible}
-              onMouseLeave={revealControls}
-              style={{
-                opacity: controlsVisible ? 1 : 0,
-                pointerEvents: controlsVisible ? 'auto' : 'none',
-              }}
-            >
-              <div className="min-w-0 flex items-center gap-3">
-                {logoSrc && (
-                  <LiveTvLogoImage
-                    src={logoSrc}
-                    alt=""
-                    className="h-8 w-8 rounded object-contain bg-slate-800/90 p-0.5"
-                  />
-                )}
-                <div className="min-w-0">
-                  <p className="truncate font-semibold text-white">{channel.name}</p>
-                  {channel.group && <p className="truncate text-xs text-slate-300">{channel.group}</p>}
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={handleClose}
-                className="rounded-full border border-white/15 bg-black/45 px-3 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-200 transition hover:border-white/35 hover:text-white"
-              >
-                {t('close')}
-              </button>
+        {loading && !error && (
+          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-transparent">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+          </div>
+        )}
+        {error && (
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-black px-4 text-center">
+            <p className="text-sm text-red-400">{error}</p>
+            <p className="text-xs text-slate-500">{t('liveTvStreamErrorHelp')}</p>
+          </div>
+        )}
+        <div
+          className="absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-4 bg-gradient-to-b from-black/75 via-black/45 to-transparent px-5 py-4 transition-opacity duration-200"
+          onMouseEnter={keepControlsVisible}
+          onMouseLeave={revealControls}
+          style={{
+            opacity: controlsVisible ? 1 : 0,
+            pointerEvents: controlsVisible ? 'auto' : 'none',
+          }}
+        >
+          <div className="min-w-0 flex items-center gap-3">
+            {logoSrc && (
+              <LiveTvLogoImage
+                src={logoSrc}
+                alt=""
+                className="h-8 w-8 rounded object-contain bg-slate-800/90 p-0.5"
+              />
+            )}
+            <div className="min-w-0">
+              <p className="truncate font-semibold text-white">{channel.name}</p>
+              {channel.group && <p className="truncate text-xs text-slate-300">{channel.group}</p>}
             </div>
-
-            <div
-              ref={stageRef}
-              className="relative aspect-video w-full overflow-hidden bg-transparent"
+          </div>
+          <button
+            type="button"
+            onClick={handleClose}
+            className="rounded-full border border-white/15 bg-black/45 px-3 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-200 transition hover:border-white/35 hover:text-white"
+          >
+            {t('close')}
+          </button>
+        </div>
+        <div
+          className="pointer-events-none absolute inset-0 transition-opacity duration-200"
+          style={{ opacity: controlsVisible ? 1 : 0 }}
+        >
+          <PlayerNowOverlay channel={channel} listId={listId} urls={epgUrls} />
+        </div>
+        <div
+          className="absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-5 pb-5 pt-12 transition-opacity duration-200"
+          onMouseEnter={keepControlsVisible}
+          onMouseLeave={revealControls}
+          style={{
+            opacity: controlsVisible ? 1 : 0,
+            pointerEvents: controlsVisible ? 'auto' : 'none',
+          }}
+        >
+          <div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-black/55 px-4 py-3 text-white shadow-2xl backdrop-blur-md">
+            <button
+              type="button"
+              onClick={toggleMpvPause}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/35 hover:bg-white/15"
+              aria-label={mpvPaused ? 'Play' : 'Pause'}
+              title={mpvPaused ? 'Play' : 'Pause'}
             >
-              {loading && !error && (
-                <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-transparent">
-                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-                </div>
+              {mpvPaused ? (
+                <svg className="h-5 w-5 translate-x-0.5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              ) : (
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M7 5h4v14H7zM13 5h4v14h-4z" />
+                </svg>
               )}
-              {error && (
-                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-black px-4 text-center">
-                  <p className="text-sm text-red-400">{error}</p>
-                  <p className="text-xs text-slate-500">{t('liveTvStreamErrorHelp')}</p>
-                </div>
-              )}
-              <div
-                className="pointer-events-none absolute inset-0 transition-opacity duration-200"
-                style={{ opacity: controlsVisible ? 1 : 0 }}
-              >
-                <PlayerNowOverlay channel={channel} listId={listId} urls={epgUrls} />
+            </button>
+            <button
+              type="button"
+              onClick={toggleFullscreen}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/35 hover:bg-white/15"
+              aria-label="Fullscreen"
+              title="Fullscreen"
+            >
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M8 3H3v5" />
+                <path d="M16 3h5v5" />
+                <path d="M21 16v5h-5" />
+                <path d="M3 16v5h5" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={() => setScheduleOpen((open) => !open)}
+              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-white transition ${
+                scheduleOpen
+                  ? 'border-emerald-300/60 bg-emerald-400/20 hover:border-emerald-200/80'
+                  : 'border-white/15 bg-white/10 hover:border-white/35 hover:bg-white/15'
+              }`}
+              aria-label="Guide"
+              title="Guide"
+              aria-pressed={scheduleOpen}
+            >
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="16" rx="2" />
+                <path d="M8 2v4" />
+                <path d="M16 2v4" />
+                <path d="M3 10h18" />
+                <path d="M7 14h4" />
+                <path d="M7 18h10" />
+              </svg>
+            </button>
+
+            <div className="min-w-0 flex-1">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="inline-flex h-6 shrink-0 items-center rounded-full border border-red-400/35 bg-red-500/15 px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-red-200">
+                  Live
+                </span>
+                <p className="truncate text-sm font-semibold text-white">{channel.name}</p>
               </div>
-            </div>
-
-            <div
-              className="bg-slate-950/60 px-5 pb-5 pt-3 transition-opacity duration-200"
-              onMouseEnter={keepControlsVisible}
-              onMouseLeave={revealControls}
-              style={{ opacity: controlsVisible ? 1 : 0, pointerEvents: controlsVisible ? 'auto' : 'none' }}
-            >
-              <div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-black/55 px-4 py-3 text-white shadow-2xl backdrop-blur-md">
-                <button
-                  type="button"
-                  onClick={toggleMpvPause}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/35 hover:bg-white/15"
-                  aria-label={mpvPaused ? 'Play' : 'Pause'}
-                  title={mpvPaused ? 'Play' : 'Pause'}
-                >
-                  {mpvPaused ? (
-                    <svg className="h-5 w-5 translate-x-0.5" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M8 5v14l11-7z" />
-                    </svg>
-                  ) : (
-                    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M7 5h4v14H7zM13 5h4v14h-4z" />
-                    </svg>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={toggleFullscreen}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/35 hover:bg-white/15"
-                  aria-label="Fullscreen"
-                  title="Fullscreen"
-                >
-                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M8 3H3v5" />
-                    <path d="M16 3h5v5" />
-                    <path d="M21 16v5h-5" />
-                    <path d="M3 16v5h5" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setScheduleOpen((open) => !open)}
-                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-white transition ${
-                    scheduleOpen
-                      ? 'border-emerald-300/60 bg-emerald-400/20 hover:border-emerald-200/80'
-                      : 'border-white/15 bg-white/10 hover:border-white/35 hover:bg-white/15'
-                  }`}
-                  aria-label="Guide"
-                  title="Guide"
-                  aria-pressed={scheduleOpen}
-                >
-                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="4" width="18" height="16" rx="2" />
-                    <path d="M8 2v4" />
-                    <path d="M16 2v4" />
-                    <path d="M3 10h18" />
-                    <path d="M7 14h4" />
-                    <path d="M7 18h10" />
-                  </svg>
-                </button>
-
-                <div className="min-w-0 flex-1">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <span className="inline-flex h-6 shrink-0 items-center rounded-full border border-red-400/35 bg-red-500/15 px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-red-200">
-                      Live
-                    </span>
-                    <p className="truncate text-sm font-semibold text-white">{channel.name}</p>
-                  </div>
-                  <div className="mt-1 flex min-w-0 items-center gap-3 text-xs text-slate-300">
-                    <span>{mpvPaused ? 'Paused' : 'Playing'}</span>
+              <div className="mt-1 flex min-w-0 items-center gap-3 text-xs text-slate-300">
+                <span>{mpvPaused ? 'Paused' : 'Playing'}</span>
+                <span className="text-slate-600">/</span>
+                <span>{formatClock(mpvTimePos)}</span>
+                {channel.group ? (
+                  <>
                     <span className="text-slate-600">/</span>
-                    <span>{formatClock(mpvTimePos)}</span>
-                    {channel.group ? (
-                      <>
-                        <span className="text-slate-600">/</span>
-                        <span className="truncate">{channel.group}</span>
-                      </>
-                    ) : null}
-                  </div>
-                </div>
-
-                <div className="hidden shrink-0 items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-slate-400 sm:flex">
-                  <span>MPV</span>
-                  <span className="h-1 w-1 rounded-full bg-slate-600" />
-                  <span>Live TV</span>
-                </div>
+                    <span className="truncate">{channel.group}</span>
+                  </>
+                ) : null}
               </div>
             </div>
 
-            <PlayerScheduleOverlay
-              channel={channel}
-              listId={listId}
-              urls={epgUrls}
-              open={scheduleOpen}
-              onClose={() => setScheduleOpen(false)}
-            />
+            <div className="hidden shrink-0 items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-slate-400 sm:flex">
+              <span>MPV</span>
+              <span className="h-1 w-1 rounded-full bg-slate-600" />
+              <span>Live TV</span>
+            </div>
           </div>
         </div>
+        <PlayerScheduleOverlay
+          channel={channel}
+          listId={listId}
+          urls={epgUrls}
+          open={scheduleOpen}
+          onClose={() => setScheduleOpen(false)}
+        />
       </div>
     )
 
