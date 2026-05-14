@@ -29,4 +29,30 @@ describe('EPG name matching', () => {
 
     expect(resolveTvgId('TV3HD.se', 'Some other name', index)).toBe('[TV3HD].TV3.HD.se')
   })
+
+  it('uses XMLTV channel display-names as aliases for provider-specific ids', () => {
+    const index = buildNameToTvgIdIndex({
+      index: {
+        'tv3.se.provider-specific': [{ title: 'News', start: 1, stop: 2 }],
+      },
+      fetchedAt: 1000,
+      sources: ['https://example.test/se.xml'],
+      sourceStats: [
+        {
+          url: 'https://example.test/se.xml',
+          ok: true,
+          channelCount: 1,
+          programmeCount: 1,
+          channels: [
+            {
+              id: 'tv3.se.provider-specific',
+              displayNames: ['TV3 HD', 'TV3'],
+            },
+          ],
+        },
+      ],
+    })
+
+    expect(resolveTvgId(null, 'TV3 FHD SE', index)).toBe('tv3.se.provider-specific')
+  })
 })

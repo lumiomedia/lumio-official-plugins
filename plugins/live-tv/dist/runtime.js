@@ -46,7 +46,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-VYll67/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-BLzBZU/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -95,7 +95,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-VYll67/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-BLzBZU/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -29688,7 +29688,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-VYll67/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-BLzBZU/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -29698,7 +29698,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-VYll67/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-BLzBZU/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -165498,7 +165498,6 @@
   var SCRAPER_PRESETS, DEFAULT_SCRAPER_URL;
   var init_stream_provider_settings = __esm({
     "lib/stream-provider-runtime/stream-provider-settings.ts"() {
-      "use strict";
       init_profile_storage();
       SCRAPER_PRESETS = [
         {
@@ -165766,10 +165765,10 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-VYll67/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-BLzBZU/auth-capabilities-shim.ts
   var sdk;
   var init_auth_capabilities_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-VYll67/auth-capabilities-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-BLzBZU/auth-capabilities-shim.ts"() {
       sdk = globalThis.__lumioPluginRuntime?.sdk;
     }
   });
@@ -166851,91 +166850,6 @@
     }
   });
 
-  // ../lumio-official-plugins/plugins/live-tv/runtime/live-tv-logo-image.tsx
-  function drainLogoQueue() {
-    while (activeLogoLoads < MAX_CONCURRENT_LOGO_LOADS && pendingLogoLoads.length > 0) {
-      activeLogoLoads += 1;
-      const next2 = pendingLogoLoads.shift();
-      next2?.();
-    }
-  }
-  function requestLogoLoad(start2) {
-    pendingLogoLoads.push(start2);
-    drainLogoQueue();
-  }
-  function finishLogoLoad(src) {
-    loadedLogoSrcs.add(src);
-    activeLogoLoads = Math.max(0, activeLogoLoads - 1);
-    drainLogoQueue();
-  }
-  function LiveTvLogoImage({ src, alt, className, onError }) {
-    const ref = useRef(null);
-    const [shouldLoad, setShouldLoad] = useState(false);
-    const [failed, setFailed] = useState(false);
-    useEffect(() => {
-      setShouldLoad(false);
-      setFailed(false);
-    }, [src]);
-    useEffect(() => {
-      if (loadedLogoSrcs.has(src)) {
-        setShouldLoad(true);
-        return;
-      }
-      const node = ref.current;
-      if (!node || shouldLoad) return;
-      if (typeof IntersectionObserver === "undefined") {
-        requestLogoLoad(() => setShouldLoad(true));
-        return;
-      }
-      const observer2 = new IntersectionObserver(
-        (entries) => {
-          if (entries.some((entry) => entry.isIntersecting)) {
-            requestLogoLoad(() => setShouldLoad(true));
-            observer2.disconnect();
-          }
-        },
-        { rootMargin: isTauriEnv ? "48px" : "160px" }
-      );
-      observer2.observe(node);
-      return () => observer2.disconnect();
-    }, [shouldLoad, src]);
-    if (failed) return null;
-    return /* @__PURE__ */ jsx(
-      "img",
-      {
-        ref,
-        src: shouldLoad ? src : void 0,
-        alt,
-        className,
-        loading: isTauriEnv ? void 0 : "lazy",
-        decoding: "async",
-        fetchPriority: "low",
-        draggable: false,
-        style: isTauriEnv ? void 0 : { contentVisibility: "auto" },
-        onLoad: () => finishLogoLoad(src),
-        onError: () => {
-          setFailed(true);
-          finishLogoLoad(src);
-          onError?.();
-        }
-      }
-    );
-  }
-  var loadedLogoSrcs, pendingLogoLoads, activeLogoLoads, MAX_CONCURRENT_LOGO_LOADS;
-  var init_live_tv_logo_image = __esm({
-    "../lumio-official-plugins/plugins/live-tv/runtime/live-tv-logo-image.tsx"() {
-      "use strict";
-      "use client";
-      init_react_shim();
-      init_plugin_sdk();
-      init_jsx_runtime_shim();
-      loadedLogoSrcs = /* @__PURE__ */ new Set();
-      pendingLogoLoads = [];
-      activeLogoLoads = 0;
-      MAX_CONCURRENT_LOGO_LOADS = isTauriEnv ? 1 : 8;
-    }
-  });
-
   // ../lumio-official-plugins/plugins/live-tv/runtime/epg/fetcher.ts
   async function fetchEpg(urls) {
     if (urls.length === 0) throw new Error("No URLs provided");
@@ -167023,6 +166937,127 @@
     }
   });
 
+  // ../lumio-official-plugins/plugins/live-tv/runtime/hooks/useLiveTvEpgCache.ts
+  function useLiveTvEpgCache(listId, urls) {
+    const [entry, setEntry] = useState(
+      () => listId ? readCache(listId) : null
+    );
+    useEffect(() => {
+      if (!listId) {
+        setEntry(null);
+        return;
+      }
+      let cancelled = false;
+      const sync2 = () => {
+        if (cancelled) return;
+        setEntry(readCache(listId));
+      };
+      sync2();
+      ensureFresh(listId, urls).then(sync2).catch(sync2);
+      const off = onPluginStorageChanged(PLUGIN_ID2, `epg_cache:${listId}`, sync2);
+      return () => {
+        cancelled = true;
+        off();
+      };
+    }, [listId, urls.join("|")]);
+    return entry;
+  }
+  var PLUGIN_ID2;
+  var init_useLiveTvEpgCache = __esm({
+    "../lumio-official-plugins/plugins/live-tv/runtime/hooks/useLiveTvEpgCache.ts"() {
+      "use strict";
+      init_react_shim();
+      init_plugin_sdk();
+      init_cache();
+      PLUGIN_ID2 = "com.lumio.live-tv";
+    }
+  });
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/live-tv-logo-image.tsx
+  function drainLogoQueue() {
+    while (activeLogoLoads < MAX_CONCURRENT_LOGO_LOADS && pendingLogoLoads.length > 0) {
+      activeLogoLoads += 1;
+      const next2 = pendingLogoLoads.shift();
+      next2?.();
+    }
+  }
+  function requestLogoLoad(start2) {
+    pendingLogoLoads.push(start2);
+    drainLogoQueue();
+  }
+  function finishLogoLoad(src) {
+    loadedLogoSrcs.add(src);
+    activeLogoLoads = Math.max(0, activeLogoLoads - 1);
+    drainLogoQueue();
+  }
+  function LiveTvLogoImage({ src, alt, className, onError }) {
+    const ref = useRef(null);
+    const [shouldLoad, setShouldLoad] = useState(false);
+    const [failed, setFailed] = useState(false);
+    useEffect(() => {
+      setShouldLoad(false);
+      setFailed(false);
+    }, [src]);
+    useEffect(() => {
+      if (loadedLogoSrcs.has(src)) {
+        setShouldLoad(true);
+        return;
+      }
+      const node = ref.current;
+      if (!node || shouldLoad) return;
+      if (typeof IntersectionObserver === "undefined") {
+        requestLogoLoad(() => setShouldLoad(true));
+        return;
+      }
+      const observer2 = new IntersectionObserver(
+        (entries) => {
+          if (entries.some((entry) => entry.isIntersecting)) {
+            requestLogoLoad(() => setShouldLoad(true));
+            observer2.disconnect();
+          }
+        },
+        { rootMargin: isTauriEnv ? "48px" : "160px" }
+      );
+      observer2.observe(node);
+      return () => observer2.disconnect();
+    }, [shouldLoad, src]);
+    if (failed) return null;
+    return /* @__PURE__ */ jsx(
+      "img",
+      {
+        ref,
+        src: shouldLoad ? src : void 0,
+        alt,
+        className,
+        loading: isTauriEnv ? void 0 : "lazy",
+        decoding: "async",
+        fetchPriority: "low",
+        draggable: false,
+        style: isTauriEnv ? void 0 : { contentVisibility: "auto" },
+        onLoad: () => finishLogoLoad(src),
+        onError: () => {
+          setFailed(true);
+          finishLogoLoad(src);
+          onError?.();
+        }
+      }
+    );
+  }
+  var loadedLogoSrcs, pendingLogoLoads, activeLogoLoads, MAX_CONCURRENT_LOGO_LOADS;
+  var init_live_tv_logo_image = __esm({
+    "../lumio-official-plugins/plugins/live-tv/runtime/live-tv-logo-image.tsx"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_plugin_sdk();
+      init_jsx_runtime_shim();
+      loadedLogoSrcs = /* @__PURE__ */ new Set();
+      pendingLogoLoads = [];
+      activeLogoLoads = 0;
+      MAX_CONCURRENT_LOGO_LOADS = isTauriEnv ? 1 : 8;
+    }
+  });
+
   // ../lumio-official-plugins/plugins/live-tv/runtime/epg/lookup.ts
   function findCurrentIndex(programmes, now2) {
     let lo = 0;
@@ -167092,16 +167127,35 @@
     if (!trimmed || index3.has(trimmed)) return;
     index3.set(trimmed, id4);
   }
-  function buildNameToTvgIdIndex(tvgIds) {
-    const out = /* @__PURE__ */ new Map();
-    for (const id4 of tvgIds) {
-      addAlias(out, id4, id4);
-      addAlias(out, id4.toLowerCase(), id4);
-      const tvgStem = normalizeTvgId(id4);
-      if (tvgStem.length >= 3) addAlias(out, tvgStem, id4);
-      const nameStem = normalizeChannelName(id4);
-      if (nameStem.length >= 3) addAlias(out, nameStem, id4);
+  function addNormalizedAlias(index3, alias, id4) {
+    addAlias(index3, alias, id4);
+    addAlias(index3, alias.toLowerCase(), id4);
+    const tvgStem = normalizeTvgId(alias);
+    if (tvgStem.length >= 3) addAlias(index3, tvgStem, id4);
+    const nameStem = normalizeChannelName(alias);
+    if (nameStem.length >= 3) addAlias(index3, nameStem, id4);
+  }
+  function addSourceChannelAliases(index3, stats, presentIds) {
+    if (!stats) return;
+    for (const stat of stats) {
+      for (const channel of stat.channels) {
+        if (!presentIds.has(channel.id)) continue;
+        addNormalizedAlias(index3, channel.id, channel.id);
+        for (const displayName of channel.displayNames) {
+          addNormalizedAlias(index3, displayName, channel.id);
+        }
+      }
     }
+  }
+  function buildNameToTvgIdIndex(tvgIdsOrCache, sourceStats) {
+    const tvgIds = Array.isArray(tvgIdsOrCache) ? tvgIdsOrCache : Object.keys(tvgIdsOrCache.index);
+    const stats = Array.isArray(tvgIdsOrCache) ? sourceStats : tvgIdsOrCache.sourceStats;
+    const out = /* @__PURE__ */ new Map();
+    const presentIds = new Set(tvgIds);
+    for (const id4 of tvgIds) {
+      addNormalizedAlias(out, id4, id4);
+    }
+    addSourceChannelAliases(out, stats, presentIds);
     return out;
   }
   function resolveTvgId(explicitTvgId, channelName, nameIndex) {
@@ -167148,7 +167202,7 @@
       const recompute = () => {
         if (cancelled) return;
         const cache2 = readCache(listId);
-        const nameIndex = cache2 ? buildNameToTvgIdIndex(Object.keys(cache2.index)) : /* @__PURE__ */ new Map();
+        const nameIndex = cache2 ? buildNameToTvgIdIndex(cache2) : /* @__PURE__ */ new Map();
         const resolvedTvgId = resolveTvgId(channel.tvgId, channel.name ?? "", nameIndex);
         if (!resolvedTvgId) {
           setData(EMPTY2);
@@ -167164,7 +167218,7 @@
       };
       recompute();
       ensureFresh(listId, urls).then(recompute).catch(recompute);
-      const off = onPluginStorageChanged(PLUGIN_ID2, `epg_cache:${listId}`, recompute);
+      const off = onPluginStorageChanged(PLUGIN_ID3, `epg_cache:${listId}`, recompute);
       return () => {
         cancelled = true;
         cancelBoundary();
@@ -167173,7 +167227,7 @@
     }, [channel.tvgId, channel.name, listId, urls.join("|")]);
     return data;
   }
-  var PLUGIN_ID2, EMPTY2;
+  var PLUGIN_ID3, EMPTY2;
   var init_useEpgNowNextLater = __esm({
     "../lumio-official-plugins/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts"() {
       "use strict";
@@ -167183,7 +167237,7 @@
       init_lookup();
       init_auto_roll();
       init_name_match();
-      PLUGIN_ID2 = "com.lumio.live-tv";
+      PLUGIN_ID3 = "com.lumio.live-tv";
       EMPTY2 = { now: null, next: null, later: null };
     }
   });
@@ -167229,7 +167283,7 @@
       const recompute = () => {
         if (cancelled) return;
         const cache2 = readCache(listId);
-        const nameIndex = cache2 ? buildNameToTvgIdIndex(Object.keys(cache2.index)) : /* @__PURE__ */ new Map();
+        const nameIndex = cache2 ? buildNameToTvgIdIndex(cache2) : /* @__PURE__ */ new Map();
         const resolvedTvgId = resolveTvgId(channel.tvgId, channel.name ?? "", nameIndex);
         if (!resolvedTvgId) {
           setProgrammes([]);
@@ -167242,7 +167296,7 @@
       };
       recompute();
       ensureFresh(listId, urls).then(recompute).catch(recompute);
-      const off = onPluginStorageChanged(PLUGIN_ID3, `epg_cache:${listId}`, recompute);
+      const off = onPluginStorageChanged(PLUGIN_ID4, `epg_cache:${listId}`, recompute);
       const msToNextMinute = 6e4 - Date.now() % 6e4;
       const tickId = window.setTimeout(function tick() {
         recompute();
@@ -167258,7 +167312,7 @@
     }, [channel.tvgId, channel.name, listId, urls.join("|"), hoursAhead, hoursBack]);
     return programmes;
   }
-  var PLUGIN_ID3;
+  var PLUGIN_ID4;
   var init_useChannelSchedule = __esm({
     "../lumio-official-plugins/plugins/live-tv/runtime/hooks/useChannelSchedule.ts"() {
       "use strict";
@@ -167267,7 +167321,7 @@
       init_cache();
       init_lookup();
       init_name_match();
-      PLUGIN_ID3 = "com.lumio.live-tv";
+      PLUGIN_ID4 = "com.lumio.live-tv";
     }
   });
 
@@ -167977,42 +168031,6 @@
     }
   });
 
-  // ../lumio-official-plugins/plugins/live-tv/runtime/hooks/useLiveTvEpgCache.ts
-  function useLiveTvEpgCache(listId, urls) {
-    const [entry, setEntry] = useState(
-      () => listId ? readCache(listId) : null
-    );
-    useEffect(() => {
-      if (!listId) {
-        setEntry(null);
-        return;
-      }
-      let cancelled = false;
-      const sync2 = () => {
-        if (cancelled) return;
-        setEntry(readCache(listId));
-      };
-      sync2();
-      ensureFresh(listId, urls).then(sync2).catch(sync2);
-      const off = onPluginStorageChanged(PLUGIN_ID4, `epg_cache:${listId}`, sync2);
-      return () => {
-        cancelled = true;
-        off();
-      };
-    }, [listId, urls.join("|")]);
-    return entry;
-  }
-  var PLUGIN_ID4;
-  var init_useLiveTvEpgCache = __esm({
-    "../lumio-official-plugins/plugins/live-tv/runtime/hooks/useLiveTvEpgCache.ts"() {
-      "use strict";
-      init_react_shim();
-      init_plugin_sdk();
-      init_cache();
-      PLUGIN_ID4 = "com.lumio.live-tv";
-    }
-  });
-
   // ../lumio-official-plugins/plugins/live-tv/runtime/live-tv-guide.tsx
   var live_tv_guide_exports = {};
   __export(live_tv_guide_exports, {
@@ -168085,7 +168103,7 @@
       return slots;
     }, [windowStart, windowEnd]);
     const nameIndex = useMemo(
-      () => cache2 ? buildNameToTvgIdIndex(Object.keys(cache2.index)) : /* @__PURE__ */ new Map(),
+      () => cache2 ? buildNameToTvgIdIndex(cache2) : /* @__PURE__ */ new Map(),
       [cache2]
     );
     const rows = useMemo(() => {
@@ -168330,16 +168348,18 @@
   init_react_shim();
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/live-tv-settings-section.tsx
-  var import_react63 = __toESM(require_dist89(), 1);
+  var import_react64 = __toESM(require_dist89(), 1);
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/epg-sources-section.tsx
   init_react_shim();
+  init_useLiveTvEpgCache();
   init_jsx_runtime_shim();
-  function EpgSourcesSection({ autoUrl, manualUrls, onChangeManual }) {
+  function EpgSourcesSection({ autoUrl, manualUrls, onChangeManual, listId = null, allUrls = [] }) {
     const [draft, setDraft] = useState("");
+    const cache2 = useLiveTvEpgCache(listId, allUrls);
     const addUrl = () => {
       const trimmed = draft.trim();
       if (!trimmed) return;
@@ -168348,10 +168368,31 @@
     };
     const removeUrl = (index3) => onChangeManual(manualUrls.filter((_, j) => j !== index3));
     const hasAny = autoUrl !== null || manualUrls.length > 0;
+    const sourceStats = cache2?.sourceStats ?? [];
+    const failures = cache2?.failures ?? [];
+    const renderSourceMeta = (url) => {
+      const stat = sourceStats.find((item) => item.url === url);
+      const failure = failures.find((item) => item.url === url);
+      if (stat) {
+        return /* @__PURE__ */ jsxs("span", { className: "mt-1 block text-[10px] text-emerald-300/70", children: [
+          stat.channelCount,
+          " channels \xB7 ",
+          stat.programmeCount,
+          " programmes"
+        ] });
+      }
+      if (failure) {
+        return /* @__PURE__ */ jsx("span", { className: "mt-1 block text-[10px] text-rose-300/80", children: failure.error });
+      }
+      return null;
+    };
     return /* @__PURE__ */ jsxs("section", { className: "space-y-2", children: [
       /* @__PURE__ */ jsx("h3", { className: "text-sm font-semibold text-white", children: "EPG sources" }),
       autoUrl ? /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between rounded border border-white/5 bg-black/30 px-3 py-2", children: [
-        /* @__PURE__ */ jsx("span", { className: "truncate text-xs text-white/80", children: autoUrl }),
+        /* @__PURE__ */ jsxs("span", { className: "min-w-0", children: [
+          /* @__PURE__ */ jsx("span", { className: "block truncate text-xs text-white/80", children: autoUrl }),
+          renderSourceMeta(autoUrl)
+        ] }),
         /* @__PURE__ */ jsx("span", { className: "ml-2 rounded bg-emerald-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wider text-emerald-300", children: "Auto" })
       ] }) : null,
       manualUrls.map((url, i) => /* @__PURE__ */ jsxs(
@@ -168359,7 +168400,10 @@
         {
           className: "flex items-center justify-between rounded border border-white/5 bg-black/30 px-3 py-2",
           children: [
-            /* @__PURE__ */ jsx("span", { className: "truncate text-xs text-white/80", children: url }),
+            /* @__PURE__ */ jsxs("span", { className: "min-w-0", children: [
+              /* @__PURE__ */ jsx("span", { className: "block truncate text-xs text-white/80", children: url }),
+              renderSourceMeta(url)
+            ] }),
             /* @__PURE__ */ jsx(
               "button",
               {
@@ -168511,7 +168555,7 @@
         homeOverrideError ? /* @__PURE__ */ jsx("p", { className: "mt-2 text-xs text-rose-300", children: homeOverrideError }) : null
       ] }),
       /* @__PURE__ */ jsx(
-        import_react63.Textarea,
+        import_react64.Textarea,
         {
           value: m3uText,
           onValueChange: setM3uText,
@@ -168545,7 +168589,9 @@
           {
             autoUrl: list.urlTvg,
             manualUrls: list.epgUrls,
-            onChangeManual: (epgUrls) => updateLiveTvListEpg(list.id, { epgUrls })
+            onChangeManual: (epgUrls) => updateLiveTvListEpg(list.id, { epgUrls }),
+            listId: list.id,
+            allUrls: [list.urlTvg, ...list.epgUrls].filter((url) => Boolean(url))
           }
         )
       ] }, list.id)) }) : null
@@ -168573,12 +168619,12 @@
   }
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/results-pagination.tsx
-  var import_react67 = __toESM(require_dist89(), 1);
+  var import_react68 = __toESM(require_dist89(), 1);
   init_jsx_runtime_shim();
   function ResultsPagination2({ currentPage, totalPages, onPageChange }) {
     if (totalPages <= 1) return null;
     return /* @__PURE__ */ jsx("div", { className: "flex items-center justify-center rounded-[1.75rem] border border-white/10 bg-slate-950/60 px-4 py-4", children: /* @__PURE__ */ jsx(
-      import_react67.Pagination,
+      import_react68.Pagination,
       {
         total: totalPages,
         page: currentPage,
@@ -169696,7 +169742,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-VYll67/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-BLzBZU/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

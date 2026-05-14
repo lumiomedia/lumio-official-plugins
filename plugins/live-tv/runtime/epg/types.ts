@@ -5,10 +5,30 @@ export interface EpgProgramme {
   stop: number
 }
 
+export interface EpgSourceChannel {
+  id: string
+  displayNames: string[]
+}
+
+export interface EpgSourceStat {
+  url: string
+  ok: boolean
+  channelCount: number
+  programmeCount: number
+  channels: EpgSourceChannel[]
+}
+
+export interface EpgSourceFailure {
+  url?: string
+  error: string
+}
+
 export interface EpgCacheEntry {
   index: Record<string, EpgProgramme[]>
   fetchedAt: number
   sources: string[]
+  sourceStats?: EpgSourceStat[]
+  failures?: EpgSourceFailure[]
 }
 
 export interface NowNextLater {

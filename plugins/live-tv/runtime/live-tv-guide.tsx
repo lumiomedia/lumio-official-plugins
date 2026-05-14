@@ -114,7 +114,7 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
   }, [windowStart, windowEnd])
 
   const nameIndex = useMemo(
-    () => (cache ? buildNameToTvgIdIndex(Object.keys(cache.index)) : new Map<string, string>()),
+    () => (cache ? buildNameToTvgIdIndex(cache) : new Map<string, string>()),
     [cache],
   )
 

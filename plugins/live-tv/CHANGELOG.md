@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.19
+
+- Improve EPG matching across XMLTV providers by using each source's `<channel><display-name>` values as aliases for provider-specific channel ids. This lets playlists with names like `TV3 FHD SE` match XMLTV feeds whose programme ids do not resemble the M3U channel name, as long as the XMLTV channel declares a useful display name.
+- Show per-source EPG diagnostics in Live TV settings when available, including channel/programme counts and fetch errors.
+
 ## 0.3.18
 
 - Restore auto-hide for the player chrome. Hiding controls during playback is the standard player UX. The underlying "hover stops working after a while" bug is fixed on the host side by a custom NSView subclass (`LumioMpvView`) in `mpv_embed.rs` whose `hitTest:` returns nil — so MPV's native video view can no longer steal first-responder status from WKWebView, and mousemove keeps flowing to WebKit for the entire session.

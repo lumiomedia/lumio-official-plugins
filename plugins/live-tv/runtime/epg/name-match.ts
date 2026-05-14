@@ -1,3 +1,5 @@
+import type { EpgCacheEntry, EpgSourceStat } from './types'
+
 /**
  * Best-effort name-to-tvg-id matching for M3U sources that don't include
  * `tvg-id="..."` per channel. The Rust XMLTV endpoint indexes programmes
@@ -47,24 +49,52 @@ function addAlias(index: Map<string, string>, alias: string, id: string): void {
   index.set(trimmed, id)
 }
 
+function addNormalizedAlias(index: Map<string, string>, alias: string, id: string): void {
+  addAlias(index, alias, id)
+  addAlias(index, alias.toLowerCase(), id)
+
+  const tvgStem = normalizeTvgId(alias)
+  if (tvgStem.length >= 3) addAlias(index, tvgStem, id)
+
+  const nameStem = normalizeChannelName(alias)
+  if (nameStem.length >= 3) addAlias(index, nameStem, id)
+}
+
+function addSourceChannelAliases(
+  index: Map<string, string>,
+  stats: EpgSourceStat[] | undefined,
+  presentIds: Set<string>,
+): void {
+  if (!stats) return
+  for (const stat of stats) {
+    for (const channel of stat.channels) {
+      if (!presentIds.has(channel.id)) continue
+      addNormalizedAlias(index, channel.id, channel.id)
+      for (const displayName of channel.displayNames) {
+        addNormalizedAlias(index, displayName, channel.id)
+      }
+    }
+  }
+}
+
 /**
  * Build a reverse index from normalized name stems to tvg-ids present in
  * the cache. When multiple tvg-ids normalize to the same stem (e.g.
  * "SVT1.se" and "SVT1.uk"), the first wins. Callers can layer extra
  * region hints to disambiguate.
  */
-export function buildNameToTvgIdIndex(tvgIds: string[]): Map<string, string> {
+export function buildNameToTvgIdIndex(
+  tvgIdsOrCache: string[] | EpgCacheEntry,
+  sourceStats?: EpgSourceStat[],
+): Map<string, string> {
+  const tvgIds = Array.isArray(tvgIdsOrCache) ? tvgIdsOrCache : Object.keys(tvgIdsOrCache.index)
+  const stats = Array.isArray(tvgIdsOrCache) ? sourceStats : tvgIdsOrCache.sourceStats
   const out = new Map<string, string>()
+  const presentIds = new Set(tvgIds)
   for (const id of tvgIds) {
-    addAlias(out, id, id)
-    addAlias(out, id.toLowerCase(), id)
-
-    const tvgStem = normalizeTvgId(id)
-    if (tvgStem.length >= 3) addAlias(out, tvgStem, id)
-
-    const nameStem = normalizeChannelName(id)
-    if (nameStem.length >= 3) addAlias(out, nameStem, id)
+    addNormalizedAlias(out, id, id)
   }
+  addSourceChannelAliases(out, stats, presentIds)
   return out
 }
 

@@ -36,7 +36,7 @@ export function useChannelSchedule(
     const recompute = () => {
       if (cancelled) return
       const cache = readCache(listId)
-      const nameIndex = cache ? buildNameToTvgIdIndex(Object.keys(cache.index)) : new Map<string, string>()
+      const nameIndex = cache ? buildNameToTvgIdIndex(cache) : new Map<string, string>()
       const resolvedTvgId = resolveTvgId(channel.tvgId, channel.name ?? '', nameIndex)
       if (!resolvedTvgId) {
         setProgrammes([])

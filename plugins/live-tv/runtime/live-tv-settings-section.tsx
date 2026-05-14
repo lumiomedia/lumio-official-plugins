@@ -177,6 +177,8 @@ export function LiveTvSettingsSection() {
                 autoUrl={list.urlTvg}
                 manualUrls={list.epgUrls}
                 onChangeManual={(epgUrls) => updateLiveTvListEpg(list.id, { epgUrls })}
+                listId={list.id}
+                allUrls={[list.urlTvg, ...list.epgUrls].filter((url): url is string => Boolean(url))}
               />
             </div>
           ))}
