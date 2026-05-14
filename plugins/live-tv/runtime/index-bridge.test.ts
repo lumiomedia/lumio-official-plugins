@@ -23,7 +23,7 @@ describe('window.__LumioLiveTvEpg bridge', () => {
     expect(window.__LumioLiveTvEpg).toBeDefined()
     expect(typeof window.__LumioLiveTvEpg?.useEpgNowNextLater).toBe('function')
     expect(typeof window.__LumioLiveTvEpg?.useEpgLoadStatus).toBe('function')
-    expect(window.__LumioLiveTvEpg?.version).toBe('0.3.21')
+    expect(window.__LumioLiveTvEpg?.version).toBe('0.3.22')
     expect(typeof window.__LumioLiveTvEpg?.useChannelSchedule).toBe('function')
   })
 
