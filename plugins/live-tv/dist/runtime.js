@@ -48,7 +48,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-tWUA4m/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-VEESTS/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -97,7 +97,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-tWUA4m/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-VEESTS/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -29690,7 +29690,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-tWUA4m/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-VEESTS/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -29700,7 +29700,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-tWUA4m/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-VEESTS/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -164361,6 +164361,9 @@
           clearing: "Clearing\u2026",
           cleared: "Cleared \u2014 restart server",
           settingsNavAppearance: "Home & Appearance",
+          homePosterAppearanceTitle: "Poster appearance",
+          homePosterAppearanceDesc: "Controls which visual labels are shown on home posters.",
+          homePosterGenreChipsToggleLabel: "Show category chips on posters",
           settingsNavSources: "Sources & Catalogs",
           settingsNavIntegrations: "Integrations",
           stremioAddonsTitle: "Stremio addons",
@@ -165141,6 +165144,9 @@
           clearing: "Rensar\u2026",
           cleared: "Rensat \u2014 starta om servern",
           settingsNavAppearance: "Hem & Utseende",
+          homePosterAppearanceTitle: "Posterutseende",
+          homePosterAppearanceDesc: "Styr vilka visuella etiketter som visas p\xE5 posters p\xE5 startsidan.",
+          homePosterGenreChipsToggleLabel: "Visa kategori-chips p\xE5 posters",
           settingsNavSources: "K\xE4llor & Kataloger",
           settingsNavIntegrations: "Integrationer",
           stremioAddonsTitle: "Stremio-addons",
@@ -165771,10 +165777,10 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-tWUA4m/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-VEESTS/auth-capabilities-shim.ts
   var sdk;
   var init_auth_capabilities_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-tWUA4m/auth-capabilities-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-VEESTS/auth-capabilities-shim.ts"() {
       sdk = globalThis.__lumioPluginRuntime?.sdk;
     }
   });
@@ -165940,6 +165946,16 @@
     } catch (e) {
       console.warn("[mpv] command error:", args, e);
     }
+  }
+  async function mpvSetPropertyStrings(props) {
+    try {
+      return await invoke("mpv_set_property_strings", { props });
+    } catch (e) {
+      console.warn("[mpv] set property error:", props, e);
+    }
+  }
+  async function setMpvAspect(value) {
+    return mpvSetPropertyStrings([{ name: "video-aspect-override", value }]);
   }
   function mpvSetBounds(rect) {
     if (rect.width <= 0 || rect.height <= 0) return;
@@ -167521,8 +167537,48 @@
       firstFrameRendered: mpvFirstFrameRendered,
       resetFileLoaded,
       resetPlaybackRestarted,
-      resetFirstFrameRendered
+      resetFirstFrameRendered,
+      setVolume: mpvSetVolume,
+      setMuted: mpvSetMuted
     } = mpv;
+    const ASPECT_OPTIONS = [
+      { value: "-1", label: "Auto" },
+      { value: "16:9", label: "16:9" },
+      { value: "4:3", label: "4:3" },
+      { value: "2.35:1", label: "2.35:1" }
+    ];
+    const [aspectIndex, setAspectIndex] = useState(0);
+    const [volumeOpen, setVolumeOpen] = useState(false);
+    const [volumeLevel, setVolumeLevel] = useState(1);
+    const [muted, setMutedState] = useState(false);
+    const cycleAspect = useCallback(() => {
+      const next2 = (aspectIndex + 1) % ASPECT_OPTIONS.length;
+      setAspectIndex(next2);
+      if (useMpv) {
+        void setMpvAspect(ASPECT_OPTIONS[next2].value);
+      } else if (videoRef.current) {
+        videoRef.current.style.objectFit = ASPECT_OPTIONS[next2].value === "-1" ? "contain" : "cover";
+      }
+    }, [aspectIndex, useMpv]);
+    const updateVolume = useCallback((next2) => {
+      const clamped = Math.max(0, Math.min(1, next2));
+      setVolumeLevel(clamped);
+      if (clamped === 0) {
+        setMutedState(true);
+        mpvSetMuted(true);
+      } else if (muted) {
+        setMutedState(false);
+        mpvSetMuted(false);
+      }
+      mpvSetVolume(clamped);
+      if (videoRef.current) videoRef.current.volume = clamped;
+    }, [mpvSetMuted, mpvSetVolume, muted]);
+    const toggleMute = useCallback(() => {
+      const next2 = !muted;
+      setMutedState(next2);
+      mpvSetMuted(next2);
+      if (videoRef.current) videoRef.current.muted = next2;
+    }, [mpvSetMuted, muted]);
     const tryEnterMobileFullscreen = useCallback(() => {
       if (mobileFullscreenAttemptedRef.current) return;
       if (!isMobileBrowser()) return;
@@ -167845,10 +167901,7 @@
                 ref: stageRef,
                 style: {
                   position: "absolute",
-                  left: 0,
-                  right: 0,
-                  top: "5rem",
-                  bottom: "8rem",
+                  inset: 0,
                   background: "transparent"
                 }
               }
@@ -167950,6 +168003,65 @@
                         /* @__PURE__ */ jsx("path", { d: "M7 14h4" }),
                         /* @__PURE__ */ jsx("path", { d: "M7 18h10" })
                       ] })
+                    }
+                  ),
+                  /* @__PURE__ */ jsxs("div", { className: "relative", onMouseLeave: () => setVolumeOpen(false), children: [
+                    /* @__PURE__ */ jsx(
+                      "button",
+                      {
+                        type: "button",
+                        onClick: toggleMute,
+                        onMouseEnter: () => setVolumeOpen(true),
+                        className: "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/35 hover:bg-white/15",
+                        "aria-label": muted ? "Unmute" : "Mute",
+                        title: muted ? "Unmute" : "Mute",
+                        children: muted || volumeLevel === 0 ? /* @__PURE__ */ jsxs("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
+                          /* @__PURE__ */ jsx("path", { d: "M11 5 6 9H3v6h3l5 4V5Z" }),
+                          /* @__PURE__ */ jsx("path", { d: "m22 9-6 6" }),
+                          /* @__PURE__ */ jsx("path", { d: "m16 9 6 6" })
+                        ] }) : /* @__PURE__ */ jsxs("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
+                          /* @__PURE__ */ jsx("path", { d: "M11 5 6 9H3v6h3l5 4V5Z" }),
+                          volumeLevel > 0.33 ? /* @__PURE__ */ jsx("path", { d: "M15.5 8.5a5 5 0 0 1 0 7" }) : null,
+                          volumeLevel > 0.66 ? /* @__PURE__ */ jsx("path", { d: "M19 4.5a10 10 0 0 1 0 15" }) : null
+                        ] })
+                      }
+                    ),
+                    volumeOpen ? /* @__PURE__ */ jsx(
+                      "div",
+                      {
+                        className: "absolute bottom-full left-1/2 mb-2 -translate-x-1/2 rounded-full border border-white/15 bg-black/85 px-3 py-2 shadow-2xl backdrop-blur",
+                        onMouseEnter: () => setVolumeOpen(true),
+                        children: /* @__PURE__ */ jsx(
+                          "input",
+                          {
+                            type: "range",
+                            min: 0,
+                            max: 1,
+                            step: 0.01,
+                            value: muted ? 0 : volumeLevel,
+                            onChange: (e) => updateVolume(parseFloat(e.target.value)),
+                            className: "h-1 w-32 cursor-pointer appearance-none rounded-full bg-white/15 accent-white",
+                            "aria-label": "Volume"
+                          }
+                        )
+                      }
+                    ) : null
+                  ] }),
+                  /* @__PURE__ */ jsxs(
+                    "button",
+                    {
+                      type: "button",
+                      onClick: cycleAspect,
+                      className: "flex h-11 shrink-0 items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 text-white transition hover:border-white/35 hover:bg-white/15",
+                      "aria-label": "Aspect ratio",
+                      title: `Aspect: ${ASPECT_OPTIONS[aspectIndex].label}`,
+                      children: [
+                        /* @__PURE__ */ jsxs("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
+                          /* @__PURE__ */ jsx("rect", { x: "3", y: "5", width: "18", height: "14", rx: "2" }),
+                          /* @__PURE__ */ jsx("path", { d: "M3 9h18M9 5v14" })
+                        ] }),
+                        /* @__PURE__ */ jsx("span", { className: "text-[11px] font-semibold uppercase tracking-[0.1em]", children: ASPECT_OPTIONS[aspectIndex].label })
+                      ]
                     }
                   ),
                   /* @__PURE__ */ jsxs("div", { className: "min-w-0 flex-1", children: [
@@ -169873,7 +169985,7 @@
       useEpgNowNextLater,
       useEpgLoadStatus,
       useChannelSchedule,
-      version: "0.3.26"
+      version: "0.3.27"
     };
     try {
       window.dispatchEvent(new CustomEvent("lumio-live-tv-bridge-ready"));
@@ -169897,7 +170009,7 @@
   var LiveTvPlugin = {
     id: "com.lumio.live-tv",
     name: { en: "Live TV", sv: "Live TV" },
-    version: "0.3.26",
+    version: "0.3.27",
     description: {
       en: "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",
       sv: "Hantera M3U-k\xE4llor, bl\xE4ddra bland live-TV-kanaler och se EPG (nu/h\xE4rn\xE4st) i Lumio."
@@ -169922,7 +170034,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-tWUA4m/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-VEESTS/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

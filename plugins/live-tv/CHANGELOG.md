@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.27
+
+- Full-bleed player stage: the MPV overlay now fills the entire viewport instead of being letterboxed between the top header and bottom controls. Chrome overlays sit on top of the video with their existing gradient backgrounds.
+- Add aspect-ratio control in the player controls bar — cycles Auto / 16:9 / 4:3 / 2.35:1 via MPV `video-aspect-override` for channels that ship non-square pixels or sidebar logos.
+- Add volume slider + mute toggle in the player controls bar; speaker icon reflects the current level.
+
 ## 0.3.26
 
 - Treat EPG sources as shared Live TV metadata so All, custom lists, favorites and the player can all resolve programme data from the same XMLTV sources.

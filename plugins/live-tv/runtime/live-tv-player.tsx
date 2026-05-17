@@ -9,6 +9,7 @@ import {
   lockBodyScroll,
   mpvSetBounds,
   openMpvPlayer,
+  setMpvAspect,
   setMpvPause,
   toggleWindowFullscreen,
   unlockBodyScroll,
@@ -94,7 +95,52 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
     resetFileLoaded,
     resetPlaybackRestarted,
     resetFirstFrameRendered,
+    setVolume: mpvSetVolume,
+    setMuted: mpvSetMuted,
   } = mpv
+  // Aspect cycle: '-1' (auto, MPV native), '16:9', '4:3', '2.35:1' (Cinemascope).
+  // Defaulting to 'auto' matches the broadcaster's intent; users only reach for
+  // an override when the channel ships non-square pixels or sidebar logos.
+  const ASPECT_OPTIONS: Array<{ value: string; label: string }> = [
+    { value: '-1', label: 'Auto' },
+    { value: '16:9', label: '16:9' },
+    { value: '4:3', label: '4:3' },
+    { value: '2.35:1', label: '2.35:1' },
+  ]
+  const [aspectIndex, setAspectIndex] = useState(0)
+  const [volumeOpen, setVolumeOpen] = useState(false)
+  const [volumeLevel, setVolumeLevel] = useState(1)
+  const [muted, setMutedState] = useState(false)
+  const cycleAspect = useCallback(() => {
+    const next = (aspectIndex + 1) % ASPECT_OPTIONS.length
+    setAspectIndex(next)
+    if (useMpv) {
+      void setMpvAspect(ASPECT_OPTIONS[next].value)
+    } else if (videoRef.current) {
+      // For the HTML5 fallback, switch between object-fit contain/cover only —
+      // there's no native equivalent to forcing a numeric aspect on the element.
+      videoRef.current.style.objectFit = ASPECT_OPTIONS[next].value === '-1' ? 'contain' : 'cover'
+    }
+  }, [aspectIndex, useMpv])
+  const updateVolume = useCallback((next: number) => {
+    const clamped = Math.max(0, Math.min(1, next))
+    setVolumeLevel(clamped)
+    if (clamped === 0) {
+      setMutedState(true)
+      mpvSetMuted(true)
+    } else if (muted) {
+      setMutedState(false)
+      mpvSetMuted(false)
+    }
+    mpvSetVolume(clamped)
+    if (videoRef.current) videoRef.current.volume = clamped
+  }, [mpvSetMuted, mpvSetVolume, muted])
+  const toggleMute = useCallback(() => {
+    const next = !muted
+    setMutedState(next)
+    mpvSetMuted(next)
+    if (videoRef.current) videoRef.current.muted = next
+  }, [mpvSetMuted, muted])
 
   const tryEnterMobileFullscreen = useCallback(() => {
     if (mobileFullscreenAttemptedRef.current) return
@@ -453,10 +499,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
           ref={stageRef}
           style={{
             position: 'absolute',
-            left: 0,
-            right: 0,
-            top: '5rem',
-            bottom: '8rem',
+            inset: 0,
             background: 'transparent',
           }}
         />
@@ -562,6 +605,64 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
                 <path d="M7 14h4" />
                 <path d="M7 18h10" />
               </svg>
+            </button>
+
+            <div className="relative" onMouseLeave={() => setVolumeOpen(false)}>
+              <button
+                type="button"
+                onClick={toggleMute}
+                onMouseEnter={() => setVolumeOpen(true)}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/35 hover:bg-white/15"
+                aria-label={muted ? 'Unmute' : 'Mute'}
+                title={muted ? 'Unmute' : 'Mute'}
+              >
+                {muted || volumeLevel === 0 ? (
+                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 5 6 9H3v6h3l5 4V5Z" />
+                    <path d="m22 9-6 6" />
+                    <path d="m16 9 6 6" />
+                  </svg>
+                ) : (
+                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 5 6 9H3v6h3l5 4V5Z" />
+                    {volumeLevel > 0.33 ? <path d="M15.5 8.5a5 5 0 0 1 0 7" /> : null}
+                    {volumeLevel > 0.66 ? <path d="M19 4.5a10 10 0 0 1 0 15" /> : null}
+                  </svg>
+                )}
+              </button>
+              {volumeOpen ? (
+                <div
+                  className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2 rounded-full border border-white/15 bg-black/85 px-3 py-2 shadow-2xl backdrop-blur"
+                  onMouseEnter={() => setVolumeOpen(true)}
+                >
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={muted ? 0 : volumeLevel}
+                    onChange={(e) => updateVolume(parseFloat(e.target.value))}
+                    className="h-1 w-32 cursor-pointer appearance-none rounded-full bg-white/15 accent-white"
+                    aria-label="Volume"
+                  />
+                </div>
+              ) : null}
+            </div>
+
+            <button
+              type="button"
+              onClick={cycleAspect}
+              className="flex h-11 shrink-0 items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 text-white transition hover:border-white/35 hover:bg-white/15"
+              aria-label="Aspect ratio"
+              title={`Aspect: ${ASPECT_OPTIONS[aspectIndex].label}`}
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="5" width="18" height="14" rx="2" />
+                <path d="M3 9h18M9 5v14" />
+              </svg>
+              <span className="text-[11px] font-semibold uppercase tracking-[0.1em]">
+                {ASPECT_OPTIONS[aspectIndex].label}
+              </span>
             </button>
 
             <div className="min-w-0 flex-1">
