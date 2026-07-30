@@ -46,7 +46,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-aluFis/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-1kzSH2/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -95,7 +95,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-aluFis/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-1kzSH2/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -29688,7 +29688,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-aluFis/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-1kzSH2/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -29698,7 +29698,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-aluFis/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-1kzSH2/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -163830,6 +163830,7 @@
       noStreamsYet: "No streamed movies or audiobooks found yet.",
       noScrapersEnabled: "No stream providers enabled.",
       streamNotCached: "Stream not cached \u2014 try another",
+      streamUnreachable: "Stream URL unreachable \u2014 try another",
       downloadTimeout: "Download timeout \u2014 try another stream",
       openToContinue: "\u2014 open to continue",
       timeLeft: "left",
@@ -164424,6 +164425,9 @@
       clearing: "Clearing\u2026",
       cleared: "Cleared \u2014 restart server",
       settingsNavAppearance: "Home & Appearance",
+      homePosterAppearanceTitle: "Poster appearance",
+      homePosterAppearanceDesc: "Controls which visual labels are shown on home posters.",
+      homePosterGenreChipsToggleLabel: "Show category chips on posters",
       settingsNavSources: "Sources & Catalogs",
       settingsNavIntegrations: "Integrations",
       stremioAddonsTitle: "Stremio addons",
@@ -164487,6 +164491,7 @@
       seriesWatchlistEmpty: "No followed series yet.",
       watchlistNoNewEpisodes: "No new episodes right now.",
       newEpisodeBadge: "New ep",
+      seriesNewCount: "{{n}} new",
       // Date presets
       days7: "7 days",
       days30: "30 days",
@@ -164610,6 +164615,7 @@
       noStreamsYet: "Inga streamade filmer eller ljudb\xF6cker hittades \xE4nnu.",
       noScrapersEnabled: "Inga stream providers \xE4r aktiverade.",
       streamNotCached: "Streamen \xE4r inte cachad \u2014 prova en annan",
+      streamUnreachable: "Stream-URL svarar inte \u2014 prova en annan",
       downloadTimeout: "Nedladdningen tog f\xF6r l\xE5ng tid \u2014 prova en annan stream",
       openToContinue: "\u2014 \xF6ppna f\xF6r att forts\xE4tta",
       timeLeft: "kvar",
@@ -165204,6 +165210,9 @@
       clearing: "Rensar\u2026",
       cleared: "Rensat \u2014 starta om servern",
       settingsNavAppearance: "Hem & Utseende",
+      homePosterAppearanceTitle: "Posterutseende",
+      homePosterAppearanceDesc: "Styr vilka visuella etiketter som visas p\xE5 posters p\xE5 startsidan.",
+      homePosterGenreChipsToggleLabel: "Visa kategori-chips p\xE5 posters",
       settingsNavSources: "K\xE4llor & Kataloger",
       settingsNavIntegrations: "Integrationer",
       stremioAddonsTitle: "Stremio-addons",
@@ -165267,6 +165276,7 @@
       seriesWatchlistEmpty: "Inga f\xF6ljda serier \xE4n.",
       watchlistNoNewEpisodes: "Inga nya avsnitt just nu.",
       newEpisodeBadge: "Nytt avsnitt",
+      seriesNewCount: "{{n}} nya",
       // Date presets
       days7: "7 dagar",
       days30: "30 dagar",
@@ -165337,7 +165347,7 @@
   var import_react55 = __toESM(require_dist89());
   init_jsx_runtime_shim();
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-aluFis/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-1kzSH2/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
 
   // lib/tauri-mpv.ts
@@ -165932,7 +165942,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-aluFis/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-1kzSH2/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

@@ -4,14 +4,15 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { createPortal } from 'react-dom'
 import {
   closeMpvPlayer,
+  getWindowFullscreen,
   getHls,
   isTauriEnv,
   lockBodyScroll,
   mpvSetBounds,
   openMpvPlayer,
-  setMpvAspect,
   setMpvPause,
-  toggleWindowFullscreen,
+  setMpvVideoGeometry,
+  setWindowNativeFullscreen,
   unlockBodyScroll,
   useMpvPlayer,
   useLang,
@@ -84,6 +85,12 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
   const logoSrc = getLiveTvLogoSrc(channel.logo)
   const closingRef = useRef(false)
   const mobileFullscreenAttemptedRef = useRef(false)
+  // Forward-declared so the keyboard effect can reference `handleClose`
+  // without listing it as a dep (handleClose is `const`-declared later in
+  // the component body and would be in the temporal dead zone if the deps
+  // array tried to capture it directly). A small effect further down keeps
+  // the ref pointed at the latest `handleClose`.
+  const handleCloseRef = useRef<() => void>(() => {})
   const useMpv = isTauriEnv
   const mpv = useMpvPlayer(useMpv)
   const {
@@ -98,28 +105,30 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
     setVolume: mpvSetVolume,
     setMuted: mpvSetMuted,
   } = mpv
-  // Aspect cycle: '-1' (auto, MPV native), '16:9', '4:3', '2.35:1' (Cinemascope).
-  // Defaulting to 'auto' matches the broadcaster's intent; users only reach for
-  // an override when the channel ships non-square pixels or sidebar logos.
-  const ASPECT_OPTIONS: Array<{ value: string; label: string }> = [
-    { value: '-1', label: 'Auto' },
-    { value: '16:9', label: '16:9' },
-    { value: '4:3', label: '4:3' },
-    { value: '2.35:1', label: '2.35:1' },
+  const ASPECT_OPTIONS: Array<{ aspectOverride: string; panscan: number; videoZoom: number; label: string; htmlFit: 'contain' | 'cover' }> = [
+    { aspectOverride: '-1', panscan: 0, videoZoom: 0, label: 'Auto', htmlFit: 'contain' },
+    { aspectOverride: '-1', panscan: 1, videoZoom: 0, label: 'Fyll', htmlFit: 'cover' },
+    { aspectOverride: '16:9', panscan: 0, videoZoom: 0, label: '16:9', htmlFit: 'contain' },
+    { aspectOverride: '4:3', panscan: 0, videoZoom: 0, label: '4:3', htmlFit: 'contain' },
+    { aspectOverride: '2.35:1', panscan: 0, videoZoom: 0, label: '2.35:1', htmlFit: 'contain' },
   ]
   const [aspectIndex, setAspectIndex] = useState(0)
   const [volumeOpen, setVolumeOpen] = useState(false)
   const [volumeLevel, setVolumeLevel] = useState(1)
   const [muted, setMutedState] = useState(false)
+  const [desktopFullscreen, setDesktopFullscreen] = useState(false)
   const cycleAspect = useCallback(() => {
     const next = (aspectIndex + 1) % ASPECT_OPTIONS.length
+    const option = ASPECT_OPTIONS[next]
     setAspectIndex(next)
     if (useMpv) {
-      void setMpvAspect(ASPECT_OPTIONS[next].value)
+      void setMpvVideoGeometry({
+        aspectOverride: option.aspectOverride,
+        panscan: option.panscan,
+        videoZoom: option.videoZoom,
+      })
     } else if (videoRef.current) {
-      // For the HTML5 fallback, switch between object-fit contain/cover only —
-      // there's no native equivalent to forcing a numeric aspect on the element.
-      videoRef.current.style.objectFit = ASPECT_OPTIONS[next].value === '-1' ? 'contain' : 'cover'
+      videoRef.current.style.objectFit = option.htmlFit
     }
   }, [aspectIndex, useMpv])
   const updateVolume = useCallback((next: number) => {
@@ -193,13 +202,43 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
   useEffect(() => {
     if (!useMpv) return
     revealControls()
+    void getWindowFullscreen().then(setDesktopFullscreen).catch(() => {})
     return clearControlsHideTimer
   }, [channel.url, clearControlsHideTimer, revealControls, useMpv])
 
   useEffect(() => {
     lockBodyScroll()
     function onKey(event: KeyboardEvent) {
-      if (event.key === 'Escape') void handleClose()
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        event.stopPropagation()
+        if (useMpv) {
+          // Always query the real window state — `desktopFullscreen` can be
+          // stale if the user toggled native fullscreen via the green traffic
+          // light, which fires no JS event we listen to. Without this query,
+          // pressing ESC in native fullscreen used to close the stream (and
+          // leave the app stuck in fullscreen) instead of exiting fullscreen.
+          void getWindowFullscreen()
+            .then((fullscreen) => {
+              if (!fullscreen) {
+                handleCloseRef.current()
+                return
+              }
+              return setWindowNativeFullscreen(false).then((nextFullscreen) => {
+                setDesktopFullscreen(nextFullscreen)
+                revealControls()
+              })
+            })
+            .catch(() => handleCloseRef.current())
+          return
+        }
+        if (typeof document !== 'undefined' && document.fullscreenElement) {
+          void document.exitFullscreen().catch(() => {})
+          return
+        }
+        handleCloseRef.current()
+        return
+      }
       if (useMpv && (event.key === ' ' || event.key === 'Spacebar')) {
         event.preventDefault()
         revealControls()
@@ -211,7 +250,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
       unlockBodyScroll()
       window.removeEventListener('keydown', onKey)
     }
-  }, [mpvPaused, onClose, useMpv])
+  }, [mpvPaused, useMpv, revealControls])
 
   useLayoutEffect(() => {
     if (!portalEl) return
@@ -445,6 +484,16 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
     if (closingRef.current) return
     closingRef.current = true
     if (useMpv) {
+      // Query the real window state instead of trusting the cached
+      // `desktopFullscreen`: the user can flip native fullscreen via the
+      // green traffic light without firing a JS event, which would leave
+      // the cached state stale and the app stranded in native fullscreen
+      // after the stream closes (no recovery short of force-quit).
+      void getWindowFullscreen()
+        .then((fullscreen) => {
+          if (fullscreen) return setWindowNativeFullscreen(false)
+        })
+        .catch(() => {})
       onClose()
       window.requestAnimationFrame(() => {
         void closeMpvPlayer().catch(() => {})
@@ -467,24 +516,52 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
     }
   }, [onClose, useMpv])
 
+  // Sync the forward-declared ref so the keyboard effect always invokes
+  // the latest handleClose without needing it as an effect dep (avoids TDZ).
+  useEffect(() => {
+    handleCloseRef.current = handleClose
+  }, [handleClose])
+
   if (useMpv) {
     const toggleMpvPause = () => {
       revealControls()
       void setMpvPause(!mpvPaused)
     }
 
+    const syncMpvBounds = () => {
+      const rect = stageRef.current?.getBoundingClientRect()
+      if (rect) mpvSetBounds(rect)
+    }
+
     const syncMpvBoundsSoon = () => {
-      window.setTimeout(() => {
-        const rect = stageRef.current?.getBoundingClientRect()
-        if (rect) mpvSetBounds(rect)
-      }, 120)
+      syncMpvBounds()
+      window.requestAnimationFrame(syncMpvBounds)
+      for (const delay of [80, 180, 360, 700]) {
+        window.setTimeout(() => {
+          const rect = stageRef.current?.getBoundingClientRect()
+          if (rect) mpvSetBounds(rect)
+        }, delay)
+      }
     }
 
     const toggleFullscreen = () => {
       revealControls()
-      void toggleWindowFullscreen()
-        .then(syncMpvBoundsSoon)
-        .catch(() => {})
+      const wasPlaying = !mpvPaused
+      void getWindowFullscreen()
+        .then((fullscreen) => setWindowNativeFullscreen(!fullscreen))
+        .then((fullscreen) => {
+          setDesktopFullscreen(fullscreen)
+          syncMpvBoundsSoon()
+          if (wasPlaying) {
+            void setMpvPause(false)
+            window.setTimeout(() => void setMpvPause(false), 250)
+            window.setTimeout(() => void setMpvPause(false), 900)
+          }
+        })
+        .catch(() => {
+          const rect = stageRef.current?.getBoundingClientRect()
+          if (rect) mpvSetBounds(rect)
+        })
     }
 
     const content = (
@@ -574,9 +651,14 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
             <button
               type="button"
               onClick={toggleFullscreen}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/35 hover:bg-white/15"
-              aria-label="Fullscreen"
-              title="Fullscreen"
+              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-white transition ${
+                desktopFullscreen
+                  ? 'border-white/45 bg-white/20 hover:border-white/60'
+                  : 'border-white/15 bg-white/10 hover:border-white/35 hover:bg-white/15'
+              }`}
+              aria-label={desktopFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+              title={desktopFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+              aria-pressed={desktopFullscreen}
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M8 3H3v5" />
@@ -610,11 +692,12 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
             <div className="relative" onMouseLeave={() => setVolumeOpen(false)}>
               <button
                 type="button"
-                onClick={toggleMute}
+                onClick={() => setVolumeOpen((open) => !open)}
                 onMouseEnter={() => setVolumeOpen(true)}
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/35 hover:bg-white/15"
-                aria-label={muted ? 'Unmute' : 'Mute'}
-                title={muted ? 'Unmute' : 'Mute'}
+                aria-label="Volume"
+                title="Volume"
+                aria-expanded={volumeOpen}
               >
                 {muted || volumeLevel === 0 ? (
                   <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -631,10 +714,36 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
                 )}
               </button>
               {volumeOpen ? (
+                /* pb-2 on an outer wrapper instead of mb-2 on the pill: the
+                   spacing must be PART of the hoverable popup element — the
+                   pointer crossing an empty margin gap between button and
+                   popup fires the wrapper's mouseleave, so the slider
+                   vanished before it could be reached. */
                 <div
-                  className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2 rounded-full border border-white/15 bg-black/85 px-3 py-2 shadow-2xl backdrop-blur"
+                  className="absolute bottom-full left-1/2 -translate-x-1/2 pb-2"
                   onMouseEnter={() => setVolumeOpen(true)}
                 >
+                <div className="flex items-center gap-2 rounded-full border border-white/15 bg-black/85 px-3 py-2 shadow-2xl backdrop-blur">
+                  <button
+                    type="button"
+                    onClick={toggleMute}
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/35 hover:bg-white/15"
+                    aria-label={muted ? 'Unmute' : 'Mute'}
+                    title={muted ? 'Unmute' : 'Mute'}
+                  >
+                    {muted || volumeLevel === 0 ? (
+                      <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M11 5 6 9H3v6h3l5 4V5Z" />
+                        <path d="m22 9-6 6" />
+                        <path d="m16 9 6 6" />
+                      </svg>
+                    ) : (
+                      <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M11 5 6 9H3v6h3l5 4V5Z" />
+                        <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+                      </svg>
+                    )}
+                  </button>
                   <input
                     type="range"
                     min={0}
@@ -645,6 +754,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
                     className="h-1 w-32 cursor-pointer appearance-none rounded-full bg-white/15 accent-white"
                     aria-label="Volume"
                   />
+                </div>
                 </div>
               ) : null}
             </div>

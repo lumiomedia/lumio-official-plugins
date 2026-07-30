@@ -46,7 +46,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-B3JZuc/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-T7aBcM/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -95,7 +95,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-B3JZuc/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-T7aBcM/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -143,7 +143,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-B3JZuc/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-T7aBcM/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -153,7 +153,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-B3JZuc/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-T7aBcM/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -163976,6 +163976,7 @@
       noStreamsYet: "No streamed movies or audiobooks found yet.",
       noScrapersEnabled: "No stream providers enabled.",
       streamNotCached: "Stream not cached \u2014 try another",
+      streamUnreachable: "Stream URL unreachable \u2014 try another",
       downloadTimeout: "Download timeout \u2014 try another stream",
       openToContinue: "\u2014 open to continue",
       timeLeft: "left",
@@ -164570,6 +164571,9 @@
       clearing: "Clearing\u2026",
       cleared: "Cleared \u2014 restart server",
       settingsNavAppearance: "Home & Appearance",
+      homePosterAppearanceTitle: "Poster appearance",
+      homePosterAppearanceDesc: "Controls which visual labels are shown on home posters.",
+      homePosterGenreChipsToggleLabel: "Show category chips on posters",
       settingsNavSources: "Sources & Catalogs",
       settingsNavIntegrations: "Integrations",
       stremioAddonsTitle: "Stremio addons",
@@ -164633,6 +164637,7 @@
       seriesWatchlistEmpty: "No followed series yet.",
       watchlistNoNewEpisodes: "No new episodes right now.",
       newEpisodeBadge: "New ep",
+      seriesNewCount: "{{n}} new",
       // Date presets
       days7: "7 days",
       days30: "30 days",
@@ -164756,6 +164761,7 @@
       noStreamsYet: "Inga streamade filmer eller ljudb\xF6cker hittades \xE4nnu.",
       noScrapersEnabled: "Inga stream providers \xE4r aktiverade.",
       streamNotCached: "Streamen \xE4r inte cachad \u2014 prova en annan",
+      streamUnreachable: "Stream-URL svarar inte \u2014 prova en annan",
       downloadTimeout: "Nedladdningen tog f\xF6r l\xE5ng tid \u2014 prova en annan stream",
       openToContinue: "\u2014 \xF6ppna f\xF6r att forts\xE4tta",
       timeLeft: "kvar",
@@ -165350,6 +165356,9 @@
       clearing: "Rensar\u2026",
       cleared: "Rensat \u2014 starta om servern",
       settingsNavAppearance: "Hem & Utseende",
+      homePosterAppearanceTitle: "Posterutseende",
+      homePosterAppearanceDesc: "Styr vilka visuella etiketter som visas p\xE5 posters p\xE5 startsidan.",
+      homePosterGenreChipsToggleLabel: "Visa kategori-chips p\xE5 posters",
       settingsNavSources: "K\xE4llor & Kataloger",
       settingsNavIntegrations: "Integrationer",
       stremioAddonsTitle: "Stremio-addons",
@@ -165413,6 +165422,7 @@
       seriesWatchlistEmpty: "Inga f\xF6ljda serier \xE4n.",
       watchlistNoNewEpisodes: "Inga nya avsnitt just nu.",
       newEpisodeBadge: "Nytt avsnitt",
+      seriesNewCount: "{{n}} nya",
       // Date presets
       days7: "7 dagar",
       days30: "30 dagar",
@@ -167137,15 +167147,319 @@
     }
   };
 
+  // lib/stream-provider-runtime/playback/providers/torbox-playback-provider.ts
+  var TORBOX_PROXY = "/api/stream-providers/torbox";
+  var INFO_CACHE_TTL_MS = 1500;
+  var VIDEO_EXT_RE = /\.(mkv|mp4|avi|m4v|mov|webm|ts|m2ts|wmv|flv)$/i;
+  var sourceState3 = /* @__PURE__ */ new Map();
+  var directLinkCache2 = /* @__PURE__ */ new Map();
+  function getAccessKey3() {
+    const key = getStreamProviderAccessKey("torbox").trim();
+    return key || null;
+  }
+  function extractInfoHash3(input) {
+    const match = input.match(/btih:([a-f0-9]+)/i);
+    return match?.[1]?.toLowerCase() ?? input.trim().toLowerCase();
+  }
+  function buildSourceId3(magnet) {
+    return `tb-${extractInfoHash3(magnet)}`;
+  }
+  function getSourceState3(id4) {
+    const state = sourceState3.get(id4);
+    if (!state) throw new Error("TorBox source not found");
+    return state;
+  }
+  async function torboxJson(path, init = {}) {
+    const token = getAccessKey3();
+    if (!token) throw new Error("TorBox key missing");
+    const headers = new Headers(init.headers);
+    headers.set("x-tb-token", token);
+    headers.set("Accept", "application/json");
+    const response = await fetch(`${TORBOX_PROXY}${path}`, { ...init, headers });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) {
+      const message = data && typeof data === "object" && "error" in data && typeof data.error === "string" && data.error || data && typeof data === "object" && "detail" in data && typeof data.detail === "string" && data.detail || `TorBox request failed (${response.status})`;
+      throw new Error(message);
+    }
+    return data;
+  }
+  async function torboxCreateTorrent(magnet) {
+    const formData = new FormData();
+    formData.append("magnet", magnet);
+    formData.append("seed", "3");
+    formData.append("allow_zip", "false");
+    const data = await torboxJson(
+      "/torrents/createtorrent",
+      { method: "POST", body: formData }
+    );
+    if (!data.success || typeof data.data?.torrent_id !== "number") {
+      throw new Error(data.detail || data.error || "TorBox createtorrent failed");
+    }
+    return {
+      torrent_id: data.data.torrent_id,
+      hash: (data.data.hash ?? "").toLowerCase()
+    };
+  }
+  async function torboxGetInfo(torrentId) {
+    const data = await torboxJson(
+      `/torrents/mylist?bypass_cache=true&id=${torrentId}`
+    );
+    if (!data.success || !data.data) return null;
+    if (Array.isArray(data.data)) return data.data[0] ?? null;
+    return data.data;
+  }
+  async function prefetchVideoFileUrls(state) {
+    if (state.torrentId == null || !state.pendingInfo) return;
+    const info = await state.pendingInfo;
+    if (!info?.files || state.torrentId == null) return;
+    for (const file of info.files) {
+      const name = file.short_name?.trim() || file.name.trim();
+      if (!VIDEO_EXT_RE.test(name)) continue;
+      if (state.pendingDlUrls.has(file.id)) continue;
+      state.pendingDlUrls.set(file.id, torboxRequestDl(state.torrentId, file.id).catch(() => null));
+    }
+  }
+  async function torboxRequestDl(torrentId, fileId) {
+    const token = getAccessKey3();
+    if (!token) return null;
+    const data = await torboxJson(
+      `/torrents/requestdl?token=${encodeURIComponent(token)}&torrent_id=${torrentId}&file_id=${fileId}&redirect=false`
+    );
+    if (!data.success || typeof data.data !== "string") return null;
+    return data.data;
+  }
+  async function torboxCheckCached(hashes) {
+    const result = /* @__PURE__ */ new Set();
+    if (hashes.length === 0) return result;
+    const params = new URLSearchParams();
+    for (const h of hashes) params.append("hash", h);
+    params.set("format", "list");
+    params.set("list_files", "false");
+    try {
+      const data = await torboxJson(
+        `/torrents/checkcached?${params}`
+      );
+      if (!data.success || !data.data) return result;
+      if (Array.isArray(data.data)) {
+        for (const entry of data.data) {
+          if (typeof entry?.hash === "string") result.add(entry.hash.toLowerCase());
+        }
+      } else if (typeof data.data === "object") {
+        for (const [hash, value] of Object.entries(data.data)) {
+          if (value) result.add(hash.toLowerCase());
+        }
+      }
+    } catch {
+    }
+    return result;
+  }
+  function toTorrentFiles2(files, isSelected) {
+    return files.map((file) => ({
+      id: file.id,
+      path: file.short_name?.trim() || file.name.trim(),
+      bytes: file.size,
+      selected: isSelected(file.id) ? 1 : 0
+    }));
+  }
+  function mapStatus2(info) {
+    if (info.download_finished) return "downloaded";
+    const state = info.download_state?.toLowerCase() ?? "";
+    if (state.includes("cached")) return "downloaded";
+    if (state.includes("error") || state.includes("failed") || state.includes("dead")) return "error";
+    if (state.includes("queue")) return "queued";
+    if (state.includes("upload")) return "uploading";
+    if (state.includes("processing")) return "magnet_conversion";
+    return "downloading";
+  }
+  function buildTorrentInfo3(state, info, status, files, links = [], statusLabel) {
+    const totalBytes = info?.size ?? files.reduce((sum, file) => sum + file.bytes, 0);
+    const selectedFiles = files.filter((file) => file.selected === 1);
+    return {
+      id: buildSourceId3(state.magnet),
+      filename: selectedFiles[0]?.path ?? files[0]?.path ?? info?.name ?? state.hash,
+      hash: state.hash,
+      bytes: totalBytes,
+      host: "torbox",
+      split: 0,
+      progress: status === "downloaded" ? 100 : 0,
+      status,
+      statusLabel,
+      added: state.addedAt,
+      links,
+      original_filename: info?.name ?? files[0]?.path ?? state.hash,
+      original_bytes: totalBytes,
+      files
+    };
+  }
+  var torboxPlaybackProvider = {
+    id: "torbox",
+    label: "TorBox playback provider",
+    getAccessKey: getAccessKey3,
+    // Torrentio's config segment for TorBox addons is `torbox=<api_key>`,
+    // analogous to `realdebrid=<api_key>` / `easydebrid=<api_key>` etc.
+    buildConfigSegment(accessKey, qualityFilter = "") {
+      const segments = qualityFilter ? [`qualityfilter=${qualityFilter}`] : [];
+      segments.push(`torbox=${accessKey}`);
+      return segments.join("|");
+    },
+    async lookupCachedStreams(candidates) {
+      const hashes = candidates.map((candidate) => candidate.infoHash?.toLowerCase()).filter((hash) => Boolean(hash));
+      if (hashes.length === 0) {
+        return {
+          cachedHashes: /* @__PURE__ */ new Set(),
+          cachedTitles: /* @__PURE__ */ new Set(),
+          downloadableHashes: /* @__PURE__ */ new Set(),
+          downloadableTitles: /* @__PURE__ */ new Set()
+        };
+      }
+      const cached = await torboxCheckCached(hashes);
+      const cachedHashes = /* @__PURE__ */ new Set();
+      const cachedTitles = /* @__PURE__ */ new Set();
+      for (const candidate of candidates) {
+        const hash = candidate.infoHash?.toLowerCase();
+        if (hash && cached.has(hash)) {
+          cachedHashes.add(candidate.infoHash);
+          if (candidate.title.trim()) cachedTitles.add(candidate.title.trim());
+        }
+      }
+      return {
+        cachedHashes,
+        cachedTitles,
+        downloadableHashes: /* @__PURE__ */ new Set(),
+        downloadableTitles: /* @__PURE__ */ new Set()
+      };
+    },
+    hideUncachedStreamsFromList() {
+      return false;
+    },
+    hideUnknownStreamsFromList() {
+      return false;
+    },
+    isMagnetSource(input) {
+      return input.trim().toLowerCase().startsWith("magnet:");
+    },
+    async addMagnet(magnet) {
+      const id4 = buildSourceId3(magnet);
+      const hash = extractInfoHash3(magnet);
+      const existing = sourceState3.get(id4);
+      if (existing && existing.torrentId != null) {
+        existing.pendingInfo = torboxGetInfo(existing.torrentId).catch(() => null);
+        existing.pendingDlUrls = /* @__PURE__ */ new Map();
+        void prefetchVideoFileUrls(existing);
+        return { id: id4, uri: magnet, hash: existing.hash };
+      }
+      const created = await torboxCreateTorrent(magnet);
+      const pendingInfo = torboxGetInfo(created.torrent_id).catch(() => null);
+      const state = {
+        magnet,
+        hash: created.hash || hash,
+        addedAt: (/* @__PURE__ */ new Date()).toISOString(),
+        torrentId: created.torrent_id,
+        selectedFileIds: null,
+        pendingInfo,
+        lastInfo: null,
+        lastInfoAt: 0,
+        pendingDlUrls: /* @__PURE__ */ new Map()
+      };
+      sourceState3.set(id4, state);
+      void prefetchVideoFileUrls(state);
+      return { id: id4, uri: magnet, hash: created.hash || hash };
+    },
+    async getSourceInfo(id4) {
+      const state = getSourceState3(id4);
+      if (state.torrentId == null) {
+        throw new Error("TorBox torrent id not yet known");
+      }
+      let info;
+      if (state.pendingInfo) {
+        info = await state.pendingInfo;
+        state.pendingInfo = null;
+        state.lastInfo = info;
+        state.lastInfoAt = Date.now();
+      } else if (state.lastInfo && Date.now() - state.lastInfoAt < INFO_CACHE_TTL_MS) {
+        info = state.lastInfo;
+      } else {
+        info = await torboxGetInfo(state.torrentId);
+        state.lastInfo = info;
+        state.lastInfoAt = Date.now();
+      }
+      if (!info) {
+        return buildTorrentInfo3(state, null, "magnet_conversion", [], [], "Looking up on TorBox\u2026");
+      }
+      const isSelected = (fileId) => state.selectedFileIds === "all" || state.selectedFileIds instanceof Set && state.selectedFileIds.has(fileId);
+      const status = mapStatus2(info);
+      const files = toTorrentFiles2(info.files ?? [], isSelected);
+      if (status !== "downloaded") {
+        return buildTorrentInfo3(state, info, status, files, [], info.download_state);
+      }
+      if (state.selectedFileIds === null) {
+        return buildTorrentInfo3(state, info, "waiting_files_selection", files, [], "Select files");
+      }
+      const selectedFiles = files.filter((file) => file.selected === 1);
+      const resolvedLinks = await Promise.all(
+        selectedFiles.map(async (file) => {
+          const pending = state.pendingDlUrls.get(file.id);
+          const url = pending != null ? await pending : await torboxRequestDl(state.torrentId, file.id);
+          return url ? { url, file } : null;
+        })
+      );
+      const links = [];
+      for (const entry of resolvedLinks) {
+        if (!entry) continue;
+        links.push(entry.url);
+        directLinkCache2.set(entry.url, { filename: entry.file.path, filesize: entry.file.bytes });
+      }
+      if (links.length === 0) {
+        return buildTorrentInfo3(state, info, "error", files, [], "No playable links from TorBox");
+      }
+      return buildTorrentInfo3(state, info, "downloaded", files, links, "Ready");
+    },
+    async selectFiles(id4, files = "all") {
+      const state = getSourceState3(id4);
+      state.selectedFileIds = files === "all" ? "all" : new Set(
+        files.split(",").map((value) => Number.parseInt(value.trim(), 10)).filter((value) => Number.isFinite(value))
+      );
+    },
+    async resolveLink(link) {
+      const cached = directLinkCache2.get(link);
+      return {
+        id: link,
+        filename: cached?.filename ?? link.split("/").pop()?.split("?")[0] ?? "download",
+        mimeType: "application/octet-stream",
+        filesize: cached?.filesize ?? 0,
+        link,
+        host: "torbox",
+        chunks: 1,
+        crc: 0,
+        download: link,
+        streamable: 1
+      };
+    }
+  };
+
   // lib/stream-provider-runtime/playback/stream-provider-playback.ts
   var playbackProviders = /* @__PURE__ */ new Map([
     ["alldebrid", alldebridPlaybackProvider],
     ["easydebrid", easyDebridPlaybackProvider],
     ["offcloud", offcloudPlaybackProvider],
-    ["realdebrid", legacyPlaybackProvider]
+    ["realdebrid", legacyPlaybackProvider],
+    ["torbox", torboxPlaybackProvider]
   ]);
+  function getPlaybackProviderOverride() {
+    if (typeof window === "undefined") return null;
+    return window.__lumioPluginRuntime?.playbackProviderOverride ?? null;
+  }
+  function resolveActiveProviderId() {
+    return getPlaybackProviderOverride() ?? getActiveStreamProvider().trim().toLowerCase();
+  }
+  function getActivePlaybackProvider() {
+    const providerId = resolveActiveProviderId();
+    const provider = playbackProviders.get(providerId);
+    if (!provider) throw new Error(`Playback provider "${providerId}" is not supported`);
+    return provider;
+  }
   function findActivePlaybackProvider() {
-    const providerId = getActiveStreamProvider().trim().toLowerCase();
+    const providerId = resolveActiveProviderId();
     return playbackProviders.get(providerId) ?? null;
   }
   function getPlaybackAccessKey() {
@@ -167157,6 +167471,18 @@
     const provider = findActivePlaybackProvider();
     if (!provider) return null;
     return provider.buildConfigSegment(accessKey, qualityFilter);
+  }
+  async function queueMagnetForPlayback(magnet) {
+    return getActivePlaybackProvider().addMagnet(magnet);
+  }
+  async function getPlaybackSourceInfo(id4) {
+    return getActivePlaybackProvider().getSourceInfo(id4);
+  }
+  async function selectPlaybackFiles(id4, files = "all") {
+    return getActivePlaybackProvider().selectFiles(id4, files);
+  }
+  async function resolvePlaybackLink(link) {
+    return getActivePlaybackProvider().resolveLink(link);
   }
 
   // lib/stream-provider-runtime/stream-filters.ts
@@ -167654,13 +167980,53 @@
     ) });
   }
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-B3JZuc/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-T7aBcM/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
 
   // lib/tauri-mpv.ts
   init_core();
   init_event();
   init_react_shim();
+
+  // lib/stream-provider-runtime/playback/resolve-stream-url.ts
+  var RESOLVE_URL_RE = /\/resolve\/(torbox|realdebrid|alldebrid|easydebrid|offcloud)\/[^/]+\/([a-f0-9]{40})\//i;
+  var VIDEO_EXT_RE2 = /\.(mkv|mp4|avi|m4v|mov|webm|ts|m2ts|wmv|flv)$/i;
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+  async function resolvePlayableStreamUrl(url) {
+    const match = url.match(RESOLVE_URL_RE);
+    if (!match) return url;
+    const provider = match[1].toLowerCase();
+    if (provider !== getActiveStreamProvider().trim().toLowerCase()) return url;
+    const infoHash = match[2].toLowerCase();
+    const wantedName = decodeURIComponent(url.split("/").pop()?.split("?")[0] ?? "").trim().toLowerCase();
+    try {
+      const added = await queueMagnetForPlayback(`magnet:?xt=urn:btih:${infoHash}`);
+      const pollSchedule = [250, 500, 1e3, 1500, 1500, 2e3, 2e3, 2500, 2500];
+      for (let attempt = 0; attempt < pollSchedule.length; attempt += 1) {
+        const info = await getPlaybackSourceInfo(added.id);
+        if (info.status === "waiting_files_selection") {
+          const videoFiles = info.files.filter((file) => VIDEO_EXT_RE2.test(file.path));
+          const byName = wantedName ? videoFiles.find((file) => file.path.trim().toLowerCase().endsWith(wantedName)) : void 0;
+          const best = byName ?? [...videoFiles].sort((a, b) => b.bytes - a.bytes)[0];
+          if (!best) return url;
+          await selectPlaybackFiles(added.id, String(best.id));
+        } else if (info.status === "downloaded") {
+          if (info.links.length === 0) return url;
+          const link = await resolvePlaybackLink(info.links[0]);
+          return link.download || url;
+        } else if (info.status === "error" || info.status === "magnet_error" || info.status === "dead" || info.status === "virus" || info.status === "downloading") {
+          return url;
+        }
+        await sleep(pollSchedule[attempt]);
+      }
+    } catch {
+    }
+    return url;
+  }
+
+  // lib/tauri-mpv.ts
   function detectTauriEnv() {
     if (typeof window === "undefined") return false;
     const maybeTauriWindow = window;
@@ -167675,7 +168041,8 @@
   }
   var isTauriEnv = detectTauriEnv();
   async function openMpvPlayer(args) {
-    return invoke("mpv_open", { args });
+    const url = await resolvePlayableStreamUrl(args.url).catch(() => args.url);
+    return invoke("mpv_open", { args: { ...args, url } });
   }
   async function closeMpvPlayer() {
     return invoke("mpv_close");
@@ -167718,14 +168085,27 @@
   async function getWindowFullscreen() {
     return invoke("get_window_fullscreen");
   }
+  async function getWindowNativeFullscreen() {
+    return invoke("get_window_native_fullscreen");
+  }
   async function setWindowFullscreen(fullscreen) {
     return invoke("set_window_fullscreen", { fullscreen });
+  }
+  async function setWindowNativeFullscreen(fullscreen) {
+    return invoke("set_window_native_fullscreen", { fullscreen });
   }
   async function mpvCommand(args) {
     try {
       return await invoke("mpv_command_ts", { args });
     } catch (e) {
       console.warn("[mpv] command error:", args, e);
+    }
+  }
+  async function mpvSetPropertyStrings(props) {
+    try {
+      return await invoke("mpv_set_property_strings", { props });
+    } catch (e) {
+      console.warn("[mpv] set property error:", props, e);
     }
   }
   async function mpvApplySubtitleStyle(args) {
@@ -167759,6 +168139,9 @@
     const [pausedForCache, setPausedForCache] = useState(false);
     const [coreIdle, setCoreIdle] = useState(true);
     const [firstFrameRendered, setFirstFrameRendered] = useState(false);
+    const [loadFailed, setLoadFailed] = useState(false);
+    const [loadFailedToken, setLoadFailedToken] = useState(0);
+    const [loadFailedError, setLoadFailedError] = useState(null);
     useEffect(() => {
       if (!isTauriEnv || !enabled) return;
       const cleanups = [];
@@ -167781,6 +168164,11 @@
         void fetch(`/api/debug-log?msg=${encodeURIComponent(`${performance.now().toFixed(0)} first-frame-rendered received`)}`);
         setFirstFrameRendered(true);
       }).then((u) => cleanups.push(u));
+      void listen("mpv://load-failed", (e) => {
+        setLoadFailedError(typeof e.payload === "number" ? e.payload : null);
+        setLoadFailed(true);
+        setLoadFailedToken((t) => t + 1);
+      }).then((u) => cleanups.push(u));
       return () => cleanups.forEach((fn) => fn());
     }, [enabled]);
     const seek = useCallback((time2) => {
@@ -167793,10 +168181,10 @@
       void mpvCommand(["set_property", "pause", pause]);
     }, []);
     const setVolume = useCallback((vol) => {
-      void mpvCommand(["set_property", "volume", Math.round(vol * 100)]);
+      void mpvSetPropertyStrings([{ name: "volume", value: String(Math.round(vol * 100)) }]);
     }, []);
     const setMuted = useCallback((muted) => {
-      void mpvCommand(["set_property", "mute", muted ? "yes" : "no"]);
+      void mpvSetPropertyStrings([{ name: "mute", value: muted ? "yes" : "no" }]);
     }, []);
     const setAudioTrack = useCallback((aid) => {
       void setMpvAudioTrack(aid);
@@ -167809,6 +168197,10 @@
     }, []);
     const resetFirstFrameRendered = useCallback(() => {
       setFirstFrameRendered(false);
+    }, []);
+    const resetLoadFailed = useCallback(() => {
+      setLoadFailed(false);
+      setLoadFailedError(null);
     }, []);
     return {
       timePos,
@@ -167823,6 +168215,9 @@
       pausedForCache,
       coreIdle,
       firstFrameRendered,
+      loadFailed,
+      loadFailedToken,
+      loadFailedError,
       seek,
       seekRelative,
       setPlayPause,
@@ -167831,7 +168226,8 @@
       setAudioTrack,
       resetFileLoaded,
       resetPlaybackRestarted,
-      resetFirstFrameRendered
+      resetFirstFrameRendered,
+      resetLoadFailed
     };
   }
 
@@ -170010,7 +170406,7 @@
   function isAbortError(error) {
     return error instanceof DOMException && error.name === "AbortError";
   }
-  function sleep(ms) {
+  function sleep2(ms) {
     return new Promise((resolve) => {
       window.setTimeout(resolve, ms);
     });
@@ -170058,7 +170454,7 @@
         const kind = classifyFetchError(error);
         if (kind === "rate_limited") throw error;
         lastError = error;
-        if (attempt < retries && retryDelayMs > 0) await sleep(retryDelayMs);
+        if (attempt < retries && retryDelayMs > 0) await sleep2(retryDelayMs);
       }
     }
     throw lastError ?? new Error("fetch_failed");
@@ -170078,7 +170474,7 @@
         const kind = classifyFetchError(error);
         if (kind === "rate_limited") throw error;
         lastError = error;
-        if (attempt < retries && retryDelayMs > 0) await sleep(retryDelayMs);
+        if (attempt < retries && retryDelayMs > 0) await sleep2(retryDelayMs);
       }
     }
     throw lastError ?? new Error("fetch_failed");
@@ -170568,7 +170964,7 @@
   var MAX_CACHE_ENTRIES = 600;
   var resultCache = /* @__PURE__ */ new Map();
   var inflight4 = /* @__PURE__ */ new Map();
-  function sleep2(ms) {
+  function sleep3(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
   function pruneCache(now3 = Date.now()) {
@@ -170644,7 +171040,7 @@
           const res = await fetch(url, { cache: "no-store", signal: controller.signal });
           if (!res.ok) {
             if (attempt === 0 && (res.status === 429 || res.status >= 500)) {
-              await sleep2(180);
+              await sleep3(180);
               continue;
             }
             throw new Error(`Subtitle search failed: ${res.status}`);
@@ -170653,7 +171049,7 @@
         } catch (error) {
           lastError = error;
           if (attempt === 0) {
-            await sleep2(180);
+            await sleep3(180);
             continue;
           }
         } finally {
@@ -171426,12 +171822,76 @@
     return value === "playback" ? "playback" : "app";
   }
 
+  // lib/subtitle-delay-store.ts
+  var STORAGE_KEY = "lumio_subtitle_delays_v1";
+  var MAX_ENTRIES = 400;
+  function readStore() {
+    if (typeof window === "undefined") return {};
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+  function writeStore(store) {
+    if (typeof window === "undefined") return;
+    try {
+      const keys2 = Object.keys(store);
+      if (keys2.length > MAX_ENTRIES) {
+        keys2.sort((a, b) => (store[a]?.t ?? 0) - (store[b]?.t ?? 0)).slice(0, keys2.length - MAX_ENTRIES).forEach((key) => {
+          delete store[key];
+        });
+      }
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+    } catch {
+    }
+  }
+  function buildSubtitleDelayMediaKey(mediaType, tmdbId, imdbId) {
+    const id4 = tmdbId ?? imdbId;
+    if (!id4) return null;
+    return `${mediaType ?? "media"}:${id4}`;
+  }
+  function getSavedSubtitleDelay(mediaKey, season, episode) {
+    const store = readStore();
+    if (season != null && episode != null) {
+      const exact = store[`${mediaKey}:s${season}e${episode}`];
+      if (exact && Number.isFinite(exact.d)) return exact.d;
+    }
+    const series = store[mediaKey];
+    return series && Number.isFinite(series.d) ? series.d : null;
+  }
+  function saveSubtitleDelay(mediaKey, season, episode, delay2) {
+    const store = readStore();
+    const exactKey = season != null && episode != null ? `${mediaKey}:s${season}e${episode}` : null;
+    if (delay2 === 0) {
+      if (exactKey) delete store[exactKey];
+      delete store[mediaKey];
+    } else {
+      const entry = { d: delay2, t: Date.now() };
+      if (exactKey) store[exactKey] = entry;
+      store[mediaKey] = entry;
+    }
+    writeStore(store);
+  }
+
   // components/player/video-player-modal.tsx
   init_jsx_runtime_shim();
   var EMBEDDED_SUBTITLES_ENABLED = true;
   var PLAYER_UI_TICK_MS = 250;
   var PLAYER_PARENT_TIMEUPDATE_TICK_MS = 1e3;
   var PROXY_RESTART_MIN_GAP_MS = 3e4;
+  var INTRODB_CACHE = /* @__PURE__ */ new Map();
+  function buildIntroDbCacheKey(mediaType, tmdbId, imdbId, season, episode) {
+    return [
+      mediaType,
+      imdbId ? `imdb:${imdbId}` : `tmdb:${tmdbId}`,
+      mediaType === "tv" ? `s${season}` : "",
+      mediaType === "tv" ? `e${episode}` : ""
+    ].join(":");
+  }
   function parseTimestamp(ts) {
     const parts = ts.trim().split(":");
     if (parts.length === 3) return +parts[0] * 3600 + +parts[1] * 60 + parseFloat(parts[2]);
@@ -171550,13 +172010,15 @@
     console.log("[sync] buildProxyUrl", { track, start: Math.floor(start2), vcodec, channels, audioMode, transcode: Boolean(transcode) });
     return `/api/proxy-stream?${p.toString()}`;
   }
-  function getAnchoredMenuStyle(trigger) {
+  function getAnchoredMenuStyle(trigger, menuWidth = 0) {
     if (!trigger || typeof window === "undefined") return { visibility: "hidden", position: "fixed" };
     const rect = trigger.getBoundingClientRect();
+    const right = Math.round(Math.max(4, window.innerWidth - rect.right));
+    const maxRight = Math.round(Math.max(4, window.innerWidth - menuWidth - 4));
     return {
       position: "fixed",
       bottom: Math.round(window.innerHeight - rect.top + 8),
-      right: Math.round(Math.max(4, window.innerWidth - rect.right))
+      right: Math.min(right, maxRight)
     };
   }
   async function initHlsStream(originalUrl, track, start2, vcodec, channels, audioMode, nightMode, transcode) {
@@ -171704,7 +172166,7 @@
     } catch {
     }
   }
-  function VideoPlayerModal({ url, filename, title, onClose, imdbId, tmdbId, mediaType, season, episode, mediaId, mediaTitle, mediaSource, posterUrl, backdropUrl, year, initialTime, onFirstPlay, hideStartSplash, forceProxy, onTimeUpdate, onOutroStart, skipHomeKitOnClose, skipHomeKitOnOpen, overlayContent, autoFullscreen, playbackTraceId }) {
+  function VideoPlayerModal({ url, filename, title, onClose, imdbId, tmdbId, mediaType, season, episode, mediaId, mediaTitle, mediaSource, posterUrl, backdropUrl, year, initialTime, onFirstPlay, hideStartSplash, forceProxy, onTimeUpdate, onOutroStart, onLoadFailed, skipHomeKitOnClose, skipHomeKitOnOpen, overlayContent, autoFullscreen, playbackTraceId }) {
     const STILL_WATCHING_CLOSE_SECONDS = 20;
     const [useMpv, setUseMpv] = useState(false);
     useEffect(() => {
@@ -171805,7 +172267,7 @@
       totalDuration: 0,
       hasStarted: false
     });
-    const introDbCacheRef = useRef(/* @__PURE__ */ new Map());
+    const introDbCacheRef = useRef(INTRODB_CACHE);
     const containerRef = useRef(null);
     const controlsRef = useRef(null);
     const boundsSyncFrameRef = useRef(null);
@@ -171924,7 +172386,7 @@
     const [mpvStartupTracksReady, setMpvStartupTracksReady] = useState(false);
     const [mpvRevealPlaybackReady, setMpvRevealPlaybackReady] = useState(false);
     const [splashFading, setSplashFading] = useState(false);
-    const SPLASH_FADE_MS = 400;
+    const SPLASH_FADE_MS = 250;
     const mpvFreshStartGuardRef = useRef({
       pending: false,
       armedAt: 0,
@@ -171958,6 +172420,19 @@
     const [resolvedImdbId, setResolvedImdbId] = useState(imdbId ?? null);
     const [cues, setCues] = useState([]);
     const [subDelay, setSubDelay] = useState(0);
+    const subtitleDelayMediaKey = buildSubtitleDelayMediaKey(mediaType, tmdbId, imdbId ?? null);
+    useEffect(() => {
+      if (!subtitleDelayMediaKey) return;
+      const saved = getSavedSubtitleDelay(subtitleDelayMediaKey, season ?? null, episode ?? null);
+      if (saved == null) return;
+      setSubDelay(saved);
+    }, [subtitleDelayMediaKey, season, episode, url]);
+    useEffect(() => {
+      if (!subtitleDelayMediaKey) return;
+      const saved = getSavedSubtitleDelay(subtitleDelayMediaKey, season ?? null, episode ?? null);
+      if ((saved ?? 0) === subDelay) return;
+      saveSubtitleDelay(subtitleDelayMediaKey, season ?? null, episode ?? null, subDelay);
+    }, [subDelay]);
     const [subtitleAutoSyncState, setSubtitleAutoSyncState] = useState({ type: "idle" });
     const [subSize, setSubSize] = useState(() => getDefaultSubtitleSize());
     const [subVerticalPos, setSubVerticalPos] = useState(() => getDefaultSubtitleVerticalPosition());
@@ -171986,6 +172461,9 @@
     const outroFiredRef = useRef(false);
     const onOutroStartRef = useRef(onOutroStart);
     onOutroStartRef.current = onOutroStart;
+    const onLoadFailedRef = useRef(onLoadFailed);
+    onLoadFailedRef.current = onLoadFailed;
+    const loadFailHandledTokenRef = useRef(0);
     const [subtitleClockOverride, setSubtitleClockOverride] = useState(null);
     const [defaultAudioLanguage, setDefaultAudioLanguage] = useState(() => getDefaultAudioLanguage() || null);
     const moreMenuRef = useRef(null);
@@ -171998,6 +172476,7 @@
     const downloadTimerRef = useRef(null);
     const autoSkippedIntroRef = useRef(false);
     const watchedMarkedRef = useRef(false);
+    const hasStartedForUrlRef = useRef(false);
     const playbackStartedAtRef = useRef(0);
     const autoSubtitleSuppressedRef = useRef(false);
     const manualSubtitleOverrideRef = useRef(false);
@@ -172125,9 +172604,9 @@
         const elapsed = Date.now() - tickAt;
         const hardTimeout = elapsed > 1e4;
         const audioReady = mpvStartupTracksReady && (audioTracks.length > 0 || hardTimeout);
-        const subtitlesReady = mpvStartupTracksReady && (!loadingSub || hardTimeout);
-        const introReady = introDataReady || hardTimeout;
-        const extraHoldDone = elapsed > ((initialTime ?? 0) > 0 ? 1e3 : 1800);
+        const subtitlesReady = mpvStartupTracksReady && (!loadingSub || elapsed > 2500);
+        const introReady = introDataReady || elapsed > 2e3;
+        const extraHoldDone = elapsed > ((initialTime ?? 0) > 0 ? 600 : 800);
         if (extraHoldDone && audioReady && subtitlesReady && introReady) {
           window.clearInterval(interval);
           setMpvStartupHoldReady(true);
@@ -172163,6 +172642,19 @@
       setMpvRevealPlaybackReady(true);
     }, [mpv.firstFrameRendered, mpvStartupHoldReady, useMpv]);
     useEffect(() => {
+      if (!useMpv) return;
+      if (!mpv.loadFailed) return;
+      if (hasStarted || mpv.firstFrameRendered) return;
+      if (loadFailHandledTokenRef.current === mpv.loadFailedToken) return;
+      loadFailHandledTokenRef.current = mpv.loadFailedToken;
+      if (onLoadFailedRef.current?.()) {
+        console.warn("[player] mpv load failed, parent retrying with next stream", { error: mpv.loadFailedError, url });
+        return;
+      }
+      console.warn("[player] mpv load failed, closing modal", { error: mpv.loadFailedError, url });
+      onClose();
+    }, [mpv.loadFailed, mpv.loadFailedToken, mpv.loadFailedError, mpv.firstFrameRendered, hasStarted, useMpv, url, onClose]);
+    useEffect(() => {
       if (hasEverStarted) return;
       if (hideStartSplash) {
         setHasEverStarted(true);
@@ -172187,7 +172679,7 @@
       void fetch(`/api/debug-log?msg=${encodeURIComponent(
         `${performance.now().toFixed(0)} FADE TRIGGER ARMED`
       )}`);
-      const REVEAL_GUARD_MS = 120;
+      const REVEAL_GUARD_MS = 60;
       const fadeStart = window.setTimeout(() => {
         setSplashFading(true);
       }, REVEAL_GUARD_MS);
@@ -172218,6 +172710,8 @@
       }
     }, [loadingSub, mpv.sid, useMpv]);
     const realTime = useMpv ? mpv.timePos : currentTime + streamStartRef.current;
+    const realTimeRef = useRef(realTime);
+    realTimeRef.current = realTime;
     const totalDuration = useMpv ? mpv.duration > 0 ? mpv.duration : probedDuration ?? 0 : probedDuration ?? (isFinite(duration) && duration > 0 ? duration : 0);
     const isPlaying = useMpv ? !mpv.paused : playing;
     const hasEndedPlayback = useMpv ? mpv.ended : hasEnded;
@@ -172568,9 +173062,17 @@
     }, [useMpv]);
     const toggleFullscreen = useCallback(() => {
       if (useMpv) {
-        void syncDesktopFullscreenState().then((fullscreen) => setWindowFullscreen(!fullscreen)).then((fullscreen) => {
+        const wasPlaying = !mpv.paused;
+        void fetch(`/api/debug-log?msg=${encodeURIComponent(`toggleFullscreen click t=${performance.now().toFixed(0)}`)}`).catch(() => {
+        });
+        void getWindowNativeFullscreen().then((fullscreen) => setWindowNativeFullscreen(!fullscreen)).then((fullscreen) => {
           setDesktopFullscreen(fullscreen);
           scheduleBoundsResync();
+          if (wasPlaying) {
+            void setMpvPause(false);
+            window.setTimeout(() => void setMpvPause(false), 250);
+            window.setTimeout(() => void setMpvPause(false), 900);
+          }
           onMouseActivity();
         }).catch(() => {
         });
@@ -172591,7 +173093,7 @@
       else void containerRef.current.requestFullscreen().catch(() => {
       });
       onMouseActivity();
-    }, [scheduleBoundsResync, syncDesktopFullscreenState, useMpv]);
+    }, [mpv.paused, scheduleBoundsResync, syncDesktopFullscreenState, useMpv]);
     useEffect(() => {
       if (!autoFullscreen) return;
       if (useMpv || typeof containerRef.current?.requestFullscreen !== "function") {
@@ -172600,7 +173102,7 @@
             scheduleBoundsResync();
             return;
           }
-          const nextFullscreen = await setWindowFullscreen(true);
+          const nextFullscreen = await setWindowNativeFullscreen(true);
           setDesktopFullscreen(nextFullscreen);
           scheduleBoundsResync();
         }).catch(() => {
@@ -172616,6 +173118,7 @@
       mpv.resetFileLoaded();
       mpv.resetPlaybackRestarted();
       mpv.resetFirstFrameRendered();
+      mpv.resetLoadFailed();
       void closeMpvPlayer().catch(() => {
       }).then(() => {
         if (cancelled) return;
@@ -172646,6 +173149,7 @@
         if (!closeToExpected && elapsed < 5e3) return;
         guard.pending = false;
       }
+      hasStartedForUrlRef.current = true;
       setHasStarted(true);
       onFirstPlay?.();
     }, [hasStarted, mpv.timePos, mpvRevealPlaybackReady, mpvStartupHoldReady, onFirstPlay, useMpv]);
@@ -172820,7 +173324,7 @@
         const fullscreenSyncTimeout = window.setTimeout(finishClose, 1500);
         void syncDesktopFullscreenState().then((fullscreen) => {
           if (!fullscreen) return;
-          return setWindowFullscreen(false);
+          return setWindowNativeFullscreen(false);
         }).then((fullscreen) => {
           if (typeof fullscreen !== "boolean") return;
           setDesktopFullscreen(fullscreen);
@@ -173061,7 +173565,7 @@
                 handleClose();
                 return;
               }
-              return setWindowFullscreen(false).then((nextFullscreen) => {
+              return setWindowNativeFullscreen(false).then((nextFullscreen) => {
                 setDesktopFullscreen(nextFullscreen);
                 scheduleBoundsResync();
                 showControlsPermanent();
@@ -173295,6 +173799,7 @@
       function save() {
         const snapshot = progressSnapshotRef.current;
         if (!mediaId || !url || snapshot.totalDuration <= 0) return;
+        if (watchedMarkedRef.current) return;
         saveStreamProgress({
           id: mediaId,
           tmdbId: wikiTmdbId,
@@ -173347,6 +173852,7 @@
       setCurrentTime(0);
       setDuration(0);
       setBuffered(0);
+      hasStartedForUrlRef.current = false;
       setHasStarted(false);
       setHasEverStarted(false);
       setMpvStartupHoldReady(false);
@@ -173442,6 +173948,7 @@
         const v = videoRef.current;
         if (!v) return;
         if (!v.paused && v.currentTime > 0.15) {
+          hasStartedForUrlRef.current = true;
           setHasStarted(true);
           setHasEverStarted(true);
           setRequiresUserStart(false);
@@ -173515,7 +174022,7 @@
     }, [imdbId, inferredMediaType, wikiTmdbId]);
     useEffect(() => {
       if (mediaType !== "movie") return;
-      if (!hasStarted) return;
+      if (!hasStarted || !hasStartedForUrlRef.current) return;
       if (watchedMarkedRef.current) return;
       if (totalDuration <= 0) return;
       const completionRatio = realTime / totalDuration;
@@ -173552,7 +174059,7 @@
     }, [hasEndedPlayback, hasStarted, isPlaying, mediaType, realTime, showStillWatchingPrompt, useMpv]);
     useEffect(() => {
       if (mediaType !== "tv") return;
-      if (!hasStarted) return;
+      if (!hasStarted || !hasStartedForUrlRef.current) return;
       if (!wikiTmdbId || season == null || episode == null) return;
       if (watchedMarkedRef.current) return;
       if (totalDuration <= 0) return;
@@ -173584,12 +174091,7 @@
         setIntroDataReady(true);
         return;
       }
-      const introDbCacheKey = [
-        mediaType,
-        introDbImdbId ? `imdb:${introDbImdbId}` : `tmdb:${wikiTmdbId}`,
-        mediaType === "tv" ? `s${season}` : "",
-        mediaType === "tv" ? `e${episode}` : ""
-      ].join(":");
+      const introDbCacheKey = buildIntroDbCacheKey(mediaType, wikiTmdbId, introDbImdbId, season, episode);
       const applyIntroDbPayload = (data) => {
         setOutroSegment(data.outro ?? null);
         setIntroSegment(data.intro ?? null);
@@ -173622,6 +174124,18 @@
         if (data.intro != null) {
           setIntroSegment(data.intro);
           setIntroKind(data.kind ?? null);
+          setIntroDataReady(true);
+          return;
+        }
+        const isRemoteUrl = /^https?:\/\//i.test(url) && !/^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])([:/])/i.test(url);
+        if (isRemoteUrl) {
+          const cachedPayload = introDbCacheRef.current.get(introDbCacheKey);
+          if (cachedPayload) {
+            applyIntroDbPayload(cachedPayload);
+          } else {
+            setIntroSegment(null);
+            setIntroKind(null);
+          }
           setIntroDataReady(true);
           return;
         }
@@ -174113,7 +174627,8 @@
       seekToAbsolute(activeIntro.endMs / 1e3);
     }, [autoSkipIntro, activeIntro, hasStarted, seekToAbsolute]);
     useEffect(() => {
-      if (!hasStarted || outroFiredRef.current || !outroSegment) return;
+      if (!hasStarted || !hasStartedForUrlRef.current) return;
+      if (outroFiredRef.current || !outroSegment) return;
       if (realTime < outroSegment.startMs / 1e3) return;
       outroFiredRef.current = true;
       if (mediaType === "tv" && wikiTmdbId && season != null && episode != null && !watchedMarkedRef.current) {
@@ -174129,7 +174644,8 @@
       (acc[_a = s.language] ?? (acc[_a] = [])).push(s);
       return acc;
     }, {});
-    const runSubtitleAutoSync = useCallback(async () => {
+    const runSubtitleAutoSync = useCallback(async (opts) => {
+      const minConfidence = typeof opts?.minConfidence === "number" ? opts.minConfidence : null;
       const groqApiKey = getGroqApiKey().trim();
       if (!groqApiKey) {
         setSubtitleAutoSyncState({ type: "error", message: t("subtitleAutoSyncNeedsGroq") });
@@ -174139,7 +174655,8 @@
         setSubtitleAutoSyncState({ type: "error", message: t("subtitleAutoSyncNeedsSubtitle") });
         return;
       }
-      const cueWindow = cues.filter((cue) => cue.end >= Math.max(0, realTime - 12) && cue.start <= realTime + 20);
+      const syncTime = realTimeRef.current;
+      const cueWindow = cues.filter((cue) => cue.end >= Math.max(0, syncTime - 12) && cue.start <= syncTime + 20);
       if (cueWindow.length < 2) {
         setSubtitleAutoSyncState({ type: "error", message: t("subtitleAutoSyncNotEnoughSpeech") });
         return;
@@ -174152,7 +174669,7 @@
           body: JSON.stringify({
             apiKey: groqApiKey,
             url,
-            currentTime: realTime,
+            currentTime: syncTime,
             cues: cueWindow
           })
         });
@@ -174160,6 +174677,10 @@
         if (!res.ok) throw new Error(data.error || "subtitle_auto_sync_failed");
         if (typeof data.suggestedDelay !== "number") {
           setSubtitleAutoSyncState({ type: "error", message: t("subtitleAutoSyncNoMatch") });
+          return;
+        }
+        if (minConfidence !== null && (data.confidence ?? 0) < minConfidence) {
+          setSubtitleAutoSyncState({ type: "idle" });
           return;
         }
         lastAutoSyncedDelayRef.current = subDelay;
@@ -174171,13 +174692,27 @@
       } catch {
         setSubtitleAutoSyncState({ type: "error", message: t("subtitleAutoSyncFailed") });
       }
-    }, [activeSubId, cues, realTime, subDelay, t, url]);
+    }, [activeSubId, cues, subDelay, t, url]);
     const undoSubtitleAutoSync = useCallback(() => {
       if (lastAutoSyncedDelayRef.current === null) return;
       setSubDelay(lastAutoSyncedDelayRef.current);
       lastAutoSyncedDelayRef.current = null;
       setSubtitleAutoSyncState({ type: "idle" });
     }, []);
+    const autoSyncAttemptKeyRef = useRef(null);
+    useEffect(() => {
+      if (!hasStarted || !activeSubId || activeSubId.startsWith("embedded:")) return;
+      if (subDelay !== 0 || lastAutoSyncedDelayRef.current !== null) return;
+      if (subtitleAutoSyncState.type !== "idle") return;
+      if (cues.length < 2 || realTime < 30) return;
+      const attemptKey = `${url}::${activeSubId}`;
+      if (autoSyncAttemptKeyRef.current === attemptKey) return;
+      if (!getGroqApiKey().trim()) return;
+      const cueWindow = cues.filter((cue) => cue.end >= realTime - 12 && cue.start <= realTime + 20);
+      if (cueWindow.length < 2) return;
+      autoSyncAttemptKeyRef.current = attemptKey;
+      void runSubtitleAutoSync({ minConfidence: 0.5 });
+    }, [activeSubId, cues, hasStarted, realTime, runSubtitleAutoSync, subDelay, subtitleAutoSyncState.type, url]);
     const content = /* @__PURE__ */ jsxs("div", { "data-lumio-player-open": "1", className: `fixed inset-0 z-[60] flex flex-col !mt-0 ${useMpv ? "" : "bg-black"}`, children: [
       !hasEverStarted && !hideStartSplash && /* @__PURE__ */ jsxs(
         "div",
@@ -174311,6 +174846,7 @@
                 onPlay: () => {
                   setPlaying(true);
                   if (!hasStarted) {
+                    hasStartedForUrlRef.current = true;
                     setHasStarted(true);
                     if (useMpv || !isServerStreamUrl(videoSrc)) {
                       setHasEverStarted(true);
@@ -174458,10 +174994,14 @@
                 )
               }
             ),
-            showSubMenu && /* @__PURE__ */ jsxs(
+            showSubMenu && // The CC panel is three columns wide — anchoring it at the trigger
+            // and growing leftward clipped it against the window's left edge.
+            // Pin it to the window's right edge instead; only `bottom` follows
+            // the trigger so it still opens just above the controls bar.
+            /* @__PURE__ */ jsxs(
               "div",
               {
-                style: getAnchoredMenuStyle(subTriggerRef.current),
+                style: { ...getAnchoredMenuStyle(subTriggerRef.current), right: 16 },
                 className: "z-[70] flex rounded-xl border border-white/10 bg-slate-900/95 shadow-xl backdrop-blur-sm",
                 onClick: (e) => e.stopPropagation(),
                 children: [
@@ -174559,7 +175099,7 @@
                       subtitleAutoSyncState.type === "analyzing" && /* @__PURE__ */ jsx("div", { className: "mt-2 text-[11px] leading-5 text-slate-400", children: t("subtitleAutoSyncAnalyzing") })
                     ] }),
                     [
-                      { label: t("delay"), value: subDelay, unit: "s", dec: () => setSubDelay((v) => Math.max(-10, Math.round((v - 0.5) * 10) / 10)), inc: () => setSubDelay((v) => Math.min(10, Math.round((v + 0.5) * 10) / 10)) },
+                      { label: t("delay"), value: subDelay, unit: "s", dec: () => setSubDelay((v) => Math.max(-30, Math.round((v - 0.1) * 10) / 10)), inc: () => setSubDelay((v) => Math.min(30, Math.round((v + 0.1) * 10) / 10)) },
                       { label: t("size"), value: subSize, unit: "%", dec: () => setSubSize((v) => Math.max(50, v - 10)), inc: () => setSubSize((v) => Math.min(200, v + 10)) },
                       { label: t("verticalPosition"), value: subVerticalPos, unit: "%", dec: () => setSubVerticalPos((v) => Math.max(0, v - 5)), inc: () => setSubVerticalPos((v) => Math.min(90, v + 5)) }
                     ].map(({ label, value, unit, dec, inc }) => /* @__PURE__ */ jsxs("div", { className: "px-4 py-2", children: [
@@ -174724,7 +175264,7 @@
                         step: 0.05,
                         value: muted ? 0 : volume,
                         onChange: handleVolumeChange,
-                        className: "w-20 accent-aurora-400"
+                        className: "h-1 w-20 cursor-pointer appearance-none rounded-full border border-white/10 bg-white/20 accent-aurora-400"
                       }
                     ),
                     (wikiTmdbId || resolvedImdbId) && /* @__PURE__ */ jsx(
@@ -174967,6 +175507,7 @@
     stillUrl,
     urlReady,
     allowManualPlayWhenNotReady = false,
+    autoPlaySeconds = 5,
     onDismiss,
     onPlayNow
   }) {
@@ -174981,7 +175522,8 @@
       return () => clearTimeout(t);
     }, []);
     useEffect(() => {
-      setCountdown(5);
+      if (autoPlaySeconds == null) return;
+      setCountdown(autoPlaySeconds);
       intervalRef.current = setInterval(() => {
         setCountdown((prev) => {
           if (prev === null || prev <= 1) {
@@ -174994,7 +175536,7 @@
       return () => {
         if (intervalRef.current) clearInterval(intervalRef.current);
       };
-    }, []);
+    }, [autoPlaySeconds]);
     useEffect(() => {
       if (countdown !== 0 || didAutoPlayRef.current) return;
       if (urlReady || allowManualPlayWhenNotReady) {
@@ -175052,9 +175594,9 @@
             "div",
             {
               className: "h-full bg-aurora-400 transition-none",
-              style: { width: `${countdown / 5 * 100}%` }
+              style: { width: `${countdown / (autoPlaySeconds ?? 5) * 100}%` }
             }
-          ) : /* @__PURE__ */ jsx("div", { className: "h-full w-full animate-pulse bg-white/10" }) }),
+          ) : !urlReady ? /* @__PURE__ */ jsx("div", { className: "h-full w-full animate-pulse bg-white/10" }) : /* @__PURE__ */ jsx("div", { className: "h-full w-full bg-white/10" }) }),
           /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-2 px-3 py-2", children: [
             /* @__PURE__ */ jsxs(
               "button",
@@ -177877,7 +178419,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-B3JZuc/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-T7aBcM/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");
