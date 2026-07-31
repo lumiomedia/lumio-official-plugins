@@ -113,6 +113,31 @@
       "bundled": true,
       "removable": true,
       "repoPath": "plugins/trakt"
+    },
+    {
+      "id": "com.lumio.twitch",
+      "slug": "twitch",
+      "name": {
+        "en": "Twitch",
+        "sv": "Twitch"
+      },
+      "version": "1.0.0",
+      "description": {
+        "en": "Browse live channels, categories, followed streams, VODs and clips from Twitch.",
+        "sv": "Bläddra bland live-kanaler, kategorier, följda streams, VOD:er och klipp från Twitch."
+      },
+      "path": "plugins/twitch",
+      "runtimeBundlePath": "dist/runtime.js",
+      "readmePath": "plugins/twitch/README.md",
+      "changelogPath": "plugins/twitch/CHANGELOG.md",
+      "official": true,
+      "bundled": true,
+      "removable": true,
+      "auth": {
+        "managedProviderId": "twitch",
+        "supportsPersonalOverride": false
+      },
+      "repoPath": "plugins/twitch"
     }
   ]
 }

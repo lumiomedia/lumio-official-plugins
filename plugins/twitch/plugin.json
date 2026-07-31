@@ -1,0 +1,28 @@
+{
+  "id": "com.lumio.twitch",
+  "slug": "twitch",
+  "name": {
+    "en": "Twitch",
+    "sv": "Twitch"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Browse live channels, categories, followed streams, VODs and clips from Twitch.",
+    "sv": "Bläddra bland live-kanaler, kategorier, följda streams, VOD:er och klipp från Twitch."
+  },
+  "runtimeBundlePath": "dist/runtime.js",
+  "official": true,
+  "bundled": true,
+  "removable": true,
+  "managedAuthProviderId": "twitch",
+  "supportsPersonalAuthOverride": false,
+  "sdkCapabilities": [
+    "settings-section",
+    "auth-capability",
+    "browse-page",
+    "home-row",
+    "home-source",
+    "hero",
+    "main-menu-item"
+  ]
+}
