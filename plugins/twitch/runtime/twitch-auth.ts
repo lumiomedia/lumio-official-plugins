@@ -58,6 +58,13 @@ export async function openTwitchVerificationUrl(url: string): Promise<void> {
   }
 }
 
+// General external-URL opener (same desktop/web handling as the verification
+// link). Used to open a channel's Twitch page — e.g. to follow it, since the
+// Helix API no longer exposes follow/unfollow endpoints.
+export async function openTwitchUrl(url: string): Promise<void> {
+  return openTwitchVerificationUrl(url)
+}
+
 async function startTwitchDeviceFlow(): Promise<DeviceStartResponse> {
   const response = await fetch('/api/plugins/twitch/device/start', {
     method: 'POST',

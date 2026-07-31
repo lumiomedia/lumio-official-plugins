@@ -22,6 +22,7 @@ import {
   thumb,
 } from './twitch-client'
 import { TwitchPlayerModal } from './twitch-player'
+import { openTwitchUrl } from './twitch-auth'
 import { getTwitchHeroEnabled, getTwitchSession, isTwitchSessionValid, onTwitchPluginChanged } from './twitch-storage'
 import type { TwitchStream, TwitchCategory, TwitchVideo, TwitchClip, EnrichedFollowedChannel } from './twitch-types'
 
@@ -110,6 +111,10 @@ const TEXT = {
   },
   liveBadge: { en: 'Live', sv: 'Live' },
   offlineBadge: { en: 'Offline', sv: 'Offline' },
+  // Channel page
+  watchLive: { en: 'Watch live', sv: 'Titta live' },
+  openOnTwitch: { en: 'Open on Twitch', sv: 'Öppna på Twitch' },
+  backToChannel: { en: 'Back', sv: 'Tillbaka' },
 } as const
 
 type TextKey = keyof typeof TEXT
@@ -477,6 +482,47 @@ function SegmentedControl<T extends string>({
   )
 }
 
+// The plugin surfaces four browse pages but the app menu only links the first,
+// so — like the YouTube plugin — each page draws its own top tab bar and uses
+// the passed `onNavigate` to switch between them. Without this, Categories /
+// Search / Following are unreachable from the UI.
+const TWITCH_PAGES: { id: string; label: { en: string; sv: string } }[] = [
+  { id: 'twitch-live', label: { en: 'Live', sv: 'Live' } },
+  { id: 'twitch-categories', label: { en: 'Categories', sv: 'Kategorier' } },
+  { id: 'twitch-following', label: { en: 'Following', sv: 'Följer' } },
+  { id: 'twitch-search', label: { en: 'Search', sv: 'Sök' } },
+]
+
+function TwitchPageNav({
+  current,
+  onNavigate,
+}: {
+  current: string
+  onNavigate: (target: { pageId: string }) => void
+}) {
+  const { lang } = useLang()
+  return (
+    <div className="flex flex-wrap gap-2">
+      {TWITCH_PAGES.map((page) => (
+        <button
+          key={page.id}
+          type="button"
+          onClick={() => {
+            if (page.id !== current) onNavigate({ pageId: page.id })
+          }}
+          className={`h-9 rounded-full border px-4 text-[0.62rem] font-normal uppercase tracking-[0.2em] transition-all ${
+            page.id === current
+              ? 'border-white/[0.24] bg-white/[0.1] text-white'
+              : 'border-white/[0.1] bg-white/[0.03] text-slate-300 hover:border-white/[0.16] hover:bg-white/[0.05] hover:text-white'
+          }`}
+        >
+          {page.label[lang] ?? page.label.en}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 function StreamCard({
   stream,
   onPlay,
@@ -594,61 +640,51 @@ function StreamFilterBar({
   )
 }
 
-export function TwitchBrowsePage({ onNavigate: _onNavigate }: BrowsePageProps) {
+export function TwitchBrowsePage({ pageId, onNavigate }: BrowsePageProps) {
   const text = useTwitchText()
   const { lang } = useLang()
   const [sort, setSort] = useState<StreamSort>('viewers-desc')
   // Stream language follows the app-wide language selector, not a local chip.
   const { streams, loading, error, hasMore, loadMore } = useTwitchTopStreams(true, lang)
-  const [playerStream, setPlayerStream] = useState<TwitchStream | null>(null)
+  const [selectedChannel, setSelectedChannel] = useState<SelectedChannel | null>(null)
+
+  if (selectedChannel) {
+    return (
+      <ChannelDrilldown
+        channel={selectedChannel}
+        pageId={pageId}
+        onNavigate={onNavigate}
+        onBack={() => setSelectedChannel(null)}
+      />
+    )
+  }
 
   const filterBar = <StreamFilterBar sort={sort} onSortChange={setSort} />
   const sorted = sortStreams(streams, sort)
 
-  if (loading && streams.length === 0) {
-    return (
-      <div className="space-y-8">
-        <TwitchGridShell title={text('liveNowTitle')} subtitle={text('liveNowSubtitle')} actions={filterBar}>
-          <p className="text-sm text-slate-400">{text('loading')}</p>
-        </TwitchGridShell>
+  const body =
+    loading && streams.length === 0 ? (
+      <p className="text-sm text-slate-400">{text('loading')}</p>
+    ) : error && streams.length === 0 ? (
+      <p className="text-sm text-slate-400">{text('loadError')}</p>
+    ) : sorted.length === 0 ? (
+      <p className="text-sm text-slate-400">{text('empty')}</p>
+    ) : (
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {sorted.map((stream) => (
+          <StreamCard key={stream.id} stream={stream} onPlay={(s) => setSelectedChannel(channelFromStream(s, true))} />
+        ))}
       </div>
     )
-  }
-
-  if (error && streams.length === 0) {
-    return (
-      <div className="space-y-8">
-        <TwitchGridShell title={text('liveNowTitle')} subtitle={text('liveNowSubtitle')} actions={filterBar}>
-          <p className="text-sm text-slate-400">{text('loadError')}</p>
-        </TwitchGridShell>
-      </div>
-    )
-  }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      <TwitchPageNav current={pageId} onNavigate={onNavigate} />
       <TwitchGridShell title={text('liveNowTitle')} subtitle={text('liveNowSubtitle')} actions={filterBar}>
-        {sorted.length === 0 ? (
-          <p className="text-sm text-slate-400">{text('empty')}</p>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {sorted.map((stream) => (
-              <StreamCard key={stream.id} stream={stream} onPlay={setPlayerStream} />
-            ))}
-          </div>
-        )}
+        {body}
       </TwitchGridShell>
 
-      {hasMore ? <LoadMoreButton onClick={() => void loadMore()} label={text('loadMore')} /> : null}
-
-      {playerStream ? (
-        <TwitchPlayerModal
-          kind="live"
-          id={playerStream.user_login}
-          title={playerStream.title}
-          onClose={() => setPlayerStream(null)}
-        />
-      ) : null}
+      {hasMore && sorted.length > 0 ? <LoadMoreButton onClick={() => void loadMore()} label={text('loadMore')} /> : null}
     </div>
   )
 }
@@ -702,10 +738,11 @@ function LoadMoreButton({ onClick, label }: { onClick: () => void; label: string
   )
 }
 
-export function TwitchCategoriesPage({ onNavigate: _onNavigate }: BrowsePageProps) {
+export function TwitchCategoriesPage({ pageId, onNavigate }: BrowsePageProps) {
   const text = useTwitchText()
   const { categories, loading, error, hasMore, loadMore } = useTwitchCategories()
   const [selectedCategory, setSelectedCategory] = useState<TwitchCategory | null>(null)
+  const [selectedChannel, setSelectedChannel] = useState<SelectedChannel | null>(null)
   const {
     streams,
     loading: streamsLoading,
@@ -713,7 +750,19 @@ export function TwitchCategoriesPage({ onNavigate: _onNavigate }: BrowsePageProp
     hasMore: streamsHasMore,
     loadMore: loadMoreStreams,
   } = useTwitchCategoryStreams(selectedCategory?.id ?? null)
-  const [playerStream, setPlayerStream] = useState<TwitchStream | null>(null)
+
+  // Clicking this page's own chip while drilled in returns to the category grid
+  // (navigating to the page we're already on won't remount it, so reset here).
+  const handleNav = (target: { pageId: string }) => {
+    if (target.pageId === pageId) {
+      setSelectedCategory(null)
+      setSelectedChannel(null)
+    } else {
+      onNavigate(target)
+    }
+  }
+  const pageNav = <TwitchPageNav current={pageId} onNavigate={onNavigate} />
+  const drillNav = <TwitchPageNav current="" onNavigate={handleNav} />
 
   const backButton = (
     <button
@@ -728,64 +777,74 @@ export function TwitchCategoriesPage({ onNavigate: _onNavigate }: BrowsePageProp
     </button>
   )
 
-  if (selectedCategory) {
-    if (streamsLoading && streams.length === 0) {
-      return (
-        <div className="space-y-6">
-          {backButton}
-          <SectionPlaceholder title={selectedCategory.name} text={text('loading')} />
-        </div>
-      )
-    }
-
-    if (streamsError && streams.length === 0) {
-      return (
-        <div className="space-y-6">
-          {backButton}
-          <SectionPlaceholder title={selectedCategory.name} text={text('loadError')} />
-        </div>
-      )
-    }
-
+  if (selectedChannel) {
     return (
-      <div className="space-y-8">
-        {backButton}
+      <ChannelDrilldown
+        channel={selectedChannel}
+        pageId={pageId}
+        onNavigate={handleNav}
+        onBack={() => setSelectedChannel(null)}
+      />
+    )
+  }
+
+  if (selectedCategory) {
+    const streamsBody =
+      streamsLoading && streams.length === 0 ? (
+        <SectionPlaceholder title={selectedCategory.name} text={text('loading')} />
+      ) : streamsError && streams.length === 0 ? (
+        <SectionPlaceholder title={selectedCategory.name} text={text('loadError')} />
+      ) : (
         <TwitchGridShell title={selectedCategory.name}>
           {streams.length === 0 ? (
             <p className="text-sm text-slate-400">{text('streamsEmpty')}</p>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {streams.map((stream) => (
-                <StreamCard key={stream.id} stream={stream} onPlay={setPlayerStream} />
+                <StreamCard
+                  key={stream.id}
+                  stream={stream}
+                  onPlay={(s) => setSelectedChannel(channelFromStream(s, true))}
+                />
               ))}
             </div>
           )}
         </TwitchGridShell>
+      )
 
-        {streamsHasMore ? <LoadMoreButton onClick={() => void loadMoreStreams()} label={text('loadMore')} /> : null}
-
-        {playerStream ? (
-          <TwitchPlayerModal
-            kind="live"
-            id={playerStream.user_login}
-            title={playerStream.title}
-            onClose={() => setPlayerStream(null)}
-          />
+    return (
+      <div className="space-y-6">
+        {drillNav}
+        {backButton}
+        {streamsBody}
+        {streamsHasMore && streams.length > 0 ? (
+          <LoadMoreButton onClick={() => void loadMoreStreams()} label={text('loadMore')} />
         ) : null}
       </div>
     )
   }
 
   if (loading && categories.length === 0) {
-    return <SectionPlaceholder title={text('categoriesTitle')} text={text('loadingCategories')} />
+    return (
+      <div className="space-y-6">
+        {pageNav}
+        <SectionPlaceholder title={text('categoriesTitle')} text={text('loadingCategories')} />
+      </div>
+    )
   }
 
   if (error && categories.length === 0) {
-    return <SectionPlaceholder title={text('categoriesTitle')} text={text('categoriesLoadError')} />
+    return (
+      <div className="space-y-6">
+        {pageNav}
+        <SectionPlaceholder title={text('categoriesTitle')} text={text('categoriesLoadError')} />
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      {pageNav}
       <TwitchGridShell title={text('categoriesTitle')} subtitle={text('categoriesSubtitle')}>
         {categories.length === 0 ? (
           <p className="text-sm text-slate-400">{text('categoriesEmpty')}</p>
@@ -851,8 +910,9 @@ function ChannelAvatarCard({
   )
 }
 
-export function TwitchFollowingPage({ onNavigate: _onNavigate }: BrowsePageProps) {
+export function TwitchFollowingPage({ pageId, onNavigate }: BrowsePageProps) {
   const text = useTwitchText()
+  const pageNav = <TwitchPageNav current={pageId} onNavigate={onNavigate} />
   const session = useTwitchSessionState()
   const valid = isTwitchSessionValid(session)
   const userId = valid ? session!.userId : null
@@ -860,7 +920,6 @@ export function TwitchFollowingPage({ onNavigate: _onNavigate }: BrowsePageProps
 
   const [tab, setTab] = useState<FollowingTab>('overview')
   const [selectedChannel, setSelectedChannel] = useState<SelectedChannel | null>(null)
-  const [playerStream, setPlayerStream] = useState<TwitchStream | null>(null)
   const [videoPlayer, setVideoPlayer] = useState<{ id: string; title: string } | null>(null)
 
   const live = useTwitchFollowedStreams(valid, userId, userToken)
@@ -877,31 +936,33 @@ export function TwitchFollowingPage({ onNavigate: _onNavigate }: BrowsePageProps
       broadcasterId: channel.id,
       login: channel.login,
       displayName: channel.displayName,
+      isLive: channel.isLive,
+      liveTitle: channel.title,
     })
   }
 
+  const handleNav = (target: { pageId: string }) => {
+    if (target.pageId === pageId) setSelectedChannel(null)
+    else onNavigate(target)
+  }
+
   if (!valid) {
-    return <SectionPlaceholder title={text('followingTitle')} text={text('followingConnectPrompt')} />
+    return (
+      <div className="space-y-6">
+        {pageNav}
+        <SectionPlaceholder title={text('followingTitle')} text={text('followingConnectPrompt')} />
+      </div>
+    )
   }
 
   if (selectedChannel) {
-    const backButton = (
-      <button
-        type="button"
-        onClick={() => setSelectedChannel(null)}
-        className="flex h-9 items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.03] px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:border-white/[0.16] hover:bg-white/[0.05] hover:text-white"
-      >
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-          <polyline points="15 18 9 12 15 6" />
-        </svg>
-        {text('back')}
-      </button>
-    )
     return (
-      <div className="space-y-6">
-        {backButton}
-        <TwitchChannelPage {...selectedChannel} />
-      </div>
+      <ChannelDrilldown
+        channel={selectedChannel}
+        pageId={pageId}
+        onNavigate={handleNav}
+        onBack={() => setSelectedChannel(null)}
+      />
     )
   }
 
@@ -915,7 +976,11 @@ export function TwitchFollowingPage({ onNavigate: _onNavigate }: BrowsePageProps
   const liveGrid = (streams: TwitchStream[]) => (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {streams.map((stream) => (
-        <StreamCard key={stream.id} stream={stream} onPlay={setPlayerStream} />
+        <StreamCard
+          key={stream.id}
+          stream={stream}
+          onPlay={(s) => setSelectedChannel(channelFromStream(s, true))}
+        />
       ))}
     </div>
   )
@@ -929,9 +994,12 @@ export function TwitchFollowingPage({ onNavigate: _onNavigate }: BrowsePageProps
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-semibold text-white">{text('followingTitle')}</h2>
-        <p className="mt-1 text-sm text-slate-400">{text('followingSubtitle')}</p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-semibold text-white">{text('followingTitle')}</h2>
+          <p className="mt-1 text-sm text-slate-400">{text('followingSubtitle')}</p>
+        </div>
+        {pageNav}
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -967,6 +1035,8 @@ export function TwitchFollowingPage({ onNavigate: _onNavigate }: BrowsePageProps
             <h3 className="text-lg font-semibold text-white">{text('overviewChannelsHeading')}</h3>
             {channelsState.loading && channelsState.channels.length === 0 ? (
               <p className="text-sm text-slate-400">{text('channelsLoading')}</p>
+            ) : channelsState.error && channelsState.channels.length === 0 ? (
+              <p className="text-sm text-slate-400">{text('channelsLoadError')} — {channelsState.error}</p>
             ) : channelsState.channels.length === 0 ? (
               <p className="text-sm text-slate-400">{text('channelsEmpty')}</p>
             ) : (
@@ -992,7 +1062,7 @@ export function TwitchFollowingPage({ onNavigate: _onNavigate }: BrowsePageProps
           {channelsState.loading && channelsState.channels.length === 0 ? (
             <p className="text-sm text-slate-400">{text('channelsLoading')}</p>
           ) : channelsState.error && channelsState.channels.length === 0 ? (
-            <p className="text-sm text-slate-400">{text('channelsLoadError')}</p>
+            <p className="text-sm text-slate-400">{text('channelsLoadError')} — {channelsState.error}</p>
           ) : channelsState.channels.length === 0 ? (
             <p className="text-sm text-slate-400">{text('channelsEmpty')}</p>
           ) : (
@@ -1021,14 +1091,6 @@ export function TwitchFollowingPage({ onNavigate: _onNavigate }: BrowsePageProps
         </div>
       )}
 
-      {playerStream ? (
-        <TwitchPlayerModal
-          kind="live"
-          id={playerStream.user_login}
-          title={playerStream.title}
-          onClose={() => setPlayerStream(null)}
-        />
-      ) : null}
       {videoPlayer ? (
         <TwitchPlayerModal
           kind="vod"
@@ -1046,6 +1108,19 @@ type SelectedChannel = {
   broadcasterId: string
   login: string
   displayName: string
+  isLive?: boolean
+  liveTitle?: string
+}
+
+function channelFromStream(stream: TwitchStream, isLive: boolean): SelectedChannel {
+  return {
+    userId: stream.user_id,
+    broadcasterId: stream.user_id,
+    login: stream.user_login,
+    displayName: stream.user_name,
+    isLive,
+    liveTitle: stream.title,
+  }
 }
 
 function useTwitchSearch(query: string) {
@@ -1235,12 +1310,13 @@ function ClipCard({ clip, onPlay }: { clip: TwitchClip; onPlay: (clip: TwitchCli
   )
 }
 
-export function TwitchChannelPage({ userId, broadcasterId, login, displayName }: SelectedChannel) {
+export function TwitchChannelPage({ userId, broadcasterId, login, displayName, isLive, liveTitle }: SelectedChannel) {
   const text = useTwitchText()
   const [tab, setTab] = useState<'vods' | 'clips'>('vods')
   const { videos, loading: videosLoading, error: videosError } = useChannelVideos(userId)
   const { clips, loading: clipsLoading, error: clipsError } = useChannelClips(broadcasterId)
   const [player, setPlayer] = useState<{ kind: 'vod' | 'clip'; id: string; title: string } | null>(null)
+  const [liveOpen, setLiveOpen] = useState(false)
 
   function tabButtonClass(key: 'vods' | 'clips') {
     return `h-9 rounded-full border px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] transition-all ${
@@ -1257,7 +1333,26 @@ export function TwitchChannelPage({ userId, broadcasterId, login, displayName }:
           <h2 className="text-2xl font-semibold text-white">{displayName || login}</h2>
           {login ? <p className="text-sm text-slate-400">@{login}</p> : null}
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {isLive ? (
+            <button
+              type="button"
+              onClick={() => setLiveOpen(true)}
+              className="flex h-9 items-center rounded-full bg-accent-500 px-4 text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-accent-400"
+            >
+              <svg className="mr-1.5 h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+              {text('watchLive')}
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => void openTwitchUrl(`https://www.twitch.tv/${login}`)}
+            className="h-9 rounded-full border border-white/[0.14] bg-white/[0.04] px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:border-white/[0.24] hover:bg-white/[0.08] hover:text-white"
+          >
+            {text('openOnTwitch')}
+          </button>
           <button type="button" onClick={() => setTab('vods')} className={tabButtonClass('vods')}>
             {text('vodsTab')}
           </button>
@@ -1266,6 +1361,15 @@ export function TwitchChannelPage({ userId, broadcasterId, login, displayName }:
           </button>
         </div>
       </div>
+
+      {liveOpen ? (
+        <TwitchPlayerModal
+          kind="live"
+          id={login}
+          title={liveTitle || displayName || login}
+          onClose={() => setLiveOpen(false)}
+        />
+      ) : null}
 
       {tab === 'vods' ? (
         videosLoading && videos.length === 0 ? (
@@ -1310,8 +1414,41 @@ export function TwitchChannelPage({ userId, broadcasterId, login, displayName }:
   )
 }
 
-export function TwitchSearchPage({ onNavigate: _onNavigate }: BrowsePageProps) {
+function ChannelDrilldown({
+  channel,
+  pageId,
+  onNavigate,
+  onBack,
+  backLabel,
+}: {
+  channel: SelectedChannel
+  pageId: string
+  onNavigate: (target: { pageId: string }) => void
+  onBack: () => void
+  backLabel?: string
+}) {
   const text = useTwitchText()
+  return (
+    <div className="space-y-6">
+      <TwitchPageNav current="" onNavigate={onNavigate} />
+      <button
+        type="button"
+        onClick={onBack}
+        className="flex h-9 items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.03] px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:border-white/[0.16] hover:bg-white/[0.05] hover:text-white"
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+        {backLabel ?? text('backToChannel')}
+      </button>
+      <TwitchChannelPage {...channel} />
+    </div>
+  )
+}
+
+export function TwitchSearchPage({ pageId, onNavigate }: BrowsePageProps) {
+  const text = useTwitchText()
+  const pageNav = <TwitchPageNav current={pageId} onNavigate={onNavigate} />
   const [inputValue, setInputValue] = useState('')
   const [query, setQuery] = useState('')
   const { channels, categories, loading, error } = useTwitchSearch(query)
@@ -1324,21 +1461,24 @@ export function TwitchSearchPage({ onNavigate: _onNavigate }: BrowsePageProps) {
     hasMore: categoryStreamsHasMore,
     loadMore: loadMoreCategoryStreams,
   } = useTwitchCategoryStreams(selectedCategory?.id ?? null)
-  const [playerStream, setPlayerStream] = useState<TwitchStream | null>(null)
-
   useEffect(() => {
     const handle = setTimeout(() => setQuery(inputValue), 400)
     return () => clearTimeout(handle)
   }, [inputValue])
 
   function openChannel(stream: TwitchStream) {
-    setSelectedChannel({
-      userId: stream.user_id,
-      broadcasterId: stream.user_id,
-      login: stream.user_login,
-      displayName: stream.user_name,
-    })
+    setSelectedChannel(channelFromStream(stream, Boolean(stream.is_live)))
   }
+
+  const handleNav = (target: { pageId: string }) => {
+    if (target.pageId === pageId) {
+      setSelectedCategory(null)
+      setSelectedChannel(null)
+    } else {
+      onNavigate(target)
+    }
+  }
+  const drillNav = <TwitchPageNav current="" onNavigate={handleNav} />
 
   const backToResults = (
     <button
@@ -1359,6 +1499,7 @@ export function TwitchSearchPage({ onNavigate: _onNavigate }: BrowsePageProps) {
   if (selectedChannel) {
     return (
       <div className="space-y-6">
+        {drillNav}
         {backToResults}
         <TwitchChannelPage {...selectedChannel} />
       </div>
@@ -1366,50 +1507,36 @@ export function TwitchSearchPage({ onNavigate: _onNavigate }: BrowsePageProps) {
   }
 
   if (selectedCategory) {
-    if (categoryStreamsLoading && categoryStreams.length === 0) {
-      return (
-        <div className="space-y-6">
-          {backToResults}
-          <SectionPlaceholder title={selectedCategory.name} text={text('loading')} />
-        </div>
-      )
-    }
-
-    if (categoryStreamsError && categoryStreams.length === 0) {
-      return (
-        <div className="space-y-6">
-          {backToResults}
-          <SectionPlaceholder title={selectedCategory.name} text={text('loadError')} />
-        </div>
-      )
-    }
-
-    return (
-      <div className="space-y-8">
-        {backToResults}
+    const streamsBody =
+      categoryStreamsLoading && categoryStreams.length === 0 ? (
+        <SectionPlaceholder title={selectedCategory.name} text={text('loading')} />
+      ) : categoryStreamsError && categoryStreams.length === 0 ? (
+        <SectionPlaceholder title={selectedCategory.name} text={text('loadError')} />
+      ) : (
         <TwitchGridShell title={selectedCategory.name}>
           {categoryStreams.length === 0 ? (
             <p className="text-sm text-slate-400">{text('streamsEmpty')}</p>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {categoryStreams.map((stream) => (
-                <StreamCard key={stream.id} stream={stream} onPlay={setPlayerStream} />
+                <StreamCard
+                  key={stream.id}
+                  stream={stream}
+                  onPlay={(s) => setSelectedChannel(channelFromStream(s, true))}
+                />
               ))}
             </div>
           )}
         </TwitchGridShell>
+      )
 
-        {categoryStreamsHasMore ? (
+    return (
+      <div className="space-y-6">
+        {drillNav}
+        {backToResults}
+        {streamsBody}
+        {categoryStreamsHasMore && categoryStreams.length > 0 ? (
           <LoadMoreButton onClick={() => void loadMoreCategoryStreams()} label={text('loadMore')} />
-        ) : null}
-
-        {playerStream ? (
-          <TwitchPlayerModal
-            kind="live"
-            id={playerStream.user_login}
-            title={playerStream.title}
-            onClose={() => setPlayerStream(null)}
-          />
         ) : null}
       </div>
     )
@@ -1419,7 +1546,8 @@ export function TwitchSearchPage({ onNavigate: _onNavigate }: BrowsePageProps) {
   const hasResults = channels.length > 0 || categories.length > 0
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      {pageNav}
       <div>
         <h2 className="text-2xl font-semibold text-white">{text('searchTitle')}</h2>
         <p className="mt-1 text-sm text-slate-400">{text('searchSubtitle')}</p>

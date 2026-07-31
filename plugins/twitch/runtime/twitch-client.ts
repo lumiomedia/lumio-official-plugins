@@ -27,7 +27,12 @@ async function helixGet<T>(url: string, userToken?: string): Promise<{ data: T[]
   const headers: Record<string, string> = {}
   if (userToken) headers['x-twitch-user-token'] = userToken
   const res = await fetch(url, { headers })
-  if (!res.ok) throw new Error(`Twitch request failed (${res.status})`)
+  if (!res.ok) {
+    // Include the status and (truncated) response body so auth/scope failures
+    // (e.g. 401 "Missing scope: user:read:follows") are diagnosable in the UI.
+    const body = await res.text().catch(() => '')
+    throw new Error(`Twitch request failed (${res.status})${body ? `: ${body.slice(0, 200)}` : ''}`)
+  }
   const json = await res.json() as { data?: T[]; pagination?: { cursor?: string } }
   return { data: json.data ?? [], cursor: json.pagination?.cursor ?? null }
 }

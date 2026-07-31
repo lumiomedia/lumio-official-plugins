@@ -46,7 +46,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Zkdy7F/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-zm6f8X/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -95,7 +95,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Zkdy7F/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-zm6f8X/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -143,7 +143,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Zkdy7F/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-zm6f8X/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -153,7 +153,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Zkdy7F/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-zm6f8X/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -166300,7 +166300,7 @@
   var import_react55 = __toESM(require_dist89());
   init_jsx_runtime_shim();
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Zkdy7F/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-zm6f8X/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
   function resolveAuthCapabilityStatus(providerId) {
     return sdk.resolveAuthCapabilityStatus(providerId);
@@ -166740,7 +166740,10 @@
     const headers = {};
     if (userToken) headers["x-twitch-user-token"] = userToken;
     const res = await fetch(url, { headers });
-    if (!res.ok) throw new Error(`Twitch request failed (${res.status})`);
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      throw new Error(`Twitch request failed (${res.status})${body ? `: ${body.slice(0, 200)}` : ""}`);
+    }
     const json = await res.json();
     return { data: json.data ?? [], cursor: json.pagination?.cursor ?? null };
   }
@@ -166888,6 +166891,9 @@
     if (typeof window !== "undefined") {
       window.open(url, "_blank", "noopener,noreferrer");
     }
+  }
+  async function openTwitchUrl(url) {
+    return openTwitchVerificationUrl(url);
   }
   async function startTwitchDeviceFlow() {
     const response = await fetch("/api/plugins/twitch/device/start", {
@@ -167318,7 +167324,11 @@
       sv: "Inga nya videor fr\xE5n kanaler du f\xF6ljer."
     },
     liveBadge: { en: "Live", sv: "Live" },
-    offlineBadge: { en: "Offline", sv: "Offline" }
+    offlineBadge: { en: "Offline", sv: "Offline" },
+    // Channel page
+    watchLive: { en: "Watch live", sv: "Titta live" },
+    openOnTwitch: { en: "Open on Twitch", sv: "\xD6ppna p\xE5 Twitch" },
+    backToChannel: { en: "Back", sv: "Tillbaka" }
   };
   function useTwitchText() {
     const { lang } = useLang();
@@ -167604,6 +167614,30 @@
       )) })
     ] });
   }
+  var TWITCH_PAGES = [
+    { id: "twitch-live", label: { en: "Live", sv: "Live" } },
+    { id: "twitch-categories", label: { en: "Categories", sv: "Kategorier" } },
+    { id: "twitch-following", label: { en: "Following", sv: "F\xF6ljer" } },
+    { id: "twitch-search", label: { en: "Search", sv: "S\xF6k" } }
+  ];
+  function TwitchPageNav({
+    current: current2,
+    onNavigate
+  }) {
+    const { lang } = useLang();
+    return /* @__PURE__ */ jsx("div", { className: "flex flex-wrap gap-2", children: TWITCH_PAGES.map((page) => /* @__PURE__ */ jsx(
+      "button",
+      {
+        type: "button",
+        onClick: () => {
+          if (page.id !== current2) onNavigate({ pageId: page.id });
+        },
+        className: `h-9 rounded-full border px-4 text-[0.62rem] font-normal uppercase tracking-[0.2em] transition-all ${page.id === current2 ? "border-white/[0.24] bg-white/[0.1] text-white" : "border-white/[0.1] bg-white/[0.03] text-slate-300 hover:border-white/[0.16] hover:bg-white/[0.05] hover:text-white"}`,
+        children: page.label[lang] ?? page.label.en
+      },
+      page.id
+    )) });
+  }
   function StreamCard({
     stream,
     onPlay
@@ -167691,32 +167725,30 @@
       }
     ) });
   }
-  function TwitchBrowsePage({ onNavigate: _onNavigate }) {
+  function TwitchBrowsePage({ pageId, onNavigate }) {
     const text = useTwitchText();
     const { lang } = useLang();
     const [sort, setSort] = useState("viewers-desc");
     const { streams, loading, error, hasMore, loadMore } = useTwitchTopStreams(true, lang);
-    const [playerStream, setPlayerStream] = useState(null);
+    const [selectedChannel, setSelectedChannel] = useState(null);
+    if (selectedChannel) {
+      return /* @__PURE__ */ jsx(
+        ChannelDrilldown,
+        {
+          channel: selectedChannel,
+          pageId,
+          onNavigate,
+          onBack: () => setSelectedChannel(null)
+        }
+      );
+    }
     const filterBar = /* @__PURE__ */ jsx(StreamFilterBar, { sort, onSortChange: setSort });
     const sorted = sortStreams(streams, sort);
-    if (loading && streams.length === 0) {
-      return /* @__PURE__ */ jsx("div", { className: "space-y-8", children: /* @__PURE__ */ jsx(TwitchGridShell, { title: text("liveNowTitle"), subtitle: text("liveNowSubtitle"), actions: filterBar, children: /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("loading") }) }) });
-    }
-    if (error && streams.length === 0) {
-      return /* @__PURE__ */ jsx("div", { className: "space-y-8", children: /* @__PURE__ */ jsx(TwitchGridShell, { title: text("liveNowTitle"), subtitle: text("liveNowSubtitle"), actions: filterBar, children: /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("loadError") }) }) });
-    }
-    return /* @__PURE__ */ jsxs("div", { className: "space-y-8", children: [
-      /* @__PURE__ */ jsx(TwitchGridShell, { title: text("liveNowTitle"), subtitle: text("liveNowSubtitle"), actions: filterBar, children: sorted.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("empty") }) : /* @__PURE__ */ jsx("div", { className: "grid gap-4 sm:grid-cols-2 xl:grid-cols-4", children: sorted.map((stream) => /* @__PURE__ */ jsx(StreamCard, { stream, onPlay: setPlayerStream }, stream.id)) }) }),
-      hasMore ? /* @__PURE__ */ jsx(LoadMoreButton, { onClick: () => void loadMore(), label: text("loadMore") }) : null,
-      playerStream ? /* @__PURE__ */ jsx(
-        TwitchPlayerModal,
-        {
-          kind: "live",
-          id: playerStream.user_login,
-          title: playerStream.title,
-          onClose: () => setPlayerStream(null)
-        }
-      ) : null
+    const body = loading && streams.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("loading") }) : error && streams.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("loadError") }) : sorted.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("empty") }) : /* @__PURE__ */ jsx("div", { className: "grid gap-4 sm:grid-cols-2 xl:grid-cols-4", children: sorted.map((stream) => /* @__PURE__ */ jsx(StreamCard, { stream, onPlay: (s) => setSelectedChannel(channelFromStream(s, true)) }, stream.id)) });
+    return /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
+      /* @__PURE__ */ jsx(TwitchPageNav, { current: pageId, onNavigate }),
+      /* @__PURE__ */ jsx(TwitchGridShell, { title: text("liveNowTitle"), subtitle: text("liveNowSubtitle"), actions: filterBar, children: body }),
+      hasMore && sorted.length > 0 ? /* @__PURE__ */ jsx(LoadMoreButton, { onClick: () => void loadMore(), label: text("loadMore") }) : null
     ] });
   }
   function CategoryCard({
@@ -167764,10 +167796,11 @@
       }
     ) });
   }
-  function TwitchCategoriesPage({ onNavigate: _onNavigate }) {
+  function TwitchCategoriesPage({ pageId, onNavigate }) {
     const text = useTwitchText();
     const { categories, loading, error, hasMore, loadMore } = useTwitchCategories();
     const [selectedCategory, setSelectedCategory] = useState(null);
+    const [selectedChannel, setSelectedChannel] = useState(null);
     const {
       streams,
       loading: streamsLoading,
@@ -167775,7 +167808,16 @@
       hasMore: streamsHasMore,
       loadMore: loadMoreStreams
     } = useTwitchCategoryStreams(selectedCategory?.id ?? null);
-    const [playerStream, setPlayerStream] = useState(null);
+    const handleNav = (target) => {
+      if (target.pageId === pageId) {
+        setSelectedCategory(null);
+        setSelectedChannel(null);
+      } else {
+        onNavigate(target);
+      }
+    };
+    const pageNav = /* @__PURE__ */ jsx(TwitchPageNav, { current: pageId, onNavigate });
+    const drillNav = /* @__PURE__ */ jsx(TwitchPageNav, { current: "", onNavigate: handleNav });
     const backButton = /* @__PURE__ */ jsxs(
       "button",
       {
@@ -167788,41 +167830,47 @@
         ]
       }
     );
+    if (selectedChannel) {
+      return /* @__PURE__ */ jsx(
+        ChannelDrilldown,
+        {
+          channel: selectedChannel,
+          pageId,
+          onNavigate: handleNav,
+          onBack: () => setSelectedChannel(null)
+        }
+      );
+    }
     if (selectedCategory) {
-      if (streamsLoading && streams.length === 0) {
-        return /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
-          backButton,
-          /* @__PURE__ */ jsx(SectionPlaceholder, { title: selectedCategory.name, text: text("loading") })
-        ] });
-      }
-      if (streamsError && streams.length === 0) {
-        return /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
-          backButton,
-          /* @__PURE__ */ jsx(SectionPlaceholder, { title: selectedCategory.name, text: text("loadError") })
-        ] });
-      }
-      return /* @__PURE__ */ jsxs("div", { className: "space-y-8", children: [
+      const streamsBody = streamsLoading && streams.length === 0 ? /* @__PURE__ */ jsx(SectionPlaceholder, { title: selectedCategory.name, text: text("loading") }) : streamsError && streams.length === 0 ? /* @__PURE__ */ jsx(SectionPlaceholder, { title: selectedCategory.name, text: text("loadError") }) : /* @__PURE__ */ jsx(TwitchGridShell, { title: selectedCategory.name, children: streams.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("streamsEmpty") }) : /* @__PURE__ */ jsx("div", { className: "grid gap-4 sm:grid-cols-2 xl:grid-cols-4", children: streams.map((stream) => /* @__PURE__ */ jsx(
+        StreamCard,
+        {
+          stream,
+          onPlay: (s) => setSelectedChannel(channelFromStream(s, true))
+        },
+        stream.id
+      )) }) });
+      return /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
+        drillNav,
         backButton,
-        /* @__PURE__ */ jsx(TwitchGridShell, { title: selectedCategory.name, children: streams.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("streamsEmpty") }) : /* @__PURE__ */ jsx("div", { className: "grid gap-4 sm:grid-cols-2 xl:grid-cols-4", children: streams.map((stream) => /* @__PURE__ */ jsx(StreamCard, { stream, onPlay: setPlayerStream }, stream.id)) }) }),
-        streamsHasMore ? /* @__PURE__ */ jsx(LoadMoreButton, { onClick: () => void loadMoreStreams(), label: text("loadMore") }) : null,
-        playerStream ? /* @__PURE__ */ jsx(
-          TwitchPlayerModal,
-          {
-            kind: "live",
-            id: playerStream.user_login,
-            title: playerStream.title,
-            onClose: () => setPlayerStream(null)
-          }
-        ) : null
+        streamsBody,
+        streamsHasMore && streams.length > 0 ? /* @__PURE__ */ jsx(LoadMoreButton, { onClick: () => void loadMoreStreams(), label: text("loadMore") }) : null
       ] });
     }
     if (loading && categories.length === 0) {
-      return /* @__PURE__ */ jsx(SectionPlaceholder, { title: text("categoriesTitle"), text: text("loadingCategories") });
+      return /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
+        pageNav,
+        /* @__PURE__ */ jsx(SectionPlaceholder, { title: text("categoriesTitle"), text: text("loadingCategories") })
+      ] });
     }
     if (error && categories.length === 0) {
-      return /* @__PURE__ */ jsx(SectionPlaceholder, { title: text("categoriesTitle"), text: text("categoriesLoadError") });
+      return /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
+        pageNav,
+        /* @__PURE__ */ jsx(SectionPlaceholder, { title: text("categoriesTitle"), text: text("categoriesLoadError") })
+      ] });
     }
-    return /* @__PURE__ */ jsxs("div", { className: "space-y-8", children: [
+    return /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
+      pageNav,
       /* @__PURE__ */ jsx(TwitchGridShell, { title: text("categoriesTitle"), subtitle: text("categoriesSubtitle"), children: categories.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("categoriesEmpty") }) : /* @__PURE__ */ jsx("div", { className: "grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6", children: categories.map((category) => /* @__PURE__ */ jsx(CategoryCard, { category, onSelect: setSelectedCategory }, category.id)) }) }),
       hasMore ? /* @__PURE__ */ jsx(LoadMoreButton, { onClick: () => void loadMore(), label: text("loadMore") }) : null
     ] });
@@ -167859,15 +167907,15 @@
       }
     );
   }
-  function TwitchFollowingPage({ onNavigate: _onNavigate }) {
+  function TwitchFollowingPage({ pageId, onNavigate }) {
     const text = useTwitchText();
+    const pageNav = /* @__PURE__ */ jsx(TwitchPageNav, { current: pageId, onNavigate });
     const session = useTwitchSessionState();
     const valid = isTwitchSessionValid(session);
     const userId = valid ? session.userId : null;
     const userToken = valid ? session.accessToken : null;
     const [tab, setTab] = useState("overview");
     const [selectedChannel, setSelectedChannel] = useState(null);
-    const [playerStream, setPlayerStream] = useState(null);
     const [videoPlayer, setVideoPlayer] = useState(null);
     const live = useTwitchFollowedStreams(valid, userId, userToken);
     const liveById = new Map(live.streams.map((stream) => [stream.user_id, stream]));
@@ -167881,29 +167929,31 @@
         userId: channel.id,
         broadcasterId: channel.id,
         login: channel.login,
-        displayName: channel.displayName
+        displayName: channel.displayName,
+        isLive: channel.isLive,
+        liveTitle: channel.title
       });
     }
+    const handleNav = (target) => {
+      if (target.pageId === pageId) setSelectedChannel(null);
+      else onNavigate(target);
+    };
     if (!valid) {
-      return /* @__PURE__ */ jsx(SectionPlaceholder, { title: text("followingTitle"), text: text("followingConnectPrompt") });
+      return /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
+        pageNav,
+        /* @__PURE__ */ jsx(SectionPlaceholder, { title: text("followingTitle"), text: text("followingConnectPrompt") })
+      ] });
     }
     if (selectedChannel) {
-      const backButton = /* @__PURE__ */ jsxs(
-        "button",
+      return /* @__PURE__ */ jsx(
+        ChannelDrilldown,
         {
-          type: "button",
-          onClick: () => setSelectedChannel(null),
-          className: "flex h-9 items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.03] px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:border-white/[0.16] hover:bg-white/[0.05] hover:text-white",
-          children: [
-            /* @__PURE__ */ jsx("svg", { width: "12", height: "12", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", children: /* @__PURE__ */ jsx("polyline", { points: "15 18 9 12 15 6" }) }),
-            text("back")
-          ]
+          channel: selectedChannel,
+          pageId,
+          onNavigate: handleNav,
+          onBack: () => setSelectedChannel(null)
         }
       );
-      return /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
-        backButton,
-        /* @__PURE__ */ jsx(TwitchChannelPage, { ...selectedChannel })
-      ] });
     }
     const tabs = [
       { key: "overview", label: text("tabOverview") },
@@ -167911,12 +167961,22 @@
       { key: "channels", label: text("tabChannels") },
       { key: "videos", label: text("tabVideos") }
     ];
-    const liveGrid = (streams) => /* @__PURE__ */ jsx("div", { className: "grid gap-4 sm:grid-cols-2 xl:grid-cols-4", children: streams.map((stream) => /* @__PURE__ */ jsx(StreamCard, { stream, onPlay: setPlayerStream }, stream.id)) });
+    const liveGrid = (streams) => /* @__PURE__ */ jsx("div", { className: "grid gap-4 sm:grid-cols-2 xl:grid-cols-4", children: streams.map((stream) => /* @__PURE__ */ jsx(
+      StreamCard,
+      {
+        stream,
+        onPlay: (s) => setSelectedChannel(channelFromStream(s, true))
+      },
+      stream.id
+    )) });
     const channelGrid = (channels) => /* @__PURE__ */ jsx("div", { className: "grid gap-3 sm:grid-cols-2 xl:grid-cols-3", children: channels.map((channel) => /* @__PURE__ */ jsx(ChannelAvatarCard, { channel, onSelect: openFollowedChannel }, channel.id)) });
     return /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
-      /* @__PURE__ */ jsxs("div", { children: [
-        /* @__PURE__ */ jsx("h2", { className: "text-2xl font-semibold text-white", children: text("followingTitle") }),
-        /* @__PURE__ */ jsx("p", { className: "mt-1 text-sm text-slate-400", children: text("followingSubtitle") })
+      /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-start justify-between gap-4", children: [
+        /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsx("h2", { className: "text-2xl font-semibold text-white", children: text("followingTitle") }),
+          /* @__PURE__ */ jsx("p", { className: "mt-1 text-sm text-slate-400", children: text("followingSubtitle") })
+        ] }),
+        pageNav
       ] }),
       /* @__PURE__ */ jsx("div", { className: "flex flex-wrap gap-2", children: tabs.map((entry) => /* @__PURE__ */ jsx(
         "button",
@@ -167935,12 +167995,20 @@
         ] }),
         /* @__PURE__ */ jsxs("section", { className: "space-y-3", children: [
           /* @__PURE__ */ jsx("h3", { className: "text-lg font-semibold text-white", children: text("overviewChannelsHeading") }),
-          channelsState.loading && channelsState.channels.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("channelsLoading") }) : channelsState.channels.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("channelsEmpty") }) : channelGrid(channelsState.channels.slice(0, 12))
+          channelsState.loading && channelsState.channels.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("channelsLoading") }) : channelsState.error && channelsState.channels.length === 0 ? /* @__PURE__ */ jsxs("p", { className: "text-sm text-slate-400", children: [
+            text("channelsLoadError"),
+            " \u2014 ",
+            channelsState.error
+          ] }) : channelsState.channels.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("channelsEmpty") }) : channelGrid(channelsState.channels.slice(0, 12))
         ] })
       ] }) : tab === "live" ? /* @__PURE__ */ jsxs("div", { className: "space-y-8", children: [
         live.loading && live.streams.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("loading") }) : live.error && live.streams.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("loadError") }) : live.streams.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("followingEmpty") }) : liveGrid(live.streams),
         live.hasMore ? /* @__PURE__ */ jsx(LoadMoreButton, { onClick: () => void live.loadMore(), label: text("loadMore") }) : null
-      ] }) : tab === "channels" ? /* @__PURE__ */ jsx("div", { className: "space-y-8", children: channelsState.loading && channelsState.channels.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("channelsLoading") }) : channelsState.error && channelsState.channels.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("channelsLoadError") }) : channelsState.channels.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("channelsEmpty") }) : channelGrid(channelsState.channels) }) : /* @__PURE__ */ jsx("div", { className: "space-y-8", children: videosState.loading && videosState.videos.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("followingVideosLoading") }) : videosState.error && videosState.videos.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("followingVideosError") }) : videosState.videos.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("followingVideosEmpty") }) : /* @__PURE__ */ jsx("div", { className: "grid gap-4 sm:grid-cols-2 xl:grid-cols-4", children: videosState.videos.map((video) => /* @__PURE__ */ jsx(
+      ] }) : tab === "channels" ? /* @__PURE__ */ jsx("div", { className: "space-y-8", children: channelsState.loading && channelsState.channels.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("channelsLoading") }) : channelsState.error && channelsState.channels.length === 0 ? /* @__PURE__ */ jsxs("p", { className: "text-sm text-slate-400", children: [
+        text("channelsLoadError"),
+        " \u2014 ",
+        channelsState.error
+      ] }) : channelsState.channels.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("channelsEmpty") }) : channelGrid(channelsState.channels) }) : /* @__PURE__ */ jsx("div", { className: "space-y-8", children: videosState.loading && videosState.videos.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("followingVideosLoading") }) : videosState.error && videosState.videos.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("followingVideosError") }) : videosState.videos.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("followingVideosEmpty") }) : /* @__PURE__ */ jsx("div", { className: "grid gap-4 sm:grid-cols-2 xl:grid-cols-4", children: videosState.videos.map((video) => /* @__PURE__ */ jsx(
         VideoCard,
         {
           video,
@@ -167948,15 +168016,6 @@
         },
         video.id
       )) }) }),
-      playerStream ? /* @__PURE__ */ jsx(
-        TwitchPlayerModal,
-        {
-          kind: "live",
-          id: playerStream.user_login,
-          title: playerStream.title,
-          onClose: () => setPlayerStream(null)
-        }
-      ) : null,
       videoPlayer ? /* @__PURE__ */ jsx(
         TwitchPlayerModal,
         {
@@ -167967,6 +168026,16 @@
         }
       ) : null
     ] });
+  }
+  function channelFromStream(stream, isLive) {
+    return {
+      userId: stream.user_id,
+      broadcasterId: stream.user_id,
+      login: stream.user_login,
+      displayName: stream.user_name,
+      isLive,
+      liveTitle: stream.title
+    };
   }
   function useTwitchSearch(query) {
     const [channels, setChannels] = useState([]);
@@ -168123,12 +168192,13 @@
       }
     );
   }
-  function TwitchChannelPage({ userId, broadcasterId, login, displayName }) {
+  function TwitchChannelPage({ userId, broadcasterId, login, displayName, isLive, liveTitle }) {
     const text = useTwitchText();
     const [tab, setTab] = useState("vods");
     const { videos, loading: videosLoading, error: videosError } = useChannelVideos(userId);
     const { clips, loading: clipsLoading, error: clipsError } = useChannelClips(broadcasterId);
     const [player, setPlayer] = useState(null);
+    const [liveOpen, setLiveOpen] = useState(false);
     function tabButtonClass(key) {
       return `h-9 rounded-full border px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] transition-all ${tab === key ? "border-white/[0.24] bg-white/[0.1] text-white" : "border-white/[0.1] bg-white/[0.03] text-slate-300 hover:border-white/[0.16] hover:bg-white/[0.05] hover:text-white"}`;
     }
@@ -168141,11 +168211,41 @@
             login
           ] }) : null
         ] }),
-        /* @__PURE__ */ jsxs("div", { className: "flex gap-2", children: [
+        /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
+          isLive ? /* @__PURE__ */ jsxs(
+            "button",
+            {
+              type: "button",
+              onClick: () => setLiveOpen(true),
+              className: "flex h-9 items-center rounded-full bg-accent-500 px-4 text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-accent-400",
+              children: [
+                /* @__PURE__ */ jsx("svg", { className: "mr-1.5 h-3.5 w-3.5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }),
+                text("watchLive")
+              ]
+            }
+          ) : null,
+          /* @__PURE__ */ jsx(
+            "button",
+            {
+              type: "button",
+              onClick: () => void openTwitchUrl(`https://www.twitch.tv/${login}`),
+              className: "h-9 rounded-full border border-white/[0.14] bg-white/[0.04] px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:border-white/[0.24] hover:bg-white/[0.08] hover:text-white",
+              children: text("openOnTwitch")
+            }
+          ),
           /* @__PURE__ */ jsx("button", { type: "button", onClick: () => setTab("vods"), className: tabButtonClass("vods"), children: text("vodsTab") }),
           /* @__PURE__ */ jsx("button", { type: "button", onClick: () => setTab("clips"), className: tabButtonClass("clips"), children: text("clipsTab") })
         ] })
       ] }),
+      liveOpen ? /* @__PURE__ */ jsx(
+        TwitchPlayerModal,
+        {
+          kind: "live",
+          id: login,
+          title: liveTitle || displayName || login,
+          onClose: () => setLiveOpen(false)
+        }
+      ) : null,
       tab === "vods" ? videosLoading && videos.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("loadingVods") }) : videosError && videos.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("vodsLoadError") }) : videos.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("vodsEmpty") }) : /* @__PURE__ */ jsx("div", { className: "grid gap-4 sm:grid-cols-2 xl:grid-cols-4", children: videos.map((video) => /* @__PURE__ */ jsx(
         VideoCard,
         {
@@ -168164,8 +168264,34 @@
       player ? /* @__PURE__ */ jsx(TwitchPlayerModal, { kind: player.kind, id: player.id, title: player.title, onClose: () => setPlayer(null) }) : null
     ] });
   }
-  function TwitchSearchPage({ onNavigate: _onNavigate }) {
+  function ChannelDrilldown({
+    channel,
+    pageId,
+    onNavigate,
+    onBack,
+    backLabel
+  }) {
     const text = useTwitchText();
+    return /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
+      /* @__PURE__ */ jsx(TwitchPageNav, { current: "", onNavigate }),
+      /* @__PURE__ */ jsxs(
+        "button",
+        {
+          type: "button",
+          onClick: onBack,
+          className: "flex h-9 items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.03] px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:border-white/[0.16] hover:bg-white/[0.05] hover:text-white",
+          children: [
+            /* @__PURE__ */ jsx("svg", { width: "12", height: "12", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", children: /* @__PURE__ */ jsx("polyline", { points: "15 18 9 12 15 6" }) }),
+            backLabel ?? text("backToChannel")
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsx(TwitchChannelPage, { ...channel })
+    ] });
+  }
+  function TwitchSearchPage({ pageId, onNavigate }) {
+    const text = useTwitchText();
+    const pageNav = /* @__PURE__ */ jsx(TwitchPageNav, { current: pageId, onNavigate });
     const [inputValue, setInputValue] = useState("");
     const [query, setQuery] = useState("");
     const { channels, categories, loading, error } = useTwitchSearch(query);
@@ -168178,19 +168304,22 @@
       hasMore: categoryStreamsHasMore,
       loadMore: loadMoreCategoryStreams
     } = useTwitchCategoryStreams(selectedCategory?.id ?? null);
-    const [playerStream, setPlayerStream] = useState(null);
     useEffect(() => {
       const handle = setTimeout(() => setQuery(inputValue), 400);
       return () => clearTimeout(handle);
     }, [inputValue]);
     function openChannel(stream) {
-      setSelectedChannel({
-        userId: stream.user_id,
-        broadcasterId: stream.user_id,
-        login: stream.user_login,
-        displayName: stream.user_name
-      });
+      setSelectedChannel(channelFromStream(stream, Boolean(stream.is_live)));
     }
+    const handleNav = (target) => {
+      if (target.pageId === pageId) {
+        setSelectedCategory(null);
+        setSelectedChannel(null);
+      } else {
+        onNavigate(target);
+      }
+    };
+    const drillNav = /* @__PURE__ */ jsx(TwitchPageNav, { current: "", onNavigate: handleNav });
     const backToResults = /* @__PURE__ */ jsxs(
       "button",
       {
@@ -168208,41 +168337,31 @@
     );
     if (selectedChannel) {
       return /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
+        drillNav,
         backToResults,
         /* @__PURE__ */ jsx(TwitchChannelPage, { ...selectedChannel })
       ] });
     }
     if (selectedCategory) {
-      if (categoryStreamsLoading && categoryStreams.length === 0) {
-        return /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
-          backToResults,
-          /* @__PURE__ */ jsx(SectionPlaceholder, { title: selectedCategory.name, text: text("loading") })
-        ] });
-      }
-      if (categoryStreamsError && categoryStreams.length === 0) {
-        return /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
-          backToResults,
-          /* @__PURE__ */ jsx(SectionPlaceholder, { title: selectedCategory.name, text: text("loadError") })
-        ] });
-      }
-      return /* @__PURE__ */ jsxs("div", { className: "space-y-8", children: [
+      const streamsBody = categoryStreamsLoading && categoryStreams.length === 0 ? /* @__PURE__ */ jsx(SectionPlaceholder, { title: selectedCategory.name, text: text("loading") }) : categoryStreamsError && categoryStreams.length === 0 ? /* @__PURE__ */ jsx(SectionPlaceholder, { title: selectedCategory.name, text: text("loadError") }) : /* @__PURE__ */ jsx(TwitchGridShell, { title: selectedCategory.name, children: categoryStreams.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("streamsEmpty") }) : /* @__PURE__ */ jsx("div", { className: "grid gap-4 sm:grid-cols-2 xl:grid-cols-4", children: categoryStreams.map((stream) => /* @__PURE__ */ jsx(
+        StreamCard,
+        {
+          stream,
+          onPlay: (s) => setSelectedChannel(channelFromStream(s, true))
+        },
+        stream.id
+      )) }) });
+      return /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
+        drillNav,
         backToResults,
-        /* @__PURE__ */ jsx(TwitchGridShell, { title: selectedCategory.name, children: categoryStreams.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("streamsEmpty") }) : /* @__PURE__ */ jsx("div", { className: "grid gap-4 sm:grid-cols-2 xl:grid-cols-4", children: categoryStreams.map((stream) => /* @__PURE__ */ jsx(StreamCard, { stream, onPlay: setPlayerStream }, stream.id)) }) }),
-        categoryStreamsHasMore ? /* @__PURE__ */ jsx(LoadMoreButton, { onClick: () => void loadMoreCategoryStreams(), label: text("loadMore") }) : null,
-        playerStream ? /* @__PURE__ */ jsx(
-          TwitchPlayerModal,
-          {
-            kind: "live",
-            id: playerStream.user_login,
-            title: playerStream.title,
-            onClose: () => setPlayerStream(null)
-          }
-        ) : null
+        streamsBody,
+        categoryStreamsHasMore && categoryStreams.length > 0 ? /* @__PURE__ */ jsx(LoadMoreButton, { onClick: () => void loadMoreCategoryStreams(), label: text("loadMore") }) : null
       ] });
     }
     const trimmedQuery = query.trim();
     const hasResults = channels.length > 0 || categories.length > 0;
-    return /* @__PURE__ */ jsxs("div", { className: "space-y-8", children: [
+    return /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
+      pageNav,
       /* @__PURE__ */ jsxs("div", { children: [
         /* @__PURE__ */ jsx("h2", { className: "text-2xl font-semibold text-white", children: text("searchTitle") }),
         /* @__PURE__ */ jsx("p", { className: "mt-1 text-sm text-slate-400", children: text("searchSubtitle") })
@@ -168543,7 +168662,7 @@
   };
   var runtime_default = TwitchPlugin;
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Zkdy7F/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-zm6f8X/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");
