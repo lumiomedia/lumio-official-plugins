@@ -46,7 +46,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-5FHsCq/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-YtiiCc/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -95,7 +95,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-5FHsCq/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-YtiiCc/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -143,7 +143,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-5FHsCq/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-YtiiCc/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -153,7 +153,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-5FHsCq/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-YtiiCc/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -166300,7 +166300,7 @@
   var import_react55 = __toESM(require_dist89());
   init_jsx_runtime_shim();
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-5FHsCq/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-YtiiCc/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
   function resolveAuthCapabilityStatus(providerId) {
     return sdk.resolveAuthCapabilityStatus(providerId);
@@ -166734,7 +166734,7 @@
     return `/api/plugins/twitch/helix/${path}${qs ? `?${qs}` : ""}`;
   }
   function thumb(url, w, h) {
-    return url.replace("{width}", String(w)).replace("%{width}", String(w)).replace("{height}", String(h)).replace("%{height}", String(h));
+    return url.replace(/%?\{width\}/g, String(w)).replace(/%?\{height\}/g, String(h));
   }
   async function helixGet(url, userToken) {
     const headers = {};
@@ -166761,8 +166761,20 @@
     return { streams: data, cursor: next2 };
   }
   async function searchChannels(query) {
-    const { data } = await helixGet(helixUrl("search/channels", { query, first: 20, live_only: "true" }));
-    return data;
+    const { data } = await helixGet(
+      helixUrl("search/channels", { query, first: 20, live_only: "true" })
+    );
+    return data.map((row) => ({
+      id: row.id,
+      user_id: row.id,
+      user_login: row.broadcaster_login,
+      user_name: row.display_name,
+      game_id: row.game_id ?? "",
+      game_name: row.game_name ?? "",
+      title: row.title ?? "",
+      thumbnail_url: row.thumbnail_url ?? "",
+      is_live: row.is_live
+    }));
   }
   async function searchCategories(query) {
     const { data } = await helixGet(helixUrl("search/categories", { query, first: 20 }));
@@ -167486,7 +167498,7 @@
             ) : null,
             /* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent opacity-90 transition group-hover:opacity-100" }),
             /* @__PURE__ */ jsx("div", { className: "absolute left-2 top-2 rounded-full border border-rose-400/30 bg-rose-600/85 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur-sm", children: text("live") }),
-            /* @__PURE__ */ jsx("div", { className: "absolute right-2 top-2 rounded-full border border-white/12 bg-black/50 px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-slate-200 backdrop-blur-sm", children: formatViewerCount(stream.viewer_count) }),
+            Number.isFinite(stream.viewer_count) ? /* @__PURE__ */ jsx("div", { className: "absolute right-2 top-2 rounded-full border border-white/12 bg-black/50 px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-slate-200 backdrop-blur-sm", children: formatViewerCount(stream.viewer_count) }) : null,
             /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute inset-0 flex items-center justify-center", children: /* @__PURE__ */ jsx("span", { className: "flex h-12 w-12 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm transition group-hover:scale-105 group-hover:bg-black/70", children: /* @__PURE__ */ jsx("svg", { className: "ml-0.5 h-4 w-4", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) }) })
           ] }),
           /* @__PURE__ */ jsxs("div", { className: "p-2.5", children: [
@@ -168174,7 +168186,7 @@
         /* @__PURE__ */ jsx("h2", { className: "mb-1 text-3xl font-bold leading-tight text-white drop-shadow-lg sm:text-4xl", children: stream.user_name }),
         /* @__PURE__ */ jsxs("div", { className: "mb-3 flex items-center gap-3 text-sm text-slate-300", children: [
           stream.game_name ? /* @__PURE__ */ jsx("span", { children: stream.game_name }) : null,
-          /* @__PURE__ */ jsx("span", { children: formatViewerCount(stream.viewer_count) })
+          Number.isFinite(stream.viewer_count) ? /* @__PURE__ */ jsx("span", { children: formatViewerCount(stream.viewer_count) }) : null
         ] }),
         /* @__PURE__ */ jsx("p", { className: "mb-4 line-clamp-2 text-sm leading-relaxed text-slate-300/80 sm:text-base", children: stream.title }),
         /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
@@ -168269,7 +168281,7 @@
   };
   var runtime_default = TwitchPlugin;
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-5FHsCq/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-YtiiCc/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

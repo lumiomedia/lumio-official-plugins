@@ -1,4 +1,4 @@
-import type { TwitchStream, TwitchCategory, TwitchVideo, TwitchClip } from './twitch-types'
+import type { TwitchStream, TwitchCategory, TwitchVideo, TwitchClip, TwitchSearchChannelRow } from './twitch-types'
 
 export function helixUrl(path: string, params: Record<string, string | number | undefined> = {}): string {
   const qs = Object.entries(params)
@@ -9,8 +9,10 @@ export function helixUrl(path: string, params: Record<string, string | number | 
 }
 
 export function thumb(url: string, w: number, h: number): string {
-  return url.replace('{width}', String(w)).replace('%{width}', String(w))
-    .replace('{height}', String(h)).replace('%{height}', String(h))
+  // Match the `%{width}`/`%{height}` form (used by Helix `/videos` thumbnails)
+  // before the plain `{width}`/`{height}` form, since `%?` makes the leading
+  // `%` optional and covers both in a single pass.
+  return url.replace(/%?\{width\}/g, String(w)).replace(/%?\{height\}/g, String(h))
 }
 
 async function helixGet<T>(url: string, userToken?: string): Promise<{ data: T[]; cursor: string | null }> {
@@ -38,9 +40,26 @@ export async function getFollowedStreams(userId: string, userToken: string, curs
   const { data, cursor: next } = await helixGet<TwitchStream>(helixUrl('streams/followed', { user_id: userId, first: 30, after: cursor }), userToken)
   return { streams: data, cursor: next }
 }
-export async function searchChannels(query: string) {
-  const { data } = await helixGet<TwitchStream>(helixUrl('search/channels', { query, first: 20, live_only: 'true' }))
-  return data
+export async function searchChannels(query: string): Promise<TwitchStream[]> {
+  const { data } = await helixGet<TwitchSearchChannelRow>(
+    helixUrl('search/channels', { query, first: 20, live_only: 'true' }),
+  )
+  // `GET /search/channels` rows don't share the `streams` endpoint's shape:
+  // normalize `id`/`broadcaster_login`/`display_name` into
+  // `user_id`/`user_login`/`user_name` so downstream UI (StreamCard,
+  // openChannel -> TwitchChannelPage) gets valid identifiers. There is no
+  // `viewer_count` for search results — leave it undefined.
+  return data.map((row) => ({
+    id: row.id,
+    user_id: row.id,
+    user_login: row.broadcaster_login,
+    user_name: row.display_name,
+    game_id: row.game_id ?? '',
+    game_name: row.game_name ?? '',
+    title: row.title ?? '',
+    thumbnail_url: row.thumbnail_url ?? '',
+    is_live: row.is_live,
+  }))
 }
 export async function searchCategories(query: string) {
   const { data } = await helixGet<TwitchCategory>(helixUrl('search/categories', { query, first: 20 }))

@@ -342,9 +342,11 @@ function StreamCard({
         <div className="absolute left-2 top-2 rounded-full border border-rose-400/30 bg-rose-600/85 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur-sm">
           {text('live')}
         </div>
-        <div className="absolute right-2 top-2 rounded-full border border-white/12 bg-black/50 px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-slate-200 backdrop-blur-sm">
-          {formatViewerCount(stream.viewer_count)}
-        </div>
+        {Number.isFinite(stream.viewer_count) ? (
+          <div className="absolute right-2 top-2 rounded-full border border-white/12 bg-black/50 px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-slate-200 backdrop-blur-sm">
+            {formatViewerCount(stream.viewer_count as number)}
+          </div>
+        ) : null}
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <span className="flex h-12 w-12 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm transition group-hover:scale-105 group-hover:bg-black/70">
             <svg className="ml-0.5 h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
@@ -1270,7 +1272,7 @@ export function TwitchHero({ onNavigate, onActiveChange, onBackdropChange }: Plu
 
         <div className="mb-3 flex items-center gap-3 text-sm text-slate-300">
           {stream.game_name ? <span>{stream.game_name}</span> : null}
-          <span>{formatViewerCount(stream.viewer_count)}</span>
+          {Number.isFinite(stream.viewer_count) ? <span>{formatViewerCount(stream.viewer_count as number)}</span> : null}
         </div>
 
         <p className="mb-4 line-clamp-2 text-sm leading-relaxed text-slate-300/80 sm:text-base">

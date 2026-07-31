@@ -16,4 +16,9 @@ describe('thumb', () => {
     expect(thumb('https://x/{width}x{height}.jpg', 440, 248))
       .toBe('https://x/440x248.jpg')
   })
+
+  it('fills the %{width}x%{height} form used by Helix /videos thumbnails', () => {
+    expect(thumb('https://x/%{width}x%{height}.jpg', 440, 248))
+      .toBe('https://x/440x248.jpg')
+  })
 })
