@@ -17,7 +17,8 @@ interface DevicePollResult {
   accessToken?: string
   refreshToken?: string
   expiresAt?: number
-  status?: string
+  /** HTTP status code echoed by the backend; informational only — control flow keys off `error`. */
+  status?: number
   error?: string
 }
 
@@ -142,13 +143,14 @@ export async function connectTwitch(onCode: (userCode: string, verificationUri: 
       return
     }
 
-    if (poll.status === 'slow_down') {
+    if (poll.error === 'authorization_pending') {
+      continue
+    }
+    if (poll.error === 'slow_down') {
       intervalMs += SLOW_DOWN_STEP_MS
       continue
     }
-    if (poll.status && poll.status !== 'authorization_pending') {
-      throw new Error(poll.error || 'Twitch login failed.')
-    }
+    throw new Error(poll.error || 'Twitch device login failed')
   }
 
   throw new Error('Twitch login timed out. Try connecting again.')
