@@ -46,7 +46,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-1l6lJr/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-aGh5jV/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -95,7 +95,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-1l6lJr/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-aGh5jV/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -143,7 +143,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-1l6lJr/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-aGh5jV/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -153,7 +153,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-1l6lJr/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-aGh5jV/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -166300,7 +166300,7 @@
   var import_react55 = __toESM(require_dist89());
   init_jsx_runtime_shim();
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-1l6lJr/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-aGh5jV/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
   function resolveAuthCapabilityStatus(providerId) {
     return sdk.resolveAuthCapabilityStatus(providerId);
@@ -166756,6 +166756,22 @@
     const { data, cursor: next2 } = await helixGet(helixUrl("games/top", { first: 30, after: cursor }));
     return { categories: data, cursor: next2 };
   }
+  async function searchChannels(query) {
+    const { data } = await helixGet(helixUrl("search/channels", { query, first: 20, live_only: "true" }));
+    return data;
+  }
+  async function searchCategories(query) {
+    const { data } = await helixGet(helixUrl("search/categories", { query, first: 20 }));
+    return data;
+  }
+  async function getChannelVideos(userId) {
+    const { data } = await helixGet(helixUrl("videos", { user_id: userId, first: 20, type: "archive" }));
+    return data;
+  }
+  async function getChannelClips(broadcasterId) {
+    const { data } = await helixGet(helixUrl("clips", { broadcaster_id: broadcasterId, first: 20 }));
+    return data;
+  }
 
   // ../lumio-official-plugins/plugins/twitch/runtime/twitch-storage.ts
   var SESSION_KEY = "twitch_session_v1";
@@ -167180,7 +167196,25 @@
       sv: "Inga live-kanaler i denna kategori just nu."
     },
     back: { en: "Back to categories", sv: "Tillbaka till kategorier" },
-    loadMore: { en: "Load more", sv: "Ladda fler" }
+    loadMore: { en: "Load more", sv: "Ladda fler" },
+    searchTitle: { en: "Twitch: Search", sv: "Twitch: S\xF6k" },
+    searchSubtitle: { en: "Find channels and categories on Twitch.", sv: "Hitta kanaler och kategorier p\xE5 Twitch." },
+    searchPlaceholder: { en: "Search channels and categories\u2026", sv: "S\xF6k kanaler och kategorier\u2026" },
+    searchPrompt: { en: "Start typing to search Twitch.", sv: "B\xF6rja skriva f\xF6r att s\xF6ka p\xE5 Twitch." },
+    searching: { en: "Searching\u2026", sv: "S\xF6ker\u2026" },
+    searchError: { en: "Could not search Twitch.", sv: "Kunde inte s\xF6ka p\xE5 Twitch." },
+    searchNoResults: { en: "No channels or categories found.", sv: "Inga kanaler eller kategorier hittades." },
+    channelsHeading: { en: "Channels", sv: "Kanaler" },
+    categoriesHeading: { en: "Categories", sv: "Kategorier" },
+    backToResults: { en: "Back to search results", sv: "Tillbaka till s\xF6kresultat" },
+    vodsTab: { en: "VODs", sv: "VOD:er" },
+    clipsTab: { en: "Clips", sv: "Klipp" },
+    loadingVods: { en: "Loading VODs\u2026", sv: "Laddar VOD:er\u2026" },
+    loadingClips: { en: "Loading clips\u2026", sv: "Laddar klipp\u2026" },
+    vodsLoadError: { en: "Could not load VODs.", sv: "Kunde inte l\xE4sa in VOD:er." },
+    clipsLoadError: { en: "Could not load clips.", sv: "Kunde inte l\xE4sa in klipp." },
+    vodsEmpty: { en: "No VODs found for this channel.", sv: "Inga VOD:er hittades f\xF6r denna kanal." },
+    clipsEmpty: { en: "No clips found for this channel.", sv: "Inga klipp hittades f\xF6r denna kanal." }
   };
   function useTwitchText() {
     const { lang } = useLang();
@@ -167519,6 +167553,310 @@
       hasMore ? /* @__PURE__ */ jsx(LoadMoreButton, { onClick: () => void loadMore(), label: text("loadMore") }) : null
     ] });
   }
+  function useTwitchSearch(query) {
+    const [channels, setChannels] = useState([]);
+    const [categories, setCategories] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    useEffect(() => {
+      const trimmed = query.trim();
+      if (!trimmed) {
+        setChannels([]);
+        setCategories([]);
+        setLoading(false);
+        setError(null);
+        return;
+      }
+      let cancelled = false;
+      setLoading(true);
+      setError(null);
+      Promise.all([searchChannels(trimmed), searchCategories(trimmed)]).then(([channelResults, categoryResults]) => {
+        if (cancelled) return;
+        setChannels(channelResults);
+        setCategories(categoryResults);
+      }).catch((loadError) => {
+        if (cancelled) return;
+        setError(loadError instanceof Error ? loadError.message : "error");
+      }).finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }, [query]);
+    return { channels, categories, loading, error };
+  }
+  function useChannelVideos(userId) {
+    const [videos, setVideos] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    useEffect(() => {
+      if (!userId) return;
+      let cancelled = false;
+      setLoading(true);
+      setError(null);
+      getChannelVideos(userId).then((result) => {
+        if (!cancelled) setVideos(result);
+      }).catch((loadError) => {
+        if (!cancelled) setError(loadError instanceof Error ? loadError.message : "error");
+      }).finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }, [userId]);
+    return { videos, loading, error };
+  }
+  function useChannelClips(broadcasterId) {
+    const [clips, setClips] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    useEffect(() => {
+      if (!broadcasterId) return;
+      let cancelled = false;
+      setLoading(true);
+      setError(null);
+      getChannelClips(broadcasterId).then((result) => {
+        if (!cancelled) setClips(result);
+      }).catch((loadError) => {
+        if (!cancelled) setError(loadError instanceof Error ? loadError.message : "error");
+      }).finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }, [broadcasterId]);
+    return { clips, loading, error };
+  }
+  function resolveClipSlug(clip) {
+    const idLooksLikeSlug = /^[A-Za-z][A-Za-z0-9_-]*$/.test(clip.id);
+    if (idLooksLikeSlug) return clip.id;
+    const fromEmbed = clip.embed_url?.match(/clip=([^&]+)/)?.[1] ?? clip.embed_url?.match(/clips\.twitch\.tv\/([^/?&]+)/)?.[1];
+    return fromEmbed ? decodeURIComponent(fromEmbed) : clip.id;
+  }
+  function formatClipDate(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toLocaleDateString();
+  }
+  function VideoCard({ video, onPlay }) {
+    return /* @__PURE__ */ jsxs(
+      "div",
+      {
+        role: "button",
+        tabIndex: 0,
+        onClick: () => onPlay(video),
+        onKeyDown: (event) => {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
+          onPlay(video);
+        },
+        className: "group relative w-full overflow-hidden bg-transparent text-left transition-all duration-300 hover:-translate-y-1",
+        "aria-label": video.title,
+        children: [
+          /* @__PURE__ */ jsxs("div", { className: "relative aspect-video overflow-hidden rounded-[0.75rem] bg-slate-800", children: [
+            video.thumbnail_url ? /* @__PURE__ */ jsx(
+              "img",
+              {
+                src: thumb(video.thumbnail_url, 440, 248),
+                alt: video.title,
+                className: "h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
+              }
+            ) : null,
+            /* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent opacity-90 transition group-hover:opacity-100" }),
+            /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute inset-0 flex items-center justify-center", children: /* @__PURE__ */ jsx("span", { className: "flex h-12 w-12 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm transition group-hover:scale-105 group-hover:bg-black/70", children: /* @__PURE__ */ jsx("svg", { className: "ml-0.5 h-4 w-4", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) }) })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "p-2.5", children: [
+            /* @__PURE__ */ jsx("h3", { className: "line-clamp-2 text-[0.8rem] font-semibold leading-snug text-white", children: video.title }),
+            /* @__PURE__ */ jsx("p", { className: "mt-0.5 text-[0.7rem] text-slate-400", children: formatClipDate(video.created_at) })
+          ] })
+        ]
+      }
+    );
+  }
+  function ClipCard({ clip, onPlay }) {
+    return /* @__PURE__ */ jsxs(
+      "div",
+      {
+        role: "button",
+        tabIndex: 0,
+        onClick: () => onPlay(clip),
+        onKeyDown: (event) => {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
+          onPlay(clip);
+        },
+        className: "group relative w-full overflow-hidden bg-transparent text-left transition-all duration-300 hover:-translate-y-1",
+        "aria-label": clip.title,
+        children: [
+          /* @__PURE__ */ jsxs("div", { className: "relative aspect-video overflow-hidden rounded-[0.75rem] bg-slate-800", children: [
+            clip.thumbnail_url ? /* @__PURE__ */ jsx(
+              "img",
+              {
+                src: thumb(clip.thumbnail_url, 440, 248),
+                alt: clip.title,
+                className: "h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
+              }
+            ) : null,
+            /* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent opacity-90 transition group-hover:opacity-100" }),
+            /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute inset-0 flex items-center justify-center", children: /* @__PURE__ */ jsx("span", { className: "flex h-12 w-12 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm transition group-hover:scale-105 group-hover:bg-black/70", children: /* @__PURE__ */ jsx("svg", { className: "ml-0.5 h-4 w-4", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) }) })
+          ] }),
+          /* @__PURE__ */ jsx("div", { className: "p-2.5", children: /* @__PURE__ */ jsx("h3", { className: "line-clamp-2 text-[0.8rem] font-semibold leading-snug text-white", children: clip.title }) })
+        ]
+      }
+    );
+  }
+  function TwitchChannelPage({ userId, broadcasterId, login, displayName }) {
+    const text = useTwitchText();
+    const [tab, setTab] = useState("vods");
+    const { videos, loading: videosLoading, error: videosError } = useChannelVideos(userId);
+    const { clips, loading: clipsLoading, error: clipsError } = useChannelClips(broadcasterId);
+    const [player, setPlayer] = useState(null);
+    function tabButtonClass(key) {
+      return `h-9 rounded-full border px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] transition-all ${tab === key ? "border-white/[0.24] bg-white/[0.1] text-white" : "border-white/[0.1] bg-white/[0.03] text-slate-300 hover:border-white/[0.16] hover:bg-white/[0.05] hover:text-white"}`;
+    }
+    return /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
+      /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center justify-between gap-3", children: [
+        /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsx("h2", { className: "text-2xl font-semibold text-white", children: displayName || login }),
+          login ? /* @__PURE__ */ jsxs("p", { className: "text-sm text-slate-400", children: [
+            "@",
+            login
+          ] }) : null
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "flex gap-2", children: [
+          /* @__PURE__ */ jsx("button", { type: "button", onClick: () => setTab("vods"), className: tabButtonClass("vods"), children: text("vodsTab") }),
+          /* @__PURE__ */ jsx("button", { type: "button", onClick: () => setTab("clips"), className: tabButtonClass("clips"), children: text("clipsTab") })
+        ] })
+      ] }),
+      tab === "vods" ? videosLoading && videos.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("loadingVods") }) : videosError && videos.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("vodsLoadError") }) : videos.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("vodsEmpty") }) : /* @__PURE__ */ jsx("div", { className: "grid gap-4 sm:grid-cols-2 xl:grid-cols-4", children: videos.map((video) => /* @__PURE__ */ jsx(
+        VideoCard,
+        {
+          video,
+          onPlay: (v) => setPlayer({ kind: "vod", id: v.id, title: v.title })
+        },
+        video.id
+      )) }) : clipsLoading && clips.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("loadingClips") }) : clipsError && clips.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("clipsLoadError") }) : clips.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("clipsEmpty") }) : /* @__PURE__ */ jsx("div", { className: "grid gap-4 sm:grid-cols-2 xl:grid-cols-4", children: clips.map((clip) => /* @__PURE__ */ jsx(
+        ClipCard,
+        {
+          clip,
+          onPlay: (c) => setPlayer({ kind: "clip", id: resolveClipSlug(c), title: c.title })
+        },
+        clip.id
+      )) }),
+      player ? /* @__PURE__ */ jsx(TwitchPlayerModal, { kind: player.kind, id: player.id, title: player.title, onClose: () => setPlayer(null) }) : null
+    ] });
+  }
+  function TwitchSearchPage({ onNavigate: _onNavigate }) {
+    const text = useTwitchText();
+    const [inputValue, setInputValue] = useState("");
+    const [query, setQuery] = useState("");
+    const { channels, categories, loading, error } = useTwitchSearch(query);
+    const [selectedCategory, setSelectedCategory] = useState(null);
+    const [selectedChannel, setSelectedChannel] = useState(null);
+    const {
+      streams: categoryStreams,
+      loading: categoryStreamsLoading,
+      error: categoryStreamsError,
+      hasMore: categoryStreamsHasMore,
+      loadMore: loadMoreCategoryStreams
+    } = useTwitchCategoryStreams(selectedCategory?.id ?? null);
+    const [playerStream, setPlayerStream] = useState(null);
+    useEffect(() => {
+      const handle = setTimeout(() => setQuery(inputValue), 400);
+      return () => clearTimeout(handle);
+    }, [inputValue]);
+    function openChannel(stream) {
+      setSelectedChannel({
+        userId: stream.user_id,
+        broadcasterId: stream.user_id,
+        login: stream.user_login,
+        displayName: stream.user_name
+      });
+    }
+    const backToResults = /* @__PURE__ */ jsxs(
+      "button",
+      {
+        type: "button",
+        onClick: () => {
+          setSelectedCategory(null);
+          setSelectedChannel(null);
+        },
+        className: "flex h-9 items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.03] px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:border-white/[0.16] hover:bg-white/[0.05] hover:text-white",
+        children: [
+          /* @__PURE__ */ jsx("svg", { width: "12", height: "12", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", children: /* @__PURE__ */ jsx("polyline", { points: "15 18 9 12 15 6" }) }),
+          text("backToResults")
+        ]
+      }
+    );
+    if (selectedChannel) {
+      return /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
+        backToResults,
+        /* @__PURE__ */ jsx(TwitchChannelPage, { ...selectedChannel })
+      ] });
+    }
+    if (selectedCategory) {
+      if (categoryStreamsLoading && categoryStreams.length === 0) {
+        return /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
+          backToResults,
+          /* @__PURE__ */ jsx(SectionPlaceholder, { title: selectedCategory.name, text: text("loading") })
+        ] });
+      }
+      if (categoryStreamsError && categoryStreams.length === 0) {
+        return /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
+          backToResults,
+          /* @__PURE__ */ jsx(SectionPlaceholder, { title: selectedCategory.name, text: text("loadError") })
+        ] });
+      }
+      return /* @__PURE__ */ jsxs("div", { className: "space-y-8", children: [
+        backToResults,
+        /* @__PURE__ */ jsx(TwitchGridShell, { title: selectedCategory.name, children: categoryStreams.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("streamsEmpty") }) : /* @__PURE__ */ jsx("div", { className: "grid gap-4 sm:grid-cols-2 xl:grid-cols-4", children: categoryStreams.map((stream) => /* @__PURE__ */ jsx(StreamCard, { stream, onPlay: setPlayerStream }, stream.id)) }) }),
+        categoryStreamsHasMore ? /* @__PURE__ */ jsx(LoadMoreButton, { onClick: () => void loadMoreCategoryStreams(), label: text("loadMore") }) : null,
+        playerStream ? /* @__PURE__ */ jsx(
+          TwitchPlayerModal,
+          {
+            kind: "live",
+            id: playerStream.user_login,
+            title: playerStream.title,
+            onClose: () => setPlayerStream(null)
+          }
+        ) : null
+      ] });
+    }
+    const trimmedQuery = query.trim();
+    const hasResults = channels.length > 0 || categories.length > 0;
+    return /* @__PURE__ */ jsxs("div", { className: "space-y-8", children: [
+      /* @__PURE__ */ jsxs("div", { children: [
+        /* @__PURE__ */ jsx("h2", { className: "text-2xl font-semibold text-white", children: text("searchTitle") }),
+        /* @__PURE__ */ jsx("p", { className: "mt-1 text-sm text-slate-400", children: text("searchSubtitle") })
+      ] }),
+      /* @__PURE__ */ jsx(
+        "form",
+        {
+          onSubmit: (event) => {
+            event.preventDefault();
+            setQuery(inputValue);
+          },
+          children: /* @__PURE__ */ jsx(
+            "input",
+            {
+              type: "search",
+              value: inputValue,
+              onChange: (event) => setInputValue(event.target.value),
+              placeholder: text("searchPlaceholder"),
+              className: "h-11 w-full rounded-full border border-white/[0.1] bg-white/[0.04] px-5 text-sm text-white placeholder:text-slate-500 outline-none transition-all focus:border-white/[0.2] focus:bg-white/[0.06] sm:max-w-md"
+            }
+          )
+        }
+      ),
+      !trimmedQuery ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("searchPrompt") }) : loading && !hasResults ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("searching") }) : error && !hasResults ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("searchError") }) : !hasResults ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("searchNoResults") }) : /* @__PURE__ */ jsxs("div", { className: "space-y-8", children: [
+        channels.length > 0 ? /* @__PURE__ */ jsx(TwitchGridShell, { title: text("channelsHeading"), children: /* @__PURE__ */ jsx("div", { className: "grid gap-4 sm:grid-cols-2 xl:grid-cols-4", children: channels.map((stream) => /* @__PURE__ */ jsx(StreamCard, { stream, onPlay: openChannel }, stream.id)) }) }) : null,
+        categories.length > 0 ? /* @__PURE__ */ jsx(TwitchGridShell, { title: text("categoriesHeading"), children: /* @__PURE__ */ jsx("div", { className: "grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6", children: categories.map((category) => /* @__PURE__ */ jsx(CategoryCard, { category, onSelect: setSelectedCategory }, category.id)) }) }) : null
+      ] })
+    ] });
+  }
   function TwitchHomeRowShell({
     title,
     subtitle,
@@ -167704,6 +168042,7 @@
       });
       ctx.registerBrowsePage({ id: "twitch-live", label: { en: "Live", sv: "Live" }, Page: TwitchBrowsePage });
       ctx.registerBrowsePage({ id: "twitch-categories", label: { en: "Categories", sv: "Kategorier" }, Page: TwitchCategoriesPage });
+      ctx.registerBrowsePage({ id: "twitch-search", label: { en: "Search", sv: "S\xF6k" }, Page: TwitchSearchPage });
       const twitchEntry = {
         id: "twitch",
         label: { en: "Twitch", sv: "Twitch" },
@@ -167715,7 +168054,7 @@
   };
   var runtime_default = TwitchPlugin;
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-1l6lJr/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-aGh5jV/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

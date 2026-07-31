@@ -2,9 +2,18 @@
 
 import { useEffect, useState, type ReactNode } from 'react'
 import { useLang, type BrowsePageProps, type HomeRowProps, type PluginHeroProps } from '@/lib/plugin-sdk'
-import { getTopStreams, getTopCategories, getStreamsByGame, thumb } from './twitch-client'
+import {
+  getTopStreams,
+  getTopCategories,
+  getStreamsByGame,
+  searchChannels,
+  searchCategories,
+  getChannelVideos,
+  getChannelClips,
+  thumb,
+} from './twitch-client'
 import { TwitchPlayerModal } from './twitch-player'
-import type { TwitchStream, TwitchCategory } from './twitch-types'
+import type { TwitchStream, TwitchCategory, TwitchVideo, TwitchClip } from './twitch-types'
 
 const TEXT = {
   liveNowTitle: { en: 'Twitch: Live now', sv: 'Twitch: Live nu' },
@@ -29,6 +38,24 @@ const TEXT = {
   },
   back: { en: 'Back to categories', sv: 'Tillbaka till kategorier' },
   loadMore: { en: 'Load more', sv: 'Ladda fler' },
+  searchTitle: { en: 'Twitch: Search', sv: 'Twitch: Sök' },
+  searchSubtitle: { en: 'Find channels and categories on Twitch.', sv: 'Hitta kanaler och kategorier på Twitch.' },
+  searchPlaceholder: { en: 'Search channels and categories…', sv: 'Sök kanaler och kategorier…' },
+  searchPrompt: { en: 'Start typing to search Twitch.', sv: 'Börja skriva för att söka på Twitch.' },
+  searching: { en: 'Searching…', sv: 'Söker…' },
+  searchError: { en: 'Could not search Twitch.', sv: 'Kunde inte söka på Twitch.' },
+  searchNoResults: { en: 'No channels or categories found.', sv: 'Inga kanaler eller kategorier hittades.' },
+  channelsHeading: { en: 'Channels', sv: 'Kanaler' },
+  categoriesHeading: { en: 'Categories', sv: 'Kategorier' },
+  backToResults: { en: 'Back to search results', sv: 'Tillbaka till sökresultat' },
+  vodsTab: { en: 'VODs', sv: 'VOD:er' },
+  clipsTab: { en: 'Clips', sv: 'Klipp' },
+  loadingVods: { en: 'Loading VODs…', sv: 'Laddar VOD:er…' },
+  loadingClips: { en: 'Loading clips…', sv: 'Laddar klipp…' },
+  vodsLoadError: { en: 'Could not load VODs.', sv: 'Kunde inte läsa in VOD:er.' },
+  clipsLoadError: { en: 'Could not load clips.', sv: 'Kunde inte läsa in klipp.' },
+  vodsEmpty: { en: 'No VODs found for this channel.', sv: 'Inga VOD:er hittades för denna kanal.' },
+  clipsEmpty: { en: 'No clips found for this channel.', sv: 'Inga klipp hittades för denna kanal.' },
 } as const
 
 type TextKey = keyof typeof TEXT
@@ -478,6 +505,440 @@ export function TwitchCategoriesPage({ onNavigate: _onNavigate }: BrowsePageProp
       </TwitchGridShell>
 
       {hasMore ? <LoadMoreButton onClick={() => void loadMore()} label={text('loadMore')} /> : null}
+    </div>
+  )
+}
+
+type SelectedChannel = {
+  userId: string
+  broadcasterId: string
+  login: string
+  displayName: string
+}
+
+function useTwitchSearch(query: string) {
+  const [channels, setChannels] = useState<TwitchStream[]>([])
+  const [categories, setCategories] = useState<TwitchCategory[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const trimmed = query.trim()
+    if (!trimmed) {
+      setChannels([])
+      setCategories([])
+      setLoading(false)
+      setError(null)
+      return
+    }
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+    Promise.all([searchChannels(trimmed), searchCategories(trimmed)])
+      .then(([channelResults, categoryResults]) => {
+        if (cancelled) return
+        setChannels(channelResults)
+        setCategories(categoryResults)
+      })
+      .catch((loadError) => {
+        if (cancelled) return
+        setError(loadError instanceof Error ? loadError.message : 'error')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [query])
+
+  return { channels, categories, loading, error }
+}
+
+function useChannelVideos(userId: string) {
+  const [videos, setVideos] = useState<TwitchVideo[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!userId) return
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+    getChannelVideos(userId)
+      .then((result) => {
+        if (!cancelled) setVideos(result)
+      })
+      .catch((loadError) => {
+        if (!cancelled) setError(loadError instanceof Error ? loadError.message : 'error')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [userId])
+
+  return { videos, loading, error }
+}
+
+function useChannelClips(broadcasterId: string) {
+  const [clips, setClips] = useState<TwitchClip[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!broadcasterId) return
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+    getChannelClips(broadcasterId)
+      .then((result) => {
+        if (!cancelled) setClips(result)
+      })
+      .catch((loadError) => {
+        if (!cancelled) setError(loadError instanceof Error ? loadError.message : 'error')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [broadcasterId])
+
+  return { clips, loading, error }
+}
+
+// Twitch clip `id` values are already the embeddable slug (e.g. "AwkwardSalamander...").
+// Only legacy numeric ids need the slug recovered from `embed_url` instead.
+function resolveClipSlug(clip: TwitchClip): string {
+  const idLooksLikeSlug = /^[A-Za-z][A-Za-z0-9_-]*$/.test(clip.id)
+  if (idLooksLikeSlug) return clip.id
+  const fromEmbed = clip.embed_url?.match(/clip=([^&]+)/)?.[1] ?? clip.embed_url?.match(/clips\.twitch\.tv\/([^/?&]+)/)?.[1]
+  return fromEmbed ? decodeURIComponent(fromEmbed) : clip.id
+}
+
+function formatClipDate(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toLocaleDateString()
+}
+
+function VideoCard({ video, onPlay }: { video: TwitchVideo; onPlay: (video: TwitchVideo) => void }) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onPlay(video)}
+      onKeyDown={(event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return
+        event.preventDefault()
+        onPlay(video)
+      }}
+      className="group relative w-full overflow-hidden bg-transparent text-left transition-all duration-300 hover:-translate-y-1"
+      aria-label={video.title}
+    >
+      <div className="relative aspect-video overflow-hidden rounded-[0.75rem] bg-slate-800">
+        {video.thumbnail_url ? (
+          <img
+            src={thumb(video.thumbnail_url, 440, 248)}
+            alt={video.title}
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
+          />
+        ) : null}
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent opacity-90 transition group-hover:opacity-100" />
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm transition group-hover:scale-105 group-hover:bg-black/70">
+            <svg className="ml-0.5 h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </span>
+        </div>
+      </div>
+      <div className="p-2.5">
+        <h3 className="line-clamp-2 text-[0.8rem] font-semibold leading-snug text-white">{video.title}</h3>
+        <p className="mt-0.5 text-[0.7rem] text-slate-400">{formatClipDate(video.created_at)}</p>
+      </div>
+    </div>
+  )
+}
+
+function ClipCard({ clip, onPlay }: { clip: TwitchClip; onPlay: (clip: TwitchClip) => void }) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onPlay(clip)}
+      onKeyDown={(event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return
+        event.preventDefault()
+        onPlay(clip)
+      }}
+      className="group relative w-full overflow-hidden bg-transparent text-left transition-all duration-300 hover:-translate-y-1"
+      aria-label={clip.title}
+    >
+      <div className="relative aspect-video overflow-hidden rounded-[0.75rem] bg-slate-800">
+        {clip.thumbnail_url ? (
+          <img
+            src={thumb(clip.thumbnail_url, 440, 248)}
+            alt={clip.title}
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
+          />
+        ) : null}
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent opacity-90 transition group-hover:opacity-100" />
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm transition group-hover:scale-105 group-hover:bg-black/70">
+            <svg className="ml-0.5 h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </span>
+        </div>
+      </div>
+      <div className="p-2.5">
+        <h3 className="line-clamp-2 text-[0.8rem] font-semibold leading-snug text-white">{clip.title}</h3>
+      </div>
+    </div>
+  )
+}
+
+export function TwitchChannelPage({ userId, broadcasterId, login, displayName }: SelectedChannel) {
+  const text = useTwitchText()
+  const [tab, setTab] = useState<'vods' | 'clips'>('vods')
+  const { videos, loading: videosLoading, error: videosError } = useChannelVideos(userId)
+  const { clips, loading: clipsLoading, error: clipsError } = useChannelClips(broadcasterId)
+  const [player, setPlayer] = useState<{ kind: 'vod' | 'clip'; id: string; title: string } | null>(null)
+
+  function tabButtonClass(key: 'vods' | 'clips') {
+    return `h-9 rounded-full border px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] transition-all ${
+      tab === key
+        ? 'border-white/[0.24] bg-white/[0.1] text-white'
+        : 'border-white/[0.1] bg-white/[0.03] text-slate-300 hover:border-white/[0.16] hover:bg-white/[0.05] hover:text-white'
+    }`
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-2xl font-semibold text-white">{displayName || login}</h2>
+          {login ? <p className="text-sm text-slate-400">@{login}</p> : null}
+        </div>
+        <div className="flex gap-2">
+          <button type="button" onClick={() => setTab('vods')} className={tabButtonClass('vods')}>
+            {text('vodsTab')}
+          </button>
+          <button type="button" onClick={() => setTab('clips')} className={tabButtonClass('clips')}>
+            {text('clipsTab')}
+          </button>
+        </div>
+      </div>
+
+      {tab === 'vods' ? (
+        videosLoading && videos.length === 0 ? (
+          <p className="text-sm text-slate-400">{text('loadingVods')}</p>
+        ) : videosError && videos.length === 0 ? (
+          <p className="text-sm text-slate-400">{text('vodsLoadError')}</p>
+        ) : videos.length === 0 ? (
+          <p className="text-sm text-slate-400">{text('vodsEmpty')}</p>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {videos.map((video) => (
+              <VideoCard
+                key={video.id}
+                video={video}
+                onPlay={(v) => setPlayer({ kind: 'vod', id: v.id, title: v.title })}
+              />
+            ))}
+          </div>
+        )
+      ) : clipsLoading && clips.length === 0 ? (
+        <p className="text-sm text-slate-400">{text('loadingClips')}</p>
+      ) : clipsError && clips.length === 0 ? (
+        <p className="text-sm text-slate-400">{text('clipsLoadError')}</p>
+      ) : clips.length === 0 ? (
+        <p className="text-sm text-slate-400">{text('clipsEmpty')}</p>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {clips.map((clip) => (
+            <ClipCard
+              key={clip.id}
+              clip={clip}
+              onPlay={(c) => setPlayer({ kind: 'clip', id: resolveClipSlug(c), title: c.title })}
+            />
+          ))}
+        </div>
+      )}
+
+      {player ? (
+        <TwitchPlayerModal kind={player.kind} id={player.id} title={player.title} onClose={() => setPlayer(null)} />
+      ) : null}
+    </div>
+  )
+}
+
+export function TwitchSearchPage({ onNavigate: _onNavigate }: BrowsePageProps) {
+  const text = useTwitchText()
+  const [inputValue, setInputValue] = useState('')
+  const [query, setQuery] = useState('')
+  const { channels, categories, loading, error } = useTwitchSearch(query)
+  const [selectedCategory, setSelectedCategory] = useState<TwitchCategory | null>(null)
+  const [selectedChannel, setSelectedChannel] = useState<SelectedChannel | null>(null)
+  const {
+    streams: categoryStreams,
+    loading: categoryStreamsLoading,
+    error: categoryStreamsError,
+    hasMore: categoryStreamsHasMore,
+    loadMore: loadMoreCategoryStreams,
+  } = useTwitchCategoryStreams(selectedCategory?.id ?? null)
+  const [playerStream, setPlayerStream] = useState<TwitchStream | null>(null)
+
+  useEffect(() => {
+    const handle = setTimeout(() => setQuery(inputValue), 400)
+    return () => clearTimeout(handle)
+  }, [inputValue])
+
+  function openChannel(stream: TwitchStream) {
+    setSelectedChannel({
+      userId: stream.user_id,
+      broadcasterId: stream.user_id,
+      login: stream.user_login,
+      displayName: stream.user_name,
+    })
+  }
+
+  const backToResults = (
+    <button
+      type="button"
+      onClick={() => {
+        setSelectedCategory(null)
+        setSelectedChannel(null)
+      }}
+      className="flex h-9 items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.03] px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:border-white/[0.16] hover:bg-white/[0.05] hover:text-white"
+    >
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+        <polyline points="15 18 9 12 15 6" />
+      </svg>
+      {text('backToResults')}
+    </button>
+  )
+
+  if (selectedChannel) {
+    return (
+      <div className="space-y-6">
+        {backToResults}
+        <TwitchChannelPage {...selectedChannel} />
+      </div>
+    )
+  }
+
+  if (selectedCategory) {
+    if (categoryStreamsLoading && categoryStreams.length === 0) {
+      return (
+        <div className="space-y-6">
+          {backToResults}
+          <SectionPlaceholder title={selectedCategory.name} text={text('loading')} />
+        </div>
+      )
+    }
+
+    if (categoryStreamsError && categoryStreams.length === 0) {
+      return (
+        <div className="space-y-6">
+          {backToResults}
+          <SectionPlaceholder title={selectedCategory.name} text={text('loadError')} />
+        </div>
+      )
+    }
+
+    return (
+      <div className="space-y-8">
+        {backToResults}
+        <TwitchGridShell title={selectedCategory.name}>
+          {categoryStreams.length === 0 ? (
+            <p className="text-sm text-slate-400">{text('streamsEmpty')}</p>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {categoryStreams.map((stream) => (
+                <StreamCard key={stream.id} stream={stream} onPlay={setPlayerStream} />
+              ))}
+            </div>
+          )}
+        </TwitchGridShell>
+
+        {categoryStreamsHasMore ? (
+          <LoadMoreButton onClick={() => void loadMoreCategoryStreams()} label={text('loadMore')} />
+        ) : null}
+
+        {playerStream ? (
+          <TwitchPlayerModal
+            kind="live"
+            id={playerStream.user_login}
+            title={playerStream.title}
+            onClose={() => setPlayerStream(null)}
+          />
+        ) : null}
+      </div>
+    )
+  }
+
+  const trimmedQuery = query.trim()
+  const hasResults = channels.length > 0 || categories.length > 0
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-2xl font-semibold text-white">{text('searchTitle')}</h2>
+        <p className="mt-1 text-sm text-slate-400">{text('searchSubtitle')}</p>
+      </div>
+
+      <form
+        onSubmit={(event) => {
+          event.preventDefault()
+          setQuery(inputValue)
+        }}
+      >
+        <input
+          type="search"
+          value={inputValue}
+          onChange={(event) => setInputValue(event.target.value)}
+          placeholder={text('searchPlaceholder')}
+          className="h-11 w-full rounded-full border border-white/[0.1] bg-white/[0.04] px-5 text-sm text-white placeholder:text-slate-500 outline-none transition-all focus:border-white/[0.2] focus:bg-white/[0.06] sm:max-w-md"
+        />
+      </form>
+
+      {!trimmedQuery ? (
+        <p className="text-sm text-slate-400">{text('searchPrompt')}</p>
+      ) : loading && !hasResults ? (
+        <p className="text-sm text-slate-400">{text('searching')}</p>
+      ) : error && !hasResults ? (
+        <p className="text-sm text-slate-400">{text('searchError')}</p>
+      ) : !hasResults ? (
+        <p className="text-sm text-slate-400">{text('searchNoResults')}</p>
+      ) : (
+        <div className="space-y-8">
+          {channels.length > 0 ? (
+            <TwitchGridShell title={text('channelsHeading')}>
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {channels.map((stream) => (
+                  <StreamCard key={stream.id} stream={stream} onPlay={openChannel} />
+                ))}
+              </div>
+            </TwitchGridShell>
+          ) : null}
+
+          {categories.length > 0 ? (
+            <TwitchGridShell title={text('categoriesHeading')}>
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
+                {categories.map((category) => (
+                  <CategoryCard key={category.id} category={category} onSelect={setSelectedCategory} />
+                ))}
+              </div>
+            </TwitchGridShell>
+          ) : null}
+        </div>
+      )}
     </div>
   )
 }
