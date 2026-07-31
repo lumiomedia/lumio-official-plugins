@@ -8,6 +8,7 @@ import {
   useLang,
 } from '@/lib/plugin-sdk'
 import { connectTwitch, disconnectTwitch, openTwitchVerificationUrl } from './twitch-auth'
+import { getTwitchHeroEnabled, onTwitchPluginChanged, setTwitchHeroEnabled } from './twitch-storage'
 
 const settingsActionButtonClass =
   'rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-slate-300 transition hover:border-white/20 hover:text-white disabled:opacity-40'
@@ -35,6 +36,7 @@ const TEXT = {
   },
   openVerificationUrl: { en: 'Open twitch.tv/activate', sv: 'Öppna twitch.tv/activate' },
   waitingForApproval: { en: 'Waiting for approval on twitch.tv…', sv: 'Väntar på godkännande på twitch.tv…' },
+  heroToggle: { en: 'Show Twitch hero on home', sv: 'Visa Twitch-hero på startsidan' },
 } as const
 
 export function TwitchSettingsSection() {
@@ -45,10 +47,17 @@ export function TwitchSettingsSection() {
   const [error, setError] = useState('')
   const [userCode, setUserCode] = useState('')
   const [verificationUri, setVerificationUri] = useState('')
+  const [heroEnabled, setHeroEnabled] = useState(false)
 
   function text(key: keyof typeof TEXT): string {
     return TEXT[key][lang] ?? TEXT[key].en
   }
+
+  useEffect(() => {
+    const sync = () => setHeroEnabled(getTwitchHeroEnabled())
+    sync()
+    return onTwitchPluginChanged(sync)
+  }, [])
 
   useEffect(() => {
     const sync = () => {
@@ -123,6 +132,22 @@ export function TwitchSettingsSection() {
         <p className="mt-2 text-sm text-slate-300">{sessionLabel}</p>
         {sessionDetail ? <p className="mt-2 text-xs text-amber-300">{sessionDetail}</p> : null}
         <p className="mt-2 text-xs text-slate-500">{text('connectionNote')}</p>
+      </div>
+
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+        <label className="flex items-center gap-3 text-sm text-slate-200">
+          <input
+            type="checkbox"
+            checked={heroEnabled}
+            onChange={(event) => {
+              const next = event.target.checked
+              setHeroEnabled(next)
+              setTwitchHeroEnabled(next)
+            }}
+            className="h-4 w-4 accent-amber-400"
+          />
+          {text('heroToggle')}
+        </label>
       </div>
 
       {busy === 'connecting' && userCode ? (

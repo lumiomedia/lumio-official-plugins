@@ -20,7 +20,7 @@ import {
   thumb,
 } from './twitch-client'
 import { TwitchPlayerModal } from './twitch-player'
-import { getTwitchSession, isTwitchSessionValid } from './twitch-storage'
+import { getTwitchHeroEnabled, getTwitchSession, isTwitchSessionValid, onTwitchPluginChanged } from './twitch-storage'
 import type { TwitchStream, TwitchCategory, TwitchVideo, TwitchClip } from './twitch-types'
 
 const TEXT = {
@@ -240,6 +240,18 @@ function useTwitchCategoryStreams(gameId: string | null) {
   }
 
   return { streams, loading, error, hasMore: Boolean(cursor), loadMore }
+}
+
+function useTwitchHeroEnabled() {
+  const [enabled, setEnabled] = useState(() => getTwitchHeroEnabled())
+
+  useEffect(() => {
+    const sync = () => setEnabled(getTwitchHeroEnabled())
+    sync()
+    return onTwitchPluginChanged(sync)
+  }, [])
+
+  return enabled
 }
 
 function useTwitchSessionState() {
@@ -1220,9 +1232,10 @@ export function TwitchFollowingRow({
 
 export function TwitchHero({ onNavigate, onActiveChange, onBackdropChange }: PluginHeroProps) {
   const text = useTwitchText()
-  const { streams } = useTwitchTopStreams(true)
+  const heroEnabled = useTwitchHeroEnabled()
+  const { streams } = useTwitchTopStreams(heroEnabled)
   const [playerStream, setPlayerStream] = useState<TwitchStream | null>(null)
-  const stream = streams[0] ?? null
+  const stream = heroEnabled ? streams[0] ?? null : null
 
   useEffect(() => {
     onActiveChange(Boolean(stream))
@@ -1233,7 +1246,7 @@ export function TwitchHero({ onNavigate, onActiveChange, onBackdropChange }: Plu
     }
   }, [stream, onActiveChange, onBackdropChange])
 
-  if (!stream) return null
+  if (!heroEnabled || !stream) return null
 
   return (
     <div className="relative mb-4" style={{ minHeight: 380 }}>

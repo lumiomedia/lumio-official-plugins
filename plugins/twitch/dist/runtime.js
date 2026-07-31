@@ -46,7 +46,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-PU6i2U/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-pmqjr6/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -95,7 +95,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-PU6i2U/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-pmqjr6/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -143,7 +143,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-PU6i2U/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-pmqjr6/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -153,7 +153,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-PU6i2U/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-pmqjr6/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -166300,7 +166300,7 @@
   var import_react55 = __toESM(require_dist89());
   init_jsx_runtime_shim();
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-PU6i2U/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-pmqjr6/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
   function resolveAuthCapabilityStatus(providerId) {
     return sdk.resolveAuthCapabilityStatus(providerId);
@@ -166779,6 +166779,7 @@
 
   // ../lumio-official-plugins/plugins/twitch/runtime/twitch-storage.ts
   var SESSION_KEY = "twitch_session_v1";
+  var HERO_ENABLED_KEY = "twitch_hero_enabled_v1";
   var EVENT2 = "lumio-twitch-plugin-changed";
   function emitChanged() {
     if (typeof window !== "undefined") {
@@ -166820,6 +166821,20 @@
   }
   function isTwitchSessionValid(session = getTwitchSession()) {
     return Boolean(session && session.expiresAt > Date.now() + 3e4);
+  }
+  function getTwitchHeroEnabled() {
+    if (typeof window === "undefined") return false;
+    return getScopedStorageItem(HERO_ENABLED_KEY) === "1";
+  }
+  function setTwitchHeroEnabled(enabled) {
+    setScopedStorageItem(HERO_ENABLED_KEY, enabled ? "1" : "");
+    emitChanged();
+  }
+  function onTwitchPluginChanged(listener) {
+    if (typeof window === "undefined") return () => {
+    };
+    window.addEventListener(EVENT2, listener);
+    return () => window.removeEventListener(EVENT2, listener);
   }
 
   // ../lumio-official-plugins/plugins/twitch/runtime/twitch-auth.ts
@@ -167005,7 +167020,8 @@
       sv: "\xD6ppna Twitchs aktiveringssida och ange denna kod:"
     },
     openVerificationUrl: { en: "Open twitch.tv/activate", sv: "\xD6ppna twitch.tv/activate" },
-    waitingForApproval: { en: "Waiting for approval on twitch.tv\u2026", sv: "V\xE4ntar p\xE5 godk\xE4nnande p\xE5 twitch.tv\u2026" }
+    waitingForApproval: { en: "Waiting for approval on twitch.tv\u2026", sv: "V\xE4ntar p\xE5 godk\xE4nnande p\xE5 twitch.tv\u2026" },
+    heroToggle: { en: "Show Twitch hero on home", sv: "Visa Twitch-hero p\xE5 startsidan" }
   };
   function TwitchSettingsSection() {
     const { lang } = useLang();
@@ -167015,9 +167031,15 @@
     const [error, setError] = useState("");
     const [userCode, setUserCode] = useState("");
     const [verificationUri, setVerificationUri] = useState("");
+    const [heroEnabled, setHeroEnabled] = useState(false);
     function text(key) {
       return TEXT[key][lang] ?? TEXT[key].en;
     }
+    useEffect(() => {
+      const sync2 = () => setHeroEnabled(getTwitchHeroEnabled());
+      sync2();
+      return onTwitchPluginChanged(sync2);
+    }, []);
     useEffect(() => {
       const sync2 = () => {
         void resolveAuthCapabilityStatus("twitch-auth").then((status) => {
@@ -167083,6 +167105,22 @@
         sessionDetail ? /* @__PURE__ */ jsx("p", { className: "mt-2 text-xs text-amber-300", children: sessionDetail }) : null,
         /* @__PURE__ */ jsx("p", { className: "mt-2 text-xs text-slate-500", children: text("connectionNote") })
       ] }),
+      /* @__PURE__ */ jsx("div", { className: "rounded-2xl border border-white/10 bg-white/[0.03] p-4", children: /* @__PURE__ */ jsxs("label", { className: "flex items-center gap-3 text-sm text-slate-200", children: [
+        /* @__PURE__ */ jsx(
+          "input",
+          {
+            type: "checkbox",
+            checked: heroEnabled,
+            onChange: (event) => {
+              const next2 = event.target.checked;
+              setHeroEnabled(next2);
+              setTwitchHeroEnabled(next2);
+            },
+            className: "h-4 w-4 accent-amber-400"
+          }
+        ),
+        text("heroToggle")
+      ] }) }),
       busy === "connecting" && userCode ? /* @__PURE__ */ jsxs("div", { className: "rounded-2xl border border-white/10 bg-slate-950/50 p-4", children: [
         /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-400", children: text("deviceCodeIntro") }),
         /* @__PURE__ */ jsx("p", { className: "mt-2 text-2xl font-semibold tracking-[0.3em] text-white", children: userCode }),
@@ -167364,6 +167402,15 @@
       }
     }
     return { streams, loading, error, hasMore: Boolean(cursor), loadMore };
+  }
+  function useTwitchHeroEnabled() {
+    const [enabled, setEnabled] = useState(() => getTwitchHeroEnabled());
+    useEffect(() => {
+      const sync2 = () => setEnabled(getTwitchHeroEnabled());
+      sync2();
+      return onTwitchPluginChanged(sync2);
+    }, []);
+    return enabled;
   }
   function useTwitchSessionState() {
     const [session, setSession] = useState(() => getTwitchSession());
@@ -168097,9 +168144,10 @@
   }
   function TwitchHero({ onNavigate, onActiveChange, onBackdropChange }) {
     const text = useTwitchText();
-    const { streams } = useTwitchTopStreams(true);
+    const heroEnabled = useTwitchHeroEnabled();
+    const { streams } = useTwitchTopStreams(heroEnabled);
     const [playerStream, setPlayerStream] = useState(null);
-    const stream = streams[0] ?? null;
+    const stream = heroEnabled ? streams[0] ?? null : null;
     useEffect(() => {
       onActiveChange(Boolean(stream));
       onBackdropChange(stream ? thumb(stream.thumbnail_url, 1920, 1080) : null);
@@ -168108,7 +168156,7 @@
         onBackdropChange(null);
       };
     }, [stream, onActiveChange, onBackdropChange]);
-    if (!stream) return null;
+    if (!heroEnabled || !stream) return null;
     return /* @__PURE__ */ jsxs("div", { className: "relative mb-4", style: { minHeight: 380 }, children: [
       /* @__PURE__ */ jsxs("div", { className: "flex h-full min-h-[380px] flex-col justify-end p-6 sm:p-8 md:max-w-[60%]", children: [
         /* @__PURE__ */ jsxs("div", { className: "mb-3 flex flex-wrap gap-1.5", children: [
@@ -168221,7 +168269,7 @@
   };
   var runtime_default = TwitchPlugin;
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-PU6i2U/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-pmqjr6/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

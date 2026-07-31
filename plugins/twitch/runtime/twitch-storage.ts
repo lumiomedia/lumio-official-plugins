@@ -7,6 +7,7 @@ import {
 } from '@/lib/plugin-sdk'
 
 const SESSION_KEY = 'twitch_session_v1'
+const HERO_ENABLED_KEY = 'twitch_hero_enabled_v1'
 const EVENT = 'lumio-twitch-plugin-changed'
 
 export interface TwitchSession {
@@ -69,4 +70,22 @@ export function clearTwitchSession(): void {
 
 export function isTwitchSessionValid(session: TwitchSession | null = getTwitchSession()): boolean {
   return Boolean(session && session.expiresAt > Date.now() + 30_000)
+}
+
+// Opt-in pref, default OFF: the app must never show more than one plugin hero at once,
+// so Twitch's hero banner only renders when the user explicitly enables it.
+export function getTwitchHeroEnabled(): boolean {
+  if (typeof window === 'undefined') return false
+  return getScopedStorageItem(HERO_ENABLED_KEY) === '1'
+}
+
+export function setTwitchHeroEnabled(enabled: boolean): void {
+  setScopedStorageItem(HERO_ENABLED_KEY, enabled ? '1' : '')
+  emitChanged()
+}
+
+export function onTwitchPluginChanged(listener: () => void): () => void {
+  if (typeof window === 'undefined') return () => {}
+  window.addEventListener(EVENT, listener)
+  return () => window.removeEventListener(EVENT, listener)
 }
