@@ -1,4 +1,12 @@
-import type { TwitchStream, TwitchCategory, TwitchVideo, TwitchClip, TwitchSearchChannelRow } from './twitch-types'
+import type {
+  TwitchStream,
+  TwitchCategory,
+  TwitchVideo,
+  TwitchClip,
+  TwitchSearchChannelRow,
+  TwitchFollowedChannel,
+  TwitchUser,
+} from './twitch-types'
 
 export function helixUrl(path: string, params: Record<string, string | number | undefined> = {}): string {
   const qs = Object.entries(params)
@@ -24,12 +32,14 @@ async function helixGet<T>(url: string, userToken?: string): Promise<{ data: T[]
   return { data: json.data ?? [], cursor: json.pagination?.cursor ?? null }
 }
 
-export async function getTopStreams(cursor?: string) {
-  const { data, cursor: next } = await helixGet<TwitchStream>(helixUrl('streams', { first: 30, after: cursor }))
+// `language` is an ISO 639-1 code (e.g. 'sv', 'en') passed to Helix `/streams`
+// to filter by stream language; omit or pass '' for all languages.
+export async function getTopStreams(cursor?: string, language?: string) {
+  const { data, cursor: next } = await helixGet<TwitchStream>(helixUrl('streams', { first: 30, after: cursor, language }))
   return { streams: data, cursor: next }
 }
-export async function getStreamsByGame(gameId: string, cursor?: string) {
-  const { data, cursor: next } = await helixGet<TwitchStream>(helixUrl('streams', { game_id: gameId, first: 30, after: cursor }))
+export async function getStreamsByGame(gameId: string, cursor?: string, language?: string) {
+  const { data, cursor: next } = await helixGet<TwitchStream>(helixUrl('streams', { game_id: gameId, first: 30, after: cursor, language }))
   return { streams: data, cursor: next }
 }
 export async function getTopCategories(cursor?: string) {
@@ -63,6 +73,21 @@ export async function searchChannels(query: string): Promise<TwitchStream[]> {
 }
 export async function searchCategories(query: string) {
   const { data } = await helixGet<TwitchCategory>(helixUrl('search/categories', { query, first: 20 }))
+  return data
+}
+export async function getFollowedChannels(userId: string, userToken: string, cursor?: string) {
+  const { data, cursor: next } = await helixGet<TwitchFollowedChannel>(
+    helixUrl('channels/followed', { user_id: userId, first: 100, after: cursor }),
+    userToken,
+  )
+  return { channels: data, cursor: next }
+}
+export async function getUsersByIds(ids: string[]): Promise<TwitchUser[]> {
+  if (ids.length === 0) return []
+  // `GET /users` takes repeated `id` params (max 100), which the record-based
+  // `helixUrl` can't express — build the query string directly.
+  const qs = ids.slice(0, 100).map((id) => `id=${encodeURIComponent(id)}`).join('&')
+  const { data } = await helixGet<TwitchUser>(`/api/plugins/twitch/helix/users?${qs}`)
   return data
 }
 export async function getChannelVideos(userId: string) {

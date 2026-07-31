@@ -13,6 +13,8 @@ import {
   getTopCategories,
   getStreamsByGame,
   getFollowedStreams,
+  getFollowedChannels,
+  getUsersByIds,
   searchChannels,
   searchCategories,
   getChannelVideos,
@@ -21,7 +23,15 @@ import {
 } from './twitch-client'
 import { TwitchPlayerModal } from './twitch-player'
 import { getTwitchHeroEnabled, getTwitchSession, isTwitchSessionValid, onTwitchPluginChanged } from './twitch-storage'
-import type { TwitchStream, TwitchCategory, TwitchVideo, TwitchClip } from './twitch-types'
+import type { TwitchStream, TwitchCategory, TwitchVideo, TwitchClip, EnrichedFollowedChannel } from './twitch-types'
+
+type StreamLanguage = '' | 'sv' | 'en'
+type StreamSort = 'viewers-desc' | 'viewers-asc'
+type FollowingTab = 'overview' | 'live' | 'channels' | 'videos'
+
+// Cap the number of followed channels we fan out VOD requests to on the
+// Following → Videos tab, to stay well within Helix rate limits.
+const FOLLOWED_VIDEO_CHANNEL_CAP = 12
 
 const TEXT = {
   liveNowTitle: { en: 'Twitch: Live now', sv: 'Twitch: Live nu' },
@@ -77,6 +87,36 @@ const TEXT = {
     en: 'None of the channels you follow are live right now.',
     sv: 'Inga av kanalerna du följer är live just nu.',
   },
+  // Filter bar (Live browse page)
+  filterLanguage: { en: 'Language', sv: 'Språk' },
+  filterSort: { en: 'Sort by', sv: 'Sortera' },
+  langAll: { en: 'All', sv: 'Alla' },
+  langSv: { en: 'Swedish', sv: 'Svenska' },
+  langEn: { en: 'English', sv: 'Engelska' },
+  sortViewersDesc: { en: 'Most viewers', sv: 'Flest tittare' },
+  sortViewersAsc: { en: 'Fewest viewers', sv: 'Färst tittare' },
+  filterEmpty: {
+    en: 'No live channels match this filter right now.',
+    sv: 'Inga live-kanaler matchar detta filter just nu.',
+  },
+  // Following tabs
+  tabOverview: { en: 'Overview', sv: 'Översikt' },
+  tabLive: { en: 'Live', sv: 'Live' },
+  tabChannels: { en: 'Channels', sv: 'Kanaler' },
+  tabVideos: { en: 'Videos', sv: 'Videor' },
+  overviewLiveHeading: { en: 'Live now', sv: 'Live nu' },
+  overviewChannelsHeading: { en: 'Channels you follow', sv: 'Kanaler du följer' },
+  channelsLoading: { en: 'Loading channels…', sv: 'Laddar kanaler…' },
+  channelsLoadError: { en: 'Could not load followed channels.', sv: 'Kunde inte läsa in följda kanaler.' },
+  channelsEmpty: { en: "You don't follow any channels yet.", sv: 'Du följer inga kanaler ännu.' },
+  followingVideosLoading: { en: 'Loading videos…', sv: 'Laddar videor…' },
+  followingVideosError: { en: 'Could not load videos.', sv: 'Kunde inte läsa in videor.' },
+  followingVideosEmpty: {
+    en: 'No recent videos from channels you follow.',
+    sv: 'Inga nya videor från kanaler du följer.',
+  },
+  liveBadge: { en: 'Live', sv: 'Live' },
+  offlineBadge: { en: 'Offline', sv: 'Offline' },
 } as const
 
 type TextKey = keyof typeof TEXT
@@ -112,7 +152,7 @@ function useDeferredActivation() {
   return { active, setNode }
 }
 
-function useTwitchTopStreams(active: boolean) {
+function useTwitchTopStreams(active: boolean, language: StreamLanguage = '') {
   const [streams, setStreams] = useState<TwitchStream[]>([])
   const [cursor, setCursor] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -123,7 +163,7 @@ function useTwitchTopStreams(active: boolean) {
     let cancelled = false
     setLoading(true)
     setError(null)
-    getTopStreams()
+    getTopStreams(undefined, language)
       .then((result) => {
         if (cancelled) return
         setStreams(result.streams)
@@ -139,12 +179,12 @@ function useTwitchTopStreams(active: boolean) {
     return () => {
       cancelled = true
     }
-  }, [active])
+  }, [active, language])
 
   async function loadMore() {
     if (!cursor) return
     try {
-      const result = await getTopStreams(cursor)
+      const result = await getTopStreams(cursor, language)
       setStreams((current) => [...current, ...result.streams])
       setCursor(result.cursor ?? null)
     } catch {
@@ -309,6 +349,141 @@ function useTwitchFollowedStreams(active: boolean, userId: string | null, userTo
   return { streams, loading, error, hasMore: Boolean(cursor), loadMore }
 }
 
+function useFollowedChannels(
+  active: boolean,
+  userId: string | null,
+  userToken: string | null,
+  liveById: Map<string, TwitchStream>,
+) {
+  const [rawChannels, setRawChannels] = useState<{ id: string; login: string; displayName: string }[]>([])
+  const [profileById, setProfileById] = useState<Map<string, string>>(new Map())
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!active || !userId || !userToken) return
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+    getFollowedChannels(userId, userToken)
+      .then(async (result) => {
+        if (cancelled) return
+        const mapped = result.channels.map((channel) => ({
+          id: channel.broadcaster_id,
+          login: channel.broadcaster_login,
+          displayName: channel.broadcaster_name,
+        }))
+        setRawChannels(mapped)
+        // Enrich with profile images (best-effort; cards still render without).
+        const users = await getUsersByIds(mapped.map((channel) => channel.id)).catch(() => [])
+        if (cancelled) return
+        setProfileById(new Map(users.map((user) => [user.id, user.profile_image_url])))
+      })
+      .catch((loadError) => {
+        if (cancelled) return
+        setError(loadError instanceof Error ? loadError.message : 'error')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [active, userId, userToken])
+
+  const channels: EnrichedFollowedChannel[] = rawChannels.map((channel) => {
+    const live = liveById.get(channel.id)
+    return {
+      id: channel.id,
+      login: channel.login,
+      displayName: channel.displayName,
+      profileImageUrl: profileById.get(channel.id) ?? '',
+      isLive: Boolean(live),
+      gameName: live?.game_name,
+      title: live?.title,
+    }
+  })
+  // Surface live channels first, then alphabetical by display name.
+  channels.sort((a, b) => {
+    if (a.isLive !== b.isLive) return a.isLive ? -1 : 1
+    return a.displayName.localeCompare(b.displayName)
+  })
+
+  return { channels, loading, error }
+}
+
+function useFollowedVideos(active: boolean, channelIds: string[]) {
+  const [videos, setVideos] = useState<TwitchVideo[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const key = channelIds.slice(0, FOLLOWED_VIDEO_CHANNEL_CAP).join(',')
+
+  useEffect(() => {
+    if (!active || !key) {
+      setLoading(false)
+      return
+    }
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+    const ids = key.split(',')
+    Promise.all(ids.map((id) => getChannelVideos(id).catch(() => [] as TwitchVideo[])))
+      .then((lists) => {
+        if (cancelled) return
+        const merged = lists
+          .flat()
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        setVideos(merged)
+      })
+      .catch((loadError) => {
+        if (cancelled) return
+        setError(loadError instanceof Error ? loadError.message : 'error')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [active, key])
+
+  return { videos, loading, error }
+}
+
+function SegmentedControl<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string
+  value: T
+  options: { value: T; label: string }[]
+  onChange: (value: T) => void
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-[0.6rem] font-normal uppercase tracking-[0.2em] text-slate-400">{label}</span>
+      <div className="flex gap-1 rounded-full border border-white/[0.08] bg-white/[0.03] p-0.5">
+        {options.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => onChange(option.value)}
+            className={`h-8 rounded-full px-3.5 text-[0.6rem] font-normal uppercase tracking-[0.16em] transition-all ${
+              value === option.value
+                ? 'bg-white/[0.12] text-white'
+                : 'text-slate-300 hover:bg-white/[0.06] hover:text-white'
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function StreamCard({
   stream,
   onPlay,
@@ -398,44 +573,100 @@ function SectionPlaceholder({ title, text }: { title: string; text: string }) {
   )
 }
 
+function sortStreams(streams: TwitchStream[], sort: StreamSort): TwitchStream[] {
+  const factor = sort === 'viewers-asc' ? 1 : -1
+  return [...streams].sort((a, b) => factor * ((a.viewer_count ?? 0) - (b.viewer_count ?? 0)))
+}
+
+function StreamFilterBar({
+  language,
+  sort,
+  onLanguageChange,
+  onSortChange,
+}: {
+  language: StreamLanguage
+  sort: StreamSort
+  onLanguageChange: (value: StreamLanguage) => void
+  onSortChange: (value: StreamSort) => void
+}) {
+  const text = useTwitchText()
+  return (
+    <div className="flex flex-wrap items-center gap-4">
+      <SegmentedControl<StreamLanguage>
+        label={text('filterLanguage')}
+        value={language}
+        onChange={onLanguageChange}
+        options={[
+          { value: '', label: text('langAll') },
+          { value: 'sv', label: text('langSv') },
+          { value: 'en', label: text('langEn') },
+        ]}
+      />
+      <SegmentedControl<StreamSort>
+        label={text('filterSort')}
+        value={sort}
+        onChange={onSortChange}
+        options={[
+          { value: 'viewers-desc', label: text('sortViewersDesc') },
+          { value: 'viewers-asc', label: text('sortViewersAsc') },
+        ]}
+      />
+    </div>
+  )
+}
+
 export function TwitchBrowsePage({ onNavigate: _onNavigate }: BrowsePageProps) {
   const text = useTwitchText()
-  const { streams, loading, error, hasMore, loadMore } = useTwitchTopStreams(true)
+  const [language, setLanguage] = useState<StreamLanguage>('')
+  const [sort, setSort] = useState<StreamSort>('viewers-desc')
+  const { streams, loading, error, hasMore, loadMore } = useTwitchTopStreams(true, language)
   const [playerStream, setPlayerStream] = useState<TwitchStream | null>(null)
 
+  const filterBar = (
+    <StreamFilterBar
+      language={language}
+      sort={sort}
+      onLanguageChange={setLanguage}
+      onSortChange={setSort}
+    />
+  )
+  const sorted = sortStreams(streams, sort)
+
   if (loading && streams.length === 0) {
-    return <SectionPlaceholder title={text('liveNowTitle')} text={text('loading')} />
+    return (
+      <div className="space-y-8">
+        <TwitchGridShell title={text('liveNowTitle')} subtitle={text('liveNowSubtitle')} actions={filterBar}>
+          <p className="text-sm text-slate-400">{text('loading')}</p>
+        </TwitchGridShell>
+      </div>
+    )
   }
 
   if (error && streams.length === 0) {
-    return <SectionPlaceholder title={text('liveNowTitle')} text={text('loadError')} />
+    return (
+      <div className="space-y-8">
+        <TwitchGridShell title={text('liveNowTitle')} subtitle={text('liveNowSubtitle')} actions={filterBar}>
+          <p className="text-sm text-slate-400">{text('loadError')}</p>
+        </TwitchGridShell>
+      </div>
+    )
   }
 
   return (
     <div className="space-y-8">
-      <TwitchGridShell title={text('liveNowTitle')} subtitle={text('liveNowSubtitle')}>
-        {streams.length === 0 ? (
-          <p className="text-sm text-slate-400">{text('empty')}</p>
+      <TwitchGridShell title={text('liveNowTitle')} subtitle={text('liveNowSubtitle')} actions={filterBar}>
+        {sorted.length === 0 ? (
+          <p className="text-sm text-slate-400">{language ? text('filterEmpty') : text('empty')}</p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {streams.map((stream) => (
+            {sorted.map((stream) => (
               <StreamCard key={stream.id} stream={stream} onPlay={setPlayerStream} />
             ))}
           </div>
         )}
       </TwitchGridShell>
 
-      {hasMore ? (
-        <div className="flex justify-center pt-2">
-          <button
-            type="button"
-            onClick={() => void loadMore()}
-            className="h-10 rounded-full border border-white/[0.1] bg-white/[0.04] px-5 text-[0.65rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:border-white/[0.16] hover:bg-white/[0.06] hover:text-white"
-          >
-            {text('browseLive')}
-          </button>
-        </div>
-      ) : null}
+      {hasMore ? <LoadMoreButton onClick={() => void loadMore()} label={text('loadMore')} /> : null}
 
       {playerStream ? (
         <TwitchPlayerModal
@@ -599,44 +830,223 @@ export function TwitchCategoriesPage({ onNavigate: _onNavigate }: BrowsePageProp
   )
 }
 
+function ChannelAvatarCard({
+  channel,
+  onSelect,
+}: {
+  channel: EnrichedFollowedChannel
+  onSelect: (channel: EnrichedFollowedChannel) => void
+}) {
+  const text = useTwitchText()
+  const initial = (channel.displayName || channel.login || '?').charAt(0).toUpperCase()
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onSelect(channel)}
+      onKeyDown={(event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return
+        event.preventDefault()
+        onSelect(channel)
+      }}
+      className="group flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-3 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-white/[0.16] hover:bg-white/[0.05]"
+      aria-label={channel.displayName || channel.login}
+    >
+      <div className="relative flex-none">
+        <div className="h-12 w-12 overflow-hidden rounded-full bg-slate-700">
+          {channel.profileImageUrl ? (
+            <img src={channel.profileImageUrl} alt={channel.displayName} className="h-full w-full object-cover" />
+          ) : (
+            <span className="flex h-full w-full items-center justify-center text-sm font-semibold text-white">{initial}</span>
+          )}
+        </div>
+        {channel.isLive ? (
+          <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 rounded-full border border-rose-400/40 bg-rose-600 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-[0.14em] text-white">
+            {text('liveBadge')}
+          </span>
+        ) : null}
+      </div>
+      <div className="min-w-0">
+        <h3 className="truncate text-sm font-semibold text-white">{channel.displayName || channel.login}</h3>
+        {channel.isLive && channel.gameName ? (
+          <p className="truncate text-[0.7rem] text-slate-400">{channel.gameName}</p>
+        ) : (
+          <p className="text-[0.7rem] uppercase tracking-[0.18em] text-slate-500">{text('offlineBadge')}</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function TwitchFollowingPage({ onNavigate: _onNavigate }: BrowsePageProps) {
   const text = useTwitchText()
   const session = useTwitchSessionState()
   const valid = isTwitchSessionValid(session)
-  const { streams, loading, error, hasMore, loadMore } = useTwitchFollowedStreams(
-    valid,
-    valid ? session!.userId : null,
-    valid ? session!.accessToken : null,
-  )
+  const userId = valid ? session!.userId : null
+  const userToken = valid ? session!.accessToken : null
+
+  const [tab, setTab] = useState<FollowingTab>('overview')
+  const [selectedChannel, setSelectedChannel] = useState<SelectedChannel | null>(null)
   const [playerStream, setPlayerStream] = useState<TwitchStream | null>(null)
+  const [videoPlayer, setVideoPlayer] = useState<{ id: string; title: string } | null>(null)
+
+  const live = useTwitchFollowedStreams(valid, userId, userToken)
+  const liveById = new Map(live.streams.map((stream) => [stream.user_id, stream]))
+  const channelsState = useFollowedChannels(valid, userId, userToken, liveById)
+  const videosState = useFollowedVideos(
+    valid && tab === 'videos',
+    channelsState.channels.map((channel) => channel.id),
+  )
+
+  function openFollowedChannel(channel: EnrichedFollowedChannel) {
+    setSelectedChannel({
+      userId: channel.id,
+      broadcasterId: channel.id,
+      login: channel.login,
+      displayName: channel.displayName,
+    })
+  }
 
   if (!valid) {
     return <SectionPlaceholder title={text('followingTitle')} text={text('followingConnectPrompt')} />
   }
 
-  if (loading && streams.length === 0) {
-    return <SectionPlaceholder title={text('followingTitle')} text={text('loading')} />
+  if (selectedChannel) {
+    const backButton = (
+      <button
+        type="button"
+        onClick={() => setSelectedChannel(null)}
+        className="flex h-9 items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.03] px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:border-white/[0.16] hover:bg-white/[0.05] hover:text-white"
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+        {text('back')}
+      </button>
+    )
+    return (
+      <div className="space-y-6">
+        {backButton}
+        <TwitchChannelPage {...selectedChannel} />
+      </div>
+    )
   }
 
-  if (error && streams.length === 0) {
-    return <SectionPlaceholder title={text('followingTitle')} text={text('loadError')} />
-  }
+  const tabs: { key: FollowingTab; label: string }[] = [
+    { key: 'overview', label: text('tabOverview') },
+    { key: 'live', label: text('tabLive') },
+    { key: 'channels', label: text('tabChannels') },
+    { key: 'videos', label: text('tabVideos') },
+  ]
+
+  const liveGrid = (streams: TwitchStream[]) => (
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {streams.map((stream) => (
+        <StreamCard key={stream.id} stream={stream} onPlay={setPlayerStream} />
+      ))}
+    </div>
+  )
+  const channelGrid = (channels: EnrichedFollowedChannel[]) => (
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      {channels.map((channel) => (
+        <ChannelAvatarCard key={channel.id} channel={channel} onSelect={openFollowedChannel} />
+      ))}
+    </div>
+  )
 
   return (
-    <div className="space-y-8">
-      <TwitchGridShell title={text('followingTitle')} subtitle={text('followingSubtitle')}>
-        {streams.length === 0 ? (
-          <p className="text-sm text-slate-400">{text('followingEmpty')}</p>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {streams.map((stream) => (
-              <StreamCard key={stream.id} stream={stream} onPlay={setPlayerStream} />
-            ))}
-          </div>
-        )}
-      </TwitchGridShell>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-semibold text-white">{text('followingTitle')}</h2>
+        <p className="mt-1 text-sm text-slate-400">{text('followingSubtitle')}</p>
+      </div>
 
-      {hasMore ? <LoadMoreButton onClick={() => void loadMore()} label={text('loadMore')} /> : null}
+      <div className="flex flex-wrap gap-2">
+        {tabs.map((entry) => (
+          <button
+            key={entry.key}
+            type="button"
+            onClick={() => setTab(entry.key)}
+            className={`h-9 rounded-full border px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] transition-all ${
+              tab === entry.key
+                ? 'border-white/[0.24] bg-white/[0.1] text-white'
+                : 'border-white/[0.1] bg-white/[0.03] text-slate-300 hover:border-white/[0.16] hover:bg-white/[0.05] hover:text-white'
+            }`}
+          >
+            {entry.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'overview' ? (
+        <div className="space-y-8">
+          <section className="space-y-3">
+            <h3 className="text-lg font-semibold text-white">{text('overviewLiveHeading')}</h3>
+            {live.loading && live.streams.length === 0 ? (
+              <p className="text-sm text-slate-400">{text('loading')}</p>
+            ) : live.streams.length === 0 ? (
+              <p className="text-sm text-slate-400">{text('followingEmpty')}</p>
+            ) : (
+              liveGrid(live.streams.slice(0, 8))
+            )}
+          </section>
+          <section className="space-y-3">
+            <h3 className="text-lg font-semibold text-white">{text('overviewChannelsHeading')}</h3>
+            {channelsState.loading && channelsState.channels.length === 0 ? (
+              <p className="text-sm text-slate-400">{text('channelsLoading')}</p>
+            ) : channelsState.channels.length === 0 ? (
+              <p className="text-sm text-slate-400">{text('channelsEmpty')}</p>
+            ) : (
+              channelGrid(channelsState.channels.slice(0, 12))
+            )}
+          </section>
+        </div>
+      ) : tab === 'live' ? (
+        <div className="space-y-8">
+          {live.loading && live.streams.length === 0 ? (
+            <p className="text-sm text-slate-400">{text('loading')}</p>
+          ) : live.error && live.streams.length === 0 ? (
+            <p className="text-sm text-slate-400">{text('loadError')}</p>
+          ) : live.streams.length === 0 ? (
+            <p className="text-sm text-slate-400">{text('followingEmpty')}</p>
+          ) : (
+            liveGrid(live.streams)
+          )}
+          {live.hasMore ? <LoadMoreButton onClick={() => void live.loadMore()} label={text('loadMore')} /> : null}
+        </div>
+      ) : tab === 'channels' ? (
+        <div className="space-y-8">
+          {channelsState.loading && channelsState.channels.length === 0 ? (
+            <p className="text-sm text-slate-400">{text('channelsLoading')}</p>
+          ) : channelsState.error && channelsState.channels.length === 0 ? (
+            <p className="text-sm text-slate-400">{text('channelsLoadError')}</p>
+          ) : channelsState.channels.length === 0 ? (
+            <p className="text-sm text-slate-400">{text('channelsEmpty')}</p>
+          ) : (
+            channelGrid(channelsState.channels)
+          )}
+        </div>
+      ) : (
+        <div className="space-y-8">
+          {videosState.loading && videosState.videos.length === 0 ? (
+            <p className="text-sm text-slate-400">{text('followingVideosLoading')}</p>
+          ) : videosState.error && videosState.videos.length === 0 ? (
+            <p className="text-sm text-slate-400">{text('followingVideosError')}</p>
+          ) : videosState.videos.length === 0 ? (
+            <p className="text-sm text-slate-400">{text('followingVideosEmpty')}</p>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {videosState.videos.map((video) => (
+                <VideoCard
+                  key={video.id}
+                  video={video}
+                  onPlay={(v) => setVideoPlayer({ id: v.id, title: v.title })}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {playerStream ? (
         <TwitchPlayerModal
@@ -644,6 +1054,14 @@ export function TwitchFollowingPage({ onNavigate: _onNavigate }: BrowsePageProps
           id={playerStream.user_login}
           title={playerStream.title}
           onClose={() => setPlayerStream(null)}
+        />
+      ) : null}
+      {videoPlayer ? (
+        <TwitchPlayerModal
+          kind="vod"
+          id={videoPlayer.id}
+          title={videoPlayer.title}
+          onClose={() => setVideoPlayer(null)}
         />
       ) : null}
     </div>

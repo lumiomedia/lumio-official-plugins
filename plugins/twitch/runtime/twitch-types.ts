@@ -56,3 +56,24 @@ export interface TwitchUser {
   display_name: string
   profile_image_url: string
 }
+
+// Raw shape returned by Helix `GET /channels/followed` (requires a user token
+// with `user:read:follows`). Lists every channel the user follows, live or not.
+export interface TwitchFollowedChannel {
+  broadcaster_id: string
+  broadcaster_login: string
+  broadcaster_name: string
+  followed_at: string
+}
+
+// A followed channel enriched for display: profile image from `GET /users`
+// and a live flag cross-referenced against the followed live streams.
+export interface EnrichedFollowedChannel {
+  id: string
+  login: string
+  displayName: string
+  profileImageUrl: string
+  isLive: boolean
+  gameName?: string
+  title?: string
+}
