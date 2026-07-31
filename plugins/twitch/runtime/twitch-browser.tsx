@@ -87,18 +87,11 @@ const TEXT = {
     en: 'None of the channels you follow are live right now.',
     sv: 'Inga av kanalerna du följer är live just nu.',
   },
-  // Filter bar (Live browse page)
-  filterLanguage: { en: 'Language', sv: 'Språk' },
+  // Filter bar (Live browse page). Stream language follows the app's own
+  // language selector (useLang), so there is no Twitch-specific language chip.
   filterSort: { en: 'Sort by', sv: 'Sortera' },
-  langAll: { en: 'All', sv: 'Alla' },
-  langSv: { en: 'Swedish', sv: 'Svenska' },
-  langEn: { en: 'English', sv: 'Engelska' },
   sortViewersDesc: { en: 'Most viewers', sv: 'Flest tittare' },
   sortViewersAsc: { en: 'Fewest viewers', sv: 'Färst tittare' },
-  filterEmpty: {
-    en: 'No live channels match this filter right now.',
-    sv: 'Inga live-kanaler matchar detta filter just nu.',
-  },
   // Following tabs
   tabOverview: { en: 'Overview', sv: 'Översikt' },
   tabLive: { en: 'Live', sv: 'Live' },
@@ -579,29 +572,15 @@ function sortStreams(streams: TwitchStream[], sort: StreamSort): TwitchStream[] 
 }
 
 function StreamFilterBar({
-  language,
   sort,
-  onLanguageChange,
   onSortChange,
 }: {
-  language: StreamLanguage
   sort: StreamSort
-  onLanguageChange: (value: StreamLanguage) => void
   onSortChange: (value: StreamSort) => void
 }) {
   const text = useTwitchText()
   return (
     <div className="flex flex-wrap items-center gap-4">
-      <SegmentedControl<StreamLanguage>
-        label={text('filterLanguage')}
-        value={language}
-        onChange={onLanguageChange}
-        options={[
-          { value: '', label: text('langAll') },
-          { value: 'sv', label: text('langSv') },
-          { value: 'en', label: text('langEn') },
-        ]}
-      />
       <SegmentedControl<StreamSort>
         label={text('filterSort')}
         value={sort}
@@ -617,19 +596,13 @@ function StreamFilterBar({
 
 export function TwitchBrowsePage({ onNavigate: _onNavigate }: BrowsePageProps) {
   const text = useTwitchText()
-  const [language, setLanguage] = useState<StreamLanguage>('')
+  const { lang } = useLang()
   const [sort, setSort] = useState<StreamSort>('viewers-desc')
-  const { streams, loading, error, hasMore, loadMore } = useTwitchTopStreams(true, language)
+  // Stream language follows the app-wide language selector, not a local chip.
+  const { streams, loading, error, hasMore, loadMore } = useTwitchTopStreams(true, lang)
   const [playerStream, setPlayerStream] = useState<TwitchStream | null>(null)
 
-  const filterBar = (
-    <StreamFilterBar
-      language={language}
-      sort={sort}
-      onLanguageChange={setLanguage}
-      onSortChange={setSort}
-    />
-  )
+  const filterBar = <StreamFilterBar sort={sort} onSortChange={setSort} />
   const sorted = sortStreams(streams, sort)
 
   if (loading && streams.length === 0) {
@@ -656,7 +629,7 @@ export function TwitchBrowsePage({ onNavigate: _onNavigate }: BrowsePageProps) {
     <div className="space-y-8">
       <TwitchGridShell title={text('liveNowTitle')} subtitle={text('liveNowSubtitle')} actions={filterBar}>
         {sorted.length === 0 ? (
-          <p className="text-sm text-slate-400">{language ? text('filterEmpty') : text('empty')}</p>
+          <p className="text-sm text-slate-400">{text('empty')}</p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {sorted.map((stream) => (

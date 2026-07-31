@@ -51,8 +51,12 @@ export async function getFollowedStreams(userId: string, userToken: string, curs
   return { streams: data, cursor: next }
 }
 export async function searchChannels(query: string): Promise<TwitchStream[]> {
+  // No `live_only` filter: Twitch's own channel search returns matching
+  // channels whether or not they're currently live, so the channel a user is
+  // actually looking for shows up even when it's offline. The `is_live` flag on
+  // each row drives the LIVE badge in the UI.
   const { data } = await helixGet<TwitchSearchChannelRow>(
-    helixUrl('search/channels', { query, first: 20, live_only: 'true' }),
+    helixUrl('search/channels', { query, first: 20 }),
   )
   // `GET /search/channels` rows don't share the `streams` endpoint's shape:
   // normalize `id`/`broadcaster_login`/`display_name` into

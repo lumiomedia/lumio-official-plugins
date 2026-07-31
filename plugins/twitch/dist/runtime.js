@@ -46,7 +46,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-5ZOwx6/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Zkdy7F/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -95,7 +95,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-5ZOwx6/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Zkdy7F/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -143,7 +143,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-5ZOwx6/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Zkdy7F/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -153,7 +153,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-5ZOwx6/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Zkdy7F/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -166300,7 +166300,7 @@
   var import_react55 = __toESM(require_dist89());
   init_jsx_runtime_shim();
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-5ZOwx6/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Zkdy7F/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
   function resolveAuthCapabilityStatus(providerId) {
     return sdk.resolveAuthCapabilityStatus(providerId);
@@ -166762,7 +166762,7 @@
   }
   async function searchChannels(query) {
     const { data } = await helixGet(
-      helixUrl("search/channels", { query, first: 20, live_only: "true" })
+      helixUrl("search/channels", { query, first: 20 })
     );
     return data.map((row) => ({
       id: row.id,
@@ -167296,18 +167296,11 @@
       en: "None of the channels you follow are live right now.",
       sv: "Inga av kanalerna du f\xF6ljer \xE4r live just nu."
     },
-    // Filter bar (Live browse page)
-    filterLanguage: { en: "Language", sv: "Spr\xE5k" },
+    // Filter bar (Live browse page). Stream language follows the app's own
+    // language selector (useLang), so there is no Twitch-specific language chip.
     filterSort: { en: "Sort by", sv: "Sortera" },
-    langAll: { en: "All", sv: "Alla" },
-    langSv: { en: "Swedish", sv: "Svenska" },
-    langEn: { en: "English", sv: "Engelska" },
     sortViewersDesc: { en: "Most viewers", sv: "Flest tittare" },
     sortViewersAsc: { en: "Fewest viewers", sv: "F\xE4rst tittare" },
-    filterEmpty: {
-      en: "No live channels match this filter right now.",
-      sv: "Inga live-kanaler matchar detta filter just nu."
-    },
     // Following tabs
     tabOverview: { en: "Overview", sv: "\xD6versikt" },
     tabLive: { en: "Live", sv: "Live" },
@@ -167681,55 +167674,30 @@
     return [...streams].sort((a, b) => factor * ((a.viewer_count ?? 0) - (b.viewer_count ?? 0)));
   }
   function StreamFilterBar({
-    language,
     sort,
-    onLanguageChange,
     onSortChange
   }) {
     const text = useTwitchText();
-    return /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center gap-4", children: [
-      /* @__PURE__ */ jsx(
-        SegmentedControl,
-        {
-          label: text("filterLanguage"),
-          value: language,
-          onChange: onLanguageChange,
-          options: [
-            { value: "", label: text("langAll") },
-            { value: "sv", label: text("langSv") },
-            { value: "en", label: text("langEn") }
-          ]
-        }
-      ),
-      /* @__PURE__ */ jsx(
-        SegmentedControl,
-        {
-          label: text("filterSort"),
-          value: sort,
-          onChange: onSortChange,
-          options: [
-            { value: "viewers-desc", label: text("sortViewersDesc") },
-            { value: "viewers-asc", label: text("sortViewersAsc") }
-          ]
-        }
-      )
-    ] });
+    return /* @__PURE__ */ jsx("div", { className: "flex flex-wrap items-center gap-4", children: /* @__PURE__ */ jsx(
+      SegmentedControl,
+      {
+        label: text("filterSort"),
+        value: sort,
+        onChange: onSortChange,
+        options: [
+          { value: "viewers-desc", label: text("sortViewersDesc") },
+          { value: "viewers-asc", label: text("sortViewersAsc") }
+        ]
+      }
+    ) });
   }
   function TwitchBrowsePage({ onNavigate: _onNavigate }) {
     const text = useTwitchText();
-    const [language, setLanguage] = useState("");
+    const { lang } = useLang();
     const [sort, setSort] = useState("viewers-desc");
-    const { streams, loading, error, hasMore, loadMore } = useTwitchTopStreams(true, language);
+    const { streams, loading, error, hasMore, loadMore } = useTwitchTopStreams(true, lang);
     const [playerStream, setPlayerStream] = useState(null);
-    const filterBar = /* @__PURE__ */ jsx(
-      StreamFilterBar,
-      {
-        language,
-        sort,
-        onLanguageChange: setLanguage,
-        onSortChange: setSort
-      }
-    );
+    const filterBar = /* @__PURE__ */ jsx(StreamFilterBar, { sort, onSortChange: setSort });
     const sorted = sortStreams(streams, sort);
     if (loading && streams.length === 0) {
       return /* @__PURE__ */ jsx("div", { className: "space-y-8", children: /* @__PURE__ */ jsx(TwitchGridShell, { title: text("liveNowTitle"), subtitle: text("liveNowSubtitle"), actions: filterBar, children: /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("loading") }) }) });
@@ -167738,7 +167706,7 @@
       return /* @__PURE__ */ jsx("div", { className: "space-y-8", children: /* @__PURE__ */ jsx(TwitchGridShell, { title: text("liveNowTitle"), subtitle: text("liveNowSubtitle"), actions: filterBar, children: /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("loadError") }) }) });
     }
     return /* @__PURE__ */ jsxs("div", { className: "space-y-8", children: [
-      /* @__PURE__ */ jsx(TwitchGridShell, { title: text("liveNowTitle"), subtitle: text("liveNowSubtitle"), actions: filterBar, children: sorted.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: language ? text("filterEmpty") : text("empty") }) : /* @__PURE__ */ jsx("div", { className: "grid gap-4 sm:grid-cols-2 xl:grid-cols-4", children: sorted.map((stream) => /* @__PURE__ */ jsx(StreamCard, { stream, onPlay: setPlayerStream }, stream.id)) }) }),
+      /* @__PURE__ */ jsx(TwitchGridShell, { title: text("liveNowTitle"), subtitle: text("liveNowSubtitle"), actions: filterBar, children: sorted.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("empty") }) : /* @__PURE__ */ jsx("div", { className: "grid gap-4 sm:grid-cols-2 xl:grid-cols-4", children: sorted.map((stream) => /* @__PURE__ */ jsx(StreamCard, { stream, onPlay: setPlayerStream }, stream.id)) }) }),
       hasMore ? /* @__PURE__ */ jsx(LoadMoreButton, { onClick: () => void loadMore(), label: text("loadMore") }) : null,
       playerStream ? /* @__PURE__ */ jsx(
         TwitchPlayerModal,
@@ -168575,7 +168543,7 @@
   };
   var runtime_default = TwitchPlugin;
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-5ZOwx6/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-Zkdy7F/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");
