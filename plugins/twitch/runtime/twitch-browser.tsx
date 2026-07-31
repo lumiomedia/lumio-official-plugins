@@ -1,11 +1,18 @@
 'use client'
 
 import { useEffect, useState, type ReactNode } from 'react'
-import { useLang, type BrowsePageProps, type HomeRowProps, type PluginHeroProps } from '@/lib/plugin-sdk'
+import {
+  onAuthCapabilitiesChanged,
+  useLang,
+  type BrowsePageProps,
+  type HomeRowProps,
+  type PluginHeroProps,
+} from '@/lib/plugin-sdk'
 import {
   getTopStreams,
   getTopCategories,
   getStreamsByGame,
+  getFollowedStreams,
   searchChannels,
   searchCategories,
   getChannelVideos,
@@ -13,6 +20,7 @@ import {
   thumb,
 } from './twitch-client'
 import { TwitchPlayerModal } from './twitch-player'
+import { getTwitchSession, isTwitchSessionValid } from './twitch-storage'
 import type { TwitchStream, TwitchCategory, TwitchVideo, TwitchClip } from './twitch-types'
 
 const TEXT = {
@@ -56,6 +64,19 @@ const TEXT = {
   clipsLoadError: { en: 'Could not load clips.', sv: 'Kunde inte läsa in klipp.' },
   vodsEmpty: { en: 'No VODs found for this channel.', sv: 'Inga VOD:er hittades för denna kanal.' },
   clipsEmpty: { en: 'No clips found for this channel.', sv: 'Inga klipp hittades för denna kanal.' },
+  followingTitle: { en: 'Twitch: Following', sv: 'Twitch: Följer' },
+  followingSubtitle: {
+    en: 'Live channels you follow on Twitch.',
+    sv: 'Live-kanaler du följer på Twitch.',
+  },
+  followingConnectPrompt: {
+    en: 'Connect Twitch in Settings to see who you follow.',
+    sv: 'Anslut Twitch i Inställningar för att se vilka du följer.',
+  },
+  followingEmpty: {
+    en: 'None of the channels you follow are live right now.',
+    sv: 'Inga av kanalerna du följer är live just nu.',
+  },
 } as const
 
 type TextKey = keyof typeof TEXT
@@ -211,6 +232,61 @@ function useTwitchCategoryStreams(gameId: string | null) {
     if (!gameId || !cursor) return
     try {
       const result = await getStreamsByGame(gameId, cursor)
+      setStreams((current) => [...current, ...result.streams])
+      setCursor(result.cursor ?? null)
+    } catch {
+      // Keep current results on load-more failure; the button remains visible for retry.
+    }
+  }
+
+  return { streams, loading, error, hasMore: Boolean(cursor), loadMore }
+}
+
+function useTwitchSessionState() {
+  const [session, setSession] = useState(() => getTwitchSession())
+
+  useEffect(() => {
+    const sync = () => setSession(getTwitchSession())
+    sync()
+    return onAuthCapabilitiesChanged(sync)
+  }, [])
+
+  return session
+}
+
+function useTwitchFollowedStreams(active: boolean, userId: string | null, userToken: string | null) {
+  const [streams, setStreams] = useState<TwitchStream[]>([])
+  const [cursor, setCursor] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!active || !userId || !userToken) return
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+    getFollowedStreams(userId, userToken)
+      .then((result) => {
+        if (cancelled) return
+        setStreams(result.streams)
+        setCursor(result.cursor ?? null)
+      })
+      .catch((loadError) => {
+        if (cancelled) return
+        setError(loadError instanceof Error ? loadError.message : 'error')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [active, userId, userToken])
+
+  async function loadMore() {
+    if (!cursor || !userId || !userToken) return
+    try {
+      const result = await getFollowedStreams(userId, userToken, cursor)
       setStreams((current) => [...current, ...result.streams])
       setCursor(result.cursor ?? null)
     } catch {
@@ -505,6 +581,57 @@ export function TwitchCategoriesPage({ onNavigate: _onNavigate }: BrowsePageProp
       </TwitchGridShell>
 
       {hasMore ? <LoadMoreButton onClick={() => void loadMore()} label={text('loadMore')} /> : null}
+    </div>
+  )
+}
+
+export function TwitchFollowingPage({ onNavigate: _onNavigate }: BrowsePageProps) {
+  const text = useTwitchText()
+  const session = useTwitchSessionState()
+  const valid = isTwitchSessionValid(session)
+  const { streams, loading, error, hasMore, loadMore } = useTwitchFollowedStreams(
+    valid,
+    valid ? session!.userId : null,
+    valid ? session!.accessToken : null,
+  )
+  const [playerStream, setPlayerStream] = useState<TwitchStream | null>(null)
+
+  if (!valid) {
+    return <SectionPlaceholder title={text('followingTitle')} text={text('followingConnectPrompt')} />
+  }
+
+  if (loading && streams.length === 0) {
+    return <SectionPlaceholder title={text('followingTitle')} text={text('loading')} />
+  }
+
+  if (error && streams.length === 0) {
+    return <SectionPlaceholder title={text('followingTitle')} text={text('loadError')} />
+  }
+
+  return (
+    <div className="space-y-8">
+      <TwitchGridShell title={text('followingTitle')} subtitle={text('followingSubtitle')}>
+        {streams.length === 0 ? (
+          <p className="text-sm text-slate-400">{text('followingEmpty')}</p>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {streams.map((stream) => (
+              <StreamCard key={stream.id} stream={stream} onPlay={setPlayerStream} />
+            ))}
+          </div>
+        )}
+      </TwitchGridShell>
+
+      {hasMore ? <LoadMoreButton onClick={() => void loadMore()} label={text('loadMore')} /> : null}
+
+      {playerStream ? (
+        <TwitchPlayerModal
+          kind="live"
+          id={playerStream.user_login}
+          title={playerStream.title}
+          onClose={() => setPlayerStream(null)}
+        />
+      ) : null}
     </div>
   )
 }
@@ -997,6 +1124,66 @@ export function TwitchLiveRow({
         title={text('liveNowTitle')}
         subtitle={text('liveNowSubtitle')}
         onOpenAll={() => onNavigate({ pageId: 'twitch-live' })}
+      >
+        <div
+          className={layout === 'slider' ? 'flex gap-3 overflow-x-auto pb-3' : 'grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4'}
+          style={layout === 'slider' ? { scrollbarWidth: 'none', msOverflowStyle: 'none' } : undefined}
+        >
+          {active ? streams.slice(0, count).map((stream) => (
+            <div
+              key={stream.id}
+              className={layout === 'slider' ? 'flex-none' : 'w-full'}
+              style={layout === 'slider' ? { width: sliderCardWidth } : undefined}
+            >
+              <StreamCard stream={stream} onPlay={setPlayerStream} />
+            </div>
+          )) : Array.from({ length: 4 }).map((_, index) => (
+            <div
+              key={index}
+              className={`animate-pulse rounded-[1.5rem] bg-slate-800/50 ${layout === 'slider' ? 'aspect-video flex-none' : 'aspect-video'}`}
+              style={layout === 'slider' ? { width: sliderCardWidth } : undefined}
+            />
+          ))}
+        </div>
+      </TwitchHomeRowShell>
+      {playerStream ? (
+        <TwitchPlayerModal
+          kind="live"
+          id={playerStream.user_login}
+          title={playerStream.title}
+          onClose={() => setPlayerStream(null)}
+        />
+      ) : null}
+    </div>
+  )
+}
+
+export function TwitchFollowingRow({
+  onNavigate,
+  layout = 'slider',
+  count = 16,
+  sliderCardWidth = 'calc((100% - 3 * 0.75rem) / 4)',
+}: HomeRowProps) {
+  const text = useTwitchText()
+  const session = useTwitchSessionState()
+  const valid = isTwitchSessionValid(session)
+  const { active, setNode } = useDeferredActivation()
+  const { streams, error } = useTwitchFollowedStreams(
+    active && valid,
+    valid ? session!.userId : null,
+    valid ? session!.accessToken : null,
+  )
+  const [playerStream, setPlayerStream] = useState<TwitchStream | null>(null)
+
+  if (!valid) return null
+  if (error) return null
+
+  return (
+    <div ref={setNode}>
+      <TwitchHomeRowShell
+        title={text('followingTitle')}
+        subtitle={text('followingSubtitle')}
+        onOpenAll={() => onNavigate({ pageId: 'twitch-following' })}
       >
         <div
           className={layout === 'slider' ? 'flex gap-3 overflow-x-auto pb-3' : 'grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4'}

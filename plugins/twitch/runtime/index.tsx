@@ -1,7 +1,15 @@
 import type { LumioPlugin } from '@/lib/plugin-sdk'
 import { twitchAuthCapabilityProvider } from './twitch-auth-capability-provider'
 import { TwitchSettingsSection } from './twitch-settings-section'
-import { TwitchBrowsePage, TwitchCategoriesPage, TwitchSearchPage, TwitchHero, TwitchLiveRow } from './twitch-browser'
+import {
+  TwitchBrowsePage,
+  TwitchCategoriesPage,
+  TwitchSearchPage,
+  TwitchFollowingPage,
+  TwitchHero,
+  TwitchLiveRow,
+  TwitchFollowingRow,
+} from './twitch-browser'
 
 export const TwitchPlugin: LumioPlugin = {
   id: 'com.lumio.twitch',
@@ -34,6 +42,19 @@ export const TwitchPlugin: LumioPlugin = {
     ctx.registerBrowsePage({ id: 'twitch-live', label: { en: 'Live', sv: 'Live' }, Page: TwitchBrowsePage })
     ctx.registerBrowsePage({ id: 'twitch-categories', label: { en: 'Categories', sv: 'Kategorier' }, Page: TwitchCategoriesPage })
     ctx.registerBrowsePage({ id: 'twitch-search', label: { en: 'Search', sv: 'Sök' }, Page: TwitchSearchPage })
+
+    ctx.registerHomeRow({
+      id: 'twitch-following-row',
+      title: { en: 'Twitch: Following', sv: 'Twitch: Följer' },
+      showOnHome: false,
+      Row: (props) => <TwitchFollowingRow {...props} />,
+    })
+    ctx.registerHomeSource({
+      id: 'twitch-following',
+      label: { en: 'Twitch: Following', sv: 'Twitch: Följer' },
+      rowId: 'twitch-following-row',
+    })
+    ctx.registerBrowsePage({ id: 'twitch-following', label: { en: 'Following', sv: 'Följer' }, Page: TwitchFollowingPage })
 
     const twitchEntry = {
       id: 'twitch',

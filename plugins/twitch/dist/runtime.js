@@ -46,7 +46,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-aGh5jV/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-PU6i2U/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -95,7 +95,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-aGh5jV/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-PU6i2U/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -143,7 +143,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-aGh5jV/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-PU6i2U/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -153,7 +153,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-aGh5jV/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-PU6i2U/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -166300,7 +166300,7 @@
   var import_react55 = __toESM(require_dist89());
   init_jsx_runtime_shim();
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-aGh5jV/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-PU6i2U/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
   function resolveAuthCapabilityStatus(providerId) {
     return sdk.resolveAuthCapabilityStatus(providerId);
@@ -166755,6 +166755,10 @@
   async function getTopCategories(cursor) {
     const { data, cursor: next2 } = await helixGet(helixUrl("games/top", { first: 30, after: cursor }));
     return { categories: data, cursor: next2 };
+  }
+  async function getFollowedStreams(userId, userToken, cursor) {
+    const { data, cursor: next2 } = await helixGet(helixUrl("streams/followed", { user_id: userId, first: 30, after: cursor }), userToken);
+    return { streams: data, cursor: next2 };
   }
   async function searchChannels(query) {
     const { data } = await helixGet(helixUrl("search/channels", { query, first: 20, live_only: "true" }));
@@ -167214,7 +167218,20 @@
     vodsLoadError: { en: "Could not load VODs.", sv: "Kunde inte l\xE4sa in VOD:er." },
     clipsLoadError: { en: "Could not load clips.", sv: "Kunde inte l\xE4sa in klipp." },
     vodsEmpty: { en: "No VODs found for this channel.", sv: "Inga VOD:er hittades f\xF6r denna kanal." },
-    clipsEmpty: { en: "No clips found for this channel.", sv: "Inga klipp hittades f\xF6r denna kanal." }
+    clipsEmpty: { en: "No clips found for this channel.", sv: "Inga klipp hittades f\xF6r denna kanal." },
+    followingTitle: { en: "Twitch: Following", sv: "Twitch: F\xF6ljer" },
+    followingSubtitle: {
+      en: "Live channels you follow on Twitch.",
+      sv: "Live-kanaler du f\xF6ljer p\xE5 Twitch."
+    },
+    followingConnectPrompt: {
+      en: "Connect Twitch in Settings to see who you follow.",
+      sv: "Anslut Twitch i Inst\xE4llningar f\xF6r att se vilka du f\xF6ljer."
+    },
+    followingEmpty: {
+      en: "None of the channels you follow are live right now.",
+      sv: "Inga av kanalerna du f\xF6ljer \xE4r live just nu."
+    }
   };
   function useTwitchText() {
     const { lang } = useLang();
@@ -167341,6 +167358,50 @@
       if (!gameId || !cursor) return;
       try {
         const result = await getStreamsByGame(gameId, cursor);
+        setStreams((current2) => [...current2, ...result.streams]);
+        setCursor(result.cursor ?? null);
+      } catch {
+      }
+    }
+    return { streams, loading, error, hasMore: Boolean(cursor), loadMore };
+  }
+  function useTwitchSessionState() {
+    const [session, setSession] = useState(() => getTwitchSession());
+    useEffect(() => {
+      const sync2 = () => setSession(getTwitchSession());
+      sync2();
+      return onAuthCapabilitiesChanged(sync2);
+    }, []);
+    return session;
+  }
+  function useTwitchFollowedStreams(active, userId, userToken) {
+    const [streams, setStreams] = useState([]);
+    const [cursor, setCursor] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    useEffect(() => {
+      if (!active || !userId || !userToken) return;
+      let cancelled = false;
+      setLoading(true);
+      setError(null);
+      getFollowedStreams(userId, userToken).then((result) => {
+        if (cancelled) return;
+        setStreams(result.streams);
+        setCursor(result.cursor ?? null);
+      }).catch((loadError) => {
+        if (cancelled) return;
+        setError(loadError instanceof Error ? loadError.message : "error");
+      }).finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }, [active, userId, userToken]);
+    async function loadMore() {
+      if (!cursor || !userId || !userToken) return;
+      try {
+        const result = await getFollowedStreams(userId, userToken, cursor);
         setStreams((current2) => [...current2, ...result.streams]);
         setCursor(result.cursor ?? null);
       } catch {
@@ -167551,6 +167612,39 @@
     return /* @__PURE__ */ jsxs("div", { className: "space-y-8", children: [
       /* @__PURE__ */ jsx(TwitchGridShell, { title: text("categoriesTitle"), subtitle: text("categoriesSubtitle"), children: categories.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("categoriesEmpty") }) : /* @__PURE__ */ jsx("div", { className: "grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6", children: categories.map((category) => /* @__PURE__ */ jsx(CategoryCard, { category, onSelect: setSelectedCategory }, category.id)) }) }),
       hasMore ? /* @__PURE__ */ jsx(LoadMoreButton, { onClick: () => void loadMore(), label: text("loadMore") }) : null
+    ] });
+  }
+  function TwitchFollowingPage({ onNavigate: _onNavigate }) {
+    const text = useTwitchText();
+    const session = useTwitchSessionState();
+    const valid = isTwitchSessionValid(session);
+    const { streams, loading, error, hasMore, loadMore } = useTwitchFollowedStreams(
+      valid,
+      valid ? session.userId : null,
+      valid ? session.accessToken : null
+    );
+    const [playerStream, setPlayerStream] = useState(null);
+    if (!valid) {
+      return /* @__PURE__ */ jsx(SectionPlaceholder, { title: text("followingTitle"), text: text("followingConnectPrompt") });
+    }
+    if (loading && streams.length === 0) {
+      return /* @__PURE__ */ jsx(SectionPlaceholder, { title: text("followingTitle"), text: text("loading") });
+    }
+    if (error && streams.length === 0) {
+      return /* @__PURE__ */ jsx(SectionPlaceholder, { title: text("followingTitle"), text: text("loadError") });
+    }
+    return /* @__PURE__ */ jsxs("div", { className: "space-y-8", children: [
+      /* @__PURE__ */ jsx(TwitchGridShell, { title: text("followingTitle"), subtitle: text("followingSubtitle"), children: streams.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("followingEmpty") }) : /* @__PURE__ */ jsx("div", { className: "grid gap-4 sm:grid-cols-2 xl:grid-cols-4", children: streams.map((stream) => /* @__PURE__ */ jsx(StreamCard, { stream, onPlay: setPlayerStream }, stream.id)) }) }),
+      hasMore ? /* @__PURE__ */ jsx(LoadMoreButton, { onClick: () => void loadMore(), label: text("loadMore") }) : null,
+      playerStream ? /* @__PURE__ */ jsx(
+        TwitchPlayerModal,
+        {
+          kind: "live",
+          id: playerStream.user_login,
+          title: playerStream.title,
+          onClose: () => setPlayerStream(null)
+        }
+      ) : null
     ] });
   }
   function useTwitchSearch(query) {
@@ -167940,6 +168034,67 @@
       ) : null
     ] });
   }
+  function TwitchFollowingRow({
+    onNavigate,
+    layout: layout2 = "slider",
+    count = 16,
+    sliderCardWidth = "calc((100% - 3 * 0.75rem) / 4)"
+  }) {
+    const text = useTwitchText();
+    const session = useTwitchSessionState();
+    const valid = isTwitchSessionValid(session);
+    const { active, setNode } = useDeferredActivation();
+    const { streams, error } = useTwitchFollowedStreams(
+      active && valid,
+      valid ? session.userId : null,
+      valid ? session.accessToken : null
+    );
+    const [playerStream, setPlayerStream] = useState(null);
+    if (!valid) return null;
+    if (error) return null;
+    return /* @__PURE__ */ jsxs("div", { ref: setNode, children: [
+      /* @__PURE__ */ jsx(
+        TwitchHomeRowShell,
+        {
+          title: text("followingTitle"),
+          subtitle: text("followingSubtitle"),
+          onOpenAll: () => onNavigate({ pageId: "twitch-following" }),
+          children: /* @__PURE__ */ jsx(
+            "div",
+            {
+              className: layout2 === "slider" ? "flex gap-3 overflow-x-auto pb-3" : "grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4",
+              style: layout2 === "slider" ? { scrollbarWidth: "none", msOverflowStyle: "none" } : void 0,
+              children: active ? streams.slice(0, count).map((stream) => /* @__PURE__ */ jsx(
+                "div",
+                {
+                  className: layout2 === "slider" ? "flex-none" : "w-full",
+                  style: layout2 === "slider" ? { width: sliderCardWidth } : void 0,
+                  children: /* @__PURE__ */ jsx(StreamCard, { stream, onPlay: setPlayerStream })
+                },
+                stream.id
+              )) : Array.from({ length: 4 }).map((_, index3) => /* @__PURE__ */ jsx(
+                "div",
+                {
+                  className: `animate-pulse rounded-[1.5rem] bg-slate-800/50 ${layout2 === "slider" ? "aspect-video flex-none" : "aspect-video"}`,
+                  style: layout2 === "slider" ? { width: sliderCardWidth } : void 0
+                },
+                index3
+              ))
+            }
+          )
+        }
+      ),
+      playerStream ? /* @__PURE__ */ jsx(
+        TwitchPlayerModal,
+        {
+          kind: "live",
+          id: playerStream.user_login,
+          title: playerStream.title,
+          onClose: () => setPlayerStream(null)
+        }
+      ) : null
+    ] });
+  }
   function TwitchHero({ onNavigate, onActiveChange, onBackdropChange }) {
     const text = useTwitchText();
     const { streams } = useTwitchTopStreams(true);
@@ -168043,6 +168198,18 @@
       ctx.registerBrowsePage({ id: "twitch-live", label: { en: "Live", sv: "Live" }, Page: TwitchBrowsePage });
       ctx.registerBrowsePage({ id: "twitch-categories", label: { en: "Categories", sv: "Kategorier" }, Page: TwitchCategoriesPage });
       ctx.registerBrowsePage({ id: "twitch-search", label: { en: "Search", sv: "S\xF6k" }, Page: TwitchSearchPage });
+      ctx.registerHomeRow({
+        id: "twitch-following-row",
+        title: { en: "Twitch: Following", sv: "Twitch: F\xF6ljer" },
+        showOnHome: false,
+        Row: (props) => /* @__PURE__ */ jsx(TwitchFollowingRow, { ...props })
+      });
+      ctx.registerHomeSource({
+        id: "twitch-following",
+        label: { en: "Twitch: Following", sv: "Twitch: F\xF6ljer" },
+        rowId: "twitch-following-row"
+      });
+      ctx.registerBrowsePage({ id: "twitch-following", label: { en: "Following", sv: "F\xF6ljer" }, Page: TwitchFollowingPage });
       const twitchEntry = {
         id: "twitch",
         label: { en: "Twitch", sv: "Twitch" },
@@ -168054,7 +168221,7 @@
   };
   var runtime_default = TwitchPlugin;
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-aGh5jV/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-PU6i2U/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");
