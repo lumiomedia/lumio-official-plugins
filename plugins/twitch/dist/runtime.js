@@ -46,7 +46,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ENeH7t/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-1l6lJr/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -95,7 +95,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ENeH7t/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-1l6lJr/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -143,7 +143,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ENeH7t/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-1l6lJr/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -153,7 +153,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ENeH7t/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-1l6lJr/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -166300,7 +166300,7 @@
   var import_react55 = __toESM(require_dist89());
   init_jsx_runtime_shim();
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ENeH7t/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-1l6lJr/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
   function resolveAuthCapabilityStatus(providerId) {
     return sdk.resolveAuthCapabilityStatus(providerId);
@@ -166748,6 +166748,14 @@
     const { data, cursor: next2 } = await helixGet(helixUrl("streams", { first: 30, after: cursor }));
     return { streams: data, cursor: next2 };
   }
+  async function getStreamsByGame(gameId, cursor) {
+    const { data, cursor: next2 } = await helixGet(helixUrl("streams", { game_id: gameId, first: 30, after: cursor }));
+    return { streams: data, cursor: next2 };
+  }
+  async function getTopCategories(cursor) {
+    const { data, cursor: next2 } = await helixGet(helixUrl("games/top", { first: 30, after: cursor }));
+    return { categories: data, cursor: next2 };
+  }
 
   // ../lumio-official-plugins/plugins/twitch/runtime/twitch-storage.ts
   var SESSION_KEY = "twitch_session_v1";
@@ -167161,7 +167169,18 @@
     loadError: { en: "Could not load Twitch live channels.", sv: "Kunde inte l\xE4sa in live-kanaler fr\xE5n Twitch." },
     empty: { en: "No live channels right now.", sv: "Inga live-kanaler just nu." },
     watchNow: { en: "Watch now", sv: "Titta nu" },
-    browseLive: { en: "Browse live", sv: "Bl\xE4ddra live" }
+    browseLive: { en: "Browse live", sv: "Bl\xE4ddra live" },
+    categoriesTitle: { en: "Twitch: Categories", sv: "Twitch: Kategorier" },
+    categoriesSubtitle: { en: "Browse categories on Twitch.", sv: "Bl\xE4ddra bland kategorier p\xE5 Twitch." },
+    loadingCategories: { en: "Loading categories\u2026", sv: "Laddar kategorier\u2026" },
+    categoriesLoadError: { en: "Could not load Twitch categories.", sv: "Kunde inte l\xE4sa in kategorier fr\xE5n Twitch." },
+    categoriesEmpty: { en: "No categories found.", sv: "Inga kategorier hittades." },
+    streamsEmpty: {
+      en: "No live channels in this category right now.",
+      sv: "Inga live-kanaler i denna kategori just nu."
+    },
+    back: { en: "Back to categories", sv: "Tillbaka till kategorier" },
+    loadMore: { en: "Load more", sv: "Ladda fler" }
   };
   function useTwitchText() {
     const { lang } = useLang();
@@ -167217,6 +167236,77 @@
       if (!cursor) return;
       try {
         const result = await getTopStreams(cursor);
+        setStreams((current2) => [...current2, ...result.streams]);
+        setCursor(result.cursor ?? null);
+      } catch {
+      }
+    }
+    return { streams, loading, error, hasMore: Boolean(cursor), loadMore };
+  }
+  function useTwitchCategories() {
+    const [categories, setCategories] = useState([]);
+    const [cursor, setCursor] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    useEffect(() => {
+      let cancelled = false;
+      setLoading(true);
+      setError(null);
+      getTopCategories().then((result) => {
+        if (cancelled) return;
+        setCategories(result.categories);
+        setCursor(result.cursor ?? null);
+      }).catch((loadError) => {
+        if (cancelled) return;
+        setError(loadError instanceof Error ? loadError.message : "error");
+      }).finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }, []);
+    async function loadMore() {
+      if (!cursor) return;
+      try {
+        const result = await getTopCategories(cursor);
+        setCategories((current2) => [...current2, ...result.categories]);
+        setCursor(result.cursor ?? null);
+      } catch {
+      }
+    }
+    return { categories, loading, error, hasMore: Boolean(cursor), loadMore };
+  }
+  function useTwitchCategoryStreams(gameId) {
+    const [streams, setStreams] = useState([]);
+    const [cursor, setCursor] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    useEffect(() => {
+      if (!gameId) return;
+      let cancelled = false;
+      setLoading(true);
+      setError(null);
+      setStreams([]);
+      setCursor(null);
+      getStreamsByGame(gameId).then((result) => {
+        if (cancelled) return;
+        setStreams(result.streams);
+        setCursor(result.cursor ?? null);
+      }).catch((loadError) => {
+        if (cancelled) return;
+        setError(loadError instanceof Error ? loadError.message : "error");
+      }).finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }, [gameId]);
+    async function loadMore() {
+      if (!gameId || !cursor) return;
+      try {
+        const result = await getStreamsByGame(gameId, cursor);
         setStreams((current2) => [...current2, ...result.streams]);
         setCursor(result.cursor ?? null);
       } catch {
@@ -167319,6 +167409,114 @@
           onClose: () => setPlayerStream(null)
         }
       ) : null
+    ] });
+  }
+  function CategoryCard({
+    category,
+    onSelect
+  }) {
+    return /* @__PURE__ */ jsxs(
+      "div",
+      {
+        role: "button",
+        tabIndex: 0,
+        onClick: () => onSelect(category),
+        onKeyDown: (event) => {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
+          onSelect(category);
+        },
+        className: "group relative w-full cursor-pointer bg-transparent text-left transition-all duration-300 hover:-translate-y-1",
+        "aria-label": category.name,
+        children: [
+          /* @__PURE__ */ jsxs("div", { className: "relative aspect-[3/4] overflow-hidden rounded-[0.75rem] bg-slate-800", children: [
+            category.box_art_url ? /* @__PURE__ */ jsx(
+              "img",
+              {
+                src: thumb(category.box_art_url, 285, 380),
+                alt: category.name,
+                className: "h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
+              }
+            ) : null,
+            /* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent opacity-90 transition group-hover:opacity-100" })
+          ] }),
+          /* @__PURE__ */ jsx("h3", { className: "mt-2 line-clamp-2 text-[0.8rem] font-semibold leading-snug text-white", children: category.name })
+        ]
+      }
+    );
+  }
+  function LoadMoreButton({ onClick, label }) {
+    return /* @__PURE__ */ jsx("div", { className: "flex justify-center pt-2", children: /* @__PURE__ */ jsx(
+      "button",
+      {
+        type: "button",
+        onClick,
+        className: "h-10 rounded-full border border-white/[0.1] bg-white/[0.04] px-5 text-[0.65rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:border-white/[0.16] hover:bg-white/[0.06] hover:text-white",
+        children: label
+      }
+    ) });
+  }
+  function TwitchCategoriesPage({ onNavigate: _onNavigate }) {
+    const text = useTwitchText();
+    const { categories, loading, error, hasMore, loadMore } = useTwitchCategories();
+    const [selectedCategory, setSelectedCategory] = useState(null);
+    const {
+      streams,
+      loading: streamsLoading,
+      error: streamsError,
+      hasMore: streamsHasMore,
+      loadMore: loadMoreStreams
+    } = useTwitchCategoryStreams(selectedCategory?.id ?? null);
+    const [playerStream, setPlayerStream] = useState(null);
+    const backButton = /* @__PURE__ */ jsxs(
+      "button",
+      {
+        type: "button",
+        onClick: () => setSelectedCategory(null),
+        className: "flex h-9 items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.03] px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:border-white/[0.16] hover:bg-white/[0.05] hover:text-white",
+        children: [
+          /* @__PURE__ */ jsx("svg", { width: "12", height: "12", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", children: /* @__PURE__ */ jsx("polyline", { points: "15 18 9 12 15 6" }) }),
+          text("back")
+        ]
+      }
+    );
+    if (selectedCategory) {
+      if (streamsLoading && streams.length === 0) {
+        return /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
+          backButton,
+          /* @__PURE__ */ jsx(SectionPlaceholder, { title: selectedCategory.name, text: text("loading") })
+        ] });
+      }
+      if (streamsError && streams.length === 0) {
+        return /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
+          backButton,
+          /* @__PURE__ */ jsx(SectionPlaceholder, { title: selectedCategory.name, text: text("loadError") })
+        ] });
+      }
+      return /* @__PURE__ */ jsxs("div", { className: "space-y-8", children: [
+        backButton,
+        /* @__PURE__ */ jsx(TwitchGridShell, { title: selectedCategory.name, children: streams.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("streamsEmpty") }) : /* @__PURE__ */ jsx("div", { className: "grid gap-4 sm:grid-cols-2 xl:grid-cols-4", children: streams.map((stream) => /* @__PURE__ */ jsx(StreamCard, { stream, onPlay: setPlayerStream }, stream.id)) }) }),
+        streamsHasMore ? /* @__PURE__ */ jsx(LoadMoreButton, { onClick: () => void loadMoreStreams(), label: text("loadMore") }) : null,
+        playerStream ? /* @__PURE__ */ jsx(
+          TwitchPlayerModal,
+          {
+            kind: "live",
+            id: playerStream.user_login,
+            title: playerStream.title,
+            onClose: () => setPlayerStream(null)
+          }
+        ) : null
+      ] });
+    }
+    if (loading && categories.length === 0) {
+      return /* @__PURE__ */ jsx(SectionPlaceholder, { title: text("categoriesTitle"), text: text("loadingCategories") });
+    }
+    if (error && categories.length === 0) {
+      return /* @__PURE__ */ jsx(SectionPlaceholder, { title: text("categoriesTitle"), text: text("categoriesLoadError") });
+    }
+    return /* @__PURE__ */ jsxs("div", { className: "space-y-8", children: [
+      /* @__PURE__ */ jsx(TwitchGridShell, { title: text("categoriesTitle"), subtitle: text("categoriesSubtitle"), children: categories.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("categoriesEmpty") }) : /* @__PURE__ */ jsx("div", { className: "grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6", children: categories.map((category) => /* @__PURE__ */ jsx(CategoryCard, { category, onSelect: setSelectedCategory }, category.id)) }) }),
+      hasMore ? /* @__PURE__ */ jsx(LoadMoreButton, { onClick: () => void loadMore(), label: text("loadMore") }) : null
     ] });
   }
   function TwitchHomeRowShell({
@@ -167505,6 +167703,7 @@
         rowId: "twitch-live-row"
       });
       ctx.registerBrowsePage({ id: "twitch-live", label: { en: "Live", sv: "Live" }, Page: TwitchBrowsePage });
+      ctx.registerBrowsePage({ id: "twitch-categories", label: { en: "Categories", sv: "Kategorier" }, Page: TwitchCategoriesPage });
       const twitchEntry = {
         id: "twitch",
         label: { en: "Twitch", sv: "Twitch" },
@@ -167516,7 +167715,7 @@
   };
   var runtime_default = TwitchPlugin;
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ENeH7t/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-1l6lJr/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

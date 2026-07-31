@@ -2,9 +2,9 @@
 
 import { useEffect, useState, type ReactNode } from 'react'
 import { useLang, type BrowsePageProps, type HomeRowProps, type PluginHeroProps } from '@/lib/plugin-sdk'
-import { getTopStreams, thumb } from './twitch-client'
+import { getTopStreams, getTopCategories, getStreamsByGame, thumb } from './twitch-client'
 import { TwitchPlayerModal } from './twitch-player'
-import type { TwitchStream } from './twitch-types'
+import type { TwitchStream, TwitchCategory } from './twitch-types'
 
 const TEXT = {
   liveNowTitle: { en: 'Twitch: Live now', sv: 'Twitch: Live nu' },
@@ -18,6 +18,17 @@ const TEXT = {
   empty: { en: 'No live channels right now.', sv: 'Inga live-kanaler just nu.' },
   watchNow: { en: 'Watch now', sv: 'Titta nu' },
   browseLive: { en: 'Browse live', sv: 'Bläddra live' },
+  categoriesTitle: { en: 'Twitch: Categories', sv: 'Twitch: Kategorier' },
+  categoriesSubtitle: { en: 'Browse categories on Twitch.', sv: 'Bläddra bland kategorier på Twitch.' },
+  loadingCategories: { en: 'Loading categories…', sv: 'Laddar kategorier…' },
+  categoriesLoadError: { en: 'Could not load Twitch categories.', sv: 'Kunde inte läsa in kategorier från Twitch.' },
+  categoriesEmpty: { en: 'No categories found.', sv: 'Inga kategorier hittades.' },
+  streamsEmpty: {
+    en: 'No live channels in this category right now.',
+    sv: 'Inga live-kanaler i denna kategori just nu.',
+  },
+  back: { en: 'Back to categories', sv: 'Tillbaka till kategorier' },
+  loadMore: { en: 'Load more', sv: 'Ladda fler' },
 } as const
 
 type TextKey = keyof typeof TEXT
@@ -86,6 +97,93 @@ function useTwitchTopStreams(active: boolean) {
     if (!cursor) return
     try {
       const result = await getTopStreams(cursor)
+      setStreams((current) => [...current, ...result.streams])
+      setCursor(result.cursor ?? null)
+    } catch {
+      // Keep current results on load-more failure; the button remains visible for retry.
+    }
+  }
+
+  return { streams, loading, error, hasMore: Boolean(cursor), loadMore }
+}
+
+function useTwitchCategories() {
+  const [categories, setCategories] = useState<TwitchCategory[]>([])
+  const [cursor, setCursor] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+    getTopCategories()
+      .then((result) => {
+        if (cancelled) return
+        setCategories(result.categories)
+        setCursor(result.cursor ?? null)
+      })
+      .catch((loadError) => {
+        if (cancelled) return
+        setError(loadError instanceof Error ? loadError.message : 'error')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  async function loadMore() {
+    if (!cursor) return
+    try {
+      const result = await getTopCategories(cursor)
+      setCategories((current) => [...current, ...result.categories])
+      setCursor(result.cursor ?? null)
+    } catch {
+      // Keep current results on load-more failure; the button remains visible for retry.
+    }
+  }
+
+  return { categories, loading, error, hasMore: Boolean(cursor), loadMore }
+}
+
+function useTwitchCategoryStreams(gameId: string | null) {
+  const [streams, setStreams] = useState<TwitchStream[]>([])
+  const [cursor, setCursor] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!gameId) return
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+    setStreams([])
+    setCursor(null)
+    getStreamsByGame(gameId)
+      .then((result) => {
+        if (cancelled) return
+        setStreams(result.streams)
+        setCursor(result.cursor ?? null)
+      })
+      .catch((loadError) => {
+        if (cancelled) return
+        setError(loadError instanceof Error ? loadError.message : 'error')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [gameId])
+
+  async function loadMore() {
+    if (!gameId || !cursor) return
+    try {
+      const result = await getStreamsByGame(gameId, cursor)
       setStreams((current) => [...current, ...result.streams])
       setCursor(result.cursor ?? null)
     } catch {
@@ -230,6 +328,156 @@ export function TwitchBrowsePage({ onNavigate: _onNavigate }: BrowsePageProps) {
           onClose={() => setPlayerStream(null)}
         />
       ) : null}
+    </div>
+  )
+}
+
+function CategoryCard({
+  category,
+  onSelect,
+}: {
+  category: TwitchCategory
+  onSelect: (category: TwitchCategory) => void
+}) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onSelect(category)}
+      onKeyDown={(event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return
+        event.preventDefault()
+        onSelect(category)
+      }}
+      className="group relative w-full cursor-pointer bg-transparent text-left transition-all duration-300 hover:-translate-y-1"
+      aria-label={category.name}
+    >
+      <div className="relative aspect-[3/4] overflow-hidden rounded-[0.75rem] bg-slate-800">
+        {category.box_art_url ? (
+          <img
+            src={thumb(category.box_art_url, 285, 380)}
+            alt={category.name}
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
+          />
+        ) : null}
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent opacity-90 transition group-hover:opacity-100" />
+      </div>
+      <h3 className="mt-2 line-clamp-2 text-[0.8rem] font-semibold leading-snug text-white">{category.name}</h3>
+    </div>
+  )
+}
+
+function LoadMoreButton({ onClick, label }: { onClick: () => void; label: string }) {
+  return (
+    <div className="flex justify-center pt-2">
+      <button
+        type="button"
+        onClick={onClick}
+        className="h-10 rounded-full border border-white/[0.1] bg-white/[0.04] px-5 text-[0.65rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:border-white/[0.16] hover:bg-white/[0.06] hover:text-white"
+      >
+        {label}
+      </button>
+    </div>
+  )
+}
+
+export function TwitchCategoriesPage({ onNavigate: _onNavigate }: BrowsePageProps) {
+  const text = useTwitchText()
+  const { categories, loading, error, hasMore, loadMore } = useTwitchCategories()
+  const [selectedCategory, setSelectedCategory] = useState<TwitchCategory | null>(null)
+  const {
+    streams,
+    loading: streamsLoading,
+    error: streamsError,
+    hasMore: streamsHasMore,
+    loadMore: loadMoreStreams,
+  } = useTwitchCategoryStreams(selectedCategory?.id ?? null)
+  const [playerStream, setPlayerStream] = useState<TwitchStream | null>(null)
+
+  const backButton = (
+    <button
+      type="button"
+      onClick={() => setSelectedCategory(null)}
+      className="flex h-9 items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.03] px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:border-white/[0.16] hover:bg-white/[0.05] hover:text-white"
+    >
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+        <polyline points="15 18 9 12 15 6" />
+      </svg>
+      {text('back')}
+    </button>
+  )
+
+  if (selectedCategory) {
+    if (streamsLoading && streams.length === 0) {
+      return (
+        <div className="space-y-6">
+          {backButton}
+          <SectionPlaceholder title={selectedCategory.name} text={text('loading')} />
+        </div>
+      )
+    }
+
+    if (streamsError && streams.length === 0) {
+      return (
+        <div className="space-y-6">
+          {backButton}
+          <SectionPlaceholder title={selectedCategory.name} text={text('loadError')} />
+        </div>
+      )
+    }
+
+    return (
+      <div className="space-y-8">
+        {backButton}
+        <TwitchGridShell title={selectedCategory.name}>
+          {streams.length === 0 ? (
+            <p className="text-sm text-slate-400">{text('streamsEmpty')}</p>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {streams.map((stream) => (
+                <StreamCard key={stream.id} stream={stream} onPlay={setPlayerStream} />
+              ))}
+            </div>
+          )}
+        </TwitchGridShell>
+
+        {streamsHasMore ? <LoadMoreButton onClick={() => void loadMoreStreams()} label={text('loadMore')} /> : null}
+
+        {playerStream ? (
+          <TwitchPlayerModal
+            kind="live"
+            id={playerStream.user_login}
+            title={playerStream.title}
+            onClose={() => setPlayerStream(null)}
+          />
+        ) : null}
+      </div>
+    )
+  }
+
+  if (loading && categories.length === 0) {
+    return <SectionPlaceholder title={text('categoriesTitle')} text={text('loadingCategories')} />
+  }
+
+  if (error && categories.length === 0) {
+    return <SectionPlaceholder title={text('categoriesTitle')} text={text('categoriesLoadError')} />
+  }
+
+  return (
+    <div className="space-y-8">
+      <TwitchGridShell title={text('categoriesTitle')} subtitle={text('categoriesSubtitle')}>
+        {categories.length === 0 ? (
+          <p className="text-sm text-slate-400">{text('categoriesEmpty')}</p>
+        ) : (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
+            {categories.map((category) => (
+              <CategoryCard key={category.id} category={category} onSelect={setSelectedCategory} />
+            ))}
+          </div>
+        )}
+      </TwitchGridShell>
+
+      {hasMore ? <LoadMoreButton onClick={() => void loadMore()} label={text('loadMore')} /> : null}
     </div>
   )
 }

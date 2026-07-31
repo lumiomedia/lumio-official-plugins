@@ -1,7 +1,7 @@
 import type { LumioPlugin } from '@/lib/plugin-sdk'
 import { twitchAuthCapabilityProvider } from './twitch-auth-capability-provider'
 import { TwitchSettingsSection } from './twitch-settings-section'
-import { TwitchBrowsePage, TwitchHero, TwitchLiveRow } from './twitch-browser'
+import { TwitchBrowsePage, TwitchCategoriesPage, TwitchHero, TwitchLiveRow } from './twitch-browser'
 
 export const TwitchPlugin: LumioPlugin = {
   id: 'com.lumio.twitch',
@@ -32,6 +32,7 @@ export const TwitchPlugin: LumioPlugin = {
       rowId: 'twitch-live-row',
     })
     ctx.registerBrowsePage({ id: 'twitch-live', label: { en: 'Live', sv: 'Live' }, Page: TwitchBrowsePage })
+    ctx.registerBrowsePage({ id: 'twitch-categories', label: { en: 'Categories', sv: 'Kategorier' }, Page: TwitchCategoriesPage })
 
     const twitchEntry = {
       id: 'twitch',
