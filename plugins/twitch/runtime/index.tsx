@@ -1,4 +1,5 @@
 import type { LumioPlugin } from '@/lib/plugin-sdk'
+import { ensureFreshTwitchSession } from './twitch-auth'
 import { twitchAuthCapabilityProvider } from './twitch-auth-capability-provider'
 import { TwitchSettingsSection } from './twitch-settings-section'
 import {
@@ -21,6 +22,10 @@ export const TwitchPlugin: LumioPlugin = {
   },
   preinstalled: true,
   register(ctx) {
+    // Auto-reconnect at app start: a once-connected account whose access
+    // token expired is silently renewed from the stored refresh token, so
+    // Following/home-rows work without re-running the device flow.
+    if (typeof window !== 'undefined') void ensureFreshTwitchSession()
     ctx.registerAuthCapabilityProvider(twitchAuthCapabilityProvider)
     ctx.registerSettingsSection({
       id: 'twitch',

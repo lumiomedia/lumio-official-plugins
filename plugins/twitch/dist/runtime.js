@@ -46,7 +46,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-zm6f8X/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-HuOZNH/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -95,7 +95,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-zm6f8X/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-HuOZNH/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -143,7 +143,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-zm6f8X/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-HuOZNH/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -153,7 +153,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-zm6f8X/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-HuOZNH/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -166300,7 +166300,7 @@
   var import_react55 = __toESM(require_dist89());
   init_jsx_runtime_shim();
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-zm6f8X/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-HuOZNH/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
   function resolveAuthCapabilityStatus(providerId) {
     return sdk.resolveAuthCapabilityStatus(providerId);
@@ -166977,6 +166977,43 @@
   function disconnectTwitch() {
     clearTwitchSession();
   }
+  async function refreshTwitchSession() {
+    const session = getTwitchSession();
+    if (!session?.refreshToken) return null;
+    const response = await fetch("/api/plugins/twitch/device/refresh", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken: session.refreshToken })
+    }).catch(() => null);
+    if (!response) return null;
+    const payload = await response.json().catch(() => ({}));
+    if (payload.ok && payload.accessToken && typeof payload.expiresAt === "number") {
+      const next2 = {
+        ...session,
+        accessToken: payload.accessToken,
+        refreshToken: payload.refreshToken || session.refreshToken,
+        expiresAt: payload.expiresAt
+      };
+      setTwitchSession(next2);
+      return next2;
+    }
+    if (typeof payload.status === "number" && payload.status >= 400 && payload.status < 500) {
+      clearTwitchSession();
+    }
+    return null;
+  }
+  var inflightSessionRefresh = null;
+  async function ensureFreshTwitchSession() {
+    const session = getTwitchSession();
+    if (!session) return null;
+    if (isTwitchSessionValid(session)) return session;
+    if (!inflightSessionRefresh) {
+      inflightSessionRefresh = refreshTwitchSession().finally(() => {
+        inflightSessionRefresh = null;
+      });
+    }
+    return inflightSessionRefresh;
+  }
 
   // ../lumio-official-plugins/plugins/twitch/runtime/twitch-auth-capability-provider.ts
   function getStatus() {
@@ -167476,6 +167513,7 @@
     useEffect(() => {
       const sync2 = () => setSession(getTwitchSession());
       sync2();
+      void ensureFreshTwitchSession();
       return onAuthCapabilitiesChanged(sync2);
     }, []);
     return session;
@@ -167818,18 +167856,6 @@
     };
     const pageNav = /* @__PURE__ */ jsx(TwitchPageNav, { current: pageId, onNavigate });
     const drillNav = /* @__PURE__ */ jsx(TwitchPageNav, { current: "", onNavigate: handleNav });
-    const backButton = /* @__PURE__ */ jsxs(
-      "button",
-      {
-        type: "button",
-        onClick: () => setSelectedCategory(null),
-        className: "flex h-9 items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.03] px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:border-white/[0.16] hover:bg-white/[0.05] hover:text-white",
-        children: [
-          /* @__PURE__ */ jsx("svg", { width: "12", height: "12", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", children: /* @__PURE__ */ jsx("polyline", { points: "15 18 9 12 15 6" }) }),
-          text("back")
-        ]
-      }
-    );
     if (selectedChannel) {
       return /* @__PURE__ */ jsx(
         ChannelDrilldown,
@@ -167852,7 +167878,6 @@
       )) }) });
       return /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
         drillNav,
-        backButton,
         streamsBody,
         streamsHasMore && streams.length > 0 ? /* @__PURE__ */ jsx(LoadMoreButton, { onClick: () => void loadMoreStreams(), label: text("loadMore") }) : null
       ] });
@@ -168618,6 +168643,7 @@
     },
     preinstalled: true,
     register(ctx) {
+      if (typeof window !== "undefined") void ensureFreshTwitchSession();
       ctx.registerAuthCapabilityProvider(twitchAuthCapabilityProvider);
       ctx.registerSettingsSection({
         id: "twitch",
@@ -168662,7 +168688,7 @@
   };
   var runtime_default = TwitchPlugin;
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-zm6f8X/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-HuOZNH/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

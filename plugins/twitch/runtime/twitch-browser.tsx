@@ -22,7 +22,7 @@ import {
   thumb,
 } from './twitch-client'
 import { TwitchPlayerModal } from './twitch-player'
-import { openTwitchUrl } from './twitch-auth'
+import { ensureFreshTwitchSession, openTwitchUrl } from './twitch-auth'
 import { getTwitchHeroEnabled, getTwitchSession, isTwitchSessionValid, onTwitchPluginChanged } from './twitch-storage'
 import type { TwitchStream, TwitchCategory, TwitchVideo, TwitchClip, EnrichedFollowedChannel } from './twitch-types'
 
@@ -298,6 +298,11 @@ function useTwitchSessionState() {
   useEffect(() => {
     const sync = () => setSession(getTwitchSession())
     sync()
+    // A stored session whose access token has expired is silently renewed via
+    // the refresh token whenever a Twitch surface mounts — the user connects
+    // once, then opening Twitch just works. The refresh persists the rotated
+    // session, which fires the auth-changed event and re-syncs this state.
+    void ensureFreshTwitchSession()
     return onAuthCapabilitiesChanged(sync)
   }, [])
 
@@ -764,19 +769,6 @@ export function TwitchCategoriesPage({ pageId, onNavigate }: BrowsePageProps) {
   const pageNav = <TwitchPageNav current={pageId} onNavigate={onNavigate} />
   const drillNav = <TwitchPageNav current="" onNavigate={handleNav} />
 
-  const backButton = (
-    <button
-      type="button"
-      onClick={() => setSelectedCategory(null)}
-      className="flex h-9 items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.03] px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:border-white/[0.16] hover:bg-white/[0.05] hover:text-white"
-    >
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-        <polyline points="15 18 9 12 15 6" />
-      </svg>
-      {text('back')}
-    </button>
-  )
-
   if (selectedChannel) {
     return (
       <ChannelDrilldown
@@ -815,7 +807,6 @@ export function TwitchCategoriesPage({ pageId, onNavigate }: BrowsePageProps) {
     return (
       <div className="space-y-6">
         {drillNav}
-        {backButton}
         {streamsBody}
         {streamsHasMore && streams.length > 0 ? (
           <LoadMoreButton onClick={() => void loadMoreStreams()} label={text('loadMore')} />

@@ -2,7 +2,13 @@
 
 import { isPluginDesktopHost, launchPluginProgram } from '@/lib/plugin-sdk'
 import { helixUrl } from './twitch-client'
-import { clearTwitchSession, setTwitchSession } from './twitch-storage'
+import {
+  clearTwitchSession,
+  getTwitchSession,
+  isTwitchSessionValid,
+  setTwitchSession,
+  type TwitchSession,
+} from './twitch-storage'
 
 interface DeviceStartResponse {
   device_code: string
@@ -165,4 +171,62 @@ export async function connectTwitch(onCode: (userCode: string, verificationUri: 
 
 export function disconnectTwitch(): void {
   clearTwitchSession()
+}
+
+/**
+ * Exchanges the stored refresh token for a fresh access token and persists
+ * the rotated session. Returns the updated session, or null if there is
+ * nothing to refresh or Twitch rejected the token. Only a definitive 4xx
+ * rejection clears the stored session — network/server hiccups keep it so a
+ * later attempt can still succeed.
+ */
+export async function refreshTwitchSession(): Promise<TwitchSession | null> {
+  const session = getTwitchSession()
+  if (!session?.refreshToken) return null
+
+  const response = await fetch('/api/plugins/twitch/device/refresh', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refreshToken: session.refreshToken }),
+  }).catch(() => null)
+  if (!response) return null
+  const payload = (await response.json().catch(() => ({}))) as Partial<DevicePollResult>
+
+  if (payload.ok && payload.accessToken && typeof payload.expiresAt === 'number') {
+    const next: TwitchSession = {
+      ...session,
+      accessToken: payload.accessToken,
+      refreshToken: payload.refreshToken || session.refreshToken,
+      expiresAt: payload.expiresAt,
+    }
+    setTwitchSession(next)
+    return next
+  }
+
+  if (typeof payload.status === 'number' && payload.status >= 400 && payload.status < 500) {
+    // Refresh token revoked/expired — the account genuinely needs a new
+    // device-flow login, so stop advertising a session that cannot work.
+    clearTwitchSession()
+  }
+  return null
+}
+
+let inflightSessionRefresh: Promise<TwitchSession | null> | null = null
+
+/**
+ * Returns a usable session: the stored one when still valid, otherwise a
+ * silent refresh via the stored refresh token (deduped across concurrent
+ * callers). This is what makes a once-connected account auto-reconnect on
+ * app start and whenever a Twitch surface is opened.
+ */
+export async function ensureFreshTwitchSession(): Promise<TwitchSession | null> {
+  const session = getTwitchSession()
+  if (!session) return null
+  if (isTwitchSessionValid(session)) return session
+  if (!inflightSessionRefresh) {
+    inflightSessionRefresh = refreshTwitchSession().finally(() => {
+      inflightSessionRefresh = null
+    })
+  }
+  return inflightSessionRefresh
 }
