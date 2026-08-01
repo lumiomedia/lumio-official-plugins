@@ -9,11 +9,8 @@ import {
 } from '@/lib/plugin-sdk'
 import { connectTwitch, disconnectTwitch, openTwitchVerificationUrl } from './twitch-auth'
 import {
-  getTwitchHeroEnabled,
   getTwitchHomeCategory,
   getTwitchHomeChannels,
-  onTwitchPluginChanged,
-  setTwitchHeroEnabled,
   setTwitchHomeCategory,
   setTwitchHomeChannels,
 } from './twitch-storage'
@@ -44,7 +41,6 @@ const TEXT = {
   },
   openVerificationUrl: { en: 'Open twitch.tv/activate', sv: 'Öppna twitch.tv/activate' },
   waitingForApproval: { en: 'Waiting for approval on twitch.tv…', sv: 'Väntar på godkännande på twitch.tv…' },
-  heroToggle: { en: 'Show Twitch hero on home', sv: 'Visa Twitch-hero på startsidan' },
   homeRows: { en: 'Home rows', sv: 'Hemmarader' },
   homeRowsNote: {
     en: 'Used by the "Twitch: Category" and "Twitch: Channels" home rows (Settings → Home → row source).',
@@ -67,7 +63,6 @@ export function TwitchSettingsSection() {
   const [error, setError] = useState('')
   const [userCode, setUserCode] = useState('')
   const [verificationUri, setVerificationUri] = useState('')
-  const [heroEnabled, setHeroEnabled] = useState(false)
   const [homeCategory, setHomeCategory] = useState('')
   const [homeChannels, setHomeChannels] = useState('')
 
@@ -76,13 +71,10 @@ export function TwitchSettingsSection() {
   }
 
   useEffect(() => {
-    setHeroEnabled(getTwitchHeroEnabled())
+    // Read once on mount; the fields are edited here, so re-reading them on
+    // every keystroke's own change event would fight the user's typing.
     setHomeCategory(getTwitchHomeCategory())
     setHomeChannels(getTwitchHomeChannels())
-    // Only the hero toggle re-syncs from change events: the two text fields
-    // are edited here and re-reading them on every keystroke's own change
-    // event would fight the user's typing.
-    return onTwitchPluginChanged(() => setHeroEnabled(getTwitchHeroEnabled()))
   }, [])
 
   useEffect(() => {
@@ -158,22 +150,6 @@ export function TwitchSettingsSection() {
         <p className="mt-2 text-sm text-slate-300">{sessionLabel}</p>
         {sessionDetail ? <p className="mt-2 text-xs text-amber-300">{sessionDetail}</p> : null}
         <p className="mt-2 text-xs text-slate-500">{text('connectionNote')}</p>
-      </div>
-
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-        <label className="flex items-center gap-3 text-sm text-slate-200">
-          <input
-            type="checkbox"
-            checked={heroEnabled}
-            onChange={(event) => {
-              const next = event.target.checked
-              setHeroEnabled(next)
-              setTwitchHeroEnabled(next)
-            }}
-            className="h-4 w-4 accent-amber-400"
-          />
-          {text('heroToggle')}
-        </label>
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">

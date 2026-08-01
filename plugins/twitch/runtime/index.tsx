@@ -7,7 +7,6 @@ import {
   TwitchCategoriesPage,
   TwitchSearchPage,
   TwitchFollowingPage,
-  TwitchHero,
   TwitchLiveRow,
   TwitchFollowingRow,
   TwitchCategoryRow,
@@ -34,7 +33,6 @@ export const TwitchPlugin: LumioPlugin = {
       label: { en: 'Twitch', sv: 'Twitch' },
       Section: TwitchSettingsSection,
     })
-    ctx.registerHero({ id: 'twitch-hero', Hero: TwitchHero })
     ctx.registerHomeRow({
       id: 'twitch-live-row',
       title: { en: 'Twitch: Live now', sv: 'Twitch: Live nu' },

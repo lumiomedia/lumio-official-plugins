@@ -46,7 +46,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LRWY2m/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LUozgL/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -95,7 +95,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LRWY2m/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LUozgL/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -143,7 +143,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LRWY2m/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LUozgL/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -153,7 +153,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LRWY2m/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LUozgL/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -164005,6 +164005,7 @@
   // lib/profile-storage.ts
   var PROFILES_KEY = "app_profiles";
   var ACTIVE_PROFILE_KEY = "app_active_profile";
+  var PROFILE_EVENT = "lumio-profile-changed";
   var PROFILE_PREFIX = "profile:";
   function readProfiles() {
     if (typeof window === "undefined") return [];
@@ -164013,6 +164014,10 @@
     } catch {
       return [];
     }
+  }
+  function onProfileChanged(listener) {
+    window.addEventListener(PROFILE_EVENT, listener);
+    return () => window.removeEventListener(PROFILE_EVENT, listener);
   }
   function getActiveProfileId() {
     if (typeof window === "undefined") return null;
@@ -165040,6 +165045,9 @@
       hpWideLayoutEyebrow: "Wide layout",
       hpSliderCardsTitle: "Slider cards",
       hpSliderCardsHint: "How many cards a slider shows at most, globally.",
+      hpSliderCardsRowLabel: "Slider cards",
+      hpSliderCardsGlobalOption: "Global ({count})",
+      tgColumnsLabel: "Columns",
       hpAlwaysShown: "Always shown",
       hpTopMenuEyebrow: "Top menu",
       hpTopButtonsTitle: "Top buttons",
@@ -166142,6 +166150,9 @@
       hpWideLayoutEyebrow: "Bred layout",
       hpSliderCardsTitle: "Sliderkort",
       hpSliderCardsHint: "Hur m\xE5nga kort en slider max visar globalt.",
+      hpSliderCardsRowLabel: "Sliderkort",
+      hpSliderCardsGlobalOption: "Global ({count})",
+      tgColumnsLabel: "Kolumner",
       hpAlwaysShown: "Visas alltid",
       hpTopMenuEyebrow: "\xD6vre meny",
       hpTopButtonsTitle: "Topp-knappar",
@@ -166242,14 +166253,54 @@
       meStremioUnreachable: "Kunde inte n\xE5 Stremio-addonen."
     }
   };
-  var LangContext = createContext2({
+  var detachedLangContextValue = {
     lang: "en",
     setLang: () => {
     },
     t: (key) => strings.en[key]
-  });
+  };
+  var LangContext = createContext2(detachedLangContextValue);
+  var LANG_CHANGED_EVENT = "lumio-app-lang-changed";
+  var STORAGE_KEY = "app_lang";
+  var DEFAULT_LANG = "en";
+  function readStoredLang() {
+    if (typeof window === "undefined") return DEFAULT_LANG;
+    try {
+      const scoped = getScopedStorageItem(STORAGE_KEY);
+      const legacy = localStorage.getItem(STORAGE_KEY);
+      const value = scoped ?? legacy;
+      if (value === "sv" || value === "en") return value;
+    } catch {
+    }
+    return DEFAULT_LANG;
+  }
   function useLang() {
-    return useContext(LangContext);
+    const ctx = useContext(LangContext);
+    const detached = ctx === detachedLangContextValue;
+    const [detachedLang, setDetachedLang] = useState(DEFAULT_LANG);
+    useEffect(() => {
+      if (!detached || typeof window === "undefined") return;
+      const sync2 = () => setDetachedLang(readStoredLang());
+      sync2();
+      window.addEventListener(LANG_CHANGED_EVENT, sync2);
+      const offProfile = onProfileChanged(sync2);
+      return () => {
+        window.removeEventListener(LANG_CHANGED_EVENT, sync2);
+        offProfile();
+      };
+    }, [detached]);
+    if (!detached) return ctx;
+    return {
+      lang: detachedLang,
+      setLang: (l) => {
+        setScopedStorageItem(STORAGE_KEY, l);
+        setDetachedLang(l);
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent(LANG_CHANGED_EVENT));
+        }
+      },
+      t: (key) => strings[detachedLang][key] ?? strings.en[key]
+    };
   }
 
   // lib/stream-provider-runtime/stream-provider-settings.ts
@@ -166300,7 +166351,7 @@
   var import_react55 = __toESM(require_dist89());
   init_jsx_runtime_shim();
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LRWY2m/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LUozgL/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
   function resolveAuthCapabilityStatus(providerId) {
     return sdk.resolveAuthCapabilityStatus(providerId);
@@ -166813,7 +166864,6 @@
 
   // ../lumio-official-plugins/plugins/twitch/runtime/twitch-storage.ts
   var SESSION_KEY = "twitch_session_v1";
-  var HERO_ENABLED_KEY = "twitch_hero_enabled_v1";
   var EVENT2 = "lumio-twitch-plugin-changed";
   function emitChanged() {
     if (typeof window !== "undefined") {
@@ -166855,14 +166905,6 @@
   }
   function isTwitchSessionValid(session = getTwitchSession()) {
     return Boolean(session && session.expiresAt > Date.now() + 3e4);
-  }
-  function getTwitchHeroEnabled() {
-    if (typeof window === "undefined") return false;
-    return getScopedStorageItem(HERO_ENABLED_KEY) === "1";
-  }
-  function setTwitchHeroEnabled(enabled) {
-    setScopedStorageItem(HERO_ENABLED_KEY, enabled ? "1" : "");
-    emitChanged();
   }
   var HOME_CATEGORY_KEY = "twitch_home_category_v1";
   var HOME_CHANNELS_KEY = "twitch_home_channels_v1";
@@ -167118,7 +167160,6 @@
     },
     openVerificationUrl: { en: "Open twitch.tv/activate", sv: "\xD6ppna twitch.tv/activate" },
     waitingForApproval: { en: "Waiting for approval on twitch.tv\u2026", sv: "V\xE4ntar p\xE5 godk\xE4nnande p\xE5 twitch.tv\u2026" },
-    heroToggle: { en: "Show Twitch hero on home", sv: "Visa Twitch-hero p\xE5 startsidan" },
     homeRows: { en: "Home rows", sv: "Hemmarader" },
     homeRowsNote: {
       en: 'Used by the "Twitch: Category" and "Twitch: Channels" home rows (Settings \u2192 Home \u2192 row source).',
@@ -167138,17 +167179,14 @@
     const [error, setError] = useState("");
     const [userCode, setUserCode] = useState("");
     const [verificationUri, setVerificationUri] = useState("");
-    const [heroEnabled, setHeroEnabled] = useState(false);
     const [homeCategory, setHomeCategory] = useState("");
     const [homeChannels, setHomeChannels] = useState("");
     function text(key) {
       return TEXT[key][lang] ?? TEXT[key].en;
     }
     useEffect(() => {
-      setHeroEnabled(getTwitchHeroEnabled());
       setHomeCategory(getTwitchHomeCategory());
       setHomeChannels(getTwitchHomeChannels());
-      return onTwitchPluginChanged(() => setHeroEnabled(getTwitchHeroEnabled()));
     }, []);
     useEffect(() => {
       const sync2 = () => {
@@ -167215,22 +167253,6 @@
         sessionDetail ? /* @__PURE__ */ jsx("p", { className: "mt-2 text-xs text-amber-300", children: sessionDetail }) : null,
         /* @__PURE__ */ jsx("p", { className: "mt-2 text-xs text-slate-500", children: text("connectionNote") })
       ] }),
-      /* @__PURE__ */ jsx("div", { className: "rounded-2xl border border-white/10 bg-white/[0.03] p-4", children: /* @__PURE__ */ jsxs("label", { className: "flex items-center gap-3 text-sm text-slate-200", children: [
-        /* @__PURE__ */ jsx(
-          "input",
-          {
-            type: "checkbox",
-            checked: heroEnabled,
-            onChange: (event) => {
-              const next2 = event.target.checked;
-              setHeroEnabled(next2);
-              setTwitchHeroEnabled(next2);
-            },
-            className: "h-4 w-4 accent-amber-400"
-          }
-        ),
-        text("heroToggle")
-      ] }) }),
       /* @__PURE__ */ jsxs("div", { className: "rounded-2xl border border-white/10 bg-white/[0.03] p-4", children: [
         /* @__PURE__ */ jsx("p", { className: "text-xs uppercase tracking-[0.2em] text-slate-400", children: text("homeRows") }),
         /* @__PURE__ */ jsx("p", { className: "mt-2 text-xs text-slate-500", children: text("homeRowsNote") }),
@@ -167583,15 +167605,6 @@
       }
     }
     return { streams, loading, error, hasMore: Boolean(cursor), loadMore };
-  }
-  function useTwitchHeroEnabled() {
-    const [enabled, setEnabled] = useState(() => getTwitchHeroEnabled());
-    useEffect(() => {
-      const sync2 = () => setEnabled(getTwitchHeroEnabled());
-      sync2();
-      return onTwitchPluginChanged(sync2);
-    }, []);
-    return enabled;
   }
   function useTwitchSessionState() {
     const [session, setSession] = useState(() => getTwitchSession());
@@ -168814,76 +168827,6 @@
       ) : null
     ] });
   }
-  function TwitchHero({ onNavigate, onActiveChange, onBackdropChange }) {
-    const text = useTwitchText();
-    const heroEnabled = useTwitchHeroEnabled();
-    const { streams } = useTwitchTopStreams(heroEnabled);
-    const [playerStream, setPlayerStream] = useState(null);
-    const stream = heroEnabled ? streams[0] ?? null : null;
-    useEffect(() => {
-      onActiveChange(Boolean(stream));
-      onBackdropChange(stream ? thumb(stream.thumbnail_url, 1920, 1080) : null);
-      return () => {
-        onActiveChange(false);
-        onBackdropChange(null);
-      };
-    }, [stream, onActiveChange, onBackdropChange]);
-    if (!heroEnabled || !stream) return null;
-    return /* @__PURE__ */ jsxs("div", { className: "relative mb-4", style: { minHeight: 380 }, children: [
-      /* @__PURE__ */ jsxs("div", { className: "flex h-full min-h-[380px] flex-col justify-end p-6 sm:p-8 md:max-w-[60%]", children: [
-        /* @__PURE__ */ jsxs("div", { className: "mb-3 flex flex-wrap gap-1.5", children: [
-          /* @__PURE__ */ jsx("span", { className: "rounded-full border border-rose-400/30 bg-rose-600/85 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white", children: text("live") }),
-          /* @__PURE__ */ jsx(
-            "button",
-            {
-              type: "button",
-              onClick: () => onNavigate({ pageId: "twitch-live" }),
-              className: "rounded-full border border-white/15 bg-white/10 px-2.5 py-0.5 text-[10px] uppercase tracking-[0.18em] text-slate-300 transition hover:border-white/30 hover:bg-white/20 hover:text-white",
-              children: "Twitch"
-            }
-          )
-        ] }),
-        /* @__PURE__ */ jsx("h2", { className: "mb-1 text-3xl font-bold leading-tight text-white drop-shadow-lg sm:text-4xl", children: stream.user_name }),
-        /* @__PURE__ */ jsxs("div", { className: "mb-3 flex items-center gap-3 text-sm text-slate-300", children: [
-          stream.game_name ? /* @__PURE__ */ jsx("span", { children: stream.game_name }) : null,
-          Number.isFinite(stream.viewer_count) ? /* @__PURE__ */ jsx("span", { children: formatViewerCount(stream.viewer_count) }) : null
-        ] }),
-        /* @__PURE__ */ jsx("p", { className: "mb-4 line-clamp-2 text-sm leading-relaxed text-slate-300/80 sm:text-base", children: stream.title }),
-        /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
-          /* @__PURE__ */ jsxs(
-            "button",
-            {
-              type: "button",
-              onClick: () => setPlayerStream(stream),
-              className: "flex h-10 items-center rounded-full bg-accent-500 px-6 text-sm font-semibold text-white transition hover:bg-accent-400",
-              children: [
-                /* @__PURE__ */ jsx("svg", { className: "mr-1.5 h-4 w-4", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }),
-                text("watchNow")
-              ]
-            }
-          ),
-          /* @__PURE__ */ jsx(
-            "button",
-            {
-              type: "button",
-              onClick: () => onNavigate({ pageId: "twitch-live" }),
-              className: "h-10 rounded-full border border-white/20 bg-white/[0.06] px-6 text-sm font-semibold text-white transition hover:bg-white/10",
-              children: text("browseLive")
-            }
-          )
-        ] })
-      ] }),
-      playerStream ? /* @__PURE__ */ jsx(
-        TwitchPlayerModal,
-        {
-          kind: "live",
-          id: playerStream.user_login,
-          title: playerStream.title,
-          onClose: () => setPlayerStream(null)
-        }
-      ) : null
-    ] });
-  }
 
   // ../lumio-official-plugins/plugins/twitch/runtime/index.tsx
   init_jsx_runtime_shim();
@@ -168904,7 +168847,6 @@
         label: { en: "Twitch", sv: "Twitch" },
         Section: TwitchSettingsSection
       });
-      ctx.registerHero({ id: "twitch-hero", Hero: TwitchHero });
       ctx.registerHomeRow({
         id: "twitch-live-row",
         title: { en: "Twitch: Live now", sv: "Twitch: Live nu" },
@@ -168964,7 +168906,7 @@
   };
   var runtime_default = TwitchPlugin;
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LRWY2m/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LUozgL/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.0
+
+- All Twitch UI (browse pages, home rows, settings) now follows the app's language picker. Plugin bundles carry their own copy of the i18n module, so the host's language context never reached them and everything fell back to English; the host's `useLang` now detects that detached state and reads the persisted per-profile language directly, following picker changes live.
+- Removed the Twitch hero option (toggle + hero registration).
+
 ## 1.2.0
 
 - Two new home-row sources: "Twitch: Category" (top live streams in a category of your choice) and "Twitch: Channels" (your hand-picked channels, live now, in your configured order — with a quiet note when none are live). Which category/channels they show is set under Settings → Twitch; the rows follow config changes live and stay hidden until configured.
