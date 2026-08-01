@@ -46,7 +46,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LUozgL/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LOd9UW/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -95,7 +95,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LUozgL/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LOd9UW/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -143,7 +143,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LUozgL/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LOd9UW/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -153,7 +153,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LUozgL/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LOd9UW/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -165047,7 +165047,9 @@
       hpSliderCardsHint: "How many cards a slider shows at most, globally.",
       hpSliderCardsRowLabel: "Slider cards",
       hpSliderCardsGlobalOption: "Global ({count})",
+      tgSectionEyebrow: "Trailers page",
       tgColumnsLabel: "Columns",
+      tgColumnsHint: "How many columns the trailer grid shows.",
       hpAlwaysShown: "Always shown",
       hpTopMenuEyebrow: "Top menu",
       hpTopButtonsTitle: "Top buttons",
@@ -166152,7 +166154,9 @@
       hpSliderCardsHint: "Hur m\xE5nga kort en slider max visar globalt.",
       hpSliderCardsRowLabel: "Sliderkort",
       hpSliderCardsGlobalOption: "Global ({count})",
+      tgSectionEyebrow: "Trailersidan",
       tgColumnsLabel: "Kolumner",
+      tgColumnsHint: "Hur m\xE5nga kolumner trailer-griden visar.",
       hpAlwaysShown: "Visas alltid",
       hpTopMenuEyebrow: "\xD6vre meny",
       hpTopButtonsTitle: "Topp-knappar",
@@ -166351,7 +166355,7 @@
   var import_react55 = __toESM(require_dist89());
   init_jsx_runtime_shim();
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LUozgL/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LOd9UW/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
   function resolveAuthCapabilityStatus(providerId) {
     return sdk.resolveAuthCapabilityStatus(providerId);
@@ -168485,30 +168489,33 @@
     const hasResults = channels.length > 0 || categories.length > 0;
     return /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
       pageNav,
-      /* @__PURE__ */ jsxs("div", { children: [
-        /* @__PURE__ */ jsx("h2", { className: "text-2xl font-semibold text-white", children: text("searchTitle") }),
-        /* @__PURE__ */ jsx("p", { className: "mt-1 text-sm text-slate-400", children: text("searchSubtitle") })
+      /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center justify-between gap-4", children: [
+        /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsx("h2", { className: "text-2xl font-semibold text-white", children: text("searchTitle") }),
+          /* @__PURE__ */ jsx("p", { className: "mt-1 text-sm text-slate-400", children: text("searchSubtitle") })
+        ] }),
+        /* @__PURE__ */ jsx(
+          "form",
+          {
+            className: "w-full sm:w-auto sm:min-w-[22rem] sm:max-w-md sm:flex-1",
+            onSubmit: (event) => {
+              event.preventDefault();
+              setQuery(inputValue);
+            },
+            children: /* @__PURE__ */ jsx(
+              "input",
+              {
+                type: "search",
+                value: inputValue,
+                onChange: (event) => setInputValue(event.target.value),
+                placeholder: text("searchPlaceholder"),
+                className: "h-11 w-full rounded-full border border-white/[0.1] bg-white/[0.04] px-5 text-sm text-white placeholder:text-slate-500 outline-none transition-all focus:border-white/[0.2] focus:bg-white/[0.06]"
+              }
+            )
+          }
+        )
       ] }),
-      /* @__PURE__ */ jsx(
-        "form",
-        {
-          onSubmit: (event) => {
-            event.preventDefault();
-            setQuery(inputValue);
-          },
-          children: /* @__PURE__ */ jsx(
-            "input",
-            {
-              type: "search",
-              value: inputValue,
-              onChange: (event) => setInputValue(event.target.value),
-              placeholder: text("searchPlaceholder"),
-              className: "h-11 w-full rounded-full border border-white/[0.1] bg-white/[0.04] px-5 text-sm text-white placeholder:text-slate-500 outline-none transition-all focus:border-white/[0.2] focus:bg-white/[0.06] sm:max-w-md"
-            }
-          )
-        }
-      ),
-      !trimmedQuery ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("searchPrompt") }) : loading && !hasResults ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("searching") }) : error && !hasResults ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("searchError") }) : !hasResults ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("searchNoResults") }) : /* @__PURE__ */ jsxs("div", { className: "space-y-8", children: [
+      !trimmedQuery ? null : loading && !hasResults ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("searching") }) : error && !hasResults ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("searchError") }) : !hasResults ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("searchNoResults") }) : /* @__PURE__ */ jsxs("div", { className: "space-y-8", children: [
         channels.length > 0 ? /* @__PURE__ */ jsx(TwitchGridShell, { title: text("channelsHeading"), children: /* @__PURE__ */ jsx("div", { className: "grid gap-4 sm:grid-cols-2 xl:grid-cols-4", children: channels.map((stream) => /* @__PURE__ */ jsx(StreamCard, { stream, onPlay: openChannel }, stream.id)) }) }) : null,
         categories.length > 0 ? /* @__PURE__ */ jsx(TwitchGridShell, { title: text("categoriesHeading"), children: /* @__PURE__ */ jsx("div", { className: "grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6", children: categories.map((category) => /* @__PURE__ */ jsx(CategoryCard, { category, onSelect: setSelectedCategory }, category.id)) }) }) : null
       ] })
@@ -168906,7 +168913,7 @@
   };
   var runtime_default = TwitchPlugin;
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LUozgL/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LOd9UW/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

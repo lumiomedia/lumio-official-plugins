@@ -1554,29 +1554,29 @@ export function TwitchSearchPage({ pageId, onNavigate }: BrowsePageProps) {
   return (
     <div className="space-y-6">
       {pageNav}
-      <div>
-        <h2 className="text-2xl font-semibold text-white">{text('searchTitle')}</h2>
-        <p className="mt-1 text-sm text-slate-400">{text('searchSubtitle')}</p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-semibold text-white">{text('searchTitle')}</h2>
+          <p className="mt-1 text-sm text-slate-400">{text('searchSubtitle')}</p>
+        </div>
+        <form
+          className="w-full sm:w-auto sm:min-w-[22rem] sm:max-w-md sm:flex-1"
+          onSubmit={(event) => {
+            event.preventDefault()
+            setQuery(inputValue)
+          }}
+        >
+          <input
+            type="search"
+            value={inputValue}
+            onChange={(event) => setInputValue(event.target.value)}
+            placeholder={text('searchPlaceholder')}
+            className="h-11 w-full rounded-full border border-white/[0.1] bg-white/[0.04] px-5 text-sm text-white placeholder:text-slate-500 outline-none transition-all focus:border-white/[0.2] focus:bg-white/[0.06]"
+          />
+        </form>
       </div>
 
-      <form
-        onSubmit={(event) => {
-          event.preventDefault()
-          setQuery(inputValue)
-        }}
-      >
-        <input
-          type="search"
-          value={inputValue}
-          onChange={(event) => setInputValue(event.target.value)}
-          placeholder={text('searchPlaceholder')}
-          className="h-11 w-full rounded-full border border-white/[0.1] bg-white/[0.04] px-5 text-sm text-white placeholder:text-slate-500 outline-none transition-all focus:border-white/[0.2] focus:bg-white/[0.06] sm:max-w-md"
-        />
-      </form>
-
-      {!trimmedQuery ? (
-        <p className="text-sm text-slate-400">{text('searchPrompt')}</p>
-      ) : loading && !hasResults ? (
+      {!trimmedQuery ? null : loading && !hasResults ? (
         <p className="text-sm text-slate-400">{text('searching')}</p>
       ) : error && !hasResults ? (
         <p className="text-sm text-slate-400">{text('searchError')}</p>

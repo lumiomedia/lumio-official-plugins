@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.1
+
+- Search page: input now sits beside the heading (title left, search right) instead of below it, and the "Start typing to search Twitch." prompt is gone.
+
 ## 1.3.0
 
 - All Twitch UI (browse pages, home rows, settings) now follows the app's language picker. Plugin bundles carry their own copy of the i18n module, so the host's language context never reached them and everything fell back to English; the host's `useLang` now detects that detached state and reads the persisted per-profile language directly, following picker changes live.
