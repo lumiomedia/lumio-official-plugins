@@ -84,6 +84,43 @@ export function setTwitchHeroEnabled(enabled: boolean): void {
   emitChanged()
 }
 
+// ── Home-row source config ─────────────────────────────────────────────────
+// Which category / channels the "Twitch: Kategori" and "Twitch: Kanaler"
+// home rows show. Configured in Settings → Twitch; empty = row hidden.
+
+const HOME_CATEGORY_KEY = 'twitch_home_category_v1'
+const HOME_CHANNELS_KEY = 'twitch_home_channels_v1'
+
+export function getTwitchHomeCategory(): string {
+  if (typeof window === 'undefined') return ''
+  return (getScopedStorageItem(HOME_CATEGORY_KEY) ?? '').trim()
+}
+
+export function setTwitchHomeCategory(value: string): void {
+  setScopedStorageItem(HOME_CATEGORY_KEY, value.trim())
+  emitChanged()
+}
+
+export function getTwitchHomeChannels(): string {
+  if (typeof window === 'undefined') return ''
+  return (getScopedStorageItem(HOME_CHANNELS_KEY) ?? '').trim()
+}
+
+export function setTwitchHomeChannels(value: string): void {
+  setScopedStorageItem(HOME_CHANNELS_KEY, value.trim())
+  emitChanged()
+}
+
+/** "shroud, pokimane cohhcarnage" → ['shroud', 'pokimane', 'cohhcarnage'] */
+export function parseTwitchHomeChannels(raw: string = getTwitchHomeChannels()): string[] {
+  return [...new Set(
+    raw
+      .split(/[,\s]+/)
+      .map((entry) => entry.trim().toLowerCase().replace(/^@/, ''))
+      .filter(Boolean),
+  )]
+}
+
 export function onTwitchPluginChanged(listener: () => void): () => void {
   if (typeof window === 'undefined') return () => {}
   window.addEventListener(EVENT, listener)

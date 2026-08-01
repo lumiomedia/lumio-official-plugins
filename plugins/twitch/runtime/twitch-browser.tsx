@@ -12,6 +12,7 @@ import {
   getTopStreams,
   getTopCategories,
   getStreamsByGame,
+  getStreamsByLogins,
   getFollowedStreams,
   getFollowedChannels,
   getUsersByIds,
@@ -23,7 +24,14 @@ import {
 } from './twitch-client'
 import { TwitchPlayerModal } from './twitch-player'
 import { ensureFreshTwitchSession, openTwitchUrl } from './twitch-auth'
-import { getTwitchHeroEnabled, getTwitchSession, isTwitchSessionValid, onTwitchPluginChanged } from './twitch-storage'
+import {
+  getTwitchHeroEnabled,
+  getTwitchHomeCategory,
+  getTwitchSession,
+  isTwitchSessionValid,
+  onTwitchPluginChanged,
+  parseTwitchHomeChannels,
+} from './twitch-storage'
 import type { TwitchStream, TwitchCategory, TwitchVideo, TwitchClip, EnrichedFollowedChannel } from './twitch-types'
 
 type StreamLanguage = '' | 'sv' | 'en'
@@ -56,6 +64,13 @@ const TEXT = {
     sv: 'Inga live-kanaler i denna kategori just nu.',
   },
   back: { en: 'Back to categories', sv: 'Tillbaka till kategorier' },
+  categoryRowSubtitle: { en: 'Top live channels in the category.', sv: 'Toppkanaler som är live i kategorin.' },
+  channelsRowTitle: { en: 'Twitch: Channels', sv: 'Twitch: Kanaler' },
+  channelsRowSubtitle: { en: 'Your picked channels, live now.', sv: 'Dina valda kanaler som är live nu.' },
+  channelsRowEmpty: {
+    en: 'None of your picked channels are live right now.',
+    sv: 'Ingen av dina valda kanaler är live just nu.',
+  },
   loadMore: { en: 'Load more', sv: 'Ladda fler' },
   searchTitle: { en: 'Twitch: Search', sv: 'Twitch: Sök' },
   searchSubtitle: { en: 'Find channels and categories on Twitch.', sv: 'Hitta kanaler och kategorier på Twitch.' },
@@ -1729,6 +1744,182 @@ export function TwitchFollowingRow({
             />
           ))}
         </div>
+      </TwitchHomeRowShell>
+      {playerStream ? (
+        <TwitchPlayerModal
+          kind="live"
+          id={playerStream.user_login}
+          title={playerStream.title}
+          onClose={() => setPlayerStream(null)}
+        />
+      ) : null}
+    </div>
+  )
+}
+
+// Reads a plugin-storage pref reactively: re-evaluates whenever the plugin's
+// change event fires (settings edits), so home rows follow the config live.
+function useTwitchHomeRowPref<T>(read: () => T): T {
+  const [value, setValue] = useState<T>(read)
+  useEffect(() => {
+    const sync = () => setValue(read())
+    sync()
+    return onTwitchPluginChanged(sync)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  return value
+}
+
+export function TwitchCategoryRow({
+  onNavigate,
+  layout = 'slider',
+  count = 16,
+  sliderCardWidth = 'calc((100% - 3 * 0.75rem) / 4)',
+}: HomeRowProps) {
+  const text = useTwitchText()
+  const categoryName = useTwitchHomeRowPref(getTwitchHomeCategory)
+  const { active, setNode } = useDeferredActivation()
+  const [resolved, setResolved] = useState<TwitchCategory | null>(null)
+  const [streams, setStreams] = useState<TwitchStream[]>([])
+  const [failed, setFailed] = useState(false)
+  const [playerStream, setPlayerStream] = useState<TwitchStream | null>(null)
+
+  useEffect(() => {
+    if (!active || !categoryName) return
+    let cancelled = false
+    setFailed(false)
+    void (async () => {
+      try {
+        const matches = await searchCategories(categoryName)
+        const category =
+          matches.find((c) => c.name.toLowerCase() === categoryName.toLowerCase()) ?? matches[0] ?? null
+        if (cancelled) return
+        setResolved(category)
+        if (!category) { setFailed(true); return }
+        const result = await getStreamsByGame(category.id)
+        if (!cancelled) setStreams(result.streams)
+      } catch {
+        if (!cancelled) setFailed(true)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [active, categoryName])
+
+  // No category configured (Settings → Twitch) or lookup failed → no row.
+  if (!categoryName || failed) return null
+
+  return (
+    <div ref={setNode}>
+      <TwitchHomeRowShell
+        title={`Twitch: ${resolved?.name ?? categoryName}`}
+        subtitle={text('categoryRowSubtitle')}
+        onOpenAll={() => onNavigate({ pageId: 'twitch-categories' })}
+      >
+        <div
+          className={layout === 'slider' ? 'flex gap-3 overflow-x-auto pb-3' : 'grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4'}
+          style={layout === 'slider' ? { scrollbarWidth: 'none', msOverflowStyle: 'none' } : undefined}
+        >
+          {active && streams.length > 0 ? streams.slice(0, count).map((stream) => (
+            <div
+              key={stream.id}
+              className={layout === 'slider' ? 'flex-none' : 'w-full'}
+              style={layout === 'slider' ? { width: sliderCardWidth } : undefined}
+            >
+              <StreamCard stream={stream} onPlay={setPlayerStream} />
+            </div>
+          )) : Array.from({ length: 4 }).map((_, index) => (
+            <div
+              key={index}
+              className={`animate-pulse rounded-[1.5rem] bg-slate-800/50 ${layout === 'slider' ? 'aspect-video flex-none' : 'aspect-video'}`}
+              style={layout === 'slider' ? { width: sliderCardWidth } : undefined}
+            />
+          ))}
+        </div>
+      </TwitchHomeRowShell>
+      {playerStream ? (
+        <TwitchPlayerModal
+          kind="live"
+          id={playerStream.user_login}
+          title={playerStream.title}
+          onClose={() => setPlayerStream(null)}
+        />
+      ) : null}
+    </div>
+  )
+}
+
+export function TwitchChannelsRow({
+  onNavigate,
+  layout = 'slider',
+  count = 16,
+  sliderCardWidth = 'calc((100% - 3 * 0.75rem) / 4)',
+}: HomeRowProps) {
+  const text = useTwitchText()
+  const channels = useTwitchHomeRowPref(() => parseTwitchHomeChannels())
+  const channelsKey = channels.join(',')
+  const { active, setNode } = useDeferredActivation()
+  const [streams, setStreams] = useState<TwitchStream[]>([])
+  const [loaded, setLoaded] = useState(false)
+  const [failed, setFailed] = useState(false)
+  const [playerStream, setPlayerStream] = useState<TwitchStream | null>(null)
+
+  useEffect(() => {
+    if (!active || channels.length === 0) return
+    let cancelled = false
+    setFailed(false)
+    setLoaded(false)
+    void (async () => {
+      try {
+        // Helix /streams only returns channels that are live right now.
+        const live = await getStreamsByLogins(channels)
+        if (cancelled) return
+        // Preserve the user's configured order rather than Helix's.
+        const order = new Map(channels.map((login, index) => [login, index]))
+        live.sort((a, b) => (order.get(a.user_login.toLowerCase()) ?? 99) - (order.get(b.user_login.toLowerCase()) ?? 99))
+        setStreams(live)
+        setLoaded(true)
+      } catch {
+        if (!cancelled) setFailed(true)
+      }
+    })()
+    return () => { cancelled = true }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, channelsKey])
+
+  // No channels configured (Settings → Twitch) or lookup failed → no row.
+  if (channels.length === 0 || failed) return null
+
+  return (
+    <div ref={setNode}>
+      <TwitchHomeRowShell
+        title={text('channelsRowTitle')}
+        subtitle={text('channelsRowSubtitle')}
+        onOpenAll={() => onNavigate({ pageId: 'twitch-search' })}
+      >
+        {loaded && streams.length === 0 ? (
+          <p className="pb-3 text-sm text-slate-400">{text('channelsRowEmpty')}</p>
+        ) : (
+          <div
+            className={layout === 'slider' ? 'flex gap-3 overflow-x-auto pb-3' : 'grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4'}
+            style={layout === 'slider' ? { scrollbarWidth: 'none', msOverflowStyle: 'none' } : undefined}
+          >
+            {active && streams.length > 0 ? streams.slice(0, count).map((stream) => (
+              <div
+                key={stream.id}
+                className={layout === 'slider' ? 'flex-none' : 'w-full'}
+                style={layout === 'slider' ? { width: sliderCardWidth } : undefined}
+              >
+                <StreamCard stream={stream} onPlay={setPlayerStream} />
+              </div>
+            )) : Array.from({ length: 4 }).map((_, index) => (
+              <div
+                key={index}
+                className={`animate-pulse rounded-[1.5rem] bg-slate-800/50 ${layout === 'slider' ? 'aspect-video flex-none' : 'aspect-video'}`}
+                style={layout === 'slider' ? { width: sliderCardWidth } : undefined}
+              />
+            ))}
+          </div>
+        )}
       </TwitchHomeRowShell>
       {playerStream ? (
         <TwitchPlayerModal

@@ -46,7 +46,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-HuOZNH/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LRWY2m/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -95,7 +95,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-HuOZNH/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LRWY2m/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -143,7 +143,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-HuOZNH/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LRWY2m/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -153,7 +153,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-HuOZNH/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LRWY2m/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -166300,7 +166300,7 @@
   var import_react55 = __toESM(require_dist89());
   init_jsx_runtime_shim();
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-HuOZNH/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LRWY2m/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
   function resolveAuthCapabilityStatus(providerId) {
     return sdk.resolveAuthCapabilityStatus(providerId);
@@ -166796,6 +166796,12 @@
     const { data } = await helixGet(`/api/plugins/twitch/helix/users?${qs}`);
     return data;
   }
+  async function getStreamsByLogins(logins) {
+    if (logins.length === 0) return [];
+    const qs = logins.slice(0, 100).map((login) => `user_login=${encodeURIComponent(login)}`).join("&");
+    const { data } = await helixGet(`/api/plugins/twitch/helix/streams?${qs}`);
+    return data;
+  }
   async function getChannelVideos(userId) {
     const { data } = await helixGet(helixUrl("videos", { user_id: userId, first: 20, type: "archive" }));
     return data;
@@ -166857,6 +166863,29 @@
   function setTwitchHeroEnabled(enabled) {
     setScopedStorageItem(HERO_ENABLED_KEY, enabled ? "1" : "");
     emitChanged();
+  }
+  var HOME_CATEGORY_KEY = "twitch_home_category_v1";
+  var HOME_CHANNELS_KEY = "twitch_home_channels_v1";
+  function getTwitchHomeCategory() {
+    if (typeof window === "undefined") return "";
+    return (getScopedStorageItem(HOME_CATEGORY_KEY) ?? "").trim();
+  }
+  function setTwitchHomeCategory(value) {
+    setScopedStorageItem(HOME_CATEGORY_KEY, value.trim());
+    emitChanged();
+  }
+  function getTwitchHomeChannels() {
+    if (typeof window === "undefined") return "";
+    return (getScopedStorageItem(HOME_CHANNELS_KEY) ?? "").trim();
+  }
+  function setTwitchHomeChannels(value) {
+    setScopedStorageItem(HOME_CHANNELS_KEY, value.trim());
+    emitChanged();
+  }
+  function parseTwitchHomeChannels(raw = getTwitchHomeChannels()) {
+    return [...new Set(
+      raw.split(/[,\s]+/).map((entry) => entry.trim().toLowerCase().replace(/^@/, "")).filter(Boolean)
+    )];
   }
   function onTwitchPluginChanged(listener) {
     if (typeof window === "undefined") return () => {
@@ -167089,8 +167118,18 @@
     },
     openVerificationUrl: { en: "Open twitch.tv/activate", sv: "\xD6ppna twitch.tv/activate" },
     waitingForApproval: { en: "Waiting for approval on twitch.tv\u2026", sv: "V\xE4ntar p\xE5 godk\xE4nnande p\xE5 twitch.tv\u2026" },
-    heroToggle: { en: "Show Twitch hero on home", sv: "Visa Twitch-hero p\xE5 startsidan" }
+    heroToggle: { en: "Show Twitch hero on home", sv: "Visa Twitch-hero p\xE5 startsidan" },
+    homeRows: { en: "Home rows", sv: "Hemmarader" },
+    homeRowsNote: {
+      en: 'Used by the "Twitch: Category" and "Twitch: Channels" home rows (Settings \u2192 Home \u2192 row source).',
+      sv: 'Anv\xE4nds av hemmaraderna "Twitch: Kategori" och "Twitch: Kanaler" (Inst\xE4llningar \u2192 Hem \u2192 radk\xE4lla).'
+    },
+    homeCategoryLabel: { en: "Category row: category", sv: "Kategorirad: kategori" },
+    homeCategoryPlaceholder: { en: "e.g. Counter-Strike", sv: "t.ex. Counter-Strike" },
+    homeChannelsLabel: { en: "Channels row: channels (comma-separated)", sv: "Kanalrad: kanaler (kommaseparerade)" },
+    homeChannelsPlaceholder: { en: "e.g. shroud, cohhcarnage", sv: "t.ex. shroud, cohhcarnage" }
   };
+  var settingsTextInputClass = "w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-sm text-white placeholder-slate-500 outline-none transition focus:border-white/25";
   function TwitchSettingsSection() {
     const { lang } = useLang();
     const [sessionLabel, setSessionLabel] = useState("");
@@ -167100,13 +167139,16 @@
     const [userCode, setUserCode] = useState("");
     const [verificationUri, setVerificationUri] = useState("");
     const [heroEnabled, setHeroEnabled] = useState(false);
+    const [homeCategory, setHomeCategory] = useState("");
+    const [homeChannels, setHomeChannels] = useState("");
     function text(key) {
       return TEXT[key][lang] ?? TEXT[key].en;
     }
     useEffect(() => {
-      const sync2 = () => setHeroEnabled(getTwitchHeroEnabled());
-      sync2();
-      return onTwitchPluginChanged(sync2);
+      setHeroEnabled(getTwitchHeroEnabled());
+      setHomeCategory(getTwitchHomeCategory());
+      setHomeChannels(getTwitchHomeChannels());
+      return onTwitchPluginChanged(() => setHeroEnabled(getTwitchHeroEnabled()));
     }, []);
     useEffect(() => {
       const sync2 = () => {
@@ -167189,6 +167231,42 @@
         ),
         text("heroToggle")
       ] }) }),
+      /* @__PURE__ */ jsxs("div", { className: "rounded-2xl border border-white/10 bg-white/[0.03] p-4", children: [
+        /* @__PURE__ */ jsx("p", { className: "text-xs uppercase tracking-[0.2em] text-slate-400", children: text("homeRows") }),
+        /* @__PURE__ */ jsx("p", { className: "mt-2 text-xs text-slate-500", children: text("homeRowsNote") }),
+        /* @__PURE__ */ jsxs("label", { className: "mt-4 block text-xs text-slate-400", children: [
+          text("homeCategoryLabel"),
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              type: "text",
+              value: homeCategory,
+              placeholder: text("homeCategoryPlaceholder"),
+              onChange: (event) => {
+                setHomeCategory(event.target.value);
+                setTwitchHomeCategory(event.target.value);
+              },
+              className: `${settingsTextInputClass} mt-1.5`
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs("label", { className: "mt-4 block text-xs text-slate-400", children: [
+          text("homeChannelsLabel"),
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              type: "text",
+              value: homeChannels,
+              placeholder: text("homeChannelsPlaceholder"),
+              onChange: (event) => {
+                setHomeChannels(event.target.value);
+                setTwitchHomeChannels(event.target.value);
+              },
+              className: `${settingsTextInputClass} mt-1.5`
+            }
+          )
+        ] })
+      ] }),
       busy === "connecting" && userCode ? /* @__PURE__ */ jsxs("div", { className: "rounded-2xl border border-white/10 bg-slate-950/50 p-4", children: [
         /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-400", children: text("deviceCodeIntro") }),
         /* @__PURE__ */ jsx("p", { className: "mt-2 text-2xl font-semibold tracking-[0.3em] text-white", children: userCode }),
@@ -167307,6 +167385,13 @@
       sv: "Inga live-kanaler i denna kategori just nu."
     },
     back: { en: "Back to categories", sv: "Tillbaka till kategorier" },
+    categoryRowSubtitle: { en: "Top live channels in the category.", sv: "Toppkanaler som \xE4r live i kategorin." },
+    channelsRowTitle: { en: "Twitch: Channels", sv: "Twitch: Kanaler" },
+    channelsRowSubtitle: { en: "Your picked channels, live now.", sv: "Dina valda kanaler som \xE4r live nu." },
+    channelsRowEmpty: {
+      en: "None of your picked channels are live right now.",
+      sv: "Ingen av dina valda kanaler \xE4r live just nu."
+    },
     loadMore: { en: "Load more", sv: "Ladda fler" },
     searchTitle: { en: "Twitch: Search", sv: "Twitch: S\xF6k" },
     searchSubtitle: { en: "Find channels and categories on Twitch.", sv: "Hitta kanaler och kategorier p\xE5 Twitch." },
@@ -168560,6 +168645,175 @@
       ) : null
     ] });
   }
+  function useTwitchHomeRowPref(read) {
+    const [value, setValue] = useState(read);
+    useEffect(() => {
+      const sync2 = () => setValue(read());
+      sync2();
+      return onTwitchPluginChanged(sync2);
+    }, []);
+    return value;
+  }
+  function TwitchCategoryRow({
+    onNavigate,
+    layout: layout2 = "slider",
+    count = 16,
+    sliderCardWidth = "calc((100% - 3 * 0.75rem) / 4)"
+  }) {
+    const text = useTwitchText();
+    const categoryName = useTwitchHomeRowPref(getTwitchHomeCategory);
+    const { active, setNode } = useDeferredActivation();
+    const [resolved, setResolved] = useState(null);
+    const [streams, setStreams] = useState([]);
+    const [failed, setFailed] = useState(false);
+    const [playerStream, setPlayerStream] = useState(null);
+    useEffect(() => {
+      if (!active || !categoryName) return;
+      let cancelled = false;
+      setFailed(false);
+      void (async () => {
+        try {
+          const matches = await searchCategories(categoryName);
+          const category = matches.find((c) => c.name.toLowerCase() === categoryName.toLowerCase()) ?? matches[0] ?? null;
+          if (cancelled) return;
+          setResolved(category);
+          if (!category) {
+            setFailed(true);
+            return;
+          }
+          const result = await getStreamsByGame(category.id);
+          if (!cancelled) setStreams(result.streams);
+        } catch {
+          if (!cancelled) setFailed(true);
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }, [active, categoryName]);
+    if (!categoryName || failed) return null;
+    return /* @__PURE__ */ jsxs("div", { ref: setNode, children: [
+      /* @__PURE__ */ jsx(
+        TwitchHomeRowShell,
+        {
+          title: `Twitch: ${resolved?.name ?? categoryName}`,
+          subtitle: text("categoryRowSubtitle"),
+          onOpenAll: () => onNavigate({ pageId: "twitch-categories" }),
+          children: /* @__PURE__ */ jsx(
+            "div",
+            {
+              className: layout2 === "slider" ? "flex gap-3 overflow-x-auto pb-3" : "grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4",
+              style: layout2 === "slider" ? { scrollbarWidth: "none", msOverflowStyle: "none" } : void 0,
+              children: active && streams.length > 0 ? streams.slice(0, count).map((stream) => /* @__PURE__ */ jsx(
+                "div",
+                {
+                  className: layout2 === "slider" ? "flex-none" : "w-full",
+                  style: layout2 === "slider" ? { width: sliderCardWidth } : void 0,
+                  children: /* @__PURE__ */ jsx(StreamCard, { stream, onPlay: setPlayerStream })
+                },
+                stream.id
+              )) : Array.from({ length: 4 }).map((_, index3) => /* @__PURE__ */ jsx(
+                "div",
+                {
+                  className: `animate-pulse rounded-[1.5rem] bg-slate-800/50 ${layout2 === "slider" ? "aspect-video flex-none" : "aspect-video"}`,
+                  style: layout2 === "slider" ? { width: sliderCardWidth } : void 0
+                },
+                index3
+              ))
+            }
+          )
+        }
+      ),
+      playerStream ? /* @__PURE__ */ jsx(
+        TwitchPlayerModal,
+        {
+          kind: "live",
+          id: playerStream.user_login,
+          title: playerStream.title,
+          onClose: () => setPlayerStream(null)
+        }
+      ) : null
+    ] });
+  }
+  function TwitchChannelsRow({
+    onNavigate,
+    layout: layout2 = "slider",
+    count = 16,
+    sliderCardWidth = "calc((100% - 3 * 0.75rem) / 4)"
+  }) {
+    const text = useTwitchText();
+    const channels = useTwitchHomeRowPref(() => parseTwitchHomeChannels());
+    const channelsKey = channels.join(",");
+    const { active, setNode } = useDeferredActivation();
+    const [streams, setStreams] = useState([]);
+    const [loaded, setLoaded] = useState(false);
+    const [failed, setFailed] = useState(false);
+    const [playerStream, setPlayerStream] = useState(null);
+    useEffect(() => {
+      if (!active || channels.length === 0) return;
+      let cancelled = false;
+      setFailed(false);
+      setLoaded(false);
+      void (async () => {
+        try {
+          const live = await getStreamsByLogins(channels);
+          if (cancelled) return;
+          const order = new Map(channels.map((login, index3) => [login, index3]));
+          live.sort((a, b) => (order.get(a.user_login.toLowerCase()) ?? 99) - (order.get(b.user_login.toLowerCase()) ?? 99));
+          setStreams(live);
+          setLoaded(true);
+        } catch {
+          if (!cancelled) setFailed(true);
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }, [active, channelsKey]);
+    if (channels.length === 0 || failed) return null;
+    return /* @__PURE__ */ jsxs("div", { ref: setNode, children: [
+      /* @__PURE__ */ jsx(
+        TwitchHomeRowShell,
+        {
+          title: text("channelsRowTitle"),
+          subtitle: text("channelsRowSubtitle"),
+          onOpenAll: () => onNavigate({ pageId: "twitch-search" }),
+          children: loaded && streams.length === 0 ? /* @__PURE__ */ jsx("p", { className: "pb-3 text-sm text-slate-400", children: text("channelsRowEmpty") }) : /* @__PURE__ */ jsx(
+            "div",
+            {
+              className: layout2 === "slider" ? "flex gap-3 overflow-x-auto pb-3" : "grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4",
+              style: layout2 === "slider" ? { scrollbarWidth: "none", msOverflowStyle: "none" } : void 0,
+              children: active && streams.length > 0 ? streams.slice(0, count).map((stream) => /* @__PURE__ */ jsx(
+                "div",
+                {
+                  className: layout2 === "slider" ? "flex-none" : "w-full",
+                  style: layout2 === "slider" ? { width: sliderCardWidth } : void 0,
+                  children: /* @__PURE__ */ jsx(StreamCard, { stream, onPlay: setPlayerStream })
+                },
+                stream.id
+              )) : Array.from({ length: 4 }).map((_, index3) => /* @__PURE__ */ jsx(
+                "div",
+                {
+                  className: `animate-pulse rounded-[1.5rem] bg-slate-800/50 ${layout2 === "slider" ? "aspect-video flex-none" : "aspect-video"}`,
+                  style: layout2 === "slider" ? { width: sliderCardWidth } : void 0
+                },
+                index3
+              ))
+            }
+          )
+        }
+      ),
+      playerStream ? /* @__PURE__ */ jsx(
+        TwitchPlayerModal,
+        {
+          kind: "live",
+          id: playerStream.user_login,
+          title: playerStream.title,
+          onClose: () => setPlayerStream(null)
+        }
+      ) : null
+    ] });
+  }
   function TwitchHero({ onNavigate, onActiveChange, onBackdropChange }) {
     const text = useTwitchText();
     const heroEnabled = useTwitchHeroEnabled();
@@ -168677,6 +168931,28 @@
         rowId: "twitch-following-row"
       });
       ctx.registerBrowsePage({ id: "twitch-following", label: { en: "Following", sv: "F\xF6ljer" }, Page: TwitchFollowingPage });
+      ctx.registerHomeRow({
+        id: "twitch-category-row",
+        title: { en: "Twitch: Category", sv: "Twitch: Kategori" },
+        showOnHome: false,
+        Row: (props) => /* @__PURE__ */ jsx(TwitchCategoryRow, { ...props })
+      });
+      ctx.registerHomeSource({
+        id: "twitch-category",
+        label: { en: "Twitch: Category", sv: "Twitch: Kategori" },
+        rowId: "twitch-category-row"
+      });
+      ctx.registerHomeRow({
+        id: "twitch-channels-row",
+        title: { en: "Twitch: Channels", sv: "Twitch: Kanaler" },
+        showOnHome: false,
+        Row: (props) => /* @__PURE__ */ jsx(TwitchChannelsRow, { ...props })
+      });
+      ctx.registerHomeSource({
+        id: "twitch-channels",
+        label: { en: "Twitch: Channels", sv: "Twitch: Kanaler" },
+        rowId: "twitch-channels-row"
+      });
       const twitchEntry = {
         id: "twitch",
         label: { en: "Twitch", sv: "Twitch" },
@@ -168688,7 +168964,7 @@
   };
   var runtime_default = TwitchPlugin;
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-HuOZNH/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LRWY2m/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

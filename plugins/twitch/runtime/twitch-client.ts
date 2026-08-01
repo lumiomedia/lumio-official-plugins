@@ -99,6 +99,15 @@ export async function getUsersByIds(ids: string[]): Promise<TwitchUser[]> {
   const { data } = await helixGet<TwitchUser>(`/api/plugins/twitch/helix/users?${qs}`)
   return data
 }
+export async function getStreamsByLogins(logins: string[]): Promise<TwitchStream[]> {
+  if (logins.length === 0) return []
+  // `GET /streams` takes repeated `user_login` params (max 100), which the
+  // record-based `helixUrl` can't express — build the query string directly.
+  // Only currently-live channels come back.
+  const qs = logins.slice(0, 100).map((login) => `user_login=${encodeURIComponent(login)}`).join('&')
+  const { data } = await helixGet<TwitchStream>(`/api/plugins/twitch/helix/streams?${qs}`)
+  return data
+}
 export async function getChannelVideos(userId: string) {
   const { data } = await helixGet<TwitchVideo>(helixUrl('videos', { user_id: userId, first: 20, type: 'archive' }))
   return data

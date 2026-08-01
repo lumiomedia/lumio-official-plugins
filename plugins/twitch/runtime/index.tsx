@@ -10,6 +10,8 @@ import {
   TwitchHero,
   TwitchLiveRow,
   TwitchFollowingRow,
+  TwitchCategoryRow,
+  TwitchChannelsRow,
 } from './twitch-browser'
 
 export const TwitchPlugin: LumioPlugin = {
@@ -60,6 +62,31 @@ export const TwitchPlugin: LumioPlugin = {
       rowId: 'twitch-following-row',
     })
     ctx.registerBrowsePage({ id: 'twitch-following', label: { en: 'Following', sv: 'Följer' }, Page: TwitchFollowingPage })
+
+    // Configurable rows: which category / channels they show is set under
+    // Settings → Twitch (getTwitchHomeCategory / getTwitchHomeChannels).
+    ctx.registerHomeRow({
+      id: 'twitch-category-row',
+      title: { en: 'Twitch: Category', sv: 'Twitch: Kategori' },
+      showOnHome: false,
+      Row: (props) => <TwitchCategoryRow {...props} />,
+    })
+    ctx.registerHomeSource({
+      id: 'twitch-category',
+      label: { en: 'Twitch: Category', sv: 'Twitch: Kategori' },
+      rowId: 'twitch-category-row',
+    })
+    ctx.registerHomeRow({
+      id: 'twitch-channels-row',
+      title: { en: 'Twitch: Channels', sv: 'Twitch: Kanaler' },
+      showOnHome: false,
+      Row: (props) => <TwitchChannelsRow {...props} />,
+    })
+    ctx.registerHomeSource({
+      id: 'twitch-channels',
+      label: { en: 'Twitch: Channels', sv: 'Twitch: Kanaler' },
+      rowId: 'twitch-channels-row',
+    })
 
     const twitchEntry = {
       id: 'twitch',

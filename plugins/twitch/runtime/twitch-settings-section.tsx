@@ -8,7 +8,15 @@ import {
   useLang,
 } from '@/lib/plugin-sdk'
 import { connectTwitch, disconnectTwitch, openTwitchVerificationUrl } from './twitch-auth'
-import { getTwitchHeroEnabled, onTwitchPluginChanged, setTwitchHeroEnabled } from './twitch-storage'
+import {
+  getTwitchHeroEnabled,
+  getTwitchHomeCategory,
+  getTwitchHomeChannels,
+  onTwitchPluginChanged,
+  setTwitchHeroEnabled,
+  setTwitchHomeCategory,
+  setTwitchHomeChannels,
+} from './twitch-storage'
 
 const settingsActionButtonClass =
   'rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-slate-300 transition hover:border-white/20 hover:text-white disabled:opacity-40'
@@ -37,7 +45,19 @@ const TEXT = {
   openVerificationUrl: { en: 'Open twitch.tv/activate', sv: 'Öppna twitch.tv/activate' },
   waitingForApproval: { en: 'Waiting for approval on twitch.tv…', sv: 'Väntar på godkännande på twitch.tv…' },
   heroToggle: { en: 'Show Twitch hero on home', sv: 'Visa Twitch-hero på startsidan' },
+  homeRows: { en: 'Home rows', sv: 'Hemmarader' },
+  homeRowsNote: {
+    en: 'Used by the "Twitch: Category" and "Twitch: Channels" home rows (Settings → Home → row source).',
+    sv: 'Används av hemmaraderna "Twitch: Kategori" och "Twitch: Kanaler" (Inställningar → Hem → radkälla).',
+  },
+  homeCategoryLabel: { en: 'Category row: category', sv: 'Kategorirad: kategori' },
+  homeCategoryPlaceholder: { en: 'e.g. Counter-Strike', sv: 't.ex. Counter-Strike' },
+  homeChannelsLabel: { en: 'Channels row: channels (comma-separated)', sv: 'Kanalrad: kanaler (kommaseparerade)' },
+  homeChannelsPlaceholder: { en: 'e.g. shroud, cohhcarnage', sv: 't.ex. shroud, cohhcarnage' },
 } as const
+
+const settingsTextInputClass =
+  'w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-sm text-white placeholder-slate-500 outline-none transition focus:border-white/25'
 
 export function TwitchSettingsSection() {
   const { lang } = useLang()
@@ -48,15 +68,21 @@ export function TwitchSettingsSection() {
   const [userCode, setUserCode] = useState('')
   const [verificationUri, setVerificationUri] = useState('')
   const [heroEnabled, setHeroEnabled] = useState(false)
+  const [homeCategory, setHomeCategory] = useState('')
+  const [homeChannels, setHomeChannels] = useState('')
 
   function text(key: keyof typeof TEXT): string {
     return TEXT[key][lang] ?? TEXT[key].en
   }
 
   useEffect(() => {
-    const sync = () => setHeroEnabled(getTwitchHeroEnabled())
-    sync()
-    return onTwitchPluginChanged(sync)
+    setHeroEnabled(getTwitchHeroEnabled())
+    setHomeCategory(getTwitchHomeCategory())
+    setHomeChannels(getTwitchHomeChannels())
+    // Only the hero toggle re-syncs from change events: the two text fields
+    // are edited here and re-reading them on every keystroke's own change
+    // event would fight the user's typing.
+    return onTwitchPluginChanged(() => setHeroEnabled(getTwitchHeroEnabled()))
   }, [])
 
   useEffect(() => {
@@ -147,6 +173,37 @@ export function TwitchSettingsSection() {
             className="h-4 w-4 accent-amber-400"
           />
           {text('heroToggle')}
+        </label>
+      </div>
+
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{text('homeRows')}</p>
+        <p className="mt-2 text-xs text-slate-500">{text('homeRowsNote')}</p>
+        <label className="mt-4 block text-xs text-slate-400">
+          {text('homeCategoryLabel')}
+          <input
+            type="text"
+            value={homeCategory}
+            placeholder={text('homeCategoryPlaceholder')}
+            onChange={(event) => {
+              setHomeCategory(event.target.value)
+              setTwitchHomeCategory(event.target.value)
+            }}
+            className={`${settingsTextInputClass} mt-1.5`}
+          />
+        </label>
+        <label className="mt-4 block text-xs text-slate-400">
+          {text('homeChannelsLabel')}
+          <input
+            type="text"
+            value={homeChannels}
+            placeholder={text('homeChannelsPlaceholder')}
+            onChange={(event) => {
+              setHomeChannels(event.target.value)
+              setTwitchHomeChannels(event.target.value)
+            }}
+            className={`${settingsTextInputClass} mt-1.5`}
+          />
         </label>
       </div>
 

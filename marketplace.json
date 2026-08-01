@@ -121,7 +121,7 @@
         "en": "Twitch",
         "sv": "Twitch"
       },
-      "version": "1.1.0",
+      "version": "1.2.0",
       "description": {
         "en": "Browse live channels, categories, followed streams, VODs and clips from Twitch.",
         "sv": "Bläddra bland live-kanaler, kategorier, följda streams, VOD:er och klipp från Twitch."
