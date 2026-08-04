@@ -1,5 +1,6 @@
 'use client'
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 
 export type TwitchEmbedKind = 'live' | 'vod' | 'clip'
 
@@ -31,7 +32,10 @@ export function TwitchPlayerModal({
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  return (
+  // Portal to <body>: the plugin surface can sit inside transformed/filtered
+  // ancestors, which turn `fixed` into container-relative positioning and
+  // leave a gap at the top of the window.
+  return createPortal(
     <div className="fixed inset-0 z-[300] flex flex-col bg-black">
       <div className="flex items-center justify-between px-4 py-2 text-white">
         <span className="truncate text-sm">{title}</span>
@@ -51,6 +55,7 @@ export function TwitchPlayerModal({
         allow="autoplay; fullscreen"
         allowFullScreen
       />
-    </div>
+    </div>,
+    document.body,
   )
 }
