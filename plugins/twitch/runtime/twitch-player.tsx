@@ -32,9 +32,7 @@ export function TwitchPlayerModal({
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  // Portal to <body>: the plugin surface can sit inside transformed/filtered
-  // ancestors, which turn `fixed` into container-relative positioning and
-  // leave a gap at the top of the window.
+  // Portal to body: transformed ancestors would make fixed positioning container-relative.
   return createPortal(
     <div className="fixed inset-0 z-[300] flex flex-col bg-black">
       <div className="flex items-center justify-between px-4 py-2 text-white">
