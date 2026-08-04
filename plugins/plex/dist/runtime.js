@@ -46,7 +46,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-T7aBcM/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-3gus0W/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -95,7 +95,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-T7aBcM/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-3gus0W/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -143,7 +143,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-T7aBcM/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-3gus0W/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -153,7 +153,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-T7aBcM/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-3gus0W/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -314,6 +314,241 @@
         }
       };
       _Resource_rid = /* @__PURE__ */ new WeakMap();
+    }
+  });
+
+  // lib/plugin-registry.ts
+  var plugin_registry_exports = {};
+  __export(plugin_registry_exports, {
+    getAuthCapabilityProviders: () => getAuthCapabilityProviders,
+    getBootstraps: () => getBootstraps,
+    getBrowsePages: () => getBrowsePages,
+    getEpisodeSidebarProviders: () => getEpisodeSidebarProviders,
+    getHeroes: () => getHeroes,
+    getHomeOverrides: () => getHomeOverrides,
+    getHomeRows: () => getHomeRows,
+    getHomeSources: () => getHomeSources,
+    getInstantPlayProviders: () => getInstantPlayProviders,
+    getMainMenuItems: () => getMainMenuItems,
+    getManagedAuthConsumers: () => getManagedAuthConsumers,
+    getMediaDetailsActions: () => getMediaDetailsActions,
+    getMediaDownloadActions: () => getMediaDownloadActions,
+    getMediaStreamAvailabilityProviders: () => getMediaStreamAvailabilityProviders,
+    getMediaStreamCatalogProviders: () => getMediaStreamCatalogProviders,
+    getPlaybackCapabilityProviders: () => getPlaybackCapabilityProviders,
+    getPluginRegistryRevision: () => getPluginRegistryRevision,
+    getSettingsSections: () => getSettingsSections,
+    getStreamProviders: () => getStreamProviders,
+    getSyncIdentityProviders: () => getSyncIdentityProviders,
+    getTopbarItems: () => getTopbarItems,
+    hasStreamProviders: () => hasStreamProviders,
+    registerPlugin: () => registerPlugin,
+    subscribePluginRegistry: () => subscribePluginRegistry
+  });
+  function notifyRegistryChanged() {
+    registryRevision += 1;
+    for (const listener of registryListeners) {
+      try {
+        listener();
+      } catch (error) {
+        console.warn("[plugin-registry] listener failed", error);
+      }
+    }
+  }
+  function makeContext(pluginId) {
+    return {
+      registerStreamProvider(provider) {
+        if (streamProviders.find((p) => p.id === provider.id)) return;
+        streamProviders.push(provider);
+      },
+      registerMediaStreamCatalogProvider(provider) {
+        if (mediaStreamCatalogProviders.find((entry) => entry.id === provider.id)) return;
+        mediaStreamCatalogProviders.push(provider);
+      },
+      registerMediaStreamAvailabilityProvider(provider) {
+        if (mediaStreamAvailabilityProviders.find((entry) => entry.id === provider.id)) return;
+        mediaStreamAvailabilityProviders.push(provider);
+      },
+      registerInstantPlayProvider(provider) {
+        if (instantPlayProviders.find((entry) => entry.id === provider.id)) return;
+        instantPlayProviders.push(provider);
+      },
+      registerEpisodeSidebarProvider(provider) {
+        if (episodeSidebarProviders.find((p) => p.id === provider.id)) return;
+        episodeSidebarProviders.push(provider);
+      },
+      registerPlaybackCapabilityProvider(provider) {
+        if (playbackCapabilityProviders.find((entry) => entry.id === provider.id)) return;
+        playbackCapabilityProviders.push(provider);
+      },
+      registerSyncIdentityProvider(provider) {
+        if (syncIdentityProviders.find((entry) => entry.id === provider.id)) return;
+        syncIdentityProviders.push(provider);
+      },
+      registerAuthCapabilityProvider(provider) {
+        if (authCapabilityProviders.find((entry) => entry.id === provider.id)) return;
+        authCapabilityProviders.push(provider);
+      },
+      registerSettingsSection(section) {
+        if (settingsSections.find((s) => s.id === section.id)) return;
+        settingsSections.push({
+          ...section,
+          pluginId
+        });
+      },
+      registerMediaDetailsAction(action) {
+        if (mediaDetailsActions.find((entry) => entry.id === action.id)) return;
+        mediaDetailsActions.push(action);
+      },
+      registerMediaDownloadAction(action) {
+        if (mediaDownloadActions.find((entry) => entry.id === action.id)) return;
+        mediaDownloadActions.push(action);
+      },
+      registerHomeRow(row) {
+        if (homeRows.find((r) => r.id === row.id)) return;
+        homeRows.push(row);
+      },
+      registerHomeSource(source) {
+        if (homeSources.find((entry) => entry.id === source.id)) return;
+        homeSources.push(source);
+      },
+      registerBootstrap(bootstrap) {
+        if (bootstraps.find((entry) => entry.id === bootstrap.id)) return;
+        bootstraps.push(bootstrap);
+      },
+      registerHero(hero) {
+        if (heroes.find((entry) => entry.id === hero.id)) return;
+        heroes.push(hero);
+      },
+      registerHomeOverride(homeOverride) {
+        if (homeOverrides.find((entry) => entry.id === homeOverride.id)) return;
+        homeOverrides.push({
+          ...homeOverride,
+          pluginId
+        });
+      },
+      registerBrowsePage(page) {
+        if (browsePages.find((entry) => entry.id === page.id)) return;
+        browsePages.push(page);
+      },
+      registerMainMenuItem(item) {
+        if (mainMenuItems.find((entry) => entry.id === item.id)) return;
+        mainMenuItems.push(item);
+      },
+      registerTopbarItem(item) {
+        if (topbarItems.find((entry) => entry.id === item.id)) return;
+        topbarItems.push(item);
+      },
+      registerManagedAuthConsumer(consumer) {
+        if (managedAuthConsumers.find((entry) => entry.id === consumer.id)) return;
+        managedAuthConsumers.push(consumer);
+      }
+    };
+  }
+  function registerPlugin(plugin2) {
+    if (registeredPluginIds.has(plugin2.id)) return;
+    registeredPluginIds.add(plugin2.id);
+    plugin2.register(makeContext(plugin2.id));
+    notifyRegistryChanged();
+  }
+  function getStreamProviders() {
+    return streamProviders;
+  }
+  function getMediaStreamCatalogProviders() {
+    return mediaStreamCatalogProviders;
+  }
+  function getMediaStreamAvailabilityProviders() {
+    return mediaStreamAvailabilityProviders;
+  }
+  function getInstantPlayProviders() {
+    return instantPlayProviders;
+  }
+  function getEpisodeSidebarProviders() {
+    return episodeSidebarProviders;
+  }
+  function getPlaybackCapabilityProviders() {
+    return playbackCapabilityProviders;
+  }
+  function getSyncIdentityProviders() {
+    return syncIdentityProviders;
+  }
+  function getAuthCapabilityProviders() {
+    return authCapabilityProviders;
+  }
+  function getSettingsSections() {
+    return settingsSections;
+  }
+  function getMediaDetailsActions() {
+    return mediaDetailsActions;
+  }
+  function getMediaDownloadActions() {
+    return mediaDownloadActions;
+  }
+  function getHomeRows() {
+    return homeRows;
+  }
+  function getHomeSources() {
+    return homeSources;
+  }
+  function getBootstraps() {
+    return bootstraps;
+  }
+  function getHeroes() {
+    return heroes;
+  }
+  function getHomeOverrides() {
+    return homeOverrides;
+  }
+  function getBrowsePages() {
+    return browsePages;
+  }
+  function getMainMenuItems() {
+    return mainMenuItems;
+  }
+  function getTopbarItems() {
+    return topbarItems;
+  }
+  function getManagedAuthConsumers() {
+    return managedAuthConsumers;
+  }
+  function hasStreamProviders() {
+    return streamProviders.length > 0;
+  }
+  function getPluginRegistryRevision() {
+    return registryRevision;
+  }
+  function subscribePluginRegistry(listener) {
+    registryListeners.add(listener);
+    return () => {
+      registryListeners.delete(listener);
+    };
+  }
+  var streamProviders, mediaStreamCatalogProviders, mediaStreamAvailabilityProviders, instantPlayProviders, episodeSidebarProviders, playbackCapabilityProviders, syncIdentityProviders, authCapabilityProviders, settingsSections, mediaDownloadActions, mediaDetailsActions, homeRows, homeSources, bootstraps, heroes, homeOverrides, browsePages, mainMenuItems, topbarItems, managedAuthConsumers, registeredPluginIds, registryRevision, registryListeners;
+  var init_plugin_registry = __esm({
+    "lib/plugin-registry.ts"() {
+      streamProviders = [];
+      mediaStreamCatalogProviders = [];
+      mediaStreamAvailabilityProviders = [];
+      instantPlayProviders = [];
+      episodeSidebarProviders = [];
+      playbackCapabilityProviders = [];
+      syncIdentityProviders = [];
+      authCapabilityProviders = [];
+      settingsSections = [];
+      mediaDownloadActions = [];
+      mediaDetailsActions = [];
+      homeRows = [];
+      homeSources = [];
+      bootstraps = [];
+      heroes = [];
+      homeOverrides = [];
+      browsePages = [];
+      mainMenuItems = [];
+      topbarItems = [];
+      managedAuthConsumers = [];
+      registeredPluginIds = /* @__PURE__ */ new Set();
+      registryRevision = 0;
+      registryListeners = /* @__PURE__ */ new Set();
     }
   });
 
@@ -163804,25 +164039,6 @@
     PlexPlugin: () => PlexPlugin
   });
 
-  // lib/session-host.ts
-  function normalizeHost(rawHost) {
-    return rawHost.trim().toLowerCase().replace(/\.+$/, "");
-  }
-  function isLocalAppHost(hostname) {
-    const host = normalizeHost(hostname);
-    if (!host) return false;
-    if (host === "localhost" || host === "127.0.0.1" || host === "::1") return true;
-    if (host === "tauri.localhost" || host.endsWith(".tauri.localhost")) return true;
-    return false;
-  }
-  function isLanClientHost(hostname) {
-    return !isLocalAppHost(hostname);
-  }
-  function isLanClientSession() {
-    if (typeof window === "undefined") return false;
-    return isLanClientHost(window.location.hostname);
-  }
-
   // lib/profile-storage.ts
   var PROFILES_KEY = "app_profiles";
   var ACTIVE_PROFILE_KEY = "app_active_profile";
@@ -164126,7 +164342,40 @@
       subtitleAutoSync: "Auto-sync",
       subtitleAutoSyncAnalyzing: "Analyzing...",
       subtitleAutoSyncApplied: "Applied offset",
+      subtitleAlignedToReference: "Synced against a subtitle matching your file",
+      subtitleHashMatch: "Matches your file",
+      subtitleAlignedToAudio: "Synced against the full audio track",
+      subtitleAnchorApplied: "Synced from your tap",
+      subtitleAnchorDrift: "drift corrected too",
+      subtitleManualSync: "Sync by ear",
+      subtitleManualSyncTapPrompt: "Press when you hear a line you recognise",
+      subtitleManualSyncTapButton: "I hear it now",
+      subtitleManualSyncPickPrompt: "Which line did you just hear?",
+      subtitleManualSyncSecondHint: "Repeat this later in the film to also correct drift.",
+      subtitleManualSyncNoCues: "No subtitle lines near this point.",
+      subtitleManualSyncApplying: "Applying your sync\u2026",
+      subtitleManualSyncRefining: "Fine-tuning against the audio\u2026",
+      castTitle: "Play on another device",
+      castScanning: "Looking for devices\u2026",
+      castNoDevices: "No Chromecast or DLNA devices found.",
+      castPreparing: "Preparing stream\u2026",
+      castPrepareFailed: "Failed \u2014 tap to retry",
+      castRescan: "Search again",
+      castScanFailed: "Could not search for devices.",
+      castFailed: "The device would not accept playback.",
+      castPlayingOn: "Playing on",
+      castStop: "Stop casting",
+      castPause: "Pause",
+      castResume: "Resume",
+      castPairTitle: "Pair with Apple TV",
+      castPairPrompt: "Enter the code shown on your TV",
+      castPairConfirm: "Pair",
+      castPairing: "Pairing\u2026",
+      castPairFailed: "Pairing failed. Try again.",
+      cancel2: "Cancel",
+      subtitleAutoSyncNoReference: "Not certain enough from audio alone. Add an OpenSubtitles API key in Settings to sync against a subtitle matching your file.",
       subtitleAutoSyncFailed: "Could not auto-sync subtitles",
+      subtitleAutoSyncDriftApplied: "drift corrected ({rate}s/min)",
       subtitleAutoSyncNoMatch: "Could not find a reliable subtitle match",
       subtitleAutoSyncNeedsGroq: "Add a Groq API key in Settings first",
       subtitleAutoSyncNeedsSubtitle: "Pick a subtitle track first",
@@ -164649,7 +164898,329 @@
       spotifyDesc: "Used to display soundtracks in the details panel. Create an app at developer.spotify.com and copy the Client ID and Client Secret.",
       clearCacheDesc: "Clear app cache and build artifacts if something behaves oddly.",
       // Soundtrack
-      openOnSpotify: "Open on Spotify"
+      openOnSpotify: "Open on Spotify",
+      // First-run onboarding
+      onboardingSkip: "Skip",
+      onboardingBack: "Back",
+      onboardingNext: "Next",
+      onboardingStart: "Get started",
+      onboardingInstalling: "Installing\u2026",
+      onboardingStep: "Step",
+      onboardingGoToStep: "Go to step",
+      onboardingLanguageLabel: "Language",
+      onboardingWelcomeEyebrow: "WELCOME",
+      onboardingWelcomeTitle: "Welcome to Lumio",
+      onboardingWelcomeDesc: "Your media player and hub for movies and series \u2014 play your own library and keep everything you follow in one place.",
+      onboardingPluginsEyebrow: "PLUGINS",
+      onboardingPluginsTitle: "Choose your plugins",
+      onboardingPluginsDesc: "Tick the plugins you want to install right away. Everything can be added or removed later under Settings \u2192 Plugins.",
+      onboardingOfficialGroup: "Official",
+      onboardingExternalGroup: "External",
+      onboardingThirdParty: "Third-party",
+      onboardingExternalDisclaimer: "External plugins are developed and maintained by their respective developers \u2014 not by Lumio. They are fetched from the developer's own repository and used at your own risk.",
+      onboardingDiscoverEyebrow: "DISCOVER",
+      onboardingDiscoverTitle: "Find your next favourite",
+      onboardingDiscoverDesc: "Explore trends, the release calendar and curated rows for movies and series \u2014 a media hub built for inspiration.",
+      onboardingControlEyebrow: "READY",
+      onboardingControlTitle: "You are in control",
+      onboardingControlDesc: "Customise the start page, filters, language and layout exactly the way you want before you begin.",
+      onboardingWillInstall: "{count} plugin(s) will be installed when you finish.",
+      onboardingInstallFailed: "{names} could not be installed right now \u2014 you can find them under Settings \u2192 Plugins.",
+      onboardingServicesEyebrow: "SERVICES",
+      onboardingServicesTitle: "Connect services",
+      onboardingServicesDesc: "Lumio uses TMDb for movie and series metadata. Create a free account at themoviedb.org and paste your API token (Bearer) here \u2014 all artwork and details are fetched with it. More integrations can be configured later under Settings \u2192 Integrations.",
+      onboardingTmdbLabel: "TMDb API token (Bearer)",
+      onboardingTmdbPlaceholder: "Paste your token here",
+      onboardingTmdbSaved: "Saved \u2014 the token is stored on this device.",
+      onboardingTmdbSaveFailed: "Could not save the token \u2014 try again under Settings \u2192 Integrations.",
+      onboardingTmdbSkipHint: "Without a token no movie or series content can be loaded. You can add it later under Settings \u2192 Integrations.",
+      showOnboardingAgain: "Show the intro again",
+      // Settings → Plugins tab
+      ptCannotConnect: "Could not connect \u2014 check Integrations",
+      ptWorksNormally: "Working normally",
+      ptDisabled: "Disabled",
+      ptMoveUp: "Move up",
+      ptMoveDown: "Move down",
+      ptMore: "More",
+      ptCheckUpdate: "Check for update",
+      ptOpenRepo: "Open repo",
+      ptUninstall: "Uninstall",
+      ptOfficialMarketplace: "Official marketplace",
+      ptLiveManifest: "Live manifest",
+      ptAll: "All",
+      ptOf: "of",
+      ptInstalledWord: "installed",
+      ptSearching: "Checking\u2026",
+      ptCheckUpdates: "Check for updates",
+      ptAddSourceTitle: "Add plugin source",
+      ptAddSourceSubtitle: "GitHub repo or local ZIP file",
+      ptUploading: "Uploading\u2026",
+      ptZipFile: "ZIP file",
+      ptAdding: "Adding\u2026",
+      ptAdd: "Add",
+      ptSyncing: "Syncing\u2026",
+      ptSync: "Sync",
+      ptRemove: "Remove",
+      ptReleaseNeedsZip: "This release requires a manual ZIP selection.",
+      ptManifestFetchError: "Unknown error while fetching the manifest.",
+      ptZipReadError: "Could not read the ZIP file.",
+      ptStatInstalled: "Installed",
+      ptStatActive: "Active",
+      ptStatIssues: "With issues",
+      ptStatSources: "Plugin sources",
+      ptManageTitle: "Manage & order",
+      ptManageHint: "Enable, disable or drag to change priority order.",
+      ptNonePlugins: "No plugins installed yet.",
+      ptAvailableTitle: "Available",
+      ptAvailableHint: "Known plugins that are not installed. External plugins are fetched from each developer's own repository and are not maintained by Lumio.",
+      ptInstalling: "Installing\u2026",
+      ptInstall: "Install",
+      ptFindNewTitle: "Find new plugins",
+      ptFindNewHint: "Official marketplace and your own sources.",
+      ptSourcesTitle: "GitHub repos providing plugins",
+      ptSourcesHint: "External sources you have added yourself are listed here.",
+      ptNoSources: "No sources added yet. Add a GitHub repo above to get started.",
+      ptInstalledBadge: "Installed",
+      ptUpdating: "Checking for the latest version\u2026",
+      ptUpdatedTo: "Updated to {version} \u2014 restart to apply.",
+      ptUpToDate: "Already on the latest version.",
+      ptUpdateFailed: "Update failed: {reason}",
+      aiSearchTitle: "AI search",
+      sssEpisodeInfo: "Show episode info",
+      // Zapp player
+      zpStartFailed: "Zapp failed to start. Please try again.",
+      zpStartTimeout: "Start timeout. Source did not start in time, try again.",
+      zpNoMovieFound: "No movie found.",
+      zpFetchTimeout: "Timeout \u2013 could not fetch movies from TMDB. Try again.",
+      zpFoundOpening: "Found it, opening details...",
+      zpNoMovieRetry: "No movie found \u2013 try again!",
+      zpConnectProvider: "Connect a stream provider in Settings first.",
+      zpNoPlayableStream: "No playable stream found. Try again.",
+      zpQueueAddError: "Could not add to the stream provider queue.",
+      zpNoSourceYetOpening: "No playable source yet, opening details...",
+      zpStreamTimeout: "Timeout \u2013 could not fetch the stream.",
+      // Media details panel
+      mdpCloseMobileMenu: "Close mobile menu",
+      mdpCloseMenu: "Close menu",
+      mdpShowMenu: "Show menu",
+      mdpHideEpisodes: "Hide episodes",
+      mdpShowEpisodes: "Show episodes",
+      mdpHideStreams: "Hide streams",
+      mdpShowStreams: "Show streams",
+      mdpCloseSidebar: "Close sidebar",
+      // Sources panel (Källor)
+      kpTabCatalogs: "Catalogs",
+      kpTabLibrary: "Library",
+      kpCatalogsSuffix: "catalogs",
+      kpProvidedCatalogs: "Provided catalogs",
+      kpMetricActiveAddons: "Active addons",
+      kpMetricActiveAddonsSub: "installed",
+      kpMetricTotalCatalogs: "Total catalogs",
+      kpMetricTotalCatalogsSub: "from all sources",
+      kpMetricUsableRows: "Usable in rows",
+      kpMetricUsableRowsSub: "as custom sources",
+      kpStremioEyebrow: "Stremio addons",
+      kpCommunityTitle: "Catalogs from the community",
+      kpCommunityHint: "Add community addons that expose catalogs. Each catalog becomes selectable as the source of its own home row.",
+      kpManifestHint: "Paste the addon manifest URL. Example: \u2026/manifest.json",
+      kpLocalFilesEyebrow: "Local files",
+      kpLibraryTitle: "My own library",
+      kpLibraryHint: "Pick a folder with video files. Lumio matches file names against TMDb and shows them in a library of its own.",
+      kpFolderLabel: "Folder",
+      kpFolderPlaceholder: "/Users/your-name/Movies",
+      kpBrowse: "Browse",
+      kpPathHint: "The path is read automatically when Lumio starts. Files are matched against TMDb in the background.",
+      // Integrations panel
+      ipCatAll: "All",
+      ipCatNetwork: "Network",
+      ipDescTmdb: "Movies, series, posters and metadata. Required for most of Lumio.",
+      ipDescGroq: 'Enables natural-language AI search. "Show cozy winter movies from the 90s" works.',
+      ipDescSpotify: "Used to show soundtracks in the details panel. Create an app at developer.spotify.com.",
+      ipDescLan: "Share Lumio with other devices on the same network via a local web address.",
+      ipHide: "Hide",
+      ipShow: "Show",
+      ipTmdbTokenLabel: "API token (Bearer)",
+      ipTmdbTokenHintDefault: "A default token is configured in the environment \u2014 set your own for a higher quota.",
+      ipTmdbTokenHint: "Used for the v4 API. Required for large lookups.",
+      ipTmdbKeyLabel: "API key (v3)",
+      ipTmdbKeyHint: "Backwards compatibility for older catalogs.",
+      ipGroqKeyHint: "Get one from console.groq.com \u2014 the free tier is plenty for Lumio.",
+      ipSaved: "Saved",
+      ipSaveError: "Could not save",
+      ipSaving: "Saving\u2026",
+      ipUnsavedChanges: "Unsaved changes",
+      ipNoUnsavedChanges: "No unsaved changes",
+      ipLanEnable: "Enable LAN Streaming",
+      ipLanEnableDesc: "Makes Lumio reachable from other devices on your network",
+      ipLanModeLabel: "Mode \u2014 what other devices see",
+      ipLanModeApp: "Entire app",
+      ipLanModePlayback: "Playback only",
+      ipLanLocalUrl: "Local URL",
+      ipLanFetchingIp: "Fetching IP address\u2026",
+      ipCopy: "Copy",
+      ipLanRestartWarning: "Requires restarting Lumio to take effect. macOS may ask whether to allow incoming connections \u2014 click",
+      ipLanAllow: "Allow",
+      ipConnected: "Connected",
+      ipInactive: "Inactive",
+      ipMetricConnected: "Connected services",
+      ipMetricOfCount: "of {count}",
+      ipMetricCategories: "Categories",
+      ipMetricCategoriesSub: "metadata, AI, music, network",
+      ipLanStatus: "LAN status",
+      ipOff: "Off",
+      ipExternalEyebrow: "External services",
+      ipSectionTitle: "Connected APIs and network",
+      ipSectionHint: "Click a service to view or change its settings.",
+      // Home panel (Hem)
+      hpTabHero: "Hero & background",
+      hpTabDisplay: "Display",
+      hpGenreAll: "All categories",
+      hpGenreAction: "Action",
+      hpGenreAdventure: "Adventure",
+      hpGenreAnimation: "Animation",
+      hpGenreComedy: "Comedy",
+      hpGenreCrime: "Crime",
+      hpGenreDocumentary: "Documentary",
+      hpGenreDrama: "Drama",
+      hpGenreFamily: "Family",
+      hpGenreFantasy: "Fantasy",
+      hpGenreHistory: "History",
+      hpGenreHorror: "Horror",
+      hpGenreMusic: "Music",
+      hpGenreMystery: "Mystery",
+      hpGenreRomance: "Romance",
+      hpGenreSciFi: "Sci-Fi",
+      hpGenreThriller: "Thriller",
+      hpGenreWar: "War",
+      hpGenreWestern: "Western",
+      hpLayoutSlider: "Carousel",
+      hpLayoutGrid: "Show all",
+      hpLayoutFull: "Large banner",
+      hpMetricActiveRows: "Active rows",
+      hpMetricCustomRows: "Custom rows",
+      hpMetricSliderMax: "Slider cards max",
+      hpMetricSliderMaxSub: "global",
+      hpRowsEyebrow: "Home page \xB7 Rows",
+      hpRowsTitle: "What appears on the home screen",
+      hpRowsHint: "Click a row to fine-tune layout, count and source. Use the arrows to change the order.",
+      hpCustomBadge: "custom",
+      hpCardsCount: "{count} cards",
+      hpMoveUp: "Move up",
+      hpMoveDown: "Move down",
+      hpSourceLabel: "Source",
+      hpCardCountLabel: "Number of cards",
+      hpPopularStreaming: "Popular streaming",
+      hpListLabel: "List",
+      hpAllChannels: "All channels",
+      hpTraktListLabel: "Trakt list",
+      hpMyCollection: "My collection",
+      hpWideLayoutEyebrow: "Wide layout",
+      hpSliderCardsTitle: "Slider cards",
+      hpSliderCardsHint: "How many cards a slider shows at most, globally.",
+      hpSliderCardsRowLabel: "Slider cards",
+      hpSliderCardsGlobalOption: "Global ({count})",
+      ipDescOpenSubtitles: "Deeper subtitle search via your own OpenSubtitles API key (free at opensubtitles.com \u2192 API consumers). Without a key, only the community catalog is searched.",
+      tgSectionEyebrow: "Trailers page",
+      tgColumnsLabel: "Columns",
+      tgColumnsHint: "How many columns the trailer grid shows.",
+      hpAlwaysShown: "Always shown",
+      hpTopMenuEyebrow: "Top menu",
+      hpTopButtonsTitle: "Top buttons",
+      hpTopButtonsHint: "Choose which buttons appear at the top and in what order.",
+      hpProfilePicker: "Profile picker",
+      hpSettingsShortcutHint: "Settings can always be opened with",
+      hpHomeMenuEyebrow: "Home page menu",
+      hpSideButtonsTitle: "Side buttons",
+      hpSideButtonsHint: "Choose which menu buttons appear and change their order.",
+      hpLivePreviewEyebrow: "Live preview",
+      hpLivePreviewTitle: "How it looks on the home screen",
+      hpLivePreviewHint: "Quick sketch of the top and side menus with your choices.",
+      hpPreviewTitle: "Preview",
+      hpPreviewOverview: "A short example description of the movie showing how the summary, rating and buttons render in the hero banner on the home page.",
+      hpPreviewPlay: "Play",
+      hpPreviewMyList: "My list",
+      hpPreviewMoreInfo: "More info",
+      hpNoMoviesMatched: "No movies matched",
+      hpHeroEyebrow: "Hero banner",
+      hpHeroTitle: "The star at the top",
+      hpHeroHint: "Shows a random movie at the top of the home page. Requires custom background to be off.",
+      hpHeroActive: "Hero active",
+      hpHeroOff: "Hero off",
+      hpRightNow: "Right now",
+      hpEnableHero: "Enable hero banner",
+      hpEnableHeroDisabledHint: "Disabled \u2013 turn off custom background first",
+      hpEnableHeroHint: "Show a random movie at the top of the home page",
+      hpCategoryLabel: "Category",
+      hpMinRatingImdb: "Minimum rating (IMDb) \u2014 {value}",
+      hpPersistentHero: "Persistent hero",
+      hpPersistentHeroHint: "Keep the same movie between sessions",
+      hpRefreshHeroNow: "Refresh hero now",
+      hpBackgroundEyebrow: "Background",
+      hpBackgroundTitle: "Home page background",
+      hpBackgroundHint: "Use your own image URLs or uploaded images instead of a random background. Turns off the hero banner while active.",
+      hpUseOwnImages: "Use your own images",
+      hpUseOwnImagesOnHint: "The hero banner is disabled while this is on",
+      hpUseOwnImagesOffHint: "Random background from your library",
+      hpBackgroundUrlsPlaceholder: "https://example.com/background-1.jpg\nhttps://example.com/background-2.jpg",
+      hpOneUrlPerLine: "One URL per line. Images rotate randomly on every visit to the home page.",
+      hpUploadedAlt: "Uploaded {num}",
+      hpUploadedImage: "Uploaded image {num}",
+      hpStoredLocally: "Stored locally in your profile",
+      hpUpload: "Upload",
+      hpHomeEyebrow: "Home page",
+      hpSearchFieldTitle: "Search field",
+      hpSearchFieldHint: "Show or hide the large search field at the top of the home page.",
+      hpSearchStaysHint: "Search remains available in the top menu",
+      hpSearchMoviesSeries: "Search movies, series\u2026",
+      hpPosterEyebrow: "Poster appearance",
+      hpPosterTitle: "Labels on posters",
+      hpPosterHint: "Control which visual labels appear on posters on the home page.",
+      hpShowGenreChips: "Show category chips",
+      hpShowGenreChipsHint: "Genre labels at the bottom of the poster",
+      hpShowImdbRating: "Show IMDb rating",
+      hpShowImdbRatingHint: "Rating as a badge in the corner",
+      hpShowYear: "Show year",
+      hpShowYearHint: "Release year next to the title",
+      hpProgressLine: "Progress bar",
+      hpProgressLineHint: "Always shown on Continue watching cards",
+      hpZappTitle: "Random movie plugin",
+      hpZappHint: "Minimum rating for random movies. Zapp! only picks movies with at least this rating from TMDb.",
+      hpMinRating: "Minimum rating \u2014 {value}",
+      hpPosterKindMovie: "MOVIE",
+      hpPosterTitleSample: "Movie title",
+      // Series seasons section
+      sssSeasons: "Seasons",
+      sssPrevSeasons: "Previous seasons",
+      sssMoreSeasons: "More seasons",
+      sssSeasonN: "Season {num}",
+      sssEpisodesWord: "episodes",
+      sssMarkSeasonUnwatchedTitle: "Mark whole season unwatched",
+      sssMarkSeasonWatchedTitle: "Mark whole season watched",
+      sssSeasonWatched: "Season watched",
+      sssMarkSeasonWatched: "Mark season watched",
+      sssEpisodesLoadError: "Could not load episodes right now.",
+      sssPlayEpisodeCode: "Play {code}",
+      sssPlayEpisode: "Play episode",
+      // Series calendar
+      scLoading: "Loading\u2026",
+      scFollowing: "Following",
+      scUnfollow: "Stop following",
+      scCloseDayPanel: "Close day panel",
+      scCloseStreamDetails: "Close stream details",
+      // Video player
+      vpSubTimeout: "Subtitles took too long to load. Try again.",
+      vpSubNetwork: "Could not connect to the subtitle source.",
+      vpSubHttp: "The subtitle service responded with an error.",
+      vpSubLoadFailed: "Could not load subtitle.",
+      vpSubDownloadTimeout: "Subtitle download took too long. Try again.",
+      vpSubMpvFailedWith: "Could not load subtitle in mpv: {message}",
+      vpSubMpvFailed: "Could not load subtitle in mpv.",
+      vpNoSubsFound: "No subtitles were found for this title.",
+      vpDownloadStartFailed: "Could not start the download",
+      // Media explorer
+      meAddGroqKeyFirst: "Add a Groq API key in Settings first.",
+      meStremioNoStreams: "The Stremio addon returned no streams for this content.",
+      meStremioUnreachable: "Could not reach the Stremio addon."
     },
     sv: {
       // Nav
@@ -164911,7 +165482,40 @@
       subtitleAutoSync: "Auto-sync",
       subtitleAutoSyncAnalyzing: "Analyserar...",
       subtitleAutoSyncApplied: "La p\xE5 offset",
+      subtitleAlignedToReference: "Synkad mot en undertext som matchar din fil",
+      subtitleHashMatch: "Matchar din fil",
+      subtitleAlignedToAudio: "Synkad mot hela ljudsp\xE5ret",
+      subtitleAnchorApplied: "Synkad fr\xE5n din markering",
+      subtitleAnchorDrift: "drift korrigerad ocks\xE5",
+      subtitleManualSync: "Synka p\xE5 geh\xF6r",
+      subtitleManualSyncTapPrompt: "Tryck n\xE4r du h\xF6r en replik du k\xE4nner igen",
+      subtitleManualSyncTapButton: "Jag h\xF6r den nu",
+      subtitleManualSyncPickPrompt: "Vilken rad h\xF6rde du nyss?",
+      subtitleManualSyncSecondHint: "G\xF6r om det senare i filmen f\xF6r att \xE4ven r\xE4tta driften.",
+      subtitleManualSyncNoCues: "Inga undertextrader n\xE4ra den h\xE4r punkten.",
+      subtitleManualSyncApplying: "Till\xE4mpar din synkning\u2026",
+      subtitleManualSyncRefining: "Finjusterar mot ljudet\u2026",
+      castTitle: "Spela p\xE5 annan enhet",
+      castScanning: "S\xF6ker efter enheter\u2026",
+      castNoDevices: "Inga Chromecast- eller DLNA-enheter hittades.",
+      castPreparing: "F\xF6rbereder str\xF6m\u2026",
+      castPrepareFailed: "Misslyckades \u2014 klicka f\xF6r nytt f\xF6rs\xF6k",
+      castRescan: "S\xF6k igen",
+      castScanFailed: "Kunde inte s\xF6ka efter enheter.",
+      castFailed: "Enheten accepterade inte uppspelningen.",
+      castPlayingOn: "Spelar p\xE5",
+      castStop: "Sluta casta",
+      castPause: "Pausa",
+      castResume: "Forts\xE4tt",
+      castPairTitle: "Parkoppla med Apple TV",
+      castPairPrompt: "Ange koden som visas p\xE5 din TV",
+      castPairConfirm: "Parkoppla",
+      castPairing: "Parkopplar\u2026",
+      castPairFailed: "Parkopplingen misslyckades. F\xF6rs\xF6k igen.",
+      cancel2: "Avbryt",
+      subtitleAutoSyncNoReference: "Inte s\xE4ker nog utifr\xE5n bara ljudet. L\xE4gg in en OpenSubtitles API-nyckel i Inst\xE4llningar f\xF6r att synka mot en undertext som matchar din fil.",
       subtitleAutoSyncFailed: "Kunde inte auto-synca undertexterna",
+      subtitleAutoSyncDriftApplied: "drift korrigerad ({rate}s/min)",
       subtitleAutoSyncNoMatch: "Kunde inte hitta en tillr\xE4ckligt bra matchning",
       subtitleAutoSyncNeedsGroq: "L\xE4gg till en Groq API-nyckel i inst\xE4llningar f\xF6rst",
       subtitleAutoSyncNeedsSubtitle: "V\xE4lj ett undertextsp\xE5r f\xF6rst",
@@ -165434,17 +166038,379 @@
       spotifyDesc: "Anv\xE4nds f\xF6r att visa soundtracks i detaljpanelen. Skapa en app p\xE5 developer.spotify.com och kopiera Client ID och Client Secret.",
       clearCacheDesc: "Rensa app-cache och byggartefakter om n\xE5got beter sig konstigt.",
       // Soundtrack
-      openOnSpotify: "\xD6ppna p\xE5 Spotify"
+      openOnSpotify: "\xD6ppna p\xE5 Spotify",
+      // First-run onboarding
+      onboardingSkip: "Hoppa \xF6ver",
+      onboardingBack: "Tillbaka",
+      onboardingNext: "N\xE4sta",
+      onboardingStart: "Kom ig\xE5ng",
+      onboardingInstalling: "Installerar\u2026",
+      onboardingStep: "Steg",
+      onboardingGoToStep: "G\xE5 till steg",
+      onboardingLanguageLabel: "Spr\xE5k",
+      onboardingWelcomeEyebrow: "V\xC4LKOMMEN",
+      onboardingWelcomeTitle: "V\xE4lkommen till Lumio",
+      onboardingWelcomeDesc: "Din mediaspelare och hub f\xF6r film och serier \u2014 spela upp ditt eget bibliotek och samla allt du f\xF6ljer p\xE5 ett st\xE4lle.",
+      onboardingPluginsEyebrow: "TILL\xC4GG",
+      onboardingPluginsTitle: "V\xE4lj dina till\xE4gg",
+      onboardingPluginsDesc: "Bocka f\xF6r de till\xE4gg du vill installera direkt. Allt g\xE5r att l\xE4gga till eller ta bort senare under Inst\xE4llningar \u2192 Plugins.",
+      onboardingOfficialGroup: "Officiella",
+      onboardingExternalGroup: "Externa",
+      onboardingThirdParty: "Tredjepart",
+      onboardingExternalDisclaimer: "Externa till\xE4gg utvecklas och underh\xE5lls av respektive utvecklare \u2014 inte av Lumio. De h\xE4mtas fr\xE5n utvecklarens egna kodf\xF6rr\xE5d och anv\xE4nds p\xE5 eget ansvar.",
+      onboardingDiscoverEyebrow: "UPPT\xC4CK",
+      onboardingDiscoverTitle: "Hitta n\xE4sta favorit",
+      onboardingDiscoverDesc: "Utforska trender, releasekalendern och samlade rader f\xF6r film och serier \u2014 en mediahub byggd f\xF6r inspiration.",
+      onboardingControlEyebrow: "KLART",
+      onboardingControlTitle: "Du har full kontroll",
+      onboardingControlDesc: "Anpassa startsidan, filter, spr\xE5k och utseende precis som du vill ha det innan du b\xF6rjar.",
+      onboardingWillInstall: "{count} till\xE4gg installeras n\xE4r du \xE4r klar.",
+      onboardingInstallFailed: "{names} kunde inte installeras just nu \u2014 du hittar dem under Inst\xE4llningar \u2192 Plugins.",
+      onboardingServicesEyebrow: "TJ\xC4NSTER",
+      onboardingServicesTitle: "Anslut tj\xE4nster",
+      onboardingServicesDesc: "Lumio anv\xE4nder TMDb f\xF6r metadata om filmer och serier. Skapa ett gratis konto p\xE5 themoviedb.org och klistra in din API-token (Bearer) h\xE4r \u2014 alla omslag och detaljer h\xE4mtas med den. Fler integrationer kan konfigureras senare under Inst\xE4llningar \u2192 Integrationer.",
+      onboardingTmdbLabel: "TMDb API-token (Bearer)",
+      onboardingTmdbPlaceholder: "Klistra in din token h\xE4r",
+      onboardingTmdbSaved: "Sparad \u2014 token lagras p\xE5 den h\xE4r enheten.",
+      onboardingTmdbSaveFailed: "Kunde inte spara token \u2014 f\xF6rs\xF6k igen under Inst\xE4llningar \u2192 Integrationer.",
+      onboardingTmdbSkipHint: "Utan token kan inget film- och serieinneh\xE5ll h\xE4mtas. Du kan l\xE4gga till den senare under Inst\xE4llningar \u2192 Integrationer.",
+      showOnboardingAgain: "Visa introduktionen igen",
+      // Settings → Plugins tab
+      ptCannotConnect: "Kunde inte ansluta \u2014 kontrollera Integrationer",
+      ptWorksNormally: "Fungerar normalt",
+      ptDisabled: "Inaktiverad",
+      ptMoveUp: "Flytta upp",
+      ptMoveDown: "Flytta ner",
+      ptMore: "Mer",
+      ptCheckUpdate: "S\xF6k uppdatering",
+      ptOpenRepo: "\xD6ppna repo",
+      ptUninstall: "Avinstallera",
+      ptOfficialMarketplace: "Officiell marketplace",
+      ptLiveManifest: "Live-manifest",
+      ptAll: "Alla",
+      ptOf: "av",
+      ptInstalledWord: "installerade",
+      ptSearching: "S\xF6ker\u2026",
+      ptCheckUpdates: "S\xF6k uppdateringar",
+      ptAddSourceTitle: "L\xE4gg till plugin-k\xE4lla",
+      ptAddSourceSubtitle: "GitHub-repo eller lokal ZIP-fil",
+      ptUploading: "Laddar upp\u2026",
+      ptZipFile: "ZIP-fil",
+      ptAdding: "L\xE4gger till\u2026",
+      ptAdd: "L\xE4gg till",
+      ptSyncing: "Synkar\u2026",
+      ptSync: "Synka",
+      ptRemove: "Ta bort",
+      ptReleaseNeedsZip: "Denna release kr\xE4ver ett manuellt ZIP-val.",
+      ptManifestFetchError: "Ok\xE4nt fel vid h\xE4mtning av manifest.",
+      ptZipReadError: "Kunde inte l\xE4sa ZIP-filen.",
+      ptStatInstalled: "Installerade",
+      ptStatActive: "Aktiva",
+      ptStatIssues: "Med problem",
+      ptStatSources: "Plugin-k\xE4llor",
+      ptManageTitle: "Hantera & ordna",
+      ptManageHint: "Aktivera, inaktivera eller dra f\xF6r att \xE4ndra prioriteringsordning.",
+      ptNonePlugins: "Inga plugins installerade \xE4n.",
+      ptAvailableTitle: "Tillg\xE4ngliga",
+      ptAvailableHint: "K\xE4nda plugins som inte \xE4r installerade. Externa plugins h\xE4mtas fr\xE5n respektive utvecklares kodf\xF6rr\xE5d och underh\xE5lls inte av Lumio.",
+      ptInstalling: "Installerar\u2026",
+      ptInstall: "Installera",
+      ptFindNewTitle: "Hitta nya plugins",
+      ptFindNewHint: "Officiell marketplace och egna k\xE4llor.",
+      ptSourcesTitle: "GitHub-repos som tillhandah\xE5ller plugins",
+      ptSourcesHint: "H\xE4r listas de externa k\xE4llor du sj\xE4lv har lagt till.",
+      ptNoSources: "Inga egna k\xE4llor tillagda \xE4n. L\xE4gg till ett GitHub-repo ovan f\xF6r att b\xF6rja.",
+      ptInstalledBadge: "Installerad",
+      ptUpdating: "H\xE4mtar senaste versionen\u2026",
+      ptUpdatedTo: "Uppdaterad till {version} \u2014 starta om f\xF6r att aktivera.",
+      ptUpToDate: "Redan senaste versionen.",
+      ptUpdateFailed: "Uppdateringen misslyckades: {reason}",
+      aiSearchTitle: "AI-s\xF6kning",
+      sssEpisodeInfo: "Visa avsnittsinfo",
+      // Zapp player
+      zpStartFailed: "Zapp kunde inte starta. F\xF6rs\xF6k igen.",
+      zpStartTimeout: "Start timeout. K\xE4llan svarar inte, prova igen.",
+      zpNoMovieFound: "Ingen film hittades.",
+      zpFetchTimeout: "Timeout \u2013 kunde inte h\xE4mta filmer fr\xE5n TMDB. F\xF6rs\xF6k igen.",
+      zpFoundOpening: "Hittade filmen, \xF6ppnar info...",
+      zpNoMovieRetry: "Hittade ingen film \u2013 f\xF6rs\xF6k igen!",
+      zpConnectProvider: "Koppla upp en stream provider i Inst\xE4llningar f\xF6rst.",
+      zpNoPlayableStream: "Hittade ingen spelbar stream f\xF6r filmen. Prova igen.",
+      zpQueueAddError: "Kunde inte l\xE4gga till i stream provider-k\xF6n.",
+      zpNoSourceYetOpening: "Ingen spelbar k\xE4lla \xE4nnu, \xF6ppnar info...",
+      zpStreamTimeout: "Timeout \u2013 kunde inte h\xE4mta stream.",
+      // Media details panel
+      mdpCloseMobileMenu: "St\xE4ng mobilmeny",
+      mdpCloseMenu: "St\xE4ng meny",
+      mdpShowMenu: "Visa meny",
+      mdpHideEpisodes: "D\xF6lj avsnitt",
+      mdpShowEpisodes: "Visa avsnitt",
+      mdpHideStreams: "D\xF6lj streams",
+      mdpShowStreams: "Visa streams",
+      mdpCloseSidebar: "St\xE4ng sidopanel",
+      // Sources panel (Källor)
+      kpTabCatalogs: "Kataloger",
+      kpTabLibrary: "Bibliotek",
+      kpCatalogsSuffix: "kataloger",
+      kpProvidedCatalogs: "Tillhandah\xE5llna kataloger",
+      kpMetricActiveAddons: "Aktiva addons",
+      kpMetricActiveAddonsSub: "installerade",
+      kpMetricTotalCatalogs: "Totalt kataloger",
+      kpMetricTotalCatalogsSub: "fr\xE5n alla k\xE4llor",
+      kpMetricUsableRows: "Anv\xE4ndbara i rader",
+      kpMetricUsableRowsSub: "som custom-k\xE4llor",
+      kpStremioEyebrow: "Stremio-addons",
+      kpCommunityTitle: "Kataloger fr\xE5n community",
+      kpCommunityHint: "L\xE4gg till community-addons som exponerar kataloger. Varje katalog blir valbar som k\xE4lla f\xF6r en egen home-row.",
+      kpManifestHint: "Klistra in addon-manifest-URL:en. Exempel: \u2026/manifest.json",
+      kpLocalFilesEyebrow: "Lokala filer",
+      kpLibraryTitle: "Mitt eget bibliotek",
+      kpLibraryHint: "V\xE4lj en mapp med videofiler. Lumio matchar filnamn mot TMDb och visar dem i ett eget bibliotek.",
+      kpFolderLabel: "Mapp",
+      kpFolderPlaceholder: "/Users/ditt-namn/Movies",
+      kpBrowse: "Bl\xE4ddra",
+      kpPathHint: "S\xF6kv\xE4gen l\xE4ses automatiskt n\xE4r Lumio startar. Filer matchas mot TMDb i bakgrunden.",
+      // Integrations panel
+      ipCatAll: "Alla",
+      ipCatNetwork: "N\xE4tverk",
+      ipDescTmdb: "Filmer, serier, postrar och metadata. Kr\xE4vs f\xF6r det mesta i Lumio.",
+      ipDescGroq: 'Aktiverar AI-s\xF6kning med naturligt spr\xE5k. "Visa mysiga vinterfilmer fr\xE5n 90-talet" funkar.',
+      ipDescSpotify: "Anv\xE4nds f\xF6r att visa soundtracks i detaljpanelen. Skapa en app p\xE5 developer.spotify.com.",
+      ipDescLan: "Dela Lumio med andra enheter i samma n\xE4tverk via en lokal webbadress.",
+      ipHide: "D\xF6lj",
+      ipShow: "Visa",
+      ipTmdbTokenLabel: "API-token (Bearer)",
+      ipTmdbTokenHintDefault: "En standardtoken \xE4r konfigurerad i milj\xF6n \u2014 s\xE4tt en egen f\xF6r h\xF6gre quota.",
+      ipTmdbTokenHint: "Anv\xE4nds f\xF6r v4 API. Kr\xE4vs f\xF6r stora uppslag.",
+      ipTmdbKeyLabel: "API-nyckel (v3)",
+      ipTmdbKeyHint: "Bak\xE5tkompatibilitet f\xF6r \xE4ldre kataloger.",
+      ipGroqKeyHint: "H\xE4mta fr\xE5n console.groq.com \u2014 kostnadsfri tier r\xE4cker bra f\xF6r Lumio.",
+      ipSaved: "Sparad",
+      ipSaveError: "Kunde inte spara",
+      ipSaving: "Sparar\u2026",
+      ipUnsavedChanges: "Osparade \xE4ndringar",
+      ipNoUnsavedChanges: "Inga osparade \xE4ndringar",
+      ipLanEnable: "Aktivera LAN Streaming",
+      ipLanEnableDesc: "G\xF6r Lumio \xE5tkomlig f\xF6r andra enheter p\xE5 ditt n\xE4tverk",
+      ipLanModeLabel: "L\xE4ge \u2014 vad andra enheter ser",
+      ipLanModeApp: "Hela appen",
+      ipLanModePlayback: "Bara uppspelning",
+      ipLanLocalUrl: "Lokal URL",
+      ipLanFetchingIp: "H\xE4mtar IP-adress\u2026",
+      ipCopy: "Kopiera",
+      ipLanRestartWarning: "Kr\xE4ver omstart av Lumio f\xF6r att aktiveras. macOS kan fr\xE5ga om du vill till\xE5ta inkommande anslutningar \u2014 klicka",
+      ipLanAllow: "Till\xE5t",
+      ipConnected: "Ansluten",
+      ipInactive: "Inaktiv",
+      ipMetricConnected: "Anslutna tj\xE4nster",
+      ipMetricOfCount: "av {count}",
+      ipMetricCategories: "Kategorier",
+      ipMetricCategoriesSub: "metadata, AI, music, n\xE4tverk",
+      ipLanStatus: "LAN-status",
+      ipOff: "Avst\xE4ngd",
+      ipExternalEyebrow: "Externa tj\xE4nster",
+      ipSectionTitle: "Anslutna API:er och n\xE4tverk",
+      ipSectionHint: "Klicka p\xE5 en tj\xE4nst f\xF6r att se eller \xE4ndra inst\xE4llningar.",
+      // Home panel (Hem)
+      hpTabHero: "Hero & bakgrund",
+      hpTabDisplay: "Visning",
+      hpGenreAll: "Alla kategorier",
+      hpGenreAction: "Action",
+      hpGenreAdventure: "\xC4ventyr",
+      hpGenreAnimation: "Animerat",
+      hpGenreComedy: "Komedi",
+      hpGenreCrime: "Kriminal",
+      hpGenreDocumentary: "Dokument\xE4r",
+      hpGenreDrama: "Drama",
+      hpGenreFamily: "Familj",
+      hpGenreFantasy: "Fantasy",
+      hpGenreHistory: "Historia",
+      hpGenreHorror: "Skr\xE4ck",
+      hpGenreMusic: "Musik",
+      hpGenreMystery: "Mystery",
+      hpGenreRomance: "Romantik",
+      hpGenreSciFi: "Sci-Fi",
+      hpGenreThriller: "Thriller",
+      hpGenreWar: "Krig",
+      hpGenreWestern: "Western",
+      hpLayoutSlider: "Karusell",
+      hpLayoutGrid: "Visa allt",
+      hpLayoutFull: "Stor banner",
+      hpMetricActiveRows: "Aktiva rader",
+      hpMetricCustomRows: "Egna rader",
+      hpMetricSliderMax: "Sliderkort max",
+      hpMetricSliderMaxSub: "globalt",
+      hpRowsEyebrow: "Startsidan \xB7 Rader",
+      hpRowsTitle: "Vad visas p\xE5 hem-sk\xE4rmen",
+      hpRowsHint: "Klicka p\xE5 en rad f\xF6r att finjustera layout, antal och k\xE4lla. Anv\xE4nd pilarna f\xF6r att \xE4ndra ordning.",
+      hpCustomBadge: "egen",
+      hpCardsCount: "{count} kort",
+      hpMoveUp: "Flytta upp",
+      hpMoveDown: "Flytta ner",
+      hpSourceLabel: "K\xE4lla",
+      hpCardCountLabel: "Antal kort",
+      hpPopularStreaming: "Popul\xE4ra streaming",
+      hpListLabel: "Lista",
+      hpAllChannels: "Alla kanaler",
+      hpTraktListLabel: "Trakt-lista",
+      hpMyCollection: "Min samling",
+      hpWideLayoutEyebrow: "Bred layout",
+      hpSliderCardsTitle: "Sliderkort",
+      hpSliderCardsHint: "Hur m\xE5nga kort en slider max visar globalt.",
+      hpSliderCardsRowLabel: "Sliderkort",
+      hpSliderCardsGlobalOption: "Global ({count})",
+      ipDescOpenSubtitles: "Djupare undertexts\xF6kning via egen OpenSubtitles API-nyckel (gratis p\xE5 opensubtitles.com \u2192 API consumers). Utan nyckel s\xF6ks bara community-katalogen.",
+      tgSectionEyebrow: "Trailersidan",
+      tgColumnsLabel: "Kolumner",
+      tgColumnsHint: "Hur m\xE5nga kolumner trailer-griden visar.",
+      hpAlwaysShown: "Visas alltid",
+      hpTopMenuEyebrow: "\xD6vre meny",
+      hpTopButtonsTitle: "Topp-knappar",
+      hpTopButtonsHint: "V\xE4lj vilka knappar som visas h\xF6gst upp och i vilken ordning.",
+      hpProfilePicker: "Profilv\xE4ljare",
+      hpSettingsShortcutHint: "Inst\xE4llningar kan alltid \xF6ppnas med",
+      hpHomeMenuEyebrow: "Startsidans meny",
+      hpSideButtonsTitle: "Sidoknappar",
+      hpSideButtonsHint: "V\xE4lj vilka menyknappar som visas och \xE4ndra ordningen.",
+      hpLivePreviewEyebrow: "Live preview",
+      hpLivePreviewTitle: "S\xE5 h\xE4r ser det ut p\xE5 hemsk\xE4rmen",
+      hpLivePreviewHint: "Snabbskiss av topp- och sidomenyn med dina val.",
+      hpPreviewTitle: "F\xF6rhandsvisning",
+      hpPreviewOverview: "En kort exempelbeskrivning av filmen som visar hur sammanfattning, betyg och knappar renderas i hero-bannern p\xE5 startsidan.",
+      hpPreviewPlay: "Spela",
+      hpPreviewMyList: "Min lista",
+      hpPreviewMoreInfo: "Mer info",
+      hpNoMoviesMatched: "Inga filmer matchade",
+      hpHeroEyebrow: "Hero-banner",
+      hpHeroTitle: "Stj\xE4rnan h\xF6gst upp",
+      hpHeroHint: "Visar en slumpm\xE4ssig film h\xF6gst upp p\xE5 startsidan. Kr\xE4ver att egen bakgrund \xE4r avst\xE4ngd.",
+      hpHeroActive: "Hero aktiv",
+      hpHeroOff: "Hero av",
+      hpRightNow: "Just nu",
+      hpEnableHero: "Aktivera hero-banner",
+      hpEnableHeroDisabledHint: "Inaktiverat \u2013 st\xE4ng av egen bakgrund f\xF6rst",
+      hpEnableHeroHint: "Visa en slumpm\xE4ssig film h\xF6gst upp p\xE5 startsidan",
+      hpCategoryLabel: "Kategori",
+      hpMinRatingImdb: "Minimumbetyg (IMDb) \u2014 {value}",
+      hpPersistentHero: "Persistent hero",
+      hpPersistentHeroHint: "Beh\xE5ll samma film mellan sessioner",
+      hpRefreshHeroNow: "Refresh hero nu",
+      hpBackgroundEyebrow: "Bakgrund",
+      hpBackgroundTitle: "Bakgrund p\xE5 startsidan",
+      hpBackgroundHint: "Anv\xE4nd egna bild-URL:er eller uppladdade bilder ist\xE4llet f\xF6r slumpad bakgrund. St\xE4nger av hero-banner n\xE4r aktiv.",
+      hpUseOwnImages: "Anv\xE4nd egna bilder",
+      hpUseOwnImagesOnHint: "Hero-banner \xE4r inaktiverad medan detta \xE4r p\xE5",
+      hpUseOwnImagesOffHint: "Slumpm\xE4ssig bakgrund fr\xE5n ditt bibliotek",
+      hpBackgroundUrlsPlaceholder: "https://exempel.se/bakgrund-1.jpg\nhttps://exempel.se/bakgrund-2.jpg",
+      hpOneUrlPerLine: "En URL per rad. Bilder roteras slumpvist vid varje bes\xF6k p\xE5 startsidan.",
+      hpUploadedAlt: "Uppladdad {num}",
+      hpUploadedImage: "Uppladdad bild {num}",
+      hpStoredLocally: "Sparas lokalt i din profil",
+      hpUpload: "Ladda upp",
+      hpHomeEyebrow: "Startsida",
+      hpSearchFieldTitle: "S\xF6kf\xE4lt",
+      hpSearchFieldHint: "Visa eller d\xF6lj det stora s\xF6kf\xE4ltet h\xF6gst upp p\xE5 startsidan.",
+      hpSearchStaysHint: "S\xF6kfunktionen finns kvar i topp-menyn",
+      hpSearchMoviesSeries: "S\xF6k filmer, serier\u2026",
+      hpPosterEyebrow: "Posterutseende",
+      hpPosterTitle: "Etiketter p\xE5 posters",
+      hpPosterHint: "Styr vilka visuella etiketter som visas p\xE5 posters p\xE5 startsidan.",
+      hpShowGenreChips: "Visa kategori-chips",
+      hpShowGenreChipsHint: "Genre-etiketter nederst p\xE5 postern",
+      hpShowImdbRating: "Visa IMDb-betyg",
+      hpShowImdbRatingHint: "Betyg som badge i h\xF6rnet",
+      hpShowYear: "Visa \xE5rtal",
+      hpShowYearHint: "Premi\xE4r\xE5r vid titeln",
+      hpProgressLine: "F\xF6rloppslinje",
+      hpProgressLineHint: "Visas alltid p\xE5 Forts\xE4tt titta-kort",
+      hpZappTitle: "Slumpfilm-plugin",
+      hpZappHint: "Minimumbetyg f\xF6r slumpm\xE4ssiga filmer. Zapp! v\xE4ljer bara filmer med minst detta betyg fr\xE5n TMDb.",
+      hpMinRating: "Minimumbetyg \u2014 {value}",
+      hpPosterKindMovie: "FILM",
+      hpPosterTitleSample: "Filmtitel",
+      // Series seasons section
+      sssSeasons: "S\xE4songer",
+      sssPrevSeasons: "F\xF6reg\xE5ende s\xE4songer",
+      sssMoreSeasons: "Fler s\xE4songer",
+      sssSeasonN: "S\xE4song {num}",
+      sssEpisodesWord: "avsnitt",
+      sssMarkSeasonUnwatchedTitle: "Markera hela s\xE4songen som osedd",
+      sssMarkSeasonWatchedTitle: "Markera hela s\xE4songen som sedd",
+      sssSeasonWatched: "S\xE4songen sedd",
+      sssMarkSeasonWatched: "Markera s\xE4song sedd",
+      sssEpisodesLoadError: "Kunde inte ladda avsnitt just nu.",
+      sssPlayEpisodeCode: "Spela {code}",
+      sssPlayEpisode: "Spela avsnitt",
+      // Series calendar
+      scLoading: "Laddar\u2026",
+      scFollowing: "F\xF6ljer",
+      scUnfollow: "Sluta f\xF6lja",
+      scCloseDayPanel: "St\xE4ng dagspanel",
+      scCloseStreamDetails: "St\xE4ng streamdetaljer",
+      // Video player
+      vpSubTimeout: "Undertexter tog f\xF6r l\xE5ng tid att ladda. F\xF6rs\xF6k igen.",
+      vpSubNetwork: "Kunde inte ansluta till undertextk\xE4llan.",
+      vpSubHttp: "Undertexttj\xE4nsten svarade med fel.",
+      vpSubLoadFailed: "Kunde inte ladda undertext.",
+      vpSubDownloadTimeout: "Undertextladdning tog f\xF6r l\xE5ng tid. F\xF6rs\xF6k igen.",
+      vpSubMpvFailedWith: "Kunde inte ladda undertext i mpv: {message}",
+      vpSubMpvFailed: "Kunde inte ladda undertext i mpv.",
+      vpNoSubsFound: "Inga undertexter hittades f\xF6r den h\xE4r titeln.",
+      vpDownloadStartFailed: "Kunde inte starta nedladdning",
+      // Media explorer
+      meAddGroqKeyFirst: "L\xE4gg till Groq API-nyckel i inst\xE4llningarna f\xF6rst.",
+      meStremioNoStreams: "Inga streams returnerades fr\xE5n Stremio-addonen f\xF6r det h\xE4r inneh\xE5llet.",
+      meStremioUnreachable: "Kunde inte n\xE5 Stremio-addonen."
     }
   };
-  var LangContext = createContext2({
+  var detachedLangContextValue = {
     lang: "en",
     setLang: () => {
     },
     t: (key) => strings.en[key]
-  });
+  };
+  var LangContext = createContext2(detachedLangContextValue);
+  var LANG_CHANGED_EVENT = "lumio-app-lang-changed";
+  var STORAGE_KEY = "app_lang";
+  var DEFAULT_LANG = "en";
+  function readStoredLang() {
+    if (typeof window === "undefined") return DEFAULT_LANG;
+    try {
+      const scoped = getScopedStorageItem(STORAGE_KEY);
+      const legacy = localStorage.getItem(STORAGE_KEY);
+      const value = scoped ?? legacy;
+      if (value === "sv" || value === "en") return value;
+    } catch {
+    }
+    return DEFAULT_LANG;
+  }
   function useLang() {
-    return useContext(LangContext);
+    const ctx = useContext(LangContext);
+    const detached = ctx === detachedLangContextValue;
+    const [detachedLang, setDetachedLang] = useState(DEFAULT_LANG);
+    useEffect(() => {
+      if (!detached || typeof window === "undefined") return;
+      const sync2 = () => setDetachedLang(readStoredLang());
+      sync2();
+      window.addEventListener(LANG_CHANGED_EVENT, sync2);
+      const offProfile = onProfileChanged(sync2);
+      return () => {
+        window.removeEventListener(LANG_CHANGED_EVENT, sync2);
+        offProfile();
+      };
+    }, [detached]);
+    if (!detached) return ctx;
+    return {
+      lang: detachedLang,
+      setLang: (l) => {
+        setScopedStorageItem(STORAGE_KEY, l);
+        setDetachedLang(l);
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent(LANG_CHANGED_EVENT));
+        }
+      },
+      t: (key) => strings[detachedLang][key] ?? strings.en[key]
+    };
   }
 
   // lib/home-override-settings.ts
@@ -165721,6 +166687,40 @@
       limit: 0
     }
   };
+  var TORRENTSDB_AUTOADD_KEY = "scraper_torrentsdb_autoadded_v1";
+  function buildDefaultTorrentsDbConfig(streamProvider) {
+    const provider = normalizeStreamProvider(streamProvider);
+    return {
+      id: "torrentsdb",
+      preset: "torrentsdb",
+      enabled: true,
+      options: {
+        streamProvider: provider,
+        debridProvider: provider,
+        qualityFilter: [],
+        languages: []
+      }
+    };
+  }
+  function withAutoAddedTorrentsDb(configs) {
+    if (configs.some((config) => config.preset === "torrentsdb")) return configs;
+    try {
+      if (getScopedStorageItem(TORRENTSDB_AUTOADD_KEY) === "1") return configs;
+    } catch {
+      return configs;
+    }
+    const primary = configs.find((config) => config.enabled) ?? configs[0];
+    const provider = normalizeStreamProvider(
+      primary?.options?.streamProvider ?? primary?.options?.debridProvider
+    );
+    const next2 = [...configs, buildDefaultTorrentsDbConfig(provider)];
+    try {
+      setScopedStorageItem(TORRENTSDB_AUTOADD_KEY, "1");
+      setScraperConfigs(next2);
+    } catch {
+    }
+    return next2;
+  }
   function getActiveStreamProviderId() {
     if (typeof window === "undefined") return "realdebrid";
     const configs = getScraperConfigs();
@@ -165777,12 +166777,17 @@
     migrateScraperSettingsIfNeeded();
     try {
       const raw = getScopedStorageItem(CONFIGS_KEY) ?? localStorage.getItem(CONFIGS_KEY);
-      if (!raw) return [DEFAULT_TORRENTIO_CONFIG];
+      if (!raw) {
+        return [DEFAULT_TORRENTIO_CONFIG, buildDefaultTorrentsDbConfig("realdebrid")];
+      }
       const parsed = JSON.parse(raw);
-      return parsed.map(normalizeScraperConfig);
+      return withAutoAddedTorrentsDb(parsed.map(normalizeScraperConfig));
     } catch {
       return [DEFAULT_TORRENTIO_CONFIG];
     }
+  }
+  function setScraperConfigs(configs) {
+    setScopedStorageItem(CONFIGS_KEY, JSON.stringify(configs));
   }
   function migrateScraperSettingsIfNeeded() {
     if (getScopedStorageItem(CONFIGS_KEY)) return;
@@ -167485,6 +168490,9 @@
     return getActivePlaybackProvider().resolveLink(link);
   }
 
+  // lib/series-watchlist-feed.ts
+  init_plugin_registry();
+
   // lib/stream-provider-runtime/stream-filters.ts
   var FILTER_KEY = "stream_provider_filters";
   var LEGACY_FILTER_KEY = "rd_stream_filters";
@@ -167663,6 +168671,7 @@
   var SERIES_STATUS_CACHE_TTL_MS = 15 * 60 * 1e3;
 
   // lib/release-watchlist-feed.ts
+  init_plugin_registry();
   var STREAM_CACHE_TTL_MS2 = 30 * 60 * 1e3;
 
   // lib/utils/search-text.ts
@@ -167980,13 +168989,32 @@
     ) });
   }
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-T7aBcM/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-3gus0W/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
 
   // lib/tauri-mpv.ts
   init_core();
   init_event();
   init_react_shim();
+
+  // lib/session-host.ts
+  function normalizeHost(rawHost) {
+    return rawHost.trim().toLowerCase().replace(/\.+$/, "");
+  }
+  function isLocalAppHost(hostname) {
+    const host = normalizeHost(hostname);
+    if (!host) return false;
+    if (host === "localhost" || host === "127.0.0.1" || host === "::1") return true;
+    if (host === "tauri.localhost" || host.endsWith(".tauri.localhost")) return true;
+    return false;
+  }
+  function isLanClientHost(hostname) {
+    return !isLocalAppHost(hostname);
+  }
+  function isLanClientSession() {
+    if (typeof window === "undefined") return false;
+    return isLanClientHost(window.location.hostname);
+  }
 
   // lib/stream-provider-runtime/playback/resolve-stream-url.ts
   var RESOLVE_URL_RE = /\/resolve\/(torbox|realdebrid|alldebrid|easydebrid|offcloud)\/[^/]+\/([a-f0-9]{40})\//i;
@@ -170267,8 +171295,20 @@
     EffectState2["Inactive"] = "inactive";
   })(EffectState || (EffectState = {}));
 
+  // lib/playback-availability.ts
+  init_plugin_registry();
+
   // lib/video-progress.ts
   var EVENT3 = "lumio-stream-progress-changed";
+  if (typeof window !== "undefined") {
+    void Promise.resolve().then(() => (init_plugin_registry(), plugin_registry_exports)).then(({ subscribePluginRegistry: subscribePluginRegistry2 }) => {
+      subscribePluginRegistry2(() => {
+        window.dispatchEvent(new CustomEvent(EVENT3));
+        window.dispatchEvent(new CustomEvent(HISTORY_EVENT));
+      });
+    }).catch(() => {
+    });
+  }
   var KEY3 = "stream_progress_list";
   var MAX = 20;
   var HISTORY_KEY = "stream_history_list";
@@ -170379,13 +171419,6 @@
     });
     setScopedStorageItem(KEY3, JSON.stringify(list));
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT3));
-  }
-
-  // lib/groq-settings.ts
-  var KEY4 = "groq_api_key";
-  function getGroqApiKey() {
-    if (typeof window === "undefined") return "";
-    return getScopedStorageItem(KEY4) ?? "";
   }
 
   // lib/utils/fetch-client.ts
@@ -170635,12 +171668,14 @@
       const release = await acquireRequestSlot(options.priority ?? "normal", requestGroup, options.signal);
       try {
         if (isPluginDesktopHost()) {
-          const data = await fetchDesktopApiJson(
-            key,
-            options.desktopTimeoutMs ?? options.timeoutMs ?? 4500
-          );
-          if (data == null) throw new Error("desktop_api_query_failed");
-          return data;
+          try {
+            const data = await fetchDesktopApiJson(
+              key,
+              options.desktopTimeoutMs ?? options.timeoutMs ?? 4500
+            );
+            if (data != null) return data;
+          } catch {
+          }
         }
         return fetchJsonWithRetry(key, {}, {
           timeoutMs: options.timeoutMs,
@@ -170956,8 +171991,14 @@
     await Promise.allSettled(tasks);
   }
 
+  // lib/opensubtitles-settings.ts
+  var KEY_OS_API_KEY = "opensubtitles_api_key";
+  function getOpenSubtitlesApiKey() {
+    if (typeof window === "undefined") return "";
+    return getScopedStorageItem(KEY_OS_API_KEY) ?? "";
+  }
+
   // lib/opensubtitles/os-client.ts
-  var STREMIO_OS_BASE = "https://opensubtitles-v3.strem.io";
   var NON_EMPTY_CACHE_TTL_MS = 2e4;
   var EMPTY_CACHE_TTL_MS = 3e3;
   var FETCH_TIMEOUT_MS = 4800;
@@ -171018,18 +172059,33 @@
     ind: "id"
   };
   async function searchSubtitles(params) {
-    const { imdbId, type, season, episode } = params;
+    const { imdbId, type, season, episode, mediaUrl } = params;
     const videoId = type === "episode" && season != null && episode != null ? `${imdbId}:${season}:${episode}` : imdbId;
     const stremioType = type === "episode" ? "series" : "movie";
-    const url = `${STREMIO_OS_BASE}/subtitles/${stremioType}/${videoId}.json`;
-    const cacheKey = `${stremioType}:${videoId}`;
+    const osApiKey = getOpenSubtitlesApiKey().trim();
+    const searchParams = new URLSearchParams({ imdb_id: imdbId, type });
+    if (type === "episode" && season != null && episode != null) {
+      searchParams.set("season", String(season));
+      searchParams.set("episode", String(episode));
+    }
+    if (osApiKey) searchParams.set("os_api_key", osApiKey);
+    if (osApiKey && mediaUrl) searchParams.set("media_url", mediaUrl);
+    const url = `/api/subtitles?${searchParams.toString()}`;
+    const cacheKey = `${stremioType}:${videoId}:${osApiKey ? "rest" : "addon"}:${mediaUrl ? "hash" : "nohash"}`;
     const cached = resultCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) return cached.subtitles;
     const running = inflight4.get(cacheKey);
     if (running) return running;
     const parseSubtitles = (payload) => {
       const subtitles = payload?.subtitles;
-      return Array.isArray(subtitles) ? subtitles : [];
+      if (!Array.isArray(subtitles)) return [];
+      return subtitles.map((s) => ({
+        id: s.id,
+        url: s.url,
+        lang: s.lang ?? s.lang3 ?? "",
+        hashMatch: s.hashMatch === true,
+        release: s.release
+      }));
     };
     const fetchOnce = async () => {
       let lastError = null;
@@ -171064,7 +172120,9 @@
         language: LANG3_TO_22[s.lang] ?? s.lang,
         lang3: s.lang,
         url: s.url,
-        id: s.id
+        id: s.id,
+        hashMatch: s.hashMatch === true,
+        release: s.release
       }));
       pruneCache();
       resultCache.set(cacheKey, {
@@ -171823,12 +172881,12 @@
   }
 
   // lib/subtitle-delay-store.ts
-  var STORAGE_KEY = "lumio_subtitle_delays_v1";
+  var STORAGE_KEY2 = "lumio_subtitle_delays_v1";
   var MAX_ENTRIES = 400;
   function readStore() {
     if (typeof window === "undefined") return {};
     try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
+      const raw = window.localStorage.getItem(STORAGE_KEY2);
       if (!raw) return {};
       const parsed = JSON.parse(raw);
       return parsed && typeof parsed === "object" ? parsed : {};
@@ -171845,7 +172903,7 @@
           delete store[key];
         });
       }
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+      window.localStorage.setItem(STORAGE_KEY2, JSON.stringify(store));
     } catch {
     }
   }
@@ -171877,12 +172935,47 @@
     writeStore(store);
   }
 
+  // lib/tauri-avplayer.ts
+  init_core();
+  async function avplayerPrepare(url, start2, sub) {
+    if (!isTauriEnv) return { streamUrl: url, offset: 0 };
+    return invoke("avplayer_prepare", {
+      url,
+      start: start2 ?? null,
+      subContent: sub?.subContent ?? null,
+      subIndex: sub?.subIndex ?? null
+    });
+  }
+  async function avplayerTeardown() {
+    if (!isTauriEnv) return;
+    await invoke("avplayer_teardown");
+  }
+  function airplayLog(msg) {
+    if (!isTauriEnv) return;
+    void invoke("lumio_debug_log", { msg: `airplay: ${msg}` }).catch(() => {
+    });
+  }
+
   // components/player/video-player-modal.tsx
   init_jsx_runtime_shim();
   var EMBEDDED_SUBTITLES_ENABLED = true;
   var PLAYER_UI_TICK_MS = 250;
   var PLAYER_PARENT_TIMEUPDATE_TICK_MS = 1e3;
   var PROXY_RESTART_MIN_GAP_MS = 3e4;
+  function cuesToSrt(cues) {
+    const stamp = (sec) => {
+      const ms = Math.max(0, Math.round(sec * 1e3));
+      const h = String(Math.floor(ms / 36e5)).padStart(2, "0");
+      const m2 = String(Math.floor(ms % 36e5 / 6e4)).padStart(2, "0");
+      const s = String(Math.floor(ms % 6e4 / 1e3)).padStart(2, "0");
+      const rest = String(ms % 1e3).padStart(3, "0");
+      return `${h}:${m2}:${s},${rest}`;
+    };
+    return cues.map((cue, i) => `${i + 1}
+${stamp(cue.start)} --> ${stamp(cue.end)}
+${cue.text}
+`).join("\n");
+  }
   var INTRODB_CACHE = /* @__PURE__ */ new Map();
   function buildIntroDbCacheKey(mediaType, tmdbId, imdbId, season, episode) {
     return [
@@ -172166,7 +173259,7 @@
     } catch {
     }
   }
-  function VideoPlayerModal({ url, filename, title, onClose, imdbId, tmdbId, mediaType, season, episode, mediaId, mediaTitle, mediaSource, posterUrl, backdropUrl, year, initialTime, onFirstPlay, hideStartSplash, forceProxy, onTimeUpdate, onOutroStart, onLoadFailed, skipHomeKitOnClose, skipHomeKitOnOpen, overlayContent, autoFullscreen, playbackTraceId }) {
+  function VideoPlayerModal({ url, filename, title, onClose, imdbId, tmdbId, mediaType, season, episode, mediaId, mediaTitle, mediaSource, posterUrl, backdropUrl, year, initialTime, onFirstPlay, hideStartSplash, forceProxy, onTimeUpdate, onOutroStart, onLoadFailed, skipHomeKitOnClose, skipHomeKitOnOpen, overlayContent, autoFullscreen, sourceInfoHash, playbackTraceId }) {
     const STILL_WATCHING_CLOSE_SECONDS = 20;
     const [useMpv, setUseMpv] = useState(false);
     useEffect(() => {
@@ -172412,6 +173505,18 @@
     const [subtitleDebugInfo, setSubtitleDebugInfo] = useState(null);
     const [subtitleClientDebugInfo, setSubtitleClientDebugInfo] = useState(null);
     const [showSubMenu, setShowSubMenu] = useState(false);
+    const [showCastMenu, setShowCastMenu] = useState(false);
+    const [castDevices, setCastDevices] = useState([]);
+    const [castScanning, setCastScanning] = useState(false);
+    const [castTarget, setCastTarget] = useState(null);
+    const [castError, setCastError] = useState(null);
+    const [airplaySession, setAirplaySession] = useState(null);
+    const [airplayPrepare, setAirplayPrepare] = useState("idle");
+    const [airplayTargetReady, setAirplayTargetReady] = useState(false);
+    const [airplayMediaReady, setAirplayMediaReady] = useState(false);
+    const [airplayActive, setAirplayActive] = useState(false);
+    const airplayVideoRef = useRef(null);
+    const airplayWasExternalRef = useRef(false);
     const [activeSubId, setActiveSubId] = useState(null);
     const [selectedLang, setSelectedLang] = useState(() => getDefaultSubtitleLanguage() || null);
     const [defaultSubtitleLang] = useState(() => getDefaultSubtitleLanguage());
@@ -172420,9 +173525,11 @@
     const [resolvedImdbId, setResolvedImdbId] = useState(imdbId ?? null);
     const [cues, setCues] = useState([]);
     const [subDelay, setSubDelay] = useState(0);
+    const [subDrift, setSubDrift] = useState(null);
     const subtitleDelayMediaKey = buildSubtitleDelayMediaKey(mediaType, tmdbId, imdbId ?? null);
     useEffect(() => {
       if (!subtitleDelayMediaKey) return;
+      setSubDrift(null);
       const saved = getSavedSubtitleDelay(subtitleDelayMediaKey, season ?? null, episode ?? null);
       if (saved == null) return;
       setSubDelay(saved);
@@ -172482,6 +173589,10 @@
     const manualSubtitleOverrideRef = useRef(false);
     const subtitlePreferenceRef = useRef({ mode: "default" });
     const lastAutoSyncedDelayRef = useRef(null);
+    const [manualSyncOpen, setManualSyncOpen] = useState(false);
+    const [manualSyncTapTime, setManualSyncTapTime] = useState(null);
+    const [manualSyncBusy, setManualSyncBusy] = useState(false);
+    const [manualSyncFirstAnchor, setManualSyncFirstAnchor] = useState(null);
     const stallLastProgressSecondsRef = useRef(0);
     const stallLastProgressAtRef = useRef(Date.now());
     const stallRecoveriesRef = useRef(0);
@@ -172515,10 +173626,10 @@
     }
     function getSubtitleUiError(error) {
       const kind = classifyFetchError(error);
-      if (kind === "timeout") return "Undertexter tog f\xF6r l\xE5ng tid att ladda. F\xF6rs\xF6k igen.";
-      if (kind === "network") return "Kunde inte ansluta till undertextk\xE4llan.";
-      if (kind === "http") return "Undertexttj\xE4nsten svarade med fel.";
-      return "Kunde inte ladda undertext.";
+      if (kind === "timeout") return t("vpSubTimeout");
+      if (kind === "network") return t("vpSubNetwork");
+      if (kind === "http") return t("vpSubHttp");
+      return t("vpSubLoadFailed");
     }
     function getTrackChannels(trackIndex) {
       if (trackIndex === null) return audioTracks[0]?.channels ?? null;
@@ -172746,7 +173857,8 @@
         subtitleDownloadAbortRef.current = null;
       };
     }, []);
-    const subtitleTime = (subtitleClockOverride ?? realTime) + subDelay;
+    const subtitleClockBase = subtitleClockOverride ?? realTime;
+    const subtitleTime = subtitleClockBase - subDelay + (subDrift ? subDrift.slope * (subtitleClockBase - subDrift.anchor) : 0);
     const activeCue = useMpv ? null : cues.find((c) => subtitleTime >= c.start && subtitleTime <= c.end) ?? null;
     const parsedEpisodeFromFilename = useMemo(() => filename ? parseEpisodeIdentifier(filename) : null, [filename]);
     const parsedEpisodeFromTitle = useMemo(() => parseEpisodeIdentifier(title), [title]);
@@ -172776,7 +173888,7 @@
     useEffect(() => {
       if (useMpv || !isPlaying || cues.length === 0) return;
       const id4 = setInterval(() => {
-        const effectiveTime = realTime + subDelay;
+        const effectiveTime = realTime - subDelay + (subDrift ? subDrift.slope * (realTime - subDrift.anchor) : 0);
         const activeCueNow = cues.find((c) => effectiveTime >= c.start && effectiveTime <= c.end);
         const nearestCue = cues.reduce((best, c) => {
           if (!best) return c;
@@ -172824,8 +173936,12 @@
         "Bold=1"
       ].join(",");
       const scale2 = Math.max(0.5, subSize / 100);
+      const driftSlope = subDrift?.slope ?? 0;
+      const speed = 1 / (1 + driftSlope);
+      const delayWithDrift = subDrift ? (subDelay + driftSlope * subDrift.anchor) * speed : subDelay;
       void mpvApplySubtitleStyle({
-        delay: subDelay,
+        delay: delayWithDrift,
+        speed,
         scale: scale2,
         pos: Math.max(0, Math.min(100, 100 - subVerticalPos)),
         fontSize: Math.max(18, Math.round(42 * scale2)),
@@ -172835,7 +173951,7 @@
         backColor: subBackgroundColor === "transparent" ? "#00000000" : toMpvNativeColor(subBackgroundColor, Math.max(35, subOpacity)),
         assStyle: style2
       });
-    }, [useMpv, subDelay, subTextColor, subOutlineColor, subBackgroundColor, subOpacity, subSize, subVerticalPos, containerSize.height, activeSubId, mpv.sid]);
+    }, [useMpv, subDelay, subDrift, subTextColor, subOutlineColor, subBackgroundColor, subOpacity, subSize, subVerticalPos, containerSize.height, activeSubId, mpv.sid]);
     useEffect(() => {
       if (!useMpv) return;
       const filter2 = nightMode === "off" ? null : nightMode === "mild" ? "lavfi=[acompressor=threshold=0.125:ratio=2.2:attack=20:release=250:makeup=1.5,alimiter=limit=0.92]" : "lavfi=[acompressor=threshold=0.08:ratio=3.5:attack=10:release=300:makeup=3,alimiter=limit=0.88]";
@@ -173132,6 +174248,17 @@
       return () => {
         cancelled = true;
         void closeMpvPlayer();
+        const v = airplayVideoRef.current;
+        if (v) {
+          v.pause();
+          v.removeAttribute("src");
+          v.load();
+        }
+        void avplayerTeardown();
+        setAirplaySession(null);
+        setAirplayPrepare("idle");
+        setAirplayActive(false);
+        airplayWasExternalRef.current = false;
       };
     }, [useMpv, url]);
     useEffect(() => {
@@ -173424,7 +174551,7 @@
             filename: filename || title
           })
         });
-        if (!res.ok) throw new Error("Kunde inte starta nedladdning");
+        if (!res.ok) throw new Error(t("vpDownloadStartFailed"));
         const { jobId } = await res.json();
         setDownloadState({ type: "downloading", jobId, progress: 0, filename: t("preparingDownload") });
         const es = new EventSource(`/api/download/progress?jobId=${jobId}`);
@@ -173689,7 +174816,7 @@
       const loadingGuard = window.setTimeout(() => {
         if (subtitleDownloadRequestIdRef.current === requestId) {
           setLoadingSub(false);
-          setSubtitleLoadError((prev) => prev ?? "Undertextladdning tog f\xF6r l\xE5ng tid. F\xF6rs\xF6k igen.");
+          setSubtitleLoadError((prev) => prev ?? t("vpSubDownloadTimeout"));
         }
       }, 12e3);
       try {
@@ -173716,9 +174843,21 @@
               5e3,
               "subtitle_mpv_sub_add_timeout"
             );
-            void getMpvSid().catch(() => null);
             setActiveSubId(sub.id);
             await refreshMpvSubtitleTracks();
+            try {
+              const sid = await getMpvSid();
+              if (!sid || sid <= 0) {
+                const tracks = await getMpvSubtitleTracks().catch(() => []);
+                const external = Array.isArray(tracks) ? tracks.filter((track) => track.external) : [];
+                const target = external[external.length - 1];
+                if (target?.sid) {
+                  await setMpvSubtitleTrack(target.sid);
+                  await refreshMpvSubtitleTracks();
+                }
+              }
+            } catch {
+            }
             try {
               const subtitleVtt2 = await withTimeout(
                 fetchTextWithRetry("/api/subtitles/download", {
@@ -173745,7 +174884,7 @@
             setLoadingSub(false);
             setActiveSubId(null);
             setCues([]);
-            setSubtitleLoadError(error instanceof Error ? `Kunde inte ladda undertext i mpv: ${error.message}` : "Kunde inte ladda undertext i mpv.");
+            setSubtitleLoadError(error instanceof Error ? t("vpSubMpvFailedWith").replace("{message}", error.message) : t("vpSubMpvFailed"));
             return;
           }
         }
@@ -173813,6 +174952,7 @@
           currentTime: snapshot.realTime,
           duration: snapshot.totalDuration,
           url,
+          infoHash: sourceInfoHash ?? null,
           watchedAt: (/* @__PURE__ */ new Date()).toISOString(),
           season,
           episode
@@ -173823,7 +174963,7 @@
         clearInterval(interval);
         save();
       };
-    }, [backdropUrl, episode, imdbId, mediaId, mediaSource, mediaTitle, mediaType, posterUrl, season, title, url, wikiTmdbId, year]);
+    }, [backdropUrl, episode, imdbId, mediaId, mediaSource, mediaTitle, mediaType, posterUrl, season, sourceInfoHash, title, url, wikiTmdbId, year]);
     useEffect(() => {
       if (useMpv) {
         setPreparingProxySource(false);
@@ -174317,7 +175457,10 @@
             imdbId: resolvedImdbId,
             type: inferredMediaType === "tv" ? "episode" : "movie",
             season: effectiveSeason ?? void 0,
-            episode: effectiveEpisode ?? void 0
+            episode: effectiveEpisode ?? void 0,
+            // Enables exact-file matching: subtitles authored for this very
+            // release come back already in sync, so nothing needs correcting.
+            mediaUrl: url
           });
           if (cancelled || subtitleListRequestIdRef.current !== requestId) return;
           setSubtitleDebugInfo({
@@ -174343,7 +175486,7 @@
             setSubtitleLoadError(null);
           } else {
             setSubtitles([]);
-            setSubtitleLoadError("Inga undertexter hittades f\xF6r den h\xE4r titeln.");
+            setSubtitleLoadError(t("vpNoSubsFound"));
           }
         } catch (error) {
           if (cancelled || subtitleListRequestIdRef.current !== requestId) return;
@@ -174541,13 +175684,14 @@
     }, [subtitles, embeddedSubtitleOptions]);
     useEffect(() => {
       if (embeddedSubtitleOptions.length === 0) return;
-      setSubtitleLoadError((current2) => current2 === "Inga undertexter hittades f\xF6r den h\xE4r titeln." ? null : current2);
+      setSubtitleLoadError((current2) => current2 === t("vpNoSubsFound") ? null : current2);
     }, [embeddedSubtitleOptions.length]);
     useEffect(() => {
       if (manualSubtitleOverrideRef.current) return;
       if (subtitleOptions.length === 0) return;
       if (subtitlePreferenceRef.current.mode === "off") return;
       if (autoSubtitleSuppressedRef.current) return;
+      if (useMpv && !mpv.fileLoaded) return;
       const preferredLanguages = [defaultSubtitleLang, fallbackSubtitleLang, selectedLang].map((lang2) => normalizeLanguageCode(lang2)).filter((lang2, index3, values) => Boolean(lang2) && values.indexOf(lang2) === index3);
       if (preferredLanguages.length === 0) return;
       const preferredLanguage = subtitlePreferenceRef.current.mode === "language" ? normalizeLanguageCode(subtitlePreferenceRef.current.language) : null;
@@ -174559,7 +175703,16 @@
       }
       const embeddedFallback = subtitles.length === 0 ? embeddedSubtitleOptions[0] : null;
       if (embeddedFallback && embeddedFallback.id !== activeSubId) void selectSubtitle(embeddedFallback);
-    }, [subtitleOptions, selectedLang, fallbackSubtitleLang, subtitles.length, embeddedSubtitleOptions]);
+    }, [subtitleOptions, selectedLang, fallbackSubtitleLang, subtitles.length, embeddedSubtitleOptions, useMpv, mpv.fileLoaded]);
+    const lastSubReapplyTokenRef = useRef(0);
+    useEffect(() => {
+      if (!useMpv || !mpv.fileLoaded) return;
+      if (mpv.fileLoadedToken === lastSubReapplyTokenRef.current) return;
+      lastSubReapplyTokenRef.current = mpv.fileLoadedToken;
+      if (!activeSubId || activeSubId.startsWith("embedded:")) return;
+      const current2 = subtitleOptions.find((subtitle) => subtitle.id === activeSubId);
+      if (current2) void selectSubtitle(current2);
+    }, [useMpv, mpv.fileLoaded, mpv.fileLoadedToken, activeSubId, subtitleOptions]);
     const seekToAbsolute = useCallback((targetTime) => {
       setSubtitleClockOverride(Math.max(0, targetTime));
       if (useMpv) {
@@ -174616,7 +175769,6 @@
     }
     const progress2 = totalDuration > 0 ? realTime / totalDuration * 100 : 0;
     const hasSubtitles = subtitleOptions.length > 0;
-    const canAutoSyncNow = Boolean(activeSubId) && cues.length >= 2;
     const activeIntro = introSegment ? realTime >= introSegment.startMs / 1e3 && realTime < introSegment.endMs / 1e3 ? introSegment : null : null;
     const shouldShowSkipIntroButton = Boolean(hasStarted && !autoSkipIntro && activeIntro && introDataReady);
     const controlsReady = useMpv ? hasEverStarted || hasStarted || mpv.firstFrameRendered || mpvRevealPlaybackReady : hasEverStarted;
@@ -174644,75 +175796,215 @@
       (acc[_a = s.language] ?? (acc[_a] = [])).push(s);
       return acc;
     }, {});
-    const runSubtitleAutoSync = useCallback(async (opts) => {
-      const minConfidence = typeof opts?.minConfidence === "number" ? opts.minConfidence : null;
-      const groqApiKey = getGroqApiKey().trim();
-      if (!groqApiKey) {
-        setSubtitleAutoSyncState({ type: "error", message: t("subtitleAutoSyncNeedsGroq") });
-        return;
-      }
-      if (!activeSubId || cues.length < 2) {
-        setSubtitleAutoSyncState({ type: "error", message: t("subtitleAutoSyncNeedsSubtitle") });
-        return;
-      }
-      const syncTime = realTimeRef.current;
-      const cueWindow = cues.filter((cue) => cue.end >= Math.max(0, syncTime - 12) && cue.start <= syncTime + 20);
-      if (cueWindow.length < 2) {
-        setSubtitleAutoSyncState({ type: "error", message: t("subtitleAutoSyncNotEnoughSpeech") });
-        return;
-      }
-      setSubtitleAutoSyncState({ type: "analyzing" });
+    const applyManualAnchor = useCallback(async (cue) => {
+      const tapTime = manualSyncTapTime;
+      if (tapTime == null) return;
+      setManualSyncBusy(true);
       try {
-        const res = await fetch("/api/subtitles/auto-sync", {
+        const coarseDelay = Math.round((tapTime - cue.start) * 100) / 100;
+        let finalDelay = coarseDelay;
+        const activeAudioAid = useMpv ? activeAudioTrack ?? audioTracks.find((track) => track.index != null)?.index ?? null : null;
+        const audioTrackIndex = typeof activeAudioAid === "number" && activeAudioAid > 0 ? activeAudioAid - 1 : null;
+        const refined = await fetch("/api/subtitles/refine-offset", {
+          signal: AbortSignal.timeout(9e4),
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            apiKey: groqApiKey,
             url,
-            currentTime: syncTime,
-            cues: cueWindow
+            anchorTime: tapTime,
+            coarseDelay,
+            audioTrackIndex,
+            cues: cues.map((entry) => ({ start: entry.start, end: entry.end, text: entry.text }))
           })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "subtitle_auto_sync_failed");
-        if (typeof data.suggestedDelay !== "number") {
-          setSubtitleAutoSyncState({ type: "error", message: t("subtitleAutoSyncNoMatch") });
-          return;
-        }
-        if (minConfidence !== null && (data.confidence ?? 0) < minConfidence) {
-          setSubtitleAutoSyncState({ type: "idle" });
-          return;
+        }).catch(() => null);
+        if (refined?.ok) {
+          const data = await refined.json();
+          if (typeof data.refinedDelay === "number" && (data.score ?? 0) > 0.15) {
+            finalDelay = data.refinedDelay;
+          }
         }
         lastAutoSyncedDelayRef.current = subDelay;
-        setSubDelay(data.suggestedDelay);
-        setSubtitleAutoSyncState({
-          type: "done",
-          message: `${t("subtitleAutoSyncApplied")} ${data.suggestedDelay > 0 ? "+" : ""}${data.suggestedDelay.toFixed(1)}s`
-        });
-      } catch {
-        setSubtitleAutoSyncState({ type: "error", message: t("subtitleAutoSyncFailed") });
+        if (manualSyncFirstAnchor && Math.abs(tapTime - manualSyncFirstAnchor.time) >= 180) {
+          const s1 = manualSyncFirstAnchor.cueStart;
+          const t1 = manualSyncFirstAnchor.time;
+          const slope = (cue.start - s1) / (tapTime - t1) - 1;
+          setSubDelay(Math.round((t1 - s1) * 10) / 10);
+          setSubDrift(Math.abs(slope) > 5e-4 ? { slope, anchor: t1 } : null);
+          setSubtitleAutoSyncState({
+            type: "done",
+            message: `${t("subtitleAnchorApplied")} ${t1 - s1 > 0 ? "+" : ""}${(t1 - s1).toFixed(1)}s \xB7 ${t("subtitleAnchorDrift")}`
+          });
+          setManualSyncFirstAnchor(null);
+        } else {
+          setSubDelay(finalDelay);
+          setSubDrift(null);
+          setManualSyncFirstAnchor({ time: tapTime, cueStart: cue.start });
+          setSubtitleAutoSyncState({
+            type: "done",
+            message: `${t("subtitleAnchorApplied")} ${finalDelay > 0 ? "+" : ""}${finalDelay.toFixed(1)}s`
+          });
+        }
+        setManualSyncOpen(false);
+        setManualSyncTapTime(null);
+      } finally {
+        setManualSyncBusy(false);
       }
-    }, [activeSubId, cues, subDelay, t, url]);
+    }, [activeAudioTrack, audioTracks, cues, manualSyncFirstAnchor, manualSyncTapTime, subDelay, t, url, useMpv]);
+    const scanCastDevices = useCallback(async () => {
+      setCastScanning(true);
+      setCastError(null);
+      try {
+        const res = await fetch("/api/cast/devices", { signal: AbortSignal.timeout(15e3) });
+        const data = await res.json();
+        setCastDevices(Array.isArray(data.devices) ? data.devices : []);
+      } catch {
+        setCastError(t("castScanFailed"));
+      } finally {
+        setCastScanning(false);
+      }
+    }, [t]);
+    const sendToCast = useCallback(async (device, action) => {
+      setCastError(null);
+      try {
+        const res = await fetch("/api/cast/control", {
+          signal: AbortSignal.timeout(3e4),
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            kind: device.kind,
+            address: device.address,
+            controlUrl: device.controlUrl ?? null,
+            url,
+            title: mediaTitle ?? title,
+            action,
+            position: action === "play" ? realTimeRef.current : void 0
+          })
+        });
+        if (!res.ok) {
+          const payload = await res.json().catch(() => ({}));
+          setCastError(payload.error ?? t("castFailed"));
+          return;
+        }
+        if (action === "play") {
+          setCastTarget(device);
+          if (useMpv) void setMpvPause(true);
+        }
+        if (action === "stop") setCastTarget(null);
+      } catch {
+        setCastError(t("castFailed"));
+      }
+    }, [mediaTitle, t, title, url, useMpv]);
+    const prepareAirplaySession = useCallback(async () => {
+      setAirplayPrepare("preparing");
+      try {
+        const subContent = activeSubId && cues.length > 0 ? cuesToSrt(cues) : void 0;
+        airplayLog(`prepare start, sub=${subContent ? "external" : "none"}`);
+        const stream = await avplayerPrepare(url, realTimeRef.current, { subContent });
+        airplayLog(`prepare done, offset=${stream.offset}`);
+        setAirplaySession({ offset: stream.offset, streamUrl: stream.streamUrl });
+        setAirplayPrepare("ready");
+      } catch (e) {
+        airplayLog(`prepare failed: ${String(e)}`);
+        setAirplayPrepare("failed");
+      }
+    }, [activeSubId, cues, url]);
+    const stopAirplayVideo = useCallback(() => {
+      const v = airplayVideoRef.current;
+      if (!v) return;
+      v.pause();
+      v.removeAttribute("src");
+      v.load();
+    }, []);
+    useEffect(() => {
+      const v = airplayVideoRef.current;
+      if (!v || !airplaySession || !useMpv) return;
+      const offset = airplaySession.offset;
+      v.muted = true;
+      v.preload = "auto";
+      v.setAttribute("src", airplaySession.streamUrl);
+      v.load();
+      void v.play().catch(() => {
+      });
+      const availabilityHandler = (event) => {
+        const availability = event.availability;
+        airplayLog(`target availability -> ${availability}`);
+        setAirplayTargetReady(availability === "available");
+      };
+      v.addEventListener("webkitplaybacktargetavailabilitychanged", availabilityHandler);
+      const availabilityRetry = window.setTimeout(() => {
+        v.removeEventListener("webkitplaybacktargetavailabilitychanged", availabilityHandler);
+        v.addEventListener("webkitplaybacktargetavailabilitychanged", availabilityHandler);
+        airplayLog("availability listener re-attached");
+      }, 3e3);
+      const metadataHandler = () => {
+        airplayLog(`media state (readyState=${v.readyState})`);
+      };
+      const canplayHandler = () => {
+        airplayLog(`media ready (readyState=${v.readyState})`);
+        setAirplayMediaReady(true);
+      };
+      const errorHandler = () => {
+        airplayLog(`media error: code=${v.error?.code} msg=${v.error?.message ?? ""}`);
+        setAirplayPrepare("failed");
+      };
+      v.addEventListener("loadedmetadata", metadataHandler);
+      v.addEventListener("canplay", canplayHandler);
+      v.addEventListener("error", errorHandler);
+      if (v.readyState >= 3) setAirplayMediaReady(true);
+      airplayLog("wireless listener attached");
+      const handler = () => {
+        const wireless = v.webkitCurrentPlaybackTargetIsWireless === true;
+        airplayLog(`wireless changed -> ${wireless}`);
+        if (wireless && !airplayWasExternalRef.current) {
+          airplayWasExternalRef.current = true;
+          setAirplayActive(true);
+          void setMpvPause(true);
+          v.muted = false;
+          void v.play().catch(() => {
+          });
+        } else if (!wireless && airplayWasExternalRef.current) {
+          airplayWasExternalRef.current = false;
+          setAirplayActive(false);
+          const resumeAt = v.currentTime > 0 ? offset + v.currentTime : realTimeRef.current;
+          stopAirplayVideo();
+          void avplayerTeardown();
+          setAirplaySession(null);
+          setAirplayPrepare("idle");
+          void mpvCommand(["seek", resumeAt, "absolute"]);
+          void setMpvPause(false);
+        }
+      };
+      v.addEventListener("webkitcurrentplaybacktargetiswirelesschanged", handler);
+      return () => {
+        window.clearTimeout(availabilityRetry);
+        v.removeEventListener("webkitcurrentplaybacktargetiswirelesschanged", handler);
+        v.removeEventListener("webkitplaybacktargetavailabilitychanged", availabilityHandler);
+        v.removeEventListener("loadedmetadata", metadataHandler);
+        v.removeEventListener("canplay", canplayHandler);
+        v.removeEventListener("error", errorHandler);
+        setAirplayTargetReady(false);
+        setAirplayMediaReady(false);
+      };
+    }, [airplaySession, useMpv]);
+    useEffect(() => {
+      if (!airplaySession || airplayWasExternalRef.current || showCastMenu) return;
+      const timer = window.setTimeout(() => {
+        if (!airplayWasExternalRef.current) {
+          stopAirplayVideo();
+          void avplayerTeardown();
+          setAirplaySession(null);
+          setAirplayPrepare("idle");
+        }
+      }, 1e4);
+      return () => window.clearTimeout(timer);
+    }, [showCastMenu, airplaySession]);
     const undoSubtitleAutoSync = useCallback(() => {
       if (lastAutoSyncedDelayRef.current === null) return;
       setSubDelay(lastAutoSyncedDelayRef.current);
+      setSubDrift(null);
       lastAutoSyncedDelayRef.current = null;
       setSubtitleAutoSyncState({ type: "idle" });
     }, []);
-    const autoSyncAttemptKeyRef = useRef(null);
-    useEffect(() => {
-      if (!hasStarted || !activeSubId || activeSubId.startsWith("embedded:")) return;
-      if (subDelay !== 0 || lastAutoSyncedDelayRef.current !== null) return;
-      if (subtitleAutoSyncState.type !== "idle") return;
-      if (cues.length < 2 || realTime < 30) return;
-      const attemptKey = `${url}::${activeSubId}`;
-      if (autoSyncAttemptKeyRef.current === attemptKey) return;
-      if (!getGroqApiKey().trim()) return;
-      const cueWindow = cues.filter((cue) => cue.end >= realTime - 12 && cue.start <= realTime + 20);
-      if (cueWindow.length < 2) return;
-      autoSyncAttemptKeyRef.current = attemptKey;
-      void runSubtitleAutoSync({ minConfidence: 0.5 });
-    }, [activeSubId, cues, hasStarted, realTime, runSubtitleAutoSync, subDelay, subtitleAutoSyncState.type, url]);
     const content = /* @__PURE__ */ jsxs("div", { "data-lumio-player-open": "1", className: `fixed inset-0 z-[60] flex flex-col !mt-0 ${useMpv ? "" : "bg-black"}`, children: [
       !hasEverStarted && !hideStartSplash && /* @__PURE__ */ jsxs(
         "div",
@@ -174824,6 +176116,44 @@
           style: { cursor: useMpv ? "default" : controlsVisible ? "default" : "none" },
           onMouseMove: onMouseActivity,
           children: [
+            useMpv && /* Hidden WebKit video that owns the AirPlay hand-off — see the
+               AirPlay row in the cast menu. */
+            /* eslint-disable-next-line jsx-a11y/media-has-caption */
+            /* @__PURE__ */ jsx(
+              "video",
+              {
+                ref: airplayVideoRef,
+                playsInline: true,
+                style: { position: "absolute", bottom: 0, left: 0, width: 2, height: 2, opacity: 0, pointerEvents: "none" },
+                ...{ "x-webkit-airplay": "allow" }
+              }
+            ),
+            airplayActive && /* @__PURE__ */ jsxs("div", { className: "absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-black/80", children: [
+              /* @__PURE__ */ jsxs("span", { className: "text-lg text-white", children: [
+                t("castPlayingOn"),
+                " AirPlay"
+              ] }),
+              /* @__PURE__ */ jsx(
+                "button",
+                {
+                  type: "button",
+                  className: "rounded-full border border-white/15 px-3 py-1 text-[11px] text-slate-200 hover:bg-white/10",
+                  onClick: () => {
+                    const v = airplayVideoRef.current;
+                    const resumeAt = v && v.currentTime > 0 ? (airplaySession?.offset ?? 0) + v.currentTime : realTimeRef.current;
+                    setAirplayActive(false);
+                    airplayWasExternalRef.current = false;
+                    stopAirplayVideo();
+                    void avplayerTeardown();
+                    setAirplaySession(null);
+                    setAirplayPrepare("idle");
+                    void mpvCommand(["seek", resumeAt, "absolute"]);
+                    void setMpvPause(false);
+                  },
+                  children: t("castStop")
+                }
+              )
+            ] }),
             useMpv ? (
               // Transparent area — mpv NSView renders behind the WKWebView here
               /* @__PURE__ */ jsx("div", { style: { width: "100%", height: "100%", background: "transparent" } })
@@ -174970,6 +176300,78 @@
                 children: "Tryck f\xF6r att starta"
               }
             ) }),
+            manualSyncOpen && /* @__PURE__ */ jsx(
+              "div",
+              {
+                className: "absolute inset-0 z-[70] flex items-end justify-center bg-slate-950/70 p-6 backdrop-blur-sm",
+                onClick: () => {
+                  setManualSyncOpen(false);
+                  setManualSyncTapTime(null);
+                },
+                children: /* @__PURE__ */ jsx(
+                  "div",
+                  {
+                    className: "mb-24 w-full max-w-xl rounded-2xl border border-white/10 bg-slate-900/95 p-5 shadow-2xl",
+                    onClick: (event) => event.stopPropagation(),
+                    children: manualSyncTapTime === null ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+                      /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-200", children: t("subtitleManualSyncTapPrompt") }),
+                      /* @__PURE__ */ jsx(
+                        "button",
+                        {
+                          type: "button",
+                          autoFocus: true,
+                          onClick: () => setManualSyncTapTime(realTimeRef.current),
+                          className: "mt-4 w-full rounded-xl bg-aurora-500/80 px-4 py-3 text-sm font-semibold text-white transition hover:bg-aurora-400/80",
+                          children: t("subtitleManualSyncTapButton")
+                        }
+                      ),
+                      /* @__PURE__ */ jsx("p", { className: "mt-3 text-[11px] text-slate-500", children: t("subtitleManualSyncSecondHint") })
+                    ] }) : /* @__PURE__ */ jsxs(Fragment2, { children: [
+                      /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-200", children: manualSyncBusy ? t("subtitleManualSyncApplying") : t("subtitleManualSyncPickPrompt") }),
+                      manualSyncBusy && /* @__PURE__ */ jsxs("div", { className: "mt-3 flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-3", children: [
+                        /* @__PURE__ */ jsx("span", { className: "h-4 w-4 animate-spin rounded-full border-2 border-white/25 border-t-white/80" }),
+                        /* @__PURE__ */ jsx("span", { className: "text-xs text-slate-300", children: t("subtitleManualSyncRefining") })
+                      ] }),
+                      /* @__PURE__ */ jsx("div", { className: `mt-3 max-h-64 space-y-1 overflow-y-auto ${manualSyncBusy ? "pointer-events-none opacity-40" : ""}`, children: (() => {
+                        const near = cues.filter((cue) => Math.abs(cue.start - manualSyncTapTime) <= 120).sort((a, b) => Math.abs(a.start - manualSyncTapTime) - Math.abs(b.start - manualSyncTapTime)).slice(0, 40).sort((a, b) => a.start - b.start);
+                        if (near.length === 0) {
+                          return /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500", children: t("subtitleManualSyncNoCues") });
+                        }
+                        return near.map((cue) => /* @__PURE__ */ jsxs(
+                          "button",
+                          {
+                            type: "button",
+                            disabled: manualSyncBusy,
+                            onClick: () => {
+                              void applyManualAnchor(cue);
+                            },
+                            className: "flex w-full items-baseline gap-3 rounded-lg px-3 py-2 text-left text-sm text-slate-200 transition hover:bg-white/10 disabled:opacity-50",
+                            children: [
+                              /* @__PURE__ */ jsxs("span", { className: "shrink-0 font-mono text-[11px] text-slate-500", children: [
+                                Math.floor(cue.start / 60),
+                                ":",
+                                String(Math.floor(cue.start % 60)).padStart(2, "0")
+                              ] }),
+                              /* @__PURE__ */ jsx("span", { className: "line-clamp-2", children: cue.text.replace(/\n/g, " ") })
+                            ]
+                          },
+                          `${cue.start}-${cue.text.slice(0, 12)}`
+                        ));
+                      })() }),
+                      /* @__PURE__ */ jsx(
+                        "button",
+                        {
+                          type: "button",
+                          onClick: () => setManualSyncTapTime(null),
+                          className: "mt-3 text-xs text-slate-400 underline-offset-2 hover:text-white hover:underline",
+                          children: t("cancel2")
+                        }
+                      )
+                    ] })
+                  }
+                )
+              }
+            ),
             activeCue && /* @__PURE__ */ jsx(
               "div",
               {
@@ -174994,6 +176396,94 @@
                 )
               }
             ),
+            showCastMenu && /* @__PURE__ */ jsxs("div", { className: "absolute bottom-20 right-4 z-[60] w-72 rounded-2xl border border-white/10 bg-slate-900/95 p-4 shadow-2xl backdrop-blur", children: [
+              /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between", children: [
+                /* @__PURE__ */ jsx("p", { className: "text-xs uppercase tracking-[0.2em] text-slate-400", children: t("castTitle") }),
+                /* @__PURE__ */ jsx(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: () => void scanCastDevices(),
+                    disabled: castScanning,
+                    className: "text-[11px] text-slate-400 underline-offset-2 hover:text-white hover:underline disabled:opacity-50",
+                    children: t("castRescan")
+                  }
+                )
+              ] }),
+              castTarget && /* @__PURE__ */ jsxs("div", { className: "mt-3 rounded-xl border border-aurora-400/30 bg-aurora-400/10 p-3", children: [
+                /* @__PURE__ */ jsx("p", { className: "text-[11px] uppercase tracking-[0.18em] text-aurora-200", children: t("castPlayingOn") }),
+                /* @__PURE__ */ jsx("p", { className: "mt-1 truncate text-sm text-white", children: castTarget.name }),
+                /* @__PURE__ */ jsxs("div", { className: "mt-2 flex gap-2", children: [
+                  /* @__PURE__ */ jsx(
+                    "button",
+                    {
+                      type: "button",
+                      onClick: () => void sendToCast(castTarget, "pause"),
+                      className: "rounded-full border border-white/15 px-3 py-1 text-[11px] text-slate-200 hover:bg-white/10",
+                      children: t("castPause")
+                    }
+                  ),
+                  /* @__PURE__ */ jsx(
+                    "button",
+                    {
+                      type: "button",
+                      onClick: () => void sendToCast(castTarget, "resume"),
+                      className: "rounded-full border border-white/15 px-3 py-1 text-[11px] text-slate-200 hover:bg-white/10",
+                      children: t("castResume")
+                    }
+                  ),
+                  /* @__PURE__ */ jsx(
+                    "button",
+                    {
+                      type: "button",
+                      onClick: () => void sendToCast(castTarget, "stop"),
+                      className: "rounded-full border border-white/15 px-3 py-1 text-[11px] text-slate-200 hover:bg-white/10",
+                      children: t("castStop")
+                    }
+                  )
+                ] })
+              ] }),
+              /* @__PURE__ */ jsx("div", { className: "mt-3 max-h-56 space-y-1 overflow-y-auto", children: castScanning && castDevices.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500", children: t("castScanning") }) : castDevices.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500", children: t("castNoDevices") }) : castDevices.filter((device) => device.kind !== "airplay").map((device) => /* @__PURE__ */ jsxs(
+                "button",
+                {
+                  type: "button",
+                  onClick: () => void sendToCast(device, "play"),
+                  className: "flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left transition hover:bg-white/10",
+                  children: [
+                    /* @__PURE__ */ jsx("span", { className: "truncate text-sm text-slate-200", children: device.name }),
+                    /* @__PURE__ */ jsx("span", { className: "shrink-0 text-[10px] uppercase tracking-[0.16em] text-slate-500", children: device.kind === "chromecast" ? "Cast" : "DLNA" })
+                  ]
+                },
+                device.id
+              )) }),
+              useMpv && /* @__PURE__ */ jsxs(
+                "button",
+                {
+                  type: "button",
+                  disabled: airplayPrepare === "preparing" || airplaySession !== null && !(airplayTargetReady && airplayMediaReady),
+                  onClick: () => {
+                    if (!airplaySession) {
+                      void prepareAirplaySession();
+                      return;
+                    }
+                    const v = airplayVideoRef.current;
+                    if (!v) return;
+                    void v.play().catch(() => {
+                    });
+                    const show = v.webkitShowPlaybackTargetPicker;
+                    airplayLog(`row click, picker=${typeof show}, readyState=${v.readyState}`);
+                    if (typeof show === "function") show.call(v);
+                    else setCastError(t("castFailed"));
+                  },
+                  className: "flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left transition hover:bg-white/10 disabled:cursor-default disabled:opacity-50",
+                  children: [
+                    /* @__PURE__ */ jsx("span", { className: "truncate text-sm text-slate-200", children: "AirPlay" }),
+                    /* @__PURE__ */ jsx("span", { className: `shrink-0 text-[10px] uppercase tracking-[0.16em] ${airplayPrepare === "failed" ? "text-rose-300" : "text-slate-500"}`, children: airplayPrepare === "failed" ? t("castPrepareFailed") : airplaySession && airplayTargetReady && airplayMediaReady ? "AirPlay" : t("castPreparing") })
+                  ]
+                }
+              ),
+              castError && /* @__PURE__ */ jsx("p", { className: "mt-3 text-[11px] leading-5 text-rose-300", children: castError })
+            ] }),
             showSubMenu && // The CC panel is three columns wide — anchoring it at the trigger
             // and growing leftward clipped it against the window's left edge.
             // Pin it to the window's right edge instead; only `bottom` follows
@@ -175077,11 +176567,13 @@
                         {
                           type: "button",
                           onClick: () => {
-                            void runSubtitleAutoSync();
+                            setShowSubMenu(false);
+                            setManualSyncTapTime(null);
+                            setManualSyncOpen(true);
                           },
-                          disabled: subtitleAutoSyncState.type === "analyzing",
-                          className: `w-full rounded-lg border px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.18em] transition ${subtitleAutoSyncState.type === "analyzing" ? "cursor-wait border-white/15 bg-white/5 text-slate-300" : canAutoSyncNow ? "border-aurora-400/40 bg-aurora-400/10 text-aurora-200 hover:bg-aurora-400/15" : "border-white/10 bg-white/5 text-slate-500 hover:border-white/20"}`,
-                          children: subtitleAutoSyncState.type === "analyzing" ? t("subtitleAutoSyncAnalyzing") : t("subtitleAutoSync")
+                          disabled: cues.length < 2,
+                          className: `mt-2 w-full rounded-lg border px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.18em] transition ${cues.length >= 2 ? "border-white/15 bg-white/5 text-slate-200 hover:border-white/25 hover:bg-white/10" : "border-white/10 bg-white/5 text-slate-500"}`,
+                          children: t("subtitleManualSync")
                         }
                       ),
                       subtitleAutoSyncState.type !== "idle" && subtitleAutoSyncState.type !== "analyzing" && /* @__PURE__ */ jsxs("div", { className: "mt-2 text-[11px] leading-5 text-slate-400", children: [
@@ -175207,6 +176699,26 @@
                         title: t("subtitlesLabel"),
                         className: `ml-auto shrink-0 rounded px-1.5 py-0.5 text-xs font-bold uppercase tracking-wider transition ${activeSubId ? "bg-aurora-400 text-black" : hasSubtitles || loadingSub || subtitleLoadError || resolvedImdbId ? "text-slate-300 hover:text-white" : "text-slate-500"}`,
                         children: "CC"
+                      }
+                    ),
+                    /* @__PURE__ */ jsx(
+                      "button",
+                      {
+                        type: "button",
+                        onClick: () => {
+                          const opening = !showCastMenu;
+                          setShowCastMenu(opening);
+                          if (opening && castDevices.length === 0) void scanCastDevices();
+                          if (opening && useMpv && !airplaySession) void prepareAirplaySession();
+                        },
+                        title: t("castTitle"),
+                        className: `shrink-0 rounded px-1 py-0.5 transition ${castTarget ? "text-aurora-300" : "text-slate-300 hover:text-white"}`,
+                        children: /* @__PURE__ */ jsxs("svg", { width: "18", height: "18", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", children: [
+                          /* @__PURE__ */ jsx("path", { d: "M2 16.1a5 5 0 0 1 5.9 5.9" }),
+                          /* @__PURE__ */ jsx("path", { d: "M2 12.05a9 9 0 0 1 9.95 9.95" }),
+                          /* @__PURE__ */ jsx("path", { d: "M2 8.05a13 13 0 0 1 13.95 13.95" }),
+                          /* @__PURE__ */ jsx("path", { d: "M4 4h16a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-5" })
+                        ] })
                       }
                     ),
                     audioTracks.length > 0 && /* @__PURE__ */ jsx(
@@ -175649,7 +177161,7 @@
     if (maybeTauriWindow.__TAURI_INTERNALS__ || maybeTauriWindow.__TAURI__) return true;
     const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "";
     if (userAgent.includes("Tauri")) return true;
-    return isLocalAppHost(window.location.hostname) && window.location.port === "3011";
+    return false;
   }
   async function emitDesktopPlaybackTelemetry(payload) {
     if (!isPluginDesktopHost()) return false;
@@ -178419,7 +179931,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-T7aBcM/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-3gus0W/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

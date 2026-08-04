@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.2
+
+- Player modal renders via a portal to `<body>`, so it always covers the whole window — previously a transformed ancestor could offset it and leave a strip of the page visible at the top.
+
 ## 1.3.1
 
 - Search page: input now sits beside the heading (title left, search right) instead of below it, and the "Start typing to search Twitch." prompt is gone.

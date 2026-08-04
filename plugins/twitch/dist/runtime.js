@@ -46,7 +46,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LOd9UW/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ucXx3V/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -95,7 +95,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LOd9UW/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ucXx3V/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -143,7 +143,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LOd9UW/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ucXx3V/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -153,7 +153,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LOd9UW/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ucXx3V/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -164302,6 +164302,38 @@
       subtitleAutoSync: "Auto-sync",
       subtitleAutoSyncAnalyzing: "Analyzing...",
       subtitleAutoSyncApplied: "Applied offset",
+      subtitleAlignedToReference: "Synced against a subtitle matching your file",
+      subtitleHashMatch: "Matches your file",
+      subtitleAlignedToAudio: "Synced against the full audio track",
+      subtitleAnchorApplied: "Synced from your tap",
+      subtitleAnchorDrift: "drift corrected too",
+      subtitleManualSync: "Sync by ear",
+      subtitleManualSyncTapPrompt: "Press when you hear a line you recognise",
+      subtitleManualSyncTapButton: "I hear it now",
+      subtitleManualSyncPickPrompt: "Which line did you just hear?",
+      subtitleManualSyncSecondHint: "Repeat this later in the film to also correct drift.",
+      subtitleManualSyncNoCues: "No subtitle lines near this point.",
+      subtitleManualSyncApplying: "Applying your sync\u2026",
+      subtitleManualSyncRefining: "Fine-tuning against the audio\u2026",
+      castTitle: "Play on another device",
+      castScanning: "Looking for devices\u2026",
+      castNoDevices: "No Chromecast or DLNA devices found.",
+      castPreparing: "Preparing stream\u2026",
+      castPrepareFailed: "Failed \u2014 tap to retry",
+      castRescan: "Search again",
+      castScanFailed: "Could not search for devices.",
+      castFailed: "The device would not accept playback.",
+      castPlayingOn: "Playing on",
+      castStop: "Stop casting",
+      castPause: "Pause",
+      castResume: "Resume",
+      castPairTitle: "Pair with Apple TV",
+      castPairPrompt: "Enter the code shown on your TV",
+      castPairConfirm: "Pair",
+      castPairing: "Pairing\u2026",
+      castPairFailed: "Pairing failed. Try again.",
+      cancel2: "Cancel",
+      subtitleAutoSyncNoReference: "Not certain enough from audio alone. Add an OpenSubtitles API key in Settings to sync against a subtitle matching your file.",
       subtitleAutoSyncFailed: "Could not auto-sync subtitles",
       subtitleAutoSyncDriftApplied: "drift corrected ({rate}s/min)",
       subtitleAutoSyncNoMatch: "Could not find a reliable subtitle match",
@@ -165047,6 +165079,7 @@
       hpSliderCardsHint: "How many cards a slider shows at most, globally.",
       hpSliderCardsRowLabel: "Slider cards",
       hpSliderCardsGlobalOption: "Global ({count})",
+      ipDescOpenSubtitles: "Deeper subtitle search via your own OpenSubtitles API key (free at opensubtitles.com \u2192 API consumers). Without a key, only the community catalog is searched.",
       tgSectionEyebrow: "Trailers page",
       tgColumnsLabel: "Columns",
       tgColumnsHint: "How many columns the trailer grid shows.",
@@ -165409,6 +165442,38 @@
       subtitleAutoSync: "Auto-sync",
       subtitleAutoSyncAnalyzing: "Analyserar...",
       subtitleAutoSyncApplied: "La p\xE5 offset",
+      subtitleAlignedToReference: "Synkad mot en undertext som matchar din fil",
+      subtitleHashMatch: "Matchar din fil",
+      subtitleAlignedToAudio: "Synkad mot hela ljudsp\xE5ret",
+      subtitleAnchorApplied: "Synkad fr\xE5n din markering",
+      subtitleAnchorDrift: "drift korrigerad ocks\xE5",
+      subtitleManualSync: "Synka p\xE5 geh\xF6r",
+      subtitleManualSyncTapPrompt: "Tryck n\xE4r du h\xF6r en replik du k\xE4nner igen",
+      subtitleManualSyncTapButton: "Jag h\xF6r den nu",
+      subtitleManualSyncPickPrompt: "Vilken rad h\xF6rde du nyss?",
+      subtitleManualSyncSecondHint: "G\xF6r om det senare i filmen f\xF6r att \xE4ven r\xE4tta driften.",
+      subtitleManualSyncNoCues: "Inga undertextrader n\xE4ra den h\xE4r punkten.",
+      subtitleManualSyncApplying: "Till\xE4mpar din synkning\u2026",
+      subtitleManualSyncRefining: "Finjusterar mot ljudet\u2026",
+      castTitle: "Spela p\xE5 annan enhet",
+      castScanning: "S\xF6ker efter enheter\u2026",
+      castNoDevices: "Inga Chromecast- eller DLNA-enheter hittades.",
+      castPreparing: "F\xF6rbereder str\xF6m\u2026",
+      castPrepareFailed: "Misslyckades \u2014 klicka f\xF6r nytt f\xF6rs\xF6k",
+      castRescan: "S\xF6k igen",
+      castScanFailed: "Kunde inte s\xF6ka efter enheter.",
+      castFailed: "Enheten accepterade inte uppspelningen.",
+      castPlayingOn: "Spelar p\xE5",
+      castStop: "Sluta casta",
+      castPause: "Pausa",
+      castResume: "Forts\xE4tt",
+      castPairTitle: "Parkoppla med Apple TV",
+      castPairPrompt: "Ange koden som visas p\xE5 din TV",
+      castPairConfirm: "Parkoppla",
+      castPairing: "Parkopplar\u2026",
+      castPairFailed: "Parkopplingen misslyckades. F\xF6rs\xF6k igen.",
+      cancel2: "Avbryt",
+      subtitleAutoSyncNoReference: "Inte s\xE4ker nog utifr\xE5n bara ljudet. L\xE4gg in en OpenSubtitles API-nyckel i Inst\xE4llningar f\xF6r att synka mot en undertext som matchar din fil.",
       subtitleAutoSyncFailed: "Kunde inte auto-synca undertexterna",
       subtitleAutoSyncDriftApplied: "drift korrigerad ({rate}s/min)",
       subtitleAutoSyncNoMatch: "Kunde inte hitta en tillr\xE4ckligt bra matchning",
@@ -166154,6 +166219,7 @@
       hpSliderCardsHint: "Hur m\xE5nga kort en slider max visar globalt.",
       hpSliderCardsRowLabel: "Sliderkort",
       hpSliderCardsGlobalOption: "Global ({count})",
+      ipDescOpenSubtitles: "Djupare undertexts\xF6kning via egen OpenSubtitles API-nyckel (gratis p\xE5 opensubtitles.com \u2192 API consumers). Utan nyckel s\xF6ks bara community-katalogen.",
       tgSectionEyebrow: "Trailersidan",
       tgColumnsLabel: "Kolumner",
       tgColumnsHint: "Hur m\xE5nga kolumner trailer-griden visar.",
@@ -166355,7 +166421,7 @@
   var import_react55 = __toESM(require_dist89());
   init_jsx_runtime_shim();
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LOd9UW/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ucXx3V/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
   function resolveAuthCapabilityStatus(providerId) {
     return sdk.resolveAuthCapabilityStatus(providerId);
@@ -166734,6 +166800,9 @@
   // components/player/player-soundtrack-panel.tsx
   init_react_shim();
   init_jsx_runtime_shim();
+
+  // lib/tauri-avplayer.ts
+  init_core();
 
   // components/player/video-player-modal.tsx
   init_jsx_runtime_shim();
@@ -167338,6 +167407,7 @@
 
   // ../lumio-official-plugins/plugins/twitch/runtime/twitch-player.tsx
   init_react_shim();
+  var import_react_dom2 = __toESM(require_react_dom(), 1);
   init_jsx_runtime_shim();
   function embedUrl(kind, id4, parents) {
     const parentQs = parents.map((p) => `parent=${encodeURIComponent(p)}`).join("&");
@@ -167359,31 +167429,34 @@
       window.addEventListener("keydown", onKey);
       return () => window.removeEventListener("keydown", onKey);
     }, [onClose]);
-    return /* @__PURE__ */ jsxs("div", { className: "fixed inset-0 z-[300] flex flex-col bg-black", children: [
-      /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between px-4 py-2 text-white", children: [
-        /* @__PURE__ */ jsx("span", { className: "truncate text-sm", children: title }),
+    return (0, import_react_dom2.createPortal)(
+      /* @__PURE__ */ jsxs("div", { className: "fixed inset-0 z-[300] flex flex-col bg-black", children: [
+        /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between px-4 py-2 text-white", children: [
+          /* @__PURE__ */ jsx("span", { className: "truncate text-sm", children: title }),
+          /* @__PURE__ */ jsx(
+            "button",
+            {
+              type: "button",
+              onClick: onClose,
+              "aria-label": "Close",
+              className: "rounded-full px-3 py-1 hover:bg-white/10",
+              children: "\u2715"
+            }
+          )
+        ] }),
         /* @__PURE__ */ jsx(
-          "button",
+          "iframe",
           {
-            type: "button",
-            onClick: onClose,
-            "aria-label": "Close",
-            className: "rounded-full px-3 py-1 hover:bg-white/10",
-            children: "\u2715"
+            title,
+            src: embedUrl(kind, id4, TWITCH_EMBED_PARENTS),
+            className: "h-full w-full flex-1 border-0",
+            allow: "autoplay; fullscreen",
+            allowFullScreen: true
           }
         )
       ] }),
-      /* @__PURE__ */ jsx(
-        "iframe",
-        {
-          title,
-          src: embedUrl(kind, id4, TWITCH_EMBED_PARENTS),
-          className: "h-full w-full flex-1 border-0",
-          allow: "autoplay; fullscreen",
-          allowFullScreen: true
-        }
-      )
-    ] });
+      document.body
+    );
   }
 
   // ../lumio-official-plugins/plugins/twitch/runtime/twitch-browser.tsx
@@ -168913,7 +168986,7 @@
   };
   var runtime_default = TwitchPlugin;
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-LOd9UW/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-ucXx3V/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");
