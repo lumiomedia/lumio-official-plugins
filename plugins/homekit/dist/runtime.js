@@ -46,7 +46,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-cBj0b6/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-hL9vXT/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -95,7 +95,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-cBj0b6/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-hL9vXT/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -29688,7 +29688,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-cBj0b6/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-hL9vXT/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -29698,7 +29698,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-cBj0b6/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-hL9vXT/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -164626,8 +164626,6 @@
       rememberAspectRatioDesc: "Uses your chosen aspect ratio as the default for new movies and episodes.",
       autoSkipIntro: "Auto-skip intro",
       autoSkipIntroDesc: "When enabled, intros are skipped automatically. When disabled, a Skip intro button is shown if IntroDB has a match.",
-      autoplayStreamOnPlay: "Auto-play on Play button",
-      autoplayStreamOnPlayDesc: "Play tries up to 3 streams automatically. Known mismatches on audio language and oversized files are skipped when possible.",
       hideWatchedMoviesHome: "Hide watched movies on Home",
       hideWatchedMoviesHomeDesc: "Exclude movies marked as watched from Home grids and sliders.",
       stillWatching: "Still watching?",
@@ -164660,6 +164658,9 @@
       nightModeOff: "Off",
       nightModeMild: "Mild night mode",
       nightModeStrong: "Strong night mode",
+      nightModeMenuLabel: "Night mode",
+      nightModeMenuMild: "Mild",
+      nightModeMenuStrong: "Strong",
       defaultSubtitleLanguage: "Default subtitles language",
       defaultSubtitleLanguageDesc: "Selected automatically when subtitles are available.",
       fallbackSubtitleLanguage: "Fallback subtitles language",
@@ -165766,8 +165767,6 @@
       rememberAspectRatioDesc: "Anv\xE4nder ditt valda bildformat som standard f\xF6r nya filmer och avsnitt.",
       autoSkipIntro: "Auto-skippa intro",
       autoSkipIntroDesc: "Om det \xE4r p\xE5slaget hoppas intro \xF6ver automatiskt. Om det \xE4r av visas en Skippa intro-knapp n\xE4r IntroDB har en tr\xE4ff.",
-      autoplayStreamOnPlay: "Auto-spela fr\xE5n Play-knappen",
-      autoplayStreamOnPlayDesc: "F\xF6r vanliga kort testar Play upp till 3 streams automatiskt. K\xE4nda fel spr\xE5ksp\xE5r och f\xF6r stora filer hoppas \xF6ver n\xE4r det g\xE5r.",
       hideWatchedMoviesHome: "D\xF6lj sedda filmer p\xE5 startsidan",
       hideWatchedMoviesHomeDesc: "Exkludera filmer som markerats som sedda fr\xE5n startsidans gridar och sliders.",
       stillWatching: "Tittar du fortfarande?",
@@ -165800,6 +165799,9 @@
       nightModeOff: "Av",
       nightModeMild: "Mild nattl\xE4ge",
       nightModeStrong: "Stark nattl\xE4ge",
+      nightModeMenuLabel: "Nattl\xE4ge",
+      nightModeMenuMild: "Mild",
+      nightModeMenuStrong: "Stark",
       defaultSubtitleLanguage: "Standard spr\xE5k f\xF6r textning",
       defaultSubtitleLanguageDesc: "V\xE4ljs automatiskt n\xE4r undertexter finns tillg\xE4ngliga.",
       fallbackSubtitleLanguage: "Sekund\xE4rt spr\xE5k f\xF6r textning",
@@ -166351,7 +166353,7 @@
   var import_react55 = __toESM(require_dist89());
   init_jsx_runtime_shim();
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-cBj0b6/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-hL9vXT/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
 
   // lib/tauri-mpv.ts
@@ -166979,7 +166981,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-cBj0b6/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-hL9vXT/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");
