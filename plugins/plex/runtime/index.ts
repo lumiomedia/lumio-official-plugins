@@ -16,7 +16,7 @@ export const PlexPlugin: LumioPlugin = {
   version: '1.0.26',
   description: {
     en: 'Browse and play media from your Plex Media Server.',
-    sv: 'Bladdra i och spela upp media från din Plex Media Server.',
+    sv: 'Bläddra i och spela upp media från din Plex Media Server.',
   },
   preinstalled: true,
 

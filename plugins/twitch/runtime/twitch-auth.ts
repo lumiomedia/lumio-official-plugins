@@ -1,6 +1,6 @@
 'use client'
 
-import { isPluginDesktopHost, launchPluginProgram } from '@/lib/plugin-sdk'
+import { isPluginDesktopHost, launchPluginProgram, type PluginText } from '@/lib/plugin-sdk'
 import { helixUrl } from './twitch-client'
 import {
   clearTwitchSession,
@@ -32,6 +32,22 @@ interface TwitchHelixUser {
   id: string
   login: string
   display_name: string
+}
+
+/**
+ * Login failure that carries its own localized copy. This module is not a
+ * component, so it cannot call `useLang()`; the settings UI resolves `text`
+ * with `resolvePluginText()` — the same {en, sv} convention the rest of this
+ * plugin uses for its strings.
+ */
+export class TwitchAuthError extends Error {
+  readonly text: PluginText
+
+  constructor(text: PluginText) {
+    super(typeof text === 'string' ? text : text.en ?? 'Twitch login failed.')
+    this.name = 'TwitchAuthError'
+    this.text = text
+  }
 }
 
 const DEFAULT_POLL_INTERVAL_SECONDS = 5
@@ -79,7 +95,11 @@ async function startTwitchDeviceFlow(): Promise<DeviceStartResponse> {
   const payload = (await response.json().catch(() => ({}))) as Partial<DeviceStartResponse> & { error?: string }
 
   if (!response.ok || !payload.device_code || !payload.user_code || !payload.verification_uri) {
-    throw new Error(payload.error || 'Could not start Twitch login.')
+    if (payload.error) throw new Error(payload.error)
+    throw new TwitchAuthError({
+      en: 'Could not start Twitch login.',
+      sv: 'Kunde inte starta Twitch-inloggningen.',
+    })
   }
 
   return {
@@ -116,12 +136,18 @@ async function resolveTwitchAccount(accessToken: string): Promise<TwitchHelixUse
     headers: { 'x-twitch-user-token': accessToken },
   })
   if (!response.ok) {
-    throw new Error(`Could not resolve Twitch account (${response.status}).`)
+    throw new TwitchAuthError({
+      en: `Could not resolve Twitch account (${response.status}).`,
+      sv: `Kunde inte hämta Twitch-kontot (${response.status}).`,
+    })
   }
   const payload = (await response.json().catch(() => ({}))) as { data?: TwitchHelixUser[] }
   const user = payload.data?.[0]
   if (!user?.id || !user.login) {
-    throw new Error('Could not resolve Twitch account.')
+    throw new TwitchAuthError({
+      en: 'Could not resolve Twitch account.',
+      sv: 'Kunde inte hämta Twitch-kontot.',
+    })
   }
   return user
 }
@@ -163,10 +189,17 @@ export async function connectTwitch(onCode: (userCode: string, verificationUri: 
       intervalMs += SLOW_DOWN_STEP_MS
       continue
     }
-    throw new Error(poll.error || 'Twitch device login failed')
+    if (poll.error) throw new Error(poll.error)
+    throw new TwitchAuthError({
+      en: 'Twitch device login failed.',
+      sv: 'Twitch-inloggningen med enhetskod misslyckades.',
+    })
   }
 
-  throw new Error('Twitch login timed out. Try connecting again.')
+  throw new TwitchAuthError({
+    en: 'Twitch login timed out. Try connecting again.',
+    sv: 'Twitch-inloggningen tog för lång tid. Försök ansluta igen.',
+  })
 }
 
 export function disconnectTwitch(): void {

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useLang } from '@/lib/plugin-sdk'
 import { LiveTvLogoImage } from './live-tv-logo-image'
 import { useLiveTvEpgCache } from './hooks/useLiveTvEpgCache'
 import { buildNameToTvgIdIndex, resolveTvgId } from './epg/name-match'
@@ -56,6 +57,7 @@ interface ChannelRow {
 }
 
 export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
+  const { t } = useLang()
   const [lists, setLists] = useState<LiveTvList[]>(() => getLiveTvLists())
   const [activeListId, setActiveListId] = useState<string | null>(null)
   const [nowTick, setNowTick] = useState(() => Date.now())
@@ -204,18 +206,23 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
   const hasSources = epgUrls.length > 0
   const failures = cache?.failures ?? []
   const emptyMessage = lists.length === 0
-    ? 'Ingen Live TV-lista finns ännu.'
+    ? t('liveTvGuideNoLists')
     : !hasSources
-      ? 'Ingen EPG-källa är kopplad till den här Live TV-listan.'
+      ? t('liveTvGuideNoEpgSource')
       : !cache
-        ? 'Hämtar guidedata...'
+        ? t('liveTvGuideLoading')
         : failures.length > 0 && guideStats.sourceChannels === 0
-          ? `EPG-källan kunde inte hämtas: ${failures.map((failure) => failure.error).join(', ')}`
+          ? t('liveTvGuideFetchFailed').replace(
+              '{errors}',
+              failures.map((failure) => failure.error).join(', '),
+            )
           : guideStats.sourceChannels === 0
-            ? 'EPG-källan hämtades men innehöll inga program.'
+            ? t('liveTvGuideNoProgrammes')
             : guideStats.matched === 0
-              ? `EPG hämtad (${guideStats.sourceChannels} kanaler), men inga av listans kanaler matchade.`
-              : `EPG hämtad (${guideStats.sourceChannels} kanaler, ${guideStats.matched} matchade), men inga program ligger i tidsfönstret.`
+              ? t('liveTvGuideNoMatches').replace('{channels}', String(guideStats.sourceChannels))
+              : t('liveTvGuideNoProgrammesInWindow')
+                  .replace('{channels}', String(guideStats.sourceChannels))
+                  .replace('{matched}', String(guideStats.matched))
 
   return (
     <div
@@ -225,14 +232,14 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
       <div className="flex items-center justify-between gap-4 border-b border-white/5 px-5 py-3">
         <div className="flex min-w-0 items-center gap-3">
           <span className="text-[10px] uppercase tracking-[0.24em] text-emerald-300/80">EPG</span>
-          <h2 className="truncate text-base font-semibold text-white">TV-tablå</h2>
+          <h2 className="truncate text-base font-semibold text-white">{t('liveTvGuideTitle')}</h2>
           {lists.length > 0 ? (
             <select
               value={activeListId ?? ''}
               onChange={(event) => setActiveListId(event.target.value || null)}
               className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-slate-200 outline-none transition hover:border-white/30 focus:border-white/40"
             >
-              <option value="" className="bg-slate-900">Alla</option>
+              <option value="" className="bg-slate-900">{t('all')}</option>
               {lists.map((list) => (
                 <option key={list.id} value={list.id} className="bg-slate-900">
                   {list.name}
@@ -251,7 +258,7 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
                 : 'border-emerald-300/50 bg-emerald-400/15 text-emerald-200'
             }`}
           >
-            Alla
+            {t('all')}
           </button>
           <select
             value={channelFilter?.url ?? ''}
@@ -261,9 +268,9 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
               if (next) setSelectedChannel(next)
             }}
             className="max-w-[16rem] rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[11px] uppercase tracking-[0.14em] text-slate-200 outline-none transition hover:border-white/35 focus:border-white/40"
-            title="Filtrera kanal"
+            title={t('liveTvFilterChannel')}
           >
-            <option value="" className="bg-slate-900">Alla kanaler</option>
+            <option value="" className="bg-slate-900">{t('liveTvAllChannels')}</option>
             {allRows.map(({ channel }) => (
               <option key={channel.url} value={channel.url} className="bg-slate-900">
                 {channel.name}
@@ -279,9 +286,9 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
                 ? 'border-emerald-300/50 bg-emerald-400/15 text-emerald-200'
                 : 'border-white/15 bg-white/5 text-slate-300 hover:border-white/35 hover:text-white'
             }`}
-            title={selectedChannel?.name ?? 'Välj en kanal'}
+            title={selectedChannel?.name ?? t('liveTvSelectChannel')}
           >
-            {selectedChannel ? selectedChannel.name : 'Vald kanal'}
+            {selectedChannel ? selectedChannel.name : t('liveTvSelectedChannel')}
           </button>
           <button
             type="button"
@@ -292,14 +299,14 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
             }}
             className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[11px] uppercase tracking-[0.22em] text-slate-200 transition hover:border-white/35 hover:text-white"
           >
-            Nu
+            {t('liveTvNow')}
           </button>
           <button
             type="button"
             onClick={onClose}
             className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[11px] uppercase tracking-[0.22em] text-slate-200 transition hover:border-white/35 hover:text-white"
           >
-            Stäng
+            {t('close')}
           </button>
         </div>
       </div>
@@ -431,7 +438,9 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
                           </div>
                           <div className="truncate text-[10px] text-white/55">
                             {formatHour(p.start)}
-                            {isLive ? ` • ${formatRemaining(p.stop, nowTick)} kvar` : ''}
+                            {isLive
+                              ? ` • ${t('liveTvRemaining').replace('{time}', formatRemaining(p.stop, nowTick))}`
+                              : ''}
                           </div>
                           {isLive ? (
                             <div
@@ -463,7 +472,9 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
           <div className="flex items-center gap-3">
             <div className="text-[10px] uppercase tracking-[0.22em] text-emerald-300/80">{formatHour(selectedProgramme.start)} – {formatHour(selectedProgramme.stop)}</div>
             <div className="text-sm font-semibold text-white">{selectedProgramme.title}</div>
-            <span className="text-[11px] text-slate-400">på {selectedChannel.name}</span>
+            <span className="text-[11px] text-slate-400">
+              {t('liveTvOnChannel').replace('{channel}', selectedChannel.name)}
+            </span>
           </div>
           {selectedProgramme.description ? (
             <p className="mt-1 line-clamp-2 text-xs text-white/60">{selectedProgramme.description}</p>

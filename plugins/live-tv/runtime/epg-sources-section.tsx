@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useLang } from '@/lib/plugin-sdk'
 import { useLiveTvEpgCache } from './hooks/useLiveTvEpgCache'
 
 interface Props {
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function EpgSourcesSection({ autoUrl, manualUrls, onChangeManual, listId = null, allUrls = [] }: Props) {
+  const { t } = useLang()
   const [draft, setDraft] = useState('')
   const cache = useLiveTvEpgCache(listId, allUrls)
   const addUrl = () => {
@@ -30,7 +32,9 @@ export function EpgSourcesSection({ autoUrl, manualUrls, onChangeManual, listId 
     if (stat) {
       return (
         <span className="mt-1 block text-[10px] text-emerald-300/70">
-          {stat.channelCount} channels · {stat.programmeCount} programmes
+          {t('liveTvEpgSourceStats')
+            .replace('{channels}', String(stat.channelCount))
+            .replace('{programmes}', String(stat.programmeCount))}
         </span>
       )
     }
@@ -41,7 +45,7 @@ export function EpgSourcesSection({ autoUrl, manualUrls, onChangeManual, listId 
   }
   return (
     <section className="space-y-2">
-      <h3 className="text-sm font-semibold text-white">EPG sources</h3>
+      <h3 className="text-sm font-semibold text-white">{t('liveTvEpgSources')}</h3>
       {autoUrl ? (
         <div className="flex items-center justify-between rounded border border-white/5 bg-black/30 px-3 py-2">
           <span className="min-w-0">
@@ -65,17 +69,17 @@ export function EpgSourcesSection({ autoUrl, manualUrls, onChangeManual, listId 
           <button
             type="button"
             onClick={() => removeUrl(i)}
-            aria-label="Remove"
+            aria-label={t('remove')}
             className="text-xs text-red-300 hover:text-red-200"
           >
-            Remove
+            {t('remove')}
           </button>
         </div>
       ))}
       <div className="flex gap-2">
         <input
           type="url"
-          placeholder="XMLTV URL (e.g. https://epgshare01.online/epgshare01/epg_ripper_SE1.xml.gz)"
+          placeholder={t('liveTvEpgUrlPlaceholder')}
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={(event) => {
@@ -91,16 +95,16 @@ export function EpgSourcesSection({ autoUrl, manualUrls, onChangeManual, listId 
           onClick={addUrl}
           className="rounded bg-emerald-500/20 px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/30"
         >
-          Add
+          {t('add')}
         </button>
       </div>
       {!hasAny ? (
         <p className="text-xs text-white/40">
-          No EPG sources yet. Try{' '}
+          {t('liveTvNoEpgSourcesPrefix')}{' '}
           <code className="rounded bg-white/10 px-1">
             https://epgshare01.online/epgshare01/epg_ripper_SE1.xml.gz
           </code>{' '}
-          for Swedish channels.
+          {t('liveTvNoEpgSourcesSuffix')}
         </p>
       ) : null}
     </section>

@@ -1,6 +1,7 @@
 'use client'
 
 import type { YouTubeChannel, YouTubePlaylist, YouTubeSession, YouTubeVideo } from './youtube-types'
+import { YOUTUBE_ERROR_KEYS, youTubeError } from './youtube-errors'
 import {
   getYouTubeSettings,
   isYouTubeSessionValid,
@@ -29,14 +30,20 @@ interface YouTubeApiOptions {
   body?: unknown
 }
 
+/**
+ * Returns either an i18n key from YOUTUBE_ERROR_KEYS or the API's own message
+ * (which YouTube only ever returns in English and cannot be translated here).
+ */
 function normalizeYouTubeError(message?: string): string {
-  const text = (message ?? 'YouTube request failed.')
+  const text = (message ?? '')
     .replace(/<a [^>]+>/gi, '')
     .replace(/<\/a>/gi, '')
     .trim()
 
+  if (!text) return YOUTUBE_ERROR_KEYS.requestFailed
+
   if (/quota/i.test(text) || /quotaexceeded/i.test(text) || /exceeded your quota/i.test(text)) {
-    return 'YouTube API-kvoten är slut för tillfället. Prova igen senare eller minska antalet YouTube-laddningar.'
+    return YOUTUBE_ERROR_KEYS.quotaExceeded
   }
 
   return text
@@ -112,7 +119,7 @@ async function youtubeApi<T>(
 function getSessionAccessToken(session?: YouTubeSession | null): string {
   const resolved = session ?? null
   if (!isYouTubeSessionValid(resolved)) {
-    throw new Error('YouTube session expired. Reconnect in Settings.')
+    throw youTubeError(YOUTUBE_ERROR_KEYS.sessionExpired)
   }
   return resolved!.accessToken
 }
@@ -206,7 +213,7 @@ export async function fetchMyYouTubeChannel(accessToken: string): Promise<YouTub
 
   const item = data.items?.[0]
   if (!item?.id || !item.snippet?.title) {
-    throw new Error('Could not load your YouTube channel.')
+    throw youTubeError(YOUTUBE_ERROR_KEYS.channelLoadFailed)
   }
 
   return {
@@ -471,7 +478,7 @@ export async function fetchYouTubeChannelVideos(
       const uploadsByChannel = await fetchUploadsPlaylistIds(session, [channelId])
       const uploadsPlaylistId = uploadsByChannel.get(channelId)
       if (!uploadsPlaylistId) {
-        throw new Error('Could not load this channel playlist.')
+        throw youTubeError(YOUTUBE_ERROR_KEYS.channelPlaylistLoadFailed)
       }
 
       let pageToken: string | undefined

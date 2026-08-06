@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { BrowsePageProps, FilterOptions, MediaFilters } from '@/lib/plugin-sdk'
 import { useLang } from '@/lib/plugin-sdk'
 import { PlexGrid } from './plex-grid'
@@ -38,7 +38,7 @@ const defaultFilters: MediaFilters = {
 }
 
 export function PlexBrowsePage({ params, onOpenDetails }: BrowsePageProps) {
-  const { lang } = useLang()
+  const { t } = useLang()
   const [filters, setFilters] = useState<MediaFilters>(() => ({
     ...defaultFilters,
     titleQuery: params?.titleQuery ?? '',
@@ -46,18 +46,6 @@ export function PlexBrowsePage({ params, onOpenDetails }: BrowsePageProps) {
   const [refreshRequestToken, setRefreshRequestToken] = useState(0)
   const [refreshingGrid, setRefreshingGrid] = useState(false)
   const [, setFilterOptions] = useState<FilterOptions>(defaultFilterOptions)
-  const labels = useMemo(() => {
-    const isSv = lang === 'sv'
-    return {
-      all: isSv ? 'Alla' : 'All',
-      movies: isSv ? 'Filmer' : 'Movies',
-      series: isSv ? 'Serier' : 'Series',
-      clearFilters: isSv ? 'Rensa' : 'Clear',
-      refresh: isSv ? 'Uppdatera' : 'Refresh',
-      refreshing: isSv ? 'Uppdaterar…' : 'Refreshing…',
-    }
-  }, [lang])
-
 
   useEffect(() => {
     const incoming = params?.titleQuery ?? ''
@@ -78,21 +66,21 @@ export function PlexBrowsePage({ params, onOpenDetails }: BrowsePageProps) {
               className={buttonBase + ' ' + (filters.mediaType == 'all' ? buttonActive : buttonInactive)}
               onClick={() => setFilters((current) => ({ ...current, mediaType: 'all', page: 1 }))}
             >
-              {labels.all}
+              {t('all')}
             </button>
             <button
               type="button"
               className={buttonBase + ' ' + (filters.mediaType == 'movie' ? buttonActive : buttonInactive)}
               onClick={() => setFilters((current) => ({ ...current, mediaType: 'movie', page: 1 }))}
             >
-              {labels.movies}
+              {t('movies')}
             </button>
             <button
               type="button"
               className={buttonBase + ' ' + (filters.mediaType == 'tv' ? buttonActive : buttonInactive)}
               onClick={() => setFilters((current) => ({ ...current, mediaType: 'tv', page: 1 }))}
             >
-              {labels.series}
+              {t('series')}
             </button>
           </div>
           <button
@@ -100,7 +88,7 @@ export function PlexBrowsePage({ params, onOpenDetails }: BrowsePageProps) {
             className={`${buttonBase} ${buttonInactive} hidden sm:inline-flex`}
             onClick={() => setFilters(defaultFilters)}
           >
-            {labels.clearFilters}
+            {t('clear')}
           </button>
         </div>
         <button
@@ -109,7 +97,7 @@ export function PlexBrowsePage({ params, onOpenDetails }: BrowsePageProps) {
           className={`${buttonBase} ${refreshingGrid ? 'text-slate-300/60 border-white/15 cursor-wait' : buttonInactive}`}
           onClick={() => setRefreshRequestToken((value) => value + 1)}
         >
-          {refreshingGrid ? labels.refreshing : labels.refresh}
+          {refreshingGrid ? t('refreshing') : t('refresh')}
         </button>
       </div>
 

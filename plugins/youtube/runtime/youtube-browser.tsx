@@ -13,6 +13,7 @@ import {
   unsubscribeFromYouTubeChannel,
   warmYouTubeBackgroundCaches,
 } from './youtube-client'
+import { YOUTUBE_ERROR_KEYS, isYouTubeErrorKey } from './youtube-errors'
 import {
   clearYouTubeCache,
   getDismissedYouTubeHeroVideoId,
@@ -410,21 +411,22 @@ function useYouTubeData(pageId: string, params?: Record<string, string>, videoLi
         }
         if (mode === 'playlist') {
           if (!params?.id) {
-            throw new Error('Missing playlist id.')
+            throw new Error(YOUTUBE_ERROR_KEYS.missingPlaylistId)
           }
           const nextVideos = await fetchYouTubePlaylistVideos(activeSession, params.id, Math.max(videoLimit + 12, 36))
           if (!cancelled) setVideos(filterShorts(nextVideos, hideShorts))
         }
         if (mode === 'channel') {
           if (!params?.id) {
-            throw new Error('Missing channel id.')
+            throw new Error(YOUTUBE_ERROR_KEYS.missingChannelId)
           }
           const nextVideos = await fetchYouTubeChannelVideos(activeSession, params.id, Math.max(videoLimit + 12, 36))
           if (!cancelled) setVideos(filterShorts(nextVideos, hideShorts))
         }
       } catch (loadError) {
         if (!cancelled) {
-          setError(loadError instanceof Error ? loadError.message : t('pluginYoutubeLoadError'))
+          const message = loadError instanceof Error ? loadError.message : ''
+          setError(isYouTubeErrorKey(message) ? t(message) : message || t('pluginYoutubeLoadError'))
         }
       } finally {
         if (!cancelled) setLoading(false)
@@ -977,7 +979,8 @@ export function YouTubeHomeRow({
         if (!cancelled) setVideos(filterShorts(next, settings.hideShorts))
       } catch (loadError) {
         if (!cancelled) {
-          setError(loadError instanceof Error ? loadError.message : t('pluginYoutubeRowLoadError'))
+          const message = loadError instanceof Error ? loadError.message : ''
+          setError(isYouTubeErrorKey(message) ? t(message) : message || t('pluginYoutubeRowLoadError'))
         }
       }
     }

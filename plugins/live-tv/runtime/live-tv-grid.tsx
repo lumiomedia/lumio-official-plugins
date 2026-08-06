@@ -645,13 +645,13 @@ export function LiveTvGrid({ initialChannel = null }: { initialChannel?: M3uChan
           </button>
           <div className="ml-auto flex items-center gap-3">
             <span className="text-xs text-white">{filtered.length} / {visibleChannels.length} {t('m3uChannels')}</span>
-            {refreshing && visibleChannels.length > 0 ? <span className="text-xs text-slate-500">Uppdaterar...</span> : null}
+            {refreshing && visibleChannels.length > 0 ? <span className="text-xs text-slate-500">{t('liveTvRefreshing')}</span> : null}
             <button
               type="button"
               onClick={() => setGuideOpen(true)}
               className={`inline-flex h-9 items-center gap-2 px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] ${neutralPillClass}`}
-              aria-label="Öppna TV-tablå"
-              title="TV-tablå"
+              aria-label={t('liveTvOpenGuide')}
+              title={t('liveTvGuideTitle')}
             >
               <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="4" width="18" height="16" rx="2" />
@@ -661,7 +661,7 @@ export function LiveTvGrid({ initialChannel = null }: { initialChannel?: M3uChan
                 <path d="M7 14h4" />
                 <path d="M7 18h10" />
               </svg>
-              Guide
+              {t('liveTvGuide')}
             </button>
             <button
               type="button"
@@ -705,7 +705,7 @@ export function LiveTvGrid({ initialChannel = null }: { initialChannel?: M3uChan
                       : neutralPillClass
                   }`}
                 >
-                  <span>Favoriter</span>
+                  <span>{t('liveTvFavorites')}</span>
                   <span className={`rounded-full px-2 py-0.5 text-[10px] tracking-[0.08em] ${
                     activeListId === FAVORITES_LIST_ID
                       ? 'bg-amber-400/15 text-amber-100'
@@ -914,7 +914,7 @@ export function LiveTvGrid({ initialChannel = null }: { initialChannel?: M3uChan
             <div className="mb-5 space-y-2">
               <p className="text-[10px] uppercase tracking-[0.24em] text-slate-500">{t('liveTvCreateList')}</p>
               <h3 className="text-2xl font-semibold text-white">{t('liveTvListName')}</h3>
-              <p className="text-sm text-slate-400">Skapa en egen kanalrad för Live TV.</p>
+              <p className="text-sm text-slate-400">{t('liveTvCreateListDesc')}</p>
             </div>
             <input
               type="text"

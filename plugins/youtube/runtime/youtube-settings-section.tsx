@@ -11,6 +11,7 @@ import {
   useLang,
 } from '@/lib/plugin-sdk'
 import { connectYouTube, disconnectYouTube, loadGoogleIdentityServices } from './youtube-auth'
+import { isYouTubeErrorKey } from './youtube-errors'
 import {
   clearYouTubeCache,
   getYouTubeSettings,
@@ -129,7 +130,8 @@ export function YouTubeSettingsSection() {
       )
       setSessionDetail(nextStatus?.detail ? (typeof nextStatus.detail === 'string' ? nextStatus.detail : nextStatus.detail[lang] ?? nextStatus.detail.en ?? nextStatus.detail.sv ?? '') : '')
     } catch (connectError) {
-      setError(connectError instanceof Error ? connectError.message : t('pluginYoutubeConnectError'))
+      const message = connectError instanceof Error ? connectError.message : ''
+      setError(isYouTubeErrorKey(message) ? t(message) : message || t('pluginYoutubeConnectError'))
     } finally {
       setBusy('idle')
     }
@@ -143,7 +145,8 @@ export function YouTubeSettingsSection() {
       setSessionLabel(t('pluginYoutubeNotConnected'))
       setSessionDetail('')
     } catch (disconnectError) {
-      setError(disconnectError instanceof Error ? disconnectError.message : t('pluginYoutubeDisconnectError'))
+      const message = disconnectError instanceof Error ? disconnectError.message : ''
+      setError(isYouTubeErrorKey(message) ? t(message) : message || t('pluginYoutubeDisconnectError'))
     } finally {
       setBusy('idle')
     }
@@ -157,7 +160,7 @@ export function YouTubeSettingsSection() {
     }
     const result = tryEnableHomeOverridePlugin(HOME_OVERRIDE_PLUGIN_ID)
     if (!result.ok) {
-      setHomeOverrideError('Det finns redan en egen startsida satt. Avmarkera den först innan du valjer en annan plugin.')
+      setHomeOverrideError(t('homeOverrideAlreadySet'))
     }
   }
 
@@ -171,10 +174,10 @@ export function YouTubeSettingsSection() {
             onChange={(event) => handleHomeOverrideToggle(event.target.checked)}
             className="h-4 w-4 accent-amber-400"
           />
-          Anvand som startsida
+          {t('homeOverrideUseAsHome')}
         </label>
         <p className="mt-2 text-xs text-slate-500">
-          Ersatter vanliga Home-rader med YouTube-vyn men behaller hero och resten av startsidan.
+          {t('youtubeHomeOverrideDesc')}
         </p>
         {homeOverrideError ? <p className="mt-2 text-xs text-rose-300">{homeOverrideError}</p> : null}
       </div>

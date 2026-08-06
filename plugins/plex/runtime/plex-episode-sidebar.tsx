@@ -12,6 +12,7 @@ import {
   getNextEpPreloadLeadSeconds,
   VideoPlayerModal,
   NextEpisodeCard,
+  useLang,
 } from '@/lib/plugin-sdk'
 import type { MediaItem } from '@/lib/plugin-sdk'
 
@@ -85,6 +86,7 @@ export function PlexEpisodeSidebar({
   onClose,
   onAutoPlayFallback,
 }: EpisodeSidebarProps) {
+  const { t } = useLang()
   const [seasons, setSeasons] = useState<PlexSeason[]>([])
   const [selectedSeason, setSelectedSeason] = useState<PlexSeason | null>(null)
   const [episodes, setEpisodes] = useState<PlexEpisode[]>([])
@@ -475,7 +477,7 @@ export function PlexEpisodeSidebar({
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">{item.title}</p>
           <button type="button" onClick={onClose} className="flex h-7 w-7 items-center justify-center rounded-full text-slate-500 transition hover:text-white">✕</button>
         </div>
-        <p className="px-4 py-8 text-center text-xs text-slate-500">Plex not connected</p>
+        <p className="px-4 py-8 text-center text-xs text-slate-500">{t('plexNotConnected')}</p>
       </div>
     )
   }
@@ -520,7 +522,7 @@ export function PlexEpisodeSidebar({
             ))}
           </div>
         ) : episodes.length === 0 ? (
-          <p className="py-8 text-center text-xs text-slate-600">No episodes found</p>
+          <p className="py-8 text-center text-xs text-slate-600">{t('noEpisodes')}</p>
         ) : (
           <div className="space-y-1">
             {episodes.map((ep) => {
@@ -549,7 +551,7 @@ export function PlexEpisodeSidebar({
                   {resolvedTmdbId ? (
                     <button
                       type="button"
-                      title={watched ? 'Mark as unwatched' : 'Mark as watched'}
+                      title={watched ? t('markUnwatched') : t('markWatched')}
                       onClick={() => markWatched(ep, !watched)}
                       className={`flex-none rounded-full border p-1.5 transition ${
                         watched ? 'border-emerald-400/40 text-emerald-400 hover:border-red-400/40 hover:text-red-400' : 'border-white/10 text-slate-600 hover:border-emerald-400/40 hover:text-emerald-400'

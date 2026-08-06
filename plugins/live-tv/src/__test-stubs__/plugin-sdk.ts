@@ -40,6 +40,32 @@ export function setPluginMemoryCache<T>(_pluginId: string, _k: string, _v: T): v
 export function getPluginMemoryCache<T>(_pluginId: string, _k: string): T | undefined { return undefined }
 export function removePluginStorageByPrefix(_pluginId: string, _prefix: string, _opts?: { emitChange?: boolean }): void {}
 
+// The host resolves t() against its own strings.en/strings.sv catalogue. Tests
+// only need stable, readable output, so keys that assertions look for carry
+// their English text here and everything else falls back to the key itself.
+const TEST_STRINGS: Record<string, string> = {
+  add: 'Add',
+  remove: 'Remove',
+  next: 'Next',
+  liveTvNow: 'Now',
+  liveTvLater: 'Later',
+  liveTvNoEpg: 'No EPG',
+  liveTvNoGuideAvailable: 'No guide available',
+  liveTvNoEpgSourcesPrefix: 'No EPG sources yet. Try',
+  liveTvNoEpgSourcesSuffix: 'for Swedish channels.',
+  liveTvEpgSources: 'EPG sources',
+  liveTvEpgSourceStats: '{channels} channels · {programmes} programmes',
+  liveTvRemaining: '{time} left',
+}
+
+export function useLang() {
+  return {
+    lang: 'en' as const,
+    setLang: (_lang: 'en' | 'sv') => {},
+    t: (key: string) => TEST_STRINGS[key] ?? key,
+  }
+}
+
 // __resetForTests is convenient for tests that need a clean slate
 export function __resetForTests(): void {
   memory.clear()

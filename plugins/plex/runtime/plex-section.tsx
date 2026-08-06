@@ -462,7 +462,7 @@ export function PlexSection() {
   function handleClearPlexCaches() {
     removeScopedStorageItem('plex_library_cache')
     removeScopedStorageItem('plex_recent_cache')
-    setPlexCacheMessage('Plex-cache rensad. Oppna Plex igen for att hamta nya bilder.')
+    setPlexCacheMessage(t('plexCacheCleared'))
   }
 
   function handleHomeOverrideToggle(checked: boolean) {
@@ -473,7 +473,7 @@ export function PlexSection() {
     }
     const result = tryEnableHomeOverridePlugin(HOME_OVERRIDE_PLUGIN_ID)
     if (!result.ok) {
-      setHomeOverrideError('Det finns redan en egen startsida satt. Avmarkera den först innan du valjer en annan plugin.')
+      setHomeOverrideError(t('homeOverrideAlreadySet'))
     }
   }
 
@@ -487,10 +487,10 @@ export function PlexSection() {
             onChange={(event) => handleHomeOverrideToggle(event.target.checked)}
             className="h-4 w-4 accent-amber-400"
           />
-          Anvand som startsida
+          {t('homeOverrideUseAsHome')}
         </label>
         <p className="mt-2 text-xs text-slate-500">
-          Ersatter vanliga Home-rader med Plex-vyn men behaller hero och resten av startsidan.
+          {t('plexHomeOverrideDesc')}
         </p>
         {homeOverrideError ? <p className="mt-2 text-xs text-rose-300">{homeOverrideError}</p> : null}
       </div>
@@ -589,7 +589,7 @@ export function PlexSection() {
               onClick={handleClearPlexCaches}
               className={settingsActionButtonClass}
             >
-              Rensa Plex-cache
+              {t('plexClearCache')}
             </button>
             {plexCacheMessage ? <span className="text-xs text-slate-400">{plexCacheMessage}</span> : null}
           </div>

@@ -1,5 +1,6 @@
 'use client'
 
+import { useLang } from '@/lib/plugin-sdk'
 import { useEpgNowNextLater } from './hooks/useEpgNowNextLater'
 import { useEpgLoadStatus } from './hooks/useEpgLoadStatus'
 import type { EpgProgramme } from './epg/types'
@@ -69,20 +70,21 @@ function Card({
 }
 
 export function NowNextLaterRow({ channel, listId, urls }: Props) {
+  const { t } = useLang()
   const status = useEpgLoadStatus(listId, urls)
   const data = useEpgNowNextLater(channel, listId, urls)
   if ((status === 'empty' || status === 'error') && !data.now && !data.next && !data.later) {
     return (
       <div className="rounded-2xl border border-white/5 bg-black/40 px-4 py-3 text-sm text-white/40">
-        No guide available
+        {t('liveTvNoGuideAvailable')}
       </div>
     )
   }
   return (
     <div className="flex gap-3">
-      <Card label="Now" programme={data.now} withProgress />
-      <Card label="Next" programme={data.next} />
-      <Card label="Later" programme={data.later} />
+      <Card label={t('liveTvNow')} programme={data.now} withProgress />
+      <Card label={t('next')} programme={data.next} />
+      <Card label={t('liveTvLater')} programme={data.later} />
     </div>
   )
 }

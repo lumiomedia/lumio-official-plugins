@@ -7,7 +7,7 @@ import {
   resolvePluginText,
   useLang,
 } from '@/lib/plugin-sdk'
-import { connectTwitch, disconnectTwitch, openTwitchVerificationUrl } from './twitch-auth'
+import { connectTwitch, disconnectTwitch, openTwitchVerificationUrl, TwitchAuthError } from './twitch-auth'
 import {
   getTwitchHomeCategory,
   getTwitchHomeChannels,
@@ -70,6 +70,14 @@ export function TwitchSettingsSection() {
     return TEXT[key][lang] ?? TEXT[key].en
   }
 
+  // TwitchAuthError carries its own {en, sv} copy; anything else is either a
+  // raw Twitch API code or an unexpected throw, so fall back to local copy.
+  function errorText(error: unknown, fallbackKey: keyof typeof TEXT): string {
+    if (error instanceof TwitchAuthError) return resolvePluginText(error.text, lang)
+    if (error instanceof Error && error.message) return error.message
+    return text(fallbackKey)
+  }
+
   useEffect(() => {
     // Read once on mount; the fields are edited here, so re-reading them on
     // every keystroke's own change event would fight the user's typing.
@@ -121,7 +129,7 @@ export function TwitchSettingsSection() {
       )
       setSessionDetail(nextStatus?.detail ? resolvePluginText(nextStatus.detail, lang) : '')
     } catch (connectError) {
-      setError(connectError instanceof Error ? connectError.message : text('connectError'))
+      setError(errorText(connectError, 'connectError'))
     } finally {
       setUserCode('')
       setVerificationUri('')
@@ -137,7 +145,7 @@ export function TwitchSettingsSection() {
       setSessionLabel(text('notConnected'))
       setSessionDetail('')
     } catch (disconnectError) {
-      setError(disconnectError instanceof Error ? disconnectError.message : text('disconnectError'))
+      setError(errorText(disconnectError, 'disconnectError'))
     } finally {
       setBusy('idle')
     }

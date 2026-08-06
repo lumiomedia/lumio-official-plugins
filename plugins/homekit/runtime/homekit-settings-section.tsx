@@ -178,19 +178,19 @@ export function HomeKitSettingsSection() {
           <Input type="text" value={homekitAccessoryName} onValueChange={setHomekitAccessoryName} placeholder="Lumio Cinema Sync" radius="lg" classNames={inputClassNames} />
         </div>
         <div className="space-y-1.5">
-          <label className="block text-xs text-slate-400">Accessory ID (MAC-format)</label>
+          <label className="block text-xs text-slate-400">{t('homekitAccessoryIdLabel')}</label>
           <Input type="text" value={homekitUsername} onValueChange={setHomekitUsername} placeholder="0E:39:6A:11:22:33" radius="lg" classNames={inputClassNames} />
         </div>
         <div className="space-y-1.5">
-          <label className="block text-xs text-slate-400">PIN</label>
+          <label className="block text-xs text-slate-400">{t('homekitPinLabel')}</label>
           <Input type="text" value={homekitPin} onValueChange={setHomekitPin} placeholder="031-45-154" radius="lg" classNames={inputClassNames} />
         </div>
         <div className="space-y-1.5">
-          <label className="block text-xs text-slate-400">Setup ID</label>
+          <label className="block text-xs text-slate-400">{t('homekitSetupIdLabel')}</label>
           <Input type="text" value={homekitSetupId} onValueChange={setHomekitSetupId} placeholder="LMIO" radius="lg" classNames={inputClassNames} />
         </div>
         <div className="space-y-1.5">
-          <label className="block text-xs text-slate-400">Port</label>
+          <label className="block text-xs text-slate-400">{t('homekitPortLabel')}</label>
           <Input type="text" value={homekitPort} onValueChange={setHomekitPort} placeholder="51826" radius="lg" classNames={inputClassNames} />
         </div>
       </div>
@@ -219,7 +219,7 @@ export function HomeKitSettingsSection() {
               {rule.label}
             </label>
             <div className="mt-2 space-y-1.5">
-              <label className="block text-[11px] uppercase tracking-[0.14em] text-slate-500">Brightness</label>
+              <label className="block text-[11px] uppercase tracking-[0.14em] text-slate-500">{t('homekitBrightnessLabel')}</label>
               <Input type="text" value={rule.brightness} onValueChange={rule.setBrightness} placeholder="20" radius="lg" classNames={inputClassNames} />
             </div>
           </div>

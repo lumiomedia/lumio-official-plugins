@@ -242,7 +242,7 @@ export function PlexGrid({
           continue
         }
         if (thisLoadId === loadIdRef.current) {
-          setError(message || 'Plex load failed')
+          setError(message || t('plexLoadFailed'))
         }
         break
       }
@@ -433,7 +433,7 @@ export function PlexGrid({
   if (loading && items.length === 0) {
     return (
       <div className="space-y-4">
-        <ResultsLoadingIndicator title="Loading Plex" description="Fetching titles from your selected Plex libraries." />
+        <ResultsLoadingIndicator title={t('plexLoading')} description={t('plexLoadingDesc')} />
       </div>
     )
   }
@@ -441,9 +441,9 @@ export function PlexGrid({
   if (!loading && items.length === 0) {
     return (
       <ResultsState
-        title="No Plex titles"
-        description={error ?? lastSyncError ?? 'No Plex titles were found in the selected libraries.'}
-        actionLabel="Try again"
+        title={t('plexNoTitles')}
+        description={error ?? lastSyncError ?? t('plexNoTitlesDesc')}
+        actionLabel={t('tryAgain')}
         onAction={() => { void load() }}
       />
     )
@@ -453,13 +453,13 @@ export function PlexGrid({
     <div className="space-y-4">
       {error ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
-          <span>Showing the latest Plex results. The refresh failed.</span>
+          <span>{t('plexStaleResults')}</span>
           <button
             type="button"
             onClick={() => { void load() }}
             className="rounded-full border border-rose-200/30 px-3 py-1.5 text-xs uppercase tracking-[0.2em] transition hover:bg-white/10"
           >
-            Try again
+            {t('tryAgain')}
           </button>
         </div>
       ) : null}

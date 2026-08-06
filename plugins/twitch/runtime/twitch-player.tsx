@@ -1,6 +1,7 @@
 'use client'
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import { useLang } from '@/lib/plugin-sdk'
 
 export type TwitchEmbedKind = 'live' | 'vod' | 'clip'
 
@@ -24,6 +25,8 @@ export function TwitchPlayerModal({
   title: string
   onClose: () => void
 }) {
+  const { t } = useLang()
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose()
@@ -40,7 +43,7 @@ export function TwitchPlayerModal({
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close"
+          aria-label={t('close')}
           className="rounded-full px-3 py-1 hover:bg-white/10"
         >
           ✕

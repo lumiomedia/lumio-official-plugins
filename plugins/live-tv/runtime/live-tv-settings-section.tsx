@@ -117,7 +117,7 @@ export function LiveTvSettingsSection() {
     }
     const result = tryEnableHomeOverridePlugin(HOME_OVERRIDE_PLUGIN_ID)
     if (!result.ok) {
-      setHomeOverrideError('Det finns redan en egen startsida satt. Avmarkera den först innan du väljer en annan plugin.')
+      setHomeOverrideError(t('homeOverrideAlreadySet'))
     }
   }
 
@@ -131,10 +131,10 @@ export function LiveTvSettingsSection() {
             onChange={(event) => handleHomeOverrideToggle(event.target.checked)}
             className="h-4 w-4 accent-amber-400"
           />
-          Anvand som startsida
+          {t('homeOverrideUseAsHome')}
         </label>
         <p className="mt-2 text-xs text-slate-500">
-          Ersatter vanliga Home-rader med Live TV-vyn men behaller hero och resten av startsidan.
+          {t('liveTvHomeOverrideDesc')}
         </p>
         {homeOverrideError ? <p className="mt-2 text-xs text-rose-300">{homeOverrideError}</p> : null}
       </div>
@@ -170,7 +170,7 @@ export function LiveTvSettingsSection() {
               <div className="flex items-baseline justify-between gap-2">
                 <h4 className="text-sm font-semibold text-white">{list.name}</h4>
                 <span className="text-[10px] uppercase tracking-wider text-slate-500">
-                  {list.channels.length} channels
+                  {list.channels.length} {t('m3uChannels')}
                 </span>
               </div>
               <EpgSourcesSection

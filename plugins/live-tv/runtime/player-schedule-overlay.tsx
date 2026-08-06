@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { useLang } from '@/lib/plugin-sdk'
 import { useChannelSchedule } from './hooks/useChannelSchedule'
 import type { EpgProgramme } from './epg/types'
 import type { M3uChannel } from './live-tv-data'
@@ -26,12 +27,13 @@ function formatRemaining(stopMs: number, now: number): string {
   if (mins >= 60) {
     const h = Math.floor(mins / 60)
     const m = mins % 60
-    return m > 0 ? `${h}h ${m}m left` : `${h}h left`
+    return m > 0 ? `${h}h ${m}m` : `${h}h`
   }
-  return `${mins}m left`
+  return `${mins}m`
 }
 
 export function PlayerScheduleOverlay({ channel, listId, urls, open, onClose }: Props) {
+  const { t } = useLang()
   const programmes = useChannelSchedule(channel, listId, urls, 12, 1)
   const scrollRef = useRef<HTMLDivElement>(null)
   const nowMs = Date.now()
@@ -58,14 +60,14 @@ export function PlayerScheduleOverlay({ channel, listId, urls, open, onClose }: 
           onClick={onClose}
           className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[10px] uppercase tracking-[0.22em] text-slate-200 transition hover:border-white/35 hover:text-white"
         >
-          Stäng
+          {t('close')}
         </button>
       </div>
 
       <div ref={scrollRef} className="thin-slider-scrollbar max-h-[calc(55vh-3.5rem)] overflow-y-auto">
         {programmes.length === 0 ? (
           <div className="px-5 py-6 text-sm text-white/50">
-            Ingen guidedata tillgänglig för den här kanalen.
+            {t('liveTvNoGuideForChannel')}
           </div>
         ) : (
           <ul className="divide-y divide-white/5">
@@ -93,7 +95,7 @@ export function PlayerScheduleOverlay({ channel, listId, urls, open, onClose }: 
                     </span>
                     {live ? (
                       <span className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-emerald-300/80">
-                        Nu
+                        {t('liveTvNow')}
                       </span>
                     ) : null}
                   </div>
@@ -106,7 +108,9 @@ export function PlayerScheduleOverlay({ channel, listId, urls, open, onClose }: 
                     ) : null}
                   </div>
                   <div className="flex shrink-0 items-start text-[11px] text-white/55">
-                    {live ? formatRemaining(p.stop, nowMs) : formatTime(p.stop)}
+                    {live
+                      ? t('liveTvRemaining').replace('{time}', formatRemaining(p.stop, nowMs))
+                      : formatTime(p.stop)}
                   </div>
                   {progress !== null ? (
                     <div

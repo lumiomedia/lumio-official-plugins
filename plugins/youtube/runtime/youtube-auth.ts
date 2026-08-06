@@ -1,6 +1,7 @@
 'use client'
 
 import { fetchMyYouTubeChannel } from './youtube-client'
+import { YOUTUBE_ERROR_KEYS, youTubeError } from './youtube-errors'
 import {
   canAttemptYouTubeReconnect,
   getYouTubeAutoReconnectEnabled,
@@ -51,7 +52,7 @@ export function getYouTubeScopes(): string[] {
 
 export function loadGoogleIdentityServices(): Promise<void> {
   if (typeof window === 'undefined') {
-    return Promise.reject(new Error('Google sign-in is only available in the browser.'))
+    return Promise.reject(youTubeError(YOUTUBE_ERROR_KEYS.browserOnly))
   }
   if (window.google?.accounts?.oauth2) return Promise.resolve()
   if (gisLoader) return gisLoader
@@ -60,7 +61,7 @@ export function loadGoogleIdentityServices(): Promise<void> {
     const existing = document.querySelector(`script[src="${GOOGLE_GSI_URL}"]`) as HTMLScriptElement | null
     if (existing) {
       existing.addEventListener('load', () => resolve(), { once: true })
-      existing.addEventListener('error', () => reject(new Error('Failed to load Google Identity Services.')), { once: true })
+      existing.addEventListener('error', () => reject(youTubeError(YOUTUBE_ERROR_KEYS.identityServicesLoadFailed)), { once: true })
       return
     }
 
@@ -69,7 +70,7 @@ export function loadGoogleIdentityServices(): Promise<void> {
     script.async = true
     script.defer = true
     script.onload = () => resolve()
-    script.onerror = () => reject(new Error('Failed to load Google Identity Services.'))
+    script.onerror = () => reject(youTubeError(YOUTUBE_ERROR_KEYS.identityServicesLoadFailed))
     document.head.appendChild(script)
   })
 
@@ -124,7 +125,7 @@ async function startDesktopYouTubeOauth(clientId: string, oauthWindow: Window | 
   }
 
   if (!startResponse.ok || !startPayload.sessionId || !startPayload.authUrl) {
-    throw new Error(startPayload.error || 'Could not start desktop YouTube login.')
+    throw new Error(startPayload.error || YOUTUBE_ERROR_KEYS.desktopLoginStartFailed)
   }
 
   let opened = false
@@ -151,10 +152,10 @@ async function startDesktopYouTubeOauth(clientId: string, oauthWindow: Window | 
 
     if (!pollPayload || pollPayload.status === 'pending') continue
     if (pollPayload.status === 'missing') {
-      throw new Error('YouTube login session expired. Start the connection again.')
+      throw youTubeError(YOUTUBE_ERROR_KEYS.loginSessionExpired)
     }
     if (pollPayload.status === 'error') {
-      throw new Error(pollPayload.error || 'YouTube login failed.')
+      throw new Error(pollPayload.error || YOUTUBE_ERROR_KEYS.loginFailed)
     }
     if (pollPayload.status === 'complete' && pollPayload.token?.accessToken) {
       const channel = await fetchMyYouTubeChannel(pollPayload.token.accessToken)
@@ -167,12 +168,12 @@ async function startDesktopYouTubeOauth(clientId: string, oauthWindow: Window | 
     }
   }
 
-  throw new Error('YouTube login timed out before Lumio received the session.')
+  throw youTubeError(YOUTUBE_ERROR_KEYS.loginTimedOut)
 }
 
 async function requestYouTubeAccessToken(clientId: string, prompt: '' | 'consent'): Promise<{ access_token: string; expires_in?: number; scope?: string }> {
   if (!clientId.trim()) {
-    throw new Error('Add a Google OAuth client ID first.')
+    throw youTubeError(YOUTUBE_ERROR_KEYS.missingClientId)
   }
 
   await loadGoogleIdentityServices()
@@ -182,7 +183,7 @@ async function requestYouTubeAccessToken(clientId: string, prompt: '' | 'consent
       scope: YOUTUBE_SCOPES.join(' '),
       callback: (response) => {
         if (response.error || !response.access_token) {
-          reject(new Error(response.error_description || response.error || 'YouTube login failed.'))
+          reject(new Error(response.error_description || response.error || YOUTUBE_ERROR_KEYS.loginFailed))
           return
         }
         resolve({
@@ -194,7 +195,7 @@ async function requestYouTubeAccessToken(clientId: string, prompt: '' | 'consent
     })
 
     if (!tokenClient) {
-      reject(new Error('Could not initialize Google sign-in.'))
+      reject(youTubeError(YOUTUBE_ERROR_KEYS.identityServicesInitFailed))
       return
     }
 

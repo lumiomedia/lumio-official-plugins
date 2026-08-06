@@ -9,7 +9,7 @@ export const YouTubePlugin: LumioPlugin = {
   version: '1.0.0',
   description: {
     en: 'Browse subscriptions, playlists and channels from YouTube.',
-    sv: 'Bladdra bland prenumerationer, spellistor och kanaler från YouTube.',
+    sv: 'Bläddra bland prenumerationer, spellistor och kanaler från YouTube.',
   },
   preinstalled: true,
 

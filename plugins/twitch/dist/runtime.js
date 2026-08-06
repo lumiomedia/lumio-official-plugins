@@ -8,6 +8,7 @@
   var __typeError = (msg) => {
     throw TypeError(msg);
   };
+  var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
   var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, {
     get: (a, b) => (typeof require !== "undefined" ? require : a)[b]
   }) : x)(function(x) {
@@ -41,12 +42,13 @@
     mod
   ));
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+  var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
   var __accessCheck = (obj, member, msg) => member.has(obj) || __typeError("Cannot " + msg);
   var __privateGet = (obj, member, getter) => (__accessCheck(obj, member, "read from private field"), getter ? getter.call(obj) : member.get(obj));
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-QbSTg5/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-byDeyw/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -95,7 +97,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-QbSTg5/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-byDeyw/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -143,7 +145,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-QbSTg5/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-byDeyw/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -153,7 +155,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-QbSTg5/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-byDeyw/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -48937,7 +48939,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_system_rsc = require_dist4();
-      var import_i18n6 = require_main5();
+      var import_i18n7 = require_main5();
       var import_react65 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_motion2 = require_cjs4();
       var import_utils8 = require_main4();
@@ -48993,7 +48995,7 @@
           labelPlacement,
           spinnerVariant
         ]);
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(ProviderContext, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_i18n6.I18nProvider, { locale, children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_framer_motion2.MotionConfig, { reducedMotion, children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_overlays.OverlayProvider, { ...otherProps, children: contents }) }) }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(ProviderContext, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_i18n7.I18nProvider, { locale, children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_framer_motion2.MotionConfig, { reducedMotion, children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_overlays.OverlayProvider, { ...otherProps, children: contents }) }) }) });
       };
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useLabelPlacement(props) {
@@ -110183,7 +110185,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_react65 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var import_i18n6 = require_main5();
+      var import_i18n7 = require_main5();
       var import_shared_utils = require_dist2();
       var PaginationItemType2 = /* @__PURE__ */ ((PaginationItemType22) => {
         PaginationItemType22["DOTS"] = "dots";
@@ -110202,7 +110204,7 @@
           onChange
         } = props;
         const [activePage, setActivePage] = (0, import_react65.useState)(page || initialPage);
-        const { direction } = (0, import_i18n6.useLocale)();
+        const { direction } = (0, import_i18n7.useLocale)();
         const isRTL = direction === "rtl";
         const onChangeActivePage = (newPage) => {
           setActivePage(newPage);
@@ -110512,7 +110514,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var import_i18n6 = require_main5();
+      var import_i18n7 = require_main5();
       var import_system4 = require_dist11();
       var import_use_pagination3 = require_dist38();
       var import_shared_icons = require_dist17();
@@ -110864,7 +110866,7 @@
           getItemProps,
           getCursorProps
         } = usePagination({ ...props, ref });
-        const { direction } = (0, import_i18n6.useLocale)();
+        const { direction } = (0, import_i18n7.useLocale)();
         const isRTL = direction === "rtl";
         const renderChevronIcon = (0, import_react310.useCallback)(
           (key) => {
@@ -139141,7 +139143,7 @@
         useMultiSelectState: () => useMultiSelectState
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_i18n6 = require_main5();
+      var import_i18n7 = require_main5();
       var import_interactions = require_main59();
       var import_label = require_main60();
       var import_menu = require_main61();
@@ -139150,7 +139152,7 @@
       var import_react65 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useMultiSelect(props, state, ref) {
         const { disallowEmptySelection, isDisabled } = props;
-        const collator = (0, import_i18n6.useCollator)({ usage: "search", sensitivity: "base" });
+        const collator = (0, import_i18n7.useCollator)({ usage: "search", sensitivity: "base" });
         const delegate = (0, import_react65.useMemo)(
           () => new import_selection.ListKeyboardDelegate(state.collection, state.disabledKeys, null, collator),
           [state.collection, state.disabledKeys, collator]
@@ -140759,7 +140761,7 @@
       var import_interactions = require_main17();
       var import_focus2 = require_main18();
       var import_shared_utils = require_dist2();
-      var import_i18n6 = require_main5();
+      var import_i18n7 = require_main5();
       function useSliderThumb(props) {
         const {
           ref,
@@ -140780,7 +140782,7 @@
         const Component2 = as || "div";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
         const inputRef = (0, import_react65.useRef)(null);
-        const numberFormatter = (0, import_i18n6.useNumberFormatter)(formatOptions);
+        const numberFormatter = (0, import_i18n7.useNumberFormatter)(formatOptions);
         const { thumbProps, inputProps, isDragging: isDragging2, isFocused } = (0, import_slider.useSliderThumb)(
           {
             index: index3,
@@ -146003,7 +146005,7 @@
       var import_react65 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_utils = require_dist10();
       var import_combobox = require_main67();
-      var import_i18n6 = require_main5();
+      var import_i18n7 = require_main5();
       var import_theme = require_dist12();
       var import_use_safe_layout_effect = require_dist21();
       var import_system = require_dist11();
@@ -146055,7 +146057,7 @@
           isReadOnly = false,
           ...otherProps
         } = props;
-        const { contains } = (0, import_i18n6.useFilter)(filterOptions);
+        const { contains } = (0, import_i18n7.useFilter)(filterOptions);
         const { onChange: _onChange, ...restProps } = originalProps;
         let state = (0, import_combobox.useComboBoxState)({
           ...restProps,
@@ -151069,13 +151071,13 @@
       var import_theme = require_dist12();
       var import_utils8 = require_main38();
       var import_react_utils = require_dist10();
-      var import_i18n6 = require_main5();
+      var import_i18n7 = require_main5();
       var import_shared_utils = require_dist2();
       function useCalendarBase(originalProps) {
         var _a, _b, _c, _d, _e, _f, _g;
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.calendar.variantKeys);
         const globalContext = (0, import_system.useProviderContext)();
-        const { locale, direction } = (0, import_i18n6.useLocale)();
+        const { locale, direction } = (0, import_i18n7.useLocale)();
         const isRTL = direction === "rtl";
         const calendarProp = (0, import_date.createCalendar)(
           new import_date.DateFormatter(locale).resolvedOptions().calendar
@@ -157036,7 +157038,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_system4 = require_dist11();
-      var import_i18n6 = require_main5();
+      var import_i18n7 = require_main5();
       var import_date = require_main74();
       var import_system = require_dist11();
       var import_system2 = require_dist11();
@@ -157052,7 +157054,7 @@
         const globalContext = (0, import_system.useProviderContext)();
         const { validationBehavior: formValidationBehavior } = (0, import_form.useSlottedContext)(import_form.FormContext) || {};
         const [props, variantProps2] = (0, import_system2.mapPropsVariants)(originalProps, import_theme.dateInput.variantKeys);
-        const { locale } = (0, import_i18n6.useLocale)();
+        const { locale } = (0, import_i18n7.useLocale)();
         const calendarProp = (0, import_date.createCalendar)(
           new import_date.DateFormatter(locale).resolvedOptions().calendar
         );
@@ -157613,7 +157615,7 @@
       var import_react65 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
-      var import_i18n6 = require_main5();
+      var import_i18n7 = require_main5();
       var import_utils8 = require_main38();
       var messages_default = {
         "ar-AE": {
@@ -157834,7 +157836,7 @@
         const [isCalendarHeaderExpanded, setIsCalendarHeaderExpanded] = (0, import_utils8.useControlledState)(isHeaderExpanded, isHeaderDefaultExpanded != null ? isHeaderDefaultExpanded : false, handleHeaderExpandedChange);
         const domRef = (0, import_react_utils.useDOMRef)(ref);
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        let stringFormatter = (0, import_i18n6.useLocalizedStringFormatter)(messages_default);
+        let stringFormatter = (0, import_i18n7.useLocalizedStringFormatter)(messages_default);
         const isDefaultColor = originalProps.color === "default" || !originalProps.color;
         const hasMultipleMonths = visibleMonths > 1;
         const placeholder = originalProps == null ? void 0 : originalProps.placeholderValue;
@@ -160472,7 +160474,7 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_interactions = require_main17();
-      var import_i18n6 = require_main5();
+      var import_i18n7 = require_main5();
       var import_shared_utils = require_dist2();
       var import_numberfield = require_main78();
       var import_numberfield2 = require_main79();
@@ -160511,7 +160513,7 @@
         const baseDomRef = (0, import_react_utils.useDOMRef)(baseRef);
         const inputWrapperRef = (0, import_react_utils.useDOMRef)(wrapperRef);
         const innerWrapperRef = (0, import_react_utils.useDOMRef)(innerWrapperRefProp);
-        const { locale } = (0, import_i18n6.useLocale)();
+        const { locale } = (0, import_i18n7.useLocale)();
         const state = (0, import_numberfield.useNumberFieldState)({
           ...originalProps,
           validationBehavior,
@@ -164235,6 +164237,30 @@
       copyStreamLink: "Copy stream link",
       downloadThisVideo: "Download this video",
       openInVlc: "Play in VLC",
+      openInExternalPrefix: "Play in",
+      openInExternalPlayer: "Open in external player",
+      externalPlayerApp: "External player",
+      externalPlayerPick: "Choose\u2026",
+      licensesTitle: "Licenses",
+      appUpdateTitle: "App update",
+      appUpdateDesc: "Check if a newer Lumio version is available.",
+      appUpdateCheck: "Check for update",
+      appUpdateCheckFailed: "Could not fetch update information",
+      appUpdateAvailable: "Update available:",
+      appUpdateCurrent: "current",
+      appUpdateUpToDate: "You are on the latest version",
+      appUpdateInstall: "Download & install",
+      appUpdatePromptTitle: "Update available",
+      appUpdatePromptBody: "Lumio {version} is ready to install. Update now?",
+      appUpdatePromptInstall: "Update now",
+      appUpdatePromptInstalling: "Updating\u2026",
+      appUpdatePromptLater: "Not now",
+      appUpdateRestarting: "Update installed \u2014 Lumio is restarting\u2026",
+      appUpdateDmgOpened: "The installer was downloaded and opened \u2014 drag Lumio to Applications.",
+      appUpdateBrowserStarted: "The download started in the browser \u2014 open the APK to install.",
+      licensesDesc: "Open-source components and services Lumio is built on.",
+      licensesIntro: "Lumio bundles the following open-source software. GPL-licensed components include a pointer to their source code.",
+      externalPlayerAppDesc: 'App used by "Play in \u2026" (macOS app name, e.g. VLC or IINA). Android shows the system app chooser.',
       preparingDownload: "Preparing download...",
       downloadComplete: "Download complete",
       downloadFailed: "Download failed",
@@ -164731,6 +164757,14 @@
       nightModeMenuLabel: "Night mode",
       nightModeMenuMild: "Mild",
       nightModeMenuStrong: "Strong",
+      onboardingIntegrationsEyebrow: "Integrations",
+      onboardingIntegrationsTitle: "Make Lumio even better",
+      onboardingIntegrationsDesc: "Optional connections that enhance the experience \u2014 nothing here is required. Everything is configured later under Settings \u2192 Integrations.",
+      onboardingIntTrakt: "Sync watched history and watchlists. Sign in with a code from the settings.",
+      onboardingIntSpotify: "Soundtrack playback on detail pages. Create a free app for client ID/secret.",
+      onboardingIntGroq: "AI search. Create a free API key.",
+      onboardingIntOpenSubtitles: "Subtitles work out of the box \u2014 an account only helps with rate limits.",
+      onboardingIntegrationsHint: "Tap a card to open its site. Add your keys under Settings \u2192 Integrations whenever you like.",
       defaultSubtitleLanguage: "Default subtitles language",
       defaultSubtitleLanguageDesc: "Selected automatically when subtitles are available.",
       fallbackSubtitleLanguage: "Fallback subtitles language",
@@ -165181,7 +165215,153 @@
       // Media explorer
       meAddGroqKeyFirst: "Add a Groq API key in Settings first.",
       meStremioNoStreams: "The Stremio addon returned no streams for this content.",
-      meStremioUnreachable: "Could not reach the Stremio addon."
+      meStremioUnreachable: "Could not reach the Stremio addon.",
+      createList: "Create list",
+      createListFailed: "Could not create the list",
+      listNamePlaceholder: "List name",
+      creating: "Creating\u2026",
+      createAction: "Create",
+      assignToList: "Assign to list",
+      noMoviesInListYet: "No movies in your list yet.",
+      download: "Download",
+      pickStreamToDownload: "Pick a stream to download",
+      closeDownload: "Close download",
+      preparing: "Preparing\u2026",
+      fetchingShort: "Fetching\u2026",
+      done: "Done",
+      downloadFailedRetry: "Download failed, try again",
+      noPlayableStream: "No playable stream found",
+      resolveLinkFailed: "Could not resolve the download link",
+      torrentFailed: "The torrent failed: {status}",
+      debridKeyMissing: "Debrid key missing",
+      fetchStreamsFailed: "Could not fetch streams",
+      noStreamsFound: "No streams found",
+      startDownloadFailed: "Could not start the download",
+      folderPickFailed: "Folder selection failed",
+      prepareDownloadFailed: "Could not prepare the download",
+      downloadJobLost: "Lost contact with the download job",
+      unexpectedServerResponse: "Unexpected response from the server",
+      seriesPlural: "Series",
+      startingIn: "Starting in {seconds}s",
+      startingSoon: "Starting soon",
+      noStarredTitles: "No starred titles yet.",
+      starTitlesHint: "Star titles in the release calendar to follow their premieres.",
+      watchlist: "Watchlist",
+      editFile: "Edit file",
+      movieTitlePlaceholder: "Movie title\u2026",
+      pickFile: "Pick file",
+      describeMoviePlaceholder: "Describe the movie\u2026",
+      genresPlaceholder: "Action, Drama\u2026",
+      backdropUrl: "Backdrop URL",
+      posterUrl: "Poster URL",
+      fetchFromTmdb: "Fetch from TMDb",
+      pickCorrectMovie: "Pick the right movie",
+      noResultsFound: "No results found.",
+      searchFailed: "Search failed.",
+      edit: "Edit",
+      editMetadata: "Edit metadata",
+      ownFiles: "Own files",
+      localBadge: "Local",
+      noFolderSelected: "No folder selected. Pick a folder in Settings.",
+      readFolderFailed: "Could not read folder: {error}",
+      fileReadError: "Error while reading files.",
+      noVideoFilesFound: "No video files found in the folder.",
+      back: "Back",
+      backToHome: "Back to home",
+      pageLoadFailed: "The page could not be loaded",
+      pluginError: "Plugin error",
+      fetchingStream: "Fetching stream\u2026",
+      loadingDetails: "Loading details\u2026",
+      loadingFileInfo: "Loading file info\u2026",
+      loadingZapp: "Loading Zapp\u2026",
+      loadingCalendar: "Loading calendar\u2026",
+      loadingLiveTvPlugin: "Loading Live TV plugin\u2026",
+      saving: "Saving\u2026",
+      openExternalPlayerFailed: "Could not open the external player",
+      pressToStart: "Press to start",
+      activeLabel: "Active",
+      clearActorSearch: "Clear cast search",
+      nothingToShowYet: "Nothing to show yet.",
+      liveTvGuideTitle: "TV guide",
+      liveTvGuideNoLists: "No Live TV list yet.",
+      liveTvGuideNoEpgSource: "No EPG source is connected to this Live TV list.",
+      liveTvGuideLoading: "Loading guide data\u2026",
+      liveTvGuideFetchFailed: "The EPG source could not be fetched: {errors}",
+      liveTvGuideNoProgrammes: "The EPG source was fetched but contained no programmes.",
+      liveTvGuideNoMatches: "EPG loaded ({channels} channels), but none of the channels in the list matched.",
+      liveTvGuideNoProgrammesInWindow: "EPG loaded ({channels} channels, {matched} matched), but no programmes fall within the time window.",
+      liveTvFilterChannel: "Filter channel",
+      liveTvSelectChannel: "Select a channel",
+      liveTvSelectedChannel: "Selected channel",
+      liveTvNow: "Now",
+      liveTvLater: "Later",
+      liveTvRemaining: "{time} left",
+      liveTvOnChannel: "on {channel}",
+      liveTvPause: "Pause",
+      liveTvPaused: "Paused",
+      liveTvPlaying: "Playing",
+      liveTvFullscreen: "Fullscreen",
+      liveTvExitFullscreen: "Exit fullscreen",
+      liveTvGuide: "Guide",
+      liveTvOpenGuide: "Open TV guide",
+      liveTvVolume: "Volume",
+      liveTvMute: "Mute",
+      liveTvUnmute: "Unmute",
+      liveTvLiveBadge: "Live",
+      liveTvPlaybackFailed: "Playback failed.",
+      liveTvHlsUnsupported: "This browser does not support HLS playback.",
+      liveTvStreamErrorDetails: "Stream error: {details}",
+      liveTvMpvStartFailed: "The stream did not start in MPV. Close the player and try again, or try another channel.",
+      liveTvRefreshing: "Refreshing\u2026",
+      liveTvFavorites: "Favorites",
+      liveTvCreateListDesc: "Create your own channel row for Live TV.",
+      liveTvHomeOverrideDesc: "Replaces the regular Home rows with the Live TV view but keeps the hero and the rest of the start page.",
+      liveTvEpgSources: "EPG sources",
+      liveTvEpgSourceStats: "{channels} channels \xB7 {programmes} programmes",
+      liveTvEpgUrlPlaceholder: "XMLTV URL (e.g. https://epgshare01.online/epgshare01/epg_ripper_SE1.xml.gz)",
+      liveTvNoEpgSourcesPrefix: "No EPG sources yet. Try",
+      liveTvNoEpgSourcesSuffix: "for Swedish channels.",
+      liveTvFetchEpgForChannel: "Fetch EPG for this channel",
+      liveTvNoEpg: "No EPG",
+      liveTvNoGuideAvailable: "No guide available",
+      liveTvNoGuideForChannel: "No guide data available for this channel.",
+      liveTvPreviousChannel: "Previous channel",
+      liveTvNextChannel: "Next channel",
+      homeOverrideAlreadySet: "A custom home page is already set. Unselect it first before choosing another plugin.",
+      homeOverrideUseAsHome: "Use as home page",
+      plexHomeOverrideDesc: "Replaces the normal home rows with the Plex view, but keeps the hero and the rest of the home page.",
+      youtubeHomeOverrideDesc: "Replaces the normal home rows with the YouTube view, but keeps the hero and the rest of the home page.",
+      refresh: "Refresh",
+      refreshing: "Refreshing\u2026",
+      homekitAccessoryIdLabel: "Accessory ID (MAC format)",
+      homekitPinLabel: "PIN",
+      homekitSetupIdLabel: "Setup ID",
+      homekitPortLabel: "Port",
+      homekitBrightnessLabel: "Brightness",
+      plexCacheCleared: "Plex cache cleared. Open Plex again to fetch new images.",
+      plexClearCache: "Clear Plex cache",
+      plexLoading: "Loading Plex",
+      plexLoadingDesc: "Fetching titles from your selected Plex libraries.",
+      plexLoadFailed: "Could not load titles from Plex.",
+      plexNoTitles: "No Plex titles",
+      plexNoTitlesDesc: "No Plex titles were found in the selected libraries.",
+      plexStaleResults: "Showing the latest Plex results. The refresh failed.",
+      plexNotConnected: "Plex not connected",
+      pluginYoutubeRequestFailed: "YouTube request failed.",
+      pluginYoutubeQuotaExceeded: "The YouTube API quota is used up for now. Try again later, or reduce the number of YouTube loads.",
+      pluginYoutubeSessionExpired: "YouTube session expired. Reconnect in Settings.",
+      pluginYoutubeChannelLoadFailed: "Could not load your YouTube channel.",
+      pluginYoutubeChannelPlaylistLoadFailed: "Could not load this channel playlist.",
+      pluginYoutubeBrowserOnly: "Google sign-in is only available in the browser.",
+      pluginYoutubeIdentityServicesLoadFailed: "Failed to load Google Identity Services.",
+      pluginYoutubeIdentityServicesInitFailed: "Could not initialize Google sign-in.",
+      pluginYoutubeDesktopLoginStartFailed: "Could not start desktop YouTube login.",
+      pluginYoutubeLoginSessionExpired: "YouTube login session expired. Start the connection again.",
+      pluginYoutubeLoginFailed: "YouTube login failed.",
+      pluginYoutubeLoginTimedOut: "YouTube login timed out before Lumio received the session.",
+      pluginYoutubeMissingClientId: "Add a Google OAuth client ID first.",
+      pluginYoutubeMissingPlaylistId: "Playlist ID is missing.",
+      pluginYoutubeMissingChannelId: "Channel ID is missing."
     },
     sv: {
       // Nav
@@ -165376,6 +165556,30 @@
       copyStreamLink: "Kopiera streaml\xE4nk",
       downloadThisVideo: "Ladda ner videon",
       openInVlc: "Spela i VLC",
+      openInExternalPrefix: "Spela i",
+      openInExternalPlayer: "\xD6ppna i extern spelare",
+      externalPlayerApp: "Extern spelare",
+      externalPlayerPick: "V\xE4lj\u2026",
+      licensesTitle: "Licenser",
+      appUpdateTitle: "Appuppdatering",
+      appUpdateDesc: "Kolla om en nyare Lumio-version finns.",
+      appUpdateCheck: "S\xF6k uppdatering",
+      appUpdateCheckFailed: "Kunde inte h\xE4mta uppdateringsinformation",
+      appUpdateAvailable: "Uppdatering finns:",
+      appUpdateCurrent: "nuvarande",
+      appUpdateUpToDate: "Du har senaste versionen",
+      appUpdateInstall: "H\xE4mta & installera",
+      appUpdatePromptTitle: "Uppdatering finns",
+      appUpdatePromptBody: "Lumio {version} \xE4r redo att installeras. Uppdatera nu?",
+      appUpdatePromptInstall: "Uppdatera nu",
+      appUpdatePromptInstalling: "Uppdaterar\u2026",
+      appUpdatePromptLater: "Inte nu",
+      appUpdateRestarting: "Uppdateringen installerad \u2014 Lumio startar om\u2026",
+      appUpdateDmgOpened: "Installeraren laddades ner och \xF6ppnades \u2014 dra Lumio till Program.",
+      appUpdateBrowserStarted: "Nedladdningen startade i webbl\xE4saren \u2014 \xF6ppna APK:n f\xF6r att installera.",
+      licensesDesc: "\xD6ppen k\xE4llkod och tj\xE4nster som Lumio bygger p\xE5.",
+      licensesIntro: "Lumio buntar f\xF6ljande programvara med \xF6ppen k\xE4llkod. GPL-licensierade komponenter har h\xE4nvisning till k\xE4llkoden.",
+      externalPlayerAppDesc: 'App som "Spela i \u2026" anv\xE4nder (macOS-appnamn, t.ex. VLC eller IINA). Android visar systemets appv\xE4ljare.',
       preparingDownload: "F\xF6rbereder nedladdning...",
       downloadComplete: "Nedladdning klar",
       downloadFailed: "Nedladdning misslyckades",
@@ -165872,6 +166076,14 @@
       nightModeMenuLabel: "Nattl\xE4ge",
       nightModeMenuMild: "Mild",
       nightModeMenuStrong: "Stark",
+      onboardingIntegrationsEyebrow: "Integrationer",
+      onboardingIntegrationsTitle: "G\xF6r Lumio \xE4nnu b\xE4ttre",
+      onboardingIntegrationsDesc: "Valfria kopplingar som f\xF6rb\xE4ttrar upplevelsen \u2014 inget h\xE4r \xE4r n\xF6dv\xE4ndigt. Allt st\xE4lls in senare under Inst\xE4llningar \u2192 Integrationer.",
+      onboardingIntTrakt: "Synka sedda titlar och bevakningslistor. Logga in med en kod fr\xE5n inst\xE4llningarna.",
+      onboardingIntSpotify: "Soundtrack-uppspelning p\xE5 detaljsidor. Skapa en gratis app f\xF6r client ID/secret.",
+      onboardingIntGroq: "AI-s\xF6kning. Skapa en gratis API-nyckel.",
+      onboardingIntOpenSubtitles: "Undertexter fungerar direkt \u2014 ett konto hj\xE4lper bara mot kvotgr\xE4nser.",
+      onboardingIntegrationsHint: "Tryck p\xE5 ett kort f\xF6r att \xF6ppna dess sida. L\xE4gg in nycklarna under Inst\xE4llningar \u2192 Integrationer n\xE4r du vill.",
       defaultSubtitleLanguage: "Standard spr\xE5k f\xF6r textning",
       defaultSubtitleLanguageDesc: "V\xE4ljs automatiskt n\xE4r undertexter finns tillg\xE4ngliga.",
       fallbackSubtitleLanguage: "Sekund\xE4rt spr\xE5k f\xF6r textning",
@@ -166322,7 +166534,153 @@
       // Media explorer
       meAddGroqKeyFirst: "L\xE4gg till Groq API-nyckel i inst\xE4llningarna f\xF6rst.",
       meStremioNoStreams: "Inga streams returnerades fr\xE5n Stremio-addonen f\xF6r det h\xE4r inneh\xE5llet.",
-      meStremioUnreachable: "Kunde inte n\xE5 Stremio-addonen."
+      meStremioUnreachable: "Kunde inte n\xE5 Stremio-addonen.",
+      createList: "Skapa lista",
+      createListFailed: "Kunde inte skapa listan",
+      listNamePlaceholder: "Listnamn",
+      creating: "Skapar\u2026",
+      createAction: "Skapa",
+      assignToList: "Tilldela till lista",
+      noMoviesInListYet: "Inga filmer i min lista \xE4n.",
+      download: "Ladda ner",
+      pickStreamToDownload: "V\xE4lj stream att ladda ner",
+      closeDownload: "St\xE4ng nedladdning",
+      preparing: "F\xF6rbereder\u2026",
+      fetchingShort: "H\xE4mtar\u2026",
+      done: "Klar",
+      downloadFailedRetry: "Nedladdningen misslyckades, f\xF6rs\xF6k igen",
+      noPlayableStream: "Ingen spelbar stream hittades",
+      resolveLinkFailed: "Kunde inte l\xF6sa nedladdningsl\xE4nk",
+      torrentFailed: "Torrenten misslyckades: {status}",
+      debridKeyMissing: "Debrid-nyckel saknas",
+      fetchStreamsFailed: "Kunde inte h\xE4mta streams",
+      noStreamsFound: "Inga streams hittades",
+      startDownloadFailed: "Kunde inte starta nedladdning",
+      folderPickFailed: "Mappval misslyckades",
+      prepareDownloadFailed: "Kunde inte f\xF6rbereda nedladdning",
+      downloadJobLost: "Tappade kontakt med nedladdningsjobbet",
+      unexpectedServerResponse: "Ov\xE4ntat svar fr\xE5n servern",
+      seriesPlural: "Serier",
+      startingIn: "Startar om {seconds}s",
+      startingSoon: "Startar snart",
+      noStarredTitles: "Inga stj\xE4rnm\xE4rkta titlar \xE4n.",
+      starTitlesHint: "Stj\xE4rnm\xE4rk titlar i releasekalendern f\xF6r att f\xF6lja premi\xE4rer.",
+      watchlist: "Watchlist",
+      editFile: "Redigera fil",
+      movieTitlePlaceholder: "Filmtitel\u2026",
+      pickFile: "V\xE4lj fil",
+      describeMoviePlaceholder: "Beskriv filmen\u2026",
+      genresPlaceholder: "Action, Drama\u2026",
+      backdropUrl: "Bakgrundsbild URL",
+      posterUrl: "Affisch-URL",
+      fetchFromTmdb: "H\xE4mta fr\xE5n TMDb",
+      pickCorrectMovie: "V\xE4lj r\xE4tt film",
+      noResultsFound: "Inga resultat hittades.",
+      searchFailed: "S\xF6kning misslyckades.",
+      edit: "Redigera",
+      editMetadata: "Redigera metadata",
+      ownFiles: "Egna filer",
+      localBadge: "Lokal",
+      noFolderSelected: "Ingen mapp vald. V\xE4lj en mapp i inst\xE4llningarna.",
+      readFolderFailed: "Kunde inte l\xE4sa mapp: {error}",
+      fileReadError: "Fel vid inl\xE4sning av filer.",
+      noVideoFilesFound: "Inga videofiler hittades i mappen.",
+      back: "Tillbaka",
+      backToHome: "Tillbaka till startsidan",
+      pageLoadFailed: "Sidan kunde inte laddas",
+      pluginError: "Plugin-fel",
+      fetchingStream: "H\xE4mtar stream\u2026",
+      loadingDetails: "Laddar detaljer\u2026",
+      loadingFileInfo: "Laddar filinfo\u2026",
+      loadingZapp: "Laddar Zapp\u2026",
+      loadingCalendar: "Laddar kalender\u2026",
+      loadingLiveTvPlugin: "Laddar Live TV-plugin\u2026",
+      saving: "Sparar\u2026",
+      openExternalPlayerFailed: "Kunde inte \xF6ppna extern spelare",
+      pressToStart: "Tryck f\xF6r att starta",
+      activeLabel: "Aktiv",
+      clearActorSearch: "Rensa sk\xE5despelars\xF6k",
+      nothingToShowYet: "Inget att visa \xE4n.",
+      liveTvGuideTitle: "TV-tabl\xE5",
+      liveTvGuideNoLists: "Ingen Live TV-lista finns \xE4nnu.",
+      liveTvGuideNoEpgSource: "Ingen EPG-k\xE4lla \xE4r kopplad till den h\xE4r Live TV-listan.",
+      liveTvGuideLoading: "H\xE4mtar guidedata\u2026",
+      liveTvGuideFetchFailed: "EPG-k\xE4llan kunde inte h\xE4mtas: {errors}",
+      liveTvGuideNoProgrammes: "EPG-k\xE4llan h\xE4mtades men inneh\xF6ll inga program.",
+      liveTvGuideNoMatches: "EPG h\xE4mtad ({channels} kanaler), men inga av listans kanaler matchade.",
+      liveTvGuideNoProgrammesInWindow: "EPG h\xE4mtad ({channels} kanaler, {matched} matchade), men inga program ligger i tidsf\xF6nstret.",
+      liveTvFilterChannel: "Filtrera kanal",
+      liveTvSelectChannel: "V\xE4lj en kanal",
+      liveTvSelectedChannel: "Vald kanal",
+      liveTvNow: "Nu",
+      liveTvLater: "Senare",
+      liveTvRemaining: "{time} kvar",
+      liveTvOnChannel: "p\xE5 {channel}",
+      liveTvPause: "Pausa",
+      liveTvPaused: "Pausad",
+      liveTvPlaying: "Spelar",
+      liveTvFullscreen: "Helsk\xE4rm",
+      liveTvExitFullscreen: "Avsluta helsk\xE4rm",
+      liveTvGuide: "Tabl\xE5",
+      liveTvOpenGuide: "\xD6ppna TV-tabl\xE5",
+      liveTvVolume: "Volym",
+      liveTvMute: "Ljud av",
+      liveTvUnmute: "Ljud p\xE5",
+      liveTvLiveBadge: "Direkt",
+      liveTvPlaybackFailed: "Uppspelningen misslyckades.",
+      liveTvHlsUnsupported: "Den h\xE4r webbl\xE4saren st\xF6der inte HLS-uppspelning.",
+      liveTvStreamErrorDetails: "Streamfel: {details}",
+      liveTvMpvStartFailed: "Streamen startade inte i MPV. St\xE4ng spelaren och f\xF6rs\xF6k igen, eller testa en annan kanal.",
+      liveTvRefreshing: "Uppdaterar\u2026",
+      liveTvFavorites: "Favoriter",
+      liveTvCreateListDesc: "Skapa en egen kanalrad f\xF6r Live TV.",
+      liveTvHomeOverrideDesc: "Ers\xE4tter vanliga Home-rader med Live TV-vyn men beh\xE5ller hero och resten av startsidan.",
+      liveTvEpgSources: "EPG-k\xE4llor",
+      liveTvEpgSourceStats: "{channels} kanaler \xB7 {programmes} program",
+      liveTvEpgUrlPlaceholder: "XMLTV-URL (t.ex. https://epgshare01.online/epgshare01/epg_ripper_SE1.xml.gz)",
+      liveTvNoEpgSourcesPrefix: "Inga EPG-k\xE4llor \xE4nnu. Testa",
+      liveTvNoEpgSourcesSuffix: "f\xF6r svenska kanaler.",
+      liveTvFetchEpgForChannel: "H\xE4mta EPG f\xF6r kanalen",
+      liveTvNoEpg: "Ingen EPG",
+      liveTvNoGuideAvailable: "Ingen tabl\xE5 tillg\xE4nglig",
+      liveTvNoGuideForChannel: "Ingen guidedata tillg\xE4nglig f\xF6r den h\xE4r kanalen.",
+      liveTvPreviousChannel: "F\xF6reg\xE5ende kanal",
+      liveTvNextChannel: "N\xE4sta kanal",
+      homeOverrideAlreadySet: "En egen startsida \xE4r redan vald. Avmarkera den f\xF6rst innan du v\xE4ljer en annan plugin.",
+      homeOverrideUseAsHome: "Anv\xE4nd som startsida",
+      plexHomeOverrideDesc: "Ers\xE4tter de vanliga hemraderna med Plex-vyn men beh\xE5ller hero och resten av startsidan.",
+      youtubeHomeOverrideDesc: "Ers\xE4tter de vanliga hemraderna med YouTube-vyn men beh\xE5ller hero och resten av startsidan.",
+      refresh: "Uppdatera",
+      refreshing: "Uppdaterar\u2026",
+      homekitAccessoryIdLabel: "Tillbeh\xF6rs-ID (MAC-format)",
+      homekitPinLabel: "PIN",
+      homekitSetupIdLabel: "Setup ID",
+      homekitPortLabel: "Port",
+      homekitBrightnessLabel: "Ljusstyrka",
+      plexCacheCleared: "Plex-cachen \xE4r rensad. \xD6ppna Plex igen f\xF6r att h\xE4mta nya bilder.",
+      plexClearCache: "Rensa Plex-cache",
+      plexLoading: "Laddar Plex",
+      plexLoadingDesc: "H\xE4mtar titlar fr\xE5n dina valda Plex-bibliotek.",
+      plexLoadFailed: "Kunde inte l\xE4sa in titlar fr\xE5n Plex.",
+      plexNoTitles: "Inga Plex-titlar",
+      plexNoTitlesDesc: "Inga Plex-titlar hittades i de valda biblioteken.",
+      plexStaleResults: "Visar de senaste Plex-resultaten. Uppdateringen misslyckades.",
+      plexNotConnected: "Plex \xE4r inte anslutet",
+      pluginYoutubeRequestFailed: "YouTube-f\xF6rfr\xE5gan misslyckades.",
+      pluginYoutubeQuotaExceeded: "YouTube API-kvoten \xE4r slut f\xF6r tillf\xE4llet. F\xF6rs\xF6k igen senare eller minska antalet YouTube-laddningar.",
+      pluginYoutubeSessionExpired: "YouTube-sessionen har g\xE5tt ut. \xC5teranslut i Inst\xE4llningar.",
+      pluginYoutubeChannelLoadFailed: "Kunde inte l\xE4sa in din YouTube-kanal.",
+      pluginYoutubeChannelPlaylistLoadFailed: "Kunde inte l\xE4sa in kanalens spellista.",
+      pluginYoutubeBrowserOnly: "Google-inloggning \xE4r bara tillg\xE4nglig i webbl\xE4saren.",
+      pluginYoutubeIdentityServicesLoadFailed: "Kunde inte l\xE4sa in Google Identity Services.",
+      pluginYoutubeIdentityServicesInitFailed: "Kunde inte starta Google-inloggningen.",
+      pluginYoutubeDesktopLoginStartFailed: "Kunde inte starta YouTube-inloggningen p\xE5 datorn.",
+      pluginYoutubeLoginSessionExpired: "YouTube-inloggningen har g\xE5tt ut. Starta anslutningen igen.",
+      pluginYoutubeLoginFailed: "YouTube-inloggningen misslyckades.",
+      pluginYoutubeLoginTimedOut: "YouTube-inloggningen tog f\xF6r l\xE5ng tid \u2013 Lumio fick aldrig n\xE5gon session.",
+      pluginYoutubeMissingClientId: "L\xE4gg till ett Google OAuth-klient-ID f\xF6rst.",
+      pluginYoutubeMissingPlaylistId: "Spellistans ID saknas.",
+      pluginYoutubeMissingChannelId: "Kanalens ID saknas."
     }
   };
   var detachedLangContextValue = {
@@ -166423,7 +166781,7 @@
   var import_react55 = __toESM(require_dist89());
   init_jsx_runtime_shim();
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-QbSTg5/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-byDeyw/auth-capabilities-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
   function resolveAuthCapabilityStatus(providerId) {
     return sdk.resolveAuthCapabilityStatus(providerId);
@@ -166466,6 +166824,7 @@
     return isLocalAppHost(host) && port === "3011";
   }
   var isTauriEnv = detectTauriEnv();
+  var isDesktopTauriEnv = isTauriEnv && !(typeof navigator !== "undefined" && /android/i.test(navigator.userAgent));
 
   // components/player/video-player-modal.tsx
   init_react_shim();
@@ -167012,6 +167371,14 @@
   }
 
   // ../lumio-official-plugins/plugins/twitch/runtime/twitch-auth.ts
+  var TwitchAuthError = class extends Error {
+    constructor(text) {
+      super(typeof text === "string" ? text : text.en ?? "Twitch login failed.");
+      __publicField(this, "text");
+      this.name = "TwitchAuthError";
+      this.text = text;
+    }
+  };
   var DEFAULT_POLL_INTERVAL_SECONDS = 5;
   var DEFAULT_DEVICE_CODE_TTL_SECONDS = 1800;
   var SLOW_DOWN_STEP_MS = 5e3;
@@ -167048,7 +167415,11 @@
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok || !payload.device_code || !payload.user_code || !payload.verification_uri) {
-      throw new Error(payload.error || "Could not start Twitch login.");
+      if (payload.error) throw new Error(payload.error);
+      throw new TwitchAuthError({
+        en: "Could not start Twitch login.",
+        sv: "Kunde inte starta Twitch-inloggningen."
+      });
     }
     return {
       device_code: payload.device_code,
@@ -167080,12 +167451,18 @@
       headers: { "x-twitch-user-token": accessToken }
     });
     if (!response.ok) {
-      throw new Error(`Could not resolve Twitch account (${response.status}).`);
+      throw new TwitchAuthError({
+        en: `Could not resolve Twitch account (${response.status}).`,
+        sv: `Kunde inte h\xE4mta Twitch-kontot (${response.status}).`
+      });
     }
     const payload = await response.json().catch(() => ({}));
     const user = payload.data?.[0];
     if (!user?.id || !user.login) {
-      throw new Error("Could not resolve Twitch account.");
+      throw new TwitchAuthError({
+        en: "Could not resolve Twitch account.",
+        sv: "Kunde inte h\xE4mta Twitch-kontot."
+      });
     }
     return user;
   }
@@ -167116,9 +167493,16 @@
         intervalMs += SLOW_DOWN_STEP_MS;
         continue;
       }
-      throw new Error(poll.error || "Twitch device login failed");
+      if (poll.error) throw new Error(poll.error);
+      throw new TwitchAuthError({
+        en: "Twitch device login failed.",
+        sv: "Twitch-inloggningen med enhetskod misslyckades."
+      });
     }
-    throw new Error("Twitch login timed out. Try connecting again.");
+    throw new TwitchAuthError({
+      en: "Twitch login timed out. Try connecting again.",
+      sv: "Twitch-inloggningen tog f\xF6r l\xE5ng tid. F\xF6rs\xF6k ansluta igen."
+    });
   }
   function disconnectTwitch() {
     clearTwitchSession();
@@ -167259,6 +167643,11 @@
     function text(key) {
       return TEXT[key][lang] ?? TEXT[key].en;
     }
+    function errorText(error2, fallbackKey) {
+      if (error2 instanceof TwitchAuthError) return resolvePluginText(error2.text, lang);
+      if (error2 instanceof Error && error2.message) return error2.message;
+      return text(fallbackKey);
+    }
     useEffect(() => {
       setHomeCategory(getTwitchHomeCategory());
       setHomeChannels(getTwitchHomeChannels());
@@ -167301,7 +167690,7 @@
         );
         setSessionDetail(nextStatus?.detail ? resolvePluginText(nextStatus.detail, lang) : "");
       } catch (connectError) {
-        setError(connectError instanceof Error ? connectError.message : text("connectError"));
+        setError(errorText(connectError, "connectError"));
       } finally {
         setUserCode("");
         setVerificationUri("");
@@ -167316,7 +167705,7 @@
         setSessionLabel(text("notConnected"));
         setSessionDetail("");
       } catch (disconnectError) {
-        setError(disconnectError instanceof Error ? disconnectError.message : text("disconnectError"));
+        setError(errorText(disconnectError, "disconnectError"));
       } finally {
         setBusy("idle");
       }
@@ -167424,6 +167813,7 @@
     title,
     onClose
   }) {
+    const { t } = useLang();
     useEffect(() => {
       function onKey(e) {
         if (e.key === "Escape") onClose();
@@ -167440,7 +167830,7 @@
             {
               type: "button",
               onClick: onClose,
-              "aria-label": "Close",
+              "aria-label": t("close"),
               className: "rounded-full px-3 py-1 hover:bg-white/10",
               children: "\u2715"
             }
@@ -168988,7 +169378,7 @@
   };
   var runtime_default = TwitchPlugin;
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-QbSTg5/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-byDeyw/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

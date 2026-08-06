@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState, type ComponentType } from 'react'
-import type { HomeOverrideProps } from '@/lib/plugin-sdk'
+import { useLang, type HomeOverrideProps } from '@/lib/plugin-sdk'
 import { LiveTvGrid } from './live-tv-grid'
 import { LiveTvLogoImage } from './live-tv-logo-image'
 import { NowNextLaterRow } from './now-next-later-row'
@@ -39,6 +39,7 @@ function preferredChannels(lists: LiveTvList[]): Array<{ list: LiveTvList; chann
 }
 
 export function LiveTvHomeOverride(_props: HomeOverrideProps) {
+  const { t } = useLang()
   const [lists, setLists] = useState<LiveTvList[]>([])
   const [focusedKey, setFocusedKey] = useState<string | null>(null)
   const [LiveTvPlayerComponent, setLiveTvPlayerComponent] = useState<
@@ -148,8 +149,8 @@ export function LiveTvHomeOverride(_props: HomeOverrideProps) {
                 type="button"
                 onClick={() => moveFocus(-1)}
                 className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:border-white/35 hover:bg-white/10"
-                aria-label="Föregående kanal"
-                title="Föregående kanal"
+                aria-label={t('liveTvPreviousChannel')}
+                title={t('liveTvPreviousChannel')}
               >
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="15 18 9 12 15 6" />
@@ -159,8 +160,8 @@ export function LiveTvHomeOverride(_props: HomeOverrideProps) {
                 type="button"
                 onClick={() => moveFocus(1)}
                 className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:border-white/35 hover:bg-white/10"
-                aria-label="Nästa kanal"
-                title="Nästa kanal"
+                aria-label={t('liveTvNextChannel')}
+                title={t('liveTvNextChannel')}
               >
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="9 18 15 12 9 6" />
@@ -174,7 +175,7 @@ export function LiveTvHomeOverride(_props: HomeOverrideProps) {
                 <svg className="h-3.5 w-3.5 translate-x-[1px]" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M8 5v14l11-7z" />
                 </svg>
-                Spela
+                {t('play')}
               </button>
             </div>
           </div>

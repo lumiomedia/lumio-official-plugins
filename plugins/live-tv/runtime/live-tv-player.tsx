@@ -106,8 +106,8 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
     setMuted: mpvSetMuted,
   } = mpv
   const ASPECT_OPTIONS: Array<{ aspectOverride: string; panscan: number; videoZoom: number; label: string; htmlFit: 'contain' | 'cover' }> = [
-    { aspectOverride: '-1', panscan: 0, videoZoom: 0, label: 'Auto', htmlFit: 'contain' },
-    { aspectOverride: '-1', panscan: 1, videoZoom: 0, label: 'Fyll', htmlFit: 'cover' },
+    { aspectOverride: '-1', panscan: 0, videoZoom: 0, label: t('aspectAuto'), htmlFit: 'contain' },
+    { aspectOverride: '-1', panscan: 1, videoZoom: 0, label: t('aspectFill'), htmlFit: 'cover' },
     { aspectOverride: '16:9', panscan: 0, videoZoom: 0, label: '16:9', htmlFit: 'contain' },
     { aspectOverride: '4:3', panscan: 0, videoZoom: 0, label: '4:3', htmlFit: 'contain' },
     { aspectOverride: '2.35:1', panscan: 0, videoZoom: 0, label: '2.35:1', htmlFit: 'contain' },
@@ -345,7 +345,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
         })
         .catch((err: unknown) => {
           if (cancelled) return
-          setError(err instanceof Error ? err.message : 'Playback failed')
+          setError(err instanceof Error ? err.message : t('liveTvPlaybackFailed'))
           setLoading(false)
         })
 
@@ -394,7 +394,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
 
           const Hls = getHls()
           if (cancelled) return
-          if (!Hls || !Hls.isSupported()) throw new Error('This browser does not support HLS playback.')
+          if (!Hls || !Hls.isSupported()) throw new Error(t('liveTvHlsUnsupported'))
 
           const hls = new Hls({
             enableWorker: false,
@@ -417,7 +417,12 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
           hls.on(Hls.Events.ERROR, (_: unknown, data: { fatal?: boolean; type?: string; details?: string }) => {
             if (cancelled) return
             if (data.fatal) {
-              setError(`Stream error: ${data.details ?? data.type ?? 'unknown'}`)
+              setError(
+                t('liveTvStreamErrorDetails').replace(
+                  '{details}',
+                  String(data.details ?? data.type ?? 'unknown'),
+                ),
+              )
               setLoading(false)
             }
           })
@@ -430,7 +435,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
           tryEnterMobileFullscreen()
         }).catch(() => {})
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Playback failed')
+        if (!cancelled) setError(err instanceof Error ? err.message : t('liveTvPlaybackFailed'))
       }
     }
 
@@ -462,7 +467,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
   useEffect(() => {
     if (!useMpv || !loading || error || mpvFileLoaded || mpvPlaybackRestarted || mpvFirstFrameRendered) return
     const timeout = window.setTimeout(() => {
-      setError('Streamen startade inte i MPV. Stäng spelaren och försök igen, eller testa en annan kanal.')
+      setError(t('liveTvMpvStartFailed'))
       setLoading(false)
       void closeMpvPlayer().catch(() => {})
     }, MPV_STARTUP_TIMEOUT_MS)
@@ -635,8 +640,8 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
               type="button"
               onClick={toggleMpvPause}
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/35 hover:bg-white/15"
-              aria-label={mpvPaused ? 'Play' : 'Pause'}
-              title={mpvPaused ? 'Play' : 'Pause'}
+              aria-label={mpvPaused ? t('play') : t('liveTvPause')}
+              title={mpvPaused ? t('play') : t('liveTvPause')}
             >
               {mpvPaused ? (
                 <svg className="h-5 w-5 translate-x-0.5" viewBox="0 0 24 24" fill="currentColor">
@@ -656,8 +661,8 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
                   ? 'border-white/45 bg-white/20 hover:border-white/60'
                   : 'border-white/15 bg-white/10 hover:border-white/35 hover:bg-white/15'
               }`}
-              aria-label={desktopFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-              title={desktopFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+              aria-label={desktopFullscreen ? t('liveTvExitFullscreen') : t('liveTvFullscreen')}
+              title={desktopFullscreen ? t('liveTvExitFullscreen') : t('liveTvFullscreen')}
               aria-pressed={desktopFullscreen}
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -675,8 +680,8 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
                   ? 'border-emerald-300/60 bg-emerald-400/20 hover:border-emerald-200/80'
                   : 'border-white/15 bg-white/10 hover:border-white/35 hover:bg-white/15'
               }`}
-              aria-label="Guide"
-              title="Guide"
+              aria-label={t('liveTvGuide')}
+              title={t('liveTvGuide')}
               aria-pressed={scheduleOpen}
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -695,8 +700,8 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
                 onClick={() => setVolumeOpen((open) => !open)}
                 onMouseEnter={() => setVolumeOpen(true)}
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/35 hover:bg-white/15"
-                aria-label="Volume"
-                title="Volume"
+                aria-label={t('liveTvVolume')}
+                title={t('liveTvVolume')}
                 aria-expanded={volumeOpen}
               >
                 {muted || volumeLevel === 0 ? (
@@ -728,8 +733,8 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
                     type="button"
                     onClick={toggleMute}
                     className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/35 hover:bg-white/15"
-                    aria-label={muted ? 'Unmute' : 'Mute'}
-                    title={muted ? 'Unmute' : 'Mute'}
+                    aria-label={muted ? t('liveTvUnmute') : t('liveTvMute')}
+                    title={muted ? t('liveTvUnmute') : t('liveTvMute')}
                   >
                     {muted || volumeLevel === 0 ? (
                       <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -752,7 +757,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
                     value={muted ? 0 : volumeLevel}
                     onChange={(e) => updateVolume(parseFloat(e.target.value))}
                     className="h-1 w-32 cursor-pointer appearance-none rounded-full bg-white/15 accent-white"
-                    aria-label="Volume"
+                    aria-label={t('liveTvVolume')}
                   />
                 </div>
                 </div>
@@ -763,8 +768,8 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
               type="button"
               onClick={cycleAspect}
               className="flex h-11 shrink-0 items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 text-white transition hover:border-white/35 hover:bg-white/15"
-              aria-label="Aspect ratio"
-              title={`Aspect: ${ASPECT_OPTIONS[aspectIndex].label}`}
+              aria-label={t('aspectRatio')}
+              title={`${t('aspectRatio')}: ${ASPECT_OPTIONS[aspectIndex].label}`}
             >
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="5" width="18" height="14" rx="2" />
@@ -778,7 +783,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
             <div className="min-w-0 flex-1">
               <div className="flex min-w-0 items-center gap-3">
                 <span className="inline-flex h-6 shrink-0 items-center rounded-full border border-red-400/35 bg-red-500/15 px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-red-200">
-                  Live
+                  {t('liveTvLiveBadge')}
                 </span>
                 <p className="shrink-0 truncate text-sm font-semibold text-white">{channel.name}</p>
                 <div className="min-w-0 flex-1">
@@ -786,7 +791,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
                 </div>
               </div>
               <div className="mt-1 flex min-w-0 items-center gap-3 text-xs text-slate-300">
-                <span>{mpvPaused ? 'Paused' : 'Playing'}</span>
+                <span>{mpvPaused ? t('liveTvPaused') : t('liveTvPlaying')}</span>
                 <span className="text-slate-600">/</span>
                 <span>{formatClock(mpvTimePos)}</span>
                 {channel.group ? (
