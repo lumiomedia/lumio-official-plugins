@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.3
+
+- The player close button and the login/account error messages follow the
+  app language.
+
 ## 1.3.2
 
 - Player modal renders via a portal to `<body>`, so it always covers the whole window — previously a transformed ancestor could offset it and leave a strip of the page visible at the top.

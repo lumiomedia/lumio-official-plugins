@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.28
+
+- The loading, empty and error states, the cache-cleared message and the
+  browse-page filters follow the app language. The episode sidebar had no
+  translator at all.
+
 ## 1.0.26
 
 - Removed the Plex debug panel from Plex settings (no more Test server / Copy / Clear controls in UI).

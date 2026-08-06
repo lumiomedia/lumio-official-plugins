@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.3
+
+- The last five field labels (accessory ID, PIN, setup ID, port,
+  brightness) follow the app language instead of being hardcoded.
+
 ## 0.2.1
 
 - Runtime bundle refresh for latest SDK contract and separation updates

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.30
+
+- The whole UI follows the app language. The TV guide, the player
+  controls and five components had no translator at all and mixed Swedish
+  and English within the same view; the "use as home page" block also had
+  its Swedish diacritics stripped.
+
 ## 0.3.27
 
 - Full-bleed player stage: the MPV overlay now fills the entire viewport instead of being letterboxed between the top header and bottom controls. Chrome overlays sit on top of the video with their existing gradient backgrounds.
