@@ -137,8 +137,10 @@ export function HomeKitSettingsSection() {
       const data = (await res.json()) as { ok: boolean; error?: string }
       if (!data.ok) {
         setHomekitError(data.error ?? t('homekitActionFailed'))
-      } else if (action === 'reset') {
-        setHomekitInfo(t('homekitResetInfo'))
+      } else {
+        // Publishing succeeds in well under a second, so without a message the
+        // button just flickers and looks like it did nothing.
+        setHomekitInfo(action === 'reset' ? t('homekitResetInfo') : t('homekitPublishedInfo'))
         if (infoTimerRef.current) clearTimeout(infoTimerRef.current)
         infoTimerRef.current = setTimeout(() => {
           setHomekitInfo('')
@@ -189,7 +191,7 @@ export function HomeKitSettingsSection() {
         </div>
         <div className="space-y-1.5">
           <label className="block text-xs text-slate-400">{t('homekitPinLabel')}</label>
-          <Input type="text" value={homekitPin} onValueChange={setHomekitPin} placeholder="031-45-154" radius="lg" classNames={inputClassNames} />
+          <Input type="text" value={homekitPin} onValueChange={setHomekitPin} placeholder="0314-5154" radius="lg" classNames={inputClassNames} />
         </div>
         <div className="space-y-1.5">
           <label className="block text-xs text-slate-400">{t('homekitSetupIdLabel')}</label>
