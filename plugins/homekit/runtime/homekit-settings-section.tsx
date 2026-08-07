@@ -103,7 +103,6 @@ export function HomeKitSettingsSection() {
       body: JSON.stringify({
         HOMEKIT_ENABLED: homekitEnabled ? '1' : '0',
         HOMEKIT_ACCESSORY_NAME: homekitAccessoryName,
-        HOMEKIT_USERNAME: homekitUsername,
         HOMEKIT_PIN: homekitPin,
         HOMEKIT_SETUP_ID: homekitSetupId,
         HOMEKIT_PORT: homekitPort,
@@ -178,7 +177,11 @@ export function HomeKitSettingsSection() {
         </div>
         <div className="space-y-1.5">
           <label className="block text-xs text-slate-400">{t('homekitAccessoryIdLabel')}</label>
-          <Input type="text" value={homekitUsername} onValueChange={setHomekitUsername} placeholder="0E:39:6A:11:22:33" radius="lg" classNames={inputClassNames} />
+          {/* Read-only on purpose. A controller looks the accessory up by this
+              id, so changing it invalidates every pairing -- and a field that
+              round-trips its value on save did exactly that by accident.
+              "Reset pairing" is the deliberate way to get a new identity. */}
+          <p className="rounded-lg border border-white/10 bg-slate-950/60 px-3 py-2 font-mono text-xs text-slate-300">{homekitUsername}</p>
         </div>
         <div className="space-y-1.5">
           <label className="block text-xs text-slate-400">{t('homekitPinLabel')}</label>
