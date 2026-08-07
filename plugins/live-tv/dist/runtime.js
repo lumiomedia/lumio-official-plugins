@@ -48,7 +48,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-nuuFnf/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-fZ0Hpm/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -97,7 +97,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-nuuFnf/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-fZ0Hpm/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -29690,7 +29690,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-nuuFnf/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-fZ0Hpm/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -29700,7 +29700,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-nuuFnf/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-fZ0Hpm/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -163583,49 +163583,17 @@
     }
   });
 
-  // lib/profile-storage.ts
-  function readProfiles() {
-    if (typeof window === "undefined") return [];
-    try {
-      return JSON.parse(localStorage.getItem(PROFILES_KEY) ?? "[]");
-    } catch {
-      return [];
-    }
-  }
-  function onProfileChanged(listener) {
-    window.addEventListener(PROFILE_EVENT, listener);
-    return () => window.removeEventListener(PROFILE_EVENT, listener);
-  }
-  function getActiveProfileId() {
-    if (typeof window === "undefined") return null;
-    const value = localStorage.getItem(ACTIVE_PROFILE_KEY);
-    return value && readProfiles().some((profile) => profile.id === value) ? value : null;
-  }
-  function getProfileStorageKey(baseKey, profileId = getActiveProfileId()) {
-    return profileId ? `${PROFILE_PREFIX}${profileId}:${baseKey}` : baseKey;
-  }
-  function getScopedStorageItem(baseKey) {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem(getProfileStorageKey(baseKey));
-  }
-  function setScopedStorageItem(baseKey, value) {
-    try {
-      localStorage.setItem(getProfileStorageKey(baseKey), value);
-    } catch {
-    }
-  }
-  function removeScopedStorageItem(baseKey) {
-    localStorage.removeItem(getProfileStorageKey(baseKey));
-  }
-  var PROFILES_KEY, ACTIVE_PROFILE_KEY, PROFILE_EVENT, PROFILE_PREFIX;
-  var init_profile_storage = __esm({
-    "lib/profile-storage.ts"() {
-      "use strict";
-      "use client";
-      PROFILES_KEY = "app_profiles";
-      ACTIVE_PROFILE_KEY = "app_active_profile";
-      PROFILE_EVENT = "lumio-profile-changed";
-      PROFILE_PREFIX = "profile:";
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-fZ0Hpm/profile-storage-shim.ts
+  var sdk, getActiveProfileId, getProfileStorageKey, getScopedStorageItem, setScopedStorageItem, removeScopedStorageItem, onProfileChanged;
+  var init_profile_storage_shim = __esm({
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-fZ0Hpm/profile-storage-shim.ts"() {
+      sdk = globalThis.__lumioPluginRuntime?.sdk;
+      getActiveProfileId = () => sdk.getActiveProfileId();
+      getProfileStorageKey = (baseKey, profileId) => sdk.getProfileStorageKey(baseKey, profileId);
+      getScopedStorageItem = (baseKey) => sdk.getScopedStorageItem(baseKey);
+      setScopedStorageItem = (baseKey, value) => sdk.setScopedStorageItem(baseKey, value);
+      removeScopedStorageItem = (baseKey) => sdk.removeScopedStorageItem(baseKey);
+      onProfileChanged = (listener) => sdk.onProfileChanged(listener);
     }
   });
 
@@ -163675,7 +163643,7 @@
       "use strict";
       "use client";
       init_react_shim();
-      init_profile_storage();
+      init_profile_storage_shim();
       init_jsx_runtime_shim();
       strings = {
         en: {
@@ -164073,16 +164041,17 @@
           homekitServerError: "Could not contact HomeKit server",
           homekitActionFailed: "HomeKit operation failed",
           homekitResetInfo: "Pairing reset. A new HomeKit identity was created for a fresh pairing.",
+          homekitPublishedInfo: "Accessory published. Add it in the Home app.",
           homekitEventRules: "Event rules",
           movieStarts: "Movie starts",
           moviePaused: "Movie pauses",
           videoClosed: "Video closes",
           openGuide: "Open guide",
           closeGuide: "Close guide",
-          startPairing: "Start pairing",
+          startPairing: "Publish accessory",
           resetPairing: "Reset pairing",
           refreshStatus: "Refresh status",
-          starting: "Starting...",
+          starting: "Publishing...",
           resetting: "Resetting...",
           homekitGuideTitle: "HomeKit guide",
           homekitGuideStep1: "Press Start pairing.",
@@ -164969,6 +164938,8 @@
           refreshing: "Refreshing\u2026",
           homekitAccessoryIdLabel: "Accessory ID (MAC format)",
           homekitPinLabel: "PIN",
+          homekitPairingCodeLabel: "Pairing code",
+          homekitPairingCodeHint: "Add it in the Home app on your iPhone: Add Accessory -> More options -> Lumio Cinema Sync, then enter this code.",
           homekitSetupIdLabel: "Setup ID",
           homekitPortLabel: "Port",
           homekitBrightnessLabel: "Brightness",
@@ -164995,7 +164966,10 @@
           pluginYoutubeLoginTimedOut: "YouTube login timed out before Lumio received the session.",
           pluginYoutubeMissingClientId: "Add a Google OAuth client ID first.",
           pluginYoutubeMissingPlaylistId: "Playlist ID is missing.",
-          pluginYoutubeMissingChannelId: "Channel ID is missing."
+          pluginYoutubeMissingChannelId: "Channel ID is missing.",
+          ptNeedsNewerApp: "A newer app version is required for this update.",
+          ptScanSummary: "{updated} updated, {uptodate} already current, {failed} failed.",
+          ptScanNoUpdates: "All plugins are on the latest version."
         },
         sv: {
           // Nav
@@ -165392,16 +165366,17 @@
           homekitServerError: "Kunde inte kontakta HomeKit-servern",
           homekitActionFailed: "HomeKit-operation misslyckades",
           homekitResetInfo: "Pairing nollst\xE4lld. Ny HomeKit-identitet skapad f\xF6r ny parkoppling.",
+          homekitPublishedInfo: "Tillbeh\xF6ret \xE4r publicerat. L\xE4gg till det i Home-appen.",
           homekitEventRules: "Event-regler",
           movieStarts: "Film startar",
           moviePaused: "Film pausas",
           videoClosed: "Video st\xE4ngs",
           openGuide: "\xD6ppna guide",
           closeGuide: "St\xE4ng guide",
-          startPairing: "Starta pairing",
+          startPairing: "Publicera tillbeh\xF6r",
           resetPairing: "Nollst\xE4ll pairing",
           refreshStatus: "Uppdatera status",
-          starting: "Startar...",
+          starting: "Publicerar...",
           resetting: "Nollst\xE4ller...",
           homekitGuideTitle: "HomeKit-guide",
           homekitGuideStep1: "Tryck p\xE5 Starta pairing.",
@@ -166288,6 +166263,8 @@
           refreshing: "Uppdaterar\u2026",
           homekitAccessoryIdLabel: "Tillbeh\xF6rs-ID (MAC-format)",
           homekitPinLabel: "PIN",
+          homekitPairingCodeLabel: "Parningskod",
+          homekitPairingCodeHint: "L\xE4gg till det i Home-appen p\xE5 din iPhone: L\xE4gg till tillbeh\xF6r -> Fler alternativ -> Lumio Cinema Sync, och ange sedan koden.",
           homekitSetupIdLabel: "Setup ID",
           homekitPortLabel: "Port",
           homekitBrightnessLabel: "Ljusstyrka",
@@ -166314,7 +166291,10 @@
           pluginYoutubeLoginTimedOut: "YouTube-inloggningen tog f\xF6r l\xE5ng tid \u2013 Lumio fick aldrig n\xE5gon session.",
           pluginYoutubeMissingClientId: "L\xE4gg till ett Google OAuth-klient-ID f\xF6rst.",
           pluginYoutubeMissingPlaylistId: "Spellistans ID saknas.",
-          pluginYoutubeMissingChannelId: "Kanalens ID saknas."
+          pluginYoutubeMissingChannelId: "Kanalens ID saknas.",
+          ptNeedsNewerApp: "Uppdateringen kr\xE4ver en nyare version av appen.",
+          ptScanSummary: "{updated} uppdaterade, {uptodate} redan aktuella, {failed} misslyckades.",
+          ptScanNoUpdates: "Alla plugins \xE4r p\xE5 senaste versionen."
         }
       };
       detachedLangContextValue = {
@@ -166423,7 +166403,7 @@
     "lib/plugin-storage.ts"() {
       "use strict";
       "use client";
-      init_profile_storage();
+      init_profile_storage_shim();
       PLUGIN_STORAGE_PREFIX = "plugin:";
       pluginMemoryCache = /* @__PURE__ */ new Map();
     }
@@ -166536,7 +166516,7 @@
     "lib/home-override-settings.ts"() {
       "use strict";
       "use client";
-      init_profile_storage();
+      init_profile_storage_shim();
       KEY = "custom_home_override_plugin";
       EVENT = "lumio-home-override-changed";
     }
@@ -166547,21 +166527,21 @@
     "lib/trakt-storage.ts"() {
       "use strict";
       "use client";
-      init_profile_storage();
+      init_profile_storage_shim();
     }
   });
 
   // lib/movie-watchlist.ts
   var init_movie_watchlist = __esm({
     "lib/movie-watchlist.ts"() {
-      init_profile_storage();
+      init_profile_storage_shim();
     }
   });
 
   // lib/watchlist.ts
   var init_watchlist = __esm({
     "lib/watchlist.ts"() {
-      init_profile_storage();
+      init_profile_storage_shim();
     }
   });
 
@@ -166569,7 +166549,7 @@
   var init_watched_episodes = __esm({
     "lib/watched-episodes.ts"() {
       "use strict";
-      init_profile_storage();
+      init_profile_storage_shim();
     }
   });
 
@@ -166578,14 +166558,14 @@
     "lib/watched-movies.ts"() {
       "use strict";
       "use client";
-      init_profile_storage();
+      init_profile_storage_shim();
     }
   });
 
   // lib/watchlist-item-cache.ts
   var init_watchlist_item_cache = __esm({
     "lib/watchlist-item-cache.ts"() {
-      init_profile_storage();
+      init_profile_storage_shim();
     }
   });
 
@@ -166675,9 +166655,9 @@
   }
   function getScraperConfigs() {
     if (typeof window === "undefined") return [DEFAULT_TORRENTIO_CONFIG];
-    migrateScraperSettingsIfNeeded();
     try {
-      const raw = getScopedStorageItem(CONFIGS_KEY) ?? localStorage.getItem(CONFIGS_KEY);
+      const scoped = getScopedStorageItem(CONFIGS_KEY);
+      const raw = scoped ?? (getActiveProfileId() ? null : localStorage.getItem(CONFIGS_KEY));
       if (!raw) {
         return [DEFAULT_TORRENTIO_CONFIG];
       }
@@ -166689,15 +166669,6 @@
   }
   function setScraperConfigs(configs) {
     setScopedStorageItem(CONFIGS_KEY, JSON.stringify(configs));
-  }
-  function migrateScraperSettingsIfNeeded() {
-    if (getScopedStorageItem(CONFIGS_KEY)) return;
-    const unscopedConfigs = localStorage.getItem(CONFIGS_KEY);
-    if (unscopedConfigs) {
-      setScopedStorageItem(CONFIGS_KEY, unscopedConfigs);
-      return;
-    }
-    setScopedStorageItem(CONFIGS_KEY, JSON.stringify([DEFAULT_TORRENTIO_CONFIG]));
   }
   function normalizeScraperConfig(config) {
     switch (config.preset) {
@@ -166776,7 +166747,7 @@
   var SCRAPER_PRESETS, DEFAULT_SCRAPER_URL, CONFIGS_KEY, GLOBAL_STREAM_PROVIDER_TOKEN_KEY_PREFIX, GLOBAL_STREAM_PROVIDER_COOKIE_PREFIX, LEGACY_STREAM_PROVIDER_COOKIE_PREFIX, LEGACY_RD_API_KEY, VALID_STREAM_PROVIDERS, DEFAULT_TORRENTIO_CONFIG, TORRENTSDB_AUTOADD_KEY;
   var init_stream_provider_settings = __esm({
     "lib/stream-provider-runtime/stream-provider-settings.ts"() {
-      init_profile_storage();
+      init_profile_storage_shim();
       SCRAPER_PRESETS = [
         {
           id: "torrentio",
@@ -166848,7 +166819,7 @@
   var init_playback_settings = __esm({
     "lib/playback-settings.ts"() {
       "use strict";
-      init_profile_storage();
+      init_profile_storage_shim();
     }
   });
 
@@ -168706,7 +168677,7 @@
   // lib/stream-provider-runtime/stream-filters.ts
   var init_stream_filters = __esm({
     "lib/stream-provider-runtime/stream-filters.ts"() {
-      init_profile_storage();
+      init_profile_storage_shim();
     }
   });
 
@@ -168750,7 +168721,7 @@
       init_async_utils();
       init_plugin_registry();
       init_plugin_state();
-      init_profile_storage();
+      init_profile_storage_shim();
       init_filters();
       init_plugin_sdk();
       init_request_context();
@@ -168776,7 +168747,7 @@
       init_async_utils();
       init_plugin_registry();
       init_plugin_state();
-      init_profile_storage();
+      init_profile_storage_shim();
       init_filters();
       init_plugin_sdk();
       init_request_context();
@@ -168838,11 +168809,11 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-nuuFnf/auth-capabilities-shim.ts
-  var sdk;
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-fZ0Hpm/auth-capabilities-shim.ts
+  var sdk2;
   var init_auth_capabilities_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-nuuFnf/auth-capabilities-shim.ts"() {
-      sdk = globalThis.__lumioPluginRuntime?.sdk;
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-fZ0Hpm/auth-capabilities-shim.ts"() {
+      sdk2 = globalThis.__lumioPluginRuntime?.sdk;
     }
   });
 
@@ -169166,7 +169137,7 @@
   var init_autoplay_settings = __esm({
     "lib/autoplay-settings.ts"() {
       "use strict";
-      init_profile_storage();
+      init_profile_storage_shim();
     }
   });
 
@@ -169174,7 +169145,7 @@
   var init_zapp_settings = __esm({
     "lib/zapp-settings.ts"() {
       "use strict";
-      init_profile_storage();
+      init_profile_storage_shim();
     }
   });
 
@@ -169486,7 +169457,7 @@
     "lib/stream-provider-runtime/core-stream-addons.ts"() {
       "use strict";
       "use client";
-      init_profile_storage();
+      init_profile_storage_shim();
     }
   });
 
@@ -169510,7 +169481,7 @@
   var EVENT2, HISTORY_EVENT;
   var init_video_progress = __esm({
     "lib/video-progress.ts"() {
-      init_profile_storage();
+      init_profile_storage_shim();
       init_watched_episodes();
       init_playback_availability();
       EVENT2 = "lumio-stream-progress-changed";
@@ -169555,7 +169526,7 @@
   // lib/spotify-settings.ts
   var init_spotify_settings = __esm({
     "lib/spotify-settings.ts"() {
-      init_profile_storage();
+      init_profile_storage_shim();
     }
   });
 
@@ -169585,7 +169556,7 @@
   // lib/opensubtitles-settings.ts
   var init_opensubtitles_settings = __esm({
     "lib/opensubtitles-settings.ts"() {
-      init_profile_storage();
+      init_profile_storage_shim();
     }
   });
 
@@ -169738,7 +169709,7 @@
   }
   var init_plugin_sdk = __esm({
     "lib/plugin-sdk.ts"() {
-      init_profile_storage();
+      init_profile_storage_shim();
       init_i18n();
       init_plugin_storage();
       init_plugin_assets();
@@ -173279,7 +173250,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-nuuFnf/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-fZ0Hpm/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

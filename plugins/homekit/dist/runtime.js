@@ -46,7 +46,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-iSyWpi/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-fRuZlh/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -95,7 +95,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-iSyWpi/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-fRuZlh/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -29688,7 +29688,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-iSyWpi/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-fRuZlh/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -29698,7 +29698,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-iSyWpi/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-fRuZlh/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -163932,41 +163932,11 @@
   var import_react62 = __toESM(require_dist89());
   init_react_shim();
 
-  // lib/profile-storage.ts
-  var PROFILES_KEY = "app_profiles";
-  var ACTIVE_PROFILE_KEY = "app_active_profile";
-  var PROFILE_EVENT = "lumio-profile-changed";
-  var PROFILE_PREFIX = "profile:";
-  function readProfiles() {
-    if (typeof window === "undefined") return [];
-    try {
-      return JSON.parse(localStorage.getItem(PROFILES_KEY) ?? "[]");
-    } catch {
-      return [];
-    }
-  }
-  function onProfileChanged(listener) {
-    window.addEventListener(PROFILE_EVENT, listener);
-    return () => window.removeEventListener(PROFILE_EVENT, listener);
-  }
-  function getActiveProfileId() {
-    if (typeof window === "undefined") return null;
-    const value = localStorage.getItem(ACTIVE_PROFILE_KEY);
-    return value && readProfiles().some((profile) => profile.id === value) ? value : null;
-  }
-  function getProfileStorageKey(baseKey, profileId = getActiveProfileId()) {
-    return profileId ? `${PROFILE_PREFIX}${profileId}:${baseKey}` : baseKey;
-  }
-  function getScopedStorageItem(baseKey) {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem(getProfileStorageKey(baseKey));
-  }
-  function setScopedStorageItem(baseKey, value) {
-    try {
-      localStorage.setItem(getProfileStorageKey(baseKey), value);
-    } catch {
-    }
-  }
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-fRuZlh/profile-storage-shim.ts
+  var sdk = globalThis.__lumioPluginRuntime?.sdk;
+  var getScopedStorageItem = (baseKey) => sdk.getScopedStorageItem(baseKey);
+  var setScopedStorageItem = (baseKey, value) => sdk.setScopedStorageItem(baseKey, value);
+  var onProfileChanged = (listener) => sdk.onProfileChanged(listener);
 
   // lib/i18n.tsx
   init_react_shim();
@@ -164367,16 +164337,17 @@
       homekitServerError: "Could not contact HomeKit server",
       homekitActionFailed: "HomeKit operation failed",
       homekitResetInfo: "Pairing reset. A new HomeKit identity was created for a fresh pairing.",
+      homekitPublishedInfo: "Accessory published. Add it in the Home app.",
       homekitEventRules: "Event rules",
       movieStarts: "Movie starts",
       moviePaused: "Movie pauses",
       videoClosed: "Video closes",
       openGuide: "Open guide",
       closeGuide: "Close guide",
-      startPairing: "Start pairing",
+      startPairing: "Publish accessory",
       resetPairing: "Reset pairing",
       refreshStatus: "Refresh status",
-      starting: "Starting...",
+      starting: "Publishing...",
       resetting: "Resetting...",
       homekitGuideTitle: "HomeKit guide",
       homekitGuideStep1: "Press Start pairing.",
@@ -165263,6 +165234,8 @@
       refreshing: "Refreshing\u2026",
       homekitAccessoryIdLabel: "Accessory ID (MAC format)",
       homekitPinLabel: "PIN",
+      homekitPairingCodeLabel: "Pairing code",
+      homekitPairingCodeHint: "Add it in the Home app on your iPhone: Add Accessory -> More options -> Lumio Cinema Sync, then enter this code.",
       homekitSetupIdLabel: "Setup ID",
       homekitPortLabel: "Port",
       homekitBrightnessLabel: "Brightness",
@@ -165289,7 +165262,10 @@
       pluginYoutubeLoginTimedOut: "YouTube login timed out before Lumio received the session.",
       pluginYoutubeMissingClientId: "Add a Google OAuth client ID first.",
       pluginYoutubeMissingPlaylistId: "Playlist ID is missing.",
-      pluginYoutubeMissingChannelId: "Channel ID is missing."
+      pluginYoutubeMissingChannelId: "Channel ID is missing.",
+      ptNeedsNewerApp: "A newer app version is required for this update.",
+      ptScanSummary: "{updated} updated, {uptodate} already current, {failed} failed.",
+      ptScanNoUpdates: "All plugins are on the latest version."
     },
     sv: {
       // Nav
@@ -165686,16 +165662,17 @@
       homekitServerError: "Kunde inte kontakta HomeKit-servern",
       homekitActionFailed: "HomeKit-operation misslyckades",
       homekitResetInfo: "Pairing nollst\xE4lld. Ny HomeKit-identitet skapad f\xF6r ny parkoppling.",
+      homekitPublishedInfo: "Tillbeh\xF6ret \xE4r publicerat. L\xE4gg till det i Home-appen.",
       homekitEventRules: "Event-regler",
       movieStarts: "Film startar",
       moviePaused: "Film pausas",
       videoClosed: "Video st\xE4ngs",
       openGuide: "\xD6ppna guide",
       closeGuide: "St\xE4ng guide",
-      startPairing: "Starta pairing",
+      startPairing: "Publicera tillbeh\xF6r",
       resetPairing: "Nollst\xE4ll pairing",
       refreshStatus: "Uppdatera status",
-      starting: "Startar...",
+      starting: "Publicerar...",
       resetting: "Nollst\xE4ller...",
       homekitGuideTitle: "HomeKit-guide",
       homekitGuideStep1: "Tryck p\xE5 Starta pairing.",
@@ -166582,6 +166559,8 @@
       refreshing: "Uppdaterar\u2026",
       homekitAccessoryIdLabel: "Tillbeh\xF6rs-ID (MAC-format)",
       homekitPinLabel: "PIN",
+      homekitPairingCodeLabel: "Parningskod",
+      homekitPairingCodeHint: "L\xE4gg till det i Home-appen p\xE5 din iPhone: L\xE4gg till tillbeh\xF6r -> Fler alternativ -> Lumio Cinema Sync, och ange sedan koden.",
       homekitSetupIdLabel: "Setup ID",
       homekitPortLabel: "Port",
       homekitBrightnessLabel: "Ljusstyrka",
@@ -166608,7 +166587,10 @@
       pluginYoutubeLoginTimedOut: "YouTube-inloggningen tog f\xF6r l\xE5ng tid \u2013 Lumio fick aldrig n\xE5gon session.",
       pluginYoutubeMissingClientId: "L\xE4gg till ett Google OAuth-klient-ID f\xF6rst.",
       pluginYoutubeMissingPlaylistId: "Spellistans ID saknas.",
-      pluginYoutubeMissingChannelId: "Kanalens ID saknas."
+      pluginYoutubeMissingChannelId: "Kanalens ID saknas.",
+      ptNeedsNewerApp: "Uppdateringen kr\xE4ver en nyare version av appen.",
+      ptScanSummary: "{updated} uppdaterade, {uptodate} redan aktuella, {failed} misslyckades.",
+      ptScanNoUpdates: "Alla plugins \xE4r p\xE5 senaste versionen."
     }
   };
   var detachedLangContextValue = {
@@ -166709,8 +166691,8 @@
   var import_react55 = __toESM(require_dist89());
   init_jsx_runtime_shim();
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-iSyWpi/auth-capabilities-shim.ts
-  var sdk = globalThis.__lumioPluginRuntime?.sdk;
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-fRuZlh/auth-capabilities-shim.ts
+  var sdk2 = globalThis.__lumioPluginRuntime?.sdk;
 
   // lib/tauri-mpv.ts
   init_core();
@@ -167121,6 +167103,7 @@
     const [hkPlayerClosedEnabled, setHkPlayerClosedEnabled] = useState(true);
     const [hkPlayerClosedBrightness, setHkPlayerClosedBrightness] = useState("65");
     const [homekitStatus, setHomekitStatus] = useState("");
+    const [publishedPin, setPublishedPin] = useState("");
     const [homekitError, setHomekitError] = useState("");
     const [homekitInfo, setHomekitInfo] = useState("");
     const [homekitGuideOpen, setHomekitGuideOpen] = useState(false);
@@ -167152,8 +167135,10 @@
         if (!data.ok || !data.status) {
           setHomekitError(data.error ?? t("homekitStatusFetchError"));
           setHomekitStatus(t("homekitNotConnected"));
+          setPublishedPin("");
           return;
         }
+        setPublishedPin(data.status.published ? data.status.pincode ?? "" : "");
         if (!data.status.enabled) {
           setHomekitStatus(t("homekitDisabled"));
         } else if (data.status.published) {
@@ -167201,8 +167186,8 @@
         const data = await res.json();
         if (!data.ok) {
           setHomekitError(data.error ?? t("homekitActionFailed"));
-        } else if (action === "reset") {
-          setHomekitInfo(t("homekitResetInfo"));
+        } else {
+          setHomekitInfo(action === "reset" ? t("homekitResetInfo") : t("homekitPublishedInfo"));
           if (infoTimerRef.current) clearTimeout(infoTimerRef.current);
           infoTimerRef.current = setTimeout(() => {
             setHomekitInfo("");
@@ -167252,7 +167237,7 @@
         ] }),
         /* @__PURE__ */ jsxs("div", { className: "space-y-1.5", children: [
           /* @__PURE__ */ jsx("label", { className: "block text-xs text-slate-400", children: t("homekitPinLabel") }),
-          /* @__PURE__ */ jsx(import_react62.Input, { type: "text", value: homekitPin, onValueChange: setHomekitPin, placeholder: "031-45-154", radius: "lg", classNames: inputClassNames })
+          /* @__PURE__ */ jsx(import_react62.Input, { type: "text", value: homekitPin, onValueChange: setHomekitPin, placeholder: "0314-5154", radius: "lg", classNames: inputClassNames })
         ] }),
         /* @__PURE__ */ jsxs("div", { className: "space-y-1.5", children: [
           /* @__PURE__ */ jsx("label", { className: "block text-xs text-slate-400", children: t("homekitSetupIdLabel") }),
@@ -167267,6 +167252,11 @@
         t("homekitStatusLabel"),
         ": ",
         /* @__PURE__ */ jsx("span", { className: "text-slate-200", children: homekitStatus }),
+        publishedPin ? /* @__PURE__ */ jsxs("div", { className: "mt-2", children: [
+          /* @__PURE__ */ jsx("p", { className: "text-slate-400", children: t("homekitPairingCodeLabel") }),
+          /* @__PURE__ */ jsx("p", { className: "mt-0.5 select-all font-mono text-lg tracking-[0.2em] text-slate-100", children: publishedPin }),
+          /* @__PURE__ */ jsx("p", { className: "mt-0.5 text-slate-500", children: t("homekitPairingCodeHint") })
+        ] }) : null,
         homekitInfo ? /* @__PURE__ */ jsx("p", { className: "mt-1 text-emerald-400", children: homekitInfo }) : null,
         homekitError ? /* @__PURE__ */ jsx("p", { className: "mt-1 text-red-400", children: homekitError }) : null
       ] }),
@@ -167338,7 +167328,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-iSyWpi/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-fRuZlh/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");
