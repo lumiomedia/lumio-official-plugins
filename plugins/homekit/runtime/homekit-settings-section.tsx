@@ -36,11 +36,8 @@ export function HomeKitSettingsSection() {
   const [homekitSetupId, setHomekitSetupId] = useState('LMIO')
   const [homekitPort, setHomekitPort] = useState('51826')
   const [hkMovieStartEnabled, setHkMovieStartEnabled] = useState(true)
-  const [hkMovieStartBrightness, setHkMovieStartBrightness] = useState('20')
   const [hkMoviePauseEnabled, setHkMoviePauseEnabled] = useState(true)
-  const [hkMoviePauseBrightness, setHkMoviePauseBrightness] = useState('35')
   const [hkPlayerClosedEnabled, setHkPlayerClosedEnabled] = useState(true)
-  const [hkPlayerClosedBrightness, setHkPlayerClosedBrightness] = useState('65')
   const [homekitStatus, setHomekitStatus] = useState('')
   // The code the accessory is actually published with, straight from the
   // backend. The editable field above is the desired value; this is what Home
@@ -63,11 +60,8 @@ export function HomeKitSettingsSection() {
       setHomekitSetupId(data.HOMEKIT_SETUP_ID || 'LMIO')
       setHomekitPort(data.HOMEKIT_PORT || '51826')
       setHkMovieStartEnabled((data.HOMEKIT_EVENT_MOVIE_START_ENABLED ?? '1') === '1')
-      setHkMovieStartBrightness(data.HOMEKIT_EVENT_MOVIE_START_BRIGHTNESS || '20')
       setHkMoviePauseEnabled((data.HOMEKIT_EVENT_MOVIE_PAUSE_ENABLED ?? '1') === '1')
-      setHkMoviePauseBrightness(data.HOMEKIT_EVENT_MOVIE_PAUSE_BRIGHTNESS || '35')
       setHkPlayerClosedEnabled((data.HOMEKIT_EVENT_PLAYER_CLOSED_ENABLED ?? '1') === '1')
-      setHkPlayerClosedBrightness(data.HOMEKIT_EVENT_PLAYER_CLOSED_BRIGHTNESS || '65')
     } catch {
       // Keep defaults if env settings are unavailable.
     }
@@ -114,11 +108,8 @@ export function HomeKitSettingsSection() {
         HOMEKIT_SETUP_ID: homekitSetupId,
         HOMEKIT_PORT: homekitPort,
         HOMEKIT_EVENT_MOVIE_START_ENABLED: hkMovieStartEnabled ? '1' : '0',
-        HOMEKIT_EVENT_MOVIE_START_BRIGHTNESS: hkMovieStartBrightness,
         HOMEKIT_EVENT_MOVIE_PAUSE_ENABLED: hkMoviePauseEnabled ? '1' : '0',
-        HOMEKIT_EVENT_MOVIE_PAUSE_BRIGHTNESS: hkMoviePauseBrightness,
         HOMEKIT_EVENT_PLAYER_CLOSED_ENABLED: hkPlayerClosedEnabled ? '1' : '0',
-        HOMEKIT_EVENT_PLAYER_CLOSED_BRIGHTNESS: hkPlayerClosedBrightness,
       }),
     })
   }
@@ -218,10 +209,11 @@ export function HomeKitSettingsSection() {
 
       <div className="space-y-2 rounded-lg border border-white/10 bg-slate-950/60 p-3">
         <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{t('homekitEventRules')}</p>
+        <p className="text-xs text-slate-500">{t('homekitEventRulesHint')}</p>
         {[
-          { label: t('movieStarts'), enabled: hkMovieStartEnabled, setEnabled: setHkMovieStartEnabled, brightness: hkMovieStartBrightness, setBrightness: setHkMovieStartBrightness },
-          { label: t('moviePaused'), enabled: hkMoviePauseEnabled, setEnabled: setHkMoviePauseEnabled, brightness: hkMoviePauseBrightness, setBrightness: setHkMoviePauseBrightness },
-          { label: t('videoClosed'), enabled: hkPlayerClosedEnabled, setEnabled: setHkPlayerClosedEnabled, brightness: hkPlayerClosedBrightness, setBrightness: setHkPlayerClosedBrightness },
+          { label: t('movieStarts'), enabled: hkMovieStartEnabled, setEnabled: setHkMovieStartEnabled },
+          { label: t('moviePaused'), enabled: hkMoviePauseEnabled, setEnabled: setHkMoviePauseEnabled },
+          { label: t('videoClosed'), enabled: hkPlayerClosedEnabled, setEnabled: setHkPlayerClosedEnabled },
         ].map((rule) => (
           <div key={rule.label} className="rounded-md border border-white/10 bg-white/[0.02] px-2 py-2">
             <label className="flex cursor-pointer items-center gap-2 text-xs text-slate-300">
@@ -233,10 +225,6 @@ export function HomeKitSettingsSection() {
               />
               {rule.label}
             </label>
-            <div className="mt-2 space-y-1.5">
-              <label className="block text-[11px] uppercase tracking-[0.14em] text-slate-500">{t('homekitBrightnessLabel')}</label>
-              <Input type="text" value={rule.brightness} onValueChange={rule.setBrightness} placeholder="20" radius="lg" classNames={inputClassNames} />
-            </div>
           </div>
         ))}
       </div>

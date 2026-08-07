@@ -46,7 +46,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-fRuZlh/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-UDCEmV/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -95,7 +95,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-fRuZlh/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-UDCEmV/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -29688,7 +29688,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-fRuZlh/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-UDCEmV/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -29698,7 +29698,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-fRuZlh/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-UDCEmV/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -163932,7 +163932,7 @@
   var import_react62 = __toESM(require_dist89());
   init_react_shim();
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-fRuZlh/profile-storage-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-UDCEmV/profile-storage-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
   var getScopedStorageItem = (baseKey) => sdk.getScopedStorageItem(baseKey);
   var setScopedStorageItem = (baseKey, value) => sdk.setScopedStorageItem(baseKey, value);
@@ -165236,9 +165236,9 @@
       homekitPinLabel: "PIN",
       homekitPairingCodeLabel: "Pairing code",
       homekitPairingCodeHint: "Add it in the Home app on your iPhone: Add Accessory -> More options -> Lumio Cinema Sync, then enter this code.",
+      homekitEventRulesHint: "Each switch is a trigger. Build an automation per switch in the Home app to decide what happens.",
       homekitSetupIdLabel: "Setup ID",
       homekitPortLabel: "Port",
-      homekitBrightnessLabel: "Brightness",
       plexCacheCleared: "Plex cache cleared. Open Plex again to fetch new images.",
       plexClearCache: "Clear Plex cache",
       plexLoading: "Loading Plex",
@@ -166561,9 +166561,9 @@
       homekitPinLabel: "PIN",
       homekitPairingCodeLabel: "Parningskod",
       homekitPairingCodeHint: "L\xE4gg till det i Home-appen p\xE5 din iPhone: L\xE4gg till tillbeh\xF6r -> Fler alternativ -> Lumio Cinema Sync, och ange sedan koden.",
+      homekitEventRulesHint: "Varje brytare \xE4r en utl\xF6sare. Bygg en automation per brytare i Home-appen f\xF6r att best\xE4mma vad som ska h\xE4nda.",
       homekitSetupIdLabel: "Setup ID",
       homekitPortLabel: "Port",
-      homekitBrightnessLabel: "Ljusstyrka",
       plexCacheCleared: "Plex-cachen \xE4r rensad. \xD6ppna Plex igen f\xF6r att h\xE4mta nya bilder.",
       plexClearCache: "Rensa Plex-cache",
       plexLoading: "Laddar Plex",
@@ -166691,7 +166691,7 @@
   var import_react55 = __toESM(require_dist89());
   init_jsx_runtime_shim();
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-fRuZlh/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-UDCEmV/auth-capabilities-shim.ts
   var sdk2 = globalThis.__lumioPluginRuntime?.sdk;
 
   // lib/tauri-mpv.ts
@@ -167097,11 +167097,8 @@
     const [homekitSetupId, setHomekitSetupId] = useState("LMIO");
     const [homekitPort, setHomekitPort] = useState("51826");
     const [hkMovieStartEnabled, setHkMovieStartEnabled] = useState(true);
-    const [hkMovieStartBrightness, setHkMovieStartBrightness] = useState("20");
     const [hkMoviePauseEnabled, setHkMoviePauseEnabled] = useState(true);
-    const [hkMoviePauseBrightness, setHkMoviePauseBrightness] = useState("35");
     const [hkPlayerClosedEnabled, setHkPlayerClosedEnabled] = useState(true);
-    const [hkPlayerClosedBrightness, setHkPlayerClosedBrightness] = useState("65");
     const [homekitStatus, setHomekitStatus] = useState("");
     const [publishedPin, setPublishedPin] = useState("");
     const [homekitError, setHomekitError] = useState("");
@@ -167120,11 +167117,8 @@
         setHomekitSetupId(data.HOMEKIT_SETUP_ID || "LMIO");
         setHomekitPort(data.HOMEKIT_PORT || "51826");
         setHkMovieStartEnabled((data.HOMEKIT_EVENT_MOVIE_START_ENABLED ?? "1") === "1");
-        setHkMovieStartBrightness(data.HOMEKIT_EVENT_MOVIE_START_BRIGHTNESS || "20");
         setHkMoviePauseEnabled((data.HOMEKIT_EVENT_MOVIE_PAUSE_ENABLED ?? "1") === "1");
-        setHkMoviePauseBrightness(data.HOMEKIT_EVENT_MOVIE_PAUSE_BRIGHTNESS || "35");
         setHkPlayerClosedEnabled((data.HOMEKIT_EVENT_PLAYER_CLOSED_ENABLED ?? "1") === "1");
-        setHkPlayerClosedBrightness(data.HOMEKIT_EVENT_PLAYER_CLOSED_BRIGHTNESS || "65");
       } catch {
       }
     }
@@ -167164,11 +167158,8 @@
           HOMEKIT_SETUP_ID: homekitSetupId,
           HOMEKIT_PORT: homekitPort,
           HOMEKIT_EVENT_MOVIE_START_ENABLED: hkMovieStartEnabled ? "1" : "0",
-          HOMEKIT_EVENT_MOVIE_START_BRIGHTNESS: hkMovieStartBrightness,
           HOMEKIT_EVENT_MOVIE_PAUSE_ENABLED: hkMoviePauseEnabled ? "1" : "0",
-          HOMEKIT_EVENT_MOVIE_PAUSE_BRIGHTNESS: hkMoviePauseBrightness,
-          HOMEKIT_EVENT_PLAYER_CLOSED_ENABLED: hkPlayerClosedEnabled ? "1" : "0",
-          HOMEKIT_EVENT_PLAYER_CLOSED_BRIGHTNESS: hkPlayerClosedBrightness
+          HOMEKIT_EVENT_PLAYER_CLOSED_ENABLED: hkPlayerClosedEnabled ? "1" : "0"
         })
       });
     }
@@ -167262,28 +167253,23 @@
       ] }),
       /* @__PURE__ */ jsxs("div", { className: "space-y-2 rounded-lg border border-white/10 bg-slate-950/60 p-3", children: [
         /* @__PURE__ */ jsx("p", { className: "text-xs uppercase tracking-[0.2em] text-slate-500", children: t("homekitEventRules") }),
+        /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500", children: t("homekitEventRulesHint") }),
         [
-          { label: t("movieStarts"), enabled: hkMovieStartEnabled, setEnabled: setHkMovieStartEnabled, brightness: hkMovieStartBrightness, setBrightness: setHkMovieStartBrightness },
-          { label: t("moviePaused"), enabled: hkMoviePauseEnabled, setEnabled: setHkMoviePauseEnabled, brightness: hkMoviePauseBrightness, setBrightness: setHkMoviePauseBrightness },
-          { label: t("videoClosed"), enabled: hkPlayerClosedEnabled, setEnabled: setHkPlayerClosedEnabled, brightness: hkPlayerClosedBrightness, setBrightness: setHkPlayerClosedBrightness }
-        ].map((rule) => /* @__PURE__ */ jsxs("div", { className: "rounded-md border border-white/10 bg-white/[0.02] px-2 py-2", children: [
-          /* @__PURE__ */ jsxs("label", { className: "flex cursor-pointer items-center gap-2 text-xs text-slate-300", children: [
-            /* @__PURE__ */ jsx(
-              "input",
-              {
-                type: "checkbox",
-                checked: rule.enabled,
-                onChange: (e) => rule.setEnabled(e.target.checked),
-                className: "h-3.5 w-3.5 accent-aurora-400"
-              }
-            ),
-            rule.label
-          ] }),
-          /* @__PURE__ */ jsxs("div", { className: "mt-2 space-y-1.5", children: [
-            /* @__PURE__ */ jsx("label", { className: "block text-[11px] uppercase tracking-[0.14em] text-slate-500", children: t("homekitBrightnessLabel") }),
-            /* @__PURE__ */ jsx(import_react62.Input, { type: "text", value: rule.brightness, onValueChange: rule.setBrightness, placeholder: "20", radius: "lg", classNames: inputClassNames })
-          ] })
-        ] }, rule.label))
+          { label: t("movieStarts"), enabled: hkMovieStartEnabled, setEnabled: setHkMovieStartEnabled },
+          { label: t("moviePaused"), enabled: hkMoviePauseEnabled, setEnabled: setHkMoviePauseEnabled },
+          { label: t("videoClosed"), enabled: hkPlayerClosedEnabled, setEnabled: setHkPlayerClosedEnabled }
+        ].map((rule) => /* @__PURE__ */ jsx("div", { className: "rounded-md border border-white/10 bg-white/[0.02] px-2 py-2", children: /* @__PURE__ */ jsxs("label", { className: "flex cursor-pointer items-center gap-2 text-xs text-slate-300", children: [
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              type: "checkbox",
+              checked: rule.enabled,
+              onChange: (e) => rule.setEnabled(e.target.checked),
+              className: "h-3.5 w-3.5 accent-aurora-400"
+            }
+          ),
+          rule.label
+        ] }) }, rule.label))
       ] }),
       /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap gap-2", children: [
         /* @__PURE__ */ jsx("button", { type: "button", onClick: () => setHomekitGuideOpen((v) => !v), className: settingsActionButtonClass, children: homekitGuideOpen ? t("closeGuide") : t("openGuide") }),
@@ -167328,7 +167314,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-fRuZlh/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-UDCEmV/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");
