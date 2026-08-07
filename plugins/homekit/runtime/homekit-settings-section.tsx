@@ -42,6 +42,10 @@ export function HomeKitSettingsSection() {
   const [hkPlayerClosedEnabled, setHkPlayerClosedEnabled] = useState(true)
   const [hkPlayerClosedBrightness, setHkPlayerClosedBrightness] = useState('65')
   const [homekitStatus, setHomekitStatus] = useState('')
+  // The code the accessory is actually published with, straight from the
+  // backend. The editable field above is the desired value; this is what Home
+  // will accept right now, and the two differ until settings are applied.
+  const [publishedPin, setPublishedPin] = useState('')
   const [homekitError, setHomekitError] = useState('')
   const [homekitInfo, setHomekitInfo] = useState('')
   const [homekitGuideOpen, setHomekitGuideOpen] = useState(false)
@@ -80,8 +84,10 @@ export function HomeKitSettingsSection() {
       if (!data.ok || !data.status) {
         setHomekitError(data.error ?? t('homekitStatusFetchError'))
         setHomekitStatus(t('homekitNotConnected'))
+        setPublishedPin('')
         return
       }
+      setPublishedPin(data.status.published ? data.status.pincode ?? '' : '')
       if (!data.status.enabled) {
         setHomekitStatus(t('homekitDisabled'))
       } else if (data.status.published) {
@@ -197,6 +203,13 @@ export function HomeKitSettingsSection() {
 
       <div className="rounded-lg border border-white/10 bg-slate-950/60 px-3 py-2 text-xs text-slate-400">
         {t('homekitStatusLabel')}: <span className="text-slate-200">{homekitStatus}</span>
+        {publishedPin ? (
+          <div className="mt-2">
+            <p className="text-slate-400">{t('homekitPairingCodeLabel')}</p>
+            <p className="mt-0.5 select-all font-mono text-lg tracking-[0.2em] text-slate-100">{publishedPin}</p>
+            <p className="mt-0.5 text-slate-500">{t('homekitPairingCodeHint')}</p>
+          </div>
+        ) : null}
         {homekitInfo ? <p className="mt-1 text-emerald-400">{homekitInfo}</p> : null}
         {homekitError ? <p className="mt-1 text-red-400">{homekitError}</p> : null}
       </div>
