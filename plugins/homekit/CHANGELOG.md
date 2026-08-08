@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.4
+
+- Save applies immediately: disabling the accessory takes it down without
+  an app restart, and event-rule changes take effect on the next event.
+- The Save button shows progress and confirms with a status message.
+
 ## 0.2.3
 
 - The last five field labels (accessory ID, PIN, setup ID, port,

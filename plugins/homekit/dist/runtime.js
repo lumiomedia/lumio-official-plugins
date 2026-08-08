@@ -46,7 +46,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-pjVmt7/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-AJs1OC/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -95,7 +95,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-pjVmt7/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-AJs1OC/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -165,9 +165,9 @@
             if (type === "number" && input !== input) return;
             classList.push(String(input));
           } else if (type === "object") {
-            const keys2 = Object.keys(input);
-            for (let i = 0, len = keys2.length; i < len; i++) {
-              const key = keys2[i];
+            const keys3 = Object.keys(input);
+            for (let i = 0, len = keys3.length; i < len; i++) {
+              const key = keys3[i];
               if (input[key]) classList.push(key);
             }
           }
@@ -188,11 +188,11 @@
         if (obj1 === obj2) return true;
         if (!obj1 || !obj2) return false;
         const keys1 = Object.keys(obj1);
-        const keys2 = Object.keys(obj2);
-        if (keys1.length !== keys2.length) return false;
+        const keys22 = Object.keys(obj2);
+        if (keys1.length !== keys22.length) return false;
         for (let i = 0; i < keys1.length; i++) {
           const key = keys1[i];
-          if (!keys2.includes(key)) return false;
+          if (!keys22.includes(key)) return false;
           if (obj1[key] !== obj2[key]) return false;
         }
         return true;
@@ -371,10 +371,10 @@
             };
             const getVariantClassNames = () => {
               if (!variants) return null;
-              const keys2 = Object.keys(variants);
+              const keys3 = Object.keys(variants);
               const result = [];
-              for (let i = 0; i < keys2.length; i++) {
-                const value = getVariantValue(keys2[i], variants);
+              for (let i = 0; i < keys3.length; i++) {
+                const value = getVariantValue(keys3[i], variants);
                 if (value) result.push(value);
               }
               return result;
@@ -5196,12 +5196,12 @@
           this.valpha = 1;
         } else {
           this.valpha = 1;
-          const keys2 = Object.keys(object);
+          const keys3 = Object.keys(object);
           if ("alpha" in object) {
-            keys2.splice(keys2.indexOf("alpha"), 1);
+            keys3.splice(keys3.indexOf("alpha"), 1);
             this.valpha = typeof object.alpha === "number" ? object.alpha : 0;
           }
-          const hashedKeys = keys2.sort().join("");
+          const hashedKeys = keys3.sort().join("");
           if (!(hashedKeys in hashedModelKeys)) {
             throw new Error("Unable to parse color from object: " + JSON.stringify(object));
           }
@@ -5809,11 +5809,11 @@
         });
         return newObj;
       };
-      var cleanObjectKeys = (obj, keys2 = []) => {
+      var cleanObjectKeys = (obj, keys3 = []) => {
         if (!isObject2(obj)) return obj;
         if (obj instanceof Array) return [...obj];
         const newObj = { ...obj };
-        keys2.forEach((key) => {
+        keys3.forEach((key) => {
           if (newObj[key]) {
             delete newObj[key];
           }
@@ -5934,9 +5934,9 @@
         }
         return arr.filter((x, i, self) => i === self.findIndex((y) => iteratee(x) === iteratee(y)));
       }
-      var omit = (obj, keys2) => {
+      var omit = (obj, keys3) => {
         const res = Object.assign({}, obj);
-        keys2.forEach((key) => {
+        keys3.forEach((key) => {
           delete res[key];
         });
         return res;
@@ -5950,9 +5950,9 @@
         );
       };
       var get = (object, path, defaultValue) => {
-        const keys2 = Array.isArray(path) ? path : path.replace(/\[(\d+)\]/g, ".$1").split(".");
+        const keys3 = Array.isArray(path) ? path : path.replace(/\[(\d+)\]/g, ".$1").split(".");
         let res = object;
-        for (const key of keys2) {
+        for (const key of keys3) {
           res = res == null ? void 0 : res[key];
           if (res === void 0) {
             return defaultValue;
@@ -6592,8 +6592,8 @@
       };
       var mergeClasses = (itemClasses, itemPropsClasses) => {
         if (!itemClasses && !itemPropsClasses) return {};
-        const keys2 = /* @__PURE__ */ new Set([...Object.keys(itemClasses || {}), ...Object.keys(itemPropsClasses || {})]);
-        return Array.from(keys2).reduce(
+        const keys3 = /* @__PURE__ */ new Set([...Object.keys(itemClasses || {}), ...Object.keys(itemPropsClasses || {})]);
+        return Array.from(keys3).reduce(
           (acc, key) => ({
             ...acc,
             [key]: cn(itemClasses == null ? void 0 : itemClasses[key], itemPropsClasses == null ? void 0 : itemPropsClasses[key])
@@ -18062,16 +18062,16 @@
       var import_color2k = require_index_exports_require_cjs();
       function swapColorValues(colors2) {
         const swappedColors = {};
-        const keys2 = Object.keys(colors2);
-        const length = keys2.length;
+        const keys3 = Object.keys(colors2);
+        const length = keys3.length;
         for (let i = 0; i < length / 2; i++) {
-          const key1 = keys2[i];
-          const key2 = keys2[length - 1 - i];
+          const key1 = keys3[i];
+          const key2 = keys3[length - 1 - i];
           swappedColors[key1] = colors2[key2];
           swappedColors[key2] = colors2[key1];
         }
         if (length % 2 !== 0) {
-          const middleKey = keys2[Math.floor(length / 2)];
+          const middleKey = keys3[Math.floor(length / 2)];
           swappedColors[middleKey] = colors2[middleKey];
         }
         return swappedColors;
@@ -18659,14 +18659,14 @@
         return {
           ...obj,
           [Symbol.iterator]: function() {
-            const keys2 = Object.keys(this);
+            const keys3 = Object.keys(this);
             let index3 = 0;
             return {
               next: () => {
-                if (index3 >= keys2.length) {
+                if (index3 >= keys3.length) {
                   return { done: true };
                 }
-                const key = keys2[index3];
+                const key = keys3[index3];
                 const value = this[key];
                 index3++;
                 return { value: { key, value }, done: false };
@@ -18733,13 +18733,13 @@
         opts
       }) {
         var _a, _b, _c;
-        const keys2 = [];
+        const keys3 = [];
         if (defaultVariants && typeof defaultVariants === "object") {
           for (const key in defaultVariants) {
             const value = defaultVariants[key];
             const propValue = props == null ? void 0 : props[key];
             if (propValue && propValue !== value) {
-              keys2.push(key);
+              keys3.push(key);
             }
           }
         }
@@ -18748,7 +18748,7 @@
             variants,
             defaultVariants: defaultVariants && typeof defaultVariants === "object" ? (
               // Do not apply default variants when the props variant is different
-              Object.keys(defaultVariants).filter((k) => !keys2.includes(k)).reduce((o, k) => {
+              Object.keys(defaultVariants).filter((k) => !keys3.includes(k)).reduce((o, k) => {
                 o[k] = defaultVariants[k];
                 return o;
               }, [])
@@ -23114,15 +23114,15 @@
           return all;
         }, tslib_1.__assign({}, defaultConfig));
       }
-      function createFastMemoizeCache(store) {
+      function createFastMemoizeCache(store2) {
         return {
           create: function() {
             return {
               get: function(key) {
-                return store[key];
+                return store2[key];
               },
               set: function(key, value) {
-                store[key] = value;
+                store2[key] = value;
               }
             };
           }
@@ -29688,7 +29688,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-pjVmt7/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-AJs1OC/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -29698,7 +29698,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-pjVmt7/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-AJs1OC/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -29716,7 +29716,7 @@
         if (arr.indexOf(item) === -1)
           arr.push(item);
       }
-      function removeItem2(arr, item) {
+      function removeItem3(arr, item) {
         const index3 = arr.indexOf(item);
         if (index3 > -1)
           arr.splice(index3, 1);
@@ -29784,7 +29784,7 @@
         }
         add(handler) {
           addUniqueItem2(this.subscriptions, handler);
-          return () => removeItem2(this.subscriptions, handler);
+          return () => removeItem3(this.subscriptions, handler);
         }
         notify(a, b, c) {
           const numSubscriptions = this.subscriptions.length;
@@ -29933,7 +29933,7 @@
       exports.noop = noop5;
       exports.pipe = pipe2;
       exports.progress = progress2;
-      exports.removeItem = removeItem2;
+      exports.removeItem = removeItem3;
       exports.reverseEasing = reverseEasing2;
       exports.secondsToMilliseconds = secondsToMilliseconds2;
       exports.steps = steps2;
@@ -30636,8 +30636,8 @@
       }
       var durationKeys2 = ["duration", "bounce"];
       var physicsKeys2 = ["stiffness", "damping", "mass"];
-      function isSpringType2(options, keys2) {
-        return keys2.some((key) => options[key] !== void 0);
+      function isSpringType2(options, keys3) {
+        return keys3.some((key) => options[key] !== void 0);
       }
       function getSpringOptions2(options) {
         let springOptions = {
@@ -35022,9 +35022,9 @@
       };
       function buildSVGPath2(attrs, length, spacing = 1, offset = 0, useDashCase = true) {
         attrs.pathLength = 1;
-        const keys2 = useDashCase ? dashKeys2 : camelKeys2;
-        attrs[keys2.offset] = `${-offset}`;
-        attrs[keys2.array] = `${length} ${spacing}`;
+        const keys3 = useDashCase ? dashKeys2 : camelKeys2;
+        attrs[keys3.offset] = `${-offset}`;
+        attrs[keys3.array] = `${length} ${spacing}`;
       }
       var cssMotionPathProperties2 = [
         "offsetDistance",
@@ -39660,9 +39660,9 @@
         });
       }
       function useMapTransform2(inputValue, inputRange, outputMap, options) {
-        const keys3 = featureBundle2.useConstant(() => Object.keys(outputMap));
+        const keys4 = featureBundle2.useConstant(() => Object.keys(outputMap));
         const output = featureBundle2.useConstant(() => ({}));
-        for (const key of keys3) {
+        for (const key of keys4) {
           output[key] = useTransform2(inputValue, inputRange, outputMap[key], options);
         }
         return output;
@@ -40237,7 +40237,7 @@
         x: createAxisInfo2(),
         y: createAxisInfo2()
       });
-      var keys2 = {
+      var keys3 = {
         x: {
           length: "Width",
           position: "Left"
@@ -40249,7 +40249,7 @@
       };
       function updateAxisInfo2(element, axisName, info, time2) {
         const axis = info[axisName];
-        const { length, position } = keys2[axisName];
+        const { length, position } = keys3[axisName];
         const prev = axis.current;
         const prevTime = info.time;
         axis.current = Math.abs(element[`scroll${position}`]);
@@ -49251,8 +49251,8 @@
       };
       var mergeClasses = (itemClasses, itemPropsClasses) => {
         if (!itemClasses && !itemPropsClasses) return {};
-        const keys2 = /* @__PURE__ */ new Set([...Object.keys(itemClasses || {}), ...Object.keys(itemPropsClasses || {})]);
-        return Array.from(keys2).reduce(
+        const keys3 = /* @__PURE__ */ new Set([...Object.keys(itemClasses || {}), ...Object.keys(itemPropsClasses || {})]);
+        return Array.from(keys3).reduce(
           (acc, key) => ({
             ...acc,
             [key]: cn(itemClasses == null ? void 0 : itemClasses[key], itemPropsClasses == null ? void 0 : itemPropsClasses[key])
@@ -60721,16 +60721,16 @@
       var import_color2k = require_index_exports_require_cjs();
       function swapColorValues(colors2) {
         const swappedColors = {};
-        const keys2 = Object.keys(colors2);
-        const length = keys2.length;
+        const keys3 = Object.keys(colors2);
+        const length = keys3.length;
         for (let i = 0; i < length / 2; i++) {
-          const key1 = keys2[i];
-          const key2 = keys2[length - 1 - i];
+          const key1 = keys3[i];
+          const key2 = keys3[length - 1 - i];
           swappedColors[key1] = colors2[key2];
           swappedColors[key2] = colors2[key1];
         }
         if (length % 2 !== 0) {
-          const middleKey = keys2[Math.floor(length / 2)];
+          const middleKey = keys3[Math.floor(length / 2)];
           swappedColors[middleKey] = colors2[middleKey];
         }
         return swappedColors;
@@ -62025,14 +62025,14 @@
         return {
           ...obj,
           [Symbol.iterator]: function() {
-            const keys2 = Object.keys(this);
+            const keys3 = Object.keys(this);
             let index3 = 0;
             return {
               next: () => {
-                if (index3 >= keys2.length) {
+                if (index3 >= keys3.length) {
                   return { done: true };
                 }
-                const key = keys2[index3];
+                const key = keys3[index3];
                 const value = this[key];
                 index3++;
                 return { value: { key, value }, done: false };
@@ -62099,13 +62099,13 @@
         opts
       }) {
         var _a, _b, _c;
-        const keys2 = [];
+        const keys3 = [];
         if (defaultVariants && typeof defaultVariants === "object") {
           for (const key in defaultVariants) {
             const value = defaultVariants[key];
             const propValue = props == null ? void 0 : props[key];
             if (propValue && propValue !== value) {
-              keys2.push(key);
+              keys3.push(key);
             }
           }
         }
@@ -62114,7 +62114,7 @@
             variants,
             defaultVariants: defaultVariants && typeof defaultVariants === "object" ? (
               // Do not apply default variants when the props variant is different
-              Object.keys(defaultVariants).filter((k) => !keys2.includes(k)).reduce((o, k) => {
+              Object.keys(defaultVariants).filter((k) => !keys3.includes(k)).reduce((o, k) => {
                 o[k] = defaultVariants[k];
                 return o;
               }, [])
@@ -62330,10 +62330,10 @@
           return (_this_keyMap_get = this.keyMap.get(key)) !== null && _this_keyMap_get !== void 0 ? _this_keyMap_get : null;
         }
         at(idx) {
-          const keys2 = [
+          const keys3 = [
             ...this.getKeys()
           ];
-          return this.getItem(keys2[idx]);
+          return this.getItem(keys3[idx]);
         }
         constructor(nodes, { expandedKeys } = {}) {
           this.keyMap = /* @__PURE__ */ new Map();
@@ -62377,11 +62377,11 @@
         return $69defba172ea05d3$export$52baac22726c72bf;
       });
       var $69defba172ea05d3$export$52baac22726c72bf = class _$69defba172ea05d3$export$52baac22726c72bf extends Set {
-        constructor(keys2, anchorKey, currentKey) {
-          super(keys2);
-          if (keys2 instanceof _$69defba172ea05d3$export$52baac22726c72bf) {
-            this.anchorKey = anchorKey ?? keys2.anchorKey;
-            this.currentKey = currentKey ?? keys2.currentKey;
+        constructor(keys3, anchorKey, currentKey) {
+          super(keys3);
+          if (keys3 instanceof _$69defba172ea05d3$export$52baac22726c72bf) {
+            this.anchorKey = anchorKey ?? keys3.anchorKey;
+            this.currentKey = currentKey ?? keys3.currentKey;
           } else {
             this.anchorKey = anchorKey ?? null;
             this.currentKey = currentKey ?? null;
@@ -62462,8 +62462,8 @@
             setFocusedKey(k);
           },
           selectedKeys,
-          setSelectedKeys(keys2) {
-            if (allowDuplicateSelectionEvents || !$0af3d14a0ed99bae$var$equalSets(keys2, selectedKeys)) setSelectedKeys(keys2);
+          setSelectedKeys(keys3) {
+            if (allowDuplicateSelectionEvents || !$0af3d14a0ed99bae$var$equalSets(keys3, selectedKeys)) setSelectedKeys(keys3);
           },
           disabledKeys: disabledKeysProp,
           disabledBehavior
@@ -62731,12 +62731,12 @@
         }
         getKeyRangeInternal(from, to) {
           if (this.layoutDelegate?.getKeyRange) return this.layoutDelegate.getKeyRange(from, to);
-          let keys2 = [];
+          let keys3 = [];
           let key = from;
           while (key != null) {
             let item = this.collection.getItem(key);
-            if (item && (item.type === "item" || item.type === "cell" && this.allowsCellSelection)) keys2.push(key);
-            if (key === to) return keys2;
+            if (item && (item.type === "item" || item.type === "cell" && this.allowsCellSelection)) keys3.push(key);
+            if (key === to) return keys3;
             key = this.collection.getKeyAfter(key);
           }
           return [];
@@ -62761,15 +62761,15 @@
           }
           let mappedKey = this.getKey(key);
           if (mappedKey == null) return;
-          let keys2 = new (0, $69defba172ea05d3$exports.Selection)(this.state.selectedKeys === "all" ? this.getSelectAllKeys() : this.state.selectedKeys);
-          if (keys2.has(mappedKey)) keys2.delete(mappedKey);
+          let keys3 = new (0, $69defba172ea05d3$exports.Selection)(this.state.selectedKeys === "all" ? this.getSelectAllKeys() : this.state.selectedKeys);
+          if (keys3.has(mappedKey)) keys3.delete(mappedKey);
           else if (this.canSelectItem(mappedKey)) {
-            keys2.add(mappedKey);
-            keys2.anchorKey = mappedKey;
-            keys2.currentKey = mappedKey;
+            keys3.add(mappedKey);
+            keys3.anchorKey = mappedKey;
+            keys3.currentKey = mappedKey;
           }
-          if (this.disallowEmptySelection && keys2.size === 0) return;
-          this.state.setSelectedKeys(keys2);
+          if (this.disallowEmptySelection && keys3.size === 0) return;
+          this.state.setSelectedKeys(keys3);
         }
         /**
         * Replaces the selection with only the given key.
@@ -62786,10 +62786,10 @@
         /**
         * Replaces the selection with the given keys.
         */
-        setSelectedKeys(keys2) {
+        setSelectedKeys(keys3) {
           if (this.selectionMode === "none") return;
           let selection = new (0, $69defba172ea05d3$exports.Selection)();
-          for (let key of keys2) {
+          for (let key of keys3) {
             let mappedKey = this.getKey(key);
             if (mappedKey != null) {
               selection.add(mappedKey);
@@ -62800,19 +62800,19 @@
         }
         getSelectAllKeys() {
           let collection = this.fullCollection ?? this.collection;
-          let keys2 = [];
+          let keys3 = [];
           let addKeys = (key) => {
             while (key != null) {
               if (this.canSelectItemIn(key, collection)) {
                 let item = collection.getItem(key);
-                if (item?.type === "item") keys2.push(key);
+                if (item?.type === "item") keys3.push(key);
                 if (item?.hasChildNodes && (this.allowsCellSelection || item.type !== "item")) addKeys((0, $c731fb93d14b07fc$exports.getFirstItem)((0, $c731fb93d14b07fc$exports.getChildNodes)(item, collection))?.key ?? null);
               }
               key = collection.getKeyAfter(key);
             }
           };
           addKeys(collection.getFirstKey());
-          return keys2;
+          return keys3;
         }
         /**
         * Selects all items in the collection.
@@ -73111,8 +73111,8 @@
       };
     }
   }
-  function isSpringType(options, keys2) {
-    return keys2.some((key) => options[key] !== void 0);
+  function isSpringType(options, keys3) {
+    return keys3.some((key) => options[key] !== void 0);
   }
   function getSpringOptions(options) {
     let springOptions = {
@@ -78840,9 +78840,9 @@
   // node_modules/motion-dom/dist/es/render/svg/utils/path.mjs
   function buildSVGPath(attrs, length, spacing = 1, offset = 0, useDashCase = true) {
     attrs.pathLength = 1;
-    const keys2 = useDashCase ? dashKeys : camelKeys;
-    attrs[keys2.offset] = `${-offset}`;
-    attrs[keys2.array] = `${length} ${spacing}`;
+    const keys3 = useDashCase ? dashKeys : camelKeys;
+    attrs[keys3.offset] = `${-offset}`;
+    attrs[keys3.array] = `${length} ${spacing}`;
   }
   var dashKeys, camelKeys;
   var init_path = __esm({
@@ -84963,9 +84963,9 @@
     });
   }
   function useMapTransform(inputValue, inputRange, outputMap, options) {
-    const keys2 = useConstant(() => Object.keys(outputMap));
+    const keys3 = useConstant(() => Object.keys(outputMap));
     const output = useConstant(() => ({}));
-    for (const key of keys2) {
+    for (const key of keys3) {
       output[key] = useTransform(inputValue, inputRange, outputMap[key], options);
     }
     return output;
@@ -92465,15 +92465,15 @@
           selectedKeys,
           setSelectedKeys,
           toggleKey(key) {
-            let keys2;
+            let keys3;
             if (selectionMode === "multiple") {
-              keys2 = new Set(selectedKeys);
-              if (keys2.has(key) && (!disallowEmptySelection || keys2.size > 1)) keys2.delete(key);
-              else keys2.add(key);
-            } else keys2 = new Set(selectedKeys.has(key) && !disallowEmptySelection ? [] : [
+              keys3 = new Set(selectedKeys);
+              if (keys3.has(key) && (!disallowEmptySelection || keys3.size > 1)) keys3.delete(key);
+              else keys3.add(key);
+            } else keys3 = new Set(selectedKeys.has(key) && !disallowEmptySelection ? [] : [
               key
             ]);
-            setSelectedKeys(keys2);
+            setSelectedKeys(keys3);
           },
           setSelected(key, isSelected) {
             if (isSelected !== selectedKeys.has(key)) this.toggleKey(key);
@@ -93919,8 +93919,8 @@
       };
       var mergeClasses = (itemClasses, itemPropsClasses) => {
         if (!itemClasses && !itemPropsClasses) return {};
-        const keys2 = /* @__PURE__ */ new Set([...Object.keys(itemClasses || {}), ...Object.keys(itemPropsClasses || {})]);
-        return Array.from(keys2).reduce(
+        const keys3 = /* @__PURE__ */ new Set([...Object.keys(itemClasses || {}), ...Object.keys(itemPropsClasses || {})]);
+        return Array.from(keys3).reduce(
           (acc, key) => ({
             ...acc,
             [key]: cn(itemClasses == null ? void 0 : itemClasses[key], itemPropsClasses == null ? void 0 : itemPropsClasses[key])
@@ -105389,16 +105389,16 @@
       var import_color2k = require_index_exports_require_cjs();
       function swapColorValues(colors2) {
         const swappedColors = {};
-        const keys2 = Object.keys(colors2);
-        const length = keys2.length;
+        const keys3 = Object.keys(colors2);
+        const length = keys3.length;
         for (let i = 0; i < length / 2; i++) {
-          const key1 = keys2[i];
-          const key2 = keys2[length - 1 - i];
+          const key1 = keys3[i];
+          const key2 = keys3[length - 1 - i];
           swappedColors[key1] = colors2[key2];
           swappedColors[key2] = colors2[key1];
         }
         if (length % 2 !== 0) {
-          const middleKey = keys2[Math.floor(length / 2)];
+          const middleKey = keys3[Math.floor(length / 2)];
           swappedColors[middleKey] = colors2[middleKey];
         }
         return swappedColors;
@@ -125068,10 +125068,10 @@
           return this.keyMap.get(key) ?? null;
         }
         at(idx) {
-          const keys2 = [
+          const keys3 = [
             ...this.getKeys()
           ];
-          return this.getItem(keys2[idx]);
+          return this.getItem(keys3[idx]);
         }
         getChildren(key) {
           let node = this.keyMap.get(key);
@@ -125280,10 +125280,10 @@
           return (_this_keyMap_get = this.keyMap.get(key)) !== null && _this_keyMap_get !== void 0 ? _this_keyMap_get : null;
         }
         at(idx) {
-          const keys2 = [
+          const keys3 = [
             ...this.getKeys()
           ];
-          return this.getItem(keys2[idx]);
+          return this.getItem(keys3[idx]);
         }
         getChildren(key) {
           if (key === this.body.key) return this.body.childNodes;
@@ -132385,7 +132385,7 @@
       var import_react64 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useKbd(originalProps) {
         const [props, variantProps2] = (0, import_system_rsc.mapPropsVariants)(originalProps, import_theme.kbd.variantKeys);
-        const { as, children, className, keys: keys2, title, classNames, ...otherProps } = props;
+        const { as, children, className, keys: keys3, title, classNames, ...otherProps } = props;
         const Component2 = as || "kbd";
         const slots = (0, import_react64.useMemo)(
           () => (0, import_theme.kbd)({
@@ -132394,7 +132394,7 @@
           [(0, import_shared_utils.objectToDeps)(variantProps2)]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const keysToRender = typeof keys2 === "string" ? [keys2] : Array.isArray(keys2) ? keys2 : [];
+        const keysToRender = typeof keys3 === "string" ? [keys3] : Array.isArray(keys3) ? keys3 : [];
         const getKbdProps = (props2 = {}) => ({
           ...otherProps,
           ...props2,
@@ -132542,10 +132542,10 @@
           return this.keyMap.get(key) ?? null;
         }
         at(idx) {
-          const keys2 = [
+          const keys3 = [
             ...this.getKeys()
           ];
-          return this.getItem(keys2[idx]);
+          return this.getItem(keys3[idx]);
         }
         getChildren(key) {
           let node = this.keyMap.get(key);
@@ -132917,9 +132917,9 @@
           disallowEmptySelection: true,
           allowDuplicateSelectionEvents: true,
           selectedKeys,
-          onSelectionChange: (keys2) => {
-            if (keys2 === "all") return;
-            let key = keys2.values().next().value ?? null;
+          onSelectionChange: (keys3) => {
+            if (keys3 === "all") return;
+            let key = keys3.values().next().value ?? null;
             if (key === selectedKey && props.onSelectionChange) props.onSelectionChange(key);
             setSelectedKey(key);
           }
@@ -134298,10 +134298,10 @@
           return (_this_keyMap_get = this.keyMap.get(key)) !== null && _this_keyMap_get !== void 0 ? _this_keyMap_get : null;
         }
         at(idx) {
-          const keys2 = [
+          const keys3 = [
             ...this.getKeys()
           ];
-          return this.getItem(keys2[idx]);
+          return this.getItem(keys3[idx]);
         }
         getChildren(key) {
           let node = this.keyMap.get(key);
@@ -134466,10 +134466,10 @@
           disallowEmptySelection: true,
           allowDuplicateSelectionEvents: true,
           selectedKeys,
-          onSelectionChange: (keys2) => {
-            if (keys2 === "all") return;
+          onSelectionChange: (keys3) => {
+            if (keys3 === "all") return;
             var _keys_values_next_value;
-            let key = (_keys_values_next_value = keys2.values().next().value) !== null && _keys_values_next_value !== void 0 ? _keys_values_next_value : null;
+            let key = (_keys_values_next_value = keys3.values().next().value) !== null && _keys_values_next_value !== void 0 ? _keys_values_next_value : null;
             if (key === selectedKey && props.onSelectionChange) props.onSelectionChange(key);
             setSelectedKey(key);
           }
@@ -138673,10 +138673,10 @@
           return (_this_keyMap_get = this.keyMap.get(key)) !== null && _this_keyMap_get !== void 0 ? _this_keyMap_get : null;
         }
         at(idx) {
-          const keys2 = [
+          const keys3 = [
             ...this.getKeys()
           ];
-          return this.getItem(keys2[idx]);
+          return this.getItem(keys3[idx]);
         }
         getChildren(key) {
           let node = this.keyMap.get(key);
@@ -138841,10 +138841,10 @@
           disallowEmptySelection: true,
           allowDuplicateSelectionEvents: true,
           selectedKeys,
-          onSelectionChange: (keys2) => {
-            if (keys2 === "all") return;
+          onSelectionChange: (keys3) => {
+            if (keys3 === "all") return;
             var _keys_values_next_value;
-            let key = (_keys_values_next_value = keys2.values().next().value) !== null && _keys_values_next_value !== void 0 ? _keys_values_next_value : null;
+            let key = (_keys_values_next_value = keys3.values().next().value) !== null && _keys_values_next_value !== void 0 ? _keys_values_next_value : null;
             if (key === selectedKey && props.onSelectionChange) props.onSelectionChange(key);
             setSelectedKey(key);
           }
@@ -139093,12 +139093,12 @@
         const triggerState = (0, import_menu2.useMenuTriggerState)(props);
         const listState = useMultiSelectListState({
           ...props,
-          onSelectionChange: (keys2) => {
+          onSelectionChange: (keys3) => {
             if (props.onSelectionChange != null) {
-              if (keys2 === "all") {
+              if (keys3 === "all") {
                 props.onSelectionChange(new Set(listState.collection.getKeys()));
               } else {
-                props.onSelectionChange(keys2);
+                props.onSelectionChange(keys3);
               }
             }
             if (props.selectionMode === "single") {
@@ -139111,8 +139111,8 @@
           validationBehavior,
           validate: (value) => {
             if (!validate) return;
-            const keys2 = Array.from(value);
-            return validate(props.selectionMode === "single" ? keys2[0] : keys2);
+            const keys3 = Array.from(value);
+            return validate(props.selectionMode === "single" ? keys3[0] : keys3);
           },
           // @ts-ignore
           value: listState.selectedKeys
@@ -139296,8 +139296,8 @@
               onClose == null ? void 0 : onClose();
             }
           },
-          onSelectionChange: (keys2) => {
-            onSelectionChange == null ? void 0 : onSelectionChange(keys2);
+          onSelectionChange: (keys3) => {
+            onSelectionChange == null ? void 0 : onSelectionChange(keys3);
             if (onChange && typeof onChange === "function") {
               onChange({
                 target: {
@@ -139305,7 +139305,7 @@
                     ...domRef.current,
                     name: domRef.current.name
                   },
-                  value: Array.from(keys2).join(",")
+                  value: Array.from(keys3).join(",")
                 }
               });
             }
@@ -141899,12 +141899,12 @@
             setControlledValue(key);
             if (key !== displayValue) (_props_onSelectionChange = props.onSelectionChange) === null || _props_onSelectionChange === void 0 ? void 0 : _props_onSelectionChange.call(props, key);
           } else {
-            let keys2 = [];
-            if (Array.isArray(value2)) keys2 = value2;
-            else if (value2 != null) keys2 = [
+            let keys3 = [];
+            if (Array.isArray(value2)) keys3 = value2;
+            else if (value2 != null) keys3 = [
               value2
             ];
-            setControlledValue(keys2);
+            setControlledValue(keys3);
           }
         };
         var _props_items;
@@ -141917,11 +141917,11 @@
           selectedKeys: (0, $2KOLe$react.useMemo)(() => $e563f9c9469ad14c$var$convertValue(displayValue), [
             displayValue
           ]),
-          onSelectionChange: (keys2) => {
-            if (keys2 === "all") return;
+          onSelectionChange: (keys3) => {
+            if (keys3 === "all") return;
             if (selectionMode === "single") {
               var _keys_values_next_value;
-              let key = (_keys_values_next_value = keys2.values().next().value) !== null && _keys_values_next_value !== void 0 ? _keys_values_next_value : null;
+              let key = (_keys_values_next_value = keys3.values().next().value) !== null && _keys_values_next_value !== void 0 ? _keys_values_next_value : null;
               if (key === displayValue) {
                 var _props_onSelectionChange;
                 (_props_onSelectionChange = props.onSelectionChange) === null || _props_onSelectionChange === void 0 ? void 0 : _props_onSelectionChange.call(props, key);
@@ -141929,7 +141929,7 @@
                 closeMenu();
               } else setValue(key);
             } else setValue([
-              ...keys2
+              ...keys3
             ]);
           }
         });
@@ -155198,14 +155198,14 @@
           ...fieldOptions
         };
         let granularity = options.granularity || "minute";
-        let keys2 = Object.keys(fieldOptions);
+        let keys3 = Object.keys(fieldOptions);
         var _options_maxGranularity;
-        let startIdx = keys2.indexOf((_options_maxGranularity = options.maxGranularity) !== null && _options_maxGranularity !== void 0 ? _options_maxGranularity : "year");
+        let startIdx = keys3.indexOf((_options_maxGranularity = options.maxGranularity) !== null && _options_maxGranularity !== void 0 ? _options_maxGranularity : "year");
         if (startIdx < 0) startIdx = 0;
-        let endIdx = keys2.indexOf(granularity);
+        let endIdx = keys3.indexOf(granularity);
         if (endIdx < 0) endIdx = 2;
         if (startIdx > endIdx) throw new Error("maxGranularity must be greater than granularity");
-        let opts = keys2.slice(startIdx, endIdx + 1).reduce((opts2, key) => {
+        let opts = keys3.slice(startIdx, endIdx + 1).reduce((opts2, key) => {
           opts2[key] = fieldOptions[key];
           return opts2;
         }, {});
@@ -163932,11 +163932,41 @@
   var import_react62 = __toESM(require_dist89());
   init_react_shim();
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-pjVmt7/profile-storage-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-AJs1OC/profile-storage-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
   var getScopedStorageItem = (baseKey) => sdk.getScopedStorageItem(baseKey);
   var setScopedStorageItem = (baseKey, value) => sdk.setScopedStorageItem(baseKey, value);
   var onProfileChanged = (listener) => sdk.onProfileChanged(listener);
+
+  // lib/app-storage.ts
+  var store = null;
+  function ensureStore() {
+    if (store) return store;
+    const seeded = /* @__PURE__ */ new Map();
+    if (typeof window !== "undefined") {
+      const snapshot = window.__lumioNativeStorageSnapshot;
+      if (snapshot) {
+        for (const [key, value] of Object.entries(snapshot)) {
+          seeded.set(key, String(value));
+        }
+      }
+      try {
+        for (let index3 = 0; index3 < localStorage.length; index3 += 1) {
+          const key = localStorage.key(index3);
+          if (key === null) continue;
+          const value = localStorage.getItem(key);
+          if (value !== null) seeded.set(key, value);
+        }
+      } catch {
+      }
+    }
+    store = seeded;
+    return seeded;
+  }
+  function getItem(key) {
+    if (typeof window === "undefined") return null;
+    return ensureStore().get(key) ?? null;
+  }
 
   // lib/i18n.tsx
   init_react_shim();
@@ -164298,6 +164328,26 @@
       profileName: "Profile name",
       profileNamePlaceholder: "For example Family or Kids",
       createProfile: "Create profile",
+      newProfileHeading: "New profile",
+      profileSourceLabel: "Start the profile from",
+      profileSourceBaseline: "Everything as it is now",
+      profilePinLabel: "PIN",
+      profilePinOptionalLabel: "PIN (optional)",
+      profilePinEnterTitle: "Enter PIN for {name}",
+      profilePinSetTitle: "Choose a PIN for {name}",
+      profilePinCurrentTitle: "Enter the current PIN for {name}",
+      profilePinRemoveTitle: "Enter PIN to remove the lock for {name}",
+      profilePinConfirm: "Enter the code again to confirm",
+      profilePinWrong: "Wrong PIN",
+      profilePinMismatch: "The codes did not match \u2014 start over",
+      profilePinFormatError: "PIN must be exactly 4 digits",
+      profilePinSet: "Set PIN",
+      profilePinChange: "Change PIN",
+      profilePinRemove: "Remove PIN",
+      profileSourceEmpty: "Empty, like a new install",
+      profileSourceProfile: "A copy of",
+      deleteProfileKeepData: "Keep the data when deleting",
+      deleteProfileKeepHint: "Deleting {name} keeps its data as the starting point. Unticked, the data is removed and the app falls back to what it held before profiles.",
       deleteProfile: "Delete profile",
       resetProfile: "Reset profile",
       activeProfile: "Active profile",
@@ -164338,6 +164388,8 @@
       homekitActionFailed: "HomeKit operation failed",
       homekitResetInfo: "Pairing reset and a new HomeKit identity created. Restart Lumio before adding it in the Home app -- the network advertisement only refreshes on startup.",
       homekitPublishedInfo: "Accessory published. Add it in the Home app.",
+      homekitSavedInfo: "Saved. The changes are live \u2014 no restart needed.",
+      homekitSaveFailed: "Could not save the settings.",
       homekitEventRules: "Event rules",
       movieStarts: "Movie starts",
       moviePaused: "Movie pauses",
@@ -164662,8 +164714,7 @@
       onboardingIntTrakt: "Sync watched history and watchlists. Sign in with a code from the settings.",
       onboardingIntSpotify: "Soundtrack playback on detail pages. Create a free app for client ID/secret.",
       onboardingIntGroq: "AI search. Create a free API key.",
-      onboardingIntOpenSubtitles: "Subtitles work out of the box \u2014 an account only helps with rate limits.",
-      onboardingIntegrationsHint: "Tap a card to open its site. Add your keys under Settings \u2192 Integrations whenever you like.",
+      onboardingIntOpenSubtitles: "Works without an account. With one, files are matched by hash for better subtitles.",
       defaultSubtitleLanguage: "Default subtitles language",
       defaultSubtitleLanguageDesc: "Selected automatically when subtitles are available.",
       fallbackSubtitleLanguage: "Fallback subtitles language",
@@ -165623,6 +165674,26 @@
       profileName: "Profilnamn",
       profileNamePlaceholder: "Till exempel Familj eller Barn",
       createProfile: "Skapa profil",
+      newProfileHeading: "Ny profil",
+      profileSourceLabel: "Starta profilen fr\xE5n",
+      profileSourceBaseline: "Allt som det ser ut nu",
+      profilePinLabel: "PIN",
+      profilePinOptionalLabel: "PIN (valfritt)",
+      profilePinEnterTitle: "Ange PIN f\xF6r {name}",
+      profilePinSetTitle: "V\xE4lj PIN f\xF6r {name}",
+      profilePinCurrentTitle: "Ange nuvarande PIN f\xF6r {name}",
+      profilePinRemoveTitle: "Ange PIN f\xF6r att ta bort l\xE5set f\xF6r {name}",
+      profilePinConfirm: "Ange koden igen f\xF6r att bekr\xE4fta",
+      profilePinWrong: "Fel PIN-kod",
+      profilePinMismatch: "Koderna matchade inte \u2014 b\xF6rja om",
+      profilePinFormatError: "PIN m\xE5ste vara exakt 4 siffror",
+      profilePinSet: "S\xE4tt PIN",
+      profilePinChange: "\xC4ndra PIN",
+      profilePinRemove: "Ta bort PIN",
+      profileSourceEmpty: "Tomt, som en ny installation",
+      profileSourceProfile: "En kopia av",
+      deleteProfileKeepData: "Beh\xE5ll datan vid borttagning",
+      deleteProfileKeepHint: "Tar du bort {name} beh\xE5lls dess data som utg\xE5ngsl\xE4ge. Utan kryss tas datan bort och appen \xE5terg\xE5r till det som fanns f\xF6re profiler.",
       deleteProfile: "Ta bort profil",
       resetProfile: "Nollst\xE4ll profil",
       activeProfile: "Aktiv profil",
@@ -165663,6 +165734,8 @@
       homekitActionFailed: "HomeKit-operation misslyckades",
       homekitResetInfo: "Pairing nollst\xE4lld och ny HomeKit-identitet skapad. Starta om Lumio innan du l\xE4gger till det i Home-appen \u2014 n\xE4tverksposten uppdateras bara vid start.",
       homekitPublishedInfo: "Tillbeh\xF6ret \xE4r publicerat. L\xE4gg till det i Home-appen.",
+      homekitSavedInfo: "Sparat. \xC4ndringarna g\xE4ller direkt \u2014 ingen omstart beh\xF6vs.",
+      homekitSaveFailed: "Kunde inte spara inst\xE4llningarna.",
       homekitEventRules: "Event-regler",
       movieStarts: "Film startar",
       moviePaused: "Film pausas",
@@ -165987,8 +166060,7 @@
       onboardingIntTrakt: "Synka sedda titlar och bevakningslistor. Logga in med en kod fr\xE5n inst\xE4llningarna.",
       onboardingIntSpotify: "Soundtrack-uppspelning p\xE5 detaljsidor. Skapa en gratis app f\xF6r client ID/secret.",
       onboardingIntGroq: "AI-s\xF6kning. Skapa en gratis API-nyckel.",
-      onboardingIntOpenSubtitles: "Undertexter fungerar direkt \u2014 ett konto hj\xE4lper bara mot kvotgr\xE4nser.",
-      onboardingIntegrationsHint: "Tryck p\xE5 ett kort f\xF6r att \xF6ppna dess sida. L\xE4gg in nycklarna under Inst\xE4llningar \u2192 Integrationer n\xE4r du vill.",
+      onboardingIntOpenSubtitles: "Fungerar utan konto. Med konto matchas filen p\xE5 hash och ger tr\xE4ffs\xE4krare undertexter.",
       defaultSubtitleLanguage: "Standard spr\xE5k f\xF6r textning",
       defaultSubtitleLanguageDesc: "V\xE4ljs automatiskt n\xE4r undertexter finns tillg\xE4ngliga.",
       fallbackSubtitleLanguage: "Sekund\xE4rt spr\xE5k f\xF6r textning",
@@ -166607,7 +166679,7 @@
     if (typeof window === "undefined") return DEFAULT_LANG;
     try {
       const scoped = getScopedStorageItem(STORAGE_KEY);
-      const legacy = localStorage.getItem(STORAGE_KEY);
+      const legacy = getItem(STORAGE_KEY);
       const value = scoped ?? legacy;
       if (value === "sv" || value === "en") return value;
     } catch {
@@ -166691,7 +166763,7 @@
   var import_react55 = __toESM(require_dist89());
   init_jsx_runtime_shim();
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-pjVmt7/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-AJs1OC/auth-capabilities-shim.ts
   var sdk2 = globalThis.__lumioPluginRuntime?.sdk;
 
   // lib/tauri-mpv.ts
@@ -167086,7 +167158,7 @@
     ].join(" "),
     input: "text-sm text-slate-50 placeholder:text-slate-500 !shadow-none outline-none"
   };
-  var settingsActionButtonClass = "rounded-full border border-white/10 px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-slate-300 transition hover:border-white/20 hover:text-white disabled:opacity-50";
+  var settingsActionButtonClass = "rounded-full border border-white/10 px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-slate-300 transition hover:border-white/25 hover:bg-white/10 hover:text-white active:bg-white/15 disabled:opacity-50";
   var settingsDangerActionButtonClass = "rounded-full border border-red-400/30 px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-red-300 transition hover:border-red-400/40 hover:text-red-300 disabled:opacity-50";
   function HomeKitSettingsSection() {
     const { t } = useLang();
@@ -167147,7 +167219,7 @@
       }
     }
     async function saveHomeKitSettings() {
-      await fetch("/api/env-settings", {
+      const response = await fetch("/api/env-settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -167161,6 +167233,31 @@
           HOMEKIT_EVENT_PLAYER_CLOSED_ENABLED: hkPlayerClosedEnabled ? "1" : "0"
         })
       });
+      if (!response.ok) {
+        throw new Error(`env-settings save failed: ${response.status}`);
+      }
+    }
+    function showInfoMessage(message) {
+      setHomekitInfo(message);
+      if (infoTimerRef.current) clearTimeout(infoTimerRef.current);
+      infoTimerRef.current = setTimeout(() => {
+        setHomekitInfo("");
+        infoTimerRef.current = null;
+      }, 4500);
+    }
+    async function saveAndApply() {
+      setHomekitBusy("saving");
+      setHomekitError("");
+      setHomekitInfo("");
+      try {
+        await saveHomeKitSettings();
+        showInfoMessage(t("homekitSavedInfo"));
+      } catch {
+        setHomekitError(t("homekitSaveFailed"));
+      } finally {
+        setHomekitBusy("idle");
+        await refreshHomeKitStatus();
+      }
     }
     async function controlHomeKit(action) {
       setHomekitBusy(action === "restart" ? "starting" : "resetting");
@@ -167177,12 +167274,7 @@
         if (!data.ok) {
           setHomekitError(data.error ?? t("homekitActionFailed"));
         } else {
-          setHomekitInfo(action === "reset" ? t("homekitResetInfo") : t("homekitPublishedInfo"));
-          if (infoTimerRef.current) clearTimeout(infoTimerRef.current);
-          infoTimerRef.current = setTimeout(() => {
-            setHomekitInfo("");
-            infoTimerRef.current = null;
-          }, 4500);
+          showInfoMessage(action === "reset" ? t("homekitResetInfo") : t("homekitPublishedInfo"));
         }
       } catch {
         setHomekitError(t("homekitActionFailed"));
@@ -167274,7 +167366,7 @@
         /* @__PURE__ */ jsx("button", { type: "button", onClick: () => setHomekitGuideOpen((v) => !v), className: settingsActionButtonClass, children: homekitGuideOpen ? t("closeGuide") : t("openGuide") }),
         /* @__PURE__ */ jsx("button", { type: "button", onClick: () => void controlHomeKit("restart"), disabled: !homekitEnabled || homekitBusy !== "idle", className: settingsActionButtonClass, children: homekitBusy === "starting" ? t("starting") : t("startPairing") }),
         /* @__PURE__ */ jsx("button", { type: "button", onClick: () => void controlHomeKit("reset"), disabled: homekitBusy !== "idle", className: settingsDangerActionButtonClass, children: homekitBusy === "resetting" ? t("resetting") : t("resetPairing") }),
-        /* @__PURE__ */ jsx("button", { type: "button", onClick: () => void saveHomeKitSettings(), disabled: homekitBusy !== "idle", className: settingsActionButtonClass, children: t("save") }),
+        /* @__PURE__ */ jsx("button", { type: "button", onClick: () => void saveAndApply(), disabled: homekitBusy !== "idle", className: settingsActionButtonClass, children: homekitBusy === "saving" ? t("saving") : t("save") }),
         /* @__PURE__ */ jsx("button", { type: "button", onClick: () => void refreshHomeKitStatus(), disabled: homekitBusy !== "idle", className: settingsActionButtonClass, children: t("refreshStatus") })
       ] }),
       homekitGuideOpen ? /* @__PURE__ */ jsxs("div", { className: "rounded-lg border border-white/10 bg-slate-950/60 p-3 text-xs text-slate-300", children: [
@@ -167313,7 +167405,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-pjVmt7/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-AJs1OC/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");

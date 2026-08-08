@@ -16,7 +16,7 @@ const inputClassNames = {
 }
 
 const settingsActionButtonClass =
-  'rounded-full border border-white/10 px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-slate-300 transition hover:border-white/20 hover:text-white disabled:opacity-50'
+  'rounded-full border border-white/10 px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-slate-300 transition hover:border-white/25 hover:bg-white/10 hover:text-white active:bg-white/15 disabled:opacity-50'
 const settingsDangerActionButtonClass =
   'rounded-full border border-red-400/30 px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-red-300 transition hover:border-red-400/40 hover:text-red-300 disabled:opacity-50'
 
@@ -46,7 +46,7 @@ export function HomeKitSettingsSection() {
   const [homekitError, setHomekitError] = useState('')
   const [homekitInfo, setHomekitInfo] = useState('')
   const [homekitGuideOpen, setHomekitGuideOpen] = useState(false)
-  const [homekitBusy, setHomekitBusy] = useState<'idle' | 'starting' | 'resetting'>('idle')
+  const [homekitBusy, setHomekitBusy] = useState<'idle' | 'starting' | 'resetting' | 'saving'>('idle')
   const infoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   async function loadHomeKitSettings() {
@@ -97,7 +97,7 @@ export function HomeKitSettingsSection() {
   }
 
   async function saveHomeKitSettings() {
-    await fetch('/api/env-settings', {
+    const response = await fetch('/api/env-settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -111,6 +111,36 @@ export function HomeKitSettingsSection() {
         HOMEKIT_EVENT_PLAYER_CLOSED_ENABLED: hkPlayerClosedEnabled ? '1' : '0',
       }),
     })
+    if (!response.ok) {
+      throw new Error(`env-settings save failed: ${response.status}`)
+    }
+  }
+
+  function showInfoMessage(message: string) {
+    setHomekitInfo(message)
+    if (infoTimerRef.current) clearTimeout(infoTimerRef.current)
+    infoTimerRef.current = setTimeout(() => {
+      setHomekitInfo('')
+      infoTimerRef.current = null
+    }, 4500)
+  }
+
+  // The backend applies saved settings to the running accessory immediately
+  // (enable/disable, event rules, name/PIN/port) — so saving is the whole
+  // action, and the status line below reflects the new state right away.
+  async function saveAndApply() {
+    setHomekitBusy('saving')
+    setHomekitError('')
+    setHomekitInfo('')
+    try {
+      await saveHomeKitSettings()
+      showInfoMessage(t('homekitSavedInfo'))
+    } catch {
+      setHomekitError(t('homekitSaveFailed'))
+    } finally {
+      setHomekitBusy('idle')
+      await refreshHomeKitStatus()
+    }
   }
 
   async function controlHomeKit(action: 'restart' | 'reset') {
@@ -130,12 +160,7 @@ export function HomeKitSettingsSection() {
       } else {
         // Publishing succeeds in well under a second, so without a message the
         // button just flickers and looks like it did nothing.
-        setHomekitInfo(action === 'reset' ? t('homekitResetInfo') : t('homekitPublishedInfo'))
-        if (infoTimerRef.current) clearTimeout(infoTimerRef.current)
-        infoTimerRef.current = setTimeout(() => {
-          setHomekitInfo('')
-          infoTimerRef.current = null
-        }, 4500)
+        showInfoMessage(action === 'reset' ? t('homekitResetInfo') : t('homekitPublishedInfo'))
       }
     } catch {
       setHomekitError(t('homekitActionFailed'))
@@ -242,8 +267,8 @@ export function HomeKitSettingsSection() {
         <button type="button" onClick={() => void controlHomeKit('reset')} disabled={homekitBusy !== 'idle'} className={settingsDangerActionButtonClass}>
           {homekitBusy === 'resetting' ? t('resetting') : t('resetPairing')}
         </button>
-        <button type="button" onClick={() => void saveHomeKitSettings()} disabled={homekitBusy !== 'idle'} className={settingsActionButtonClass}>
-          {t('save')}
+        <button type="button" onClick={() => void saveAndApply()} disabled={homekitBusy !== 'idle'} className={settingsActionButtonClass}>
+          {homekitBusy === 'saving' ? t('saving') : t('save')}
         </button>
         <button type="button" onClick={() => void refreshHomeKitStatus()} disabled={homekitBusy !== 'idle'} className={settingsActionButtonClass}>
           {t('refreshStatus')}
