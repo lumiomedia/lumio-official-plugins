@@ -14,6 +14,15 @@ export function embedUrl(kind: TwitchEmbedKind, id: string, parents: string[]): 
 
 export const TWITCH_EMBED_PARENTS = ['127.0.0.1', 'localhost', 'tauri.localhost']
 
+// Twitch refuses to render (blank/white iframe) unless every parent hostname
+// embedding it is declared. In a remote browser session the page is served
+// from a dynamic host (e.g. <ip>.sslip.io), so the static desktop list isn't
+// enough — fold in the live hostname before building the embed URL.
+function resolveEmbedParents(): string[] {
+  const host = typeof window !== 'undefined' ? window.location.hostname : ''
+  return Array.from(new Set([...(host ? [host] : []), ...TWITCH_EMBED_PARENTS]))
+}
+
 export function TwitchPlayerModal({
   kind,
   id,
@@ -51,7 +60,7 @@ export function TwitchPlayerModal({
       </div>
       <iframe
         title={title}
-        src={embedUrl(kind, id, TWITCH_EMBED_PARENTS)}
+        src={embedUrl(kind, id, resolveEmbedParents())}
         className="h-full w-full flex-1 border-0"
         allow="autoplay; fullscreen"
         allowFullScreen

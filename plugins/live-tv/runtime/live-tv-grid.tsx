@@ -523,12 +523,80 @@ export function LiveTvGrid({ initialChannel = null }: { initialChannel?: M3uChan
   }, [loading, channels.length, filtered.length, pagedChannels.length, error])
 
   if (urls.length === 0) {
+    const openLiveTvSettings = () => {
+      // Deep-link into the app settings panel at this plugin's section. The
+      // host listens for this event (lib/settings-navigation.ts) — plugins
+      // only get the SDK surface, so the window event is the contract.
+      window.dispatchEvent(new CustomEvent('lumio-open-settings', { detail: { section: 'plugin:m3u' } }))
+    }
+    const features = [
+      {
+        key: 'lists',
+        title: t('liveTvFeatureListsTitle'),
+        description: t('liveTvFeatureListsDesc'),
+        icon: (
+          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 10h18M12 10v10" />
+          </svg>
+        ),
+      },
+      {
+        key: 'epg',
+        title: t('liveTvFeatureEpgTitle'),
+        description: t('liveTvFeatureEpgDesc'),
+        icon: (
+          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" />
+          </svg>
+        ),
+      },
+      {
+        key: 'mpv',
+        title: t('liveTvFeatureMpvTitle'),
+        description: t('liveTvFeatureMpvDesc'),
+        icon: (
+          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <circle cx="12" cy="12" r="2" /><path d="M4.9 19.1a10 10 0 0 1 0-14.2M19.1 4.9a10 10 0 0 1 0 14.2M7.8 16.2a6 6 0 0 1 0-8.4M16.2 7.8a6 6 0 0 1 0 8.4" />
+          </svg>
+        ),
+      },
+      {
+        key: 'local',
+        title: t('liveTvFeatureLocalTitle'),
+        description: t('liveTvFeatureLocalDesc'),
+        icon: (
+          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M12 3 4.5 6v5c0 4.5 3 8.6 7.5 10 4.5-1.4 7.5-5.5 7.5-10V6L12 3Z" /><path d="m9.5 12 2 2 3.5-4" />
+          </svg>
+        ),
+      },
+    ]
     return (
-      <div className="flex flex-col items-center gap-3 py-16 text-center">
-        <svg className="h-12 w-12 text-slate-600" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z" />
-        </svg>
-        <p className="text-slate-400">{t('m3uNoUrl')}</p>
+      <div className="mx-auto w-full max-w-3xl px-4 py-14">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-500">{t('liveTvEmptyEyebrow')}</p>
+        <h2 className="mt-4 text-4xl font-semibold leading-tight text-white sm:text-5xl">{t('liveTvEmptyTitle')}</h2>
+        <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-400">{t('liveTvEmptyBody')}</p>
+        <button
+          type="button"
+          onClick={openLiveTvSettings}
+          className="mt-8 inline-flex items-center gap-2 rounded-full bg-white px-7 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-200"
+        >
+          {t('liveTvEmptyCta')}
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M5 12h14M13 6l6 6-6 6" />
+          </svg>
+        </button>
+        <div className="mt-12 grid grid-cols-1 gap-x-10 gap-y-8 border-t border-white/10 pt-10 sm:grid-cols-2">
+          {features.map((feature) => (
+            <div key={feature.key} className="flex items-start gap-3.5">
+              <span className="mt-0.5 flex h-6 w-6 flex-none items-center justify-center text-slate-500">{feature.icon}</span>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-white">{feature.title}</p>
+                <p className="mt-1 text-sm leading-relaxed text-slate-400">{feature.description}</p>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     )
   }
