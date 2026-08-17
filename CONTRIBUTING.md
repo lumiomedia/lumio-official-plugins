@@ -2,6 +2,13 @@
 
 Thanks for building for Lumio.
 
+**Ground rule going forward:** the Lumio core stays a neutral media client.
+Source-specific behavior (stream engines, provider integrations, source
+settings UI and their strings) always lives in a plugin, wired in through the
+contracts in [docs/plugin-contracts.md](./docs/plugin-contracts.md). If a
+feature seems to need core changes, the answer is a new neutral seam in the
+SDK — not source logic in the app.
+
 This repository is both:
 
 - the official Lumio plugin marketplace
