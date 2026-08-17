@@ -40,6 +40,10 @@ how Lumio plugins are structured.
 
 If you want to build, fork or adapt a plugin, start here:
 
+- [Plugin contracts](./docs/plugin-contracts.md) — the full contribution
+  surface: streams/playback seams, settings sections and claimed tabs, home
+  and navigation contributions, player integration limits, versioning and
+  `minAppVersion` rules
 - [SDK overview](./docs/sdk.md)
 - [Contributing](./CONTRIBUTING.md)
 - [Plugin template](./docs/PLUGIN_TEMPLATE.md)
