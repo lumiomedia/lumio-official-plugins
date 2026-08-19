@@ -1,4 +1,5 @@
 import type { LumioPlugin } from '@/lib/plugin-sdk'
+import { traktAuthCapabilityProvider } from './trakt-auth-capability-provider'
 import { TraktSettingsSection } from './trakt-settings-section'
 
 export const TraktPlugin: LumioPlugin = {
@@ -12,6 +13,8 @@ export const TraktPlugin: LumioPlugin = {
   preinstalled: true,
 
   register(ctx) {
+    // Drives the connected/not-connected dot next to TRAKT in Settings.
+    ctx.registerAuthCapabilityProvider(traktAuthCapabilityProvider)
     ctx.registerSettingsSection({
       id: 'trakt',
       label: { en: 'Trakt', sv: 'Trakt' },

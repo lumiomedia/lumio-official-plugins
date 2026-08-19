@@ -46,7 +46,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-GW3EcK/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-JKmj3o/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -95,7 +95,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-GW3EcK/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-JKmj3o/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -143,7 +143,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-GW3EcK/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-JKmj3o/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -153,12 +153,239 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-GW3EcK/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-JKmj3o/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
       jsxs = runtime.jsxs;
       jsxDEV = runtime.jsxDEV;
+    }
+  });
+
+  // node_modules/@tauri-apps/api/external/tslib/tslib.es6.cjs
+  var require_tslib_es6 = __commonJS({
+    "node_modules/@tauri-apps/api/external/tslib/tslib.es6.cjs"(exports) {
+      "use strict";
+      function __classPrivateFieldGet2(receiver, state, kind, f) {
+        if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
+        if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+        return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
+      }
+      function __classPrivateFieldSet2(receiver, state, value, kind, f) {
+        if (kind === "m") throw new TypeError("Private method is not writable");
+        if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
+        if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
+        return kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value), value;
+      }
+      exports.__classPrivateFieldGet = __classPrivateFieldGet2;
+      exports.__classPrivateFieldSet = __classPrivateFieldSet2;
+    }
+  });
+
+  // node_modules/@tauri-apps/api/core.cjs
+  var require_core = __commonJS({
+    "node_modules/@tauri-apps/api/core.cjs"(exports) {
+      "use strict";
+      var tslib_es6 = require_tslib_es6();
+      var _Channel_onmessage;
+      var _Channel_nextMessageIndex;
+      var _Channel_pendingMessages;
+      var _Channel_messageEndIndex;
+      var _Resource_rid;
+      var SERIALIZE_TO_IPC_FN = "__TAURI_TO_IPC_KEY__";
+      function transformCallback(callback, once = false) {
+        return window.__TAURI_INTERNALS__.transformCallback(callback, once);
+      }
+      var Channel = class {
+        constructor(onmessage) {
+          _Channel_onmessage.set(this, void 0);
+          _Channel_nextMessageIndex.set(this, 0);
+          _Channel_pendingMessages.set(this, []);
+          _Channel_messageEndIndex.set(this, void 0);
+          tslib_es6.__classPrivateFieldSet(this, _Channel_onmessage, onmessage || (() => {
+          }), "f");
+          this.id = transformCallback((rawMessage) => {
+            const index3 = rawMessage.index;
+            if ("end" in rawMessage) {
+              if (index3 == tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")) {
+                this.cleanupCallback();
+              } else {
+                tslib_es6.__classPrivateFieldSet(this, _Channel_messageEndIndex, index3, "f");
+              }
+              return;
+            }
+            const message = rawMessage.message;
+            if (index3 == tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")) {
+              tslib_es6.__classPrivateFieldGet(this, _Channel_onmessage, "f").call(this, message);
+              tslib_es6.__classPrivateFieldSet(this, _Channel_nextMessageIndex, tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") + 1, "f");
+              while (tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") in tslib_es6.__classPrivateFieldGet(this, _Channel_pendingMessages, "f")) {
+                const message2 = tslib_es6.__classPrivateFieldGet(this, _Channel_pendingMessages, "f")[tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")];
+                tslib_es6.__classPrivateFieldGet(this, _Channel_onmessage, "f").call(this, message2);
+                delete tslib_es6.__classPrivateFieldGet(this, _Channel_pendingMessages, "f")[tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")];
+                tslib_es6.__classPrivateFieldSet(this, _Channel_nextMessageIndex, tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") + 1, "f");
+              }
+              if (tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") === tslib_es6.__classPrivateFieldGet(this, _Channel_messageEndIndex, "f")) {
+                this.cleanupCallback();
+              }
+            } else {
+              tslib_es6.__classPrivateFieldGet(this, _Channel_pendingMessages, "f")[index3] = message;
+            }
+          });
+        }
+        cleanupCallback() {
+          window.__TAURI_INTERNALS__.unregisterCallback(this.id);
+        }
+        set onmessage(handler) {
+          tslib_es6.__classPrivateFieldSet(this, _Channel_onmessage, handler, "f");
+        }
+        get onmessage() {
+          return tslib_es6.__classPrivateFieldGet(this, _Channel_onmessage, "f");
+        }
+        [(_Channel_onmessage = /* @__PURE__ */ new WeakMap(), _Channel_nextMessageIndex = /* @__PURE__ */ new WeakMap(), _Channel_pendingMessages = /* @__PURE__ */ new WeakMap(), _Channel_messageEndIndex = /* @__PURE__ */ new WeakMap(), SERIALIZE_TO_IPC_FN)]() {
+          return `__CHANNEL__:${this.id}`;
+        }
+        toJSON() {
+          return this[SERIALIZE_TO_IPC_FN]();
+        }
+      };
+      var PluginListener = class {
+        constructor(plugin2, event, channelId) {
+          this.plugin = plugin2;
+          this.event = event;
+          this.channelId = channelId;
+        }
+        async unregister() {
+          return invoke4(`plugin:${this.plugin}|remove_listener`, {
+            event: this.event,
+            channelId: this.channelId
+          });
+        }
+      };
+      async function addPluginListener(plugin2, event, cb) {
+        const handler = new Channel(cb);
+        try {
+          await invoke4(`plugin:${plugin2}|register_listener`, {
+            event,
+            handler
+          });
+          return new PluginListener(plugin2, event, handler.id);
+        } catch {
+          await invoke4(`plugin:${plugin2}|registerListener`, { event, handler });
+          return new PluginListener(plugin2, event, handler.id);
+        }
+      }
+      async function checkPermissions(plugin2) {
+        return invoke4(`plugin:${plugin2}|check_permissions`);
+      }
+      async function requestPermissions(plugin2) {
+        return invoke4(`plugin:${plugin2}|request_permissions`);
+      }
+      async function invoke4(cmd, args = {}, options) {
+        return window.__TAURI_INTERNALS__.invoke(cmd, args, options);
+      }
+      function convertFileSrc(filePath, protocol = "asset") {
+        return window.__TAURI_INTERNALS__.convertFileSrc(filePath, protocol);
+      }
+      var Resource = class {
+        get rid() {
+          return tslib_es6.__classPrivateFieldGet(this, _Resource_rid, "f");
+        }
+        constructor(rid) {
+          _Resource_rid.set(this, void 0);
+          tslib_es6.__classPrivateFieldSet(this, _Resource_rid, rid, "f");
+        }
+        /**
+         * Destroys and cleans up this resource from memory.
+         * **You should not call any method on this object anymore and should drop any reference to it.**
+         */
+        async close() {
+          return invoke4("plugin:resources|close", {
+            rid: this.rid
+          });
+        }
+      };
+      _Resource_rid = /* @__PURE__ */ new WeakMap();
+      function isTauri() {
+        return !!(globalThis || window).isTauri;
+      }
+      exports.Channel = Channel;
+      exports.PluginListener = PluginListener;
+      exports.Resource = Resource;
+      exports.SERIALIZE_TO_IPC_FN = SERIALIZE_TO_IPC_FN;
+      exports.addPluginListener = addPluginListener;
+      exports.checkPermissions = checkPermissions;
+      exports.convertFileSrc = convertFileSrc;
+      exports.invoke = invoke4;
+      exports.isTauri = isTauri;
+      exports.requestPermissions = requestPermissions;
+      exports.transformCallback = transformCallback;
+    }
+  });
+
+  // node_modules/@tauri-apps/api/event.cjs
+  var require_event = __commonJS({
+    "node_modules/@tauri-apps/api/event.cjs"(exports) {
+      "use strict";
+      var core = require_core();
+      exports.TauriEvent = void 0;
+      (function(TauriEvent) {
+        TauriEvent["WINDOW_RESIZED"] = "tauri://resize";
+        TauriEvent["WINDOW_MOVED"] = "tauri://move";
+        TauriEvent["WINDOW_CLOSE_REQUESTED"] = "tauri://close-requested";
+        TauriEvent["WINDOW_DESTROYED"] = "tauri://destroyed";
+        TauriEvent["WINDOW_FOCUS"] = "tauri://focus";
+        TauriEvent["WINDOW_BLUR"] = "tauri://blur";
+        TauriEvent["WINDOW_SCALE_FACTOR_CHANGED"] = "tauri://scale-change";
+        TauriEvent["WINDOW_THEME_CHANGED"] = "tauri://theme-changed";
+        TauriEvent["WINDOW_CREATED"] = "tauri://window-created";
+        TauriEvent["WEBVIEW_CREATED"] = "tauri://webview-created";
+        TauriEvent["DRAG_ENTER"] = "tauri://drag-enter";
+        TauriEvent["DRAG_OVER"] = "tauri://drag-over";
+        TauriEvent["DRAG_DROP"] = "tauri://drag-drop";
+        TauriEvent["DRAG_LEAVE"] = "tauri://drag-leave";
+      })(exports.TauriEvent || (exports.TauriEvent = {}));
+      async function _unlisten(event, eventId) {
+        window.__TAURI_EVENT_PLUGIN_INTERNALS__.unregisterListener(event, eventId);
+        await core.invoke("plugin:event|unlisten", {
+          event,
+          eventId
+        });
+      }
+      async function listen2(event, handler, options) {
+        var _a;
+        const target = typeof (options === null || options === void 0 ? void 0 : options.target) === "string" ? { kind: "AnyLabel", label: options.target } : (_a = options === null || options === void 0 ? void 0 : options.target) !== null && _a !== void 0 ? _a : { kind: "Any" };
+        return core.invoke("plugin:event|listen", {
+          event,
+          target,
+          handler: core.transformCallback(handler)
+        }).then((eventId) => {
+          return async () => _unlisten(event, eventId);
+        });
+      }
+      async function once(event, handler, options) {
+        return listen2(event, (eventData) => {
+          void _unlisten(event, eventData.id);
+          handler(eventData);
+        }, options);
+      }
+      async function emit(event, payload) {
+        await core.invoke("plugin:event|emit", {
+          event,
+          payload
+        });
+      }
+      async function emitTo(target, event, payload) {
+        const eventTarget = typeof target === "string" ? { kind: "AnyLabel", label: target } : target;
+        await core.invoke("plugin:event|emit_to", {
+          target: eventTarget,
+          event,
+          payload
+        });
+      }
+      exports.emit = emit;
+      exports.emitTo = emitTo;
+      exports.listen = listen2;
+      exports.once = once;
     }
   });
 
@@ -186,6 +413,7 @@
     getResumeRefreshProviders: () => getResumeRefreshProviders,
     getSettingsSections: () => getSettingsSections,
     getStreamProviders: () => getStreamProviders,
+    getStreamRequestConfigProviders: () => getStreamRequestConfigProviders,
     getSyncIdentityProviders: () => getSyncIdentityProviders,
     getTopbarItems: () => getTopbarItems,
     hasStreamProviders: () => hasStreamProviders,
@@ -202,8 +430,16 @@
       }
     }
   }
+  function scheduleRegistryNotify() {
+    if (registryNotifyScheduled) return;
+    registryNotifyScheduled = true;
+    queueMicrotask(() => {
+      registryNotifyScheduled = false;
+      notifyRegistryChanged();
+    });
+  }
   function makeContext(pluginId) {
-    return {
+    const ctx = {
       registerStreamProvider(provider) {
         if (streamProviders.find((p) => p.id === provider.id)) return;
         streamProviders.push(provider);
@@ -227,6 +463,10 @@
       registerPlayableUrlRewriter(rewriter) {
         if (playableUrlRewriters.find((entry) => entry.id === rewriter.id)) return;
         playableUrlRewriters.push(rewriter);
+      },
+      registerStreamRequestConfigProvider(provider) {
+        if (streamRequestConfigProviders.find((entry) => entry.id === provider.id)) return;
+        streamRequestConfigProviders.push(provider);
       },
       registerEpisodeSidebarProvider(provider) {
         if (episodeSidebarProviders.find((p) => p.id === provider.id)) return;
@@ -299,6 +539,18 @@
         managedAuthConsumers.push(consumer);
       }
     };
+    for (const key of Object.keys(ctx)) {
+      const original = ctx[key];
+      if (typeof original === "function" && String(key).startsWith("register")) {
+        ;
+        ctx[key] = (...args) => {
+          ;
+          original.apply(ctx, args);
+          scheduleRegistryNotify();
+        };
+      }
+    }
+    return ctx;
   }
   function registerPlugin(plugin2) {
     if (registeredPluginIds.has(plugin2.id)) return;
@@ -323,6 +575,9 @@
   }
   function getPlayableUrlRewriters() {
     return [...playableUrlRewriters].sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+  }
+  function getStreamRequestConfigProviders() {
+    return [...streamRequestConfigProviders].sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
   }
   function getEpisodeSidebarProviders() {
     return episodeSidebarProviders;
@@ -384,7 +639,7 @@
       registryListeners.delete(listener);
     };
   }
-  var streamProviders, mediaStreamCatalogProviders, mediaStreamAvailabilityProviders, instantPlayProviders, resumeRefreshProviders, playableUrlRewriters, episodeSidebarProviders, playbackCapabilityProviders, syncIdentityProviders, authCapabilityProviders, settingsSections, mediaDownloadActions, mediaDetailsActions, homeRows, homeSources, bootstraps, heroes, homeOverrides, browsePages, mainMenuItems, topbarItems, managedAuthConsumers, registeredPluginIds, registryRevision, registryListeners;
+  var streamProviders, mediaStreamCatalogProviders, mediaStreamAvailabilityProviders, instantPlayProviders, resumeRefreshProviders, playableUrlRewriters, streamRequestConfigProviders, episodeSidebarProviders, playbackCapabilityProviders, syncIdentityProviders, authCapabilityProviders, settingsSections, mediaDownloadActions, mediaDetailsActions, homeRows, homeSources, bootstraps, heroes, homeOverrides, browsePages, mainMenuItems, topbarItems, managedAuthConsumers, registeredPluginIds, registryRevision, registryListeners, registryNotifyScheduled;
   var init_plugin_registry = __esm({
     "lib/plugin-registry.ts"() {
       streamProviders = [];
@@ -393,6 +648,7 @@
       instantPlayProviders = [];
       resumeRefreshProviders = [];
       playableUrlRewriters = [];
+      streamRequestConfigProviders = [];
       episodeSidebarProviders = [];
       playbackCapabilityProviders = [];
       syncIdentityProviders = [];
@@ -412,6 +668,7 @@
       registeredPluginIds = /* @__PURE__ */ new Set();
       registryRevision = 0;
       registryListeners = /* @__PURE__ */ new Set();
+      registryNotifyScheduled = false;
     }
   });
 
@@ -18923,9 +19180,9 @@
         toIterator: () => toIterator2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function forwardRef3(component) {
-        return (0, import_react67.forwardRef)(component);
+        return (0, import_react69.forwardRef)(component);
       }
       var toIterator2 = (obj) => {
         return {
@@ -23359,7 +23616,7 @@
   });
 
   // node_modules/intl-messageformat/src/core.js
-  var require_core = __commonJS({
+  var require_core2 = __commonJS({
     "node_modules/intl-messageformat/src/core.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
@@ -23600,11 +23857,11 @@
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.IntlMessageFormat = void 0;
       var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
-      var core_1 = require_core();
+      var core_1 = require_core2();
       Object.defineProperty(exports, "IntlMessageFormat", { enumerable: true, get: function() {
         return core_1.IntlMessageFormat;
       } });
-      tslib_1.__exportStar(require_core(), exports);
+      tslib_1.__exportStar(require_core2(), exports);
       tslib_1.__exportStar(require_error2(), exports);
       tslib_1.__exportStar(require_formatters(), exports);
       exports.default = core_1.IntlMessageFormat;
@@ -39299,7 +39556,7 @@
         startObserver() {
           this.stopObserver?.();
           const { viewport = {} } = this.node.getProps();
-          const { root, margin: rootMargin, amount = "some", once: once2 } = viewport;
+          const { root, margin: rootMargin, amount = "some", once } = viewport;
           const options = {
             root: root ? root.current : void 0,
             rootMargin,
@@ -39310,7 +39567,7 @@
             if (this.isInView === isIntersecting)
               return;
             this.isInView = isIntersecting;
-            if (once2 && !isIntersecting && this.hasEnteredView) {
+            if (once && !isIntersecting && this.hasEnteredView) {
               return;
             } else if (isIntersecting) {
               this.hasEnteredView = true;
@@ -41368,14 +41625,14 @@
         );
         return [item, runCycle];
       }
-      function useInView2(ref, { root, margin, amount, once: once2 = false, initial = false } = {}) {
+      function useInView2(ref, { root, margin, amount, once = false, initial = false } = {}) {
         const [isInView, setInView] = React.useState(initial);
         React.useEffect(() => {
-          if (!ref.current || once2 && isInView)
+          if (!ref.current || once && isInView)
             return;
           const onEnter = () => {
             setInView(true);
-            return once2 ? void 0 : () => setInView(false);
+            return once ? void 0 : () => setInView(false);
           };
           const options = {
             root: root && root.current || void 0,
@@ -41383,7 +41640,7 @@
             amount
           };
           return inView2(ref.current, onEnter, options);
-        }, [root, ref, margin, once2, amount]);
+        }, [root, ref, margin, once, amount]);
         return isInView;
       }
       function useInstantTransition2() {
@@ -48426,17 +48683,17 @@
         renderFn: () => renderFn2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function getValidChildren2(children) {
-        return import_react67.Children.toArray(children).filter(
-          (child) => (0, import_react67.isValidElement)(child)
+        return import_react69.Children.toArray(children).filter(
+          (child) => (0, import_react69.isValidElement)(child)
         );
       }
       var pickChildren2 = (children, targetChild) => {
         var _a;
         let target = [];
-        const withoutTargetChildren = (_a = import_react67.Children.map(children, (item) => {
-          if (!(0, import_react67.isValidElement)(item)) return item;
+        const withoutTargetChildren = (_a = import_react69.Children.map(children, (item) => {
+          if (!(0, import_react69.isValidElement)(item)) return item;
           if (item.type === targetChild) {
             target.push(item);
             return null;
@@ -48778,7 +49035,7 @@
           refs.forEach((ref) => assignRef(ref, node));
         };
       }
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function canUseDOM() {
         return !!(typeof window !== "undefined" && window.document && window.document.createElement);
       }
@@ -48864,17 +49121,17 @@
         };
       }
       function useDOMRef(ref) {
-        const domRef = (0, import_react67.useRef)(null);
-        (0, import_react67.useImperativeHandle)(ref, () => domRef.current);
+        const domRef = (0, import_react69.useRef)(null);
+        (0, import_react69.useImperativeHandle)(ref, () => domRef.current);
         return domRef;
       }
       function useFocusableRef(ref, focusableRef) {
-        const domRef = (0, import_react67.useRef)(null);
-        (0, import_react67.useImperativeHandle)(ref, () => createFocusableRef(domRef, focusableRef));
+        const domRef = (0, import_react69.useRef)(null);
+        (0, import_react69.useImperativeHandle)(ref, () => createFocusableRef(domRef, focusableRef));
         return domRef;
       }
       function useSyncRef(context, ref) {
-        (0, import_react67.useLayoutEffect)(() => {
+        (0, import_react69.useLayoutEffect)(() => {
           if (context && context.ref && ref && ref.current) {
             context.ref.current = ref.current;
             return () => {
@@ -48955,8 +49212,8 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_system_rsc = require_dist4();
-      var import_i18n8 = require_main5();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_i18n9 = require_main5();
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_motion2 = require_cjs4();
       var import_utils8 = require_main4();
       var import_overlays = require_main9();
@@ -48965,7 +49222,7 @@
         name: "ProviderContext",
         strict: false
       });
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var HeroUIProvider = ({
         children,
         navigate,
@@ -48986,9 +49243,9 @@
       }) => {
         let contents = children;
         if (navigate) {
-          contents = /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_utils8.RouterProvider, { navigate, useHref, children: contents });
+          contents = /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_utils8.RouterProvider, { navigate, useHref, children: contents });
         }
-        const context = (0, import_react67.useMemo)(() => {
+        const context = (0, import_react69.useMemo)(() => {
           if (disableAnimation && skipFramerMotionAnimations) {
             import_framer_motion2.MotionGlobalConfig.skipAnimations = true;
           }
@@ -49011,7 +49268,7 @@
           labelPlacement,
           spinnerVariant
         ]);
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(ProviderContext, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_i18n8.I18nProvider, { locale, children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_framer_motion2.MotionConfig, { reducedMotion, children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_overlays.OverlayProvider, { ...otherProps, children: contents }) }) }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(ProviderContext, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_i18n9.I18nProvider, { locale, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_framer_motion2.MotionConfig, { reducedMotion, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_overlays.OverlayProvider, { ...otherProps, children: contents }) }) }) });
       };
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useLabelPlacement(props) {
@@ -62270,9 +62527,9 @@
         toIterator: () => toIterator2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function forwardRef3(component) {
-        return (0, import_react67.forwardRef)(component);
+        return (0, import_react69.forwardRef)(component);
       }
       var toIterator2 = (obj) => {
         return {
@@ -62484,7 +62741,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_rsc_utils = require_dist9();
       function useSeparator(props) {
         let domProps = (0, import_react_rsc_utils.filterDOMProps)(props, {
@@ -62515,14 +62772,14 @@
           elementType: typeof Component2 === "string" ? Component2 : "hr",
           orientation
         });
-        const styles = (0, import_react67.useMemo)(
+        const styles = (0, import_react69.useMemo)(
           () => (0, import_theme.divider)({
             orientation,
             className
           }),
           [orientation, className]
         );
-        const getDividerProps = (0, import_react67.useCallback)(
+        const getDividerProps = (0, import_react69.useCallback)(
           (props2 = {}) => ({
             className: styles,
             role: "separator",
@@ -62535,10 +62792,10 @@
         );
         return { Component: Component2, getDividerProps };
       }
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Divider = (0, import_system_rsc.forwardRef)((props, ref) => {
         const { Component: Component2, getDividerProps } = useDivider({ ...props });
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(Component2, { ref, ...getDividerProps() });
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(Component2, { ref, ...getDividerProps() });
       });
       Divider.displayName = "HeroUI.Divider";
       var divider_default = Divider;
@@ -65329,22 +65586,22 @@
         };
       }
       var import_focus2 = require_main14();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_button = require_main16();
       function useReactAriaAccordionItem(props, state, ref) {
         let { item, isDisabled: isDisabledProp } = props;
         let key = item.key;
         let manager = state.selectionManager;
-        let buttonId = (0, import_react67.useId)();
-        let regionId = (0, import_react67.useId)();
+        let buttonId = (0, import_react69.useId)();
+        let regionId = (0, import_react69.useId)();
         let isDisabled = state.disabledKeys.has(item.key) || isDisabledProp;
-        (0, import_react67.useEffect)(() => {
+        (0, import_react69.useEffect)(() => {
           let isFocused = key === state.focusedKey;
           if (isFocused && document.activeElement !== ref.current) {
             ref.current && (0, import_focus2.focusSafely)(ref.current);
           }
         }, [ref, key, state.focusedKey]);
-        let onSelect = (0, import_react67.useCallback)(
+        let onSelect = (0, import_react69.useCallback)(
           (e) => {
             if (!manager.canSelectItem(key)) {
               return;
@@ -65354,7 +65611,7 @@
           },
           [key, manager]
         );
-        const extendFocusSelection = (0, import_react67.useCallback)(
+        const extendFocusSelection = (0, import_react69.useCallback)(
           (toKey) => {
             if (manager.selectionBehavior === "replace") {
               manager.extendSelection(toKey);
@@ -65363,7 +65620,7 @@
           },
           [manager]
         );
-        const onKeyDown = (0, import_react67.useCallback)(
+        const onKeyDown = (0, import_react69.useCallback)(
           (event) => {
             const keyMap = {
               ArrowDown: () => {
@@ -65549,17 +65806,17 @@
         WarningIcon: () => WarningIcon
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Sun = ({ fill, filled, size, height, width, ...props }) => {
         if (filled) {
-          return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
             "svg",
             {
               height: size || height || 24,
               viewBox: "0 0 512 512",
               width: size || width || 24,
               ...props,
-              children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M256 118a22 22 0 01-22-22V48a22 22 0 0144 0v48a22 22 0 01-22 22zM256 486a22 22 0 01-22-22v-48a22 22 0 0144 0v48a22 22 0 01-22 22zM369.14 164.86a22 22 0 01-15.56-37.55l33.94-33.94a22 22 0 0131.11 31.11l-33.94 33.94a21.93 21.93 0 01-15.55 6.44zM108.92 425.08a22 22 0 01-15.55-37.56l33.94-33.94a22 22 0 1131.11 31.11l-33.94 33.94a21.94 21.94 0 01-15.56 6.45zM464 278h-48a22 22 0 010-44h48a22 22 0 010 44zM96 278H48a22 22 0 010-44h48a22 22 0 010 44zM403.08 425.08a21.94 21.94 0 01-15.56-6.45l-33.94-33.94a22 22 0 0131.11-31.11l33.94 33.94a22 22 0 01-15.55 37.56zM142.86 164.86a21.89 21.89 0 01-15.55-6.44l-33.94-33.94a22 22 0 0131.11-31.11l33.94 33.94a22 22 0 01-15.56 37.55zM256 358a102 102 0 11102-102 102.12 102.12 0 01-102 102z",
@@ -65569,8 +65826,8 @@
             }
           );
         }
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("svg", { height: size || height || 24, viewBox: "0 0 512 512", width: size || width || 24, ...props, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("svg", { height: size || height || 24, viewBox: "0 0 512 512", width: size || width || 24, ...props, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
             "path",
             {
               d: "M256 48v48M256 416v48M403.08 108.92l-33.94 33.94M142.86 369.14l-33.94 33.94M464 256h-48M96 256H48M403.08 403.08l-33.94-33.94M142.86 142.86l-33.94-33.94",
@@ -65581,7 +65838,7 @@
               strokeWidth: 32
             }
           ),
-          /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
             "circle",
             {
               cx: 256,
@@ -65597,21 +65854,21 @@
         ] });
       };
       var Mail = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("svg", { height: size || height || 24, viewBox: "0 0 24 24", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("g", { fill: "none", stroke: fill, strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 1.5, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("path", { d: "M12 20.5H7c-3 0-5-1.5-5-5v-7c0-3.5 2-5 5-5h10c3 0 5 1.5 5 5v3" }),
-          /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("path", { d: "M17 9l-3.13 2.5a3.166 3.166 0 01-3.75 0L7 9M19.21 14.77l-3.539 3.54a1.232 1.232 0 00-.3.59l-.19 1.35a.635.635 0 00.76.76l1.35-.19a1.189 1.189 0 00.59-.3l3.54-3.54a1.365 1.365 0 000-2.22 1.361 1.361 0 00-2.211.01zM18.7 15.28a3.185 3.185 0 002.22 2.22" })
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("svg", { height: size || height || 24, viewBox: "0 0 24 24", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("g", { fill: "none", stroke: fill, strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 1.5, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("path", { d: "M12 20.5H7c-3 0-5-1.5-5-5v-7c0-3.5 2-5 5-5h10c3 0 5 1.5 5 5v3" }),
+          /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("path", { d: "M17 9l-3.13 2.5a3.166 3.166 0 01-3.75 0L7 9M19.21 14.77l-3.539 3.54a1.232 1.232 0 00-.3.59l-.19 1.35a.635.635 0 00.76.76l1.35-.19a1.189 1.189 0 00.59-.3l3.54-3.54a1.365 1.365 0 000-2.22 1.361 1.361 0 00-2.211.01zM18.7 15.28a3.185 3.185 0 002.22 2.22" })
         ] }) });
       };
       var Moon = ({ fill, filled, size, height, width, ...props }) => {
         if (filled) {
-          return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
             "svg",
             {
               height: size || height || 24,
               viewBox: "0 0 512 512",
               width: size || width || 24,
               ...props,
-              children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M152.62 126.77c0-33 4.85-66.35 17.23-94.77C87.54 67.83 32 151.89 32 247.38 32 375.85 136.15 480 264.62 480c95.49 0 179.55-55.54 215.38-137.85-28.42 12.38-61.8 17.23-94.77 17.23-128.47 0-232.61-104.14-232.61-232.61z",
@@ -65621,7 +65878,7 @@
             }
           );
         }
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("svg", { height: size || height || 24, viewBox: "0 0 512 512", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("svg", { height: size || height || 24, viewBox: "0 0 512 512", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
           "path",
           {
             d: "M160 136c0-30.62 4.51-61.61 16-88C99.57 81.27 48 159.32 48 248c0 119.29 96.71 216 216 216 88.68 0 166.73-51.57 200-128-26.39 11.49-57.38 16-88 16-119.29 0-216-96.71-216-216z",
@@ -65635,7 +65892,7 @@
       };
       var Lock = ({ fill, size, height, width, ...props }) => {
         const color2 = fill;
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
           "svg",
           {
             "data-name": "Iconly/Curved/Lock",
@@ -65644,8 +65901,8 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("g", { transform: "translate(3.5 2)", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("g", { transform: "translate(3.5 2)", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M9.121,6.653V4.5A4.561,4.561,0,0,0,0,4.484V6.653",
@@ -65658,7 +65915,7 @@
                   transform: "translate(3.85 0.75)"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M.5,0V2.221",
@@ -65671,7 +65928,7 @@
                   transform: "translate(7.91 12.156)"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M7.66,0C1.915,0,0,1.568,0,6.271s1.915,6.272,7.66,6.272,7.661-1.568,7.661-6.272S13.4,0,7.66,0Z",
@@ -65690,7 +65947,7 @@
       };
       var Unlock = ({ fill, size, height, width, ...props }) => {
         const color2 = fill;
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
           "svg",
           {
             "data-name": "Iconly/Curved/Lock",
@@ -65699,8 +65956,8 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("g", { transform: "translate(3.5 2)", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("g", { transform: "translate(3.5 2)", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M8.927,3.237A4.562,4.562,0,0,0,0,4.484V6.653",
@@ -65713,7 +65970,7 @@
                   transform: "translate(3.849 0.75)"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M.5,0V2.221",
@@ -65726,7 +65983,7 @@
                   transform: "translate(7.91 12.156)"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M7.66,0C1.915,0,0,1.568,0,6.271s1.915,6.272,7.66,6.272,7.661-1.568,7.661-6.272S13.406,0,7.66,0Z",
@@ -65744,13 +66001,13 @@
         );
       };
       var Password = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("svg", { height: size || height || 24, viewBox: "0 0 24 24", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("g", { fill, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("path", { d: "M18.75 8v2.1a12.984 12.984 0 00-1.5-.1V8c0-3.15-.89-5.25-5.25-5.25S6.75 4.85 6.75 8v2a12.984 12.984 0 00-1.5.1V8c0-2.9.7-6.75 6.75-6.75S18.75 5.1 18.75 8z" }),
-          /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("path", { d: "M18.75 10.1a12.984 12.984 0 00-1.5-.1H6.75a12.984 12.984 0 00-1.5.1C2.7 10.41 2 11.66 2 15v2c0 4 1 5 5 5h10c4 0 5-1 5-5v-2c0-3.34-.7-4.59-3.25-4.9zM8.71 16.71A1.052 1.052 0 018 17a1 1 0 01-.38-.08 1.032 1.032 0 01-.33-.21A1.052 1.052 0 017 16a1 1 0 01.08-.38 1.155 1.155 0 01.21-.33 1.032 1.032 0 01.33-.21 1 1 0 011.09.21 1.155 1.155 0 01.21.33A1 1 0 019 16a1.052 1.052 0 01-.29.71zm4.21-.33a1.155 1.155 0 01-.21.33A1.052 1.052 0 0112 17a1.033 1.033 0 01-.71-.29 1.155 1.155 0 01-.21-.33A1 1 0 0111 16a1.033 1.033 0 01.29-.71 1.047 1.047 0 011.42 0A1.033 1.033 0 0113 16a1 1 0 01-.08.38zm3.79.33a1.014 1.014 0 01-1.42 0 1.014 1.014 0 010-1.42 1.047 1.047 0 011.42 0c.04.05.08.1.12.16a.556.556 0 01.09.17.636.636 0 01.06.18 1.5 1.5 0 01.02.2 1.052 1.052 0 01-.29.71z" })
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("svg", { height: size || height || 24, viewBox: "0 0 24 24", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("g", { fill, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("path", { d: "M18.75 8v2.1a12.984 12.984 0 00-1.5-.1V8c0-3.15-.89-5.25-5.25-5.25S6.75 4.85 6.75 8v2a12.984 12.984 0 00-1.5.1V8c0-2.9.7-6.75 6.75-6.75S18.75 5.1 18.75 8z" }),
+          /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("path", { d: "M18.75 10.1a12.984 12.984 0 00-1.5-.1H6.75a12.984 12.984 0 00-1.5.1C2.7 10.41 2 11.66 2 15v2c0 4 1 5 5 5h10c4 0 5-1 5-5v-2c0-3.34-.7-4.59-3.25-4.9zM8.71 16.71A1.052 1.052 0 018 17a1 1 0 01-.38-.08 1.032 1.032 0 01-.33-.21A1.052 1.052 0 017 16a1 1 0 01.08-.38 1.155 1.155 0 01.21-.33 1.032 1.032 0 01.33-.21 1 1 0 011.09.21 1.155 1.155 0 01.21.33A1 1 0 019 16a1.052 1.052 0 01-.29.71zm4.21-.33a1.155 1.155 0 01-.21.33A1.052 1.052 0 0112 17a1.033 1.033 0 01-.71-.29 1.155 1.155 0 01-.21-.33A1 1 0 0111 16a1.033 1.033 0 01.29-.71 1.047 1.047 0 011.42 0A1.033 1.033 0 0113 16a1 1 0 01-.08.38zm3.79.33a1.014 1.014 0 01-1.42 0 1.014 1.014 0 010-1.42 1.047 1.047 0 011.42 0c.04.05.08.1.12.16a.556.556 0 01.09.17.636.636 0 01.06.18 1.5 1.5 0 01.02.2 1.052 1.052 0 01-.29.71z" })
         ] }) });
       };
       var Notification = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
           "svg",
           {
             fill: "none",
@@ -65759,7 +66016,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
               "path",
               {
                 clipRule: "evenodd",
@@ -65772,7 +66029,7 @@
         );
       };
       var User = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
           "svg",
           {
             height: size || height || 24,
@@ -65780,7 +66037,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(
               "g",
               {
                 fill: "none",
@@ -65790,14 +66047,14 @@
                 strokeMiterlimit: 10,
                 strokeWidth: 1.5,
                 children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+                  /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                     "path",
                     {
                       d: "M11.845 21.662C8.153 21.662 5 21.088 5 18.787s3.133-4.425 6.845-4.425c3.692 0 6.845 2.1 6.845 4.4s-3.134 2.9-6.845 2.9z",
                       "data-name": "Stroke 1"
                     }
                   ),
-                  /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("path", { d: "M11.837 11.174a4.372 4.372 0 10-.031 0z", "data-name": "Stroke 3" })
+                  /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("path", { d: "M11.837 11.174a4.372 4.372 0 10-.031 0z", "data-name": "Stroke 3" })
                 ]
               }
             )
@@ -65805,7 +66062,7 @@
         );
       };
       var VolumeUp = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
           "svg",
           {
             fill: "none",
@@ -65814,7 +66071,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
               "path",
               {
                 clipRule: "evenodd",
@@ -65827,7 +66084,7 @@
         );
       };
       var Camera = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
           "svg",
           {
             fill: "none",
@@ -65836,7 +66093,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
               "path",
               {
                 clipRule: "evenodd",
@@ -65849,7 +66106,7 @@
         );
       };
       var Activity2 = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
           "svg",
           {
             "data-name": "Iconly/Curved/Activity",
@@ -65858,7 +66115,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(
               "g",
               {
                 fill: "none",
@@ -65868,9 +66125,9 @@
                 strokeMiterlimit: 10,
                 strokeWidth: 1.5,
                 children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("path", { d: "M6.918 14.854l2.993-3.889 3.414 2.68 2.929-3.78" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("path", { d: "M19.668 2.35a1.922 1.922 0 11-1.922 1.922 1.921 1.921 0 011.922-1.922z" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("path", { d: "M20.756 9.269a20.809 20.809 0 01.194 3.034c0 6.938-2.312 9.25-9.25 9.25s-9.25-2.312-9.25-9.25 2.313-9.25 9.25-9.25a20.931 20.931 0 012.983.187" })
+                  /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("path", { d: "M6.918 14.854l2.993-3.889 3.414 2.68 2.929-3.78" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("path", { d: "M19.668 2.35a1.922 1.922 0 11-1.922 1.922 1.921 1.921 0 011.922-1.922z" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("path", { d: "M20.756 9.269a20.809 20.809 0 01.194 3.034c0 6.938-2.312 9.25-9.25 9.25s-9.25-2.312-9.25-9.25 2.313-9.25 9.25-9.25a20.931 20.931 0 012.983.187" })
                 ]
               }
             )
@@ -65878,7 +66135,7 @@
         );
       };
       var Plus = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
           "svg",
           {
             height: size || height || 24,
@@ -65886,15 +66143,15 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("g", { fill: "none", stroke: fill, strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 1.5, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("path", { d: "M6 12h12" }),
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("path", { d: "M12 18V6" })
+            children: /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("g", { fill: "none", stroke: fill, strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 1.5, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("path", { d: "M6 12h12" }),
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("path", { d: "M12 18V6" })
             ] })
           }
         );
       };
       var Minus = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
           "svg",
           {
             height: size || height || 24,
@@ -65902,7 +66159,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
               "path",
               {
                 d: "M6 12h12",
@@ -65917,7 +66174,7 @@
         );
       };
       var Eye = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(
           "svg",
           {
             fill: "none",
@@ -65927,7 +66184,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M12.9833 10C12.9833 11.65 11.65 12.9833 10 12.9833C8.35 12.9833 7.01666 11.65 7.01666 10C7.01666 8.35 8.35 7.01666 10 7.01666C11.65 7.01666 12.9833 8.35 12.9833 10Z",
@@ -65937,7 +66194,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M9.99999 16.8916C12.9417 16.8916 15.6833 15.1583 17.5917 12.1583C18.3417 10.9833 18.3417 9.00831 17.5917 7.83331C15.6833 4.83331 12.9417 3.09998 9.99999 3.09998C7.05833 3.09998 4.31666 4.83331 2.40833 7.83331C1.65833 9.00831 1.65833 10.9833 2.40833 12.1583C4.31666 15.1583 7.05833 16.8916 9.99999 16.8916Z",
@@ -65952,7 +66209,7 @@
         );
       };
       var Edit = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(
           "svg",
           {
             fill: "none",
@@ -65962,7 +66219,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M11.05 3.00002L4.20835 10.2417C3.95002 10.5167 3.70002 11.0584 3.65002 11.4334L3.34169 14.1334C3.23335 15.1084 3.93335 15.775 4.90002 15.6084L7.58335 15.15C7.95835 15.0834 8.48335 14.8084 8.74168 14.525L15.5834 7.28335C16.7667 6.03335 17.3 4.60835 15.4583 2.86668C13.625 1.14168 12.2334 1.75002 11.05 3.00002Z",
@@ -65973,7 +66230,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M9.90833 4.20831C10.2667 6.50831 12.1333 8.26665 14.45 8.49998",
@@ -65984,7 +66241,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M2.5 18.3333H17.5",
@@ -66000,7 +66257,7 @@
         );
       };
       var Delete = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(
           "svg",
           {
             fill: "none",
@@ -66010,7 +66267,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M17.5 4.98332C14.725 4.70832 11.9333 4.56665 9.15 4.56665C7.5 4.56665 5.85 4.64998 4.2 4.81665L2.5 4.98332",
@@ -66020,7 +66277,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M7.08331 4.14169L7.26665 3.05002C7.39998 2.25835 7.49998 1.66669 8.90831 1.66669H11.0916C12.5 1.66669 12.6083 2.29169 12.7333 3.05835L12.9166 4.14169",
@@ -66030,7 +66287,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M15.7084 7.61664L15.1667 16.0083C15.075 17.3166 15 18.3333 12.675 18.3333H7.32502C5.00002 18.3333 4.92502 17.3166 4.83335 16.0083L4.29169 7.61664",
@@ -66040,7 +66297,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M8.60834 13.75H11.3833",
@@ -66050,7 +66307,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M7.91669 10.4167H12.0834",
@@ -66065,7 +66322,7 @@
         );
       };
       var ChevronDown = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
           "svg",
           {
             fill: "none",
@@ -66074,7 +66331,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
               "path",
               {
                 d: "m19.92 8.95-6.52 6.52c-.77.77-2.03.77-2.8 0L4.08 8.95",
@@ -66089,7 +66346,7 @@
         );
       };
       var ChevronDownBold = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
           "svg",
           {
             fill: "none",
@@ -66098,7 +66355,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
               "path",
               {
                 d: "M17.9188 8.17969H11.6888H6.07877C5.11877 8.17969 4.63877 9.33969 5.31877 10.0197L10.4988 15.1997C11.3288 16.0297 12.6788 16.0297 13.5088 15.1997L15.4788 13.2297L18.6888 10.0197C19.3588 9.33969 18.8788 8.17969 17.9188 8.17969Z",
@@ -66109,7 +66366,7 @@
         );
       };
       var NewFile = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(
           "svg",
           {
             fill: "none",
@@ -66119,7 +66376,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M8 2V5",
@@ -66130,7 +66387,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M16 2V5",
@@ -66141,7 +66398,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M21 8.5V13.63C20.11 12.92 18.98 12.5 17.75 12.5C16.52 12.5 15.37 12.93 14.47 13.66C13.26 14.61 12.5 16.1 12.5 17.75C12.5 18.73 12.78 19.67 13.26 20.45C13.63 21.06 14.11 21.59 14.68 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z",
@@ -66152,7 +66409,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M7 11H13",
@@ -66163,7 +66420,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M7 16H9.62",
@@ -66174,7 +66431,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M23 17.75C23 18.73 22.72 19.67 22.24 20.45C21.96 20.93 21.61 21.35 21.2 21.69C20.28 22.51 19.08 23 17.75 23C16.6 23 15.54 22.63 14.68 22C14.11 21.59 13.63 21.06 13.26 20.45C12.78 19.67 12.5 18.73 12.5 17.75C12.5 16.1 13.26 14.61 14.47 13.66C15.37 12.93 16.52 12.5 17.75 12.5C18.98 12.5 20.11 12.92 21 13.63C22.22 14.59 23 16.08 23 17.75Z",
@@ -66185,7 +66442,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M17.75 20.25C17.75 18.87 18.87 17.75 20.25 17.75C18.87 17.75 17.75 16.63 17.75 15.25C17.75 16.63 16.63 17.75 15.25 17.75C16.63 17.75 17.75 18.87 17.75 20.25Z",
@@ -66200,7 +66457,7 @@
         );
       };
       var AddNoteBulk = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(
           "svg",
           {
             fill: "none",
@@ -66210,7 +66467,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M7.37 22h9.25a4.87 4.87 0 0 0 4.87-4.87V8.37a4.87 4.87 0 0 0-4.87-4.87H7.37A4.87 4.87 0 0 0 2.5 8.37v8.75c0 2.7 2.18 4.88 4.87 4.88Z",
@@ -66218,7 +66475,7 @@
                   opacity: 0.4
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M8.29 6.29c-.42 0-.75-.34-.75-.75V2.75a.749.749 0 1 1 1.5 0v2.78c0 .42-.33.76-.75.76ZM15.71 6.29c-.42 0-.75-.34-.75-.75V2.75a.749.749 0 1 1 1.5 0v2.78c0 .42-.33.76-.75.76ZM12 14.75h-1.69V13c0-.41-.34-.75-.75-.75s-.75.34-.75.75v1.75H7c-.41 0-.75.34-.75.75s.34.75.75.75h1.81V18c0 .41.34.75.75.75s.75-.34.75-.75v-1.75H12c.41 0 .75-.34.75-.75s-.34-.75-.75-.75Z",
@@ -66230,7 +66487,7 @@
         );
       };
       var CopyDocumentBulk = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(
           "svg",
           {
             fill: "none",
@@ -66240,7 +66497,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M15.5 13.15h-2.17c-1.78 0-3.23-1.44-3.23-3.23V7.75c0-.41-.33-.75-.75-.75H6.18C3.87 7 2 8.5 2 11.18v6.64C2 20.5 3.87 22 6.18 22h5.89c2.31 0 4.18-1.5 4.18-4.18V13.9c0-.42-.34-.75-.75-.75Z",
@@ -66248,14 +66505,14 @@
                   opacity: 0.4
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M17.82 2H11.93C9.67 2 7.84 3.44 7.76 6.01c.06 0 .11-.01.17-.01h5.89C16.13 6 18 7.5 18 10.18V16.83c0 .06-.01.11-.01.16 2.23-.07 4.01-1.55 4.01-4.16V6.18C22 3.5 20.13 2 17.82 2Z",
                   fill
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M11.98 7.15c-.31-.31-.84-.1-.84.33v2.62c0 1.1.93 2 2.07 2 .71.01 1.7.01 2.55.01.43 0 .65-.5.35-.8-1.09-1.09-3.03-3.04-4.13-4.16Z",
@@ -66267,7 +66524,7 @@
         );
       };
       var EditDocumentBulk = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(
           "svg",
           {
             fill: "none",
@@ -66277,7 +66534,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M15.48 3H7.52C4.07 3 2 5.06 2 8.52v7.95C2 19.94 4.07 22 7.52 22h7.95c3.46 0 5.52-2.06 5.52-5.52V8.52C21 5.06 18.93 3 15.48 3Z",
@@ -66285,7 +66542,7 @@
                   opacity: 0.4
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M21.02 2.98c-1.79-1.8-3.54-1.84-5.38 0L14.51 4.1c-.1.1-.13.24-.09.37.7 2.45 2.66 4.41 5.11 5.11.03.01.08.01.11.01.1 0 .2-.04.27-.11l1.11-1.12c.91-.91 1.36-1.78 1.36-2.67 0-.9-.45-1.79-1.36-2.71ZM17.86 10.42c-.27-.13-.53-.26-.77-.41-.2-.12-.4-.25-.59-.39-.16-.1-.34-.25-.52-.4-.02-.01-.08-.06-.16-.14-.31-.25-.64-.59-.95-.96-.02-.02-.08-.08-.13-.17-.1-.11-.25-.3-.38-.51-.11-.14-.24-.34-.36-.55-.15-.25-.28-.5-.4-.76-.13-.28-.23-.54-.32-.79L7.9 10.72c-.35.35-.69 1.01-.76 1.5l-.43 2.98c-.09.63.08 1.22.47 1.61.33.33.78.5 1.28.5.11 0 .22-.01.33-.02l2.97-.42c.49-.07 1.15-.4 1.5-.76l5.38-5.38c-.25-.08-.5-.19-.78-.31Z",
@@ -66297,7 +66554,7 @@
         );
       };
       var DeleteDocumentBulk = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(
           "svg",
           {
             fill: "none",
@@ -66307,14 +66564,14 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M21.07 5.23c-1.61-.16-3.22-.28-4.84-.37v-.01l-.22-1.3c-.15-.92-.37-2.3-2.71-2.3h-2.62c-2.33 0-2.55 1.32-2.71 2.29l-.21 1.28c-.93.06-1.86.12-2.79.21l-2.04.2c-.42.04-.72.41-.68.82.04.41.4.71.82.67l2.04-.2c5.24-.52 10.52-.32 15.82.21h.08c.38 0 .71-.29.75-.68a.766.766 0 0 0-.69-.82Z",
                   fill
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M19.23 8.14c-.24-.25-.57-.39-.91-.39H5.68c-.34 0-.68.14-.91.39-.23.25-.36.59-.34.94l.62 10.26c.11 1.52.25 3.42 3.74 3.42h6.42c3.49 0 3.63-1.89 3.74-3.42l.62-10.25c.02-.36-.11-.7-.34-.95Z",
@@ -66322,7 +66579,7 @@
                   opacity: 0.399
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   clipRule: "evenodd",
@@ -66342,7 +66599,7 @@
         width,
         ...props
       }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(
           "svg",
           {
             fill: "none",
@@ -66352,28 +66609,28 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M16.25 22.5C17.2165 22.5 18 21.7165 18 20.75C18 19.7835 17.2165 19 16.25 19C15.2835 19 14.5 19.7835 14.5 20.75C14.5 21.7165 15.2835 22.5 16.25 22.5Z",
                   fill
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M8.25 22.5C9.2165 22.5 10 21.7165 10 20.75C10 19.7835 9.2165 19 8.25 19C7.2835 19 6.5 19.7835 6.5 20.75C6.5 21.7165 7.2835 22.5 8.25 22.5Z",
                   fill
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M4.84 3.94L4.64 6.39C4.6 6.86 4.97 7.25 5.44 7.25H20.75C21.17 7.25 21.52 6.93 21.55 6.51C21.68 4.74 20.33 3.3 18.56 3.3H6.27C6.17 2.86 5.97 2.44 5.66 2.09C5.16 1.56 4.46 1.25 3.74 1.25H2C1.59 1.25 1.25 1.59 1.25 2C1.25 2.41 1.59 2.75 2 2.75H3.74C4.05 2.75 4.34 2.88 4.55 3.1C4.76 3.33 4.86 3.63 4.84 3.94Z",
                   fill
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M20.5101 8.75H5.17005C4.75005 8.75 4.41005 9.07 4.37005 9.48L4.01005 13.83C3.87005 15.54 5.21005 17 6.92005 17H18.0401C19.5401 17 20.8601 15.77 20.9701 14.27L21.3001 9.6C21.3401 9.14 20.9801 8.75 20.5101 8.75Z",
@@ -66391,7 +66648,7 @@
         width,
         ...props
       }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
           "svg",
           {
             fill: "none",
@@ -66400,7 +66657,7 @@
             width: size || width,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
               "path",
               {
                 d: "M6.09 13.28h3.09v7.2c0 1.68.91 2.02 2.02.76l7.57-8.6c.93-1.05.54-1.92-.87-1.92h-3.09v-7.2c0-1.68-.91-2.02-2.02-.76l-7.57 8.6c-.92 1.06-.53 1.92.87 1.92Z",
@@ -66421,7 +66678,7 @@
         width,
         ...props
       }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
           "svg",
           {
             fill: "none",
@@ -66430,7 +66687,7 @@
             width: size || width,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
               "path",
               {
                 d: "M19.32 10H4.69c-1.48 0-2.68-1.21-2.68-2.68V4.69c0-1.48 1.21-2.68 2.68-2.68h14.63C20.8 2.01 22 3.22 22 4.69v2.63C22 8.79 20.79 10 19.32 10ZM19.32 22H4.69c-1.48 0-2.68-1.21-2.68-2.68v-2.63c0-1.48 1.21-2.68 2.68-2.68h14.63c1.48 0 2.68 1.21 2.68 2.68v2.63c0 1.47-1.21 2.68-2.68 2.68ZM6 5v2M10 5v2M6 17v2M10 17v2M14 6h4M14 18h4",
@@ -66450,7 +66707,7 @@
         width,
         ...props
       }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(
           "svg",
           {
             fill: "none",
@@ -66460,7 +66717,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M18 18.86h-.76c-.8 0-1.56.31-2.12.87l-1.71 1.69c-.78.77-2.05.77-2.83 0l-1.71-1.69c-.56-.56-1.33-.87-2.12-.87H6c-1.66 0-3-1.33-3-2.97V4.98c0-1.64 1.34-2.97 3-2.97h12c1.66 0 3 1.33 3 2.97v10.91c0 1.63-1.34 2.97-3 2.97Z",
@@ -66471,7 +66728,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M12 10a2.33 2.33 0 1 0 0-4.66A2.33 2.33 0 0 0 12 10ZM16 15.66c0-1.8-1.79-3.26-4-3.26s-4 1.46-4 3.26",
@@ -66492,7 +66749,7 @@
         width,
         ...props
       }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(
           "svg",
           {
             fill: "none",
@@ -66502,7 +66759,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M9 22h6c5 0 7-2 7-7V9c0-5-2-7-7-7H9C4 2 2 4 2 9v6c0 5 2 7 7 7ZM18 6 6 18",
@@ -66512,7 +66769,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                 "path",
                 {
                   d: "M18 10V6h-4M6 14v4h4",
@@ -66527,7 +66784,7 @@
         );
       };
       var Search = ({ size, fill, width = 24, height = 24, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("svg", { fill: "none", height: size || height, viewBox: "0 0 24 24", width: size || width, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("svg", { fill: "none", height: size || height, viewBox: "0 0 24 24", width: size || width, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
           "path",
           {
             d: "M11.5 21a9.5 9.5 0 1 0 0-19 9.5 9.5 0 0 0 0 19ZM22 22l-2-2",
@@ -66538,8 +66795,8 @@
           }
         ) });
       };
-      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var CopyIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
+      var import_jsx_runtime28 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var CopyIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(
         "svg",
         {
           "aria-hidden": "true",
@@ -66549,7 +66806,7 @@
           viewBox: "0 0 24 24",
           width: "1em",
           ...props,
-          children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
+          children: /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(
             "path",
             {
               d: "M20 2H10c-1.103 0-2 .897-2 2v4H4c-1.103 0-2 .897-2 2v10c0 1.103.897 2 2 2h10c1.103 0 2-.897 2-2v-4h4c1.103 0 2-.897 2-2V4c0-1.103-.897-2-2-2zM4 20V10h10l.002 10H4zm16-6h-4v-4c0-1.103-.897-2-2-2h-4V4h10v10z",
@@ -67336,8 +67593,8 @@
           ]
         }
       );
-      var import_jsx_runtime28 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var EyeFilledIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)(
+      var import_jsx_runtime282 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var EyeFilledIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime282.jsxs)(
         "svg",
         {
           "aria-hidden": "true",
@@ -67349,14 +67606,14 @@
           width: "1em",
           ...props,
           children: [
-            /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime282.jsx)(
               "path",
               {
                 d: "M21.25 9.14969C18.94 5.51969 15.56 3.42969 12 3.42969C10.22 3.42969 8.49 3.94969 6.91 4.91969C5.33 5.89969 3.91 7.32969 2.75 9.14969C1.75 10.7197 1.75 13.2697 2.75 14.8397C5.06 18.4797 8.44 20.5597 12 20.5597C13.78 20.5597 15.51 20.0397 17.09 19.0697C18.67 18.0897 20.09 16.6597 21.25 14.8397C22.25 13.2797 22.25 10.7197 21.25 9.14969ZM12 16.0397C9.76 16.0397 7.96 14.2297 7.96 11.9997C7.96 9.76969 9.76 7.95969 12 7.95969C14.24 7.95969 16.04 9.76969 16.04 11.9997C16.04 14.2297 14.24 16.0397 12 16.0397Z",
                 fill: "currentColor"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime282.jsx)(
               "path",
               {
                 d: "M11.9984 9.14062C10.4284 9.14062 9.14844 10.4206 9.14844 12.0006C9.14844 13.5706 10.4284 14.8506 11.9984 14.8506C13.5684 14.8506 14.8584 13.5706 14.8584 12.0006C14.8584 10.4306 13.5684 9.14062 11.9984 9.14062Z",
@@ -68682,14 +68939,14 @@
         useMeasure: () => useMeasure
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useMeasure() {
-        const [dimensions, setDimensions] = (0, import_react67.useState)({
+        const [dimensions, setDimensions] = (0, import_react69.useState)({
           width: null,
           height: null
         });
-        const previousObserver = (0, import_react67.useRef)(null);
-        const customRef = (0, import_react67.useCallback)((node) => {
+        const previousObserver = (0, import_react69.useRef)(null);
+        const customRef = (0, import_react69.useCallback)((node) => {
           if (previousObserver.current) {
             previousObserver.current.disconnect();
             previousObserver.current = null;
@@ -68885,15 +69142,15 @@
           }
         }
       };
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_motion2 = require_cjs4();
       var import_use_measure = require_dist18();
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var ResizablePanel2 = (0, import_react67.forwardRef)(
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var ResizablePanel2 = (0, import_react69.forwardRef)(
         (originalProps, ref) => {
           const { children, ...props } = originalProps;
           let [measureRef, bounds] = (0, import_use_measure.useMeasure)();
-          return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_framer_motion2.LazyMotion, { features: import_framer_motion2.domAnimation, children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_framer_motion2.LazyMotion, { features: import_framer_motion2.domAnimation, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
             import_framer_motion2.m.div,
             {
               ref,
@@ -68901,7 +69158,7 @@
                 width: bounds.width && (bounds == null ? void 0 : bounds.width) > 0 ? bounds.width : "auto",
                 height: bounds.height && bounds.height > 0 ? bounds.height : "auto"
               },
-              children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { ref: measureRef, ...props, children })
+              children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ref: measureRef, ...props, children })
             }
           ) });
         }
@@ -84235,7 +84492,7 @@
         startObserver() {
           this.stopObserver?.();
           const { viewport = {} } = this.node.getProps();
-          const { root, margin: rootMargin, amount = "some", once: once2 } = viewport;
+          const { root, margin: rootMargin, amount = "some", once } = viewport;
           const options = {
             root: root ? root.current : void 0,
             rootMargin,
@@ -84246,7 +84503,7 @@
             if (this.isInView === isIntersecting)
               return;
             this.isInView = isIntersecting;
-            if (once2 && !isIntersecting && this.hasEnteredView) {
+            if (once && !isIntersecting && this.hasEnteredView) {
               return;
             } else if (isIntersecting) {
               this.hasEnteredView = true;
@@ -86304,14 +86561,14 @@
   });
 
   // node_modules/framer-motion/dist/es/utils/use-in-view.mjs
-  function useInView(ref, { root, margin, amount, once: once2 = false, initial = false } = {}) {
+  function useInView(ref, { root, margin, amount, once = false, initial = false } = {}) {
     const [isInView, setInView] = useState(initial);
     useEffect(() => {
-      if (!ref.current || once2 && isInView)
+      if (!ref.current || once && isInView)
         return;
       const onEnter = () => {
         setInView(true);
-        return once2 ? void 0 : () => setInView(false);
+        return once ? void 0 : () => setInView(false);
       };
       const options = {
         root: root && root.current || void 0,
@@ -86319,7 +86576,7 @@
         amount
       };
       return inView(ref.current, onEnter, options);
-    }, [root, ref, margin, once2, amount]);
+    }, [root, ref, margin, once, amount]);
     return isInView;
   }
   var init_use_in_view = __esm({
@@ -87556,7 +87813,7 @@
       var import_react510 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
-      var import_react67 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
+      var import_react69 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
       var import_tree = require_main12();
       var import_shared_utils = require_dist2();
       var import_theme = require_dist12();
@@ -87608,10 +87865,10 @@
         );
         const children = (0, import_react210.useMemo)(() => {
           let treeChildren = [];
-          import_react67.default.Children.map(childrenProp, (child) => {
+          import_react69.default.Children.map(childrenProp, (child) => {
             var _a2;
-            if (import_react67.default.isValidElement(child) && typeof ((_a2 = child.props) == null ? void 0 : _a2.children) !== "string") {
-              const clonedChild = import_react67.default.cloneElement(child, {
+            if (import_react69.default.isValidElement(child) && typeof ((_a2 = child.props) == null ? void 0 : _a2.children) !== "string") {
+              const clonedChild = import_react69.default.cloneElement(child, {
                 // @ts-ignore
                 hasChildItems: false
               });
@@ -87682,7 +87939,7 @@
             motionProps
           ]
         );
-        const getBaseProps = (0, import_react67.useCallback)((props2 = {}) => {
+        const getBaseProps = (0, import_react69.useCallback)((props2 = {}) => {
           return {
             ref: domRef,
             className: classNames,
@@ -87696,7 +87953,7 @@
             )
           };
         }, []);
-        const handleFocusChanged = (0, import_react67.useCallback)((isFocused, key) => {
+        const handleFocusChanged = (0, import_react69.useCallback)((isFocused, key) => {
           isFocused && setFocusedKey(key);
         }, []);
         return {
@@ -87942,7 +88199,7 @@
           getSubtitleProps
         };
       }
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var domAnimation2 = () => Promise.resolve().then(() => (init_dist(), dist_exports)).then((res) => res.default);
       var AccordionItem = (0, import_system3.forwardRef)((props, ref) => {
         const {
@@ -87972,24 +88229,24 @@
         const willChange = (0, import_framer_motion3.useWillChange)();
         const indicatorContent = (0, import_react410.useMemo)(() => {
           if (typeof indicator === "function") {
-            return indicator({ indicator: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_shared_icons.ChevronIcon, {}), isOpen, isDisabled });
+            return indicator({ indicator: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_shared_icons.ChevronIcon, {}), isOpen, isDisabled });
           }
           if (indicator) return indicator;
           return null;
         }, [indicator, isOpen, isDisabled]);
-        const indicatorComponent = indicatorContent || /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_shared_icons.ChevronIcon, {});
+        const indicatorComponent = indicatorContent || /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_shared_icons.ChevronIcon, {});
         const content = (0, import_react410.useMemo)(() => {
           if (disableAnimation) {
             if (keepContentMounted) {
-              return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { ...getContentProps(), children });
+              return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getContentProps(), children });
             }
-            return isOpen && /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { ...getContentProps(), children });
+            return isOpen && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getContentProps(), children });
           }
           const transitionVariants = {
             exit: { ...import_framer_utils.TRANSITION_VARIANTS.collapse.exit, overflowY: "hidden" },
             enter: { ...import_framer_utils.TRANSITION_VARIANTS.collapse.enter, overflowY: "unset" }
           };
-          return keepContentMounted ? /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+          return keepContentMounted ? /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
             import_framer_motion3.m.section,
             {
               animate: isOpen ? "enter" : "exit",
@@ -88001,10 +88258,10 @@
                 e.stopPropagation();
               },
               ...motionProps,
-              children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { ...getContentProps(), children })
+              children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getContentProps(), children })
             },
             "accordion-content"
-          ) }) : /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_framer_motion3.AnimatePresence, { initial: false, children: isOpen && /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+          ) }) : /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_framer_motion3.AnimatePresence, { initial: false, children: isOpen && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
             import_framer_motion3.m.section,
             {
               animate: "enter",
@@ -88016,26 +88273,26 @@
                 e.stopPropagation();
               },
               ...motionProps,
-              children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { ...getContentProps(), children })
+              children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getContentProps(), children })
             },
             "accordion-content"
           ) }) });
         }, [isOpen, disableAnimation, keepContentMounted, children, motionProps]);
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(Component2, { ...getBaseProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(HeadingComponent, { ...getHeadingProps(), children: /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("button", { ...getButtonProps(), children: [
-            startContent && /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { className: slots.startContent({ class: classNames == null ? void 0 : classNames.startContent }), children: startContent }),
-            /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("div", { className: slots.titleWrapper({ class: classNames == null ? void 0 : classNames.titleWrapper }), children: [
-              title && /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("span", { ...getTitleProps(), children: title }),
-              subtitle && /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("span", { ...getSubtitleProps(), children: subtitle })
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(Component2, { ...getBaseProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(HeadingComponent, { ...getHeadingProps(), children: /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("button", { ...getButtonProps(), children: [
+            startContent && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { className: slots.startContent({ class: classNames == null ? void 0 : classNames.startContent }), children: startContent }),
+            /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { className: slots.titleWrapper({ class: classNames == null ? void 0 : classNames.titleWrapper }), children: [
+              title && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { ...getTitleProps(), children: title }),
+              subtitle && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { ...getSubtitleProps(), children: subtitle })
             ] }),
-            !hideIndicator && indicatorComponent && /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("span", { ...getIndicatorProps(), children: indicatorComponent })
+            !hideIndicator && indicatorComponent && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { ...getIndicatorProps(), children: indicatorComponent })
           ] }) }),
           content
         ] });
       });
       AccordionItem.displayName = "HeroUI.AccordionItem";
       var accordion_item_default = AccordionItem;
-      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime28 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var AccordionGroup = (0, import_system4.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -88059,8 +88316,8 @@
         const content = (0, import_react510.useMemo)(() => {
           return [...state.collection].map((item, index3) => {
             const classNames = { ...itemClasses, ...item.props.classNames || {} };
-            return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(import_react510.Fragment, { children: [
-              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
+            return /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)(import_react510.Fragment, { children: [
+              /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(
                 accordion_item_default,
                 {
                   item,
@@ -88071,11 +88328,11 @@
                   classNames
                 }
               ),
-              !item.props.hidden && !isSplitted && showDivider && index3 < state.collection.size - 1 && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_divider.Divider, { ...dividerProps })
+              !item.props.hidden && !isSplitted && showDivider && index3 < state.collection.size - 1 && /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(import_divider.Divider, { ...dividerProps })
             ] }, item.key);
           });
         }, [values, itemClasses, handleFocusChanged, isSplitted, showDivider, state.collection]);
-        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(Component2, { ...getBaseProps(), children: disableAnimation ? content : /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_framer_motion2.LayoutGroup, { children: content }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(Component2, { ...getBaseProps(), children: disableAnimation ? content : /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(import_framer_motion2.LayoutGroup, { children: content }) });
       });
       AccordionGroup.displayName = "HeroUI.Accordion";
       var accordion_default = AccordionGroup;
@@ -88108,8 +88365,8 @@
         useSafeLayoutEffect: () => useSafeLayoutEffect
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var useSafeLayoutEffect = Boolean(globalThis == null ? void 0 : globalThis.document) ? import_react67.useLayoutEffect : import_react67.useEffect;
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var useSafeLayoutEffect = Boolean(globalThis == null ? void 0 : globalThis.document) ? import_react69.useLayoutEffect : import_react69.useEffect;
     }
   });
 
@@ -88140,7 +88397,7 @@
         useImage: () => useImage
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_utils = require_dist10();
       var import_use_safe_layout_effect = require_dist21();
       function useImage(props = {}) {
@@ -88156,16 +88413,16 @@
           shouldBypassImageLoad = false
         } = props;
         const isHydrated = (0, import_react_utils.useIsHydrated)();
-        const imageRef = (0, import_react67.useRef)(null);
-        const [status, setStatus] = (0, import_react67.useState)("pending");
-        const flush = (0, import_react67.useCallback)(() => {
+        const imageRef = (0, import_react69.useRef)(null);
+        const [status, setStatus] = (0, import_react69.useState)("pending");
+        const flush = (0, import_react69.useCallback)(() => {
           if (imageRef.current) {
             imageRef.current.onload = null;
             imageRef.current.onerror = null;
             imageRef.current = null;
           }
         }, []);
-        const load = (0, import_react67.useCallback)(() => {
+        const load = (0, import_react69.useCallback)(() => {
           if (!src) return "pending";
           if (ignoreFallback || shouldBypassImageLoad) return "loaded";
           flush();
@@ -88251,8 +88508,8 @@
       module.exports = __toCommonJS2(index_exports);
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist11();
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var AvatarIcon = () => /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var AvatarIcon = () => /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(
         "svg",
         {
           "aria-hidden": "true",
@@ -88262,14 +88519,14 @@
           viewBox: "0 0 24 24",
           width: "80%",
           children: [
-            /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
               "path",
               {
                 d: "M12 2C9.38 2 7.25 4.13 7.25 6.75C7.25 9.32 9.26 11.4 11.88 11.49C11.96 11.48 12.04 11.48 12.1 11.49C12.12 11.49 12.13 11.49 12.15 11.49C12.16 11.49 12.16 11.49 12.17 11.49C14.73 11.4 16.74 9.32 16.75 6.75C16.75 4.13 14.62 2 12 2Z",
                 fill: "currentColor"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
               "path",
               {
                 d: "M17.0809 14.1489C14.2909 12.2889 9.74094 12.2889 6.93094 14.1489C5.66094 14.9989 4.96094 16.1489 4.96094 17.3789C4.96094 18.6089 5.66094 19.7489 6.92094 20.5889C8.32094 21.5289 10.1609 21.9989 12.0009 21.9989C13.8409 21.9989 15.6809 21.5289 17.0809 20.5889C18.3409 19.7389 19.0409 18.5989 19.0409 17.3589C19.0309 16.1289 18.3409 14.9889 17.0809 14.1489Z",
@@ -88284,7 +88541,7 @@
       var import_react_utils2 = require_dist10();
       var import_shared_utils = require_dist2();
       var import_focus2 = require_main18();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_image = require_dist22();
       var import_interactions = require_main17();
       var import_react_utils = require_dist10();
@@ -88339,7 +88596,7 @@
         const isImgLoaded = imageStatus === "loaded";
         const shouldFilterDOMProps = !isHeroImage;
         const showFallback = (!src || !isImgLoaded) && showFallbackProp;
-        const slots = (0, import_react67.useMemo)(
+        const slots = (0, import_react69.useMemo)(
           () => {
             var _a2;
             return (0, import_theme.avatar)({
@@ -88365,10 +88622,10 @@
           ]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const canBeFocused = (0, import_react67.useMemo)(() => {
+        const canBeFocused = (0, import_react69.useMemo)(() => {
           return isFocusable || as === "button";
         }, [isFocusable, as]);
-        const getAvatarProps = (0, import_react67.useCallback)(
+        const getAvatarProps = (0, import_react69.useCallback)(
           (props = {}) => ({
             ref: domRef,
             tabIndex: canBeFocused ? 0 : -1,
@@ -88382,7 +88639,7 @@
           }),
           [canBeFocused, slots, baseStyles, focusProps, otherProps]
         );
-        const getImageProps = (0, import_react67.useCallback)(
+        const getImageProps = (0, import_react69.useCallback)(
           (props = {}) => ({
             ref: imgRef,
             src,
@@ -88417,13 +88674,13 @@
           getImageProps
         };
       }
-      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime28 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Avatar = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
           ImgComponent,
           src,
-          icon = /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(AvatarIcon, {}),
+          icon = /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(AvatarIcon, {}),
           alt,
           classNames,
           slots,
@@ -88440,12 +88697,12 @@
         const fallback = (0, import_react210.useMemo)(() => {
           if (!showFallback && src) return null;
           if (fallbackComponent) {
-            return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { "aria-label": alt, className: slots.fallback({ class: classNames == null ? void 0 : classNames.fallback }), role: "img", children: fallbackComponent });
+            return /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("div", { "aria-label": alt, className: slots.fallback({ class: classNames == null ? void 0 : classNames.fallback }), role: "img", children: fallbackComponent });
           }
-          return name ? /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { "aria-label": alt, className: slots.name({ class: classNames == null ? void 0 : classNames.name }), role: "img", children: getInitials(name) }) : /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { "aria-label": alt, className: slots.icon({ class: classNames == null ? void 0 : classNames.icon }), role: "img", children: icon });
+          return name ? /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("span", { "aria-label": alt, className: slots.name({ class: classNames == null ? void 0 : classNames.name }), role: "img", children: getInitials(name) }) : /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("span", { "aria-label": alt, className: slots.icon({ class: classNames == null ? void 0 : classNames.icon }), role: "img", children: icon });
         }, [showFallback, src, fallbackComponent, name, classNames]);
-        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(Component2, { ...getAvatarProps(), children: [
-          src && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(ImgComponent, { ...getImageProps(), alt }),
+        return /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)(Component2, { ...getAvatarProps(), children: [
+          src && /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(ImgComponent, { ...getImageProps(), alt }),
           fallback
         ] });
       });
@@ -88585,7 +88842,7 @@
       var import_theme = require_dist12();
       var import_system = require_dist11();
       var import_shared_utils = require_dist2();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useBadge(originalProps) {
         var _a, _b;
         const globalContext = (0, import_system.useProviderContext)();
@@ -88593,19 +88850,19 @@
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.badge.variantKeys);
         const { as, children, className, content, classNames, ...otherProps } = props;
         const Component2 = as || "span";
-        const isOneChar = (0, import_react67.useMemo)(
+        const isOneChar = (0, import_react69.useMemo)(
           () => {
             var _a2;
             return ((_a2 = String(content)) == null ? void 0 : _a2.length) === 1 || (originalProps == null ? void 0 : originalProps.isOneChar);
           },
           [content, originalProps == null ? void 0 : originalProps.isOneChar]
         );
-        const isDot = (0, import_react67.useMemo)(() => {
+        const isDot = (0, import_react69.useMemo)(() => {
           var _a2;
           return ((_a2 = String(content)) == null ? void 0 : _a2.length) === 0;
         }, [content]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.badge, className);
-        const slots = (0, import_react67.useMemo)(
+        const slots = (0, import_react69.useMemo)(
           () => (0, import_theme.badge)({
             ...variantProps2,
             showOutline: !!(originalProps == null ? void 0 : originalProps.disableOutline) ? !(originalProps == null ? void 0 : originalProps.disableOutline) : originalProps == null ? void 0 : originalProps.showOutline,
@@ -88633,14 +88890,14 @@
         };
       }
       var import_system2 = require_dist11();
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Badge = (0, import_system2.forwardRef)((props, ref) => {
         const { Component: Component2, children, content, slots, classNames, getBadgeProps } = useBadge({
           ...props
         });
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("div", { className: slots.base({ class: classNames == null ? void 0 : classNames.base }), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { className: slots.base({ class: classNames == null ? void 0 : classNames.base }), children: [
           children,
-          /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(Component2, { ref, ...getBadgeProps(), children: content })
+          /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(Component2, { ref, ...getBadgeProps(), children: content })
         ] });
       });
       Badge.displayName = "HeroUI.Badge";
@@ -88679,7 +88936,7 @@
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       function useSpinner(originalProps) {
         var _a, _b;
@@ -88687,19 +88944,19 @@
         const globalContext = (0, import_system.useProviderContext)();
         const variant = (_b = (_a = originalProps == null ? void 0 : originalProps.variant) != null ? _a : globalContext == null ? void 0 : globalContext.spinnerVariant) != null ? _b : "default";
         const { children, className, classNames, label: labelProp, ...otherProps } = props;
-        const slots = (0, import_react67.useMemo)(
+        const slots = (0, import_react69.useMemo)(
           () => (0, import_theme.spinner)({ ...variantProps2, variant }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), variant]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
         const label = labelProp || children;
-        const ariaLabel = (0, import_react67.useMemo)(() => {
+        const ariaLabel = (0, import_react69.useMemo)(() => {
           if (label && typeof label === "string") {
             return label;
           }
           return !otherProps["aria-label"] ? "Loading" : "";
         }, [children, label, otherProps["aria-label"]]);
-        const getSpinnerProps = (0, import_react67.useCallback)(
+        const getSpinnerProps = (0, import_react69.useCallback)(
           () => ({
             "aria-label": ariaLabel,
             className: slots.base({
@@ -88712,12 +88969,12 @@
         return { label, slots, classNames, variant, getSpinnerProps };
       }
       var import_system_rsc2 = require_dist14();
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Spinner = (0, import_system_rsc2.forwardRef)((props, ref) => {
         const { slots, classNames, label, variant, getSpinnerProps } = useSpinner({ ...props });
         if (variant === "wave" || variant === "dots") {
-          return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("div", { ref, ...getSpinnerProps(), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [...new Array(3)].map((_, index3) => /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { ref, ...getSpinnerProps(), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [...new Array(3)].map((_, index3) => /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
               "i",
               {
                 className: slots.dots({ class: classNames == null ? void 0 : classNames.dots }),
@@ -88727,19 +88984,19 @@
               },
               `dot-${index3}`
             )) }),
-            label && /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
+            label && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
           ] });
         }
         if (variant === "simple") {
-          return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("div", { ref, ...getSpinnerProps(), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(
+          return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { ref, ...getSpinnerProps(), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(
               "svg",
               {
                 className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }),
                 fill: "none",
                 viewBox: "0 0 24 24",
                 children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+                  /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                     "circle",
                     {
                       className: slots.circle1({ class: classNames == null ? void 0 : classNames.circle1 }),
@@ -88750,7 +89007,7 @@
                       strokeWidth: "4"
                     }
                   ),
-                  /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+                  /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
                     "path",
                     {
                       className: slots.circle2({ class: classNames == null ? void 0 : classNames.circle2 }),
@@ -88761,12 +89018,12 @@
                 ]
               }
             ),
-            label && /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
+            label && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
           ] });
         }
         if (variant === "spinner") {
-          return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("div", { ref, ...getSpinnerProps(), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [...new Array(12)].map((_, index3) => /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { ref, ...getSpinnerProps(), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [...new Array(12)].map((_, index3) => /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
               "i",
               {
                 className: slots.spinnerBars({ class: classNames == null ? void 0 : classNames.spinnerBars }),
@@ -88776,15 +89033,15 @@
               },
               `star-${index3}`
             )) }),
-            label && /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
+            label && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
           ] });
         }
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("div", { ref, ...getSpinnerProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("i", { className: slots.circle1({ class: classNames == null ? void 0 : classNames.circle1 }) }),
-            /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("i", { className: slots.circle2({ class: classNames == null ? void 0 : classNames.circle2 }) })
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { ref, ...getSpinnerProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("i", { className: slots.circle1({ class: classNames == null ? void 0 : classNames.circle1 }) }),
+            /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("i", { className: slots.circle2({ class: classNames == null ? void 0 : classNames.circle2 }) })
           ] }),
-          label && /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
+          label && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
         ] });
       });
       Spinner.displayName = "HeroUI.Spinner";
@@ -88822,13 +89079,13 @@
       module.exports = __toCommonJS2(index_exports);
       var import_framer_motion2 = require_cjs4();
       var import_shared_utils = require_dist2();
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var domAnimation2 = () => Promise.resolve().then(() => (init_dist(), dist_exports)).then((res) => res.default);
       var Ripple = (props) => {
         const { ripples = [], motionProps, color: color2 = "currentColor", style: style2, onClear } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_jsx_runtime26.Fragment, { children: ripples.map((ripple) => {
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_jsx_runtime27.Fragment, { children: ripples.map((ripple) => {
           const duration = (0, import_shared_utils.clamp)(0.01 * ripple.size, 0.2, ripple.size > 100 ? 0.75 : 0.5);
-          return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_framer_motion2.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_framer_motion2.AnimatePresence, { mode: "popLayout", children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_framer_motion2.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_framer_motion2.AnimatePresence, { mode: "popLayout", children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
             import_framer_motion2.m.span,
             {
               animate: {
@@ -88866,10 +89123,10 @@
       Ripple.displayName = "HeroUI.Ripple";
       var ripple_default = Ripple;
       var import_shared_utils2 = require_dist2();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useRipple(props = {}) {
-        const [ripples, setRipples] = (0, import_react67.useState)([]);
-        const onPress = (0, import_react67.useCallback)((event) => {
+        const [ripples, setRipples] = (0, import_react69.useState)([]);
+        const onPress = (0, import_react69.useCallback)((event) => {
           const trigger = event.target;
           const size = Math.max(trigger.clientWidth, trigger.clientHeight);
           setRipples((prevRipples) => [
@@ -88882,7 +89139,7 @@
             }
           ]);
         }, []);
-        const onClear = (0, import_react67.useCallback)((key) => {
+        const onClear = (0, import_react69.useCallback)((key) => {
           setRipples((prevState) => prevState.filter((ripple) => ripple.key !== key));
         }, []);
         return { ripples, onClear, onPress, ...props };
@@ -91969,7 +92226,7 @@
       var import_system2 = require_dist11();
       var import_system = require_dist11();
       var import_shared_utils = require_dist2();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_react_utils2 = require_dist10();
       var import_theme = require_dist12();
@@ -92046,7 +92303,7 @@
           ]
         );
         const { onPress: onRipplePressHandler, onClear: onClearRipple, ripples } = (0, import_ripple.useRipple)();
-        const handlePress = (0, import_react67.useCallback)(
+        const handlePress = (0, import_react69.useCallback)(
           (e) => {
             if (disableRipple || isDisabled || disableAnimation) return;
             domRef.current && onRipplePressHandler(e);
@@ -92064,7 +92321,7 @@
           domRef
         );
         const { isHovered, hoverProps } = (0, import_interactions.useHover)({ isDisabled });
-        const getButtonProps = (0, import_react67.useCallback)(
+        const getButtonProps = (0, import_react69.useCallback)(
           (props2 = {}) => ({
             "data-disabled": (0, import_shared_utils.dataAttr)(isDisabled),
             "data-focus": (0, import_shared_utils.dataAttr)(isFocused),
@@ -92113,7 +92370,7 @@
           };
           return buttonSpinnerSizeMap[size];
         }, [size]);
-        const getRippleProps = (0, import_react67.useCallback)(
+        const getRippleProps = (0, import_react69.useCallback)(
           () => ({ ripples, onClear: onClearRipple }),
           [ripples, onClearRipple]
         );
@@ -92134,14 +92391,14 @@
           isIconOnly
         };
       }
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Button = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
           domRef,
           children,
           spinnerSize,
-          spinner = /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_spinner.Spinner, { color: "current", size: spinnerSize }),
+          spinner = /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_spinner.Spinner, { color: "current", size: spinnerSize }),
           spinnerPlacement,
           startContent,
           endContent,
@@ -92151,13 +92408,13 @@
           getRippleProps,
           isIconOnly
         } = useButton({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(Component2, { ref: domRef, ...getButtonProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(Component2, { ref: domRef, ...getButtonProps(), children: [
           startContent,
           isLoading && spinnerPlacement === "start" && spinner,
           isLoading && isIconOnly ? null : children,
           isLoading && spinnerPlacement === "end" && spinner,
           endContent,
-          !disableRipple && /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_ripple2.Ripple, { ...getRippleProps() })
+          !disableRipple && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_ripple2.Ripple, { ...getRippleProps() })
         ] });
       });
       Button.displayName = "HeroUI.Button";
@@ -92236,13 +92493,13 @@
           getButtonGroupProps
         };
       }
-      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime28 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var ButtonGroup = (0, import_system4.forwardRef)((props, ref) => {
         const { Component: Component2, domRef, context, children, classNames, getButtonGroupProps } = useButtonGroup({
           ...props,
           ref
         });
-        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(ButtonGroupProvider, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(Component2, { ref: domRef, className: classNames, ...getButtonGroupProps(), children }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(ButtonGroupProvider, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(Component2, { ref: domRef, className: classNames, ...getButtonGroupProps(), children }) });
       });
       ButtonGroup.displayName = "HeroUI.ButtonGroup";
       var button_group_default = ButtonGroup;
@@ -92283,7 +92540,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_theme = require_dist12();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_interactions = require_main17();
       var import_use_aria_button = require_dist27();
@@ -92315,7 +92572,7 @@
         const disableRipple = (_d = (_c = originalProps.disableRipple) != null ? _c : globalContext == null ? void 0 : globalContext.disableRipple) != null ? _d : false;
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
         const { onClear: onClearRipple, onPress: onRipplePressHandler, ripples } = (0, import_ripple.useRipple)();
-        const handlePress = (0, import_react67.useCallback)(
+        const handlePress = (0, import_react69.useCallback)(
           (e) => {
             if (disableRipple || disableAnimation) return;
             domRef.current && onRipplePressHandler(e);
@@ -92340,14 +92597,14 @@
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)({
           autoFocus
         });
-        const slots = (0, import_react67.useMemo)(
+        const slots = (0, import_react69.useMemo)(
           () => (0, import_theme.card)({
             ...variantProps2,
             disableAnimation
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation]
         );
-        const context = (0, import_react67.useMemo)(
+        const context = (0, import_react69.useMemo)(
           () => ({
             slots,
             classNames,
@@ -92365,7 +92622,7 @@
             originalProps.fullWidth
           ]
         );
-        const getCardProps = (0, import_react67.useCallback)(
+        const getCardProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ref: domRef,
@@ -92403,7 +92660,7 @@
             otherProps
           ]
         );
-        const getRippleProps = (0, import_react67.useCallback)(
+        const getRippleProps = (0, import_react69.useCallback)(
           () => ({ ripples, onClear: onClearRipple }),
           [ripples, onClearRipple]
         );
@@ -92433,7 +92690,7 @@
       });
       var import_system2 = require_dist11();
       var import_ripple2 = require_dist26();
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Card = (0, import_system2.forwardRef)((props, ref) => {
         const {
           children,
@@ -92445,9 +92702,9 @@
           getCardProps,
           getRippleProps
         } = useCard({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(Component2, { ...getCardProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(CardProvider, { value: context, children }),
-          isPressable && !disableAnimation && !disableRipple && /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_ripple2.Ripple, { ...getRippleProps() })
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(Component2, { ...getCardProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(CardProvider, { value: context, children }),
+          isPressable && !disableAnimation && !disableRipple && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_ripple2.Ripple, { ...getRippleProps() })
         ] });
       });
       Card.displayName = "HeroUI.Card";
@@ -92455,7 +92712,7 @@
       var import_system3 = require_dist11();
       var import_react_utils4 = require_dist10();
       var import_theme2 = require_dist12();
-      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime28 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var CardHeader = (0, import_system3.forwardRef)((props, ref) => {
         var _a;
         const { as, className, children, ...otherProps } = props;
@@ -92463,7 +92720,7 @@
         const domRef = (0, import_react_utils4.useDOMRef)(ref);
         const { slots, classNames } = useCardContext();
         const headerStyles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.header, className);
-        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(Component2, { ref: domRef, className: (_a = slots.header) == null ? void 0 : _a.call(slots, { class: headerStyles }), ...otherProps, children });
+        return /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(Component2, { ref: domRef, className: (_a = slots.header) == null ? void 0 : _a.call(slots, { class: headerStyles }), ...otherProps, children });
       });
       CardHeader.displayName = "HeroUI.CardHeader";
       var card_header_default = CardHeader;
@@ -92534,7 +92791,7 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useChip(originalProps) {
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.chip.variantKeys);
         const {
@@ -92555,13 +92812,13 @@
         const isCloseable = !!onClose;
         const isDotVariant = originalProps.variant === "dot";
         const { focusProps: closeFocusProps, isFocusVisible: isCloseButtonFocusVisible } = (0, import_focus2.useFocusRing)();
-        const isOneChar = (0, import_react67.useMemo)(
+        const isOneChar = (0, import_react69.useMemo)(
           () => typeof children === "string" && (children == null ? void 0 : children.length) === 1,
           [children]
         );
-        const hasStartContent = (0, import_react67.useMemo)(() => !!avatar || !!startContent, [avatar, startContent]);
-        const hasEndContent = (0, import_react67.useMemo)(() => !!endContent || isCloseable, [endContent, isCloseable]);
-        const slots = (0, import_react67.useMemo)(
+        const hasStartContent = (0, import_react69.useMemo)(() => !!avatar || !!startContent, [avatar, startContent]);
+        const hasEndContent = (0, import_react69.useMemo)(() => !!endContent || isCloseable, [endContent, isCloseable]);
+        const slots = (0, import_react69.useMemo)(
           () => (0, import_theme.chip)({
             ...variantProps2,
             hasStartContent,
@@ -92600,13 +92857,13 @@
           };
         };
         const getAvatarClone = (avatar2) => {
-          if (!(0, import_react67.isValidElement)(avatar2)) return null;
-          return (0, import_react67.cloneElement)(avatar2, {
+          if (!(0, import_react69.isValidElement)(avatar2)) return null;
+          return (0, import_react69.cloneElement)(avatar2, {
             // @ts-ignore
             className: slots.avatar({ class: classNames == null ? void 0 : classNames.avatar })
           });
         };
-        const getContentClone = (content) => (0, import_react67.isValidElement)(content) ? (0, import_react67.cloneElement)(content, {
+        const getContentClone = (content) => (0, import_react69.isValidElement)(content) ? (0, import_react69.cloneElement)(content, {
           // @ts-ignore
           className: (0, import_theme.cn)("max-h-[80%]", content.props.className)
         }) : null;
@@ -92626,7 +92883,7 @@
       var import_shared_icons = require_dist17();
       var import_system2 = require_dist11();
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Chip = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -92645,19 +92902,19 @@
         });
         const start2 = (0, import_react210.useMemo)(() => {
           if (isDot && !startContent) {
-            return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("span", { className: slots.dot({ class: classNames == null ? void 0 : classNames.dot }) });
+            return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { className: slots.dot({ class: classNames == null ? void 0 : classNames.dot }) });
           }
           return startContent;
         }, [slots, startContent, isDot]);
         const end = (0, import_react210.useMemo)(() => {
           if (isCloseable) {
-            return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("span", { ...getCloseButtonProps(), children: endContent || /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_shared_icons.CloseFilledIcon, {}) });
+            return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { ...getCloseButtonProps(), children: endContent || /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_shared_icons.CloseFilledIcon, {}) });
           }
           return endContent;
         }, [endContent, isCloseable, getCloseButtonProps]);
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(Component2, { ...getChipProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(Component2, { ...getChipProps(), children: [
           start2,
-          /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("span", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children }),
+          /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children }),
           end
         ] });
       });
@@ -92775,14 +93032,14 @@
         useCallbackRef: () => useCallbackRef
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_safe_layout_effect = require_dist21();
       function useCallbackRef(fn, deps = []) {
-        const ref = (0, import_react67.useRef)(fn);
+        const ref = (0, import_react69.useRef)(fn);
         (0, import_use_safe_layout_effect.useSafeLayoutEffect)(() => {
           ref.current = fn;
         });
-        return (0, import_react67.useCallback)((...args) => {
+        return (0, import_react69.useCallback)((...args) => {
           var _a;
           return (_a = ref.current) == null ? void 0 : _a.call(ref, ...args);
         }, deps);
@@ -106219,13 +106476,13 @@
         useSlottedContext: () => useSlottedContext
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       var DEFAULT_SLOT = /* @__PURE__ */ Symbol("default");
       function useObjectRef(ref) {
-        const objRef = (0, import_react67.useRef)(null);
-        const cleanupRef = (0, import_react67.useRef)(void 0);
-        const refEffect = (0, import_react67.useCallback)(
+        const objRef = (0, import_react69.useRef)(null);
+        const cleanupRef = (0, import_react69.useRef)(void 0);
+        const refEffect = (0, import_react69.useCallback)(
           (instance) => {
             if (typeof ref === "function") {
               const refCallback = ref;
@@ -106246,7 +106503,7 @@
           },
           [ref]
         );
-        return (0, import_react67.useMemo)(
+        return (0, import_react69.useMemo)(
           () => ({
             get current() {
               return objRef.current;
@@ -106266,7 +106523,7 @@
         );
       }
       function useSlottedContext(context, slot) {
-        let ctx = (0, import_react67.useContext)(context);
+        let ctx = (0, import_react69.useContext)(context);
         if (slot === null) {
           return null;
         }
@@ -106286,7 +106543,7 @@
       function useContextProps(props, ref, context) {
         let ctx = useSlottedContext(context, props.slot) || {};
         let { ref: contextRef, ...contextProps } = ctx;
-        let mergedRef = useObjectRef((0, import_react67.useMemo)(() => (0, import_shared_utils.mergeRefs)(ref, contextRef), [ref, contextRef]));
+        let mergedRef = useObjectRef((0, import_react69.useMemo)(() => (0, import_shared_utils.mergeRefs)(ref, contextRef), [ref, contextRef]));
         let mergedProps = (0, import_shared_utils.mergeProps)(contextProps, props);
         if ("style" in contextProps && contextProps.style && "style" in props && props.style) {
           if (typeof contextProps.style === "function" || typeof props.style === "function") {
@@ -106305,22 +106562,22 @@
       var import_form = require_main22();
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist32();
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var FormContext = (0, import_react210.createContext)(null);
       var Form = (0, import_react210.forwardRef)(function Form2(props, ref) {
         [props, ref] = useContextProps(props, ref, FormContext);
         let { validationErrors, validationBehavior = "native", children, className, ...domProps } = props;
         const styles = (0, import_react210.useMemo)(() => (0, import_theme.form)({ className }), [className]);
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("form", { noValidate: validationBehavior !== "native", ...domProps, ref, className: styles, children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(FormContext.Provider, { value: { ...props, validationBehavior }, children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_form.FormValidationContext.Provider, { value: validationErrors != null ? validationErrors : {}, children }) }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("form", { noValidate: validationBehavior !== "native", ...domProps, ref, className: styles, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(FormContext.Provider, { value: { ...props, validationBehavior }, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_form.FormValidationContext.Provider, { value: validationErrors != null ? validationErrors : {}, children }) }) });
       });
       var import_system = require_dist11();
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime28 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Form3 = (0, import_react310.forwardRef)(function Form4(props, ref) {
         var _a, _b;
         const globalContext = (0, import_system.useProviderContext)();
         const validationBehavior = (_b = (_a = props.validationBehavior) != null ? _a : globalContext == null ? void 0 : globalContext.validationBehavior) != null ? _b : "native";
-        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(Form, { ...props, ref, validationBehavior });
+        return /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(Form, { ...props, ref, validationBehavior });
       });
     }
   });
@@ -106438,7 +106695,7 @@
       var import_system2 = require_dist11();
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_toggle = require_main21();
       var import_theme = require_dist12();
@@ -106513,7 +106770,7 @@
           };
           onChange = (0, import_shared_utils.chain)(dispatch, onChange);
         }
-        const labelId = (0, import_react67.useId)();
+        const labelId = (0, import_react69.useId)();
         const ariaCheckboxProps = (0, import_react210.useMemo)(
           () => ({
             name,
@@ -106602,7 +106859,7 @@
           toggleState.setSelected(isInputRefChecked);
         }, [inputRef.current]);
         const onChangeProp = (0, import_use_callback_ref.useCallbackRef)(onChange);
-        const handleCheckboxChange = (0, import_react67.useCallback)(
+        const handleCheckboxChange = (0, import_react69.useCallback)(
           (event) => {
             if (isReadOnly || isDisabled) {
               event.preventDefault();
@@ -106613,7 +106870,7 @@
           [isReadOnly, isDisabled, onChangeProp]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getBaseProps = (0, import_react67.useCallback)(() => {
+        const getBaseProps = (0, import_react69.useCallback)(() => {
           return {
             ref: domRef,
             className: slots.base({ class: baseStyles }),
@@ -106643,7 +106900,7 @@
           hoverProps,
           otherProps
         ]);
-        const getWrapperProps = (0, import_react67.useCallback)(
+        const getWrapperProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -106653,7 +106910,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.wrapper]
         );
-        const getInputProps = (0, import_react67.useCallback)(() => {
+        const getInputProps = (0, import_react69.useCallback)(() => {
           return {
             ref: (0, import_react_utils2.mergeRefs)(inputRef, ref),
             ...(0, import_shared_utils.mergeProps)(inputProps, focusProps),
@@ -106661,14 +106918,14 @@
             onChange: (0, import_shared_utils.chain)(inputProps.onChange, handleCheckboxChange)
           };
         }, [inputProps, focusProps, handleCheckboxChange, classNames == null ? void 0 : classNames.hiddenInput]);
-        const getLabelProps = (0, import_react67.useCallback)(
+        const getLabelProps = (0, import_react69.useCallback)(
           () => ({
             id: labelId,
             className: slots.label({ class: classNames == null ? void 0 : classNames.label })
           }),
           [slots, classNames == null ? void 0 : classNames.label, isDisabled, isSelected, isInvalid]
         );
-        const getIconProps = (0, import_react67.useCallback)(
+        const getIconProps = (0, import_react69.useCallback)(
           () => ({
             isSelected,
             isIndeterminate,
@@ -106694,10 +106951,10 @@
           getIconProps
         };
       }
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       function CheckIcon(props) {
         const { isSelected, disableAnimation, ...otherProps } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
           "svg",
           {
             "aria-hidden": "true",
@@ -106714,25 +106971,25 @@
             } : {},
             viewBox: "0 0 17 18",
             ...otherProps,
-            children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("polyline", { points: "1 9 7 14 15 4" })
+            children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("polyline", { points: "1 9 7 14 15 4" })
           }
         );
       }
       function IndeterminateIcon(props) {
         const { isSelected, disableAnimation, ...otherProps } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("svg", { stroke: "currentColor", strokeWidth: 3, viewBox: "0 0 24 24", ...otherProps, children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("line", { x1: "21", x2: "3", y1: "12", y2: "12" }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("svg", { stroke: "currentColor", strokeWidth: 3, viewBox: "0 0 24 24", ...otherProps, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("line", { x1: "21", x2: "3", y1: "12", y2: "12" }) });
       }
       function CheckboxIcon(props) {
         const { isIndeterminate, ...otherProps } = props;
         const BaseIcon = isIndeterminate ? IndeterminateIcon : CheckIcon;
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(BaseIcon, { ...otherProps });
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(BaseIcon, { ...otherProps });
       }
-      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime28 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Checkbox = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
           children,
-          icon = /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(CheckboxIcon, {}),
+          icon = /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(CheckboxIcon, {}),
           getBaseProps,
           getWrapperProps,
           getInputProps,
@@ -106740,10 +106997,10 @@
           getLabelProps
         } = useCheckbox({ ...props, ref });
         const clonedIcon = typeof icon === "function" ? icon(getIconProps()) : (0, import_react310.cloneElement)(icon, getIconProps());
-        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(Component2, { ...getBaseProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("input", { ...getInputProps() }),
-          /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { ...getWrapperProps(), children: clonedIcon }),
-          children && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { ...getLabelProps(), children })
+        return /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)(Component2, { ...getBaseProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("input", { ...getInputProps() }),
+          /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("span", { ...getWrapperProps(), children: clonedIcon }),
+          children && /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("span", { ...getLabelProps(), children })
         ] });
       });
       Checkbox.displayName = "HeroUI.Checkbox";
@@ -106977,13 +107234,13 @@
       var import_system_rsc2 = require_dist14();
       var import_theme = require_dist12();
       var import_system_rsc = require_dist14();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       function useCode(originalProps) {
         const [props, variantProps2] = (0, import_system_rsc.mapPropsVariants)(originalProps, import_theme.code.variantKeys);
         const { as, children, className, ...otherProps } = props;
         const Component2 = as || "code";
-        const styles = (0, import_react67.useMemo)(
+        const styles = (0, import_react69.useMemo)(
           () => (0, import_theme.code)({
             ...variantProps2,
             className
@@ -106998,10 +107255,10 @@
         };
         return { Component: Component2, children, getCodeProps };
       }
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Code = (0, import_system_rsc2.forwardRef)((props, ref) => {
         const { Component: Component2, children, getCodeProps } = useCode({ ...props });
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(Component2, { ref, ...getCodeProps(), children });
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(Component2, { ref, ...getCodeProps(), children });
       });
       Code.displayName = "HeroUI.Code";
       var code_default = Code;
@@ -110064,7 +110321,7 @@
       var import_react_utils = require_dist10();
       var import_focus2 = require_main18();
       var import_shared_utils = require_dist2();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useLink(originalProps) {
         var _a, _b, _c, _d;
         const globalContext = (0, import_system.useProviderContext)();
@@ -110107,7 +110364,7 @@
           otherProps.rel = (_c = otherProps.rel) != null ? _c : "noopener noreferrer";
           otherProps.target = (_d = otherProps.target) != null ? _d : "_blank";
         }
-        const styles = (0, import_react67.useMemo)(
+        const styles = (0, import_react69.useMemo)(
           () => (0, import_theme.link)({
             ...variantProps2,
             disableAnimation,
@@ -110115,7 +110372,7 @@
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation, className]
         );
-        const getLinkProps = (0, import_react67.useCallback)(() => {
+        const getLinkProps = (0, import_react69.useCallback)(() => {
           return {
             ref: domRef,
             className: styles,
@@ -110129,27 +110386,27 @@
         }, [styles, isFocused, isFocusVisible, focusProps, linkProps, otherProps]);
         return { Component: Component2, children, anchorIcon, showAnchorIcon, getLinkProps };
       }
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Link = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
           children,
           showAnchorIcon,
-          anchorIcon = /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_shared_icons.LinkIcon, { className: import_theme2.linkAnchorClasses }),
+          anchorIcon = /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_shared_icons.LinkIcon, { className: import_theme2.linkAnchorClasses }),
           getLinkProps
         } = useLink({
           ref,
           ...props
         });
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(Component2, { ...getLinkProps(), children: /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(import_jsx_runtime26.Fragment, { children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(Component2, { ...getLinkProps(), children: /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(import_jsx_runtime27.Fragment, { children: [
           children,
           showAnchorIcon && anchorIcon
         ] }) });
       });
       Link.displayName = "HeroUI.Link";
       var link_default = Link;
-      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var LinkIcon2 = () => /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(
+      var import_jsx_runtime28 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var LinkIcon2 = () => /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)(
         "svg",
         {
           "aria-hidden": "true",
@@ -110164,9 +110421,9 @@
           viewBox: "0 0 24 24",
           width: "1em",
           children: [
-            /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("path", { d: "M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" }),
-            /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("path", { d: "M15 3h6v6" }),
-            /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("path", { d: "M10 14L21 3" })
+            /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("path", { d: "M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" }),
+            /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("path", { d: "M15 3h6v6" }),
+            /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("path", { d: "M10 14L21 3" })
           ]
         }
       );
@@ -110200,8 +110457,8 @@
         usePagination: () => usePagination
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var import_i18n8 = require_main5();
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_i18n9 = require_main5();
       var import_shared_utils = require_dist2();
       var PaginationItemType2 = /* @__PURE__ */ ((PaginationItemType22) => {
         PaginationItemType22["DOTS"] = "dots";
@@ -110219,19 +110476,19 @@
           showControls = false,
           onChange
         } = props;
-        const [activePage, setActivePage] = (0, import_react67.useState)(page || initialPage);
-        const { direction } = (0, import_i18n8.useLocale)();
+        const [activePage, setActivePage] = (0, import_react69.useState)(page || initialPage);
+        const { direction } = (0, import_i18n9.useLocale)();
         const isRTL = direction === "rtl";
         const onChangeActivePage = (newPage) => {
           setActivePage(newPage);
           onChange && onChange(newPage);
         };
-        (0, import_react67.useEffect)(() => {
+        (0, import_react69.useEffect)(() => {
           if (page && page !== activePage) {
             setActivePage(page);
           }
         }, [page]);
-        const setPage = (0, import_react67.useCallback)(
+        const setPage = (0, import_react69.useCallback)(
           (pageNumber) => {
             if (pageNumber <= 0) {
               onChangeActivePage(1);
@@ -110247,7 +110504,7 @@
         const previous = () => setPage(activePage - 1);
         const first = () => setPage(1);
         const last = () => setPage(total);
-        const formatRange = (0, import_react67.useCallback)(
+        const formatRange = (0, import_react69.useCallback)(
           (range2) => {
             if (showControls) {
               return [
@@ -110261,7 +110518,7 @@
           },
           [isRTL, showControls]
         );
-        const paginationRange = (0, import_react67.useMemo)(() => {
+        const paginationRange = (0, import_react69.useMemo)(() => {
           const totalPageNumbers = siblings * 2 + 3 + boundaries * 2;
           if (totalPageNumbers >= total) {
             return formatRange((0, import_shared_utils.range)(1, total));
@@ -110423,7 +110680,7 @@
         useIntersectionObserver: () => useIntersectionObserver
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useIntersectionObserver({
         threshold: threshold2 = 0,
         root = null,
@@ -110434,15 +110691,15 @@
         onChange
       } = {}) {
         var _a;
-        const [ref, setRef2] = (0, import_react67.useState)(null);
-        const [state, setState] = (0, import_react67.useState)(() => ({
+        const [ref, setRef2] = (0, import_react69.useState)(null);
+        const [state, setState] = (0, import_react69.useState)(() => ({
           isIntersecting: initialIsIntersecting,
           entry: void 0
         }));
-        const callbackRef = (0, import_react67.useRef)();
+        const callbackRef = (0, import_react69.useRef)();
         callbackRef.current = onChange;
         const frozen = ((_a = state.entry) == null ? void 0 : _a.isIntersecting) && freezeOnceVisible;
-        (0, import_react67.useEffect)(() => {
+        (0, import_react69.useEffect)(() => {
           if (!isEnabled) return;
           if (!ref) return;
           if (!("IntersectionObserver" in window)) return;
@@ -110470,8 +110727,8 @@
             observer2.disconnect();
           };
         }, [ref, isEnabled, JSON.stringify(threshold2), root, rootMargin, frozen, freezeOnceVisible]);
-        const prevRef = (0, import_react67.useRef)(null);
-        (0, import_react67.useEffect)(() => {
+        const prevRef = (0, import_react69.useRef)(null);
+        (0, import_react69.useEffect)(() => {
           var _a2;
           if (!ref && ((_a2 = state.entry) == null ? void 0 : _a2.target) && !freezeOnceVisible && !frozen && prevRef.current !== state.entry.target) {
             prevRef.current = state.entry.target;
@@ -110530,7 +110787,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var import_i18n8 = require_main5();
+      var import_i18n9 = require_main5();
       var import_system4 = require_dist11();
       var import_use_pagination3 = require_dist38();
       var import_shared_icons = require_dist17();
@@ -110538,7 +110795,7 @@
       var import_theme3 = require_dist12();
       var import_shared_utils = require_dist2();
       var import_use_pagination = require_dist38();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_use_pagination2 = require_dist38();
       var import_scroll_into_view_if_needed = __toESM2(require_dist40());
@@ -110571,9 +110828,9 @@
         } = props;
         const Component2 = as || "nav";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const cursorRef = (0, import_react67.useRef)(null);
-        const itemsRef = (0, import_react67.useRef)();
-        const cursorTimer = (0, import_react67.useRef)();
+        const cursorRef = (0, import_react69.useRef)(null);
+        const itemsRef = (0, import_react69.useRef)();
+        const cursorTimer = (0, import_react69.useRef)();
         const disableAnimation = (_b = (_a = originalProps == null ? void 0 : originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
         const disableCursorAnimation = (_d = (_c = originalProps == null ? void 0 : originalProps.disableCursorAnimation) != null ? _c : disableAnimation) != null ? _d : false;
         function getItemsRefMap() {
@@ -110631,13 +110888,13 @@
           onChange
         });
         const [setRef2, isVisible] = (0, import_use_intersection_observer.useIntersectionObserver)();
-        (0, import_react67.useEffect)(() => {
+        (0, import_react69.useEffect)(() => {
           if (domRef.current) {
             setRef2(domRef.current);
           }
         }, [domRef.current]);
-        const activePageRef = (0, import_react67.useRef)(activePage);
-        (0, import_react67.useEffect)(() => {
+        const activePageRef = (0, import_react69.useRef)(activePage);
+        (0, import_react69.useEffect)(() => {
           if (activePage && !disableAnimation && isVisible) {
             scrollTo(activePage, activePage === activePageRef.current);
           }
@@ -110652,7 +110909,7 @@
           originalProps.isCompact,
           originalProps.showControls
         ]);
-        const slots = (0, import_react67.useMemo)(
+        const slots = (0, import_react69.useMemo)(
           () => (0, import_theme.pagination)({
             ...variantProps2,
             disableAnimation,
@@ -110839,21 +111096,21 @@
           getItemProps
         };
       }
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var PaginationItem = (0, import_system2.forwardRef)((props, ref) => {
         const { Component: Component2, children, getItemProps } = usePaginationItem({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(Component2, { ...getItemProps(), children });
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(Component2, { ...getItemProps(), children });
       });
       PaginationItem.displayName = "HeroUI.PaginationItem";
       var pagination_item_default = PaginationItem;
       var import_system3 = require_dist11();
       var import_react_utils3 = require_dist10();
-      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime28 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var PaginationCursor = (0, import_system3.forwardRef)((props, ref) => {
         const { as, activePage, ...otherProps } = props;
         const Component2 = as || "span";
         const domRef = (0, import_react_utils3.useDOMRef)(ref);
-        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(Component2, { ref: domRef, "aria-hidden": true, ...otherProps, children: activePage });
+        return /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(Component2, { ref: domRef, "aria-hidden": true, ...otherProps, children: activePage });
       });
       PaginationCursor.displayName = "HeroUI.PaginationCursor";
       var pagination_cursor_default = PaginationCursor;
@@ -110882,7 +111139,7 @@
           getItemProps,
           getCursorProps
         } = usePagination({ ...props, ref });
-        const { direction } = (0, import_i18n8.useLocale)();
+        const { direction } = (0, import_i18n9.useLocale)();
         const isRTL = direction === "rtl";
         const renderChevronIcon = (0, import_react310.useCallback)(
           (key) => {
@@ -111382,7 +111639,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_system2 = require_dist11();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_interactions = require_main17();
@@ -111428,8 +111685,8 @@
         const Component2 = as || "label";
         const domRef = (0, import_react_utils2.useDOMRef)(ref);
         const inputRef = (0, import_react210.useRef)(null);
-        const labelId = (0, import_react67.useId)();
-        const descriptionId = (0, import_react67.useId)();
+        const labelId = (0, import_react69.useId)();
+        const descriptionId = (0, import_react69.useId)();
         const isRequired = (0, import_react210.useMemo)(() => {
           var _a2;
           return (_a2 = groupContext.isRequired) != null ? _a2 : false;
@@ -111483,7 +111740,7 @@
           [color2, size, isDisabled, isInvalid, disableAnimation]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getBaseProps = (0, import_react67.useCallback)(
+        const getBaseProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -111518,7 +111775,7 @@
             otherProps
           ]
         );
-        const getWrapperProps = (0, import_react67.useCallback)(
+        const getWrapperProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -111528,7 +111785,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.wrapper]
         );
-        const getInputProps = (0, import_react67.useCallback)(
+        const getInputProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ref: inputRef,
@@ -111539,7 +111796,7 @@
           },
           [inputProps, focusProps, onChange]
         );
-        const getLabelProps = (0, import_react67.useCallback)(
+        const getLabelProps = (0, import_react69.useCallback)(
           (props2 = {}) => ({
             ...props2,
             id: labelId,
@@ -111547,21 +111804,21 @@
           }),
           [slots, classNames == null ? void 0 : classNames.label, isDisabled, isSelected, isInvalid]
         );
-        const getLabelWrapperProps = (0, import_react67.useCallback)(
+        const getLabelWrapperProps = (0, import_react69.useCallback)(
           (props2 = {}) => ({
             ...props2,
             className: slots.labelWrapper({ class: classNames == null ? void 0 : classNames.labelWrapper })
           }),
           [slots, classNames == null ? void 0 : classNames.labelWrapper]
         );
-        const getControlProps = (0, import_react67.useCallback)(
+        const getControlProps = (0, import_react69.useCallback)(
           (props2 = {}) => ({
             ...props2,
             className: slots.control({ class: classNames == null ? void 0 : classNames.control })
           }),
           [slots, classNames == null ? void 0 : classNames.control]
         );
-        const getDescriptionProps = (0, import_react67.useCallback)(
+        const getDescriptionProps = (0, import_react69.useCallback)(
           (props2 = {}) => ({
             ...props2,
             id: descriptionId,
@@ -111586,7 +111843,7 @@
           getDescriptionProps
         };
       }
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Radio = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -111600,12 +111857,12 @@
           getControlProps,
           getDescriptionProps
         } = useRadio({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(Component2, { ...getBaseProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("input", { ...getInputProps() }),
-          /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("span", { ...getWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("span", { ...getControlProps() }) }),
-          /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("div", { ...getLabelWrapperProps(), children: [
-            children && /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("span", { ...getLabelProps(), children }),
-            description && /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("span", { ...getDescriptionProps(), children: description })
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(Component2, { ...getBaseProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("input", { ...getInputProps() }),
+          /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { ...getWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { ...getControlProps() }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { ...getLabelWrapperProps(), children: [
+            children && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { ...getLabelProps(), children }),
+            description && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { ...getDescriptionProps(), children: description })
           ] })
         ] });
       });
@@ -111781,7 +112038,7 @@
           getErrorMessageProps
         };
       }
-      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime28 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var RadioGroup = (0, import_system4.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -111797,10 +112054,10 @@
           getDescriptionProps,
           getErrorMessageProps
         } = useRadioGroup({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(Component2, { ...getGroupProps(), children: [
-          label && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { ...getLabelProps(), children: label }),
-          /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(RadioGroupProvider, { value: context, children }) }),
-          isInvalid && errorMessage ? /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getErrorMessageProps(), children: errorMessage }) : description ? /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getDescriptionProps(), children: description }) : null
+        return /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)(Component2, { ...getGroupProps(), children: [
+          label && /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("span", { ...getLabelProps(), children: label }),
+          /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("div", { ...getWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(RadioGroupProvider, { value: context, children }) }),
+          isInvalid && errorMessage ? /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("div", { ...getErrorMessageProps(), children: errorMessage }) : description ? /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("div", { ...getDescriptionProps(), children: description }) : null
         ] });
       });
       RadioGroup.displayName = "HeroUI.RadioGroup";
@@ -111834,20 +112091,20 @@
         useClipboard: () => useClipboard
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var transformValue2 = (text) => {
         return text.replace(/[\u00A0]/g, " ");
       };
       function useClipboard({ timeout = 2e3 } = {}) {
-        const [error, setError] = (0, import_react67.useState)(null);
-        const [copied, setCopied] = (0, import_react67.useState)(false);
-        const [copyTimeout, setCopyTimeout] = (0, import_react67.useState)(null);
-        const onClearTimeout = (0, import_react67.useCallback)(() => {
+        const [error, setError] = (0, import_react69.useState)(null);
+        const [copied, setCopied] = (0, import_react69.useState)(false);
+        const [copyTimeout, setCopyTimeout] = (0, import_react69.useState)(null);
+        const onClearTimeout = (0, import_react69.useCallback)(() => {
           if (copyTimeout) {
             clearTimeout(copyTimeout);
           }
         }, [copyTimeout]);
-        const handleCopyResult = (0, import_react67.useCallback)(
+        const handleCopyResult = (0, import_react69.useCallback)(
           (value) => {
             onClearTimeout();
             setCopyTimeout(setTimeout(() => setCopied(false), timeout));
@@ -111855,7 +112112,7 @@
           },
           [onClearTimeout, timeout]
         );
-        const copy = (0, import_react67.useCallback)(
+        const copy = (0, import_react69.useCallback)(
           (valueToCopy) => {
             if ("clipboard" in navigator) {
               const transformedValue = typeof valueToCopy === "string" ? transformValue2(valueToCopy) : valueToCopy;
@@ -111866,7 +112123,7 @@
           },
           [handleCopyResult]
         );
-        const reset = (0, import_react67.useCallback)(() => {
+        const reset = (0, import_react69.useCallback)(() => {
           setCopied(false);
           setError(null);
           onClearTimeout();
@@ -115164,7 +115421,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_focus2 = require_main36();
       var import_interactions = require_main35();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var visibleOverlays = [];
       function useAriaOverlay(props, ref) {
         const {
@@ -115176,7 +115433,7 @@
           shouldCloseOnBlur,
           shouldCloseOnInteractOutside
         } = props;
-        (0, import_react67.useEffect)(() => {
+        (0, import_react69.useEffect)(() => {
           if (isOpen && !visibleOverlays.includes(ref)) {
             visibleOverlays.push(ref);
             return () => {
@@ -115306,7 +115563,7 @@
       var import_shared_utils2 = require_dist2();
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_aria_utils2 = require_dist13();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_tooltip = require_main33();
       var import_tooltip2 = require_main34();
       var import_overlays = require_main9();
@@ -115370,9 +115627,9 @@
         });
         const triggerRef = (0, import_react210.useRef)(null);
         const overlayRef = (0, import_react210.useRef)(null);
-        const tooltipId = (0, import_react67.useId)();
+        const tooltipId = (0, import_react69.useId)();
         const isOpen = state.isOpen && !isDisabled;
-        (0, import_react67.useImperativeHandle)(
+        (0, import_react69.useImperativeHandle)(
           ref,
           () => (
             // @ts-ignore
@@ -115506,7 +115763,7 @@
           getTooltipProps
         };
       }
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var domAnimation2 = () => Promise.resolve().then(() => (init_dist(), dist_exports)).then((res) => res.default);
       var Tooltip = (0, import_system2.forwardRef)((props, ref) => {
         var _a;
@@ -115531,18 +115788,18 @@
           const childrenNum = import_react310.Children.count(children);
           if (childrenNum !== 1) throw new Error();
           if (!(0, import_react310.isValidElement)(children)) {
-            trigger = /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("p", { ...getTriggerProps(), children });
+            trigger = /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("p", { ...getTriggerProps(), children });
           } else {
             const child = children;
             const childRef = (_a = child.props.ref) != null ? _a : child.ref;
             trigger = (0, import_react310.cloneElement)(child, getTriggerProps(child.props, childRef));
           }
         } catch {
-          trigger = /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("span", {});
+          trigger = /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", {});
           (0, import_shared_utils2.warn)("Tooltip must have only one child node. Please, check your code.");
         }
         const { ref: tooltipRef, id: id4, style: style2, ...otherTooltipProps } = getTooltipProps();
-        const animatedContent = /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { ref: tooltipRef, id: id4, style: style2, children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+        const animatedContent = /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ref: tooltipRef, id: id4, style: style2, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
           import_framer_motion2.m.div,
           {
             animate: "enter",
@@ -115553,13 +115810,13 @@
             style: {
               ...(0, import_aria_utils2.getTransformOrigins)(placement)
             },
-            children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(Component2, { ...getTooltipContentProps(), children: content })
+            children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(Component2, { ...getTooltipContentProps(), children: content })
           },
           `${id4}-tooltip-inner`
         ) }, `${id4}-tooltip-content`);
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(import_jsx_runtime26.Fragment, { children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(import_jsx_runtime27.Fragment, { children: [
           trigger,
-          disableAnimation ? isOpen && /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_overlays2.OverlayContainer, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { ref: tooltipRef, id: id4, style: style2, ...otherTooltipProps, children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(Component2, { ...getTooltipContentProps(), children: content }) }) }) : /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_framer_motion2.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_framer_motion2.AnimatePresence, { children: isOpen && /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_overlays2.OverlayContainer, { portalContainer, children: animatedContent }) }) })
+          disableAnimation ? isOpen && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_overlays2.OverlayContainer, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ref: tooltipRef, id: id4, style: style2, ...otherTooltipProps, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(Component2, { ...getTooltipContentProps(), children: content }) }) }) : /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_framer_motion2.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_framer_motion2.AnimatePresence, { children: isOpen && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_overlays2.OverlayContainer, { portalContainer, children: animatedContent }) }) })
         ] });
       });
       Tooltip.displayName = "HeroUI.Tooltip";
@@ -115601,7 +115858,7 @@
       var import_shared_utils = require_dist2();
       var import_use_clipboard = require_dist44();
       var import_focus2 = require_main18();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useSnippet(originalProps) {
         var _a, _b, _c, _d;
         const globalContext = (0, import_system.useProviderContext)();
@@ -115639,26 +115896,26 @@
           ...userTooltipProps
         };
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const preRef = (0, import_react67.useRef)(null);
+        const preRef = (0, import_react69.useRef)(null);
         const { copy, copied } = (0, import_use_clipboard.useClipboard)({ timeout });
         const isMultiLine = children && Array.isArray(children);
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)({
           autoFocus
         });
-        const slots = (0, import_react67.useMemo)(
+        const slots = (0, import_react69.useMemo)(
           () => (0, import_theme.snippet)({
             ...variantProps2,
             disableAnimation
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation]
         );
-        const symbolBefore = (0, import_react67.useMemo)(() => {
+        const symbolBefore = (0, import_react69.useMemo)(() => {
           if (!symbol || typeof symbol !== "string") return symbol;
           const str = symbol.trim();
           return str ? `${str} ` : "";
         }, [symbol]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getSnippetProps = (0, import_react67.useCallback)(
+        const getSnippetProps = (0, import_react69.useCallback)(
           () => ({
             className: slots.base({
               class: baseStyles
@@ -115669,7 +115926,7 @@
           }),
           [slots, baseStyles, isMultiLine, otherProps]
         );
-        const onCopy = (0, import_react67.useCallback)(() => {
+        const onCopy = (0, import_react69.useCallback)(() => {
           var _a2;
           if (disableCopy) {
             return;
@@ -115699,7 +115956,7 @@
           isIconOnly: true,
           ...userButtonProps
         };
-        const getCopyButtonProps = (0, import_react67.useCallback)(
+        const getCopyButtonProps = (0, import_react69.useCallback)(
           () => ({
             ...copyButtonProps,
             "data-copied": (0, import_shared_utils.dataAttr)(copied),
@@ -115747,7 +116004,7 @@
       var import_shared_icons = require_dist17();
       var import_button = require_dist28();
       var import_shared_utils2 = require_dist2();
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Snippet = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -115757,8 +116014,8 @@
           slots,
           classNames,
           copied,
-          copyIcon = /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_shared_icons.CopyLinearIcon, {}),
-          checkIcon = /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_shared_icons.CheckLinearIcon, {}),
+          copyIcon = /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_shared_icons.CopyLinearIcon, {}),
+          checkIcon = /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_shared_icons.CheckLinearIcon, {}),
           symbolBefore,
           disableCopy,
           disableTooltip,
@@ -115771,7 +116028,7 @@
           getCopyButtonProps
         } = useSnippet({ ...props, ref });
         const TooltipContent = (0, import_react210.useCallback)(
-          ({ children: children2 }) => /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_tooltip.Tooltip, { ...tooltipProps, isDisabled: copied || tooltipProps.isDisabled, children: children2 }),
+          ({ children: children2 }) => /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_tooltip.Tooltip, { ...tooltipProps, isDisabled: copied || tooltipProps.isDisabled, children: children2 }),
           [(0, import_shared_utils2.objectToDeps)(tooltipProps)]
         );
         const contents = (0, import_react210.useMemo)(() => {
@@ -115780,14 +116037,14 @@
           }
           const clonedCheckIcon = checkIcon && (0, import_react210.cloneElement)(checkIcon, { className: slots.checkIcon() });
           const clonedCopyIcon = copyIcon && (0, import_react210.cloneElement)(copyIcon, { className: slots.copyIcon() });
-          const copyButton = /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(import_button.Button, { ...getCopyButtonProps(), children: [
+          const copyButton = /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(import_button.Button, { ...getCopyButtonProps(), children: [
             clonedCheckIcon,
             clonedCopyIcon
           ] });
           if (disableTooltip) {
             return copyButton;
           }
-          return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(TooltipContent, { children: copyButton });
+          return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(TooltipContent, { children: copyButton });
         }, [
           slots,
           classNames == null ? void 0 : classNames.copyButton,
@@ -115802,17 +116059,17 @@
         ]);
         const preContent = (0, import_react210.useMemo)(() => {
           if (isMultiLine && children && Array.isArray(children)) {
-            return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children: children.map((t, index3) => /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("pre", { className: slots.pre({ class: classNames == null ? void 0 : classNames.pre }), children: [
-              !hideSymbol && /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("span", { className: slots.symbol({ class: classNames == null ? void 0 : classNames.symbol }), children: symbolBefore }),
+            return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children: children.map((t, index3) => /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("pre", { className: slots.pre({ class: classNames == null ? void 0 : classNames.pre }), children: [
+              !hideSymbol && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { className: slots.symbol({ class: classNames == null ? void 0 : classNames.symbol }), children: symbolBefore }),
               t
             ] }, `${index3}-${t}`)) });
           }
-          return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("pre", { ref: preRef, className: slots.pre({ class: classNames == null ? void 0 : classNames.pre }), children: [
-            !hideSymbol && /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("span", { className: slots.symbol({ class: classNames == null ? void 0 : classNames.symbol }), children: symbolBefore }),
+          return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("pre", { ref: preRef, className: slots.pre({ class: classNames == null ? void 0 : classNames.pre }), children: [
+            !hideSymbol && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { className: slots.symbol({ class: classNames == null ? void 0 : classNames.symbol }), children: symbolBefore }),
             children
           ] });
         }, [children, hideSymbol, isMultiLine, symbolBefore, classNames == null ? void 0 : classNames.pre, slots]);
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(Component2, { ref: domRef, ...getSnippetProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(Component2, { ref: domRef, ...getSnippetProps(), children: [
           preContent,
           contents
         ] });
@@ -115889,7 +116146,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist11();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
       var import_use_safe_layout_effect = require_dist21();
@@ -115924,10 +116181,10 @@
           ...otherProps
         } = props;
         const Component2 = as || "label";
-        const domRef = (0, import_react67.useRef)(null);
-        const inputRef = (0, import_react67.useRef)(null);
+        const domRef = (0, import_react69.useRef)(null);
+        const inputRef = (0, import_react69.useRef)(null);
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        const labelId = (0, import_react67.useId)();
+        const labelId = (0, import_react69.useId)();
         const ariaSwitchProps = (0, import_react210.useMemo)(() => {
           const ariaLabel = otherProps["aria-label"] || typeof children === "string" ? children : void 0;
           return {
@@ -115994,7 +116251,7 @@
             "data-pressed": (0, import_shared_utils.dataAttr)(pressed)
           };
         };
-        const getWrapperProps = (0, import_react67.useCallback)(
+        const getWrapperProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -116013,14 +116270,14 @@
             onChange: (0, import_shared_utils.chain)(onChange, inputProps.onChange)
           };
         };
-        const getThumbProps = (0, import_react67.useCallback)(
+        const getThumbProps = (0, import_react69.useCallback)(
           (props2 = {}) => ({
             ...props2,
             className: slots.thumb({ class: (0, import_theme.cn)(classNames == null ? void 0 : classNames.thumb, props2 == null ? void 0 : props2.className) })
           }),
           [slots, classNames == null ? void 0 : classNames.thumb]
         );
-        const getLabelProps = (0, import_react67.useCallback)(
+        const getLabelProps = (0, import_react69.useCallback)(
           (props2 = {}) => ({
             ...props2,
             id: labelId,
@@ -116028,7 +116285,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.label, isDisabled, isSelected]
         );
-        const getThumbIconProps = (0, import_react67.useCallback)(
+        const getThumbIconProps = (0, import_react69.useCallback)(
           (props2 = {
             includeStateProps: false
           }) => (0, import_shared_utils.mergeProps)(
@@ -116043,7 +116300,7 @@
           ),
           [slots, classNames == null ? void 0 : classNames.thumbIcon, isSelected]
         );
-        const getStartContentProps = (0, import_react67.useCallback)(
+        const getStartContentProps = (0, import_react69.useCallback)(
           (props2 = {}) => ({
             width: "1em",
             height: "1em",
@@ -116052,7 +116309,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.startContent, isSelected]
         );
-        const getEndContentProps = (0, import_react67.useCallback)(
+        const getEndContentProps = (0, import_react69.useCallback)(
           (props2 = {}) => ({
             width: "1em",
             height: "1em",
@@ -116086,7 +116343,7 @@
           getEndContentProps
         };
       }
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Switch = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -116106,14 +116363,14 @@
         const clonedThumbIcon = typeof thumbIcon === "function" ? thumbIcon(getThumbIconProps({ includeStateProps: true })) : thumbIcon && (0, import_react310.cloneElement)(thumbIcon, getThumbIconProps());
         const clonedStartContent = startContent && (0, import_react310.cloneElement)(startContent, getStartContentProps());
         const clonedEndContent = endContent && (0, import_react310.cloneElement)(endContent, getEndContentProps());
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(Component2, { ...getBaseProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("input", { ...getInputProps() }),
-          /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("span", { ...getWrapperProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(Component2, { ...getBaseProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("input", { ...getInputProps() }),
+          /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("span", { ...getWrapperProps(), children: [
             startContent && clonedStartContent,
-            /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("span", { ...getThumbProps(), children: thumbIcon && clonedThumbIcon }),
+            /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { ...getThumbProps(), children: thumbIcon && clonedThumbIcon }),
             endContent && clonedEndContent
           ] }),
-          children && /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("span", { ...getLabelProps(), children })
+          children && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { ...getLabelProps(), children })
         ] });
       });
       Switch.displayName = "HeroUI.Switch";
@@ -116149,7 +116406,7 @@
         useUser: () => useUser
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
@@ -116175,12 +116432,12 @@
         const shouldFilterDOMProps = typeof Component2 === "string";
         const domRef = (0, import_react_utils2.useDOMRef)(ref);
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)({});
-        const canBeFocused = (0, import_react67.useMemo)(() => {
+        const canBeFocused = (0, import_react69.useMemo)(() => {
           return isFocusable || as === "button";
         }, [isFocusable, as]);
-        const slots = (0, import_react67.useMemo)(() => (0, import_theme.user)(), []);
+        const slots = (0, import_react69.useMemo)(() => (0, import_theme.user)(), []);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getUserProps = (0, import_react67.useCallback)(
+        const getUserProps = (0, import_react69.useCallback)(
           () => ({
             ref: domRef,
             tabIndex: canBeFocused ? 0 : -1,
@@ -116212,17 +116469,17 @@
       }
       var import_system = require_dist11();
       var import_avatar = require_dist23();
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var User = (0, import_system.forwardRef)((props, ref) => {
         const { Component: Component2, name, slots, classNames, description, avatarProps, getUserProps } = useUser({
           ...props,
           ref
         });
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(Component2, { ...getUserProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_avatar.Avatar, { ...avatarProps }),
-          /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("span", { className: slots.name({ class: classNames == null ? void 0 : classNames.name }), children: name }),
-            /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("span", { className: slots.description({ class: classNames == null ? void 0 : classNames.description }), children: description })
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(Component2, { ...getUserProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_avatar.Avatar, { ...avatarProps }),
+          /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { className: slots.name({ class: classNames == null ? void 0 : classNames.name }), children: name }),
+            /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { className: slots.description({ class: classNames == null ? void 0 : classNames.description }), children: description })
           ] })
         ] });
       });
@@ -116257,12 +116514,12 @@
         useIsMounted: () => useIsMounted2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useIsMounted2(props = {}) {
         const { rerender = false, delay: delay2 = 0 } = props;
-        const isMountedRef = (0, import_react67.useRef)(false);
-        const [isMounted, setIsMounted] = (0, import_react67.useState)(false);
-        (0, import_react67.useEffect)(() => {
+        const isMountedRef = (0, import_react69.useRef)(false);
+        const [isMounted, setIsMounted] = (0, import_react69.useState)(false);
+        (0, import_react69.useEffect)(() => {
           isMountedRef.current = true;
           let timer = null;
           if (rerender) {
@@ -116284,7 +116541,7 @@
             }
           };
         }, [rerender]);
-        return [(0, import_react67.useCallback)(() => isMountedRef.current, []), isMounted];
+        return [(0, import_react69.useCallback)(() => isMountedRef.current, []), isMounted];
       }
     }
   });
@@ -116379,7 +116636,7 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_is_mounted2 = require_dist50();
       var import_progress2 = require_dist51();
       function useProgress(originalProps) {
@@ -116424,7 +116681,7 @@
           "aria-labelledby": originalProps["aria-labelledby"],
           "aria-label": originalProps["aria-label"]
         });
-        const slots = (0, import_react67.useMemo)(
+        const slots = (0, import_react69.useMemo)(
           () => (0, import_theme.progress)({
             ...variantProps2,
             disableAnimation
@@ -116432,11 +116689,11 @@
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation]
         );
         const selfMounted = disableAnimation ? true : isMounted;
-        const percentage = (0, import_react67.useMemo)(
+        const percentage = (0, import_react69.useMemo)(
           () => isIndeterminate || !selfMounted ? void 0 : (0, import_shared_utils.clampPercentage)((value - minValue) / (maxValue - minValue) * 100),
           [selfMounted, isIndeterminate, value, minValue, maxValue]
         );
-        const getProgressBarProps = (0, import_react67.useCallback)(
+        const getProgressBarProps = (0, import_react69.useCallback)(
           (props2 = {}) => ({
             ref: domRef,
             "data-indeterminate": (0, import_shared_utils.dataAttr)(isIndeterminate),
@@ -116454,7 +116711,7 @@
             otherProps
           ]
         );
-        const getLabelProps = (0, import_react67.useCallback)(
+        const getLabelProps = (0, import_react69.useCallback)(
           (props2 = {}) => ({
             className: slots.label({ class: classNames == null ? void 0 : classNames.label }),
             ...(0, import_shared_utils.mergeProps)(labelProps, props2)
@@ -116473,7 +116730,7 @@
           getLabelProps
         };
       }
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Progress = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -116487,12 +116744,12 @@
         } = useProgress({ ...props, ref });
         const progressBarProps = getProgressBarProps();
         const shouldShowLabelWrapper = label || showValueLabel;
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(Component2, { ...progressBarProps, children: [
-          shouldShowLabelWrapper ? /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("div", { className: slots.labelWrapper({ class: classNames == null ? void 0 : classNames.labelWrapper }), children: [
-            label && /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("span", { ...getLabelProps(), children: label }),
-            showValueLabel && /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("span", { className: slots.value({ class: classNames == null ? void 0 : classNames.value }), children: progressBarProps["aria-valuetext"] })
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(Component2, { ...progressBarProps, children: [
+          shouldShowLabelWrapper ? /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { className: slots.labelWrapper({ class: classNames == null ? void 0 : classNames.labelWrapper }), children: [
+            label && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { ...getLabelProps(), children: label }),
+            showValueLabel && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { className: slots.value({ class: classNames == null ? void 0 : classNames.value }), children: progressBarProps["aria-valuetext"] })
           ] }) : null,
-          /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { className: slots.track({ class: classNames == null ? void 0 : classNames.track }), children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { className: slots.track({ class: classNames == null ? void 0 : classNames.track }), children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
             "div",
             {
               className: slots.indicator({ class: classNames == null ? void 0 : classNames.indicator }),
@@ -116658,7 +116915,7 @@
           getTrackProps
         };
       }
-      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime28 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var CircularProgress = (0, import_system4.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -116673,15 +116930,15 @@
           getTrackProps
         } = useCircularProgress({ ref, ...props });
         const progressBarProps = getProgressBarProps();
-        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(Component2, { ...progressBarProps, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { className: slots.svgWrapper({ class: classNames == null ? void 0 : classNames.svgWrapper }), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("svg", { ...getSvgProps(), children: [
-              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("circle", { ...getTrackProps() }),
-              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("circle", { ...getIndicatorProps() })
+        return /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)(Component2, { ...progressBarProps, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)("div", { className: slots.svgWrapper({ class: classNames == null ? void 0 : classNames.svgWrapper }), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)("svg", { ...getSvgProps(), children: [
+              /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("circle", { ...getTrackProps() }),
+              /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("circle", { ...getIndicatorProps() })
             ] }),
-            showValueLabel && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { className: slots.value({ class: classNames == null ? void 0 : classNames.value }), children: progressBarProps["aria-valuetext"] })
+            showValueLabel && /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("span", { className: slots.value({ class: classNames == null ? void 0 : classNames.value }), children: progressBarProps["aria-valuetext"] })
           ] }),
-          label && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { ...getLabelProps(), children: label })
+          label && /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("span", { ...getLabelProps(), children: label })
         ] });
       });
       CircularProgress.displayName = "HeroUI.CircularProgress";
@@ -117466,7 +117723,7 @@
       var import_interactions = require_main17();
       var import_shared_utils = require_dist2();
       var import_utils8 = require_main38();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_textfield = require_main40();
       var import_form = require_dist33();
       function useInput(originalProps) {
@@ -117496,13 +117753,13 @@
           },
           ...otherProps
         } = props;
-        const handleValueChange = (0, import_react67.useCallback)(
+        const handleValueChange = (0, import_react69.useCallback)(
           (value) => {
             onValueChange(value != null ? value : "");
           },
           [onValueChange]
         );
-        const [isFocusWithin, setFocusWithin] = (0, import_react67.useState)(false);
+        const [isFocusWithin, setFocusWithin] = (0, import_react69.useState)(false);
         const Component2 = as || "div";
         const disableAnimation = (_c = (_b = originalProps.disableAnimation) != null ? _b : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _c : false;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
@@ -117522,7 +117779,7 @@
         const isHiddenType = type === "hidden";
         const isMultiline = originalProps.isMultiline;
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className, isFilled ? "is-filled" : "");
-        const handleClear = (0, import_react67.useCallback)(() => {
+        const handleClear = (0, import_react69.useCallback)(() => {
           var _a2;
           if (isFileTypeInput) {
             domRef.current.value = "";
@@ -117599,7 +117856,7 @@
         const hasStartContent = !!startContent;
         const isLabelOutside = shouldLabelBeOutside ? isOutsideLeft || isOutsideTop || hasPlaceholder || labelPlacement === "outside" && hasStartContent : false;
         const isLabelOutsideAsPlaceholder = labelPlacement === "outside" && !hasPlaceholder && !hasStartContent;
-        const slots = (0, import_react67.useMemo)(
+        const slots = (0, import_react69.useMemo)(
           () => (0, import_theme.input)({
             ...variantProps2,
             isInvalid,
@@ -117616,7 +117873,7 @@
             disableAnimation
           ]
         );
-        const getBaseProps = (0, import_react67.useCallback)(
+        const getBaseProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ref: baseDomRef,
@@ -117669,7 +117926,7 @@
             originalProps.isDisabled
           ]
         );
-        const getLabelProps = (0, import_react67.useCallback)(
+        const getLabelProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "label",
@@ -117679,7 +117936,7 @@
           },
           [slots, isLabelHovered, labelProps, classNames == null ? void 0 : classNames.label]
         );
-        const handleKeyDown = (0, import_react67.useCallback)(
+        const handleKeyDown = (0, import_react69.useCallback)(
           (e) => {
             if (e.key === "Escape" && inputValue && (isClearable || onClear) && !originalProps.isReadOnly) {
               setInputValue("");
@@ -117688,7 +117945,7 @@
           },
           [inputValue, setInputValue, onClear, isClearable, originalProps.isReadOnly]
         );
-        const getInputProps = (0, import_react67.useCallback)(
+        const getInputProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "input",
@@ -117738,7 +117995,7 @@
             handleKeyDown
           ]
         );
-        const getInputWrapperProps = (0, import_react67.useCallback)(
+        const getInputWrapperProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ref: inputWrapperRef,
@@ -117771,7 +118028,7 @@
             classNames == null ? void 0 : classNames.inputWrapper
           ]
         );
-        const getInnerWrapperProps = (0, import_react67.useCallback)(
+        const getInnerWrapperProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -117789,7 +118046,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.innerWrapper]
         );
-        const getMainWrapperProps = (0, import_react67.useCallback)(
+        const getMainWrapperProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -117801,7 +118058,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.mainWrapper]
         );
-        const getHelperWrapperProps = (0, import_react67.useCallback)(
+        const getHelperWrapperProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -117813,7 +118070,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getDescriptionProps = (0, import_react67.useCallback)(
+        const getDescriptionProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -117824,7 +118081,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.description]
         );
-        const getErrorMessageProps = (0, import_react67.useCallback)(
+        const getErrorMessageProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -117835,7 +118092,7 @@
           },
           [slots, errorMessageProps, classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getClearButtonProps = (0, import_react67.useCallback)(
+        const getClearButtonProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -117886,7 +118143,7 @@
           getClearButtonProps
         };
       }
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Input2 = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -117913,10 +118170,10 @@
           getErrorMessageProps,
           getClearButtonProps
         } = useInput({ ...props, ref });
-        const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("label", { ...getLabelProps(), children: label }) : null;
+        const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("label", { ...getLabelProps(), children: label }) : null;
         const end = (0, import_react210.useMemo)(() => {
           if (isClearable) {
-            return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("button", { ...getClearButtonProps(), children: endContent || /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_shared_icons.CloseFilledIcon, {}) });
+            return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("button", { ...getClearButtonProps(), children: endContent || /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_shared_icons.CloseFilledIcon, {}) });
           }
           return endContent;
         }, [isClearable, getClearButtonProps]);
@@ -117924,7 +118181,7 @@
           const shouldShowError = isInvalid && errorMessage;
           const hasContent = shouldShowError || description;
           if (!hasHelper || !hasContent) return null;
-          return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { ...getHelperWrapperProps(), children: shouldShowError ? /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { ...getErrorMessageProps(), children: errorMessage }) : /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { ...getDescriptionProps(), children: description }) });
+          return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getHelperWrapperProps(), children: shouldShowError ? /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getErrorMessageProps(), children: errorMessage }) : /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getDescriptionProps(), children: description }) });
         }, [
           hasHelper,
           isInvalid,
@@ -117935,24 +118192,24 @@
           getDescriptionProps
         ]);
         const innerWrapper = (0, import_react210.useMemo)(() => {
-          return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("div", { ...getInnerWrapperProps(), children: [
+          return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { ...getInnerWrapperProps(), children: [
             startContent,
-            /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("input", { ...getInputProps() }),
+            /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("input", { ...getInputProps() }),
             end
           ] });
         }, [startContent, end, getInputProps, getInnerWrapperProps]);
         const mainWrapper = (0, import_react210.useMemo)(() => {
           if (shouldLabelBeOutside) {
-            return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("div", { ...getMainWrapperProps(), children: [
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("div", { ...getInputWrapperProps(), children: [
+            return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { ...getMainWrapperProps(), children: [
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { ...getInputWrapperProps(), children: [
                 !isOutsideLeft && !isOutsideTop ? labelContent : null,
                 innerWrapper
               ] }),
               helperWrapper
             ] });
           }
-          return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(import_jsx_runtime26.Fragment, { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("div", { ...getInputWrapperProps(), children: [
+          return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(import_jsx_runtime27.Fragment, { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { ...getInputWrapperProps(), children: [
               labelContent,
               innerWrapper
             ] }),
@@ -117971,7 +118228,7 @@
           getErrorMessageProps,
           getDescriptionProps
         ]);
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(Component2, { ...getBaseProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(Component2, { ...getBaseProps(), children: [
           isOutsideLeft || isOutsideTop ? labelContent : null,
           mainWrapper
         ] });
@@ -117983,7 +118240,7 @@
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_textarea_autosize = __toESM2((init_react_textarea_autosize_browser_esm(), __toCommonJS(react_textarea_autosize_browser_esm_exports)));
       var import_shared_icons2 = require_dist17();
-      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime28 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Textarea = (0, import_system3.forwardRef)(
         ({
           style: style2,
@@ -118018,7 +118275,7 @@
           } = useInput({ ...otherProps, ref, isMultiline: true });
           const [hasMultipleRows, setIsHasMultipleRows] = (0, import_react310.useState)(minRows > 1);
           const [isLimitReached, setIsLimitReached] = (0, import_react310.useState)(false);
-          const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("label", { ...getLabelProps(), children: label }) : null;
+          const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("label", { ...getLabelProps(), children: label }) : null;
           const inputProps = getInputProps();
           const handleHeightChange = (height, meta) => {
             if (minRows === 1) {
@@ -118030,7 +118287,7 @@
             }
             onHeightChange == null ? void 0 : onHeightChange(height, meta);
           };
-          const content = disableAutosize ? /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("textarea", { ...inputProps, style: (0, import_shared_utils2.mergeProps)(inputProps.style, style2 != null ? style2 : {}) }) : /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
+          const content = disableAutosize ? /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("textarea", { ...inputProps, style: (0, import_shared_utils2.mergeProps)(inputProps.style, style2 != null ? style2 : {}) }) : /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(
             import_react_textarea_autosize.default,
             {
               ...inputProps,
@@ -118043,28 +118300,28 @@
             }
           );
           const clearButtonContent = (0, import_react310.useMemo)(() => {
-            return isClearable ? /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("button", { ...getClearButtonProps(), children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_shared_icons2.CloseFilledIcon, {}) }) : null;
+            return isClearable ? /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("button", { ...getClearButtonProps(), children: /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(import_shared_icons2.CloseFilledIcon, {}) }) : null;
           }, [isClearable, getClearButtonProps]);
           const innerWrapper = (0, import_react310.useMemo)(() => {
             if (startContent || endContent) {
-              return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { ...getInnerWrapperProps(), children: [
+              return /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)("div", { ...getInnerWrapperProps(), children: [
                 startContent,
                 content,
                 endContent
               ] });
             }
-            return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getInnerWrapperProps(), children: content });
+            return /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("div", { ...getInnerWrapperProps(), children: content });
           }, [startContent, inputProps, endContent, getInnerWrapperProps]);
           const shouldShowError = isInvalid && errorMessage;
           const hasHelperContent = shouldShowError || description;
-          return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(Component2, { ...getBaseProps(), children: [
+          return /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)(Component2, { ...getBaseProps(), children: [
             shouldLabelBeOutside ? labelContent : null,
-            /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { ...getInputWrapperProps(), "data-has-multiple-rows": (0, import_shared_utils2.dataAttr)(hasMultipleRows), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)("div", { ...getInputWrapperProps(), "data-has-multiple-rows": (0, import_shared_utils2.dataAttr)(hasMultipleRows), children: [
               shouldLabelBeInside ? labelContent : null,
               innerWrapper,
               clearButtonContent
             ] }),
-            hasHelper && hasHelperContent ? /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getHelperWrapperProps(), children: shouldShowError ? /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getErrorMessageProps(), children: errorMessage }) : /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getDescriptionProps(), children: description }) }) : null
+            hasHelper && hasHelperContent ? /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("div", { ...getHelperWrapperProps(), children: shouldShowError ? /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("div", { ...getErrorMessageProps(), children: errorMessage }) : /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("div", { ...getDescriptionProps(), children: description }) }) : null
           ] });
         }
       );
@@ -118251,7 +118508,7 @@
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_aria_utils = require_dist13();
       var import_overlays = require_main9();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       var import_use_safe_layout_effect = require_dist21();
       var import_use_aria_overlay = require_dist45();
@@ -118319,7 +118576,7 @@
           if (!updatePositionDeps.length) return;
           updatePosition();
         }, updatePositionDeps);
-        (0, import_react67.useEffect)(() => {
+        (0, import_react69.useEffect)(() => {
           var _a, _b;
           if (state.isOpen && popoverRef.current) {
             if (isNonModal) {
@@ -118556,15 +118813,15 @@
         name: "PopoverContext",
         errorMessage: "usePopoverContext: `context` is undefined. Seems you forgot to wrap all popover components within `<Popover />`"
       });
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Popover = (0, import_system2.forwardRef)((props, ref) => {
         const { children, ...otherProps } = props;
         const context = usePopover({ ...otherProps, ref });
         const [trigger, content] = import_react310.Children.toArray(children);
-        const overlay = /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_overlays4.Overlay, { portalContainer: context.portalContainer, children: content });
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(PopoverProvider, { value: context, children: [
+        const overlay = /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_overlays4.Overlay, { portalContainer: context.portalContainer, children: content });
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(PopoverProvider, { value: context, children: [
           trigger,
-          context.disableAnimation && context.isOpen ? overlay : /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_framer_motion2.AnimatePresence, { children: context.isOpen ? overlay : null })
+          context.disableAnimation && context.isOpen ? overlay : /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_framer_motion2.AnimatePresence, { children: context.isOpen ? overlay : null })
         ] });
       });
       Popover.displayName = "HeroUI.Popover";
@@ -118574,13 +118831,13 @@
       var import_use_aria_button = require_dist27();
       var import_button = require_dist28();
       var import_shared_utils3 = require_dist2();
-      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime28 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var PopoverTrigger = (props) => {
         var _a;
         const { triggerRef, getTriggerProps } = usePopoverContext();
         const { children, ...otherProps } = props;
         const child = (0, import_react410.useMemo)(() => {
-          if (typeof children === "string") return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("p", { children });
+          if (typeof children === "string") return /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("p", { children });
           return import_react410.Children.only(children);
         }, [children]);
         const childRef = (_a = child.props.ref) != null ? _a : child.ref;
@@ -120069,7 +120326,7 @@
       var import_theme = require_dist12();
       var import_tree = require_main12();
       var import_react_utils = require_dist10();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme2 = require_dist12();
       function useMenu(props) {
         var _a;
@@ -120102,7 +120359,7 @@
         const innerState = (0, import_tree.useTreeState)({ ...otherProps, ...userMenuProps, children });
         const state = propState || innerState;
         const { menuProps } = (0, import_menu.useMenu)({ ...otherProps, ...userMenuProps, onAction }, state, domRef);
-        const slots = (0, import_react67.useMemo)(() => (0, import_theme.menu)({ className }), [className]);
+        const slots = (0, import_react69.useMemo)(() => (0, import_theme.menu)({ className }), [className]);
         const baseStyles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.base, className);
         const getBaseProps = (props2 = {}) => {
           return {
@@ -120336,10 +120593,10 @@
           getSelectedIconProps
         };
       }
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       function MenuSelectedIcon(props) {
         const { isSelected, disableAnimation, ...otherProps } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
           "svg",
           {
             "aria-hidden": "true",
@@ -120347,7 +120604,7 @@
             role: "presentation",
             viewBox: "0 0 17 18",
             ...otherProps,
-            children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
               "polyline",
               {
                 fill: "none",
@@ -120366,7 +120623,7 @@
           }
         );
       }
-      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime28 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var MenuItem = (props) => {
         const {
           Component: Component2,
@@ -120390,21 +120647,21 @@
           getSelectedIconProps
         } = useMenuItem(props);
         const selectedContent = (0, import_react310.useMemo)(() => {
-          const defaultIcon = /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(MenuSelectedIcon, { disableAnimation, isSelected });
+          const defaultIcon = /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(MenuSelectedIcon, { disableAnimation, isSelected });
           if (typeof selectedIcon === "function") {
             return selectedIcon({ icon: defaultIcon, isSelected, isDisabled });
           }
           if (selectedIcon) return selectedIcon;
           return defaultIcon;
         }, [selectedIcon, isSelected, isDisabled, disableAnimation]);
-        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(Component2, { ...getItemProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)(Component2, { ...getItemProps(), children: [
           startContent,
-          description ? /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { ...getLabelProps(), children: rendered }),
-            /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { ...getDescriptionProps(), children: description })
-          ] }) : /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { ...getLabelProps(), children: rendered }),
-          shortcut && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("kbd", { ...getKeyboardShortcutProps(), children: shortcut }),
-          isSelectable && !hideSelectedIcon && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { ...getSelectedIconProps(), children: selectedContent }),
+          description ? /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("span", { ...getLabelProps(), children: rendered }),
+            /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("span", { ...getDescriptionProps(), children: description })
+          ] }) : /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("span", { ...getLabelProps(), children: rendered }),
+          shortcut && /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("kbd", { ...getKeyboardShortcutProps(), children: shortcut }),
+          isSelectable && !hideSelectedIcon && /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("span", { ...getSelectedIconProps(), children: selectedContent }),
           endContent
         ] });
       };
@@ -120760,7 +121017,7 @@
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
       var import_react_utils2 = require_dist10();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var getMenuItem = (props, key) => {
         if (props) {
           const mergedChildren = Array.isArray(props.children) ? props.children : [...(props == null ? void 0 : props.items) || []];
@@ -120804,10 +121061,10 @@
           ...otherProps
         } = props;
         const Component2 = as || "div";
-        const triggerRef = (0, import_react67.useRef)(null);
+        const triggerRef = (0, import_react69.useRef)(null);
         const menuTriggerRef = triggerRefProp || triggerRef;
-        const menuRef = (0, import_react67.useRef)(null);
-        const popoverRef = (0, import_react67.useRef)(null);
+        const menuRef = (0, import_react69.useRef)(null);
+        const popoverRef = (0, import_react69.useRef)(null);
         const state = (0, import_menu.useMenuTriggerState)({
           trigger,
           isOpen,
@@ -120824,7 +121081,7 @@
           state,
           menuTriggerRef
         );
-        const styles = (0, import_react67.useMemo)(
+        const styles = (0, import_react69.useMemo)(
           () => (0, import_theme.dropdown)({
             className
           }),
@@ -120887,12 +121144,12 @@
           getMenuTriggerProps
         };
       }
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Dropdown = (props) => {
         const { children, ...otherProps } = props;
         const context = useDropdown(otherProps);
         const [menuTrigger, menu] = import_react210.default.Children.toArray(children);
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(DropdownProvider, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(import_popover.Popover, { ...context.getPopoverProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(DropdownProvider, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(import_popover.Popover, { ...context.getPopoverProps(), children: [
           menuTrigger,
           menu
         ] }) });
@@ -120900,11 +121157,11 @@
       Dropdown.displayName = "HeroUI.Dropdown";
       var dropdown_default = Dropdown;
       var import_popover2 = require_dist54();
-      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime28 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var DropdownTrigger = (props) => {
         const { getMenuTriggerProps } = useDropdownContext();
         const { children, ...otherProps } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_popover2.PopoverTrigger, { ...getMenuTriggerProps(otherProps), children });
+        return /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(import_popover2.PopoverTrigger, { ...getMenuTriggerProps(otherProps), children });
       };
       DropdownTrigger.displayName = "HeroUI.DropdownTrigger";
       var dropdown_trigger_default = DropdownTrigger;
@@ -120951,7 +121208,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist11();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
@@ -121036,7 +121293,7 @@
             }
           };
         };
-        const getWrapperProps = (0, import_react67.useCallback)(() => {
+        const getWrapperProps = (0, import_react69.useCallback)(() => {
           const fallbackStyle = showFallback ? {
             backgroundImage: `url(${fallbackSrc})`
           } : {};
@@ -121048,7 +121305,7 @@
             }
           };
         }, [slots, showFallback, fallbackSrc, classNames == null ? void 0 : classNames.wrapper, w]);
-        const getBlurredImgProps = (0, import_react67.useCallback)(() => {
+        const getBlurredImgProps = (0, import_react69.useCallback)(() => {
           return {
             src,
             "aria-hidden": (0, import_shared_utils.dataAttr)(true),
@@ -121071,7 +121328,7 @@
           getBlurredImgProps
         };
       }
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Image2 = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -121090,19 +121347,19 @@
           ...props,
           ref
         });
-        const img = /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(Component2, { ref: domRef, ...getImgProps() });
+        const img = /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(Component2, { ref: domRef, ...getImgProps() });
         if (removeWrapper) {
           return img;
         }
-        const zoomed = /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { className: slots.zoomedWrapper({ class: classNames == null ? void 0 : classNames.zoomedWrapper }), children: img });
+        const zoomed = /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { className: slots.zoomedWrapper({ class: classNames == null ? void 0 : classNames.zoomedWrapper }), children: img });
         if (isBlurred) {
-          return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("div", { ...getWrapperProps(), children: [
+          return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { ...getWrapperProps(), children: [
             isZoomed ? zoomed : img,
             (0, import_react310.cloneElement)(img, getBlurredImgProps())
           ] });
         }
         if (isZoomed || !disableSkeleton || fallbackSrc) {
-          return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("div", { ...getWrapperProps(), children: [
+          return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { ...getWrapperProps(), children: [
             " ",
             isZoomed ? zoomed : img
           ] });
@@ -121142,7 +121399,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_overlays = require_main9();
       var import_utils8 = require_main4();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_aria_overlay = require_dist45();
       function useAriaModalOverlay(props = {
         shouldBlockScroll: true
@@ -121159,7 +121416,7 @@
           isDisabled: !state.isOpen || !props.shouldBlockScroll
         });
         (0, import_overlays.useOverlayFocusContain)();
-        (0, import_react67.useEffect)(() => {
+        (0, import_react69.useEffect)(() => {
           if (state.isOpen && ref.current) {
             return (0, import_overlays.ariaHideOutside)([ref.current]);
           }
@@ -121209,9 +121466,9 @@
         useViewportSize: () => useViewportSize
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react67 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
+      var import_react69 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
       var visualViewport = typeof document !== "undefined" && window.visualViewport;
-      var IsSSRContext = import_react67.default.createContext(false);
+      var IsSSRContext = import_react69.default.createContext(false);
       function getSnapshot() {
         return false;
       }
@@ -121223,15 +121480,15 @@
         };
       }
       function useIsSSR() {
-        if (typeof import_react67.default["useSyncExternalStore"] === "function") {
-          return import_react67.default["useSyncExternalStore"](subscribe, getSnapshot, getServerSnapshot);
+        if (typeof import_react69.default["useSyncExternalStore"] === "function") {
+          return import_react69.default["useSyncExternalStore"](subscribe, getSnapshot, getServerSnapshot);
         }
-        return (0, import_react67.useContext)(IsSSRContext);
+        return (0, import_react69.useContext)(IsSSRContext);
       }
       function useViewportSize() {
         let isSSR = useIsSSR();
-        let [size, setSize] = (0, import_react67.useState)(() => isSSR ? { width: 0, height: 0 } : getViewportSize());
-        (0, import_react67.useEffect)(() => {
+        let [size, setSize] = (0, import_react69.useState)(() => isSSR ? { width: 0, height: 0 } : getViewportSize());
+        (0, import_react69.useEffect)(() => {
           let onResize = () => {
             setSize((size2) => {
               let newSize = getViewportSize();
@@ -121407,7 +121664,7 @@
       var import_utils8 = require_main4();
       var import_utils22 = require_main46();
       var import_use_callback_ref = require_dist31();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useDisclosure2(props = {}) {
         const {
           id: idProp,
@@ -121421,22 +121678,22 @@
         const onOpenPropCallbackRef = (0, import_use_callback_ref.useCallbackRef)(onOpenProp);
         const onClosePropCallbackRef = (0, import_use_callback_ref.useCallbackRef)(onCloseProp);
         const [isOpen, setIsOpen] = (0, import_utils22.useControlledState)(isOpenProp, defaultOpen || false, onChange);
-        const reactId = (0, import_react67.useId)();
+        const reactId = (0, import_react69.useId)();
         const id4 = idProp || reactId;
         const isControlled = isOpenProp !== void 0;
-        const onClose = (0, import_react67.useCallback)(() => {
+        const onClose = (0, import_react69.useCallback)(() => {
           if (!isControlled) {
             setIsOpen(false);
           }
           onClosePropCallbackRef == null ? void 0 : onClosePropCallbackRef();
         }, [isControlled, onClosePropCallbackRef]);
-        const onOpen = (0, import_react67.useCallback)(() => {
+        const onOpen = (0, import_react69.useCallback)(() => {
           if (!isControlled) {
             setIsOpen(true);
           }
           onOpenPropCallbackRef == null ? void 0 : onOpenPropCallbackRef();
         }, [isControlled, onOpenPropCallbackRef]);
-        const onOpenChange = (0, import_react67.useCallback)(() => {
+        const onOpenChange = (0, import_react69.useCallback)(() => {
           const action = isOpen ? onClose : onOpen;
           action();
         }, [isOpen, onOpen, onClose]);
@@ -123552,15 +123809,15 @@
         useDraggable: () => useDraggable2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_interactions = require_main47();
       function useDraggable2(props) {
         const { targetRef, isDisabled = false, canOverflow = false } = props;
-        const boundary = (0, import_react67.useRef)({ minLeft: 0, minTop: 0, maxLeft: 0, maxTop: 0 });
-        const isDragging2 = (0, import_react67.useRef)(false);
-        const transform2 = (0, import_react67.useRef)({ offsetX: 0, offsetY: 0 });
-        const prevTargetRef = (0, import_react67.useRef)(null);
-        (0, import_react67.useEffect)(() => {
+        const boundary = (0, import_react69.useRef)({ minLeft: 0, minTop: 0, maxLeft: 0, maxTop: 0 });
+        const isDragging2 = (0, import_react69.useRef)(false);
+        const transform2 = (0, import_react69.useRef)({ offsetX: 0, offsetY: 0 });
+        const prevTargetRef = (0, import_react69.useRef)(null);
+        (0, import_react69.useEffect)(() => {
           var _a;
           const currentTarget = (_a = targetRef == null ? void 0 : targetRef.current) != null ? _a : null;
           if (prevTargetRef.current !== currentTarget) {
@@ -123568,7 +123825,7 @@
             prevTargetRef.current = currentTarget;
           }
         }, [targetRef == null ? void 0 : targetRef.current]);
-        const onMoveStart = (0, import_react67.useCallback)(() => {
+        const onMoveStart = (0, import_react69.useCallback)(() => {
           var _a, _b, _c, _d, _e;
           isDragging2.current = true;
           const { offsetX, offsetY } = transform2.current;
@@ -123590,7 +123847,7 @@
             maxTop
           };
         }, [targetRef]);
-        const onMove = (0, import_react67.useCallback)(
+        const onMove = (0, import_react69.useCallback)(
           (e) => {
             if (isDisabled) {
               return;
@@ -123613,7 +123870,7 @@
           },
           [isDisabled, canOverflow, targetRef]
         );
-        const onMoveEnd = (0, import_react67.useCallback)(() => {
+        const onMoveEnd = (0, import_react69.useCallback)(() => {
           isDragging2.current = false;
         }, []);
         const { moveProps } = (0, import_interactions.useMove)({
@@ -123621,12 +123878,12 @@
           onMove,
           onMoveEnd
         });
-        const preventDefault = (0, import_react67.useCallback)((e) => {
+        const preventDefault = (0, import_react69.useCallback)((e) => {
           if (isDragging2.current) {
             e.preventDefault();
           }
         }, []);
-        (0, import_react67.useEffect)(() => {
+        (0, import_react69.useEffect)(() => {
           if (!isDisabled) {
             document.body.addEventListener("touchmove", preventDefault, { passive: false });
           }
@@ -123684,7 +123941,7 @@
       var import_overlays2 = require_main9();
       var import_system2 = require_dist11();
       var import_use_aria_modal_overlay = require_dist59();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist12();
       var import_system = require_dist11();
       var import_use_aria_button = require_dist27();
@@ -123716,13 +123973,13 @@
         } = props;
         const Component2 = as || "section";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const closeButtonRef = (0, import_react67.useRef)(null);
-        const [headerMounted, setHeaderMounted] = (0, import_react67.useState)(false);
-        const [bodyMounted, setBodyMounted] = (0, import_react67.useState)(false);
+        const closeButtonRef = (0, import_react69.useRef)(null);
+        const [headerMounted, setHeaderMounted] = (0, import_react69.useState)(false);
+        const [bodyMounted, setBodyMounted] = (0, import_react69.useState)(false);
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        const dialogId = (0, import_react67.useId)();
-        const headerId = (0, import_react67.useId)();
-        const bodyId = (0, import_react67.useId)();
+        const dialogId = (0, import_react69.useId)();
+        const headerId = (0, import_react69.useId)();
+        const bodyId = (0, import_react69.useId)();
         const state = (0, import_overlays.useOverlayTriggerState)({
           isOpen,
           defaultOpen,
@@ -123745,7 +124002,7 @@
         const { buttonProps: closeButtonProps } = (0, import_use_aria_button.useAriaButton)({ onPress: state.close }, closeButtonRef);
         const { isFocusVisible: isCloseButtonFocusVisible, focusProps: closeButtonFocusProps } = (0, import_focus2.useFocusRing)();
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react67.useMemo)(
+        const slots = (0, import_react69.useMemo)(
           () => (0, import_theme.modal)({
             ...variantProps2,
             disableAnimation
@@ -123767,7 +124024,7 @@
             "aria-describedby": bodyMounted ? bodyId : void 0
           };
         };
-        const getBackdropProps = (0, import_react67.useCallback)(
+        const getBackdropProps = (0, import_react69.useCallback)(
           (props2 = {}) => ({
             className: slots.backdrop({ class: classNames == null ? void 0 : classNames.backdrop }),
             ...underlayProps,
@@ -123814,12 +124071,12 @@
         name: "ModalContext",
         errorMessage: "useModalContext: `context` is undefined. Seems you forgot to wrap all popover components within `<Modal />`"
       });
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Modal = (0, import_system2.forwardRef)((props, ref) => {
         const { children, ...otherProps } = props;
         const context = useModal({ ...otherProps, ref });
-        const overlay = /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_overlays2.Overlay, { portalContainer: context.portalContainer, children });
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(ModalProvider, { value: context, children: context.disableAnimation && context.isOpen ? overlay : /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_framer_motion2.AnimatePresence, { children: context.isOpen ? overlay : null }) });
+        const overlay = /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_overlays2.Overlay, { portalContainer: context.portalContainer, children });
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(ModalProvider, { value: context, children: context.disableAnimation && context.isOpen ? overlay : /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_framer_motion2.AnimatePresence, { children: context.isOpen ? overlay : null }) });
       });
       Modal.displayName = "HeroUI.Modal";
       var modal_default = Modal;
@@ -123865,7 +124122,7 @@
           }
         }
       };
-      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime28 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var domAnimation2 = () => Promise.resolve().then(() => (init_dist(), dist_exports)).then((res) => res.default);
       var ModalContent = (props) => {
         const { as, children, role = "dialog", ...otherProps } = props;
@@ -123892,7 +124149,7 @@
           },
           domRef
         );
-        const closeButtonContent = (0, import_react210.isValidElement)(closeButton) ? (0, import_react210.cloneElement)(closeButton, getCloseButtonProps()) : /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("button", { ...getCloseButtonProps(), children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_shared_icons.CloseIcon, {}) });
+        const closeButtonContent = (0, import_react210.isValidElement)(closeButton) ? (0, import_react210.cloneElement)(closeButton, getCloseButtonProps()) : /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("button", { ...getCloseButtonProps(), children: /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(import_shared_icons.CloseIcon, {}) });
         const onKeyDown = (0, import_react210.useCallback)((e) => {
           if (e.key === "Tab" && e.nativeEvent.isComposing) {
             e.stopPropagation();
@@ -123900,20 +124157,20 @@
           }
         }, []);
         const contentProps = getDialogProps((0, import_shared_utils2.mergeProps)(dialogProps, otherProps));
-        const content = /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(Component2, { ...contentProps, onKeyDown: (0, import_shared_utils2.chain)(contentProps.onKeyDown, onKeyDown), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_overlays3.DismissButton, { onDismiss: onClose }),
+        const content = /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)(Component2, { ...contentProps, onKeyDown: (0, import_shared_utils2.chain)(contentProps.onKeyDown, onKeyDown), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(import_overlays3.DismissButton, { onDismiss: onClose }),
           !hideCloseButton && closeButtonContent,
           typeof children === "function" ? children(onClose) : children,
-          /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_overlays3.DismissButton, { onDismiss: onClose })
+          /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(import_overlays3.DismissButton, { onDismiss: onClose })
         ] });
         const backdropContent = (0, import_react210.useMemo)(() => {
           if (backdrop === "transparent") {
             return null;
           }
           if (disableAnimation) {
-            return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getBackdropProps() });
+            return /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("div", { ...getBackdropProps() });
           }
-          return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_framer_motion22.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(import_framer_motion22.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(
             import_framer_motion22.m.div,
             {
               animate: "enter",
@@ -123927,7 +124184,7 @@
         const viewportStyle = {
           "--visual-viewport-height": viewport.height + "px"
         };
-        const contents = disableAnimation ? /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
+        const contents = disableAnimation ? /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(
           "div",
           {
             className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }),
@@ -123935,7 +124192,7 @@
             style: viewportStyle,
             children: content
           }
-        ) : /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_framer_motion22.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
+        ) : /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(import_framer_motion22.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(
           import_framer_motion22.m.div,
           {
             animate: "enter",
@@ -123949,7 +124206,7 @@
             children: content
           }
         ) });
-        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { tabIndex: -1, children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)("div", { tabIndex: -1, children: [
           backdropContent,
           contents
         ] });
@@ -124062,7 +124319,7 @@
         useScrollPosition: () => useScrollPosition
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var isBrowser3 = typeof window !== "undefined";
       function getScrollPosition(element) {
         if (!isBrowser3) return { x: 0, y: 0 };
@@ -124073,11 +124330,11 @@
       }
       var useScrollPosition = (props) => {
         const { elementRef, delay: delay2 = 30, callback, isEnabled } = props;
-        const position = (0, import_react67.useRef)(
+        const position = (0, import_react69.useRef)(
           isEnabled ? getScrollPosition(elementRef == null ? void 0 : elementRef.current) : { x: 0, y: 0 }
         );
-        const throttleTimeout = (0, import_react67.useRef)(null);
-        const handler = (0, import_react67.useCallback)(() => {
+        const throttleTimeout = (0, import_react69.useRef)(null);
+        const handler = (0, import_react69.useCallback)(() => {
           const currPos = getScrollPosition(elementRef == null ? void 0 : elementRef.current);
           if (typeof callback === "function") {
             callback({ prevPos: position.current, currPos });
@@ -124085,7 +124342,7 @@
           position.current = currPos;
           throttleTimeout.current = null;
         }, [callback, elementRef]);
-        (0, import_react67.useEffect)(() => {
+        (0, import_react69.useEffect)(() => {
           if (!isEnabled) return;
           const handleScroll = () => {
             if (delay2) {
@@ -124139,9 +124396,9 @@
         useResizeObserver: () => useResizeObserver
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useResize(callback, immediatelyInvoke = true) {
-        (0, import_react67.useEffect)(() => {
+        (0, import_react69.useEffect)(() => {
           const fn = () => callback();
           if (immediatelyInvoke) {
             fn();
@@ -124155,7 +124412,7 @@
       }
       function useResizeObserver(options) {
         const { ref, box, onResize } = options;
-        (0, import_react67.useEffect)(() => {
+        (0, import_react69.useEffect)(() => {
           let element = ref == null ? void 0 : ref.current;
           if (!element) {
             return;
@@ -124379,7 +124636,7 @@
         useNavbarContext: () => useNavbarContext
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
@@ -124413,10 +124670,10 @@
         const Component2 = as || "nav";
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const prevWidth = (0, import_react67.useRef)(0);
-        const navHeight = (0, import_react67.useRef)(0);
-        const [isHidden, setIsHidden] = (0, import_react67.useState)(false);
-        const handleMenuOpenChange = (0, import_react67.useCallback)(
+        const prevWidth = (0, import_react69.useRef)(0);
+        const navHeight = (0, import_react69.useRef)(0);
+        const [isHidden, setIsHidden] = (0, import_react69.useState)(false);
+        const handleMenuOpenChange = (0, import_react69.useCallback)(
           (isOpen) => {
             onMenuOpenChange(isOpen || false);
           },
@@ -124453,12 +124710,12 @@
             }
           }
         });
-        (0, import_react67.useEffect)(() => {
+        (0, import_react69.useEffect)(() => {
           var _a2;
           updateWidth();
           navHeight.current = ((_a2 = domRef.current) == null ? void 0 : _a2.offsetHeight) || 0;
         }, []);
-        const slots = (0, import_react67.useMemo)(
+        const slots = (0, import_react69.useMemo)(
           () => (0, import_theme.navbar)({
             ...variantProps2,
             disableAnimation,
@@ -124560,7 +124817,7 @@
           }
         }
       };
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var domAnimation2 = () => Promise.resolve().then(() => (init_dist(), dist_exports)).then((res) => res.default);
       var NavbarMenu = (0, import_system2.forwardRef)((props, ref) => {
         var _a, _b;
@@ -124570,7 +124827,7 @@
         const styles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.menu, className);
         if (disableAnimation) {
           if (!isMenuOpen) return null;
-          return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_overlays2.Overlay, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_overlays2.Overlay, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
             "ul",
             {
               ref: domRef,
@@ -124585,7 +124842,7 @@
             }
           ) });
         }
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_framer_motion3.AnimatePresence, { mode: "wait", children: isMenuOpen ? /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_overlays2.Overlay, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_framer_motion3.AnimatePresence, { mode: "wait", children: isMenuOpen ? /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_overlays2.Overlay, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
           import_framer_motion3.m.ul,
           {
             ref: domRef,
@@ -124608,18 +124865,18 @@
       });
       NavbarMenu.displayName = "HeroUI.NavbarMenu";
       var navbar_menu_default = NavbarMenu;
-      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime28 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var domAnimation22 = () => Promise.resolve().then(() => (init_dist(), dist_exports)).then((res) => res.default);
       var Navbar = (0, import_system3.forwardRef)((props, ref) => {
         const { children, ...otherProps } = props;
         const context = useNavbar({ ...otherProps, ref });
         const Component2 = context.Component;
         const [childrenWithoutMenu, menu] = (0, import_react_utils4.pickChildren)(children, navbar_menu_default);
-        const content = /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(import_jsx_runtime27.Fragment, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("header", { ...context.getWrapperProps(), children: childrenWithoutMenu }),
+        const content = /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)(import_jsx_runtime28.Fragment, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("header", { ...context.getWrapperProps(), children: childrenWithoutMenu }),
           menu
         ] });
-        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(NavbarProvider, { value: context, children: context.shouldHideOnScroll ? /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_framer_motion2.LazyMotion, { features: domAnimation22, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(NavbarProvider, { value: context, children: context.shouldHideOnScroll ? /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(import_framer_motion2.LazyMotion, { features: domAnimation22, children: /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(
           import_framer_motion2.m.nav,
           {
             animate: context.isHidden ? "hidden" : "visible",
@@ -124628,7 +124885,7 @@
             ...(0, import_shared_utils3.mergeProps)(context.getBaseProps(), context.motionProps),
             children: content
           }
-        ) }) : /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(Component2, { ...context.getBaseProps(), children: content }) });
+        ) }) : /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(Component2, { ...context.getBaseProps(), children: content }) });
       });
       Navbar.displayName = "HeroUI.Navbar";
       var navbar_default = Navbar;
@@ -131475,7 +131732,7 @@
         useTable: () => useTable
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_table = require_main50();
       var import_table2 = require_main53();
       var import_system = require_dist11();
@@ -131577,7 +131834,7 @@
             onCellAction
           ]
         );
-        const getBaseProps = (0, import_react67.useCallback)(
+        const getBaseProps = (0, import_react69.useCallback)(
           (props2) => ({
             ...props2,
             ref: domBaseRef,
@@ -131585,7 +131842,7 @@
           }),
           [baseStyles, slots]
         );
-        const getWrapperProps = (0, import_react67.useCallback)(
+        const getWrapperProps = (0, import_react69.useCallback)(
           (props2) => ({
             ...props2,
             ref: domBaseRef,
@@ -131593,7 +131850,7 @@
           }),
           [classNames == null ? void 0 : classNames.wrapper, slots]
         );
-        const getTableProps = (0, import_react67.useCallback)(
+        const getTableProps = (0, import_react69.useCallback)(
           (props2) => ({
             ...(0, import_shared_utils.mergeProps)(
               gridProps,
@@ -131639,7 +131896,7 @@
       var import_shared_utils2 = require_dist2();
       var import_table3 = require_main53();
       var import_theme2 = require_dist12();
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var TableRowGroup = (0, import_react310.forwardRef)((props, ref) => {
         var _a;
         const { as, className, children, slots, classNames, ...otherProps } = props;
@@ -131647,7 +131904,7 @@
         const domRef = (0, import_react_utils2.useDOMRef)(ref);
         const { rowGroupProps } = (0, import_table3.useTableRowGroup)();
         const theadStyles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.thead, className);
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
           Component2,
           {
             ref: domRef,
@@ -131664,7 +131921,7 @@
       var import_shared_utils3 = require_dist2();
       var import_table4 = require_main53();
       var import_theme3 = require_dist12();
-      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime28 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var TableHeaderRow = (0, import_system2.forwardRef)((props, ref) => {
         var _a, _b;
         const { as, className, children, node, slots, classNames, state, ...otherProps } = props;
@@ -131673,7 +131930,7 @@
         const domRef = (0, import_react_utils3.useDOMRef)(ref);
         const { rowProps } = (0, import_table4.useTableHeaderRow)({ node }, state, domRef);
         const trStyles = (0, import_theme3.cn)(classNames == null ? void 0 : classNames.tr, className, (_a = node.props) == null ? void 0 : _a.className);
-        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(
           Component2,
           {
             ref: domRef,
@@ -131886,7 +132143,7 @@
       });
       TableRow.displayName = "HeroUI.TableRow";
       var table_row_default = TableRow;
-      var import_react68 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react610 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system6 = require_dist11();
       var import_react_utils7 = require_dist10();
       var import_shared_utils7 = require_dist2();
@@ -131904,7 +132161,7 @@
         const tdStyles = (0, import_theme7.cn)(classNames == null ? void 0 : classNames.td, className, (_a = node.props) == null ? void 0 : _a.className);
         const { isFocusVisible, focusProps } = (0, import_focus4.useFocusRing)();
         const isRowSelected = state.selectionManager.isSelected(rowKey);
-        const cell = (0, import_react68.useMemo)(() => {
+        const cell = (0, import_react610.useMemo)(() => {
           const cellType = typeof node.rendered;
           return cellType !== "object" && cellType !== "function" ? /* @__PURE__ */ (0, import_jsx_runtime62.jsx)("span", { children: node.rendered }) : node.rendered;
         }, [node.rendered]);
@@ -132524,7 +132781,7 @@
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var spacing = {
         px: "1px",
         0: "0px",
@@ -132570,7 +132827,7 @@
         const [props, variantProps2] = (0, import_system_rsc.mapPropsVariants)(originalProps, import_theme.spacer.variantKeys);
         const { as, className, x = 1, y = 1, ...otherProps } = props;
         const Component2 = as || "span";
-        const styles = (0, import_react67.useMemo)(
+        const styles = (0, import_react69.useMemo)(
           () => (0, import_theme.spacer)({
             ...variantProps2,
             className
@@ -132593,10 +132850,10 @@
         });
         return { Component: Component2, getSpacerProps };
       }
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Spacer = (0, import_system_rsc2.forwardRef)((props, ref) => {
         const { Component: Component2, getSpacerProps } = useSpacer({ ...props });
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(Component2, { ref, ...getSpacerProps() });
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(Component2, { ref, ...getSpacerProps() });
       });
       Spacer.displayName = "HeroUI.Spacer";
       var spacer_default = Spacer;
@@ -132635,12 +132892,12 @@
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useKbd(originalProps) {
         const [props, variantProps2] = (0, import_system_rsc.mapPropsVariants)(originalProps, import_theme.kbd.variantKeys);
         const { as, children, className, keys: keys3, title, classNames, ...otherProps } = props;
         const Component2 = as || "kbd";
-        const slots = (0, import_react67.useMemo)(
+        const slots = (0, import_react69.useMemo)(
           () => (0, import_theme.kbd)({
             ...variantProps2
           }),
@@ -132703,13 +132960,13 @@
         win: "Win",
         alt: "Alt"
       };
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Kbd = (0, import_system_rsc2.forwardRef)((props, ref) => {
         const { Component: Component2, children, slots, classNames, keysToRender, getKbdProps } = useKbd({
           ...props
         });
         const keysContent = (0, import_react210.useMemo)(() => {
-          return keysToRender.map((key) => /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+          return keysToRender.map((key) => /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
             "abbr",
             {
               className: slots.abbr({ class: classNames == null ? void 0 : classNames.abbr }),
@@ -132719,9 +132976,9 @@
             key
           ));
         }, [keysToRender]);
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(Component2, { ref, ...getKbdProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(Component2, { ref, ...getKbdProps(), children: [
           keysContent,
-          children && /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("span", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children })
+          children && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children })
         ] });
       });
       Kbd.displayName = "HeroUI.Kbd";
@@ -133583,7 +133840,7 @@
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
       var import_react_utils2 = require_dist10();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_tabs = require_main55();
       var import_tabs2 = require_main56();
       function useTabs(originalProps) {
@@ -133617,7 +133874,7 @@
           state,
           domRef
         );
-        const slots = (0, import_react67.useMemo)(
+        const slots = (0, import_react69.useMemo)(
           () => (0, import_theme.tabs)({
             ...variantProps2,
             disableAnimation,
@@ -133626,7 +133883,7 @@
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation, isVertical]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const values = (0, import_react67.useMemo)(
+        const values = (0, import_react69.useMemo)(
           () => ({
             state,
             slots,
@@ -133648,7 +133905,7 @@
             classNames
           ]
         );
-        const getBaseProps = (0, import_react67.useCallback)(
+        const getBaseProps = (0, import_react69.useCallback)(
           (props2) => ({
             "data-slot": "base",
             className: slots.base({ class: (0, import_theme.cn)(baseStyles, props2 == null ? void 0 : props2.className) }),
@@ -133661,7 +133918,7 @@
           }),
           [baseStyles, otherProps, slots]
         );
-        const getWrapperProps = (0, import_react67.useCallback)(
+        const getWrapperProps = (0, import_react69.useCallback)(
           (props2) => ({
             "data-slot": "tabWrapper",
             className: slots.tabWrapper({ class: (0, import_theme.cn)(classNames == null ? void 0 : classNames.tabWrapper, props2 == null ? void 0 : props2.className) }),
@@ -133670,7 +133927,7 @@
           }),
           [classNames, slots, placement, isVertical]
         );
-        const getTabListProps = (0, import_react67.useCallback)(
+        const getTabListProps = (0, import_react69.useCallback)(
           (props2) => ({
             ref: domRef,
             "data-slot": "tabList",
@@ -133679,7 +133936,7 @@
           }),
           [domRef, tabListProps, classNames, slots]
         );
-        const getTabCursorProps = (0, import_react67.useCallback)(
+        const getTabCursorProps = (0, import_react69.useCallback)(
           (props2) => ({
             "data-slot": "cursor",
             className: slots.cursor({
@@ -133708,7 +133965,7 @@
       var import_tabs3 = require_main56();
       var import_interactions = require_main17();
       var import_theme2 = require_dist12();
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Tab = (0, import_system2.forwardRef)((props, ref) => {
         var _a;
         const {
@@ -133753,7 +134010,7 @@
             boundary: listRef == null ? void 0 : listRef.current
           });
         };
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
           Component2,
           {
             ref: (0, import_react_utils3.mergeRefs)(domRef, tabRef),
@@ -133784,7 +134041,7 @@
             className: (_a = slots.tab) == null ? void 0 : _a.call(slots, { class: tabStyles }),
             title: otherProps == null ? void 0 : otherProps.titleValue,
             type: Component2 === "button" ? "button" : void 0,
-            children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
               "div",
               {
                 className: slots.tabContent({
@@ -133805,7 +134062,7 @@
       var import_tabs4 = require_main56();
       var import_focus22 = require_main18();
       var import_theme3 = require_dist12();
-      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime28 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var TabPanel = (0, import_system3.forwardRef)((props, ref) => {
         var _a, _b;
         const { as, tabKey, destroyInactiveTabPanel, state, className, slots, classNames, ...otherProps } = props;
@@ -133820,7 +134077,7 @@
         if (!content || !isSelected && destroyInactiveTabPanel) {
           return null;
         }
-        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(
           Component2,
           {
             ref: domRef,
@@ -134027,7 +134284,7 @@
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist11();
       function useSkeleton(originalProps) {
         var _a, _b;
@@ -134036,7 +134293,7 @@
         const { as, children, isLoaded = false, className, classNames, ...otherProps } = props;
         const Component2 = as || "div";
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        const slots = (0, import_react67.useMemo)(
+        const slots = (0, import_react69.useMemo)(
           () => (0, import_theme.skeleton)({
             ...variantProps2,
             disableAnimation
@@ -134058,10 +134315,10 @@
         };
         return { Component: Component2, children, slots, classNames, getSkeletonProps, getContentProps };
       }
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Skeleton = (0, import_system3.forwardRef)((props, ref) => {
         const { Component: Component2, children, getSkeletonProps, getContentProps } = useSkeleton({ ...props });
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(Component2, { ref, ...getSkeletonProps(), children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { ...getContentProps(), children }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(Component2, { ref, ...getSkeletonProps(), children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getContentProps(), children }) });
       });
       Skeleton.displayName = "HeroUI.Skeleton";
       var skeleton_default = Skeleton;
@@ -134095,7 +134352,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_shared_utils = require_dist2();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useDataScrollOverflow(props = {}) {
         const {
           domRef,
@@ -134106,8 +134363,8 @@
           onVisibilityChange,
           updateDeps = []
         } = props;
-        const visibleRef = (0, import_react67.useRef)(visibility);
-        (0, import_react67.useEffect)(() => {
+        const visibleRef = (0, import_react69.useRef)(visibility);
+        (0, import_react69.useEffect)(() => {
           const el = domRef == null ? void 0 : domRef.current;
           if (!el || !isEnabled) return;
           const setAttributes = (direction, hasBefore, hasAfter, prefix, suffix) => {
@@ -134209,7 +134466,7 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_use_data_scroll_overflow = require_dist72();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       function useScrollShadow(originalProps) {
         var _a;
@@ -134238,7 +134495,7 @@
           updateDeps: [children],
           overflowCheck: (_a = originalProps.orientation) != null ? _a : "vertical"
         });
-        const styles = (0, import_react67.useMemo)(
+        const styles = (0, import_react69.useMemo)(
           () => (0, import_theme.scrollShadow)({
             ...variantProps2,
             className
@@ -134262,10 +134519,10 @@
         };
         return { Component: Component2, styles, domRef, children, getBaseProps };
       }
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var ScrollShadow = (0, import_system2.forwardRef)((props, ref) => {
         const { Component: Component2, children, getBaseProps } = useScrollShadow({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(Component2, { ...getBaseProps(), children });
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(Component2, { ...getBaseProps(), children });
       });
       ScrollShadow.displayName = "HeroUI.ScrollShadow";
       var scroll_shadow_default = ScrollShadow;
@@ -134793,7 +135050,7 @@
       var import_theme = require_dist12();
       var import_list = require_main58();
       var import_react_utils = require_dist10();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme2 = require_dist12();
       function useListbox(props) {
         var _a;
@@ -134825,7 +135082,7 @@
         const innerState = (0, import_list.useListState)({ ...props, children, onSelectionChange });
         const state = propState || innerState;
         const { listBoxProps } = (0, import_listbox.useListBox)({ ...props, onAction }, state, domRef);
-        const slots = (0, import_react67.useMemo)(() => (0, import_theme.listbox)(), []);
+        const slots = (0, import_react69.useMemo)(() => (0, import_theme.listbox)(), []);
         const baseStyles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.base, className);
         const getBaseProps = (props2 = {}) => {
           return {
@@ -135042,10 +135299,10 @@
           getSelectedIconProps
         };
       }
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       function ListboxSelectedIcon(props) {
         const { isSelected, disableAnimation, ...otherProps } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
           "svg",
           {
             "aria-hidden": "true",
@@ -135053,7 +135310,7 @@
             role: "presentation",
             viewBox: "0 0 17 18",
             ...otherProps,
-            children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
               "polyline",
               {
                 fill: "none",
@@ -135072,7 +135329,7 @@
           }
         );
       }
-      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime28 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var ListboxItem = (props) => {
         const {
           Component: Component2,
@@ -135093,21 +135350,21 @@
           getSelectedIconProps
         } = useListboxItem(props);
         const selectedContent = (0, import_react310.useMemo)(() => {
-          const defaultIcon = /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(ListboxSelectedIcon, { disableAnimation, isSelected });
+          const defaultIcon = /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(ListboxSelectedIcon, { disableAnimation, isSelected });
           if (typeof selectedIcon === "function") {
             return selectedIcon({ icon: defaultIcon, isSelected, isDisabled });
           }
           if (selectedIcon) return selectedIcon;
           return defaultIcon;
         }, [selectedIcon, isSelected, isDisabled, disableAnimation]);
-        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(Component2, { ...getItemProps(), children: [
-          startContent && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { "data-slot": "startContent", children: startContent }),
-          description ? /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { ...getWrapperProps(), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { ...getLabelProps(), children: rendered }),
-            /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { ...getDescriptionProps(), children: description })
-          ] }) : /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { ...getLabelProps(), children: rendered }),
-          isSelectable && !hideSelectedIcon && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { ...getSelectedIconProps(), children: selectedContent }),
-          endContent && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { "data-slot": "endContent", children: endContent })
+        return /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)(Component2, { ...getItemProps(), children: [
+          startContent && /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("span", { "data-slot": "startContent", children: startContent }),
+          description ? /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)("div", { ...getWrapperProps(), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("span", { ...getLabelProps(), children: rendered }),
+            /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("span", { ...getDescriptionProps(), children: description })
+          ] }) : /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("span", { ...getLabelProps(), children: rendered }),
+          isSelectable && !hideSelectedIcon && /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("span", { ...getSelectedIconProps(), children: selectedContent }),
+          endContent && /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("span", { "data-slot": "endContent", children: endContent })
         ] });
       };
       ListboxItem.displayName = "HeroUI.ListboxItem";
@@ -135295,7 +135552,7 @@
           };
         }, [...updateDeps, isEnabled, visibility, overflowCheck, onVisibilityChange, domRef]);
       }
-      var import_react68 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react610 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils4 = require_dist2();
       function useScrollShadow(originalProps) {
         var _a;
@@ -135324,7 +135581,7 @@
           updateDeps: [children],
           overflowCheck: (_a = originalProps.orientation) != null ? _a : "vertical"
         });
-        const styles = (0, import_react68.useMemo)(
+        const styles = (0, import_react610.useMemo)(
           () => (0, import_theme5.scrollShadow)({
             ...variantProps2,
             className
@@ -135623,27 +135880,27 @@
         useLayoutEffect: () => useLayoutEffect2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react67 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
-      var useLayoutEffect2 = typeof document !== "undefined" ? import_react67.default.useLayoutEffect : () => {
+      var import_react69 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
+      var useLayoutEffect2 = typeof document !== "undefined" ? import_react69.default.useLayoutEffect : () => {
       };
       function useEffectEvent2(fn) {
-        const ref = (0, import_react67.useRef)(null);
+        const ref = (0, import_react69.useRef)(null);
         useLayoutEffect2(() => {
           ref.current = fn;
         }, [fn]);
-        return (0, import_react67.useCallback)((...args) => {
+        return (0, import_react69.useCallback)((...args) => {
           const f = ref.current;
           return f == null ? void 0 : f(...args);
         }, []);
       }
       function useFormReset(ref, initialValue, onReset) {
-        let resetValue = (0, import_react67.useRef)(initialValue);
+        let resetValue = (0, import_react69.useRef)(initialValue);
         let handleReset = useEffectEvent2(() => {
           if (onReset) {
             onReset(resetValue.current);
           }
         });
-        (0, import_react67.useEffect)(() => {
+        (0, import_react69.useEffect)(() => {
           var _a;
           let form = (_a = ref == null ? void 0 : ref.current) == null ? void 0 : _a.form;
           form == null ? void 0 : form.addEventListener("reset", handleReset);
@@ -139159,17 +139416,17 @@
         useMultiSelectState: () => useMultiSelectState
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_i18n8 = require_main5();
+      var import_i18n9 = require_main5();
       var import_interactions = require_main59();
       var import_label = require_main60();
       var import_menu = require_main61();
       var import_selection = require_main13();
       var import_utils8 = require_main4();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useMultiSelect(props, state, ref) {
         const { disallowEmptySelection, isDisabled } = props;
-        const collator = (0, import_i18n8.useCollator)({ usage: "search", sensitivity: "base" });
-        const delegate = (0, import_react67.useMemo)(
+        const collator = (0, import_i18n9.useCollator)({ usage: "search", sensitivity: "base" });
+        const delegate = (0, import_react69.useMemo)(
           () => new import_selection.ListKeyboardDelegate(state.collection, state.disabledKeys, null, collator),
           [state.collection, state.disabledKeys, collator]
         );
@@ -139444,7 +139701,7 @@
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_aria_button = require_dist27();
       var import_focus2 = require_main18();
       var import_shared_utils = require_dist2();
@@ -139528,9 +139785,9 @@
         const Component2 = as || "button";
         const shouldFilterDOMProps = typeof Component2 === "string";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const triggerRef = (0, import_react67.useRef)(null);
-        const listBoxRef = (0, import_react67.useRef)(null);
-        const popoverRef = (0, import_react67.useRef)(null);
+        const triggerRef = (0, import_react69.useRef)(null);
+        const listBoxRef = (0, import_react69.useRef)(null);
+        const popoverRef = (0, import_react69.useRef)(null);
         let state = (0, import_use_aria_multiselect.useMultiSelectState)({
           ...props,
           isOpen,
@@ -139591,7 +139848,7 @@
           state,
           triggerRef
         );
-        const handleClear = (0, import_react67.useCallback)(() => {
+        const handleClear = (0, import_react69.useCallback)(() => {
           var _a2;
           state.setSelectedKeys(/* @__PURE__ */ new Set([]));
           onClear == null ? void 0 : onClear();
@@ -139620,7 +139877,7 @@
         const hasLabel = !!label;
         const hasLabelOutside = hasLabel && (isOutsideLeft || shouldLabelBeOutside && hasPlaceholder);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react67.useMemo)(
+        const slots = (0, import_react69.useMemo)(
           () => (0, import_theme.select)({
             ...variantProps2,
             isInvalid,
@@ -139636,14 +139893,14 @@
         const errorMessage = typeof props.errorMessage === "function" ? props.errorMessage({ isInvalid, validationErrors, validationDetails }) : props.errorMessage || (validationErrors == null ? void 0 : validationErrors.join(" "));
         const hasHelper = !!description || !!errorMessage;
         const hasEndContent = !!endContent;
-        (0, import_react67.useEffect)(() => {
+        (0, import_react69.useEffect)(() => {
           if (state.isOpen && popoverRef.current && triggerRef.current) {
             let selectRect = triggerRef.current.getBoundingClientRect();
             let popover = popoverRef.current;
             popover.style.width = selectRect.width + "px";
           }
         }, [state.isOpen]);
-        (0, import_react67.useEffect)(() => {
+        (0, import_react69.useEffect)(() => {
           if (state.isOpen && popoverRef.current && listBoxRef.current) {
             let selectedItem = listBoxRef.current.querySelector("[aria-selected=true] [data-label=true]");
             let scrollShadow = scrollShadowRef.current;
@@ -139654,7 +139911,7 @@
             }
           }
         }, [state.isOpen, disableAnimation]);
-        const getBaseProps = (0, import_react67.useCallback)(
+        const getBaseProps = (0, import_react69.useCallback)(
           (props2 = {}) => ({
             "data-slot": "base",
             "data-filled": (0, import_shared_utils.dataAttr)(isFilled),
@@ -139671,7 +139928,7 @@
           }),
           [slots, hasHelper, hasValue, hasLabel, hasLabelOutside, isFilled, baseStyles]
         );
-        const getTriggerProps = (0, import_react67.useCallback)(
+        const getTriggerProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ref: triggerRef,
@@ -139711,7 +139968,7 @@
             shouldFilterDOMProps
           ]
         );
-        const getHiddenSelectProps = (0, import_react67.useCallback)(
+        const getHiddenSelectProps = (0, import_react69.useCallback)(
           (props2 = {}) => ({
             state,
             triggerRef,
@@ -139736,7 +139993,7 @@
             triggerRef
           ]
         );
-        const getLabelProps = (0, import_react67.useCallback)(
+        const getLabelProps = (0, import_react69.useCallback)(
           (props2 = {}) => ({
             "data-slot": "label",
             className: slots.label({
@@ -139747,7 +140004,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.label, labelProps]
         );
-        const getValueProps = (0, import_react67.useCallback)(
+        const getValueProps = (0, import_react69.useCallback)(
           (props2 = {}) => ({
             "data-slot": "value",
             className: slots.value({
@@ -139758,7 +140015,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.value, valueProps]
         );
-        const getListboxWrapperProps = (0, import_react67.useCallback)(
+        const getListboxWrapperProps = (0, import_react69.useCallback)(
           (props2 = {}) => ({
             "data-slot": "listboxWrapper",
             className: slots.listboxWrapper({
@@ -139795,7 +140052,7 @@
             ...(0, import_shared_utils.mergeProps)(slotsProps.listboxProps, props2, menuProps)
           };
         };
-        const getPopoverProps = (0, import_react67.useCallback)(
+        const getPopoverProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             var _a2, _b2;
             const popoverProps2 = (0, import_shared_utils.mergeProps)(slotsProps.popoverProps, props2);
@@ -139827,7 +140084,7 @@
             state.selectedItems
           ]
         );
-        const getSelectorIconProps = (0, import_react67.useCallback)(
+        const getSelectorIconProps = (0, import_react69.useCallback)(
           () => ({
             "data-slot": "selectorIcon",
             "aria-hidden": (0, import_shared_utils.dataAttr)(true),
@@ -139836,7 +140093,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.selectorIcon, state.isOpen]
         );
-        const getInnerWrapperProps = (0, import_react67.useCallback)(
+        const getInnerWrapperProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -139848,7 +140105,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.innerWrapper]
         );
-        const getHelperWrapperProps = (0, import_react67.useCallback)(
+        const getHelperWrapperProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -139860,7 +140117,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getDescriptionProps = (0, import_react67.useCallback)(
+        const getDescriptionProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -139871,7 +140128,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.description]
         );
-        const getMainWrapperProps = (0, import_react67.useCallback)(
+        const getMainWrapperProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -139883,7 +140140,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.mainWrapper]
         );
-        const getEndWrapperProps = (0, import_react67.useCallback)(
+        const getEndWrapperProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -139895,7 +140152,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.endWrapper]
         );
-        const getEndContentProps = (0, import_react67.useCallback)(
+        const getEndContentProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -139907,7 +140164,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.endContent]
         );
-        const getErrorMessageProps = (0, import_react67.useCallback)(
+        const getErrorMessageProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -139918,7 +140175,7 @@
           },
           [slots, errorMessageProps, classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getSpinnerProps = (0, import_react67.useCallback)(
+        const getSpinnerProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               "aria-hidden": (0, import_shared_utils.dataAttr)(true),
@@ -139933,7 +140190,7 @@
           },
           [slots, spinnerRef, spinnerProps, classNames == null ? void 0 : classNames.spinner]
         );
-        const getClearButtonProps = (0, import_react67.useCallback)(
+        const getClearButtonProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -140000,7 +140257,7 @@
           getEndContentProps
         };
       }
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       function useHiddenSelect(props, state, triggerRef) {
         var _a;
         let data = selectData.get(state) || {};
@@ -140058,20 +140315,20 @@
         let { state, triggerRef, selectRef, label, name, isDisabled, form } = props;
         let { containerProps, selectProps } = useHiddenSelect({ ...props, selectRef }, state, triggerRef);
         if (state.collection.size <= 300) {
-          return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { ...containerProps, "data-testid": "hidden-select-container", children: /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("label", { children: [
+          return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...containerProps, "data-testid": "hidden-select-container", children: /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("label", { children: [
             label,
-            /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("select", { ...selectProps, ref: selectRef, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("option", {}),
+            /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("select", { ...selectProps, ref: selectRef, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("option", {}),
               [...state.collection.getKeys()].map((key) => {
                 let item = state.collection.getItem(key);
                 if ((item == null ? void 0 : item.type) === "item") {
-                  return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("option", { value: item.key, children: item.textValue }, item.key);
+                  return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("option", { value: item.key, children: item.textValue }, item.key);
                 }
               })
             ] })
           ] }) });
         } else if (name) {
-          return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
             "input",
             {
               autoComplete: selectProps.autoComplete,
@@ -140085,7 +140342,7 @@
         }
         return null;
       }
-      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime28 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Select = (0, import_system2.forwardRef)(function Select2(props, ref) {
         var _a;
         const {
@@ -140095,7 +140352,7 @@
           hasHelper,
           isLoading,
           triggerRef,
-          selectorIcon = /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_shared_icons.ChevronDownIcon, {}),
+          selectorIcon = /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(import_shared_icons.ChevronDownIcon, {}),
           description,
           errorMessage,
           isInvalid,
@@ -140125,29 +140382,29 @@
           getEndWrapperProps,
           getEndContentProps
         } = useSelect({ ...props, ref });
-        const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("label", { ...getLabelProps(), children: label }) : null;
+        const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("label", { ...getLabelProps(), children: label }) : null;
         const clonedIcon = (0, import_react310.cloneElement)(selectorIcon, getSelectorIconProps());
         const clearButton = (0, import_react210.useMemo)(() => {
           var _a2;
           if (isClearable && ((_a2 = state.selectedItems) == null ? void 0 : _a2.length)) {
-            return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { ...getClearButtonProps(), children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_shared_icons.CloseFilledIcon, {}) });
+            return /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("span", { ...getClearButtonProps(), children: /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(import_shared_icons.CloseFilledIcon, {}) });
           }
           return null;
         }, [isClearable, getClearButtonProps, (_a = state.selectedItems) == null ? void 0 : _a.length]);
         const end = (0, import_react210.useMemo)(() => {
           if (clearButton) {
-            return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { ...getEndWrapperProps(), children: [
+            return /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)("div", { ...getEndWrapperProps(), children: [
               clearButton,
-              endContent && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { ...getEndContentProps(), children: endContent })
+              endContent && /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("span", { ...getEndContentProps(), children: endContent })
             ] });
           }
-          return endContent && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { ...getEndContentProps(), children: endContent });
+          return endContent && /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("span", { ...getEndContentProps(), children: endContent });
         }, [clearButton, endContent, getEndWrapperProps, getEndContentProps]);
         const helperWrapper = (0, import_react210.useMemo)(() => {
           const shouldShowError = isInvalid && errorMessage;
           const hasContent = shouldShowError || description;
           if (!hasHelper || !hasContent) return null;
-          return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getHelperWrapperProps(), children: shouldShowError ? /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getErrorMessageProps(), children: errorMessage }) : /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getDescriptionProps(), children: description }) });
+          return /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("div", { ...getHelperWrapperProps(), children: shouldShowError ? /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("div", { ...getErrorMessageProps(), children: errorMessage }) : /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("div", { ...getDescriptionProps(), children: description }) });
         }, [
           hasHelper,
           isInvalid,
@@ -140176,31 +140433,31 @@
         }, [state.selectedItems, renderValue, placeholder]);
         const renderIndicator = (0, import_react210.useMemo)(() => {
           if (isLoading) {
-            return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_spinner.Spinner, { ...getSpinnerProps() });
+            return /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(import_spinner.Spinner, { ...getSpinnerProps() });
           }
           return clonedIcon;
         }, [isLoading, clonedIcon, getSpinnerProps]);
         const popoverContent = (0, import_react210.useMemo)(
-          () => state.isOpen ? /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_popover.FreeSoloPopover, { ...getPopoverProps(), children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_scroll_shadow.ScrollShadow, { ...getListboxWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_listbox.Listbox, { ...getListboxProps() }) }) }) : null,
+          () => state.isOpen ? /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(import_popover.FreeSoloPopover, { ...getPopoverProps(), children: /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(import_scroll_shadow.ScrollShadow, { ...getListboxWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(import_listbox.Listbox, { ...getListboxProps() }) }) }) : null,
           [state.isOpen, getPopoverProps, state, triggerRef, getListboxWrapperProps, getListboxProps]
         );
-        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { ...getBaseProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(HiddenSelect, { ...getHiddenSelectProps() }),
+        return /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)("div", { ...getBaseProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(HiddenSelect, { ...getHiddenSelectProps() }),
           shouldLabelBeOutside ? labelContent : null,
-          /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { ...getMainWrapperProps(), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(Component2, { ...getTriggerProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)("div", { ...getMainWrapperProps(), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)(Component2, { ...getTriggerProps(), children: [
               !shouldLabelBeOutside ? labelContent : null,
-              /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { ...getInnerWrapperProps(), children: [
+              /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)("div", { ...getInnerWrapperProps(), children: [
                 startContent,
-                /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { ...getValueProps(), children: renderSelectedItem }),
-                endContent && state.selectedItems && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_visually_hidden2.VisuallyHidden, { elementType: "span", children: "," }),
+                /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("span", { ...getValueProps(), children: renderSelectedItem }),
+                endContent && state.selectedItems && /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(import_visually_hidden2.VisuallyHidden, { elementType: "span", children: "," }),
                 end
               ] }),
               renderIndicator
             ] }),
             helperWrapper
           ] }),
-          disableAnimation ? popoverContent : /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_framer_motion2.AnimatePresence, { children: popoverContent })
+          disableAnimation ? popoverContent : /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(import_framer_motion2.AnimatePresence, { children: popoverContent })
         ] });
       });
       var select_default = Select;
@@ -140773,11 +141030,11 @@
       var import_visually_hidden = require_main8();
       var import_slider = require_main63();
       var import_react_utils = require_dist10();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_interactions = require_main17();
       var import_focus2 = require_main18();
       var import_shared_utils = require_dist2();
-      var import_i18n8 = require_main5();
+      var import_i18n9 = require_main5();
       function useSliderThumb(props) {
         const {
           ref,
@@ -140797,8 +141054,8 @@
         } = props;
         const Component2 = as || "div";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const inputRef = (0, import_react67.useRef)(null);
-        const numberFormatter = (0, import_i18n8.useNumberFormatter)(formatOptions);
+        const inputRef = (0, import_react69.useRef)(null);
+        const numberFormatter = (0, import_i18n9.useNumberFormatter)(formatOptions);
         const { thumbProps, inputProps, isDragging: isDragging2, isFocused } = (0, import_slider.useSliderThumb)(
           {
             index: index3,
@@ -140861,7 +141118,7 @@
           getInputProps
         };
       }
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var SliderThumb = (0, import_system.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -140878,14 +141135,14 @@
         const thumbProps = {
           ...getThumbProps(),
           index: index3,
-          children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_visually_hidden.VisuallyHidden, { children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("input", { ...getInputProps() }) })
+          children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_visually_hidden.VisuallyHidden, { children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("input", { ...getInputProps() }) })
         };
         const content = (0, import_react_utils2.renderFn)({
           Component: Component2,
           props: thumbProps,
           renderCustom: renderThumb
         });
-        return showTooltip ? /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_tooltip.Tooltip, { ...getTooltipProps(), children: content }) : content;
+        return showTooltip ? /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_tooltip.Tooltip, { ...getTooltipProps(), children: content }) : content;
       });
       SliderThumb.displayName = "HeroUI.SliderThumb";
       var slider_thumb_default = SliderThumb;
@@ -141187,7 +141444,7 @@
           getEndContentProps
         };
       }
-      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime28 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Slider = (0, import_system3.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -141212,8 +141469,8 @@
           getStartContentProps,
           getEndContentProps
         } = useSlider({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(Component2, { ...getBaseProps(), children: [
-          label && /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { ...getLabelWrapperProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)(Component2, { ...getBaseProps(), children: [
+          label && /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)("div", { ...getLabelWrapperProps(), children: [
             (0, import_react_utils4.renderFn)({
               Component: "label",
               props: getLabelProps(),
@@ -141225,15 +141482,15 @@
               renderCustom: renderValue
             })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { ...getTrackWrapperProps(), children: [
-            startContent && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getStartContentProps(), children: startContent }),
-            /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { ...getTrackProps(), children: [
-              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getFillerProps() }),
-              Number.isFinite(steps2) && Array.from({ length: steps2 }, (_, index3) => /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getStepProps(index3) }, index3)),
-              state.values.map((_, index3) => /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(slider_thumb_default, { ...getThumbProps(index3) }, index3)),
-              (marks == null ? void 0 : marks.length) > 0 && marks.map((mark, index3) => /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getMarkProps(mark), children: mark.label }, index3))
+          /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)("div", { ...getTrackWrapperProps(), children: [
+            startContent && /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("div", { ...getStartContentProps(), children: startContent }),
+            /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)("div", { ...getTrackProps(), children: [
+              /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("div", { ...getFillerProps() }),
+              Number.isFinite(steps2) && Array.from({ length: steps2 }, (_, index3) => /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("div", { ...getStepProps(index3) }, index3)),
+              state.values.map((_, index3) => /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(slider_thumb_default, { ...getThumbProps(index3) }, index3)),
+              (marks == null ? void 0 : marks.length) > 0 && marks.map((mark, index3) => /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("div", { ...getMarkProps(mark), children: mark.label }, index3))
             ] }),
-            endContent && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getEndContentProps(), children: endContent })
+            endContent && /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("div", { ...getEndContentProps(), children: endContent })
           ] })
         ] });
       });
@@ -141824,7 +142081,7 @@
       var import_react_utils = require_dist10();
       var import_breadcrumbs = require_main66();
       var import_shared_utils = require_dist2();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useBreadcrumbItem(originalProps) {
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.breadcrumbItem.variantKeys);
         const {
@@ -141851,7 +142108,7 @@
           domRef
         );
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)();
-        const slots = (0, import_react67.useMemo)(
+        const slots = (0, import_react69.useMemo)(
           () => (0, import_theme.breadcrumbItem)({
             ...variantProps2,
             isCurrent,
@@ -141900,7 +142157,7 @@
           getSeparatorProps
         };
       }
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Breadcrumbs = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -141918,13 +142175,13 @@
           ...props,
           ref
         });
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(WrapperComponent, { ...getBaseProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(Component2, { ...getItemProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(WrapperComponent, { ...getBaseProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(Component2, { ...getItemProps(), children: [
             startContent,
             children,
             endContent
           ] }),
-          !isLast && !hideSeparator && /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("span", { ...getSeparatorProps(), children: separator })
+          !isLast && !hideSeparator && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { ...getSeparatorProps(), children: separator })
         ] });
       });
       Breadcrumbs.displayName = "HeroUI.Breadcrumbs";
@@ -142018,14 +142275,14 @@
           onAction
         };
       }
-      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime28 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Breadcrumbs2 = (0, import_system4.forwardRef)((props, ref) => {
         const {
           Component: Component2,
           children,
           childCount,
           itemProps,
-          separator = /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_shared_icons.ChevronRightIcon, {}),
+          separator = /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(import_shared_icons.ChevronRightIcon, {}),
           maxItems,
           itemsBeforeCollapse,
           itemsAfterCollapse,
@@ -142071,7 +142328,7 @@
           if (itemsInEllipsis.length < 1) {
             return items;
           }
-          const ellipsisIcon = /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_shared_icons.EllipsisIcon, { ...getEllipsisProps() });
+          const ellipsisIcon = /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(import_shared_icons.EllipsisIcon, { ...getEllipsisProps() });
           const collapsedItem = (0, import_react410.cloneElement)(itemsInEllipsis[0], {
             ...itemsInEllipsis[0].props,
             key: "ellipsis",
@@ -142084,7 +142341,7 @@
             ellipsisIcon,
             itemsBeforeCollapse,
             itemsAfterCollapse,
-            separator: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { ...getSeparatorProps(), children: separator })
+            separator: /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("span", { ...getSeparatorProps(), children: separator })
           }) : collapsedItem;
           return [
             ...items.slice(0, itemsBeforeCollapse),
@@ -142100,7 +142357,7 @@
           itemsAfterCollapse,
           isDisabled
         ]);
-        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(Component2, { ...getBaseProps(), children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("ol", { ...getListProps(), children: content }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(Component2, { ...getBaseProps(), children: /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("ol", { ...getListProps(), children: content }) });
       });
       Breadcrumbs2.displayName = "HeroUI.Breadcrumbs";
       var breadcrumbs_default = Breadcrumbs2;
@@ -146018,10 +146275,10 @@
       var import_input = require_dist53();
       var import_framer_motion2 = require_cjs4();
       var import_shared_utils = require_dist2();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_utils = require_dist10();
       var import_combobox = require_main67();
-      var import_i18n8 = require_main5();
+      var import_i18n9 = require_main5();
       var import_theme = require_dist12();
       var import_use_safe_layout_effect = require_dist21();
       var import_system = require_dist11();
@@ -146073,7 +146330,7 @@
           isReadOnly = false,
           ...otherProps
         } = props;
-        const { contains } = (0, import_i18n8.useFilter)(filterOptions);
+        const { contains } = (0, import_i18n9.useFilter)(filterOptions);
         const { onChange: _onChange, ...restProps } = originalProps;
         let state = (0, import_combobox.useComboBoxState)({
           ...restProps,
@@ -146112,10 +146369,10 @@
             disabledKeys: /* @__PURE__ */ new Set([...state.collection.getKeys()])
           }
         };
-        const buttonRef = (0, import_react67.useRef)(null);
-        const inputWrapperRef = (0, import_react67.useRef)(null);
-        const listBoxRef = (0, import_react67.useRef)(null);
-        const popoverRef = (0, import_react67.useRef)(null);
+        const buttonRef = (0, import_react69.useRef)(null);
+        const inputWrapperRef = (0, import_react69.useRef)(null);
+        const listBoxRef = (0, import_react69.useRef)(null);
+        const popoverRef = (0, import_react69.useRef)(null);
         const inputRef = (0, import_react_utils.useDOMRef)(ref);
         const scrollShadowRef = (0, import_react_utils.useDOMRef)(scrollRefProp);
         const {
@@ -146214,7 +146471,7 @@
             state.setInputValue(item.textValue);
           }
         }, [inputRef.current]);
-        (0, import_react67.useEffect)(() => {
+        (0, import_react69.useEffect)(() => {
           let keyToFocus;
           if (state.value && state.collection.getItem(state.value) && !state.disabledKeys.has(state.value)) {
             keyToFocus = state.value;
@@ -146227,7 +146484,7 @@
           }
           state.selectionManager.setFocusedKey(keyToFocus);
         }, [state.collection, state.disabledKeys, state.value, state.isOpen, state.inputValue]);
-        (0, import_react67.useEffect)(() => {
+        (0, import_react69.useEffect)(() => {
           if (state.isOpen && popoverRef.current && listBoxRef.current) {
             let selectedItem = listBoxRef.current.querySelector("[aria-selected=true] [data-label=true]");
             let scrollShadow = scrollShadowRef.current;
@@ -146239,7 +146496,7 @@
             }
           }
         }, [state.isOpen, disableAnimation]);
-        (0, import_react67.useEffect)(() => {
+        (0, import_react69.useEffect)(() => {
           if (isOpen) {
             if (popoverRef.current && inputWrapperRef.current) {
               let rect = inputWrapperRef.current.getBoundingClientRect();
@@ -146259,7 +146516,7 @@
           };
         }
         const Component2 = as || "div";
-        const slots = (0, import_react67.useMemo)(
+        const slots = (0, import_react69.useMemo)(
           () => (0, import_theme.autocomplete)({
             ...variantProps2,
             isClearable,
@@ -146425,15 +146682,15 @@
           getEndContentWrapperProps
         };
       }
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Autocomplete = (0, import_system2.forwardRef)(function Autocomplete2(props, ref) {
         var _a;
         const {
           Component: Component2,
           isOpen,
           disableAnimation,
-          selectorIcon = /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_shared_icons.ChevronDownIcon, {}),
-          clearIcon = /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_shared_icons.CloseIcon, {}),
+          selectorIcon = /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_shared_icons.ChevronDownIcon, {}),
+          clearIcon = /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_shared_icons.CloseIcon, {}),
           endContent,
           getBaseProps,
           getSelectorButtonProps,
@@ -146446,19 +146703,19 @@
           getEndContentWrapperProps
         } = useAutocomplete({ ...props, ref });
         const listboxProps = getListBoxProps();
-        const popoverContent = isOpen ? /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_popover.FreeSoloPopover, { ...getPopoverProps(), children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_scroll_shadow.ScrollShadow, { ...getListBoxWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_listbox.Listbox, { ...listboxProps }) }) }) : ((_a = listboxProps.state) == null ? void 0 : _a.collection.size) === 0 ? /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { ...getEmptyPopoverProps() }) : null;
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(Component2, { ...getBaseProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+        const popoverContent = isOpen ? /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_popover.FreeSoloPopover, { ...getPopoverProps(), children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_scroll_shadow.ScrollShadow, { ...getListBoxWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_listbox.Listbox, { ...listboxProps }) }) }) : ((_a = listboxProps.state) == null ? void 0 : _a.collection.size) === 0 ? /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getEmptyPopoverProps() }) : null;
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(Component2, { ...getBaseProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
             import_input.Input,
             {
               ...getInputProps(),
-              endContent: /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("div", { ...getEndContentWrapperProps(), children: [
-                endContent || /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_button.Button, { ...getClearButtonProps(), children: clearIcon }),
-                selectorIcon && /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: selectorIcon })
+              endContent: /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { ...getEndContentWrapperProps(), children: [
+                endContent || /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_button.Button, { ...getClearButtonProps(), children: clearIcon }),
+                selectorIcon && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: selectorIcon })
               ] })
             }
           ),
-          disableAnimation ? popoverContent : /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_framer_motion2.AnimatePresence, { children: popoverContent })
+          disableAnimation ? popoverContent : /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_framer_motion2.AnimatePresence, { children: popoverContent })
         ] });
       });
       var autocomplete_default = Autocomplete;
@@ -151083,17 +151340,17 @@
       var import_theme2 = require_dist12();
       var import_date = require_main74();
       var import_system = require_dist11();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist12();
       var import_utils8 = require_main38();
       var import_react_utils = require_dist10();
-      var import_i18n8 = require_main5();
+      var import_i18n9 = require_main5();
       var import_shared_utils = require_dist2();
       function useCalendarBase(originalProps) {
         var _a, _b, _c, _d, _e, _f, _g;
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.calendar.variantKeys);
         const globalContext = (0, import_system.useProviderContext)();
-        const { locale, direction } = (0, import_i18n8.useLocale)();
+        const { locale, direction } = (0, import_i18n9.useLocale)();
         const isRTL = direction === "rtl";
         const calendarProp = (0, import_date.createCalendar)(
           new import_date.DateFormatter(locale).resolvedOptions().calendar
@@ -151129,7 +151386,7 @@
         const visibleMonths = (0, import_shared_utils.clamp)(visibleMonthsProp, 1, 3);
         const showMonthAndYearPickers = originalProps.showMonthAndYearPickers && visibleMonths === 1;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const handleHeaderExpandedChange = (0, import_react67.useCallback)(
+        const handleHeaderExpandedChange = (0, import_react69.useCallback)(
           (isExpanded) => {
             onHeaderExpandedChange(isExpanded || false);
           },
@@ -151140,10 +151397,10 @@
           isHeaderDefaultExpanded != null ? isHeaderDefaultExpanded : false,
           handleHeaderExpandedChange
         );
-        const visibleDuration = (0, import_react67.useMemo)(() => ({ months: visibleMonths }), [visibleMonths]);
+        const visibleDuration = (0, import_react69.useMemo)(() => ({ months: visibleMonths }), [visibleMonths]);
         const hasMultipleMonths = visibleMonths > 1;
         const shouldFilterDOMProps = typeof Component2 === "string";
-        const slots = (0, import_react67.useMemo)(
+        const slots = (0, import_react69.useMemo)(
           () => (0, import_theme.calendar)({
             ...variantProps2,
             showMonthAndYearPickers,
@@ -151346,32 +151603,8 @@
       var import_framer_motion3 = require_cjs4();
       var import_i18n62 = require_main5();
       var import_framer_utils = require_dist19();
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var ChevronLeftIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
-        "svg",
-        {
-          "aria-hidden": "true",
-          fill: "none",
-          focusable: "false",
-          height: "1em",
-          role: "presentation",
-          viewBox: "0 0 16 16",
-          width: "1em",
-          ...props,
-          children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
-            "path",
-            {
-              d: "M10 3.33334L6 8.00001L10 12.6667",
-              stroke: "currentColor",
-              strokeLinecap: "round",
-              strokeLinejoin: "round",
-              strokeWidth: "1.5"
-            }
-          )
-        }
-      );
       var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var ChevronRightIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
+      var ChevronLeftIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
         "svg",
         {
           "aria-hidden": "true",
@@ -151383,6 +151616,30 @@
           width: "1em",
           ...props,
           children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
+            "path",
+            {
+              d: "M10 3.33334L6 8.00001L10 12.6667",
+              stroke: "currentColor",
+              strokeLinecap: "round",
+              strokeLinejoin: "round",
+              strokeWidth: "1.5"
+            }
+          )
+        }
+      );
+      var import_jsx_runtime28 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var ChevronRightIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(
+        "svg",
+        {
+          "aria-hidden": "true",
+          fill: "none",
+          focusable: "false",
+          height: "1em",
+          role: "presentation",
+          viewBox: "0 0 16 16",
+          width: "1em",
+          ...props,
+          children: /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(
             "path",
             {
               d: "M6 3.33334L10 8.00001L6 12.6667",
@@ -151728,7 +151985,7 @@
       });
       CalendarPickerItem.displayName = "CalendarPickerItem";
       var import_i18n52 = require_main5();
-      var import_react68 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react610 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils6 = require_dist2();
       var import_scroll_into_view_if_needed = __toESM2(require_dist40());
       var import_date5 = require_main74();
@@ -151761,12 +152018,12 @@
         var _a;
         const { date, currentMonth } = props;
         const { slots, state, headerRef, isHeaderExpanded, setIsHeaderExpanded, classNames } = useCalendarContext();
-        const highlightRef = (0, import_react68.useRef)(null);
-        const yearsListRef = (0, import_react68.useRef)(null);
-        const monthsListRef = (0, import_react68.useRef)(null);
-        const monthsItemsRef = (0, import_react68.useRef)();
-        const yearsItemsRef = (0, import_react68.useRef)();
-        const focusedDateRef = (0, import_react68.useRef)(state.focusedDate);
+        const highlightRef = (0, import_react610.useRef)(null);
+        const yearsListRef = (0, import_react610.useRef)(null);
+        const monthsListRef = (0, import_react610.useRef)(null);
+        const monthsItemsRef = (0, import_react610.useRef)();
+        const yearsItemsRef = (0, import_react610.useRef)();
+        const focusedDateRef = (0, import_react610.useRef)(state.focusedDate);
         const monthDateFormatter = (0, import_i18n52.useDateFormatter)({
           month: "long",
           era: currentMonth.calendar.identifier === "gregory" && currentMonth.era === "BC" ? "short" : void 0,
@@ -151799,7 +152056,7 @@
             map.delete(value);
           }
         }
-        const handleListScroll = (0, import_react68.useCallback)(
+        const handleListScroll = (0, import_react610.useCallback)(
           (e, highlightEl, list) => {
             if (!(e.target instanceof HTMLElement) || !highlightEl) return;
             const map = getItemsRefMap(list === "months" ? monthsItemsRef : yearsItemsRef);
@@ -151834,15 +152091,15 @@
           },
           [isHeaderExpanded]
         );
-        (0, import_react68.useEffect)(() => {
+        (0, import_react610.useEffect)(() => {
           focusedDateRef.current = state.focusedDate;
         }, [state.focusedDate]);
-        (0, import_react68.useEffect)(() => {
+        (0, import_react610.useEffect)(() => {
           if (!isHeaderExpanded) return;
           scrollTo(date.month, "months", false);
           scrollTo(date.year, "years", false);
         }, [isHeaderExpanded]);
-        (0, import_react68.useEffect)(() => {
+        (0, import_react610.useEffect)(() => {
           const monthsList = monthsListRef.current;
           const yearsList = yearsListRef.current;
           const highlightEl = highlightRef.current;
@@ -151878,7 +152135,7 @@
             boundary: listRef.current
           });
         }
-        const onPickerItemPressed = (0, import_react68.useCallback)(
+        const onPickerItemPressed = (0, import_react610.useCallback)(
           (e, list) => {
             const target = e.target;
             const value = Number(target.getAttribute("data-value"));
@@ -151887,7 +152144,7 @@
           },
           [state]
         );
-        const onPickerItemKeyDown = (0, import_react68.useCallback)(
+        const onPickerItemKeyDown = (0, import_react610.useCallback)(
           (e, value, list) => {
             var _a2;
             const map = getItemsRefMap(list === "months" ? monthsItemsRef : yearsItemsRef);
@@ -157054,7 +157311,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_system4 = require_dist11();
-      var import_i18n8 = require_main5();
+      var import_i18n9 = require_main5();
       var import_date = require_main74();
       var import_system = require_dist11();
       var import_system2 = require_dist11();
@@ -157063,14 +157320,14 @@
       var import_datepicker2 = require_main77();
       var import_shared_utils = require_dist2();
       var import_theme = require_dist12();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_form = require_dist33();
       function useDateInput(originalProps) {
         var _a, _b, _c, _d, _e, _f, _g;
         const globalContext = (0, import_system.useProviderContext)();
         const { validationBehavior: formValidationBehavior } = (0, import_form.useSlottedContext)(import_form.FormContext) || {};
         const [props, variantProps2] = (0, import_system2.mapPropsVariants)(originalProps, import_theme.dateInput.variantKeys);
-        const { locale } = (0, import_i18n8.useLocale)();
+        const { locale } = (0, import_i18n9.useLocale)();
         const calendarProp = (0, import_date.createCalendar)(
           new import_date.DateFormatter(locale).resolvedOptions().calendar
         );
@@ -157130,7 +157387,7 @@
           label
         });
         const shouldLabelBeOutside = labelPlacement === "outside" || labelPlacement === "outside-left" || labelPlacement === "outside-top";
-        const slots = (0, import_react67.useMemo)(
+        const slots = (0, import_react69.useMemo)(
           () => (0, import_theme.dateInput)({
             ...variantProps2,
             disableAnimation,
@@ -157250,7 +157507,7 @@
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system3 = require_dist11();
       var import_shared_utils2 = require_dist2();
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var DateInputGroup = (0, import_system3.forwardRef)((props, ref) => {
         const {
           as,
@@ -157273,7 +157530,7 @@
           ...otherProps
         } = props;
         const Component2 = as || "div";
-        const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("span", { ...labelProps, children: label }) : null;
+        const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { ...labelProps, children: label }) : null;
         const errorMessage = typeof errorMessageProp === "function" ? errorMessageProp({
           isInvalid,
           validationErrors,
@@ -157282,7 +157539,7 @@
         const hasHelper = !!description || !!errorMessage;
         const helperWrapper = (0, import_react210.useMemo)(() => {
           if (!hasHelper) return null;
-          return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { ...helperWrapperProps, children: isInvalid && errorMessage ? /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { ...errorMessageProps, children: errorMessage }) : description ? /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { ...descriptionProps, children: description }) : null });
+          return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...helperWrapperProps, children: isInvalid && errorMessage ? /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...errorMessageProps, children: errorMessage }) : description ? /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...descriptionProps, children: description }) : null });
         }, [
           hasHelper,
           errorMessage,
@@ -157291,11 +157548,11 @@
           errorMessageProps,
           descriptionProps
         ]);
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(Component2, { ...otherProps, ref, "data-has-helper": (0, import_shared_utils2.dataAttr)(hasHelper), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(Component2, { ...otherProps, ref, "data-has-helper": (0, import_shared_utils2.dataAttr)(hasHelper), children: [
           shouldLabelBeOutside ? labelContent : null,
-          /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("div", { ...groupProps, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { ...groupProps, children: [
             !shouldLabelBeOutside ? labelContent : null,
-            /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("div", { ...wrapperProps, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { ...wrapperProps, children: [
               startContent,
               children,
               endContent
@@ -157310,7 +157567,7 @@
       var import_datepicker3 = require_main76();
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils3 = require_dist2();
-      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime28 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var DateInputSegment = ({
         state,
         segment,
@@ -157320,7 +157577,7 @@
       }) => {
         const ref = (0, import_react310.useRef)(null);
         let { segmentProps } = (0, import_datepicker3.useDateSegment)(segment, state, ref);
-        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(
           "div",
           {
             ...(0, import_shared_utils3.mergeProps)(segmentProps, otherProps),
@@ -157628,10 +157885,10 @@
       var import_form = require_dist33();
       var import_shared_utils = require_dist2();
       var import_theme = require_dist12();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
-      var import_i18n8 = require_main5();
+      var import_i18n9 = require_main5();
       var import_utils8 = require_main38();
       var messages_default = {
         "ar-AE": {
@@ -157843,7 +158100,7 @@
           onHeaderExpandedChange,
           ...restUserCalendarProps
         } = userCalendarProps;
-        const handleHeaderExpandedChange = (0, import_react67.useCallback)(
+        const handleHeaderExpandedChange = (0, import_react69.useCallback)(
           (isExpanded) => {
             onHeaderExpandedChange == null ? void 0 : onHeaderExpandedChange(isExpanded || false);
           },
@@ -157852,7 +158109,7 @@
         const [isCalendarHeaderExpanded, setIsCalendarHeaderExpanded] = (0, import_utils8.useControlledState)(isHeaderExpanded, isHeaderDefaultExpanded != null ? isHeaderDefaultExpanded : false, handleHeaderExpandedChange);
         const domRef = (0, import_react_utils.useDOMRef)(ref);
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        let stringFormatter = (0, import_i18n8.useLocalizedStringFormatter)(messages_default);
+        let stringFormatter = (0, import_i18n9.useLocalizedStringFormatter)(messages_default);
         const isDefaultColor = originalProps.color === "default" || !originalProps.color;
         const hasMultipleMonths = visibleMonths > 1;
         const placeholder = originalProps == null ? void 0 : originalProps.placeholderValue;
@@ -158146,7 +158403,7 @@
           getSelectorIconProps
         };
       }
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var DatePicker = (0, import_system3.forwardRef)(function DatePicker2(props, ref) {
         const { selectorButtonPlacement = "end", ...otherProps } = props;
         const {
@@ -158166,11 +158423,11 @@
           CalendarTopContent,
           CalendarBottomContent
         } = useDatePicker({ ...otherProps, ref });
-        const selectorContent = (0, import_react410.isValidElement)(selectorIcon) ? (0, import_react410.cloneElement)(selectorIcon, getSelectorIconProps()) : /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_shared_icons.CalendarBoldIcon, { ...getSelectorIconProps() });
+        const selectorContent = (0, import_react410.isValidElement)(selectorIcon) ? (0, import_react410.cloneElement)(selectorIcon, getSelectorIconProps()) : /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_shared_icons.CalendarBoldIcon, { ...getSelectorIconProps() });
         const calendarBottomContent = (0, import_react310.useMemo)(() => {
           if (isCalendarHeaderExpanded) return null;
-          return showTimeField ? /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(import_jsx_runtime26.Fragment, { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_date_input.TimeInput, { ...getTimeInputProps() }),
+          return showTimeField ? /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(import_jsx_runtime27.Fragment, { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_date_input.TimeInput, { ...getTimeInputProps() }),
             CalendarBottomContent
           ] }) : CalendarBottomContent;
         }, [state, showTimeField, CalendarBottomContent, isCalendarHeaderExpanded]);
@@ -158178,7 +158435,7 @@
           if (isCalendarHeaderExpanded) return null;
           return CalendarTopContent;
         }, [showTimeField, CalendarTopContent, isCalendarHeaderExpanded]);
-        const popoverContent = state.isOpen ? /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_popover.FreeSoloPopover, { ...getPopoverProps(), children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+        const popoverContent = state.isOpen ? /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_popover.FreeSoloPopover, { ...getPopoverProps(), children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
           import_calendar.Calendar,
           {
             ...getCalendarProps(),
@@ -158188,12 +158445,12 @@
         ) }) : null;
         const dateInputProps = {
           ...getDateInputProps(),
-          endContent: selectorButtonPlacement === "end" ? /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: endContent || selectorContent }) : endContent,
-          startContent: selectorButtonPlacement === "start" ? /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: startContent || selectorContent }) : startContent
+          endContent: selectorButtonPlacement === "end" ? /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: endContent || selectorContent }) : endContent,
+          startContent: selectorButtonPlacement === "start" ? /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: startContent || selectorContent }) : startContent
         };
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(import_jsx_runtime26.Fragment, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_date_input.DateInput, { ...dateInputProps }),
-          disableAnimation ? popoverContent : /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_framer_motion2.AnimatePresence, { children: popoverContent })
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(import_jsx_runtime27.Fragment, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_date_input.DateInput, { ...dateInputProps }),
+          disableAnimation ? popoverContent : /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_framer_motion2.AnimatePresence, { children: popoverContent })
         ] });
       });
       var date_picker_default = DatePicker;
@@ -158214,7 +158471,7 @@
       var import_react_utils2 = require_dist10();
       var import_i18n22 = require_main5();
       var import_shared_utils3 = require_dist2();
-      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime28 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var DateRangePickerField = (0, import_react510.forwardRef)(function DateRangePickerField2(props, ref) {
         const { as, slots, createCalendar: createCalendarProp, classNames, ...otherProps } = props;
         const Component2 = as || "div";
@@ -158233,8 +158490,8 @@
         } = (0, import_datepicker3.useDateField)({ ...otherProps, inputRef }, state, domRef);
         const isInvalid = props.isInvalid || ariaIsInvalid;
         state.isInvalid = isInvalid;
-        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(Component2, { ...(0, import_shared_utils3.mergeProps)(fieldProps, (0, import_react_utils2.filterDOMProps)(otherProps)), ref: domRef, children: [
-          state.segments.map((segment, i) => /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)(Component2, { ...(0, import_shared_utils3.mergeProps)(fieldProps, (0, import_react_utils2.filterDOMProps)(otherProps)), ref: domRef, children: [
+          state.segments.map((segment, i) => /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(
             import_date_input2.DateInputSegment,
             {
               classNames,
@@ -158244,12 +158501,12 @@
             },
             i
           )),
-          /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("input", { ...inputProps, ref: inputRef })
+          /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("input", { ...inputProps, ref: inputRef })
         ] });
       });
       var date_range_picker_field_default = DateRangePickerField;
       var import_system4 = require_dist11();
-      var import_react68 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react610 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_datepicker5 = require_main77();
       var import_datepicker6 = require_main76();
       var import_shared_utils4 = require_dist2();
@@ -158297,7 +158554,7 @@
           validationBehavior,
           shouldCloseOnSelect: () => !state.hasTime
         });
-        const popoverTriggerRef = (0, import_react68.useRef)(null);
+        const popoverTriggerRef = (0, import_react610.useRef)(null);
         let {
           groupProps,
           labelProps,
@@ -158312,11 +158569,11 @@
           errorMessageProps,
           isInvalid: isAriaInvalid
         } = (0, import_datepicker6.useDateRangePicker)({ ...originalProps, validationBehavior }, state, domRef);
-        (0, import_react68.useEffect)(() => {
+        (0, import_react610.useEffect)(() => {
           state.commitValidation();
         }, [state.value, state.commitValidation]);
         const isInvalid = isInvalidProp || isAriaInvalid;
-        const slots = (0, import_react68.useMemo)(
+        const slots = (0, import_react610.useMemo)(
           () => (0, import_theme3.dateRangePicker)({
             ...variantProps2,
             className
@@ -158426,7 +158683,7 @@
           };
         };
         const baseStyles = (0, import_theme3.cn)(classNames == null ? void 0 : classNames.base, className);
-        const dateInputSlots = (0, import_react68.useMemo)(
+        const dateInputSlots = (0, import_react610.useMemo)(
           () => (0, import_theme3.dateInput)({
             ...variantProps2,
             labelPlacement
@@ -158689,7 +158946,7 @@
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist12();
       var import_utils8 = require_main38();
       var import_shared_utils = require_dist2();
@@ -158724,16 +158981,16 @@
         const Component2 = as || "div";
         const shouldFilterDOMProps = typeof Component2 === "string";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const handleClose = (0, import_react67.useCallback)(() => {
+        const handleClose = (0, import_react69.useCallback)(() => {
           setIsVisible(false);
           onClose == null ? void 0 : onClose();
         }, [setIsVisible, onClose]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react67.useMemo)(
+        const slots = (0, import_react69.useMemo)(
           () => (0, import_theme.alert)({ hasContent: !(0, import_shared_utils.isEmpty)(description) || !(0, import_shared_utils.isEmpty)(children), ...variantProps2 }),
           [description, (0, import_shared_utils.objectToDeps)(variantProps2)]
         );
-        const getBaseProps = (0, import_react67.useCallback)(() => {
+        const getBaseProps = (0, import_react69.useCallback)(() => {
           return {
             "data-visible": (0, import_shared_utils.dataAttr)(isVisible),
             "data-closeable": (0, import_shared_utils.dataAttr)(isClosable),
@@ -158748,35 +159005,35 @@
             className: slots.base({ class: baseStyles })
           };
         }, [slots, baseStyles]);
-        const getMainWrapperProps = (0, import_react67.useCallback)(() => {
+        const getMainWrapperProps = (0, import_react69.useCallback)(() => {
           return {
             className: slots.mainWrapper({ class: classNames == null ? void 0 : classNames.mainWrapper })
           };
         }, [slots, classNames == null ? void 0 : classNames.mainWrapper]);
-        const getDescriptionProps = (0, import_react67.useCallback)(() => {
+        const getDescriptionProps = (0, import_react69.useCallback)(() => {
           return {
             className: slots.description({ class: classNames == null ? void 0 : classNames.description })
           };
         }, [slots, classNames == null ? void 0 : classNames.description]);
-        const getTitleProps = (0, import_react67.useCallback)(() => {
+        const getTitleProps = (0, import_react69.useCallback)(() => {
           return {
             className: slots.title({ class: classNames == null ? void 0 : classNames.title })
           };
         }, [slots, classNames == null ? void 0 : classNames.title]);
-        const getCloseButtonProps = (0, import_react67.useCallback)(
+        const getCloseButtonProps = (0, import_react69.useCallback)(
           () => ({
             ...closeButtonProps,
             className: slots.closeButton({ class: classNames == null ? void 0 : classNames.closeButton })
           }),
           [slots, classNames == null ? void 0 : classNames.closeButton]
         );
-        const getAlertIconProps = (0, import_react67.useCallback)(
+        const getAlertIconProps = (0, import_react69.useCallback)(
           () => ({
             className: slots.alertIcon({ class: classNames == null ? void 0 : classNames.alertIcon })
           }),
           [slots, classNames == null ? void 0 : classNames.alertIcon]
         );
-        const getIconWrapperProps = (0, import_react67.useCallback)(
+        const getIconWrapperProps = (0, import_react69.useCallback)(
           () => ({
             className: slots.iconWrapper({ class: classNames == null ? void 0 : classNames.iconWrapper })
           }),
@@ -158804,7 +159061,7 @@
           getIconWrapperProps
         };
       }
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var iconMap = {
         primary: import_shared_icons.InfoCircleIcon,
         secondary: import_shared_icons.InfoCircleIcon,
@@ -158837,16 +159094,16 @@
         if (!isVisible) return null;
         const customIcon = icon && (0, import_react210.isValidElement)(icon) ? (0, import_react210.cloneElement)(icon, getAlertIconProps()) : null;
         const IconComponent = iconMap[color2] || iconMap.primary;
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("div", { ref: domRef, role: "alert", ...getBaseProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { ref: domRef, role: "alert", ...getBaseProps(), children: [
           startContent,
-          /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { ...getIconWrapperProps(), children: customIcon || /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(IconComponent, { ...getAlertIconProps() }) }),
-          /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("div", { ...getMainWrapperProps(), children: [
-            !(0, import_shared_utils2.isEmpty)(title) && /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { ...getTitleProps(), children: title }),
-            !(0, import_shared_utils2.isEmpty)(description) && /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { ...getDescriptionProps(), children: description }),
+          /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getIconWrapperProps(), children: customIcon || /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(IconComponent, { ...getAlertIconProps() }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { ...getMainWrapperProps(), children: [
+            !(0, import_shared_utils2.isEmpty)(title) && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getTitleProps(), children: title }),
+            !(0, import_shared_utils2.isEmpty)(description) && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getDescriptionProps(), children: description }),
             children
           ] }),
           endContent,
-          (isClosable || onClose) && /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+          (isClosable || onClose) && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
             import_button.Button,
             {
               isIconOnly: true,
@@ -158855,7 +159112,7 @@
               variant: "light",
               onPress: handleClose,
               ...getCloseButtonProps(),
-              children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_shared_icons.CloseIcon, { height: 20, width: 20 })
+              children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_shared_icons.CloseIcon, { height: 20, width: 20 })
             }
           )
         ] });
@@ -158902,7 +159159,7 @@
       var import_modal = require_dist63();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_utils = require_dist19();
       var import_shared_utils = require_dist2();
       function useDrawer(originalProps) {
@@ -158917,7 +159174,7 @@
           ...otherProps
         } = originalProps;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const motionProps = (0, import_react67.useMemo)(() => {
+        const motionProps = (0, import_react69.useMemo)(() => {
           if (!(0, import_shared_utils.isEmpty)(drawerMotionProps)) return drawerMotionProps;
           const key = placement === "left" || placement === "right" ? "x" : "y";
           return {
@@ -158944,14 +159201,14 @@
           };
         }, [placement, drawerMotionProps]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react67.useMemo)(
+        const slots = (0, import_react69.useMemo)(
           () => (0, import_theme.drawer)({
             size,
             placement
           }),
           [size, placement]
         );
-        const getModalProps = (0, import_react67.useCallback)(() => {
+        const getModalProps = (0, import_react69.useCallback)(() => {
           return {
             classNames: {
               ...classNames,
@@ -158965,10 +159222,10 @@
         }, [baseStyles, classNames, motionProps, scrollBehavior, size, otherProps]);
         return { domRef, getModalProps };
       }
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Drawer = (0, import_system.forwardRef)(({ children, ...props }, ref) => {
         const { domRef, getModalProps } = useDrawer({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_modal.Modal, { ref: domRef, ...getModalProps(), children });
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_modal.Modal, { ref: domRef, ...getModalProps(), children });
       });
       Drawer.displayName = "HeroUI.Drawer";
       var drawer_default = Drawer;
@@ -159238,7 +159495,7 @@
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
       var import_use_form_reset = require_dist75();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_utils8 = require_main38();
       var import_form = require_main22();
       var import_form2 = require_main39();
@@ -159284,7 +159541,7 @@
           autoFocus,
           isTextInput: true
         });
-        const handleValueChange = (0, import_react67.useCallback)(
+        const handleValueChange = (0, import_react69.useCallback)(
           (value2) => {
             onValueChange(value2 != null ? value2 : "");
           },
@@ -159316,7 +159573,7 @@
         const errorMessage = typeof props.errorMessage === "function" ? props.errorMessage({ isInvalid, validationErrors, validationDetails }) : props.errorMessage || (validationErrors == null ? void 0 : validationErrors.join(" "));
         const description = props.description;
         const hasHelper = !!description || !!errorMessage;
-        const slots = (0, import_react67.useMemo)(
+        const slots = (0, import_react69.useMemo)(
           () => (0, import_theme.inputOtp)({
             ...variantProps2,
             disableAnimation,
@@ -159325,7 +159582,7 @@
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation, isInvalid, isReadOnly]
         );
-        const getBaseProps = (0, import_react67.useCallback)(
+        const getBaseProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ref: baseDomRef,
@@ -159360,7 +159617,7 @@
           },
           [baseDomRef, slots, baseStyles, isDisabled, isInvalid, isRequired, isReadOnly, value, length]
         );
-        const getInputOtpProps = (0, import_react67.useCallback)(
+        const getInputOtpProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             var _a2;
             const otpProps = {
@@ -159404,7 +159661,7 @@
             autoFocus
           ]
         );
-        const getSegmentWrapperProps = (0, import_react67.useCallback)(
+        const getSegmentWrapperProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.segmentWrapper({
@@ -159418,7 +159675,7 @@
           },
           [classNames == null ? void 0 : classNames.segmentWrapper, isDisabled]
         );
-        const getHelperWrapperProps = (0, import_react67.useCallback)(
+        const getHelperWrapperProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.helperWrapper({
@@ -159430,7 +159687,7 @@
           },
           [classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getErrorMessageProps = (0, import_react67.useCallback)(
+        const getErrorMessageProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.errorMessage({
@@ -159442,7 +159699,7 @@
           },
           [classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getDescriptionProps = (0, import_react67.useCallback)(
+        const getDescriptionProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.description({
@@ -159484,7 +159741,7 @@
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils2 = require_dist2();
       var import_theme2 = require_dist12();
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var InputOtpSegment = ({
         ...props
       }) => {
@@ -159496,14 +159753,14 @@
         const displayValue = (0, import_react210.useMemo)(() => {
           var _a2, _b;
           if (props.isActive && !props.char) {
-            return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { className: (0, import_theme2.cn)((_a2 = slots.caret) == null ? void 0 : _a2.call(slots, { class: caretStyles })) });
+            return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { className: (0, import_theme2.cn)((_a2 = slots.caret) == null ? void 0 : _a2.call(slots, { class: caretStyles })) });
           }
           if (props.char) {
-            return type === "password" ? /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { className: (0, import_theme2.cn)((_b = slots.passwordChar) == null ? void 0 : _b.call(slots, { class: passwordCharStyles })) }) : /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { children: props.char });
+            return type === "password" ? /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { className: (0, import_theme2.cn)((_b = slots.passwordChar) == null ? void 0 : _b.call(slots, { class: passwordCharStyles })) }) : /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { children: props.char });
           }
-          return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { children: props.placeholderChar });
+          return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { children: props.placeholderChar });
         }, [props.char, props.isActive, props.placeholderChar, type]);
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
           "div",
           {
             className: (0, import_theme2.cn)((_a = slots.segment) == null ? void 0 : _a.call(slots, { class: segmentStyles })),
@@ -159517,7 +159774,7 @@
           }
         );
       };
-      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime28 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var InputOtp = (0, import_system2.forwardRef)((props, ref) => {
         const context = useInputOtp({ ...props, ref });
         const {
@@ -159539,7 +159796,7 @@
           if (!hasHelper) {
             return null;
           }
-          return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getHelperWrapperProps(), children: isInvalid && errorMessage ? /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getErrorMessageProps(), children: errorMessage }) : /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getDescriptionProps(), children: description }) });
+          return /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("div", { ...getHelperWrapperProps(), children: isInvalid && errorMessage ? /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("div", { ...getErrorMessageProps(), children: errorMessage }) : /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("div", { ...getDescriptionProps(), children: description }) });
         }, [
           hasHelper,
           isInvalid,
@@ -159549,12 +159806,12 @@
           getErrorMessageProps,
           getDescriptionProps
         ]);
-        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(InputOtpProvider, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(Component2, { ...getBaseProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(InputOtpProvider, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)(Component2, { ...getBaseProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(
             import_input_otp.OTPInput,
             {
               ...getInputOtpProps(),
-              render: ({ slots }) => /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getSegmentWrapperProps(), children: slots.map((slot, idx) => /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
+              render: ({ slots }) => /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("div", { ...getSegmentWrapperProps(), children: slots.map((slot, idx) => /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(
                 InputOtpSegment,
                 {
                   ...slot,
@@ -160490,11 +160747,11 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_interactions = require_main17();
-      var import_i18n8 = require_main5();
+      var import_i18n9 = require_main5();
       var import_shared_utils = require_dist2();
       var import_numberfield = require_main78();
       var import_numberfield2 = require_main79();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_form = require_dist33();
       function useNumberInput(originalProps) {
         var _a, _b, _c;
@@ -160522,14 +160779,14 @@
           hideStepper,
           ...otherProps
         } = props;
-        const [isFocusWithin, setFocusWithin] = (0, import_react67.useState)(false);
+        const [isFocusWithin, setFocusWithin] = (0, import_react69.useState)(false);
         const Component2 = as || "div";
         const disableAnimation = (_c = (_b = originalProps.disableAnimation) != null ? _b : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _c : false;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
         const baseDomRef = (0, import_react_utils.useDOMRef)(baseRef);
         const inputWrapperRef = (0, import_react_utils.useDOMRef)(wrapperRef);
         const innerWrapperRef = (0, import_react_utils.useDOMRef)(innerWrapperRefProp);
-        const { locale } = (0, import_i18n8.useLocale)();
+        const { locale } = (0, import_i18n9.useLocale)();
         const state = (0, import_numberfield.useNumberFieldState)({
           ...originalProps,
           validationBehavior,
@@ -160552,7 +160809,7 @@
         const isFilled = !(0, import_shared_utils.isEmpty)(state.inputValue) && !(0, import_shared_utils.isEmpty)(inputValue);
         const isFilledWithin = isFilled || isFocusWithin;
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className, isFilled ? "is-filled" : "");
-        const handleClear = (0, import_react67.useCallback)(() => {
+        const handleClear = (0, import_react69.useCallback)(() => {
           var _a2;
           state.setInputValue("");
           onClear == null ? void 0 : onClear();
@@ -160596,7 +160853,7 @@
         const hasStartContent = !!startContent;
         const isLabelOutside = shouldLabelBeOutside ? labelPlacement === "outside-left" || isOutsideTop || hasPlaceholder || labelPlacement === "outside" && hasStartContent : false;
         const isLabelOutsideAsPlaceholder = labelPlacement === "outside" && !hasPlaceholder && !hasStartContent;
-        const slots = (0, import_react67.useMemo)(
+        const slots = (0, import_react69.useMemo)(
           () => (0, import_theme.numberInput)({
             ...variantProps2,
             isInvalid,
@@ -160613,7 +160870,7 @@
             disableAnimation
           ]
         );
-        const handleKeyDown = (0, import_react67.useCallback)(
+        const handleKeyDown = (0, import_react69.useCallback)(
           (e) => {
             var _a2, _b2;
             const inputElement = e.currentTarget;
@@ -160643,7 +160900,7 @@
           },
           [inputValue, state, onClear, isClearable, originalProps.isReadOnly]
         );
-        const getBaseProps = (0, import_react67.useCallback)(
+        const getBaseProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ref: baseDomRef,
@@ -160693,7 +160950,7 @@
             originalProps.isDisabled
           ]
         );
-        const getLabelProps = (0, import_react67.useCallback)(
+        const getLabelProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "label",
@@ -160703,7 +160960,7 @@
           },
           [slots, isLabelHovered, labelProps, classNames == null ? void 0 : classNames.label]
         );
-        const getNumberInputProps = (0, import_react67.useCallback)(
+        const getNumberInputProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "input",
@@ -160745,7 +161002,7 @@
             handleKeyDown
           ]
         );
-        const getHiddenNumberInputProps = (0, import_react67.useCallback)(
+        const getHiddenNumberInputProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               name: originalProps.name,
@@ -160757,7 +161014,7 @@
           },
           [inputValue, originalProps.name]
         );
-        const getInputWrapperProps = (0, import_react67.useCallback)(
+        const getInputWrapperProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ref: inputWrapperRef,
@@ -160790,7 +161047,7 @@
             classNames == null ? void 0 : classNames.inputWrapper
           ]
         );
-        const getInnerWrapperProps = (0, import_react67.useCallback)(
+        const getInnerWrapperProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ref: innerWrapperRef,
@@ -160808,7 +161065,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.innerWrapper]
         );
-        const getMainWrapperProps = (0, import_react67.useCallback)(
+        const getMainWrapperProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -160820,7 +161077,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.mainWrapper]
         );
-        const getHelperWrapperProps = (0, import_react67.useCallback)(
+        const getHelperWrapperProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -160832,7 +161089,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getDescriptionProps = (0, import_react67.useCallback)(
+        const getDescriptionProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -160843,7 +161100,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.description]
         );
-        const getErrorMessageProps = (0, import_react67.useCallback)(
+        const getErrorMessageProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -160854,7 +161111,7 @@
           },
           [slots, errorMessageProps, classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getClearButtonProps = (0, import_react67.useCallback)(
+        const getClearButtonProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -160870,7 +161127,7 @@
           },
           [slots, isClearButtonFocusVisible, clearPressProps, clearFocusProps, classNames == null ? void 0 : classNames.clearButton]
         );
-        const getStepperWrapperProps = (0, import_react67.useCallback)(
+        const getStepperWrapperProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -160882,7 +161139,7 @@
           },
           [slots]
         );
-        const getStepperIncreaseButtonProps = (0, import_react67.useCallback)(
+        const getStepperIncreaseButtonProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -160897,7 +161154,7 @@
           },
           [slots, incrementButtonProps, classNames == null ? void 0 : classNames.stepperButton]
         );
-        const getStepperDecreaseButtonProps = (0, import_react67.useCallback)(
+        const getStepperDecreaseButtonProps = (0, import_react69.useCallback)(
           (props2 = {}) => {
             return {
               type: "button",
@@ -160954,13 +161211,13 @@
       }
       var import_button = require_dist28();
       var import_shared_icons = require_dist17();
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var NumberInputStepper = ({ direction, ...otherProps }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_button.Button, { disableRipple: true, isIconOnly: true, ...otherProps, children: direction == "up" ? /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_shared_icons.ChevronUpIcon, {}) : /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_shared_icons.ChevronDownIcon, {}) });
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_button.Button, { disableRipple: true, isIconOnly: true, ...otherProps, children: direction == "up" ? /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_shared_icons.ChevronUpIcon, {}) : /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_shared_icons.ChevronDownIcon, {}) });
       };
       NumberInputStepper.displayName = "HeroUI.NumberInputStepper";
       var number_input_stepper_default = NumberInputStepper;
-      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime28 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var NumberInput = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -160992,11 +161249,11 @@
           getStepperDecreaseButtonProps,
           getStepperWrapperProps
         } = useNumberInput({ ...props, ref });
-        const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("label", { ...getLabelProps(), children: label }) : null;
+        const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("label", { ...getLabelProps(), children: label }) : null;
         const end = (0, import_react210.useMemo)(() => {
           if (isClearable) {
-            return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(import_jsx_runtime27.Fragment, { children: [
-              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("button", { ...getClearButtonProps(), children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_shared_icons2.CloseFilledIcon, {}) }),
+            return /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)(import_jsx_runtime28.Fragment, { children: [
+              /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("button", { ...getClearButtonProps(), children: /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(import_shared_icons2.CloseFilledIcon, {}) }),
               endContent
             ] });
           }
@@ -161006,7 +161263,7 @@
           const shouldShowError = isInvalid && errorMessage;
           const hasContent = shouldShowError || description;
           if (!hasHelper || !hasContent) return null;
-          return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getHelperWrapperProps(), children: shouldShowError ? /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getErrorMessageProps(), children: errorMessage }) : /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { ...getDescriptionProps(), children: description }) });
+          return /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("div", { ...getHelperWrapperProps(), children: shouldShowError ? /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("div", { ...getErrorMessageProps(), children: errorMessage }) : /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("div", { ...getDescriptionProps(), children: description }) });
         }, [
           hasHelper,
           isInvalid,
@@ -161017,29 +161274,29 @@
           getDescriptionProps
         ]);
         const innerWrapper = (0, import_react210.useMemo)(() => {
-          return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { ...getInnerWrapperProps(), children: [
+          return /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)("div", { ...getInnerWrapperProps(), children: [
             startContent,
-            /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("input", { ...getNumberInputProps() }),
-            /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("input", { ...getHiddenNumberInputProps() }),
+            /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("input", { ...getNumberInputProps() }),
+            /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("input", { ...getHiddenNumberInputProps() }),
             end,
-            !hideStepper && /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { ...getStepperWrapperProps(), children: [
-              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(number_input_stepper_default, { ...getStepperIncreaseButtonProps(), direction: "up" }),
-              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(number_input_stepper_default, { ...getStepperDecreaseButtonProps(), direction: "down" })
+            !hideStepper && /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)("div", { ...getStepperWrapperProps(), children: [
+              /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(number_input_stepper_default, { ...getStepperIncreaseButtonProps(), direction: "up" }),
+              /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(number_input_stepper_default, { ...getStepperDecreaseButtonProps(), direction: "down" })
             ] })
           ] });
         }, [startContent, end, getNumberInputProps, getInnerWrapperProps]);
         const mainWrapper = (0, import_react210.useMemo)(() => {
           if (shouldLabelBeOutside) {
-            return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { ...getMainWrapperProps(), children: [
-              /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { ...getInputWrapperProps(), children: [
+            return /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)("div", { ...getMainWrapperProps(), children: [
+              /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)("div", { ...getInputWrapperProps(), children: [
                 !isOutsideLeft && !isOutsideTop ? labelContent : null,
                 innerWrapper
               ] }),
               helperWrapper
             ] });
           }
-          return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(import_jsx_runtime27.Fragment, { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { ...getInputWrapperProps(), children: [
+          return /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)(import_jsx_runtime28.Fragment, { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)("div", { ...getInputWrapperProps(), children: [
               labelContent,
               innerWrapper
             ] }),
@@ -161058,7 +161315,7 @@
           getErrorMessageProps,
           getDescriptionProps
         ]);
-        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(Component2, { ...getBaseProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)(Component2, { ...getBaseProps(), children: [
           isOutsideLeft || isOutsideTop ? labelContent : null,
           mainWrapper
         ] });
@@ -162508,13 +162765,13 @@
       var import_spinner = require_dist25();
       var import_framer_motion22 = require_cjs4();
       var import_shared_utils = require_dist2();
-      var import_jsx_runtime26 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var domAnimation2 = () => Promise.resolve().then(() => (init_src(), src_exports)).then((res) => res.default);
       var Ripple = (props) => {
         const { ripples = [], motionProps, color: color2 = "currentColor", style: style2, onClear } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_jsx_runtime26.Fragment, { children: ripples.map((ripple) => {
+        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_jsx_runtime27.Fragment, { children: ripples.map((ripple) => {
           const duration = (0, import_shared_utils.clamp)(0.01 * ripple.size, 0.2, ripple.size > 100 ? 0.75 : 0.5);
-          return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_framer_motion22.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(import_framer_motion22.AnimatePresence, { mode: "popLayout", children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_framer_motion22.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_framer_motion22.AnimatePresence, { mode: "popLayout", children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
             import_framer_motion22.m.span,
             {
               animate: {
@@ -162552,10 +162809,10 @@
       Ripple.displayName = "HeroUI.Ripple";
       var ripple_default = Ripple;
       var import_shared_utils2 = require_dist2();
-      var import_react67 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react69 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useRipple(props = {}) {
-        const [ripples, setRipples] = (0, import_react67.useState)([]);
-        const onPress = (0, import_react67.useCallback)((event) => {
+        const [ripples, setRipples] = (0, import_react69.useState)([]);
+        const onPress = (0, import_react69.useCallback)((event) => {
           const trigger = event.target;
           const size = Math.max(trigger.clientWidth, trigger.clientHeight);
           setRipples((prevRipples) => [
@@ -162568,7 +162825,7 @@
             }
           ]);
         }, []);
-        const onClear = (0, import_react67.useCallback)((key) => {
+        const onClear = (0, import_react69.useCallback)((key) => {
           setRipples((prevState) => prevState.filter((ripple) => ripple.key !== key));
         }, []);
         return { ripples, onClear, onPress, ...props };
@@ -163003,14 +163260,14 @@
           isIconOnly
         };
       }
-      var import_jsx_runtime27 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime28 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Button = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
           domRef,
           children,
           spinnerSize,
-          spinner = /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(import_spinner.Spinner, { color: "current", size: spinnerSize }),
+          spinner = /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(import_spinner.Spinner, { color: "current", size: spinnerSize }),
           spinnerPlacement,
           startContent,
           endContent,
@@ -163020,13 +163277,13 @@
           getRippleProps,
           isIconOnly
         } = useButton({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(Component2, { ref: domRef, ...getButtonProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)(Component2, { ref: domRef, ...getButtonProps(), children: [
           startContent,
           isLoading && spinnerPlacement === "start" && spinner,
           isLoading && isIconOnly ? null : children,
           isLoading && spinnerPlacement === "end" && spinner,
           endContent,
-          !disableRipple && /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(ripple_default, { ...getRippleProps() })
+          !disableRipple && /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(ripple_default, { ...getRippleProps() })
         ] });
       });
       Button.displayName = "HeroUI.Button";
@@ -163039,7 +163296,7 @@
       var import_theme2 = require_dist12();
       var import_react_utils3 = require_dist10();
       var import_shared_utils4 = require_dist2();
-      var import_react68 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react610 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_toast = require_main81();
       var import_interactions5 = require_main17();
       var import_use_is_mobile = require_dist55();
@@ -163095,32 +163352,32 @@
             placement = "bottom-center";
           }
         }
-        const animationRef = (0, import_react68.useRef)(null);
-        const startTime = (0, import_react68.useRef)(null);
-        const progressRef = (0, import_react68.useRef)(0);
-        const progressBarRef = (0, import_react68.useRef)(null);
-        const pausedTime = (0, import_react68.useRef)(0);
-        const timeElapsed = (0, import_react68.useRef)(0);
-        (0, import_react68.useEffect)(() => {
+        const animationRef = (0, import_react610.useRef)(null);
+        const startTime = (0, import_react610.useRef)(null);
+        const progressRef = (0, import_react610.useRef)(0);
+        const progressBarRef = (0, import_react610.useRef)(null);
+        const pausedTime = (0, import_react610.useRef)(0);
+        const timeElapsed = (0, import_react610.useRef)(0);
+        (0, import_react610.useEffect)(() => {
           if (progressBarRef.current) {
             progressBarRef.current.style.width = "0%";
           }
         }, []);
-        const [isLoading, setIsLoading] = (0, import_react68.useState)(!!promiseProp);
-        const [isToastExiting, setIsToastExiting] = (0, import_react68.useState)(false);
-        const hasCalledOnCloseRef = (0, import_react68.useRef)(false);
-        (0, import_react68.useEffect)(() => {
+        const [isLoading, setIsLoading] = (0, import_react610.useState)(!!promiseProp);
+        const [isToastExiting, setIsToastExiting] = (0, import_react610.useState)(false);
+        const hasCalledOnCloseRef = (0, import_react610.useRef)(false);
+        (0, import_react610.useEffect)(() => {
           if (!promiseProp) return;
           promiseProp.finally(() => {
             setIsLoading(false);
           });
         }, [promiseProp]);
-        (0, import_react68.useEffect)(() => {
+        (0, import_react610.useEffect)(() => {
           if (isClosing && !isToastExiting) {
             setIsToastExiting(true);
           }
         }, [isClosing, isToastExiting]);
-        (0, import_react68.useEffect)(() => {
+        (0, import_react610.useEffect)(() => {
           if (isToastExiting && disableAnimation) {
             state.close(toast.key);
             if (!hasCalledOnCloseRef.current) {
@@ -163129,7 +163386,7 @@
             }
           }
         }, [isToastExiting, disableAnimation, state, toast.key, onClose]);
-        (0, import_react68.useEffect)(() => {
+        (0, import_react610.useEffect)(() => {
           const updateProgress = (timestamp) => {
             if (!timeout || isLoading) {
               return;
@@ -163181,12 +163438,12 @@
           state,
           domRef
         );
-        const [mounted, setMounted] = (0, import_react68.useState)(false);
-        (0, import_react68.useEffect)(() => {
+        const [mounted, setMounted] = (0, import_react610.useState)(false);
+        (0, import_react610.useEffect)(() => {
           setMounted(true);
         }, []);
-        const [initialHeight, setInitialHeight] = (0, import_react68.useState)(0);
-        (0, import_react68.useLayoutEffect)(() => {
+        const [initialHeight, setInitialHeight] = (0, import_react610.useState)(0);
+        (0, import_react610.useLayoutEffect)(() => {
           if (!domRef.current || !mounted || isToastExiting) {
             return;
           }
@@ -163212,7 +163469,7 @@
           liftHeight += heights[idx] || 0;
         }
         const frontHeight = heights[heights.length - 1];
-        const slots = (0, import_react68.useMemo)(
+        const slots = (0, import_react610.useMemo)(
           () => (0, import_theme2.toast)({
             ...variantProps2,
             disableAnimation
@@ -163225,8 +163482,8 @@
           visible: { opacity: 1, y: 0 },
           exit: { opacity: 0, y: -INITIAL_POSITION * multiplier }
         };
-        const [drag2, setDrag] = (0, import_react68.useState)(false);
-        const [dragValue, setDragValue] = (0, import_react68.useState)(0);
+        const [drag2, setDrag] = (0, import_react610.useState)(false);
+        const [dragValue, setDragValue] = (0, import_react610.useState)(0);
         const shouldCloseToast = (offsetX, offsetY) => {
           const isRight = placement.includes("right");
           const isLeft = placement.includes("left");
@@ -163264,7 +163521,7 @@
         } else if (drag2) {
           opacityValue = Math.max(0, 1 - dragValue / (SWIPE_THRESHOLD_X + 20));
         }
-        const getToastProps = (0, import_react68.useCallback)(
+        const getToastProps = (0, import_react610.useCallback)(
           (props2 = {}) => {
             const topExtension = 16;
             const bottomExtension = 16;
@@ -163311,14 +163568,14 @@
             disableAnimation
           ]
         );
-        const getWrapperProps = (0, import_react68.useCallback)(
+        const getWrapperProps = (0, import_react610.useCallback)(
           (props2 = {}) => ({
             className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }),
             ...props2
           }),
           []
         );
-        const getIconProps = (0, import_react68.useCallback)(
+        const getIconProps = (0, import_react610.useCallback)(
           (props2 = {}) => ({
             "aria-label": "descriptionIcon",
             className: slots.icon({ class: classNames == null ? void 0 : classNames.icon }),
@@ -163326,7 +163583,7 @@
           }),
           []
         );
-        const getLoadingComponentProps = (0, import_react68.useCallback)(
+        const getLoadingComponentProps = (0, import_react610.useCallback)(
           (props2 = {}) => ({
             className: slots.loadingComponent({ class: classNames == null ? void 0 : classNames.loadingComponent }),
             "aria-label": "loadingIcon",
@@ -163335,7 +163592,7 @@
           }),
           []
         );
-        const getSpinnerComponentProps = (0, import_react68.useCallback)(
+        const getSpinnerComponentProps = (0, import_react610.useCallback)(
           (props2 = {}) => ({
             classNames: { wrapper: slots.loadingComponent({ class: classNames == null ? void 0 : classNames.loadingComponent }) },
             "aria-label": "loadingIcon",
@@ -163344,28 +163601,28 @@
           }),
           []
         );
-        const getContentProps = (0, import_react68.useCallback)(
+        const getContentProps = (0, import_react610.useCallback)(
           (props2 = {}) => ({
             className: slots.content({ class: classNames == null ? void 0 : classNames.content }),
             ...(0, import_shared_utils4.mergeProps)(props2, otherProps, contentProps)
           }),
           [contentProps]
         );
-        const getTitleProps = (0, import_react68.useCallback)(
+        const getTitleProps = (0, import_react610.useCallback)(
           (props2 = {}) => ({
             className: slots.title({ class: classNames == null ? void 0 : classNames.title }),
             ...(0, import_shared_utils4.mergeProps)(props2, otherProps, titleProps)
           }),
           [titleProps]
         );
-        const getDescriptionProps = (0, import_react68.useCallback)(
+        const getDescriptionProps = (0, import_react610.useCallback)(
           (props2 = {}) => ({
             className: slots.description({ class: classNames == null ? void 0 : classNames.description }),
             ...(0, import_shared_utils4.mergeProps)(props2, otherProps, descriptionProps)
           }),
           [descriptionProps]
         );
-        const getCloseButtonProps = (0, import_react68.useCallback)(
+        const getCloseButtonProps = (0, import_react610.useCallback)(
           (props2 = {}) => ({
             className: slots.closeButton({ class: classNames == null ? void 0 : classNames.closeButton }),
             "aria-label": "closeButton",
@@ -163383,7 +163640,7 @@
           }),
           [setIsToastExiting, onClose]
         );
-        const getCloseIconProps = (0, import_react68.useCallback)(
+        const getCloseIconProps = (0, import_react610.useCallback)(
           (props2 = {}) => ({
             className: slots.closeIcon({ class: classNames == null ? void 0 : classNames.closeIcon }),
             "aria-label": "closeIcon",
@@ -163391,7 +163648,7 @@
           }),
           []
         );
-        const getMotionDivProps = (0, import_react68.useCallback)(
+        const getMotionDivProps = (0, import_react610.useCallback)(
           (props2 = {}) => {
             const comparingValue = isRegionExpanded ? maxVisibleToasts - 1 : Math.min(2, maxVisibleToasts - 1);
             const isCloseToEnd = total - index3 - 1 <= comparingValue;
@@ -163834,182 +164091,2070 @@
     }
   });
 
-  // node_modules/@tauri-apps/api/external/tslib/tslib.es6.js
-  function __classPrivateFieldGet2(receiver, state, kind, f) {
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
-    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
-  }
-  function __classPrivateFieldSet2(receiver, state, value, kind, f) {
-    if (kind === "m") throw new TypeError("Private method is not writable");
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
-    return kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value), value;
-  }
-  var init_tslib_es62 = __esm({
-    "node_modules/@tauri-apps/api/external/tslib/tslib.es6.js"() {
-    }
-  });
-
-  // node_modules/@tauri-apps/api/core.js
-  var core_exports = {};
-  __export(core_exports, {
-    Channel: () => Channel,
-    PluginListener: () => PluginListener,
-    Resource: () => Resource,
-    SERIALIZE_TO_IPC_FN: () => SERIALIZE_TO_IPC_FN,
-    addPluginListener: () => addPluginListener,
-    checkPermissions: () => checkPermissions,
-    convertFileSrc: () => convertFileSrc,
-    invoke: () => invoke,
-    isTauri: () => isTauri,
-    requestPermissions: () => requestPermissions,
-    transformCallback: () => transformCallback
-  });
-  function transformCallback(callback, once2 = false) {
-    return window.__TAURI_INTERNALS__.transformCallback(callback, once2);
-  }
-  async function addPluginListener(plugin2, event, cb) {
-    const handler = new Channel(cb);
-    try {
-      await invoke(`plugin:${plugin2}|register_listener`, {
-        event,
-        handler
-      });
-      return new PluginListener(plugin2, event, handler.id);
-    } catch {
-      await invoke(`plugin:${plugin2}|registerListener`, { event, handler });
-      return new PluginListener(plugin2, event, handler.id);
-    }
-  }
-  async function checkPermissions(plugin2) {
-    return invoke(`plugin:${plugin2}|check_permissions`);
-  }
-  async function requestPermissions(plugin2) {
-    return invoke(`plugin:${plugin2}|request_permissions`);
-  }
-  async function invoke(cmd, args = {}, options) {
-    return window.__TAURI_INTERNALS__.invoke(cmd, args, options);
-  }
-  function convertFileSrc(filePath, protocol = "asset") {
-    return window.__TAURI_INTERNALS__.convertFileSrc(filePath, protocol);
-  }
-  function isTauri() {
-    return !!(globalThis || window).isTauri;
-  }
-  var _Channel_onmessage, _Channel_nextMessageIndex, _Channel_pendingMessages, _Channel_messageEndIndex, _Resource_rid, SERIALIZE_TO_IPC_FN, Channel, PluginListener, Resource;
-  var init_core = __esm({
-    "node_modules/@tauri-apps/api/core.js"() {
-      init_tslib_es62();
-      SERIALIZE_TO_IPC_FN = "__TAURI_TO_IPC_KEY__";
-      Channel = class {
-        constructor(onmessage) {
-          _Channel_onmessage.set(this, void 0);
-          _Channel_nextMessageIndex.set(this, 0);
-          _Channel_pendingMessages.set(this, []);
-          _Channel_messageEndIndex.set(this, void 0);
-          __classPrivateFieldSet2(this, _Channel_onmessage, onmessage || (() => {
-          }), "f");
-          this.id = transformCallback((rawMessage) => {
-            const index3 = rawMessage.index;
-            if ("end" in rawMessage) {
-              if (index3 == __classPrivateFieldGet2(this, _Channel_nextMessageIndex, "f")) {
-                this.cleanupCallback();
-              } else {
-                __classPrivateFieldSet2(this, _Channel_messageEndIndex, index3, "f");
-              }
-              return;
-            }
-            const message = rawMessage.message;
-            if (index3 == __classPrivateFieldGet2(this, _Channel_nextMessageIndex, "f")) {
-              __classPrivateFieldGet2(this, _Channel_onmessage, "f").call(this, message);
-              __classPrivateFieldSet2(this, _Channel_nextMessageIndex, __classPrivateFieldGet2(this, _Channel_nextMessageIndex, "f") + 1, "f");
-              while (__classPrivateFieldGet2(this, _Channel_nextMessageIndex, "f") in __classPrivateFieldGet2(this, _Channel_pendingMessages, "f")) {
-                const message2 = __classPrivateFieldGet2(this, _Channel_pendingMessages, "f")[__classPrivateFieldGet2(this, _Channel_nextMessageIndex, "f")];
-                __classPrivateFieldGet2(this, _Channel_onmessage, "f").call(this, message2);
-                delete __classPrivateFieldGet2(this, _Channel_pendingMessages, "f")[__classPrivateFieldGet2(this, _Channel_nextMessageIndex, "f")];
-                __classPrivateFieldSet2(this, _Channel_nextMessageIndex, __classPrivateFieldGet2(this, _Channel_nextMessageIndex, "f") + 1, "f");
-              }
-              if (__classPrivateFieldGet2(this, _Channel_nextMessageIndex, "f") === __classPrivateFieldGet2(this, _Channel_messageEndIndex, "f")) {
-                this.cleanupCallback();
-              }
+  // node_modules/@tauri-apps/api/dpi.cjs
+  var require_dpi = __commonJS({
+    "node_modules/@tauri-apps/api/dpi.cjs"(exports) {
+      "use strict";
+      var core = require_core();
+      var LogicalSize = class {
+        constructor(...args) {
+          this.type = "Logical";
+          if (args.length === 1) {
+            if ("Logical" in args[0]) {
+              this.width = args[0].Logical.width;
+              this.height = args[0].Logical.height;
             } else {
-              __classPrivateFieldGet2(this, _Channel_pendingMessages, "f")[index3] = message;
+              this.width = args[0].width;
+              this.height = args[0].height;
             }
-          });
-        }
-        cleanupCallback() {
-          window.__TAURI_INTERNALS__.unregisterCallback(this.id);
-        }
-        set onmessage(handler) {
-          __classPrivateFieldSet2(this, _Channel_onmessage, handler, "f");
-        }
-        get onmessage() {
-          return __classPrivateFieldGet2(this, _Channel_onmessage, "f");
-        }
-        [(_Channel_onmessage = /* @__PURE__ */ new WeakMap(), _Channel_nextMessageIndex = /* @__PURE__ */ new WeakMap(), _Channel_pendingMessages = /* @__PURE__ */ new WeakMap(), _Channel_messageEndIndex = /* @__PURE__ */ new WeakMap(), SERIALIZE_TO_IPC_FN)]() {
-          return `__CHANNEL__:${this.id}`;
-        }
-        toJSON() {
-          return this[SERIALIZE_TO_IPC_FN]();
-        }
-      };
-      PluginListener = class {
-        constructor(plugin2, event, channelId) {
-          this.plugin = plugin2;
-          this.event = event;
-          this.channelId = channelId;
-        }
-        async unregister() {
-          return invoke(`plugin:${this.plugin}|remove_listener`, {
-            event: this.event,
-            channelId: this.channelId
-          });
-        }
-      };
-      Resource = class {
-        get rid() {
-          return __classPrivateFieldGet2(this, _Resource_rid, "f");
-        }
-        constructor(rid) {
-          _Resource_rid.set(this, void 0);
-          __classPrivateFieldSet2(this, _Resource_rid, rid, "f");
+          } else {
+            this.width = args[0];
+            this.height = args[1];
+          }
         }
         /**
-         * Destroys and cleans up this resource from memory.
-         * **You should not call any method on this object anymore and should drop any reference to it.**
+         * Converts the logical size to a physical one.
+         * @example
+         * ```typescript
+         * import { LogicalSize } from '@tauri-apps/api/dpi';
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         *
+         * const appWindow = getCurrentWindow();
+         * const factor = await appWindow.scaleFactor();
+         * const size = new LogicalSize(400, 500);
+         * const physical = size.toPhysical(factor);
+         * ```
+         *
+         * @since 2.0.0
          */
-        async close() {
-          return invoke("plugin:resources|close", {
-            rid: this.rid
-          });
+        toPhysical(scaleFactor) {
+          return new PhysicalSize(this.width * scaleFactor, this.height * scaleFactor);
+        }
+        [core.SERIALIZE_TO_IPC_FN]() {
+          return {
+            width: this.width,
+            height: this.height
+          };
+        }
+        toJSON() {
+          return this[core.SERIALIZE_TO_IPC_FN]();
         }
       };
-      _Resource_rid = /* @__PURE__ */ new WeakMap();
+      var PhysicalSize = class {
+        constructor(...args) {
+          this.type = "Physical";
+          if (args.length === 1) {
+            if ("Physical" in args[0]) {
+              this.width = args[0].Physical.width;
+              this.height = args[0].Physical.height;
+            } else {
+              this.width = args[0].width;
+              this.height = args[0].height;
+            }
+          } else {
+            this.width = args[0];
+            this.height = args[1];
+          }
+        }
+        /**
+         * Converts the physical size to a logical one.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * const appWindow = getCurrentWindow();
+         * const factor = await appWindow.scaleFactor();
+         * const size = await appWindow.innerSize(); // PhysicalSize
+         * const logical = size.toLogical(factor);
+         * ```
+         */
+        toLogical(scaleFactor) {
+          return new LogicalSize(this.width / scaleFactor, this.height / scaleFactor);
+        }
+        [core.SERIALIZE_TO_IPC_FN]() {
+          return {
+            width: this.width,
+            height: this.height
+          };
+        }
+        toJSON() {
+          return this[core.SERIALIZE_TO_IPC_FN]();
+        }
+      };
+      var Size = class {
+        constructor(size) {
+          this.size = size;
+        }
+        toLogical(scaleFactor) {
+          return this.size instanceof LogicalSize ? this.size : this.size.toLogical(scaleFactor);
+        }
+        toPhysical(scaleFactor) {
+          return this.size instanceof PhysicalSize ? this.size : this.size.toPhysical(scaleFactor);
+        }
+        [core.SERIALIZE_TO_IPC_FN]() {
+          return {
+            [`${this.size.type}`]: {
+              width: this.size.width,
+              height: this.size.height
+            }
+          };
+        }
+        toJSON() {
+          return this[core.SERIALIZE_TO_IPC_FN]();
+        }
+      };
+      var LogicalPosition = class {
+        constructor(...args) {
+          this.type = "Logical";
+          if (args.length === 1) {
+            if ("Logical" in args[0]) {
+              this.x = args[0].Logical.x;
+              this.y = args[0].Logical.y;
+            } else {
+              this.x = args[0].x;
+              this.y = args[0].y;
+            }
+          } else {
+            this.x = args[0];
+            this.y = args[1];
+          }
+        }
+        /**
+         * Converts the logical position to a physical one.
+         * @example
+         * ```typescript
+         * import { LogicalPosition } from '@tauri-apps/api/dpi';
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         *
+         * const appWindow = getCurrentWindow();
+         * const factor = await appWindow.scaleFactor();
+         * const position = new LogicalPosition(400, 500);
+         * const physical = position.toPhysical(factor);
+         * ```
+         *
+         * @since 2.0.0
+         */
+        toPhysical(scaleFactor) {
+          return new PhysicalPosition(this.x * scaleFactor, this.y * scaleFactor);
+        }
+        [core.SERIALIZE_TO_IPC_FN]() {
+          return {
+            x: this.x,
+            y: this.y
+          };
+        }
+        toJSON() {
+          return this[core.SERIALIZE_TO_IPC_FN]();
+        }
+      };
+      var PhysicalPosition = class {
+        constructor(...args) {
+          this.type = "Physical";
+          if (args.length === 1) {
+            if ("Physical" in args[0]) {
+              this.x = args[0].Physical.x;
+              this.y = args[0].Physical.y;
+            } else {
+              this.x = args[0].x;
+              this.y = args[0].y;
+            }
+          } else {
+            this.x = args[0];
+            this.y = args[1];
+          }
+        }
+        /**
+         * Converts the physical position to a logical one.
+         * @example
+         * ```typescript
+         * import { PhysicalPosition } from '@tauri-apps/api/dpi';
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         *
+         * const appWindow = getCurrentWindow();
+         * const factor = await appWindow.scaleFactor();
+         * const position = new PhysicalPosition(400, 500);
+         * const physical = position.toLogical(factor);
+         * ```
+         *
+         * @since 2.0.0
+         */
+        toLogical(scaleFactor) {
+          return new LogicalPosition(this.x / scaleFactor, this.y / scaleFactor);
+        }
+        [core.SERIALIZE_TO_IPC_FN]() {
+          return {
+            x: this.x,
+            y: this.y
+          };
+        }
+        toJSON() {
+          return this[core.SERIALIZE_TO_IPC_FN]();
+        }
+      };
+      var Position = class {
+        constructor(position) {
+          this.position = position;
+        }
+        toLogical(scaleFactor) {
+          return this.position instanceof LogicalPosition ? this.position : this.position.toLogical(scaleFactor);
+        }
+        toPhysical(scaleFactor) {
+          return this.position instanceof PhysicalPosition ? this.position : this.position.toPhysical(scaleFactor);
+        }
+        [core.SERIALIZE_TO_IPC_FN]() {
+          return {
+            [`${this.position.type}`]: {
+              x: this.position.x,
+              y: this.position.y
+            }
+          };
+        }
+        toJSON() {
+          return this[core.SERIALIZE_TO_IPC_FN]();
+        }
+      };
+      exports.LogicalPosition = LogicalPosition;
+      exports.LogicalSize = LogicalSize;
+      exports.PhysicalPosition = PhysicalPosition;
+      exports.PhysicalSize = PhysicalSize;
+      exports.Position = Position;
+      exports.Size = Size;
     }
   });
 
-  // node_modules/@tauri-apps/api/event.js
-  var TauriEvent;
-  var init_event = __esm({
-    "node_modules/@tauri-apps/api/event.js"() {
-      init_core();
-      (function(TauriEvent2) {
-        TauriEvent2["WINDOW_RESIZED"] = "tauri://resize";
-        TauriEvent2["WINDOW_MOVED"] = "tauri://move";
-        TauriEvent2["WINDOW_CLOSE_REQUESTED"] = "tauri://close-requested";
-        TauriEvent2["WINDOW_DESTROYED"] = "tauri://destroyed";
-        TauriEvent2["WINDOW_FOCUS"] = "tauri://focus";
-        TauriEvent2["WINDOW_BLUR"] = "tauri://blur";
-        TauriEvent2["WINDOW_SCALE_FACTOR_CHANGED"] = "tauri://scale-change";
-        TauriEvent2["WINDOW_THEME_CHANGED"] = "tauri://theme-changed";
-        TauriEvent2["WINDOW_CREATED"] = "tauri://window-created";
-        TauriEvent2["WEBVIEW_CREATED"] = "tauri://webview-created";
-        TauriEvent2["DRAG_ENTER"] = "tauri://drag-enter";
-        TauriEvent2["DRAG_OVER"] = "tauri://drag-over";
-        TauriEvent2["DRAG_DROP"] = "tauri://drag-drop";
-        TauriEvent2["DRAG_LEAVE"] = "tauri://drag-leave";
-      })(TauriEvent || (TauriEvent = {}));
+  // node_modules/@tauri-apps/api/image.cjs
+  var require_image = __commonJS({
+    "node_modules/@tauri-apps/api/image.cjs"(exports) {
+      "use strict";
+      var core = require_core();
+      var Image2 = class _Image extends core.Resource {
+        /**
+         * Creates an Image from a resource ID. For internal use only.
+         *
+         * @ignore
+         */
+        constructor(rid) {
+          super(rid);
+        }
+        /** Creates a new Image using RGBA data, in row-major order from top to bottom, and with specified width and height. */
+        static async new(rgba2, width, height) {
+          return core.invoke("plugin:image|new", {
+            rgba: transformImage(rgba2),
+            width,
+            height
+          }).then((rid) => new _Image(rid));
+        }
+        /**
+         * Creates a new image using the provided bytes by inferring the file format.
+         * If the format is known, prefer [@link Image.fromPngBytes] or [@link Image.fromIcoBytes].
+         *
+         * Only `ico` and `png` are supported (based on activated feature flag).
+         *
+         * Note that you need the `image-ico` or `image-png` Cargo features to use this API.
+         * To enable it, change your Cargo.toml file:
+         * ```toml
+         * [dependencies]
+         * tauri = { version = "...", features = ["...", "image-png"] }
+         * ```
+         */
+        static async fromBytes(bytes) {
+          return core.invoke("plugin:image|from_bytes", {
+            bytes: transformImage(bytes)
+          }).then((rid) => new _Image(rid));
+        }
+        /**
+         * Creates a new image using the provided path.
+         *
+         * Only `ico` and `png` are supported (based on activated feature flag).
+         *
+         * Note that you need the `image-ico` or `image-png` Cargo features to use this API.
+         * To enable it, change your Cargo.toml file:
+         * ```toml
+         * [dependencies]
+         * tauri = { version = "...", features = ["...", "image-png"] }
+         * ```
+         */
+        static async fromPath(path) {
+          return core.invoke("plugin:image|from_path", { path }).then((rid) => new _Image(rid));
+        }
+        /** Returns the RGBA data for this image, in row-major order from top to bottom.  */
+        async rgba() {
+          return core.invoke("plugin:image|rgba", {
+            rid: this.rid
+          }).then((buffer) => new Uint8Array(buffer));
+        }
+        /** Returns the size of this image.  */
+        async size() {
+          return core.invoke("plugin:image|size", { rid: this.rid });
+        }
+      };
+      function transformImage(image) {
+        const ret = image == null ? null : typeof image === "string" ? image : image instanceof Image2 ? image.rid : image;
+        return ret;
+      }
+      exports.Image = Image2;
+      exports.transformImage = transformImage;
+    }
+  });
+
+  // node_modules/@tauri-apps/api/window.cjs
+  var require_window = __commonJS({
+    "node_modules/@tauri-apps/api/window.cjs"(exports) {
+      "use strict";
+      var dpi = require_dpi();
+      var event = require_event();
+      var core = require_core();
+      var image = require_image();
+      exports.UserAttentionType = void 0;
+      (function(UserAttentionType) {
+        UserAttentionType[UserAttentionType["Critical"] = 1] = "Critical";
+        UserAttentionType[UserAttentionType["Informational"] = 2] = "Informational";
+      })(exports.UserAttentionType || (exports.UserAttentionType = {}));
+      var CloseRequestedEvent = class {
+        constructor(event2) {
+          this._preventDefault = false;
+          this.event = event2.event;
+          this.id = event2.id;
+        }
+        preventDefault() {
+          this._preventDefault = true;
+        }
+        isPreventDefault() {
+          return this._preventDefault;
+        }
+      };
+      exports.ProgressBarStatus = void 0;
+      (function(ProgressBarStatus) {
+        ProgressBarStatus["None"] = "none";
+        ProgressBarStatus["Normal"] = "normal";
+        ProgressBarStatus["Indeterminate"] = "indeterminate";
+        ProgressBarStatus["Paused"] = "paused";
+        ProgressBarStatus["Error"] = "error";
+      })(exports.ProgressBarStatus || (exports.ProgressBarStatus = {}));
+      function getCurrentWindow2() {
+        return new Window(window.__TAURI_INTERNALS__.metadata.currentWindow.label, {
+          // @ts-expect-error `skip` is not defined in the public API but it is handled by the constructor
+          skip: true
+        });
+      }
+      async function getAllWindows() {
+        return core.invoke("plugin:window|get_all_windows").then((windows) => windows.map((w) => new Window(w, {
+          // @ts-expect-error `skip` is not defined in the public API but it is handled by the constructor
+          skip: true
+        })));
+      }
+      var localTauriEvents = ["tauri://created", "tauri://error"];
+      var Window = class {
+        /**
+         * Creates a new Window.
+         * @example
+         * ```typescript
+         * import { Window } from '@tauri-apps/api/window';
+         * const appWindow = new Window('my-label');
+         * appWindow.once('tauri://created', function () {
+         *  // window successfully created
+         * });
+         * appWindow.once('tauri://error', function (e) {
+         *  // an error happened creating the window
+         * });
+         * ```
+         *
+         * @param label The unique window label. Must be alphanumeric: `a-zA-Z-/:_`.
+         * @returns The {@link Window} instance to communicate with the window.
+         */
+        constructor(label, options = {}) {
+          var _a;
+          this.label = label;
+          this.listeners = /* @__PURE__ */ Object.create(null);
+          if (!(options === null || options === void 0 ? void 0 : options.skip)) {
+            core.invoke("plugin:window|create", {
+              options: {
+                ...options,
+                parent: typeof options.parent === "string" ? options.parent : (_a = options.parent) === null || _a === void 0 ? void 0 : _a.label,
+                label
+              }
+            }).then(async () => this.emit("tauri://created")).catch(async (e) => this.emit("tauri://error", e));
+          }
+        }
+        /**
+         * Gets the Window associated with the given label.
+         * @example
+         * ```typescript
+         * import { Window } from '@tauri-apps/api/window';
+         * const mainWindow = Window.getByLabel('main');
+         * ```
+         *
+         * @param label The window label.
+         * @returns The Window instance to communicate with the window or null if the window doesn't exist.
+         */
+        static async getByLabel(label) {
+          var _a;
+          return (_a = (await getAllWindows()).find((w) => w.label === label)) !== null && _a !== void 0 ? _a : null;
+        }
+        /**
+         * Get an instance of `Window` for the current window.
+         */
+        static getCurrent() {
+          return getCurrentWindow2();
+        }
+        /**
+         * Gets a list of instances of `Window` for all available windows.
+         */
+        static async getAll() {
+          return getAllWindows();
+        }
+        /**
+         *  Gets the focused window.
+         * @example
+         * ```typescript
+         * import { Window } from '@tauri-apps/api/window';
+         * const focusedWindow = Window.getFocusedWindow();
+         * ```
+         *
+         * @returns The Window instance or `undefined` if there is not any focused window.
+         */
+        static async getFocusedWindow() {
+          for (const w of await getAllWindows()) {
+            if (await w.isFocused()) {
+              return w;
+            }
+          }
+          return null;
+        }
+        /**
+         * Listen to an emitted event on this window.
+         *
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * const unlisten = await getCurrentWindow().listen<string>('state-changed', (event) => {
+         *   console.log(`Got error: ${payload}`);
+         * });
+         *
+         * // you need to call unlisten if your handler goes out of scope e.g. the component is unmounted
+         * unlisten();
+         * ```
+         *
+         * @param event Event name. Must include only alphanumeric characters, `-`, `/`, `:` and `_`.
+         * @param handler Event handler.
+         * @returns A promise resolving to a function to unlisten to the event.
+         * Note that removing the listener is required if your listener goes out of scope e.g. the component is unmounted.
+         */
+        async listen(event$1, handler) {
+          if (this._handleTauriEvent(event$1, handler)) {
+            return () => {
+              const listeners = this.listeners[event$1];
+              listeners.splice(listeners.indexOf(handler), 1);
+            };
+          }
+          return event.listen(event$1, handler, {
+            target: { kind: "Window", label: this.label }
+          });
+        }
+        /**
+         * Listen to an emitted event on this window only once.
+         *
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * const unlisten = await getCurrentWindow().once<null>('initialized', (event) => {
+         *   console.log(`Window initialized!`);
+         * });
+         *
+         * // you need to call unlisten if your handler goes out of scope e.g. the component is unmounted
+         * unlisten();
+         * ```
+         *
+         * @param event Event name. Must include only alphanumeric characters, `-`, `/`, `:` and `_`.
+         * @param handler Event handler.
+         * @returns A promise resolving to a function to unlisten to the event.
+         * Note that removing the listener is required if your listener goes out of scope e.g. the component is unmounted.
+         */
+        async once(event$1, handler) {
+          if (this._handleTauriEvent(event$1, handler)) {
+            return () => {
+              const listeners = this.listeners[event$1];
+              listeners.splice(listeners.indexOf(handler), 1);
+            };
+          }
+          return event.once(event$1, handler, {
+            target: { kind: "Window", label: this.label }
+          });
+        }
+        /**
+         * Emits an event to all {@link EventTarget|targets}.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().emit('window-loaded', { loggedIn: true, token: 'authToken' });
+         * ```
+         *
+         * @param event Event name. Must include only alphanumeric characters, `-`, `/`, `:` and `_`.
+         * @param payload Event payload.
+         */
+        async emit(event$1, payload) {
+          if (localTauriEvents.includes(event$1)) {
+            for (const handler of this.listeners[event$1] || []) {
+              handler({
+                event: event$1,
+                id: -1,
+                payload
+              });
+            }
+            return;
+          }
+          return event.emit(event$1, payload);
+        }
+        /**
+         * Emits an event to all {@link EventTarget|targets} matching the given target.
+         *
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().emit('main', 'window-loaded', { loggedIn: true, token: 'authToken' });
+         * ```
+         * @param target Label of the target Window/Webview/WebviewWindow or raw {@link EventTarget} object.
+         * @param event Event name. Must include only alphanumeric characters, `-`, `/`, `:` and `_`.
+         * @param payload Event payload.
+         */
+        async emitTo(target, event$1, payload) {
+          if (localTauriEvents.includes(event$1)) {
+            for (const handler of this.listeners[event$1] || []) {
+              handler({
+                event: event$1,
+                id: -1,
+                payload
+              });
+            }
+            return;
+          }
+          return event.emitTo(target, event$1, payload);
+        }
+        /** @ignore */
+        _handleTauriEvent(event2, handler) {
+          if (localTauriEvents.includes(event2)) {
+            if (!(event2 in this.listeners)) {
+              this.listeners[event2] = [handler];
+            } else {
+              this.listeners[event2].push(handler);
+            }
+            return true;
+          }
+          return false;
+        }
+        // Getters
+        /**
+         * The scale factor that can be used to map physical pixels to logical pixels.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * const factor = await getCurrentWindow().scaleFactor();
+         * ```
+         *
+         * @returns The window's monitor scale factor.
+         */
+        async scaleFactor() {
+          return core.invoke("plugin:window|scale_factor", {
+            label: this.label
+          });
+        }
+        /**
+         * The position of the top-left hand corner of the window's client area relative to the top-left hand corner of the desktop.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * const position = await getCurrentWindow().innerPosition();
+         * ```
+         *
+         * @returns The window's inner position.
+         */
+        async innerPosition() {
+          return core.invoke("plugin:window|inner_position", {
+            label: this.label
+          }).then((p) => new dpi.PhysicalPosition(p));
+        }
+        /**
+         * The position of the top-left hand corner of the window relative to the top-left hand corner of the desktop.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * const position = await getCurrentWindow().outerPosition();
+         * ```
+         *
+         * @returns The window's outer position.
+         */
+        async outerPosition() {
+          return core.invoke("plugin:window|outer_position", {
+            label: this.label
+          }).then((p) => new dpi.PhysicalPosition(p));
+        }
+        /**
+         * The physical size of the window's client area.
+         * The client area is the content of the window, excluding the title bar and borders.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * const size = await getCurrentWindow().innerSize();
+         * ```
+         *
+         * @returns The window's inner size.
+         */
+        async innerSize() {
+          return core.invoke("plugin:window|inner_size", {
+            label: this.label
+          }).then((s) => new dpi.PhysicalSize(s));
+        }
+        /**
+         * The physical size of the entire window.
+         * These dimensions include the title bar and borders. If you don't want that (and you usually don't), use inner_size instead.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * const size = await getCurrentWindow().outerSize();
+         * ```
+         *
+         * @returns The window's outer size.
+         */
+        async outerSize() {
+          return core.invoke("plugin:window|outer_size", {
+            label: this.label
+          }).then((s) => new dpi.PhysicalSize(s));
+        }
+        /**
+         * Gets the window's current fullscreen state.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * const fullscreen = await getCurrentWindow().isFullscreen();
+         * ```
+         *
+         * @returns Whether the window is in fullscreen mode or not.
+         */
+        async isFullscreen() {
+          return core.invoke("plugin:window|is_fullscreen", {
+            label: this.label
+          });
+        }
+        /**
+         * Gets the window's current minimized state.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * const minimized = await getCurrentWindow().isMinimized();
+         * ```
+         */
+        async isMinimized() {
+          return core.invoke("plugin:window|is_minimized", {
+            label: this.label
+          });
+        }
+        /**
+         * Gets the window's current maximized state.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * const maximized = await getCurrentWindow().isMaximized();
+         * ```
+         *
+         * @returns Whether the window is maximized or not.
+         */
+        async isMaximized() {
+          return core.invoke("plugin:window|is_maximized", {
+            label: this.label
+          });
+        }
+        /**
+         * Gets the window's current focus state.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * const focused = await getCurrentWindow().isFocused();
+         * ```
+         *
+         * @returns Whether the window is focused or not.
+         */
+        async isFocused() {
+          return core.invoke("plugin:window|is_focused", {
+            label: this.label
+          });
+        }
+        /**
+         * Gets the window's current decorated state.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * const decorated = await getCurrentWindow().isDecorated();
+         * ```
+         *
+         * @returns Whether the window is decorated or not.
+         */
+        async isDecorated() {
+          return core.invoke("plugin:window|is_decorated", {
+            label: this.label
+          });
+        }
+        /**
+         * Gets the window's current resizable state.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * const resizable = await getCurrentWindow().isResizable();
+         * ```
+         *
+         * @returns Whether the window is resizable or not.
+         */
+        async isResizable() {
+          return core.invoke("plugin:window|is_resizable", {
+            label: this.label
+          });
+        }
+        /**
+         * Gets the window's native maximize button state.
+         *
+         * #### Platform-specific
+         *
+         * - **Linux / iOS / Android:** Unsupported.
+         *
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * const maximizable = await getCurrentWindow().isMaximizable();
+         * ```
+         *
+         * @returns Whether the window's native maximize button is enabled or not.
+         */
+        async isMaximizable() {
+          return core.invoke("plugin:window|is_maximizable", {
+            label: this.label
+          });
+        }
+        /**
+         * Gets the window's native minimize button state.
+         *
+         * #### Platform-specific
+         *
+         * - **Linux / iOS / Android:** Unsupported.
+         *
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * const minimizable = await getCurrentWindow().isMinimizable();
+         * ```
+         *
+         * @returns Whether the window's native minimize button is enabled or not.
+         */
+        async isMinimizable() {
+          return core.invoke("plugin:window|is_minimizable", {
+            label: this.label
+          });
+        }
+        /**
+         * Gets the window's native close button state.
+         *
+         * #### Platform-specific
+         *
+         * - **iOS / Android:** Unsupported.
+         *
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * const closable = await getCurrentWindow().isClosable();
+         * ```
+         *
+         * @returns Whether the window's native close button is enabled or not.
+         */
+        async isClosable() {
+          return core.invoke("plugin:window|is_closable", {
+            label: this.label
+          });
+        }
+        /**
+         * Gets the window's current visible state.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * const visible = await getCurrentWindow().isVisible();
+         * ```
+         *
+         * @returns Whether the window is visible or not.
+         */
+        async isVisible() {
+          return core.invoke("plugin:window|is_visible", {
+            label: this.label
+          });
+        }
+        /**
+         * Gets the window's current title.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * const title = await getCurrentWindow().title();
+         * ```
+         */
+        async title() {
+          return core.invoke("plugin:window|title", {
+            label: this.label
+          });
+        }
+        /**
+         * Gets the window's current theme.
+         *
+         * #### Platform-specific
+         *
+         * - **macOS:** Theme was introduced on macOS 10.14. Returns `light` on macOS 10.13 and below.
+         *
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * const theme = await getCurrentWindow().theme();
+         * ```
+         *
+         * @returns The window theme.
+         */
+        async theme() {
+          return core.invoke("plugin:window|theme", {
+            label: this.label
+          });
+        }
+        /**
+         * Whether the window is configured to be always on top of other windows or not.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * const alwaysOnTop = await getCurrentWindow().isAlwaysOnTop();
+         * ```
+         *
+         * @returns Whether the window is visible or not.
+         */
+        async isAlwaysOnTop() {
+          return core.invoke("plugin:window|is_always_on_top", {
+            label: this.label
+          });
+        }
+        // Setters
+        /**
+         * Centers the window.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().center();
+         * ```
+         *
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async center() {
+          return core.invoke("plugin:window|center", {
+            label: this.label
+          });
+        }
+        /**
+         *  Requests user attention to the window, this has no effect if the application
+         * is already focused. How requesting for user attention manifests is platform dependent,
+         * see `UserAttentionType` for details.
+         *
+         * Providing `null` will unset the request for user attention. Unsetting the request for
+         * user attention might not be done automatically by the WM when the window receives input.
+         *
+         * #### Platform-specific
+         *
+         * - **macOS:** `null` has no effect.
+         * - **Linux:** Urgency levels have the same effect.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().requestUserAttention();
+         * ```
+         *
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async requestUserAttention(requestType) {
+          let requestType_ = null;
+          if (requestType) {
+            if (requestType === exports.UserAttentionType.Critical) {
+              requestType_ = { type: "Critical" };
+            } else {
+              requestType_ = { type: "Informational" };
+            }
+          }
+          return core.invoke("plugin:window|request_user_attention", {
+            label: this.label,
+            value: requestType_
+          });
+        }
+        /**
+         * Updates the window resizable flag.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().setResizable(false);
+         * ```
+         *
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async setResizable(resizable) {
+          return core.invoke("plugin:window|set_resizable", {
+            label: this.label,
+            value: resizable
+          });
+        }
+        /**
+         * Enable or disable the window.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().setEnabled(false);
+         * ```
+         *
+         * @returns A promise indicating the success or failure of the operation.
+         *
+         * @since 2.0.0
+         */
+        async setEnabled(enabled) {
+          return core.invoke("plugin:window|set_enabled", {
+            label: this.label,
+            value: enabled
+          });
+        }
+        /**
+         * Whether the window is enabled or disabled.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().setEnabled(false);
+         * ```
+         *
+         * @returns A promise indicating the success or failure of the operation.
+         *
+         * @since 2.0.0
+         */
+        async isEnabled() {
+          return core.invoke("plugin:window|is_enabled", {
+            label: this.label
+          });
+        }
+        /**
+         * Sets whether the window's native maximize button is enabled or not.
+         * If resizable is set to false, this setting is ignored.
+         *
+         * #### Platform-specific
+         *
+         * - **macOS:** Disables the "zoom" button in the window titlebar, which is also used to enter fullscreen mode.
+         * - **Linux / iOS / Android:** Unsupported.
+         *
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().setMaximizable(false);
+         * ```
+         *
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async setMaximizable(maximizable) {
+          return core.invoke("plugin:window|set_maximizable", {
+            label: this.label,
+            value: maximizable
+          });
+        }
+        /**
+         * Sets whether the window's native minimize button is enabled or not.
+         *
+         * #### Platform-specific
+         *
+         * - **Linux / iOS / Android:** Unsupported.
+         *
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().setMinimizable(false);
+         * ```
+         *
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async setMinimizable(minimizable) {
+          return core.invoke("plugin:window|set_minimizable", {
+            label: this.label,
+            value: minimizable
+          });
+        }
+        /**
+         * Sets whether the window's native close button is enabled or not.
+         *
+         * #### Platform-specific
+         *
+         * - **Linux:** GTK+ will do its best to convince the window manager not to show a close button. Depending on the system, this function may not have any effect when called on a window that is already visible
+         * - **iOS / Android:** Unsupported.
+         *
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().setClosable(false);
+         * ```
+         *
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async setClosable(closable) {
+          return core.invoke("plugin:window|set_closable", {
+            label: this.label,
+            value: closable
+          });
+        }
+        /**
+         * Sets the window title.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().setTitle('Tauri');
+         * ```
+         *
+         * @param title The new title
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async setTitle(title) {
+          return core.invoke("plugin:window|set_title", {
+            label: this.label,
+            value: title
+          });
+        }
+        /**
+         * Maximizes the window.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().maximize();
+         * ```
+         *
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async maximize() {
+          return core.invoke("plugin:window|maximize", {
+            label: this.label
+          });
+        }
+        /**
+         * Unmaximizes the window.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().unmaximize();
+         * ```
+         *
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async unmaximize() {
+          return core.invoke("plugin:window|unmaximize", {
+            label: this.label
+          });
+        }
+        /**
+         * Toggles the window maximized state.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().toggleMaximize();
+         * ```
+         *
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async toggleMaximize() {
+          return core.invoke("plugin:window|toggle_maximize", {
+            label: this.label
+          });
+        }
+        /**
+         * Minimizes the window.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().minimize();
+         * ```
+         *
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async minimize() {
+          return core.invoke("plugin:window|minimize", {
+            label: this.label
+          });
+        }
+        /**
+         * Unminimizes the window.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().unminimize();
+         * ```
+         *
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async unminimize() {
+          return core.invoke("plugin:window|unminimize", {
+            label: this.label
+          });
+        }
+        /**
+         * Sets the window visibility to true.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().show();
+         * ```
+         *
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async show() {
+          return core.invoke("plugin:window|show", {
+            label: this.label
+          });
+        }
+        /**
+         * Sets the window visibility to false.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().hide();
+         * ```
+         *
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async hide() {
+          return core.invoke("plugin:window|hide", {
+            label: this.label
+          });
+        }
+        /**
+         * Closes the window.
+         *
+         * Note this emits a closeRequested event so you can intercept it. To force window close, use {@link Window.destroy}.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().close();
+         * ```
+         *
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async close() {
+          return core.invoke("plugin:window|close", {
+            label: this.label
+          });
+        }
+        /**
+         * Destroys the window. Behaves like {@link Window.close} but forces the window close instead of emitting a closeRequested event.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().destroy();
+         * ```
+         *
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async destroy() {
+          return core.invoke("plugin:window|destroy", {
+            label: this.label
+          });
+        }
+        /**
+         * Whether the window should have borders and bars.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().setDecorations(false);
+         * ```
+         *
+         * @param decorations Whether the window should have borders and bars.
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async setDecorations(decorations) {
+          return core.invoke("plugin:window|set_decorations", {
+            label: this.label,
+            value: decorations
+          });
+        }
+        /**
+         * Whether or not the window should have shadow.
+         *
+         * #### Platform-specific
+         *
+         * - **Windows:**
+         *   - `false` has no effect on decorated window, shadows are always ON.
+         *   - `true` will make undecorated window have a 1px white border,
+         * and on Windows 11, it will have a rounded corners.
+         * - **Linux:** Unsupported.
+         *
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().setShadow(false);
+         * ```
+         *
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async setShadow(enable) {
+          return core.invoke("plugin:window|set_shadow", {
+            label: this.label,
+            value: enable
+          });
+        }
+        /**
+         * Set window effects.
+         */
+        async setEffects(effects) {
+          return core.invoke("plugin:window|set_effects", {
+            label: this.label,
+            value: effects
+          });
+        }
+        /**
+         * Clear any applied effects if possible.
+         */
+        async clearEffects() {
+          return core.invoke("plugin:window|set_effects", {
+            label: this.label,
+            value: null
+          });
+        }
+        /**
+         * Whether the window should always be on top of other windows.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().setAlwaysOnTop(true);
+         * ```
+         *
+         * @param alwaysOnTop Whether the window should always be on top of other windows or not.
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async setAlwaysOnTop(alwaysOnTop) {
+          return core.invoke("plugin:window|set_always_on_top", {
+            label: this.label,
+            value: alwaysOnTop
+          });
+        }
+        /**
+         * Whether the window should always be below other windows.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().setAlwaysOnBottom(true);
+         * ```
+         *
+         * @param alwaysOnBottom Whether the window should always be below other windows or not.
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async setAlwaysOnBottom(alwaysOnBottom) {
+          return core.invoke("plugin:window|set_always_on_bottom", {
+            label: this.label,
+            value: alwaysOnBottom
+          });
+        }
+        /**
+         * Prevents the window contents from being captured by other apps.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().setContentProtected(true);
+         * ```
+         *
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async setContentProtected(protected_) {
+          return core.invoke("plugin:window|set_content_protected", {
+            label: this.label,
+            value: protected_
+          });
+        }
+        /**
+         * Resizes the window with a new inner size.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window';
+         * await getCurrentWindow().setSize(new LogicalSize(600, 500));
+         * ```
+         *
+         * @param size The logical or physical inner size.
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async setSize(size) {
+          return core.invoke("plugin:window|set_size", {
+            label: this.label,
+            value: size instanceof dpi.Size ? size : new dpi.Size(size)
+          });
+        }
+        /**
+         * Sets the window minimum inner size. If the `size` argument is not provided, the constraint is unset.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow, PhysicalSize } from '@tauri-apps/api/window';
+         * await getCurrentWindow().setMinSize(new PhysicalSize(600, 500));
+         * ```
+         *
+         * @param size The logical or physical inner size, or `null` to unset the constraint.
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async setMinSize(size) {
+          return core.invoke("plugin:window|set_min_size", {
+            label: this.label,
+            value: size instanceof dpi.Size ? size : size ? new dpi.Size(size) : null
+          });
+        }
+        /**
+         * Sets the window maximum inner size. If the `size` argument is undefined, the constraint is unset.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window';
+         * await getCurrentWindow().setMaxSize(new LogicalSize(600, 500));
+         * ```
+         *
+         * @param size The logical or physical inner size, or `null` to unset the constraint.
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async setMaxSize(size) {
+          return core.invoke("plugin:window|set_max_size", {
+            label: this.label,
+            value: size instanceof dpi.Size ? size : size ? new dpi.Size(size) : null
+          });
+        }
+        /**
+         * Sets the window inner size constraints.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().setSizeConstraints({ minWidth: 300 });
+         * ```
+         *
+         * @param constraints The logical or physical inner size, or `null` to unset the constraint.
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async setSizeConstraints(constraints) {
+          function logical(pixel) {
+            return pixel ? { Logical: pixel } : null;
+          }
+          return core.invoke("plugin:window|set_size_constraints", {
+            label: this.label,
+            value: {
+              minWidth: logical(constraints === null || constraints === void 0 ? void 0 : constraints.minWidth),
+              minHeight: logical(constraints === null || constraints === void 0 ? void 0 : constraints.minHeight),
+              maxWidth: logical(constraints === null || constraints === void 0 ? void 0 : constraints.maxWidth),
+              maxHeight: logical(constraints === null || constraints === void 0 ? void 0 : constraints.maxHeight)
+            }
+          });
+        }
+        /**
+         * Sets the window outer position.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow, LogicalPosition } from '@tauri-apps/api/window';
+         * await getCurrentWindow().setPosition(new LogicalPosition(600, 500));
+         * ```
+         *
+         * @param position The new position, in logical or physical pixels.
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async setPosition(position) {
+          return core.invoke("plugin:window|set_position", {
+            label: this.label,
+            value: position instanceof dpi.Position ? position : new dpi.Position(position)
+          });
+        }
+        /**
+         * Sets the window fullscreen state.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().setFullscreen(true);
+         * ```
+         *
+         * @param fullscreen Whether the window should go to fullscreen or not.
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async setFullscreen(fullscreen) {
+          return core.invoke("plugin:window|set_fullscreen", {
+            label: this.label,
+            value: fullscreen
+          });
+        }
+        /**
+         * On macOS, Toggles a fullscreen mode that doesn’t require a new macOS space. Returns a boolean indicating whether the transition was successful (this won’t work if the window was already in the native fullscreen).
+         * This is how fullscreen used to work on macOS in versions before Lion. And allows the user to have a fullscreen window without using another space or taking control over the entire monitor.
+         *
+         * On other platforms, this is the same as {@link Window.setFullscreen}.
+         *
+         * @param fullscreen Whether the window should go to simple fullscreen or not.
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async setSimpleFullscreen(fullscreen) {
+          return core.invoke("plugin:window|set_simple_fullscreen", {
+            label: this.label,
+            value: fullscreen
+          });
+        }
+        /**
+         * Bring the window to front and focus.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().setFocus();
+         * ```
+         *
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async setFocus() {
+          return core.invoke("plugin:window|set_focus", {
+            label: this.label
+          });
+        }
+        /**
+         * Sets whether the window can be focused.
+         *
+         * #### Platform-specific
+         *
+         * - **macOS**: If the window is already focused, it is not possible to unfocus it after calling `set_focusable(false)`.
+         *   In this case, you might consider calling {@link Window.setFocus} but it will move the window to the back i.e. at the bottom in terms of z-order.
+         *
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().setFocusable(true);
+         * ```
+         *
+         * @param focusable Whether the window can be focused.
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async setFocusable(focusable) {
+          return core.invoke("plugin:window|set_focusable", {
+            label: this.label,
+            value: focusable
+          });
+        }
+        /**
+         * Sets the window icon.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().setIcon('/tauri/awesome.png');
+         * ```
+         *
+         * Note that you may need the `image-ico` or `image-png` Cargo features to use this API.
+         * To enable it, change your Cargo.toml file:
+         * ```toml
+         * [dependencies]
+         * tauri = { version = "...", features = ["...", "image-png"] }
+         * ```
+         *
+         * @param icon Icon bytes or path to the icon file.
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async setIcon(icon) {
+          return core.invoke("plugin:window|set_icon", {
+            label: this.label,
+            value: image.transformImage(icon)
+          });
+        }
+        /**
+         * Whether the window icon should be hidden from the taskbar or not.
+         *
+         * #### Platform-specific
+         *
+         * - **macOS:** Unsupported.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().setSkipTaskbar(true);
+         * ```
+         *
+         * @param skip true to hide window icon, false to show it.
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async setSkipTaskbar(skip) {
+          return core.invoke("plugin:window|set_skip_taskbar", {
+            label: this.label,
+            value: skip
+          });
+        }
+        /**
+         * Grabs the cursor, preventing it from leaving the window.
+         *
+         * There's no guarantee that the cursor will be hidden. You should
+         * hide it by yourself if you want so.
+         *
+         * #### Platform-specific
+         *
+         * - **Linux:** Unsupported.
+         * - **macOS:** This locks the cursor in a fixed location, which looks visually awkward.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().setCursorGrab(true);
+         * ```
+         *
+         * @param grab `true` to grab the cursor icon, `false` to release it.
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async setCursorGrab(grab) {
+          return core.invoke("plugin:window|set_cursor_grab", {
+            label: this.label,
+            value: grab
+          });
+        }
+        /**
+         * Modifies the cursor's visibility.
+         *
+         * #### Platform-specific
+         *
+         * - **Windows:** The cursor is only hidden within the confines of the window.
+         * - **macOS:** The cursor is hidden as long as the window has input focus, even if the cursor is
+         *   outside of the window.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().setCursorVisible(false);
+         * ```
+         *
+         * @param visible If `false`, this will hide the cursor. If `true`, this will show the cursor.
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async setCursorVisible(visible) {
+          return core.invoke("plugin:window|set_cursor_visible", {
+            label: this.label,
+            value: visible
+          });
+        }
+        /**
+         * Modifies the cursor icon of the window.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().setCursorIcon('help');
+         * ```
+         *
+         * @param icon The new cursor icon.
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async setCursorIcon(icon) {
+          return core.invoke("plugin:window|set_cursor_icon", {
+            label: this.label,
+            value: icon
+          });
+        }
+        /**
+         * Sets the window background color.
+         *
+         * #### Platform-specific:
+         *
+         * - **Windows:** alpha channel is ignored.
+         * - **iOS / Android:** Unsupported.
+         *
+         * @returns A promise indicating the success or failure of the operation.
+         *
+         * @since 2.1.0
+         */
+        async setBackgroundColor(color2) {
+          return core.invoke("plugin:window|set_background_color", { color: color2 });
+        }
+        /**
+         * Changes the position of the cursor in window coordinates.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow, LogicalPosition } from '@tauri-apps/api/window';
+         * await getCurrentWindow().setCursorPosition(new LogicalPosition(600, 300));
+         * ```
+         *
+         * @param position The new cursor position.
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async setCursorPosition(position) {
+          return core.invoke("plugin:window|set_cursor_position", {
+            label: this.label,
+            value: position instanceof dpi.Position ? position : new dpi.Position(position)
+          });
+        }
+        /**
+         * Changes the cursor events behavior.
+         *
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().setIgnoreCursorEvents(true);
+         * ```
+         *
+         * @param ignore `true` to ignore the cursor events; `false` to process them as usual.
+         * @returns A promise indicating the success or failure of the operation.
+         */
+        async setIgnoreCursorEvents(ignore) {
+          return core.invoke("plugin:window|set_ignore_cursor_events", {
+            label: this.label,
+            value: ignore
+          });
+        }
+        /**
+         * Starts dragging the window.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().startDragging();
+         * ```
+         *
+         * @return A promise indicating the success or failure of the operation.
+         */
+        async startDragging() {
+          return core.invoke("plugin:window|start_dragging", {
+            label: this.label
+          });
+        }
+        /**
+         * Starts resize-dragging the window.
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().startResizeDragging();
+         * ```
+         *
+         * @return A promise indicating the success or failure of the operation.
+         */
+        async startResizeDragging(direction) {
+          return core.invoke("plugin:window|start_resize_dragging", {
+            label: this.label,
+            value: direction
+          });
+        }
+        /**
+         * Sets the badge count. It is app wide and not specific to this window.
+         *
+         * #### Platform-specific
+         *
+         * - **Windows**: Unsupported. Use @{linkcode Window.setOverlayIcon} instead.
+         *
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().setBadgeCount(5);
+         * ```
+         *
+         * @param count The badge count. Use `undefined` to remove the badge.
+         * @return A promise indicating the success or failure of the operation.
+         */
+        async setBadgeCount(count) {
+          return core.invoke("plugin:window|set_badge_count", {
+            label: this.label,
+            value: count
+          });
+        }
+        /**
+         * Sets the badge cont **macOS only**.
+         *
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().setBadgeLabel("Hello");
+         * ```
+         *
+         * @param label The badge label. Use `undefined` to remove the badge.
+         * @return A promise indicating the success or failure of the operation.
+         */
+        async setBadgeLabel(label) {
+          return core.invoke("plugin:window|set_badge_label", {
+            label: this.label,
+            value: label
+          });
+        }
+        /**
+         * Sets the overlay icon. **Windows only**
+         * The overlay icon can be set for every window.
+         *
+         *
+         * Note that you may need the `image-ico` or `image-png` Cargo features to use this API.
+         * To enable it, change your Cargo.toml file:
+         *
+         * ```toml
+         * [dependencies]
+         * tauri = { version = "...", features = ["...", "image-png"] }
+         * ```
+         *
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from '@tauri-apps/api/window';
+         * await getCurrentWindow().setOverlayIcon("/tauri/awesome.png");
+         * ```
+         *
+         * @param icon Icon bytes or path to the icon file. Use `undefined` to remove the overlay icon.
+         * @return A promise indicating the success or failure of the operation.
+         */
+        async setOverlayIcon(icon) {
+          return core.invoke("plugin:window|set_overlay_icon", {
+            label: this.label,
+            value: icon ? image.transformImage(icon) : void 0
+          });
+        }
+        /**
+         * Sets the taskbar progress state.
+         *
+         * #### Platform-specific
+         *
+         * - **Linux / macOS**: Progress bar is app-wide and not specific to this window.
+         * - **Linux**: Only supported desktop environments with `libunity` (e.g. GNOME).
+         *
+         * @example
+         * ```typescript
+         * import { getCurrentWindow, ProgressBarStatus } from '@tauri-apps/api/window';
+         * await getCurrentWindow().setProgressBar({
+         *   status: ProgressBarStatus.Normal,
+         *   progress: 50,
+         * });
+         * ```
+         *
+         * @return A promise indicating the success or failure of the operation.
+         */
+        async setProgressBar(state) {
+          return core.invoke("plugin:window|set_progress_bar", {
+            label: this.label,
+            value: state
+          });
+        }
+        /**
+         * Sets whether the window should be visible on all workspaces or virtual desktops.
+         *
+         * #### Platform-specific
+         *
+         * - **Windows / iOS / Android:** Unsupported.
+         *
+         * @since 2.0.0
+         */
+        async setVisibleOnAllWorkspaces(visible) {
+          return core.invoke("plugin:window|set_visible_on_all_workspaces", {
+            label: this.label,
+            value: visible
+          });
+        }
+        /**
+         * Sets the title bar style. **macOS only**.
+         *
+         * @since 2.0.0
+         */
+        async setTitleBarStyle(style2) {
+          return core.invoke("plugin:window|set_title_bar_style", {
+            label: this.label,
+            value: style2
+          });
+        }
+        /**
+         * Set window theme, pass in `null` or `undefined` to follow system theme
+         *
+         * #### Platform-specific
+         *
+         * - **Linux / macOS**: Theme is app-wide and not specific to this window.
+         * - **iOS / Android:** Unsupported.
+         *
+         * @since 2.0.0
+         */
+        async setTheme(theme) {
+          return core.invoke("plugin:window|set_theme", {
+            label: this.label,
+            value: theme
+          });
+        }
+        // Listeners
+        /**
+         * Listen to window resize.
+         *
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from "@tauri-apps/api/window";
+         * const unlisten = await getCurrentWindow().onResized(({ payload: size }) => {
+         *  console.log('Window resized', size);
+         * });
+         *
+         * // you need to call unlisten if your handler goes out of scope e.g. the component is unmounted
+         * unlisten();
+         * ```
+         *
+         * @returns A promise resolving to a function to unlisten to the event.
+         * Note that removing the listener is required if your listener goes out of scope e.g. the component is unmounted.
+         */
+        async onResized(handler) {
+          return this.listen(event.TauriEvent.WINDOW_RESIZED, (e) => {
+            e.payload = new dpi.PhysicalSize(e.payload);
+            handler(e);
+          });
+        }
+        /**
+         * Listen to window move.
+         *
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from "@tauri-apps/api/window";
+         * const unlisten = await getCurrentWindow().onMoved(({ payload: position }) => {
+         *  console.log('Window moved', position);
+         * });
+         *
+         * // you need to call unlisten if your handler goes out of scope e.g. the component is unmounted
+         * unlisten();
+         * ```
+         *
+         * @returns A promise resolving to a function to unlisten to the event.
+         * Note that removing the listener is required if your listener goes out of scope e.g. the component is unmounted.
+         */
+        async onMoved(handler) {
+          return this.listen(event.TauriEvent.WINDOW_MOVED, (e) => {
+            e.payload = new dpi.PhysicalPosition(e.payload);
+            handler(e);
+          });
+        }
+        /**
+         * Listen to window close requested. Emitted when the user requests to closes the window.
+         *
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from "@tauri-apps/api/window";
+         * import { confirm } from '@tauri-apps/api/dialog';
+         * const unlisten = await getCurrentWindow().onCloseRequested(async (event) => {
+         *   const confirmed = await confirm('Are you sure?');
+         *   if (!confirmed) {
+         *     // user did not confirm closing the window; let's prevent it
+         *     event.preventDefault();
+         *   }
+         * });
+         *
+         * // you need to call unlisten if your handler goes out of scope e.g. the component is unmounted
+         * unlisten();
+         * ```
+         *
+         * @returns A promise resolving to a function to unlisten to the event.
+         * Note that removing the listener is required if your listener goes out of scope e.g. the component is unmounted.
+         */
+        async onCloseRequested(handler) {
+          return this.listen(event.TauriEvent.WINDOW_CLOSE_REQUESTED, async (event2) => {
+            const evt = new CloseRequestedEvent(event2);
+            await handler(evt);
+            if (!evt.isPreventDefault()) {
+              await this.destroy();
+            }
+          });
+        }
+        /**
+         * Listen to a file drop event.
+         * The listener is triggered when the user hovers the selected files on the webview,
+         * drops the files or cancels the operation.
+         *
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from "@tauri-apps/api/webview";
+         * const unlisten = await getCurrentWindow().onDragDropEvent((event) => {
+         *  if (event.payload.type === 'over') {
+         *    console.log('User hovering', event.payload.position);
+         *  } else if (event.payload.type === 'drop') {
+         *    console.log('User dropped', event.payload.paths);
+         *  } else {
+         *    console.log('File drop cancelled');
+         *  }
+         * });
+         *
+         * // you need to call unlisten if your handler goes out of scope e.g. the component is unmounted
+         * unlisten();
+         * ```
+         *
+         * @returns A promise resolving to a function to unlisten to the event.
+         * Note that removing the listener is required if your listener goes out of scope e.g. the component is unmounted.
+         */
+        async onDragDropEvent(handler) {
+          const unlistenDrag = await this.listen(event.TauriEvent.DRAG_ENTER, (event2) => {
+            handler({
+              ...event2,
+              payload: {
+                type: "enter",
+                paths: event2.payload.paths,
+                position: new dpi.PhysicalPosition(event2.payload.position)
+              }
+            });
+          });
+          const unlistenDragOver = await this.listen(event.TauriEvent.DRAG_OVER, (event2) => {
+            handler({
+              ...event2,
+              payload: {
+                type: "over",
+                position: new dpi.PhysicalPosition(event2.payload.position)
+              }
+            });
+          });
+          const unlistenDrop = await this.listen(event.TauriEvent.DRAG_DROP, (event2) => {
+            handler({
+              ...event2,
+              payload: {
+                type: "drop",
+                paths: event2.payload.paths,
+                position: new dpi.PhysicalPosition(event2.payload.position)
+              }
+            });
+          });
+          const unlistenCancel = await this.listen(event.TauriEvent.DRAG_LEAVE, (event2) => {
+            handler({ ...event2, payload: { type: "leave" } });
+          });
+          return () => {
+            unlistenDrag();
+            unlistenDrop();
+            unlistenDragOver();
+            unlistenCancel();
+          };
+        }
+        /**
+         * Listen to window focus change.
+         *
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from "@tauri-apps/api/window";
+         * const unlisten = await getCurrentWindow().onFocusChanged(({ payload: focused }) => {
+         *  console.log('Focus changed, window is focused? ' + focused);
+         * });
+         *
+         * // you need to call unlisten if your handler goes out of scope e.g. the component is unmounted
+         * unlisten();
+         * ```
+         *
+         * @returns A promise resolving to a function to unlisten to the event.
+         * Note that removing the listener is required if your listener goes out of scope e.g. the component is unmounted.
+         */
+        async onFocusChanged(handler) {
+          const unlistenFocus = await this.listen(event.TauriEvent.WINDOW_FOCUS, (event2) => {
+            handler({ ...event2, payload: true });
+          });
+          const unlistenBlur = await this.listen(event.TauriEvent.WINDOW_BLUR, (event2) => {
+            handler({ ...event2, payload: false });
+          });
+          return () => {
+            unlistenFocus();
+            unlistenBlur();
+          };
+        }
+        /**
+         * Listen to window scale change. Emitted when the window's scale factor has changed.
+         * The following user actions can cause DPI changes:
+         * - Changing the display's resolution.
+         * - Changing the display's scale factor (e.g. in Control Panel on Windows).
+         * - Moving the window to a display with a different scale factor.
+         *
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from "@tauri-apps/api/window";
+         * const unlisten = await getCurrentWindow().onScaleChanged(({ payload }) => {
+         *  console.log('Scale changed', payload.scaleFactor, payload.size);
+         * });
+         *
+         * // you need to call unlisten if your handler goes out of scope e.g. the component is unmounted
+         * unlisten();
+         * ```
+         *
+         * @returns A promise resolving to a function to unlisten to the event.
+         * Note that removing the listener is required if your listener goes out of scope e.g. the component is unmounted.
+         */
+        async onScaleChanged(handler) {
+          return this.listen(event.TauriEvent.WINDOW_SCALE_FACTOR_CHANGED, handler);
+        }
+        /**
+         * Listen to the system theme change.
+         *
+         * @example
+         * ```typescript
+         * import { getCurrentWindow } from "@tauri-apps/api/window";
+         * const unlisten = await getCurrentWindow().onThemeChanged(({ payload: theme }) => {
+         *  console.log('New theme: ' + theme);
+         * });
+         *
+         * // you need to call unlisten if your handler goes out of scope e.g. the component is unmounted
+         * unlisten();
+         * ```
+         *
+         * @returns A promise resolving to a function to unlisten to the event.
+         * Note that removing the listener is required if your listener goes out of scope e.g. the component is unmounted.
+         */
+        async onThemeChanged(handler) {
+          return this.listen(event.TauriEvent.WINDOW_THEME_CHANGED, handler);
+        }
+      };
+      var BackgroundThrottlingPolicy;
+      (function(BackgroundThrottlingPolicy2) {
+        BackgroundThrottlingPolicy2["Disabled"] = "disabled";
+        BackgroundThrottlingPolicy2["Throttle"] = "throttle";
+        BackgroundThrottlingPolicy2["Suspend"] = "suspend";
+      })(BackgroundThrottlingPolicy || (BackgroundThrottlingPolicy = {}));
+      var ScrollBarStyle;
+      (function(ScrollBarStyle2) {
+        ScrollBarStyle2["Default"] = "default";
+        ScrollBarStyle2["FluentOverlay"] = "fluentOverlay";
+      })(ScrollBarStyle || (ScrollBarStyle = {}));
+      exports.Effect = void 0;
+      (function(Effect) {
+        Effect["AppearanceBased"] = "appearanceBased";
+        Effect["Light"] = "light";
+        Effect["Dark"] = "dark";
+        Effect["MediumLight"] = "mediumLight";
+        Effect["UltraDark"] = "ultraDark";
+        Effect["Titlebar"] = "titlebar";
+        Effect["Selection"] = "selection";
+        Effect["Menu"] = "menu";
+        Effect["Popover"] = "popover";
+        Effect["Sidebar"] = "sidebar";
+        Effect["HeaderView"] = "headerView";
+        Effect["Sheet"] = "sheet";
+        Effect["WindowBackground"] = "windowBackground";
+        Effect["HudWindow"] = "hudWindow";
+        Effect["FullScreenUI"] = "fullScreenUI";
+        Effect["Tooltip"] = "tooltip";
+        Effect["ContentBackground"] = "contentBackground";
+        Effect["UnderWindowBackground"] = "underWindowBackground";
+        Effect["UnderPageBackground"] = "underPageBackground";
+        Effect["Mica"] = "mica";
+        Effect["Blur"] = "blur";
+        Effect["Acrylic"] = "acrylic";
+        Effect["Tabbed"] = "tabbed";
+        Effect["TabbedDark"] = "tabbedDark";
+        Effect["TabbedLight"] = "tabbedLight";
+      })(exports.Effect || (exports.Effect = {}));
+      exports.EffectState = void 0;
+      (function(EffectState) {
+        EffectState["FollowsWindowActiveState"] = "followsWindowActiveState";
+        EffectState["Active"] = "active";
+        EffectState["Inactive"] = "inactive";
+      })(exports.EffectState || (exports.EffectState = {}));
+      function mapMonitor(m2) {
+        return m2 === null ? null : {
+          name: m2.name,
+          scaleFactor: m2.scaleFactor,
+          position: new dpi.PhysicalPosition(m2.position),
+          size: new dpi.PhysicalSize(m2.size),
+          workArea: {
+            position: new dpi.PhysicalPosition(m2.workArea.position),
+            size: new dpi.PhysicalSize(m2.workArea.size)
+          }
+        };
+      }
+      async function currentMonitor() {
+        return core.invoke("plugin:window|current_monitor").then(mapMonitor);
+      }
+      async function primaryMonitor() {
+        return core.invoke("plugin:window|primary_monitor").then(mapMonitor);
+      }
+      async function monitorFromPoint(x, y) {
+        return core.invoke("plugin:window|monitor_from_point", {
+          x,
+          y
+        }).then(mapMonitor);
+      }
+      async function availableMonitors() {
+        return core.invoke("plugin:window|available_monitors").then((ms) => ms.map(mapMonitor));
+      }
+      async function cursorPosition() {
+        return core.invoke("plugin:window|cursor_position").then((v) => new dpi.PhysicalPosition(v));
+      }
+      exports.LogicalPosition = dpi.LogicalPosition;
+      exports.LogicalSize = dpi.LogicalSize;
+      exports.PhysicalPosition = dpi.PhysicalPosition;
+      exports.PhysicalSize = dpi.PhysicalSize;
+      exports.CloseRequestedEvent = CloseRequestedEvent;
+      exports.Window = Window;
+      exports.availableMonitors = availableMonitors;
+      exports.currentMonitor = currentMonitor;
+      exports.cursorPosition = cursorPosition;
+      exports.getAllWindows = getAllWindows;
+      exports.getCurrentWindow = getCurrentWindow2;
+      exports.monitorFromPoint = monitorFromPoint;
+      exports.primaryMonitor = primaryMonitor;
     }
   });
 
@@ -164022,7 +166167,7 @@
   // ../lumio-official-plugins/plugins/youtube/runtime/youtube-browser.tsx
   init_react_shim();
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-GW3EcK/profile-storage-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-JKmj3o/profile-storage-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
   var getScopedStorageItem = (baseKey) => sdk.getScopedStorageItem(baseKey);
   var setScopedStorageItem = (baseKey, value) => sdk.setScopedStorageItem(baseKey, value);
@@ -164196,12 +166341,9 @@
       streamProviderManifestUrl: "Manifest URL (stremio:// or https://)",
       streamProviderCustomUrl: "Custom URL",
       streamProviderNoUrl: "No URL set",
-      streamProviderAddIndexed: "+ TorrentsDB",
-      streamProviderAddStandard: "+ Torrentio",
       streamProviderAddComet: "+ Comet",
       streamProviderAddJackettio: "+ Jackettio",
       streamProviderAddAiostreams: "+ AIOStreams",
-      aiostreamsHint: "AIOStreams is configured on its own site (UUID + password, debrid keys and filters live there). Configure once, then paste the manifest URL from the Save & Install page here.",
       aiostreamsOpenConfig: "Open the configurator",
       aiostreamsManifestLabel: "Manifest URL",
       streamProviderAddCustom: "+ Custom URL",
@@ -164220,8 +166362,12 @@
       openToContinue: "\u2014 open to continue",
       timeLeft: "left",
       resume: "Resume",
+      resumeStarting: "Starting\u2026",
+      resumeFetchingLink: "Fetching fresh link\u2026",
       listenedAt: "at",
       streamAvailable: "Cached",
+      streamDeviceUnsupported: "unsupported",
+      streamDeviceUnsupportedHint: "This device lacks a decoder for this stream (lossless audio or Dolby Vision) \u2014 expect no sound, or no playback.",
       streamDownload: "Download",
       startingMovie: "Starting movie...",
       findingMovie: "Finding movie...",
@@ -164276,7 +166422,6 @@
       downloading: "Downloading\u2026",
       downloadingFile: "Downloading file...",
       queued: "Queued on stream provider\u2026",
-      convertingMagnet: "Converting magnet\u2026",
       selectingFiles: "Selecting files\u2026",
       addingToRd: "Adding to stream provider\u2026",
       unrestrictingLinks: "Unrestricting links\u2026",
@@ -164287,10 +166432,7 @@
       watched: "\u2713 Watched",
       watchedQ: "Watched?",
       markAllWatched: "Mark all as watched",
-      addManually: "Add magnet / direct link manually",
       hideManual: "Hide manual input",
-      pasteManual: "Paste magnet link manually",
-      manualPlaceholder: "magnet:? or https://\u2026",
       go: "Go",
       tryAgain: "Try again",
       cancel: "Cancel",
@@ -164331,6 +166473,8 @@
       remoteConnectionTitle: "Remote connection",
       remoteExternalTitle: "Outside the home network",
       remoteExternalDesc: "Reach your library away from home. Requires an open router port and a public IP address (won't work behind CGNAT).",
+      remoteGuestMenuTitle: "Let remote guests open the menu",
+      remoteGuestMenuDesc: "Remote (not LAN) devices get the settings gear and main menu. Off by default.",
       remoteLanTitle: "Home network (LAN)",
       remoteLanDesc: "Stream to other devices on the same home network.",
       externalPlayerAppDesc: 'App used by "Play in \u2026" (macOS app name, e.g. VLC or IINA). Android shows the system app chooser.',
@@ -164527,6 +166671,10 @@
       settingsPagePlayer: "Player & quality",
       settingsPageHome: "Home & appearance",
       settingsPageTheme: "Theme & scale",
+      trailersEnabledLabel: "Show trailers",
+      trailersEnabledHint: 'Trailers come from YouTube. On some networks YouTube blocks them ("Sign in to confirm you\u2019re not a bot") \u2014 turn this off to hide every trailer instead of hitting a dead player.',
+      trailersOffTitle: "Trailers are turned off",
+      trailersOffBody: 'Turn "Show trailers" back on under Settings \u2192 Home & appearance \u2192 Hero banner.',
       heroTrailerLabel: "Play trailer in hero",
       heroTrailerHint: "After a few seconds on a title, a muted trailer fades in behind the content.",
       playerLayoutTitle: "Player layout",
@@ -164631,7 +166779,7 @@
       advAboutHint: "Version and platform \u2014 handy when reporting a bug.",
       advAboutVersion: "Version",
       advLegalEyebrow: "Legal",
-      advLegalP1: 'Lumio is an independent media client. It is not affiliated with, endorsed by, sponsored by, or in any way associated with any streaming service, addon author, debrid provider, or trademark holder referenced inside the app. "TMDb", "Trakt", "IMDb", "Real-Debrid", "TorBox", "OpenSubtitles", "Plex", "Netflix", "Disney+" and all other names, logos and brand references are property of their respective owners and are used only for compatibility and identification.',
+      advLegalP1: "Lumio is an independent media client. It is not affiliated with, endorsed by, sponsored by, or in any way associated with any streaming service, plugin or addon author, or trademark holder referenced inside the app. All names, logos and brand references are property of their respective owners and are used only for compatibility and identification.",
       advLegalP2: "Lumio itself does not host, distribute, or index any media. All streams come from third-party sources, addons, or services that you configure yourself. You are responsible for what you choose to play and for complying with the laws of your jurisdiction.",
       advAboutPlatform: "Platform",
       subStyleEyebrow: "Subtitle style",
@@ -164703,6 +166851,10 @@
       sfTabSafety: "Safety",
       sfDisplayEyebrow: "Display",
       sfDisplayHint: "Release types that never show up in the stream list.",
+      sfDisplayOffNote: "Turn on a filter level above to choose what gets hidden.",
+      deviceNoDolbyVision: "This device cannot decode Dolby Vision \u2014 pick a non-DV version of the stream.",
+      deviceNoAudioDecoder: "This device cannot decode the lossless audio track (TrueHD/DTS-HD) \u2014 playing with another track, or without sound. Pick an AC3/EAC3/AAC version for audio.",
+      deviceFormatUnsupported: "This device cannot decode that video format \u2014 try another version.",
       plTabNextEp: "Next episode",
       plNextEpHint: "Autoplay, the popup and outro behavior between episodes.",
       langAudioSubTab: "Audio & subtitles",
@@ -164768,9 +166920,7 @@
       settingsTabApiKeys: "API keys",
       settingsTabAddons: "Addons",
       settingsTabSourcesMain: "Sources & addons",
-      settingsTabScrapersDebrid: "Scrapers & debrid",
       settingsTabScrapers: "Scrapers",
-      settingsTabDebrid: "Debrid",
       cardTagNew: "New",
       showCardTags: "Show tags on cards",
       showCardTagsDesc: "Marks titles released in the last 30 days. Needs a known release date, so older catalogue items are never tagged.",
@@ -164790,11 +166940,6 @@
       traktConflictTrakt: "Trakt wins",
       traktConflictLocal: "This device wins",
       showTraktCommentsDesc: "Public Trakt comments under movies and series. Spoiler-marked ones stay hidden until you click them.",
-      debridSectionDesc: "API keys are shared across every scraper. Which service a scraper resolves through is set on that scraper under Scrapers.",
-      debridKeySaved: "Key saved",
-      debridNoKeyBadge: "No key",
-      debridKeyPlaceholder: "Paste API key",
-      debridPerScraperHint: "A key entered here is used by every scraper configured for that service.",
       shortcutsBindableTitle: "KEYS (CLICK TO CHANGE)",
       shortcutsTracks: "Tracks",
       shortcutsGlobal: "Global",
@@ -164956,6 +167101,9 @@
       homeRowLiveTv: "Live TV",
       homeRowTraktCollection: "Watchlist",
       homeRowCustom1: "Custom section 1",
+      homeRowCustomN: "Custom section {n}",
+      hpAddCustomRow: "Add row",
+      hpRemoveCustomRow: "Remove row",
       homeRowCustom2: "Custom section 2",
       homeRowCustom3: "Custom section 3",
       homeSearchTitle: "Homepage search",
@@ -165151,6 +167299,42 @@
       traktStartLoginFailed: "Failed to start Trakt login",
       traktLoginFailed: "Trakt login failed",
       traktImportFailed: "Failed to sync with Trakt",
+      // Deliberately calm and not an error: the entries work everywhere in Lumio,
+      // only the Trakt mirror is incomplete. The calendar reads TMDB, not Trakt.
+      traktMirrorIncomplete: "Trakt would not accept every item",
+      traktMirrorIncompleteBody: "Your Trakt watchlist is full, so {count} item(s) live only on this device. Everything works normally in Lumio \u2014 the calendar reads TMDB and is unaffected. Trakt announced a 250-item limit for free accounts, but their API still enforces 100; Lumio retries automatically, so the items sync themselves once Trakt raises it. To make room now, remove items from your watchlist on trakt.tv or upgrade to VIP.",
+      traktMirrorLocalOnly: "On this device only",
+      traktAutoRemoveMovies: "Remove watched movies from the watchlist",
+      traktAutoRemoveMoviesHint: "A film you have seen leaves the list automatically \u2014 and frees a slot on Trakt.",
+      traktAutoUnfollowSeries: "Unfollow series you have finished",
+      traktAutoUnfollowSeriesHint: "Removes a series once you have watched its final season in full. Your watch history is kept, so a revived show can come back.",
+      // Named per operation: a 420 on history and a 420 on the watchlist are
+      // different caps with different fixes, and a bare code taught us nothing.
+      traktHistoryRefused: "Trakt would not accept your watch history",
+      traktHistoryRefusedBody: "Your watchlist synced fine \u2014 this only affects watch history. Trakt caps history at 100,000 plays. Your local history is intact and Lumio is unaffected.",
+      traktRejectedBy: "Rejected by Trakt",
+      traktCopyCode: "Copy code",
+      traktCodeCopied: "Copied",
+      traktOpenActivationPage: "Open trakt.tv/activate",
+      traktStepOpen: "Open the link \u2014 it opens in your browser, Lumio stays open.",
+      traktStepEnterCode: "Sign in to Trakt and enter the code above.",
+      traktStepComeBack: "Come back here \u2014 we detect the approval automatically.",
+      traktWaitingForApproval: "Waiting for your approval...",
+      traktImportPhaseWatched: "Importing watched history from Trakt...",
+      traktImportPhaseWatchlist: "Importing watchlists from Trakt...",
+      traktImportSummary: "Imported {count} watched titles, {shows} shows and {movies} movies from your watchlist.",
+      traktImportBackgroundHint: "A large Trakt account takes a moment \u2014 keep setting up, this runs in the background.",
+      traktNetworkRetrying: "Could not reach Trakt \u2014 retrying...",
+      traktNetworkUnreachable: "Could not reach Trakt. Check your network or DNS (auth.trakt.tv) and try again.",
+      traktNetworkTimeout: "Trakt did not answer in time. Check your connection and try again.",
+      traktCodeExpired: "The code expired. Start the sign-in again.",
+      traktCodeInvalid: "The code is no longer valid. Start the sign-in again.",
+      traktCodeAlreadyUsed: "This code has already been used. Start the sign-in again.",
+      traktLoginDenied: "The sign-in was denied on Trakt.",
+      traktConnected: "Trakt is connected",
+      pluginDotActive: "Plugin active",
+      pluginDotInactive: "Plugin inactive",
+      pluginDotNotConnected: "Not connected",
       homeSourceCinemaMovies: "In theaters",
       homeSourceTopRatedMovies: "Top rated movies",
       homeSourceTopRatedSeries: "Top rated series",
@@ -165161,6 +167345,10 @@
       homeSourceStreamingMovies: "Trending movies (streaming)",
       homeSourceStreamingSeries: "Trending series (streaming)",
       homeSourceAiringTodaySeries: "Airing today",
+      homeSourceTraktRecommendations: "Recommended for you",
+      homeSourceFilmCollections: "Film collections",
+      collectionsBackLabel: "Collections",
+      collectionsHeroActive: "Featured on Home",
       homeAiringTodaySubtitle: "New episodes today on your streaming services",
       airingTodayProvidersLabel: "Streaming services",
       homeLayout: "Layout",
@@ -165334,9 +167522,20 @@
       onboardingIntegrationsEyebrow: "Integrations",
       onboardingIntegrationsTitle: "Make Lumio even better",
       onboardingIntegrationsDesc: "Optional connections that enhance the experience \u2014 nothing here is required. Everything is configured later under Settings \u2192 Integrations.",
-      onboardingIntTrakt: "Sync watched history and watchlists. Sign in with a code from the settings.",
+      onboardingIntTrakt: "Sync watched history and watchlists. Sign in with a code right here.",
+      onboardingTraktInlineHint: "Sign in without leaving setup: the link opens in your browser, setup stays exactly where it is.",
       onboardingIntSpotify: "Soundtrack playback on detail pages. Create a free app for client ID/secret.",
       onboardingIntGroq: "AI search. Create a free API key.",
+      onboardingKeySave: "Save",
+      onboardingKeyActive: "Active",
+      onboardingKeyShow: "Show",
+      onboardingKeyHide: "Hide",
+      onboardingKeyWhere: "Where do I find the key?",
+      onboardingKeyGroq: "Groq API key",
+      onboardingKeyOpenSubtitles: "OpenSubtitles API key",
+      onboardingKeySpotifyId: "Spotify Client ID",
+      onboardingKeySpotifySecret: "Spotify Client Secret",
+      onboardingKeyOptional: "All of these are optional and can be added later under Settings \u2192 API keys \u2014 the same fields, the same values.",
       onboardingIntOpenSubtitles: "Works without an account. With one, files are matched by hash for better subtitles.",
       defaultSubtitleLanguage: "Default subtitles language",
       defaultSubtitleLanguageDesc: "Selected automatically when subtitles are available.",
@@ -165503,6 +167702,13 @@
       onboardingControlDesc: "Customise the start page, filters, language and layout exactly the way you want before you begin.",
       onboardingWillInstall: "{count} plugin(s) will be installed when you finish.",
       onboardingInstallFailed: "{names} could not be installed right now \u2014 you can find them under Settings \u2192 Plugins.",
+      onboardingOpenAppNow: "Open Lumio now",
+      onboardingInstallProgress: "Installing plugins {done} / {total}",
+      onboardingInstallQueued: "Queued",
+      onboardingInstallWorking: "Downloading\u2026",
+      onboardingInstallDone: "Done",
+      onboardingInstallError: "Failed",
+      onboardingInstallBackground: "This continues in the background \u2014 you can open Lumio right away and check Settings \u2192 Plugins later.",
       onboardingServicesEyebrow: "SERVICES",
       onboardingServicesTitle: "Connect services",
       onboardingServicesDesc: "Lumio uses TMDb for movie and series metadata. Create a free account at themoviedb.org and paste your API token (Bearer) here \u2014 all artwork and details are fetched with it. More integrations can be configured later under Settings \u2192 Integrations.",
@@ -165798,6 +168004,8 @@
       sssPlayEpisode: "Play episode",
       // Series calendar
       scLoading: "Loading\u2026",
+      scPrevMonth: "Previous month",
+      scNextMonth: "Next month",
       scFollowing: "Following",
       scUnfollow: "Stop following",
       scCloseDayPanel: "Close day panel",
@@ -165832,8 +168040,6 @@
       downloadFailedRetry: "Download failed, try again",
       noPlayableStream: "No playable stream found",
       resolveLinkFailed: "Could not resolve the download link",
-      torrentFailed: "The torrent failed: {status}",
-      debridKeyMissing: "Debrid key missing",
       fetchStreamsFailed: "Could not fetch streams",
       noStreamsFound: "No streams found",
       startDownloadFailed: "Could not start the download",
@@ -166075,12 +168281,9 @@
       streamProviderManifestUrl: "Manifest-URL (stremio:// eller https://)",
       streamProviderCustomUrl: "Egen URL",
       streamProviderNoUrl: "Ingen URL angiven",
-      streamProviderAddIndexed: "+ TorrentsDB",
-      streamProviderAddStandard: "+ Torrentio",
       streamProviderAddComet: "+ Comet",
       streamProviderAddJackettio: "+ Jackettio",
       streamProviderAddAiostreams: "+ AIOStreams",
-      aiostreamsHint: "AIOStreams konfigureras p\xE5 sin egen sida (UUID + l\xF6senord \u2014 debrid-nycklar och filter bor d\xE4r). Konfigurera en g\xE5ng, klistra sedan in manifest-URL:en fr\xE5n Save & Install-sidan h\xE4r.",
       aiostreamsOpenConfig: "\xD6ppna konfiguratorn",
       aiostreamsManifestLabel: "Manifest-URL",
       streamProviderAddCustom: "+ Egen URL",
@@ -166099,8 +168302,12 @@
       openToContinue: "\u2014 \xF6ppna f\xF6r att forts\xE4tta",
       timeLeft: "kvar",
       resume: "Forts\xE4tt",
+      resumeStarting: "Startar\u2026",
+      resumeFetchingLink: "H\xE4mtar ny l\xE4nk\u2026",
       listenedAt: "vid",
       streamAvailable: "Cachad",
+      streamDeviceUnsupported: "st\xF6ds ej",
+      streamDeviceUnsupportedHint: "Enheten saknar avkodare f\xF6r den h\xE4r str\xF6mmen (f\xF6rlustfritt ljud eller Dolby Vision) \u2014 r\xE4kna med inget ljud, eller ingen uppspelning.",
       streamDownload: "Ladda ned",
       startingMovie: "Startar film...",
       findingMovie: "Hittar film...",
@@ -166155,7 +168362,6 @@
       downloading: "Laddar ned\u2026",
       downloadingFile: "Laddar ner fil...",
       queued: "I k\xF6 hos stream provider\u2026",
-      convertingMagnet: "Konverterar magnet\u2026",
       selectingFiles: "V\xE4ljer filer\u2026",
       addingToRd: "L\xE4gger till hos stream provider\u2026",
       unrestrictingLinks: "Avbegr\xE4nsar l\xE4nkar\u2026",
@@ -166166,10 +168372,7 @@
       watched: "\u2713 Sedd",
       watchedQ: "Sedd?",
       markAllWatched: "Markera alla som sedda",
-      addManually: "L\xE4gg till magnet / direktl\xE4nk manuellt",
       hideManual: "D\xF6lj manuell inmatning",
-      pasteManual: "Klistra in magnet-l\xE4nk manuellt",
-      manualPlaceholder: "magnet:? eller https://\u2026",
       go: "K\xF6r",
       tryAgain: "F\xF6rs\xF6k igen",
       cancel: "Avbryt",
@@ -166210,6 +168413,8 @@
       remoteConnectionTitle: "Fj\xE4rranslutning",
       remoteExternalTitle: "Utanf\xF6r hemn\xE4tet",
       remoteExternalDesc: "N\xE5 biblioteket utanf\xF6r hemmet. Kr\xE4ver en \xF6ppen port i routern och en publik IP-adress (fungerar inte bakom CGNAT).",
+      remoteGuestMenuTitle: "L\xE5t fj\xE4rrg\xE4ster \xF6ppna menyn",
+      remoteGuestMenuDesc: "Fj\xE4rranslutna enheter (ej LAN) f\xE5r kugghjulet och huvudmenyn. Av som standard.",
       remoteLanTitle: "Hemn\xE4tverket (LAN)",
       remoteLanDesc: "Str\xF6mma till andra enheter p\xE5 samma n\xE4tverk hemma.",
       externalPlayerAppDesc: 'App som "Spela i \u2026" anv\xE4nder (macOS-appnamn, t.ex. VLC eller IINA). Android visar systemets appv\xE4ljare.',
@@ -166406,6 +168611,10 @@
       settingsPagePlayer: "Spelare & kvalitet",
       settingsPageHome: "Hem & utseende",
       settingsPageTheme: "Tema & skala",
+      trailersEnabledLabel: "Visa trailers",
+      trailersEnabledHint: 'Trailers kommer fr\xE5n YouTube. P\xE5 vissa n\xE4tverk blockerar YouTube dem ("Logga in f\xF6r att bekr\xE4fta att du inte \xE4r en robot") \u2014 st\xE4ng av det h\xE4r f\xF6r att g\xF6mma alla trailers i st\xE4llet f\xF6r att m\xF6tas av en d\xF6d spelare.',
+      trailersOffTitle: "Trailers \xE4r avst\xE4ngda",
+      trailersOffBody: 'Sl\xE5 p\xE5 "Visa trailers" igen under Inst\xE4llningar \u2192 Hem & utseende \u2192 Hero-banner.',
       heroTrailerLabel: "Spela trailer i heron",
       heroTrailerHint: "Efter n\xE5gra sekunder p\xE5 en titel tonas en ljudl\xF6s trailer in bakom inneh\xE5llet.",
       playerLayoutTitle: "Spelarlayout",
@@ -166510,7 +168719,7 @@
       advAboutHint: "Version och plattform \u2014 bra att ha vid buggrapport.",
       advAboutVersion: "Version",
       advLegalEyebrow: "Juridiskt",
-      advLegalP1: 'Lumio \xE4r en frist\xE5ende mediaklient. Den \xE4r inte ansluten till, godk\xE4nd av, sponsrad av eller p\xE5 n\xE5got s\xE4tt associerad med n\xE5gon streamingtj\xE4nst, addon-utvecklare, debrid-leverant\xF6r eller varum\xE4rkesinnehavare som refereras i appen. "TMDb", "Trakt", "IMDb", "Real-Debrid", "TorBox", "OpenSubtitles", "Plex", "Netflix", "Disney+" och alla andra namn, logotyper och varum\xE4rken tillh\xF6r sina respektive \xE4gare och anv\xE4nds enbart f\xF6r kompatibilitet och identifiering.',
+      advLegalP1: "Lumio \xE4r en frist\xE5ende mediaklient. Den \xE4r inte ansluten till, godk\xE4nd av, sponsrad av eller p\xE5 n\xE5got s\xE4tt associerad med n\xE5gon streamingtj\xE4nst, plugin- eller addon-utvecklare eller varum\xE4rkesinnehavare som refereras i appen. Alla namn, logotyper och varum\xE4rken tillh\xF6r sina respektive \xE4gare och anv\xE4nds enbart f\xF6r kompatibilitet och identifiering.",
       advLegalP2: "Lumio varken lagrar, distribuerar eller indexerar n\xE5got medieinneh\xE5ll. Alla str\xF6mmar kommer fr\xE5n tredjepartsk\xE4llor, addons eller tj\xE4nster som du sj\xE4lv konfigurerar. Du ansvarar f\xF6r vad du v\xE4ljer att spela upp och f\xF6r att f\xF6lja lagarna i din jurisdiktion.",
       advAboutPlatform: "Plattform",
       subStyleEyebrow: "Undertextstil",
@@ -166582,6 +168791,10 @@
       sfTabSafety: "S\xE4kerhet",
       sfDisplayEyebrow: "Visning",
       sfDisplayHint: "Sl\xE4pptyper som aldrig dyker upp i str\xF6mlistan.",
+      sfDisplayOffNote: "Sl\xE5 p\xE5 en filterniv\xE5 ovan f\xF6r att v\xE4lja vad som d\xF6ljs.",
+      deviceNoDolbyVision: "Enheten kan inte avkoda Dolby Vision \u2014 v\xE4lj en version utan DV.",
+      deviceNoAudioDecoder: "Enheten kan inte avkoda det f\xF6rlustfria ljudsp\xE5ret (TrueHD/DTS-HD) \u2014 spelar med annat sp\xE5r, eller utan ljud. V\xE4lj en AC3/EAC3/AAC-version f\xF6r ljud.",
+      deviceFormatUnsupported: "Enheten kan inte avkoda det videoformatet \u2014 prova en annan version.",
       plTabNextEp: "N\xE4sta avsnitt",
       plNextEpHint: "Autoplay, popupen och outro-beteendet mellan avsnitt.",
       langAudioSubTab: "Ljud & undertext",
@@ -166647,9 +168860,7 @@
       settingsTabApiKeys: "API-nycklar",
       settingsTabAddons: "Addons",
       settingsTabSourcesMain: "K\xE4llor & addons",
-      settingsTabScrapersDebrid: "Scrapers & debrid",
       settingsTabScrapers: "Scrapers",
-      settingsTabDebrid: "Debrid",
       cardTagNew: "Nyhet",
       showCardTags: "Visa taggar p\xE5 kort",
       showCardTagsDesc: "M\xE4rker titlar som sl\xE4ppts de senaste 30 dagarna. Kr\xE4ver k\xE4nt releasedatum, s\xE5 \xE4ldre katalogtitlar taggas aldrig.",
@@ -166669,11 +168880,6 @@
       traktConflictTrakt: "Trakt vinner",
       traktConflictLocal: "Den h\xE4r enheten vinner",
       showTraktCommentsDesc: "Publika Trakt-kommentarer under filmer och serier. Spoilerm\xE4rkta d\xF6ljs tills du klickar p\xE5 dem.",
-      debridSectionDesc: "API-nycklarna delas mellan alla scrapers. Vilken tj\xE4nst en scraper anv\xE4nder st\xE4lls p\xE5 den scrapern under Scrapers.",
-      debridKeySaved: "Nyckel sparad",
-      debridNoKeyBadge: "Ingen nyckel",
-      debridKeyPlaceholder: "Klistra in API-nyckel",
-      debridPerScraperHint: "En nyckel h\xE4r anv\xE4nds av alla scrapers som \xE4r konfigurerade f\xF6r den tj\xE4nsten.",
       shortcutsBindableTitle: "TANGENTER (KLICKA F\xD6R ATT \xC4NDRA)",
       shortcutsTracks: "Sp\xE5r",
       shortcutsGlobal: "Globalt",
@@ -166835,6 +169041,9 @@
       homeRowLiveTv: "Live TV",
       homeRowTraktCollection: "Watchlist",
       homeRowCustom1: "Egen rad 1",
+      homeRowCustomN: "Egen rad {n}",
+      hpAddCustomRow: "L\xE4gg till rad",
+      hpRemoveCustomRow: "Ta bort rad",
       homeRowCustom2: "Egen rad 2",
       homeRowCustom3: "Egen rad 3",
       homeSearchTitle: "S\xF6kf\xE4lt p\xE5 startsidan",
@@ -167030,6 +169239,38 @@
       traktStartLoginFailed: "Kunde inte starta Trakt-inloggning",
       traktLoginFailed: "Trakt-inloggning misslyckades",
       traktImportFailed: "Kunde inte synka med Trakt",
+      traktMirrorIncomplete: "Trakt tog inte emot alla poster",
+      traktMirrorIncompleteBody: "Din bevakningslista hos Trakt \xE4r full, s\xE5 {count} poster finns bara p\xE5 den h\xE4r enheten. Allt fungerar normalt i Lumio \u2014 kalendern h\xE4mtar sin data fr\xE5n TMDB och p\xE5verkas inte. Trakt har annonserat ett tak p\xE5 250 poster f\xF6r gratiskonton, men deras API till\xE4mpar fortfarande 100. Lumio f\xF6rs\xF6ker igen automatiskt, s\xE5 posterna synkar sig sj\xE4lva n\xE4r Trakt h\xF6jer taket. Vill du frig\xF6ra plats nu kan du ta bort poster i bevakningslistan p\xE5 trakt.tv eller uppgradera till VIP.",
+      traktMirrorLocalOnly: "Bara p\xE5 den h\xE4r enheten",
+      traktAutoRemoveMovies: "Ta bort sedda filmer fr\xE5n bevakningslistan",
+      traktAutoRemoveMoviesHint: "En film du sett l\xE4mnar listan automatiskt \u2014 och frig\xF6r en plats hos Trakt.",
+      traktAutoUnfollowSeries: "Avf\xF6lj serier du sett klart",
+      traktAutoUnfollowSeriesHint: "Tar bort en serie n\xE4r du sett hela sista s\xE4songen. Din sedda-historik beh\xE5lls, s\xE5 en \xE5terupplivad serie kan komma tillbaka.",
+      traktHistoryRefused: "Trakt tog inte emot din sedd-historik",
+      traktHistoryRefusedBody: "Bevakningslistan synkade som den ska \u2014 det h\xE4r g\xE4ller bara sedd-historiken. Trakt har ett tak p\xE5 100 000 uppspelningar. Din lokala historik \xE4r intakt och Lumio p\xE5verkas inte.",
+      traktRejectedBy: "Avvisat av Trakt",
+      traktCopyCode: "Kopiera kod",
+      traktCodeCopied: "Kopierad",
+      traktOpenActivationPage: "\xD6ppna trakt.tv/activate",
+      traktStepOpen: "\xD6ppna l\xE4nken \u2014 den \xF6ppnas i webbl\xE4saren, Lumio ligger kvar.",
+      traktStepEnterCode: "Logga in p\xE5 Trakt och skriv in koden ovan.",
+      traktStepComeBack: "Kom tillbaka hit \u2014 vi uppt\xE4cker godk\xE4nnandet automatiskt.",
+      traktWaitingForApproval: "V\xE4ntar p\xE5 ditt godk\xE4nnande...",
+      traktImportPhaseWatched: "Importerar sedd historik fr\xE5n Trakt...",
+      traktImportPhaseWatchlist: "Importerar listor fr\xE5n Trakt...",
+      traktImportSummary: "Importerade {count} sedda titlar, {shows} serier och {movies} filmer fr\xE5n dina listor.",
+      traktImportBackgroundHint: "Ett stort Trakt-konto tar en stund \u2014 forts\xE4tt g\xE4rna, det h\xE4r k\xF6r i bakgrunden.",
+      traktNetworkRetrying: "Kunde inte n\xE5 Trakt \u2014 f\xF6rs\xF6ker igen...",
+      traktNetworkUnreachable: "Kunde inte n\xE5 Trakt. Kontrollera n\xE4tverk eller DNS (auth.trakt.tv) och f\xF6rs\xF6k igen.",
+      traktNetworkTimeout: "Trakt svarade inte i tid. Kontrollera anslutningen och f\xF6rs\xF6k igen.",
+      traktCodeExpired: "Koden har g\xE5tt ut. Starta inloggningen igen.",
+      traktCodeInvalid: "Koden \xE4r inte l\xE4ngre giltig. Starta inloggningen igen.",
+      traktCodeAlreadyUsed: "Koden \xE4r redan anv\xE4nd. Starta inloggningen igen.",
+      traktLoginDenied: "Inloggningen nekades p\xE5 Trakt.",
+      traktConnected: "Trakt \xE4r anslutet",
+      pluginDotActive: "Plugin aktiv",
+      pluginDotInactive: "Plugin inaktiv",
+      pluginDotNotConnected: "Inte ansluten",
       homeSourceCinemaMovies: "P\xE5 bio",
       homeSourceTopRatedMovies: "H\xF6gst betyg filmer",
       homeSourceTopRatedSeries: "H\xF6gst betyg serier",
@@ -167040,6 +169281,10 @@
       homeSourceStreamingMovies: "Trendande filmer (streaming)",
       homeSourceStreamingSeries: "Trendande serier (streaming)",
       homeSourceAiringTodaySeries: "Visas idag",
+      homeSourceTraktRecommendations: "Rekommenderat f\xF6r dig",
+      homeSourceFilmCollections: "Filmserier",
+      collectionsBackLabel: "Filmserier",
+      collectionsHeroActive: "Visas p\xE5 startsidan",
       homeAiringTodaySubtitle: "Nya avsnitt idag p\xE5 dina streamingtj\xE4nster",
       airingTodayProvidersLabel: "Streamingtj\xE4nster",
       homeLayout: "Layout",
@@ -167213,9 +169458,20 @@
       onboardingIntegrationsEyebrow: "Integrationer",
       onboardingIntegrationsTitle: "G\xF6r Lumio \xE4nnu b\xE4ttre",
       onboardingIntegrationsDesc: "Valfria kopplingar som f\xF6rb\xE4ttrar upplevelsen \u2014 inget h\xE4r \xE4r n\xF6dv\xE4ndigt. Allt st\xE4lls in senare under Inst\xE4llningar \u2192 Integrationer.",
-      onboardingIntTrakt: "Synka sedda titlar och bevakningslistor. Logga in med en kod fr\xE5n inst\xE4llningarna.",
+      onboardingIntTrakt: "Synka sedda titlar och bevakningslistor. Logga in med en kod direkt h\xE4r.",
+      onboardingTraktInlineHint: "Logga in utan att l\xE4mna installationen: l\xE4nken \xF6ppnas i webbl\xE4saren och installationen st\xE5r kvar d\xE4r den \xE4r.",
       onboardingIntSpotify: "Soundtrack-uppspelning p\xE5 detaljsidor. Skapa en gratis app f\xF6r client ID/secret.",
       onboardingIntGroq: "AI-s\xF6kning. Skapa en gratis API-nyckel.",
+      onboardingKeySave: "Spara",
+      onboardingKeyActive: "Aktiverad",
+      onboardingKeyShow: "Visa",
+      onboardingKeyHide: "D\xF6lj",
+      onboardingKeyWhere: "Var hittar jag nyckeln?",
+      onboardingKeyGroq: "Groq API-nyckel",
+      onboardingKeyOpenSubtitles: "OpenSubtitles API-nyckel",
+      onboardingKeySpotifyId: "Spotify Client ID",
+      onboardingKeySpotifySecret: "Spotify Client Secret",
+      onboardingKeyOptional: "Allt h\xE4r \xE4r frivilligt och kan l\xE4ggas in senare under Inst\xE4llningar \u2192 API-nycklar \u2014 samma f\xE4lt, samma v\xE4rden.",
       onboardingIntOpenSubtitles: "Fungerar utan konto. Med konto matchas filen p\xE5 hash och ger tr\xE4ffs\xE4krare undertexter.",
       defaultSubtitleLanguage: "Standard spr\xE5k f\xF6r textning",
       defaultSubtitleLanguageDesc: "V\xE4ljs automatiskt n\xE4r undertexter finns tillg\xE4ngliga.",
@@ -167382,6 +169638,13 @@
       onboardingControlDesc: "Anpassa startsidan, filter, spr\xE5k och utseende precis som du vill ha det innan du b\xF6rjar.",
       onboardingWillInstall: "{count} till\xE4gg installeras n\xE4r du \xE4r klar.",
       onboardingInstallFailed: "{names} kunde inte installeras just nu \u2014 du hittar dem under Inst\xE4llningar \u2192 Plugins.",
+      onboardingOpenAppNow: "\xD6ppna Lumio nu",
+      onboardingInstallProgress: "Installerar plugins {done} / {total}",
+      onboardingInstallQueued: "I k\xF6",
+      onboardingInstallWorking: "H\xE4mtar\u2026",
+      onboardingInstallDone: "Klar",
+      onboardingInstallError: "Misslyckades",
+      onboardingInstallBackground: "Det h\xE4r forts\xE4tter i bakgrunden \u2014 du kan \xF6ppna Lumio direkt och titta under Inst\xE4llningar \u2192 Plugins senare.",
       onboardingServicesEyebrow: "TJ\xC4NSTER",
       onboardingServicesTitle: "Anslut tj\xE4nster",
       onboardingServicesDesc: "Lumio anv\xE4nder TMDb f\xF6r metadata om filmer och serier. Skapa ett gratis konto p\xE5 themoviedb.org och klistra in din API-token (Bearer) h\xE4r \u2014 alla omslag och detaljer h\xE4mtas med den. Fler integrationer kan konfigureras senare under Inst\xE4llningar \u2192 Integrationer.",
@@ -167677,6 +169940,8 @@
       sssPlayEpisode: "Spela avsnitt",
       // Series calendar
       scLoading: "Laddar\u2026",
+      scPrevMonth: "F\xF6reg\xE5ende m\xE5nad",
+      scNextMonth: "N\xE4sta m\xE5nad",
       scFollowing: "F\xF6ljer",
       scUnfollow: "Sluta f\xF6lja",
       scCloseDayPanel: "St\xE4ng dagspanel",
@@ -167711,8 +169976,6 @@
       downloadFailedRetry: "Nedladdningen misslyckades, f\xF6rs\xF6k igen",
       noPlayableStream: "Ingen spelbar stream hittades",
       resolveLinkFailed: "Kunde inte l\xF6sa nedladdningsl\xE4nk",
-      torrentFailed: "Torrenten misslyckades: {status}",
-      debridKeyMissing: "Debrid-nyckel saknas",
       fetchStreamsFailed: "Kunde inte h\xE4mta streams",
       noStreamsFound: "Inga streams hittades",
       startDownloadFailed: "Kunde inte starta nedladdning",
@@ -167946,7 +170209,56 @@
     };
   }
 
-  // lib/stream-provider-runtime/stream-provider-settings.ts
+  // lib/trakt-watchlist-limit.ts
+  var LIMIT_BACKOFF_MS = 24 * 60 * 6e4;
+
+  // lib/trakt-device-login.tsx
+  init_react_shim();
+
+  // lib/tauri-mpv.ts
+  var import_core = __toESM(require_core());
+  var import_event = __toESM(require_event());
+  init_react_shim();
+
+  // lib/session-host.ts
+  function normalizeHost(rawHost) {
+    return rawHost.trim().toLowerCase().replace(/\.+$/, "");
+  }
+  function isLocalAppHost(hostname) {
+    const host = normalizeHost(hostname);
+    if (!host) return false;
+    if (host === "localhost" || host === "127.0.0.1" || host === "::1") return true;
+    if (host === "tauri.localhost" || host.endsWith(".tauri.localhost")) return true;
+    return false;
+  }
+
+  // lib/tauri-mpv.ts
+  init_plugin_registry();
+  function detectTauriEnv() {
+    if (typeof window === "undefined") return false;
+    const maybeTauriWindow = window;
+    if (maybeTauriWindow.__TAURI_INTERNALS__ || maybeTauriWindow.__TAURI__) {
+      return true;
+    }
+    const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "";
+    if (userAgent.includes("Tauri")) return true;
+    const host = window.location.hostname;
+    const port = window.location.port;
+    return isLocalAppHost(host) && port === "3011";
+  }
+  var isTauriEnv = detectTauriEnv();
+  var hasTauriIpc = typeof window !== "undefined" && Boolean(
+    window.__TAURI_INTERNALS__ || window.__TAURI__
+  );
+  var isDesktopTauriEnv = isTauriEnv && hasTauriIpc && !(typeof navigator !== "undefined" && /android/i.test(navigator.userAgent));
+
+  // lib/open-external.ts
+  var isAndroidTauri = isTauriEnv && typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
+
+  // lib/trakt-device-login.tsx
+  init_jsx_runtime_shim();
+
+  // lib/media-stream/config.ts
   var SCRAPER_PRESETS = [
     {
       id: "torrentio",
@@ -167989,6 +170301,9 @@
   // lib/media-stream/availability-throttle.ts
   var RATE_LIMIT_COOLDOWN_MS = 10 * 60 * 1e3;
 
+  // lib/media-stream/request-context.ts
+  init_plugin_registry();
+
   // lib/series-watchlist-feed.ts
   var STREAM_CACHE_TTL_MS = 30 * 60 * 1e3;
   var SERIES_STATUS_CACHE_TTL_MS = 15 * 60 * 1e3;
@@ -168006,10 +170321,11 @@
   init_jsx_runtime_shim();
 
   // components/results/results-pagination.tsx
-  var import_react55 = __toESM(require_dist89());
+  var import_react57 = __toESM(require_dist89());
+  init_react_shim();
   init_jsx_runtime_shim();
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-GW3EcK/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-JKmj3o/auth-capabilities-shim.ts
   var sdk2 = globalThis.__lumioPluginRuntime?.sdk;
   function resolveAuthCapabilityStatus(providerId) {
     return sdk2.resolveAuthCapabilityStatus(providerId);
@@ -168018,336 +170334,14 @@
     return sdk2.notifyAuthCapabilitiesChanged();
   }
 
-  // lib/tauri-mpv.ts
-  init_core();
-  init_event();
-  init_react_shim();
-
-  // lib/session-host.ts
-  function normalizeHost(rawHost) {
-    return rawHost.trim().toLowerCase().replace(/\.+$/, "");
-  }
-  function isLocalAppHost(hostname) {
-    const host = normalizeHost(hostname);
-    if (!host) return false;
-    if (host === "localhost" || host === "127.0.0.1" || host === "::1") return true;
-    if (host === "tauri.localhost" || host.endsWith(".tauri.localhost")) return true;
-    return false;
-  }
-
-  // lib/tauri-mpv.ts
-  init_plugin_registry();
-  function detectTauriEnv() {
-    if (typeof window === "undefined") return false;
-    const maybeTauriWindow = window;
-    if (maybeTauriWindow.__TAURI_INTERNALS__ || maybeTauriWindow.__TAURI__) {
-      return true;
-    }
-    const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "";
-    if (userAgent.includes("Tauri")) return true;
-    const host = window.location.hostname;
-    const port = window.location.port;
-    return isLocalAppHost(host) && port === "3011";
-  }
-  var isTauriEnv = detectTauriEnv();
-  var hasTauriIpc = typeof window !== "undefined" && Boolean(
-    window.__TAURI_INTERNALS__ || window.__TAURI__
-  );
-  var isDesktopTauriEnv = isTauriEnv && hasTauriIpc && !(typeof navigator !== "undefined" && /android/i.test(navigator.userAgent));
-
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-GW3EcK/video-player-modal-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-JKmj3o/video-player-modal-shim.ts
   init_react_shim();
 
   // components/player/video-player-modal.tsx
   init_react_shim();
   var import_react_dom = __toESM(require_react_dom());
-  init_core();
-
-  // node_modules/@tauri-apps/api/dpi.js
-  init_core();
-  var LogicalSize = class {
-    constructor(...args) {
-      this.type = "Logical";
-      if (args.length === 1) {
-        if ("Logical" in args[0]) {
-          this.width = args[0].Logical.width;
-          this.height = args[0].Logical.height;
-        } else {
-          this.width = args[0].width;
-          this.height = args[0].height;
-        }
-      } else {
-        this.width = args[0];
-        this.height = args[1];
-      }
-    }
-    /**
-     * Converts the logical size to a physical one.
-     * @example
-     * ```typescript
-     * import { LogicalSize } from '@tauri-apps/api/dpi';
-     * import { getCurrentWindow } from '@tauri-apps/api/window';
-     *
-     * const appWindow = getCurrentWindow();
-     * const factor = await appWindow.scaleFactor();
-     * const size = new LogicalSize(400, 500);
-     * const physical = size.toPhysical(factor);
-     * ```
-     *
-     * @since 2.0.0
-     */
-    toPhysical(scaleFactor) {
-      return new PhysicalSize(this.width * scaleFactor, this.height * scaleFactor);
-    }
-    [SERIALIZE_TO_IPC_FN]() {
-      return {
-        width: this.width,
-        height: this.height
-      };
-    }
-    toJSON() {
-      return this[SERIALIZE_TO_IPC_FN]();
-    }
-  };
-  var PhysicalSize = class {
-    constructor(...args) {
-      this.type = "Physical";
-      if (args.length === 1) {
-        if ("Physical" in args[0]) {
-          this.width = args[0].Physical.width;
-          this.height = args[0].Physical.height;
-        } else {
-          this.width = args[0].width;
-          this.height = args[0].height;
-        }
-      } else {
-        this.width = args[0];
-        this.height = args[1];
-      }
-    }
-    /**
-     * Converts the physical size to a logical one.
-     * @example
-     * ```typescript
-     * import { getCurrentWindow } from '@tauri-apps/api/window';
-     * const appWindow = getCurrentWindow();
-     * const factor = await appWindow.scaleFactor();
-     * const size = await appWindow.innerSize(); // PhysicalSize
-     * const logical = size.toLogical(factor);
-     * ```
-     */
-    toLogical(scaleFactor) {
-      return new LogicalSize(this.width / scaleFactor, this.height / scaleFactor);
-    }
-    [SERIALIZE_TO_IPC_FN]() {
-      return {
-        width: this.width,
-        height: this.height
-      };
-    }
-    toJSON() {
-      return this[SERIALIZE_TO_IPC_FN]();
-    }
-  };
-  var Size = class {
-    constructor(size) {
-      this.size = size;
-    }
-    toLogical(scaleFactor) {
-      return this.size instanceof LogicalSize ? this.size : this.size.toLogical(scaleFactor);
-    }
-    toPhysical(scaleFactor) {
-      return this.size instanceof PhysicalSize ? this.size : this.size.toPhysical(scaleFactor);
-    }
-    [SERIALIZE_TO_IPC_FN]() {
-      return {
-        [`${this.size.type}`]: {
-          width: this.size.width,
-          height: this.size.height
-        }
-      };
-    }
-    toJSON() {
-      return this[SERIALIZE_TO_IPC_FN]();
-    }
-  };
-  var LogicalPosition = class {
-    constructor(...args) {
-      this.type = "Logical";
-      if (args.length === 1) {
-        if ("Logical" in args[0]) {
-          this.x = args[0].Logical.x;
-          this.y = args[0].Logical.y;
-        } else {
-          this.x = args[0].x;
-          this.y = args[0].y;
-        }
-      } else {
-        this.x = args[0];
-        this.y = args[1];
-      }
-    }
-    /**
-     * Converts the logical position to a physical one.
-     * @example
-     * ```typescript
-     * import { LogicalPosition } from '@tauri-apps/api/dpi';
-     * import { getCurrentWindow } from '@tauri-apps/api/window';
-     *
-     * const appWindow = getCurrentWindow();
-     * const factor = await appWindow.scaleFactor();
-     * const position = new LogicalPosition(400, 500);
-     * const physical = position.toPhysical(factor);
-     * ```
-     *
-     * @since 2.0.0
-     */
-    toPhysical(scaleFactor) {
-      return new PhysicalPosition(this.x * scaleFactor, this.y * scaleFactor);
-    }
-    [SERIALIZE_TO_IPC_FN]() {
-      return {
-        x: this.x,
-        y: this.y
-      };
-    }
-    toJSON() {
-      return this[SERIALIZE_TO_IPC_FN]();
-    }
-  };
-  var PhysicalPosition = class {
-    constructor(...args) {
-      this.type = "Physical";
-      if (args.length === 1) {
-        if ("Physical" in args[0]) {
-          this.x = args[0].Physical.x;
-          this.y = args[0].Physical.y;
-        } else {
-          this.x = args[0].x;
-          this.y = args[0].y;
-        }
-      } else {
-        this.x = args[0];
-        this.y = args[1];
-      }
-    }
-    /**
-     * Converts the physical position to a logical one.
-     * @example
-     * ```typescript
-     * import { PhysicalPosition } from '@tauri-apps/api/dpi';
-     * import { getCurrentWindow } from '@tauri-apps/api/window';
-     *
-     * const appWindow = getCurrentWindow();
-     * const factor = await appWindow.scaleFactor();
-     * const position = new PhysicalPosition(400, 500);
-     * const physical = position.toLogical(factor);
-     * ```
-     *
-     * @since 2.0.0
-     */
-    toLogical(scaleFactor) {
-      return new LogicalPosition(this.x / scaleFactor, this.y / scaleFactor);
-    }
-    [SERIALIZE_TO_IPC_FN]() {
-      return {
-        x: this.x,
-        y: this.y
-      };
-    }
-    toJSON() {
-      return this[SERIALIZE_TO_IPC_FN]();
-    }
-  };
-  var Position = class {
-    constructor(position) {
-      this.position = position;
-    }
-    toLogical(scaleFactor) {
-      return this.position instanceof LogicalPosition ? this.position : this.position.toLogical(scaleFactor);
-    }
-    toPhysical(scaleFactor) {
-      return this.position instanceof PhysicalPosition ? this.position : this.position.toPhysical(scaleFactor);
-    }
-    [SERIALIZE_TO_IPC_FN]() {
-      return {
-        [`${this.position.type}`]: {
-          x: this.position.x,
-          y: this.position.y
-        }
-      };
-    }
-    toJSON() {
-      return this[SERIALIZE_TO_IPC_FN]();
-    }
-  };
-
-  // node_modules/@tauri-apps/api/window.js
-  init_event();
-  init_core();
-
-  // node_modules/@tauri-apps/api/image.js
-  init_core();
-
-  // node_modules/@tauri-apps/api/window.js
-  var UserAttentionType;
-  (function(UserAttentionType2) {
-    UserAttentionType2[UserAttentionType2["Critical"] = 1] = "Critical";
-    UserAttentionType2[UserAttentionType2["Informational"] = 2] = "Informational";
-  })(UserAttentionType || (UserAttentionType = {}));
-  var ProgressBarStatus;
-  (function(ProgressBarStatus2) {
-    ProgressBarStatus2["None"] = "none";
-    ProgressBarStatus2["Normal"] = "normal";
-    ProgressBarStatus2["Indeterminate"] = "indeterminate";
-    ProgressBarStatus2["Paused"] = "paused";
-    ProgressBarStatus2["Error"] = "error";
-  })(ProgressBarStatus || (ProgressBarStatus = {}));
-  var BackgroundThrottlingPolicy;
-  (function(BackgroundThrottlingPolicy2) {
-    BackgroundThrottlingPolicy2["Disabled"] = "disabled";
-    BackgroundThrottlingPolicy2["Throttle"] = "throttle";
-    BackgroundThrottlingPolicy2["Suspend"] = "suspend";
-  })(BackgroundThrottlingPolicy || (BackgroundThrottlingPolicy = {}));
-  var ScrollBarStyle;
-  (function(ScrollBarStyle2) {
-    ScrollBarStyle2["Default"] = "default";
-    ScrollBarStyle2["FluentOverlay"] = "fluentOverlay";
-  })(ScrollBarStyle || (ScrollBarStyle = {}));
-  var Effect;
-  (function(Effect2) {
-    Effect2["AppearanceBased"] = "appearanceBased";
-    Effect2["Light"] = "light";
-    Effect2["Dark"] = "dark";
-    Effect2["MediumLight"] = "mediumLight";
-    Effect2["UltraDark"] = "ultraDark";
-    Effect2["Titlebar"] = "titlebar";
-    Effect2["Selection"] = "selection";
-    Effect2["Menu"] = "menu";
-    Effect2["Popover"] = "popover";
-    Effect2["Sidebar"] = "sidebar";
-    Effect2["HeaderView"] = "headerView";
-    Effect2["Sheet"] = "sheet";
-    Effect2["WindowBackground"] = "windowBackground";
-    Effect2["HudWindow"] = "hudWindow";
-    Effect2["FullScreenUI"] = "fullScreenUI";
-    Effect2["Tooltip"] = "tooltip";
-    Effect2["ContentBackground"] = "contentBackground";
-    Effect2["UnderWindowBackground"] = "underWindowBackground";
-    Effect2["UnderPageBackground"] = "underPageBackground";
-    Effect2["Mica"] = "mica";
-    Effect2["Blur"] = "blur";
-    Effect2["Acrylic"] = "acrylic";
-    Effect2["Tabbed"] = "tabbed";
-    Effect2["TabbedDark"] = "tabbedDark";
-    Effect2["TabbedLight"] = "tabbedLight";
-  })(Effect || (Effect = {}));
-  var EffectState;
-  (function(EffectState2) {
-    EffectState2["FollowsWindowActiveState"] = "followsWindowActiveState";
-    EffectState2["Active"] = "active";
-    EffectState2["Inactive"] = "inactive";
-  })(EffectState || (EffectState = {}));
+  var import_core3 = __toESM(require_core());
+  var import_window = __toESM(require_window());
 
   // lib/playback-availability.ts
   init_plugin_registry();
@@ -168420,12 +170414,12 @@
   var isAndroidTauriEnv = isTauriEnv && typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
 
   // lib/tauri-avplayer.ts
-  init_core();
+  var import_core2 = __toESM(require_core());
 
   // components/player/video-player-modal.tsx
   init_jsx_runtime_shim();
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-GW3EcK/next-episode-card-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-JKmj3o/next-episode-card-shim.ts
   init_react_shim();
 
   // components/player/next-episode-card.tsx
@@ -168436,6 +170430,8 @@
   // lib/plugin-sdk.ts
   function isPluginDesktopHost() {
     if (typeof window === "undefined") return false;
+    const userAgentEarly = typeof navigator !== "undefined" ? navigator.userAgent : "";
+    if (/android/i.test(userAgentEarly)) return false;
     const maybeTauriWindow = window;
     if (maybeTauriWindow.__LUMIO_DESKTOP_HOST__) return true;
     if (maybeTauriWindow.__TAURI_INTERNALS__ || maybeTauriWindow.__TAURI__) return true;
@@ -168456,9 +170452,9 @@
       const candidate = args[0]?.trim() ?? "";
       return /^https?:\/\//i.test(candidate) ? candidate : null;
     };
-    const { invoke: invoke2 } = await Promise.resolve().then(() => (init_core(), core_exports));
+    const { invoke: invoke4 } = await Promise.resolve().then(() => __toESM(require_core()));
     try {
-      return await invoke2("launch_program", { program, args });
+      return await invoke4("launch_program", { program, args });
     } catch (error) {
       const url = inferUrlFromLaunchArgs();
       if (url && typeof window !== "undefined") {
@@ -168473,8 +170469,8 @@
     const normalized = pathAndQuery.trim();
     if (!normalized.startsWith("/api/")) return null;
     try {
-      const { invoke: invoke2 } = await Promise.resolve().then(() => (init_core(), core_exports));
-      return await invoke2("desktop_api_query", {
+      const { invoke: invoke4 } = await Promise.resolve().then(() => __toESM(require_core()));
+      return await invoke4("desktop_api_query", {
         pathAndQuery: normalized,
         timeoutMs: timeoutMs ?? null
       });
@@ -170178,7 +172174,7 @@
   };
 
   // ../lumio-official-plugins/plugins/youtube/runtime/youtube-settings-section.tsx
-  var import_react65 = __toESM(require_dist89());
+  var import_react67 = __toESM(require_dist89());
   init_react_shim();
   init_jsx_runtime_shim();
   var inputClassNames = {
@@ -170332,7 +172328,7 @@
       /* @__PURE__ */ jsxs("div", { className: "space-y-1.5", children: [
         /* @__PURE__ */ jsx("label", { className: "block text-xs text-slate-400", children: t("pluginYoutubeClientId") }),
         /* @__PURE__ */ jsx(
-          import_react65.Input,
+          import_react67.Input,
           {
             type: "text",
             value: clientId,
@@ -170349,7 +172345,7 @@
       /* @__PURE__ */ jsxs("div", { className: "space-y-1.5", children: [
         /* @__PURE__ */ jsx("label", { className: "block text-xs text-slate-400", children: t("pluginYoutubeApiKey") }),
         /* @__PURE__ */ jsx(
-          import_react65.Input,
+          import_react67.Input,
           {
             type: "password",
             value: apiKey,
@@ -170544,7 +172540,7 @@
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-GW3EcK/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-JKmj3o/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");
