@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useLang } from '@/lib/plugin-sdk'
+import { onTvFocusEdge, useLang, useTvMode } from '@/lib/plugin-sdk'
 import { LiveTvLogoImage } from './live-tv-logo-image'
 import { useLiveTvEpgCache } from './hooks/useLiveTvEpgCache'
 import { buildNameToTvgIdIndex, resolveTvgId } from './epg/name-match'
@@ -58,6 +58,11 @@ interface ChannelRow {
 
 export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
   const { t } = useLang()
+  // TV mode: the host focus engine is DOM-driven (data-f stations,
+  // data-init entry point, data-scroll/data-row scroll containers), and the
+  // host's 88px icon rail overlays the left edge of every fullscreen view.
+  const isTv = useTvMode()
+  const tvStation = isTv ? { 'data-f': '' } : {}
   const [lists, setLists] = useState<LiveTvList[]>(() => getLiveTvLists())
   const [activeListId, setActiveListId] = useState<string | null>(null)
   const [nowTick, setNowTick] = useState(() => Date.now())
@@ -194,6 +199,36 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
     if (channelListRef.current) channelListRef.current.scrollTop = 0
   }, [open, channelFilter])
 
+  // Back/Escape closes the guide. Captured on window in the capture phase:
+  // right after opening, focus can still sit outside the panel (on the Guide
+  // button), and the host's global back handler would otherwise navigate away
+  // from the whole view instead of closing this overlay.
+  useEffect(() => {
+    if (!open) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' && !(isTv && event.key === 'Backspace')) return
+      const target = event.target as HTMLElement | null
+      if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA') return
+      event.preventDefault()
+      event.stopPropagation()
+      onClose()
+    }
+    window.addEventListener('keydown', onKeyDown, true)
+    return () => window.removeEventListener('keydown', onKeyDown, true)
+  }, [open, isTv, onClose])
+
+  // Left at the guide's left edge backs out, same as Escape. The claim stops
+  // the host's fallback listener from opening the main menu on top of the
+  // guide; called defensively because older hosts send no meta.
+  useEffect(() => {
+    if (!open || !isTv) return
+    return onTvFocusEdge((dir, meta) => {
+      if (dir !== 'left') return
+      meta?.claim?.()
+      onClose()
+    })
+  }, [open, isTv, onClose])
+
   function syncVerticalScroll(source: 'body' | 'channels', scrollTop: number): void {
     const target = source === 'body' ? channelListRef.current : bodyRef.current
     if (target && Math.abs(target.scrollTop - scrollTop) > 1) target.scrollTop = scrollTop
@@ -226,8 +261,13 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
 
   return (
     <div
+      // TV: focus trap while the guide is open — the engine treats the last
+      // visible [data-panel-root] as the only valid root. The inline
+      // paddingLeft clears the host's 88px icon rail; without it the channel
+      // column rendered underneath the menu.
+      {...(isTv ? { 'data-panel-root': '' } : {})}
       className="fixed inset-x-0 bottom-0 z-[80] flex flex-col bg-slate-950/95 backdrop-blur-xl"
-      style={{ top: -64, paddingTop: 64 }}
+      style={{ top: -64, paddingTop: 64, ...(isTv ? { paddingLeft: 88 } : null) }}
     >
       <div className="flex items-center justify-between gap-4 border-b border-white/5 px-5 py-3">
         <div className="flex min-w-0 items-center gap-3">
@@ -235,6 +275,7 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
           <h2 className="truncate text-base font-semibold text-white">{t('liveTvGuideTitle')}</h2>
           {lists.length > 0 ? (
             <select
+              {...tvStation}
               value={activeListId ?? ''}
               onChange={(event) => setActiveListId(event.target.value || null)}
               className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-slate-200 outline-none transition hover:border-white/30 focus:border-white/40"
@@ -251,6 +292,7 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
         <div className="flex items-center gap-2">
           <button
             type="button"
+            {...tvStation}
             onClick={() => setChannelFilter(null)}
             className={`rounded-full border px-3 py-1.5 text-[11px] uppercase tracking-[0.22em] transition ${
               channelFilter
@@ -261,6 +303,7 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
             {t('all')}
           </button>
           <select
+            {...tvStation}
             value={channelFilter?.url ?? ''}
             onChange={(event) => {
               const next = allRows.find((row) => row.channel.url === event.target.value)?.channel ?? null
@@ -279,6 +322,7 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
           </select>
           <button
             type="button"
+            {...tvStation}
             disabled={!selectedChannel}
             onClick={() => selectedChannel && setChannelFilter(selectedChannel)}
             className={`max-w-[14rem] truncate rounded-full border px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] transition disabled:cursor-not-allowed disabled:opacity-35 ${
@@ -292,6 +336,7 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
           </button>
           <button
             type="button"
+            {...tvStation}
             onClick={() => {
               const target = bodyRef.current
               if (!target) return
@@ -303,6 +348,10 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
           </button>
           <button
             type="button"
+            {...tvStation}
+            // Fallback entry point: with no rows there is no channel list to
+            // land in, and the panel must still have exactly one data-init.
+            {...(isTv && rows.length === 0 ? { 'data-init': '' } : {})}
             onClick={onClose}
             className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[11px] uppercase tracking-[0.22em] text-slate-200 transition hover:border-white/35 hover:text-white"
           >
@@ -320,19 +369,25 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
           <div className="flex shrink-0 flex-col border-r border-white/5" style={{ width: CHANNEL_COL_WIDTH }}>
             <div className="border-b border-white/5 bg-black/40" style={{ height: HEAD_HEIGHT }} />
             <div
+              // TV: data-scroll lets the focus engine scroll the channel list
+              // as focus moves down through the rows.
+              {...(isTv ? { 'data-scroll': '' } : {})}
               className="thin-slider-scrollbar flex-1 overflow-y-auto"
               ref={channelListRef}
               onScroll={(event) => {
                 syncVerticalScroll('channels', event.currentTarget.scrollTop)
               }}
             >
-              {rows.map(({ channel, list }) => {
+              {rows.map(({ channel, list }, rowIdx) => {
                 const logoSrc = getLiveTvLogoSrc(channel.logo)
                 const isSelected = selectedChannel === channel
                 return (
                   <button
                     key={`${list.id}::${channel.url}`}
                     type="button"
+                    {...tvStation}
+                    // The first channel row is the guide's natural entry point.
+                    {...(isTv && rowIdx === 0 ? { 'data-init': '' } : {})}
                     onClick={() => onPlayChannel(channel, list)}
                     onDoubleClick={() => setChannelFilter(channel)}
                     onMouseEnter={() => setSelectedChannel(channel)}
@@ -387,6 +442,9 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
             </div>
             <div
               ref={bodyRef}
+              // TV: the programme grid scrolls both ways — data-scroll for the
+              // vertical axis, data-row for the horizontal timeline.
+              {...(isTv ? { 'data-scroll': '', 'data-row': '' } : {})}
               onScroll={(event) => {
                 if (timelineRef.current) {
                   timelineRef.current.scrollLeft = event.currentTarget.scrollLeft
@@ -418,6 +476,7 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
                         <button
                           key={`${rowIdx}-${p.start}-${i}`}
                           type="button"
+                          {...tvStation}
                           onClick={() => {
                             setSelectedProgramme(p)
                             setSelectedChannel(channel)

@@ -56,7 +56,7 @@ function decodeInitialChannel(params?: BrowsePageProps['params']): M3uChannel | 
 }
 
 function LiveTvBrowsePage({ params }: BrowsePageProps) {
-  return createElement(LiveTvGrid, { initialChannel: decodeInitialChannel(params) })
+  return createElement(LiveTvGrid, { initialChannel: decodeInitialChannel(params), tvCompactTop: true })
 }
 
 export const LiveTvPlugin: LumioPlugin = {

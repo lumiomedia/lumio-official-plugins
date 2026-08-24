@@ -9,6 +9,7 @@ import {
   isTauriEnv,
   lockBodyScroll,
   mpvSetBounds,
+  onTvFocusEdge,
   openMpvPlayer,
   setMpvPause,
   setMpvVideoGeometry,
@@ -16,6 +17,7 @@ import {
   unlockBodyScroll,
   useMpvPlayer,
   useLang,
+  useTvMode,
 } from '@/lib/plugin-sdk'
 import { LiveTvLogoImage } from './live-tv-logo-image'
 import { getLiveTvLogoSrc } from './live-tv-data'
@@ -68,11 +70,23 @@ const MPV_STARTUP_TIMEOUT_MS = 18_000
 
 export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: LiveTvPlayerProps) {
   const { t } = useLang()
+  /**
+   * TV-läget: spelaren är en helskärmsoverlay och därmed fokusfälla
+   * (data-panel-root); varje kontroll är en station (data-f) och
+   * spela/paus bär data-init — det man oftast vill åt med fjärren.
+   * Utan detta gick spelaren inte att navigera alls med fjärrkontroll:
+   * knapparna fanns men låg utanför fokusmotorns värld.
+   */
+  const isTv = useTvMode()
+  const tvStation = isTv ? { 'data-f': '' } : {}
   const videoRef = useRef<HTMLVideoElement>(null)
   const stageRef = useRef<HTMLDivElement>(null)
   const controlsHideTimerRef = useRef<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  // HTML-spelarens paus-läge speglas i state: de inbyggda kontrollerna går
+  // inte att nå med fjärren, så TV-läget ritar en egen spela/paus-station.
+  const [htmlPaused, setHtmlPaused] = useState(false)
   const [controlsVisible, setControlsVisible] = useState(true)
   const [scheduleOpen, setScheduleOpen] = useState(false)
   const [portalEl] = useState<HTMLElement | null>(() => {
@@ -209,9 +223,20 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
   useEffect(() => {
     lockBodyScroll()
     function onKey(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
+      // TV: kontrollraden gömmer sig efter 2,4 s — varje fjärrtryck ska
+      // väcka den igen, annars navigerar man bland osynliga knappar.
+      if (isTv) revealControls()
+      const target = event.target as HTMLElement | null
+      if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA') return
+      // Backspace är TV-fjärrens bakåtknapp — samma väg som Escape.
+      if (event.key === 'Escape' || (isTv && event.key === 'Backspace')) {
         event.preventDefault()
         event.stopPropagation()
+        // Tablå-arket stängs först: bakåt kliver ur ett lager i taget.
+        if (scheduleOpen) {
+          setScheduleOpen(false)
+          return
+        }
         if (useMpv) {
           // Always query the real window state — `desktopFullscreen` can be
           // stale if the user toggled native fullscreen via the green traffic
@@ -245,12 +270,28 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
         void setMpvPause(!mpvPaused)
       }
     }
-    window.addEventListener('keydown', onKey)
+    // TV: capture-fasen, före motorns bubblande lyssnare — annars hinner
+    // värdens bakåthantering agera på trycket innan spelaren stängt sitt
+    // lager. Skrivbordet behåller bubbelfasen: där finns lyssnare (t.ex.
+    // schemaark med egna fält) som ska få tangenten först.
+    window.addEventListener('keydown', onKey, isTv)
     return () => {
       unlockBodyScroll()
-      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('keydown', onKey, isTv)
     }
-  }, [mpvPaused, useMpv, revealControls])
+  }, [isTv, mpvPaused, revealControls, scheduleOpen, useMpv])
+
+  // Vänster vid en vänsterkant i spelaren: anspråka trycket så värdens
+  // reservlyssnare inte öppnar huvudmenyn ovanpå strömmen. Trycket väcker
+  // bara kontrollraden. Defensivt meta?.claim?.() — äldre värdar saknar metan.
+  useEffect(() => {
+    if (!isTv) return
+    return onTvFocusEdge((dir, meta) => {
+      if (dir !== 'left') return
+      meta?.claim?.()
+      revealControls()
+    })
+  }, [isTv, revealControls])
 
   useLayoutEffect(() => {
     if (!portalEl) return
@@ -572,6 +613,11 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
     const content = (
       <div
         data-lumio-player-open="1"
+        // TV: fokusfälla medan spelaren är öppen. onFocusCapture väcker
+        // kontrollraden när motorn flyttar fokus mellan stationerna.
+        // data-tv-fullbleed: värdens CSS ger panelrötter vänsterpadding för
+        // ikonrailen — en videoyta ska täcka hela skärmen och väljer bort den.
+        {...(isTv ? { 'data-panel-root': '', 'data-tv-fullbleed': '' } : {})}
         className="fixed inset-0 z-[70] bg-transparent cursor-default"
         onMouseMove={revealControls}
         onPointerMove={revealControls}
@@ -620,6 +666,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
           </div>
           <button
             type="button"
+            {...tvStation}
             onClick={handleClose}
             className="rounded-full border border-white/15 bg-black/45 px-3 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-200 transition hover:border-white/35 hover:text-white"
           >
@@ -638,6 +685,9 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
           <div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-black/55 px-4 py-3 text-white shadow-2xl backdrop-blur-md">
             <button
               type="button"
+              {...tvStation}
+              // Startfokus: spela/paus är det man oftast vill åt med fjärren.
+              {...(isTv ? { 'data-init': '' } : {})}
               onClick={toggleMpvPause}
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/35 hover:bg-white/15"
               aria-label={mpvPaused ? t('play') : t('liveTvPause')}
@@ -655,6 +705,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
             </button>
             <button
               type="button"
+              {...tvStation}
               onClick={toggleFullscreen}
               className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-white transition ${
                 desktopFullscreen
@@ -674,6 +725,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
             </button>
             <button
               type="button"
+              {...tvStation}
               onClick={() => setScheduleOpen((open) => !open)}
               className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-white transition ${
                 scheduleOpen
@@ -697,6 +749,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
             <div className="relative" onMouseLeave={() => setVolumeOpen(false)}>
               <button
                 type="button"
+                {...tvStation}
                 onClick={() => setVolumeOpen((open) => !open)}
                 onMouseEnter={() => setVolumeOpen(true)}
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/35 hover:bg-white/15"
@@ -729,8 +782,11 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
                   onMouseEnter={() => setVolumeOpen(true)}
                 >
                 <div className="flex items-center gap-2 rounded-full border border-white/15 bg-black/85 px-3 py-2 shadow-2xl backdrop-blur">
+                  {/* Reglaget förblir musens: ett range-input som station
+                      skulle svälja alla pilar. Mute-knappen räcker på TV. */}
                   <button
                     type="button"
+                    {...tvStation}
                     onClick={toggleMute}
                     className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/35 hover:bg-white/15"
                     aria-label={muted ? t('liveTvUnmute') : t('liveTvMute')}
@@ -766,6 +822,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
 
             <button
               type="button"
+              {...tvStation}
               onClick={cycleAspect}
               className="flex h-11 shrink-0 items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 text-white transition hover:border-white/35 hover:bg-white/15"
               aria-label={t('aspectRatio')}
@@ -827,8 +884,20 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
   const cardBg = 'bg-slate-950/30'
   const stageBg = 'bg-black'
 
+  const toggleHtmlPause = () => {
+    const media = videoRef.current
+    if (!media) return
+    if (media.paused) void media.play().catch(() => {})
+    else media.pause()
+  }
+
   const content = (
-    <div className={`fixed inset-0 z-[70] flex items-center justify-center ${wrapperBg}`}>
+    <div
+      // TV: fokusfälla även för HTML-spelaren (värdar utan mpv).
+      // data-tv-fullbleed väljer bort värdens rail-padding — se mpv-grenen.
+      {...(isTv ? { 'data-panel-root': '', 'data-tv-fullbleed': '' } : {})}
+      className={`fixed inset-0 z-[70] flex items-center justify-center ${wrapperBg}`}
+    >
       <button type="button" aria-label={t('close')} onClick={() => void handleClose()} className="absolute inset-0" />
 
       <div className="relative z-10 w-full max-w-5xl px-4">
@@ -847,13 +916,39 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
                 {channel.group && <p className="truncate text-xs text-slate-300">{channel.group}</p>}
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => void handleClose()}
-              className="rounded-full border border-white/15 bg-black/45 px-3 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-200 transition hover:border-white/35 hover:text-white"
-            >
-              {t('close')}
-            </button>
+            <div className="flex items-center gap-2">
+              {/* TV: videons inbyggda kontroller nås inte med fjärren — en
+                  egen spela/paus-station med startfokus krävs. */}
+              {isTv ? (
+                <button
+                  type="button"
+                  {...tvStation}
+                  data-init=""
+                  onClick={toggleHtmlPause}
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/45 text-slate-200 transition hover:border-white/35 hover:text-white"
+                  aria-label={htmlPaused ? t('play') : t('liveTvPause')}
+                  title={htmlPaused ? t('play') : t('liveTvPause')}
+                >
+                  {htmlPaused ? (
+                    <svg className="h-4 w-4 translate-x-0.5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  ) : (
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M7 5h4v14H7zM13 5h4v14h-4z" />
+                    </svg>
+                  )}
+                </button>
+              ) : null}
+              <button
+                type="button"
+                {...tvStation}
+                onClick={() => void handleClose()}
+                className="rounded-full border border-white/15 bg-black/45 px-3 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-200 transition hover:border-white/35 hover:text-white"
+              >
+                {t('close')}
+              </button>
+            </div>
           </div>
 
           <div className={`relative aspect-video w-full overflow-hidden ${stageBg}`}>
@@ -881,6 +976,8 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
                 setError(t('liveTvStreamError'))
               }}
               onLoadedMetadata={() => setLoading(false)}
+              onPlay={() => setHtmlPaused(false)}
+              onPause={() => setHtmlPaused(true)}
               onPlaying={() => {
                 setLoading(false)
                 tryEnterMobileFullscreen()

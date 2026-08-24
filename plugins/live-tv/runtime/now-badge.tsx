@@ -9,13 +9,22 @@ interface Props {
   channel: M3uChannel
   listId: string | null
   urls: string[]
+  /**
+   * TV-läget: kortets runda EPG-knapp äger hämtningen. showTrigger={false}
+   * gömmer textutlösaren här (annars blev det två EPG-knappar per kort) och
+   * forceRequested speglar knappens tillstånd utifrån.
+   */
+  showTrigger?: boolean
+  forceRequested?: boolean
 }
 
-export function NowBadge({ channel, listId, urls }: Props) {
+export function NowBadge({ channel, listId, urls, showTrigger = true, forceRequested = false }: Props) {
   const { t } = useLang()
-  const [requested, setRequested] = useState(false)
+  const [requestedState, setRequested] = useState(false)
+  const requested = requestedState || forceRequested
   const { now } = useEpgNowNextLater(channel, listId, urls, requested)
   if (!requested) {
+    if (!showTrigger) return null
     return (
       <button
         type="button"

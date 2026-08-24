@@ -46,7 +46,7 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-QtUTtP/react-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
     Activity: () => Activity,
@@ -95,7 +95,7 @@
   });
   var react, react_shim_default, Activity, Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, act, cache, cacheSignal, captureOwnerStack, cloneElement, createContext2, createElement, createRef, forwardRef2, isValidElement, lazy, memo, startTransition, unstable_useCacheRefresh, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useEffectEvent, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version;
   var init_react_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-QtUTtP/react-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/react-shim.ts"() {
       react = globalThis.__lumioPluginRuntime?.react ?? globalThis.React;
       react_shim_default = react;
       Activity = react.Activity;
@@ -143,7 +143,7 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-QtUTtP/jsx-runtime-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/jsx-runtime-shim.ts
   var jsx_runtime_shim_exports = {};
   __export(jsx_runtime_shim_exports, {
     Fragment: () => Fragment2,
@@ -153,7 +153,7 @@
   });
   var runtime, Fragment2, jsx, jsxs, jsxDEV;
   var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-QtUTtP/jsx-runtime-shim.ts"() {
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/jsx-runtime-shim.ts"() {
       runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
       Fragment2 = runtime.Fragment;
       jsx = runtime.jsx;
@@ -407,6 +407,7 @@
     getMediaDownloadActions: () => getMediaDownloadActions,
     getMediaStreamAvailabilityProviders: () => getMediaStreamAvailabilityProviders,
     getMediaStreamCatalogProviders: () => getMediaStreamCatalogProviders,
+    getOverviewStatusProviders: () => getOverviewStatusProviders,
     getPlayableUrlRewriters: () => getPlayableUrlRewriters,
     getPlaybackCapabilityProviders: () => getPlaybackCapabilityProviders,
     getPluginRegistryRevision: () => getPluginRegistryRevision,
@@ -483,6 +484,10 @@
       registerAuthCapabilityProvider(provider) {
         if (authCapabilityProviders.find((entry) => entry.id === provider.id)) return;
         authCapabilityProviders.push(provider);
+      },
+      registerOverviewStatusProvider(provider) {
+        if (overviewStatusProviders.find((entry) => entry.id === provider.id)) return;
+        overviewStatusProviders.push({ ...provider, pluginId });
       },
       registerSettingsSection(section) {
         if (settingsSections.find((s) => s.id === section.id)) return;
@@ -588,6 +593,9 @@
   function getSyncIdentityProviders() {
     return syncIdentityProviders;
   }
+  function getOverviewStatusProviders() {
+    return [...overviewStatusProviders].sort((a, b) => (a.order ?? 100) - (b.order ?? 100));
+  }
   function getAuthCapabilityProviders() {
     return authCapabilityProviders;
   }
@@ -639,7 +647,7 @@
       registryListeners.delete(listener);
     };
   }
-  var streamProviders, mediaStreamCatalogProviders, mediaStreamAvailabilityProviders, instantPlayProviders, resumeRefreshProviders, playableUrlRewriters, streamRequestConfigProviders, episodeSidebarProviders, playbackCapabilityProviders, syncIdentityProviders, authCapabilityProviders, settingsSections, mediaDownloadActions, mediaDetailsActions, homeRows, homeSources, bootstraps, heroes, homeOverrides, browsePages, mainMenuItems, topbarItems, managedAuthConsumers, registeredPluginIds, registryRevision, registryListeners, registryNotifyScheduled;
+  var streamProviders, mediaStreamCatalogProviders, mediaStreamAvailabilityProviders, instantPlayProviders, resumeRefreshProviders, playableUrlRewriters, streamRequestConfigProviders, episodeSidebarProviders, playbackCapabilityProviders, syncIdentityProviders, authCapabilityProviders, overviewStatusProviders, settingsSections, mediaDownloadActions, mediaDetailsActions, homeRows, homeSources, bootstraps, heroes, homeOverrides, browsePages, mainMenuItems, topbarItems, managedAuthConsumers, registeredPluginIds, registryRevision, registryListeners, registryNotifyScheduled;
   var init_plugin_registry = __esm({
     "lib/plugin-registry.ts"() {
       streamProviders = [];
@@ -653,6 +661,7 @@
       playbackCapabilityProviders = [];
       syncIdentityProviders = [];
       authCapabilityProviders = [];
+      overviewStatusProviders = [];
       settingsSections = [];
       mediaDownloadActions = [];
       mediaDetailsActions = [];
@@ -19180,9 +19189,9 @@
         toIterator: () => toIterator2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function forwardRef3(component) {
-        return (0, import_react72.forwardRef)(component);
+        return (0, import_react73.forwardRef)(component);
       }
       var toIterator2 = (obj) => {
         return {
@@ -41612,11 +41621,11 @@
       }
       function useCycle2(...items) {
         const index3 = React.useRef(0);
-        const [item, setItem] = React.useState(items[index3.current]);
+        const [item, setItem2] = React.useState(items[index3.current]);
         const runCycle = React.useCallback(
           (next2) => {
             index3.current = typeof next2 !== "number" ? motionUtils.wrap(0, items.length, index3.current + 1) : next2;
-            setItem(items[index3.current]);
+            setItem2(items[index3.current]);
           },
           // The array will change on each call, but by putting items.length at
           // the front of this array, we guarantee the dependency comparison will match up
@@ -48683,17 +48692,17 @@
         renderFn: () => renderFn2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function getValidChildren2(children) {
-        return import_react72.Children.toArray(children).filter(
-          (child) => (0, import_react72.isValidElement)(child)
+        return import_react73.Children.toArray(children).filter(
+          (child) => (0, import_react73.isValidElement)(child)
         );
       }
       var pickChildren2 = (children, targetChild) => {
         var _a;
         let target = [];
-        const withoutTargetChildren = (_a = import_react72.Children.map(children, (item) => {
-          if (!(0, import_react72.isValidElement)(item)) return item;
+        const withoutTargetChildren = (_a = import_react73.Children.map(children, (item) => {
+          if (!(0, import_react73.isValidElement)(item)) return item;
           if (item.type === targetChild) {
             target.push(item);
             return null;
@@ -49035,7 +49044,7 @@
           refs.forEach((ref) => assignRef(ref, node));
         };
       }
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function canUseDOM() {
         return !!(typeof window !== "undefined" && window.document && window.document.createElement);
       }
@@ -49121,17 +49130,17 @@
         };
       }
       function useDOMRef(ref) {
-        const domRef = (0, import_react72.useRef)(null);
-        (0, import_react72.useImperativeHandle)(ref, () => domRef.current);
+        const domRef = (0, import_react73.useRef)(null);
+        (0, import_react73.useImperativeHandle)(ref, () => domRef.current);
         return domRef;
       }
       function useFocusableRef(ref, focusableRef) {
-        const domRef = (0, import_react72.useRef)(null);
-        (0, import_react72.useImperativeHandle)(ref, () => createFocusableRef(domRef, focusableRef));
+        const domRef = (0, import_react73.useRef)(null);
+        (0, import_react73.useImperativeHandle)(ref, () => createFocusableRef(domRef, focusableRef));
         return domRef;
       }
       function useSyncRef(context, ref) {
-        (0, import_react72.useLayoutEffect)(() => {
+        (0, import_react73.useLayoutEffect)(() => {
           if (context && context.ref && ref && ref.current) {
             context.ref.current = ref.current;
             return () => {
@@ -49213,7 +49222,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_system_rsc = require_dist4();
       var import_i18n9 = require_main5();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_motion2 = require_cjs4();
       var import_utils8 = require_main4();
       var import_overlays = require_main9();
@@ -49245,7 +49254,7 @@
         if (navigate) {
           contents = /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_utils8.RouterProvider, { navigate, useHref, children: contents });
         }
-        const context = (0, import_react72.useMemo)(() => {
+        const context = (0, import_react73.useMemo)(() => {
           if (disableAnimation && skipFramerMotionAnimations) {
             import_framer_motion2.MotionGlobalConfig.skipAnimations = true;
           }
@@ -62527,9 +62536,9 @@
         toIterator: () => toIterator2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function forwardRef3(component) {
-        return (0, import_react72.forwardRef)(component);
+        return (0, import_react73.forwardRef)(component);
       }
       var toIterator2 = (obj) => {
         return {
@@ -62741,7 +62750,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_rsc_utils = require_dist9();
       function useSeparator(props) {
         let domProps = (0, import_react_rsc_utils.filterDOMProps)(props, {
@@ -62772,14 +62781,14 @@
           elementType: typeof Component2 === "string" ? Component2 : "hr",
           orientation
         });
-        const styles = (0, import_react72.useMemo)(
+        const styles = (0, import_react73.useMemo)(
           () => (0, import_theme.divider)({
             orientation,
             className
           }),
           [orientation, className]
         );
-        const getDividerProps = (0, import_react72.useCallback)(
+        const getDividerProps = (0, import_react73.useCallback)(
           (props2 = {}) => ({
             className: styles,
             role: "separator",
@@ -65586,22 +65595,22 @@
         };
       }
       var import_focus2 = require_main14();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_button = require_main16();
       function useReactAriaAccordionItem(props, state, ref) {
         let { item, isDisabled: isDisabledProp } = props;
         let key = item.key;
         let manager = state.selectionManager;
-        let buttonId = (0, import_react72.useId)();
-        let regionId = (0, import_react72.useId)();
+        let buttonId = (0, import_react73.useId)();
+        let regionId = (0, import_react73.useId)();
         let isDisabled = state.disabledKeys.has(item.key) || isDisabledProp;
-        (0, import_react72.useEffect)(() => {
+        (0, import_react73.useEffect)(() => {
           let isFocused = key === state.focusedKey;
           if (isFocused && document.activeElement !== ref.current) {
             ref.current && (0, import_focus2.focusSafely)(ref.current);
           }
         }, [ref, key, state.focusedKey]);
-        let onSelect = (0, import_react72.useCallback)(
+        let onSelect = (0, import_react73.useCallback)(
           (e) => {
             if (!manager.canSelectItem(key)) {
               return;
@@ -65611,7 +65620,7 @@
           },
           [key, manager]
         );
-        const extendFocusSelection = (0, import_react72.useCallback)(
+        const extendFocusSelection = (0, import_react73.useCallback)(
           (toKey2) => {
             if (manager.selectionBehavior === "replace") {
               manager.extendSelection(toKey2);
@@ -65620,7 +65629,7 @@
           },
           [manager]
         );
-        const onKeyDown = (0, import_react72.useCallback)(
+        const onKeyDown = (0, import_react73.useCallback)(
           (event) => {
             const keyMap = {
               ArrowDown: () => {
@@ -68939,14 +68948,14 @@
         useMeasure: () => useMeasure
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useMeasure() {
-        const [dimensions, setDimensions] = (0, import_react72.useState)({
+        const [dimensions, setDimensions] = (0, import_react73.useState)({
           width: null,
           height: null
         });
-        const previousObserver = (0, import_react72.useRef)(null);
-        const customRef = (0, import_react72.useCallback)((node) => {
+        const previousObserver = (0, import_react73.useRef)(null);
+        const customRef = (0, import_react73.useCallback)((node) => {
           if (previousObserver.current) {
             previousObserver.current.disconnect();
             previousObserver.current = null;
@@ -69142,11 +69151,11 @@
           }
         }
       };
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_motion2 = require_cjs4();
       var import_use_measure = require_dist18();
       var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var ResizablePanel2 = (0, import_react72.forwardRef)(
+      var ResizablePanel2 = (0, import_react73.forwardRef)(
         (originalProps, ref) => {
           const { children, ...props } = originalProps;
           let [measureRef, bounds] = (0, import_use_measure.useMeasure)();
@@ -86498,11 +86507,11 @@
   // node_modules/framer-motion/dist/es/utils/use-cycle.mjs
   function useCycle(...items) {
     const index3 = useRef(0);
-    const [item, setItem] = useState(items[index3.current]);
+    const [item, setItem2] = useState(items[index3.current]);
     const runCycle = useCallback(
       (next2) => {
         index3.current = typeof next2 !== "number" ? wrap(0, items.length, index3.current + 1) : next2;
-        setItem(items[index3.current]);
+        setItem2(items[index3.current]);
       },
       // The array will change on each call, but by putting items.length at
       // the front of this array, we guarantee the dependency comparison will match up
@@ -87813,7 +87822,7 @@
       var import_react510 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
-      var import_react72 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
+      var import_react73 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
       var import_tree = require_main12();
       var import_shared_utils = require_dist2();
       var import_theme = require_dist12();
@@ -87865,10 +87874,10 @@
         );
         const children = (0, import_react210.useMemo)(() => {
           let treeChildren = [];
-          import_react72.default.Children.map(childrenProp, (child) => {
+          import_react73.default.Children.map(childrenProp, (child) => {
             var _a2;
-            if (import_react72.default.isValidElement(child) && typeof ((_a2 = child.props) == null ? void 0 : _a2.children) !== "string") {
-              const clonedChild = import_react72.default.cloneElement(child, {
+            if (import_react73.default.isValidElement(child) && typeof ((_a2 = child.props) == null ? void 0 : _a2.children) !== "string") {
+              const clonedChild = import_react73.default.cloneElement(child, {
                 // @ts-ignore
                 hasChildItems: false
               });
@@ -87939,7 +87948,7 @@
             motionProps
           ]
         );
-        const getBaseProps = (0, import_react72.useCallback)((props2 = {}) => {
+        const getBaseProps = (0, import_react73.useCallback)((props2 = {}) => {
           return {
             ref: domRef,
             className: classNames,
@@ -87953,7 +87962,7 @@
             )
           };
         }, []);
-        const handleFocusChanged = (0, import_react72.useCallback)((isFocused, key) => {
+        const handleFocusChanged = (0, import_react73.useCallback)((isFocused, key) => {
           isFocused && setFocusedKey(key);
         }, []);
         return {
@@ -88365,8 +88374,8 @@
         useSafeLayoutEffect: () => useSafeLayoutEffect
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var useSafeLayoutEffect = Boolean(globalThis == null ? void 0 : globalThis.document) ? import_react72.useLayoutEffect : import_react72.useEffect;
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var useSafeLayoutEffect = Boolean(globalThis == null ? void 0 : globalThis.document) ? import_react73.useLayoutEffect : import_react73.useEffect;
     }
   });
 
@@ -88397,7 +88406,7 @@
         useImage: () => useImage
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_utils = require_dist10();
       var import_use_safe_layout_effect = require_dist21();
       function useImage(props = {}) {
@@ -88413,16 +88422,16 @@
           shouldBypassImageLoad = false
         } = props;
         const isHydrated = (0, import_react_utils.useIsHydrated)();
-        const imageRef = (0, import_react72.useRef)(null);
-        const [status, setStatus] = (0, import_react72.useState)("pending");
-        const flush = (0, import_react72.useCallback)(() => {
+        const imageRef = (0, import_react73.useRef)(null);
+        const [status, setStatus] = (0, import_react73.useState)("pending");
+        const flush = (0, import_react73.useCallback)(() => {
           if (imageRef.current) {
             imageRef.current.onload = null;
             imageRef.current.onerror = null;
             imageRef.current = null;
           }
         }, []);
-        const load = (0, import_react72.useCallback)(() => {
+        const load = (0, import_react73.useCallback)(() => {
           if (!src) return "pending";
           if (ignoreFallback || shouldBypassImageLoad) return "loaded";
           flush();
@@ -88541,7 +88550,7 @@
       var import_react_utils2 = require_dist10();
       var import_shared_utils = require_dist2();
       var import_focus2 = require_main18();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_image = require_dist22();
       var import_interactions = require_main17();
       var import_react_utils = require_dist10();
@@ -88596,7 +88605,7 @@
         const isImgLoaded = imageStatus === "loaded";
         const shouldFilterDOMProps = !isHeroImage;
         const showFallback = (!src || !isImgLoaded) && showFallbackProp;
-        const slots = (0, import_react72.useMemo)(
+        const slots = (0, import_react73.useMemo)(
           () => {
             var _a2;
             return (0, import_theme.avatar)({
@@ -88622,10 +88631,10 @@
           ]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const canBeFocused = (0, import_react72.useMemo)(() => {
+        const canBeFocused = (0, import_react73.useMemo)(() => {
           return isFocusable || as === "button";
         }, [isFocusable, as]);
-        const getAvatarProps = (0, import_react72.useCallback)(
+        const getAvatarProps = (0, import_react73.useCallback)(
           (props = {}) => ({
             ref: domRef,
             tabIndex: canBeFocused ? 0 : -1,
@@ -88639,7 +88648,7 @@
           }),
           [canBeFocused, slots, baseStyles, focusProps, otherProps]
         );
-        const getImageProps = (0, import_react72.useCallback)(
+        const getImageProps = (0, import_react73.useCallback)(
           (props = {}) => ({
             ref: imgRef,
             src,
@@ -88842,7 +88851,7 @@
       var import_theme = require_dist12();
       var import_system = require_dist11();
       var import_shared_utils = require_dist2();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useBadge(originalProps) {
         var _a, _b;
         const globalContext = (0, import_system.useProviderContext)();
@@ -88850,19 +88859,19 @@
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.badge.variantKeys);
         const { as, children, className, content, classNames, ...otherProps } = props;
         const Component2 = as || "span";
-        const isOneChar = (0, import_react72.useMemo)(
+        const isOneChar = (0, import_react73.useMemo)(
           () => {
             var _a2;
             return ((_a2 = String(content)) == null ? void 0 : _a2.length) === 1 || (originalProps == null ? void 0 : originalProps.isOneChar);
           },
           [content, originalProps == null ? void 0 : originalProps.isOneChar]
         );
-        const isDot = (0, import_react72.useMemo)(() => {
+        const isDot = (0, import_react73.useMemo)(() => {
           var _a2;
           return ((_a2 = String(content)) == null ? void 0 : _a2.length) === 0;
         }, [content]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.badge, className);
-        const slots = (0, import_react72.useMemo)(
+        const slots = (0, import_react73.useMemo)(
           () => (0, import_theme.badge)({
             ...variantProps2,
             showOutline: !!(originalProps == null ? void 0 : originalProps.disableOutline) ? !(originalProps == null ? void 0 : originalProps.disableOutline) : originalProps == null ? void 0 : originalProps.showOutline,
@@ -88936,7 +88945,7 @@
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       function useSpinner(originalProps) {
         var _a, _b;
@@ -88944,19 +88953,19 @@
         const globalContext = (0, import_system.useProviderContext)();
         const variant = (_b = (_a = originalProps == null ? void 0 : originalProps.variant) != null ? _a : globalContext == null ? void 0 : globalContext.spinnerVariant) != null ? _b : "default";
         const { children, className, classNames, label: labelProp, ...otherProps } = props;
-        const slots = (0, import_react72.useMemo)(
+        const slots = (0, import_react73.useMemo)(
           () => (0, import_theme.spinner)({ ...variantProps2, variant }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), variant]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
         const label = labelProp || children;
-        const ariaLabel = (0, import_react72.useMemo)(() => {
+        const ariaLabel = (0, import_react73.useMemo)(() => {
           if (label && typeof label === "string") {
             return label;
           }
           return !otherProps["aria-label"] ? "Loading" : "";
         }, [children, label, otherProps["aria-label"]]);
-        const getSpinnerProps = (0, import_react72.useCallback)(
+        const getSpinnerProps = (0, import_react73.useCallback)(
           () => ({
             "aria-label": ariaLabel,
             className: slots.base({
@@ -89123,10 +89132,10 @@
       Ripple.displayName = "HeroUI.Ripple";
       var ripple_default = Ripple;
       var import_shared_utils2 = require_dist2();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useRipple(props = {}) {
-        const [ripples, setRipples] = (0, import_react72.useState)([]);
-        const onPress = (0, import_react72.useCallback)((event) => {
+        const [ripples, setRipples] = (0, import_react73.useState)([]);
+        const onPress = (0, import_react73.useCallback)((event) => {
           const trigger = event.target;
           const size = Math.max(trigger.clientWidth, trigger.clientHeight);
           setRipples((prevRipples) => [
@@ -89139,7 +89148,7 @@
             }
           ]);
         }, []);
-        const onClear = (0, import_react72.useCallback)((key) => {
+        const onClear = (0, import_react73.useCallback)((key) => {
           setRipples((prevState) => prevState.filter((ripple) => ripple.key !== key));
         }, []);
         return { ripples, onClear, onPress, ...props };
@@ -92226,7 +92235,7 @@
       var import_system2 = require_dist11();
       var import_system = require_dist11();
       var import_shared_utils = require_dist2();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_react_utils2 = require_dist10();
       var import_theme = require_dist12();
@@ -92303,7 +92312,7 @@
           ]
         );
         const { onPress: onRipplePressHandler, onClear: onClearRipple, ripples } = (0, import_ripple.useRipple)();
-        const handlePress = (0, import_react72.useCallback)(
+        const handlePress = (0, import_react73.useCallback)(
           (e) => {
             if (disableRipple || isDisabled || disableAnimation) return;
             domRef.current && onRipplePressHandler(e);
@@ -92321,7 +92330,7 @@
           domRef
         );
         const { isHovered, hoverProps } = (0, import_interactions.useHover)({ isDisabled });
-        const getButtonProps = (0, import_react72.useCallback)(
+        const getButtonProps = (0, import_react73.useCallback)(
           (props2 = {}) => ({
             "data-disabled": (0, import_shared_utils.dataAttr)(isDisabled),
             "data-focus": (0, import_shared_utils.dataAttr)(isFocused),
@@ -92370,7 +92379,7 @@
           };
           return buttonSpinnerSizeMap[size];
         }, [size]);
-        const getRippleProps = (0, import_react72.useCallback)(
+        const getRippleProps = (0, import_react73.useCallback)(
           () => ({ ripples, onClear: onClearRipple }),
           [ripples, onClearRipple]
         );
@@ -92540,7 +92549,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_theme = require_dist12();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_interactions = require_main17();
       var import_use_aria_button = require_dist27();
@@ -92572,7 +92581,7 @@
         const disableRipple = (_d = (_c = originalProps.disableRipple) != null ? _c : globalContext == null ? void 0 : globalContext.disableRipple) != null ? _d : false;
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
         const { onClear: onClearRipple, onPress: onRipplePressHandler, ripples } = (0, import_ripple.useRipple)();
-        const handlePress = (0, import_react72.useCallback)(
+        const handlePress = (0, import_react73.useCallback)(
           (e) => {
             if (disableRipple || disableAnimation) return;
             domRef.current && onRipplePressHandler(e);
@@ -92597,14 +92606,14 @@
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)({
           autoFocus
         });
-        const slots = (0, import_react72.useMemo)(
+        const slots = (0, import_react73.useMemo)(
           () => (0, import_theme.card)({
             ...variantProps2,
             disableAnimation
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation]
         );
-        const context = (0, import_react72.useMemo)(
+        const context = (0, import_react73.useMemo)(
           () => ({
             slots,
             classNames,
@@ -92622,7 +92631,7 @@
             originalProps.fullWidth
           ]
         );
-        const getCardProps = (0, import_react72.useCallback)(
+        const getCardProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ref: domRef,
@@ -92660,7 +92669,7 @@
             otherProps
           ]
         );
-        const getRippleProps = (0, import_react72.useCallback)(
+        const getRippleProps = (0, import_react73.useCallback)(
           () => ({ ripples, onClear: onClearRipple }),
           [ripples, onClearRipple]
         );
@@ -92791,7 +92800,7 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useChip(originalProps) {
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.chip.variantKeys);
         const {
@@ -92812,13 +92821,13 @@
         const isCloseable = !!onClose;
         const isDotVariant = originalProps.variant === "dot";
         const { focusProps: closeFocusProps, isFocusVisible: isCloseButtonFocusVisible } = (0, import_focus2.useFocusRing)();
-        const isOneChar = (0, import_react72.useMemo)(
+        const isOneChar = (0, import_react73.useMemo)(
           () => typeof children === "string" && (children == null ? void 0 : children.length) === 1,
           [children]
         );
-        const hasStartContent = (0, import_react72.useMemo)(() => !!avatar || !!startContent, [avatar, startContent]);
-        const hasEndContent = (0, import_react72.useMemo)(() => !!endContent || isCloseable, [endContent, isCloseable]);
-        const slots = (0, import_react72.useMemo)(
+        const hasStartContent = (0, import_react73.useMemo)(() => !!avatar || !!startContent, [avatar, startContent]);
+        const hasEndContent = (0, import_react73.useMemo)(() => !!endContent || isCloseable, [endContent, isCloseable]);
+        const slots = (0, import_react73.useMemo)(
           () => (0, import_theme.chip)({
             ...variantProps2,
             hasStartContent,
@@ -92857,13 +92866,13 @@
           };
         };
         const getAvatarClone = (avatar2) => {
-          if (!(0, import_react72.isValidElement)(avatar2)) return null;
-          return (0, import_react72.cloneElement)(avatar2, {
+          if (!(0, import_react73.isValidElement)(avatar2)) return null;
+          return (0, import_react73.cloneElement)(avatar2, {
             // @ts-ignore
             className: slots.avatar({ class: classNames == null ? void 0 : classNames.avatar })
           });
         };
-        const getContentClone = (content) => (0, import_react72.isValidElement)(content) ? (0, import_react72.cloneElement)(content, {
+        const getContentClone = (content) => (0, import_react73.isValidElement)(content) ? (0, import_react73.cloneElement)(content, {
           // @ts-ignore
           className: (0, import_theme.cn)("max-h-[80%]", content.props.className)
         }) : null;
@@ -93032,14 +93041,14 @@
         useCallbackRef: () => useCallbackRef
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_safe_layout_effect = require_dist21();
       function useCallbackRef(fn, deps = []) {
-        const ref = (0, import_react72.useRef)(fn);
+        const ref = (0, import_react73.useRef)(fn);
         (0, import_use_safe_layout_effect.useSafeLayoutEffect)(() => {
           ref.current = fn;
         });
-        return (0, import_react72.useCallback)((...args) => {
+        return (0, import_react73.useCallback)((...args) => {
           var _a;
           return (_a = ref.current) == null ? void 0 : _a.call(ref, ...args);
         }, deps);
@@ -106476,13 +106485,13 @@
         useSlottedContext: () => useSlottedContext
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       var DEFAULT_SLOT = /* @__PURE__ */ Symbol("default");
       function useObjectRef(ref) {
-        const objRef = (0, import_react72.useRef)(null);
-        const cleanupRef = (0, import_react72.useRef)(void 0);
-        const refEffect = (0, import_react72.useCallback)(
+        const objRef = (0, import_react73.useRef)(null);
+        const cleanupRef = (0, import_react73.useRef)(void 0);
+        const refEffect = (0, import_react73.useCallback)(
           (instance) => {
             if (typeof ref === "function") {
               const refCallback = ref;
@@ -106503,7 +106512,7 @@
           },
           [ref]
         );
-        return (0, import_react72.useMemo)(
+        return (0, import_react73.useMemo)(
           () => ({
             get current() {
               return objRef.current;
@@ -106523,7 +106532,7 @@
         );
       }
       function useSlottedContext(context, slot) {
-        let ctx = (0, import_react72.useContext)(context);
+        let ctx = (0, import_react73.useContext)(context);
         if (slot === null) {
           return null;
         }
@@ -106543,7 +106552,7 @@
       function useContextProps(props, ref, context) {
         let ctx = useSlottedContext(context, props.slot) || {};
         let { ref: contextRef, ...contextProps } = ctx;
-        let mergedRef = useObjectRef((0, import_react72.useMemo)(() => (0, import_shared_utils.mergeRefs)(ref, contextRef), [ref, contextRef]));
+        let mergedRef = useObjectRef((0, import_react73.useMemo)(() => (0, import_shared_utils.mergeRefs)(ref, contextRef), [ref, contextRef]));
         let mergedProps = (0, import_shared_utils.mergeProps)(contextProps, props);
         if ("style" in contextProps && contextProps.style && "style" in props && props.style) {
           if (typeof contextProps.style === "function" || typeof props.style === "function") {
@@ -106695,7 +106704,7 @@
       var import_system2 = require_dist11();
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_toggle = require_main21();
       var import_theme = require_dist12();
@@ -106770,7 +106779,7 @@
           };
           onChange = (0, import_shared_utils.chain)(dispatch, onChange);
         }
-        const labelId = (0, import_react72.useId)();
+        const labelId = (0, import_react73.useId)();
         const ariaCheckboxProps = (0, import_react210.useMemo)(
           () => ({
             name,
@@ -106859,7 +106868,7 @@
           toggleState.setSelected(isInputRefChecked);
         }, [inputRef.current]);
         const onChangeProp = (0, import_use_callback_ref.useCallbackRef)(onChange);
-        const handleCheckboxChange = (0, import_react72.useCallback)(
+        const handleCheckboxChange = (0, import_react73.useCallback)(
           (event) => {
             if (isReadOnly || isDisabled) {
               event.preventDefault();
@@ -106870,7 +106879,7 @@
           [isReadOnly, isDisabled, onChangeProp]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getBaseProps = (0, import_react72.useCallback)(() => {
+        const getBaseProps = (0, import_react73.useCallback)(() => {
           return {
             ref: domRef,
             className: slots.base({ class: baseStyles }),
@@ -106900,7 +106909,7 @@
           hoverProps,
           otherProps
         ]);
-        const getWrapperProps = (0, import_react72.useCallback)(
+        const getWrapperProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -106910,7 +106919,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.wrapper]
         );
-        const getInputProps = (0, import_react72.useCallback)(() => {
+        const getInputProps = (0, import_react73.useCallback)(() => {
           return {
             ref: (0, import_react_utils2.mergeRefs)(inputRef, ref),
             ...(0, import_shared_utils.mergeProps)(inputProps, focusProps),
@@ -106918,14 +106927,14 @@
             onChange: (0, import_shared_utils.chain)(inputProps.onChange, handleCheckboxChange)
           };
         }, [inputProps, focusProps, handleCheckboxChange, classNames == null ? void 0 : classNames.hiddenInput]);
-        const getLabelProps = (0, import_react72.useCallback)(
+        const getLabelProps = (0, import_react73.useCallback)(
           () => ({
             id: labelId,
             className: slots.label({ class: classNames == null ? void 0 : classNames.label })
           }),
           [slots, classNames == null ? void 0 : classNames.label, isDisabled, isSelected, isInvalid]
         );
-        const getIconProps = (0, import_react72.useCallback)(
+        const getIconProps = (0, import_react73.useCallback)(
           () => ({
             isSelected,
             isIndeterminate,
@@ -107234,13 +107243,13 @@
       var import_system_rsc2 = require_dist14();
       var import_theme = require_dist12();
       var import_system_rsc = require_dist14();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       function useCode(originalProps) {
         const [props, variantProps2] = (0, import_system_rsc.mapPropsVariants)(originalProps, import_theme.code.variantKeys);
         const { as, children, className, ...otherProps } = props;
         const Component2 = as || "code";
-        const styles = (0, import_react72.useMemo)(
+        const styles = (0, import_react73.useMemo)(
           () => (0, import_theme.code)({
             ...variantProps2,
             className
@@ -110321,7 +110330,7 @@
       var import_react_utils = require_dist10();
       var import_focus2 = require_main18();
       var import_shared_utils = require_dist2();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useLink(originalProps) {
         var _a, _b, _c, _d;
         const globalContext = (0, import_system.useProviderContext)();
@@ -110364,7 +110373,7 @@
           otherProps.rel = (_c = otherProps.rel) != null ? _c : "noopener noreferrer";
           otherProps.target = (_d = otherProps.target) != null ? _d : "_blank";
         }
-        const styles = (0, import_react72.useMemo)(
+        const styles = (0, import_react73.useMemo)(
           () => (0, import_theme.link)({
             ...variantProps2,
             disableAnimation,
@@ -110372,7 +110381,7 @@
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation, className]
         );
-        const getLinkProps = (0, import_react72.useCallback)(() => {
+        const getLinkProps = (0, import_react73.useCallback)(() => {
           return {
             ref: domRef,
             className: styles,
@@ -110457,7 +110466,7 @@
         usePagination: () => usePagination
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_i18n9 = require_main5();
       var import_shared_utils = require_dist2();
       var PaginationItemType2 = /* @__PURE__ */ ((PaginationItemType22) => {
@@ -110476,19 +110485,19 @@
           showControls = false,
           onChange
         } = props;
-        const [activePage, setActivePage] = (0, import_react72.useState)(page || initialPage);
+        const [activePage, setActivePage] = (0, import_react73.useState)(page || initialPage);
         const { direction } = (0, import_i18n9.useLocale)();
         const isRTL = direction === "rtl";
         const onChangeActivePage = (newPage) => {
           setActivePage(newPage);
           onChange && onChange(newPage);
         };
-        (0, import_react72.useEffect)(() => {
+        (0, import_react73.useEffect)(() => {
           if (page && page !== activePage) {
             setActivePage(page);
           }
         }, [page]);
-        const setPage = (0, import_react72.useCallback)(
+        const setPage = (0, import_react73.useCallback)(
           (pageNumber) => {
             if (pageNumber <= 0) {
               onChangeActivePage(1);
@@ -110504,7 +110513,7 @@
         const previous = () => setPage(activePage - 1);
         const first = () => setPage(1);
         const last = () => setPage(total);
-        const formatRange = (0, import_react72.useCallback)(
+        const formatRange = (0, import_react73.useCallback)(
           (range2) => {
             if (showControls) {
               return [
@@ -110518,7 +110527,7 @@
           },
           [isRTL, showControls]
         );
-        const paginationRange = (0, import_react72.useMemo)(() => {
+        const paginationRange = (0, import_react73.useMemo)(() => {
           const totalPageNumbers = siblings * 2 + 3 + boundaries * 2;
           if (totalPageNumbers >= total) {
             return formatRange((0, import_shared_utils.range)(1, total));
@@ -110680,7 +110689,7 @@
         useIntersectionObserver: () => useIntersectionObserver
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useIntersectionObserver({
         threshold: threshold2 = 0,
         root = null,
@@ -110691,15 +110700,15 @@
         onChange
       } = {}) {
         var _a;
-        const [ref, setRef2] = (0, import_react72.useState)(null);
-        const [state, setState] = (0, import_react72.useState)(() => ({
+        const [ref, setRef2] = (0, import_react73.useState)(null);
+        const [state, setState] = (0, import_react73.useState)(() => ({
           isIntersecting: initialIsIntersecting,
           entry: void 0
         }));
-        const callbackRef = (0, import_react72.useRef)();
+        const callbackRef = (0, import_react73.useRef)();
         callbackRef.current = onChange;
         const frozen = ((_a = state.entry) == null ? void 0 : _a.isIntersecting) && freezeOnceVisible;
-        (0, import_react72.useEffect)(() => {
+        (0, import_react73.useEffect)(() => {
           if (!isEnabled) return;
           if (!ref) return;
           if (!("IntersectionObserver" in window)) return;
@@ -110727,8 +110736,8 @@
             observer2.disconnect();
           };
         }, [ref, isEnabled, JSON.stringify(threshold2), root, rootMargin, frozen, freezeOnceVisible]);
-        const prevRef = (0, import_react72.useRef)(null);
-        (0, import_react72.useEffect)(() => {
+        const prevRef = (0, import_react73.useRef)(null);
+        (0, import_react73.useEffect)(() => {
           var _a2;
           if (!ref && ((_a2 = state.entry) == null ? void 0 : _a2.target) && !freezeOnceVisible && !frozen && prevRef.current !== state.entry.target) {
             prevRef.current = state.entry.target;
@@ -110795,7 +110804,7 @@
       var import_theme3 = require_dist12();
       var import_shared_utils = require_dist2();
       var import_use_pagination = require_dist38();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_use_pagination2 = require_dist38();
       var import_scroll_into_view_if_needed = __toESM2(require_dist40());
@@ -110828,9 +110837,9 @@
         } = props;
         const Component2 = as || "nav";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const cursorRef = (0, import_react72.useRef)(null);
-        const itemsRef = (0, import_react72.useRef)();
-        const cursorTimer = (0, import_react72.useRef)();
+        const cursorRef = (0, import_react73.useRef)(null);
+        const itemsRef = (0, import_react73.useRef)();
+        const cursorTimer = (0, import_react73.useRef)();
         const disableAnimation = (_b = (_a = originalProps == null ? void 0 : originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
         const disableCursorAnimation = (_d = (_c = originalProps == null ? void 0 : originalProps.disableCursorAnimation) != null ? _c : disableAnimation) != null ? _d : false;
         function getItemsRefMap() {
@@ -110888,13 +110897,13 @@
           onChange
         });
         const [setRef2, isVisible] = (0, import_use_intersection_observer.useIntersectionObserver)();
-        (0, import_react72.useEffect)(() => {
+        (0, import_react73.useEffect)(() => {
           if (domRef.current) {
             setRef2(domRef.current);
           }
         }, [domRef.current]);
-        const activePageRef = (0, import_react72.useRef)(activePage);
-        (0, import_react72.useEffect)(() => {
+        const activePageRef = (0, import_react73.useRef)(activePage);
+        (0, import_react73.useEffect)(() => {
           if (activePage && !disableAnimation && isVisible) {
             scrollTo(activePage, activePage === activePageRef.current);
           }
@@ -110909,7 +110918,7 @@
           originalProps.isCompact,
           originalProps.showControls
         ]);
-        const slots = (0, import_react72.useMemo)(
+        const slots = (0, import_react73.useMemo)(
           () => (0, import_theme.pagination)({
             ...variantProps2,
             disableAnimation,
@@ -111639,7 +111648,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_system2 = require_dist11();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_interactions = require_main17();
@@ -111685,8 +111694,8 @@
         const Component2 = as || "label";
         const domRef = (0, import_react_utils2.useDOMRef)(ref);
         const inputRef = (0, import_react210.useRef)(null);
-        const labelId = (0, import_react72.useId)();
-        const descriptionId = (0, import_react72.useId)();
+        const labelId = (0, import_react73.useId)();
+        const descriptionId = (0, import_react73.useId)();
         const isRequired = (0, import_react210.useMemo)(() => {
           var _a2;
           return (_a2 = groupContext.isRequired) != null ? _a2 : false;
@@ -111740,7 +111749,7 @@
           [color2, size, isDisabled, isInvalid, disableAnimation]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getBaseProps = (0, import_react72.useCallback)(
+        const getBaseProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -111775,7 +111784,7 @@
             otherProps
           ]
         );
-        const getWrapperProps = (0, import_react72.useCallback)(
+        const getWrapperProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -111785,7 +111794,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.wrapper]
         );
-        const getInputProps = (0, import_react72.useCallback)(
+        const getInputProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ref: inputRef,
@@ -111796,7 +111805,7 @@
           },
           [inputProps, focusProps, onChange]
         );
-        const getLabelProps = (0, import_react72.useCallback)(
+        const getLabelProps = (0, import_react73.useCallback)(
           (props2 = {}) => ({
             ...props2,
             id: labelId,
@@ -111804,21 +111813,21 @@
           }),
           [slots, classNames == null ? void 0 : classNames.label, isDisabled, isSelected, isInvalid]
         );
-        const getLabelWrapperProps = (0, import_react72.useCallback)(
+        const getLabelWrapperProps = (0, import_react73.useCallback)(
           (props2 = {}) => ({
             ...props2,
             className: slots.labelWrapper({ class: classNames == null ? void 0 : classNames.labelWrapper })
           }),
           [slots, classNames == null ? void 0 : classNames.labelWrapper]
         );
-        const getControlProps = (0, import_react72.useCallback)(
+        const getControlProps = (0, import_react73.useCallback)(
           (props2 = {}) => ({
             ...props2,
             className: slots.control({ class: classNames == null ? void 0 : classNames.control })
           }),
           [slots, classNames == null ? void 0 : classNames.control]
         );
-        const getDescriptionProps = (0, import_react72.useCallback)(
+        const getDescriptionProps = (0, import_react73.useCallback)(
           (props2 = {}) => ({
             ...props2,
             id: descriptionId,
@@ -112091,20 +112100,20 @@
         useClipboard: () => useClipboard
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var transformValue2 = (text) => {
         return text.replace(/[\u00A0]/g, " ");
       };
       function useClipboard({ timeout = 2e3 } = {}) {
-        const [error, setError] = (0, import_react72.useState)(null);
-        const [copied, setCopied] = (0, import_react72.useState)(false);
-        const [copyTimeout, setCopyTimeout] = (0, import_react72.useState)(null);
-        const onClearTimeout = (0, import_react72.useCallback)(() => {
+        const [error, setError] = (0, import_react73.useState)(null);
+        const [copied, setCopied] = (0, import_react73.useState)(false);
+        const [copyTimeout, setCopyTimeout] = (0, import_react73.useState)(null);
+        const onClearTimeout = (0, import_react73.useCallback)(() => {
           if (copyTimeout) {
             clearTimeout(copyTimeout);
           }
         }, [copyTimeout]);
-        const handleCopyResult = (0, import_react72.useCallback)(
+        const handleCopyResult = (0, import_react73.useCallback)(
           (value) => {
             onClearTimeout();
             setCopyTimeout(setTimeout(() => setCopied(false), timeout));
@@ -112112,7 +112121,7 @@
           },
           [onClearTimeout, timeout]
         );
-        const copy = (0, import_react72.useCallback)(
+        const copy = (0, import_react73.useCallback)(
           (valueToCopy) => {
             if ("clipboard" in navigator) {
               const transformedValue = typeof valueToCopy === "string" ? transformValue2(valueToCopy) : valueToCopy;
@@ -112123,7 +112132,7 @@
           },
           [handleCopyResult]
         );
-        const reset = (0, import_react72.useCallback)(() => {
+        const reset = (0, import_react73.useCallback)(() => {
           setCopied(false);
           setError(null);
           onClearTimeout();
@@ -115421,7 +115430,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_focus2 = require_main36();
       var import_interactions = require_main35();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var visibleOverlays = [];
       function useAriaOverlay(props, ref) {
         const {
@@ -115433,7 +115442,7 @@
           shouldCloseOnBlur,
           shouldCloseOnInteractOutside
         } = props;
-        (0, import_react72.useEffect)(() => {
+        (0, import_react73.useEffect)(() => {
           if (isOpen && !visibleOverlays.includes(ref)) {
             visibleOverlays.push(ref);
             return () => {
@@ -115563,7 +115572,7 @@
       var import_shared_utils2 = require_dist2();
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_aria_utils2 = require_dist13();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_tooltip = require_main33();
       var import_tooltip2 = require_main34();
       var import_overlays = require_main9();
@@ -115627,9 +115636,9 @@
         });
         const triggerRef = (0, import_react210.useRef)(null);
         const overlayRef = (0, import_react210.useRef)(null);
-        const tooltipId = (0, import_react72.useId)();
+        const tooltipId = (0, import_react73.useId)();
         const isOpen = state.isOpen && !isDisabled;
-        (0, import_react72.useImperativeHandle)(
+        (0, import_react73.useImperativeHandle)(
           ref,
           () => (
             // @ts-ignore
@@ -115858,7 +115867,7 @@
       var import_shared_utils = require_dist2();
       var import_use_clipboard = require_dist44();
       var import_focus2 = require_main18();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useSnippet(originalProps) {
         var _a, _b, _c, _d;
         const globalContext = (0, import_system.useProviderContext)();
@@ -115896,26 +115905,26 @@
           ...userTooltipProps
         };
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const preRef = (0, import_react72.useRef)(null);
+        const preRef = (0, import_react73.useRef)(null);
         const { copy, copied } = (0, import_use_clipboard.useClipboard)({ timeout });
         const isMultiLine = children && Array.isArray(children);
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)({
           autoFocus
         });
-        const slots = (0, import_react72.useMemo)(
+        const slots = (0, import_react73.useMemo)(
           () => (0, import_theme.snippet)({
             ...variantProps2,
             disableAnimation
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation]
         );
-        const symbolBefore = (0, import_react72.useMemo)(() => {
+        const symbolBefore = (0, import_react73.useMemo)(() => {
           if (!symbol || typeof symbol !== "string") return symbol;
           const str = symbol.trim();
           return str ? `${str} ` : "";
         }, [symbol]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getSnippetProps = (0, import_react72.useCallback)(
+        const getSnippetProps = (0, import_react73.useCallback)(
           () => ({
             className: slots.base({
               class: baseStyles
@@ -115926,7 +115935,7 @@
           }),
           [slots, baseStyles, isMultiLine, otherProps]
         );
-        const onCopy = (0, import_react72.useCallback)(() => {
+        const onCopy = (0, import_react73.useCallback)(() => {
           var _a2;
           if (disableCopy) {
             return;
@@ -115956,7 +115965,7 @@
           isIconOnly: true,
           ...userButtonProps
         };
-        const getCopyButtonProps = (0, import_react72.useCallback)(
+        const getCopyButtonProps = (0, import_react73.useCallback)(
           () => ({
             ...copyButtonProps,
             "data-copied": (0, import_shared_utils.dataAttr)(copied),
@@ -116146,7 +116155,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist11();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
       var import_use_safe_layout_effect = require_dist21();
@@ -116181,10 +116190,10 @@
           ...otherProps
         } = props;
         const Component2 = as || "label";
-        const domRef = (0, import_react72.useRef)(null);
-        const inputRef = (0, import_react72.useRef)(null);
+        const domRef = (0, import_react73.useRef)(null);
+        const inputRef = (0, import_react73.useRef)(null);
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        const labelId = (0, import_react72.useId)();
+        const labelId = (0, import_react73.useId)();
         const ariaSwitchProps = (0, import_react210.useMemo)(() => {
           const ariaLabel = otherProps["aria-label"] || typeof children === "string" ? children : void 0;
           return {
@@ -116251,7 +116260,7 @@
             "data-pressed": (0, import_shared_utils.dataAttr)(pressed)
           };
         };
-        const getWrapperProps = (0, import_react72.useCallback)(
+        const getWrapperProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -116270,14 +116279,14 @@
             onChange: (0, import_shared_utils.chain)(onChange, inputProps.onChange)
           };
         };
-        const getThumbProps = (0, import_react72.useCallback)(
+        const getThumbProps = (0, import_react73.useCallback)(
           (props2 = {}) => ({
             ...props2,
             className: slots.thumb({ class: (0, import_theme.cn)(classNames == null ? void 0 : classNames.thumb, props2 == null ? void 0 : props2.className) })
           }),
           [slots, classNames == null ? void 0 : classNames.thumb]
         );
-        const getLabelProps = (0, import_react72.useCallback)(
+        const getLabelProps = (0, import_react73.useCallback)(
           (props2 = {}) => ({
             ...props2,
             id: labelId,
@@ -116285,7 +116294,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.label, isDisabled, isSelected]
         );
-        const getThumbIconProps = (0, import_react72.useCallback)(
+        const getThumbIconProps = (0, import_react73.useCallback)(
           (props2 = {
             includeStateProps: false
           }) => (0, import_shared_utils.mergeProps)(
@@ -116300,7 +116309,7 @@
           ),
           [slots, classNames == null ? void 0 : classNames.thumbIcon, isSelected]
         );
-        const getStartContentProps = (0, import_react72.useCallback)(
+        const getStartContentProps = (0, import_react73.useCallback)(
           (props2 = {}) => ({
             width: "1em",
             height: "1em",
@@ -116309,7 +116318,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.startContent, isSelected]
         );
-        const getEndContentProps = (0, import_react72.useCallback)(
+        const getEndContentProps = (0, import_react73.useCallback)(
           (props2 = {}) => ({
             width: "1em",
             height: "1em",
@@ -116406,7 +116415,7 @@
         useUser: () => useUser
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
@@ -116432,12 +116441,12 @@
         const shouldFilterDOMProps = typeof Component2 === "string";
         const domRef = (0, import_react_utils2.useDOMRef)(ref);
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)({});
-        const canBeFocused = (0, import_react72.useMemo)(() => {
+        const canBeFocused = (0, import_react73.useMemo)(() => {
           return isFocusable || as === "button";
         }, [isFocusable, as]);
-        const slots = (0, import_react72.useMemo)(() => (0, import_theme.user)(), []);
+        const slots = (0, import_react73.useMemo)(() => (0, import_theme.user)(), []);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getUserProps = (0, import_react72.useCallback)(
+        const getUserProps = (0, import_react73.useCallback)(
           () => ({
             ref: domRef,
             tabIndex: canBeFocused ? 0 : -1,
@@ -116514,12 +116523,12 @@
         useIsMounted: () => useIsMounted2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useIsMounted2(props = {}) {
         const { rerender = false, delay: delay2 = 0 } = props;
-        const isMountedRef = (0, import_react72.useRef)(false);
-        const [isMounted, setIsMounted] = (0, import_react72.useState)(false);
-        (0, import_react72.useEffect)(() => {
+        const isMountedRef = (0, import_react73.useRef)(false);
+        const [isMounted, setIsMounted] = (0, import_react73.useState)(false);
+        (0, import_react73.useEffect)(() => {
           isMountedRef.current = true;
           let timer = null;
           if (rerender) {
@@ -116541,7 +116550,7 @@
             }
           };
         }, [rerender]);
-        return [(0, import_react72.useCallback)(() => isMountedRef.current, []), isMounted];
+        return [(0, import_react73.useCallback)(() => isMountedRef.current, []), isMounted];
       }
     }
   });
@@ -116636,7 +116645,7 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_is_mounted2 = require_dist50();
       var import_progress2 = require_dist51();
       function useProgress(originalProps) {
@@ -116681,7 +116690,7 @@
           "aria-labelledby": originalProps["aria-labelledby"],
           "aria-label": originalProps["aria-label"]
         });
-        const slots = (0, import_react72.useMemo)(
+        const slots = (0, import_react73.useMemo)(
           () => (0, import_theme.progress)({
             ...variantProps2,
             disableAnimation
@@ -116689,11 +116698,11 @@
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation]
         );
         const selfMounted = disableAnimation ? true : isMounted;
-        const percentage = (0, import_react72.useMemo)(
+        const percentage = (0, import_react73.useMemo)(
           () => isIndeterminate || !selfMounted ? void 0 : (0, import_shared_utils.clampPercentage)((value - minValue) / (maxValue - minValue) * 100),
           [selfMounted, isIndeterminate, value, minValue, maxValue]
         );
-        const getProgressBarProps = (0, import_react72.useCallback)(
+        const getProgressBarProps = (0, import_react73.useCallback)(
           (props2 = {}) => ({
             ref: domRef,
             "data-indeterminate": (0, import_shared_utils.dataAttr)(isIndeterminate),
@@ -116711,7 +116720,7 @@
             otherProps
           ]
         );
-        const getLabelProps = (0, import_react72.useCallback)(
+        const getLabelProps = (0, import_react73.useCallback)(
           (props2 = {}) => ({
             className: slots.label({ class: classNames == null ? void 0 : classNames.label }),
             ...(0, import_shared_utils.mergeProps)(labelProps, props2)
@@ -117723,7 +117732,7 @@
       var import_interactions = require_main17();
       var import_shared_utils = require_dist2();
       var import_utils8 = require_main38();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_textfield = require_main40();
       var import_form = require_dist33();
       function useInput(originalProps) {
@@ -117753,13 +117762,13 @@
           },
           ...otherProps
         } = props;
-        const handleValueChange = (0, import_react72.useCallback)(
+        const handleValueChange = (0, import_react73.useCallback)(
           (value) => {
             onValueChange(value != null ? value : "");
           },
           [onValueChange]
         );
-        const [isFocusWithin, setFocusWithin] = (0, import_react72.useState)(false);
+        const [isFocusWithin, setFocusWithin] = (0, import_react73.useState)(false);
         const Component2 = as || "div";
         const disableAnimation = (_c = (_b = originalProps.disableAnimation) != null ? _b : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _c : false;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
@@ -117779,7 +117788,7 @@
         const isHiddenType = type === "hidden";
         const isMultiline = originalProps.isMultiline;
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className, isFilled ? "is-filled" : "");
-        const handleClear = (0, import_react72.useCallback)(() => {
+        const handleClear = (0, import_react73.useCallback)(() => {
           var _a2;
           if (isFileTypeInput) {
             domRef.current.value = "";
@@ -117856,7 +117865,7 @@
         const hasStartContent = !!startContent;
         const isLabelOutside = shouldLabelBeOutside ? isOutsideLeft || isOutsideTop || hasPlaceholder || labelPlacement === "outside" && hasStartContent : false;
         const isLabelOutsideAsPlaceholder = labelPlacement === "outside" && !hasPlaceholder && !hasStartContent;
-        const slots = (0, import_react72.useMemo)(
+        const slots = (0, import_react73.useMemo)(
           () => (0, import_theme.input)({
             ...variantProps2,
             isInvalid,
@@ -117873,7 +117882,7 @@
             disableAnimation
           ]
         );
-        const getBaseProps = (0, import_react72.useCallback)(
+        const getBaseProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ref: baseDomRef,
@@ -117926,7 +117935,7 @@
             originalProps.isDisabled
           ]
         );
-        const getLabelProps = (0, import_react72.useCallback)(
+        const getLabelProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "label",
@@ -117936,7 +117945,7 @@
           },
           [slots, isLabelHovered, labelProps, classNames == null ? void 0 : classNames.label]
         );
-        const handleKeyDown = (0, import_react72.useCallback)(
+        const handleKeyDown = (0, import_react73.useCallback)(
           (e) => {
             if (e.key === "Escape" && inputValue && (isClearable || onClear) && !originalProps.isReadOnly) {
               setInputValue("");
@@ -117945,7 +117954,7 @@
           },
           [inputValue, setInputValue, onClear, isClearable, originalProps.isReadOnly]
         );
-        const getInputProps = (0, import_react72.useCallback)(
+        const getInputProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "input",
@@ -117995,7 +118004,7 @@
             handleKeyDown
           ]
         );
-        const getInputWrapperProps = (0, import_react72.useCallback)(
+        const getInputWrapperProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ref: inputWrapperRef,
@@ -118028,7 +118037,7 @@
             classNames == null ? void 0 : classNames.inputWrapper
           ]
         );
-        const getInnerWrapperProps = (0, import_react72.useCallback)(
+        const getInnerWrapperProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -118046,7 +118055,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.innerWrapper]
         );
-        const getMainWrapperProps = (0, import_react72.useCallback)(
+        const getMainWrapperProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -118058,7 +118067,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.mainWrapper]
         );
-        const getHelperWrapperProps = (0, import_react72.useCallback)(
+        const getHelperWrapperProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -118070,7 +118079,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getDescriptionProps = (0, import_react72.useCallback)(
+        const getDescriptionProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -118081,7 +118090,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.description]
         );
-        const getErrorMessageProps = (0, import_react72.useCallback)(
+        const getErrorMessageProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -118092,7 +118101,7 @@
           },
           [slots, errorMessageProps, classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getClearButtonProps = (0, import_react72.useCallback)(
+        const getClearButtonProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -118508,7 +118517,7 @@
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_aria_utils = require_dist13();
       var import_overlays = require_main9();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       var import_use_safe_layout_effect = require_dist21();
       var import_use_aria_overlay = require_dist45();
@@ -118576,7 +118585,7 @@
           if (!updatePositionDeps.length) return;
           updatePosition();
         }, updatePositionDeps);
-        (0, import_react72.useEffect)(() => {
+        (0, import_react73.useEffect)(() => {
           var _a, _b;
           if (state.isOpen && popoverRef.current) {
             if (isNonModal) {
@@ -120326,7 +120335,7 @@
       var import_theme = require_dist12();
       var import_tree = require_main12();
       var import_react_utils = require_dist10();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme2 = require_dist12();
       function useMenu(props) {
         var _a;
@@ -120359,7 +120368,7 @@
         const innerState = (0, import_tree.useTreeState)({ ...otherProps, ...userMenuProps, children });
         const state = propState || innerState;
         const { menuProps } = (0, import_menu.useMenu)({ ...otherProps, ...userMenuProps, onAction }, state, domRef);
-        const slots = (0, import_react72.useMemo)(() => (0, import_theme.menu)({ className }), [className]);
+        const slots = (0, import_react73.useMemo)(() => (0, import_theme.menu)({ className }), [className]);
         const baseStyles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.base, className);
         const getBaseProps = (props2 = {}) => {
           return {
@@ -121017,7 +121026,7 @@
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
       var import_react_utils2 = require_dist10();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var getMenuItem = (props, key) => {
         if (props) {
           const mergedChildren = Array.isArray(props.children) ? props.children : [...(props == null ? void 0 : props.items) || []];
@@ -121061,10 +121070,10 @@
           ...otherProps
         } = props;
         const Component2 = as || "div";
-        const triggerRef = (0, import_react72.useRef)(null);
+        const triggerRef = (0, import_react73.useRef)(null);
         const menuTriggerRef = triggerRefProp || triggerRef;
-        const menuRef = (0, import_react72.useRef)(null);
-        const popoverRef = (0, import_react72.useRef)(null);
+        const menuRef = (0, import_react73.useRef)(null);
+        const popoverRef = (0, import_react73.useRef)(null);
         const state = (0, import_menu.useMenuTriggerState)({
           trigger,
           isOpen,
@@ -121081,7 +121090,7 @@
           state,
           menuTriggerRef
         );
-        const styles = (0, import_react72.useMemo)(
+        const styles = (0, import_react73.useMemo)(
           () => (0, import_theme.dropdown)({
             className
           }),
@@ -121208,7 +121217,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist11();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
@@ -121293,7 +121302,7 @@
             }
           };
         };
-        const getWrapperProps = (0, import_react72.useCallback)(() => {
+        const getWrapperProps = (0, import_react73.useCallback)(() => {
           const fallbackStyle = showFallback ? {
             backgroundImage: `url(${fallbackSrc})`
           } : {};
@@ -121305,7 +121314,7 @@
             }
           };
         }, [slots, showFallback, fallbackSrc, classNames == null ? void 0 : classNames.wrapper, w]);
-        const getBlurredImgProps = (0, import_react72.useCallback)(() => {
+        const getBlurredImgProps = (0, import_react73.useCallback)(() => {
           return {
             src,
             "aria-hidden": (0, import_shared_utils.dataAttr)(true),
@@ -121399,7 +121408,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_overlays = require_main9();
       var import_utils8 = require_main4();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_aria_overlay = require_dist45();
       function useAriaModalOverlay(props = {
         shouldBlockScroll: true
@@ -121416,7 +121425,7 @@
           isDisabled: !state.isOpen || !props.shouldBlockScroll
         });
         (0, import_overlays.useOverlayFocusContain)();
-        (0, import_react72.useEffect)(() => {
+        (0, import_react73.useEffect)(() => {
           if (state.isOpen && ref.current) {
             return (0, import_overlays.ariaHideOutside)([ref.current]);
           }
@@ -121466,9 +121475,9 @@
         useViewportSize: () => useViewportSize
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react72 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
+      var import_react73 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
       var visualViewport = typeof document !== "undefined" && window.visualViewport;
-      var IsSSRContext = import_react72.default.createContext(false);
+      var IsSSRContext = import_react73.default.createContext(false);
       function getSnapshot() {
         return false;
       }
@@ -121480,15 +121489,15 @@
         };
       }
       function useIsSSR() {
-        if (typeof import_react72.default["useSyncExternalStore"] === "function") {
-          return import_react72.default["useSyncExternalStore"](subscribe, getSnapshot, getServerSnapshot);
+        if (typeof import_react73.default["useSyncExternalStore"] === "function") {
+          return import_react73.default["useSyncExternalStore"](subscribe, getSnapshot, getServerSnapshot);
         }
-        return (0, import_react72.useContext)(IsSSRContext);
+        return (0, import_react73.useContext)(IsSSRContext);
       }
       function useViewportSize() {
         let isSSR = useIsSSR();
-        let [size, setSize] = (0, import_react72.useState)(() => isSSR ? { width: 0, height: 0 } : getViewportSize());
-        (0, import_react72.useEffect)(() => {
+        let [size, setSize] = (0, import_react73.useState)(() => isSSR ? { width: 0, height: 0 } : getViewportSize());
+        (0, import_react73.useEffect)(() => {
           let onResize = () => {
             setSize((size2) => {
               let newSize = getViewportSize();
@@ -121664,7 +121673,7 @@
       var import_utils8 = require_main4();
       var import_utils22 = require_main46();
       var import_use_callback_ref = require_dist31();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useDisclosure2(props = {}) {
         const {
           id: idProp,
@@ -121678,22 +121687,22 @@
         const onOpenPropCallbackRef = (0, import_use_callback_ref.useCallbackRef)(onOpenProp);
         const onClosePropCallbackRef = (0, import_use_callback_ref.useCallbackRef)(onCloseProp);
         const [isOpen, setIsOpen] = (0, import_utils22.useControlledState)(isOpenProp, defaultOpen || false, onChange);
-        const reactId = (0, import_react72.useId)();
+        const reactId = (0, import_react73.useId)();
         const id4 = idProp || reactId;
         const isControlled = isOpenProp !== void 0;
-        const onClose = (0, import_react72.useCallback)(() => {
+        const onClose = (0, import_react73.useCallback)(() => {
           if (!isControlled) {
             setIsOpen(false);
           }
           onClosePropCallbackRef == null ? void 0 : onClosePropCallbackRef();
         }, [isControlled, onClosePropCallbackRef]);
-        const onOpen = (0, import_react72.useCallback)(() => {
+        const onOpen = (0, import_react73.useCallback)(() => {
           if (!isControlled) {
             setIsOpen(true);
           }
           onOpenPropCallbackRef == null ? void 0 : onOpenPropCallbackRef();
         }, [isControlled, onOpenPropCallbackRef]);
-        const onOpenChange = (0, import_react72.useCallback)(() => {
+        const onOpenChange = (0, import_react73.useCallback)(() => {
           const action = isOpen ? onClose : onOpen;
           action();
         }, [isOpen, onOpen, onClose]);
@@ -123809,15 +123818,15 @@
         useDraggable: () => useDraggable2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_interactions = require_main47();
       function useDraggable2(props) {
         const { targetRef, isDisabled = false, canOverflow = false } = props;
-        const boundary = (0, import_react72.useRef)({ minLeft: 0, minTop: 0, maxLeft: 0, maxTop: 0 });
-        const isDragging2 = (0, import_react72.useRef)(false);
-        const transform2 = (0, import_react72.useRef)({ offsetX: 0, offsetY: 0 });
-        const prevTargetRef = (0, import_react72.useRef)(null);
-        (0, import_react72.useEffect)(() => {
+        const boundary = (0, import_react73.useRef)({ minLeft: 0, minTop: 0, maxLeft: 0, maxTop: 0 });
+        const isDragging2 = (0, import_react73.useRef)(false);
+        const transform2 = (0, import_react73.useRef)({ offsetX: 0, offsetY: 0 });
+        const prevTargetRef = (0, import_react73.useRef)(null);
+        (0, import_react73.useEffect)(() => {
           var _a;
           const currentTarget = (_a = targetRef == null ? void 0 : targetRef.current) != null ? _a : null;
           if (prevTargetRef.current !== currentTarget) {
@@ -123825,7 +123834,7 @@
             prevTargetRef.current = currentTarget;
           }
         }, [targetRef == null ? void 0 : targetRef.current]);
-        const onMoveStart = (0, import_react72.useCallback)(() => {
+        const onMoveStart = (0, import_react73.useCallback)(() => {
           var _a, _b, _c, _d, _e;
           isDragging2.current = true;
           const { offsetX, offsetY } = transform2.current;
@@ -123847,7 +123856,7 @@
             maxTop
           };
         }, [targetRef]);
-        const onMove = (0, import_react72.useCallback)(
+        const onMove = (0, import_react73.useCallback)(
           (e) => {
             if (isDisabled) {
               return;
@@ -123870,7 +123879,7 @@
           },
           [isDisabled, canOverflow, targetRef]
         );
-        const onMoveEnd = (0, import_react72.useCallback)(() => {
+        const onMoveEnd = (0, import_react73.useCallback)(() => {
           isDragging2.current = false;
         }, []);
         const { moveProps } = (0, import_interactions.useMove)({
@@ -123878,12 +123887,12 @@
           onMove,
           onMoveEnd
         });
-        const preventDefault = (0, import_react72.useCallback)((e) => {
+        const preventDefault = (0, import_react73.useCallback)((e) => {
           if (isDragging2.current) {
             e.preventDefault();
           }
         }, []);
-        (0, import_react72.useEffect)(() => {
+        (0, import_react73.useEffect)(() => {
           if (!isDisabled) {
             document.body.addEventListener("touchmove", preventDefault, { passive: false });
           }
@@ -123941,7 +123950,7 @@
       var import_overlays2 = require_main9();
       var import_system2 = require_dist11();
       var import_use_aria_modal_overlay = require_dist59();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist12();
       var import_system = require_dist11();
       var import_use_aria_button = require_dist27();
@@ -123973,13 +123982,13 @@
         } = props;
         const Component2 = as || "section";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const closeButtonRef = (0, import_react72.useRef)(null);
-        const [headerMounted, setHeaderMounted] = (0, import_react72.useState)(false);
-        const [bodyMounted, setBodyMounted] = (0, import_react72.useState)(false);
+        const closeButtonRef = (0, import_react73.useRef)(null);
+        const [headerMounted, setHeaderMounted] = (0, import_react73.useState)(false);
+        const [bodyMounted, setBodyMounted] = (0, import_react73.useState)(false);
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        const dialogId = (0, import_react72.useId)();
-        const headerId = (0, import_react72.useId)();
-        const bodyId = (0, import_react72.useId)();
+        const dialogId = (0, import_react73.useId)();
+        const headerId = (0, import_react73.useId)();
+        const bodyId = (0, import_react73.useId)();
         const state = (0, import_overlays.useOverlayTriggerState)({
           isOpen,
           defaultOpen,
@@ -124002,7 +124011,7 @@
         const { buttonProps: closeButtonProps } = (0, import_use_aria_button.useAriaButton)({ onPress: state.close }, closeButtonRef);
         const { isFocusVisible: isCloseButtonFocusVisible, focusProps: closeButtonFocusProps } = (0, import_focus2.useFocusRing)();
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react72.useMemo)(
+        const slots = (0, import_react73.useMemo)(
           () => (0, import_theme.modal)({
             ...variantProps2,
             disableAnimation
@@ -124024,7 +124033,7 @@
             "aria-describedby": bodyMounted ? bodyId : void 0
           };
         };
-        const getBackdropProps = (0, import_react72.useCallback)(
+        const getBackdropProps = (0, import_react73.useCallback)(
           (props2 = {}) => ({
             className: slots.backdrop({ class: classNames == null ? void 0 : classNames.backdrop }),
             ...underlayProps,
@@ -124319,7 +124328,7 @@
         useScrollPosition: () => useScrollPosition
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var isBrowser3 = typeof window !== "undefined";
       function getScrollPosition(element) {
         if (!isBrowser3) return { x: 0, y: 0 };
@@ -124330,11 +124339,11 @@
       }
       var useScrollPosition = (props) => {
         const { elementRef, delay: delay2 = 30, callback, isEnabled } = props;
-        const position = (0, import_react72.useRef)(
+        const position = (0, import_react73.useRef)(
           isEnabled ? getScrollPosition(elementRef == null ? void 0 : elementRef.current) : { x: 0, y: 0 }
         );
-        const throttleTimeout = (0, import_react72.useRef)(null);
-        const handler = (0, import_react72.useCallback)(() => {
+        const throttleTimeout = (0, import_react73.useRef)(null);
+        const handler = (0, import_react73.useCallback)(() => {
           const currPos = getScrollPosition(elementRef == null ? void 0 : elementRef.current);
           if (typeof callback === "function") {
             callback({ prevPos: position.current, currPos });
@@ -124342,7 +124351,7 @@
           position.current = currPos;
           throttleTimeout.current = null;
         }, [callback, elementRef]);
-        (0, import_react72.useEffect)(() => {
+        (0, import_react73.useEffect)(() => {
           if (!isEnabled) return;
           const handleScroll = () => {
             if (delay2) {
@@ -124396,9 +124405,9 @@
         useResizeObserver: () => useResizeObserver
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useResize(callback, immediatelyInvoke = true) {
-        (0, import_react72.useEffect)(() => {
+        (0, import_react73.useEffect)(() => {
           const fn = () => callback();
           if (immediatelyInvoke) {
             fn();
@@ -124412,7 +124421,7 @@
       }
       function useResizeObserver(options) {
         const { ref, box, onResize } = options;
-        (0, import_react72.useEffect)(() => {
+        (0, import_react73.useEffect)(() => {
           let element = ref == null ? void 0 : ref.current;
           if (!element) {
             return;
@@ -124636,7 +124645,7 @@
         useNavbarContext: () => useNavbarContext
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
@@ -124670,10 +124679,10 @@
         const Component2 = as || "nav";
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const prevWidth = (0, import_react72.useRef)(0);
-        const navHeight = (0, import_react72.useRef)(0);
-        const [isHidden, setIsHidden] = (0, import_react72.useState)(false);
-        const handleMenuOpenChange = (0, import_react72.useCallback)(
+        const prevWidth = (0, import_react73.useRef)(0);
+        const navHeight = (0, import_react73.useRef)(0);
+        const [isHidden, setIsHidden] = (0, import_react73.useState)(false);
+        const handleMenuOpenChange = (0, import_react73.useCallback)(
           (isOpen) => {
             onMenuOpenChange(isOpen || false);
           },
@@ -124710,12 +124719,12 @@
             }
           }
         });
-        (0, import_react72.useEffect)(() => {
+        (0, import_react73.useEffect)(() => {
           var _a2;
           updateWidth();
           navHeight.current = ((_a2 = domRef.current) == null ? void 0 : _a2.offsetHeight) || 0;
         }, []);
-        const slots = (0, import_react72.useMemo)(
+        const slots = (0, import_react73.useMemo)(
           () => (0, import_theme.navbar)({
             ...variantProps2,
             disableAnimation,
@@ -131732,7 +131741,7 @@
         useTable: () => useTable
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_table = require_main50();
       var import_table2 = require_main53();
       var import_system = require_dist11();
@@ -131834,7 +131843,7 @@
             onCellAction
           ]
         );
-        const getBaseProps = (0, import_react72.useCallback)(
+        const getBaseProps = (0, import_react73.useCallback)(
           (props2) => ({
             ...props2,
             ref: domBaseRef,
@@ -131842,7 +131851,7 @@
           }),
           [baseStyles, slots]
         );
-        const getWrapperProps = (0, import_react72.useCallback)(
+        const getWrapperProps = (0, import_react73.useCallback)(
           (props2) => ({
             ...props2,
             ref: domBaseRef,
@@ -131850,7 +131859,7 @@
           }),
           [classNames == null ? void 0 : classNames.wrapper, slots]
         );
-        const getTableProps = (0, import_react72.useCallback)(
+        const getTableProps = (0, import_react73.useCallback)(
           (props2) => ({
             ...(0, import_shared_utils.mergeProps)(
               gridProps,
@@ -131888,7 +131897,7 @@
       var import_shared_utils11 = require_dist2();
       var import_react92 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system11 = require_dist11();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react74 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system9 = require_dist11();
       var import_react_virtual = require_cjs6();
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
@@ -132395,7 +132404,7 @@
           ref
         });
         const { rowHeight = 40, maxTableHeight = 600 } = props;
-        const Wrapper = (0, import_react73.useCallback)(
+        const Wrapper = (0, import_react74.useCallback)(
           ({ children }) => {
             return /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(
               BaseComponent,
@@ -132411,10 +132420,10 @@
         );
         const items = [...collection.body.childNodes];
         const count = items.length;
-        const parentRef = (0, import_react73.useRef)(null);
-        const [headerHeight, setHeaderHeight] = (0, import_react73.useState)(0);
-        const headerRef = (0, import_react73.useRef)(null);
-        (0, import_react73.useLayoutEffect)(() => {
+        const parentRef = (0, import_react74.useRef)(null);
+        const [headerHeight, setHeaderHeight] = (0, import_react74.useState)(0);
+        const headerRef = (0, import_react74.useRef)(null);
+        (0, import_react74.useLayoutEffect)(() => {
           if (headerRef.current) {
             setHeaderHeight(headerRef.current.getBoundingClientRect().height);
           }
@@ -132781,7 +132790,7 @@
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var spacing = {
         px: "1px",
         0: "0px",
@@ -132827,7 +132836,7 @@
         const [props, variantProps2] = (0, import_system_rsc.mapPropsVariants)(originalProps, import_theme.spacer.variantKeys);
         const { as, className, x = 1, y = 1, ...otherProps } = props;
         const Component2 = as || "span";
-        const styles = (0, import_react72.useMemo)(
+        const styles = (0, import_react73.useMemo)(
           () => (0, import_theme.spacer)({
             ...variantProps2,
             className
@@ -132892,12 +132901,12 @@
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useKbd(originalProps) {
         const [props, variantProps2] = (0, import_system_rsc.mapPropsVariants)(originalProps, import_theme.kbd.variantKeys);
         const { as, children, className, keys: keys3, title, classNames, ...otherProps } = props;
         const Component2 = as || "kbd";
-        const slots = (0, import_react72.useMemo)(
+        const slots = (0, import_react73.useMemo)(
           () => (0, import_theme.kbd)({
             ...variantProps2
           }),
@@ -133840,7 +133849,7 @@
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
       var import_react_utils2 = require_dist10();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_tabs = require_main55();
       var import_tabs2 = require_main56();
       function useTabs(originalProps) {
@@ -133874,7 +133883,7 @@
           state,
           domRef
         );
-        const slots = (0, import_react72.useMemo)(
+        const slots = (0, import_react73.useMemo)(
           () => (0, import_theme.tabs)({
             ...variantProps2,
             disableAnimation,
@@ -133883,7 +133892,7 @@
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation, isVertical]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const values = (0, import_react72.useMemo)(
+        const values = (0, import_react73.useMemo)(
           () => ({
             state,
             slots,
@@ -133905,7 +133914,7 @@
             classNames
           ]
         );
-        const getBaseProps = (0, import_react72.useCallback)(
+        const getBaseProps = (0, import_react73.useCallback)(
           (props2) => ({
             "data-slot": "base",
             className: slots.base({ class: (0, import_theme.cn)(baseStyles, props2 == null ? void 0 : props2.className) }),
@@ -133918,7 +133927,7 @@
           }),
           [baseStyles, otherProps, slots]
         );
-        const getWrapperProps = (0, import_react72.useCallback)(
+        const getWrapperProps = (0, import_react73.useCallback)(
           (props2) => ({
             "data-slot": "tabWrapper",
             className: slots.tabWrapper({ class: (0, import_theme.cn)(classNames == null ? void 0 : classNames.tabWrapper, props2 == null ? void 0 : props2.className) }),
@@ -133927,7 +133936,7 @@
           }),
           [classNames, slots, placement, isVertical]
         );
-        const getTabListProps = (0, import_react72.useCallback)(
+        const getTabListProps = (0, import_react73.useCallback)(
           (props2) => ({
             ref: domRef,
             "data-slot": "tabList",
@@ -133936,7 +133945,7 @@
           }),
           [domRef, tabListProps, classNames, slots]
         );
-        const getTabCursorProps = (0, import_react72.useCallback)(
+        const getTabCursorProps = (0, import_react73.useCallback)(
           (props2) => ({
             "data-slot": "cursor",
             className: slots.cursor({
@@ -134284,7 +134293,7 @@
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist11();
       function useSkeleton(originalProps) {
         var _a, _b;
@@ -134293,7 +134302,7 @@
         const { as, children, isLoaded = false, className, classNames, ...otherProps } = props;
         const Component2 = as || "div";
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        const slots = (0, import_react72.useMemo)(
+        const slots = (0, import_react73.useMemo)(
           () => (0, import_theme.skeleton)({
             ...variantProps2,
             disableAnimation
@@ -134352,7 +134361,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_shared_utils = require_dist2();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useDataScrollOverflow(props = {}) {
         const {
           domRef,
@@ -134363,8 +134372,8 @@
           onVisibilityChange,
           updateDeps = []
         } = props;
-        const visibleRef = (0, import_react72.useRef)(visibility);
-        (0, import_react72.useEffect)(() => {
+        const visibleRef = (0, import_react73.useRef)(visibility);
+        (0, import_react73.useEffect)(() => {
           const el = domRef == null ? void 0 : domRef.current;
           if (!el || !isEnabled) return;
           const setAttributes = (direction, hasBefore, hasAfter, prefix, suffix) => {
@@ -134466,7 +134475,7 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_use_data_scroll_overflow = require_dist72();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       function useScrollShadow(originalProps) {
         var _a;
@@ -134495,7 +134504,7 @@
           updateDeps: [children],
           overflowCheck: (_a = originalProps.orientation) != null ? _a : "vertical"
         });
-        const styles = (0, import_react72.useMemo)(
+        const styles = (0, import_react73.useMemo)(
           () => (0, import_theme.scrollShadow)({
             ...variantProps2,
             className
@@ -135050,7 +135059,7 @@
       var import_theme = require_dist12();
       var import_list = require_main58();
       var import_react_utils = require_dist10();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme2 = require_dist12();
       function useListbox(props) {
         var _a;
@@ -135082,7 +135091,7 @@
         const innerState = (0, import_list.useListState)({ ...props, children, onSelectionChange });
         const state = propState || innerState;
         const { listBoxProps } = (0, import_listbox.useListBox)({ ...props, onAction }, state, domRef);
-        const slots = (0, import_react72.useMemo)(() => (0, import_theme.listbox)(), []);
+        const slots = (0, import_react73.useMemo)(() => (0, import_theme.listbox)(), []);
         const baseStyles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.base, className);
         const getBaseProps = (props2 = {}) => {
           return {
@@ -135467,7 +135476,7 @@
       );
       ListboxSection.displayName = "HeroUI.ListboxSection";
       var listbox_section_default = ListboxSection;
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react74 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_virtual = require_cjs6();
       var import_shared_utils5 = require_dist2();
       var import_system4 = require_dist11();
@@ -135662,8 +135671,8 @@
         }
         const { maxListboxHeight, itemHeight } = virtualization;
         const listHeight = Math.min(maxListboxHeight, itemHeight * state.collection.size);
-        const parentRef = (0, import_react73.useRef)(null);
-        const itemSizes = (0, import_react73.useMemo)(
+        const parentRef = (0, import_react74.useRef)(null);
+        const itemSizes = (0, import_react74.useMemo)(
           () => getItemSizesForCollection([...state.collection], itemHeight),
           [state.collection, itemHeight]
         );
@@ -135724,7 +135733,7 @@
           }
           return listboxItem2;
         };
-        const [scrollState, setScrollState] = (0, import_react73.useState)({
+        const [scrollState, setScrollState] = (0, import_react74.useState)({
           isTop: false,
           isBottom: true,
           isMiddle: false
@@ -135880,27 +135889,27 @@
         useLayoutEffect: () => useLayoutEffect2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react72 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
-      var useLayoutEffect2 = typeof document !== "undefined" ? import_react72.default.useLayoutEffect : () => {
+      var import_react73 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
+      var useLayoutEffect2 = typeof document !== "undefined" ? import_react73.default.useLayoutEffect : () => {
       };
       function useEffectEvent2(fn) {
-        const ref = (0, import_react72.useRef)(null);
+        const ref = (0, import_react73.useRef)(null);
         useLayoutEffect2(() => {
           ref.current = fn;
         }, [fn]);
-        return (0, import_react72.useCallback)((...args) => {
+        return (0, import_react73.useCallback)((...args) => {
           const f = ref.current;
           return f == null ? void 0 : f(...args);
         }, []);
       }
       function useFormReset(ref, initialValue, onReset) {
-        let resetValue = (0, import_react72.useRef)(initialValue);
+        let resetValue = (0, import_react73.useRef)(initialValue);
         let handleReset = useEffectEvent2(() => {
           if (onReset) {
             onReset(resetValue.current);
           }
         });
-        (0, import_react72.useEffect)(() => {
+        (0, import_react73.useEffect)(() => {
           var _a;
           let form = (_a = ref == null ? void 0 : ref.current) == null ? void 0 : _a.form;
           form == null ? void 0 : form.addEventListener("reset", handleReset);
@@ -139422,11 +139431,11 @@
       var import_menu = require_main61();
       var import_selection = require_main13();
       var import_utils8 = require_main4();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useMultiSelect(props, state, ref) {
         const { disallowEmptySelection, isDisabled } = props;
         const collator = (0, import_i18n9.useCollator)({ usage: "search", sensitivity: "base" });
-        const delegate = (0, import_react72.useMemo)(
+        const delegate = (0, import_react73.useMemo)(
           () => new import_selection.ListKeyboardDelegate(state.collection, state.disabledKeys, null, collator),
           [state.collection, state.disabledKeys, collator]
         );
@@ -139701,7 +139710,7 @@
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_aria_button = require_dist27();
       var import_focus2 = require_main18();
       var import_shared_utils = require_dist2();
@@ -139785,9 +139794,9 @@
         const Component2 = as || "button";
         const shouldFilterDOMProps = typeof Component2 === "string";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const triggerRef = (0, import_react72.useRef)(null);
-        const listBoxRef = (0, import_react72.useRef)(null);
-        const popoverRef = (0, import_react72.useRef)(null);
+        const triggerRef = (0, import_react73.useRef)(null);
+        const listBoxRef = (0, import_react73.useRef)(null);
+        const popoverRef = (0, import_react73.useRef)(null);
         let state = (0, import_use_aria_multiselect.useMultiSelectState)({
           ...props,
           isOpen,
@@ -139848,7 +139857,7 @@
           state,
           triggerRef
         );
-        const handleClear = (0, import_react72.useCallback)(() => {
+        const handleClear = (0, import_react73.useCallback)(() => {
           var _a2;
           state.setSelectedKeys(/* @__PURE__ */ new Set([]));
           onClear == null ? void 0 : onClear();
@@ -139877,7 +139886,7 @@
         const hasLabel = !!label;
         const hasLabelOutside = hasLabel && (isOutsideLeft || shouldLabelBeOutside && hasPlaceholder);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react72.useMemo)(
+        const slots = (0, import_react73.useMemo)(
           () => (0, import_theme.select)({
             ...variantProps2,
             isInvalid,
@@ -139893,14 +139902,14 @@
         const errorMessage = typeof props.errorMessage === "function" ? props.errorMessage({ isInvalid, validationErrors, validationDetails }) : props.errorMessage || (validationErrors == null ? void 0 : validationErrors.join(" "));
         const hasHelper = !!description || !!errorMessage;
         const hasEndContent = !!endContent;
-        (0, import_react72.useEffect)(() => {
+        (0, import_react73.useEffect)(() => {
           if (state.isOpen && popoverRef.current && triggerRef.current) {
             let selectRect = triggerRef.current.getBoundingClientRect();
             let popover = popoverRef.current;
             popover.style.width = selectRect.width + "px";
           }
         }, [state.isOpen]);
-        (0, import_react72.useEffect)(() => {
+        (0, import_react73.useEffect)(() => {
           if (state.isOpen && popoverRef.current && listBoxRef.current) {
             let selectedItem = listBoxRef.current.querySelector("[aria-selected=true] [data-label=true]");
             let scrollShadow = scrollShadowRef.current;
@@ -139911,7 +139920,7 @@
             }
           }
         }, [state.isOpen, disableAnimation]);
-        const getBaseProps = (0, import_react72.useCallback)(
+        const getBaseProps = (0, import_react73.useCallback)(
           (props2 = {}) => ({
             "data-slot": "base",
             "data-filled": (0, import_shared_utils.dataAttr)(isFilled),
@@ -139928,7 +139937,7 @@
           }),
           [slots, hasHelper, hasValue, hasLabel, hasLabelOutside, isFilled, baseStyles]
         );
-        const getTriggerProps = (0, import_react72.useCallback)(
+        const getTriggerProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ref: triggerRef,
@@ -139968,7 +139977,7 @@
             shouldFilterDOMProps
           ]
         );
-        const getHiddenSelectProps = (0, import_react72.useCallback)(
+        const getHiddenSelectProps = (0, import_react73.useCallback)(
           (props2 = {}) => ({
             state,
             triggerRef,
@@ -139993,7 +140002,7 @@
             triggerRef
           ]
         );
-        const getLabelProps = (0, import_react72.useCallback)(
+        const getLabelProps = (0, import_react73.useCallback)(
           (props2 = {}) => ({
             "data-slot": "label",
             className: slots.label({
@@ -140004,7 +140013,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.label, labelProps]
         );
-        const getValueProps = (0, import_react72.useCallback)(
+        const getValueProps = (0, import_react73.useCallback)(
           (props2 = {}) => ({
             "data-slot": "value",
             className: slots.value({
@@ -140015,7 +140024,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.value, valueProps]
         );
-        const getListboxWrapperProps = (0, import_react72.useCallback)(
+        const getListboxWrapperProps = (0, import_react73.useCallback)(
           (props2 = {}) => ({
             "data-slot": "listboxWrapper",
             className: slots.listboxWrapper({
@@ -140052,7 +140061,7 @@
             ...(0, import_shared_utils.mergeProps)(slotsProps.listboxProps, props2, menuProps)
           };
         };
-        const getPopoverProps = (0, import_react72.useCallback)(
+        const getPopoverProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             var _a2, _b2;
             const popoverProps2 = (0, import_shared_utils.mergeProps)(slotsProps.popoverProps, props2);
@@ -140084,7 +140093,7 @@
             state.selectedItems
           ]
         );
-        const getSelectorIconProps = (0, import_react72.useCallback)(
+        const getSelectorIconProps = (0, import_react73.useCallback)(
           () => ({
             "data-slot": "selectorIcon",
             "aria-hidden": (0, import_shared_utils.dataAttr)(true),
@@ -140093,7 +140102,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.selectorIcon, state.isOpen]
         );
-        const getInnerWrapperProps = (0, import_react72.useCallback)(
+        const getInnerWrapperProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -140105,7 +140114,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.innerWrapper]
         );
-        const getHelperWrapperProps = (0, import_react72.useCallback)(
+        const getHelperWrapperProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -140117,7 +140126,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getDescriptionProps = (0, import_react72.useCallback)(
+        const getDescriptionProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -140128,7 +140137,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.description]
         );
-        const getMainWrapperProps = (0, import_react72.useCallback)(
+        const getMainWrapperProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -140140,7 +140149,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.mainWrapper]
         );
-        const getEndWrapperProps = (0, import_react72.useCallback)(
+        const getEndWrapperProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -140152,7 +140161,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.endWrapper]
         );
-        const getEndContentProps = (0, import_react72.useCallback)(
+        const getEndContentProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -140164,7 +140173,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.endContent]
         );
-        const getErrorMessageProps = (0, import_react72.useCallback)(
+        const getErrorMessageProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -140175,7 +140184,7 @@
           },
           [slots, errorMessageProps, classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getSpinnerProps = (0, import_react72.useCallback)(
+        const getSpinnerProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               "aria-hidden": (0, import_shared_utils.dataAttr)(true),
@@ -140190,7 +140199,7 @@
           },
           [slots, spinnerRef, spinnerProps, classNames == null ? void 0 : classNames.spinner]
         );
-        const getClearButtonProps = (0, import_react72.useCallback)(
+        const getClearButtonProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -141030,7 +141039,7 @@
       var import_visually_hidden = require_main8();
       var import_slider = require_main63();
       var import_react_utils = require_dist10();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_interactions = require_main17();
       var import_focus2 = require_main18();
       var import_shared_utils = require_dist2();
@@ -141054,7 +141063,7 @@
         } = props;
         const Component2 = as || "div";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const inputRef = (0, import_react72.useRef)(null);
+        const inputRef = (0, import_react73.useRef)(null);
         const numberFormatter = (0, import_i18n9.useNumberFormatter)(formatOptions);
         const { thumbProps, inputProps, isDragging: isDragging2, isFocused } = (0, import_slider.useSliderThumb)(
           {
@@ -142081,7 +142090,7 @@
       var import_react_utils = require_dist10();
       var import_breadcrumbs = require_main66();
       var import_shared_utils = require_dist2();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useBreadcrumbItem(originalProps) {
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.breadcrumbItem.variantKeys);
         const {
@@ -142108,7 +142117,7 @@
           domRef
         );
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)();
-        const slots = (0, import_react72.useMemo)(
+        const slots = (0, import_react73.useMemo)(
           () => (0, import_theme.breadcrumbItem)({
             ...variantProps2,
             isCurrent,
@@ -146275,7 +146284,7 @@
       var import_input = require_dist53();
       var import_framer_motion2 = require_cjs4();
       var import_shared_utils = require_dist2();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_utils = require_dist10();
       var import_combobox = require_main67();
       var import_i18n9 = require_main5();
@@ -146369,10 +146378,10 @@
             disabledKeys: /* @__PURE__ */ new Set([...state.collection.getKeys()])
           }
         };
-        const buttonRef = (0, import_react72.useRef)(null);
-        const inputWrapperRef = (0, import_react72.useRef)(null);
-        const listBoxRef = (0, import_react72.useRef)(null);
-        const popoverRef = (0, import_react72.useRef)(null);
+        const buttonRef = (0, import_react73.useRef)(null);
+        const inputWrapperRef = (0, import_react73.useRef)(null);
+        const listBoxRef = (0, import_react73.useRef)(null);
+        const popoverRef = (0, import_react73.useRef)(null);
         const inputRef = (0, import_react_utils.useDOMRef)(ref);
         const scrollShadowRef = (0, import_react_utils.useDOMRef)(scrollRefProp);
         const {
@@ -146471,7 +146480,7 @@
             state.setInputValue(item.textValue);
           }
         }, [inputRef.current]);
-        (0, import_react72.useEffect)(() => {
+        (0, import_react73.useEffect)(() => {
           let keyToFocus;
           if (state.value && state.collection.getItem(state.value) && !state.disabledKeys.has(state.value)) {
             keyToFocus = state.value;
@@ -146484,7 +146493,7 @@
           }
           state.selectionManager.setFocusedKey(keyToFocus);
         }, [state.collection, state.disabledKeys, state.value, state.isOpen, state.inputValue]);
-        (0, import_react72.useEffect)(() => {
+        (0, import_react73.useEffect)(() => {
           if (state.isOpen && popoverRef.current && listBoxRef.current) {
             let selectedItem = listBoxRef.current.querySelector("[aria-selected=true] [data-label=true]");
             let scrollShadow = scrollShadowRef.current;
@@ -146496,7 +146505,7 @@
             }
           }
         }, [state.isOpen, disableAnimation]);
-        (0, import_react72.useEffect)(() => {
+        (0, import_react73.useEffect)(() => {
           if (isOpen) {
             if (popoverRef.current && inputWrapperRef.current) {
               let rect = inputWrapperRef.current.getBoundingClientRect();
@@ -146516,7 +146525,7 @@
           };
         }
         const Component2 = as || "div";
-        const slots = (0, import_react72.useMemo)(
+        const slots = (0, import_react73.useMemo)(
           () => (0, import_theme.autocomplete)({
             ...variantProps2,
             isClearable,
@@ -151340,7 +151349,7 @@
       var import_theme2 = require_dist12();
       var import_date = require_main74();
       var import_system = require_dist11();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist12();
       var import_utils8 = require_main38();
       var import_react_utils = require_dist10();
@@ -151386,7 +151395,7 @@
         const visibleMonths = (0, import_shared_utils.clamp)(visibleMonthsProp, 1, 3);
         const showMonthAndYearPickers = originalProps.showMonthAndYearPickers && visibleMonths === 1;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const handleHeaderExpandedChange = (0, import_react72.useCallback)(
+        const handleHeaderExpandedChange = (0, import_react73.useCallback)(
           (isExpanded) => {
             onHeaderExpandedChange(isExpanded || false);
           },
@@ -151397,10 +151406,10 @@
           isHeaderDefaultExpanded != null ? isHeaderDefaultExpanded : false,
           handleHeaderExpandedChange
         );
-        const visibleDuration = (0, import_react72.useMemo)(() => ({ months: visibleMonths }), [visibleMonths]);
+        const visibleDuration = (0, import_react73.useMemo)(() => ({ months: visibleMonths }), [visibleMonths]);
         const hasMultipleMonths = visibleMonths > 1;
         const shouldFilterDOMProps = typeof Component2 === "string";
-        const slots = (0, import_react72.useMemo)(
+        const slots = (0, import_react73.useMemo)(
           () => (0, import_theme.calendar)({
             ...variantProps2,
             showMonthAndYearPickers,
@@ -151939,7 +151948,7 @@
           }
         ) : /* @__PURE__ */ (0, import_jsx_runtime62.jsx)("header", { ...headerProps, children: headerTitle });
       }
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react74 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils7 = require_dist2();
       var import_use_aria_button = require_dist27();
       var import_interactions2 = require_main17();
@@ -152214,7 +152223,7 @@
           onPickerItemPressed,
           onPickerItemKeyDown
         } = useCalendarPicker(props);
-        const EmptyItem = (0, import_react73.useCallback)(
+        const EmptyItem = (0, import_react74.useCallback)(
           (props2) => /* @__PURE__ */ (0, import_jsx_runtime82.jsx)(
             "div",
             {
@@ -152228,7 +152237,7 @@
           ),
           [slots, classNames == null ? void 0 : classNames.pickerItem]
         );
-        const PickerItemWrapper = (0, import_react73.useCallback)(
+        const PickerItemWrapper = (0, import_react74.useCallback)(
           ({ children }) => /* @__PURE__ */ (0, import_jsx_runtime82.jsxs)(import_jsx_runtime82.Fragment, { children: [
             Array.from({ length: EMPTY_ITEMS_OFFSET }, (_, i) => /* @__PURE__ */ (0, import_jsx_runtime82.jsx)(EmptyItem, {}, i)),
             children,
@@ -157320,7 +157329,7 @@
       var import_datepicker2 = require_main77();
       var import_shared_utils = require_dist2();
       var import_theme = require_dist12();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_form = require_dist33();
       function useDateInput(originalProps) {
         var _a, _b, _c, _d, _e, _f, _g;
@@ -157387,7 +157396,7 @@
           label
         });
         const shouldLabelBeOutside = labelPlacement === "outside" || labelPlacement === "outside-left" || labelPlacement === "outside-top";
-        const slots = (0, import_react72.useMemo)(
+        const slots = (0, import_react73.useMemo)(
           () => (0, import_theme.dateInput)({
             ...variantProps2,
             disableAnimation,
@@ -157885,7 +157894,7 @@
       var import_form = require_dist33();
       var import_shared_utils = require_dist2();
       var import_theme = require_dist12();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
       var import_i18n9 = require_main5();
@@ -158100,7 +158109,7 @@
           onHeaderExpandedChange,
           ...restUserCalendarProps
         } = userCalendarProps;
-        const handleHeaderExpandedChange = (0, import_react72.useCallback)(
+        const handleHeaderExpandedChange = (0, import_react73.useCallback)(
           (isExpanded) => {
             onHeaderExpandedChange == null ? void 0 : onHeaderExpandedChange(isExpanded || false);
           },
@@ -158454,7 +158463,7 @@
         ] });
       });
       var date_picker_default = DatePicker;
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react74 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react82 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system5 = require_dist11();
       var import_button2 = require_dist28();
@@ -158871,7 +158880,7 @@
           CalendarBottomContent
         } = useDateRangePicker({ ...otherProps, ref });
         const selectorContent = (0, import_react82.isValidElement)(selectorIcon) ? (0, import_react82.cloneElement)(selectorIcon, getSelectorIconProps()) : /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(import_shared_icons2.CalendarBoldIcon, { ...getSelectorIconProps() });
-        const calendarBottomContent = (0, import_react73.useMemo)(() => {
+        const calendarBottomContent = (0, import_react74.useMemo)(() => {
           if (isCalendarHeaderExpanded) return null;
           return showTimeField ? /* @__PURE__ */ (0, import_jsx_runtime32.jsxs)("div", { className: slots == null ? void 0 : slots.bottomContent({ class: classNames == null ? void 0 : classNames.bottomContent }), children: [
             /* @__PURE__ */ (0, import_jsx_runtime32.jsxs)("div", { className: slots == null ? void 0 : slots.timeInputWrapper({ class: classNames == null ? void 0 : classNames.timeInputWrapper }), children: [
@@ -158881,7 +158890,7 @@
             CalendarBottomContent
           ] }) : CalendarBottomContent;
         }, [state, showTimeField, CalendarBottomContent, isCalendarHeaderExpanded]);
-        const calendarTopContent = (0, import_react73.useMemo)(() => {
+        const calendarTopContent = (0, import_react74.useMemo)(() => {
           if (isCalendarHeaderExpanded) return null;
           return CalendarTopContent;
         }, [showTimeField, CalendarTopContent, isCalendarHeaderExpanded]);
@@ -158946,7 +158955,7 @@
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist12();
       var import_utils8 = require_main38();
       var import_shared_utils = require_dist2();
@@ -158981,16 +158990,16 @@
         const Component2 = as || "div";
         const shouldFilterDOMProps = typeof Component2 === "string";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const handleClose = (0, import_react72.useCallback)(() => {
+        const handleClose = (0, import_react73.useCallback)(() => {
           setIsVisible(false);
           onClose == null ? void 0 : onClose();
         }, [setIsVisible, onClose]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react72.useMemo)(
+        const slots = (0, import_react73.useMemo)(
           () => (0, import_theme.alert)({ hasContent: !(0, import_shared_utils.isEmpty)(description) || !(0, import_shared_utils.isEmpty)(children), ...variantProps2 }),
           [description, (0, import_shared_utils.objectToDeps)(variantProps2)]
         );
-        const getBaseProps = (0, import_react72.useCallback)(() => {
+        const getBaseProps = (0, import_react73.useCallback)(() => {
           return {
             "data-visible": (0, import_shared_utils.dataAttr)(isVisible),
             "data-closeable": (0, import_shared_utils.dataAttr)(isClosable),
@@ -159005,35 +159014,35 @@
             className: slots.base({ class: baseStyles })
           };
         }, [slots, baseStyles]);
-        const getMainWrapperProps = (0, import_react72.useCallback)(() => {
+        const getMainWrapperProps = (0, import_react73.useCallback)(() => {
           return {
             className: slots.mainWrapper({ class: classNames == null ? void 0 : classNames.mainWrapper })
           };
         }, [slots, classNames == null ? void 0 : classNames.mainWrapper]);
-        const getDescriptionProps = (0, import_react72.useCallback)(() => {
+        const getDescriptionProps = (0, import_react73.useCallback)(() => {
           return {
             className: slots.description({ class: classNames == null ? void 0 : classNames.description })
           };
         }, [slots, classNames == null ? void 0 : classNames.description]);
-        const getTitleProps = (0, import_react72.useCallback)(() => {
+        const getTitleProps = (0, import_react73.useCallback)(() => {
           return {
             className: slots.title({ class: classNames == null ? void 0 : classNames.title })
           };
         }, [slots, classNames == null ? void 0 : classNames.title]);
-        const getCloseButtonProps = (0, import_react72.useCallback)(
+        const getCloseButtonProps = (0, import_react73.useCallback)(
           () => ({
             ...closeButtonProps,
             className: slots.closeButton({ class: classNames == null ? void 0 : classNames.closeButton })
           }),
           [slots, classNames == null ? void 0 : classNames.closeButton]
         );
-        const getAlertIconProps = (0, import_react72.useCallback)(
+        const getAlertIconProps = (0, import_react73.useCallback)(
           () => ({
             className: slots.alertIcon({ class: classNames == null ? void 0 : classNames.alertIcon })
           }),
           [slots, classNames == null ? void 0 : classNames.alertIcon]
         );
-        const getIconWrapperProps = (0, import_react72.useCallback)(
+        const getIconWrapperProps = (0, import_react73.useCallback)(
           () => ({
             className: slots.iconWrapper({ class: classNames == null ? void 0 : classNames.iconWrapper })
           }),
@@ -159159,7 +159168,7 @@
       var import_modal = require_dist63();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_utils = require_dist19();
       var import_shared_utils = require_dist2();
       function useDrawer(originalProps) {
@@ -159174,7 +159183,7 @@
           ...otherProps
         } = originalProps;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const motionProps = (0, import_react72.useMemo)(() => {
+        const motionProps = (0, import_react73.useMemo)(() => {
           if (!(0, import_shared_utils.isEmpty)(drawerMotionProps)) return drawerMotionProps;
           const key = placement === "left" || placement === "right" ? "x" : "y";
           return {
@@ -159201,14 +159210,14 @@
           };
         }, [placement, drawerMotionProps]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react72.useMemo)(
+        const slots = (0, import_react73.useMemo)(
           () => (0, import_theme.drawer)({
             size,
             placement
           }),
           [size, placement]
         );
-        const getModalProps = (0, import_react72.useCallback)(() => {
+        const getModalProps = (0, import_react73.useCallback)(() => {
           return {
             classNames: {
               ...classNames,
@@ -159495,7 +159504,7 @@
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
       var import_use_form_reset = require_dist75();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_utils8 = require_main38();
       var import_form = require_main22();
       var import_form2 = require_main39();
@@ -159541,7 +159550,7 @@
           autoFocus,
           isTextInput: true
         });
-        const handleValueChange = (0, import_react72.useCallback)(
+        const handleValueChange = (0, import_react73.useCallback)(
           (value2) => {
             onValueChange(value2 != null ? value2 : "");
           },
@@ -159573,7 +159582,7 @@
         const errorMessage = typeof props.errorMessage === "function" ? props.errorMessage({ isInvalid, validationErrors, validationDetails }) : props.errorMessage || (validationErrors == null ? void 0 : validationErrors.join(" "));
         const description = props.description;
         const hasHelper = !!description || !!errorMessage;
-        const slots = (0, import_react72.useMemo)(
+        const slots = (0, import_react73.useMemo)(
           () => (0, import_theme.inputOtp)({
             ...variantProps2,
             disableAnimation,
@@ -159582,7 +159591,7 @@
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation, isInvalid, isReadOnly]
         );
-        const getBaseProps = (0, import_react72.useCallback)(
+        const getBaseProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ref: baseDomRef,
@@ -159617,7 +159626,7 @@
           },
           [baseDomRef, slots, baseStyles, isDisabled, isInvalid, isRequired, isReadOnly, value, length]
         );
-        const getInputOtpProps = (0, import_react72.useCallback)(
+        const getInputOtpProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             var _a2;
             const otpProps = {
@@ -159661,7 +159670,7 @@
             autoFocus
           ]
         );
-        const getSegmentWrapperProps = (0, import_react72.useCallback)(
+        const getSegmentWrapperProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.segmentWrapper({
@@ -159675,7 +159684,7 @@
           },
           [classNames == null ? void 0 : classNames.segmentWrapper, isDisabled]
         );
-        const getHelperWrapperProps = (0, import_react72.useCallback)(
+        const getHelperWrapperProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.helperWrapper({
@@ -159687,7 +159696,7 @@
           },
           [classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getErrorMessageProps = (0, import_react72.useCallback)(
+        const getErrorMessageProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.errorMessage({
@@ -159699,7 +159708,7 @@
           },
           [classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getDescriptionProps = (0, import_react72.useCallback)(
+        const getDescriptionProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.description({
@@ -160751,7 +160760,7 @@
       var import_shared_utils = require_dist2();
       var import_numberfield = require_main78();
       var import_numberfield2 = require_main79();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_form = require_dist33();
       function useNumberInput(originalProps) {
         var _a, _b, _c;
@@ -160779,7 +160788,7 @@
           hideStepper,
           ...otherProps
         } = props;
-        const [isFocusWithin, setFocusWithin] = (0, import_react72.useState)(false);
+        const [isFocusWithin, setFocusWithin] = (0, import_react73.useState)(false);
         const Component2 = as || "div";
         const disableAnimation = (_c = (_b = originalProps.disableAnimation) != null ? _b : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _c : false;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
@@ -160809,7 +160818,7 @@
         const isFilled = !(0, import_shared_utils.isEmpty)(state.inputValue) && !(0, import_shared_utils.isEmpty)(inputValue);
         const isFilledWithin = isFilled || isFocusWithin;
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className, isFilled ? "is-filled" : "");
-        const handleClear = (0, import_react72.useCallback)(() => {
+        const handleClear = (0, import_react73.useCallback)(() => {
           var _a2;
           state.setInputValue("");
           onClear == null ? void 0 : onClear();
@@ -160853,7 +160862,7 @@
         const hasStartContent = !!startContent;
         const isLabelOutside = shouldLabelBeOutside ? labelPlacement === "outside-left" || isOutsideTop || hasPlaceholder || labelPlacement === "outside" && hasStartContent : false;
         const isLabelOutsideAsPlaceholder = labelPlacement === "outside" && !hasPlaceholder && !hasStartContent;
-        const slots = (0, import_react72.useMemo)(
+        const slots = (0, import_react73.useMemo)(
           () => (0, import_theme.numberInput)({
             ...variantProps2,
             isInvalid,
@@ -160870,7 +160879,7 @@
             disableAnimation
           ]
         );
-        const handleKeyDown = (0, import_react72.useCallback)(
+        const handleKeyDown = (0, import_react73.useCallback)(
           (e) => {
             var _a2, _b2;
             const inputElement = e.currentTarget;
@@ -160900,7 +160909,7 @@
           },
           [inputValue, state, onClear, isClearable, originalProps.isReadOnly]
         );
-        const getBaseProps = (0, import_react72.useCallback)(
+        const getBaseProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ref: baseDomRef,
@@ -160950,7 +160959,7 @@
             originalProps.isDisabled
           ]
         );
-        const getLabelProps = (0, import_react72.useCallback)(
+        const getLabelProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "label",
@@ -160960,7 +160969,7 @@
           },
           [slots, isLabelHovered, labelProps, classNames == null ? void 0 : classNames.label]
         );
-        const getNumberInputProps = (0, import_react72.useCallback)(
+        const getNumberInputProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "input",
@@ -161002,7 +161011,7 @@
             handleKeyDown
           ]
         );
-        const getHiddenNumberInputProps = (0, import_react72.useCallback)(
+        const getHiddenNumberInputProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               name: originalProps.name,
@@ -161014,7 +161023,7 @@
           },
           [inputValue, originalProps.name]
         );
-        const getInputWrapperProps = (0, import_react72.useCallback)(
+        const getInputWrapperProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ref: inputWrapperRef,
@@ -161047,7 +161056,7 @@
             classNames == null ? void 0 : classNames.inputWrapper
           ]
         );
-        const getInnerWrapperProps = (0, import_react72.useCallback)(
+        const getInnerWrapperProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ref: innerWrapperRef,
@@ -161065,7 +161074,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.innerWrapper]
         );
-        const getMainWrapperProps = (0, import_react72.useCallback)(
+        const getMainWrapperProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -161077,7 +161086,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.mainWrapper]
         );
-        const getHelperWrapperProps = (0, import_react72.useCallback)(
+        const getHelperWrapperProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -161089,7 +161098,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getDescriptionProps = (0, import_react72.useCallback)(
+        const getDescriptionProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -161100,7 +161109,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.description]
         );
-        const getErrorMessageProps = (0, import_react72.useCallback)(
+        const getErrorMessageProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -161111,7 +161120,7 @@
           },
           [slots, errorMessageProps, classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getClearButtonProps = (0, import_react72.useCallback)(
+        const getClearButtonProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -161127,7 +161136,7 @@
           },
           [slots, isClearButtonFocusVisible, clearPressProps, clearFocusProps, classNames == null ? void 0 : classNames.clearButton]
         );
-        const getStepperWrapperProps = (0, import_react72.useCallback)(
+        const getStepperWrapperProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -161139,7 +161148,7 @@
           },
           [slots]
         );
-        const getStepperIncreaseButtonProps = (0, import_react72.useCallback)(
+        const getStepperIncreaseButtonProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -161154,7 +161163,7 @@
           },
           [slots, incrementButtonProps, classNames == null ? void 0 : classNames.stepperButton]
         );
-        const getStepperDecreaseButtonProps = (0, import_react72.useCallback)(
+        const getStepperDecreaseButtonProps = (0, import_react73.useCallback)(
           (props2 = {}) => {
             return {
               type: "button",
@@ -162809,10 +162818,10 @@
       Ripple.displayName = "HeroUI.Ripple";
       var ripple_default = Ripple;
       var import_shared_utils2 = require_dist2();
-      var import_react72 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useRipple(props = {}) {
-        const [ripples, setRipples] = (0, import_react72.useState)([]);
-        const onPress = (0, import_react72.useCallback)((event) => {
+        const [ripples, setRipples] = (0, import_react73.useState)([]);
+        const onPress = (0, import_react73.useCallback)((event) => {
           const trigger = event.target;
           const size = Math.max(trigger.clientWidth, trigger.clientHeight);
           setRipples((prevRipples) => [
@@ -162825,7 +162834,7 @@
             }
           ]);
         }, []);
-        const onClear = (0, import_react72.useCallback)((key) => {
+        const onClear = (0, import_react73.useCallback)((key) => {
           setRipples((prevState) => prevState.filter((ripple) => ripple.key !== key));
         }, []);
         return { ripples, onClear, onPress, ...props };
@@ -163290,7 +163299,7 @@
       var button_default = Button;
       var import_shared_icons = require_dist17();
       var import_framer_motion3 = require_cjs4();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react74 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_spinner2 = require_dist25();
       var import_system3 = require_dist11();
       var import_theme2 = require_dist12();
@@ -163825,11 +163834,11 @@
           ...props,
           ref
         });
-        const customIcon = typeof icon === "function" ? icon(getIconProps()) : (0, import_react73.isValidElement)(icon) && (0, import_react73.cloneElement)(icon, getIconProps());
+        const customIcon = typeof icon === "function" ? icon(getIconProps()) : (0, import_react74.isValidElement)(icon) && (0, import_react74.cloneElement)(icon, getIconProps());
         const IconComponent = severity ? iconMap[severity] : iconMap[color2] || iconMap.default;
-        const customLoadingComponent = loadingComponent && (0, import_react73.isValidElement)(loadingComponent) ? (0, import_react73.cloneElement)(loadingComponent, getLoadingComponentProps()) : null;
+        const customLoadingComponent = loadingComponent && (0, import_react74.isValidElement)(loadingComponent) ? (0, import_react74.cloneElement)(loadingComponent, getLoadingComponentProps()) : null;
         const loadingIconComponent = isLoading ? customLoadingComponent || /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(import_spinner2.Spinner, { ...getSpinnerComponentProps() }) : null;
-        const customCloseIcon = typeof closeIcon === "function" ? closeIcon({}) : (0, import_react73.isValidElement)(closeIcon) && (0, import_react73.cloneElement)(closeIcon, {});
+        const customCloseIcon = typeof closeIcon === "function" ? closeIcon({}) : (0, import_react74.isValidElement)(closeIcon) && (0, import_react74.cloneElement)(closeIcon, {});
         const toastContent = /* @__PURE__ */ (0, import_jsx_runtime32.jsxs)(Component2, { ref: domRef, ...getToastProps(), children: [
           /* @__PURE__ */ (0, import_jsx_runtime32.jsxs)("div", { ...getContentProps(), children: [
             hideIcon && !isLoading ? null : loadingIconComponent || customIcon || /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(IconComponent, { ...getIconProps() }),
@@ -166164,7 +166173,7 @@
     PlexPlugin: () => PlexPlugin
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-QtUTtP/profile-storage-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/profile-storage-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
   var getActiveProfileId = () => sdk.getActiveProfileId();
   var getScopedStorageItem = (baseKey) => sdk.getScopedStorageItem(baseKey);
@@ -166255,6 +166264,8 @@
       liveTvCreateList: "Create list",
       liveTvListName: "List name",
       liveTvNoLists: "No channel lists yet.",
+      liveTvNoListsHint: "Add an M3U playlist under Settings \u2192 Live TV, then your channels show up here.",
+      liveTvNoMatchHint: "Try a shorter search, or pick another category.",
       liveTvAddToList: "Add to active list",
       liveTvRemoveFromList: "Remove from active list",
       liveTvDeleteList: "Delete list",
@@ -166285,10 +166296,10 @@
       myFiles: "My Files",
       trending: "Trending",
       homeTrendingSubtitle: "Across movies and series this week",
-      popularMoviesTitle: "Popular Movies",
-      popularMoviesSubtitle: "Current movie picks with the biggest momentum",
-      popularSeriesTitle: "Popular Series",
-      popularSeriesSubtitle: "Top series on streaming right now",
+      popularMoviesTitle: "Popular movies",
+      popularMoviesSubtitle: "The most popular movies right now",
+      popularSeriesTitle: "Popular series",
+      popularSeriesSubtitle: "The most popular series right now",
       showAllTrending: "Show all trending",
       showAllMovies: "Show all movies",
       showAllSeries: "Show all series",
@@ -166352,7 +166363,7 @@
       titleLabel: "Title",
       ratingLabel: "Rating",
       ratingLabelTmdb: "TMDb",
-      noStreamsYet: "No streamed movies or audiobooks found yet.",
+      noStreamsYet: "Nothing streamed yet.",
       noScrapersEnabled: "No stream providers enabled.",
       streamNotCached: "Stream not cached \u2014 try another",
       streamUnreachable: "Stream URL unreachable \u2014 try another",
@@ -166628,6 +166639,11 @@
       profileWhoIsWatching: "Who's watching?",
       profileCustomizeAction: "Customize",
       profileAddTile: "Add",
+      profileAvatar: "Avatar",
+      profileAvatarHint: "Picked from the bundled catalogue.",
+      profileNoAvatarHint: "Shows the initial instead.",
+      profileColor: "Colour",
+      profilePinRemoveEnterCurrent: "Enter the current PIN to remove it",
       profilesStripHint: "Add a profile for someone else and everyone keeps their own Continue Watching, watch history, and progress.",
       settingsGroupOverview: "OVERVIEW",
       settingsGroupAccount: "ACCOUNT",
@@ -166660,6 +166676,7 @@
       webhooksRunNothing: "Nothing new to send",
       webhooksScheduleHint: "Rules run automatically shortly after launch and every 6 hours while the app is open.",
       settingsGroupSystem: "SYSTEM",
+      settingsPageTvMode: "TV mode",
       settingsPageOverview: "Overview",
       settingsPageAccount: "Account & profiles",
       settingsPageLibrary: "Library & metadata",
@@ -166867,6 +166884,91 @@
       libCardsTitle: "Poster card badges",
       libCardsHint: "Tags and markers shown on poster cards across Home and grids.",
       profilesEyebrow: "Profiles",
+      tvActiveProfile: "Active profile",
+      tvManageProfiles: "Manage profiles",
+      tvNotSet: "Not set",
+      tvBackCloses: "Back closes and leaves focus on the row.",
+      tvBackDiscards: "Back closes without saving.",
+      tvKeyDone: "Done",
+      tvQrScanHint: "Scan with your phone \u2014 nothing is typed with the remote.",
+      profileSwitching: "Switching profiles",
+      profileColorTenFixed: "Ten fixed colors",
+      set: "Set",
+      paste: "Paste",
+      profileAvatarShowAll: "Show all avatars",
+      srcCatalogs: "Catalogs",
+      srcLibrary: "Library",
+      srcStremioAddons: "Stremio addons",
+      srcCatalogsWord: "catalogs",
+      srcCatalogsNote: "Catalogs from the community \u2014 add community addons that expose catalogs. Each catalog becomes selectable as the source of its own home row.",
+      srcAddAddon: "Add addon",
+      srcAddAddonHint: "Paste the addon manifest URL. Example: \u2026/manifest.json",
+      srcLibraryNote: "Pick a folder with video files. Lumio matches file names against TMDb and shows them in a library of its own.",
+      srcLibraryPathNote: "The path is read automatically when Lumio starts.",
+      pluginsCheckUpdates: "Check for updates",
+      pluginsFindNew: "Find new plugins",
+      pluginsMarketplace: "Official marketplace",
+      pluginsAddSource: "Add plugin source",
+      pluginsAddSourceHint: "GitHub repo or local ZIP file.",
+      pluginsSources: "Plugin sources",
+      pluginsSourcesNote: "External sources you have added yourself are listed here.",
+      pluginsSourceType: "Source type",
+      spoilPrevNextTitle: "S02E04 \xB7 The Long Way Down",
+      spoilPrevNextDesc: "Kim meets her brother at the station and is forced to pick a side.",
+      spoilPrevNextTag: "Next episode",
+      spoilPrevNextTagKept: "Next episode \u2014 always visible",
+      spoilPrevUnseenTitle: "S02E05 \xB7 What Comes After",
+      spoilPrevUnseenDesc: "The aftermath forces a decision nobody is ready for.",
+      spoilPrevUnseenTag: "Unseen",
+      spoilPrevUnseenTagHidden: "Unseen \u2014 hidden",
+      access: "Access",
+      lanStreaming: "LAN streaming",
+      accessType: "Access type",
+      accessTypeDesc: "LAN = other devices on your home network. Remote = a direct link in to the computer.",
+      cornerTopRight: "Top right",
+      cornerTopLeft: "Top left",
+      cornerBottomRight: "Bottom right",
+      cornerBottomLeft: "Bottom left",
+      hpTrailersColumns: "Columns",
+      check: "Check",
+      disabledWord: "Disabled",
+      pluginsCheckUpdate: "Check for update",
+      pluginsCatalogEntry: "Catalog entry",
+      pluginsRowMenu: "Row menu",
+      pluginsPluginId: "Plugin id",
+      pluginsOfficial: "Official",
+      pluginsRemovable: "Removable",
+      pluginsPriorityOrder: "Priority order",
+      pluginsPriorityOrderDesc: "Decides which source is asked first.",
+      pluginsSignedOfficial: "Signed and listed in the official marketplace.",
+      pluginsNotSigned: "Not signed by Lumio.",
+      pluginsRuntimeDownloaded: "Runtime downloaded from the maker repo on install.",
+      pluginsBundledWithApp: "Bundled with the app.",
+      yes: "Yes",
+      no: "No",
+      view: "View",
+      pluginsManageHint: "Enable, disable or reorder. Each plugin has its own menu with version, source and removal.",
+      pluginsEnabled: "Enabled",
+      pluginsOpenRepo: "Open repo",
+      pluginsUninstall: "Uninstall",
+      pluginsBundled: "bundled",
+      pluginsThirdParty: "third-party",
+      pluginsBundledCannotRemove: "Bundled plugins ship with Lumio and can only be turned off, not removed.",
+      tvModeUse: "Use TV mode",
+      tvModeUseDesc: "Bigger hit areas, remote-control focus and the side menu. On automatically on a TV. The view reloads when you change this.",
+      tvModeAuto: "Auto",
+      remoteSessionModeLabel: "Remote and LAN sessions",
+      remoteSessionModeDesc: "Which UI browser sessions served by this app get. Auto inherits the TV mode choice above plus the device\u2019s own detection; Desktop and TV force one mode.",
+      remoteSessionModeDesktop: "Desktop",
+      remoteSessionModeTv: "TV",
+      tvSegmentsEyebrow: "Rows per segment",
+      tvSegmentLabel: "Segment",
+      tvSegmentDesc: "Each segment has its own rows in TV mode. It starts out mirroring your normal home screen, so nothing changes until you change it here.",
+      tvSegmentUntouched: "Mirrors your normal home screen. Change anything here and this segment gets rows of its own.",
+      tvRowLayout: "Layout",
+      tvRowShared: "Shared",
+      tvAddRowDesc: "Only rows that belong to this segment are offered.",
+      tvRemoveRowBody: "The row disappears from this segment. Your desktop home screen is untouched, and you can add the row back.",
       profileRequirePin: "Require PIN when switching profiles",
       profileRequirePinDesc: "Optional four-digit code per profile. Without it anyone switches instantly.",
       profileStartFrom: "Start new profiles from",
@@ -166919,6 +167021,7 @@
       settingsTabAddons: "Addons",
       settingsTabSourcesMain: "Sources & addons",
       settingsTabScrapers: "Scrapers",
+      settingsTabPlugins: "Plugins",
       cardTagNew: "New",
       showCardTags: "Show tags on cards",
       showCardTagsDesc: "Marks titles released in the last 30 days. Needs a known release date, so older catalogue items are never tagged.",
@@ -167277,6 +167380,42 @@
       homeSourceMyFiles: "My files",
       homeSourceRecentlyWatched: "History",
       homeSourceRecentlyWatchedSubtitle: "Recently seen",
+      homeSourceCriticsPicks: "Critics' Picks",
+      homeSourceDecade2010s: "Defining the 2010s",
+      homeSourceDecade1990s: "Essential 90s",
+      homeSourceDecade1980s: "80s Classics",
+      homeSourceDecade1970s: "70s Cinema",
+      homeSourceJapaneseCinema: "Japanese Cinema",
+      homeSourceKoreanCinema: "Korean Cinema",
+      homeSourceFrenchCinema: "French Cinema",
+      homeSourceKdrama: "K-Drama",
+      tvSegmentAnime: "Anime",
+      homeSourceAnimeSeries: "Anime Series",
+      homeSourceMoodComfort: "Comfort Watch",
+      homeSourceMoodMind: "Mind Benders",
+      homeSourceMoodAfterDark: "After Dark",
+      homeSourceMoodDateNight: "Date Night",
+      homeSourceMoodAdrenaline: "Adrenaline Rush",
+      homeSourceMoodLaugh: "Laugh Out Loud",
+      homeSourceMoodHeist: "Heists & Cons",
+      homeSourceMoodSpace: "Into the Stars",
+      homeSourceMoodFantasy: "Sword & Sorcery",
+      homeSourceMoodTrueCrime: "True Crime",
+      homeSourceMoodSlowBurn: "Slow-Burn Dramas",
+      homeSourceMoodWar: "War Stories",
+      homeSourceMoodWestern: "Saddle Up",
+      homeSourceMoodHistory: "History Buff",
+      homeSourceMoodWhodunit: "Whodunit",
+      homeSourceNetworkNetflix: "Netflix Originals",
+      homeSourceNetworkHbo: "From HBO",
+      homeSourceNetworkApple: "Apple TV+",
+      homeSourceNetworkAmc: "AMC",
+      homeSourceNetworkFx: "FX",
+      homeSourceNetworkDisney: "Disney+ Originals",
+      homeSourceNetworkPrime: "Prime Video",
+      homeSourcePrestigeDrama: "Prestige Drama",
+      homeSourceAnimeMovies: "Anime Movies",
+      homeSourceAnimeTopSeries: "Top Rated Anime",
       homeSourceStreamingServices: "Streaming services",
       homeSourceStudios: "Studios",
       liveTvList: "Live TV list",
@@ -167302,6 +167441,16 @@
       traktMirrorIncomplete: "Trakt would not accept every item",
       traktMirrorIncompleteBody: "Your Trakt watchlist is full, so {count} item(s) live only on this device. Everything works normally in Lumio \u2014 the calendar reads TMDB and is unaffected. Trakt announced a 250-item limit for free accounts, but their API still enforces 100; Lumio retries automatically, so the items sync themselves once Trakt raises it. To make room now, remove items from your watchlist on trakt.tv or upgrade to VIP.",
       traktMirrorLocalOnly: "On this device only",
+      ovOpenSubsTitle: "Subtitles",
+      ovOpenSubsOkDesc: "OpenSubtitles key saved \u2014 subtitle search is available.",
+      ovOpenSubsMissingDesc: "No OpenSubtitles key. Subtitle search is limited without one.",
+      ovGroqTitle: "AI features",
+      ovGroqOkDesc: "Groq key saved.",
+      ovGroqMissingDesc: "No Groq key. AI-assisted features stay off.",
+      ovSpotifyTitle: "Music",
+      ovSpotifyOkDesc: "Spotify credentials saved.",
+      ovSpotifyMissingDesc: "No Spotify credentials. Soundtracks stay unavailable.",
+      ovOpenSettings: "Open settings",
       traktAutoRemoveMovies: "Remove watched movies from the watchlist",
       traktAutoRemoveMoviesHint: "A film you have seen leaves the list automatically \u2014 and frees a slot on Trakt.",
       traktAutoUnfollowSeries: "Unfollow series you have finished",
@@ -167333,17 +167482,33 @@
       pluginDotActive: "Plugin active",
       pluginDotInactive: "Plugin inactive",
       pluginDotNotConnected: "Not connected",
-      homeSourceCinemaMovies: "In theaters",
+      homeSourceCinemaMovies: "In theatres now",
+      homeSubCinemaMovies: "Playing in cinemas right now",
       homeSourceTopRatedMovies: "Top rated movies",
       homeSourceTopRatedSeries: "Top rated series",
-      homeSourceReleaseRecentMovies: "Releases: recently movies",
-      homeSourceReleaseRecentSeries: "Releases: recently series",
-      homeSourceReleaseUpcomingMovies: "Releases: upcoming movies",
-      homeSourceReleaseUpcomingSeries: "Releases: upcoming series",
-      homeSourceStreamingMovies: "Trending movies (streaming)",
-      homeSourceStreamingSeries: "Trending series (streaming)",
+      homeSourceReleaseRecentMovies: "New releases",
+      homeSubReleaseRecentMovies: "Fresh movie releases from cinema and streaming",
+      homeSourceReleaseRecentSeries: "Newly released series",
+      homeSubReleaseRecentSeries: "Series with fresh premieres and new episodes",
+      homeSourceReleaseUpcomingMovies: "Upcoming movies",
+      homeSubReleaseUpcomingMovies: "Premieres on the way to cinema and streaming",
+      homeSourceReleaseUpcomingSeries: "Upcoming series",
+      homeSubReleaseUpcomingSeries: "Season premieres and new series on the way",
+      homeSourceStreamingMovies: "Trending movies in streaming",
+      homeSubStreamingMovies: "The most-watched movies in streaming right now",
+      homeSourceStreamingSeries: "Trending series in streaming",
+      homeSubStreamingSeries: "The series everyone is streaming right now",
+      homeSubTraktRecommendations: "Based on your watch history",
+      homeSubTraktRecommendationsMovies: "Recommended movies based on your watch history",
+      homeSubTraktRecommendationsSeries: "Recommended series based on your watch history",
+      homeSubMovieWatchlist: "Movies you saved to watch",
+      homeSubTrailers: "The latest trailers and teasers",
       homeSourceAiringTodaySeries: "Airing today",
       homeSourceTraktRecommendations: "Recommended for you",
+      homeSourceTraktRecommendationsMovies: "Recommended for you \xB7 Movies",
+      homeSourceTraktRecommendationsSeries: "Recommended for you \xB7 Series",
+      homeSourceTopPicksSeries: "Top series",
+      homeTopPicksSeriesSubtitle: "Curated top series",
       homeSourceFilmCollections: "Film collections",
       collectionsBackLabel: "Collections",
       collectionsHeroActive: "Featured on Home",
@@ -167648,6 +167813,10 @@
       watchlistContinueHere: "Continue here",
       watchlistEmpty: "No starred titles yet.",
       watchlistEmptyHint: "Star titles in the release calendar to follow premieres.",
+      tvSegmentEmpty: "No rows here yet.",
+      tvSegmentEmptyHint: "Add rows for this page in Settings \u2014 under Home page rows, or TV mode on a TV.",
+      continueEmpty: "Nothing started yet.",
+      continueEmptyHint: "Titles you start playing show up here so you can pick up where you left off.",
       seriesWatchlistEmpty: "No followed series yet.",
       seriesWatchlistEmptyHint: "Follow a series from its detail page and new episodes show up here.",
       noMoviesInListYetHint: "Add movies to My list from any detail page to save them here.",
@@ -167900,6 +168069,10 @@
       hpRowsEyebrow: "Home page \xB7 Rows",
       hpRowsTitle: "What appears on the home screen",
       hpRowsHint: "Click a row to fine-tune layout, count and source. Use the arrows to change the order.",
+      hpRowsTvNote: "TV mode has its own rows per segment \u2014 Home, Movies and Series. Set them under TV mode; these desktop rows are left untouched.",
+      hpRowsSectionHint: "Home is the start screen. Movies, Series and Trending are the pages the chips under the search bar open \u2014 TV mode shares the Movies and Series lists.",
+      hpSegmentUntouchedNote: "This page shows the recommended rows until you change something here.",
+      hpSegmentReset: "Reset to recommended rows",
       hpCustomBadge: "custom",
       hpCardsCount: "{count} cards",
       hpMoveUp: "Move up",
@@ -168195,6 +168368,8 @@
       liveTvCreateList: "Skapa lista",
       liveTvListName: "Listnamn",
       liveTvNoLists: "Inga kanallistor \xE4nnu.",
+      liveTvNoListsHint: "L\xE4gg till en M3U-spellista under Inst\xE4llningar \u2192 Live TV, s\xE5 dyker kanalerna upp h\xE4r.",
+      liveTvNoMatchHint: "Prova en kortare s\xF6kning, eller v\xE4lj en annan kategori.",
       liveTvAddToList: "L\xE4gg till i aktiv lista",
       liveTvRemoveFromList: "Ta bort fr\xE5n aktiv lista",
       liveTvDeleteList: "Radera lista",
@@ -168226,9 +168401,9 @@
       trending: "Trendar",
       homeTrendingSubtitle: "Bland filmer och serier den h\xE4r veckan",
       popularMoviesTitle: "Popul\xE4ra filmer",
-      popularMoviesSubtitle: "Aktuella filmtips med mest momentum",
+      popularMoviesSubtitle: "De popul\xE4raste filmerna just nu",
       popularSeriesTitle: "Popul\xE4ra serier",
-      popularSeriesSubtitle: "Toppserier p\xE5 streaming just nu",
+      popularSeriesSubtitle: "De popul\xE4raste serierna just nu",
       showAllTrending: "Visa alla trender",
       showAllMovies: "Visa alla filmer",
       showAllSeries: "Visa alla serier",
@@ -168292,7 +168467,7 @@
       titleLabel: "Titel",
       ratingLabel: "Betyg",
       ratingLabelTmdb: "TMDb",
-      noStreamsYet: "Inga streamade filmer eller ljudb\xF6cker hittades \xE4nnu.",
+      noStreamsYet: "Inget streamat \xE4n.",
       noScrapersEnabled: "Inga stream providers \xE4r aktiverade.",
       streamNotCached: "Streamen \xE4r inte cachad \u2014 prova en annan",
       streamUnreachable: "Stream-URL svarar inte \u2014 prova en annan",
@@ -168568,6 +168743,11 @@
       profileWhoIsWatching: "Vem tittar?",
       profileCustomizeAction: "Anpassa",
       profileAddTile: "L\xE4gg till",
+      profileAvatar: "Avatar",
+      profileAvatarHint: "V\xE4ljs ur den medf\xF6ljande katalogen.",
+      profileNoAvatarHint: "Visar initialen i st\xE4llet.",
+      profileColor: "F\xE4rg",
+      profilePinRemoveEnterCurrent: "Ange nuvarande PIN f\xF6r att ta bort den",
       profilesStripHint: "L\xE4gg till en profil f\xF6r n\xE5gon annan s\xE5 beh\xE5ller alla sitt eget Forts\xE4tt titta, sin historik och sina framsteg.",
       settingsGroupOverview: "\xD6VERSIKT",
       settingsGroupAccount: "KONTO",
@@ -168600,6 +168780,7 @@
       webhooksRunNothing: "Inget nytt att skicka",
       webhooksScheduleHint: "Reglerna k\xF6rs automatiskt strax efter start och var 6:e timme medan appen \xE4r ig\xE5ng.",
       settingsGroupSystem: "SYSTEM",
+      settingsPageTvMode: "TV-l\xE4ge",
       settingsPageOverview: "\xD6versikt",
       settingsPageAccount: "Konto & profiler",
       settingsPageLibrary: "Bibliotek & metadata",
@@ -168807,6 +168988,91 @@
       libCardsTitle: "M\xE4rken p\xE5 posterkort",
       libCardsHint: "Taggar och mark\xF6rer som visas p\xE5 posterkort p\xE5 Hem och i rutn\xE4t.",
       profilesEyebrow: "Profiler",
+      tvActiveProfile: "Aktiv profil",
+      tvManageProfiles: "Hantera profiler",
+      tvNotSet: "Ej angivet",
+      tvBackCloses: "Bak\xE5t st\xE4nger och l\xE4mnar fokus p\xE5 raden.",
+      tvBackDiscards: "Bak\xE5t st\xE4nger utan att spara.",
+      tvKeyDone: "Klar",
+      tvQrScanHint: "Skanna med telefonen \u2014 inget skrivs med fj\xE4rrkontrollen.",
+      profileSwitching: "Profilbyte",
+      profileColorTenFixed: "Tio fasta f\xE4rger",
+      set: "Ange",
+      paste: "Klistra in",
+      profileAvatarShowAll: "Visa alla avatarer",
+      srcCatalogs: "Kataloger",
+      srcLibrary: "Bibliotek",
+      srcStremioAddons: "Stremio-addons",
+      srcCatalogsWord: "kataloger",
+      srcCatalogsNote: "Kataloger fr\xE5n communityn \u2014 l\xE4gg till addons som exponerar kataloger. Varje katalog g\xE5r att v\xE4lja som k\xE4lla f\xF6r en egen rad p\xE5 startsidan.",
+      srcAddAddon: "L\xE4gg till addon",
+      srcAddAddonHint: "Klistra in addonens manifest-URL. Exempel: \u2026/manifest.json",
+      srcLibraryNote: "V\xE4lj en mapp med videofiler. Lumio matchar filnamnen mot TMDb och visar dem i ett eget bibliotek.",
+      srcLibraryPathNote: "S\xF6kv\xE4gen l\xE4ses automatiskt n\xE4r Lumio startar.",
+      pluginsCheckUpdates: "S\xF6k uppdateringar",
+      pluginsFindNew: "Hitta nya plugins",
+      pluginsMarketplace: "Officiell marknadsplats",
+      pluginsAddSource: "L\xE4gg till plugink\xE4lla",
+      pluginsAddSourceHint: "GitHub-repo eller lokal ZIP-fil.",
+      pluginsSources: "Plugink\xE4llor",
+      pluginsSourcesNote: "Externa k\xE4llor du lagt till sj\xE4lv listas h\xE4r.",
+      pluginsSourceType: "K\xE4lltyp",
+      spoilPrevNextTitle: "S02E04 \xB7 The Long Way Down",
+      spoilPrevNextDesc: "Kim m\xF6ter sin bror p\xE5 stationen och tvingas v\xE4lja sida.",
+      spoilPrevNextTag: "N\xE4sta avsnitt",
+      spoilPrevNextTagKept: "N\xE4sta avsnitt \u2014 alltid synligt",
+      spoilPrevUnseenTitle: "S02E05 \xB7 What Comes After",
+      spoilPrevUnseenDesc: "Efterspelet tvingar fram ett beslut ingen \xE4r redo f\xF6r.",
+      spoilPrevUnseenTag: "Osedd",
+      spoilPrevUnseenTagHidden: "Osedd \u2014 dold",
+      access: "\xC5tkomst",
+      lanStreaming: "LAN-str\xF6mning",
+      accessType: "\xC5tkomsttyp",
+      accessTypeDesc: "LAN = andra enheter i hemman\xE4tet. Fj\xE4rr = en direkt l\xE4nk in till datorn.",
+      cornerTopRight: "Uppe till h\xF6ger",
+      cornerTopLeft: "Uppe till v\xE4nster",
+      cornerBottomRight: "Nere till h\xF6ger",
+      cornerBottomLeft: "Nere till v\xE4nster",
+      hpTrailersColumns: "Kolumner",
+      check: "S\xF6k",
+      disabledWord: "Avst\xE4ngd",
+      pluginsCheckUpdate: "S\xF6k uppdatering",
+      pluginsCatalogEntry: "Katalogpost",
+      pluginsRowMenu: "Radmeny",
+      pluginsPluginId: "Plugin-id",
+      pluginsOfficial: "Officiell",
+      pluginsRemovable: "Kan tas bort",
+      pluginsPriorityOrder: "Prioritetsordning",
+      pluginsPriorityOrderDesc: "Avg\xF6r vilken k\xE4lla som fr\xE5gas f\xF6rst.",
+      pluginsSignedOfficial: "Signerad och listad i den officiella marknadsplatsen.",
+      pluginsNotSigned: "Inte signerad av Lumio.",
+      pluginsRuntimeDownloaded: "Runtime h\xE4mtas fr\xE5n makarens repo vid installation.",
+      pluginsBundledWithApp: "Buntad med appen.",
+      yes: "Ja",
+      no: "Nej",
+      view: "Vy",
+      pluginsManageHint: "Sl\xE5 p\xE5, st\xE4ng av eller \xE4ndra ordning. Varje plugin har en egen meny med version, k\xE4lla och borttagning.",
+      pluginsEnabled: "Aktiverad",
+      pluginsOpenRepo: "\xD6ppna repo",
+      pluginsUninstall: "Avinstallera",
+      pluginsBundled: "buntad",
+      pluginsThirdParty: "tredjepart",
+      pluginsBundledCannotRemove: "Buntade plugins f\xF6ljer med Lumio och kan bara st\xE4ngas av, inte tas bort.",
+      tvModeUse: "Anv\xE4nd TV-l\xE4ge",
+      tvModeUseDesc: "St\xF6rre tr\xE4ffytor, fokusnavigering med fj\xE4rrkontroll och sidomeny. Sl\xE5s p\xE5 automatiskt p\xE5 en TV. Vyn laddas om n\xE4r du \xE4ndrar det h\xE4r.",
+      tvModeAuto: "Auto",
+      remoteSessionModeLabel: "Fj\xE4rr- och LAN-sessioner",
+      remoteSessionModeDesc: "Vilket gr\xE4nssnitt webbl\xE4sarsessioner mot den h\xE4r appen f\xE5r. Auto \xE4rver TV-l\xE4gesvalet ovan plus enhetens egen detektering; Skrivbord och TV tvingar ett l\xE4ge.",
+      remoteSessionModeDesktop: "Skrivbord",
+      remoteSessionModeTv: "TV",
+      tvSegmentsEyebrow: "Rader per segment",
+      tvSegmentLabel: "Segment",
+      tvSegmentDesc: "Varje segment har egna rader i TV-l\xE4get. Utg\xE5ngsl\xE4get speglar din vanliga startsida, s\xE5 inget \xE4ndras f\xF6rr\xE4n du g\xF6r det h\xE4r.",
+      tvSegmentUntouched: "Speglar din vanliga startsida. \xC4ndrar du n\xE5got h\xE4r f\xE5r segmentet egna rader.",
+      tvRowLayout: "Layout",
+      tvRowShared: "Delad",
+      tvAddRowDesc: "Bara rader som h\xF6r till det h\xE4r segmentet erbjuds.",
+      tvRemoveRowBody: "Raden f\xF6rsvinner ur det h\xE4r segmentet. Din startsida p\xE5 datorn \xE4r or\xF6rd, och du kan l\xE4gga tillbaka raden.",
       profileRequirePin: "Kr\xE4v PIN vid profilbyte",
       profileRequirePinDesc: "Valfri fyrsiffrig kod per profil. Utan PIN byter vem som helst profil direkt.",
       profileStartFrom: "Starta nya profiler fr\xE5n",
@@ -168859,6 +169125,7 @@
       settingsTabAddons: "Addons",
       settingsTabSourcesMain: "K\xE4llor & addons",
       settingsTabScrapers: "Scrapers",
+      settingsTabPlugins: "Plugins",
       cardTagNew: "Nyhet",
       showCardTags: "Visa taggar p\xE5 kort",
       showCardTagsDesc: "M\xE4rker titlar som sl\xE4ppts de senaste 30 dagarna. Kr\xE4ver k\xE4nt releasedatum, s\xE5 \xE4ldre katalogtitlar taggas aldrig.",
@@ -169217,6 +169484,42 @@
       homeSourceMyFiles: "Mina filer",
       homeSourceRecentlyWatched: "Historik",
       homeSourceRecentlyWatchedSubtitle: "Nyligen sett",
+      homeSourceCriticsPicks: "Kritikerfavoriter",
+      homeSourceDecade2010s: "Tiotalets b\xE4sta",
+      homeSourceDecade1990s: "Nittiotalsklassiker",
+      homeSourceDecade1980s: "\xC5ttiotalsklassiker",
+      homeSourceDecade1970s: "Sjuttiotalsfilm",
+      homeSourceJapaneseCinema: "Japansk film",
+      homeSourceKoreanCinema: "Koreansk film",
+      homeSourceFrenchCinema: "Fransk film",
+      homeSourceKdrama: "K-drama",
+      tvSegmentAnime: "Anime",
+      homeSourceAnimeSeries: "Animeserier",
+      homeSourceMoodComfort: "Mysfilm",
+      homeSourceMoodMind: "Tanken\xF6tter",
+      homeSourceMoodAfterDark: "Efter m\xF6rkrets inbrott",
+      homeSourceMoodDateNight: "Mysig kv\xE4ll",
+      homeSourceMoodAdrenaline: "Adrenalin",
+      homeSourceMoodLaugh: "Skratta h\xF6gt",
+      homeSourceMoodHeist: "Kupper och bedr\xE4gerier",
+      homeSourceMoodSpace: "Ut i rymden",
+      homeSourceMoodFantasy: "Sv\xE4rd och magi",
+      homeSourceMoodTrueCrime: "Sanna brott",
+      homeSourceMoodSlowBurn: "L\xE5ngsamma dramer",
+      homeSourceMoodWar: "Krigsber\xE4ttelser",
+      homeSourceMoodWestern: "V\xE4stern",
+      homeSourceMoodHistory: "Historiskt",
+      homeSourceMoodWhodunit: "Vem gjorde det",
+      homeSourceNetworkNetflix: "Netflix Originals",
+      homeSourceNetworkHbo: "Fr\xE5n HBO",
+      homeSourceNetworkApple: "Apple TV+",
+      homeSourceNetworkAmc: "AMC",
+      homeSourceNetworkFx: "FX",
+      homeSourceNetworkDisney: "Disney+ Originals",
+      homeSourceNetworkPrime: "Prime Video",
+      homeSourcePrestigeDrama: "Prestigedrama",
+      homeSourceAnimeMovies: "Animefilmer",
+      homeSourceAnimeTopSeries: "H\xF6gst betygsatt anime",
       homeSourceStreamingServices: "Streamingtj\xE4nster",
       homeSourceStudios: "Studios",
       liveTvList: "Live TV-lista",
@@ -169240,6 +169543,16 @@
       traktMirrorIncomplete: "Trakt tog inte emot alla poster",
       traktMirrorIncompleteBody: "Din bevakningslista hos Trakt \xE4r full, s\xE5 {count} poster finns bara p\xE5 den h\xE4r enheten. Allt fungerar normalt i Lumio \u2014 kalendern h\xE4mtar sin data fr\xE5n TMDB och p\xE5verkas inte. Trakt har annonserat ett tak p\xE5 250 poster f\xF6r gratiskonton, men deras API till\xE4mpar fortfarande 100. Lumio f\xF6rs\xF6ker igen automatiskt, s\xE5 posterna synkar sig sj\xE4lva n\xE4r Trakt h\xF6jer taket. Vill du frig\xF6ra plats nu kan du ta bort poster i bevakningslistan p\xE5 trakt.tv eller uppgradera till VIP.",
       traktMirrorLocalOnly: "Bara p\xE5 den h\xE4r enheten",
+      ovOpenSubsTitle: "Undertexter",
+      ovOpenSubsOkDesc: "OpenSubtitles-nyckel sparad \u2014 undertexts\xF6kning fungerar.",
+      ovOpenSubsMissingDesc: "Ingen OpenSubtitles-nyckel. Undertexts\xF6kningen \xE4r begr\xE4nsad utan en.",
+      ovGroqTitle: "AI-funktioner",
+      ovGroqOkDesc: "Groq-nyckel sparad.",
+      ovGroqMissingDesc: "Ingen Groq-nyckel. AI-funktioner \xE4r avst\xE4ngda.",
+      ovSpotifyTitle: "Musik",
+      ovSpotifyOkDesc: "Spotify-uppgifter sparade.",
+      ovSpotifyMissingDesc: "Inga Spotify-uppgifter. Soundtracks \xE4r inte tillg\xE4ngliga.",
+      ovOpenSettings: "\xD6ppna inst\xE4llningar",
       traktAutoRemoveMovies: "Ta bort sedda filmer fr\xE5n bevakningslistan",
       traktAutoRemoveMoviesHint: "En film du sett l\xE4mnar listan automatiskt \u2014 och frig\xF6r en plats hos Trakt.",
       traktAutoUnfollowSeries: "Avf\xF6lj serier du sett klart",
@@ -169269,17 +169582,33 @@
       pluginDotActive: "Plugin aktiv",
       pluginDotInactive: "Plugin inaktiv",
       pluginDotNotConnected: "Inte ansluten",
-      homeSourceCinemaMovies: "P\xE5 bio",
+      homeSourceCinemaMovies: "P\xE5 bio nu",
+      homeSubCinemaMovies: "G\xE5r p\xE5 bio just nu",
       homeSourceTopRatedMovies: "H\xF6gst betyg filmer",
       homeSourceTopRatedSeries: "H\xF6gst betyg serier",
-      homeSourceReleaseRecentMovies: "Releases: nyligen filmer",
-      homeSourceReleaseRecentSeries: "Releases: nyligen serier",
-      homeSourceReleaseUpcomingMovies: "Releases: kommande filmer",
-      homeSourceReleaseUpcomingSeries: "Releases: kommande serier",
-      homeSourceStreamingMovies: "Trendande filmer (streaming)",
-      homeSourceStreamingSeries: "Trendande serier (streaming)",
+      homeSourceReleaseRecentMovies: "Nya sl\xE4pp",
+      homeSubReleaseRecentMovies: "F\xE4rska filmsl\xE4pp fr\xE5n bio och streaming",
+      homeSourceReleaseRecentSeries: "Nysl\xE4ppta serier",
+      homeSubReleaseRecentSeries: "Serier med f\xE4rska premi\xE4rer och nya avsnitt",
+      homeSourceReleaseUpcomingMovies: "Kommande filmer",
+      homeSubReleaseUpcomingMovies: "Premi\xE4rer p\xE5 v\xE4g till bio och streaming",
+      homeSourceReleaseUpcomingSeries: "Kommande serier",
+      homeSubReleaseUpcomingSeries: "S\xE4songspremi\xE4rer och nya serier p\xE5 v\xE4g",
+      homeSourceStreamingMovies: "Trendande filmer p\xE5 streaming",
+      homeSubStreamingMovies: "De mest sedda filmerna p\xE5 streaming just nu",
+      homeSourceStreamingSeries: "Trendande serier p\xE5 streaming",
+      homeSubStreamingSeries: "Serierna alla streamar just nu",
+      homeSubTraktRecommendations: "Utifr\xE5n din tittarhistorik",
+      homeSubTraktRecommendationsMovies: "Rekommenderade filmer utifr\xE5n din tittarhistorik",
+      homeSubTraktRecommendationsSeries: "Rekommenderade serier utifr\xE5n din tittarhistorik",
+      homeSubMovieWatchlist: "Filmer du sparat att se",
+      homeSubTrailers: "De senaste trailrarna och teasrarna",
       homeSourceAiringTodaySeries: "Visas idag",
       homeSourceTraktRecommendations: "Rekommenderat f\xF6r dig",
+      homeSourceTraktRecommendationsMovies: "Rekommenderat f\xF6r dig \xB7 Filmer",
+      homeSourceTraktRecommendationsSeries: "Rekommenderat f\xF6r dig \xB7 Serier",
+      homeSourceTopPicksSeries: "Toppserier",
+      homeTopPicksSeriesSubtitle: "Kurerade toppserier",
       homeSourceFilmCollections: "Filmserier",
       collectionsBackLabel: "Filmserier",
       collectionsHeroActive: "Visas p\xE5 startsidan",
@@ -169584,6 +169913,10 @@
       watchlistContinueHere: "Forts\xE4tt d\xE4r",
       watchlistEmpty: "Inga stj\xE4rnm\xE4rkta titlar \xE4n.",
       watchlistEmptyHint: "Stj\xE4rnm\xE4rk titlar i releasekalendern f\xF6r att f\xF6lja premi\xE4rer.",
+      tvSegmentEmpty: "Inga rader h\xE4r \xE4n.",
+      tvSegmentEmptyHint: "L\xE4gg till rader f\xF6r den h\xE4r sidan i Inst\xE4llningar \u2014 under startsidans rader, eller TV-l\xE4ge p\xE5 en TV.",
+      continueEmpty: "Inget p\xE5b\xF6rjat \xE4n.",
+      continueEmptyHint: "Titlar du b\xF6rjar spela hamnar h\xE4r, s\xE5 du kan forts\xE4tta d\xE4r du slutade.",
       seriesWatchlistEmpty: "Inga f\xF6ljda serier \xE4n.",
       seriesWatchlistEmptyHint: "F\xF6lj en serie fr\xE5n dess detaljsida s\xE5 dyker nya avsnitt upp h\xE4r.",
       noMoviesInListYetHint: "L\xE4gg till filmer i Min lista fr\xE5n valfri detaljsida f\xF6r att spara dem h\xE4r.",
@@ -169836,6 +170169,10 @@
       hpRowsEyebrow: "Startsidan \xB7 Rader",
       hpRowsTitle: "Vad visas p\xE5 hem-sk\xE4rmen",
       hpRowsHint: "Klicka p\xE5 en rad f\xF6r att finjustera layout, antal och k\xE4lla. Anv\xE4nd pilarna f\xF6r att \xE4ndra ordning.",
+      hpRowsTvNote: "TV-l\xE4get har egna rader per segment \u2014 Hem, Film och Serier. St\xE4ll in dem under TV-l\xE4ge; skrivbordets rader h\xE4r l\xE4mnas or\xF6rda.",
+      hpRowsSectionHint: "Hem \xE4r startsidan. Film, Serier och Trendar \xE4r sidorna som knapparna under s\xF6kf\xE4ltet \xF6ppnar \u2014 TV-l\xE4get delar Film- och Serielistorna.",
+      hpSegmentUntouchedNote: "Sidan visar de rekommenderade raderna tills du \xE4ndrar n\xE5got h\xE4r.",
+      hpSegmentReset: "\xC5terst\xE4ll till rekommenderade rader",
       hpCustomBadge: "egen",
       hpCardsCount: "{count} kort",
       hpMoveUp: "Flytta upp",
@@ -170157,6 +170494,22 @@
       },
       t: (key) => strings[detachedLang][key] ?? strings.en[key]
     };
+  }
+
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/tv-focus-shim.ts
+  var hostSdk = () => globalThis.__lumioPluginRuntime?.sdk;
+  var domTvMode = () => typeof document !== "undefined" && document.documentElement.getAttribute("data-tv") === "1";
+  function useTvMode() {
+    const sdk3 = hostSdk();
+    return sdk3?.useTvMode ? sdk3.useTvMode() : domTvMode();
+  }
+  function detectTvMode() {
+    const sdk3 = hostSdk();
+    return sdk3?.detectTvMode ? sdk3.detectTvMode() : domTvMode();
+  }
+  function useTvFocus() {
+    const sdk3 = hostSdk();
+    return sdk3?.useTvFocus ? sdk3.useTvFocus() : null;
   }
 
   // lib/home-override-settings.ts
@@ -171222,11 +171575,7 @@
   }
   function getDownloadDir() {
     if (typeof window === "undefined") return "";
-    try {
-      return window.localStorage.getItem("lumio_download_dir") ?? "";
-    } catch {
-      return "";
-    }
+    return getItem("lumio_download_dir") ?? "";
   }
   function getShowStreamQuality() {
     if (typeof window === "undefined") return true;
@@ -171876,7 +172225,7 @@
     ) });
   }
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-QtUTtP/auth-capabilities-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/auth-capabilities-shim.ts
   var sdk2 = globalThis.__lumioPluginRuntime?.sdk;
 
   // lib/utils/scroll-lock.ts
@@ -171946,7 +172295,7 @@
     return FIXED_NEXT_EP_PRELOAD_LEAD_SECONDS;
   }
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-QtUTtP/video-player-modal-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/video-player-modal-shim.ts
   init_react_shim();
 
   // components/player/video-player-modal.tsx
@@ -171998,6 +172347,13 @@
     if (season != null && episode != null) return `${id4}:S${season}E${episode}`;
     return id4;
   }
+  function watchedAtMs(entry) {
+    const ts = Date.parse(entry.watchedAt ?? "");
+    return Number.isFinite(ts) ? ts : 0;
+  }
+  function sortByWatchedAtDesc(entries) {
+    return [...entries].sort((a, b) => watchedAtMs(b) - watchedAtMs(a));
+  }
   function isSameProgressTarget(left, right) {
     const leftSanitized = sanitizeEntry(left);
     const rightSanitized = sanitizeEntry(right);
@@ -172007,6 +172363,7 @@
     if (entryKey(leftSanitized.id, leftSanitized.season, leftSanitized.episode) === entryKey(rightSanitized.id, rightSanitized.season, rightSanitized.episode)) {
       return true;
     }
+    if (leftSanitized.type !== rightSanitized.type) return false;
     if (leftSanitized.tmdbId && rightSanitized.tmdbId && leftSanitized.tmdbId === rightSanitized.tmdbId) return true;
     if (leftSanitized.imdbId && rightSanitized.imdbId && leftSanitized.imdbId === rightSanitized.imdbId) return true;
     const leftTitleKey = normalizeTitleKey(leftSanitized.title);
@@ -172064,7 +172421,7 @@
   }
   function saveStreamProgress(entry) {
     const sanitizedEntry = sanitizeEntry(entry);
-    const list = dedupeProgressEntries([sanitizedEntry, ...read2()]).slice(0, MAX);
+    const list = sortByWatchedAtDesc(dedupeProgressEntries([sanitizedEntry, ...read2()])).slice(0, MAX);
     setScopedStorageItem(KEY3, JSON.stringify(list));
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT4));
     appendHistoryEntry(sanitizedEntry);
@@ -172079,6 +172436,17 @@
     });
     setScopedStorageItem(KEY3, JSON.stringify(list));
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT4));
+  }
+
+  // lib/resume-playback.ts
+  init_plugin_registry();
+  function isResumeDurationMismatch(expectedSeconds, actualSeconds, resumeFromSeconds = 0) {
+    if (!isFinite(actualSeconds) || actualSeconds <= 0) return false;
+    if (expectedSeconds != null && expectedSeconds > 600) {
+      if (actualSeconds < Math.min(300, expectedSeconds * 0.2)) return true;
+    }
+    if (resumeFromSeconds > 0 && actualSeconds < resumeFromSeconds * 0.5) return true;
+    return false;
   }
 
   // lib/trakt-scrobble.ts
@@ -172102,6 +172470,11 @@
     if (callKey === lastCallKey && now3 - lastCallAt < DUPLICATE_WINDOW_MS) return;
     lastCallKey = callKey;
     lastCallAt = now3;
+    const logScrobble = (message) => {
+      void fetch(`/api/debug-log?msg=${encodeURIComponent(`[trakt-scrobble] ${message}`)}`).catch(() => {
+      });
+    };
+    const what = `${action} ${identity.mediaType}${identity.season != null ? ` S${identity.season}E${identity.episode}` : ""} ${progress2}%`;
     try {
       const response = await fetch("/api/trakt/scrobble", {
         method: "POST",
@@ -172118,16 +172491,28 @@
         })
       });
       if (response.status === 401) {
+        logScrobble(`${what}: 401 \u2014 auth avvisad`);
         const payload2 = await response.json().catch(() => null);
-        if (payload2?.authExpired) clearTraktAuth();
+        if (payload2?.authExpired) {
+          clearTraktAuth();
+          logScrobble(`${action}: auth utg\xE5ngen \u2014 Trakt-kopplingen rensad`);
+        } else {
+          logScrobble(`${action}: HTTP 401 utan authExpired`);
+        }
         return;
       }
-      if (!response.ok) return;
+      if (!response.ok) {
+        logScrobble(`${action}: HTTP ${response.status}`);
+        return;
+      }
+      logScrobble(`${what}: ok`);
       const payload = await response.json();
       if (payload.auth?.accessToken && payload.auth.accessToken !== auth.accessToken) {
         setTraktAuth({ ...auth, ...payload.auth });
       }
-    } catch {
+      logScrobble(`${action} ${identityKey(identity)} @ ${Math.round(progress2)}%`);
+    } catch (err) {
+      logScrobble(`${action}: n\xE4tverksfel \u2014 ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 
@@ -172383,13 +172768,14 @@
   function MiniHeader({ children }) {
     return /* @__PURE__ */ jsx("p", { className: "mb-2 mt-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 first:mt-0", children });
   }
-  function MiniToggle({ checked, onChange }) {
+  function MiniToggle({ checked, onChange, tv }) {
     return /* @__PURE__ */ jsx(
       "button",
       {
         type: "button",
         role: "switch",
         "aria-checked": checked,
+        ...tv ? { "data-f": "" } : {},
         onClick: onChange,
         className: `relative h-5 w-9 flex-none rounded-full transition ${checked ? "bg-accent-500" : "bg-white/10"}`,
         children: /* @__PURE__ */ jsx("span", { className: `absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${checked ? "left-[1.125rem]" : "left-0.5"}` })
@@ -172398,6 +172784,8 @@
   }
   function PlayerTuningPanel({ onClose }) {
     const { t } = useLang();
+    const isTv = useTvMode();
+    const closeRef = useRef(null);
     const [tuning, setTuningState] = useState(() => getVideoTuning());
     const [render, setRenderState] = useState(() => getRenderTuning());
     const [audio, setAudioState] = useState(() => getAudioTuning());
@@ -172422,47 +172810,106 @@
       const full = { ...DEFAULT_TUNING, ...patch };
       return Object.keys(full).every((k) => full[k] === tuning[k]);
     };
+    useEffect(() => {
+      if (!isTv) return;
+      let cancelled = false;
+      let frames = 0;
+      let held = 0;
+      const attempt = () => {
+        if (cancelled) return;
+        const btn = closeRef.current;
+        if (btn && btn.offsetParent !== null) {
+          if (document.activeElement === btn) {
+            if (++held >= 5) return;
+          } else {
+            held = 0;
+            btn.focus();
+          }
+        }
+        if (frames++ < 60) requestAnimationFrame(attempt);
+      };
+      requestAnimationFrame(attempt);
+      return () => {
+        cancelled = true;
+      };
+    }, [isTv]);
+    const tvRow = (onStep) => isTv ? {
+      "data-f": "",
+      tabIndex: 0,
+      onKeyDown: (e) => {
+        if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+        e.preventDefault();
+        e.stopPropagation();
+        onStep(e.key === "ArrowRight" ? 1 : -1);
+      }
+    } : {};
     return /* @__PURE__ */ jsxs(
       "div",
       {
         className: "absolute bottom-24 right-4 z-[60] max-h-[70vh] w-80 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-2xl border border-white/10 bg-black/85 p-4 shadow-2xl backdrop-blur-xl",
         onClick: (e) => e.stopPropagation(),
         onMouseMove: (e) => e.stopPropagation(),
+        ...isTv ? { "data-panel-root": "", "data-scroll": "" } : {},
+        onKeyDown: (e) => {
+          if (!isTv) return;
+          if (e.key === "Escape" || e.key === "Backspace") {
+            e.preventDefault();
+            e.stopPropagation();
+            onClose();
+          }
+        },
         children: [
           /* @__PURE__ */ jsxs("div", { className: "mb-3 flex items-center justify-between", children: [
             /* @__PURE__ */ jsx("p", { className: "text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400", children: t("vtTitle") }),
-            /* @__PURE__ */ jsx("button", { type: "button", onClick: onClose, className: "text-slate-400 transition hover:text-white", "aria-label": t("close"), children: /* @__PURE__ */ jsx("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.2", strokeLinecap: "round", children: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12" }) }) })
+            /* @__PURE__ */ jsx("button", { type: "button", ref: closeRef, ...isTv ? { "data-f": "", "data-init": "" } : {}, onClick: onClose, className: "text-slate-400 transition hover:text-white", "aria-label": t("close"), children: /* @__PURE__ */ jsx("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.2", strokeLinecap: "round", children: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12" }) }) })
           ] }),
           /* @__PURE__ */ jsx("div", { className: "mb-3 flex flex-wrap gap-1.5", children: Object.entries(TUNING_PRESETS).map(([id4, preset]) => /* @__PURE__ */ jsx(
             "button",
             {
               type: "button",
+              ...isTv ? { "data-f": "" } : {},
               onClick: () => apply({ ...DEFAULT_TUNING, ...preset.patch }),
               className: `rounded-full border px-2.5 py-1 text-[10.5px] font-medium transition ${matchesPreset2(preset.patch) ? "border-accent-400/60 bg-accent-500/15 text-accent-200" : "border-white/10 text-slate-300 hover:border-white/25"}`,
               children: t(preset.labelKey)
             },
             id4
           )) }),
-          /* @__PURE__ */ jsx("div", { className: "space-y-2.5", children: DIALS.map(({ key, labelKey, min, max, step }) => /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2.5", children: [
-            /* @__PURE__ */ jsx("span", { className: "w-16 flex-none text-[11px] text-slate-300", children: t(labelKey) }),
-            /* @__PURE__ */ jsx(
-              "input",
+          /* @__PURE__ */ jsx("div", { className: "space-y-2.5", children: DIALS.map(({ key, labelKey, min, max, step }) => (
+            // TV: HELA raden är stationen (reglaget går inte att dra med
+            // fjärrkontroll) — vänster/höger stegar värdet, upp/ner byter rad.
+            /* @__PURE__ */ jsxs(
+              "div",
               {
-                type: "range",
-                min,
-                max,
-                step,
-                value: tuning[key],
-                onChange: (e) => apply({ ...tuning, [key]: Number(e.target.value) }),
-                className: "h-1 flex-1 cursor-pointer appearance-none rounded-full bg-white/20 accent-aurora-400"
-              }
-            ),
-            /* @__PURE__ */ jsx("span", { className: "w-9 flex-none text-right text-[10.5px] tabular-nums text-slate-400", children: key === "sharpen" ? tuning[key].toFixed(2) : tuning[key] > 0 ? `+${tuning[key]}` : tuning[key] })
-          ] }, key)) }),
+                className: "flex items-center gap-2.5 rounded-lg",
+                ...tvRow((dir) => {
+                  const next2 = Math.min(max, Math.max(min, Number((tuning[key] + dir * step).toFixed(2))));
+                  apply({ ...tuning, [key]: next2 });
+                }),
+                children: [
+                  /* @__PURE__ */ jsx("span", { className: "w-16 flex-none text-[11px] text-slate-300", children: t(labelKey) }),
+                  /* @__PURE__ */ jsx(
+                    "input",
+                    {
+                      type: "range",
+                      min,
+                      max,
+                      step,
+                      value: tuning[key],
+                      tabIndex: isTv ? -1 : void 0,
+                      onChange: (e) => apply({ ...tuning, [key]: Number(e.target.value) }),
+                      className: "h-1 flex-1 cursor-pointer appearance-none rounded-full bg-white/20 accent-aurora-400"
+                    }
+                  ),
+                  /* @__PURE__ */ jsx("span", { className: "w-9 flex-none text-right text-[10.5px] tabular-nums text-slate-400", children: key === "sharpen" ? tuning[key].toFixed(2) : tuning[key] > 0 ? `+${tuning[key]}` : tuning[key] })
+                ]
+              },
+              key
+            )
+          )) }),
           /* @__PURE__ */ jsx(MiniHeader, { children: t("atEyebrow") }),
           /* @__PURE__ */ jsx("div", { className: "space-y-2", children: AUDIO_TOGGLES.map(([key, labelKey]) => /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-2", children: [
             /* @__PURE__ */ jsx("span", { className: "text-[11px] text-slate-300", children: t(labelKey) }),
-            /* @__PURE__ */ jsx(MiniToggle, { checked: audio[key], onChange: () => applyAudio({ ...audio, [key]: !audio[key] }) })
+            /* @__PURE__ */ jsx(MiniToggle, { tv: isTv, checked: audio[key], onChange: () => applyAudio({ ...audio, [key]: !audio[key] }) })
           ] }, key)) }),
           /* @__PURE__ */ jsx(MiniHeader, { children: t("rtEyebrow") }),
           /* @__PURE__ */ jsxs("div", { className: "space-y-2.5", children: [
@@ -172470,24 +172917,37 @@
               "button",
               {
                 type: "button",
+                ...isTv ? { "data-f": "" } : {},
                 onClick: () => applyRender({ ...render, profile }),
                 className: `rounded-full border px-2.5 py-1 text-[10.5px] font-medium transition ${render.profile === profile ? "border-accent-400/60 bg-accent-500/15 text-accent-200" : "border-white/10 text-slate-300 hover:border-white/25"}`,
                 children: t(profile === "light" ? "rtProfileLight" : profile === "max" ? "rtProfileMax" : "rtProfileBalanced")
               },
               profile
             )) }),
-            /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-2", children: [
-              /* @__PURE__ */ jsx("span", { className: "text-[11px] text-slate-300", children: t("rtToneMapping") }),
-              /* @__PURE__ */ jsx(
-                "select",
-                {
-                  value: render.toneMapping,
-                  onChange: (e) => applyRender({ ...render, toneMapping: e.target.value }),
-                  className: "cursor-pointer rounded-lg border border-white/10 bg-transparent px-2 py-1 text-[11px] text-slate-200 outline-none hover:text-white",
-                  children: TONE_MAPPINGS.map((mode) => /* @__PURE__ */ jsx("option", { value: mode, className: "bg-slate-900", children: mode }, mode))
-                }
-              )
-            ] }),
+            /* @__PURE__ */ jsxs(
+              "div",
+              {
+                className: "flex items-center justify-between gap-2 rounded-lg",
+                ...tvRow((dir) => {
+                  const at = TONE_MAPPINGS.indexOf(render.toneMapping);
+                  const next2 = TONE_MAPPINGS[(at + dir + TONE_MAPPINGS.length) % TONE_MAPPINGS.length];
+                  applyRender({ ...render, toneMapping: next2 });
+                }),
+                children: [
+                  /* @__PURE__ */ jsx("span", { className: "text-[11px] text-slate-300", children: t("rtToneMapping") }),
+                  /* @__PURE__ */ jsx(
+                    "select",
+                    {
+                      value: render.toneMapping,
+                      tabIndex: isTv ? -1 : void 0,
+                      onChange: (e) => applyRender({ ...render, toneMapping: e.target.value }),
+                      className: "cursor-pointer rounded-lg border border-white/10 bg-transparent px-2 py-1 text-[11px] text-slate-200 outline-none hover:text-white",
+                      children: TONE_MAPPINGS.map((mode) => /* @__PURE__ */ jsx("option", { value: mode, className: "bg-slate-900", children: mode }, mode))
+                    }
+                  )
+                ]
+              }
+            ),
             [
               ["inverseToneMapping", "rtInverseTm"],
               ["hwdec", "rtHwdec"],
@@ -172499,6 +172959,7 @@
               /* @__PURE__ */ jsx(
                 MiniToggle,
                 {
+                  tv: isTv,
                   checked: Boolean(render[key]),
                   onChange: () => applyRender({ ...render, [key]: !render[key] })
                 }
@@ -172510,6 +172971,7 @@
               "button",
               {
                 type: "button",
+                ...isTv ? { "data-f": "" } : {},
                 disabled: isDefaultTuning(tuning),
                 onClick: () => {
                   apply({ ...DEFAULT_TUNING });
@@ -172677,7 +173139,10 @@
 
   // lib/services/api-json-cache.ts
   var DEFAULT_TTL_MS = 2 * 6e4;
-  var MAX_CONCURRENT_REQUESTS = 6;
+  function maxConcurrentRequests() {
+    return isTvSurface() ? 10 : 6;
+  }
+  var QUEUE_BYPASS_MS = 8e3;
   var cache2 = /* @__PURE__ */ new Map();
   var errorCache = /* @__PURE__ */ new Map();
   var inflight = /* @__PURE__ */ new Map();
@@ -172695,15 +173160,20 @@
   function getGroupLimit(group) {
     if (group === "item") return 4;
     if (group === "recommendations") return 2;
-    if (group === "media") return 2;
+    if (group === "media") return isTvSurface() ? 6 : 2;
     if (group === "wiki") return 3;
     return 3;
+  }
+  var tvSurface = null;
+  function isTvSurface() {
+    if (tvSurface === null) tvSurface = detectTvMode();
+    return tvSurface;
   }
   function getGroupActive(group) {
     return activeByGroup.get(group) ?? 0;
   }
   function canStartGroup(group) {
-    return activeRequests < MAX_CONCURRENT_REQUESTS && getGroupActive(group) < getGroupLimit(group);
+    return activeRequests < maxConcurrentRequests() && getGroupActive(group) < getGroupLimit(group);
   }
   function onRequestStart(group) {
     activeRequests += 1;
@@ -172726,7 +173196,7 @@
     });
   }
   function pumpQueue() {
-    while (activeRequests < MAX_CONCURRENT_REQUESTS && queue.length > 0) {
+    while (activeRequests < maxConcurrentRequests() && queue.length > 0) {
       const nextIndex = queue.findIndex((entry) => canStartGroup(entry.group));
       if (nextIndex < 0) return;
       const [next2] = queue.splice(nextIndex, 1);
@@ -172766,6 +173236,12 @@
           });
         }
       };
+      const bypass = setTimeout(() => {
+        const index3 = queue.findIndex((entry) => entry.seq === seq);
+        if (index3 < 0) return;
+        queue.splice(index3, 1);
+        item.start();
+      }, QUEUE_BYPASS_MS);
       const onAbort = () => {
         const index3 = queue.findIndex((entry) => entry.seq === seq);
         if (index3 >= 0) queue.splice(index3, 1);
@@ -172773,6 +173249,7 @@
         reject(new DOMException("Aborted", "AbortError"));
       };
       const cleanup = () => {
+        clearTimeout(bypass);
         signal?.removeEventListener("abort", onAbort);
       };
       signal?.addEventListener("abort", onAbort, { once: true });
@@ -172829,7 +173306,7 @@
     const existing = inflight.get(key);
     if (existing) return withAbortSignal(existing, options.signal);
     const request = (async () => {
-      const release = await acquireRequestSlot(options.priority ?? "normal", requestGroup, options.signal);
+      const release = await acquireRequestSlot(options.priority ?? "normal", requestGroup);
       try {
         if (isPluginDesktopHost()) {
           try {
@@ -172844,8 +173321,9 @@
         return fetchJsonWithRetry(key, {}, {
           timeoutMs: resolvedTimeoutMs,
           retries: options.retries,
-          retryDelayMs: options.retryDelayMs,
-          signal: options.signal
+          retryDelayMs: options.retryDelayMs
+          // Av samma skäl som ovan: den delade hämtningen tillhör alla som
+          // väntar på nyckeln, inte den som råkade starta den.
         });
       } finally {
         release();
@@ -173304,6 +173782,9 @@
   // components/player/player-wiki-panel.tsx
   init_react_shim();
 
+  // components/results/person-sidebar-panel.tsx
+  init_react_shim();
+
   // components/results/person-banner.tsx
   init_react_shim();
   init_jsx_runtime_shim();
@@ -173323,13 +173804,15 @@
     seriesLabel,
     title
   }) {
+    const isTv = useTvMode();
     if (credits.length === 0) return null;
     return /* @__PURE__ */ jsxs("div", { children: [
       /* @__PURE__ */ jsx("div", { className: "mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500", children: title }),
-      /* @__PURE__ */ jsx("div", { className: "flex gap-2 overflow-x-auto pb-1", children: credits.map((credit) => /* @__PURE__ */ jsxs(
+      /* @__PURE__ */ jsx("div", { className: "flex gap-2 overflow-x-auto pb-1", ...isTv ? { "data-row": "" } : {}, children: credits.map((credit) => /* @__PURE__ */ jsxs(
         "button",
         {
           type: "button",
+          ...isTv && onCreditClick ? { "data-f": "" } : {},
           onClick: () => onCreditClick?.({ id: credit.id, mediaType: credit.mediaType, title: credit.title }),
           className: `group relative w-[80px] flex-shrink-0 text-left ${onCreditClick ? "cursor-pointer" : "cursor-default"}`,
           children: [
@@ -173430,6 +173913,7 @@
                 href: `https://www.imdb.com/name/${person.imdbId}`,
                 target: "_blank",
                 rel: "noopener noreferrer",
+                "data-tv-hide": "",
                 className: "flex items-center gap-1 rounded-full border border-white/10 bg-[#f5c518]/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#f5c518] transition hover:bg-[#f5c518]/20",
                 onClick: (e) => e.stopPropagation(),
                 children: "IMDb"
@@ -173538,6 +174022,7 @@
               href: `https://www.imdb.com/name/${person.imdbId}`,
               target: "_blank",
               rel: "noopener noreferrer",
+              "data-tv-hide": "",
               className: "flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-[#f5c518] transition hover:bg-white/10",
               children: "IMDb"
             }
@@ -173623,6 +174108,31 @@
   init_jsx_runtime_shim();
   function PersonSidebarPanel({ personId, personName, onClose, onBack, onCreditClick }) {
     const { t } = useLang();
+    const isTv = useTvMode();
+    const closeRef = useRef(null);
+    useEffect(() => {
+      if (!isTv) return;
+      let cancelled = false;
+      let frames = 0;
+      let held = 0;
+      const attempt = () => {
+        if (cancelled) return;
+        const btn = closeRef.current;
+        if (btn && btn.offsetParent !== null) {
+          if (document.activeElement === btn) {
+            if (++held >= 5) return;
+          } else {
+            held = 0;
+            btn.focus();
+          }
+        }
+        if (frames++ < 60) requestAnimationFrame(attempt);
+      };
+      requestAnimationFrame(attempt);
+      return () => {
+        cancelled = true;
+      };
+    }, [isTv, personId]);
     return /* @__PURE__ */ jsxs(
       "div",
       {
@@ -173633,6 +174143,7 @@
           borderLeft: "1px solid rgba(255,255,255,0.07)"
         },
         onClick: (e) => e.stopPropagation(),
+        ...isTv ? { "data-panel-root": "" } : {},
         children: [
           /* @__PURE__ */ jsxs("div", { className: "flex flex-shrink-0 items-center justify-between border-b border-white/[0.07] px-4 pb-3 pt-[max(0.75rem,calc(env(safe-area-inset-top)+0.5rem))]", children: [
             /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
@@ -173640,6 +174151,7 @@
                 "button",
                 {
                   type: "button",
+                  ...isTv ? { "data-f": "" } : {},
                   onClick: onBack,
                   className: "flex h-7 w-7 items-center justify-center rounded-full text-slate-500 transition hover:bg-white/10 hover:text-white",
                   title: "Back",
@@ -173652,13 +174164,15 @@
               "button",
               {
                 type: "button",
+                ref: closeRef,
+                ...isTv ? { "data-f": "", "data-init": "" } : {},
                 onClick: onClose,
                 className: "flex h-7 w-7 items-center justify-center rounded-full text-slate-500 transition hover:bg-white/10 hover:text-white",
                 children: /* @__PURE__ */ jsx("svg", { className: "h-3.5 w-3.5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2.5, children: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12" }) })
               }
             )
           ] }),
-          /* @__PURE__ */ jsx("div", { className: "flex-1 overflow-y-auto overscroll-contain p-4", children: /* @__PURE__ */ jsx(
+          /* @__PURE__ */ jsx("div", { className: "flex-1 overflow-y-auto overscroll-contain p-4", ...isTv ? { "data-scroll": "" } : {}, children: /* @__PURE__ */ jsx(
             PersonBanner,
             {
               personId,
@@ -173685,6 +174199,8 @@
     return h > 0 ? `${h}h ${m2}m` : `${m2}m`;
   }
   function PlayerWikiPanel({ tmdbId, mediaType, imdbId, onClose, onBack }) {
+    const isTv = useTvMode();
+    const closeRef = useRef(null);
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
@@ -173732,12 +174248,36 @@
         controller.abort();
       };
     }, [tmdbId, mediaType, imdbId]);
+    useEffect(() => {
+      if (!isTv) return;
+      let cancelled = false;
+      let frames = 0;
+      let held = 0;
+      const attempt = () => {
+        if (cancelled) return;
+        const btn = closeRef.current;
+        if (btn && btn.offsetParent !== null) {
+          if (document.activeElement === btn) {
+            if (++held >= 5) return;
+          } else {
+            held = 0;
+            btn.focus();
+          }
+        }
+        if (frames++ < 60) requestAnimationFrame(attempt);
+      };
+      requestAnimationFrame(attempt);
+      return () => {
+        cancelled = true;
+      };
+    }, [isTv, tmdbId, imdbId]);
     return /* @__PURE__ */ jsxs(
       "div",
       {
         className: "absolute inset-y-0 right-0 z-[80] flex w-[340px] flex-col overflow-hidden",
         style: { background: "rgb(var(--base-950) / 0.96)", backdropFilter: "blur(12px)", borderLeft: "1px solid rgba(255,255,255,0.07)" },
         onClick: (e) => e.stopPropagation(),
+        ...isTv ? { "data-panel-root": "" } : {},
         children: [
           /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between border-b border-white/[0.07] px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top),var(--android-inset-top,0px))]", children: [
             /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
@@ -173745,6 +174285,7 @@
                 "button",
                 {
                   type: "button",
+                  ...isTv ? { "data-f": "" } : {},
                   onClick: onBack,
                   className: "flex h-7 w-7 items-center justify-center rounded-full text-slate-500 transition hover:bg-white/10 hover:text-white",
                   title: "Back",
@@ -173757,13 +174298,15 @@
               "button",
               {
                 type: "button",
+                ref: closeRef,
+                ...isTv ? { "data-f": "", "data-init": "" } : {},
                 onClick: onClose,
                 className: "flex h-7 w-7 items-center justify-center rounded-full text-slate-500 transition hover:bg-white/10 hover:text-white",
                 children: /* @__PURE__ */ jsx("svg", { className: "h-3.5 w-3.5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2.5, children: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12" }) })
               }
             )
           ] }),
-          /* @__PURE__ */ jsxs("div", { className: "flex-1 overflow-y-auto overscroll-contain", children: [
+          /* @__PURE__ */ jsxs("div", { className: "flex-1 overflow-y-auto overscroll-contain", ...isTv ? { "data-scroll": "" } : {}, children: [
             loading && /* @__PURE__ */ jsx("div", { className: "flex h-32 items-center justify-center", children: /* @__PURE__ */ jsx("svg", { className: "h-6 w-6 animate-spin text-slate-500", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, children: /* @__PURE__ */ jsx("path", { d: "M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" }) }) }),
             error && /* @__PURE__ */ jsxs("div", { className: "flex h-32 items-center justify-center text-sm text-slate-500", children: [
               "Could not load info",
@@ -173819,6 +174362,7 @@
                     "button",
                     {
                       type: "button",
+                      ...isTv ? { "data-f": "" } : {},
                       onClick: () => setSelectedPerson({ id: actor.id, name: actor.name }),
                       className: "flex flex-col items-center text-center transition hover:opacity-80 active:opacity-60",
                       title: actor.name,
@@ -173876,6 +174420,8 @@
   init_jsx_runtime_shim();
   function PlayerSoundtrackPanel({ title, year, onClose }) {
     const { t } = useLang();
+    const isTv = useTvMode();
+    const closeRef = useRef(null);
     const [state, setState] = useState("loading");
     const [result, setResult] = useState(null);
     const [errorKind, setErrorKind] = useState(null);
@@ -173906,12 +174452,36 @@
         controller.abort();
       };
     }, [title, year]);
+    useEffect(() => {
+      if (!isTv) return;
+      let cancelled = false;
+      let frames = 0;
+      let held = 0;
+      const attempt = () => {
+        if (cancelled) return;
+        const btn = closeRef.current;
+        if (btn && btn.offsetParent !== null) {
+          if (document.activeElement === btn) {
+            if (++held >= 5) return;
+          } else {
+            held = 0;
+            btn.focus();
+          }
+        }
+        if (frames++ < 60) requestAnimationFrame(attempt);
+      };
+      requestAnimationFrame(attempt);
+      return () => {
+        cancelled = true;
+      };
+    }, [isTv, title, year]);
     return /* @__PURE__ */ jsxs(
       "div",
       {
         className: "absolute inset-y-0 right-0 z-40 flex w-[340px] flex-col overflow-hidden",
         style: { background: "rgb(var(--base-950) / 0.96)", backdropFilter: "blur(12px)", borderLeft: "1px solid rgba(255,255,255,0.07)" },
         onClick: (e) => e.stopPropagation(),
+        ...isTv ? { "data-panel-root": "" } : {},
         children: [
           /* @__PURE__ */ jsxs("div", { className: "flex flex-shrink-0 items-center justify-between border-b border-white/[0.07] px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top),var(--android-inset-top,0px))]", children: [
             /* @__PURE__ */ jsx("span", { className: "text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400", children: t("soundtrack") }),
@@ -173919,13 +174489,15 @@
               "button",
               {
                 type: "button",
+                ref: closeRef,
+                ...isTv ? { "data-f": "", "data-init": "" } : {},
                 onClick: onClose,
                 className: "flex h-7 w-7 items-center justify-center rounded-full text-slate-500 transition hover:bg-white/10 hover:text-white",
                 children: /* @__PURE__ */ jsx("svg", { className: "h-3.5 w-3.5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2.5, children: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12" }) })
               }
             )
           ] }),
-          /* @__PURE__ */ jsxs("div", { className: `flex min-h-0 flex-1 flex-col ${state === "embed" ? "" : "overflow-y-auto overscroll-contain"}`, children: [
+          /* @__PURE__ */ jsxs("div", { className: `flex min-h-0 flex-1 flex-col ${state === "embed" ? "" : "overflow-y-auto overscroll-contain"}`, ...isTv && state !== "embed" ? { "data-scroll": "" } : {}, children: [
             state === "loading" && /* @__PURE__ */ jsx("div", { className: "flex h-32 items-center justify-center", children: /* @__PURE__ */ jsx("svg", { className: "h-6 w-6 animate-spin text-slate-500", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, children: /* @__PURE__ */ jsx("path", { d: "M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" }) }) }),
             state === "error" && /* @__PURE__ */ jsxs("div", { className: "flex h-32 items-center justify-center text-sm text-slate-500", children: [
               t("soundtrackLoadError"),
@@ -173940,6 +174512,7 @@
                   href: result.fallbackUrl,
                   target: "_blank",
                   rel: "noopener noreferrer",
+                  ...isTv ? { "data-f": "" } : {},
                   className: "rounded-full border border-green-500/40 bg-green-500/10 px-4 py-1.5 text-xs font-medium text-green-400 transition hover:bg-green-500/20",
                   children: [
                     t("searchOnSpotify"),
@@ -173962,6 +174535,7 @@
                     href: result.spotifyUrl,
                     target: "_blank",
                     rel: "noopener noreferrer",
+                    ...isTv ? { "data-f": "" } : {},
                     className: "flex-shrink-0 text-[10px] text-slate-500 transition hover:text-green-400",
                     title: t("openOnSpotify"),
                     children: /* @__PURE__ */ jsx("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" }) })
@@ -174755,7 +175329,7 @@ ${cue.text}`).join("\n\n")}
     } catch {
     }
   }
-  function VideoPlayerModal({ url, filename, title, onClose, imdbId, tmdbId, mediaType, season, episode, mediaId, mediaTitle, mediaSource, posterUrl, backdropUrl, year, initialTime, onFirstPlay, hideStartSplash, forceProxy, onTimeUpdate, onOutroStart, onLoadFailed, onOpenedExternally, skipHomeKitOnClose, skipHomeKitOnOpen, overlayContent, autoFullscreen, sourceInfoHash, playbackTraceId }) {
+  function VideoPlayerModal({ url, filename, title, onClose, imdbId, tmdbId, mediaType, season, episode, mediaId, mediaTitle, mediaSource, posterUrl, backdropUrl, year, initialTime, expectedDurationSeconds, onFirstPlay, hideStartSplash, forceProxy, onTimeUpdate, onOutroStart, onLoadFailed, onPlaybackEnded, onOpenedExternally, skipHomeKitOnClose, skipHomeKitOnOpen, overlayContent, autoFullscreen, sourceInfoHash, playbackTraceId }) {
     const STILL_WATCHING_CLOSE_SECONDS = 20;
     const [engineKind, setEngineKind] = useState("none");
     useEffect(() => {
@@ -174776,10 +175350,7 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (isClientSession()) {
         let vlcPref = false;
-        try {
-          vlcPref = window.localStorage.getItem("remote_open_in_vlc") === "1";
-        } catch {
-        }
+        vlcPref = getItem("remote_open_in_vlc") === "1";
         if (vlcPref && openInVlc(url)) {
           onClose();
         }
@@ -174972,7 +175543,14 @@ ${cue.text}`).join("\n\n")}
         episode != null ? `e:${episode}` : "e:none"
       ].join("|");
     }, [playbackTraceId, mediaId, url, tmdbId, imdbId, mediaType, season, episode]);
+    const isTv = useTvMode();
+    const tvFocus = useTvFocus();
+    const playerRootRef = useRef(null);
     const [controlsVisible, setControlsVisible] = useState(true);
+    const controlsVisibleRef = useRef(true);
+    useEffect(() => {
+      controlsVisibleRef.current = controlsVisible;
+    }, [controlsVisible]);
     const [cssFullscreen, setCssFullscreen] = useState(false);
     const [desktopFullscreen, setDesktopFullscreen] = useState(false);
     const hideTimerRef = useRef(null);
@@ -174998,6 +175576,9 @@ ${cue.text}`).join("\n\n")}
         if (!paused) setControlsVisible(false);
       }, 3e3);
     }
+    const onMouseActivityRef = useRef(() => {
+    });
+    onMouseActivityRef.current = onMouseActivity;
     const suppressNextOverlayToggleRef = useRef(false);
     function showControlsPermanent() {
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
@@ -175589,6 +176170,9 @@ ${cue.text}`).join("\n\n")}
     const totalDuration = useMpv ? mpv.duration > 0 ? mpv.duration : probedDuration ?? 0 : probedDuration ?? (isFinite(duration) && duration > 0 ? duration : 0);
     const isPlaying = useMpv ? !mpv.paused : playing;
     const hasEndedPlayback = useMpv ? mpv.ended : hasEnded;
+    const durationConfirmed = expectedDurationSeconds == null || expectedDurationSeconds <= 0 || totalDuration > 0 && !isResumeDurationMismatch(expectedDurationSeconds, totalDuration, initialTime ?? 0);
+    const durationConfirmedRef = useRef(durationConfirmed);
+    durationConfirmedRef.current = durationConfirmed;
     useEffect(() => {
       if (!useMpv || !hasEndedPlayback) return;
       if (prematureEndHandledRef.current) return;
@@ -176531,7 +177115,9 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       lockBodyScroll();
       function onKey(e) {
-        if (e.key === "Escape") {
+        const keyTarget = e.target;
+        const typing = keyTarget?.tagName === "INPUT" || keyTarget?.tagName === "TEXTAREA" || keyTarget?.isContentEditable === true;
+        if (e.key === "Escape" || isTv && e.key === "Backspace" && !typing) {
           e.preventDefault();
           e.stopPropagation();
           if (useMpv) {
@@ -176571,6 +177157,7 @@ ${cue.text}`).join("\n\n")}
           handleClose();
           return;
         }
+        if (isTv && e.key.startsWith("Arrow")) return;
         if (matchesShortcut("playPause", e.key) || e.key === "k") {
           e.preventDefault();
           togglePlay();
@@ -176616,7 +177203,7 @@ ${cue.text}`).join("\n\n")}
         unlockBodyScroll();
         window.removeEventListener("keydown", onKey);
       };
-    }, [handleClose, scheduleBoundsResync, syncDesktopFullscreenState, togglePlay, seek, toggleMute, toggleFullscreen, useMpv]);
+    }, [handleClose, scheduleBoundsResync, syncDesktopFullscreenState, togglePlay, seek, toggleMute, toggleFullscreen, useMpv, isTv]);
     useEffect(() => {
       if (!useMpv) return;
       let raf = null;
@@ -176635,6 +177222,49 @@ ${cue.text}`).join("\n\n")}
         if (raf !== null) window.cancelAnimationFrame(raf);
       };
     }, [useMpv]);
+    useEffect(() => {
+      if (!isTv) return;
+      const onTvRemoteKey = (e) => {
+        const nav = e.key === "ArrowUp" || e.key === "ArrowDown" || e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "Enter";
+        if (!nav) return;
+        if (!controlsVisibleRef.current) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          onMouseActivityRef.current();
+          tvFocus?.focusInit(playerRootRef.current);
+          return;
+        }
+        onMouseActivityRef.current();
+      };
+      window.addEventListener("keydown", onTvRemoteKey, true);
+      return () => window.removeEventListener("keydown", onTvRemoteKey, true);
+    }, [isTv, tvFocus]);
+    const splashCancelRef = useRef(null);
+    const tuningTriggerRef = useRef(null);
+    const splashVisibleForTv = !hasEverStarted && (!hideStartSplash || clientOwnsSplash);
+    useEffect(() => {
+      if (!isTv || !splashVisibleForTv) return;
+      let cancelled = false;
+      let frames = 0;
+      let held = 0;
+      const attempt = () => {
+        if (cancelled) return;
+        const btn = splashCancelRef.current;
+        if (btn && btn.offsetParent !== null) {
+          if (document.activeElement === btn) {
+            if (++held >= 5) return;
+          } else {
+            held = 0;
+            btn.focus();
+          }
+        }
+        if (frames++ < 60) requestAnimationFrame(attempt);
+      };
+      requestAnimationFrame(attempt);
+      return () => {
+        cancelled = true;
+      };
+    }, [isTv, splashVisibleForTv]);
     useEffect(() => {
       const sync2 = () => {
         stillWatchingEnabledRef.current = getStillWatchingEnabled();
@@ -176818,13 +177448,26 @@ ${cue.text}`).join("\n\n")}
     const scrobbleStartedRef = useRef(false);
     useEffect(() => {
       if (!hasStarted) return;
+      if (!durationConfirmed) return;
       if (isPlaying) {
         scrobbleStartedRef.current = true;
         void scrobble("start", scrobbleIdentityRef.current, scrobbleProgress());
+        const pulse = window.setInterval(() => {
+          if (!scrobbleStartedRef.current) return;
+          void scrobble("pause", scrobbleIdentityRef.current, scrobbleProgress());
+        }, 3e4);
+        return () => window.clearInterval(pulse);
       } else if (scrobbleStartedRef.current) {
         void scrobble("pause", scrobbleIdentityRef.current, scrobbleProgress());
       }
-    }, [isPlaying, hasStarted, scrobbleProgress]);
+    }, [isPlaying, hasStarted, scrobbleProgress, durationConfirmed]);
+    useEffect(() => {
+      if (!isPlaying || !hasStarted || !durationConfirmed) return;
+      const interval = setInterval(() => {
+        void scrobble("pause", scrobbleIdentityRef.current, scrobbleProgress());
+      }, 3e4);
+      return () => clearInterval(interval);
+    }, [isPlaying, hasStarted, scrobbleProgress, durationConfirmed]);
     useEffect(() => {
       if (!wikiTmdbId && !imdbId) return;
       return () => {
@@ -176839,6 +177482,7 @@ ${cue.text}`).join("\n\n")}
         const snapshot = progressSnapshotRef.current;
         if (!mediaId || !url || snapshot.totalDuration <= 0) return;
         if (watchedMarkedRef.current) return;
+        if (!durationConfirmedRef.current) return;
         saveStreamProgress({
           id: mediaId,
           tmdbId: wikiTmdbId,
@@ -177067,6 +177711,7 @@ ${cue.text}`).join("\n\n")}
       if (!hasStarted || !hasStartedForUrlRef.current) return;
       if (watchedMarkedRef.current) return;
       if (totalDuration <= 0) return;
+      if (!durationConfirmed) return;
       const completionRatio = realTime / totalDuration;
       const secondsRemaining = totalDuration - realTime;
       const watchedThisSession = Math.max(0, realTime - playbackStartedAtRef.current);
@@ -177082,7 +177727,7 @@ ${cue.text}`).join("\n\n")}
         posterUrl: posterUrl ?? null
       }, true);
       watchedMarkedRef.current = true;
-    }, [hasEndedPlayback, hasStarted, imdbId, mediaType, posterUrl, realTime, resolvedImdbId, title, totalDuration, wikiTmdbId]);
+    }, [durationConfirmed, hasEndedPlayback, hasStarted, imdbId, mediaType, posterUrl, realTime, resolvedImdbId, title, totalDuration, wikiTmdbId]);
     useEffect(() => {
       if (!stillWatchingEnabledRef.current) return;
       if (mediaType !== "tv") return;
@@ -177105,6 +177750,7 @@ ${cue.text}`).join("\n\n")}
       if (!wikiTmdbId || season == null || episode == null) return;
       if (watchedMarkedRef.current) return;
       if (totalDuration <= 0) return;
+      if (!durationConfirmed) return;
       const completionRatio = realTime / totalDuration;
       const secondsRemaining = totalDuration - realTime;
       const watchedThisSession = Math.max(0, realTime - playbackStartedAtRef.current);
@@ -177114,7 +177760,7 @@ ${cue.text}`).join("\n\n")}
       setWatched(wikiTmdbId, season, episode, true, { imdbId: imdbId ?? null });
       removeStreamProgress(`tv-${wikiTmdbId}`, season, episode);
       watchedMarkedRef.current = true;
-    }, [episode, hasEndedPlayback, hasStarted, mediaType, realTime, season, totalDuration, wikiTmdbId]);
+    }, [durationConfirmed, episode, hasEndedPlayback, hasStarted, mediaType, realTime, season, totalDuration, wikiTmdbId]);
     useEffect(() => {
       const introDbImdbId = resolvedImdbId ?? imdbId ?? null;
       if (!wikiTmdbId && !introDbImdbId || !mediaType) {
@@ -177810,7 +178456,7 @@ ${cue.text}`).join("\n\n")}
       if (realTime < outroSegment.startMs / 1e3) return;
       outroFiredRef.current = true;
       markOutroFired(true);
-      if (mediaType === "tv" && wikiTmdbId && season != null && episode != null && !watchedMarkedRef.current) {
+      if (mediaType === "tv" && wikiTmdbId && season != null && episode != null && !watchedMarkedRef.current && durationConfirmedRef.current) {
         setWatched(wikiTmdbId, season, episode, true, { imdbId: imdbId ?? null });
         removeStreamProgress(`tv-${wikiTmdbId}`, season, episode);
         watchedMarkedRef.current = true;
@@ -178051,7 +178697,7 @@ ${cue.text}`).join("\n\n")}
       lastAutoSyncedDelayRef.current = null;
       setSubtitleAutoSyncState({ type: "idle" });
     }, []);
-    const content = /* @__PURE__ */ jsxs("div", { "data-lumio-player-open": "1", className: `fixed inset-x-0 top-0 z-[60] flex h-[100dvh] flex-col !mt-0 ${useMpv ? "" : "bg-black"}`, children: [
+    const content = /* @__PURE__ */ jsxs("div", { ref: playerRootRef, "data-lumio-player-open": "1", "data-panel-root": isTv ? "1" : void 0, "data-tv-fullbleed": "", className: `fixed inset-x-0 top-0 z-[60] flex h-[100dvh] flex-col !mt-0 ${useMpv ? "" : "bg-black"}`, children: [
       !hasEverStarted && (!hideStartSplash || clientOwnsSplash) && /* @__PURE__ */ jsxs(
         "div",
         {
@@ -178090,6 +178736,7 @@ ${cue.text}`).join("\n\n")}
                   "button",
                   {
                     type: "button",
+                    "data-f": isTv ? "1" : void 0,
                     onClick: () => {
                       if (openInExternalPlayer(url)) {
                         (onOpenedExternally ?? onClose)();
@@ -178103,6 +178750,9 @@ ${cue.text}`).join("\n\n")}
                   "button",
                   {
                     type: "button",
+                    ref: splashCancelRef,
+                    "data-f": isTv ? "1" : void 0,
+                    "data-init": isTv ? "1" : void 0,
                     onClick: handleClose,
                     className: "text-xs text-slate-500 transition hover:text-slate-300",
                     children: startError ? t("close") : "Avbryt"
@@ -178150,6 +178800,7 @@ ${cue.text}`).join("\n\n")}
                     "button",
                     {
                       type: "button",
+                      "data-f": isTv ? "1" : void 0,
                       onClick: () => {
                         void handleCopyStreamLink();
                       },
@@ -178161,6 +178812,7 @@ ${cue.text}`).join("\n\n")}
                     "button",
                     {
                       type: "button",
+                      "data-f": isTv ? "1" : void 0,
                       onClick: handleClose,
                       className: "rounded-full border border-white/10 px-3 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-300 transition hover:border-white/30 hover:text-white",
                       children: t("close")
@@ -178201,6 +178853,7 @@ ${cue.text}`).join("\n\n")}
                 "button",
                 {
                   type: "button",
+                  "data-f": isTv ? "1" : void 0,
                   className: "rounded-full border border-white/15 px-3 py-1 text-[11px] text-slate-200 hover:bg-white/10",
                   onClick: () => {
                     const v = airplayVideoRef.current;
@@ -178273,6 +178926,7 @@ ${cue.text}`).join("\n\n")}
                   setHasEnded(true);
                   setPlaying(false);
                   setControlsPaused(true);
+                  onPlaybackEnded?.();
                 },
                 onTimeUpdate: (e) => {
                   const v = e.currentTarget;
@@ -178383,6 +179037,7 @@ ${cue.text}`).join("\n\n")}
               "button",
               {
                 type: "button",
+                "data-f": isTv ? "1" : void 0,
                 onClick: () => {
                   void attemptHtml5Start(true);
                 },
@@ -178410,6 +179065,7 @@ ${cue.text}`).join("\n\n")}
                         {
                           type: "button",
                           autoFocus: true,
+                          "data-f": isTv ? "1" : void 0,
                           onClick: () => setManualSyncTapTime(realTimeRef.current),
                           className: "mt-4 w-full rounded-xl bg-aurora-500/80 px-4 py-3 text-sm font-semibold text-white transition hover:bg-aurora-400/80",
                           children: t("subtitleManualSyncTapButton")
@@ -178431,6 +179087,7 @@ ${cue.text}`).join("\n\n")}
                           "button",
                           {
                             type: "button",
+                            "data-f": isTv ? "1" : void 0,
                             disabled: manualSyncBusy,
                             onClick: () => {
                               void applyManualAnchor(cue);
@@ -178452,6 +179109,7 @@ ${cue.text}`).join("\n\n")}
                         "button",
                         {
                           type: "button",
+                          "data-f": isTv ? "1" : void 0,
                           onClick: () => setManualSyncTapTime(null),
                           className: "mt-3 text-xs text-slate-400 underline-offset-2 hover:text-white hover:underline",
                           children: t("cancel2")
@@ -178493,6 +179151,7 @@ ${cue.text}`).join("\n\n")}
                   "button",
                   {
                     type: "button",
+                    "data-f": isTv ? "1" : void 0,
                     onClick: () => void scanCastDevices(),
                     disabled: castScanning,
                     className: "text-[11px] text-slate-400 underline-offset-2 hover:text-white hover:underline disabled:opacity-50",
@@ -178508,6 +179167,7 @@ ${cue.text}`).join("\n\n")}
                     "button",
                     {
                       type: "button",
+                      "data-f": isTv ? "1" : void 0,
                       onClick: () => void sendToCast(castTarget, "pause"),
                       className: "rounded-full border border-white/15 px-3 py-1 text-[11px] text-slate-200 hover:bg-white/10",
                       children: t("castPause")
@@ -178517,6 +179177,7 @@ ${cue.text}`).join("\n\n")}
                     "button",
                     {
                       type: "button",
+                      "data-f": isTv ? "1" : void 0,
                       onClick: () => void sendToCast(castTarget, "resume"),
                       className: "rounded-full border border-white/15 px-3 py-1 text-[11px] text-slate-200 hover:bg-white/10",
                       children: t("castResume")
@@ -178526,6 +179187,7 @@ ${cue.text}`).join("\n\n")}
                     "button",
                     {
                       type: "button",
+                      "data-f": isTv ? "1" : void 0,
                       onClick: () => void sendToCast(castTarget, "stop"),
                       className: "rounded-full border border-white/15 px-3 py-1 text-[11px] text-slate-200 hover:bg-white/10",
                       children: t("castStop")
@@ -178537,6 +179199,7 @@ ${cue.text}`).join("\n\n")}
                 "button",
                 {
                   type: "button",
+                  "data-f": isTv ? "1" : void 0,
                   onClick: () => void sendToCast(device, "play"),
                   className: "flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left transition hover:bg-white/10",
                   children: [
@@ -178550,6 +179213,7 @@ ${cue.text}`).join("\n\n")}
                 "button",
                 {
                   type: "button",
+                  "data-f": isTv ? "1" : void 0,
                   disabled: airplayPrepare === "preparing" || airplaySession !== null && !(airplayTargetReady && airplayMediaReady),
                   onClick: () => {
                     if (!airplaySession) {
@@ -178592,6 +179256,7 @@ ${cue.text}`).join("\n\n")}
                         "button",
                         {
                           type: "button",
+                          "data-f": isTv ? "1" : void 0,
                           onClick: () => {
                             manualSubtitleOverrideRef.current = true;
                             subtitlePreferenceRef.current = { mode: "off" };
@@ -178611,6 +179276,7 @@ ${cue.text}`).join("\n\n")}
                           "button",
                           {
                             type: "button",
+                            "data-f": isTv ? "1" : void 0,
                             onClick: () => {
                               subtitlePreferenceRef.current = { mode: "language", language: lang2 };
                               setSelectedLang(lang2);
@@ -178634,6 +179300,7 @@ ${cue.text}`).join("\n\n")}
                         "button",
                         {
                           type: "button",
+                          "data-f": isTv ? "1" : void 0,
                           onClick: () => void selectSubtitle(sub, { manual: true }),
                           className: `flex w-full items-center justify-between px-4 py-2 text-sm transition hover:bg-white/5 ${isActive ? "bg-white/5" : ""}`,
                           children: [
@@ -178656,6 +179323,7 @@ ${cue.text}`).join("\n\n")}
                         "button",
                         {
                           type: "button",
+                          "data-f": isTv ? "1" : void 0,
                           onClick: () => {
                             setShowSubMenu(false);
                             setManualSyncTapTime(null);
@@ -178672,6 +179340,7 @@ ${cue.text}`).join("\n\n")}
                           "button",
                           {
                             type: "button",
+                            "data-f": isTv ? "1" : void 0,
                             onClick: undoSubtitleAutoSync,
                             className: "ml-2 text-aurora-300 transition hover:text-aurora-200",
                             children: t("undo")
@@ -178691,6 +179360,7 @@ ${cue.text}`).join("\n\n")}
                           "button",
                           {
                             type: "button",
+                            "data-f": isTv ? "1" : void 0,
                             onClick: dec,
                             className: "flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border border-white/10 text-sm text-white transition hover:bg-white/10",
                             children: "\u2212"
@@ -178704,6 +179374,7 @@ ${cue.text}`).join("\n\n")}
                           "button",
                           {
                             type: "button",
+                            "data-f": isTv ? "1" : void 0,
                             onClick: inc,
                             className: "flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border border-white/10 text-sm text-white transition hover:bg-white/10",
                             children: "+"
@@ -178724,6 +179395,7 @@ ${cue.text}`).join("\n\n")}
                   "button",
                   {
                     type: "button",
+                    "data-f": isTv ? "1" : void 0,
                     onClick: handleStillWatchingContinue,
                     className: "rounded-full bg-accent-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-400",
                     children: t("stillWatchingContinue")
@@ -178733,6 +179405,7 @@ ${cue.text}`).join("\n\n")}
                   "button",
                   {
                     type: "button",
+                    "data-f": isTv ? "1" : void 0,
                     onClick: handleClose,
                     className: "rounded-full border border-white/10 px-5 py-2.5 text-sm font-semibold text-slate-200 transition hover:border-white/20 hover:text-white",
                     children: `${t("stillWatchingExit")} (${stillWatchingCountdown})`
@@ -178741,11 +179414,15 @@ ${cue.text}`).join("\n\n")}
               ] })
             ] }) }),
             showStartTitle && /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute left-8 top-10 z-[55] max-w-[70%]", children: /* @__PURE__ */ jsx("p", { className: "text-2xl font-semibold text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)] sm:text-3xl", children: title }) }),
-            showTuningPanel && /* @__PURE__ */ jsx(PlayerTuningPanel, { onClose: () => setShowTuningPanel(false) }),
+            showTuningPanel && /* @__PURE__ */ jsx(PlayerTuningPanel, { onClose: () => {
+              setShowTuningPanel(false);
+              if (isTv) requestAnimationFrame(() => tuningTriggerRef.current?.focus());
+            } }),
             shouldShowSkipIntroButton && activeIntro && /* @__PURE__ */ jsx("div", { className: "absolute bottom-24 right-4 z-[55]", onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ jsx(
               "button",
               {
                 type: "button",
+                "data-f": isTv ? "1" : void 0,
                 onClick: () => seekToAbsolute(activeIntro.endMs / 1e3),
                 className: "rounded-full border border-white/15 bg-black/70 px-4 py-2 text-sm font-medium text-white shadow-xl backdrop-blur-md transition hover:border-white/30 hover:bg-black/85",
                 children: t("skipIntro")
@@ -178765,19 +179442,45 @@ ${cue.text}`).join("\n\n")}
                     const heightClass = playerLayout.seekBarHeight === "slim" ? "h-1" : playerLayout.seekBarHeight === "chunky" ? "h-2.5" : "h-1.5";
                     const fillColorClass = playerLayout.seekBarColor === "white" ? "bg-white" : playerLayout.seekBarColor === "red" ? "bg-red-500" : playerLayout.seekBarColor === "amber" ? "bg-amber-400" : "bg-aurora-400";
                     const styleClass = playerLayout.seekBarStyle === "glass" ? "opacity-80 backdrop-blur-sm shadow-[0_0_12px_rgba(255,255,255,0.25)]" : playerLayout.seekBarStyle === "pinstripe" ? "bg-[repeating-linear-gradient(45deg,transparent,transparent_4px,rgba(0,0,0,0.25)_4px,rgba(0,0,0,0.25)_8px)]" : "";
-                    return /* @__PURE__ */ jsxs("div", { className: `relative mb-3 cursor-pointer rounded-full bg-white/20 ${heightClass}`, onClick: handleSeekClick, children: [
-                      !useMpv && !isServerStreamUrl(videoSrc) && /* @__PURE__ */ jsx("div", { className: "absolute inset-y-0 left-0 rounded-full bg-white/30", style: { width: `${buffered}%` } }),
-                      totalDuration > 0 && /* @__PURE__ */ jsxs(Fragment2, { children: [
-                        /* @__PURE__ */ jsx("div", { className: `absolute inset-y-0 left-0 rounded-full ${fillColorClass}`, style: { width: `${progress2}%` }, children: styleClass ? /* @__PURE__ */ jsx("div", { className: `absolute inset-0 rounded-full ${styleClass}` }) : null }),
-                        playerLayout.seekBarDot ? /* @__PURE__ */ jsx("div", { className: "absolute top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full bg-white shadow", style: { left: `calc(${progress2}% - 7px)` } }) : null
-                      ] })
-                    ] });
+                    return (
+                      // TV mode: the seek bar is a focus station. Left/right seek
+                      // while it has focus and are swallowed (stopPropagation) so the
+                      // focus engine doesn't move focus; up/down fall through and
+                      // leave the bar.
+                      /* @__PURE__ */ jsxs(
+                        "div",
+                        {
+                          className: `relative mb-3 cursor-pointer rounded-full bg-white/20 ${heightClass}`,
+                          onClick: handleSeekClick,
+                          "data-f": isTv ? "1" : void 0,
+                          tabIndex: isTv ? 0 : void 0,
+                          role: isTv ? "slider" : void 0,
+                          "aria-valuemin": isTv ? 0 : void 0,
+                          "aria-valuemax": isTv ? 100 : void 0,
+                          "aria-valuenow": isTv ? Math.round(progress2) : void 0,
+                          onKeyDown: isTv ? (e) => {
+                            if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              seek(e.key === "ArrowLeft" ? -10 : 10);
+                            }
+                          } : void 0,
+                          children: [
+                            !useMpv && !isServerStreamUrl(videoSrc) && /* @__PURE__ */ jsx("div", { className: "absolute inset-y-0 left-0 rounded-full bg-white/30", style: { width: `${buffered}%` } }),
+                            totalDuration > 0 && /* @__PURE__ */ jsxs(Fragment2, { children: [
+                              /* @__PURE__ */ jsx("div", { className: `absolute inset-y-0 left-0 rounded-full ${fillColorClass}`, style: { width: `${progress2}%` }, children: styleClass ? /* @__PURE__ */ jsx("div", { className: `absolute inset-0 rounded-full ${styleClass}` }) : null }),
+                              playerLayout.seekBarDot ? /* @__PURE__ */ jsx("div", { className: "absolute top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full bg-white shadow", style: { left: `calc(${progress2}% - 7px)` } }) : null
+                            ] })
+                          ]
+                        }
+                      )
+                    );
                   })(),
                   /* @__PURE__ */ jsx("div", { className: "vp-controls-row flex items-center gap-4 overflow-x-auto whitespace-nowrap", children: (() => {
                     const controls = {
-                      playPause: /* @__PURE__ */ jsx("button", { type: "button", onClick: togglePlay, className: "text-white hover:text-aurora-300", children: isPlaying ? /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M6 19h4V5H6v14zm8-14v14h4V5h-4z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) }),
-                      seekBack: /* @__PURE__ */ jsx("button", { type: "button", onClick: () => seek(-10), className: "text-xs text-slate-300 hover:text-white", children: "\u221210s" }),
-                      seekForward: /* @__PURE__ */ jsx("button", { type: "button", onClick: () => seek(10), className: "text-xs text-slate-300 hover:text-white", children: "+10s" }),
+                      playPause: /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, "data-init": isTv ? "1" : void 0, onClick: togglePlay, className: "text-white hover:text-aurora-300", children: isPlaying ? /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M6 19h4V5H6v14zm8-14v14h4V5h-4z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) }),
+                      seekBack: /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, onClick: () => seek(-10), className: "text-xs text-slate-300 hover:text-white", children: "\u221210s" }),
+                      seekForward: /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, onClick: () => seek(10), className: "text-xs text-slate-300 hover:text-white", children: "+10s" }),
                       time: /* @__PURE__ */ jsx("span", { className: "text-xs tabular-nums text-slate-300", children: playerLayout.timeFormat === "remaining" ? `-${fmt(Math.max(0, totalDuration - realTime))}` : playerLayout.timeFormat === "elapsed" ? fmt(realTime) : `${fmt(realTime)} / ${fmt(totalDuration)}` }),
                       spacer: /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "flex-1" }),
                       subtitles: /* @__PURE__ */ jsx(
@@ -178785,6 +179488,7 @@ ${cue.text}`).join("\n\n")}
                         {
                           type: "button",
                           ref: subTriggerRef,
+                          "data-f": isTv ? "1" : void 0,
                           onClick: () => {
                             if (!showSubMenu) {
                               const activeLang = activeSubId ? toSubtitleLangGroup(subtitleOptions.find((s) => s.id === activeSubId)?.language ?? null) : null;
@@ -178801,6 +179505,7 @@ ${cue.text}`).join("\n\n")}
                         "button",
                         {
                           type: "button",
+                          "data-f": isTv ? "1" : void 0,
                           onClick: () => {
                             const opening = !showCastMenu;
                             setShowCastMenu(opening);
@@ -178822,6 +179527,7 @@ ${cue.text}`).join("\n\n")}
                         {
                           type: "button",
                           ref: audioTriggerRef,
+                          "data-f": isTv ? "1" : void 0,
                           onClick: () => setShowAudioMenu((v) => !v),
                           title: t("audioLanguage"),
                           className: `shrink-0 rounded px-1.5 py-0.5 text-xs font-bold uppercase tracking-wider transition ${showAudioMenu ? "bg-aurora-400 text-black" : "text-slate-300 hover:text-white"}`,
@@ -178833,6 +179539,7 @@ ${cue.text}`).join("\n\n")}
                         {
                           type: "button",
                           ref: aspectTriggerRef,
+                          "data-f": isTv ? "1" : void 0,
                           onClick: () => setShowAspectMenu((value) => !value),
                           title: t("aspectRatio"),
                           className: `shrink-0 rounded px-1.5 py-0.5 text-xs font-bold uppercase tracking-wider transition ${showAspectMenu ? "bg-aurora-400 text-black" : "text-slate-300 hover:text-white"}`,
@@ -178844,6 +179551,7 @@ ${cue.text}`).join("\n\n")}
                         {
                           type: "button",
                           ref: cropTriggerRef,
+                          "data-f": isTv ? "1" : void 0,
                           onClick: () => setShowCropZoomMenu((value) => !value),
                           title: t("cropZoom"),
                           className: `shrink-0 rounded px-1.5 py-0.5 text-xs font-bold uppercase tracking-wider transition ${showCropZoomMenu ? "bg-aurora-400 text-black" : "text-slate-300 hover:text-white"}`,
@@ -178862,15 +179570,15 @@ ${cue.text}`).join("\n\n")}
                         /* @__PURE__ */ jsx("span", { className: `rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${introSegment ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-300" : "border-white/10 bg-white/5 text-slate-300"}`, children: introSegment ? `${introKind === "recap" ? "Recap" : "Intro"} found` : t("introDebugMissing") }),
                         /* @__PURE__ */ jsx("span", { className: `rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${outroSegment ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-300" : "border-white/10 bg-white/5 text-slate-300"}`, children: outroSegment ? "Outro found" : "Outro missing" })
                       ] }) : null,
-                      mute: /* @__PURE__ */ jsx("button", { type: "button", onClick: toggleMute, className: "text-slate-300 hover:text-white", children: muted || volume === 0 ? /* @__PURE__ */ jsx("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" }) }) }),
-                      volume: /* @__PURE__ */ jsx(Fragment2, { children: playerLayout.volumeStyle === "icon" ? null : playerLayout.volumeStyle === "stepper" ? /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-1.5", children: [
-                        /* @__PURE__ */ jsx("button", { type: "button", onClick: () => applyVolume((muted ? 0 : volume) - 0.05), className: "flex h-5 w-5 items-center justify-center rounded-full border border-white/10 text-xs text-slate-300 hover:text-white", children: "\u2212" }),
+                      mute: /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, onClick: toggleMute, className: "text-slate-300 hover:text-white", children: muted || volume === 0 ? /* @__PURE__ */ jsx("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" }) }) }),
+                      volume: /* @__PURE__ */ jsx(Fragment2, { children: isTv || playerLayout.volumeStyle === "stepper" ? /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-1.5", children: [
+                        /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, onClick: () => applyVolume((muted ? 0 : volume) - 0.05), className: "flex h-5 w-5 items-center justify-center rounded-full border border-white/10 text-xs text-slate-300 hover:text-white", children: "\u2212" }),
                         /* @__PURE__ */ jsxs("span", { className: "min-w-[2.5rem] text-center text-xs tabular-nums text-slate-300", children: [
                           Math.round((muted ? 0 : volume) * 100),
                           "%"
                         ] }),
-                        /* @__PURE__ */ jsx("button", { type: "button", onClick: () => applyVolume((muted ? 0 : volume) + 0.05), className: "flex h-5 w-5 items-center justify-center rounded-full border border-white/10 text-xs text-slate-300 hover:text-white", children: "+" })
-                      ] }) : (
+                        /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, onClick: () => applyVolume((muted ? 0 : volume) + 0.05), className: "flex h-5 w-5 items-center justify-center rounded-full border border-white/10 text-xs text-slate-300 hover:text-white", children: "+" })
+                      ] }) : playerLayout.volumeStyle === "icon" ? null : (
                         /* Explicit track styling — the bare native range was invisible
                             against the black controls bar (only the thumb showed). */
                         /* @__PURE__ */ jsx(
@@ -178890,6 +179598,7 @@ ${cue.text}`).join("\n\n")}
                         "button",
                         {
                           type: "button",
+                          "data-f": isTv ? "1" : void 0,
                           onClick: () => {
                             setShowWiki((v) => !v);
                             setShowSoundtrack(false);
@@ -178903,6 +179612,7 @@ ${cue.text}`).join("\n\n")}
                         "button",
                         {
                           type: "button",
+                          "data-f": isTv ? "1" : void 0,
                           onClick: () => {
                             setShowSoundtrack((v) => !v);
                             setShowWiki(false);
@@ -178916,6 +179626,8 @@ ${cue.text}`).join("\n\n")}
                         "button",
                         {
                           type: "button",
+                          ref: tuningTriggerRef,
+                          "data-f": isTv ? "1" : void 0,
                           onClick: () => setShowTuningPanel((v) => !v),
                           title: t("vtTitle"),
                           className: `transition ${showTuningPanel ? "text-aurora-300" : "text-slate-300 hover:text-white"}`,
@@ -178931,6 +179643,7 @@ ${cue.text}`).join("\n\n")}
                           {
                             ref: moreTriggerRef,
                             type: "button",
+                            "data-f": isTv ? "1" : void 0,
                             onClick: () => setShowMoreMenu((value) => !value),
                             title: t("moreActions"),
                             className: `shrink-0 rounded px-1.5 py-0.5 text-xs font-bold uppercase tracking-wider transition ${showMoreMenu ? "bg-aurora-400 text-black" : "text-slate-300 hover:text-white"}`,
@@ -178949,6 +179662,7 @@ ${cue.text}`).join("\n\n")}
                                 "button",
                                 {
                                   type: "button",
+                                  "data-f": isTv ? "1" : void 0,
                                   onClick: () => {
                                     const next2 = nightMode === "off" ? "mild" : nightMode === "mild" ? "strong" : "off";
                                     setNightMode(next2);
@@ -178968,6 +179682,7 @@ ${cue.text}`).join("\n\n")}
                                 "button",
                                 {
                                   type: "button",
+                                  "data-f": isTv ? "1" : void 0,
                                   onClick: () => void handleCopyStreamLink(),
                                   className: "flex w-full items-center gap-3 rounded-[1.15rem] px-4 py-3 text-left text-slate-100 transition hover:bg-white/5",
                                   children: [
@@ -178984,6 +179699,7 @@ ${cue.text}`).join("\n\n")}
                                   "button",
                                   {
                                     type: "button",
+                                    "data-f": isTv ? "1" : void 0,
                                     onClick: () => void handleDownload(),
                                     disabled: downloadState.type === "picking-folder" || downloadState.type === "downloading",
                                     className: "flex min-w-0 flex-1 items-center gap-3 px-4 py-3 text-left text-slate-100 disabled:cursor-wait disabled:opacity-70",
@@ -179001,6 +179717,7 @@ ${cue.text}`).join("\n\n")}
                                   "button",
                                   {
                                     type: "button",
+                                    "data-f": isTv ? "1" : void 0,
                                     onClick: () => void handleCancelDownload(),
                                     className: "mr-3 flex h-7 w-7 flex-none items-center justify-center rounded-full border border-white/10 text-slate-300 transition hover:border-red-400/40 hover:text-red-300",
                                     title: t("cancel"),
@@ -179012,6 +179729,7 @@ ${cue.text}`).join("\n\n")}
                                 "button",
                                 {
                                   type: "button",
+                                  "data-f": isTv ? "1" : void 0,
                                   onClick: () => void handleOpenExternal(),
                                   onMouseDown: (e) => e.stopPropagation(),
                                   className: "relative z-10 mt-1 flex w-full items-center gap-3 rounded-[1.15rem] bg-white/5 px-4 py-3 text-left text-slate-100 transition hover:bg-white/10",
@@ -179029,7 +179747,7 @@ ${cue.text}`).join("\n\n")}
                           }
                         )
                       ] }),
-                      fullscreen: (!isTauriEnv || isDesktopTauriEnv) && /* @__PURE__ */ jsx("button", { type: "button", onClick: toggleFullscreen, className: "shrink-0 text-slate-300 hover:text-white", children: cssFullscreen ? /* @__PURE__ */ jsx("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" }) }) })
+                      fullscreen: (!isTauriEnv || isDesktopTauriEnv) && /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, onClick: toggleFullscreen, className: "shrink-0 text-slate-300 hover:text-white", children: cssFullscreen ? /* @__PURE__ */ jsx("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" }) }) })
                     };
                     const hiddenControls = new Set(playerLayout.hidden);
                     return playerLayout.order.filter((id4) => !hiddenControls.has(id4)).map((id4) => /* @__PURE__ */ jsx(react_shim_default.Fragment, { children: controls[id4] }, id4));
@@ -179049,6 +179767,7 @@ ${cue.text}`).join("\n\n")}
                             "button",
                             {
                               type: "button",
+                              "data-f": isTv ? "1" : void 0,
                               onClick: () => switchAudioTrack(track),
                               className: `flex w-full items-center justify-between px-3 py-2 text-sm transition hover:bg-white/5 ${isActive ? "text-aurora-300" : "text-slate-300"}`,
                               children: [
@@ -179076,6 +179795,7 @@ ${cue.text}`).join("\n\n")}
                             "button",
                             {
                               type: "button",
+                              "data-f": isTv ? "1" : void 0,
                               onClick: () => {
                                 setAspectRatioMode(mode);
                                 setShowAspectMenu(false);
@@ -179106,6 +179826,7 @@ ${cue.text}`).join("\n\n")}
                             "button",
                             {
                               type: "button",
+                              "data-f": isTv ? "1" : void 0,
                               onClick: () => {
                                 setCropZoomMode(mode);
                                 setShowCropZoomMenu(false);
@@ -179151,13 +179872,13 @@ ${cue.text}`).join("\n\n")}
     return portalEl ? (0, import_react_dom.createPortal)(content, portalEl) : content;
   }
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-QtUTtP/video-player-modal-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/video-player-modal-shim.ts
   function VideoPlayerModal2(props) {
     const hostComponent = globalThis.__lumioPluginRuntime?.components?.VideoPlayerModal;
     return createElement(hostComponent ?? VideoPlayerModal, props);
   }
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-QtUTtP/next-episode-card-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/next-episode-card-shim.ts
   init_react_shim();
 
   // components/player/next-episode-card.tsx
@@ -179208,8 +179929,8 @@ ${cue.text}`).join("\n\n")}
 
   // lib/spoilers.ts
   var CLEAR = { thumb: false, title: false, desc: false };
-  var SPOILER_THUMB_CLASS = "blur-[14px] scale-[1.04] transition-[filter,transform] duration-200 group-hover:blur-[0px] group-hover:scale-100";
-  var SPOILER_TEXT_CLASS = "blur-[5px] select-none transition-[filter] duration-200 group-hover:blur-[0px]";
+  var SPOILER_THUMB_CLASS = "blur-[14px] scale-[1.04] transition-[filter,transform] duration-200 group-hover:blur-[0px] group-hover:scale-100 group-focus-within:blur-[0px] group-focus-within:scale-100";
+  var SPOILER_TEXT_CLASS = "blur-[5px] select-none transition-[filter] duration-200 group-hover:blur-[0px] group-focus-within:blur-[0px]";
   function spoilerMaskFor(s, opts) {
     if (!s.enabled) return CLEAR;
     if (opts.watched) return CLEAR;
@@ -179237,6 +179958,8 @@ ${cue.text}`).join("\n\n")}
     onPlayNow
   }) {
     const { t } = useLang();
+    const isTv = useTvMode();
+    const tvStation = isTv ? { "data-f": "" } : {};
     const [skipStraightToNext] = useState(
       () => getAdvanceAtOutro() && getAutoPlayNextEpisode() && hasOutroFired()
     );
@@ -179341,6 +180064,7 @@ ${cue.text}`).join("\n\n")}
               "button",
               {
                 type: "button",
+                ...tvStation,
                 onClick: handleDismiss,
                 className: "flex items-center gap-1.5 text-xs text-slate-500 transition hover:text-slate-300",
                 children: [
@@ -179353,6 +180077,7 @@ ${cue.text}`).join("\n\n")}
               "button",
               {
                 type: "button",
+                ...tvStation,
                 onClick: handlePlayNow,
                 className: "flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white transition hover:bg-white/20",
                 children: [
@@ -179365,6 +180090,7 @@ ${cue.text}`).join("\n\n")}
               "button",
               {
                 type: "button",
+                ...tvStation,
                 onClick: handlePlayNow,
                 className: "flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1 text-xs font-medium text-white transition hover:bg-white/10",
                 children: [
@@ -179380,7 +180106,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-QtUTtP/next-episode-card-shim.ts
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/next-episode-card-shim.ts
   function NextEpisodeCard2(props) {
     const hostComponent = globalThis.__lumioPluginRuntime?.components?.NextEpisodeCard;
     return createElement(hostComponent ?? NextEpisodeCard, props);
@@ -180461,7 +181187,7 @@ ${cue.text}`).join("\n\n")}
 
   // ../lumio-official-plugins/plugins/plex/runtime/plex-grid.tsx
   init_react_shim();
-  var import_react67 = __toESM(require_dist89());
+  var import_react68 = __toESM(require_dist89());
   init_jsx_runtime_shim();
   function uniqueSorted(values) {
     return Array.from(new Set(values.filter(Boolean))).sort(
@@ -180532,7 +181258,7 @@ ${cue.text}`).join("\n\n")}
               }
             ) : /* @__PURE__ */ jsx("div", { className: "flex h-full items-end bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 p-4", children: /* @__PURE__ */ jsx("span", { className: "text-base font-semibold text-slate-100", children: item.title }) }),
             item.genres.length > 0 && /* @__PURE__ */ jsx("div", { className: "absolute inset-x-0 bottom-0 flex flex-wrap gap-1 p-2", children: item.genres.slice(0, 2).map((genre) => /* @__PURE__ */ jsx(
-              import_react67.Chip,
+              import_react68.Chip,
               {
                 size: "sm",
                 variant: "flat",
@@ -182160,7 +182886,7 @@ ${cue.text}`).join("\n\n")}
     }
   };
 
-  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build-QtUTtP/wrapper-entry.ts
+  // ../../../../private/var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/wrapper-entry.ts
   var plugin = Reflect.get(runtime_exports, "default") ?? Object.values(runtime_exports).find((value) => value && typeof value === "object" && "id" in value && "register" in value);
   if (!plugin) {
     throw new Error("Could not find a Lumio plugin export in runtime entry.");
