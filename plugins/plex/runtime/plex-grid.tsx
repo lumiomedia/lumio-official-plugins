@@ -38,6 +38,8 @@ interface PlexGridProps {
   onGenreSelect?: (genre: string) => void
   onClearFilters: () => void
   onFilterOptionsChange?: (options: FilterOptions) => void
+  /** Rapporterar tomt rutnät uppåt så sidan kan dölja sin knapprad. */
+  onEmptyChange?: (empty: boolean) => void
   refreshRequestToken?: number
   onRefreshStateChange?: (refreshing: boolean) => void
 }
@@ -182,6 +184,7 @@ export function PlexGrid({
   onOpenDetails,
   onGenreSelect,
   onFilterOptionsChange,
+  onEmptyChange,
   refreshRequestToken,
   onRefreshStateChange,
 }: PlexGridProps) {
@@ -429,6 +432,16 @@ export function PlexGrid({
     }
   }, [currentPage, safeCurrentPage])
 
+
+  // Rapporteras i en EFFEKT, inte under render: ett setState i en förälder
+  // mitt i barnets rendering är just det React varnar för.
+  const gridIsEmpty = !loading && items.length === 0
+  useEffect(() => {
+    onEmptyChange?.(gridIsEmpty)
+    // onEmptyChange utelämnad med flit: föräldern skickar ofta en ny closure
+    // per render, och att lyssna på den hade gjort effekten till en loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gridIsEmpty])
 
   if (loading && items.length === 0) {
     return (

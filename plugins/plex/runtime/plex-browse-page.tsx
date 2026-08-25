@@ -46,6 +46,21 @@ export function PlexBrowsePage({ params, onOpenDetails }: BrowsePageProps) {
   const [refreshRequestToken, setRefreshRequestToken] = useState(0)
   const [refreshingGrid, setRefreshingGrid] = useState(false)
   const [, setFilterOptions] = useState<FilterOptions>(defaultFilterOptions)
+  const [gridEmpty, setGridEmpty] = useState(false)
+
+  /**
+   * Knappraden döljs bara när BIBLIOTEKET är tomt — inte när ett filter gav
+   * noll träffar.
+   *
+   * Skillnaden är viktig: filtrerar man till Serier och får inget, och raden
+   * försvinner, så finns ingen väg till "Rensa" längre. Då är användaren
+   * inlåst i ett tomt läge. Ett tomt bibliotek har däremot inget att filtrera
+   * på, och där är raden bara brus över ett tomläge.
+   */
+  const hasActiveFilters = filters.mediaType !== 'all'
+    || filters.genres.length > 0
+    || Boolean(filters.titleQuery)
+  const showControls = !gridEmpty || hasActiveFilters
 
   useEffect(() => {
     const incoming = params?.titleQuery ?? ''
@@ -58,6 +73,7 @@ export function PlexBrowsePage({ params, onOpenDetails }: BrowsePageProps) {
 
   return (
     <div className="space-y-4">
+      {showControls ? (
       <div className="flex flex-wrap items-center justify-between gap-2 px-1">
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -100,6 +116,7 @@ export function PlexBrowsePage({ params, onOpenDetails }: BrowsePageProps) {
           {refreshingGrid ? t('refreshing') : t('refresh')}
         </button>
       </div>
+      ) : null}
 
       <PlexGrid
         filters={filters}
@@ -107,6 +124,7 @@ export function PlexBrowsePage({ params, onOpenDetails }: BrowsePageProps) {
         refreshRequestToken={refreshRequestToken}
         onRefreshStateChange={setRefreshingGrid}
         onFilterOptionsChange={setFilterOptions}
+        onEmptyChange={setGridEmpty}
         onGenreSelect={(genre) =>
           setFilters((current) => ({
             ...current,

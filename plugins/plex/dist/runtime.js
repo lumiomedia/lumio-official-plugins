@@ -255,7 +255,7 @@
           this.channelId = channelId;
         }
         async unregister() {
-          return invoke4(`plugin:${this.plugin}|remove_listener`, {
+          return invoke5(`plugin:${this.plugin}|remove_listener`, {
             event: this.event,
             channelId: this.channelId
           });
@@ -264,23 +264,23 @@
       async function addPluginListener(plugin2, event, cb) {
         const handler = new Channel(cb);
         try {
-          await invoke4(`plugin:${plugin2}|register_listener`, {
+          await invoke5(`plugin:${plugin2}|register_listener`, {
             event,
             handler
           });
           return new PluginListener(plugin2, event, handler.id);
         } catch {
-          await invoke4(`plugin:${plugin2}|registerListener`, { event, handler });
+          await invoke5(`plugin:${plugin2}|registerListener`, { event, handler });
           return new PluginListener(plugin2, event, handler.id);
         }
       }
       async function checkPermissions(plugin2) {
-        return invoke4(`plugin:${plugin2}|check_permissions`);
+        return invoke5(`plugin:${plugin2}|check_permissions`);
       }
       async function requestPermissions(plugin2) {
-        return invoke4(`plugin:${plugin2}|request_permissions`);
+        return invoke5(`plugin:${plugin2}|request_permissions`);
       }
-      async function invoke4(cmd, args = {}, options) {
+      async function invoke5(cmd, args = {}, options) {
         return window.__TAURI_INTERNALS__.invoke(cmd, args, options);
       }
       function convertFileSrc(filePath, protocol = "asset") {
@@ -299,7 +299,7 @@
          * **You should not call any method on this object anymore and should drop any reference to it.**
          */
         async close() {
-          return invoke4("plugin:resources|close", {
+          return invoke5("plugin:resources|close", {
             rid: this.rid
           });
         }
@@ -315,7 +315,7 @@
       exports.addPluginListener = addPluginListener;
       exports.checkPermissions = checkPermissions;
       exports.convertFileSrc = convertFileSrc;
-      exports.invoke = invoke4;
+      exports.invoke = invoke5;
       exports.isTauri = isTauri;
       exports.requestPermissions = requestPermissions;
       exports.transformCallback = transformCallback;
@@ -49221,7 +49221,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_system_rsc = require_dist4();
-      var import_i18n9 = require_main5();
+      var import_i18n10 = require_main5();
       var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_motion2 = require_cjs4();
       var import_utils8 = require_main4();
@@ -49277,7 +49277,7 @@
           labelPlacement,
           spinnerVariant
         ]);
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(ProviderContext, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_i18n9.I18nProvider, { locale, children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_framer_motion2.MotionConfig, { reducedMotion, children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_overlays.OverlayProvider, { ...otherProps, children: contents }) }) }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(ProviderContext, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_i18n10.I18nProvider, { locale, children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_framer_motion2.MotionConfig, { reducedMotion, children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_overlays.OverlayProvider, { ...otherProps, children: contents }) }) }) });
       };
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useLabelPlacement(props) {
@@ -110467,7 +110467,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var import_i18n9 = require_main5();
+      var import_i18n10 = require_main5();
       var import_shared_utils = require_dist2();
       var PaginationItemType2 = /* @__PURE__ */ ((PaginationItemType22) => {
         PaginationItemType22["DOTS"] = "dots";
@@ -110486,7 +110486,7 @@
           onChange
         } = props;
         const [activePage, setActivePage] = (0, import_react73.useState)(page || initialPage);
-        const { direction } = (0, import_i18n9.useLocale)();
+        const { direction } = (0, import_i18n10.useLocale)();
         const isRTL = direction === "rtl";
         const onChangeActivePage = (newPage) => {
           setActivePage(newPage);
@@ -110796,7 +110796,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var import_i18n9 = require_main5();
+      var import_i18n10 = require_main5();
       var import_system4 = require_dist11();
       var import_use_pagination3 = require_dist38();
       var import_shared_icons = require_dist17();
@@ -111148,7 +111148,7 @@
           getItemProps,
           getCursorProps
         } = usePagination({ ...props, ref });
-        const { direction } = (0, import_i18n9.useLocale)();
+        const { direction } = (0, import_i18n10.useLocale)();
         const isRTL = direction === "rtl";
         const renderChevronIcon = (0, import_react310.useCallback)(
           (key) => {
@@ -139425,7 +139425,7 @@
         useMultiSelectState: () => useMultiSelectState
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_i18n9 = require_main5();
+      var import_i18n10 = require_main5();
       var import_interactions = require_main59();
       var import_label = require_main60();
       var import_menu = require_main61();
@@ -139434,7 +139434,7 @@
       var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useMultiSelect(props, state, ref) {
         const { disallowEmptySelection, isDisabled } = props;
-        const collator = (0, import_i18n9.useCollator)({ usage: "search", sensitivity: "base" });
+        const collator = (0, import_i18n10.useCollator)({ usage: "search", sensitivity: "base" });
         const delegate = (0, import_react73.useMemo)(
           () => new import_selection.ListKeyboardDelegate(state.collection, state.disabledKeys, null, collator),
           [state.collection, state.disabledKeys, collator]
@@ -141043,7 +141043,7 @@
       var import_interactions = require_main17();
       var import_focus2 = require_main18();
       var import_shared_utils = require_dist2();
-      var import_i18n9 = require_main5();
+      var import_i18n10 = require_main5();
       function useSliderThumb(props) {
         const {
           ref,
@@ -141064,7 +141064,7 @@
         const Component2 = as || "div";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
         const inputRef = (0, import_react73.useRef)(null);
-        const numberFormatter = (0, import_i18n9.useNumberFormatter)(formatOptions);
+        const numberFormatter = (0, import_i18n10.useNumberFormatter)(formatOptions);
         const { thumbProps, inputProps, isDragging: isDragging2, isFocused } = (0, import_slider.useSliderThumb)(
           {
             index: index3,
@@ -146287,7 +146287,7 @@
       var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_utils = require_dist10();
       var import_combobox = require_main67();
-      var import_i18n9 = require_main5();
+      var import_i18n10 = require_main5();
       var import_theme = require_dist12();
       var import_use_safe_layout_effect = require_dist21();
       var import_system = require_dist11();
@@ -146339,7 +146339,7 @@
           isReadOnly = false,
           ...otherProps
         } = props;
-        const { contains } = (0, import_i18n9.useFilter)(filterOptions);
+        const { contains } = (0, import_i18n10.useFilter)(filterOptions);
         const { onChange: _onChange, ...restProps } = originalProps;
         let state = (0, import_combobox.useComboBoxState)({
           ...restProps,
@@ -151353,13 +151353,13 @@
       var import_theme = require_dist12();
       var import_utils8 = require_main38();
       var import_react_utils = require_dist10();
-      var import_i18n9 = require_main5();
+      var import_i18n10 = require_main5();
       var import_shared_utils = require_dist2();
       function useCalendarBase(originalProps) {
         var _a, _b, _c, _d, _e, _f, _g;
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.calendar.variantKeys);
         const globalContext = (0, import_system.useProviderContext)();
-        const { locale, direction } = (0, import_i18n9.useLocale)();
+        const { locale, direction } = (0, import_i18n10.useLocale)();
         const isRTL = direction === "rtl";
         const calendarProp = (0, import_date.createCalendar)(
           new import_date.DateFormatter(locale).resolvedOptions().calendar
@@ -157320,7 +157320,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_system4 = require_dist11();
-      var import_i18n9 = require_main5();
+      var import_i18n10 = require_main5();
       var import_date = require_main74();
       var import_system = require_dist11();
       var import_system2 = require_dist11();
@@ -157336,7 +157336,7 @@
         const globalContext = (0, import_system.useProviderContext)();
         const { validationBehavior: formValidationBehavior } = (0, import_form.useSlottedContext)(import_form.FormContext) || {};
         const [props, variantProps2] = (0, import_system2.mapPropsVariants)(originalProps, import_theme.dateInput.variantKeys);
-        const { locale } = (0, import_i18n9.useLocale)();
+        const { locale } = (0, import_i18n10.useLocale)();
         const calendarProp = (0, import_date.createCalendar)(
           new import_date.DateFormatter(locale).resolvedOptions().calendar
         );
@@ -157897,7 +157897,7 @@
       var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
-      var import_i18n9 = require_main5();
+      var import_i18n10 = require_main5();
       var import_utils8 = require_main38();
       var messages_default = {
         "ar-AE": {
@@ -158118,7 +158118,7 @@
         const [isCalendarHeaderExpanded, setIsCalendarHeaderExpanded] = (0, import_utils8.useControlledState)(isHeaderExpanded, isHeaderDefaultExpanded != null ? isHeaderDefaultExpanded : false, handleHeaderExpandedChange);
         const domRef = (0, import_react_utils.useDOMRef)(ref);
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        let stringFormatter = (0, import_i18n9.useLocalizedStringFormatter)(messages_default);
+        let stringFormatter = (0, import_i18n10.useLocalizedStringFormatter)(messages_default);
         const isDefaultColor = originalProps.color === "default" || !originalProps.color;
         const hasMultipleMonths = visibleMonths > 1;
         const placeholder = originalProps == null ? void 0 : originalProps.placeholderValue;
@@ -160756,7 +160756,7 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_interactions = require_main17();
-      var import_i18n9 = require_main5();
+      var import_i18n10 = require_main5();
       var import_shared_utils = require_dist2();
       var import_numberfield = require_main78();
       var import_numberfield2 = require_main79();
@@ -160795,7 +160795,7 @@
         const baseDomRef = (0, import_react_utils.useDOMRef)(baseRef);
         const inputWrapperRef = (0, import_react_utils.useDOMRef)(wrapperRef);
         const innerWrapperRef = (0, import_react_utils.useDOMRef)(innerWrapperRefProp);
-        const { locale } = (0, import_i18n9.useLocale)();
+        const { locale } = (0, import_i18n10.useLocale)();
         const state = (0, import_numberfield.useNumberFieldState)({
           ...originalProps,
           validationBehavior,
@@ -166452,6 +166452,60 @@
       copyStreamLink: "Copy stream link",
       downloadThisVideo: "Download this video",
       openInVlc: "Play in VLC",
+      tvModeGroupTitle: "TV mode",
+      tvModeUseTitle: "Use TV mode",
+      tvRowsIntro: "Every segment has its own rows in TV mode. The starting point mirrors your normal home page, so nothing changes until you change it here.",
+      tvAddRow: "Add row",
+      tvAddRowAll: "Every row can be picked.",
+      tvSegmentProviders: "services",
+      tvSearchAlphaTab: "A\u2013Z",
+      tvSearchBefore1990: "Before 1990",
+      tvSearchEmpty: "Type or pick a letter to search.",
+      tvSearchNoHits: "No matches. Try a shorter search.",
+      pairUnknownDevice: "Unknown device",
+      pairTooManyTries: "Too many attempts \u2014 wait a moment.",
+      pairBadCode: "Wrong or expired code.",
+      pairUnstable: "The connection is unstable right now \u2014 try again shortly.",
+      pairTitle: "Pair this device with Lumio",
+      pairIntro: "Create an invite code in Lumio on your computer (Settings \u2192 Remote access) and enter it here.",
+      watchUnknownTitle: "Unknown title",
+      watchWaiting: "Waiting for playback\u2026",
+      lanLocalAddrTip: "This .local address keeps working even when the computer\u2019s IP address changes. On iPhone: open the link in Safari and choose Share \u2192 Add to Home Screen for fullscreen.",
+      bugStepsHeading: "**Steps to reproduce:**",
+      pluginsHostOnly: "Plugin management happens on the host in LAN mode.",
+      calFetchFailed: "Could not fetch data.",
+      nothingYet: "Nothing to show yet.",
+      bugEnvLabel: "Environment:",
+      appUpdateAndroidInstaller: "Opening the system installer \u2014 confirm the install there.",
+      tvSegmentMovies: "movies",
+      tvSegmentSeries: "series",
+      tvSegmentAll: "everything",
+      tvMirrorsHome: "Mirrors your normal home page. Change anything here and the segment gets its own rows.",
+      tvMirrorsHomeLimited: "Mirrors your normal home page, limited to {type}. Change anything here and the segment gets its own rows.",
+      tvAddRowLimited: "Only rows that belong to {type} are offered.",
+      tvRemoveRow: "Remove",
+      raAlwaysVlc: "Always open in VLC",
+      dtMinutesShort: "{n}m",
+      epLayoutTitle: "Episode layout",
+      epLayoutDesc: "List shows a thumbnail beside the text. Cards show wide artwork you scroll through, with the text over the image.",
+      epLayoutList: "List",
+      epLayoutCards: "Cards",
+      epLayoutToggleTitle: "Switch episode layout",
+      homeBubble: "Home",
+      daPlacementTitle: "Action buttons",
+      daPlacementDesc: "Where Follow, Watched, Trailer and Sources sit on the details page.",
+      daPlacementHeader: "Top right",
+      daPlacementInline: "Next to Play",
+      dtSeasonOne: "1 season",
+      dtSeasonsN: "{n} seasons",
+      settingsDetailsEyebrow: "Details page",
+      sideMenuTitle: "Side menu",
+      sideMenuDesc: "A floating icon rail on the left instead of the horizontal menu. Search moves into the rail. Desktop only.",
+      sideMenuOn: "Side menu",
+      sideMenuOff: "Horizontal menu",
+      vlcToggleOn: "VLC on",
+      vlcToggleOff: "VLC off",
+      vlcToggleTitle: "Open streams directly in VLC",
       openInExternalPrefix: "Play in",
       openInExternalPlayer: "Open in external player",
       externalPlayerToggle: "External player",
@@ -166536,6 +166590,7 @@
       // Results
       aboutResults: "About",
       results: "results",
+      resultsTryThis: "Try this",
       page: "Page",
       of: "of",
       previous: "Previous",
@@ -166784,6 +166839,8 @@
       advDownloadsTitle: "Download folder",
       advDownloadsHint: "Where the player saves videos. When set, the folder picker is skipped.",
       advDownloadsUnset: "Ask every time",
+      advDownloadsAppManaged: "Downloads are saved in the app and appear under My files.",
+      settingsFolderPickerUnavailable: "Choosing a folder is not available on this device.",
       advDownloadsPick: "Choose folder",
       advDownloadsClear: "Clear",
       advOnboardingEyebrow: "Onboarding",
@@ -167420,7 +167477,7 @@
       homeSourceStudios: "Studios",
       liveTvList: "Live TV list",
       liveTvChooseList: "Choose a Live TV list",
-      homeMenuPremiereStar: "Premiere star",
+      homeMenuPremiereStar: "Premieres",
       traktTitle: "Trakt",
       traktDesc: "Sign in with Trakt to sync watched TV episodes, watchlists, and your collection with Lumio.",
       traktSignedInAs: "Signed in as",
@@ -168171,6 +168228,10 @@
       sssSeasonWatched: "Season watched",
       sssMarkSeasonWatched: "Mark season watched",
       sssEpisodesLoadError: "Could not load episodes right now.",
+      sssSeasonsLoadError: "Could not load seasons right now.",
+      detailsCastLoadError: "Could not load the cast right now.",
+      detailsRecommendationsLoadError: "Could not load recommendations right now.",
+      detailsCommentsLoadError: "Could not load comments right now.",
       sssPlayEpisodeCode: "Play {code}",
       sssPlayEpisode: "Play episode",
       // Series calendar
@@ -168556,6 +168617,60 @@
       copyStreamLink: "Kopiera streaml\xE4nk",
       downloadThisVideo: "Ladda ner videon",
       openInVlc: "Spela i VLC",
+      tvModeGroupTitle: "TV-l\xE4ge",
+      tvModeUseTitle: "Anv\xE4nd TV-l\xE4ge",
+      tvRowsIntro: "Varje segment har egna rader i TV-l\xE4get. Utg\xE5ngsl\xE4get speglar din vanliga startsida, s\xE5 inget \xE4ndras f\xF6rr\xE4n du g\xF6r det h\xE4r.",
+      tvAddRow: "L\xE4gg till rad",
+      tvAddRowAll: "Alla rader kan v\xE4ljas.",
+      tvSegmentProviders: "tj\xE4nster",
+      tvSearchAlphaTab: "A\u2013\xD6",
+      tvSearchBefore1990: "F\xF6re 1990",
+      tvSearchEmpty: "Skriv eller v\xE4lj en bokstav f\xF6r att s\xF6ka.",
+      tvSearchNoHits: "Inga tr\xE4ffar. Prova en kortare s\xF6kning.",
+      pairUnknownDevice: "Ok\xE4nd enhet",
+      pairTooManyTries: "F\xF6r m\xE5nga f\xF6rs\xF6k \u2014 v\xE4nta en stund.",
+      pairBadCode: "Fel eller utg\xE5ngen kod.",
+      pairUnstable: "Anslutningen \xE4r ostadig just nu \u2014 f\xF6rs\xF6k igen om en stund.",
+      pairTitle: "Para den h\xE4r enheten med Lumio",
+      pairIntro: "Skapa en inbjudningskod i Lumio p\xE5 datorn (Inst\xE4llningar \u2192 Fj\xE4rr\xE5tkomst) och ange den h\xE4r.",
+      watchUnknownTitle: "Ok\xE4nd titel",
+      watchWaiting: "V\xE4ntar p\xE5 uppspelning\u2026",
+      lanLocalAddrTip: "Den h\xE4r .local-adressen forts\xE4tter fungera \xE4ven n\xE4r datorns IP-adress \xE4ndras. P\xE5 iPhone: \xF6ppna l\xE4nken i Safari och v\xE4lj Dela \u2192 L\xE4gg till p\xE5 hemsk\xE4rmen f\xF6r helsk\xE4rm.",
+      bugStepsHeading: "**Steg f\xF6r att \xE5terskapa:**",
+      pluginsHostOnly: "Plugin-hantering g\xF6rs p\xE5 hosten i LAN-l\xE4ge.",
+      calFetchFailed: "Kunde inte h\xE4mta data.",
+      nothingYet: "Inget att visa \xE4n.",
+      bugEnvLabel: "Milj\xF6:",
+      appUpdateAndroidInstaller: "\xD6ppnar systemets installerare \u2014 bekr\xE4fta installationen d\xE4r.",
+      tvSegmentMovies: "film",
+      tvSegmentSeries: "serier",
+      tvSegmentAll: "allt",
+      tvMirrorsHome: "Speglar din vanliga startsida. \xC4ndrar du n\xE5got h\xE4r f\xE5r segmentet egna rader.",
+      tvMirrorsHomeLimited: "Speglar din vanliga startsida, begr\xE4nsad till {type}. \xC4ndrar du n\xE5got h\xE4r f\xE5r segmentet egna rader.",
+      tvAddRowLimited: "Bara rader som h\xF6r till {type} erbjuds.",
+      tvRemoveRow: "Ta bort",
+      raAlwaysVlc: "\xD6ppna alltid i VLC",
+      dtMinutesShort: "{n} min",
+      epLayoutTitle: "Avsnittslayout",
+      epLayoutDesc: "Lista visar en miniatyr bredvid texten. Kort visar breda bilder du bl\xE4ddrar genom, med texten ovanp\xE5 bilden.",
+      epLayoutList: "Lista",
+      epLayoutCards: "Kort",
+      epLayoutToggleTitle: "Byt avsnittslayout",
+      homeBubble: "Hem",
+      daPlacementTitle: "\xC5tg\xE4rdsknappar",
+      daPlacementDesc: "Var F\xF6lj, Sedd, Trailer och K\xE4llor sitter p\xE5 detaljsidan.",
+      daPlacementHeader: "Uppe till h\xF6ger",
+      daPlacementInline: "Bredvid Spela",
+      dtSeasonOne: "1 s\xE4song",
+      dtSeasonsN: "{n} s\xE4songer",
+      settingsDetailsEyebrow: "Detaljsidan",
+      sideMenuTitle: "Sidomeny",
+      sideMenuDesc: "En flytande ikonrad till v\xE4nster i st\xE4llet f\xF6r den horisontella menyn. S\xF6ket flyttar in i raden. Endast skrivbord.",
+      sideMenuOn: "Sidomeny",
+      sideMenuOff: "Horisontell meny",
+      vlcToggleOn: "VLC p\xE5",
+      vlcToggleOff: "VLC av",
+      vlcToggleTitle: "\xD6ppna streams direkt i VLC",
       openInExternalPrefix: "Spela i",
       openInExternalPlayer: "\xD6ppna i extern spelare",
       externalPlayerToggle: "Extern spelare",
@@ -168640,6 +168755,7 @@
       // Results
       aboutResults: "Ungef\xE4r",
       results: "resultat",
+      resultsTryThis: "Prova det h\xE4r",
       page: "Sida",
       of: "av",
       previous: "F\xF6reg\xE5ende",
@@ -168888,6 +169004,8 @@
       advDownloadsTitle: "Nedladdningsmapp",
       advDownloadsHint: "Var spelaren sparar video. N\xE4r satt hoppas mappv\xE4ljaren \xF6ver.",
       advDownloadsUnset: "Fr\xE5ga varje g\xE5ng",
+      advDownloadsAppManaged: "Nedladdningar sparas i appen och visas under Mina filer.",
+      settingsFolderPickerUnavailable: "Att v\xE4lja mapp g\xE5r inte p\xE5 den h\xE4r enheten.",
       advDownloadsPick: "V\xE4lj mapp",
       advDownloadsClear: "Rensa",
       advOnboardingEyebrow: "Onboarding",
@@ -169524,7 +169642,7 @@
       homeSourceStudios: "Studios",
       liveTvList: "Live TV-lista",
       liveTvChooseList: "V\xE4lj en Live TV-lista",
-      homeMenuPremiereStar: "Premi\xE4rstj\xE4rna",
+      homeMenuPremiereStar: "Premi\xE4rer",
       traktTitle: "Trakt",
       traktDesc: "Logga in med Trakt f\xF6r att synka sedda serieavsnitt, listor och din samling med Lumio.",
       traktSignedInAs: "Inloggad som",
@@ -170271,6 +170389,10 @@
       sssSeasonWatched: "S\xE4songen sedd",
       sssMarkSeasonWatched: "Markera s\xE4song sedd",
       sssEpisodesLoadError: "Kunde inte ladda avsnitt just nu.",
+      sssSeasonsLoadError: "Kunde inte ladda s\xE4songer just nu.",
+      detailsCastLoadError: "Kunde inte ladda sk\xE5despelarna just nu.",
+      detailsRecommendationsLoadError: "Kunde inte ladda rekommendationer just nu.",
+      detailsCommentsLoadError: "Kunde inte ladda kommentarer just nu.",
       sssPlayEpisodeCode: "Spela {code}",
       sssPlayEpisode: "Spela avsnitt",
       // Series calendar
@@ -172164,27 +172286,33 @@
     actionLabel,
     onAction
   }) {
-    return /* @__PURE__ */ jsxs("div", { className: "flex min-h-[360px] flex-col items-center justify-center rounded-[2rem] border border-dashed border-white/10 bg-white/5 px-6 py-10 text-center", children: [
-      /* @__PURE__ */ jsx("p", { className: "text-xs uppercase tracking-[0.32em] text-accent-400", children: "Results" }),
-      /* @__PURE__ */ jsx("h3", { className: "mt-4 font-display text-4xl text-white", children: title }),
-      /* @__PURE__ */ jsx("p", { className: "mt-3 max-w-xl text-sm leading-7 text-slate-300", children: description }),
-      suggestions && suggestions.length > 0 ? /* @__PURE__ */ jsxs("div", { className: "mt-6 w-full max-w-2xl rounded-[1.5rem] border border-white/10 bg-slate-950/60 px-5 py-5 text-left", children: [
-        /* @__PURE__ */ jsx("p", { className: "text-xs uppercase tracking-[0.24em] text-slate-400", children: "Try this" }),
-        /* @__PURE__ */ jsx("ul", { className: "mt-3 space-y-3 text-sm leading-7 text-slate-200", children: suggestions.map((suggestion) => /* @__PURE__ */ jsxs("li", { className: "flex gap-3", children: [
-          /* @__PURE__ */ jsx("span", { className: "mt-2 h-2 w-2 rounded-full bg-accent-400", "aria-hidden": "true" }),
-          /* @__PURE__ */ jsx("span", { children: suggestion })
-        ] }, suggestion)) })
-      ] }) : null,
-      actionLabel && onAction ? /* @__PURE__ */ jsx(
-        "button",
-        {
-          type: "button",
-          onClick: onAction,
-          className: "mt-6 rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm text-slate-100 transition hover:border-accent-400/40 hover:bg-white/10",
-          children: actionLabel
-        }
-      ) : null
-    ] });
+    const { t } = useLang();
+    return (
+      // Ingen ram, ingen platta. Kortet var appens enda streckade rundade
+      // fyrkant och matchade därför inget annat — ett tomläge ska läsa som
+      // frånvaro av innehåll, inte som ett eget objekt på sidan.
+      /* @__PURE__ */ jsxs("div", { className: "flex min-h-[360px] flex-col items-center justify-center px-6 py-10 text-center", children: [
+        /* @__PURE__ */ jsx("p", { className: "text-xs uppercase tracking-[0.32em] text-accent-400", children: t("results") }),
+        /* @__PURE__ */ jsx("h3", { className: "mt-4 font-display text-4xl text-white", children: title }),
+        /* @__PURE__ */ jsx("p", { className: "mt-3 max-w-xl text-sm leading-7 text-slate-300", children: description }),
+        suggestions && suggestions.length > 0 ? /* @__PURE__ */ jsxs("div", { className: "mt-6 w-full max-w-2xl rounded-[1.5rem] border border-white/10 bg-slate-950/60 px-5 py-5 text-left", children: [
+          /* @__PURE__ */ jsx("p", { className: "text-xs uppercase tracking-[0.24em] text-slate-400", children: t("resultsTryThis") }),
+          /* @__PURE__ */ jsx("ul", { className: "mt-3 space-y-3 text-sm leading-7 text-slate-200", children: suggestions.map((suggestion) => /* @__PURE__ */ jsxs("li", { className: "flex gap-3", children: [
+            /* @__PURE__ */ jsx("span", { className: "mt-2 h-2 w-2 rounded-full bg-accent-400", "aria-hidden": "true" }),
+            /* @__PURE__ */ jsx("span", { children: suggestion })
+          ] }, suggestion)) })
+        ] }) : null,
+        actionLabel && onAction ? /* @__PURE__ */ jsx(
+          "button",
+          {
+            type: "button",
+            onClick: onAction,
+            className: "mt-6 rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm text-slate-100 transition hover:border-accent-400/40 hover:bg-white/10",
+            children: actionLabel
+          }
+        ) : null
+      ] })
+    );
   }
 
   // components/results/results-pagination.tsx
@@ -172227,6 +172355,232 @@
 
   // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/auth-capabilities-shim.ts
   var sdk2 = globalThis.__lumioPluginRuntime?.sdk;
+
+  // lib/tauri-native-player.ts
+  init_react_shim();
+  var isAndroidTauriEnv = isTauriEnv && typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
+  async function np(cmd) {
+    try {
+      const res = await fetch("/api/native-player", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(cmd)
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+  var deviceCapsCache = null;
+  var deviceCapsPromise = null;
+  async function getDeviceCapabilities() {
+    if (!isAndroidTauriEnv) return null;
+    if (deviceCapsCache) return deviceCapsCache;
+    if (!deviceCapsPromise) {
+      deviceCapsPromise = np({ cmd: "getCapabilities" }).then((value) => {
+        const caps = value;
+        if (caps && typeof caps.dolbyVision === "boolean") deviceCapsCache = caps;
+        return deviceCapsCache;
+      });
+    }
+    return deviceCapsPromise;
+  }
+  function looksLikeDolbyVision(name) {
+    const separated = /(?:^|[.\s_\-\[(])(dv|dovi)(?:$|[.\s_\-\])])/i;
+    return separated.test(name) || /dolby[.\s_-]?vision/i.test(name);
+  }
+  function looksLikeLosslessAudio(name) {
+    return /(true[.\s_-]?hd|atmos|dts[.\s_-]?hd|dts[.\s_-]?x|\bdtsma\b)/i.test(name);
+  }
+  async function deviceCanPlayStream(name) {
+    if (!isAndroidTauriEnv) return { ok: true };
+    if (!name) return { ok: true };
+    const caps = await getDeviceCapabilities();
+    if (!caps) return { ok: true };
+    if (looksLikeLosslessAudio(name) && !caps.trueHd && !caps.dts) {
+      return { ok: false, reason: "DEVICE_NO_AUDIO_DECODER" };
+    }
+    if (looksLikeDolbyVision(name) && !caps.dolbyVision) {
+      return { ok: false, reason: "DEVICE_NO_DOLBY_VISION" };
+    }
+    return { ok: true };
+  }
+  async function openNativePlayer(opts) {
+    const wrapped = sourceCacheUrl(opts.url) ?? opts.url;
+    await np({ cmd: "open", url: wrapped, start: opts.start ?? 0, audioLang: opts.audioLang ?? "" });
+  }
+  async function closeNativePlayer() {
+    await np({ cmd: "close" });
+  }
+  function setAndroidImmersive(on) {
+    if (!isAndroidTauriEnv) return;
+    void np({ cmd: "setImmersive", on });
+  }
+  async function nativeSetVideoTuning(t) {
+    await np({ cmd: "setTuning", brightness: t.brightness, contrast: t.contrast, saturation: t.saturation });
+  }
+  async function nativeSetVideoGeometry(opts) {
+    await np({
+      cmd: "setGeometry",
+      aspect: opts.aspectOverride ?? "-1",
+      panscan: opts.panscan ?? 0,
+      zoom: opts.videoZoom ?? 0
+    });
+  }
+  function nativeSetBounds(rect) {
+    const scale2 = window.devicePixelRatio || 1;
+    void np({
+      cmd: "setBounds",
+      x: Math.round(rect.left * scale2),
+      y: Math.round(rect.top * scale2),
+      w: Math.round(rect.width * scale2),
+      h: Math.round(rect.height * scale2)
+    });
+  }
+  function useNativePlayer(enabled = true) {
+    const [timePos, setTimePos] = useState(0);
+    const [duration, setDuration] = useState(0);
+    const [paused, setPaused] = useState(false);
+    const [ended, setEnded] = useState(false);
+    const [sid, setSid] = useState(null);
+    const [fileLoaded, setFileLoaded] = useState(false);
+    const [fileLoadedToken, setFileLoadedToken] = useState(0);
+    const [playbackRestarted, setPlaybackRestarted] = useState(false);
+    const [playbackRestartedToken, setPlaybackRestartedToken] = useState(0);
+    const [pausedForCache, setPausedForCache] = useState(false);
+    const [coreIdle, setCoreIdle] = useState(true);
+    const [firstFrameRendered, setFirstFrameRendered] = useState(false);
+    const [loadFailed, setLoadFailed] = useState(false);
+    const [loadFailedToken, setLoadFailedToken] = useState(0);
+    const [loadFailedError, setLoadFailedError] = useState(null);
+    const [audioTracks, setAudioTracks] = useState([]);
+    const [subtitleTracks, setSubtitleTracks] = useState([]);
+    const [selectedAudio, setSelectedAudio] = useState(-1);
+    const prevRef = useRef({ fileLoaded: false, firstFrame: false, failToken: -1, timePos: 0 });
+    useEffect(() => {
+      if (!isAndroidTauriEnv || !enabled) return;
+      let cancelled = false;
+      const tick = async () => {
+        const s = await np({ cmd: "status" });
+        if (cancelled || !s || typeof s.timePos !== "number") return;
+        const prev = prevRef.current;
+        setTimePos(s.timePos);
+        prev.timePos = s.timePos;
+        setDuration(s.duration);
+        setPaused(s.paused);
+        setEnded(s.ended);
+        setPausedForCache(s.pausedForCache);
+        setCoreIdle(!s.fileLoaded || s.paused);
+        setSid(s.selectedSub > 0 ? s.selectedSub : null);
+        setAudioTracks(s.tracks?.audio ?? []);
+        setSubtitleTracks(s.tracks?.sub ?? []);
+        setSelectedAudio(s.selectedAudio);
+        if (s.fileLoaded && !prev.fileLoaded) {
+          setFileLoaded(true);
+          setFileLoadedToken((t) => t + 1);
+        }
+        if (!s.fileLoaded) setFileLoaded(false);
+        prev.fileLoaded = s.fileLoaded;
+        if (s.firstFrame && !prev.firstFrame) {
+          setFirstFrameRendered(true);
+          setPlaybackRestarted(true);
+          setPlaybackRestartedToken((t) => t + 1);
+        }
+        prev.firstFrame = s.firstFrame;
+        if (prev.failToken === -1) {
+          prev.failToken = s.loadFailedToken;
+        } else if (s.loadFailedToken > prev.failToken) {
+          prev.failToken = s.loadFailedToken;
+          setLoadFailed(true);
+          setLoadFailedToken((t) => t + 1);
+          setLoadFailedError(null);
+          if (s.loadFailedMessage === "DEVICE_NO_DOLBY_VISION" || s.loadFailedMessage === "DEVICE_FORMAT_UNSUPPORTED") {
+            window.dispatchEvent(new CustomEvent("lumio-device-format-unsupported", {
+              detail: { reason: s.loadFailedMessage }
+            }));
+          }
+        }
+      };
+      const id4 = window.setInterval(() => {
+        void tick();
+      }, 250);
+      void tick();
+      return () => {
+        cancelled = true;
+        window.clearInterval(id4);
+      };
+    }, [enabled]);
+    const seek = useCallback((time2) => {
+      void np({ cmd: "seek", value: time2 });
+    }, []);
+    const seekRelative = useCallback((delta) => {
+      void np({ cmd: "seek", value: Math.max(0, prevRef.current.timePos + delta) });
+    }, []);
+    const setPlayPause = useCallback((pause) => {
+      void np({ cmd: "setPause", value: pause });
+    }, []);
+    const setVolume = useCallback((vol) => {
+      void np({ cmd: "setVolume", value: vol });
+    }, []);
+    const setMuted = useCallback((muted) => {
+      void np({ cmd: "setMuted", value: muted });
+    }, []);
+    const setAudioTrack = useCallback((aid) => {
+      void np({ cmd: "setAudioTrack", id: aid });
+    }, []);
+    const setSubtitleTrack = useCallback((newSid) => {
+      void np({ cmd: "setSubtitleTrack", id: newSid });
+    }, []);
+    const resetFileLoaded = useCallback(() => {
+      setFileLoaded(false);
+    }, []);
+    const resetEnded = useCallback(() => {
+      setEnded(false);
+    }, []);
+    const resetPlaybackRestarted = useCallback(() => {
+      setPlaybackRestarted(false);
+    }, []);
+    const resetFirstFrameRendered = useCallback(() => {
+      setFirstFrameRendered(false);
+    }, []);
+    const resetLoadFailed = useCallback(() => {
+      setLoadFailed(false);
+      setLoadFailedError(null);
+    }, []);
+    return {
+      timePos,
+      duration,
+      paused,
+      ended,
+      sid,
+      fileLoaded,
+      fileLoadedToken,
+      resetEnded,
+      playbackRestarted,
+      playbackRestartedToken,
+      pausedForCache,
+      coreIdle,
+      firstFrameRendered,
+      loadFailed,
+      loadFailedToken,
+      loadFailedError,
+      seek,
+      seekRelative,
+      setPlayPause,
+      setVolume,
+      setMuted,
+      setAudioTrack,
+      resetFileLoaded,
+      resetPlaybackRestarted,
+      resetFirstFrameRendered,
+      resetLoadFailed,
+      audioTracks,
+      subtitleTracks,
+      selectedAudio,
+      setSubtitleTrack
+    };
+  }
 
   // lib/utils/scroll-lock.ts
   function currentLockCount() {
@@ -172301,7 +172655,7 @@
   // components/player/video-player-modal.tsx
   init_react_shim();
   var import_react_dom = __toESM(require_react_dom());
-  var import_core3 = __toESM(require_core());
+  var import_core4 = __toESM(require_core());
   var import_window = __toESM(require_window());
 
   // lib/playback-availability.ts
@@ -172986,6 +173340,23 @@
         ]
       }
     );
+  }
+
+  // lib/download-target.ts
+  var import_core2 = __toESM(require_core());
+  async function resolveDownloadFolder() {
+    const preset = getDownloadDir();
+    if (preset) return preset;
+    if (isAndroidTauriEnv) {
+      return await (0, import_core2.invoke)("default_download_dir");
+    }
+    if (isTauriEnv) {
+      const picked = await (0, import_core2.invoke)("pick_folder");
+      return picked ?? await (0, import_core2.invoke)("default_download_dir");
+    }
+    const response = await fetch("/api/pick-folder", { method: "POST" });
+    if (!response.ok) throw new Error("Folder picker failed");
+    return (await response.json()).path;
   }
 
   // lib/vlc-deep-link.ts
@@ -174145,7 +174516,7 @@
         onClick: (e) => e.stopPropagation(),
         ...isTv ? { "data-panel-root": "" } : {},
         children: [
-          /* @__PURE__ */ jsxs("div", { className: "flex flex-shrink-0 items-center justify-between border-b border-white/[0.07] px-4 pb-3 pt-[max(0.75rem,calc(env(safe-area-inset-top)+0.5rem))]", children: [
+          /* @__PURE__ */ jsxs("div", { className: "flex flex-shrink-0 items-center justify-between border-b border-white/[0.07] px-4 pb-3 pt-[max(0.75rem,calc(env(safe-area-inset-top)+0.5rem),calc(var(--android-inset-top,0px)+0.5rem))]", children: [
             /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
               onBack ? /* @__PURE__ */ jsx(
                 "button",
@@ -174577,10 +174948,10 @@
   // lib/playback/playback-session-client.ts
   async function invokeDesktop(command, payload) {
     if (!isPluginDesktopHost()) return null;
-    const { invoke: invoke4 } = await Promise.resolve().then(() => __toESM(require_core()));
+    const { invoke: invoke5 } = await Promise.resolve().then(() => __toESM(require_core()));
     try {
-      if (payload) return await invoke4(command, payload);
-      return await invoke4(command);
+      if (payload) return await invoke5(command, payload);
+      return await invoke5(command);
     } catch {
       return null;
     }
@@ -174713,237 +175084,11 @@
     writeStore(store2);
   }
 
-  // lib/tauri-native-player.ts
-  init_react_shim();
-  var isAndroidTauriEnv = isTauriEnv && typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
-  async function np(cmd) {
-    try {
-      const res = await fetch("/api/native-player", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(cmd)
-      });
-      if (!res.ok) return null;
-      return await res.json();
-    } catch {
-      return null;
-    }
-  }
-  var deviceCapsCache = null;
-  var deviceCapsPromise = null;
-  async function getDeviceCapabilities() {
-    if (!isAndroidTauriEnv) return null;
-    if (deviceCapsCache) return deviceCapsCache;
-    if (!deviceCapsPromise) {
-      deviceCapsPromise = np({ cmd: "getCapabilities" }).then((value) => {
-        const caps = value;
-        if (caps && typeof caps.dolbyVision === "boolean") deviceCapsCache = caps;
-        return deviceCapsCache;
-      });
-    }
-    return deviceCapsPromise;
-  }
-  function looksLikeDolbyVision(name) {
-    const separated = /(?:^|[.\s_\-\[(])(dv|dovi)(?:$|[.\s_\-\])])/i;
-    return separated.test(name) || /dolby[.\s_-]?vision/i.test(name);
-  }
-  function looksLikeLosslessAudio(name) {
-    return /(true[.\s_-]?hd|atmos|dts[.\s_-]?hd|dts[.\s_-]?x|\bdtsma\b)/i.test(name);
-  }
-  async function deviceCanPlayStream(name) {
-    if (!isAndroidTauriEnv) return { ok: true };
-    if (!name) return { ok: true };
-    const caps = await getDeviceCapabilities();
-    if (!caps) return { ok: true };
-    if (looksLikeLosslessAudio(name) && !caps.trueHd && !caps.dts) {
-      return { ok: false, reason: "DEVICE_NO_AUDIO_DECODER" };
-    }
-    if (looksLikeDolbyVision(name) && !caps.dolbyVision) {
-      return { ok: false, reason: "DEVICE_NO_DOLBY_VISION" };
-    }
-    return { ok: true };
-  }
-  async function openNativePlayer(opts) {
-    const wrapped = sourceCacheUrl(opts.url) ?? opts.url;
-    await np({ cmd: "open", url: wrapped, start: opts.start ?? 0, audioLang: opts.audioLang ?? "" });
-  }
-  async function closeNativePlayer() {
-    await np({ cmd: "close" });
-  }
-  function setAndroidImmersive(on) {
-    if (!isAndroidTauriEnv) return;
-    void np({ cmd: "setImmersive", on });
-  }
-  async function nativeSetVideoTuning(t) {
-    await np({ cmd: "setTuning", brightness: t.brightness, contrast: t.contrast, saturation: t.saturation });
-  }
-  async function nativeSetVideoGeometry(opts) {
-    await np({
-      cmd: "setGeometry",
-      aspect: opts.aspectOverride ?? "-1",
-      panscan: opts.panscan ?? 0,
-      zoom: opts.videoZoom ?? 0
-    });
-  }
-  function nativeSetBounds(rect) {
-    const scale2 = window.devicePixelRatio || 1;
-    void np({
-      cmd: "setBounds",
-      x: Math.round(rect.left * scale2),
-      y: Math.round(rect.top * scale2),
-      w: Math.round(rect.width * scale2),
-      h: Math.round(rect.height * scale2)
-    });
-  }
-  function useNativePlayer(enabled = true) {
-    const [timePos, setTimePos] = useState(0);
-    const [duration, setDuration] = useState(0);
-    const [paused, setPaused] = useState(false);
-    const [ended, setEnded] = useState(false);
-    const [sid, setSid] = useState(null);
-    const [fileLoaded, setFileLoaded] = useState(false);
-    const [fileLoadedToken, setFileLoadedToken] = useState(0);
-    const [playbackRestarted, setPlaybackRestarted] = useState(false);
-    const [playbackRestartedToken, setPlaybackRestartedToken] = useState(0);
-    const [pausedForCache, setPausedForCache] = useState(false);
-    const [coreIdle, setCoreIdle] = useState(true);
-    const [firstFrameRendered, setFirstFrameRendered] = useState(false);
-    const [loadFailed, setLoadFailed] = useState(false);
-    const [loadFailedToken, setLoadFailedToken] = useState(0);
-    const [loadFailedError, setLoadFailedError] = useState(null);
-    const [audioTracks, setAudioTracks] = useState([]);
-    const [subtitleTracks, setSubtitleTracks] = useState([]);
-    const [selectedAudio, setSelectedAudio] = useState(-1);
-    const prevRef = useRef({ fileLoaded: false, firstFrame: false, failToken: -1, timePos: 0 });
-    useEffect(() => {
-      if (!isAndroidTauriEnv || !enabled) return;
-      let cancelled = false;
-      const tick = async () => {
-        const s = await np({ cmd: "status" });
-        if (cancelled || !s || typeof s.timePos !== "number") return;
-        const prev = prevRef.current;
-        setTimePos(s.timePos);
-        prev.timePos = s.timePos;
-        setDuration(s.duration);
-        setPaused(s.paused);
-        setEnded(s.ended);
-        setPausedForCache(s.pausedForCache);
-        setCoreIdle(!s.fileLoaded || s.paused);
-        setSid(s.selectedSub > 0 ? s.selectedSub : null);
-        setAudioTracks(s.tracks?.audio ?? []);
-        setSubtitleTracks(s.tracks?.sub ?? []);
-        setSelectedAudio(s.selectedAudio);
-        if (s.fileLoaded && !prev.fileLoaded) {
-          setFileLoaded(true);
-          setFileLoadedToken((t) => t + 1);
-        }
-        if (!s.fileLoaded) setFileLoaded(false);
-        prev.fileLoaded = s.fileLoaded;
-        if (s.firstFrame && !prev.firstFrame) {
-          setFirstFrameRendered(true);
-          setPlaybackRestarted(true);
-          setPlaybackRestartedToken((t) => t + 1);
-        }
-        prev.firstFrame = s.firstFrame;
-        if (prev.failToken === -1) {
-          prev.failToken = s.loadFailedToken;
-        } else if (s.loadFailedToken > prev.failToken) {
-          prev.failToken = s.loadFailedToken;
-          setLoadFailed(true);
-          setLoadFailedToken((t) => t + 1);
-          setLoadFailedError(null);
-          if (s.loadFailedMessage === "DEVICE_NO_DOLBY_VISION" || s.loadFailedMessage === "DEVICE_FORMAT_UNSUPPORTED") {
-            window.dispatchEvent(new CustomEvent("lumio-device-format-unsupported", {
-              detail: { reason: s.loadFailedMessage }
-            }));
-          }
-        }
-      };
-      const id4 = window.setInterval(() => {
-        void tick();
-      }, 250);
-      void tick();
-      return () => {
-        cancelled = true;
-        window.clearInterval(id4);
-      };
-    }, [enabled]);
-    const seek = useCallback((time2) => {
-      void np({ cmd: "seek", value: time2 });
-    }, []);
-    const seekRelative = useCallback((delta) => {
-      void np({ cmd: "seek", value: Math.max(0, prevRef.current.timePos + delta) });
-    }, []);
-    const setPlayPause = useCallback((pause) => {
-      void np({ cmd: "setPause", value: pause });
-    }, []);
-    const setVolume = useCallback((vol) => {
-      void np({ cmd: "setVolume", value: vol });
-    }, []);
-    const setMuted = useCallback((muted) => {
-      void np({ cmd: "setMuted", value: muted });
-    }, []);
-    const setAudioTrack = useCallback((aid) => {
-      void np({ cmd: "setAudioTrack", id: aid });
-    }, []);
-    const setSubtitleTrack = useCallback((newSid) => {
-      void np({ cmd: "setSubtitleTrack", id: newSid });
-    }, []);
-    const resetFileLoaded = useCallback(() => {
-      setFileLoaded(false);
-    }, []);
-    const resetEnded = useCallback(() => {
-      setEnded(false);
-    }, []);
-    const resetPlaybackRestarted = useCallback(() => {
-      setPlaybackRestarted(false);
-    }, []);
-    const resetFirstFrameRendered = useCallback(() => {
-      setFirstFrameRendered(false);
-    }, []);
-    const resetLoadFailed = useCallback(() => {
-      setLoadFailed(false);
-      setLoadFailedError(null);
-    }, []);
-    return {
-      timePos,
-      duration,
-      paused,
-      ended,
-      sid,
-      fileLoaded,
-      fileLoadedToken,
-      resetEnded,
-      playbackRestarted,
-      playbackRestartedToken,
-      pausedForCache,
-      coreIdle,
-      firstFrameRendered,
-      loadFailed,
-      loadFailedToken,
-      loadFailedError,
-      seek,
-      seekRelative,
-      setPlayPause,
-      setVolume,
-      setMuted,
-      setAudioTrack,
-      resetFileLoaded,
-      resetPlaybackRestarted,
-      resetFirstFrameRendered,
-      resetLoadFailed,
-      audioTracks,
-      subtitleTracks,
-      selectedAudio,
-      setSubtitleTrack
-    };
-  }
-
   // lib/tauri-avplayer.ts
-  var import_core2 = __toESM(require_core());
+  var import_core3 = __toESM(require_core());
   async function avplayerPrepare(url, start2, sub) {
     if (!isTauriEnv) return { streamUrl: url, offset: 0 };
-    return (0, import_core2.invoke)("avplayer_prepare", {
+    return (0, import_core3.invoke)("avplayer_prepare", {
       url,
       start: start2 ?? null,
       subContent: sub?.subContent ?? null,
@@ -174954,11 +175099,11 @@
   }
   async function avplayerTeardown() {
     if (!isTauriEnv) return;
-    await (0, import_core2.invoke)("avplayer_teardown");
+    await (0, import_core3.invoke)("avplayer_teardown");
   }
   function airplayLog(msg) {
     if (!isTauriEnv) return;
-    void (0, import_core2.invoke)("lumio_debug_log", { msg: `airplay: ${msg}` }).catch(() => {
+    void (0, import_core3.invoke)("lumio_debug_log", { msg: `airplay: ${msg}` }).catch(() => {
     });
   }
 
@@ -176036,6 +176181,9 @@ ${cue.text}`).join("\n\n")}
       if (!mpv.fileLoaded || mpvStartupHoldReady) return;
       const tickAt = Date.now();
       let cancelled = false;
+      let audioAt = null;
+      let subsAt = null;
+      let introAt = null;
       void refreshMpvAudioTracks();
       void refreshMpvSubtitleTracks();
       const interval = window.setInterval(() => {
@@ -176073,8 +176221,27 @@ ${cue.text}`).join("\n\n")}
         const subtitlesReady = mpvStartupTracksReady && (!loadingSub || elapsed > 2500);
         const introReady = introDataReady || elapsed > 2e3;
         const extraHoldDone = elapsed > ((initialTime ?? 0) > 0 ? 600 : 800);
+        if (audioReady && audioAt === null) audioAt = elapsed;
+        if (subtitlesReady && subsAt === null) subsAt = elapsed;
+        if (introReady && introAt === null) introAt = elapsed;
         if (extraHoldDone && audioReady && subtitlesReady && introReady) {
           window.clearInterval(interval);
+          void emitDesktopPlaybackTelemetry({
+            stage: "player.startup_hold",
+            status: "ok",
+            detail: "splash released",
+            context: {
+              elapsedMs: elapsed,
+              audioAtMs: audioAt,
+              subtitlesAtMs: subsAt,
+              introAtMs: introAt,
+              // Timeout betyder att grinden gav upp på sin budget i stället för
+              // att data kom — det är där en förladdning skulle löna sig.
+              subtitlesTimedOut: subsAt !== null && subsAt > 2500,
+              introTimedOut: introAt !== null && introAt > 2e3,
+              heldByCosmetic: elapsed <= ((initialTime ?? 0) > 0 ? 700 : 900)
+            }
+          });
           setMpvStartupHoldReady(true);
         }
       }, 200);
@@ -176935,7 +177102,7 @@ ${cue.text}`).join("\n\n")}
           }
           setPlaying(false);
           setControlsPaused(true);
-          await (0, import_core3.invoke)("open_in_vlc", { url, app: getExternalPlayerApp() });
+          await (0, import_core4.invoke)("open_in_vlc", { url, app: getExternalPlayerApp() });
         } else {
           if (useMpv) {
             void setMpvPause2(true);
@@ -176960,13 +177127,7 @@ ${cue.text}`).join("\n\n")}
     const handleDownload = useCallback(async () => {
       setDownloadState({ type: "picking-folder" });
       try {
-        const presetDir = getDownloadDir();
-        const folderPath = presetDir ? presetDir : isTauriEnv ? await (0, import_core3.invoke)("pick_folder") : await (async () => {
-          const folderRes = await fetch("/api/pick-folder", { method: "POST" });
-          if (!folderRes.ok) throw new Error("Folder picker failed");
-          const folderData = await folderRes.json();
-          return folderData.path;
-        })();
+        const folderPath = await resolveDownloadFolder();
         if (!folderPath) {
           setDownloadState({ type: "idle" });
           return;
@@ -177331,7 +177492,7 @@ ${cue.text}`).join("\n\n")}
         if (isMpvEngine) {
           try {
             const subtitlePath = await withTimeout(
-              (0, import_core3.invoke)("download_subtitle_to_temp", { url: sub.url }),
+              (0, import_core4.invoke)("download_subtitle_to_temp", { url: sub.url }),
               5e3,
               "subtitle_temp_download_timeout"
             );
@@ -178766,7 +178927,7 @@ ${cue.text}`).join("\n\n")}
       !(useMpv && desktopFullscreen) && /* @__PURE__ */ jsxs(
         "div",
         {
-          className: `absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-4 overflow-hidden transition-[height,padding,opacity,background-color] duration-300 ${collapseMpvTopBar || cssFullscreen && !controlsVisible ? "h-0 px-4 py-0 opacity-0" : "min-h-[44px] px-4 pb-2.5 pt-[max(0.625rem,env(safe-area-inset-top))]"}`,
+          className: `absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-4 overflow-hidden transition-[height,padding,opacity,background-color] duration-300 ${collapseMpvTopBar || cssFullscreen && !controlsVisible ? "h-0 px-4 py-0 opacity-0" : "min-h-[44px] px-4 pb-2.5 pt-[max(0.625rem,env(safe-area-inset-top),var(--android-inset-top,0px))]"}`,
           style: {
             backgroundColor: useMpv ? "#000" : controlsVisible ? "rgba(0,0,0,0.8)" : "transparent",
             pointerEvents: controlsVisible ? "auto" : "none"
@@ -179262,6 +179423,7 @@ ${cue.text}`).join("\n\n")}
                             subtitlePreferenceRef.current = { mode: "off" };
                             void selectSubtitle(null, { manual: true });
                             setSelectedLang(null);
+                            setShowSubMenu(false);
                           },
                           className: `flex w-full items-center justify-between px-4 py-2 text-sm transition hover:bg-white/5 ${selectedLang === null ? "bg-white/5" : ""} ${activeSubId === null ? "text-aurora-300" : "text-slate-300"}`,
                           children: [
@@ -179301,7 +179463,10 @@ ${cue.text}`).join("\n\n")}
                         {
                           type: "button",
                           "data-f": isTv ? "1" : void 0,
-                          onClick: () => void selectSubtitle(sub, { manual: true }),
+                          onClick: () => {
+                            void selectSubtitle(sub, { manual: true });
+                            setShowSubMenu(false);
+                          },
                           className: `flex w-full items-center justify-between px-4 py-2 text-sm transition hover:bg-white/5 ${isActive ? "bg-white/5" : ""}`,
                           children: [
                             /* @__PURE__ */ jsxs("div", { className: "text-left", children: [
@@ -180128,9 +180293,9 @@ ${cue.text}`).join("\n\n")}
     if (!isPluginDesktopHost()) return false;
     const stage = payload.stage.trim();
     if (!stage) return false;
-    const { invoke: invoke4 } = await Promise.resolve().then(() => __toESM(require_core()));
+    const { invoke: invoke5 } = await Promise.resolve().then(() => __toESM(require_core()));
     try {
-      return await invoke4("playback_session_telemetry", {
+      return await invoke5("playback_session_telemetry", {
         payload: {
           sessionId: payload.sessionId ?? null,
           stage,
@@ -180148,8 +180313,8 @@ ${cue.text}`).join("\n\n")}
     const normalized = pathAndQuery.trim();
     if (!normalized.startsWith("/api/")) return null;
     try {
-      const { invoke: invoke4 } = await Promise.resolve().then(() => __toESM(require_core()));
-      return await invoke4("desktop_api_query", {
+      const { invoke: invoke5 } = await Promise.resolve().then(() => __toESM(require_core()));
+      return await invoke5("desktop_api_query", {
         pathAndQuery: normalized,
         timeoutMs: timeoutMs ?? null
       });
@@ -181290,6 +181455,7 @@ ${cue.text}`).join("\n\n")}
     onOpenDetails,
     onGenreSelect,
     onFilterOptionsChange,
+    onEmptyChange,
     refreshRequestToken,
     onRefreshStateChange
   }) {
@@ -181498,6 +181664,10 @@ ${cue.text}`).join("\n\n")}
         setLocalPage(currentPage);
       }
     }, [currentPage, safeCurrentPage]);
+    const gridIsEmpty = !loading && items.length === 0;
+    useEffect(() => {
+      onEmptyChange?.(gridIsEmpty);
+    }, [gridIsEmpty]);
     if (loading && items.length === 0) {
       return /* @__PURE__ */ jsx("div", { className: "space-y-4", children: /* @__PURE__ */ jsx(ResultsLoadingIndicator, { title: t("plexLoading"), description: t("plexLoadingDesc") }) });
     }
@@ -181584,6 +181754,9 @@ ${cue.text}`).join("\n\n")}
     const [refreshRequestToken, setRefreshRequestToken] = useState(0);
     const [refreshingGrid, setRefreshingGrid] = useState(false);
     const [, setFilterOptions] = useState(defaultFilterOptions);
+    const [gridEmpty, setGridEmpty] = useState(false);
+    const hasActiveFilters = filters.mediaType !== "all" || filters.genres.length > 0 || Boolean(filters.titleQuery);
+    const showControls = !gridEmpty || hasActiveFilters;
     useEffect(() => {
       const incoming = params?.titleQuery ?? "";
       setFilters((current2) => current2.titleQuery === incoming ? current2 : { ...current2, titleQuery: incoming, page: 1 });
@@ -181592,7 +181765,7 @@ ${cue.text}`).join("\n\n")}
     const buttonActive = "bg-white/15 text-white border-white/30";
     const buttonInactive = "text-slate-400 hover:border-white/25 hover:text-slate-200";
     return /* @__PURE__ */ jsxs("div", { className: "space-y-4", children: [
-      /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center justify-between gap-2 px-1", children: [
+      showControls ? /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center justify-between gap-2 px-1", children: [
         /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
           /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
             /* @__PURE__ */ jsx(
@@ -181643,7 +181816,7 @@ ${cue.text}`).join("\n\n")}
             children: refreshingGrid ? t("refreshing") : t("refresh")
           }
         )
-      ] }),
+      ] }) : null,
       /* @__PURE__ */ jsx(
         PlexGrid,
         {
@@ -181652,6 +181825,7 @@ ${cue.text}`).join("\n\n")}
           refreshRequestToken,
           onRefreshStateChange: setRefreshingGrid,
           onFilterOptionsChange: setFilterOptions,
+          onEmptyChange: setGridEmpty,
           onGenreSelect: (genre) => setFilters((current2) => ({
             ...current2,
             page: 1,
