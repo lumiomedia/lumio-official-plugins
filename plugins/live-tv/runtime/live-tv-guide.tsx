@@ -63,6 +63,25 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
   // host's 88px icon rail overlays the left edge of every fullscreen view.
   const isTv = useTvMode()
   const tvStation = isTv ? { 'data-f': '' } : {}
+
+  /**
+   * Bredden på värdens ikonrad till vänster, som guiden måste hålla sig undan.
+   *
+   * TV-läget hade den redan. Skrivbordets flytande sidomeny är samma 88 px-rail
+   * med samma problem: guiden är `position: fixed` och ärver därför inte
+   * värdens `padding-left` på <main> (fixed räknas mot viewporten), och raden
+   * ligger på z-210 mot guidens z-80. Utan indraget ritas menyn ÖVER guidens
+   * kanalkolumn — mätt: elementFromPoint(4..84) träffade nav, inte guiden.
+   *
+   * Attributet på <html> är värdens etablerade flagga för läget och läses på
+   * samma sätt i appen (components/filters/filter-panel.tsx). Att läsa DOM i
+   * renderingen är säkert här: guiden monteras på ett klick, långt efter
+   * hydreringen, och läget kan inte ändras utan omladdning.
+   */
+  const railWidth = isTv || (typeof document !== 'undefined'
+    && document.documentElement.getAttribute('data-desktop-side-menu') === '1')
+    ? 88
+    : 0
   const [lists, setLists] = useState<LiveTvList[]>(() => getLiveTvLists())
   const [activeListId, setActiveListId] = useState<string | null>(null)
   const [nowTick, setNowTick] = useState(() => Date.now())
@@ -267,7 +286,7 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
       // column rendered underneath the menu.
       {...(isTv ? { 'data-panel-root': '' } : {})}
       className="fixed inset-x-0 bottom-0 z-[80] flex flex-col bg-slate-950/95 backdrop-blur-xl"
-      style={{ top: -64, paddingTop: 64, ...(isTv ? { paddingLeft: 88 } : null) }}
+      style={{ top: -64, paddingTop: 64, ...(railWidth ? { paddingLeft: railWidth } : null) }}
     >
       <div className="flex items-center justify-between gap-4 border-b border-white/5 px-5 py-3">
         <div className="flex min-w-0 items-center gap-3">

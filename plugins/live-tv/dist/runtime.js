@@ -48704,7 +48704,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_system_rsc = require_dist4();
-      var import_i18n9 = require_main5();
+      var import_i18n10 = require_main5();
       var import_react83 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_motion2 = require_cjs4();
       var import_utils8 = require_main4();
@@ -48760,7 +48760,7 @@
           labelPlacement,
           spinnerVariant
         ]);
-        return /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(ProviderContext, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(import_i18n9.I18nProvider, { locale, children: /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(import_framer_motion2.MotionConfig, { reducedMotion, children: /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(import_overlays.OverlayProvider, { ...otherProps, children: contents }) }) }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(ProviderContext, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(import_i18n10.I18nProvider, { locale, children: /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(import_framer_motion2.MotionConfig, { reducedMotion, children: /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(import_overlays.OverlayProvider, { ...otherProps, children: contents }) }) }) });
       };
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useLabelPlacement(props) {
@@ -109950,7 +109950,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_react83 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var import_i18n9 = require_main5();
+      var import_i18n10 = require_main5();
       var import_shared_utils = require_dist2();
       var PaginationItemType2 = /* @__PURE__ */ ((PaginationItemType22) => {
         PaginationItemType22["DOTS"] = "dots";
@@ -109969,7 +109969,7 @@
           onChange
         } = props;
         const [activePage, setActivePage] = (0, import_react83.useState)(page || initialPage);
-        const { direction } = (0, import_i18n9.useLocale)();
+        const { direction } = (0, import_i18n10.useLocale)();
         const isRTL = direction === "rtl";
         const onChangeActivePage = (newPage) => {
           setActivePage(newPage);
@@ -110279,7 +110279,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var import_i18n9 = require_main5();
+      var import_i18n10 = require_main5();
       var import_system4 = require_dist11();
       var import_use_pagination3 = require_dist38();
       var import_shared_icons = require_dist17();
@@ -110631,7 +110631,7 @@
           getItemProps,
           getCursorProps
         } = usePagination({ ...props, ref });
-        const { direction } = (0, import_i18n9.useLocale)();
+        const { direction } = (0, import_i18n10.useLocale)();
         const isRTL = direction === "rtl";
         const renderChevronIcon = (0, import_react310.useCallback)(
           (key) => {
@@ -138908,7 +138908,7 @@
         useMultiSelectState: () => useMultiSelectState
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_i18n9 = require_main5();
+      var import_i18n10 = require_main5();
       var import_interactions = require_main59();
       var import_label = require_main60();
       var import_menu = require_main61();
@@ -138917,7 +138917,7 @@
       var import_react83 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useMultiSelect(props, state, ref) {
         const { disallowEmptySelection, isDisabled } = props;
-        const collator = (0, import_i18n9.useCollator)({ usage: "search", sensitivity: "base" });
+        const collator = (0, import_i18n10.useCollator)({ usage: "search", sensitivity: "base" });
         const delegate = (0, import_react83.useMemo)(
           () => new import_selection.ListKeyboardDelegate(state.collection, state.disabledKeys, null, collator),
           [state.collection, state.disabledKeys, collator]
@@ -140526,7 +140526,7 @@
       var import_interactions = require_main17();
       var import_focus2 = require_main18();
       var import_shared_utils = require_dist2();
-      var import_i18n9 = require_main5();
+      var import_i18n10 = require_main5();
       function useSliderThumb(props) {
         const {
           ref,
@@ -140547,7 +140547,7 @@
         const Component2 = as || "div";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
         const inputRef = (0, import_react83.useRef)(null);
-        const numberFormatter = (0, import_i18n9.useNumberFormatter)(formatOptions);
+        const numberFormatter = (0, import_i18n10.useNumberFormatter)(formatOptions);
         const { thumbProps, inputProps, isDragging: isDragging2, isFocused } = (0, import_slider.useSliderThumb)(
           {
             index: index3,
@@ -145770,7 +145770,7 @@
       var import_react83 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_utils = require_dist10();
       var import_combobox = require_main67();
-      var import_i18n9 = require_main5();
+      var import_i18n10 = require_main5();
       var import_theme = require_dist12();
       var import_use_safe_layout_effect = require_dist21();
       var import_system = require_dist11();
@@ -145822,7 +145822,7 @@
           isReadOnly = false,
           ...otherProps
         } = props;
-        const { contains } = (0, import_i18n9.useFilter)(filterOptions);
+        const { contains } = (0, import_i18n10.useFilter)(filterOptions);
         const { onChange: _onChange, ...restProps } = originalProps;
         let state = (0, import_combobox.useComboBoxState)({
           ...restProps,
@@ -150836,13 +150836,13 @@
       var import_theme = require_dist12();
       var import_utils8 = require_main38();
       var import_react_utils = require_dist10();
-      var import_i18n9 = require_main5();
+      var import_i18n10 = require_main5();
       var import_shared_utils = require_dist2();
       function useCalendarBase(originalProps) {
         var _a, _b, _c, _d, _e, _f, _g;
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.calendar.variantKeys);
         const globalContext = (0, import_system.useProviderContext)();
-        const { locale, direction } = (0, import_i18n9.useLocale)();
+        const { locale, direction } = (0, import_i18n10.useLocale)();
         const isRTL = direction === "rtl";
         const calendarProp = (0, import_date.createCalendar)(
           new import_date.DateFormatter(locale).resolvedOptions().calendar
@@ -156803,7 +156803,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_system4 = require_dist11();
-      var import_i18n9 = require_main5();
+      var import_i18n10 = require_main5();
       var import_date = require_main74();
       var import_system = require_dist11();
       var import_system2 = require_dist11();
@@ -156819,7 +156819,7 @@
         const globalContext = (0, import_system.useProviderContext)();
         const { validationBehavior: formValidationBehavior } = (0, import_form.useSlottedContext)(import_form.FormContext) || {};
         const [props, variantProps2] = (0, import_system2.mapPropsVariants)(originalProps, import_theme.dateInput.variantKeys);
-        const { locale } = (0, import_i18n9.useLocale)();
+        const { locale } = (0, import_i18n10.useLocale)();
         const calendarProp = (0, import_date.createCalendar)(
           new import_date.DateFormatter(locale).resolvedOptions().calendar
         );
@@ -157380,7 +157380,7 @@
       var import_react83 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
-      var import_i18n9 = require_main5();
+      var import_i18n10 = require_main5();
       var import_utils8 = require_main38();
       var messages_default = {
         "ar-AE": {
@@ -157601,7 +157601,7 @@
         const [isCalendarHeaderExpanded, setIsCalendarHeaderExpanded] = (0, import_utils8.useControlledState)(isHeaderExpanded, isHeaderDefaultExpanded != null ? isHeaderDefaultExpanded : false, handleHeaderExpandedChange);
         const domRef = (0, import_react_utils.useDOMRef)(ref);
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        let stringFormatter = (0, import_i18n9.useLocalizedStringFormatter)(messages_default);
+        let stringFormatter = (0, import_i18n10.useLocalizedStringFormatter)(messages_default);
         const isDefaultColor = originalProps.color === "default" || !originalProps.color;
         const hasMultipleMonths = visibleMonths > 1;
         const placeholder = originalProps == null ? void 0 : originalProps.placeholderValue;
@@ -160239,7 +160239,7 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_interactions = require_main17();
-      var import_i18n9 = require_main5();
+      var import_i18n10 = require_main5();
       var import_shared_utils = require_dist2();
       var import_numberfield = require_main78();
       var import_numberfield2 = require_main79();
@@ -160278,7 +160278,7 @@
         const baseDomRef = (0, import_react_utils.useDOMRef)(baseRef);
         const inputWrapperRef = (0, import_react_utils.useDOMRef)(wrapperRef);
         const innerWrapperRef = (0, import_react_utils.useDOMRef)(innerWrapperRefProp);
-        const { locale } = (0, import_i18n9.useLocale)();
+        const { locale } = (0, import_i18n10.useLocale)();
         const state = (0, import_numberfield.useNumberFieldState)({
           ...originalProps,
           validationBehavior,
@@ -164104,6 +164104,7 @@
           // Results
           aboutResults: "About",
           results: "results",
+          resultsTryThis: "Try this",
           page: "Page",
           of: "of",
           previous: "Previous",
@@ -164352,6 +164353,8 @@
           advDownloadsTitle: "Download folder",
           advDownloadsHint: "Where the player saves videos. When set, the folder picker is skipped.",
           advDownloadsUnset: "Ask every time",
+          advDownloadsAppManaged: "Downloads are saved in the app and appear under My files.",
+          settingsFolderPickerUnavailable: "Choosing a folder is not available on this device.",
           advDownloadsPick: "Choose folder",
           advDownloadsClear: "Clear",
           advOnboardingEyebrow: "Onboarding",
@@ -164988,7 +164991,7 @@
           homeSourceStudios: "Studios",
           liveTvList: "Live TV list",
           liveTvChooseList: "Choose a Live TV list",
-          homeMenuPremiereStar: "Premiere star",
+          homeMenuPremiereStar: "Premieres",
           traktTitle: "Trakt",
           traktDesc: "Sign in with Trakt to sync watched TV episodes, watchlists, and your collection with Lumio.",
           traktSignedInAs: "Signed in as",
@@ -166266,6 +166269,7 @@
           // Results
           aboutResults: "Ungef\xE4r",
           results: "resultat",
+          resultsTryThis: "Prova det h\xE4r",
           page: "Sida",
           of: "av",
           previous: "F\xF6reg\xE5ende",
@@ -166514,6 +166518,8 @@
           advDownloadsTitle: "Nedladdningsmapp",
           advDownloadsHint: "Var spelaren sparar video. N\xE4r satt hoppas mappv\xE4ljaren \xF6ver.",
           advDownloadsUnset: "Fr\xE5ga varje g\xE5ng",
+          advDownloadsAppManaged: "Nedladdningar sparas i appen och visas under Mina filer.",
+          settingsFolderPickerUnavailable: "Att v\xE4lja mapp g\xE5r inte p\xE5 den h\xE4r enheten.",
           advDownloadsPick: "V\xE4lj mapp",
           advDownloadsClear: "Rensa",
           advOnboardingEyebrow: "Onboarding",
@@ -167150,7 +167156,7 @@
           homeSourceStudios: "Studios",
           liveTvList: "Live TV-lista",
           liveTvChooseList: "V\xE4lj en Live TV-lista",
-          homeMenuPremiereStar: "Premi\xE4rstj\xE4rna",
+          homeMenuPremiereStar: "Premi\xE4rer",
           traktTitle: "Trakt",
           traktDesc: "Logga in med Trakt f\xF6r att synka sedda serieavsnitt, listor och din samling med Lumio.",
           traktSignedInAs: "Inloggad som",
@@ -168504,7 +168510,7 @@
           this.channelId = channelId;
         }
         async unregister() {
-          return invoke4(`plugin:${this.plugin}|remove_listener`, {
+          return invoke5(`plugin:${this.plugin}|remove_listener`, {
             event: this.event,
             channelId: this.channelId
           });
@@ -168513,23 +168519,23 @@
       async function addPluginListener(plugin2, event, cb) {
         const handler = new Channel(cb);
         try {
-          await invoke4(`plugin:${plugin2}|register_listener`, {
+          await invoke5(`plugin:${plugin2}|register_listener`, {
             event,
             handler
           });
           return new PluginListener(plugin2, event, handler.id);
         } catch {
-          await invoke4(`plugin:${plugin2}|registerListener`, { event, handler });
+          await invoke5(`plugin:${plugin2}|registerListener`, { event, handler });
           return new PluginListener(plugin2, event, handler.id);
         }
       }
       async function checkPermissions(plugin2) {
-        return invoke4(`plugin:${plugin2}|check_permissions`);
+        return invoke5(`plugin:${plugin2}|check_permissions`);
       }
       async function requestPermissions(plugin2) {
-        return invoke4(`plugin:${plugin2}|request_permissions`);
+        return invoke5(`plugin:${plugin2}|request_permissions`);
       }
-      async function invoke4(cmd, args = {}, options) {
+      async function invoke5(cmd, args = {}, options) {
         return window.__TAURI_INTERNALS__.invoke(cmd, args, options);
       }
       function convertFileSrc(filePath, protocol = "asset") {
@@ -168548,7 +168554,7 @@
          * **You should not call any method on this object anymore and should drop any reference to it.**
          */
         async close() {
-          return invoke4("plugin:resources|close", {
+          return invoke5("plugin:resources|close", {
             rid: this.rid
           });
         }
@@ -168564,7 +168570,7 @@
       exports.addPluginListener = addPluginListener;
       exports.checkPermissions = checkPermissions;
       exports.convertFileSrc = convertFileSrc;
-      exports.invoke = invoke4;
+      exports.invoke = invoke5;
       exports.isTauri = isTauri;
       exports.requestPermissions = requestPermissions;
       exports.transformCallback = transformCallback;
@@ -169273,6 +169279,7 @@
   // lib/media-stream/filters.ts
   var init_filters = __esm({
     "lib/media-stream/filters.ts"() {
+      "use strict";
       init_profile_storage_shim();
     }
   });
@@ -169383,6 +169390,8 @@
   // components/results/results-state.tsx
   var init_results_state = __esm({
     "components/results/results-state.tsx"() {
+      "use client";
+      init_i18n();
       init_jsx_runtime_shim();
     }
   });
@@ -171797,6 +171806,18 @@
     }
   });
 
+  // lib/download-target.ts
+  var import_core2;
+  var init_download_target = __esm({
+    "lib/download-target.ts"() {
+      import_core2 = __toESM(require_core2());
+      init_tauri_mpv();
+      init_tauri_native_player();
+      init_playback_settings();
+      init_session_host();
+    }
+  });
+
   // lib/vlc-deep-link.ts
   var init_vlc_deep_link = __esm({
     "lib/vlc-deep-link.ts"() {
@@ -171977,24 +171998,24 @@
   });
 
   // lib/tauri-avplayer.ts
-  var import_core2;
+  var import_core3;
   var init_tauri_avplayer = __esm({
     "lib/tauri-avplayer.ts"() {
       "use client";
-      import_core2 = __toESM(require_core2());
+      import_core3 = __toESM(require_core2());
       init_tauri_mpv();
     }
   });
 
   // components/player/video-player-modal.tsx
-  var import_react_dom, import_core3, import_window;
+  var import_react_dom, import_core4, import_window;
   var init_video_player_modal = __esm({
     "components/player/video-player-modal.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
       import_react_dom = __toESM(require_react_dom());
-      import_core3 = __toESM(require_core2());
+      import_core4 = __toESM(require_core2());
       import_window = __toESM(require_window());
       init_video_progress();
       init_resume_playback();
@@ -172009,6 +172030,7 @@
       init_scroll_lock();
       init_i18n();
       init_tv_focus_shim();
+      init_download_target();
       init_session_host();
       init_vlc_deep_link();
       init_fetch_client();
@@ -173911,6 +173933,7 @@
     const { t } = useLang();
     const isTv = useTvMode();
     const tvStation = isTv ? { "data-f": "" } : {};
+    const railWidth = isTv || typeof document !== "undefined" && document.documentElement.getAttribute("data-desktop-side-menu") === "1" ? 88 : 0;
     const [lists, setLists] = useState(() => getLiveTvLists());
     const [activeListId, setActiveListId] = useState(null);
     const [nowTick, setNowTick] = useState(() => Date.now());
@@ -174066,7 +174089,7 @@
       {
         ...isTv ? { "data-panel-root": "" } : {},
         className: "fixed inset-x-0 bottom-0 z-[80] flex flex-col bg-slate-950/95 backdrop-blur-xl",
-        style: { top: -64, paddingTop: 64, ...isTv ? { paddingLeft: 88 } : null },
+        style: { top: -64, paddingTop: 64, ...railWidth ? { paddingLeft: railWidth } : null },
         children: [
           /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-4 border-b border-white/5 px-5 py-3", children: [
             /* @__PURE__ */ jsxs("div", { className: "flex min-w-0 items-center gap-3", children: [
