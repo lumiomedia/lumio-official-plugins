@@ -163966,6 +163966,60 @@
           copyStreamLink: "Copy stream link",
           downloadThisVideo: "Download this video",
           openInVlc: "Play in VLC",
+          tvModeGroupTitle: "TV mode",
+          tvModeUseTitle: "Use TV mode",
+          tvRowsIntro: "Every segment has its own rows in TV mode. The starting point mirrors your normal home page, so nothing changes until you change it here.",
+          tvAddRow: "Add row",
+          tvAddRowAll: "Every row can be picked.",
+          tvSegmentProviders: "services",
+          tvSearchAlphaTab: "A\u2013Z",
+          tvSearchBefore1990: "Before 1990",
+          tvSearchEmpty: "Type or pick a letter to search.",
+          tvSearchNoHits: "No matches. Try a shorter search.",
+          pairUnknownDevice: "Unknown device",
+          pairTooManyTries: "Too many attempts \u2014 wait a moment.",
+          pairBadCode: "Wrong or expired code.",
+          pairUnstable: "The connection is unstable right now \u2014 try again shortly.",
+          pairTitle: "Pair this device with Lumio",
+          pairIntro: "Create an invite code in Lumio on your computer (Settings \u2192 Remote access) and enter it here.",
+          watchUnknownTitle: "Unknown title",
+          watchWaiting: "Waiting for playback\u2026",
+          lanLocalAddrTip: "This .local address keeps working even when the computer\u2019s IP address changes. On iPhone: open the link in Safari and choose Share \u2192 Add to Home Screen for fullscreen.",
+          bugStepsHeading: "**Steps to reproduce:**",
+          pluginsHostOnly: "Plugin management happens on the host in LAN mode.",
+          calFetchFailed: "Could not fetch data.",
+          nothingYet: "Nothing to show yet.",
+          bugEnvLabel: "Environment:",
+          appUpdateAndroidInstaller: "Opening the system installer \u2014 confirm the install there.",
+          tvSegmentMovies: "movies",
+          tvSegmentSeries: "series",
+          tvSegmentAll: "everything",
+          tvMirrorsHome: "Mirrors your normal home page. Change anything here and the segment gets its own rows.",
+          tvMirrorsHomeLimited: "Mirrors your normal home page, limited to {type}. Change anything here and the segment gets its own rows.",
+          tvAddRowLimited: "Only rows that belong to {type} are offered.",
+          tvRemoveRow: "Remove",
+          raAlwaysVlc: "Always open in VLC",
+          dtMinutesShort: "{n}m",
+          epLayoutTitle: "Episode layout",
+          epLayoutDesc: "List shows a thumbnail beside the text. Cards show wide artwork you scroll through, with the text over the image.",
+          epLayoutList: "List",
+          epLayoutCards: "Cards",
+          epLayoutToggleTitle: "Switch episode layout",
+          homeBubble: "Home",
+          daPlacementTitle: "Action buttons",
+          daPlacementDesc: "Where Follow, Watched, Trailer and Sources sit on the details page.",
+          daPlacementHeader: "Top right",
+          daPlacementInline: "Next to Play",
+          dtSeasonOne: "1 season",
+          dtSeasonsN: "{n} seasons",
+          settingsDetailsEyebrow: "Details page",
+          sideMenuTitle: "Side menu",
+          sideMenuDesc: "A floating icon rail on the left instead of the horizontal menu. Search moves into the rail. Desktop only.",
+          sideMenuOn: "Side menu",
+          sideMenuOff: "Horizontal menu",
+          vlcToggleOn: "VLC on",
+          vlcToggleOff: "VLC off",
+          vlcToggleTitle: "Open streams directly in VLC",
           openInExternalPrefix: "Play in",
           openInExternalPlayer: "Open in external player",
           externalPlayerToggle: "External player",
@@ -166070,6 +166124,60 @@
           copyStreamLink: "Kopiera streaml\xE4nk",
           downloadThisVideo: "Ladda ner videon",
           openInVlc: "Spela i VLC",
+          tvModeGroupTitle: "TV-l\xE4ge",
+          tvModeUseTitle: "Anv\xE4nd TV-l\xE4ge",
+          tvRowsIntro: "Varje segment har egna rader i TV-l\xE4get. Utg\xE5ngsl\xE4get speglar din vanliga startsida, s\xE5 inget \xE4ndras f\xF6rr\xE4n du g\xF6r det h\xE4r.",
+          tvAddRow: "L\xE4gg till rad",
+          tvAddRowAll: "Alla rader kan v\xE4ljas.",
+          tvSegmentProviders: "tj\xE4nster",
+          tvSearchAlphaTab: "A\u2013\xD6",
+          tvSearchBefore1990: "F\xF6re 1990",
+          tvSearchEmpty: "Skriv eller v\xE4lj en bokstav f\xF6r att s\xF6ka.",
+          tvSearchNoHits: "Inga tr\xE4ffar. Prova en kortare s\xF6kning.",
+          pairUnknownDevice: "Ok\xE4nd enhet",
+          pairTooManyTries: "F\xF6r m\xE5nga f\xF6rs\xF6k \u2014 v\xE4nta en stund.",
+          pairBadCode: "Fel eller utg\xE5ngen kod.",
+          pairUnstable: "Anslutningen \xE4r ostadig just nu \u2014 f\xF6rs\xF6k igen om en stund.",
+          pairTitle: "Para den h\xE4r enheten med Lumio",
+          pairIntro: "Skapa en inbjudningskod i Lumio p\xE5 datorn (Inst\xE4llningar \u2192 Fj\xE4rr\xE5tkomst) och ange den h\xE4r.",
+          watchUnknownTitle: "Ok\xE4nd titel",
+          watchWaiting: "V\xE4ntar p\xE5 uppspelning\u2026",
+          lanLocalAddrTip: "Den h\xE4r .local-adressen forts\xE4tter fungera \xE4ven n\xE4r datorns IP-adress \xE4ndras. P\xE5 iPhone: \xF6ppna l\xE4nken i Safari och v\xE4lj Dela \u2192 L\xE4gg till p\xE5 hemsk\xE4rmen f\xF6r helsk\xE4rm.",
+          bugStepsHeading: "**Steg f\xF6r att \xE5terskapa:**",
+          pluginsHostOnly: "Plugin-hantering g\xF6rs p\xE5 hosten i LAN-l\xE4ge.",
+          calFetchFailed: "Kunde inte h\xE4mta data.",
+          nothingYet: "Inget att visa \xE4n.",
+          bugEnvLabel: "Milj\xF6:",
+          appUpdateAndroidInstaller: "\xD6ppnar systemets installerare \u2014 bekr\xE4fta installationen d\xE4r.",
+          tvSegmentMovies: "film",
+          tvSegmentSeries: "serier",
+          tvSegmentAll: "allt",
+          tvMirrorsHome: "Speglar din vanliga startsida. \xC4ndrar du n\xE5got h\xE4r f\xE5r segmentet egna rader.",
+          tvMirrorsHomeLimited: "Speglar din vanliga startsida, begr\xE4nsad till {type}. \xC4ndrar du n\xE5got h\xE4r f\xE5r segmentet egna rader.",
+          tvAddRowLimited: "Bara rader som h\xF6r till {type} erbjuds.",
+          tvRemoveRow: "Ta bort",
+          raAlwaysVlc: "\xD6ppna alltid i VLC",
+          dtMinutesShort: "{n} min",
+          epLayoutTitle: "Avsnittslayout",
+          epLayoutDesc: "Lista visar en miniatyr bredvid texten. Kort visar breda bilder du bl\xE4ddrar genom, med texten ovanp\xE5 bilden.",
+          epLayoutList: "Lista",
+          epLayoutCards: "Kort",
+          epLayoutToggleTitle: "Byt avsnittslayout",
+          homeBubble: "Hem",
+          daPlacementTitle: "\xC5tg\xE4rdsknappar",
+          daPlacementDesc: "Var F\xF6lj, Sedd, Trailer och K\xE4llor sitter p\xE5 detaljsidan.",
+          daPlacementHeader: "Uppe till h\xF6ger",
+          daPlacementInline: "Bredvid Spela",
+          dtSeasonOne: "1 s\xE4song",
+          dtSeasonsN: "{n} s\xE4songer",
+          settingsDetailsEyebrow: "Detaljsidan",
+          sideMenuTitle: "Sidomeny",
+          sideMenuDesc: "En flytande ikonrad till v\xE4nster i st\xE4llet f\xF6r den horisontella menyn. S\xF6ket flyttar in i raden. Endast skrivbord.",
+          sideMenuOn: "Sidomeny",
+          sideMenuOff: "Horisontell meny",
+          vlcToggleOn: "VLC p\xE5",
+          vlcToggleOff: "VLC av",
+          vlcToggleTitle: "\xD6ppna streams direkt i VLC",
           openInExternalPrefix: "Spela i",
           openInExternalPlayer: "\xD6ppna i extern spelare",
           externalPlayerToggle: "Extern spelare",
@@ -169160,7 +169268,6 @@
   // lib/media-stream/filters.ts
   var init_filters = __esm({
     "lib/media-stream/filters.ts"() {
-      "use strict";
       init_profile_storage_shim();
     }
   });
@@ -172639,37 +172746,44 @@
           }
         )
       ] }),
-      /* @__PURE__ */ jsx("div", { ref: scrollRef, className: "thin-slider-scrollbar max-h-[calc(55vh-3.5rem)] overflow-y-auto", children: programmes.length === 0 ? /* @__PURE__ */ jsx("div", { className: "px-5 py-6 text-sm text-white/50", children: t("liveTvNoGuideForChannel") }) : /* @__PURE__ */ jsx("ul", { className: "divide-y divide-white/5", children: programmes.map((p, i) => {
-        const live = isNow(p, nowMs);
-        const past = p.stop <= nowMs;
-        const progress2 = live ? Math.min(100, Math.max(0, (nowMs - p.start) / (p.stop - p.start) * 100)) : null;
-        return /* @__PURE__ */ jsxs(
-          "li",
-          {
-            "data-now": live || void 0,
-            className: `relative grid grid-cols-[5rem_1fr_auto] gap-4 px-5 py-3 transition ${live ? "bg-emerald-500/10" : past ? "opacity-40 hover:opacity-60" : "hover:bg-white/5"}`,
-            children: [
-              /* @__PURE__ */ jsxs("div", { className: "flex flex-col", children: [
-                /* @__PURE__ */ jsx("span", { className: `text-sm tabular-nums ${live ? "text-emerald-300" : "text-white/70"}`, children: formatTime(p.start) }),
-                live ? /* @__PURE__ */ jsx("span", { className: "mt-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-emerald-300/80", children: t("liveTvNow") }) : null
-              ] }),
-              /* @__PURE__ */ jsxs("div", { className: "min-w-0", children: [
-                /* @__PURE__ */ jsx("div", { className: `truncate text-sm font-semibold ${live ? "text-white" : "text-slate-100"}`, children: p.title }),
-                p.description ? /* @__PURE__ */ jsx("div", { className: "mt-0.5 line-clamp-2 text-xs text-white/55", children: p.description }) : null
-              ] }),
-              /* @__PURE__ */ jsx("div", { className: "flex shrink-0 items-start text-[11px] text-white/55", children: live ? t("liveTvRemaining").replace("{time}", formatRemaining2(p.stop, nowMs)) : formatTime(p.stop) }),
-              progress2 !== null ? /* @__PURE__ */ jsx(
-                "div",
-                {
-                  className: "pointer-events-none absolute inset-x-0 bottom-0 h-0.5 bg-emerald-400",
-                  style: { width: `${progress2}%` }
-                }
-              ) : null
-            ]
-          },
-          `${p.start}-${i}`
-        );
-      }) }) })
+      /* @__PURE__ */ jsx(
+        "div",
+        {
+          ref: scrollRef,
+          className: "thin-slider-scrollbar max-h-[calc(55vh-3.5rem)] overflow-y-auto pb-[max(0px,env(safe-area-inset-bottom),var(--android-inset-bottom,0px))]",
+          children: programmes.length === 0 ? /* @__PURE__ */ jsx("div", { className: "px-5 py-6 text-sm text-white/50", children: t("liveTvNoGuideForChannel") }) : /* @__PURE__ */ jsx("ul", { className: "divide-y divide-white/5", children: programmes.map((p, i) => {
+            const live = isNow(p, nowMs);
+            const past = p.stop <= nowMs;
+            const progress2 = live ? Math.min(100, Math.max(0, (nowMs - p.start) / (p.stop - p.start) * 100)) : null;
+            return /* @__PURE__ */ jsxs(
+              "li",
+              {
+                "data-now": live || void 0,
+                className: `relative grid grid-cols-[5rem_1fr_auto] gap-4 px-5 py-3 transition ${live ? "bg-emerald-500/10" : past ? "opacity-40 hover:opacity-60" : "hover:bg-white/5"}`,
+                children: [
+                  /* @__PURE__ */ jsxs("div", { className: "flex flex-col", children: [
+                    /* @__PURE__ */ jsx("span", { className: `text-sm tabular-nums ${live ? "text-emerald-300" : "text-white/70"}`, children: formatTime(p.start) }),
+                    live ? /* @__PURE__ */ jsx("span", { className: "mt-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-emerald-300/80", children: t("liveTvNow") }) : null
+                  ] }),
+                  /* @__PURE__ */ jsxs("div", { className: "min-w-0", children: [
+                    /* @__PURE__ */ jsx("div", { className: `truncate text-sm font-semibold ${live ? "text-white" : "text-slate-100"}`, children: p.title }),
+                    p.description ? /* @__PURE__ */ jsx("div", { className: "mt-0.5 line-clamp-2 text-xs text-white/55", children: p.description }) : null
+                  ] }),
+                  /* @__PURE__ */ jsx("div", { className: "flex shrink-0 items-start text-[11px] text-white/55", children: live ? t("liveTvRemaining").replace("{time}", formatRemaining2(p.stop, nowMs)) : formatTime(p.stop) }),
+                  progress2 !== null ? /* @__PURE__ */ jsx(
+                    "div",
+                    {
+                      className: "pointer-events-none absolute inset-x-0 bottom-0 h-0.5 bg-emerald-400",
+                      style: { width: `${progress2}%` }
+                    }
+                  ) : null
+                ]
+              },
+              `${p.start}-${i}`
+            );
+          }) })
+        }
+      )
     ] });
   }
   var init_player_schedule_overlay = __esm({
@@ -173201,7 +173315,7 @@
             /* @__PURE__ */ jsxs(
               "div",
               {
-                className: "absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-4 bg-gradient-to-b from-black/75 via-black/45 to-transparent px-5 py-4 transition-opacity duration-200",
+                className: "absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-4 bg-gradient-to-b from-black/75 via-black/45 to-transparent px-5 pb-4 pt-[max(1rem,env(safe-area-inset-top),var(--android-inset-top,0px))] transition-opacity duration-200",
                 onMouseEnter: keepControlsVisible,
                 onMouseLeave: revealControls,
                 style: {
@@ -173239,7 +173353,7 @@
             /* @__PURE__ */ jsx(
               "div",
               {
-                className: "absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-5 pb-5 pt-12 transition-opacity duration-200",
+                className: "absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-5 pb-[max(1.25rem,env(safe-area-inset-bottom),var(--android-inset-bottom,0px))] pt-12 transition-opacity duration-200",
                 onMouseEnter: keepControlsVisible,
                 onMouseLeave: revealControls,
                 style: {

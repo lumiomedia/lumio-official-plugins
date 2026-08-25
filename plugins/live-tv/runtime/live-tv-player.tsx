@@ -643,7 +643,11 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
           </div>
         )}
         <div
-          className="absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-4 bg-gradient-to-b from-black/75 via-black/45 to-transparent px-5 py-4 transition-opacity duration-200"
+          // Android ritar edge-to-edge och webview:n får ALDRIG insets via
+          // env(safe-area-inset-*) — de är alltid 0 där. Bryggan känner dem och
+          // startAndroidInsetSync() lägger dem i --android-inset-*, så max()
+          // måste läsa BÅDA: env() bär iOS, variabeln bär Android.
+          className="absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-4 bg-gradient-to-b from-black/75 via-black/45 to-transparent px-5 pb-4 pt-[max(1rem,env(safe-area-inset-top),var(--android-inset-top,0px))] transition-opacity duration-200"
           onMouseEnter={keepControlsVisible}
           onMouseLeave={revealControls}
           style={{
@@ -674,7 +678,9 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
           </button>
         </div>
         <div
-          className="absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-5 pb-5 pt-12 transition-opacity duration-200"
+          // Se kommentaren vid topbaren: navigeringsfältets inset kommer bara
+          // via --android-inset-bottom, aldrig via env() på Android.
+          className="absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-5 pb-[max(1.25rem,env(safe-area-inset-bottom),var(--android-inset-bottom,0px))] pt-12 transition-opacity duration-200"
           onMouseEnter={keepControlsVisible}
           onMouseLeave={revealControls}
           style={{

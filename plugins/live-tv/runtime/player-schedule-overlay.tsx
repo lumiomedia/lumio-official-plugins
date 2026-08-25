@@ -64,7 +64,14 @@ export function PlayerScheduleOverlay({ channel, listId, urls, open, onClose }: 
         </button>
       </div>
 
-      <div ref={scrollRef} className="thin-slider-scrollbar max-h-[calc(55vh-3.5rem)] overflow-y-auto">
+      {/* Paddingen sitter på SCROLLYTAN, inte på arket: arkets bakgrund ska
+          nå skärmkanten som förut, men sista programmet måste kunna skrollas
+          fri från Androids navigeringsfält. Se live-tv-player.tsx om varför
+          env() inte räcker där. */}
+      <div
+        ref={scrollRef}
+        className="thin-slider-scrollbar max-h-[calc(55vh-3.5rem)] overflow-y-auto pb-[max(0px,env(safe-area-inset-bottom),var(--android-inset-bottom,0px))]"
+      >
         {programmes.length === 0 ? (
           <div className="px-5 py-6 text-sm text-white/50">
             {t('liveTvNoGuideForChannel')}
