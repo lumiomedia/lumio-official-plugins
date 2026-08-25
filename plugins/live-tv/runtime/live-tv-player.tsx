@@ -621,7 +621,23 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
   if (useMpv) {
     const toggleMpvPause = () => {
       revealControls()
-      void mpv.setPlayPause(!mpvPaused)
+      // Spela efter paus = ladda om kanalen, inte "unpause". Live har ingen
+      // meningsfull återupptagning — livekanten rullar vidare medan man är
+      // pausad — och paus-läget i JS kan hamna i osync med motorn när en
+      // xtream-panel tappar TCP mitt i (vilket de rutinmässigt gör). En
+      // omladdning tar oss till livekanten OCH räddar oss när motorn faktiskt
+      // hängt, inte bara när flaggan är fel.
+      //
+      // Det här bodde tidigare som en TEXTPATCH i värdens
+      // generate-bundled-plugin-runtimes.mjs, som matchade på 'setMpvPause'.
+      // När motorvalet gjordes om slutade den matcha och beteendet försvann
+      // tyst. Här i källan kan det inte hända igen, och det gäller nu BÅDA
+      // motorerna — Android behöver det precis lika mycket.
+      if (mpvPaused) {
+        void engineClose().catch(() => {}).then(() => engineOpen(channel.url))
+        return
+      }
+      void mpv.setPlayPause(true)
     }
 
     const syncMpvBounds = () => {

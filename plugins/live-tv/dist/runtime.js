@@ -173477,7 +173477,12 @@
     if (useMpv) {
       const toggleMpvPause = () => {
         revealControls();
-        void mpv.setPlayPause(!mpvPaused);
+        if (mpvPaused) {
+          void engineClose().catch(() => {
+          }).then(() => engineOpen(channel.url));
+          return;
+        }
+        void mpv.setPlayPause(true);
       };
       const syncMpvBounds = () => {
         const rect = stageRef.current?.getBoundingClientRect();
