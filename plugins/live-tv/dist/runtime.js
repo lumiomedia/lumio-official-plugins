@@ -165739,6 +165739,10 @@
           sssSeasonWatched: "Season watched",
           sssMarkSeasonWatched: "Mark season watched",
           sssEpisodesLoadError: "Could not load episodes right now.",
+          sssSeasonsLoadError: "Could not load seasons right now.",
+          detailsCastLoadError: "Could not load the cast right now.",
+          detailsRecommendationsLoadError: "Could not load recommendations right now.",
+          detailsCommentsLoadError: "Could not load comments right now.",
           sssPlayEpisodeCode: "Play {code}",
           sssPlayEpisode: "Play episode",
           // Series calendar
@@ -167893,6 +167897,10 @@
           sssSeasonWatched: "S\xE4songen sedd",
           sssMarkSeasonWatched: "Markera s\xE4song sedd",
           sssEpisodesLoadError: "Kunde inte ladda avsnitt just nu.",
+          sssSeasonsLoadError: "Kunde inte ladda s\xE4songer just nu.",
+          detailsCastLoadError: "Kunde inte ladda sk\xE5despelarna just nu.",
+          detailsRecommendationsLoadError: "Kunde inte ladda rekommendationer just nu.",
+          detailsCommentsLoadError: "Kunde inte ladda kommentarer just nu.",
           sssPlayEpisodeCode: "Spela {code}",
           sssPlayEpisode: "Spela avsnitt",
           // Series calendar
@@ -168991,9 +168999,6 @@
   async function closeMpvPlayer() {
     return (0, import_core.invoke)("mpv_close");
   }
-  async function setMpvPause(paused) {
-    return (0, import_core.invoke)("mpv_set_pause", { paused });
-  }
   async function setMpvAudioTrack(aid) {
     return (0, import_core.invoke)("mpv_set_audio_track", { aid });
   }
@@ -169398,6 +169403,202 @@
   var init_auth_capabilities_shim = __esm({
     "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/auth-capabilities-shim.ts"() {
       sdk2 = globalThis.__lumioPluginRuntime?.sdk;
+    }
+  });
+
+  // lib/tauri-native-player.ts
+  async function np(cmd) {
+    try {
+      const res = await fetch("/api/native-player", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(cmd)
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+  async function openNativePlayer(opts) {
+    const wrapped = sourceCacheUrl(opts.url) ?? opts.url;
+    await np({ cmd: "open", url: wrapped, start: opts.start ?? 0, audioLang: opts.audioLang ?? "" });
+  }
+  async function closeNativePlayer() {
+    await np({ cmd: "close" });
+  }
+  function setAndroidImmersive(on) {
+    if (!isAndroidTauriEnv) return;
+    void np({ cmd: "setImmersive", on });
+  }
+  async function nativeSetVideoGeometry(opts) {
+    await np({
+      cmd: "setGeometry",
+      aspect: opts.aspectOverride ?? "-1",
+      panscan: opts.panscan ?? 0,
+      zoom: opts.videoZoom ?? 0
+    });
+  }
+  function nativeSetBounds(rect) {
+    const scale2 = window.devicePixelRatio || 1;
+    void np({
+      cmd: "setBounds",
+      x: Math.round(rect.left * scale2),
+      y: Math.round(rect.top * scale2),
+      w: Math.round(rect.width * scale2),
+      h: Math.round(rect.height * scale2)
+    });
+  }
+  function useNativePlayer(enabled = true) {
+    const [timePos, setTimePos] = useState(0);
+    const [duration, setDuration] = useState(0);
+    const [paused, setPaused] = useState(false);
+    const [ended, setEnded] = useState(false);
+    const [sid, setSid] = useState(null);
+    const [fileLoaded, setFileLoaded] = useState(false);
+    const [fileLoadedToken, setFileLoadedToken] = useState(0);
+    const [playbackRestarted, setPlaybackRestarted] = useState(false);
+    const [playbackRestartedToken, setPlaybackRestartedToken] = useState(0);
+    const [pausedForCache, setPausedForCache] = useState(false);
+    const [coreIdle, setCoreIdle] = useState(true);
+    const [firstFrameRendered, setFirstFrameRendered] = useState(false);
+    const [loadFailed, setLoadFailed] = useState(false);
+    const [loadFailedToken, setLoadFailedToken] = useState(0);
+    const [loadFailedError, setLoadFailedError] = useState(null);
+    const [audioTracks, setAudioTracks] = useState([]);
+    const [subtitleTracks, setSubtitleTracks] = useState([]);
+    const [selectedAudio, setSelectedAudio] = useState(-1);
+    const prevRef = useRef({ fileLoaded: false, firstFrame: false, failToken: -1, timePos: 0 });
+    useEffect(() => {
+      if (!isAndroidTauriEnv || !enabled) return;
+      let cancelled = false;
+      const tick = async () => {
+        const s = await np({ cmd: "status" });
+        if (cancelled || !s || typeof s.timePos !== "number") return;
+        const prev = prevRef.current;
+        setTimePos(s.timePos);
+        prev.timePos = s.timePos;
+        setDuration(s.duration);
+        setPaused(s.paused);
+        setEnded(s.ended);
+        setPausedForCache(s.pausedForCache);
+        setCoreIdle(!s.fileLoaded || s.paused);
+        setSid(s.selectedSub > 0 ? s.selectedSub : null);
+        setAudioTracks(s.tracks?.audio ?? []);
+        setSubtitleTracks(s.tracks?.sub ?? []);
+        setSelectedAudio(s.selectedAudio);
+        if (s.fileLoaded && !prev.fileLoaded) {
+          setFileLoaded(true);
+          setFileLoadedToken((t) => t + 1);
+        }
+        if (!s.fileLoaded) setFileLoaded(false);
+        prev.fileLoaded = s.fileLoaded;
+        if (s.firstFrame && !prev.firstFrame) {
+          setFirstFrameRendered(true);
+          setPlaybackRestarted(true);
+          setPlaybackRestartedToken((t) => t + 1);
+        }
+        prev.firstFrame = s.firstFrame;
+        if (prev.failToken === -1) {
+          prev.failToken = s.loadFailedToken;
+        } else if (s.loadFailedToken > prev.failToken) {
+          prev.failToken = s.loadFailedToken;
+          setLoadFailed(true);
+          setLoadFailedToken((t) => t + 1);
+          setLoadFailedError(null);
+          if (s.loadFailedMessage === "DEVICE_NO_DOLBY_VISION" || s.loadFailedMessage === "DEVICE_FORMAT_UNSUPPORTED") {
+            window.dispatchEvent(new CustomEvent("lumio-device-format-unsupported", {
+              detail: { reason: s.loadFailedMessage }
+            }));
+          }
+        }
+      };
+      const id4 = window.setInterval(() => {
+        void tick();
+      }, 250);
+      void tick();
+      return () => {
+        cancelled = true;
+        window.clearInterval(id4);
+      };
+    }, [enabled]);
+    const seek = useCallback((time2) => {
+      void np({ cmd: "seek", value: time2 });
+    }, []);
+    const seekRelative = useCallback((delta) => {
+      void np({ cmd: "seek", value: Math.max(0, prevRef.current.timePos + delta) });
+    }, []);
+    const setPlayPause = useCallback((pause) => {
+      void np({ cmd: "setPause", value: pause });
+    }, []);
+    const setVolume = useCallback((vol) => {
+      void np({ cmd: "setVolume", value: vol });
+    }, []);
+    const setMuted = useCallback((muted) => {
+      void np({ cmd: "setMuted", value: muted });
+    }, []);
+    const setAudioTrack = useCallback((aid) => {
+      void np({ cmd: "setAudioTrack", id: aid });
+    }, []);
+    const setSubtitleTrack = useCallback((newSid) => {
+      void np({ cmd: "setSubtitleTrack", id: newSid });
+    }, []);
+    const resetFileLoaded = useCallback(() => {
+      setFileLoaded(false);
+    }, []);
+    const resetEnded = useCallback(() => {
+      setEnded(false);
+    }, []);
+    const resetPlaybackRestarted = useCallback(() => {
+      setPlaybackRestarted(false);
+    }, []);
+    const resetFirstFrameRendered = useCallback(() => {
+      setFirstFrameRendered(false);
+    }, []);
+    const resetLoadFailed = useCallback(() => {
+      setLoadFailed(false);
+      setLoadFailedError(null);
+    }, []);
+    return {
+      timePos,
+      duration,
+      paused,
+      ended,
+      sid,
+      fileLoaded,
+      fileLoadedToken,
+      resetEnded,
+      playbackRestarted,
+      playbackRestartedToken,
+      pausedForCache,
+      coreIdle,
+      firstFrameRendered,
+      loadFailed,
+      loadFailedToken,
+      loadFailedError,
+      seek,
+      seekRelative,
+      setPlayPause,
+      setVolume,
+      setMuted,
+      setAudioTrack,
+      resetFileLoaded,
+      resetPlaybackRestarted,
+      resetFirstFrameRendered,
+      resetLoadFailed,
+      audioTracks,
+      subtitleTracks,
+      selectedAudio,
+      setSubtitleTrack
+    };
+  }
+  var isAndroidTauriEnv;
+  var init_tauri_native_player = __esm({
+    "lib/tauri-native-player.ts"() {
+      "use strict";
+      init_react_shim();
+      init_tauri_mpv();
+      isAndroidTauriEnv = isTauriEnv && typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
     }
   });
 
@@ -171775,16 +171976,6 @@
     }
   });
 
-  // lib/tauri-native-player.ts
-  var isAndroidTauriEnv;
-  var init_tauri_native_player = __esm({
-    "lib/tauri-native-player.ts"() {
-      init_react_shim();
-      init_tauri_mpv();
-      isAndroidTauriEnv = isTauriEnv && typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
-    }
-  });
-
   // lib/tauri-avplayer.ts
   var import_core2;
   var init_tauri_avplayer = __esm({
@@ -171926,6 +172117,7 @@
       init_results_pagination();
       init_auth_capabilities_shim();
       init_tauri_mpv();
+      init_tauri_native_player();
       init_scroll_lock();
       init_watched_episodes();
       init_autoplay_settings();
@@ -172193,7 +172385,8 @@
     const res = await fetch("/api/xmltv", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ urls })
+      body: JSON.stringify({ urls }),
+      signal: AbortSignal.timeout(EPG_FETCH_TIMEOUT_MS)
     });
     const data = await res.json().catch(() => null);
     if (!res.ok) {
@@ -172205,7 +172398,7 @@
     }
     return { ...data, requestedSources: urls };
   }
-  var EpgFetchError;
+  var EpgFetchError, EPG_FETCH_TIMEOUT_MS;
   var init_fetcher = __esm({
     "../lumio-official-plugins/plugins/live-tv/runtime/epg/fetcher.ts"() {
       "use strict";
@@ -172219,6 +172412,7 @@
           this.failures = failures;
         }
       };
+      EPG_FETCH_TIMEOUT_MS = 45e3;
     }
   });
 
@@ -172849,8 +173043,33 @@
     const mobileFullscreenAttemptedRef = useRef(false);
     const handleCloseRef = useRef(() => {
     });
-    const useMpv = isTauriEnv;
-    const mpv = useMpvPlayer(useMpv);
+    const engineKind = isDesktopTauriEnv ? "mpv" : isAndroidTauriEnv ? "droid" : "none";
+    const useMpv = engineKind !== "none";
+    const isDroidEngine = engineKind === "droid";
+    const mpvDesktop = useMpvPlayer(engineKind === "mpv");
+    const droid = useNativePlayer(isDroidEngine);
+    const mpv = isDroidEngine ? droid : mpvDesktop;
+    const engineOpen = useCallback(
+      (url) => isDroidEngine ? openNativePlayer({ url }) : openMpvPlayer({ url }),
+      [isDroidEngine]
+    );
+    const engineClose = useCallback(
+      () => isDroidEngine ? closeNativePlayer() : closeMpvPlayer(),
+      [isDroidEngine]
+    );
+    const engineSetBounds = useCallback(
+      (rect) => isDroidEngine ? nativeSetBounds(rect) : mpvSetBounds(rect),
+      [isDroidEngine]
+    );
+    const engineSetGeometry = useCallback(
+      (opts) => isDroidEngine ? nativeSetVideoGeometry(opts) : setMpvVideoGeometry(opts),
+      [isDroidEngine]
+    );
+    useEffect(() => {
+      if (!isDroidEngine) return;
+      setAndroidImmersive(true);
+      return () => setAndroidImmersive(false);
+    }, [isDroidEngine]);
     const {
       fileLoaded: mpvFileLoaded,
       timePos: mpvTimePos,
@@ -172880,7 +173099,7 @@
       const option = ASPECT_OPTIONS[next2];
       setAspectIndex(next2);
       if (useMpv) {
-        void setMpvVideoGeometry({
+        void engineSetGeometry({
           aspectOverride: option.aspectOverride,
           panscan: option.panscan,
           videoZoom: option.videoZoom
@@ -172995,7 +173214,7 @@
         if (useMpv && (event.key === " " || event.key === "Spacebar")) {
           event.preventDefault();
           revealControls();
-          void setMpvPause(!mpvPaused);
+          void mpv.setPlayPause(!mpvPaused);
         }
       }
       window.addEventListener("keydown", onKey, isTv);
@@ -173063,7 +173282,7 @@
         const boundsTimers = [];
         const sync2 = () => {
           const rect = stageRef.current?.getBoundingClientRect();
-          if (rect) mpvSetBounds(rect);
+          if (rect) engineSetBounds(rect);
         };
         const syncRepeatedly = () => {
           sync2();
@@ -173075,11 +173294,11 @@
         resetFileLoaded();
         resetPlaybackRestarted();
         resetFirstFrameRendered();
-        void closeMpvPlayer().catch(() => {
+        void engineClose().catch(() => {
         }).then(() => {
           if (cancelled2) return;
           syncRepeatedly();
-          return openMpvPlayer({ url: channel.url });
+          return engineOpen(channel.url);
         }).then(() => {
           if (cancelled2) return;
           syncRepeatedly();
@@ -173103,7 +173322,7 @@
           resizeObs?.disconnect();
           window.removeEventListener("resize", sync2);
           window.removeEventListener("scroll", sync2, true);
-          void closeMpvPlayer();
+          void engineClose();
         };
       }
       const videoEl = videoRef.current;
@@ -173114,7 +173333,7 @@
       async function setup() {
         const proxied = proxyUrl(channel.url);
         try {
-          const probe = await fetch(`${proxied}&probe=1`).then((response) => response.json()).catch(() => ({ isPlaylist: false, contentType: null }));
+          const probe = await fetch(`${proxied}&probe=1`, { signal: AbortSignal.timeout(6e3) }).then((response) => response.json()).catch(() => ({ isPlaylist: false, contentType: null }));
           if (cancelled) return;
           const shouldUseHls = Boolean(
             probe.isPlaylist || probe.contentType?.includes("mpegurl") || probe.contentType?.includes("m3u")
@@ -173196,14 +173415,14 @@
     ]);
     useEffect(() => {
       if (!useMpv || !mpvFileLoaded) return;
-      void setMpvPause(false);
+      void mpv.setPlayPause(false);
     }, [mpvFileLoaded, useMpv]);
     useEffect(() => {
       if (!useMpv || !loading || error || mpvFileLoaded || mpvPlaybackRestarted || mpvFirstFrameRendered) return;
       const timeout = window.setTimeout(() => {
         setError(t("liveTvMpvStartFailed"));
         setLoading(false);
-        void closeMpvPlayer().catch(() => {
+        void engineClose().catch(() => {
         });
       }, MPV_STARTUP_TIMEOUT_MS);
       return () => window.clearTimeout(timeout);
@@ -173228,7 +173447,7 @@
         });
         onClose();
         window.requestAnimationFrame(() => {
-          void closeMpvPlayer().catch(() => {
+          void engineClose().catch(() => {
           });
         });
         return;
@@ -173254,11 +173473,11 @@
     if (useMpv) {
       const toggleMpvPause = () => {
         revealControls();
-        void setMpvPause(!mpvPaused);
+        void mpv.setPlayPause(!mpvPaused);
       };
       const syncMpvBounds = () => {
         const rect = stageRef.current?.getBoundingClientRect();
-        if (rect) mpvSetBounds(rect);
+        if (rect) engineSetBounds(rect);
       };
       const syncMpvBoundsSoon = () => {
         syncMpvBounds();
@@ -173266,7 +173485,7 @@
         for (const delay2 of [80, 180, 360, 700]) {
           window.setTimeout(() => {
             const rect = stageRef.current?.getBoundingClientRect();
-            if (rect) mpvSetBounds(rect);
+            if (rect) engineSetBounds(rect);
           }, delay2);
         }
       };
@@ -173277,13 +173496,13 @@
           setDesktopFullscreen(fullscreen);
           syncMpvBoundsSoon();
           if (wasPlaying) {
-            void setMpvPause(false);
-            window.setTimeout(() => void setMpvPause(false), 250);
-            window.setTimeout(() => void setMpvPause(false), 900);
+            void mpv.setPlayPause(false);
+            window.setTimeout(() => void mpv.setPlayPause(false), 250);
+            window.setTimeout(() => void mpv.setPlayPause(false), 900);
           }
         }).catch(() => {
           const rect = stageRef.current?.getBoundingClientRect();
-          if (rect) mpvSetBounds(rect);
+          if (rect) engineSetBounds(rect);
         });
       };
       const content2 = /* @__PURE__ */ jsxs(

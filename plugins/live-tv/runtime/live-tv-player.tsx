@@ -4,18 +4,25 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { createPortal } from 'react-dom'
 import {
   closeMpvPlayer,
+  closeNativePlayer,
   getWindowFullscreen,
   getHls,
+  isAndroidTauriEnv,
+  isDesktopTauriEnv,
   isTauriEnv,
   lockBodyScroll,
   mpvSetBounds,
+  nativeSetBounds,
+  nativeSetVideoGeometry,
   onTvFocusEdge,
   openMpvPlayer,
-  setMpvPause,
+  openNativePlayer,
+  setAndroidImmersive,
   setMpvVideoGeometry,
   setWindowNativeFullscreen,
   unlockBodyScroll,
   useMpvPlayer,
+  useNativePlayer,
   useLang,
   useTvMode,
 } from '@/lib/plugin-sdk'
@@ -105,8 +112,45 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
   // array tried to capture it directly). A small effect further down keeps
   // the ref pointed at the latest `handleClose`.
   const handleCloseRef = useRef<() => void>(() => {})
-  const useMpv = isTauriEnv
-  const mpv = useMpvPlayer(useMpv)
+  // Tre motorer, precis som värdens spelare: mpv på skrivbordet, den nativa
+  // media3-spelaren på Android, ingen alls i en webbläsarsession (då spelar
+  // <video>/hls.js nedan). isTauriEnv DUGER INTE som val — Android-appen är
+  // också Tauri men har ingen mpv, så den grenen slutade i mpv-startens
+  // timeout och felet "uppspelningen misslyckades".
+  const engineKind: 'none' | 'mpv' | 'droid' =
+    isDesktopTauriEnv ? 'mpv' : isAndroidTauriEnv ? 'droid' : 'none'
+  const useMpv = engineKind !== 'none'
+  const isDroidEngine = engineKind === 'droid'
+  // Båda hookarna delar gränssnitt (NativePlayerState extends MpvPlayerState),
+  // så allt nedströms kan läsa samma fält oavsett motor.
+  const mpvDesktop = useMpvPlayer(engineKind === 'mpv')
+  const droid = useNativePlayer(isDroidEngine)
+  const mpv = isDroidEngine ? droid : mpvDesktop
+  const engineOpen = useCallback(
+    (url: string) => (isDroidEngine ? openNativePlayer({ url }) : openMpvPlayer({ url })),
+    [isDroidEngine],
+  )
+  const engineClose = useCallback(
+    (): Promise<void> => (isDroidEngine ? closeNativePlayer() : closeMpvPlayer()),
+    [isDroidEngine],
+  )
+  const engineSetBounds = useCallback(
+    (rect: { left: number; top: number; width: number; height: number }) =>
+      (isDroidEngine ? nativeSetBounds(rect) : mpvSetBounds(rect)),
+    [isDroidEngine],
+  )
+  const engineSetGeometry = useCallback(
+    (opts: { aspectOverride?: string; panscan?: number; videoZoom?: number }) =>
+      (isDroidEngine ? nativeSetVideoGeometry(opts) : setMpvVideoGeometry(opts)),
+    [isDroidEngine],
+  )
+  // Android: helskärm redan vid mount, samma som värdens spelare — annars
+  // syns systemfälten en bildruta innan uppspelningen hinner igång.
+  useEffect(() => {
+    if (!isDroidEngine) return
+    setAndroidImmersive(true)
+    return () => setAndroidImmersive(false)
+  }, [isDroidEngine])
   const {
     fileLoaded: mpvFileLoaded,
     timePos: mpvTimePos,
@@ -136,7 +180,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
     const option = ASPECT_OPTIONS[next]
     setAspectIndex(next)
     if (useMpv) {
-      void setMpvVideoGeometry({
+      void engineSetGeometry({
         aspectOverride: option.aspectOverride,
         panscan: option.panscan,
         videoZoom: option.videoZoom,
@@ -267,7 +311,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
       if (useMpv && (event.key === ' ' || event.key === 'Spacebar')) {
         event.preventDefault()
         revealControls()
-        void setMpvPause(!mpvPaused)
+        void mpv.setPlayPause(!mpvPaused)
       }
     }
     // TV: capture-fasen, före motorns bubblande lyssnare — annars hinner
@@ -350,7 +394,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
       const boundsTimers: number[] = []
       const sync = () => {
         const rect = stageRef.current?.getBoundingClientRect()
-        if (rect) mpvSetBounds(rect)
+        if (rect) engineSetBounds(rect)
       }
       const syncRepeatedly = () => {
         sync()
@@ -364,12 +408,12 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
       resetPlaybackRestarted()
       resetFirstFrameRendered()
 
-      void closeMpvPlayer()
+      void engineClose()
         .catch(() => {})
         .then(() => {
           if (cancelled) return
           syncRepeatedly()
-          return openMpvPlayer({ url: channel.url })
+          return engineOpen(channel.url)
         })
         .then(() => {
           if (cancelled) return
@@ -396,7 +440,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
         resizeObs?.disconnect()
         window.removeEventListener('resize', sync)
         window.removeEventListener('scroll', sync, true)
-        void closeMpvPlayer()
+        void engineClose()
       }
     }
 
@@ -411,7 +455,13 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
       const proxied = proxyUrl(channel.url)
 
       try {
-        const probe = await fetch(`${proxied}&probe=1`)
+        // Timeout på proben. Utan den kunde setup() hänga för alltid på ett
+        // svar som aldrig kom — och då sattes media.src ALDRIG, så ingen av
+        // videons händelser (onCanPlay/onLoadedMetadata/onError) kunde släppa
+        // spinnern. Det är exakt "spelaren öppnas men laddar bara" på fjärren,
+        // där reläet är långsammast. Faller proben ut går vi vidare på
+        // fallback-värdena i stället för att stanna.
+        const probe = await fetch(`${proxied}&probe=1`, { signal: AbortSignal.timeout(6000) })
           .then((response) => response.json() as Promise<{ isPlaylist?: boolean; contentType?: string | null }>)
           .catch(() => ({ isPlaylist: false, contentType: null }))
         if (cancelled) return
@@ -502,7 +552,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
 
   useEffect(() => {
     if (!useMpv || !mpvFileLoaded) return
-    void setMpvPause(false)
+    void mpv.setPlayPause(false)
   }, [mpvFileLoaded, useMpv])
 
   useEffect(() => {
@@ -510,7 +560,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
     const timeout = window.setTimeout(() => {
       setError(t('liveTvMpvStartFailed'))
       setLoading(false)
-      void closeMpvPlayer().catch(() => {})
+      void engineClose().catch(() => {})
     }, MPV_STARTUP_TIMEOUT_MS)
     return () => window.clearTimeout(timeout)
   }, [error, loading, mpvFileLoaded, mpvFirstFrameRendered, mpvPlaybackRestarted, useMpv])
@@ -542,7 +592,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
         .catch(() => {})
       onClose()
       window.requestAnimationFrame(() => {
-        void closeMpvPlayer().catch(() => {})
+        void engineClose().catch(() => {})
       })
       return
     }
@@ -571,12 +621,12 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
   if (useMpv) {
     const toggleMpvPause = () => {
       revealControls()
-      void setMpvPause(!mpvPaused)
+      void mpv.setPlayPause(!mpvPaused)
     }
 
     const syncMpvBounds = () => {
       const rect = stageRef.current?.getBoundingClientRect()
-      if (rect) mpvSetBounds(rect)
+      if (rect) engineSetBounds(rect)
     }
 
     const syncMpvBoundsSoon = () => {
@@ -585,7 +635,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
       for (const delay of [80, 180, 360, 700]) {
         window.setTimeout(() => {
           const rect = stageRef.current?.getBoundingClientRect()
-          if (rect) mpvSetBounds(rect)
+          if (rect) engineSetBounds(rect)
         }, delay)
       }
     }
@@ -599,14 +649,14 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
           setDesktopFullscreen(fullscreen)
           syncMpvBoundsSoon()
           if (wasPlaying) {
-            void setMpvPause(false)
-            window.setTimeout(() => void setMpvPause(false), 250)
-            window.setTimeout(() => void setMpvPause(false), 900)
+            void mpv.setPlayPause(false)
+            window.setTimeout(() => void mpv.setPlayPause(false), 250)
+            window.setTimeout(() => void mpv.setPlayPause(false), 900)
           }
         })
         .catch(() => {
           const rect = stageRef.current?.getBoundingClientRect()
-          if (rect) mpvSetBounds(rect)
+          if (rect) engineSetBounds(rect)
         })
     }
 
