@@ -38,6 +38,15 @@ export interface LiveTvList {
   createdAt: string
   urlTvg: string | null
   epgUrls: string[]
+  /**
+   * Stänger av den AUTO-härledda EPG-källan (url-tvg ur spellistan, eller
+   * xmltv.php som servern härleder ur en Xtream-inloggning). Egen flagga och
+   * inte "nolla urlTvg": upsertLiveTvListFromFetch skriver över urlTvg vid
+   * VARJE ny M3U-hämtning, så ett nollat värde hade kommit tillbaka. Med en
+   * flagga blir valet kvar, och källan kan slås på igen — den är härledd, så
+   * att radera den vore inte återställbart.
+   */
+  autoEpgDisabled: boolean
 }
 
 function sanitizeChannels(channels: unknown[]): M3uChannel[] {
@@ -86,6 +95,7 @@ function readLists(): LiveTvList[] {
       channels: sanitizeChannels(Array.isArray(entry.channels) ? entry.channels : []),
       urlTvg: typeof entry.urlTvg === 'string' && entry.urlTvg.trim().length > 0 ? entry.urlTvg.trim() : null,
       epgUrls: sanitizeEpgUrls(entry.epgUrls),
+      autoEpgDisabled: entry.autoEpgDisabled === true,
     }))
     .filter((entry) => entry.id.length > 0 && entry.name.length > 0)
 }
@@ -198,7 +208,7 @@ export function getLiveTvLists(): LiveTvList[] {
 export function getAllLiveTvEpgUrls(lists = readLists()): string[] {
   const urls = new Set<string>()
   for (const list of lists) {
-    if (list.urlTvg) urls.add(list.urlTvg)
+    if (list.urlTvg && !list.autoEpgDisabled) urls.add(list.urlTvg)
     for (const url of list.epgUrls) urls.add(url)
   }
   return [...urls]
@@ -218,6 +228,7 @@ export function createLiveTvList(name: string, options?: { urlTvg?: string | nul
     createdAt: new Date().toISOString(),
     urlTvg: typeof options?.urlTvg === 'string' && options.urlTvg.trim().length > 0 ? options.urlTvg.trim() : null,
     epgUrls: sanitizeEpgUrls(options?.epgUrls ?? []),
+    autoEpgDisabled: false,
   }
   writeLists([...readLists(), next])
   return next
@@ -225,7 +236,7 @@ export function createLiveTvList(name: string, options?: { urlTvg?: string | nul
 
 export function updateLiveTvListEpg(
   listId: string,
-  patch: { urlTvg?: string | null; epgUrls?: string[] },
+  patch: { urlTvg?: string | null; epgUrls?: string[]; autoEpgDisabled?: boolean },
 ): void {
   writeLists(
     readLists().map((list) => {
@@ -238,6 +249,9 @@ export function updateLiveTvListEpg(
             : null)
           : list.urlTvg,
         epgUrls: patch.epgUrls !== undefined ? sanitizeEpgUrls(patch.epgUrls) : list.epgUrls,
+        autoEpgDisabled: patch.autoEpgDisabled !== undefined
+          ? patch.autoEpgDisabled
+          : list.autoEpgDisabled,
       }
     }),
   )
@@ -280,6 +294,7 @@ export function upsertLiveTvListFromFetch(
     createdAt: new Date().toISOString(),
     urlTvg: cleanUrlTvg,
     epgUrls: [],
+    autoEpgDisabled: false,
   }
   writeLists([...readLists(), next])
   return next

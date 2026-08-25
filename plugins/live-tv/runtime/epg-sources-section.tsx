@@ -8,11 +8,22 @@ interface Props {
   autoUrl: string | null
   manualUrls: string[]
   onChangeManual: (urls: string[]) => void
+  /** Av-läget för den härledda källan. Se LiveTvList.autoEpgDisabled. */
+  autoDisabled?: boolean
+  onToggleAuto?: (disabled: boolean) => void
   listId?: string | null
   allUrls?: string[]
 }
 
-export function EpgSourcesSection({ autoUrl, manualUrls, onChangeManual, listId = null, allUrls = [] }: Props) {
+export function EpgSourcesSection({
+  autoUrl,
+  manualUrls,
+  onChangeManual,
+  autoDisabled = false,
+  onToggleAuto,
+  listId = null,
+  allUrls = [],
+}: Props) {
   const { t } = useLang()
   const [draft, setDraft] = useState('')
   const cache = useLiveTvEpgCache(listId, allUrls)
@@ -23,7 +34,7 @@ export function EpgSourcesSection({ autoUrl, manualUrls, onChangeManual, listId 
     setDraft('')
   }
   const removeUrl = (index: number) => onChangeManual(manualUrls.filter((_, j) => j !== index))
-  const hasAny = autoUrl !== null || manualUrls.length > 0
+  const hasAny = (autoUrl !== null && !autoDisabled) || manualUrls.length > 0
   const sourceStats = cache?.sourceStats ?? []
   const failures = cache?.failures ?? []
   const renderSourceMeta = (url: string) => {
@@ -48,12 +59,36 @@ export function EpgSourcesSection({ autoUrl, manualUrls, onChangeManual, listId 
       <h3 className="text-sm font-semibold text-white">{t('liveTvEpgSources')}</h3>
       {autoUrl ? (
         <div className="flex items-center justify-between rounded border border-white/5 bg-black/30 px-3 py-2">
-          <span className="min-w-0">
+          <span className={`min-w-0 ${autoDisabled ? 'opacity-40' : ''}`}>
             <span className="block truncate text-xs text-white/80">{autoUrl}</span>
-            {renderSourceMeta(autoUrl)}
+            {autoDisabled ? null : renderSourceMeta(autoUrl)}
           </span>
-          <span className="ml-2 rounded bg-emerald-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wider text-emerald-300">
-            Auto
+          <span className="ml-2 flex flex-none items-center gap-2">
+            <span
+              className={`rounded px-2 py-0.5 text-[10px] uppercase tracking-wider ${
+                autoDisabled
+                  ? 'bg-white/10 text-slate-400'
+                  : 'bg-emerald-500/20 text-emerald-300'
+              }`}
+            >
+              {autoDisabled ? `Auto · ${t('off')}` : 'Auto'}
+            </span>
+            {/* Härledd källa: den går att STÄNGA AV, inte radera. En radering
+                hade kommit tillbaka vid nästa M3U-hämtning, och användaren
+                hade inte haft någon väg att få den igen. */}
+            {onToggleAuto ? (
+              <button
+                type="button"
+                onClick={() => onToggleAuto(!autoDisabled)}
+                className={`text-xs ${
+                  autoDisabled
+                    ? 'text-emerald-300 hover:text-emerald-200'
+                    : 'text-red-300 hover:text-red-200'
+                }`}
+              >
+                {autoDisabled ? t('on') : t('remove')}
+              </button>
+            ) : null}
           </span>
         </div>
       ) : null}

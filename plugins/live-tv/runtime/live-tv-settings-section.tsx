@@ -177,8 +177,11 @@ export function LiveTvSettingsSection() {
                 autoUrl={list.urlTvg}
                 manualUrls={list.epgUrls}
                 onChangeManual={(epgUrls) => updateLiveTvListEpg(list.id, { epgUrls })}
+                autoDisabled={list.autoEpgDisabled}
+                onToggleAuto={(disabled) => updateLiveTvListEpg(list.id, { autoEpgDisabled: disabled })}
                 listId={list.id}
-                allUrls={[list.urlTvg, ...list.epgUrls].filter((url): url is string => Boolean(url))}
+                allUrls={[list.autoEpgDisabled ? null : list.urlTvg, ...list.epgUrls]
+                  .filter((url): url is string => Boolean(url))}
               />
             </div>
           ))}

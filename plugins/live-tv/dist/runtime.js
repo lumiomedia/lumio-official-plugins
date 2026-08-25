@@ -172161,7 +172161,8 @@
       createdAt: String(entry.createdAt ?? ""),
       channels: sanitizeChannels(Array.isArray(entry.channels) ? entry.channels : []),
       urlTvg: typeof entry.urlTvg === "string" && entry.urlTvg.trim().length > 0 ? entry.urlTvg.trim() : null,
-      epgUrls: sanitizeEpgUrls(entry.epgUrls)
+      epgUrls: sanitizeEpgUrls(entry.epgUrls),
+      autoEpgDisabled: entry.autoEpgDisabled === true
     })).filter((entry) => entry.id.length > 0 && entry.name.length > 0);
   }
   function dedupeChannels(channels) {
@@ -172252,7 +172253,7 @@
   function getAllLiveTvEpgUrls(lists = readLists()) {
     const urls = /* @__PURE__ */ new Set();
     for (const list of lists) {
-      if (list.urlTvg) urls.add(list.urlTvg);
+      if (list.urlTvg && !list.autoEpgDisabled) urls.add(list.urlTvg);
       for (const url of list.epgUrls) urls.add(url);
     }
     return [...urls];
@@ -172269,7 +172270,8 @@
       channels: [],
       createdAt: (/* @__PURE__ */ new Date()).toISOString(),
       urlTvg: typeof options?.urlTvg === "string" && options.urlTvg.trim().length > 0 ? options.urlTvg.trim() : null,
-      epgUrls: sanitizeEpgUrls(options?.epgUrls ?? [])
+      epgUrls: sanitizeEpgUrls(options?.epgUrls ?? []),
+      autoEpgDisabled: false
     };
     writeLists([...readLists(), next2]);
     return next2;
@@ -172281,7 +172283,8 @@
         return {
           ...list,
           urlTvg: patch.urlTvg !== void 0 ? typeof patch.urlTvg === "string" && patch.urlTvg.trim().length > 0 ? patch.urlTvg.trim() : null : list.urlTvg,
-          epgUrls: patch.epgUrls !== void 0 ? sanitizeEpgUrls(patch.epgUrls) : list.epgUrls
+          epgUrls: patch.epgUrls !== void 0 ? sanitizeEpgUrls(patch.epgUrls) : list.epgUrls,
+          autoEpgDisabled: patch.autoEpgDisabled !== void 0 ? patch.autoEpgDisabled : list.autoEpgDisabled
         };
       })
     );
@@ -172315,7 +172318,8 @@
       channels: cleanChannels,
       createdAt: (/* @__PURE__ */ new Date()).toISOString(),
       urlTvg: cleanUrlTvg,
-      epgUrls: []
+      epgUrls: [],
+      autoEpgDisabled: false
     };
     writeLists([...readLists(), next2]);
     return next2;
@@ -174342,7 +174346,15 @@
   init_plugin_sdk();
   init_useLiveTvEpgCache();
   init_jsx_runtime_shim();
-  function EpgSourcesSection({ autoUrl, manualUrls, onChangeManual, listId = null, allUrls = [] }) {
+  function EpgSourcesSection({
+    autoUrl,
+    manualUrls,
+    onChangeManual,
+    autoDisabled = false,
+    onToggleAuto,
+    listId = null,
+    allUrls = []
+  }) {
     const { t } = useLang();
     const [draft, setDraft] = useState("");
     const cache2 = useLiveTvEpgCache(listId, allUrls);
@@ -174353,7 +174365,7 @@
       setDraft("");
     };
     const removeUrl = (index3) => onChangeManual(manualUrls.filter((_, j) => j !== index3));
-    const hasAny = autoUrl !== null || manualUrls.length > 0;
+    const hasAny = autoUrl !== null && !autoDisabled || manualUrls.length > 0;
     const sourceStats = cache2?.sourceStats ?? [];
     const failures = cache2?.failures ?? [];
     const renderSourceMeta = (url) => {
@@ -174370,11 +174382,28 @@
     return /* @__PURE__ */ jsxs("section", { className: "space-y-2", children: [
       /* @__PURE__ */ jsx("h3", { className: "text-sm font-semibold text-white", children: t("liveTvEpgSources") }),
       autoUrl ? /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between rounded border border-white/5 bg-black/30 px-3 py-2", children: [
-        /* @__PURE__ */ jsxs("span", { className: "min-w-0", children: [
+        /* @__PURE__ */ jsxs("span", { className: `min-w-0 ${autoDisabled ? "opacity-40" : ""}`, children: [
           /* @__PURE__ */ jsx("span", { className: "block truncate text-xs text-white/80", children: autoUrl }),
-          renderSourceMeta(autoUrl)
+          autoDisabled ? null : renderSourceMeta(autoUrl)
         ] }),
-        /* @__PURE__ */ jsx("span", { className: "ml-2 rounded bg-emerald-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wider text-emerald-300", children: "Auto" })
+        /* @__PURE__ */ jsxs("span", { className: "ml-2 flex flex-none items-center gap-2", children: [
+          /* @__PURE__ */ jsx(
+            "span",
+            {
+              className: `rounded px-2 py-0.5 text-[10px] uppercase tracking-wider ${autoDisabled ? "bg-white/10 text-slate-400" : "bg-emerald-500/20 text-emerald-300"}`,
+              children: autoDisabled ? `Auto \xB7 ${t("off")}` : "Auto"
+            }
+          ),
+          onToggleAuto ? /* @__PURE__ */ jsx(
+            "button",
+            {
+              type: "button",
+              onClick: () => onToggleAuto(!autoDisabled),
+              className: `text-xs ${autoDisabled ? "text-emerald-300 hover:text-emerald-200" : "text-red-300 hover:text-red-200"}`,
+              children: autoDisabled ? t("on") : t("remove")
+            }
+          ) : null
+        ] })
       ] }) : null,
       manualUrls.map((url, i) => /* @__PURE__ */ jsxs(
         "div",
@@ -174572,8 +174601,10 @@
             autoUrl: list.urlTvg,
             manualUrls: list.epgUrls,
             onChangeManual: (epgUrls) => updateLiveTvListEpg(list.id, { epgUrls }),
+            autoDisabled: list.autoEpgDisabled,
+            onToggleAuto: (disabled) => updateLiveTvListEpg(list.id, { autoEpgDisabled: disabled }),
             listId: list.id,
-            allUrls: [list.urlTvg, ...list.epgUrls].filter((url) => Boolean(url))
+            allUrls: [list.autoEpgDisabled ? null : list.urlTvg, ...list.epgUrls].filter((url) => Boolean(url))
           }
         )
       ] }, list.id)) }) : null
@@ -176110,13 +176141,13 @@
     }
     const epgUrls = useMemo(() => {
       if (!focused) return [];
-      return [focused.list.urlTvg, ...focused.list.epgUrls].filter(
+      return [focused.list.autoEpgDisabled ? null : focused.list.urlTvg, ...focused.list.epgUrls].filter(
         (url) => Boolean(url)
       );
     }, [focused]);
     const activeEpgUrls = useMemo(() => {
       if (!activeList) return [];
-      return [activeList.urlTvg, ...activeList.epgUrls].filter(
+      return [activeList.autoEpgDisabled ? null : activeList.urlTvg, ...activeList.epgUrls].filter(
         (url) => Boolean(url)
       );
     }, [activeList]);

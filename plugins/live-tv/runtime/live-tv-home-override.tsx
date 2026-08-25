@@ -108,14 +108,14 @@ export function LiveTvHomeOverride(_props: HomeOverrideProps) {
 
   const epgUrls = useMemo(() => {
     if (!focused) return [] as string[]
-    return [focused.list.urlTvg, ...focused.list.epgUrls].filter(
+    return [focused.list.autoEpgDisabled ? null : focused.list.urlTvg, ...focused.list.epgUrls].filter(
       (url): url is string => Boolean(url),
     )
   }, [focused])
 
   const activeEpgUrls = useMemo(() => {
     if (!activeList) return [] as string[]
-    return [activeList.urlTvg, ...activeList.epgUrls].filter(
+    return [activeList.autoEpgDisabled ? null : activeList.urlTvg, ...activeList.epgUrls].filter(
       (url): url is string => Boolean(url),
     )
   }, [activeList])
