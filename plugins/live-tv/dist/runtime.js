@@ -169312,7 +169312,6 @@
   // lib/media-stream/filters.ts
   var init_filters = __esm({
     "lib/media-stream/filters.ts"() {
-      "use strict";
       init_profile_storage_shim();
     }
   });
