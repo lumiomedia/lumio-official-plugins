@@ -169312,6 +169312,7 @@
   // lib/media-stream/filters.ts
   var init_filters = __esm({
     "lib/media-stream/filters.ts"() {
+      "use strict";
       init_profile_storage_shim();
     }
   });
@@ -173773,14 +173774,14 @@
                       ...tvStation,
                       onClick: cycleAspect,
                       className: "flex h-11 shrink-0 items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 text-white transition hover:border-white/35 hover:bg-white/15",
-                      "aria-label": t("aspectRatio"),
+                      "aria-label": `${t("aspectRatio")}: ${ASPECT_OPTIONS[aspectIndex].label}`,
                       title: `${t("aspectRatio")}: ${ASPECT_OPTIONS[aspectIndex].label}`,
                       children: [
                         /* @__PURE__ */ jsxs("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
                           /* @__PURE__ */ jsx("rect", { x: "3", y: "5", width: "18", height: "14", rx: "2" }),
                           /* @__PURE__ */ jsx("path", { d: "M3 9h18M9 5v14" })
                         ] }),
-                        /* @__PURE__ */ jsx("span", { className: "text-[11px] font-semibold uppercase tracking-[0.1em]", children: ASPECT_OPTIONS[aspectIndex].label })
+                        /* @__PURE__ */ jsx("span", { className: "hidden text-[11px] font-semibold uppercase tracking-[0.1em] sm:inline", children: ASPECT_OPTIONS[aspectIndex].label })
                       ]
                     }
                   ),

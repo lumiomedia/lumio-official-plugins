@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.34
+
+- The aspect-ratio button in the player controls shows its icon only when the
+  bar is too narrow for the label — the phone's portrait width (360 px) could
+  not fit it. The current value moves into the aria-label so it is still
+  announced. Width-based, not orientation-based: space is the constraint, so a
+  narrow desktop window behaves the same.
+
 ## 0.3.33
 
 - Playback on Android: the engine choice now separates desktop (mpv) from

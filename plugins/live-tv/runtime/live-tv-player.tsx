@@ -897,14 +897,22 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
               {...tvStation}
               onClick={cycleAspect}
               className="flex h-11 shrink-0 items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 text-white transition hover:border-white/35 hover:bg-white/15"
-              aria-label={t('aspectRatio')}
+              /* Etiketten bär det AKTUELLA värdet, så den måste in i aria-label
+                 när texten göms — annars blir knappen "bildförhållande" utan
+                 att avslöja vilket, för både skärmläsare och TV-fokus. */
+              aria-label={`${t('aspectRatio')}: ${ASPECT_OPTIONS[aspectIndex].label}`}
               title={`${t('aspectRatio')}: ${ASPECT_OPTIONS[aspectIndex].label}`}
             >
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="5" width="18" height="14" rx="2" />
                 <path d="M3 9h18M9 5v14" />
               </svg>
-              <span className="text-[11px] font-semibold uppercase tracking-[0.1em]">
+              {/* Bara ikon när bredden inte räcker. Telefonens porträttläge är
+                  360 px och kontrollraden fick inte plats — i landskap (~800 px)
+                  och på skrivbordet finns utrymmet. Breddvillkor och inte
+                  `portrait:`/`landscape:`: det är utrymmet som är problemet, så
+                  en smal fönsterruta på skrivbordet ska bete sig likadant. */}
+              <span className="hidden text-[11px] font-semibold uppercase tracking-[0.1em] sm:inline">
                 {ASPECT_OPTIONS[aspectIndex].label}
               </span>
             </button>
