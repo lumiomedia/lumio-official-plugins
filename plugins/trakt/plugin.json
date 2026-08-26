@@ -5,7 +5,7 @@
     "en": "Trakt",
     "sv": "Trakt"
   },
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": {
     "en": "Sync watched history, watchlists and collection data with Trakt.",
     "sv": "Synka visningshistorik, listor och samlingsdata med Trakt."

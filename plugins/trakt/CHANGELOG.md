@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.4
+
+- Settings for automatic watchlist cleanup.
+
 ## 0.2.1
 
 - Runtime bundle refresh for latest SDK contract and separation updates

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.5
+
+- Embed parent for remote hosts, so the embed works outside localhost.
+
 ## 1.3.3
 
 - The player close button and the login/account error messages follow the

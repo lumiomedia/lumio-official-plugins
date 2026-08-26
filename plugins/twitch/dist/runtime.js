@@ -257,7 +257,7 @@
           this.channelId = channelId;
         }
         async unregister() {
-          return invoke4(`plugin:${this.plugin}|remove_listener`, {
+          return invoke5(`plugin:${this.plugin}|remove_listener`, {
             event: this.event,
             channelId: this.channelId
           });
@@ -266,23 +266,23 @@
       async function addPluginListener(plugin2, event, cb) {
         const handler = new Channel(cb);
         try {
-          await invoke4(`plugin:${plugin2}|register_listener`, {
+          await invoke5(`plugin:${plugin2}|register_listener`, {
             event,
             handler
           });
           return new PluginListener(plugin2, event, handler.id);
         } catch {
-          await invoke4(`plugin:${plugin2}|registerListener`, { event, handler });
+          await invoke5(`plugin:${plugin2}|registerListener`, { event, handler });
           return new PluginListener(plugin2, event, handler.id);
         }
       }
       async function checkPermissions(plugin2) {
-        return invoke4(`plugin:${plugin2}|check_permissions`);
+        return invoke5(`plugin:${plugin2}|check_permissions`);
       }
       async function requestPermissions(plugin2) {
-        return invoke4(`plugin:${plugin2}|request_permissions`);
+        return invoke5(`plugin:${plugin2}|request_permissions`);
       }
-      async function invoke4(cmd, args = {}, options) {
+      async function invoke5(cmd, args = {}, options) {
         return window.__TAURI_INTERNALS__.invoke(cmd, args, options);
       }
       function convertFileSrc(filePath, protocol = "asset") {
@@ -301,7 +301,7 @@
          * **You should not call any method on this object anymore and should drop any reference to it.**
          */
         async close() {
-          return invoke4("plugin:resources|close", {
+          return invoke5("plugin:resources|close", {
             rid: this.rid
           });
         }
@@ -317,7 +317,7 @@
       exports.addPluginListener = addPluginListener;
       exports.checkPermissions = checkPermissions;
       exports.convertFileSrc = convertFileSrc;
-      exports.invoke = invoke4;
+      exports.invoke = invoke5;
       exports.isTauri = isTauri;
       exports.requestPermissions = requestPermissions;
       exports.transformCallback = transformCallback;
@@ -49223,7 +49223,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_system_rsc = require_dist4();
-      var import_i18n9 = require_main5();
+      var import_i18n10 = require_main5();
       var import_react70 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_motion2 = require_cjs4();
       var import_utils8 = require_main4();
@@ -49279,7 +49279,7 @@
           labelPlacement,
           spinnerVariant
         ]);
-        return /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(ProviderContext, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(import_i18n9.I18nProvider, { locale, children: /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(import_framer_motion2.MotionConfig, { reducedMotion, children: /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(import_overlays.OverlayProvider, { ...otherProps, children: contents }) }) }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(ProviderContext, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(import_i18n10.I18nProvider, { locale, children: /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(import_framer_motion2.MotionConfig, { reducedMotion, children: /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(import_overlays.OverlayProvider, { ...otherProps, children: contents }) }) }) });
       };
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useLabelPlacement(props) {
@@ -110469,7 +110469,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_react70 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var import_i18n9 = require_main5();
+      var import_i18n10 = require_main5();
       var import_shared_utils = require_dist2();
       var PaginationItemType2 = /* @__PURE__ */ ((PaginationItemType22) => {
         PaginationItemType22["DOTS"] = "dots";
@@ -110488,7 +110488,7 @@
           onChange
         } = props;
         const [activePage, setActivePage] = (0, import_react70.useState)(page || initialPage);
-        const { direction } = (0, import_i18n9.useLocale)();
+        const { direction } = (0, import_i18n10.useLocale)();
         const isRTL = direction === "rtl";
         const onChangeActivePage = (newPage) => {
           setActivePage(newPage);
@@ -110798,7 +110798,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var import_i18n9 = require_main5();
+      var import_i18n10 = require_main5();
       var import_system4 = require_dist11();
       var import_use_pagination3 = require_dist38();
       var import_shared_icons = require_dist17();
@@ -111150,7 +111150,7 @@
           getItemProps,
           getCursorProps
         } = usePagination({ ...props, ref });
-        const { direction } = (0, import_i18n9.useLocale)();
+        const { direction } = (0, import_i18n10.useLocale)();
         const isRTL = direction === "rtl";
         const renderChevronIcon = (0, import_react310.useCallback)(
           (key) => {
@@ -139427,7 +139427,7 @@
         useMultiSelectState: () => useMultiSelectState
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_i18n9 = require_main5();
+      var import_i18n10 = require_main5();
       var import_interactions = require_main59();
       var import_label = require_main60();
       var import_menu = require_main61();
@@ -139436,7 +139436,7 @@
       var import_react70 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useMultiSelect(props, state, ref) {
         const { disallowEmptySelection, isDisabled } = props;
-        const collator = (0, import_i18n9.useCollator)({ usage: "search", sensitivity: "base" });
+        const collator = (0, import_i18n10.useCollator)({ usage: "search", sensitivity: "base" });
         const delegate = (0, import_react70.useMemo)(
           () => new import_selection.ListKeyboardDelegate(state.collection, state.disabledKeys, null, collator),
           [state.collection, state.disabledKeys, collator]
@@ -141045,7 +141045,7 @@
       var import_interactions = require_main17();
       var import_focus2 = require_main18();
       var import_shared_utils = require_dist2();
-      var import_i18n9 = require_main5();
+      var import_i18n10 = require_main5();
       function useSliderThumb(props) {
         const {
           ref,
@@ -141066,7 +141066,7 @@
         const Component2 = as || "div";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
         const inputRef = (0, import_react70.useRef)(null);
-        const numberFormatter = (0, import_i18n9.useNumberFormatter)(formatOptions);
+        const numberFormatter = (0, import_i18n10.useNumberFormatter)(formatOptions);
         const { thumbProps, inputProps, isDragging: isDragging2, isFocused } = (0, import_slider.useSliderThumb)(
           {
             index: index3,
@@ -146289,7 +146289,7 @@
       var import_react70 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_utils = require_dist10();
       var import_combobox = require_main67();
-      var import_i18n9 = require_main5();
+      var import_i18n10 = require_main5();
       var import_theme = require_dist12();
       var import_use_safe_layout_effect = require_dist21();
       var import_system = require_dist11();
@@ -146341,7 +146341,7 @@
           isReadOnly = false,
           ...otherProps
         } = props;
-        const { contains } = (0, import_i18n9.useFilter)(filterOptions);
+        const { contains } = (0, import_i18n10.useFilter)(filterOptions);
         const { onChange: _onChange, ...restProps } = originalProps;
         let state = (0, import_combobox.useComboBoxState)({
           ...restProps,
@@ -151355,13 +151355,13 @@
       var import_theme = require_dist12();
       var import_utils8 = require_main38();
       var import_react_utils = require_dist10();
-      var import_i18n9 = require_main5();
+      var import_i18n10 = require_main5();
       var import_shared_utils = require_dist2();
       function useCalendarBase(originalProps) {
         var _a, _b, _c, _d, _e, _f, _g;
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.calendar.variantKeys);
         const globalContext = (0, import_system.useProviderContext)();
-        const { locale, direction } = (0, import_i18n9.useLocale)();
+        const { locale, direction } = (0, import_i18n10.useLocale)();
         const isRTL = direction === "rtl";
         const calendarProp = (0, import_date.createCalendar)(
           new import_date.DateFormatter(locale).resolvedOptions().calendar
@@ -157322,7 +157322,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_system4 = require_dist11();
-      var import_i18n9 = require_main5();
+      var import_i18n10 = require_main5();
       var import_date = require_main74();
       var import_system = require_dist11();
       var import_system2 = require_dist11();
@@ -157338,7 +157338,7 @@
         const globalContext = (0, import_system.useProviderContext)();
         const { validationBehavior: formValidationBehavior } = (0, import_form.useSlottedContext)(import_form.FormContext) || {};
         const [props, variantProps2] = (0, import_system2.mapPropsVariants)(originalProps, import_theme.dateInput.variantKeys);
-        const { locale } = (0, import_i18n9.useLocale)();
+        const { locale } = (0, import_i18n10.useLocale)();
         const calendarProp = (0, import_date.createCalendar)(
           new import_date.DateFormatter(locale).resolvedOptions().calendar
         );
@@ -157899,7 +157899,7 @@
       var import_react70 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
-      var import_i18n9 = require_main5();
+      var import_i18n10 = require_main5();
       var import_utils8 = require_main38();
       var messages_default = {
         "ar-AE": {
@@ -158120,7 +158120,7 @@
         const [isCalendarHeaderExpanded, setIsCalendarHeaderExpanded] = (0, import_utils8.useControlledState)(isHeaderExpanded, isHeaderDefaultExpanded != null ? isHeaderDefaultExpanded : false, handleHeaderExpandedChange);
         const domRef = (0, import_react_utils.useDOMRef)(ref);
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        let stringFormatter = (0, import_i18n9.useLocalizedStringFormatter)(messages_default);
+        let stringFormatter = (0, import_i18n10.useLocalizedStringFormatter)(messages_default);
         const isDefaultColor = originalProps.color === "default" || !originalProps.color;
         const hasMultipleMonths = visibleMonths > 1;
         const placeholder = originalProps == null ? void 0 : originalProps.placeholderValue;
@@ -160758,7 +160758,7 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_interactions = require_main17();
-      var import_i18n9 = require_main5();
+      var import_i18n10 = require_main5();
       var import_shared_utils = require_dist2();
       var import_numberfield = require_main78();
       var import_numberfield2 = require_main79();
@@ -160797,7 +160797,7 @@
         const baseDomRef = (0, import_react_utils.useDOMRef)(baseRef);
         const inputWrapperRef = (0, import_react_utils.useDOMRef)(wrapperRef);
         const innerWrapperRef = (0, import_react_utils.useDOMRef)(innerWrapperRefProp);
-        const { locale } = (0, import_i18n9.useLocale)();
+        const { locale } = (0, import_i18n10.useLocale)();
         const state = (0, import_numberfield.useNumberFieldState)({
           ...originalProps,
           validationBehavior,
@@ -166255,6 +166255,24 @@
       popularTrendingMovies: "Movies",
       popularTrailers: "Trailers",
       popularLiveTv: "Live TV",
+      // Tomlägets vägledning (lib/utils/no-results-guidance.ts). Modulen hade
+      // ingen språktillgång alls och var därför hårdkodad engelska mitt i en
+      // svensk ruta — t trådas nu in från media-grid.tsx.
+      noResultsNothingMatched: "Nothing matched the current filter combination.",
+      noResultsFoundCandidates: "We found {count} candidates, but none matched all of your filters at the same time.",
+      noResultsNoCastMatch: "We could not find a clear cast match for that query with the current filters.",
+      noResultsNoTitleMatch: "We could not find a clear title match for that query with the current filters.",
+      noResultsTipSpellingCast: "Check the spelling or try a full cast name with fewer extra words.",
+      noResultsTipSpellingTitle: "Check the spelling or try a shorter title, such as the main word only.",
+      noResultsTipProviders: "Remove a streaming provider or try searching without provider filters to widen the results.",
+      noResultsTipKeywords: "Remove a keyword or try searching without keywords to surface more candidates.",
+      noResultsTipLanguages: "Remove an original language or add more languages if you want broader results.",
+      noResultsTipRatingTmdb: "Lower the minimum TMDb rating or widen the rating range to include more titles.",
+      noResultsTipRating: "Lower the minimum rating or widen the rating range to include more titles.",
+      noResultsTipYears: "Widen the year range by a few years to give the search more room.",
+      noResultsTipMediaType: "Switch from movies only or series only to both if you want more matches faster.",
+      noResultsTipGenres: "Remove one genre or try fewer genres at the same time.",
+      noResultsTipClearAll: "Clear the filters and start broader, then narrow the search step by step.",
       m3uUrls: "M3U Playlist URLs",
       m3uUrlsDesc: "Enter one M3U URL per line. Channels are stored in your browser.",
       m3uUrlsPlaceholder: "https://example.com/playlist.m3u",
@@ -166453,6 +166471,60 @@
       copyStreamLink: "Copy stream link",
       downloadThisVideo: "Download this video",
       openInVlc: "Play in VLC",
+      tvModeGroupTitle: "TV mode",
+      tvModeUseTitle: "Use TV mode",
+      tvRowsIntro: "Every segment has its own rows in TV mode. The starting point mirrors your normal home page, so nothing changes until you change it here.",
+      tvAddRow: "Add row",
+      tvAddRowAll: "Every row can be picked.",
+      tvSegmentProviders: "services",
+      tvSearchAlphaTab: "A\u2013Z",
+      tvSearchBefore1990: "Before 1990",
+      tvSearchEmpty: "Type or pick a letter to search.",
+      tvSearchNoHits: "No matches. Try a shorter search.",
+      pairUnknownDevice: "Unknown device",
+      pairTooManyTries: "Too many attempts \u2014 wait a moment.",
+      pairBadCode: "Wrong or expired code.",
+      pairUnstable: "The connection is unstable right now \u2014 try again shortly.",
+      pairTitle: "Pair this device with Lumio",
+      pairIntro: "Create an invite code in Lumio on your computer (Settings \u2192 Remote access) and enter it here.",
+      watchUnknownTitle: "Unknown title",
+      watchWaiting: "Waiting for playback\u2026",
+      lanLocalAddrTip: "This .local address keeps working even when the computer\u2019s IP address changes. On iPhone: open the link in Safari and choose Share \u2192 Add to Home Screen for fullscreen.",
+      bugStepsHeading: "**Steps to reproduce:**",
+      pluginsHostOnly: "Plugin management happens on the host in LAN mode.",
+      calFetchFailed: "Could not fetch data.",
+      nothingYet: "Nothing to show yet.",
+      bugEnvLabel: "Environment:",
+      appUpdateAndroidInstaller: "Opening the system installer \u2014 confirm the install there.",
+      tvSegmentMovies: "movies",
+      tvSegmentSeries: "series",
+      tvSegmentAll: "everything",
+      tvMirrorsHome: "Mirrors your normal home page. Change anything here and the segment gets its own rows.",
+      tvMirrorsHomeLimited: "Mirrors your normal home page, limited to {type}. Change anything here and the segment gets its own rows.",
+      tvAddRowLimited: "Only rows that belong to {type} are offered.",
+      tvRemoveRow: "Remove",
+      raAlwaysVlc: "Always open in VLC",
+      dtMinutesShort: "{n}m",
+      epLayoutTitle: "Episode layout",
+      epLayoutDesc: "List shows a thumbnail beside the text. Cards show wide artwork you scroll through, with the text over the image.",
+      epLayoutList: "List",
+      epLayoutCards: "Cards",
+      epLayoutToggleTitle: "Switch episode layout",
+      homeBubble: "Home",
+      daPlacementTitle: "Action buttons",
+      daPlacementDesc: "Where Follow, Watched, Trailer and Sources sit on the details page.",
+      daPlacementHeader: "Top right",
+      daPlacementInline: "Next to Play",
+      dtSeasonOne: "1 season",
+      dtSeasonsN: "{n} seasons",
+      settingsDetailsEyebrow: "Details page",
+      sideMenuTitle: "Side menu",
+      sideMenuDesc: "A floating icon rail on the left instead of the horizontal menu. Search moves into the rail. Desktop only.",
+      sideMenuOn: "Side menu",
+      sideMenuOff: "Horizontal menu",
+      vlcToggleOn: "VLC on",
+      vlcToggleOff: "VLC off",
+      vlcToggleTitle: "Open streams directly in VLC",
       openInExternalPrefix: "Play in",
       openInExternalPlayer: "Open in external player",
       externalPlayerToggle: "External player",
@@ -166537,6 +166609,7 @@
       // Results
       aboutResults: "About",
       results: "results",
+      resultsTryThis: "Try this",
       page: "Page",
       of: "of",
       previous: "Previous",
@@ -166785,6 +166858,8 @@
       advDownloadsTitle: "Download folder",
       advDownloadsHint: "Where the player saves videos. When set, the folder picker is skipped.",
       advDownloadsUnset: "Ask every time",
+      advDownloadsAppManaged: "Downloads are saved in the app and appear under My files.",
+      settingsFolderPickerUnavailable: "Choosing a folder is not available on this device.",
       advDownloadsPick: "Choose folder",
       advDownloadsClear: "Clear",
       advOnboardingEyebrow: "Onboarding",
@@ -167421,7 +167496,7 @@
       homeSourceStudios: "Studios",
       liveTvList: "Live TV list",
       liveTvChooseList: "Choose a Live TV list",
-      homeMenuPremiereStar: "Premiere star",
+      homeMenuPremiereStar: "Premieres",
       traktTitle: "Trakt",
       traktDesc: "Sign in with Trakt to sync watched TV episodes, watchlists, and your collection with Lumio.",
       traktSignedInAs: "Signed in as",
@@ -168172,6 +168247,10 @@
       sssSeasonWatched: "Season watched",
       sssMarkSeasonWatched: "Mark season watched",
       sssEpisodesLoadError: "Could not load episodes right now.",
+      sssSeasonsLoadError: "Could not load seasons right now.",
+      detailsCastLoadError: "Could not load the cast right now.",
+      detailsRecommendationsLoadError: "Could not load recommendations right now.",
+      detailsCommentsLoadError: "Could not load comments right now.",
       sssPlayEpisodeCode: "Play {code}",
       sssPlayEpisode: "Play episode",
       // Series calendar
@@ -168359,6 +168438,21 @@
       popularTrendingMovies: "Filmer",
       popularTrailers: "Trailers",
       popularLiveTv: "Live TV",
+      noResultsNothingMatched: "Ingenting matchade den nuvarande filterkombinationen.",
+      noResultsFoundCandidates: "Vi hittade {count} kandidater, men ingen matchade alla dina filter samtidigt.",
+      noResultsNoCastMatch: "Vi hittade ingen tydlig sk\xE5despelartr\xE4ff f\xF6r s\xF6kningen med de nuvarande filtren.",
+      noResultsNoTitleMatch: "Vi hittade ingen tydlig titeltr\xE4ff f\xF6r s\xF6kningen med de nuvarande filtren.",
+      noResultsTipSpellingCast: "Kontrollera stavningen eller prova ett fullst\xE4ndigt sk\xE5despelarnamn med f\xE4rre extra ord.",
+      noResultsTipSpellingTitle: "Kontrollera stavningen eller prova en kortare titel, till exempel bara huvudordet.",
+      noResultsTipProviders: "Ta bort en streamingtj\xE4nst eller s\xF6k utan tj\xE4nstefilter f\xF6r att bredda tr\xE4ffarna.",
+      noResultsTipKeywords: "Ta bort ett nyckelord eller s\xF6k utan nyckelord f\xF6r att f\xE5 fram fler kandidater.",
+      noResultsTipLanguages: "Ta bort ett originalspr\xE5k, eller l\xE4gg till fler spr\xE5k om du vill ha bredare tr\xE4ffar.",
+      noResultsTipRatingTmdb: "S\xE4nk l\xE4gsta TMDb-betyg eller vidga betygsspannet f\xF6r att f\xE5 med fler titlar.",
+      noResultsTipRating: "S\xE4nk l\xE4gsta betyg eller vidga betygsspannet f\xF6r att f\xE5 med fler titlar.",
+      noResultsTipYears: "Vidga \xE5rsspannet med n\xE5gra \xE5r f\xF6r att ge s\xF6kningen mer utrymme.",
+      noResultsTipMediaType: "Byt fr\xE5n bara filmer eller bara serier till b\xE5da om du vill hitta fler snabbare.",
+      noResultsTipGenres: "Ta bort en genre eller prova f\xE4rre genrer samtidigt.",
+      noResultsTipClearAll: "Rensa filtren och b\xF6rja bredare, och smalna sedan av s\xF6kningen steg f\xF6r steg.",
       m3uUrls: "M3U-spellistor",
       m3uUrlsDesc: "Ange en M3U-l\xE4nk per rad.",
       m3uUrlsPlaceholder: "https://exempel.se/spellista.m3u",
@@ -168557,6 +168651,60 @@
       copyStreamLink: "Kopiera streaml\xE4nk",
       downloadThisVideo: "Ladda ner videon",
       openInVlc: "Spela i VLC",
+      tvModeGroupTitle: "TV-l\xE4ge",
+      tvModeUseTitle: "Anv\xE4nd TV-l\xE4ge",
+      tvRowsIntro: "Varje segment har egna rader i TV-l\xE4get. Utg\xE5ngsl\xE4get speglar din vanliga startsida, s\xE5 inget \xE4ndras f\xF6rr\xE4n du g\xF6r det h\xE4r.",
+      tvAddRow: "L\xE4gg till rad",
+      tvAddRowAll: "Alla rader kan v\xE4ljas.",
+      tvSegmentProviders: "tj\xE4nster",
+      tvSearchAlphaTab: "A\u2013\xD6",
+      tvSearchBefore1990: "F\xF6re 1990",
+      tvSearchEmpty: "Skriv eller v\xE4lj en bokstav f\xF6r att s\xF6ka.",
+      tvSearchNoHits: "Inga tr\xE4ffar. Prova en kortare s\xF6kning.",
+      pairUnknownDevice: "Ok\xE4nd enhet",
+      pairTooManyTries: "F\xF6r m\xE5nga f\xF6rs\xF6k \u2014 v\xE4nta en stund.",
+      pairBadCode: "Fel eller utg\xE5ngen kod.",
+      pairUnstable: "Anslutningen \xE4r ostadig just nu \u2014 f\xF6rs\xF6k igen om en stund.",
+      pairTitle: "Para den h\xE4r enheten med Lumio",
+      pairIntro: "Skapa en inbjudningskod i Lumio p\xE5 datorn (Inst\xE4llningar \u2192 Fj\xE4rr\xE5tkomst) och ange den h\xE4r.",
+      watchUnknownTitle: "Ok\xE4nd titel",
+      watchWaiting: "V\xE4ntar p\xE5 uppspelning\u2026",
+      lanLocalAddrTip: "Den h\xE4r .local-adressen forts\xE4tter fungera \xE4ven n\xE4r datorns IP-adress \xE4ndras. P\xE5 iPhone: \xF6ppna l\xE4nken i Safari och v\xE4lj Dela \u2192 L\xE4gg till p\xE5 hemsk\xE4rmen f\xF6r helsk\xE4rm.",
+      bugStepsHeading: "**Steg f\xF6r att \xE5terskapa:**",
+      pluginsHostOnly: "Plugin-hantering g\xF6rs p\xE5 hosten i LAN-l\xE4ge.",
+      calFetchFailed: "Kunde inte h\xE4mta data.",
+      nothingYet: "Inget att visa \xE4n.",
+      bugEnvLabel: "Milj\xF6:",
+      appUpdateAndroidInstaller: "\xD6ppnar systemets installerare \u2014 bekr\xE4fta installationen d\xE4r.",
+      tvSegmentMovies: "film",
+      tvSegmentSeries: "serier",
+      tvSegmentAll: "allt",
+      tvMirrorsHome: "Speglar din vanliga startsida. \xC4ndrar du n\xE5got h\xE4r f\xE5r segmentet egna rader.",
+      tvMirrorsHomeLimited: "Speglar din vanliga startsida, begr\xE4nsad till {type}. \xC4ndrar du n\xE5got h\xE4r f\xE5r segmentet egna rader.",
+      tvAddRowLimited: "Bara rader som h\xF6r till {type} erbjuds.",
+      tvRemoveRow: "Ta bort",
+      raAlwaysVlc: "\xD6ppna alltid i VLC",
+      dtMinutesShort: "{n} min",
+      epLayoutTitle: "Avsnittslayout",
+      epLayoutDesc: "Lista visar en miniatyr bredvid texten. Kort visar breda bilder du bl\xE4ddrar genom, med texten ovanp\xE5 bilden.",
+      epLayoutList: "Lista",
+      epLayoutCards: "Kort",
+      epLayoutToggleTitle: "Byt avsnittslayout",
+      homeBubble: "Hem",
+      daPlacementTitle: "\xC5tg\xE4rdsknappar",
+      daPlacementDesc: "Var F\xF6lj, Sedd, Trailer och K\xE4llor sitter p\xE5 detaljsidan.",
+      daPlacementHeader: "Uppe till h\xF6ger",
+      daPlacementInline: "Bredvid Spela",
+      dtSeasonOne: "1 s\xE4song",
+      dtSeasonsN: "{n} s\xE4songer",
+      settingsDetailsEyebrow: "Detaljsidan",
+      sideMenuTitle: "Sidomeny",
+      sideMenuDesc: "En flytande ikonrad till v\xE4nster i st\xE4llet f\xF6r den horisontella menyn. S\xF6ket flyttar in i raden. Endast skrivbord.",
+      sideMenuOn: "Sidomeny",
+      sideMenuOff: "Horisontell meny",
+      vlcToggleOn: "VLC p\xE5",
+      vlcToggleOff: "VLC av",
+      vlcToggleTitle: "\xD6ppna streams direkt i VLC",
       openInExternalPrefix: "Spela i",
       openInExternalPlayer: "\xD6ppna i extern spelare",
       externalPlayerToggle: "Extern spelare",
@@ -168641,6 +168789,7 @@
       // Results
       aboutResults: "Ungef\xE4r",
       results: "resultat",
+      resultsTryThis: "Prova det h\xE4r",
       page: "Sida",
       of: "av",
       previous: "F\xF6reg\xE5ende",
@@ -168889,6 +169038,8 @@
       advDownloadsTitle: "Nedladdningsmapp",
       advDownloadsHint: "Var spelaren sparar video. N\xE4r satt hoppas mappv\xE4ljaren \xF6ver.",
       advDownloadsUnset: "Fr\xE5ga varje g\xE5ng",
+      advDownloadsAppManaged: "Nedladdningar sparas i appen och visas under Mina filer.",
+      settingsFolderPickerUnavailable: "Att v\xE4lja mapp g\xE5r inte p\xE5 den h\xE4r enheten.",
       advDownloadsPick: "V\xE4lj mapp",
       advDownloadsClear: "Rensa",
       advOnboardingEyebrow: "Onboarding",
@@ -169525,7 +169676,7 @@
       homeSourceStudios: "Studios",
       liveTvList: "Live TV-lista",
       liveTvChooseList: "V\xE4lj en Live TV-lista",
-      homeMenuPremiereStar: "Premi\xE4rstj\xE4rna",
+      homeMenuPremiereStar: "Premi\xE4rer",
       traktTitle: "Trakt",
       traktDesc: "Logga in med Trakt f\xF6r att synka sedda serieavsnitt, listor och din samling med Lumio.",
       traktSignedInAs: "Inloggad som",
@@ -170272,6 +170423,10 @@
       sssSeasonWatched: "S\xE4songen sedd",
       sssMarkSeasonWatched: "Markera s\xE4song sedd",
       sssEpisodesLoadError: "Kunde inte ladda avsnitt just nu.",
+      sssSeasonsLoadError: "Kunde inte ladda s\xE4songer just nu.",
+      detailsCastLoadError: "Kunde inte ladda sk\xE5despelarna just nu.",
+      detailsRecommendationsLoadError: "Kunde inte ladda rekommendationer just nu.",
+      detailsCommentsLoadError: "Kunde inte ladda kommentarer just nu.",
       sssPlayEpisodeCode: "Spela {code}",
       sssPlayEpisode: "Spela avsnitt",
       // Series calendar
@@ -170625,13 +170780,17 @@
     return sdk2.onAuthCapabilitiesChanged(listener);
   }
 
+  // lib/tauri-native-player.ts
+  init_react_shim();
+  var isAndroidTauriEnv = isTauriEnv && typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
+
   // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/video-player-modal-shim.ts
   init_react_shim();
 
   // components/player/video-player-modal.tsx
   init_react_shim();
   var import_react_dom = __toESM(require_react_dom());
-  var import_core3 = __toESM(require_core());
+  var import_core4 = __toESM(require_core());
   var import_window = __toESM(require_window());
 
   // lib/playback-availability.ts
@@ -170656,6 +170815,9 @@
   // components/player/player-tuning-panel.tsx
   init_react_shim();
   init_jsx_runtime_shim();
+
+  // lib/download-target.ts
+  var import_core2 = __toESM(require_core());
 
   // lib/services/api-json-cache.ts
   var DEFAULT_TTL_MS = 2 * 6e4;
@@ -170706,12 +170868,8 @@
     {}
   );
 
-  // lib/tauri-native-player.ts
-  init_react_shim();
-  var isAndroidTauriEnv = isTauriEnv && typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
-
   // lib/tauri-avplayer.ts
-  var import_core2 = __toESM(require_core());
+  var import_core3 = __toESM(require_core());
 
   // components/player/video-player-modal.tsx
   init_jsx_runtime_shim();
@@ -170753,9 +170911,9 @@
       const candidate = args[0]?.trim() ?? "";
       return /^https?:\/\//i.test(candidate) ? candidate : null;
     };
-    const { invoke: invoke4 } = await Promise.resolve().then(() => __toESM(require_core()));
+    const { invoke: invoke5 } = await Promise.resolve().then(() => __toESM(require_core()));
     try {
-      return await invoke4("launch_program", { program, args });
+      return await invoke5("launch_program", { program, args });
     } catch (error) {
       const url = inferUrlFromLaunchArgs();
       if (url && typeof window !== "undefined") {

@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.33
+
+- Playback on Android: the engine choice now separates desktop (mpv) from
+  Android (the native media3 player). Published 0.3.32 picked mpv on Android
+  too, where the command does not exist — the channel failed with "playback
+  failed" and ExoPlayer never started. Measured on device: rejected with
+  `Command mpv_set_bounds not found`.
+- The player no longer draws underneath Android's status and navigation bars.
+- The TV guide is no longer clipped by the desktop floating side menu (WebKit
+  clips `position: fixed` against the nav's overflow container).
+- The auto-derived EPG source can be turned off.
+- reload-on-play moved into the source, engine-independent.
+
 ## 0.3.30
 
 - The whole UI follows the app language. The TV guide, the player

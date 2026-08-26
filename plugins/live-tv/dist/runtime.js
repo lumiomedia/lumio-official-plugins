@@ -163768,6 +163768,24 @@
           popularTrendingMovies: "Movies",
           popularTrailers: "Trailers",
           popularLiveTv: "Live TV",
+          // Tomlägets vägledning (lib/utils/no-results-guidance.ts). Modulen hade
+          // ingen språktillgång alls och var därför hårdkodad engelska mitt i en
+          // svensk ruta — t trådas nu in från media-grid.tsx.
+          noResultsNothingMatched: "Nothing matched the current filter combination.",
+          noResultsFoundCandidates: "We found {count} candidates, but none matched all of your filters at the same time.",
+          noResultsNoCastMatch: "We could not find a clear cast match for that query with the current filters.",
+          noResultsNoTitleMatch: "We could not find a clear title match for that query with the current filters.",
+          noResultsTipSpellingCast: "Check the spelling or try a full cast name with fewer extra words.",
+          noResultsTipSpellingTitle: "Check the spelling or try a shorter title, such as the main word only.",
+          noResultsTipProviders: "Remove a streaming provider or try searching without provider filters to widen the results.",
+          noResultsTipKeywords: "Remove a keyword or try searching without keywords to surface more candidates.",
+          noResultsTipLanguages: "Remove an original language or add more languages if you want broader results.",
+          noResultsTipRatingTmdb: "Lower the minimum TMDb rating or widen the rating range to include more titles.",
+          noResultsTipRating: "Lower the minimum rating or widen the rating range to include more titles.",
+          noResultsTipYears: "Widen the year range by a few years to give the search more room.",
+          noResultsTipMediaType: "Switch from movies only or series only to both if you want more matches faster.",
+          noResultsTipGenres: "Remove one genre or try fewer genres at the same time.",
+          noResultsTipClearAll: "Clear the filters and start broader, then narrow the search step by step.",
           m3uUrls: "M3U Playlist URLs",
           m3uUrlsDesc: "Enter one M3U URL per line. Channels are stored in your browser.",
           m3uUrlsPlaceholder: "https://example.com/playlist.m3u",
@@ -165933,6 +165951,21 @@
           popularTrendingMovies: "Filmer",
           popularTrailers: "Trailers",
           popularLiveTv: "Live TV",
+          noResultsNothingMatched: "Ingenting matchade den nuvarande filterkombinationen.",
+          noResultsFoundCandidates: "Vi hittade {count} kandidater, men ingen matchade alla dina filter samtidigt.",
+          noResultsNoCastMatch: "Vi hittade ingen tydlig sk\xE5despelartr\xE4ff f\xF6r s\xF6kningen med de nuvarande filtren.",
+          noResultsNoTitleMatch: "Vi hittade ingen tydlig titeltr\xE4ff f\xF6r s\xF6kningen med de nuvarande filtren.",
+          noResultsTipSpellingCast: "Kontrollera stavningen eller prova ett fullst\xE4ndigt sk\xE5despelarnamn med f\xE4rre extra ord.",
+          noResultsTipSpellingTitle: "Kontrollera stavningen eller prova en kortare titel, till exempel bara huvudordet.",
+          noResultsTipProviders: "Ta bort en streamingtj\xE4nst eller s\xF6k utan tj\xE4nstefilter f\xF6r att bredda tr\xE4ffarna.",
+          noResultsTipKeywords: "Ta bort ett nyckelord eller s\xF6k utan nyckelord f\xF6r att f\xE5 fram fler kandidater.",
+          noResultsTipLanguages: "Ta bort ett originalspr\xE5k, eller l\xE4gg till fler spr\xE5k om du vill ha bredare tr\xE4ffar.",
+          noResultsTipRatingTmdb: "S\xE4nk l\xE4gsta TMDb-betyg eller vidga betygsspannet f\xF6r att f\xE5 med fler titlar.",
+          noResultsTipRating: "S\xE4nk l\xE4gsta betyg eller vidga betygsspannet f\xF6r att f\xE5 med fler titlar.",
+          noResultsTipYears: "Vidga \xE5rsspannet med n\xE5gra \xE5r f\xF6r att ge s\xF6kningen mer utrymme.",
+          noResultsTipMediaType: "Byt fr\xE5n bara filmer eller bara serier till b\xE5da om du vill hitta fler snabbare.",
+          noResultsTipGenres: "Ta bort en genre eller prova f\xE4rre genrer samtidigt.",
+          noResultsTipClearAll: "Rensa filtren och b\xF6rja bredare, och smalna sedan av s\xF6kningen steg f\xF6r steg.",
           m3uUrls: "M3U-spellistor",
           m3uUrlsDesc: "Ange en M3U-l\xE4nk per rad.",
           m3uUrlsPlaceholder: "https://exempel.se/spellista.m3u",
@@ -169279,7 +169312,6 @@
   // lib/media-stream/filters.ts
   var init_filters = __esm({
     "lib/media-stream/filters.ts"() {
-      "use strict";
       init_profile_storage_shim();
     }
   });

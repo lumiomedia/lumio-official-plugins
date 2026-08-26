@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.30
+
+- No player controls over an empty library.
+
 ## 1.0.28
 
 - The loading, empty and error states, the cache-cleared message and the

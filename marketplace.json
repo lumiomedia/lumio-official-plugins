@@ -37,7 +37,7 @@
         "en": "Plex",
         "sv": "Plex"
       },
-      "version": "1.0.29",
+      "version": "1.0.30",
       "description": {
         "en": "Browse and play media from your Plex Media Server.",
         "sv": "Bläddra i och spela upp media från din Plex Media Server."
@@ -58,7 +58,7 @@
         "en": "Live TV",
         "sv": "Live TV"
       },
-      "version": "0.3.32",
+      "version": "0.3.33",
       "description": {
         "en": "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",
         "sv": "Hantera M3U-källor, bläddra bland live-TV-kanaler och se EPG (nu/härnäst) i Lumio."
@@ -100,7 +100,7 @@
         "en": "Trakt",
         "sv": "Trakt"
       },
-      "version": "0.2.3",
+      "version": "0.2.4",
       "description": {
         "en": "Sync watched history, watchlists and collection data with Trakt.",
         "sv": "Synka visningshistorik, listor och samlingsdata med Trakt."
@@ -121,7 +121,7 @@
         "en": "Twitch",
         "sv": "Twitch"
       },
-      "version": "1.3.4",
+      "version": "1.3.5",
       "description": {
         "en": "Browse live channels, categories, followed streams, VODs and clips from Twitch.",
         "sv": "Bläddra bland live-kanaler, kategorier, följda streams, VOD:er och klipp från Twitch."
