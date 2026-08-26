@@ -171756,10 +171756,19 @@
     }
   });
 
+  // lib/media-stream/core-addons.ts
+  var init_core_addons = __esm({
+    "lib/media-stream/core-addons.ts"() {
+      "use client";
+      init_profile_storage_shim();
+    }
+  });
+
   // lib/playback-availability.ts
   var init_playback_availability = __esm({
     "lib/playback-availability.ts"() {
       init_plugin_registry();
+      init_core_addons();
       init_config();
       init_storage();
     }
