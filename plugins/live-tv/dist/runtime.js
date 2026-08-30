@@ -164338,6 +164338,7 @@
           plPlayPause: "Play/Pause",
           plSeekBack: "Seek back 10s",
           plSeekForward: "Seek forward 10s",
+          plSeek: "Timeline",
           plTime: "Time display",
           plSpacer: "Spacer (left/right split)",
           plSegmentBadges: "Intro/outro badges",
@@ -164655,9 +164656,21 @@
           traktConflictMerge: "Merge (keep both)",
           traktConflictTrakt: "Trakt wins",
           traktConflictLocal: "This device wins",
-          showTraktCommentsDesc: "Public Trakt comments under movies and series. Spoiler-marked ones stay hidden until you click them.",
+          showTraktCommentsDesc: "Public Trakt comments under movies and series, and a button to write your own. Spoiler-marked ones stay hidden until you click them. Trakt only accepts comments in English.",
           showTraktCommentsNeedsTrakt: "Requires a connected Trakt account (Tracking \u2192 Trakt).",
           traktCommentsConnectHint: "Connect Trakt under Settings \u2192 Tracking to see comments.",
+          traktCommentWrite: "Write a comment",
+          traktCommentPlaceholder: "What did you think?",
+          traktCommentEnglishHint: "Trakt only accepts comments in English, at least 5 words. Spoilers must be marked.",
+          traktCommentWords: "{n} words",
+          traktCommentSpoilerToggle: "Contains spoilers",
+          traktCommentSend: "Post",
+          traktCommentLooksSwedish: "This looks like Swedish \u2014 Trakt removes comments that are not in English and can suspend the account.",
+          traktCommentSendAnyway: "Post anyway",
+          traktCommentBanned: "Trakt has disabled commenting for this account.",
+          traktCommentRateLimited: "Wait a moment before posting again.",
+          traktCommentReviewNote: "From 200 words this is posted as a review.",
+          traktCommentFailed: "The comment could not be posted.",
           shortcutsBindableTitle: "KEYS (CLICK TO CHANGE)",
           shortcutsTracks: "Tracks",
           shortcutsGlobal: "Global",
@@ -165542,7 +165555,9 @@
           onboardingLanguageHint: "Subtitles in your preferred language are selected automatically when available, with the fallback used when the primary is missing.",
           onboardingPluginsEyebrow: "PLUGINS",
           onboardingPluginsTitle: "Choose your plugins",
-          onboardingPluginsDesc: "Tick the plugins you want to install right away. Everything can be added or removed later under Settings \u2192 Plugins.",
+          onboardingPluginsDesc: "Tick the plugins you want active. Built-in plugins are enabled right away and fetch their latest runtime when online; community plugins are fetched from their developer. Everything can be added or removed later under Settings \u2192 Plugins.",
+          onboardingBundledBadge: "Built in",
+          onboardingInstalledBadge: "Already active",
           onboardingOfficialGroup: "Official",
           onboardingExternalGroup: "External",
           onboardingThirdParty: "Third-party",
@@ -165557,6 +165572,8 @@
           streamsLayoutDesc: "In the side panel, or as a section on the page above Recommendations. Series get streams under each episode.",
           streamsLayoutSidebar: "Side panel",
           streamsLayoutInline: "On the page",
+          castCountTitle: "Cast members shown",
+          castCountDesc: "How many of the cast appear on the details page. Phones page them eight at a time; desktop scrolls.",
           gestTabLabel: "Gestures",
           gestTitle: "Swipe gestures",
           gestHint: "What a swipe does in the player. Phone and tablet only.",
@@ -165579,6 +165596,9 @@
           gestDoubleTapOff: "Off",
           gestHoldSpeedTitle: "Hold to fast-forward",
           gestHoldSpeedDesc: "Press and hold anywhere to play at double speed; release to return to normal.",
+          externalDisplayVideoOnlyTitle: "External display: video only there",
+          externalDisplayVideoOnlyDesc: "With glasses or an HDMI screen connected, the video plays only on the external display. The phone goes dark and shows the controls when you tap \u2014 less glare, longer battery.",
+          externalDisplayPlayingThere: "Playing on the external display",
           onboardingPerfEyebrow: "Performance",
           onboardingPerfTitle: "Matched to your device",
           onboardingPerfDesc: "We measured this device and set a ceiling for what autoplay may pick on its own. You can raise it now, or change it any time under Playback.",
@@ -165586,12 +165606,15 @@
           onboardingPerfCapLabel: "Largest stream autoplay may pick",
           onboardingPerfUnlimited: "No limit",
           onboardingPerfLater: "This only sets the starting point. Nothing is blocked \u2014 you can always pick any stream yourself from the list.",
-          onboardingWillInstall: "{count} plugin(s) will be installed when you finish.",
+          onboardingPerfNetMeasuring: "Measuring your connection speed\u2026",
+          onboardingPerfNetResult: "Connection \u2248 {mbps} Mbit/s \u2014 the suggested ceiling follows it.",
+          onboardingPerfNetFailed: "Could not measure the connection; the suggestion is based on the device alone.",
+          onboardingWillInstall: "{count} plugin(s) will be enabled \u2014 latest runtime fetched \u2014 when you finish.",
           onboardingInstallFailed: "{names} could not be installed right now \u2014 you can find them under Settings \u2192 Plugins.",
-          onboardingOpenAppNow: "Open Lumio now",
-          onboardingInstallProgress: "Installing plugins {done} / {total}",
+          onboardingOpenAppNow: "Open Lumio",
+          onboardingInstallProgress: "Enabling plugins and fetching latest runtimes {done} / {total}",
           onboardingInstallQueued: "Queued",
-          onboardingInstallWorking: "Downloading\u2026",
+          onboardingInstallWorking: "Enabling \xB7 fetching latest\u2026",
           onboardingInstallDone: "Done",
           onboardingInstallError: "Failed",
           onboardingInstallBackground: "This continues in the background \u2014 you can open Lumio right away and check Settings \u2192 Plugins later.",
@@ -166028,8 +166051,7 @@
           liveTvEpgSources: "EPG sources",
           liveTvEpgSourceStats: "{channels} channels \xB7 {programmes} programmes",
           liveTvEpgUrlPlaceholder: "XMLTV URL (e.g. https://epgshare01.online/epgshare01/epg_ripper_SE1.xml.gz)",
-          liveTvNoEpgSourcesPrefix: "No EPG sources yet. Try",
-          liveTvNoEpgSourcesSuffix: "for Swedish channels.",
+          liveTvNoEpgSourcesPrefix: "No EPG sources yet.",
           liveTvFetchEpgForChannel: "Fetch EPG for this channel",
           liveTvNoEpg: "No EPG",
           liveTvNoGuideAvailable: "No guide available",
@@ -166657,6 +166679,7 @@
           plPlayPause: "Spela/Pausa",
           plSeekBack: "Spola bak\xE5t 10s",
           plSeekForward: "Spola fram\xE5t 10s",
+          plSeek: "Tidslinje",
           plTime: "Tidsvisning",
           plSpacer: "Mellanrum (v\xE4nster/h\xF6ger-delning)",
           plSegmentBadges: "Intro/outro-m\xE4rken",
@@ -166974,9 +166997,21 @@
           traktConflictMerge: "Sl\xE5 ihop (beh\xE5ll b\xE5da)",
           traktConflictTrakt: "Trakt vinner",
           traktConflictLocal: "Den h\xE4r enheten vinner",
-          showTraktCommentsDesc: "Publika Trakt-kommentarer under filmer och serier. Spoilerm\xE4rkta d\xF6ljs tills du klickar p\xE5 dem.",
+          showTraktCommentsDesc: "Publika Trakt-kommentarer under filmer och serier, och en knapp f\xF6r att skriva egna. Spoilerm\xE4rkta d\xF6ljs tills du klickar p\xE5 dem. Trakt tar bara emot kommentarer p\xE5 engelska.",
           showTraktCommentsNeedsTrakt: "Kr\xE4ver ett anslutet Trakt-konto (Sp\xE5rning \u2192 Trakt).",
           traktCommentsConnectHint: "Anslut Trakt under Inst\xE4llningar \u2192 Sp\xE5rning f\xF6r att se kommentarer.",
+          traktCommentWrite: "Skriv kommentar",
+          traktCommentPlaceholder: "Vad tyckte du?",
+          traktCommentEnglishHint: "Trakt tar bara emot kommentarer p\xE5 engelska, minst 5 ord. Spoilers m\xE5ste markeras.",
+          traktCommentWords: "{n} ord",
+          traktCommentSpoilerToggle: "Inneh\xE5ller spoilers",
+          traktCommentSend: "Skicka",
+          traktCommentLooksSwedish: "Det h\xE4r ser ut som svenska \u2014 Trakt tar bort kommentarer p\xE5 andra spr\xE5k \xE4n engelska och kan st\xE4nga av kontot.",
+          traktCommentSendAnyway: "Skicka \xE4nd\xE5",
+          traktCommentBanned: "Trakt har st\xE4ngt av kommentering f\xF6r det h\xE4r kontot.",
+          traktCommentRateLimited: "V\xE4nta en stund innan du skickar igen.",
+          traktCommentReviewNote: "Fr\xE5n 200 ord publiceras det som en recension.",
+          traktCommentFailed: "Kommentaren kunde inte skickas.",
           shortcutsBindableTitle: "TANGENTER (KLICKA F\xD6R ATT \xC4NDRA)",
           shortcutsTracks: "Sp\xE5r",
           shortcutsGlobal: "Globalt",
@@ -167851,7 +167886,9 @@
           onboardingLanguageHint: "Undertexter p\xE5 ditt f\xF6redragna spr\xE5k v\xE4ljs automatiskt n\xE4r de finns, och reservspr\xE5ket anv\xE4nds n\xE4r det prim\xE4ra saknas.",
           onboardingPluginsEyebrow: "TILL\xC4GG",
           onboardingPluginsTitle: "V\xE4lj dina till\xE4gg",
-          onboardingPluginsDesc: "Bocka f\xF6r de till\xE4gg du vill installera direkt. Allt g\xE5r att l\xE4gga till eller ta bort senare under Inst\xE4llningar \u2192 Plugins.",
+          onboardingPluginsDesc: "Bocka f\xF6r de till\xE4gg du vill ha aktiva. Inbyggda till\xE4gg aktiveras direkt och h\xE4mtar senaste runtime n\xE4r n\xE4tet finns; till\xE4gg fr\xE5n communityn h\xE4mtas fr\xE5n utvecklaren. Allt g\xE5r att l\xE4gga till eller ta bort senare under Inst\xE4llningar \u2192 Plugins.",
+          onboardingBundledBadge: "Inbyggt",
+          onboardingInstalledBadge: "Redan aktivt",
           onboardingOfficialGroup: "Officiella",
           onboardingExternalGroup: "Externa",
           onboardingThirdParty: "Tredjepart",
@@ -167866,6 +167903,8 @@
           streamsLayoutDesc: "I sidopanelen, eller som en sektion p\xE5 sidan ovanf\xF6r Rekommendationer. Serier f\xE5r str\xF6mmarna under varje avsnitt.",
           streamsLayoutSidebar: "Sidopanel",
           streamsLayoutInline: "P\xE5 sidan",
+          castCountTitle: "Antal sk\xE5despelare",
+          castCountDesc: "Hur m\xE5nga ur ensemblen som visas p\xE5 detaljsidan. Telefonen visar dem i sidor om \xE5tta; skrivbordet rullar.",
           gestTabLabel: "Gester",
           gestTitle: "Svepgester",
           gestHint: "Vad ett svep g\xF6r i spelaren. Endast telefon och surfplatta.",
@@ -167888,6 +167927,9 @@
           gestDoubleTapOff: "Av",
           gestHoldSpeedTitle: "H\xE5ll f\xF6r snabbspolning",
           gestHoldSpeedDesc: "H\xE5ll fingret nedtryckt f\xF6r dubbel hastighet; sl\xE4pp f\xF6r att \xE5terg\xE5.",
+          externalDisplayVideoOnlyTitle: "Extern sk\xE4rm: videon bara d\xE4r",
+          externalDisplayVideoOnlyDesc: "Med glas\xF6gon eller en HDMI-sk\xE4rm ansluten spelas videon bara p\xE5 den externa sk\xE4rmen. Telefonen sl\xE4cks och visar kontrollerna n\xE4r du trycker \u2014 mindre bl\xE4ndning, l\xE4ngre batteri.",
+          externalDisplayPlayingThere: "Spelas p\xE5 den externa sk\xE4rmen",
           onboardingPerfEyebrow: "Prestanda",
           onboardingPerfTitle: "Anpassat efter din enhet",
           onboardingPerfDesc: "Vi m\xE4tte den h\xE4r enheten och satte ett tak f\xF6r vad autospelningen f\xE5r v\xE4lja p\xE5 egen hand. Du kan h\xF6ja det nu, eller \xE4ndra det n\xE4r som helst under Uppspelning.",
@@ -167895,12 +167937,15 @@
           onboardingPerfCapLabel: "St\xF6rsta str\xF6m autospelningen f\xE5r v\xE4lja",
           onboardingPerfUnlimited: "Ingen gr\xE4ns",
           onboardingPerfLater: "Det h\xE4r s\xE4tter bara utg\xE5ngsl\xE4get. Ingenting sp\xE4rras \u2014 du kan alltid v\xE4lja vilken str\xF6m du vill sj\xE4lv ur listan.",
-          onboardingWillInstall: "{count} till\xE4gg installeras n\xE4r du \xE4r klar.",
+          onboardingPerfNetMeasuring: "M\xE4ter anslutningens hastighet\u2026",
+          onboardingPerfNetResult: "Anslutning \u2248 {mbps} Mbit/s \u2014 f\xF6rslaget f\xF6ljer den.",
+          onboardingPerfNetFailed: "Anslutningen gick inte att m\xE4ta; f\xF6rslaget bygger bara p\xE5 enheten.",
+          onboardingWillInstall: "{count} till\xE4gg aktiveras \u2014 senaste runtime h\xE4mtas \u2014 n\xE4r du \xE4r klar.",
           onboardingInstallFailed: "{names} kunde inte installeras just nu \u2014 du hittar dem under Inst\xE4llningar \u2192 Plugins.",
-          onboardingOpenAppNow: "\xD6ppna Lumio nu",
-          onboardingInstallProgress: "Installerar plugins {done} / {total}",
+          onboardingOpenAppNow: "\xD6ppna Lumio",
+          onboardingInstallProgress: "Aktiverar till\xE4gg och h\xE4mtar senaste runtime {done} / {total}",
           onboardingInstallQueued: "I k\xF6",
-          onboardingInstallWorking: "H\xE4mtar\u2026",
+          onboardingInstallWorking: "Aktiverar \xB7 h\xE4mtar senaste\u2026",
           onboardingInstallDone: "Klar",
           onboardingInstallError: "Misslyckades",
           onboardingInstallBackground: "Det h\xE4r forts\xE4tter i bakgrunden \u2014 du kan \xF6ppna Lumio direkt och titta under Inst\xE4llningar \u2192 Plugins senare.",
@@ -168337,8 +168382,7 @@
           liveTvEpgSources: "EPG-k\xE4llor",
           liveTvEpgSourceStats: "{channels} kanaler \xB7 {programmes} program",
           liveTvEpgUrlPlaceholder: "XMLTV-URL (t.ex. https://epgshare01.online/epgshare01/epg_ripper_SE1.xml.gz)",
-          liveTvNoEpgSourcesPrefix: "Inga EPG-k\xE4llor \xE4nnu. Testa",
-          liveTvNoEpgSourcesSuffix: "f\xF6r svenska kanaler.",
+          liveTvNoEpgSourcesPrefix: "Inga EPG-k\xE4llor \xE4nnu.",
           liveTvFetchEpgForChannel: "H\xE4mta EPG f\xF6r kanalen",
           liveTvNoEpg: "Ingen EPG",
           liveTvNoGuideAvailable: "Ingen tabl\xE5 tillg\xE4nglig",
@@ -169284,7 +169328,7 @@
     if (pathOnly.endsWith(".m3u8") || pathOnly.endsWith(".mpd")) return true;
     return lower.includes("/live/") || lower.includes("hls/") || lower.includes("/dash/");
   }
-  function sourceCacheUrl(originalUrl) {
+  function sourceCacheUrl(originalUrl, requestHeaders) {
     if (!/^https?:\/\//i.test(originalUrl)) return null;
     if (isLiveStreamUrl(originalUrl)) return null;
     try {
@@ -169292,11 +169336,12 @@
     } catch {
       return null;
     }
-    return `${window.location.origin}/api/source-cache?u=${encodeURIComponent(originalUrl)}`;
+    const headerParam = requestHeaders && Object.keys(requestHeaders).length > 0 ? `&h=${encodeURIComponent(JSON.stringify(requestHeaders))}` : "";
+    return `${window.location.origin}/api/source-cache?u=${encodeURIComponent(originalUrl)}${headerParam}`;
   }
   async function openMpvPlayer(args) {
     const { shouldAbort: _ignored, ...rest } = args;
-    const cached = sourceCacheUrl(args.url);
+    const cached = sourceCacheUrl(args.url, args.requestHeaders);
     if (cached) {
       if (args.shouldAbort?.()) return;
       return (0, import_core.invoke)("mpv_open", { args: { ...rest, url: cached } });
@@ -169600,7 +169645,6 @@
   // lib/media-stream/filters.ts
   var init_filters = __esm({
     "lib/media-stream/filters.ts"() {
-      "use strict";
       init_profile_storage_shim();
     }
   });
@@ -169808,6 +169852,7 @@
     const [subtitleTracks, setSubtitleTracks] = useState([]);
     const [cueText, setCueText] = useState("");
     const [selectedAudio, setSelectedAudio] = useState(-1);
+    const [externalDisplay, setExternalDisplay] = useState(false);
     const prevRef = useRef({ fileLoaded: false, firstFrame: false, failToken: -1, timePos: 0 });
     useEffect(() => {
       if (!isAndroidTauriEnv || !enabled) return;
@@ -169822,6 +169867,7 @@
         setPaused(s.paused);
         setEnded(s.ended);
         setPausedForCache(s.pausedForCache);
+        setExternalDisplay(s.externalDisplay === true);
         setCoreIdle(!s.fileLoaded || s.paused);
         setSid(s.selectedSub > 0 ? s.selectedSub : null);
         const nextAudio = s.tracks?.audio ?? [];
@@ -169941,7 +169987,8 @@
       subtitleTracks,
       selectedAudio,
       setSubtitleTrack,
-      cueText
+      cueText,
+      externalDisplay
     };
   }
   var isAndroidTauriEnv;
@@ -172114,6 +172161,13 @@
     }
   });
 
+  // lib/android-media-keys.ts
+  var init_android_media_keys = __esm({
+    "lib/android-media-keys.ts"() {
+      "use client";
+    }
+  });
+
   // lib/resume-playback.ts
   var init_resume_playback = __esm({
     "lib/resume-playback.ts"() {
@@ -172431,6 +172485,9 @@
       import_core4 = __toESM(require_core2());
       import_window = __toESM(require_window());
       init_video_progress();
+      init_tauri_native_player();
+      init_playback_settings();
+      init_android_media_keys();
       init_resume_playback();
       init_watched_episodes();
       init_watched_movies();
@@ -174895,13 +174952,7 @@
           }
         )
       ] }),
-      !hasAny ? /* @__PURE__ */ jsxs("p", { className: "text-xs text-white/40", children: [
-        t("liveTvNoEpgSourcesPrefix"),
-        " ",
-        /* @__PURE__ */ jsx("code", { className: "rounded bg-white/10 px-1", children: "https://epgshare01.online/epgshare01/epg_ripper_SE1.xml.gz" }),
-        " ",
-        t("liveTvNoEpgSourcesSuffix")
-      ] }) : null
+      !hasAny ? /* @__PURE__ */ jsx("p", { className: "text-xs text-white/40", children: t("liveTvNoEpgSourcesPrefix") }) : null
     ] });
   }
 
@@ -174919,6 +174970,27 @@
   };
   var settingsActionButtonClass = "rounded-full border border-white/10 px-4 py-2 text-xs uppercase tracking-[0.22em] text-slate-300 transition hover:border-white/30 hover:text-white disabled:opacity-50";
   var HOME_OVERRIDE_PLUGIN_ID = "com.lumio.live-tv";
+  async function fetchParsedM3u(url) {
+    const response = await fetch("/api/m3u", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url })
+    });
+    if (!response.ok) throw new Error("m3u fetch failed");
+    return await response.json().catch(() => ({}));
+  }
+  function xtreamUrlWithoutOutput(raw) {
+    try {
+      const parsed = new URL(raw);
+      if (!parsed.pathname.endsWith("/get.php")) return null;
+      if (!parsed.searchParams.get("username") || !parsed.searchParams.get("password")) return null;
+      if (!parsed.searchParams.has("output")) return null;
+      parsed.searchParams.delete("output");
+      return parsed.toString();
+    } catch {
+      return null;
+    }
+  }
   function LiveTvSettingsSection() {
     const { t } = useLang();
     const [m3uText, setM3uText] = useState("");
@@ -174952,13 +175024,14 @@
         clearLiveTvMemoryCache();
         clearStoredLiveTvChannels();
         for (const url of urls) {
-          const response = await fetch("/api/m3u", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ url })
-          });
-          if (!response.ok) throw new Error("m3u fetch failed");
-          const parsed = await response.json().catch(() => ({}));
+          let parsed = await fetchParsedM3u(url);
+          if (!Array.isArray(parsed.channels) || parsed.channels.length === 0) {
+            const retryUrl = xtreamUrlWithoutOutput(url);
+            if (retryUrl) {
+              const retried = await fetchParsedM3u(retryUrl).catch(() => null);
+              if (retried && Array.isArray(retried.channels) && retried.channels.length > 0) parsed = retried;
+            }
+          }
           const channels = Array.isArray(parsed.channels) ? parsed.channels.map((c) => ({
             name: String(c.name ?? "Unknown"),
             logo: typeof c.logo === "string" ? c.logo : null,

@@ -39,6 +39,31 @@ const settingsActionButtonClass =
   'rounded-full border border-white/10 px-4 py-2 text-xs uppercase tracking-[0.22em] text-slate-300 transition hover:border-white/30 hover:text-white disabled:opacity-50'
 const HOME_OVERRIDE_PLUGIN_ID = 'com.lumio.live-tv'
 
+async function fetchParsedM3u(url: string): Promise<{ channels?: unknown[]; urlTvg?: string | null }> {
+  const response = await fetch('/api/m3u', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url }),
+  })
+  if (!response.ok) throw new Error('m3u fetch failed')
+  return (await response.json().catch(() => ({}))) as { channels?: unknown[]; urlTvg?: string | null }
+}
+
+/// Xtream-länken utan output-parametern, eller null när länken inte är en
+/// Xtream get.php-länk (då finns inget vettigt att prova om med).
+function xtreamUrlWithoutOutput(raw: string): string | null {
+  try {
+    const parsed = new URL(raw)
+    if (!parsed.pathname.endsWith('/get.php')) return null
+    if (!parsed.searchParams.get('username') || !parsed.searchParams.get('password')) return null
+    if (!parsed.searchParams.has('output')) return null
+    parsed.searchParams.delete('output')
+    return parsed.toString()
+  } catch {
+    return null
+  }
+}
+
 export function LiveTvSettingsSection() {
   const { t } = useLang()
   const [m3uText, setM3uText] = useState('')
@@ -78,15 +103,19 @@ export function LiveTvSettingsSection() {
       clearStoredLiveTvChannels()
 
       for (const url of urls) {
-        const response = await fetch('/api/m3u', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url }),
-        })
-        if (!response.ok) throw new Error('m3u fetch failed')
-        const parsed = (await response.json().catch(() => ({}))) as {
-          channels?: unknown[]
-          urlTvg?: string | null
+        let parsed = await fetchParsedM3u(url)
+        // Xtream-paneler utan m3u8-stöd: värden skriver om output= till m3u8
+        // för webbspelbara länkar, men paneler som inte stödjer det svarar
+        // tomt — HTTP 200 med noll kanaler, inget fel. Prova då utan
+        // output-parametern: panelen faller tillbaka till sitt standardformat
+        // och svarar korrekt. (Nyare appar gör samma fallback på serversidan;
+        // den här raden räddar länkarna även på appar utan den fixen.)
+        if (!Array.isArray(parsed.channels) || parsed.channels.length === 0) {
+          const retryUrl = xtreamUrlWithoutOutput(url)
+          if (retryUrl) {
+            const retried = await fetchParsedM3u(retryUrl).catch(() => null)
+            if (retried && Array.isArray(retried.channels) && retried.channels.length > 0) parsed = retried
+          }
         }
         const channels = Array.isArray(parsed.channels)
           ? (parsed.channels as Array<{ name?: unknown; logo?: unknown; group?: unknown; url?: unknown; tvgId?: unknown }>).map((c) => ({
