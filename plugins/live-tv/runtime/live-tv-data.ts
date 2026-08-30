@@ -283,7 +283,25 @@ export function upsertLiveTvListFromFetch(
   const cleanUrlTvg = typeof urlTvg === 'string' && urlTvg.trim().length > 0 ? urlTvg.trim() : null
 
   if (existing) {
-    const updated: LiveTvList = { ...existing, channels: cleanChannels, urlTvg: cleanUrlTvg }
+    /*
+     * EN HÄMTNING UTAN url-tvg FÅR INTE RADERA DEN SOM REDAN FINNS.
+     *
+     * Tidigare skrevs urlTvg över vid VARJE hämtning, också när svaret saknade
+     * attributet. En spellista som ibland bär `url-tvg` och ibland inte — eller
+     * en uppdatering mot en variant av samma källa — nollade då EPG-källan
+     * tyst. Kanalerna blev kvar (de fanns i samma svar), så det såg ut som att
+     * bara EPG:n försvann av sig själv, och kom tillbaka först vid nästa
+     * hämtning som råkade ha attributet med.
+     *
+     * Att INTE nolla tar inte ifrån användaren kontrollen: `autoEpgDisabled` är
+     * den uttryckliga vägen att stänga av den härledda källan, och den ligger
+     * kvar orörd här.
+     */
+    const updated: LiveTvList = {
+      ...existing,
+      channels: cleanChannels,
+      urlTvg: cleanUrlTvg ?? existing.urlTvg,
+    }
     writeLists(readLists().map((list) => (list.id === existing.id ? updated : list)))
     return updated
   }
