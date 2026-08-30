@@ -297,7 +297,7 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
               {...tvStation}
               value={activeListId ?? ''}
               onChange={(event) => setActiveListId(event.target.value || null)}
-              className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-slate-200 outline-none transition hover:border-white/30 focus:border-white/40"
+              className="rounded-full border border-transparent bg-[#fcfcff14] backdrop-blur-md px-3 py-1 text-xs text-slate-200 outline-none transition focus:bg-[#fcfcff22]"
             >
               <option value="" className="bg-slate-900">{t('all')}</option>
               {lists.map((list) => (
@@ -315,7 +315,7 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
             onClick={() => setChannelFilter(null)}
             className={`rounded-full border px-3 py-1.5 text-[11px] uppercase tracking-[0.22em] transition ${
               channelFilter
-                ? 'border-white/15 bg-white/5 text-slate-300 hover:border-white/35 hover:text-white'
+                ? 'border-white/15 bg-white/5 text-slate-300 hover:text-white'
                 : 'border-emerald-300/50 bg-emerald-400/15 text-emerald-200'
             }`}
           >
@@ -329,7 +329,7 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
               setChannelFilter(next)
               if (next) setSelectedChannel(next)
             }}
-            className="max-w-[16rem] rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[11px] uppercase tracking-[0.14em] text-slate-200 outline-none transition hover:border-white/35 focus:border-white/40"
+            className="max-w-[16rem] rounded-full border border-transparent bg-[#fcfcff14] backdrop-blur-md px-3 py-1.5 text-[11px] uppercase tracking-[0.14em] text-slate-200 outline-none transition focus:bg-[#fcfcff22]"
             title={t('liveTvFilterChannel')}
           >
             <option value="" className="bg-slate-900">{t('liveTvAllChannels')}</option>
@@ -347,7 +347,7 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
             className={`max-w-[14rem] truncate rounded-full border px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] transition disabled:cursor-not-allowed disabled:opacity-35 ${
               channelFilter
                 ? 'border-emerald-300/50 bg-emerald-400/15 text-emerald-200'
-                : 'border-white/15 bg-white/5 text-slate-300 hover:border-white/35 hover:text-white'
+                : 'border-white/15 bg-white/5 text-slate-300 hover:text-white'
             }`}
             title={selectedChannel?.name ?? t('liveTvSelectChannel')}
           >
@@ -361,7 +361,7 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
               if (!target) return
               target.scrollLeft = Math.max(0, nowLineLeft - target.clientWidth * 0.15)
             }}
-            className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[11px] uppercase tracking-[0.22em] text-slate-200 transition hover:border-white/35 hover:text-white"
+            className="rounded-full border border-transparent bg-[#fcfcff14] backdrop-blur-md px-3 py-1.5 text-[11px] uppercase tracking-[0.22em] text-slate-200 transition hover:text-white"
           >
             {t('liveTvNow')}
           </button>
@@ -372,7 +372,7 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
             // land in, and the panel must still have exactly one data-init.
             {...(isTv && rows.length === 0 ? { 'data-init': '' } : {})}
             onClick={onClose}
-            className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[11px] uppercase tracking-[0.22em] text-slate-200 transition hover:border-white/35 hover:text-white"
+            className="rounded-full border border-transparent bg-[#fcfcff14] backdrop-blur-md px-3 py-1.5 text-[11px] uppercase tracking-[0.22em] text-slate-200 transition hover:text-white"
           >
             {t('close')}
           </button>

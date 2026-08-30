@@ -19189,9 +19189,9 @@
         toIterator: () => toIterator2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function forwardRef3(component) {
-        return (0, import_react73.forwardRef)(component);
+        return (0, import_react75.forwardRef)(component);
       }
       var toIterator2 = (obj) => {
         return {
@@ -30571,7 +30571,7 @@
           acc[key] = createRenderStep2(flagRunNextFrame, allowKeepAlive ? key : void 0);
           return acc;
         }, {});
-        const { setup, read: read3, resolveKeyframes, preUpdate, update, preRender, render, postRender } = steps2;
+        const { setup, read: read4, resolveKeyframes, preUpdate, update, preRender, render, postRender } = steps2;
         const processBatch = () => {
           const useManualTiming = motionUtils.MotionGlobalConfig.useManualTiming;
           const timestamp = useManualTiming ? state.timestamp : performance.now();
@@ -30582,7 +30582,7 @@
           state.timestamp = timestamp;
           state.isProcessing = true;
           setup.process(state);
-          read3.process(state);
+          read4.process(state);
           resolveKeyframes.process(state);
           preUpdate.process(state);
           update.process(state);
@@ -48692,17 +48692,17 @@
         renderFn: () => renderFn2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function getValidChildren2(children) {
-        return import_react73.Children.toArray(children).filter(
-          (child) => (0, import_react73.isValidElement)(child)
+        return import_react75.Children.toArray(children).filter(
+          (child) => (0, import_react75.isValidElement)(child)
         );
       }
       var pickChildren2 = (children, targetChild) => {
         var _a;
         let target = [];
-        const withoutTargetChildren = (_a = import_react73.Children.map(children, (item) => {
-          if (!(0, import_react73.isValidElement)(item)) return item;
+        const withoutTargetChildren = (_a = import_react75.Children.map(children, (item) => {
+          if (!(0, import_react75.isValidElement)(item)) return item;
           if (item.type === targetChild) {
             target.push(item);
             return null;
@@ -49044,7 +49044,7 @@
           refs.forEach((ref) => assignRef(ref, node));
         };
       }
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function canUseDOM() {
         return !!(typeof window !== "undefined" && window.document && window.document.createElement);
       }
@@ -49130,17 +49130,17 @@
         };
       }
       function useDOMRef(ref) {
-        const domRef = (0, import_react73.useRef)(null);
-        (0, import_react73.useImperativeHandle)(ref, () => domRef.current);
+        const domRef = (0, import_react75.useRef)(null);
+        (0, import_react75.useImperativeHandle)(ref, () => domRef.current);
         return domRef;
       }
       function useFocusableRef(ref, focusableRef) {
-        const domRef = (0, import_react73.useRef)(null);
-        (0, import_react73.useImperativeHandle)(ref, () => createFocusableRef(domRef, focusableRef));
+        const domRef = (0, import_react75.useRef)(null);
+        (0, import_react75.useImperativeHandle)(ref, () => createFocusableRef(domRef, focusableRef));
         return domRef;
       }
       function useSyncRef(context, ref) {
-        (0, import_react73.useLayoutEffect)(() => {
+        (0, import_react75.useLayoutEffect)(() => {
           if (context && context.ref && ref && ref.current) {
             context.ref.current = ref.current;
             return () => {
@@ -49221,8 +49221,8 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_system_rsc = require_dist4();
-      var import_i18n10 = require_main5();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_i18n12 = require_main5();
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_motion2 = require_cjs4();
       var import_utils8 = require_main4();
       var import_overlays = require_main9();
@@ -49231,7 +49231,7 @@
         name: "ProviderContext",
         strict: false
       });
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var HeroUIProvider = ({
         children,
         navigate,
@@ -49252,9 +49252,9 @@
       }) => {
         let contents = children;
         if (navigate) {
-          contents = /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_utils8.RouterProvider, { navigate, useHref, children: contents });
+          contents = /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_utils8.RouterProvider, { navigate, useHref, children: contents });
         }
-        const context = (0, import_react73.useMemo)(() => {
+        const context = (0, import_react75.useMemo)(() => {
           if (disableAnimation && skipFramerMotionAnimations) {
             import_framer_motion2.MotionGlobalConfig.skipAnimations = true;
           }
@@ -49277,7 +49277,7 @@
           labelPlacement,
           spinnerVariant
         ]);
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(ProviderContext, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_i18n10.I18nProvider, { locale, children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_framer_motion2.MotionConfig, { reducedMotion, children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_overlays.OverlayProvider, { ...otherProps, children: contents }) }) }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(ProviderContext, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_i18n12.I18nProvider, { locale, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion2.MotionConfig, { reducedMotion, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_overlays.OverlayProvider, { ...otherProps, children: contents }) }) }) });
       };
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useLabelPlacement(props) {
@@ -62536,9 +62536,9 @@
         toIterator: () => toIterator2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function forwardRef3(component) {
-        return (0, import_react73.forwardRef)(component);
+        return (0, import_react75.forwardRef)(component);
       }
       var toIterator2 = (obj) => {
         return {
@@ -62750,7 +62750,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_rsc_utils = require_dist9();
       function useSeparator(props) {
         let domProps = (0, import_react_rsc_utils.filterDOMProps)(props, {
@@ -62781,14 +62781,14 @@
           elementType: typeof Component2 === "string" ? Component2 : "hr",
           orientation
         });
-        const styles = (0, import_react73.useMemo)(
+        const styles = (0, import_react75.useMemo)(
           () => (0, import_theme.divider)({
             orientation,
             className
           }),
           [orientation, className]
         );
-        const getDividerProps = (0, import_react73.useCallback)(
+        const getDividerProps = (0, import_react75.useCallback)(
           (props2 = {}) => ({
             className: styles,
             role: "separator",
@@ -62801,10 +62801,10 @@
         );
         return { Component: Component2, getDividerProps };
       }
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Divider = (0, import_system_rsc.forwardRef)((props, ref) => {
         const { Component: Component2, getDividerProps } = useDivider({ ...props });
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(Component2, { ref, ...getDividerProps() });
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(Component2, { ref, ...getDividerProps() });
       });
       Divider.displayName = "HeroUI.Divider";
       var divider_default = Divider;
@@ -65595,22 +65595,22 @@
         };
       }
       var import_focus2 = require_main14();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_button = require_main16();
       function useReactAriaAccordionItem(props, state, ref) {
         let { item, isDisabled: isDisabledProp } = props;
         let key = item.key;
         let manager = state.selectionManager;
-        let buttonId = (0, import_react73.useId)();
-        let regionId = (0, import_react73.useId)();
+        let buttonId = (0, import_react75.useId)();
+        let regionId = (0, import_react75.useId)();
         let isDisabled = state.disabledKeys.has(item.key) || isDisabledProp;
-        (0, import_react73.useEffect)(() => {
+        (0, import_react75.useEffect)(() => {
           let isFocused = key === state.focusedKey;
           if (isFocused && document.activeElement !== ref.current) {
             ref.current && (0, import_focus2.focusSafely)(ref.current);
           }
         }, [ref, key, state.focusedKey]);
-        let onSelect = (0, import_react73.useCallback)(
+        let onSelect = (0, import_react75.useCallback)(
           (e) => {
             if (!manager.canSelectItem(key)) {
               return;
@@ -65620,7 +65620,7 @@
           },
           [key, manager]
         );
-        const extendFocusSelection = (0, import_react73.useCallback)(
+        const extendFocusSelection = (0, import_react75.useCallback)(
           (toKey2) => {
             if (manager.selectionBehavior === "replace") {
               manager.extendSelection(toKey2);
@@ -65629,7 +65629,7 @@
           },
           [manager]
         );
-        const onKeyDown = (0, import_react73.useCallback)(
+        const onKeyDown = (0, import_react75.useCallback)(
           (event) => {
             const keyMap = {
               ArrowDown: () => {
@@ -65815,17 +65815,17 @@
         WarningIcon: () => WarningIcon
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Sun = ({ fill, filled, size, height, width, ...props }) => {
         if (filled) {
-          return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
             "svg",
             {
               height: size || height || 24,
               viewBox: "0 0 512 512",
               width: size || width || 24,
               ...props,
-              children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M256 118a22 22 0 01-22-22V48a22 22 0 0144 0v48a22 22 0 01-22 22zM256 486a22 22 0 01-22-22v-48a22 22 0 0144 0v48a22 22 0 01-22 22zM369.14 164.86a22 22 0 01-15.56-37.55l33.94-33.94a22 22 0 0131.11 31.11l-33.94 33.94a21.93 21.93 0 01-15.55 6.44zM108.92 425.08a22 22 0 01-15.55-37.56l33.94-33.94a22 22 0 1131.11 31.11l-33.94 33.94a21.94 21.94 0 01-15.56 6.45zM464 278h-48a22 22 0 010-44h48a22 22 0 010 44zM96 278H48a22 22 0 010-44h48a22 22 0 010 44zM403.08 425.08a21.94 21.94 0 01-15.56-6.45l-33.94-33.94a22 22 0 0131.11-31.11l33.94 33.94a22 22 0 01-15.55 37.56zM142.86 164.86a21.89 21.89 0 01-15.55-6.44l-33.94-33.94a22 22 0 0131.11-31.11l33.94 33.94a22 22 0 01-15.56 37.55zM256 358a102 102 0 11102-102 102.12 102.12 0 01-102 102z",
@@ -65835,8 +65835,8 @@
             }
           );
         }
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)("svg", { height: size || height || 24, viewBox: "0 0 512 512", width: size || width || 24, ...props, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("svg", { height: size || height || 24, viewBox: "0 0 512 512", width: size || width || 24, ...props, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
             "path",
             {
               d: "M256 48v48M256 416v48M403.08 108.92l-33.94 33.94M142.86 369.14l-33.94 33.94M464 256h-48M96 256H48M403.08 403.08l-33.94-33.94M142.86 142.86l-33.94-33.94",
@@ -65847,7 +65847,7 @@
               strokeWidth: 32
             }
           ),
-          /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
             "circle",
             {
               cx: 256,
@@ -65863,21 +65863,21 @@
         ] });
       };
       var Mail = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("svg", { height: size || height || 24, viewBox: "0 0 24 24", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)("g", { fill: "none", stroke: fill, strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 1.5, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("path", { d: "M12 20.5H7c-3 0-5-1.5-5-5v-7c0-3.5 2-5 5-5h10c3 0 5 1.5 5 5v3" }),
-          /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("path", { d: "M17 9l-3.13 2.5a3.166 3.166 0 01-3.75 0L7 9M19.21 14.77l-3.539 3.54a1.232 1.232 0 00-.3.59l-.19 1.35a.635.635 0 00.76.76l1.35-.19a1.189 1.189 0 00.59-.3l3.54-3.54a1.365 1.365 0 000-2.22 1.361 1.361 0 00-2.211.01zM18.7 15.28a3.185 3.185 0 002.22 2.22" })
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("svg", { height: size || height || 24, viewBox: "0 0 24 24", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("g", { fill: "none", stroke: fill, strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 1.5, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("path", { d: "M12 20.5H7c-3 0-5-1.5-5-5v-7c0-3.5 2-5 5-5h10c3 0 5 1.5 5 5v3" }),
+          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("path", { d: "M17 9l-3.13 2.5a3.166 3.166 0 01-3.75 0L7 9M19.21 14.77l-3.539 3.54a1.232 1.232 0 00-.3.59l-.19 1.35a.635.635 0 00.76.76l1.35-.19a1.189 1.189 0 00.59-.3l3.54-3.54a1.365 1.365 0 000-2.22 1.361 1.361 0 00-2.211.01zM18.7 15.28a3.185 3.185 0 002.22 2.22" })
         ] }) });
       };
       var Moon = ({ fill, filled, size, height, width, ...props }) => {
         if (filled) {
-          return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
             "svg",
             {
               height: size || height || 24,
               viewBox: "0 0 512 512",
               width: size || width || 24,
               ...props,
-              children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M152.62 126.77c0-33 4.85-66.35 17.23-94.77C87.54 67.83 32 151.89 32 247.38 32 375.85 136.15 480 264.62 480c95.49 0 179.55-55.54 215.38-137.85-28.42 12.38-61.8 17.23-94.77 17.23-128.47 0-232.61-104.14-232.61-232.61z",
@@ -65887,7 +65887,7 @@
             }
           );
         }
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("svg", { height: size || height || 24, viewBox: "0 0 512 512", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("svg", { height: size || height || 24, viewBox: "0 0 512 512", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
           "path",
           {
             d: "M160 136c0-30.62 4.51-61.61 16-88C99.57 81.27 48 159.32 48 248c0 119.29 96.71 216 216 216 88.68 0 166.73-51.57 200-128-26.39 11.49-57.38 16-88 16-119.29 0-216-96.71-216-216z",
@@ -65901,7 +65901,7 @@
       };
       var Lock = ({ fill, size, height, width, ...props }) => {
         const color2 = fill;
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
           "svg",
           {
             "data-name": "Iconly/Curved/Lock",
@@ -65910,8 +65910,8 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)("g", { transform: "translate(3.5 2)", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("g", { transform: "translate(3.5 2)", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M9.121,6.653V4.5A4.561,4.561,0,0,0,0,4.484V6.653",
@@ -65924,7 +65924,7 @@
                   transform: "translate(3.85 0.75)"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M.5,0V2.221",
@@ -65937,7 +65937,7 @@
                   transform: "translate(7.91 12.156)"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M7.66,0C1.915,0,0,1.568,0,6.271s1.915,6.272,7.66,6.272,7.661-1.568,7.661-6.272S13.4,0,7.66,0Z",
@@ -65956,7 +65956,7 @@
       };
       var Unlock = ({ fill, size, height, width, ...props }) => {
         const color2 = fill;
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
           "svg",
           {
             "data-name": "Iconly/Curved/Lock",
@@ -65965,8 +65965,8 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)("g", { transform: "translate(3.5 2)", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("g", { transform: "translate(3.5 2)", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M8.927,3.237A4.562,4.562,0,0,0,0,4.484V6.653",
@@ -65979,7 +65979,7 @@
                   transform: "translate(3.849 0.75)"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M.5,0V2.221",
@@ -65992,7 +65992,7 @@
                   transform: "translate(7.91 12.156)"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M7.66,0C1.915,0,0,1.568,0,6.271s1.915,6.272,7.66,6.272,7.661-1.568,7.661-6.272S13.406,0,7.66,0Z",
@@ -66010,13 +66010,13 @@
         );
       };
       var Password = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("svg", { height: size || height || 24, viewBox: "0 0 24 24", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)("g", { fill, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("path", { d: "M18.75 8v2.1a12.984 12.984 0 00-1.5-.1V8c0-3.15-.89-5.25-5.25-5.25S6.75 4.85 6.75 8v2a12.984 12.984 0 00-1.5.1V8c0-2.9.7-6.75 6.75-6.75S18.75 5.1 18.75 8z" }),
-          /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("path", { d: "M18.75 10.1a12.984 12.984 0 00-1.5-.1H6.75a12.984 12.984 0 00-1.5.1C2.7 10.41 2 11.66 2 15v2c0 4 1 5 5 5h10c4 0 5-1 5-5v-2c0-3.34-.7-4.59-3.25-4.9zM8.71 16.71A1.052 1.052 0 018 17a1 1 0 01-.38-.08 1.032 1.032 0 01-.33-.21A1.052 1.052 0 017 16a1 1 0 01.08-.38 1.155 1.155 0 01.21-.33 1.032 1.032 0 01.33-.21 1 1 0 011.09.21 1.155 1.155 0 01.21.33A1 1 0 019 16a1.052 1.052 0 01-.29.71zm4.21-.33a1.155 1.155 0 01-.21.33A1.052 1.052 0 0112 17a1.033 1.033 0 01-.71-.29 1.155 1.155 0 01-.21-.33A1 1 0 0111 16a1.033 1.033 0 01.29-.71 1.047 1.047 0 011.42 0A1.033 1.033 0 0113 16a1 1 0 01-.08.38zm3.79.33a1.014 1.014 0 01-1.42 0 1.014 1.014 0 010-1.42 1.047 1.047 0 011.42 0c.04.05.08.1.12.16a.556.556 0 01.09.17.636.636 0 01.06.18 1.5 1.5 0 01.02.2 1.052 1.052 0 01-.29.71z" })
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("svg", { height: size || height || 24, viewBox: "0 0 24 24", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("g", { fill, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("path", { d: "M18.75 8v2.1a12.984 12.984 0 00-1.5-.1V8c0-3.15-.89-5.25-5.25-5.25S6.75 4.85 6.75 8v2a12.984 12.984 0 00-1.5.1V8c0-2.9.7-6.75 6.75-6.75S18.75 5.1 18.75 8z" }),
+          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("path", { d: "M18.75 10.1a12.984 12.984 0 00-1.5-.1H6.75a12.984 12.984 0 00-1.5.1C2.7 10.41 2 11.66 2 15v2c0 4 1 5 5 5h10c4 0 5-1 5-5v-2c0-3.34-.7-4.59-3.25-4.9zM8.71 16.71A1.052 1.052 0 018 17a1 1 0 01-.38-.08 1.032 1.032 0 01-.33-.21A1.052 1.052 0 017 16a1 1 0 01.08-.38 1.155 1.155 0 01.21-.33 1.032 1.032 0 01.33-.21 1 1 0 011.09.21 1.155 1.155 0 01.21.33A1 1 0 019 16a1.052 1.052 0 01-.29.71zm4.21-.33a1.155 1.155 0 01-.21.33A1.052 1.052 0 0112 17a1.033 1.033 0 01-.71-.29 1.155 1.155 0 01-.21-.33A1 1 0 0111 16a1.033 1.033 0 01.29-.71 1.047 1.047 0 011.42 0A1.033 1.033 0 0113 16a1 1 0 01-.08.38zm3.79.33a1.014 1.014 0 01-1.42 0 1.014 1.014 0 010-1.42 1.047 1.047 0 011.42 0c.04.05.08.1.12.16a.556.556 0 01.09.17.636.636 0 01.06.18 1.5 1.5 0 01.02.2 1.052 1.052 0 01-.29.71z" })
         ] }) });
       };
       var Notification = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
           "svg",
           {
             fill: "none",
@@ -66025,7 +66025,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
               "path",
               {
                 clipRule: "evenodd",
@@ -66038,7 +66038,7 @@
         );
       };
       var User = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
           "svg",
           {
             height: size || height || 24,
@@ -66046,7 +66046,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(
               "g",
               {
                 fill: "none",
@@ -66056,14 +66056,14 @@
                 strokeMiterlimit: 10,
                 strokeWidth: 1.5,
                 children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+                  /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                     "path",
                     {
                       d: "M11.845 21.662C8.153 21.662 5 21.088 5 18.787s3.133-4.425 6.845-4.425c3.692 0 6.845 2.1 6.845 4.4s-3.134 2.9-6.845 2.9z",
                       "data-name": "Stroke 1"
                     }
                   ),
-                  /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("path", { d: "M11.837 11.174a4.372 4.372 0 10-.031 0z", "data-name": "Stroke 3" })
+                  /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("path", { d: "M11.837 11.174a4.372 4.372 0 10-.031 0z", "data-name": "Stroke 3" })
                 ]
               }
             )
@@ -66071,7 +66071,7 @@
         );
       };
       var VolumeUp = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
           "svg",
           {
             fill: "none",
@@ -66080,7 +66080,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
               "path",
               {
                 clipRule: "evenodd",
@@ -66093,7 +66093,7 @@
         );
       };
       var Camera = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
           "svg",
           {
             fill: "none",
@@ -66102,7 +66102,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
               "path",
               {
                 clipRule: "evenodd",
@@ -66115,7 +66115,7 @@
         );
       };
       var Activity2 = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
           "svg",
           {
             "data-name": "Iconly/Curved/Activity",
@@ -66124,7 +66124,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(
               "g",
               {
                 fill: "none",
@@ -66134,9 +66134,9 @@
                 strokeMiterlimit: 10,
                 strokeWidth: 1.5,
                 children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("path", { d: "M6.918 14.854l2.993-3.889 3.414 2.68 2.929-3.78" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("path", { d: "M19.668 2.35a1.922 1.922 0 11-1.922 1.922 1.921 1.921 0 011.922-1.922z" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("path", { d: "M20.756 9.269a20.809 20.809 0 01.194 3.034c0 6.938-2.312 9.25-9.25 9.25s-9.25-2.312-9.25-9.25 2.313-9.25 9.25-9.25a20.931 20.931 0 012.983.187" })
+                  /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("path", { d: "M6.918 14.854l2.993-3.889 3.414 2.68 2.929-3.78" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("path", { d: "M19.668 2.35a1.922 1.922 0 11-1.922 1.922 1.921 1.921 0 011.922-1.922z" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("path", { d: "M20.756 9.269a20.809 20.809 0 01.194 3.034c0 6.938-2.312 9.25-9.25 9.25s-9.25-2.312-9.25-9.25 2.313-9.25 9.25-9.25a20.931 20.931 0 012.983.187" })
                 ]
               }
             )
@@ -66144,7 +66144,7 @@
         );
       };
       var Plus = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
           "svg",
           {
             height: size || height || 24,
@@ -66152,15 +66152,15 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)("g", { fill: "none", stroke: fill, strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 1.5, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("path", { d: "M6 12h12" }),
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("path", { d: "M12 18V6" })
+            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("g", { fill: "none", stroke: fill, strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 1.5, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("path", { d: "M6 12h12" }),
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("path", { d: "M12 18V6" })
             ] })
           }
         );
       };
       var Minus = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
           "svg",
           {
             height: size || height || 24,
@@ -66168,7 +66168,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
               "path",
               {
                 d: "M6 12h12",
@@ -66183,7 +66183,7 @@
         );
       };
       var Eye = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(
           "svg",
           {
             fill: "none",
@@ -66193,7 +66193,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M12.9833 10C12.9833 11.65 11.65 12.9833 10 12.9833C8.35 12.9833 7.01666 11.65 7.01666 10C7.01666 8.35 8.35 7.01666 10 7.01666C11.65 7.01666 12.9833 8.35 12.9833 10Z",
@@ -66203,7 +66203,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M9.99999 16.8916C12.9417 16.8916 15.6833 15.1583 17.5917 12.1583C18.3417 10.9833 18.3417 9.00831 17.5917 7.83331C15.6833 4.83331 12.9417 3.09998 9.99999 3.09998C7.05833 3.09998 4.31666 4.83331 2.40833 7.83331C1.65833 9.00831 1.65833 10.9833 2.40833 12.1583C4.31666 15.1583 7.05833 16.8916 9.99999 16.8916Z",
@@ -66218,7 +66218,7 @@
         );
       };
       var Edit = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(
           "svg",
           {
             fill: "none",
@@ -66228,7 +66228,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M11.05 3.00002L4.20835 10.2417C3.95002 10.5167 3.70002 11.0584 3.65002 11.4334L3.34169 14.1334C3.23335 15.1084 3.93335 15.775 4.90002 15.6084L7.58335 15.15C7.95835 15.0834 8.48335 14.8084 8.74168 14.525L15.5834 7.28335C16.7667 6.03335 17.3 4.60835 15.4583 2.86668C13.625 1.14168 12.2334 1.75002 11.05 3.00002Z",
@@ -66239,7 +66239,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M9.90833 4.20831C10.2667 6.50831 12.1333 8.26665 14.45 8.49998",
@@ -66250,7 +66250,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M2.5 18.3333H17.5",
@@ -66266,7 +66266,7 @@
         );
       };
       var Delete = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(
           "svg",
           {
             fill: "none",
@@ -66276,7 +66276,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M17.5 4.98332C14.725 4.70832 11.9333 4.56665 9.15 4.56665C7.5 4.56665 5.85 4.64998 4.2 4.81665L2.5 4.98332",
@@ -66286,7 +66286,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M7.08331 4.14169L7.26665 3.05002C7.39998 2.25835 7.49998 1.66669 8.90831 1.66669H11.0916C12.5 1.66669 12.6083 2.29169 12.7333 3.05835L12.9166 4.14169",
@@ -66296,7 +66296,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M15.7084 7.61664L15.1667 16.0083C15.075 17.3166 15 18.3333 12.675 18.3333H7.32502C5.00002 18.3333 4.92502 17.3166 4.83335 16.0083L4.29169 7.61664",
@@ -66306,7 +66306,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M8.60834 13.75H11.3833",
@@ -66316,7 +66316,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M7.91669 10.4167H12.0834",
@@ -66331,7 +66331,7 @@
         );
       };
       var ChevronDown = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
           "svg",
           {
             fill: "none",
@@ -66340,7 +66340,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
               "path",
               {
                 d: "m19.92 8.95-6.52 6.52c-.77.77-2.03.77-2.8 0L4.08 8.95",
@@ -66355,7 +66355,7 @@
         );
       };
       var ChevronDownBold = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
           "svg",
           {
             fill: "none",
@@ -66364,7 +66364,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
               "path",
               {
                 d: "M17.9188 8.17969H11.6888H6.07877C5.11877 8.17969 4.63877 9.33969 5.31877 10.0197L10.4988 15.1997C11.3288 16.0297 12.6788 16.0297 13.5088 15.1997L15.4788 13.2297L18.6888 10.0197C19.3588 9.33969 18.8788 8.17969 17.9188 8.17969Z",
@@ -66375,7 +66375,7 @@
         );
       };
       var NewFile = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(
           "svg",
           {
             fill: "none",
@@ -66385,7 +66385,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M8 2V5",
@@ -66396,7 +66396,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M16 2V5",
@@ -66407,7 +66407,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M21 8.5V13.63C20.11 12.92 18.98 12.5 17.75 12.5C16.52 12.5 15.37 12.93 14.47 13.66C13.26 14.61 12.5 16.1 12.5 17.75C12.5 18.73 12.78 19.67 13.26 20.45C13.63 21.06 14.11 21.59 14.68 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z",
@@ -66418,7 +66418,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M7 11H13",
@@ -66429,7 +66429,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M7 16H9.62",
@@ -66440,7 +66440,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M23 17.75C23 18.73 22.72 19.67 22.24 20.45C21.96 20.93 21.61 21.35 21.2 21.69C20.28 22.51 19.08 23 17.75 23C16.6 23 15.54 22.63 14.68 22C14.11 21.59 13.63 21.06 13.26 20.45C12.78 19.67 12.5 18.73 12.5 17.75C12.5 16.1 13.26 14.61 14.47 13.66C15.37 12.93 16.52 12.5 17.75 12.5C18.98 12.5 20.11 12.92 21 13.63C22.22 14.59 23 16.08 23 17.75Z",
@@ -66451,7 +66451,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M17.75 20.25C17.75 18.87 18.87 17.75 20.25 17.75C18.87 17.75 17.75 16.63 17.75 15.25C17.75 16.63 16.63 17.75 15.25 17.75C16.63 17.75 17.75 18.87 17.75 20.25Z",
@@ -66466,7 +66466,7 @@
         );
       };
       var AddNoteBulk = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(
           "svg",
           {
             fill: "none",
@@ -66476,7 +66476,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M7.37 22h9.25a4.87 4.87 0 0 0 4.87-4.87V8.37a4.87 4.87 0 0 0-4.87-4.87H7.37A4.87 4.87 0 0 0 2.5 8.37v8.75c0 2.7 2.18 4.88 4.87 4.88Z",
@@ -66484,7 +66484,7 @@
                   opacity: 0.4
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M8.29 6.29c-.42 0-.75-.34-.75-.75V2.75a.749.749 0 1 1 1.5 0v2.78c0 .42-.33.76-.75.76ZM15.71 6.29c-.42 0-.75-.34-.75-.75V2.75a.749.749 0 1 1 1.5 0v2.78c0 .42-.33.76-.75.76ZM12 14.75h-1.69V13c0-.41-.34-.75-.75-.75s-.75.34-.75.75v1.75H7c-.41 0-.75.34-.75.75s.34.75.75.75h1.81V18c0 .41.34.75.75.75s.75-.34.75-.75v-1.75H12c.41 0 .75-.34.75-.75s-.34-.75-.75-.75Z",
@@ -66496,7 +66496,7 @@
         );
       };
       var CopyDocumentBulk = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(
           "svg",
           {
             fill: "none",
@@ -66506,7 +66506,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M15.5 13.15h-2.17c-1.78 0-3.23-1.44-3.23-3.23V7.75c0-.41-.33-.75-.75-.75H6.18C3.87 7 2 8.5 2 11.18v6.64C2 20.5 3.87 22 6.18 22h5.89c2.31 0 4.18-1.5 4.18-4.18V13.9c0-.42-.34-.75-.75-.75Z",
@@ -66514,14 +66514,14 @@
                   opacity: 0.4
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M17.82 2H11.93C9.67 2 7.84 3.44 7.76 6.01c.06 0 .11-.01.17-.01h5.89C16.13 6 18 7.5 18 10.18V16.83c0 .06-.01.11-.01.16 2.23-.07 4.01-1.55 4.01-4.16V6.18C22 3.5 20.13 2 17.82 2Z",
                   fill
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M11.98 7.15c-.31-.31-.84-.1-.84.33v2.62c0 1.1.93 2 2.07 2 .71.01 1.7.01 2.55.01.43 0 .65-.5.35-.8-1.09-1.09-3.03-3.04-4.13-4.16Z",
@@ -66533,7 +66533,7 @@
         );
       };
       var EditDocumentBulk = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(
           "svg",
           {
             fill: "none",
@@ -66543,7 +66543,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M15.48 3H7.52C4.07 3 2 5.06 2 8.52v7.95C2 19.94 4.07 22 7.52 22h7.95c3.46 0 5.52-2.06 5.52-5.52V8.52C21 5.06 18.93 3 15.48 3Z",
@@ -66551,7 +66551,7 @@
                   opacity: 0.4
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M21.02 2.98c-1.79-1.8-3.54-1.84-5.38 0L14.51 4.1c-.1.1-.13.24-.09.37.7 2.45 2.66 4.41 5.11 5.11.03.01.08.01.11.01.1 0 .2-.04.27-.11l1.11-1.12c.91-.91 1.36-1.78 1.36-2.67 0-.9-.45-1.79-1.36-2.71ZM17.86 10.42c-.27-.13-.53-.26-.77-.41-.2-.12-.4-.25-.59-.39-.16-.1-.34-.25-.52-.4-.02-.01-.08-.06-.16-.14-.31-.25-.64-.59-.95-.96-.02-.02-.08-.08-.13-.17-.1-.11-.25-.3-.38-.51-.11-.14-.24-.34-.36-.55-.15-.25-.28-.5-.4-.76-.13-.28-.23-.54-.32-.79L7.9 10.72c-.35.35-.69 1.01-.76 1.5l-.43 2.98c-.09.63.08 1.22.47 1.61.33.33.78.5 1.28.5.11 0 .22-.01.33-.02l2.97-.42c.49-.07 1.15-.4 1.5-.76l5.38-5.38c-.25-.08-.5-.19-.78-.31Z",
@@ -66563,7 +66563,7 @@
         );
       };
       var DeleteDocumentBulk = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(
           "svg",
           {
             fill: "none",
@@ -66573,14 +66573,14 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M21.07 5.23c-1.61-.16-3.22-.28-4.84-.37v-.01l-.22-1.3c-.15-.92-.37-2.3-2.71-2.3h-2.62c-2.33 0-2.55 1.32-2.71 2.29l-.21 1.28c-.93.06-1.86.12-2.79.21l-2.04.2c-.42.04-.72.41-.68.82.04.41.4.71.82.67l2.04-.2c5.24-.52 10.52-.32 15.82.21h.08c.38 0 .71-.29.75-.68a.766.766 0 0 0-.69-.82Z",
                   fill
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M19.23 8.14c-.24-.25-.57-.39-.91-.39H5.68c-.34 0-.68.14-.91.39-.23.25-.36.59-.34.94l.62 10.26c.11 1.52.25 3.42 3.74 3.42h6.42c3.49 0 3.63-1.89 3.74-3.42l.62-10.25c.02-.36-.11-.7-.34-.95Z",
@@ -66588,7 +66588,7 @@
                   opacity: 0.399
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   clipRule: "evenodd",
@@ -66608,7 +66608,7 @@
         width,
         ...props
       }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(
           "svg",
           {
             fill: "none",
@@ -66618,28 +66618,28 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M16.25 22.5C17.2165 22.5 18 21.7165 18 20.75C18 19.7835 17.2165 19 16.25 19C15.2835 19 14.5 19.7835 14.5 20.75C14.5 21.7165 15.2835 22.5 16.25 22.5Z",
                   fill
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M8.25 22.5C9.2165 22.5 10 21.7165 10 20.75C10 19.7835 9.2165 19 8.25 19C7.2835 19 6.5 19.7835 6.5 20.75C6.5 21.7165 7.2835 22.5 8.25 22.5Z",
                   fill
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M4.84 3.94L4.64 6.39C4.6 6.86 4.97 7.25 5.44 7.25H20.75C21.17 7.25 21.52 6.93 21.55 6.51C21.68 4.74 20.33 3.3 18.56 3.3H6.27C6.17 2.86 5.97 2.44 5.66 2.09C5.16 1.56 4.46 1.25 3.74 1.25H2C1.59 1.25 1.25 1.59 1.25 2C1.25 2.41 1.59 2.75 2 2.75H3.74C4.05 2.75 4.34 2.88 4.55 3.1C4.76 3.33 4.86 3.63 4.84 3.94Z",
                   fill
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M20.5101 8.75H5.17005C4.75005 8.75 4.41005 9.07 4.37005 9.48L4.01005 13.83C3.87005 15.54 5.21005 17 6.92005 17H18.0401C19.5401 17 20.8601 15.77 20.9701 14.27L21.3001 9.6C21.3401 9.14 20.9801 8.75 20.5101 8.75Z",
@@ -66657,7 +66657,7 @@
         width,
         ...props
       }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
           "svg",
           {
             fill: "none",
@@ -66666,7 +66666,7 @@
             width: size || width,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
               "path",
               {
                 d: "M6.09 13.28h3.09v7.2c0 1.68.91 2.02 2.02.76l7.57-8.6c.93-1.05.54-1.92-.87-1.92h-3.09v-7.2c0-1.68-.91-2.02-2.02-.76l-7.57 8.6c-.92 1.06-.53 1.92.87 1.92Z",
@@ -66687,7 +66687,7 @@
         width,
         ...props
       }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
           "svg",
           {
             fill: "none",
@@ -66696,7 +66696,7 @@
             width: size || width,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
               "path",
               {
                 d: "M19.32 10H4.69c-1.48 0-2.68-1.21-2.68-2.68V4.69c0-1.48 1.21-2.68 2.68-2.68h14.63C20.8 2.01 22 3.22 22 4.69v2.63C22 8.79 20.79 10 19.32 10ZM19.32 22H4.69c-1.48 0-2.68-1.21-2.68-2.68v-2.63c0-1.48 1.21-2.68 2.68-2.68h14.63c1.48 0 2.68 1.21 2.68 2.68v2.63c0 1.47-1.21 2.68-2.68 2.68ZM6 5v2M10 5v2M6 17v2M10 17v2M14 6h4M14 18h4",
@@ -66716,7 +66716,7 @@
         width,
         ...props
       }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(
           "svg",
           {
             fill: "none",
@@ -66726,7 +66726,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M18 18.86h-.76c-.8 0-1.56.31-2.12.87l-1.71 1.69c-.78.77-2.05.77-2.83 0l-1.71-1.69c-.56-.56-1.33-.87-2.12-.87H6c-1.66 0-3-1.33-3-2.97V4.98c0-1.64 1.34-2.97 3-2.97h12c1.66 0 3 1.33 3 2.97v10.91c0 1.63-1.34 2.97-3 2.97Z",
@@ -66737,7 +66737,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M12 10a2.33 2.33 0 1 0 0-4.66A2.33 2.33 0 0 0 12 10ZM16 15.66c0-1.8-1.79-3.26-4-3.26s-4 1.46-4 3.26",
@@ -66758,7 +66758,7 @@
         width,
         ...props
       }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(
           "svg",
           {
             fill: "none",
@@ -66768,7 +66768,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M9 22h6c5 0 7-2 7-7V9c0-5-2-7-7-7H9C4 2 2 4 2 9v6c0 5 2 7 7 7ZM18 6 6 18",
@@ -66778,7 +66778,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                 "path",
                 {
                   d: "M18 10V6h-4M6 14v4h4",
@@ -66793,7 +66793,7 @@
         );
       };
       var Search = ({ size, fill, width = 24, height = 24, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("svg", { fill: "none", height: size || height, viewBox: "0 0 24 24", width: size || width, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("svg", { fill: "none", height: size || height, viewBox: "0 0 24 24", width: size || width, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
           "path",
           {
             d: "M11.5 21a9.5 9.5 0 1 0 0-19 9.5 9.5 0 0 0 0 19ZM22 22l-2-2",
@@ -67683,8 +67683,8 @@
           ]
         }
       );
-      var import_jsx_runtime30 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var SearchIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime30.jsxs)(
+      var import_jsx_runtime302 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var SearchIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime302.jsxs)(
         "svg",
         {
           "aria-hidden": "true",
@@ -67696,7 +67696,7 @@
           width: "1em",
           ...props,
           children: [
-            /* @__PURE__ */ (0, import_jsx_runtime30.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime302.jsx)(
               "path",
               {
                 d: "M11.5 21C16.7467 21 21 16.7467 21 11.5C21 6.25329 16.7467 2 11.5 2C6.25329 2 2 6.25329 2 11.5C2 16.7467 6.25329 21 11.5 21Z",
@@ -67706,7 +67706,7 @@
                 strokeWidth: "2"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime30.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime302.jsx)(
               "path",
               {
                 d: "M22 22L20 20",
@@ -67719,8 +67719,8 @@
           ]
         }
       );
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var LockFilledIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(
+      var import_jsx_runtime312 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var LockFilledIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime312.jsxs)(
         "svg",
         {
           "aria-hidden": "true",
@@ -67732,14 +67732,14 @@
           width: "1em",
           ...props,
           children: [
-            /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime312.jsx)(
               "path",
               {
                 d: "M12.0011 17.3498C12.9013 17.3498 13.6311 16.6201 13.6311 15.7198C13.6311 14.8196 12.9013 14.0898 12.0011 14.0898C11.1009 14.0898 10.3711 14.8196 10.3711 15.7198C10.3711 16.6201 11.1009 17.3498 12.0011 17.3498Z",
                 fill: "currentColor"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime312.jsx)(
               "path",
               {
                 d: "M18.28 9.53V8.28C18.28 5.58 17.63 2 12 2C6.37 2 5.72 5.58 5.72 8.28V9.53C2.92 9.88 2 11.3 2 14.79V16.65C2 20.75 3.25 22 7.35 22H16.65C20.75 22 22 20.75 22 16.65V14.79C22 11.3 21.08 9.88 18.28 9.53ZM12 18.74C10.33 18.74 8.98 17.38 8.98 15.72C8.98 14.05 10.34 12.7 12 12.7C13.66 12.7 15.02 14.06 15.02 15.72C15.02 17.39 13.67 18.74 12 18.74ZM7.35 9.44C7.27 9.44 7.2 9.44 7.12 9.44V8.28C7.12 5.35 7.95 3.4 12 3.4C16.05 3.4 16.88 5.35 16.88 8.28V9.45C16.8 9.45 16.73 9.45 16.65 9.45H7.35V9.44Z",
@@ -68948,14 +68948,14 @@
         useMeasure: () => useMeasure
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useMeasure() {
-        const [dimensions, setDimensions] = (0, import_react73.useState)({
+        const [dimensions, setDimensions] = (0, import_react75.useState)({
           width: null,
           height: null
         });
-        const previousObserver = (0, import_react73.useRef)(null);
-        const customRef = (0, import_react73.useCallback)((node) => {
+        const previousObserver = (0, import_react75.useRef)(null);
+        const customRef = (0, import_react75.useCallback)((node) => {
           if (previousObserver.current) {
             previousObserver.current.disconnect();
             previousObserver.current = null;
@@ -69151,15 +69151,15 @@
           }
         }
       };
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_motion2 = require_cjs4();
       var import_use_measure = require_dist18();
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var ResizablePanel2 = (0, import_react73.forwardRef)(
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var ResizablePanel2 = (0, import_react75.forwardRef)(
         (originalProps, ref) => {
           const { children, ...props } = originalProps;
           let [measureRef, bounds] = (0, import_use_measure.useMeasure)();
-          return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_framer_motion2.LazyMotion, { features: import_framer_motion2.domAnimation, children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion2.LazyMotion, { features: import_framer_motion2.domAnimation, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
             import_framer_motion2.m.div,
             {
               ref,
@@ -69167,7 +69167,7 @@
                 width: bounds.width && (bounds == null ? void 0 : bounds.width) > 0 ? bounds.width : "auto",
                 height: bounds.height && bounds.height > 0 ? bounds.height : "auto"
               },
-              children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("div", { ref: measureRef, ...props, children })
+              children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ref: measureRef, ...props, children })
             }
           ) });
         }
@@ -72832,7 +72832,7 @@
       acc[key] = createRenderStep(flagRunNextFrame, allowKeepAlive ? key : void 0);
       return acc;
     }, {});
-    const { setup, read: read3, resolveKeyframes, preUpdate, update, preRender, render, postRender } = steps2;
+    const { setup, read: read4, resolveKeyframes, preUpdate, update, preRender, render, postRender } = steps2;
     const processBatch = () => {
       const useManualTiming = MotionGlobalConfig.useManualTiming;
       const timestamp = useManualTiming ? state.timestamp : performance.now();
@@ -72843,7 +72843,7 @@
       state.timestamp = timestamp;
       state.isProcessing = true;
       setup.process(state);
-      read3.process(state);
+      read4.process(state);
       resolveKeyframes.process(state);
       preUpdate.process(state);
       update.process(state);
@@ -87822,7 +87822,7 @@
       var import_react510 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
-      var import_react73 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
+      var import_react75 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
       var import_tree = require_main12();
       var import_shared_utils = require_dist2();
       var import_theme = require_dist12();
@@ -87874,10 +87874,10 @@
         );
         const children = (0, import_react210.useMemo)(() => {
           let treeChildren = [];
-          import_react73.default.Children.map(childrenProp, (child) => {
+          import_react75.default.Children.map(childrenProp, (child) => {
             var _a2;
-            if (import_react73.default.isValidElement(child) && typeof ((_a2 = child.props) == null ? void 0 : _a2.children) !== "string") {
-              const clonedChild = import_react73.default.cloneElement(child, {
+            if (import_react75.default.isValidElement(child) && typeof ((_a2 = child.props) == null ? void 0 : _a2.children) !== "string") {
+              const clonedChild = import_react75.default.cloneElement(child, {
                 // @ts-ignore
                 hasChildItems: false
               });
@@ -87948,7 +87948,7 @@
             motionProps
           ]
         );
-        const getBaseProps = (0, import_react73.useCallback)((props2 = {}) => {
+        const getBaseProps = (0, import_react75.useCallback)((props2 = {}) => {
           return {
             ref: domRef,
             className: classNames,
@@ -87962,7 +87962,7 @@
             )
           };
         }, []);
-        const handleFocusChanged = (0, import_react73.useCallback)((isFocused, key) => {
+        const handleFocusChanged = (0, import_react75.useCallback)((isFocused, key) => {
           isFocused && setFocusedKey(key);
         }, []);
         return {
@@ -88208,7 +88208,7 @@
           getSubtitleProps
         };
       }
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var domAnimation2 = () => Promise.resolve().then(() => (init_dist(), dist_exports)).then((res) => res.default);
       var AccordionItem = (0, import_system3.forwardRef)((props, ref) => {
         const {
@@ -88238,24 +88238,24 @@
         const willChange = (0, import_framer_motion3.useWillChange)();
         const indicatorContent = (0, import_react410.useMemo)(() => {
           if (typeof indicator === "function") {
-            return indicator({ indicator: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_shared_icons.ChevronIcon, {}), isOpen, isDisabled });
+            return indicator({ indicator: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_shared_icons.ChevronIcon, {}), isOpen, isDisabled });
           }
           if (indicator) return indicator;
           return null;
         }, [indicator, isOpen, isDisabled]);
-        const indicatorComponent = indicatorContent || /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_shared_icons.ChevronIcon, {});
+        const indicatorComponent = indicatorContent || /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_shared_icons.ChevronIcon, {});
         const content = (0, import_react410.useMemo)(() => {
           if (disableAnimation) {
             if (keepContentMounted) {
-              return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("div", { ...getContentProps(), children });
+              return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ...getContentProps(), children });
             }
-            return isOpen && /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("div", { ...getContentProps(), children });
+            return isOpen && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ...getContentProps(), children });
           }
           const transitionVariants = {
             exit: { ...import_framer_utils.TRANSITION_VARIANTS.collapse.exit, overflowY: "hidden" },
             enter: { ...import_framer_utils.TRANSITION_VARIANTS.collapse.enter, overflowY: "unset" }
           };
-          return keepContentMounted ? /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+          return keepContentMounted ? /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
             import_framer_motion3.m.section,
             {
               animate: isOpen ? "enter" : "exit",
@@ -88267,10 +88267,10 @@
                 e.stopPropagation();
               },
               ...motionProps,
-              children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("div", { ...getContentProps(), children })
+              children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ...getContentProps(), children })
             },
             "accordion-content"
-          ) }) : /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_framer_motion3.AnimatePresence, { initial: false, children: isOpen && /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+          ) }) : /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion3.AnimatePresence, { initial: false, children: isOpen && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
             import_framer_motion3.m.section,
             {
               animate: "enter",
@@ -88282,19 +88282,19 @@
                 e.stopPropagation();
               },
               ...motionProps,
-              children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("div", { ...getContentProps(), children })
+              children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ...getContentProps(), children })
             },
             "accordion-content"
           ) }) });
         }, [isOpen, disableAnimation, keepContentMounted, children, motionProps]);
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(Component2, { ...getBaseProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(HeadingComponent, { ...getHeadingProps(), children: /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)("button", { ...getButtonProps(), children: [
-            startContent && /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("div", { className: slots.startContent({ class: classNames == null ? void 0 : classNames.startContent }), children: startContent }),
-            /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)("div", { className: slots.titleWrapper({ class: classNames == null ? void 0 : classNames.titleWrapper }), children: [
-              title && /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("span", { ...getTitleProps(), children: title }),
-              subtitle && /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("span", { ...getSubtitleProps(), children: subtitle })
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(Component2, { ...getBaseProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(HeadingComponent, { ...getHeadingProps(), children: /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("button", { ...getButtonProps(), children: [
+            startContent && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { className: slots.startContent({ class: classNames == null ? void 0 : classNames.startContent }), children: startContent }),
+            /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { className: slots.titleWrapper({ class: classNames == null ? void 0 : classNames.titleWrapper }), children: [
+              title && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { ...getTitleProps(), children: title }),
+              subtitle && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { ...getSubtitleProps(), children: subtitle })
             ] }),
-            !hideIndicator && indicatorComponent && /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("span", { ...getIndicatorProps(), children: indicatorComponent })
+            !hideIndicator && indicatorComponent && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { ...getIndicatorProps(), children: indicatorComponent })
           ] }) }),
           content
         ] });
@@ -88374,8 +88374,8 @@
         useSafeLayoutEffect: () => useSafeLayoutEffect
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var useSafeLayoutEffect = Boolean(globalThis == null ? void 0 : globalThis.document) ? import_react73.useLayoutEffect : import_react73.useEffect;
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var useSafeLayoutEffect = Boolean(globalThis == null ? void 0 : globalThis.document) ? import_react75.useLayoutEffect : import_react75.useEffect;
     }
   });
 
@@ -88406,7 +88406,7 @@
         useImage: () => useImage
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_utils = require_dist10();
       var import_use_safe_layout_effect = require_dist21();
       function useImage(props = {}) {
@@ -88422,16 +88422,16 @@
           shouldBypassImageLoad = false
         } = props;
         const isHydrated = (0, import_react_utils.useIsHydrated)();
-        const imageRef = (0, import_react73.useRef)(null);
-        const [status, setStatus] = (0, import_react73.useState)("pending");
-        const flush = (0, import_react73.useCallback)(() => {
+        const imageRef = (0, import_react75.useRef)(null);
+        const [status, setStatus] = (0, import_react75.useState)("pending");
+        const flush = (0, import_react75.useCallback)(() => {
           if (imageRef.current) {
             imageRef.current.onload = null;
             imageRef.current.onerror = null;
             imageRef.current = null;
           }
         }, []);
-        const load = (0, import_react73.useCallback)(() => {
+        const load = (0, import_react75.useCallback)(() => {
           if (!src) return "pending";
           if (ignoreFallback || shouldBypassImageLoad) return "loaded";
           flush();
@@ -88517,8 +88517,8 @@
       module.exports = __toCommonJS2(index_exports);
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist11();
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var AvatarIcon = () => /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var AvatarIcon = () => /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(
         "svg",
         {
           "aria-hidden": "true",
@@ -88528,14 +88528,14 @@
           viewBox: "0 0 24 24",
           width: "80%",
           children: [
-            /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
               "path",
               {
                 d: "M12 2C9.38 2 7.25 4.13 7.25 6.75C7.25 9.32 9.26 11.4 11.88 11.49C11.96 11.48 12.04 11.48 12.1 11.49C12.12 11.49 12.13 11.49 12.15 11.49C12.16 11.49 12.16 11.49 12.17 11.49C14.73 11.4 16.74 9.32 16.75 6.75C16.75 4.13 14.62 2 12 2Z",
                 fill: "currentColor"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
               "path",
               {
                 d: "M17.0809 14.1489C14.2909 12.2889 9.74094 12.2889 6.93094 14.1489C5.66094 14.9989 4.96094 16.1489 4.96094 17.3789C4.96094 18.6089 5.66094 19.7489 6.92094 20.5889C8.32094 21.5289 10.1609 21.9989 12.0009 21.9989C13.8409 21.9989 15.6809 21.5289 17.0809 20.5889C18.3409 19.7389 19.0409 18.5989 19.0409 17.3589C19.0309 16.1289 18.3409 14.9889 17.0809 14.1489Z",
@@ -88550,7 +88550,7 @@
       var import_react_utils2 = require_dist10();
       var import_shared_utils = require_dist2();
       var import_focus2 = require_main18();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_image = require_dist22();
       var import_interactions = require_main17();
       var import_react_utils = require_dist10();
@@ -88605,7 +88605,7 @@
         const isImgLoaded = imageStatus === "loaded";
         const shouldFilterDOMProps = !isHeroImage;
         const showFallback = (!src || !isImgLoaded) && showFallbackProp;
-        const slots = (0, import_react73.useMemo)(
+        const slots = (0, import_react75.useMemo)(
           () => {
             var _a2;
             return (0, import_theme.avatar)({
@@ -88631,10 +88631,10 @@
           ]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const canBeFocused = (0, import_react73.useMemo)(() => {
+        const canBeFocused = (0, import_react75.useMemo)(() => {
           return isFocusable || as === "button";
         }, [isFocusable, as]);
-        const getAvatarProps = (0, import_react73.useCallback)(
+        const getAvatarProps = (0, import_react75.useCallback)(
           (props = {}) => ({
             ref: domRef,
             tabIndex: canBeFocused ? 0 : -1,
@@ -88648,7 +88648,7 @@
           }),
           [canBeFocused, slots, baseStyles, focusProps, otherProps]
         );
-        const getImageProps = (0, import_react73.useCallback)(
+        const getImageProps = (0, import_react75.useCallback)(
           (props = {}) => ({
             ref: imgRef,
             src,
@@ -88851,7 +88851,7 @@
       var import_theme = require_dist12();
       var import_system = require_dist11();
       var import_shared_utils = require_dist2();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useBadge(originalProps) {
         var _a, _b;
         const globalContext = (0, import_system.useProviderContext)();
@@ -88859,19 +88859,19 @@
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.badge.variantKeys);
         const { as, children, className, content, classNames, ...otherProps } = props;
         const Component2 = as || "span";
-        const isOneChar = (0, import_react73.useMemo)(
+        const isOneChar = (0, import_react75.useMemo)(
           () => {
             var _a2;
             return ((_a2 = String(content)) == null ? void 0 : _a2.length) === 1 || (originalProps == null ? void 0 : originalProps.isOneChar);
           },
           [content, originalProps == null ? void 0 : originalProps.isOneChar]
         );
-        const isDot = (0, import_react73.useMemo)(() => {
+        const isDot = (0, import_react75.useMemo)(() => {
           var _a2;
           return ((_a2 = String(content)) == null ? void 0 : _a2.length) === 0;
         }, [content]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.badge, className);
-        const slots = (0, import_react73.useMemo)(
+        const slots = (0, import_react75.useMemo)(
           () => (0, import_theme.badge)({
             ...variantProps2,
             showOutline: !!(originalProps == null ? void 0 : originalProps.disableOutline) ? !(originalProps == null ? void 0 : originalProps.disableOutline) : originalProps == null ? void 0 : originalProps.showOutline,
@@ -88899,14 +88899,14 @@
         };
       }
       var import_system2 = require_dist11();
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Badge = (0, import_system2.forwardRef)((props, ref) => {
         const { Component: Component2, children, content, slots, classNames, getBadgeProps } = useBadge({
           ...props
         });
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)("div", { className: slots.base({ class: classNames == null ? void 0 : classNames.base }), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { className: slots.base({ class: classNames == null ? void 0 : classNames.base }), children: [
           children,
-          /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(Component2, { ref, ...getBadgeProps(), children: content })
+          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(Component2, { ref, ...getBadgeProps(), children: content })
         ] });
       });
       Badge.displayName = "HeroUI.Badge";
@@ -88945,7 +88945,7 @@
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       function useSpinner(originalProps) {
         var _a, _b;
@@ -88953,19 +88953,19 @@
         const globalContext = (0, import_system.useProviderContext)();
         const variant = (_b = (_a = originalProps == null ? void 0 : originalProps.variant) != null ? _a : globalContext == null ? void 0 : globalContext.spinnerVariant) != null ? _b : "default";
         const { children, className, classNames, label: labelProp, ...otherProps } = props;
-        const slots = (0, import_react73.useMemo)(
+        const slots = (0, import_react75.useMemo)(
           () => (0, import_theme.spinner)({ ...variantProps2, variant }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), variant]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
         const label = labelProp || children;
-        const ariaLabel = (0, import_react73.useMemo)(() => {
+        const ariaLabel = (0, import_react75.useMemo)(() => {
           if (label && typeof label === "string") {
             return label;
           }
           return !otherProps["aria-label"] ? "Loading" : "";
         }, [children, label, otherProps["aria-label"]]);
-        const getSpinnerProps = (0, import_react73.useCallback)(
+        const getSpinnerProps = (0, import_react75.useCallback)(
           () => ({
             "aria-label": ariaLabel,
             className: slots.base({
@@ -88978,12 +88978,12 @@
         return { label, slots, classNames, variant, getSpinnerProps };
       }
       var import_system_rsc2 = require_dist14();
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Spinner = (0, import_system_rsc2.forwardRef)((props, ref) => {
         const { slots, classNames, label, variant, getSpinnerProps } = useSpinner({ ...props });
         if (variant === "wave" || variant === "dots") {
-          return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)("div", { ref, ...getSpinnerProps(), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [...new Array(3)].map((_, index3) => /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { ref, ...getSpinnerProps(), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [...new Array(3)].map((_, index3) => /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
               "i",
               {
                 className: slots.dots({ class: classNames == null ? void 0 : classNames.dots }),
@@ -88993,19 +88993,19 @@
               },
               `dot-${index3}`
             )) }),
-            label && /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
+            label && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
           ] });
         }
         if (variant === "simple") {
-          return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)("div", { ref, ...getSpinnerProps(), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(
+          return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { ref, ...getSpinnerProps(), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(
               "svg",
               {
                 className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }),
                 fill: "none",
                 viewBox: "0 0 24 24",
                 children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+                  /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                     "circle",
                     {
                       className: slots.circle1({ class: classNames == null ? void 0 : classNames.circle1 }),
@@ -89016,7 +89016,7 @@
                       strokeWidth: "4"
                     }
                   ),
-                  /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+                  /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
                     "path",
                     {
                       className: slots.circle2({ class: classNames == null ? void 0 : classNames.circle2 }),
@@ -89027,12 +89027,12 @@
                 ]
               }
             ),
-            label && /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
+            label && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
           ] });
         }
         if (variant === "spinner") {
-          return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)("div", { ref, ...getSpinnerProps(), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [...new Array(12)].map((_, index3) => /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { ref, ...getSpinnerProps(), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [...new Array(12)].map((_, index3) => /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
               "i",
               {
                 className: slots.spinnerBars({ class: classNames == null ? void 0 : classNames.spinnerBars }),
@@ -89042,15 +89042,15 @@
               },
               `star-${index3}`
             )) }),
-            label && /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
+            label && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
           ] });
         }
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)("div", { ref, ...getSpinnerProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("i", { className: slots.circle1({ class: classNames == null ? void 0 : classNames.circle1 }) }),
-            /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("i", { className: slots.circle2({ class: classNames == null ? void 0 : classNames.circle2 }) })
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { ref, ...getSpinnerProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("i", { className: slots.circle1({ class: classNames == null ? void 0 : classNames.circle1 }) }),
+            /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("i", { className: slots.circle2({ class: classNames == null ? void 0 : classNames.circle2 }) })
           ] }),
-          label && /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
+          label && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
         ] });
       });
       Spinner.displayName = "HeroUI.Spinner";
@@ -89088,13 +89088,13 @@
       module.exports = __toCommonJS2(index_exports);
       var import_framer_motion2 = require_cjs4();
       var import_shared_utils = require_dist2();
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var domAnimation2 = () => Promise.resolve().then(() => (init_dist(), dist_exports)).then((res) => res.default);
       var Ripple = (props) => {
         const { ripples = [], motionProps, color: color2 = "currentColor", style: style2, onClear } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_jsx_runtime29.Fragment, { children: ripples.map((ripple) => {
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_jsx_runtime31.Fragment, { children: ripples.map((ripple) => {
           const duration = (0, import_shared_utils.clamp)(0.01 * ripple.size, 0.2, ripple.size > 100 ? 0.75 : 0.5);
-          return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_framer_motion2.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_framer_motion2.AnimatePresence, { mode: "popLayout", children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion2.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion2.AnimatePresence, { mode: "popLayout", children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
             import_framer_motion2.m.span,
             {
               animate: {
@@ -89132,10 +89132,10 @@
       Ripple.displayName = "HeroUI.Ripple";
       var ripple_default = Ripple;
       var import_shared_utils2 = require_dist2();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useRipple(props = {}) {
-        const [ripples, setRipples] = (0, import_react73.useState)([]);
-        const onPress = (0, import_react73.useCallback)((event) => {
+        const [ripples, setRipples] = (0, import_react75.useState)([]);
+        const onPress = (0, import_react75.useCallback)((event) => {
           const trigger = event.target;
           const size = Math.max(trigger.clientWidth, trigger.clientHeight);
           setRipples((prevRipples) => [
@@ -89148,7 +89148,7 @@
             }
           ]);
         }, []);
-        const onClear = (0, import_react73.useCallback)((key) => {
+        const onClear = (0, import_react75.useCallback)((key) => {
           setRipples((prevState) => prevState.filter((ripple) => ripple.key !== key));
         }, []);
         return { ripples, onClear, onPress, ...props };
@@ -92235,7 +92235,7 @@
       var import_system2 = require_dist11();
       var import_system = require_dist11();
       var import_shared_utils = require_dist2();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_react_utils2 = require_dist10();
       var import_theme = require_dist12();
@@ -92312,7 +92312,7 @@
           ]
         );
         const { onPress: onRipplePressHandler, onClear: onClearRipple, ripples } = (0, import_ripple.useRipple)();
-        const handlePress = (0, import_react73.useCallback)(
+        const handlePress = (0, import_react75.useCallback)(
           (e) => {
             if (disableRipple || isDisabled || disableAnimation) return;
             domRef.current && onRipplePressHandler(e);
@@ -92330,7 +92330,7 @@
           domRef
         );
         const { isHovered, hoverProps } = (0, import_interactions.useHover)({ isDisabled });
-        const getButtonProps = (0, import_react73.useCallback)(
+        const getButtonProps = (0, import_react75.useCallback)(
           (props2 = {}) => ({
             "data-disabled": (0, import_shared_utils.dataAttr)(isDisabled),
             "data-focus": (0, import_shared_utils.dataAttr)(isFocused),
@@ -92379,7 +92379,7 @@
           };
           return buttonSpinnerSizeMap[size];
         }, [size]);
-        const getRippleProps = (0, import_react73.useCallback)(
+        const getRippleProps = (0, import_react75.useCallback)(
           () => ({ ripples, onClear: onClearRipple }),
           [ripples, onClearRipple]
         );
@@ -92400,14 +92400,14 @@
           isIconOnly
         };
       }
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Button = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
           domRef,
           children,
           spinnerSize,
-          spinner = /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_spinner.Spinner, { color: "current", size: spinnerSize }),
+          spinner = /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_spinner.Spinner, { color: "current", size: spinnerSize }),
           spinnerPlacement,
           startContent,
           endContent,
@@ -92417,13 +92417,13 @@
           getRippleProps,
           isIconOnly
         } = useButton({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(Component2, { ref: domRef, ...getButtonProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(Component2, { ref: domRef, ...getButtonProps(), children: [
           startContent,
           isLoading && spinnerPlacement === "start" && spinner,
           isLoading && isIconOnly ? null : children,
           isLoading && spinnerPlacement === "end" && spinner,
           endContent,
-          !disableRipple && /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_ripple2.Ripple, { ...getRippleProps() })
+          !disableRipple && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_ripple2.Ripple, { ...getRippleProps() })
         ] });
       });
       Button.displayName = "HeroUI.Button";
@@ -92549,7 +92549,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_theme = require_dist12();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_interactions = require_main17();
       var import_use_aria_button = require_dist27();
@@ -92581,7 +92581,7 @@
         const disableRipple = (_d = (_c = originalProps.disableRipple) != null ? _c : globalContext == null ? void 0 : globalContext.disableRipple) != null ? _d : false;
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
         const { onClear: onClearRipple, onPress: onRipplePressHandler, ripples } = (0, import_ripple.useRipple)();
-        const handlePress = (0, import_react73.useCallback)(
+        const handlePress = (0, import_react75.useCallback)(
           (e) => {
             if (disableRipple || disableAnimation) return;
             domRef.current && onRipplePressHandler(e);
@@ -92606,14 +92606,14 @@
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)({
           autoFocus
         });
-        const slots = (0, import_react73.useMemo)(
+        const slots = (0, import_react75.useMemo)(
           () => (0, import_theme.card)({
             ...variantProps2,
             disableAnimation
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation]
         );
-        const context = (0, import_react73.useMemo)(
+        const context = (0, import_react75.useMemo)(
           () => ({
             slots,
             classNames,
@@ -92631,7 +92631,7 @@
             originalProps.fullWidth
           ]
         );
-        const getCardProps = (0, import_react73.useCallback)(
+        const getCardProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ref: domRef,
@@ -92669,7 +92669,7 @@
             otherProps
           ]
         );
-        const getRippleProps = (0, import_react73.useCallback)(
+        const getRippleProps = (0, import_react75.useCallback)(
           () => ({ ripples, onClear: onClearRipple }),
           [ripples, onClearRipple]
         );
@@ -92699,7 +92699,7 @@
       });
       var import_system2 = require_dist11();
       var import_ripple2 = require_dist26();
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Card = (0, import_system2.forwardRef)((props, ref) => {
         const {
           children,
@@ -92711,9 +92711,9 @@
           getCardProps,
           getRippleProps
         } = useCard({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(Component2, { ...getCardProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(CardProvider, { value: context, children }),
-          isPressable && !disableAnimation && !disableRipple && /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_ripple2.Ripple, { ...getRippleProps() })
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(Component2, { ...getCardProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(CardProvider, { value: context, children }),
+          isPressable && !disableAnimation && !disableRipple && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_ripple2.Ripple, { ...getRippleProps() })
         ] });
       });
       Card.displayName = "HeroUI.Card";
@@ -92800,7 +92800,7 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useChip(originalProps) {
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.chip.variantKeys);
         const {
@@ -92821,13 +92821,13 @@
         const isCloseable = !!onClose;
         const isDotVariant = originalProps.variant === "dot";
         const { focusProps: closeFocusProps, isFocusVisible: isCloseButtonFocusVisible } = (0, import_focus2.useFocusRing)();
-        const isOneChar = (0, import_react73.useMemo)(
+        const isOneChar = (0, import_react75.useMemo)(
           () => typeof children === "string" && (children == null ? void 0 : children.length) === 1,
           [children]
         );
-        const hasStartContent = (0, import_react73.useMemo)(() => !!avatar || !!startContent, [avatar, startContent]);
-        const hasEndContent = (0, import_react73.useMemo)(() => !!endContent || isCloseable, [endContent, isCloseable]);
-        const slots = (0, import_react73.useMemo)(
+        const hasStartContent = (0, import_react75.useMemo)(() => !!avatar || !!startContent, [avatar, startContent]);
+        const hasEndContent = (0, import_react75.useMemo)(() => !!endContent || isCloseable, [endContent, isCloseable]);
+        const slots = (0, import_react75.useMemo)(
           () => (0, import_theme.chip)({
             ...variantProps2,
             hasStartContent,
@@ -92866,13 +92866,13 @@
           };
         };
         const getAvatarClone = (avatar2) => {
-          if (!(0, import_react73.isValidElement)(avatar2)) return null;
-          return (0, import_react73.cloneElement)(avatar2, {
+          if (!(0, import_react75.isValidElement)(avatar2)) return null;
+          return (0, import_react75.cloneElement)(avatar2, {
             // @ts-ignore
             className: slots.avatar({ class: classNames == null ? void 0 : classNames.avatar })
           });
         };
-        const getContentClone = (content) => (0, import_react73.isValidElement)(content) ? (0, import_react73.cloneElement)(content, {
+        const getContentClone = (content) => (0, import_react75.isValidElement)(content) ? (0, import_react75.cloneElement)(content, {
           // @ts-ignore
           className: (0, import_theme.cn)("max-h-[80%]", content.props.className)
         }) : null;
@@ -92892,7 +92892,7 @@
       var import_shared_icons = require_dist17();
       var import_system2 = require_dist11();
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Chip2 = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -92911,19 +92911,19 @@
         });
         const start2 = (0, import_react210.useMemo)(() => {
           if (isDot && !startContent) {
-            return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("span", { className: slots.dot({ class: classNames == null ? void 0 : classNames.dot }) });
+            return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { className: slots.dot({ class: classNames == null ? void 0 : classNames.dot }) });
           }
           return startContent;
         }, [slots, startContent, isDot]);
         const end = (0, import_react210.useMemo)(() => {
           if (isCloseable) {
-            return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("span", { ...getCloseButtonProps(), children: endContent || /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_shared_icons.CloseFilledIcon, {}) });
+            return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { ...getCloseButtonProps(), children: endContent || /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_shared_icons.CloseFilledIcon, {}) });
           }
           return endContent;
         }, [endContent, isCloseable, getCloseButtonProps]);
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(Component2, { ...getChipProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(Component2, { ...getChipProps(), children: [
           start2,
-          /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("span", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children }),
+          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children }),
           end
         ] });
       });
@@ -93041,14 +93041,14 @@
         useCallbackRef: () => useCallbackRef
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_safe_layout_effect = require_dist21();
       function useCallbackRef(fn, deps = []) {
-        const ref = (0, import_react73.useRef)(fn);
+        const ref = (0, import_react75.useRef)(fn);
         (0, import_use_safe_layout_effect.useSafeLayoutEffect)(() => {
           ref.current = fn;
         });
-        return (0, import_react73.useCallback)((...args) => {
+        return (0, import_react75.useCallback)((...args) => {
           var _a;
           return (_a = ref.current) == null ? void 0 : _a.call(ref, ...args);
         }, deps);
@@ -106485,13 +106485,13 @@
         useSlottedContext: () => useSlottedContext
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       var DEFAULT_SLOT = /* @__PURE__ */ Symbol("default");
       function useObjectRef(ref) {
-        const objRef = (0, import_react73.useRef)(null);
-        const cleanupRef = (0, import_react73.useRef)(void 0);
-        const refEffect = (0, import_react73.useCallback)(
+        const objRef = (0, import_react75.useRef)(null);
+        const cleanupRef = (0, import_react75.useRef)(void 0);
+        const refEffect = (0, import_react75.useCallback)(
           (instance) => {
             if (typeof ref === "function") {
               const refCallback = ref;
@@ -106512,7 +106512,7 @@
           },
           [ref]
         );
-        return (0, import_react73.useMemo)(
+        return (0, import_react75.useMemo)(
           () => ({
             get current() {
               return objRef.current;
@@ -106532,7 +106532,7 @@
         );
       }
       function useSlottedContext(context, slot) {
-        let ctx = (0, import_react73.useContext)(context);
+        let ctx = (0, import_react75.useContext)(context);
         if (slot === null) {
           return null;
         }
@@ -106552,7 +106552,7 @@
       function useContextProps(props, ref, context) {
         let ctx = useSlottedContext(context, props.slot) || {};
         let { ref: contextRef, ...contextProps } = ctx;
-        let mergedRef = useObjectRef((0, import_react73.useMemo)(() => (0, import_shared_utils.mergeRefs)(ref, contextRef), [ref, contextRef]));
+        let mergedRef = useObjectRef((0, import_react75.useMemo)(() => (0, import_shared_utils.mergeRefs)(ref, contextRef), [ref, contextRef]));
         let mergedProps = (0, import_shared_utils.mergeProps)(contextProps, props);
         if ("style" in contextProps && contextProps.style && "style" in props && props.style) {
           if (typeof contextProps.style === "function" || typeof props.style === "function") {
@@ -106571,13 +106571,13 @@
       var import_form = require_main22();
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist32();
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var FormContext = (0, import_react210.createContext)(null);
       var Form = (0, import_react210.forwardRef)(function Form2(props, ref) {
         [props, ref] = useContextProps(props, ref, FormContext);
         let { validationErrors, validationBehavior = "native", children, className, ...domProps } = props;
         const styles = (0, import_react210.useMemo)(() => (0, import_theme.form)({ className }), [className]);
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("form", { noValidate: validationBehavior !== "native", ...domProps, ref, className: styles, children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(FormContext.Provider, { value: { ...props, validationBehavior }, children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_form.FormValidationContext.Provider, { value: validationErrors != null ? validationErrors : {}, children }) }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("form", { noValidate: validationBehavior !== "native", ...domProps, ref, className: styles, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(FormContext.Provider, { value: { ...props, validationBehavior }, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_form.FormValidationContext.Provider, { value: validationErrors != null ? validationErrors : {}, children }) }) });
       });
       var import_system = require_dist11();
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
@@ -106704,7 +106704,7 @@
       var import_system2 = require_dist11();
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_toggle = require_main21();
       var import_theme = require_dist12();
@@ -106779,7 +106779,7 @@
           };
           onChange = (0, import_shared_utils.chain)(dispatch, onChange);
         }
-        const labelId = (0, import_react73.useId)();
+        const labelId = (0, import_react75.useId)();
         const ariaCheckboxProps = (0, import_react210.useMemo)(
           () => ({
             name,
@@ -106868,7 +106868,7 @@
           toggleState.setSelected(isInputRefChecked);
         }, [inputRef.current]);
         const onChangeProp = (0, import_use_callback_ref.useCallbackRef)(onChange);
-        const handleCheckboxChange = (0, import_react73.useCallback)(
+        const handleCheckboxChange = (0, import_react75.useCallback)(
           (event) => {
             if (isReadOnly || isDisabled) {
               event.preventDefault();
@@ -106879,7 +106879,7 @@
           [isReadOnly, isDisabled, onChangeProp]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getBaseProps = (0, import_react73.useCallback)(() => {
+        const getBaseProps = (0, import_react75.useCallback)(() => {
           return {
             ref: domRef,
             className: slots.base({ class: baseStyles }),
@@ -106909,7 +106909,7 @@
           hoverProps,
           otherProps
         ]);
-        const getWrapperProps = (0, import_react73.useCallback)(
+        const getWrapperProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -106919,7 +106919,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.wrapper]
         );
-        const getInputProps = (0, import_react73.useCallback)(() => {
+        const getInputProps = (0, import_react75.useCallback)(() => {
           return {
             ref: (0, import_react_utils2.mergeRefs)(inputRef, ref),
             ...(0, import_shared_utils.mergeProps)(inputProps, focusProps),
@@ -106927,14 +106927,14 @@
             onChange: (0, import_shared_utils.chain)(inputProps.onChange, handleCheckboxChange)
           };
         }, [inputProps, focusProps, handleCheckboxChange, classNames == null ? void 0 : classNames.hiddenInput]);
-        const getLabelProps = (0, import_react73.useCallback)(
+        const getLabelProps = (0, import_react75.useCallback)(
           () => ({
             id: labelId,
             className: slots.label({ class: classNames == null ? void 0 : classNames.label })
           }),
           [slots, classNames == null ? void 0 : classNames.label, isDisabled, isSelected, isInvalid]
         );
-        const getIconProps = (0, import_react73.useCallback)(
+        const getIconProps = (0, import_react75.useCallback)(
           () => ({
             isSelected,
             isIndeterminate,
@@ -106960,10 +106960,10 @@
           getIconProps
         };
       }
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       function CheckIcon(props) {
         const { isSelected, disableAnimation, ...otherProps } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
           "svg",
           {
             "aria-hidden": "true",
@@ -106980,18 +106980,18 @@
             } : {},
             viewBox: "0 0 17 18",
             ...otherProps,
-            children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("polyline", { points: "1 9 7 14 15 4" })
+            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("polyline", { points: "1 9 7 14 15 4" })
           }
         );
       }
       function IndeterminateIcon(props) {
         const { isSelected, disableAnimation, ...otherProps } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("svg", { stroke: "currentColor", strokeWidth: 3, viewBox: "0 0 24 24", ...otherProps, children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("line", { x1: "21", x2: "3", y1: "12", y2: "12" }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("svg", { stroke: "currentColor", strokeWidth: 3, viewBox: "0 0 24 24", ...otherProps, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("line", { x1: "21", x2: "3", y1: "12", y2: "12" }) });
       }
       function CheckboxIcon(props) {
         const { isIndeterminate, ...otherProps } = props;
         const BaseIcon = isIndeterminate ? IndeterminateIcon : CheckIcon;
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(BaseIcon, { ...otherProps });
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(BaseIcon, { ...otherProps });
       }
       var import_jsx_runtime210 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Checkbox = (0, import_system2.forwardRef)((props, ref) => {
@@ -107243,13 +107243,13 @@
       var import_system_rsc2 = require_dist14();
       var import_theme = require_dist12();
       var import_system_rsc = require_dist14();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       function useCode(originalProps) {
         const [props, variantProps2] = (0, import_system_rsc.mapPropsVariants)(originalProps, import_theme.code.variantKeys);
         const { as, children, className, ...otherProps } = props;
         const Component2 = as || "code";
-        const styles = (0, import_react73.useMemo)(
+        const styles = (0, import_react75.useMemo)(
           () => (0, import_theme.code)({
             ...variantProps2,
             className
@@ -107264,10 +107264,10 @@
         };
         return { Component: Component2, children, getCodeProps };
       }
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Code = (0, import_system_rsc2.forwardRef)((props, ref) => {
         const { Component: Component2, children, getCodeProps } = useCode({ ...props });
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(Component2, { ref, ...getCodeProps(), children });
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(Component2, { ref, ...getCodeProps(), children });
       });
       Code.displayName = "HeroUI.Code";
       var code_default = Code;
@@ -110330,7 +110330,7 @@
       var import_react_utils = require_dist10();
       var import_focus2 = require_main18();
       var import_shared_utils = require_dist2();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useLink(originalProps) {
         var _a, _b, _c, _d;
         const globalContext = (0, import_system.useProviderContext)();
@@ -110373,7 +110373,7 @@
           otherProps.rel = (_c = otherProps.rel) != null ? _c : "noopener noreferrer";
           otherProps.target = (_d = otherProps.target) != null ? _d : "_blank";
         }
-        const styles = (0, import_react73.useMemo)(
+        const styles = (0, import_react75.useMemo)(
           () => (0, import_theme.link)({
             ...variantProps2,
             disableAnimation,
@@ -110381,7 +110381,7 @@
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation, className]
         );
-        const getLinkProps = (0, import_react73.useCallback)(() => {
+        const getLinkProps = (0, import_react75.useCallback)(() => {
           return {
             ref: domRef,
             className: styles,
@@ -110395,19 +110395,19 @@
         }, [styles, isFocused, isFocusVisible, focusProps, linkProps, otherProps]);
         return { Component: Component2, children, anchorIcon, showAnchorIcon, getLinkProps };
       }
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Link = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
           children,
           showAnchorIcon,
-          anchorIcon = /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_shared_icons.LinkIcon, { className: import_theme2.linkAnchorClasses }),
+          anchorIcon = /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_shared_icons.LinkIcon, { className: import_theme2.linkAnchorClasses }),
           getLinkProps
         } = useLink({
           ref,
           ...props
         });
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(Component2, { ...getLinkProps(), children: /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(import_jsx_runtime29.Fragment, { children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(Component2, { ...getLinkProps(), children: /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(import_jsx_runtime31.Fragment, { children: [
           children,
           showAnchorIcon && anchorIcon
         ] }) });
@@ -110466,8 +110466,8 @@
         usePagination: () => usePagination
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var import_i18n10 = require_main5();
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_i18n12 = require_main5();
       var import_shared_utils = require_dist2();
       var PaginationItemType2 = /* @__PURE__ */ ((PaginationItemType22) => {
         PaginationItemType22["DOTS"] = "dots";
@@ -110485,19 +110485,19 @@
           showControls = false,
           onChange
         } = props;
-        const [activePage, setActivePage] = (0, import_react73.useState)(page || initialPage);
-        const { direction } = (0, import_i18n10.useLocale)();
+        const [activePage, setActivePage] = (0, import_react75.useState)(page || initialPage);
+        const { direction } = (0, import_i18n12.useLocale)();
         const isRTL = direction === "rtl";
         const onChangeActivePage = (newPage) => {
           setActivePage(newPage);
           onChange && onChange(newPage);
         };
-        (0, import_react73.useEffect)(() => {
+        (0, import_react75.useEffect)(() => {
           if (page && page !== activePage) {
             setActivePage(page);
           }
         }, [page]);
-        const setPage = (0, import_react73.useCallback)(
+        const setPage = (0, import_react75.useCallback)(
           (pageNumber) => {
             if (pageNumber <= 0) {
               onChangeActivePage(1);
@@ -110513,7 +110513,7 @@
         const previous = () => setPage(activePage - 1);
         const first = () => setPage(1);
         const last = () => setPage(total);
-        const formatRange = (0, import_react73.useCallback)(
+        const formatRange = (0, import_react75.useCallback)(
           (range2) => {
             if (showControls) {
               return [
@@ -110527,7 +110527,7 @@
           },
           [isRTL, showControls]
         );
-        const paginationRange = (0, import_react73.useMemo)(() => {
+        const paginationRange = (0, import_react75.useMemo)(() => {
           const totalPageNumbers = siblings * 2 + 3 + boundaries * 2;
           if (totalPageNumbers >= total) {
             return formatRange((0, import_shared_utils.range)(1, total));
@@ -110689,7 +110689,7 @@
         useIntersectionObserver: () => useIntersectionObserver
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useIntersectionObserver({
         threshold: threshold2 = 0,
         root = null,
@@ -110700,15 +110700,15 @@
         onChange
       } = {}) {
         var _a;
-        const [ref, setRef2] = (0, import_react73.useState)(null);
-        const [state, setState] = (0, import_react73.useState)(() => ({
+        const [ref, setRef2] = (0, import_react75.useState)(null);
+        const [state, setState] = (0, import_react75.useState)(() => ({
           isIntersecting: initialIsIntersecting,
           entry: void 0
         }));
-        const callbackRef = (0, import_react73.useRef)();
+        const callbackRef = (0, import_react75.useRef)();
         callbackRef.current = onChange;
         const frozen = ((_a = state.entry) == null ? void 0 : _a.isIntersecting) && freezeOnceVisible;
-        (0, import_react73.useEffect)(() => {
+        (0, import_react75.useEffect)(() => {
           if (!isEnabled) return;
           if (!ref) return;
           if (!("IntersectionObserver" in window)) return;
@@ -110736,8 +110736,8 @@
             observer2.disconnect();
           };
         }, [ref, isEnabled, JSON.stringify(threshold2), root, rootMargin, frozen, freezeOnceVisible]);
-        const prevRef = (0, import_react73.useRef)(null);
-        (0, import_react73.useEffect)(() => {
+        const prevRef = (0, import_react75.useRef)(null);
+        (0, import_react75.useEffect)(() => {
           var _a2;
           if (!ref && ((_a2 = state.entry) == null ? void 0 : _a2.target) && !freezeOnceVisible && !frozen && prevRef.current !== state.entry.target) {
             prevRef.current = state.entry.target;
@@ -110796,7 +110796,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var import_i18n10 = require_main5();
+      var import_i18n12 = require_main5();
       var import_system4 = require_dist11();
       var import_use_pagination3 = require_dist38();
       var import_shared_icons = require_dist17();
@@ -110804,7 +110804,7 @@
       var import_theme3 = require_dist12();
       var import_shared_utils = require_dist2();
       var import_use_pagination = require_dist38();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_use_pagination2 = require_dist38();
       var import_scroll_into_view_if_needed = __toESM2(require_dist40());
@@ -110837,9 +110837,9 @@
         } = props;
         const Component2 = as || "nav";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const cursorRef = (0, import_react73.useRef)(null);
-        const itemsRef = (0, import_react73.useRef)();
-        const cursorTimer = (0, import_react73.useRef)();
+        const cursorRef = (0, import_react75.useRef)(null);
+        const itemsRef = (0, import_react75.useRef)();
+        const cursorTimer = (0, import_react75.useRef)();
         const disableAnimation = (_b = (_a = originalProps == null ? void 0 : originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
         const disableCursorAnimation = (_d = (_c = originalProps == null ? void 0 : originalProps.disableCursorAnimation) != null ? _c : disableAnimation) != null ? _d : false;
         function getItemsRefMap() {
@@ -110897,13 +110897,13 @@
           onChange
         });
         const [setRef2, isVisible] = (0, import_use_intersection_observer.useIntersectionObserver)();
-        (0, import_react73.useEffect)(() => {
+        (0, import_react75.useEffect)(() => {
           if (domRef.current) {
             setRef2(domRef.current);
           }
         }, [domRef.current]);
-        const activePageRef = (0, import_react73.useRef)(activePage);
-        (0, import_react73.useEffect)(() => {
+        const activePageRef = (0, import_react75.useRef)(activePage);
+        (0, import_react75.useEffect)(() => {
           if (activePage && !disableAnimation && isVisible) {
             scrollTo(activePage, activePage === activePageRef.current);
           }
@@ -110918,7 +110918,7 @@
           originalProps.isCompact,
           originalProps.showControls
         ]);
-        const slots = (0, import_react73.useMemo)(
+        const slots = (0, import_react75.useMemo)(
           () => (0, import_theme.pagination)({
             ...variantProps2,
             disableAnimation,
@@ -111105,10 +111105,10 @@
           getItemProps
         };
       }
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var PaginationItem = (0, import_system2.forwardRef)((props, ref) => {
         const { Component: Component2, children, getItemProps } = usePaginationItem({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(Component2, { ...getItemProps(), children });
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(Component2, { ...getItemProps(), children });
       });
       PaginationItem.displayName = "HeroUI.PaginationItem";
       var pagination_item_default = PaginationItem;
@@ -111148,7 +111148,7 @@
           getItemProps,
           getCursorProps
         } = usePagination({ ...props, ref });
-        const { direction } = (0, import_i18n10.useLocale)();
+        const { direction } = (0, import_i18n12.useLocale)();
         const isRTL = direction === "rtl";
         const renderChevronIcon = (0, import_react310.useCallback)(
           (key) => {
@@ -111648,7 +111648,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_system2 = require_dist11();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_interactions = require_main17();
@@ -111694,8 +111694,8 @@
         const Component2 = as || "label";
         const domRef = (0, import_react_utils2.useDOMRef)(ref);
         const inputRef = (0, import_react210.useRef)(null);
-        const labelId = (0, import_react73.useId)();
-        const descriptionId = (0, import_react73.useId)();
+        const labelId = (0, import_react75.useId)();
+        const descriptionId = (0, import_react75.useId)();
         const isRequired = (0, import_react210.useMemo)(() => {
           var _a2;
           return (_a2 = groupContext.isRequired) != null ? _a2 : false;
@@ -111749,7 +111749,7 @@
           [color2, size, isDisabled, isInvalid, disableAnimation]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getBaseProps = (0, import_react73.useCallback)(
+        const getBaseProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -111784,7 +111784,7 @@
             otherProps
           ]
         );
-        const getWrapperProps = (0, import_react73.useCallback)(
+        const getWrapperProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -111794,7 +111794,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.wrapper]
         );
-        const getInputProps = (0, import_react73.useCallback)(
+        const getInputProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ref: inputRef,
@@ -111805,7 +111805,7 @@
           },
           [inputProps, focusProps, onChange]
         );
-        const getLabelProps = (0, import_react73.useCallback)(
+        const getLabelProps = (0, import_react75.useCallback)(
           (props2 = {}) => ({
             ...props2,
             id: labelId,
@@ -111813,21 +111813,21 @@
           }),
           [slots, classNames == null ? void 0 : classNames.label, isDisabled, isSelected, isInvalid]
         );
-        const getLabelWrapperProps = (0, import_react73.useCallback)(
+        const getLabelWrapperProps = (0, import_react75.useCallback)(
           (props2 = {}) => ({
             ...props2,
             className: slots.labelWrapper({ class: classNames == null ? void 0 : classNames.labelWrapper })
           }),
           [slots, classNames == null ? void 0 : classNames.labelWrapper]
         );
-        const getControlProps = (0, import_react73.useCallback)(
+        const getControlProps = (0, import_react75.useCallback)(
           (props2 = {}) => ({
             ...props2,
             className: slots.control({ class: classNames == null ? void 0 : classNames.control })
           }),
           [slots, classNames == null ? void 0 : classNames.control]
         );
-        const getDescriptionProps = (0, import_react73.useCallback)(
+        const getDescriptionProps = (0, import_react75.useCallback)(
           (props2 = {}) => ({
             ...props2,
             id: descriptionId,
@@ -111852,7 +111852,7 @@
           getDescriptionProps
         };
       }
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Radio = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -111866,12 +111866,12 @@
           getControlProps,
           getDescriptionProps
         } = useRadio({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(Component2, { ...getBaseProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("input", { ...getInputProps() }),
-          /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("span", { ...getWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("span", { ...getControlProps() }) }),
-          /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)("div", { ...getLabelWrapperProps(), children: [
-            children && /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("span", { ...getLabelProps(), children }),
-            description && /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("span", { ...getDescriptionProps(), children: description })
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(Component2, { ...getBaseProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("input", { ...getInputProps() }),
+          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { ...getWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { ...getControlProps() }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { ...getLabelWrapperProps(), children: [
+            children && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { ...getLabelProps(), children }),
+            description && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { ...getDescriptionProps(), children: description })
           ] })
         ] });
       });
@@ -112100,20 +112100,20 @@
         useClipboard: () => useClipboard
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var transformValue2 = (text) => {
         return text.replace(/[\u00A0]/g, " ");
       };
       function useClipboard({ timeout = 2e3 } = {}) {
-        const [error, setError] = (0, import_react73.useState)(null);
-        const [copied, setCopied] = (0, import_react73.useState)(false);
-        const [copyTimeout, setCopyTimeout] = (0, import_react73.useState)(null);
-        const onClearTimeout = (0, import_react73.useCallback)(() => {
+        const [error, setError] = (0, import_react75.useState)(null);
+        const [copied, setCopied] = (0, import_react75.useState)(false);
+        const [copyTimeout, setCopyTimeout] = (0, import_react75.useState)(null);
+        const onClearTimeout = (0, import_react75.useCallback)(() => {
           if (copyTimeout) {
             clearTimeout(copyTimeout);
           }
         }, [copyTimeout]);
-        const handleCopyResult = (0, import_react73.useCallback)(
+        const handleCopyResult = (0, import_react75.useCallback)(
           (value) => {
             onClearTimeout();
             setCopyTimeout(setTimeout(() => setCopied(false), timeout));
@@ -112121,7 +112121,7 @@
           },
           [onClearTimeout, timeout]
         );
-        const copy = (0, import_react73.useCallback)(
+        const copy = (0, import_react75.useCallback)(
           (valueToCopy) => {
             if ("clipboard" in navigator) {
               const transformedValue = typeof valueToCopy === "string" ? transformValue2(valueToCopy) : valueToCopy;
@@ -112132,7 +112132,7 @@
           },
           [handleCopyResult]
         );
-        const reset = (0, import_react73.useCallback)(() => {
+        const reset = (0, import_react75.useCallback)(() => {
           setCopied(false);
           setError(null);
           onClearTimeout();
@@ -115430,7 +115430,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_focus2 = require_main36();
       var import_interactions = require_main35();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var visibleOverlays = [];
       function useAriaOverlay(props, ref) {
         const {
@@ -115442,7 +115442,7 @@
           shouldCloseOnBlur,
           shouldCloseOnInteractOutside
         } = props;
-        (0, import_react73.useEffect)(() => {
+        (0, import_react75.useEffect)(() => {
           if (isOpen && !visibleOverlays.includes(ref)) {
             visibleOverlays.push(ref);
             return () => {
@@ -115572,7 +115572,7 @@
       var import_shared_utils2 = require_dist2();
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_aria_utils2 = require_dist13();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_tooltip = require_main33();
       var import_tooltip2 = require_main34();
       var import_overlays = require_main9();
@@ -115636,9 +115636,9 @@
         });
         const triggerRef = (0, import_react210.useRef)(null);
         const overlayRef = (0, import_react210.useRef)(null);
-        const tooltipId = (0, import_react73.useId)();
+        const tooltipId = (0, import_react75.useId)();
         const isOpen = state.isOpen && !isDisabled;
-        (0, import_react73.useImperativeHandle)(
+        (0, import_react75.useImperativeHandle)(
           ref,
           () => (
             // @ts-ignore
@@ -115772,7 +115772,7 @@
           getTooltipProps
         };
       }
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var domAnimation2 = () => Promise.resolve().then(() => (init_dist(), dist_exports)).then((res) => res.default);
       var Tooltip = (0, import_system2.forwardRef)((props, ref) => {
         var _a;
@@ -115797,18 +115797,18 @@
           const childrenNum = import_react310.Children.count(children);
           if (childrenNum !== 1) throw new Error();
           if (!(0, import_react310.isValidElement)(children)) {
-            trigger = /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("p", { ...getTriggerProps(), children });
+            trigger = /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("p", { ...getTriggerProps(), children });
           } else {
             const child = children;
             const childRef = (_a = child.props.ref) != null ? _a : child.ref;
             trigger = (0, import_react310.cloneElement)(child, getTriggerProps(child.props, childRef));
           }
         } catch {
-          trigger = /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("span", {});
+          trigger = /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", {});
           (0, import_shared_utils2.warn)("Tooltip must have only one child node. Please, check your code.");
         }
         const { ref: tooltipRef, id: id4, style: style2, ...otherTooltipProps } = getTooltipProps();
-        const animatedContent = /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("div", { ref: tooltipRef, id: id4, style: style2, children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+        const animatedContent = /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ref: tooltipRef, id: id4, style: style2, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
           import_framer_motion2.m.div,
           {
             animate: "enter",
@@ -115819,13 +115819,13 @@
             style: {
               ...(0, import_aria_utils2.getTransformOrigins)(placement)
             },
-            children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(Component2, { ...getTooltipContentProps(), children: content })
+            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(Component2, { ...getTooltipContentProps(), children: content })
           },
           `${id4}-tooltip-inner`
         ) }, `${id4}-tooltip-content`);
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(import_jsx_runtime29.Fragment, { children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(import_jsx_runtime31.Fragment, { children: [
           trigger,
-          disableAnimation ? isOpen && /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_overlays2.OverlayContainer, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("div", { ref: tooltipRef, id: id4, style: style2, ...otherTooltipProps, children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(Component2, { ...getTooltipContentProps(), children: content }) }) }) : /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_framer_motion2.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_framer_motion2.AnimatePresence, { children: isOpen && /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_overlays2.OverlayContainer, { portalContainer, children: animatedContent }) }) })
+          disableAnimation ? isOpen && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_overlays2.OverlayContainer, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ref: tooltipRef, id: id4, style: style2, ...otherTooltipProps, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(Component2, { ...getTooltipContentProps(), children: content }) }) }) : /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion2.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion2.AnimatePresence, { children: isOpen && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_overlays2.OverlayContainer, { portalContainer, children: animatedContent }) }) })
         ] });
       });
       Tooltip.displayName = "HeroUI.Tooltip";
@@ -115867,7 +115867,7 @@
       var import_shared_utils = require_dist2();
       var import_use_clipboard = require_dist44();
       var import_focus2 = require_main18();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useSnippet(originalProps) {
         var _a, _b, _c, _d;
         const globalContext = (0, import_system.useProviderContext)();
@@ -115905,26 +115905,26 @@
           ...userTooltipProps
         };
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const preRef = (0, import_react73.useRef)(null);
+        const preRef = (0, import_react75.useRef)(null);
         const { copy, copied } = (0, import_use_clipboard.useClipboard)({ timeout });
         const isMultiLine = children && Array.isArray(children);
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)({
           autoFocus
         });
-        const slots = (0, import_react73.useMemo)(
+        const slots = (0, import_react75.useMemo)(
           () => (0, import_theme.snippet)({
             ...variantProps2,
             disableAnimation
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation]
         );
-        const symbolBefore = (0, import_react73.useMemo)(() => {
+        const symbolBefore = (0, import_react75.useMemo)(() => {
           if (!symbol || typeof symbol !== "string") return symbol;
           const str = symbol.trim();
           return str ? `${str} ` : "";
         }, [symbol]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getSnippetProps = (0, import_react73.useCallback)(
+        const getSnippetProps = (0, import_react75.useCallback)(
           () => ({
             className: slots.base({
               class: baseStyles
@@ -115935,7 +115935,7 @@
           }),
           [slots, baseStyles, isMultiLine, otherProps]
         );
-        const onCopy = (0, import_react73.useCallback)(() => {
+        const onCopy = (0, import_react75.useCallback)(() => {
           var _a2;
           if (disableCopy) {
             return;
@@ -115965,7 +115965,7 @@
           isIconOnly: true,
           ...userButtonProps
         };
-        const getCopyButtonProps = (0, import_react73.useCallback)(
+        const getCopyButtonProps = (0, import_react75.useCallback)(
           () => ({
             ...copyButtonProps,
             "data-copied": (0, import_shared_utils.dataAttr)(copied),
@@ -116013,7 +116013,7 @@
       var import_shared_icons = require_dist17();
       var import_button = require_dist28();
       var import_shared_utils2 = require_dist2();
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Snippet = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -116023,8 +116023,8 @@
           slots,
           classNames,
           copied,
-          copyIcon = /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_shared_icons.CopyLinearIcon, {}),
-          checkIcon = /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_shared_icons.CheckLinearIcon, {}),
+          copyIcon = /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_shared_icons.CopyLinearIcon, {}),
+          checkIcon = /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_shared_icons.CheckLinearIcon, {}),
           symbolBefore,
           disableCopy,
           disableTooltip,
@@ -116037,7 +116037,7 @@
           getCopyButtonProps
         } = useSnippet({ ...props, ref });
         const TooltipContent = (0, import_react210.useCallback)(
-          ({ children: children2 }) => /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_tooltip.Tooltip, { ...tooltipProps, isDisabled: copied || tooltipProps.isDisabled, children: children2 }),
+          ({ children: children2 }) => /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_tooltip.Tooltip, { ...tooltipProps, isDisabled: copied || tooltipProps.isDisabled, children: children2 }),
           [(0, import_shared_utils2.objectToDeps)(tooltipProps)]
         );
         const contents = (0, import_react210.useMemo)(() => {
@@ -116046,14 +116046,14 @@
           }
           const clonedCheckIcon = checkIcon && (0, import_react210.cloneElement)(checkIcon, { className: slots.checkIcon() });
           const clonedCopyIcon = copyIcon && (0, import_react210.cloneElement)(copyIcon, { className: slots.copyIcon() });
-          const copyButton = /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(import_button.Button, { ...getCopyButtonProps(), children: [
+          const copyButton = /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(import_button.Button, { ...getCopyButtonProps(), children: [
             clonedCheckIcon,
             clonedCopyIcon
           ] });
           if (disableTooltip) {
             return copyButton;
           }
-          return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(TooltipContent, { children: copyButton });
+          return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(TooltipContent, { children: copyButton });
         }, [
           slots,
           classNames == null ? void 0 : classNames.copyButton,
@@ -116068,17 +116068,17 @@
         ]);
         const preContent = (0, import_react210.useMemo)(() => {
           if (isMultiLine && children && Array.isArray(children)) {
-            return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("div", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children: children.map((t, index3) => /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)("pre", { className: slots.pre({ class: classNames == null ? void 0 : classNames.pre }), children: [
-              !hideSymbol && /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("span", { className: slots.symbol({ class: classNames == null ? void 0 : classNames.symbol }), children: symbolBefore }),
+            return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children: children.map((t, index3) => /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("pre", { className: slots.pre({ class: classNames == null ? void 0 : classNames.pre }), children: [
+              !hideSymbol && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { className: slots.symbol({ class: classNames == null ? void 0 : classNames.symbol }), children: symbolBefore }),
               t
             ] }, `${index3}-${t}`)) });
           }
-          return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)("pre", { ref: preRef, className: slots.pre({ class: classNames == null ? void 0 : classNames.pre }), children: [
-            !hideSymbol && /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("span", { className: slots.symbol({ class: classNames == null ? void 0 : classNames.symbol }), children: symbolBefore }),
+          return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("pre", { ref: preRef, className: slots.pre({ class: classNames == null ? void 0 : classNames.pre }), children: [
+            !hideSymbol && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { className: slots.symbol({ class: classNames == null ? void 0 : classNames.symbol }), children: symbolBefore }),
             children
           ] });
         }, [children, hideSymbol, isMultiLine, symbolBefore, classNames == null ? void 0 : classNames.pre, slots]);
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(Component2, { ref: domRef, ...getSnippetProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(Component2, { ref: domRef, ...getSnippetProps(), children: [
           preContent,
           contents
         ] });
@@ -116155,7 +116155,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist11();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
       var import_use_safe_layout_effect = require_dist21();
@@ -116190,10 +116190,10 @@
           ...otherProps
         } = props;
         const Component2 = as || "label";
-        const domRef = (0, import_react73.useRef)(null);
-        const inputRef = (0, import_react73.useRef)(null);
+        const domRef = (0, import_react75.useRef)(null);
+        const inputRef = (0, import_react75.useRef)(null);
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        const labelId = (0, import_react73.useId)();
+        const labelId = (0, import_react75.useId)();
         const ariaSwitchProps = (0, import_react210.useMemo)(() => {
           const ariaLabel = otherProps["aria-label"] || typeof children === "string" ? children : void 0;
           return {
@@ -116260,7 +116260,7 @@
             "data-pressed": (0, import_shared_utils.dataAttr)(pressed)
           };
         };
-        const getWrapperProps = (0, import_react73.useCallback)(
+        const getWrapperProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -116279,14 +116279,14 @@
             onChange: (0, import_shared_utils.chain)(onChange, inputProps.onChange)
           };
         };
-        const getThumbProps = (0, import_react73.useCallback)(
+        const getThumbProps = (0, import_react75.useCallback)(
           (props2 = {}) => ({
             ...props2,
             className: slots.thumb({ class: (0, import_theme.cn)(classNames == null ? void 0 : classNames.thumb, props2 == null ? void 0 : props2.className) })
           }),
           [slots, classNames == null ? void 0 : classNames.thumb]
         );
-        const getLabelProps = (0, import_react73.useCallback)(
+        const getLabelProps = (0, import_react75.useCallback)(
           (props2 = {}) => ({
             ...props2,
             id: labelId,
@@ -116294,7 +116294,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.label, isDisabled, isSelected]
         );
-        const getThumbIconProps = (0, import_react73.useCallback)(
+        const getThumbIconProps = (0, import_react75.useCallback)(
           (props2 = {
             includeStateProps: false
           }) => (0, import_shared_utils.mergeProps)(
@@ -116309,7 +116309,7 @@
           ),
           [slots, classNames == null ? void 0 : classNames.thumbIcon, isSelected]
         );
-        const getStartContentProps = (0, import_react73.useCallback)(
+        const getStartContentProps = (0, import_react75.useCallback)(
           (props2 = {}) => ({
             width: "1em",
             height: "1em",
@@ -116318,7 +116318,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.startContent, isSelected]
         );
-        const getEndContentProps = (0, import_react73.useCallback)(
+        const getEndContentProps = (0, import_react75.useCallback)(
           (props2 = {}) => ({
             width: "1em",
             height: "1em",
@@ -116352,7 +116352,7 @@
           getEndContentProps
         };
       }
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Switch = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -116372,14 +116372,14 @@
         const clonedThumbIcon = typeof thumbIcon === "function" ? thumbIcon(getThumbIconProps({ includeStateProps: true })) : thumbIcon && (0, import_react310.cloneElement)(thumbIcon, getThumbIconProps());
         const clonedStartContent = startContent && (0, import_react310.cloneElement)(startContent, getStartContentProps());
         const clonedEndContent = endContent && (0, import_react310.cloneElement)(endContent, getEndContentProps());
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(Component2, { ...getBaseProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("input", { ...getInputProps() }),
-          /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)("span", { ...getWrapperProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(Component2, { ...getBaseProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("input", { ...getInputProps() }),
+          /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("span", { ...getWrapperProps(), children: [
             startContent && clonedStartContent,
-            /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("span", { ...getThumbProps(), children: thumbIcon && clonedThumbIcon }),
+            /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { ...getThumbProps(), children: thumbIcon && clonedThumbIcon }),
             endContent && clonedEndContent
           ] }),
-          children && /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("span", { ...getLabelProps(), children })
+          children && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { ...getLabelProps(), children })
         ] });
       });
       Switch.displayName = "HeroUI.Switch";
@@ -116415,7 +116415,7 @@
         useUser: () => useUser
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
@@ -116441,12 +116441,12 @@
         const shouldFilterDOMProps = typeof Component2 === "string";
         const domRef = (0, import_react_utils2.useDOMRef)(ref);
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)({});
-        const canBeFocused = (0, import_react73.useMemo)(() => {
+        const canBeFocused = (0, import_react75.useMemo)(() => {
           return isFocusable || as === "button";
         }, [isFocusable, as]);
-        const slots = (0, import_react73.useMemo)(() => (0, import_theme.user)(), []);
+        const slots = (0, import_react75.useMemo)(() => (0, import_theme.user)(), []);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getUserProps = (0, import_react73.useCallback)(
+        const getUserProps = (0, import_react75.useCallback)(
           () => ({
             ref: domRef,
             tabIndex: canBeFocused ? 0 : -1,
@@ -116478,17 +116478,17 @@
       }
       var import_system = require_dist11();
       var import_avatar = require_dist23();
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var User = (0, import_system.forwardRef)((props, ref) => {
         const { Component: Component2, name, slots, classNames, description, avatarProps, getUserProps } = useUser({
           ...props,
           ref
         });
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(Component2, { ...getUserProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_avatar.Avatar, { ...avatarProps }),
-          /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("span", { className: slots.name({ class: classNames == null ? void 0 : classNames.name }), children: name }),
-            /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("span", { className: slots.description({ class: classNames == null ? void 0 : classNames.description }), children: description })
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(Component2, { ...getUserProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_avatar.Avatar, { ...avatarProps }),
+          /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { className: slots.name({ class: classNames == null ? void 0 : classNames.name }), children: name }),
+            /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { className: slots.description({ class: classNames == null ? void 0 : classNames.description }), children: description })
           ] })
         ] });
       });
@@ -116523,12 +116523,12 @@
         useIsMounted: () => useIsMounted2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useIsMounted2(props = {}) {
         const { rerender = false, delay: delay2 = 0 } = props;
-        const isMountedRef = (0, import_react73.useRef)(false);
-        const [isMounted, setIsMounted] = (0, import_react73.useState)(false);
-        (0, import_react73.useEffect)(() => {
+        const isMountedRef = (0, import_react75.useRef)(false);
+        const [isMounted, setIsMounted] = (0, import_react75.useState)(false);
+        (0, import_react75.useEffect)(() => {
           isMountedRef.current = true;
           let timer = null;
           if (rerender) {
@@ -116550,7 +116550,7 @@
             }
           };
         }, [rerender]);
-        return [(0, import_react73.useCallback)(() => isMountedRef.current, []), isMounted];
+        return [(0, import_react75.useCallback)(() => isMountedRef.current, []), isMounted];
       }
     }
   });
@@ -116645,7 +116645,7 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_is_mounted2 = require_dist50();
       var import_progress2 = require_dist51();
       function useProgress(originalProps) {
@@ -116690,7 +116690,7 @@
           "aria-labelledby": originalProps["aria-labelledby"],
           "aria-label": originalProps["aria-label"]
         });
-        const slots = (0, import_react73.useMemo)(
+        const slots = (0, import_react75.useMemo)(
           () => (0, import_theme.progress)({
             ...variantProps2,
             disableAnimation
@@ -116698,11 +116698,11 @@
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation]
         );
         const selfMounted = disableAnimation ? true : isMounted;
-        const percentage = (0, import_react73.useMemo)(
+        const percentage = (0, import_react75.useMemo)(
           () => isIndeterminate || !selfMounted ? void 0 : (0, import_shared_utils.clampPercentage)((value - minValue) / (maxValue - minValue) * 100),
           [selfMounted, isIndeterminate, value, minValue, maxValue]
         );
-        const getProgressBarProps = (0, import_react73.useCallback)(
+        const getProgressBarProps = (0, import_react75.useCallback)(
           (props2 = {}) => ({
             ref: domRef,
             "data-indeterminate": (0, import_shared_utils.dataAttr)(isIndeterminate),
@@ -116720,7 +116720,7 @@
             otherProps
           ]
         );
-        const getLabelProps = (0, import_react73.useCallback)(
+        const getLabelProps = (0, import_react75.useCallback)(
           (props2 = {}) => ({
             className: slots.label({ class: classNames == null ? void 0 : classNames.label }),
             ...(0, import_shared_utils.mergeProps)(labelProps, props2)
@@ -116739,7 +116739,7 @@
           getLabelProps
         };
       }
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Progress = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -116753,12 +116753,12 @@
         } = useProgress({ ...props, ref });
         const progressBarProps = getProgressBarProps();
         const shouldShowLabelWrapper = label || showValueLabel;
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(Component2, { ...progressBarProps, children: [
-          shouldShowLabelWrapper ? /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)("div", { className: slots.labelWrapper({ class: classNames == null ? void 0 : classNames.labelWrapper }), children: [
-            label && /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("span", { ...getLabelProps(), children: label }),
-            showValueLabel && /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("span", { className: slots.value({ class: classNames == null ? void 0 : classNames.value }), children: progressBarProps["aria-valuetext"] })
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(Component2, { ...progressBarProps, children: [
+          shouldShowLabelWrapper ? /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { className: slots.labelWrapper({ class: classNames == null ? void 0 : classNames.labelWrapper }), children: [
+            label && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { ...getLabelProps(), children: label }),
+            showValueLabel && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { className: slots.value({ class: classNames == null ? void 0 : classNames.value }), children: progressBarProps["aria-valuetext"] })
           ] }) : null,
-          /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("div", { className: slots.track({ class: classNames == null ? void 0 : classNames.track }), children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { className: slots.track({ class: classNames == null ? void 0 : classNames.track }), children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
             "div",
             {
               className: slots.indicator({ class: classNames == null ? void 0 : classNames.indicator }),
@@ -117732,7 +117732,7 @@
       var import_interactions = require_main17();
       var import_shared_utils = require_dist2();
       var import_utils8 = require_main38();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_textfield = require_main40();
       var import_form = require_dist33();
       function useInput(originalProps) {
@@ -117762,13 +117762,13 @@
           },
           ...otherProps
         } = props;
-        const handleValueChange = (0, import_react73.useCallback)(
+        const handleValueChange = (0, import_react75.useCallback)(
           (value) => {
             onValueChange(value != null ? value : "");
           },
           [onValueChange]
         );
-        const [isFocusWithin, setFocusWithin] = (0, import_react73.useState)(false);
+        const [isFocusWithin, setFocusWithin] = (0, import_react75.useState)(false);
         const Component2 = as || "div";
         const disableAnimation = (_c = (_b = originalProps.disableAnimation) != null ? _b : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _c : false;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
@@ -117788,7 +117788,7 @@
         const isHiddenType = type === "hidden";
         const isMultiline = originalProps.isMultiline;
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className, isFilled ? "is-filled" : "");
-        const handleClear = (0, import_react73.useCallback)(() => {
+        const handleClear = (0, import_react75.useCallback)(() => {
           var _a2;
           if (isFileTypeInput) {
             domRef.current.value = "";
@@ -117865,7 +117865,7 @@
         const hasStartContent = !!startContent;
         const isLabelOutside = shouldLabelBeOutside ? isOutsideLeft || isOutsideTop || hasPlaceholder || labelPlacement === "outside" && hasStartContent : false;
         const isLabelOutsideAsPlaceholder = labelPlacement === "outside" && !hasPlaceholder && !hasStartContent;
-        const slots = (0, import_react73.useMemo)(
+        const slots = (0, import_react75.useMemo)(
           () => (0, import_theme.input)({
             ...variantProps2,
             isInvalid,
@@ -117882,7 +117882,7 @@
             disableAnimation
           ]
         );
-        const getBaseProps = (0, import_react73.useCallback)(
+        const getBaseProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ref: baseDomRef,
@@ -117935,7 +117935,7 @@
             originalProps.isDisabled
           ]
         );
-        const getLabelProps = (0, import_react73.useCallback)(
+        const getLabelProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "label",
@@ -117945,7 +117945,7 @@
           },
           [slots, isLabelHovered, labelProps, classNames == null ? void 0 : classNames.label]
         );
-        const handleKeyDown = (0, import_react73.useCallback)(
+        const handleKeyDown = (0, import_react75.useCallback)(
           (e) => {
             if (e.key === "Escape" && inputValue && (isClearable || onClear) && !originalProps.isReadOnly) {
               setInputValue("");
@@ -117954,7 +117954,7 @@
           },
           [inputValue, setInputValue, onClear, isClearable, originalProps.isReadOnly]
         );
-        const getInputProps = (0, import_react73.useCallback)(
+        const getInputProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "input",
@@ -118004,7 +118004,7 @@
             handleKeyDown
           ]
         );
-        const getInputWrapperProps = (0, import_react73.useCallback)(
+        const getInputWrapperProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ref: inputWrapperRef,
@@ -118037,7 +118037,7 @@
             classNames == null ? void 0 : classNames.inputWrapper
           ]
         );
-        const getInnerWrapperProps = (0, import_react73.useCallback)(
+        const getInnerWrapperProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -118055,7 +118055,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.innerWrapper]
         );
-        const getMainWrapperProps = (0, import_react73.useCallback)(
+        const getMainWrapperProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -118067,7 +118067,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.mainWrapper]
         );
-        const getHelperWrapperProps = (0, import_react73.useCallback)(
+        const getHelperWrapperProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -118079,7 +118079,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getDescriptionProps = (0, import_react73.useCallback)(
+        const getDescriptionProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -118090,7 +118090,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.description]
         );
-        const getErrorMessageProps = (0, import_react73.useCallback)(
+        const getErrorMessageProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -118101,7 +118101,7 @@
           },
           [slots, errorMessageProps, classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getClearButtonProps = (0, import_react73.useCallback)(
+        const getClearButtonProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -118152,7 +118152,7 @@
           getClearButtonProps
         };
       }
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Input = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -118179,10 +118179,10 @@
           getErrorMessageProps,
           getClearButtonProps
         } = useInput({ ...props, ref });
-        const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("label", { ...getLabelProps(), children: label }) : null;
+        const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("label", { ...getLabelProps(), children: label }) : null;
         const end = (0, import_react210.useMemo)(() => {
           if (isClearable) {
-            return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("button", { ...getClearButtonProps(), children: endContent || /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_shared_icons.CloseFilledIcon, {}) });
+            return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("button", { ...getClearButtonProps(), children: endContent || /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_shared_icons.CloseFilledIcon, {}) });
           }
           return endContent;
         }, [isClearable, getClearButtonProps]);
@@ -118190,7 +118190,7 @@
           const shouldShowError = isInvalid && errorMessage;
           const hasContent = shouldShowError || description;
           if (!hasHelper || !hasContent) return null;
-          return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("div", { ...getHelperWrapperProps(), children: shouldShowError ? /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("div", { ...getErrorMessageProps(), children: errorMessage }) : /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("div", { ...getDescriptionProps(), children: description }) });
+          return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ...getHelperWrapperProps(), children: shouldShowError ? /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ...getErrorMessageProps(), children: errorMessage }) : /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ...getDescriptionProps(), children: description }) });
         }, [
           hasHelper,
           isInvalid,
@@ -118201,24 +118201,24 @@
           getDescriptionProps
         ]);
         const innerWrapper = (0, import_react210.useMemo)(() => {
-          return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)("div", { ...getInnerWrapperProps(), children: [
+          return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { ...getInnerWrapperProps(), children: [
             startContent,
-            /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("input", { ...getInputProps() }),
+            /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("input", { ...getInputProps() }),
             end
           ] });
         }, [startContent, end, getInputProps, getInnerWrapperProps]);
         const mainWrapper = (0, import_react210.useMemo)(() => {
           if (shouldLabelBeOutside) {
-            return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)("div", { ...getMainWrapperProps(), children: [
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)("div", { ...getInputWrapperProps(), children: [
+            return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { ...getMainWrapperProps(), children: [
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { ...getInputWrapperProps(), children: [
                 !isOutsideLeft && !isOutsideTop ? labelContent : null,
                 innerWrapper
               ] }),
               helperWrapper
             ] });
           }
-          return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(import_jsx_runtime29.Fragment, { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)("div", { ...getInputWrapperProps(), children: [
+          return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(import_jsx_runtime31.Fragment, { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { ...getInputWrapperProps(), children: [
               labelContent,
               innerWrapper
             ] }),
@@ -118237,7 +118237,7 @@
           getErrorMessageProps,
           getDescriptionProps
         ]);
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(Component2, { ...getBaseProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(Component2, { ...getBaseProps(), children: [
           isOutsideLeft || isOutsideTop ? labelContent : null,
           mainWrapper
         ] });
@@ -118517,7 +118517,7 @@
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_aria_utils = require_dist13();
       var import_overlays = require_main9();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       var import_use_safe_layout_effect = require_dist21();
       var import_use_aria_overlay = require_dist45();
@@ -118585,7 +118585,7 @@
           if (!updatePositionDeps.length) return;
           updatePosition();
         }, updatePositionDeps);
-        (0, import_react73.useEffect)(() => {
+        (0, import_react75.useEffect)(() => {
           var _a, _b;
           if (state.isOpen && popoverRef.current) {
             if (isNonModal) {
@@ -118822,15 +118822,15 @@
         name: "PopoverContext",
         errorMessage: "usePopoverContext: `context` is undefined. Seems you forgot to wrap all popover components within `<Popover />`"
       });
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Popover = (0, import_system2.forwardRef)((props, ref) => {
         const { children, ...otherProps } = props;
         const context = usePopover({ ...otherProps, ref });
         const [trigger, content] = import_react310.Children.toArray(children);
-        const overlay = /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_overlays4.Overlay, { portalContainer: context.portalContainer, children: content });
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(PopoverProvider, { value: context, children: [
+        const overlay = /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_overlays4.Overlay, { portalContainer: context.portalContainer, children: content });
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(PopoverProvider, { value: context, children: [
           trigger,
-          context.disableAnimation && context.isOpen ? overlay : /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_framer_motion2.AnimatePresence, { children: context.isOpen ? overlay : null })
+          context.disableAnimation && context.isOpen ? overlay : /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion2.AnimatePresence, { children: context.isOpen ? overlay : null })
         ] });
       });
       Popover.displayName = "HeroUI.Popover";
@@ -120335,7 +120335,7 @@
       var import_theme = require_dist12();
       var import_tree = require_main12();
       var import_react_utils = require_dist10();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme2 = require_dist12();
       function useMenu(props) {
         var _a;
@@ -120368,7 +120368,7 @@
         const innerState = (0, import_tree.useTreeState)({ ...otherProps, ...userMenuProps, children });
         const state = propState || innerState;
         const { menuProps } = (0, import_menu.useMenu)({ ...otherProps, ...userMenuProps, onAction }, state, domRef);
-        const slots = (0, import_react73.useMemo)(() => (0, import_theme.menu)({ className }), [className]);
+        const slots = (0, import_react75.useMemo)(() => (0, import_theme.menu)({ className }), [className]);
         const baseStyles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.base, className);
         const getBaseProps = (props2 = {}) => {
           return {
@@ -120602,10 +120602,10 @@
           getSelectedIconProps
         };
       }
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       function MenuSelectedIcon(props) {
         const { isSelected, disableAnimation, ...otherProps } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
           "svg",
           {
             "aria-hidden": "true",
@@ -120613,7 +120613,7 @@
             role: "presentation",
             viewBox: "0 0 17 18",
             ...otherProps,
-            children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
               "polyline",
               {
                 fill: "none",
@@ -121026,7 +121026,7 @@
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
       var import_react_utils2 = require_dist10();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var getMenuItem = (props, key) => {
         if (props) {
           const mergedChildren = Array.isArray(props.children) ? props.children : [...(props == null ? void 0 : props.items) || []];
@@ -121070,10 +121070,10 @@
           ...otherProps
         } = props;
         const Component2 = as || "div";
-        const triggerRef = (0, import_react73.useRef)(null);
+        const triggerRef = (0, import_react75.useRef)(null);
         const menuTriggerRef = triggerRefProp || triggerRef;
-        const menuRef = (0, import_react73.useRef)(null);
-        const popoverRef = (0, import_react73.useRef)(null);
+        const menuRef = (0, import_react75.useRef)(null);
+        const popoverRef = (0, import_react75.useRef)(null);
         const state = (0, import_menu.useMenuTriggerState)({
           trigger,
           isOpen,
@@ -121090,7 +121090,7 @@
           state,
           menuTriggerRef
         );
-        const styles = (0, import_react73.useMemo)(
+        const styles = (0, import_react75.useMemo)(
           () => (0, import_theme.dropdown)({
             className
           }),
@@ -121153,12 +121153,12 @@
           getMenuTriggerProps
         };
       }
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Dropdown = (props) => {
         const { children, ...otherProps } = props;
         const context = useDropdown(otherProps);
         const [menuTrigger, menu] = import_react210.default.Children.toArray(children);
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(DropdownProvider, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(import_popover.Popover, { ...context.getPopoverProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(DropdownProvider, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(import_popover.Popover, { ...context.getPopoverProps(), children: [
           menuTrigger,
           menu
         ] }) });
@@ -121217,7 +121217,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist11();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
@@ -121302,7 +121302,7 @@
             }
           };
         };
-        const getWrapperProps = (0, import_react73.useCallback)(() => {
+        const getWrapperProps = (0, import_react75.useCallback)(() => {
           const fallbackStyle = showFallback ? {
             backgroundImage: `url(${fallbackSrc})`
           } : {};
@@ -121314,7 +121314,7 @@
             }
           };
         }, [slots, showFallback, fallbackSrc, classNames == null ? void 0 : classNames.wrapper, w]);
-        const getBlurredImgProps = (0, import_react73.useCallback)(() => {
+        const getBlurredImgProps = (0, import_react75.useCallback)(() => {
           return {
             src,
             "aria-hidden": (0, import_shared_utils.dataAttr)(true),
@@ -121337,7 +121337,7 @@
           getBlurredImgProps
         };
       }
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Image2 = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -121356,19 +121356,19 @@
           ...props,
           ref
         });
-        const img = /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(Component2, { ref: domRef, ...getImgProps() });
+        const img = /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(Component2, { ref: domRef, ...getImgProps() });
         if (removeWrapper) {
           return img;
         }
-        const zoomed = /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("div", { className: slots.zoomedWrapper({ class: classNames == null ? void 0 : classNames.zoomedWrapper }), children: img });
+        const zoomed = /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { className: slots.zoomedWrapper({ class: classNames == null ? void 0 : classNames.zoomedWrapper }), children: img });
         if (isBlurred) {
-          return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)("div", { ...getWrapperProps(), children: [
+          return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { ...getWrapperProps(), children: [
             isZoomed ? zoomed : img,
             (0, import_react310.cloneElement)(img, getBlurredImgProps())
           ] });
         }
         if (isZoomed || !disableSkeleton || fallbackSrc) {
-          return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)("div", { ...getWrapperProps(), children: [
+          return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { ...getWrapperProps(), children: [
             " ",
             isZoomed ? zoomed : img
           ] });
@@ -121408,7 +121408,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_overlays = require_main9();
       var import_utils8 = require_main4();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_aria_overlay = require_dist45();
       function useAriaModalOverlay(props = {
         shouldBlockScroll: true
@@ -121425,7 +121425,7 @@
           isDisabled: !state.isOpen || !props.shouldBlockScroll
         });
         (0, import_overlays.useOverlayFocusContain)();
-        (0, import_react73.useEffect)(() => {
+        (0, import_react75.useEffect)(() => {
           if (state.isOpen && ref.current) {
             return (0, import_overlays.ariaHideOutside)([ref.current]);
           }
@@ -121475,9 +121475,9 @@
         useViewportSize: () => useViewportSize
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react73 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
+      var import_react75 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
       var visualViewport = typeof document !== "undefined" && window.visualViewport;
-      var IsSSRContext = import_react73.default.createContext(false);
+      var IsSSRContext = import_react75.default.createContext(false);
       function getSnapshot() {
         return false;
       }
@@ -121489,15 +121489,15 @@
         };
       }
       function useIsSSR() {
-        if (typeof import_react73.default["useSyncExternalStore"] === "function") {
-          return import_react73.default["useSyncExternalStore"](subscribe, getSnapshot, getServerSnapshot);
+        if (typeof import_react75.default["useSyncExternalStore"] === "function") {
+          return import_react75.default["useSyncExternalStore"](subscribe, getSnapshot, getServerSnapshot);
         }
-        return (0, import_react73.useContext)(IsSSRContext);
+        return (0, import_react75.useContext)(IsSSRContext);
       }
       function useViewportSize() {
         let isSSR = useIsSSR();
-        let [size, setSize] = (0, import_react73.useState)(() => isSSR ? { width: 0, height: 0 } : getViewportSize());
-        (0, import_react73.useEffect)(() => {
+        let [size, setSize] = (0, import_react75.useState)(() => isSSR ? { width: 0, height: 0 } : getViewportSize());
+        (0, import_react75.useEffect)(() => {
           let onResize = () => {
             setSize((size2) => {
               let newSize = getViewportSize();
@@ -121673,7 +121673,7 @@
       var import_utils8 = require_main4();
       var import_utils22 = require_main46();
       var import_use_callback_ref = require_dist31();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useDisclosure2(props = {}) {
         const {
           id: idProp,
@@ -121687,22 +121687,22 @@
         const onOpenPropCallbackRef = (0, import_use_callback_ref.useCallbackRef)(onOpenProp);
         const onClosePropCallbackRef = (0, import_use_callback_ref.useCallbackRef)(onCloseProp);
         const [isOpen, setIsOpen] = (0, import_utils22.useControlledState)(isOpenProp, defaultOpen || false, onChange);
-        const reactId = (0, import_react73.useId)();
+        const reactId = (0, import_react75.useId)();
         const id4 = idProp || reactId;
         const isControlled = isOpenProp !== void 0;
-        const onClose = (0, import_react73.useCallback)(() => {
+        const onClose = (0, import_react75.useCallback)(() => {
           if (!isControlled) {
             setIsOpen(false);
           }
           onClosePropCallbackRef == null ? void 0 : onClosePropCallbackRef();
         }, [isControlled, onClosePropCallbackRef]);
-        const onOpen = (0, import_react73.useCallback)(() => {
+        const onOpen = (0, import_react75.useCallback)(() => {
           if (!isControlled) {
             setIsOpen(true);
           }
           onOpenPropCallbackRef == null ? void 0 : onOpenPropCallbackRef();
         }, [isControlled, onOpenPropCallbackRef]);
-        const onOpenChange = (0, import_react73.useCallback)(() => {
+        const onOpenChange = (0, import_react75.useCallback)(() => {
           const action = isOpen ? onClose : onOpen;
           action();
         }, [isOpen, onOpen, onClose]);
@@ -123818,15 +123818,15 @@
         useDraggable: () => useDraggable2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_interactions = require_main47();
       function useDraggable2(props) {
         const { targetRef, isDisabled = false, canOverflow = false } = props;
-        const boundary = (0, import_react73.useRef)({ minLeft: 0, minTop: 0, maxLeft: 0, maxTop: 0 });
-        const isDragging2 = (0, import_react73.useRef)(false);
-        const transform2 = (0, import_react73.useRef)({ offsetX: 0, offsetY: 0 });
-        const prevTargetRef = (0, import_react73.useRef)(null);
-        (0, import_react73.useEffect)(() => {
+        const boundary = (0, import_react75.useRef)({ minLeft: 0, minTop: 0, maxLeft: 0, maxTop: 0 });
+        const isDragging2 = (0, import_react75.useRef)(false);
+        const transform2 = (0, import_react75.useRef)({ offsetX: 0, offsetY: 0 });
+        const prevTargetRef = (0, import_react75.useRef)(null);
+        (0, import_react75.useEffect)(() => {
           var _a;
           const currentTarget = (_a = targetRef == null ? void 0 : targetRef.current) != null ? _a : null;
           if (prevTargetRef.current !== currentTarget) {
@@ -123834,7 +123834,7 @@
             prevTargetRef.current = currentTarget;
           }
         }, [targetRef == null ? void 0 : targetRef.current]);
-        const onMoveStart = (0, import_react73.useCallback)(() => {
+        const onMoveStart = (0, import_react75.useCallback)(() => {
           var _a, _b, _c, _d, _e;
           isDragging2.current = true;
           const { offsetX, offsetY } = transform2.current;
@@ -123856,7 +123856,7 @@
             maxTop
           };
         }, [targetRef]);
-        const onMove = (0, import_react73.useCallback)(
+        const onMove = (0, import_react75.useCallback)(
           (e) => {
             if (isDisabled) {
               return;
@@ -123879,7 +123879,7 @@
           },
           [isDisabled, canOverflow, targetRef]
         );
-        const onMoveEnd = (0, import_react73.useCallback)(() => {
+        const onMoveEnd = (0, import_react75.useCallback)(() => {
           isDragging2.current = false;
         }, []);
         const { moveProps } = (0, import_interactions.useMove)({
@@ -123887,12 +123887,12 @@
           onMove,
           onMoveEnd
         });
-        const preventDefault = (0, import_react73.useCallback)((e) => {
+        const preventDefault = (0, import_react75.useCallback)((e) => {
           if (isDragging2.current) {
             e.preventDefault();
           }
         }, []);
-        (0, import_react73.useEffect)(() => {
+        (0, import_react75.useEffect)(() => {
           if (!isDisabled) {
             document.body.addEventListener("touchmove", preventDefault, { passive: false });
           }
@@ -123950,7 +123950,7 @@
       var import_overlays2 = require_main9();
       var import_system2 = require_dist11();
       var import_use_aria_modal_overlay = require_dist59();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist12();
       var import_system = require_dist11();
       var import_use_aria_button = require_dist27();
@@ -123982,13 +123982,13 @@
         } = props;
         const Component2 = as || "section";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const closeButtonRef = (0, import_react73.useRef)(null);
-        const [headerMounted, setHeaderMounted] = (0, import_react73.useState)(false);
-        const [bodyMounted, setBodyMounted] = (0, import_react73.useState)(false);
+        const closeButtonRef = (0, import_react75.useRef)(null);
+        const [headerMounted, setHeaderMounted] = (0, import_react75.useState)(false);
+        const [bodyMounted, setBodyMounted] = (0, import_react75.useState)(false);
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        const dialogId = (0, import_react73.useId)();
-        const headerId = (0, import_react73.useId)();
-        const bodyId = (0, import_react73.useId)();
+        const dialogId = (0, import_react75.useId)();
+        const headerId = (0, import_react75.useId)();
+        const bodyId = (0, import_react75.useId)();
         const state = (0, import_overlays.useOverlayTriggerState)({
           isOpen,
           defaultOpen,
@@ -124011,7 +124011,7 @@
         const { buttonProps: closeButtonProps } = (0, import_use_aria_button.useAriaButton)({ onPress: state.close }, closeButtonRef);
         const { isFocusVisible: isCloseButtonFocusVisible, focusProps: closeButtonFocusProps } = (0, import_focus2.useFocusRing)();
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react73.useMemo)(
+        const slots = (0, import_react75.useMemo)(
           () => (0, import_theme.modal)({
             ...variantProps2,
             disableAnimation
@@ -124033,7 +124033,7 @@
             "aria-describedby": bodyMounted ? bodyId : void 0
           };
         };
-        const getBackdropProps = (0, import_react73.useCallback)(
+        const getBackdropProps = (0, import_react75.useCallback)(
           (props2 = {}) => ({
             className: slots.backdrop({ class: classNames == null ? void 0 : classNames.backdrop }),
             ...underlayProps,
@@ -124080,12 +124080,12 @@
         name: "ModalContext",
         errorMessage: "useModalContext: `context` is undefined. Seems you forgot to wrap all popover components within `<Modal />`"
       });
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Modal = (0, import_system2.forwardRef)((props, ref) => {
         const { children, ...otherProps } = props;
         const context = useModal({ ...otherProps, ref });
-        const overlay = /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_overlays2.Overlay, { portalContainer: context.portalContainer, children });
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(ModalProvider, { value: context, children: context.disableAnimation && context.isOpen ? overlay : /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_framer_motion2.AnimatePresence, { children: context.isOpen ? overlay : null }) });
+        const overlay = /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_overlays2.Overlay, { portalContainer: context.portalContainer, children });
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(ModalProvider, { value: context, children: context.disableAnimation && context.isOpen ? overlay : /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion2.AnimatePresence, { children: context.isOpen ? overlay : null }) });
       });
       Modal.displayName = "HeroUI.Modal";
       var modal_default = Modal;
@@ -124328,7 +124328,7 @@
         useScrollPosition: () => useScrollPosition
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var isBrowser3 = typeof window !== "undefined";
       function getScrollPosition(element) {
         if (!isBrowser3) return { x: 0, y: 0 };
@@ -124339,11 +124339,11 @@
       }
       var useScrollPosition = (props) => {
         const { elementRef, delay: delay2 = 30, callback, isEnabled } = props;
-        const position = (0, import_react73.useRef)(
+        const position = (0, import_react75.useRef)(
           isEnabled ? getScrollPosition(elementRef == null ? void 0 : elementRef.current) : { x: 0, y: 0 }
         );
-        const throttleTimeout = (0, import_react73.useRef)(null);
-        const handler = (0, import_react73.useCallback)(() => {
+        const throttleTimeout = (0, import_react75.useRef)(null);
+        const handler = (0, import_react75.useCallback)(() => {
           const currPos = getScrollPosition(elementRef == null ? void 0 : elementRef.current);
           if (typeof callback === "function") {
             callback({ prevPos: position.current, currPos });
@@ -124351,7 +124351,7 @@
           position.current = currPos;
           throttleTimeout.current = null;
         }, [callback, elementRef]);
-        (0, import_react73.useEffect)(() => {
+        (0, import_react75.useEffect)(() => {
           if (!isEnabled) return;
           const handleScroll = () => {
             if (delay2) {
@@ -124405,9 +124405,9 @@
         useResizeObserver: () => useResizeObserver
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useResize(callback, immediatelyInvoke = true) {
-        (0, import_react73.useEffect)(() => {
+        (0, import_react75.useEffect)(() => {
           const fn = () => callback();
           if (immediatelyInvoke) {
             fn();
@@ -124421,7 +124421,7 @@
       }
       function useResizeObserver(options) {
         const { ref, box, onResize } = options;
-        (0, import_react73.useEffect)(() => {
+        (0, import_react75.useEffect)(() => {
           let element = ref == null ? void 0 : ref.current;
           if (!element) {
             return;
@@ -124645,7 +124645,7 @@
         useNavbarContext: () => useNavbarContext
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
@@ -124679,10 +124679,10 @@
         const Component2 = as || "nav";
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const prevWidth = (0, import_react73.useRef)(0);
-        const navHeight = (0, import_react73.useRef)(0);
-        const [isHidden, setIsHidden] = (0, import_react73.useState)(false);
-        const handleMenuOpenChange = (0, import_react73.useCallback)(
+        const prevWidth = (0, import_react75.useRef)(0);
+        const navHeight = (0, import_react75.useRef)(0);
+        const [isHidden, setIsHidden] = (0, import_react75.useState)(false);
+        const handleMenuOpenChange = (0, import_react75.useCallback)(
           (isOpen) => {
             onMenuOpenChange(isOpen || false);
           },
@@ -124719,12 +124719,12 @@
             }
           }
         });
-        (0, import_react73.useEffect)(() => {
+        (0, import_react75.useEffect)(() => {
           var _a2;
           updateWidth();
           navHeight.current = ((_a2 = domRef.current) == null ? void 0 : _a2.offsetHeight) || 0;
         }, []);
-        const slots = (0, import_react73.useMemo)(
+        const slots = (0, import_react75.useMemo)(
           () => (0, import_theme.navbar)({
             ...variantProps2,
             disableAnimation,
@@ -124826,7 +124826,7 @@
           }
         }
       };
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var domAnimation2 = () => Promise.resolve().then(() => (init_dist(), dist_exports)).then((res) => res.default);
       var NavbarMenu = (0, import_system2.forwardRef)((props, ref) => {
         var _a, _b;
@@ -124836,7 +124836,7 @@
         const styles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.menu, className);
         if (disableAnimation) {
           if (!isMenuOpen) return null;
-          return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_overlays2.Overlay, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_overlays2.Overlay, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
             "ul",
             {
               ref: domRef,
@@ -124851,7 +124851,7 @@
             }
           ) });
         }
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_framer_motion3.AnimatePresence, { mode: "wait", children: isMenuOpen ? /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_overlays2.Overlay, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion3.AnimatePresence, { mode: "wait", children: isMenuOpen ? /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_overlays2.Overlay, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
           import_framer_motion3.m.ul,
           {
             ref: domRef,
@@ -131741,7 +131741,7 @@
         useTable: () => useTable
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_table = require_main50();
       var import_table2 = require_main53();
       var import_system = require_dist11();
@@ -131843,7 +131843,7 @@
             onCellAction
           ]
         );
-        const getBaseProps = (0, import_react73.useCallback)(
+        const getBaseProps = (0, import_react75.useCallback)(
           (props2) => ({
             ...props2,
             ref: domBaseRef,
@@ -131851,7 +131851,7 @@
           }),
           [baseStyles, slots]
         );
-        const getWrapperProps = (0, import_react73.useCallback)(
+        const getWrapperProps = (0, import_react75.useCallback)(
           (props2) => ({
             ...props2,
             ref: domBaseRef,
@@ -131859,7 +131859,7 @@
           }),
           [classNames == null ? void 0 : classNames.wrapper, slots]
         );
-        const getTableProps = (0, import_react73.useCallback)(
+        const getTableProps = (0, import_react75.useCallback)(
           (props2) => ({
             ...(0, import_shared_utils.mergeProps)(
               gridProps,
@@ -131897,7 +131897,7 @@
       var import_shared_utils11 = require_dist2();
       var import_react92 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system11 = require_dist11();
-      var import_react74 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react76 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system9 = require_dist11();
       var import_react_virtual = require_cjs6();
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
@@ -131905,7 +131905,7 @@
       var import_shared_utils2 = require_dist2();
       var import_table3 = require_main53();
       var import_theme2 = require_dist12();
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var TableRowGroup = (0, import_react310.forwardRef)((props, ref) => {
         var _a;
         const { as, className, children, slots, classNames, ...otherProps } = props;
@@ -131913,7 +131913,7 @@
         const domRef = (0, import_react_utils2.useDOMRef)(ref);
         const { rowGroupProps } = (0, import_table3.useTableRowGroup)();
         const theadStyles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.thead, className);
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
           Component2,
           {
             ref: domRef,
@@ -132404,7 +132404,7 @@
           ref
         });
         const { rowHeight = 40, maxTableHeight = 600 } = props;
-        const Wrapper = (0, import_react74.useCallback)(
+        const Wrapper = (0, import_react76.useCallback)(
           ({ children }) => {
             return /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(
               BaseComponent,
@@ -132420,10 +132420,10 @@
         );
         const items = [...collection.body.childNodes];
         const count = items.length;
-        const parentRef = (0, import_react74.useRef)(null);
-        const [headerHeight, setHeaderHeight] = (0, import_react74.useState)(0);
-        const headerRef = (0, import_react74.useRef)(null);
-        (0, import_react74.useLayoutEffect)(() => {
+        const parentRef = (0, import_react76.useRef)(null);
+        const [headerHeight, setHeaderHeight] = (0, import_react76.useState)(0);
+        const headerRef = (0, import_react76.useRef)(null);
+        (0, import_react76.useLayoutEffect)(() => {
           if (headerRef.current) {
             setHeaderHeight(headerRef.current.getBoundingClientRect().height);
           }
@@ -132790,7 +132790,7 @@
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var spacing = {
         px: "1px",
         0: "0px",
@@ -132836,7 +132836,7 @@
         const [props, variantProps2] = (0, import_system_rsc.mapPropsVariants)(originalProps, import_theme.spacer.variantKeys);
         const { as, className, x = 1, y = 1, ...otherProps } = props;
         const Component2 = as || "span";
-        const styles = (0, import_react73.useMemo)(
+        const styles = (0, import_react75.useMemo)(
           () => (0, import_theme.spacer)({
             ...variantProps2,
             className
@@ -132859,10 +132859,10 @@
         });
         return { Component: Component2, getSpacerProps };
       }
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Spacer = (0, import_system_rsc2.forwardRef)((props, ref) => {
         const { Component: Component2, getSpacerProps } = useSpacer({ ...props });
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(Component2, { ref, ...getSpacerProps() });
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(Component2, { ref, ...getSpacerProps() });
       });
       Spacer.displayName = "HeroUI.Spacer";
       var spacer_default = Spacer;
@@ -132901,12 +132901,12 @@
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useKbd(originalProps) {
         const [props, variantProps2] = (0, import_system_rsc.mapPropsVariants)(originalProps, import_theme.kbd.variantKeys);
         const { as, children, className, keys: keys3, title, classNames, ...otherProps } = props;
         const Component2 = as || "kbd";
-        const slots = (0, import_react73.useMemo)(
+        const slots = (0, import_react75.useMemo)(
           () => (0, import_theme.kbd)({
             ...variantProps2
           }),
@@ -132969,13 +132969,13 @@
         win: "Win",
         alt: "Alt"
       };
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Kbd = (0, import_system_rsc2.forwardRef)((props, ref) => {
         const { Component: Component2, children, slots, classNames, keysToRender, getKbdProps } = useKbd({
           ...props
         });
         const keysContent = (0, import_react210.useMemo)(() => {
-          return keysToRender.map((key) => /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+          return keysToRender.map((key) => /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
             "abbr",
             {
               className: slots.abbr({ class: classNames == null ? void 0 : classNames.abbr }),
@@ -132985,9 +132985,9 @@
             key
           ));
         }, [keysToRender]);
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(Component2, { ref, ...getKbdProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(Component2, { ref, ...getKbdProps(), children: [
           keysContent,
-          children && /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("span", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children })
+          children && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children })
         ] });
       });
       Kbd.displayName = "HeroUI.Kbd";
@@ -133849,7 +133849,7 @@
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
       var import_react_utils2 = require_dist10();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_tabs = require_main55();
       var import_tabs2 = require_main56();
       function useTabs(originalProps) {
@@ -133883,7 +133883,7 @@
           state,
           domRef
         );
-        const slots = (0, import_react73.useMemo)(
+        const slots = (0, import_react75.useMemo)(
           () => (0, import_theme.tabs)({
             ...variantProps2,
             disableAnimation,
@@ -133892,7 +133892,7 @@
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation, isVertical]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const values = (0, import_react73.useMemo)(
+        const values = (0, import_react75.useMemo)(
           () => ({
             state,
             slots,
@@ -133914,7 +133914,7 @@
             classNames
           ]
         );
-        const getBaseProps = (0, import_react73.useCallback)(
+        const getBaseProps = (0, import_react75.useCallback)(
           (props2) => ({
             "data-slot": "base",
             className: slots.base({ class: (0, import_theme.cn)(baseStyles, props2 == null ? void 0 : props2.className) }),
@@ -133927,7 +133927,7 @@
           }),
           [baseStyles, otherProps, slots]
         );
-        const getWrapperProps = (0, import_react73.useCallback)(
+        const getWrapperProps = (0, import_react75.useCallback)(
           (props2) => ({
             "data-slot": "tabWrapper",
             className: slots.tabWrapper({ class: (0, import_theme.cn)(classNames == null ? void 0 : classNames.tabWrapper, props2 == null ? void 0 : props2.className) }),
@@ -133936,7 +133936,7 @@
           }),
           [classNames, slots, placement, isVertical]
         );
-        const getTabListProps = (0, import_react73.useCallback)(
+        const getTabListProps = (0, import_react75.useCallback)(
           (props2) => ({
             ref: domRef,
             "data-slot": "tabList",
@@ -133945,7 +133945,7 @@
           }),
           [domRef, tabListProps, classNames, slots]
         );
-        const getTabCursorProps = (0, import_react73.useCallback)(
+        const getTabCursorProps = (0, import_react75.useCallback)(
           (props2) => ({
             "data-slot": "cursor",
             className: slots.cursor({
@@ -133974,7 +133974,7 @@
       var import_tabs3 = require_main56();
       var import_interactions = require_main17();
       var import_theme2 = require_dist12();
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Tab = (0, import_system2.forwardRef)((props, ref) => {
         var _a;
         const {
@@ -134019,7 +134019,7 @@
             boundary: listRef == null ? void 0 : listRef.current
           });
         };
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
           Component2,
           {
             ref: (0, import_react_utils3.mergeRefs)(domRef, tabRef),
@@ -134050,7 +134050,7 @@
             className: (_a = slots.tab) == null ? void 0 : _a.call(slots, { class: tabStyles }),
             title: otherProps == null ? void 0 : otherProps.titleValue,
             type: Component2 === "button" ? "button" : void 0,
-            children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
               "div",
               {
                 className: slots.tabContent({
@@ -134293,7 +134293,7 @@
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist11();
       function useSkeleton(originalProps) {
         var _a, _b;
@@ -134302,7 +134302,7 @@
         const { as, children, isLoaded = false, className, classNames, ...otherProps } = props;
         const Component2 = as || "div";
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        const slots = (0, import_react73.useMemo)(
+        const slots = (0, import_react75.useMemo)(
           () => (0, import_theme.skeleton)({
             ...variantProps2,
             disableAnimation
@@ -134324,10 +134324,10 @@
         };
         return { Component: Component2, children, slots, classNames, getSkeletonProps, getContentProps };
       }
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Skeleton = (0, import_system3.forwardRef)((props, ref) => {
         const { Component: Component2, children, getSkeletonProps, getContentProps } = useSkeleton({ ...props });
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(Component2, { ref, ...getSkeletonProps(), children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("div", { ...getContentProps(), children }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(Component2, { ref, ...getSkeletonProps(), children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ...getContentProps(), children }) });
       });
       Skeleton.displayName = "HeroUI.Skeleton";
       var skeleton_default = Skeleton;
@@ -134361,7 +134361,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_shared_utils = require_dist2();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useDataScrollOverflow(props = {}) {
         const {
           domRef,
@@ -134372,8 +134372,8 @@
           onVisibilityChange,
           updateDeps = []
         } = props;
-        const visibleRef = (0, import_react73.useRef)(visibility);
-        (0, import_react73.useEffect)(() => {
+        const visibleRef = (0, import_react75.useRef)(visibility);
+        (0, import_react75.useEffect)(() => {
           const el = domRef == null ? void 0 : domRef.current;
           if (!el || !isEnabled) return;
           const setAttributes = (direction, hasBefore, hasAfter, prefix, suffix) => {
@@ -134475,7 +134475,7 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_use_data_scroll_overflow = require_dist72();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       function useScrollShadow(originalProps) {
         var _a;
@@ -134504,7 +134504,7 @@
           updateDeps: [children],
           overflowCheck: (_a = originalProps.orientation) != null ? _a : "vertical"
         });
-        const styles = (0, import_react73.useMemo)(
+        const styles = (0, import_react75.useMemo)(
           () => (0, import_theme.scrollShadow)({
             ...variantProps2,
             className
@@ -134528,10 +134528,10 @@
         };
         return { Component: Component2, styles, domRef, children, getBaseProps };
       }
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var ScrollShadow = (0, import_system2.forwardRef)((props, ref) => {
         const { Component: Component2, children, getBaseProps } = useScrollShadow({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(Component2, { ...getBaseProps(), children });
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(Component2, { ...getBaseProps(), children });
       });
       ScrollShadow.displayName = "HeroUI.ScrollShadow";
       var scroll_shadow_default = ScrollShadow;
@@ -135059,7 +135059,7 @@
       var import_theme = require_dist12();
       var import_list = require_main58();
       var import_react_utils = require_dist10();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme2 = require_dist12();
       function useListbox(props) {
         var _a;
@@ -135091,7 +135091,7 @@
         const innerState = (0, import_list.useListState)({ ...props, children, onSelectionChange });
         const state = propState || innerState;
         const { listBoxProps } = (0, import_listbox.useListBox)({ ...props, onAction }, state, domRef);
-        const slots = (0, import_react73.useMemo)(() => (0, import_theme.listbox)(), []);
+        const slots = (0, import_react75.useMemo)(() => (0, import_theme.listbox)(), []);
         const baseStyles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.base, className);
         const getBaseProps = (props2 = {}) => {
           return {
@@ -135308,10 +135308,10 @@
           getSelectedIconProps
         };
       }
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       function ListboxSelectedIcon(props) {
         const { isSelected, disableAnimation, ...otherProps } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
           "svg",
           {
             "aria-hidden": "true",
@@ -135319,7 +135319,7 @@
             role: "presentation",
             viewBox: "0 0 17 18",
             ...otherProps,
-            children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
               "polyline",
               {
                 fill: "none",
@@ -135476,7 +135476,7 @@
       );
       ListboxSection.displayName = "HeroUI.ListboxSection";
       var listbox_section_default = ListboxSection;
-      var import_react74 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react76 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_virtual = require_cjs6();
       var import_shared_utils5 = require_dist2();
       var import_system4 = require_dist11();
@@ -135671,8 +135671,8 @@
         }
         const { maxListboxHeight, itemHeight } = virtualization;
         const listHeight = Math.min(maxListboxHeight, itemHeight * state.collection.size);
-        const parentRef = (0, import_react74.useRef)(null);
-        const itemSizes = (0, import_react74.useMemo)(
+        const parentRef = (0, import_react76.useRef)(null);
+        const itemSizes = (0, import_react76.useMemo)(
           () => getItemSizesForCollection([...state.collection], itemHeight),
           [state.collection, itemHeight]
         );
@@ -135733,7 +135733,7 @@
           }
           return listboxItem2;
         };
-        const [scrollState, setScrollState] = (0, import_react74.useState)({
+        const [scrollState, setScrollState] = (0, import_react76.useState)({
           isTop: false,
           isBottom: true,
           isMiddle: false
@@ -135889,27 +135889,27 @@
         useLayoutEffect: () => useLayoutEffect2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react73 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
-      var useLayoutEffect2 = typeof document !== "undefined" ? import_react73.default.useLayoutEffect : () => {
+      var import_react75 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
+      var useLayoutEffect2 = typeof document !== "undefined" ? import_react75.default.useLayoutEffect : () => {
       };
       function useEffectEvent2(fn) {
-        const ref = (0, import_react73.useRef)(null);
+        const ref = (0, import_react75.useRef)(null);
         useLayoutEffect2(() => {
           ref.current = fn;
         }, [fn]);
-        return (0, import_react73.useCallback)((...args) => {
+        return (0, import_react75.useCallback)((...args) => {
           const f = ref.current;
           return f == null ? void 0 : f(...args);
         }, []);
       }
       function useFormReset(ref, initialValue, onReset) {
-        let resetValue = (0, import_react73.useRef)(initialValue);
+        let resetValue = (0, import_react75.useRef)(initialValue);
         let handleReset = useEffectEvent2(() => {
           if (onReset) {
             onReset(resetValue.current);
           }
         });
-        (0, import_react73.useEffect)(() => {
+        (0, import_react75.useEffect)(() => {
           var _a;
           let form = (_a = ref == null ? void 0 : ref.current) == null ? void 0 : _a.form;
           form == null ? void 0 : form.addEventListener("reset", handleReset);
@@ -139425,17 +139425,17 @@
         useMultiSelectState: () => useMultiSelectState
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_i18n10 = require_main5();
+      var import_i18n12 = require_main5();
       var import_interactions = require_main59();
       var import_label = require_main60();
       var import_menu = require_main61();
       var import_selection = require_main13();
       var import_utils8 = require_main4();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useMultiSelect(props, state, ref) {
         const { disallowEmptySelection, isDisabled } = props;
-        const collator = (0, import_i18n10.useCollator)({ usage: "search", sensitivity: "base" });
-        const delegate = (0, import_react73.useMemo)(
+        const collator = (0, import_i18n12.useCollator)({ usage: "search", sensitivity: "base" });
+        const delegate = (0, import_react75.useMemo)(
           () => new import_selection.ListKeyboardDelegate(state.collection, state.disabledKeys, null, collator),
           [state.collection, state.disabledKeys, collator]
         );
@@ -139710,7 +139710,7 @@
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_aria_button = require_dist27();
       var import_focus2 = require_main18();
       var import_shared_utils = require_dist2();
@@ -139794,9 +139794,9 @@
         const Component2 = as || "button";
         const shouldFilterDOMProps = typeof Component2 === "string";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const triggerRef = (0, import_react73.useRef)(null);
-        const listBoxRef = (0, import_react73.useRef)(null);
-        const popoverRef = (0, import_react73.useRef)(null);
+        const triggerRef = (0, import_react75.useRef)(null);
+        const listBoxRef = (0, import_react75.useRef)(null);
+        const popoverRef = (0, import_react75.useRef)(null);
         let state = (0, import_use_aria_multiselect.useMultiSelectState)({
           ...props,
           isOpen,
@@ -139857,7 +139857,7 @@
           state,
           triggerRef
         );
-        const handleClear = (0, import_react73.useCallback)(() => {
+        const handleClear = (0, import_react75.useCallback)(() => {
           var _a2;
           state.setSelectedKeys(/* @__PURE__ */ new Set([]));
           onClear == null ? void 0 : onClear();
@@ -139886,7 +139886,7 @@
         const hasLabel = !!label;
         const hasLabelOutside = hasLabel && (isOutsideLeft || shouldLabelBeOutside && hasPlaceholder);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react73.useMemo)(
+        const slots = (0, import_react75.useMemo)(
           () => (0, import_theme.select)({
             ...variantProps2,
             isInvalid,
@@ -139902,14 +139902,14 @@
         const errorMessage = typeof props.errorMessage === "function" ? props.errorMessage({ isInvalid, validationErrors, validationDetails }) : props.errorMessage || (validationErrors == null ? void 0 : validationErrors.join(" "));
         const hasHelper = !!description || !!errorMessage;
         const hasEndContent = !!endContent;
-        (0, import_react73.useEffect)(() => {
+        (0, import_react75.useEffect)(() => {
           if (state.isOpen && popoverRef.current && triggerRef.current) {
             let selectRect = triggerRef.current.getBoundingClientRect();
             let popover = popoverRef.current;
             popover.style.width = selectRect.width + "px";
           }
         }, [state.isOpen]);
-        (0, import_react73.useEffect)(() => {
+        (0, import_react75.useEffect)(() => {
           if (state.isOpen && popoverRef.current && listBoxRef.current) {
             let selectedItem = listBoxRef.current.querySelector("[aria-selected=true] [data-label=true]");
             let scrollShadow = scrollShadowRef.current;
@@ -139920,7 +139920,7 @@
             }
           }
         }, [state.isOpen, disableAnimation]);
-        const getBaseProps = (0, import_react73.useCallback)(
+        const getBaseProps = (0, import_react75.useCallback)(
           (props2 = {}) => ({
             "data-slot": "base",
             "data-filled": (0, import_shared_utils.dataAttr)(isFilled),
@@ -139937,7 +139937,7 @@
           }),
           [slots, hasHelper, hasValue, hasLabel, hasLabelOutside, isFilled, baseStyles]
         );
-        const getTriggerProps = (0, import_react73.useCallback)(
+        const getTriggerProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ref: triggerRef,
@@ -139977,7 +139977,7 @@
             shouldFilterDOMProps
           ]
         );
-        const getHiddenSelectProps = (0, import_react73.useCallback)(
+        const getHiddenSelectProps = (0, import_react75.useCallback)(
           (props2 = {}) => ({
             state,
             triggerRef,
@@ -140002,7 +140002,7 @@
             triggerRef
           ]
         );
-        const getLabelProps = (0, import_react73.useCallback)(
+        const getLabelProps = (0, import_react75.useCallback)(
           (props2 = {}) => ({
             "data-slot": "label",
             className: slots.label({
@@ -140013,7 +140013,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.label, labelProps]
         );
-        const getValueProps = (0, import_react73.useCallback)(
+        const getValueProps = (0, import_react75.useCallback)(
           (props2 = {}) => ({
             "data-slot": "value",
             className: slots.value({
@@ -140024,7 +140024,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.value, valueProps]
         );
-        const getListboxWrapperProps = (0, import_react73.useCallback)(
+        const getListboxWrapperProps = (0, import_react75.useCallback)(
           (props2 = {}) => ({
             "data-slot": "listboxWrapper",
             className: slots.listboxWrapper({
@@ -140061,7 +140061,7 @@
             ...(0, import_shared_utils.mergeProps)(slotsProps.listboxProps, props2, menuProps)
           };
         };
-        const getPopoverProps = (0, import_react73.useCallback)(
+        const getPopoverProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             var _a2, _b2;
             const popoverProps2 = (0, import_shared_utils.mergeProps)(slotsProps.popoverProps, props2);
@@ -140093,7 +140093,7 @@
             state.selectedItems
           ]
         );
-        const getSelectorIconProps = (0, import_react73.useCallback)(
+        const getSelectorIconProps = (0, import_react75.useCallback)(
           () => ({
             "data-slot": "selectorIcon",
             "aria-hidden": (0, import_shared_utils.dataAttr)(true),
@@ -140102,7 +140102,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.selectorIcon, state.isOpen]
         );
-        const getInnerWrapperProps = (0, import_react73.useCallback)(
+        const getInnerWrapperProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -140114,7 +140114,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.innerWrapper]
         );
-        const getHelperWrapperProps = (0, import_react73.useCallback)(
+        const getHelperWrapperProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -140126,7 +140126,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getDescriptionProps = (0, import_react73.useCallback)(
+        const getDescriptionProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -140137,7 +140137,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.description]
         );
-        const getMainWrapperProps = (0, import_react73.useCallback)(
+        const getMainWrapperProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -140149,7 +140149,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.mainWrapper]
         );
-        const getEndWrapperProps = (0, import_react73.useCallback)(
+        const getEndWrapperProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -140161,7 +140161,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.endWrapper]
         );
-        const getEndContentProps = (0, import_react73.useCallback)(
+        const getEndContentProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -140173,7 +140173,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.endContent]
         );
-        const getErrorMessageProps = (0, import_react73.useCallback)(
+        const getErrorMessageProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -140184,7 +140184,7 @@
           },
           [slots, errorMessageProps, classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getSpinnerProps = (0, import_react73.useCallback)(
+        const getSpinnerProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               "aria-hidden": (0, import_shared_utils.dataAttr)(true),
@@ -140199,7 +140199,7 @@
           },
           [slots, spinnerRef, spinnerProps, classNames == null ? void 0 : classNames.spinner]
         );
-        const getClearButtonProps = (0, import_react73.useCallback)(
+        const getClearButtonProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -140266,7 +140266,7 @@
           getEndContentProps
         };
       }
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       function useHiddenSelect(props, state, triggerRef) {
         var _a;
         let data = selectData.get(state) || {};
@@ -140324,20 +140324,20 @@
         let { state, triggerRef, selectRef, label, name, isDisabled, form } = props;
         let { containerProps, selectProps } = useHiddenSelect({ ...props, selectRef }, state, triggerRef);
         if (state.collection.size <= 300) {
-          return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("div", { ...containerProps, "data-testid": "hidden-select-container", children: /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)("label", { children: [
+          return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ...containerProps, "data-testid": "hidden-select-container", children: /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("label", { children: [
             label,
-            /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)("select", { ...selectProps, ref: selectRef, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("option", {}),
+            /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("select", { ...selectProps, ref: selectRef, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("option", {}),
               [...state.collection.getKeys()].map((key) => {
                 let item = state.collection.getItem(key);
                 if ((item == null ? void 0 : item.type) === "item") {
-                  return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("option", { value: item.key, children: item.textValue }, item.key);
+                  return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("option", { value: item.key, children: item.textValue }, item.key);
                 }
               })
             ] })
           ] }) });
         } else if (name) {
-          return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
             "input",
             {
               autoComplete: selectProps.autoComplete,
@@ -141039,11 +141039,11 @@
       var import_visually_hidden = require_main8();
       var import_slider = require_main63();
       var import_react_utils = require_dist10();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_interactions = require_main17();
       var import_focus2 = require_main18();
       var import_shared_utils = require_dist2();
-      var import_i18n10 = require_main5();
+      var import_i18n12 = require_main5();
       function useSliderThumb(props) {
         const {
           ref,
@@ -141063,8 +141063,8 @@
         } = props;
         const Component2 = as || "div";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const inputRef = (0, import_react73.useRef)(null);
-        const numberFormatter = (0, import_i18n10.useNumberFormatter)(formatOptions);
+        const inputRef = (0, import_react75.useRef)(null);
+        const numberFormatter = (0, import_i18n12.useNumberFormatter)(formatOptions);
         const { thumbProps, inputProps, isDragging: isDragging2, isFocused } = (0, import_slider.useSliderThumb)(
           {
             index: index3,
@@ -141127,7 +141127,7 @@
           getInputProps
         };
       }
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var SliderThumb = (0, import_system.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -141144,14 +141144,14 @@
         const thumbProps = {
           ...getThumbProps(),
           index: index3,
-          children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_visually_hidden.VisuallyHidden, { children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("input", { ...getInputProps() }) })
+          children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_visually_hidden.VisuallyHidden, { children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("input", { ...getInputProps() }) })
         };
         const content = (0, import_react_utils2.renderFn)({
           Component: Component2,
           props: thumbProps,
           renderCustom: renderThumb
         });
-        return showTooltip ? /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_tooltip.Tooltip, { ...getTooltipProps(), children: content }) : content;
+        return showTooltip ? /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_tooltip.Tooltip, { ...getTooltipProps(), children: content }) : content;
       });
       SliderThumb.displayName = "HeroUI.SliderThumb";
       var slider_thumb_default = SliderThumb;
@@ -142090,7 +142090,7 @@
       var import_react_utils = require_dist10();
       var import_breadcrumbs = require_main66();
       var import_shared_utils = require_dist2();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useBreadcrumbItem(originalProps) {
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.breadcrumbItem.variantKeys);
         const {
@@ -142117,7 +142117,7 @@
           domRef
         );
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)();
-        const slots = (0, import_react73.useMemo)(
+        const slots = (0, import_react75.useMemo)(
           () => (0, import_theme.breadcrumbItem)({
             ...variantProps2,
             isCurrent,
@@ -142166,7 +142166,7 @@
           getSeparatorProps
         };
       }
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Breadcrumbs = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -142184,13 +142184,13 @@
           ...props,
           ref
         });
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(WrapperComponent, { ...getBaseProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(Component2, { ...getItemProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(WrapperComponent, { ...getBaseProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(Component2, { ...getItemProps(), children: [
             startContent,
             children,
             endContent
           ] }),
-          !isLast && !hideSeparator && /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("span", { ...getSeparatorProps(), children: separator })
+          !isLast && !hideSeparator && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { ...getSeparatorProps(), children: separator })
         ] });
       });
       Breadcrumbs.displayName = "HeroUI.Breadcrumbs";
@@ -146284,10 +146284,10 @@
       var import_input = require_dist53();
       var import_framer_motion2 = require_cjs4();
       var import_shared_utils = require_dist2();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_utils = require_dist10();
       var import_combobox = require_main67();
-      var import_i18n10 = require_main5();
+      var import_i18n12 = require_main5();
       var import_theme = require_dist12();
       var import_use_safe_layout_effect = require_dist21();
       var import_system = require_dist11();
@@ -146339,7 +146339,7 @@
           isReadOnly = false,
           ...otherProps
         } = props;
-        const { contains } = (0, import_i18n10.useFilter)(filterOptions);
+        const { contains } = (0, import_i18n12.useFilter)(filterOptions);
         const { onChange: _onChange, ...restProps } = originalProps;
         let state = (0, import_combobox.useComboBoxState)({
           ...restProps,
@@ -146378,10 +146378,10 @@
             disabledKeys: /* @__PURE__ */ new Set([...state.collection.getKeys()])
           }
         };
-        const buttonRef = (0, import_react73.useRef)(null);
-        const inputWrapperRef = (0, import_react73.useRef)(null);
-        const listBoxRef = (0, import_react73.useRef)(null);
-        const popoverRef = (0, import_react73.useRef)(null);
+        const buttonRef = (0, import_react75.useRef)(null);
+        const inputWrapperRef = (0, import_react75.useRef)(null);
+        const listBoxRef = (0, import_react75.useRef)(null);
+        const popoverRef = (0, import_react75.useRef)(null);
         const inputRef = (0, import_react_utils.useDOMRef)(ref);
         const scrollShadowRef = (0, import_react_utils.useDOMRef)(scrollRefProp);
         const {
@@ -146480,7 +146480,7 @@
             state.setInputValue(item.textValue);
           }
         }, [inputRef.current]);
-        (0, import_react73.useEffect)(() => {
+        (0, import_react75.useEffect)(() => {
           let keyToFocus;
           if (state.value && state.collection.getItem(state.value) && !state.disabledKeys.has(state.value)) {
             keyToFocus = state.value;
@@ -146493,7 +146493,7 @@
           }
           state.selectionManager.setFocusedKey(keyToFocus);
         }, [state.collection, state.disabledKeys, state.value, state.isOpen, state.inputValue]);
-        (0, import_react73.useEffect)(() => {
+        (0, import_react75.useEffect)(() => {
           if (state.isOpen && popoverRef.current && listBoxRef.current) {
             let selectedItem = listBoxRef.current.querySelector("[aria-selected=true] [data-label=true]");
             let scrollShadow = scrollShadowRef.current;
@@ -146505,7 +146505,7 @@
             }
           }
         }, [state.isOpen, disableAnimation]);
-        (0, import_react73.useEffect)(() => {
+        (0, import_react75.useEffect)(() => {
           if (isOpen) {
             if (popoverRef.current && inputWrapperRef.current) {
               let rect = inputWrapperRef.current.getBoundingClientRect();
@@ -146525,7 +146525,7 @@
           };
         }
         const Component2 = as || "div";
-        const slots = (0, import_react73.useMemo)(
+        const slots = (0, import_react75.useMemo)(
           () => (0, import_theme.autocomplete)({
             ...variantProps2,
             isClearable,
@@ -146691,15 +146691,15 @@
           getEndContentWrapperProps
         };
       }
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Autocomplete = (0, import_system2.forwardRef)(function Autocomplete2(props, ref) {
         var _a;
         const {
           Component: Component2,
           isOpen,
           disableAnimation,
-          selectorIcon = /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_shared_icons.ChevronDownIcon, {}),
-          clearIcon = /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_shared_icons.CloseIcon, {}),
+          selectorIcon = /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_shared_icons.ChevronDownIcon, {}),
+          clearIcon = /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_shared_icons.CloseIcon, {}),
           endContent,
           getBaseProps,
           getSelectorButtonProps,
@@ -146712,19 +146712,19 @@
           getEndContentWrapperProps
         } = useAutocomplete({ ...props, ref });
         const listboxProps = getListBoxProps();
-        const popoverContent = isOpen ? /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_popover.FreeSoloPopover, { ...getPopoverProps(), children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_scroll_shadow.ScrollShadow, { ...getListBoxWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_listbox.Listbox, { ...listboxProps }) }) }) : ((_a = listboxProps.state) == null ? void 0 : _a.collection.size) === 0 ? /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("div", { ...getEmptyPopoverProps() }) : null;
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(Component2, { ...getBaseProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+        const popoverContent = isOpen ? /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_popover.FreeSoloPopover, { ...getPopoverProps(), children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_scroll_shadow.ScrollShadow, { ...getListBoxWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_listbox.Listbox, { ...listboxProps }) }) }) : ((_a = listboxProps.state) == null ? void 0 : _a.collection.size) === 0 ? /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ...getEmptyPopoverProps() }) : null;
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(Component2, { ...getBaseProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
             import_input.Input,
             {
               ...getInputProps(),
-              endContent: /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)("div", { ...getEndContentWrapperProps(), children: [
-                endContent || /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_button.Button, { ...getClearButtonProps(), children: clearIcon }),
-                selectorIcon && /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: selectorIcon })
+              endContent: /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { ...getEndContentWrapperProps(), children: [
+                endContent || /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_button.Button, { ...getClearButtonProps(), children: clearIcon }),
+                selectorIcon && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: selectorIcon })
               ] })
             }
           ),
-          disableAnimation ? popoverContent : /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_framer_motion2.AnimatePresence, { children: popoverContent })
+          disableAnimation ? popoverContent : /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion2.AnimatePresence, { children: popoverContent })
         ] });
       });
       var autocomplete_default = Autocomplete;
@@ -151349,17 +151349,17 @@
       var import_theme2 = require_dist12();
       var import_date = require_main74();
       var import_system = require_dist11();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist12();
       var import_utils8 = require_main38();
       var import_react_utils = require_dist10();
-      var import_i18n10 = require_main5();
+      var import_i18n12 = require_main5();
       var import_shared_utils = require_dist2();
       function useCalendarBase(originalProps) {
         var _a, _b, _c, _d, _e, _f, _g;
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.calendar.variantKeys);
         const globalContext = (0, import_system.useProviderContext)();
-        const { locale, direction } = (0, import_i18n10.useLocale)();
+        const { locale, direction } = (0, import_i18n12.useLocale)();
         const isRTL = direction === "rtl";
         const calendarProp = (0, import_date.createCalendar)(
           new import_date.DateFormatter(locale).resolvedOptions().calendar
@@ -151395,7 +151395,7 @@
         const visibleMonths = (0, import_shared_utils.clamp)(visibleMonthsProp, 1, 3);
         const showMonthAndYearPickers = originalProps.showMonthAndYearPickers && visibleMonths === 1;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const handleHeaderExpandedChange = (0, import_react73.useCallback)(
+        const handleHeaderExpandedChange = (0, import_react75.useCallback)(
           (isExpanded) => {
             onHeaderExpandedChange(isExpanded || false);
           },
@@ -151406,10 +151406,10 @@
           isHeaderDefaultExpanded != null ? isHeaderDefaultExpanded : false,
           handleHeaderExpandedChange
         );
-        const visibleDuration = (0, import_react73.useMemo)(() => ({ months: visibleMonths }), [visibleMonths]);
+        const visibleDuration = (0, import_react75.useMemo)(() => ({ months: visibleMonths }), [visibleMonths]);
         const hasMultipleMonths = visibleMonths > 1;
         const shouldFilterDOMProps = typeof Component2 === "string";
-        const slots = (0, import_react73.useMemo)(
+        const slots = (0, import_react75.useMemo)(
           () => (0, import_theme.calendar)({
             ...variantProps2,
             showMonthAndYearPickers,
@@ -151612,8 +151612,8 @@
       var import_framer_motion3 = require_cjs4();
       var import_i18n62 = require_main5();
       var import_framer_utils = require_dist19();
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var ChevronLeftIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var ChevronLeftIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
         "svg",
         {
           "aria-hidden": "true",
@@ -151624,7 +151624,7 @@
           viewBox: "0 0 16 16",
           width: "1em",
           ...props,
-          children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+          children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
             "path",
             {
               d: "M10 3.33334L6 8.00001L10 12.6667",
@@ -151948,7 +151948,7 @@
           }
         ) : /* @__PURE__ */ (0, import_jsx_runtime62.jsx)("header", { ...headerProps, children: headerTitle });
       }
-      var import_react74 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react76 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils7 = require_dist2();
       var import_use_aria_button = require_dist27();
       var import_interactions2 = require_main17();
@@ -152223,7 +152223,7 @@
           onPickerItemPressed,
           onPickerItemKeyDown
         } = useCalendarPicker(props);
-        const EmptyItem = (0, import_react74.useCallback)(
+        const EmptyItem = (0, import_react76.useCallback)(
           (props2) => /* @__PURE__ */ (0, import_jsx_runtime82.jsx)(
             "div",
             {
@@ -152237,7 +152237,7 @@
           ),
           [slots, classNames == null ? void 0 : classNames.pickerItem]
         );
-        const PickerItemWrapper = (0, import_react74.useCallback)(
+        const PickerItemWrapper = (0, import_react76.useCallback)(
           ({ children }) => /* @__PURE__ */ (0, import_jsx_runtime82.jsxs)(import_jsx_runtime82.Fragment, { children: [
             Array.from({ length: EMPTY_ITEMS_OFFSET }, (_, i) => /* @__PURE__ */ (0, import_jsx_runtime82.jsx)(EmptyItem, {}, i)),
             children,
@@ -157320,7 +157320,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_system4 = require_dist11();
-      var import_i18n10 = require_main5();
+      var import_i18n12 = require_main5();
       var import_date = require_main74();
       var import_system = require_dist11();
       var import_system2 = require_dist11();
@@ -157329,14 +157329,14 @@
       var import_datepicker2 = require_main77();
       var import_shared_utils = require_dist2();
       var import_theme = require_dist12();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_form = require_dist33();
       function useDateInput(originalProps) {
         var _a, _b, _c, _d, _e, _f, _g;
         const globalContext = (0, import_system.useProviderContext)();
         const { validationBehavior: formValidationBehavior } = (0, import_form.useSlottedContext)(import_form.FormContext) || {};
         const [props, variantProps2] = (0, import_system2.mapPropsVariants)(originalProps, import_theme.dateInput.variantKeys);
-        const { locale } = (0, import_i18n10.useLocale)();
+        const { locale } = (0, import_i18n12.useLocale)();
         const calendarProp = (0, import_date.createCalendar)(
           new import_date.DateFormatter(locale).resolvedOptions().calendar
         );
@@ -157396,7 +157396,7 @@
           label
         });
         const shouldLabelBeOutside = labelPlacement === "outside" || labelPlacement === "outside-left" || labelPlacement === "outside-top";
-        const slots = (0, import_react73.useMemo)(
+        const slots = (0, import_react75.useMemo)(
           () => (0, import_theme.dateInput)({
             ...variantProps2,
             disableAnimation,
@@ -157516,7 +157516,7 @@
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system3 = require_dist11();
       var import_shared_utils2 = require_dist2();
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var DateInputGroup = (0, import_system3.forwardRef)((props, ref) => {
         const {
           as,
@@ -157539,7 +157539,7 @@
           ...otherProps
         } = props;
         const Component2 = as || "div";
-        const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("span", { ...labelProps, children: label }) : null;
+        const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { ...labelProps, children: label }) : null;
         const errorMessage = typeof errorMessageProp === "function" ? errorMessageProp({
           isInvalid,
           validationErrors,
@@ -157548,7 +157548,7 @@
         const hasHelper = !!description || !!errorMessage;
         const helperWrapper = (0, import_react210.useMemo)(() => {
           if (!hasHelper) return null;
-          return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("div", { ...helperWrapperProps, children: isInvalid && errorMessage ? /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("div", { ...errorMessageProps, children: errorMessage }) : description ? /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("div", { ...descriptionProps, children: description }) : null });
+          return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ...helperWrapperProps, children: isInvalid && errorMessage ? /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ...errorMessageProps, children: errorMessage }) : description ? /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ...descriptionProps, children: description }) : null });
         }, [
           hasHelper,
           errorMessage,
@@ -157557,11 +157557,11 @@
           errorMessageProps,
           descriptionProps
         ]);
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(Component2, { ...otherProps, ref, "data-has-helper": (0, import_shared_utils2.dataAttr)(hasHelper), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(Component2, { ...otherProps, ref, "data-has-helper": (0, import_shared_utils2.dataAttr)(hasHelper), children: [
           shouldLabelBeOutside ? labelContent : null,
-          /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)("div", { ...groupProps, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { ...groupProps, children: [
             !shouldLabelBeOutside ? labelContent : null,
-            /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)("div", { ...wrapperProps, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { ...wrapperProps, children: [
               startContent,
               children,
               endContent
@@ -157894,10 +157894,10 @@
       var import_form = require_dist33();
       var import_shared_utils = require_dist2();
       var import_theme = require_dist12();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
-      var import_i18n10 = require_main5();
+      var import_i18n12 = require_main5();
       var import_utils8 = require_main38();
       var messages_default = {
         "ar-AE": {
@@ -158109,7 +158109,7 @@
           onHeaderExpandedChange,
           ...restUserCalendarProps
         } = userCalendarProps;
-        const handleHeaderExpandedChange = (0, import_react73.useCallback)(
+        const handleHeaderExpandedChange = (0, import_react75.useCallback)(
           (isExpanded) => {
             onHeaderExpandedChange == null ? void 0 : onHeaderExpandedChange(isExpanded || false);
           },
@@ -158118,7 +158118,7 @@
         const [isCalendarHeaderExpanded, setIsCalendarHeaderExpanded] = (0, import_utils8.useControlledState)(isHeaderExpanded, isHeaderDefaultExpanded != null ? isHeaderDefaultExpanded : false, handleHeaderExpandedChange);
         const domRef = (0, import_react_utils.useDOMRef)(ref);
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        let stringFormatter = (0, import_i18n10.useLocalizedStringFormatter)(messages_default);
+        let stringFormatter = (0, import_i18n12.useLocalizedStringFormatter)(messages_default);
         const isDefaultColor = originalProps.color === "default" || !originalProps.color;
         const hasMultipleMonths = visibleMonths > 1;
         const placeholder = originalProps == null ? void 0 : originalProps.placeholderValue;
@@ -158412,7 +158412,7 @@
           getSelectorIconProps
         };
       }
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var DatePicker = (0, import_system3.forwardRef)(function DatePicker2(props, ref) {
         const { selectorButtonPlacement = "end", ...otherProps } = props;
         const {
@@ -158432,11 +158432,11 @@
           CalendarTopContent,
           CalendarBottomContent
         } = useDatePicker({ ...otherProps, ref });
-        const selectorContent = (0, import_react410.isValidElement)(selectorIcon) ? (0, import_react410.cloneElement)(selectorIcon, getSelectorIconProps()) : /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_shared_icons.CalendarBoldIcon, { ...getSelectorIconProps() });
+        const selectorContent = (0, import_react410.isValidElement)(selectorIcon) ? (0, import_react410.cloneElement)(selectorIcon, getSelectorIconProps()) : /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_shared_icons.CalendarBoldIcon, { ...getSelectorIconProps() });
         const calendarBottomContent = (0, import_react310.useMemo)(() => {
           if (isCalendarHeaderExpanded) return null;
-          return showTimeField ? /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(import_jsx_runtime29.Fragment, { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_date_input.TimeInput, { ...getTimeInputProps() }),
+          return showTimeField ? /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(import_jsx_runtime31.Fragment, { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_date_input.TimeInput, { ...getTimeInputProps() }),
             CalendarBottomContent
           ] }) : CalendarBottomContent;
         }, [state, showTimeField, CalendarBottomContent, isCalendarHeaderExpanded]);
@@ -158444,7 +158444,7 @@
           if (isCalendarHeaderExpanded) return null;
           return CalendarTopContent;
         }, [showTimeField, CalendarTopContent, isCalendarHeaderExpanded]);
-        const popoverContent = state.isOpen ? /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_popover.FreeSoloPopover, { ...getPopoverProps(), children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+        const popoverContent = state.isOpen ? /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_popover.FreeSoloPopover, { ...getPopoverProps(), children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
           import_calendar.Calendar,
           {
             ...getCalendarProps(),
@@ -158454,16 +158454,16 @@
         ) }) : null;
         const dateInputProps = {
           ...getDateInputProps(),
-          endContent: selectorButtonPlacement === "end" ? /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: endContent || selectorContent }) : endContent,
-          startContent: selectorButtonPlacement === "start" ? /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: startContent || selectorContent }) : startContent
+          endContent: selectorButtonPlacement === "end" ? /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: endContent || selectorContent }) : endContent,
+          startContent: selectorButtonPlacement === "start" ? /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: startContent || selectorContent }) : startContent
         };
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)(import_jsx_runtime29.Fragment, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_date_input.DateInput, { ...dateInputProps }),
-          disableAnimation ? popoverContent : /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_framer_motion2.AnimatePresence, { children: popoverContent })
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(import_jsx_runtime31.Fragment, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_date_input.DateInput, { ...dateInputProps }),
+          disableAnimation ? popoverContent : /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion2.AnimatePresence, { children: popoverContent })
         ] });
       });
       var date_picker_default = DatePicker;
-      var import_react74 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react76 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react82 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system5 = require_dist11();
       var import_button2 = require_dist28();
@@ -158880,7 +158880,7 @@
           CalendarBottomContent
         } = useDateRangePicker({ ...otherProps, ref });
         const selectorContent = (0, import_react82.isValidElement)(selectorIcon) ? (0, import_react82.cloneElement)(selectorIcon, getSelectorIconProps()) : /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(import_shared_icons2.CalendarBoldIcon, { ...getSelectorIconProps() });
-        const calendarBottomContent = (0, import_react74.useMemo)(() => {
+        const calendarBottomContent = (0, import_react76.useMemo)(() => {
           if (isCalendarHeaderExpanded) return null;
           return showTimeField ? /* @__PURE__ */ (0, import_jsx_runtime32.jsxs)("div", { className: slots == null ? void 0 : slots.bottomContent({ class: classNames == null ? void 0 : classNames.bottomContent }), children: [
             /* @__PURE__ */ (0, import_jsx_runtime32.jsxs)("div", { className: slots == null ? void 0 : slots.timeInputWrapper({ class: classNames == null ? void 0 : classNames.timeInputWrapper }), children: [
@@ -158890,7 +158890,7 @@
             CalendarBottomContent
           ] }) : CalendarBottomContent;
         }, [state, showTimeField, CalendarBottomContent, isCalendarHeaderExpanded]);
-        const calendarTopContent = (0, import_react74.useMemo)(() => {
+        const calendarTopContent = (0, import_react76.useMemo)(() => {
           if (isCalendarHeaderExpanded) return null;
           return CalendarTopContent;
         }, [showTimeField, CalendarTopContent, isCalendarHeaderExpanded]);
@@ -158955,7 +158955,7 @@
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist12();
       var import_utils8 = require_main38();
       var import_shared_utils = require_dist2();
@@ -158990,16 +158990,16 @@
         const Component2 = as || "div";
         const shouldFilterDOMProps = typeof Component2 === "string";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const handleClose = (0, import_react73.useCallback)(() => {
+        const handleClose = (0, import_react75.useCallback)(() => {
           setIsVisible(false);
           onClose == null ? void 0 : onClose();
         }, [setIsVisible, onClose]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react73.useMemo)(
+        const slots = (0, import_react75.useMemo)(
           () => (0, import_theme.alert)({ hasContent: !(0, import_shared_utils.isEmpty)(description) || !(0, import_shared_utils.isEmpty)(children), ...variantProps2 }),
           [description, (0, import_shared_utils.objectToDeps)(variantProps2)]
         );
-        const getBaseProps = (0, import_react73.useCallback)(() => {
+        const getBaseProps = (0, import_react75.useCallback)(() => {
           return {
             "data-visible": (0, import_shared_utils.dataAttr)(isVisible),
             "data-closeable": (0, import_shared_utils.dataAttr)(isClosable),
@@ -159014,35 +159014,35 @@
             className: slots.base({ class: baseStyles })
           };
         }, [slots, baseStyles]);
-        const getMainWrapperProps = (0, import_react73.useCallback)(() => {
+        const getMainWrapperProps = (0, import_react75.useCallback)(() => {
           return {
             className: slots.mainWrapper({ class: classNames == null ? void 0 : classNames.mainWrapper })
           };
         }, [slots, classNames == null ? void 0 : classNames.mainWrapper]);
-        const getDescriptionProps = (0, import_react73.useCallback)(() => {
+        const getDescriptionProps = (0, import_react75.useCallback)(() => {
           return {
             className: slots.description({ class: classNames == null ? void 0 : classNames.description })
           };
         }, [slots, classNames == null ? void 0 : classNames.description]);
-        const getTitleProps = (0, import_react73.useCallback)(() => {
+        const getTitleProps = (0, import_react75.useCallback)(() => {
           return {
             className: slots.title({ class: classNames == null ? void 0 : classNames.title })
           };
         }, [slots, classNames == null ? void 0 : classNames.title]);
-        const getCloseButtonProps = (0, import_react73.useCallback)(
+        const getCloseButtonProps = (0, import_react75.useCallback)(
           () => ({
             ...closeButtonProps,
             className: slots.closeButton({ class: classNames == null ? void 0 : classNames.closeButton })
           }),
           [slots, classNames == null ? void 0 : classNames.closeButton]
         );
-        const getAlertIconProps = (0, import_react73.useCallback)(
+        const getAlertIconProps = (0, import_react75.useCallback)(
           () => ({
             className: slots.alertIcon({ class: classNames == null ? void 0 : classNames.alertIcon })
           }),
           [slots, classNames == null ? void 0 : classNames.alertIcon]
         );
-        const getIconWrapperProps = (0, import_react73.useCallback)(
+        const getIconWrapperProps = (0, import_react75.useCallback)(
           () => ({
             className: slots.iconWrapper({ class: classNames == null ? void 0 : classNames.iconWrapper })
           }),
@@ -159070,7 +159070,7 @@
           getIconWrapperProps
         };
       }
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var iconMap = {
         primary: import_shared_icons.InfoCircleIcon,
         secondary: import_shared_icons.InfoCircleIcon,
@@ -159103,16 +159103,16 @@
         if (!isVisible) return null;
         const customIcon = icon && (0, import_react210.isValidElement)(icon) ? (0, import_react210.cloneElement)(icon, getAlertIconProps()) : null;
         const IconComponent = iconMap[color2] || iconMap.primary;
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)("div", { ref: domRef, role: "alert", ...getBaseProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { ref: domRef, role: "alert", ...getBaseProps(), children: [
           startContent,
-          /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("div", { ...getIconWrapperProps(), children: customIcon || /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(IconComponent, { ...getAlertIconProps() }) }),
-          /* @__PURE__ */ (0, import_jsx_runtime29.jsxs)("div", { ...getMainWrapperProps(), children: [
-            !(0, import_shared_utils2.isEmpty)(title) && /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("div", { ...getTitleProps(), children: title }),
-            !(0, import_shared_utils2.isEmpty)(description) && /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("div", { ...getDescriptionProps(), children: description }),
+          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ...getIconWrapperProps(), children: customIcon || /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(IconComponent, { ...getAlertIconProps() }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { ...getMainWrapperProps(), children: [
+            !(0, import_shared_utils2.isEmpty)(title) && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ...getTitleProps(), children: title }),
+            !(0, import_shared_utils2.isEmpty)(description) && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ...getDescriptionProps(), children: description }),
             children
           ] }),
           endContent,
-          (isClosable || onClose) && /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+          (isClosable || onClose) && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
             import_button.Button,
             {
               isIconOnly: true,
@@ -159121,7 +159121,7 @@
               variant: "light",
               onPress: handleClose,
               ...getCloseButtonProps(),
-              children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_shared_icons.CloseIcon, { height: 20, width: 20 })
+              children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_shared_icons.CloseIcon, { height: 20, width: 20 })
             }
           )
         ] });
@@ -159168,7 +159168,7 @@
       var import_modal = require_dist63();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_utils = require_dist19();
       var import_shared_utils = require_dist2();
       function useDrawer(originalProps) {
@@ -159183,7 +159183,7 @@
           ...otherProps
         } = originalProps;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const motionProps = (0, import_react73.useMemo)(() => {
+        const motionProps = (0, import_react75.useMemo)(() => {
           if (!(0, import_shared_utils.isEmpty)(drawerMotionProps)) return drawerMotionProps;
           const key = placement === "left" || placement === "right" ? "x" : "y";
           return {
@@ -159210,14 +159210,14 @@
           };
         }, [placement, drawerMotionProps]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react73.useMemo)(
+        const slots = (0, import_react75.useMemo)(
           () => (0, import_theme.drawer)({
             size,
             placement
           }),
           [size, placement]
         );
-        const getModalProps = (0, import_react73.useCallback)(() => {
+        const getModalProps = (0, import_react75.useCallback)(() => {
           return {
             classNames: {
               ...classNames,
@@ -159231,10 +159231,10 @@
         }, [baseStyles, classNames, motionProps, scrollBehavior, size, otherProps]);
         return { domRef, getModalProps };
       }
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Drawer = (0, import_system.forwardRef)(({ children, ...props }, ref) => {
         const { domRef, getModalProps } = useDrawer({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_modal.Modal, { ref: domRef, ...getModalProps(), children });
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_modal.Modal, { ref: domRef, ...getModalProps(), children });
       });
       Drawer.displayName = "HeroUI.Drawer";
       var drawer_default = Drawer;
@@ -159504,7 +159504,7 @@
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
       var import_use_form_reset = require_dist75();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_utils8 = require_main38();
       var import_form = require_main22();
       var import_form2 = require_main39();
@@ -159550,7 +159550,7 @@
           autoFocus,
           isTextInput: true
         });
-        const handleValueChange = (0, import_react73.useCallback)(
+        const handleValueChange = (0, import_react75.useCallback)(
           (value2) => {
             onValueChange(value2 != null ? value2 : "");
           },
@@ -159582,7 +159582,7 @@
         const errorMessage = typeof props.errorMessage === "function" ? props.errorMessage({ isInvalid, validationErrors, validationDetails }) : props.errorMessage || (validationErrors == null ? void 0 : validationErrors.join(" "));
         const description = props.description;
         const hasHelper = !!description || !!errorMessage;
-        const slots = (0, import_react73.useMemo)(
+        const slots = (0, import_react75.useMemo)(
           () => (0, import_theme.inputOtp)({
             ...variantProps2,
             disableAnimation,
@@ -159591,7 +159591,7 @@
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation, isInvalid, isReadOnly]
         );
-        const getBaseProps = (0, import_react73.useCallback)(
+        const getBaseProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ref: baseDomRef,
@@ -159626,7 +159626,7 @@
           },
           [baseDomRef, slots, baseStyles, isDisabled, isInvalid, isRequired, isReadOnly, value, length]
         );
-        const getInputOtpProps = (0, import_react73.useCallback)(
+        const getInputOtpProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             var _a2;
             const otpProps = {
@@ -159670,7 +159670,7 @@
             autoFocus
           ]
         );
-        const getSegmentWrapperProps = (0, import_react73.useCallback)(
+        const getSegmentWrapperProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.segmentWrapper({
@@ -159684,7 +159684,7 @@
           },
           [classNames == null ? void 0 : classNames.segmentWrapper, isDisabled]
         );
-        const getHelperWrapperProps = (0, import_react73.useCallback)(
+        const getHelperWrapperProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.helperWrapper({
@@ -159696,7 +159696,7 @@
           },
           [classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getErrorMessageProps = (0, import_react73.useCallback)(
+        const getErrorMessageProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.errorMessage({
@@ -159708,7 +159708,7 @@
           },
           [classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getDescriptionProps = (0, import_react73.useCallback)(
+        const getDescriptionProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.description({
@@ -159750,7 +159750,7 @@
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils2 = require_dist2();
       var import_theme2 = require_dist12();
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var InputOtpSegment = ({
         ...props
       }) => {
@@ -159762,14 +159762,14 @@
         const displayValue = (0, import_react210.useMemo)(() => {
           var _a2, _b;
           if (props.isActive && !props.char) {
-            return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("div", { className: (0, import_theme2.cn)((_a2 = slots.caret) == null ? void 0 : _a2.call(slots, { class: caretStyles })) });
+            return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { className: (0, import_theme2.cn)((_a2 = slots.caret) == null ? void 0 : _a2.call(slots, { class: caretStyles })) });
           }
           if (props.char) {
-            return type === "password" ? /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("div", { className: (0, import_theme2.cn)((_b = slots.passwordChar) == null ? void 0 : _b.call(slots, { class: passwordCharStyles })) }) : /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("div", { children: props.char });
+            return type === "password" ? /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { className: (0, import_theme2.cn)((_b = slots.passwordChar) == null ? void 0 : _b.call(slots, { class: passwordCharStyles })) }) : /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { children: props.char });
           }
-          return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("div", { children: props.placeholderChar });
+          return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { children: props.placeholderChar });
         }, [props.char, props.isActive, props.placeholderChar, type]);
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
           "div",
           {
             className: (0, import_theme2.cn)((_a = slots.segment) == null ? void 0 : _a.call(slots, { class: segmentStyles })),
@@ -160756,11 +160756,11 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_interactions = require_main17();
-      var import_i18n10 = require_main5();
+      var import_i18n12 = require_main5();
       var import_shared_utils = require_dist2();
       var import_numberfield = require_main78();
       var import_numberfield2 = require_main79();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_form = require_dist33();
       function useNumberInput(originalProps) {
         var _a, _b, _c;
@@ -160788,14 +160788,14 @@
           hideStepper,
           ...otherProps
         } = props;
-        const [isFocusWithin, setFocusWithin] = (0, import_react73.useState)(false);
+        const [isFocusWithin, setFocusWithin] = (0, import_react75.useState)(false);
         const Component2 = as || "div";
         const disableAnimation = (_c = (_b = originalProps.disableAnimation) != null ? _b : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _c : false;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
         const baseDomRef = (0, import_react_utils.useDOMRef)(baseRef);
         const inputWrapperRef = (0, import_react_utils.useDOMRef)(wrapperRef);
         const innerWrapperRef = (0, import_react_utils.useDOMRef)(innerWrapperRefProp);
-        const { locale } = (0, import_i18n10.useLocale)();
+        const { locale } = (0, import_i18n12.useLocale)();
         const state = (0, import_numberfield.useNumberFieldState)({
           ...originalProps,
           validationBehavior,
@@ -160818,7 +160818,7 @@
         const isFilled = !(0, import_shared_utils.isEmpty)(state.inputValue) && !(0, import_shared_utils.isEmpty)(inputValue);
         const isFilledWithin = isFilled || isFocusWithin;
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className, isFilled ? "is-filled" : "");
-        const handleClear = (0, import_react73.useCallback)(() => {
+        const handleClear = (0, import_react75.useCallback)(() => {
           var _a2;
           state.setInputValue("");
           onClear == null ? void 0 : onClear();
@@ -160862,7 +160862,7 @@
         const hasStartContent = !!startContent;
         const isLabelOutside = shouldLabelBeOutside ? labelPlacement === "outside-left" || isOutsideTop || hasPlaceholder || labelPlacement === "outside" && hasStartContent : false;
         const isLabelOutsideAsPlaceholder = labelPlacement === "outside" && !hasPlaceholder && !hasStartContent;
-        const slots = (0, import_react73.useMemo)(
+        const slots = (0, import_react75.useMemo)(
           () => (0, import_theme.numberInput)({
             ...variantProps2,
             isInvalid,
@@ -160879,7 +160879,7 @@
             disableAnimation
           ]
         );
-        const handleKeyDown = (0, import_react73.useCallback)(
+        const handleKeyDown = (0, import_react75.useCallback)(
           (e) => {
             var _a2, _b2;
             const inputElement = e.currentTarget;
@@ -160909,7 +160909,7 @@
           },
           [inputValue, state, onClear, isClearable, originalProps.isReadOnly]
         );
-        const getBaseProps = (0, import_react73.useCallback)(
+        const getBaseProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ref: baseDomRef,
@@ -160959,7 +160959,7 @@
             originalProps.isDisabled
           ]
         );
-        const getLabelProps = (0, import_react73.useCallback)(
+        const getLabelProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "label",
@@ -160969,7 +160969,7 @@
           },
           [slots, isLabelHovered, labelProps, classNames == null ? void 0 : classNames.label]
         );
-        const getNumberInputProps = (0, import_react73.useCallback)(
+        const getNumberInputProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "input",
@@ -161011,7 +161011,7 @@
             handleKeyDown
           ]
         );
-        const getHiddenNumberInputProps = (0, import_react73.useCallback)(
+        const getHiddenNumberInputProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               name: originalProps.name,
@@ -161023,7 +161023,7 @@
           },
           [inputValue, originalProps.name]
         );
-        const getInputWrapperProps = (0, import_react73.useCallback)(
+        const getInputWrapperProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ref: inputWrapperRef,
@@ -161056,7 +161056,7 @@
             classNames == null ? void 0 : classNames.inputWrapper
           ]
         );
-        const getInnerWrapperProps = (0, import_react73.useCallback)(
+        const getInnerWrapperProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ref: innerWrapperRef,
@@ -161074,7 +161074,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.innerWrapper]
         );
-        const getMainWrapperProps = (0, import_react73.useCallback)(
+        const getMainWrapperProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -161086,7 +161086,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.mainWrapper]
         );
-        const getHelperWrapperProps = (0, import_react73.useCallback)(
+        const getHelperWrapperProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -161098,7 +161098,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getDescriptionProps = (0, import_react73.useCallback)(
+        const getDescriptionProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -161109,7 +161109,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.description]
         );
-        const getErrorMessageProps = (0, import_react73.useCallback)(
+        const getErrorMessageProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -161120,7 +161120,7 @@
           },
           [slots, errorMessageProps, classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getClearButtonProps = (0, import_react73.useCallback)(
+        const getClearButtonProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -161136,7 +161136,7 @@
           },
           [slots, isClearButtonFocusVisible, clearPressProps, clearFocusProps, classNames == null ? void 0 : classNames.clearButton]
         );
-        const getStepperWrapperProps = (0, import_react73.useCallback)(
+        const getStepperWrapperProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -161148,7 +161148,7 @@
           },
           [slots]
         );
-        const getStepperIncreaseButtonProps = (0, import_react73.useCallback)(
+        const getStepperIncreaseButtonProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -161163,7 +161163,7 @@
           },
           [slots, incrementButtonProps, classNames == null ? void 0 : classNames.stepperButton]
         );
-        const getStepperDecreaseButtonProps = (0, import_react73.useCallback)(
+        const getStepperDecreaseButtonProps = (0, import_react75.useCallback)(
           (props2 = {}) => {
             return {
               type: "button",
@@ -161220,9 +161220,9 @@
       }
       var import_button = require_dist28();
       var import_shared_icons = require_dist17();
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var NumberInputStepper = ({ direction, ...otherProps }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_button.Button, { disableRipple: true, isIconOnly: true, ...otherProps, children: direction == "up" ? /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_shared_icons.ChevronUpIcon, {}) : /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_shared_icons.ChevronDownIcon, {}) });
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_button.Button, { disableRipple: true, isIconOnly: true, ...otherProps, children: direction == "up" ? /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_shared_icons.ChevronUpIcon, {}) : /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_shared_icons.ChevronDownIcon, {}) });
       };
       NumberInputStepper.displayName = "HeroUI.NumberInputStepper";
       var number_input_stepper_default = NumberInputStepper;
@@ -162774,13 +162774,13 @@
       var import_spinner = require_dist25();
       var import_framer_motion22 = require_cjs4();
       var import_shared_utils = require_dist2();
-      var import_jsx_runtime29 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var domAnimation2 = () => Promise.resolve().then(() => (init_src(), src_exports)).then((res) => res.default);
       var Ripple = (props) => {
         const { ripples = [], motionProps, color: color2 = "currentColor", style: style2, onClear } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_jsx_runtime29.Fragment, { children: ripples.map((ripple) => {
+        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_jsx_runtime31.Fragment, { children: ripples.map((ripple) => {
           const duration = (0, import_shared_utils.clamp)(0.01 * ripple.size, 0.2, ripple.size > 100 ? 0.75 : 0.5);
-          return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_framer_motion22.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(import_framer_motion22.AnimatePresence, { mode: "popLayout", children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion22.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion22.AnimatePresence, { mode: "popLayout", children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
             import_framer_motion22.m.span,
             {
               animate: {
@@ -162818,10 +162818,10 @@
       Ripple.displayName = "HeroUI.Ripple";
       var ripple_default = Ripple;
       var import_shared_utils2 = require_dist2();
-      var import_react73 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useRipple(props = {}) {
-        const [ripples, setRipples] = (0, import_react73.useState)([]);
-        const onPress = (0, import_react73.useCallback)((event) => {
+        const [ripples, setRipples] = (0, import_react75.useState)([]);
+        const onPress = (0, import_react75.useCallback)((event) => {
           const trigger = event.target;
           const size = Math.max(trigger.clientWidth, trigger.clientHeight);
           setRipples((prevRipples) => [
@@ -162834,7 +162834,7 @@
             }
           ]);
         }, []);
-        const onClear = (0, import_react73.useCallback)((key) => {
+        const onClear = (0, import_react75.useCallback)((key) => {
           setRipples((prevState) => prevState.filter((ripple) => ripple.key !== key));
         }, []);
         return { ripples, onClear, onPress, ...props };
@@ -163299,7 +163299,7 @@
       var button_default = Button;
       var import_shared_icons = require_dist17();
       var import_framer_motion3 = require_cjs4();
-      var import_react74 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react76 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_spinner2 = require_dist25();
       var import_system3 = require_dist11();
       var import_theme2 = require_dist12();
@@ -163834,11 +163834,11 @@
           ...props,
           ref
         });
-        const customIcon = typeof icon === "function" ? icon(getIconProps()) : (0, import_react74.isValidElement)(icon) && (0, import_react74.cloneElement)(icon, getIconProps());
+        const customIcon = typeof icon === "function" ? icon(getIconProps()) : (0, import_react76.isValidElement)(icon) && (0, import_react76.cloneElement)(icon, getIconProps());
         const IconComponent = severity ? iconMap[severity] : iconMap[color2] || iconMap.default;
-        const customLoadingComponent = loadingComponent && (0, import_react74.isValidElement)(loadingComponent) ? (0, import_react74.cloneElement)(loadingComponent, getLoadingComponentProps()) : null;
+        const customLoadingComponent = loadingComponent && (0, import_react76.isValidElement)(loadingComponent) ? (0, import_react76.cloneElement)(loadingComponent, getLoadingComponentProps()) : null;
         const loadingIconComponent = isLoading ? customLoadingComponent || /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(import_spinner2.Spinner, { ...getSpinnerComponentProps() }) : null;
-        const customCloseIcon = typeof closeIcon === "function" ? closeIcon({}) : (0, import_react74.isValidElement)(closeIcon) && (0, import_react74.cloneElement)(closeIcon, {});
+        const customCloseIcon = typeof closeIcon === "function" ? closeIcon({}) : (0, import_react76.isValidElement)(closeIcon) && (0, import_react76.cloneElement)(closeIcon, {});
         const toastContent = /* @__PURE__ */ (0, import_jsx_runtime32.jsxs)(Component2, { ref: domRef, ...getToastProps(), children: [
           /* @__PURE__ */ (0, import_jsx_runtime32.jsxs)("div", { ...getContentProps(), children: [
             hideIcon && !isLoading ? null : loadingIconComponent || customIcon || /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(IconComponent, { ...getIconProps() }),
@@ -166412,6 +166412,7 @@
       noProviders: "No streaming providers found",
       tmdbRating: "Rating",
       tmdbVoteAverage: "TMDb vote average",
+      cast: "Cast",
       keywords: "Keywords",
       showLess: "Show less",
       recommendations: "Recommendations",
@@ -166432,6 +166433,11 @@
       loadingSeasons: "Loading seasons\u2026",
       loadingEpisodes: "Loading episodes\u2026",
       noSeasons: "No seasons found.",
+      epPlaying: "Playing",
+      epNext: "Next",
+      epWatched: "watched",
+      epRemaining: "{time} left",
+      seasonLabel: "Season",
       noEpisodes: "No episodes found.",
       notAiredYet: "Not aired yet",
       nextAirs: "Next",
@@ -166443,6 +166449,13 @@
       noStreamYet: "No stream yet",
       addAndPlay: "Add & Play",
       searchingStreams: "Searching for streams\u2026",
+      allSources: "All sources",
+      tvSearchTypeTab: "Type",
+      tvSearchSpace: "Space",
+      tvSearchDelete: "Delete",
+      sourcesStillSearching: "Still searching:",
+      sourceFilter: "Source",
+      sourcesNoAnswer: "No answer from:",
       noStreams: "No streams found.",
       allFiltered: "All streams filtered by quality settings.",
       preparingPlayback: "Preparing playback\u2026",
@@ -166621,6 +166634,11 @@
       subtitleLanguages: "Subtitle Languages",
       subtitleVariants: "Subtitles Variants",
       subtitleSettings: "Subtitles Settings",
+      subtitleLoadFile: "Open subtitle file\u2026",
+      subtitleExternalGroup: "Own file",
+      subtitleEmbeddedTrack: "Embedded track",
+      subtitleFileUnsupported: "This format can only be shown by the built-in player on Mac (mpv). Use .srt or .vtt here.",
+      subtitleFileLoadFailed: "Could not load the subtitle file. {message}",
       selectLanguage: "Select a language",
       on: "On",
       off: "Off",
@@ -166811,6 +166829,12 @@
       plSegmentBadges: "Intro/outro badges",
       plMute: "Mute",
       plVolume: "Volume slider",
+      plAudioDelay: "Audio delay",
+      plNextEpisode: "Next episode",
+      audioDelayTitle: "Audio delay",
+      audioDelayHint: "Adjust lip sync. A positive value plays audio later.",
+      btAudioAutoOffset: "Compensate for Bluetooth latency",
+      btAudioAutoOffsetDesc: "Wireless audio arrives 100\u2013300 ms late depending on codec. Added to your own delay when the output is wireless.",
       plFullscreen: "Fullscreen",
       plShow: "Show",
       plHide: "Hide",
@@ -167085,6 +167109,8 @@
       themeSystem: "Follow system",
       uiScale: "Interface scale",
       uiScaleDesc: "Scales the entire interface. Useful on 4K and ultrawide screens.",
+      menuScale: "Menu scale",
+      menuScaleDesc: "Scales only the side menu \u2014 icons and labels \u2014 independently of the interface scale.",
       reduceMotion: "Reduce motion",
       reduceMotionDesc: "Turns off animations and soft transitions throughout the app.",
       settingsPagePluginManage: "Manage plugins",
@@ -167116,6 +167142,8 @@
       traktConflictTrakt: "Trakt wins",
       traktConflictLocal: "This device wins",
       showTraktCommentsDesc: "Public Trakt comments under movies and series. Spoiler-marked ones stay hidden until you click them.",
+      showTraktCommentsNeedsTrakt: "Requires a connected Trakt account (Tracking \u2192 Trakt).",
+      traktCommentsConnectHint: "Connect Trakt under Settings \u2192 Tracking to see comments.",
       shortcutsBindableTitle: "KEYS (CLICK TO CHANGE)",
       shortcutsTracks: "Tracks",
       shortcutsGlobal: "Global",
@@ -167138,6 +167166,8 @@
       ovTraktTitle: "Trakt",
       ovTraktConnectedDesc: "Connected \u2014 playback and lists sync.",
       ovTraktMissingDesc: "Not connected \u2014 connect to sync watch state across devices.",
+      ovFfmpegTitle: "Video tools missing on this device",
+      ovFfmpegMissingDesc: "The bundled ffmpeg is not available for this device's processor. Playback still works, but casting, the local proxy stream, chapters, Dolby Vision detection and subtitle sync are disabled.",
       ovOpenTracking: "Open Tracking services",
       ovTmdbTitle: "TMDb key",
       ovTmdbOkDesc: "Saved \u2014 catalogs and title logos load.",
@@ -167626,6 +167656,20 @@
       heroRotationDesc: "How often the hero banner rotates on its own. Off means it only changes when you swipe.",
       heroRotationNever: "Never",
       nextEpPopupAuto: "Auto",
+      creditsRecommendations: "Recommendations during the credits",
+      creditsRecommendationsDesc: "When the credits start, the picture shrinks to a corner window and the next title is shown. Applies to films and season finales \u2014 never mid-season.",
+      creditsFinishedSeason: "Season %s is over",
+      creditsNextSeason: "Season %s",
+      creditsFinishedTitle: "You finished",
+      creditsSeriesEnded: "The series has ended",
+      creditsBackToFilm: "Back to the film",
+      creditsRemaining: "Left",
+      creditsSectionEyebrow: "Playback",
+      creditsSectionTitle: "When a film or series ends",
+      creditsSectionHint: "What the player does once the credits start.",
+      creditsThreshold: "Credits start",
+      creditsThresholdDesc: "How far before the end the credits view opens when the file has no detected credits marker. Later is safer \u2014 too early covers the ending.",
+      minutesBeforeEnd: "min before the end",
       advanceAtOutro: "Skip the credits and go straight to the next episode",
       advanceAtOutroDesc: "When an outro is detected, the next episode starts immediately instead of showing the next-episode card. Episodes without a detected outro still show the card.",
       stayFullscreenOnClose: "Stay fullscreen when the player closes",
@@ -167736,6 +167780,56 @@
       introDebugLoading: "IntroDB loading",
       introDebugFound: "Intro found",
       introDebugMissing: "No intro match",
+      /* Ytor som låg med hårdkodad svenska: startsplashen, fjärranslutningen,
+         felgränserna och två Suspense-etiketter. De visades på svenska även för
+         en engelsk profil. */
+      advBackupSavedTitle: "Settings copy saved",
+      advBackupOpenOnOtherDevice: "Open this address on the other device, download the file, and press Import there.",
+      advTransferTitle: "Move settings to another device",
+      advTransferHint: "Copy everything you have set up here \u2014 sources, keys, layout, lists \u2014 to another Lumio on the same Wi-Fi. Settings that belong to a particular device, like TV mode, audio output, gestures and autoplay limits, stay where they are.",
+      advTransferReceiveTitle: "Receive from another device",
+      advTransferReceiveDesc: "Start here on the device that should get the settings. It shows a code and becomes visible to other Lumio devices on the network for ten minutes.",
+      advTransferReceiveStart: "Receive",
+      advTransferReceiveStop: "Stop",
+      advTransferReceiveWaiting: "Waiting\u2026 On the other device, open Settings \u2192 Advanced \u2192 Send to another device, pick this one and enter the code:",
+      advTransferReceiveIpHint: "If this device does not show up in the list, enter its address manually:",
+      advTransferReceived: "Settings received \u2014 restarting\u2026",
+      advTransferSendTitle: "Send to another device",
+      advTransferSendDesc: "Start here on the device that has the settings. Press Receive on the other device first, then pick it below and enter the code it shows.",
+      advTransferSendOpen: "Send\u2026",
+      advTransferDevices: "Devices on the network",
+      advTransferNoDevices: "No device found yet. Make sure the other device has pressed Receive and is on the same Wi-Fi \u2014 or enter its address below.",
+      advTransferRefresh: "Search again",
+      advTransferManualIp: "Address (e.g. 192.168.1.20)",
+      advTransferCode: "Code shown on the other device",
+      advTransferSend: "Send settings",
+      advTransferSending: "Sending\u2026",
+      advTransferSent: "Sent. The other device is restarting with your settings.",
+      advTransferFailed: "Could not send",
+      advTransferWrongCode: "Wrong code. Attempts left: {n}.",
+      appStarting: "Starting Lumio",
+      remoteConnecting: "Connecting to Lumio at home\u2026",
+      clientStartFailed: "The client could not start",
+      clientStartFailedHint: "This is the actual error from the app, not a generic fallback.",
+      loadingPlayer: "Loading player\u2026",
+      loadingAudioPlayer: "Loading audio player\u2026",
+      syncFailed: "Sync failed",
+      genericError: "Error",
+      dlDone: "Done",
+      introFound: "Intro found",
+      /* Korta etiketter i telefonens kontrollrad — brickan är 62 px och pillret
+         ska rymmas i en rullande rad, så namnen är avsiktligt kortare än de
+         fullständiga (som ligger kvar som titel och i Mer-menyn). */
+      plShortEpisodes: "Episodes",
+      plShortPicture: "Picture",
+      plShortWiki: "Wiki",
+      plShortMusic: "Music",
+      plShortZoom: "Zoom",
+      plShortCast: "Cast",
+      plShortFullscreen: "Fullscreen",
+      plShortMore: "More",
+      recapFound: "Recap found",
+      outroFound: "Outro found",
       introDebugAutoOn: "Auto-skip on",
       introDebugAutoOff: "Auto-skip off",
       aspectAuto: "Auto",
@@ -167754,6 +167848,9 @@
       nightModeOff: "Off",
       nightModeMild: "Mild night mode",
       nightModeStrong: "Strong night mode",
+      dvColorLabel: "Dolby Vision",
+      dvColorAuto: "Vivid (auto)",
+      dvColorOff: "Off",
       nightModeMenuLabel: "Night mode",
       nightModeMenuMild: "Mild",
       nightModeMenuStrong: "Strong",
@@ -167942,6 +168039,39 @@
       onboardingControlEyebrow: "READY",
       onboardingControlTitle: "You are in control",
       onboardingControlDesc: "Customise the start page, filters, language and layout exactly the way you want before you begin.",
+      streamsLayoutTitle: "Where streams are shown",
+      streamsLayoutDesc: "In the side panel, or as a section on the page above Recommendations. Series get streams under each episode.",
+      streamsLayoutSidebar: "Side panel",
+      streamsLayoutInline: "On the page",
+      gestTabLabel: "Gestures",
+      gestTitle: "Swipe gestures",
+      gestHint: "What a swipe does in the player. Phone and tablet only.",
+      gestLeftTitle: "Swipe up/down, left half",
+      gestLeftDesc: "Drag vertically on the left side of the picture.",
+      gestRightTitle: "Swipe up/down, right half",
+      gestRightDesc: "Drag vertically on the right side of the picture.",
+      gestHorizontalTitle: "Swipe left/right",
+      gestHorizontalDesc: "Drag sideways anywhere on the picture to scrub.",
+      gestBrightnessTargetTitle: "Brightness controls",
+      gestBrightnessTargetDesc: "Screen brightness dims the whole display and saves battery. Picture brightness lifts black levels and can reveal detail in dark scenes.",
+      gestActionBrightness: "Brightness",
+      gestActionVolume: "Volume",
+      gestActionSeek: "Scrub",
+      gestActionNone: "Nothing",
+      gestTargetScreen: "Screen brightness",
+      gestTargetVideo: "Picture brightness",
+      gestDoubleTapTitle: "Double-tap at the edge",
+      gestDoubleTapDesc: "Skip back or forward by tapping twice near the left or right edge.",
+      gestDoubleTapOff: "Off",
+      gestHoldSpeedTitle: "Hold to fast-forward",
+      gestHoldSpeedDesc: "Press and hold anywhere to play at double speed; release to return to normal.",
+      onboardingPerfEyebrow: "Performance",
+      onboardingPerfTitle: "Matched to your device",
+      onboardingPerfDesc: "We measured this device and set a ceiling for what autoplay may pick on its own. You can raise it now, or change it any time under Playback.",
+      onboardingPerfWhy: "Big remuxes are 40\u201375 GB with audio and video formats a phone or TV box often cannot decode. Autoplay then spends its attempts on files that were never going to play \u2014 a minute of waiting, and a black screen at the end.",
+      onboardingPerfCapLabel: "Largest stream autoplay may pick",
+      onboardingPerfUnlimited: "No limit",
+      onboardingPerfLater: "This only sets the starting point. Nothing is blocked \u2014 you can always pick any stream yourself from the list.",
       onboardingWillInstall: "{count} plugin(s) will be installed when you finish.",
       onboardingInstallFailed: "{names} could not be installed right now \u2014 you can find them under Settings \u2192 Plugins.",
       onboardingOpenAppNow: "Open Lumio now",
@@ -168054,6 +168184,11 @@
       kpFolderLabel: "Folder",
       kpFolderPlaceholder: "/Users/your-name/Movies",
       kpBrowse: "Browse",
+      kpStorageAccessTitle: "Storage access",
+      kpStorageAccessHint: "Android needs all-files access before Lumio can read a folder you type here. Grant it once in system settings.",
+      kpStorageAccessAction: "Open settings",
+      kpStorageAccessGranted: "Granted",
+      kpFolderScanFailed: "Could not read that folder",
       kpPathHint: "The path is read automatically when Lumio starts. Files are matched against TMDb in the background.",
       // Integrations panel
       ipCatAll: "All",
@@ -168266,6 +168401,7 @@
       vpSubHttp: "The subtitle service responded with an error.",
       vpSubLoadFailed: "Could not load subtitle.",
       vpSubDownloadTimeout: "Subtitle download took too long. Try again.",
+      vpWrongEpisodeWarning: "The source delivered {found}, not {wanted}. Pick another stream.",
       vpSubMpvFailedWith: "Could not load subtitle in mpv: {message}",
       vpSubMpvFailed: "Could not load subtitle in mpv.",
       vpNoSubsFound: "No subtitles were found for this title.",
@@ -168298,6 +168434,9 @@
       downloadJobLost: "Lost contact with the download job",
       unexpectedServerResponse: "Unexpected response from the server",
       seriesPlural: "Series",
+      playNow: "Play now",
+      nextOnSeries: "Next on",
+      episodeNumber: "Episode {n}",
       startingIn: "Starting in {seconds}s",
       startingSoon: "Starting soon",
       noStarredTitles: "No starred titles yet.",
@@ -168592,6 +168731,7 @@
       noProviders: "Inga streamingtj\xE4nster hittades",
       tmdbRating: "Betyg",
       tmdbVoteAverage: "TMDb genomsnittsbetyg",
+      cast: "Sk\xE5despelare",
       keywords: "Nyckelord",
       showLess: "Visa mindre",
       recommendations: "Rekommendationer",
@@ -168612,6 +168752,11 @@
       loadingSeasons: "Laddar s\xE4songer\u2026",
       loadingEpisodes: "Laddar avsnitt\u2026",
       noSeasons: "Inga s\xE4songer hittades.",
+      epPlaying: "Spelas",
+      epNext: "N\xE4sta",
+      epWatched: "sedd",
+      epRemaining: "{time} kvar",
+      seasonLabel: "S\xE4song",
       noEpisodes: "Inga avsnitt hittades.",
       notAiredYet: "Ej s\xE4nda",
       nextAirs: "N\xE4sta",
@@ -168623,6 +168768,13 @@
       noStreamYet: "Ingen stream \xE4n",
       addAndPlay: "L\xE4gg till & Spela",
       searchingStreams: "S\xF6ker str\xF6mmar\u2026",
+      allSources: "Alla k\xE4llor",
+      tvSearchTypeTab: "Skriv",
+      tvSearchSpace: "Mellanslag",
+      tvSearchDelete: "Radera",
+      sourcesStillSearching: "S\xF6ker fortfarande:",
+      sourceFilter: "K\xE4lla",
+      sourcesNoAnswer: "Inget svar fr\xE5n:",
       noStreams: "Inga str\xF6mmar hittades.",
       allFiltered: "Alla str\xF6mmar filtrerade bort av kvalitetsinst\xE4llningar.",
       preparingPlayback: "F\xF6rbereder uppspelning\u2026",
@@ -168801,6 +168953,11 @@
       subtitleLanguages: "Undertextspr\xE5k",
       subtitleVariants: "Undertextvarianter",
       subtitleSettings: "Undertextinst\xE4llningar",
+      subtitleLoadFile: "\xD6ppna undertextfil\u2026",
+      subtitleExternalGroup: "Egen fil",
+      subtitleEmbeddedTrack: "Inb\xE4ddat sp\xE5r",
+      subtitleFileUnsupported: "Det h\xE4r formatet kan bara den inbyggda spelaren p\xE5 Mac (mpv) visa. Anv\xE4nd .srt eller .vtt h\xE4r.",
+      subtitleFileLoadFailed: "Kunde inte l\xE4sa in undertextfilen. {message}",
       selectLanguage: "V\xE4lj ett spr\xE5k",
       on: "P\xE5",
       off: "Av",
@@ -168991,6 +169148,12 @@
       plSegmentBadges: "Intro/outro-m\xE4rken",
       plMute: "Ljud av",
       plVolume: "Volymreglage",
+      plAudioDelay: "Ljudf\xF6rdr\xF6jning",
+      plNextEpisode: "N\xE4sta avsnitt",
+      audioDelayTitle: "Ljudf\xF6rdr\xF6jning",
+      audioDelayHint: "Justera l\xE4ppsynk. Positivt v\xE4rde spelar ljudet senare.",
+      btAudioAutoOffset: "Kompensera f\xF6r Bluetooth-latens",
+      btAudioAutoOffsetDesc: "Tr\xE5dl\xF6st ljud kommer 100\u2013300 ms f\xF6r sent beroende p\xE5 kodek. L\xE4ggs p\xE5 din egen f\xF6rdr\xF6jning n\xE4r utg\xE5ngen \xE4r tr\xE5dl\xF6s.",
       plFullscreen: "Helsk\xE4rm",
       plShow: "Visa",
       plHide: "D\xF6lj",
@@ -169265,6 +169428,8 @@
       themeSystem: "F\xF6lj systemet",
       uiScale: "Gr\xE4nssnittsskala",
       uiScaleDesc: "Skalar hela gr\xE4nssnittet. Bra p\xE5 4K- och ultrawide-sk\xE4rmar.",
+      menuScale: "Menyskalning",
+      menuScaleDesc: "Skalar bara sidomenyn \u2014 ikoner och etiketter \u2014 oberoende av gr\xE4nssnittsskalan.",
       reduceMotion: "Minska r\xF6relse",
       reduceMotionDesc: "St\xE4nger av animationer och mjuka \xF6verg\xE5ngar i hela appen.",
       settingsPagePluginManage: "Hantera plugins",
@@ -169296,6 +169461,8 @@
       traktConflictTrakt: "Trakt vinner",
       traktConflictLocal: "Den h\xE4r enheten vinner",
       showTraktCommentsDesc: "Publika Trakt-kommentarer under filmer och serier. Spoilerm\xE4rkta d\xF6ljs tills du klickar p\xE5 dem.",
+      showTraktCommentsNeedsTrakt: "Kr\xE4ver ett anslutet Trakt-konto (Sp\xE5rning \u2192 Trakt).",
+      traktCommentsConnectHint: "Anslut Trakt under Inst\xE4llningar \u2192 Sp\xE5rning f\xF6r att se kommentarer.",
       shortcutsBindableTitle: "TANGENTER (KLICKA F\xD6R ATT \xC4NDRA)",
       shortcutsTracks: "Sp\xE5r",
       shortcutsGlobal: "Globalt",
@@ -169318,6 +169485,8 @@
       ovTraktTitle: "Trakt",
       ovTraktConnectedDesc: "Ansluten \u2014 visningar och listor synkas.",
       ovTraktMissingDesc: "Inte ansluten \u2014 anslut f\xF6r att synka tittarstatus mellan enheter.",
+      ovFfmpegTitle: "Videoverktyg saknas p\xE5 den h\xE4r enheten",
+      ovFfmpegMissingDesc: "Den medskickade ffmpeg finns inte f\xF6r enhetens processor. Uppspelning fungerar, men casting, den lokala proxystr\xF6mmen, kapitel, Dolby Vision-detektering och undertextsynk \xE4r avst\xE4ngda.",
       ovOpenTracking: "\xD6ppna Sp\xE5rningstj\xE4nster",
       ovTmdbTitle: "TMDb-nyckel",
       ovTmdbOkDesc: "Sparad \u2014 kataloger och titellogotyper h\xE4mtas.",
@@ -169802,6 +169971,20 @@
       heroRotationDesc: "Hur ofta hero-bannern roterar av sig sj\xE4lv. Av betyder att den bara byter n\xE4r du swipar.",
       heroRotationNever: "Aldrig",
       nextEpPopupAuto: "Auto",
+      creditsRecommendations: "Rekommendationer vid eftertexterna",
+      creditsRecommendationsDesc: "N\xE4r eftertexterna b\xF6rjar krymper bilden till ett h\xF6rnf\xF6nster och n\xE4sta titel visas. G\xE4ller filmer och s\xE4songsavslut \u2014 aldrig mitt i en s\xE4song.",
+      creditsFinishedSeason: "S\xE4song %s \xE4r slut",
+      creditsNextSeason: "S\xE4song %s",
+      creditsFinishedTitle: "Du s\xE5g klart",
+      creditsSeriesEnded: "Serien \xE4r slut",
+      creditsBackToFilm: "Tillbaka till filmen",
+      creditsRemaining: "Kvar",
+      creditsSectionEyebrow: "Uppspelning",
+      creditsSectionTitle: "N\xE4r en film eller serie tar slut",
+      creditsSectionHint: "Vad spelaren g\xF6r n\xE4r eftertexterna b\xF6rjar.",
+      creditsThreshold: "Eftertexterna b\xF6rjar",
+      creditsThresholdDesc: "Hur l\xE5ngt f\xF6re slutet eftertextvyn \xF6ppnas n\xE4r filen saknar detekterad mark\xF6r. Senare \xE4r s\xE4krare \u2014 f\xF6r tidigt t\xE4cker slutet.",
+      minutesBeforeEnd: "min f\xF6re slutet",
       advanceAtOutro: "Hoppa \xF6ver eftertexterna och g\xE5 direkt till n\xE4sta avsnitt",
       advanceAtOutroDesc: "N\xE4r ett outro hittas startar n\xE4sta avsnitt direkt i st\xE4llet f\xF6r att kortet visas. Avsnitt utan detekterat outro visar kortet som vanligt.",
       stayFullscreenOnClose: "Stanna i helsk\xE4rm n\xE4r spelaren st\xE4ngs",
@@ -169912,6 +170095,50 @@
       introDebugLoading: "IntroDB laddar",
       introDebugFound: "Intro hittat",
       introDebugMissing: "Ingen introtr\xE4ff",
+      advBackupSavedTitle: "Kopia av inst\xE4llningarna sparad",
+      advBackupOpenOnOtherDevice: "\xD6ppna adressen p\xE5 den andra enheten, h\xE4mta filen och tryck Importera d\xE4r.",
+      advTransferTitle: "Flytta inst\xE4llningar till en annan enhet",
+      advTransferHint: "Kopiera allt du st\xE4llt in h\xE4r \u2014 k\xE4llor, nycklar, layout, listor \u2014 till en annan Lumio p\xE5 samma wifi. Inst\xE4llningar som h\xF6r till en viss enhet, som TV-l\xE4ge, ljudutg\xE5ng, gester och autospelningens gr\xE4nser, stannar d\xE4r de \xE4r.",
+      advTransferReceiveTitle: "Ta emot fr\xE5n annan enhet",
+      advTransferReceiveDesc: "B\xF6rja h\xE4r p\xE5 enheten som ska f\xE5 inst\xE4llningarna. Den visar en kod och blir synlig f\xF6r andra Lumio-enheter p\xE5 n\xE4tet i tio minuter.",
+      advTransferReceiveStart: "Ta emot",
+      advTransferReceiveStop: "Avbryt",
+      advTransferReceiveWaiting: "V\xE4ntar\u2026 \xD6ppna Inst\xE4llningar \u2192 Avancerat \u2192 Skicka till annan enhet p\xE5 den andra enheten, v\xE4lj den h\xE4r och skriv koden:",
+      advTransferReceiveIpHint: "Syns inte den h\xE4r enheten i listan, skriv in adressen manuellt:",
+      advTransferReceived: "Inst\xE4llningar mottagna \u2014 startar om\u2026",
+      advTransferSendTitle: "Skicka till annan enhet",
+      advTransferSendDesc: "B\xF6rja h\xE4r p\xE5 enheten som har inst\xE4llningarna. Tryck Ta emot p\xE5 den andra enheten f\xF6rst, v\xE4lj den sedan nedan och skriv koden den visar.",
+      advTransferSendOpen: "Skicka\u2026",
+      advTransferDevices: "Enheter p\xE5 n\xE4tet",
+      advTransferNoDevices: "Ingen enhet hittad \xE4n. Kontrollera att den andra enheten tryckt Ta emot och \xE4r p\xE5 samma wifi \u2014 eller skriv in dess adress nedan.",
+      advTransferRefresh: "S\xF6k igen",
+      advTransferManualIp: "Adress (t.ex. 192.168.1.20)",
+      advTransferCode: "Koden som visas p\xE5 den andra enheten",
+      advTransferSend: "Skicka inst\xE4llningar",
+      advTransferSending: "Skickar\u2026",
+      advTransferSent: "Skickat. Den andra enheten startar om med dina inst\xE4llningar.",
+      advTransferFailed: "Kunde inte skicka",
+      advTransferWrongCode: "Fel kod. F\xF6rs\xF6k kvar: {n}.",
+      appStarting: "Startar Lumio",
+      remoteConnecting: "Ansluter till Lumio hemma\u2026",
+      clientStartFailed: "Klienten kunde inte starta korrekt",
+      clientStartFailedHint: "Det h\xE4r \xE4r det faktiska felmeddelandet fr\xE5n appen, inte en generisk reserv.",
+      loadingPlayer: "Laddar spelare\u2026",
+      loadingAudioPlayer: "Laddar ljudspelare\u2026",
+      syncFailed: "Fel vid synk",
+      genericError: "Fel",
+      dlDone: "Klar",
+      introFound: "Intro hittad",
+      plShortEpisodes: "Avsnitt",
+      plShortPicture: "Bild",
+      plShortWiki: "Wiki",
+      plShortMusic: "Musik",
+      plShortZoom: "Zoom",
+      plShortCast: "Casta",
+      plShortFullscreen: "Fullsk\xE4rm",
+      plShortMore: "Mer",
+      recapFound: "Recap hittad",
+      outroFound: "Outro hittad",
       introDebugAutoOn: "Auto-skip p\xE5",
       introDebugAutoOff: "Auto-skip av",
       aspectAuto: "Auto",
@@ -169930,6 +170157,9 @@
       nightModeOff: "Av",
       nightModeMild: "Mild nattl\xE4ge",
       nightModeStrong: "Stark nattl\xE4ge",
+      dvColorLabel: "Dolby Vision",
+      dvColorAuto: "Vivid (auto)",
+      dvColorOff: "Av",
       nightModeMenuLabel: "Nattl\xE4ge",
       nightModeMenuMild: "Mild",
       nightModeMenuStrong: "Stark",
@@ -170118,6 +170348,39 @@
       onboardingControlEyebrow: "KLART",
       onboardingControlTitle: "Du har full kontroll",
       onboardingControlDesc: "Anpassa startsidan, filter, spr\xE5k och utseende precis som du vill ha det innan du b\xF6rjar.",
+      streamsLayoutTitle: "Var str\xF6mmarna visas",
+      streamsLayoutDesc: "I sidopanelen, eller som en sektion p\xE5 sidan ovanf\xF6r Rekommendationer. Serier f\xE5r str\xF6mmarna under varje avsnitt.",
+      streamsLayoutSidebar: "Sidopanel",
+      streamsLayoutInline: "P\xE5 sidan",
+      gestTabLabel: "Gester",
+      gestTitle: "Svepgester",
+      gestHint: "Vad ett svep g\xF6r i spelaren. Endast telefon och surfplatta.",
+      gestLeftTitle: "Svep upp/ner, v\xE4nster halva",
+      gestLeftDesc: "Dra lodr\xE4tt p\xE5 bildens v\xE4nstra sida.",
+      gestRightTitle: "Svep upp/ner, h\xF6ger halva",
+      gestRightDesc: "Dra lodr\xE4tt p\xE5 bildens h\xF6gra sida.",
+      gestHorizontalTitle: "Svep i sidled",
+      gestHorizontalDesc: "Dra \xE5t sidan var som helst p\xE5 bilden f\xF6r att spola.",
+      gestBrightnessTargetTitle: "Ljusstyrkan styr",
+      gestBrightnessTargetDesc: "Sk\xE4rmens ljus d\xE4mpar hela displayen och sparar batteri. Bildens ljus lyfter svartniv\xE5n och kan gr\xE4va fram detaljer i m\xF6rka scener.",
+      gestActionBrightness: "Ljusstyrka",
+      gestActionVolume: "Volym",
+      gestActionSeek: "Spola",
+      gestActionNone: "Ingenting",
+      gestTargetScreen: "Sk\xE4rmens ljus",
+      gestTargetVideo: "Bildens ljus",
+      gestDoubleTapTitle: "Dubbeltryck vid kanten",
+      gestDoubleTapDesc: "Hoppa bak\xE5t eller fram\xE5t genom att trycka tv\xE5 g\xE5nger n\xE4ra v\xE4nster eller h\xF6ger kant.",
+      gestDoubleTapOff: "Av",
+      gestHoldSpeedTitle: "H\xE5ll f\xF6r snabbspolning",
+      gestHoldSpeedDesc: "H\xE5ll fingret nedtryckt f\xF6r dubbel hastighet; sl\xE4pp f\xF6r att \xE5terg\xE5.",
+      onboardingPerfEyebrow: "Prestanda",
+      onboardingPerfTitle: "Anpassat efter din enhet",
+      onboardingPerfDesc: "Vi m\xE4tte den h\xE4r enheten och satte ett tak f\xF6r vad autospelningen f\xE5r v\xE4lja p\xE5 egen hand. Du kan h\xF6ja det nu, eller \xE4ndra det n\xE4r som helst under Uppspelning.",
+      onboardingPerfWhy: "Stora remuxar \xE4r 40\u201375 GB med ljud- och bildformat som en telefon eller TV-box ofta inte kan avkoda. Autospelningen l\xE4gger d\xE5 sina f\xF6rs\xF6k p\xE5 filer som aldrig skulle g\xE5 att spela \u2014 en minuts v\xE4ntan, och svart sk\xE4rm p\xE5 slutet.",
+      onboardingPerfCapLabel: "St\xF6rsta str\xF6m autospelningen f\xE5r v\xE4lja",
+      onboardingPerfUnlimited: "Ingen gr\xE4ns",
+      onboardingPerfLater: "Det h\xE4r s\xE4tter bara utg\xE5ngsl\xE4get. Ingenting sp\xE4rras \u2014 du kan alltid v\xE4lja vilken str\xF6m du vill sj\xE4lv ur listan.",
       onboardingWillInstall: "{count} till\xE4gg installeras n\xE4r du \xE4r klar.",
       onboardingInstallFailed: "{names} kunde inte installeras just nu \u2014 du hittar dem under Inst\xE4llningar \u2192 Plugins.",
       onboardingOpenAppNow: "\xD6ppna Lumio nu",
@@ -170230,6 +170493,11 @@
       kpFolderLabel: "Mapp",
       kpFolderPlaceholder: "/Users/ditt-namn/Movies",
       kpBrowse: "Bl\xE4ddra",
+      kpStorageAccessTitle: "Lagrings\xE5tkomst",
+      kpStorageAccessHint: "Android kr\xE4ver \xE5tkomst till alla filer innan Lumio kan l\xE4sa en mapp du skriver in h\xE4r. Sl\xE5 p\xE5 den en g\xE5ng i systeminst\xE4llningarna.",
+      kpStorageAccessAction: "\xD6ppna inst\xE4llningar",
+      kpStorageAccessGranted: "Beviljad",
+      kpFolderScanFailed: "Kunde inte l\xE4sa mappen",
       kpPathHint: "S\xF6kv\xE4gen l\xE4ses automatiskt n\xE4r Lumio startar. Filer matchas mot TMDb i bakgrunden.",
       // Integrations panel
       ipCatAll: "Alla",
@@ -170442,6 +170710,7 @@
       vpSubHttp: "Undertexttj\xE4nsten svarade med fel.",
       vpSubLoadFailed: "Kunde inte ladda undertext.",
       vpSubDownloadTimeout: "Undertextladdning tog f\xF6r l\xE5ng tid. F\xF6rs\xF6k igen.",
+      vpWrongEpisodeWarning: "K\xE4llan levererade {found}, inte {wanted}. V\xE4lj en annan str\xF6m.",
       vpSubMpvFailedWith: "Kunde inte ladda undertext i mpv: {message}",
       vpSubMpvFailed: "Kunde inte ladda undertext i mpv.",
       vpNoSubsFound: "Inga undertexter hittades f\xF6r den h\xE4r titeln.",
@@ -170474,6 +170743,9 @@
       downloadJobLost: "Tappade kontakt med nedladdningsjobbet",
       unexpectedServerResponse: "Ov\xE4ntat svar fr\xE5n servern",
       seriesPlural: "Serier",
+      playNow: "Spela nu",
+      nextOnSeries: "H\xE4rn\xE4st i",
+      episodeNumber: "Avsnitt {n}",
       startingIn: "Startar om {seconds}s",
       startingSoon: "Startar snart",
       noStarredTitles: "Inga stj\xE4rnm\xE4rkta titlar \xE4n.",
@@ -170712,6 +170984,49 @@
     return () => {
       window.removeEventListener(EVENT, wrapped);
       offProfile();
+    };
+  }
+
+  // lib/spoiler-settings.ts
+  var KEY_ENABLED = "spoiler_blurEnabled";
+  var KEY_BLUR_THUMBNAILS = "spoiler_blurThumbnails";
+  var KEY_BLUR_TITLES = "spoiler_blurTitles";
+  var KEY_BLUR_DESCRIPTIONS = "spoiler_blurDescriptions";
+  var KEY_KEEP_NEXT_VISIBLE = "spoiler_keepNextVisible";
+  var DEFAULT_ENABLED = false;
+  var DEFAULT_BLUR_THUMBNAILS = true;
+  var DEFAULT_BLUR_TITLES = true;
+  var DEFAULT_BLUR_DESCRIPTIONS = true;
+  var DEFAULT_KEEP_NEXT_VISIBLE = true;
+  function getStoredBool(key, fallback) {
+    if (typeof window === "undefined") return fallback;
+    const raw = getScopedStorageItem(key);
+    if (raw === "1") return true;
+    if (raw === "0") return false;
+    return fallback;
+  }
+  function getSpoilerBlurEnabled() {
+    return getStoredBool(KEY_ENABLED, DEFAULT_ENABLED);
+  }
+  function getSpoilerBlurThumbnails() {
+    return getStoredBool(KEY_BLUR_THUMBNAILS, DEFAULT_BLUR_THUMBNAILS);
+  }
+  function getSpoilerBlurTitles() {
+    return getStoredBool(KEY_BLUR_TITLES, DEFAULT_BLUR_TITLES);
+  }
+  function getSpoilerBlurDescriptions() {
+    return getStoredBool(KEY_BLUR_DESCRIPTIONS, DEFAULT_BLUR_DESCRIPTIONS);
+  }
+  function getSpoilerKeepNextVisible() {
+    return getStoredBool(KEY_KEEP_NEXT_VISIBLE, DEFAULT_KEEP_NEXT_VISIBLE);
+  }
+  function getSpoilerMaskSettings() {
+    return {
+      enabled: getSpoilerBlurEnabled(),
+      blurThumbnails: getSpoilerBlurThumbnails(),
+      blurTitles: getSpoilerBlurTitles(),
+      blurDescriptions: getSpoilerBlurDescriptions(),
+      keepNextVisible: getSpoilerKeepNextVisible()
     };
   }
 
@@ -171203,11 +171518,17 @@
     const setVolume = useCallback((vol) => {
       void mpvSetPropertyStrings([{ name: "volume", value: String(Math.round(vol * 100)) }]);
     }, []);
+    const setSpeed = useCallback((value) => {
+      void mpvSetPropertyStrings([{ name: "speed", value: String(value) }]);
+    }, []);
     const setMuted = useCallback((muted) => {
       void mpvSetPropertyStrings([{ name: "mute", value: muted ? "yes" : "no" }]);
     }, []);
     const setAudioTrack = useCallback((aid) => {
       void setMpvAudioTrack(aid);
+    }, []);
+    const resetTimePos = useCallback(() => {
+      setTimePos(0);
     }, []);
     const resetFileLoaded = useCallback(() => {
       setFileLoaded(false);
@@ -171233,6 +171554,7 @@
       sid,
       fileLoaded,
       fileLoadedToken,
+      resetTimePos,
       resetEnded,
       playbackRestarted,
       playbackRestartedToken,
@@ -171246,6 +171568,7 @@
       seekRelative,
       setPlayPause,
       setVolume,
+      setSpeed,
       setMuted,
       setAudioTrack,
       resetFileLoaded,
@@ -171526,7 +171849,11 @@
   var KEY_STILL_WATCHING_ENABLED = "playback_stillWatchingEnabled";
   var KEY_STILL_WATCHING_MAX_MINUTES = "playback_stillWatchingMaxMinutes";
   var KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES = "playback_disableSubtitlesWhenAudioMatches";
+  var KEY_CREDITS_RECOMMENDATIONS = "playback_creditsRecommendations";
+  var KEY_CREDITS_THRESHOLD_MINUTES = "playback_creditsThresholdMinutes";
   var KEY_NIGHT_MODE = "playback_nightMode";
+  var KEY_AUDIO_DELAY_MS = "playback_audioDelayMs";
+  var KEY_BT_AUTO_OFFSET = "playback_btAudioAutoOffset";
   var KEY_STAY_FULLSCREEN_ON_CLOSE = "playback_stayFullscreenOnClose";
   var KEY_HIDE_SKIP_BUTTON_AFTER = "playback_hideSkipButtonAfterSeconds";
   var KEY_SHOW_TITLE_ON_START = "playback_showTitleOnStart";
@@ -171624,6 +171951,8 @@
   var DEFAULT_STILL_WATCHING_ENABLED = false;
   var DEFAULT_STILL_WATCHING_MAX_MINUTES = 90;
   var DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES = false;
+  var DEFAULT_CREDITS_RECOMMENDATIONS = false;
+  var DEFAULT_CREDITS_THRESHOLD_MINUTES = 3;
   var DEFAULT_NIGHT_MODE = "off";
   function getStoredString(key, fallback = "") {
     if (typeof window === "undefined") return fallback;
@@ -171801,6 +172130,27 @@
     const stored = (getScopedStorageItem(KEY_EXTERNAL_PLAYER_APP) ?? "").trim();
     return stored || "VLC";
   }
+  var AUDIO_DELAY_STEP_MS = 50;
+  var AUDIO_DELAY_LIMIT_MS = 2e3;
+  function getAudioDelayMs() {
+    if (typeof window === "undefined") return 0;
+    const raw = Number(getStoredString(KEY_AUDIO_DELAY_MS, "0"));
+    if (!Number.isFinite(raw)) return 0;
+    return clampAudioDelayMs(raw);
+  }
+  function clampAudioDelayMs(value) {
+    const steg = Math.round(value / AUDIO_DELAY_STEP_MS) * AUDIO_DELAY_STEP_MS;
+    return Math.max(-AUDIO_DELAY_LIMIT_MS, Math.min(AUDIO_DELAY_LIMIT_MS, steg));
+  }
+  function setAudioDelayMs(value) {
+    setScopedStorageItem(KEY_AUDIO_DELAY_MS, String(clampAudioDelayMs(value)));
+    emitPlaybackSettingsChanged();
+  }
+  function getBluetoothAudioAutoOffset() {
+    if (typeof window === "undefined") return false;
+    return getScopedStorageItem(KEY_BT_AUTO_OFFSET) === "1";
+  }
+  var BLUETOOTH_AUDIO_OFFSET_MS = -150;
   function getNightMode() {
     const stored = getStoredString(KEY_NIGHT_MODE, DEFAULT_NIGHT_MODE);
     return NIGHT_MODE_OPTIONS.includes(stored) ? stored : DEFAULT_NIGHT_MODE;
@@ -171808,6 +172158,16 @@
   function setNightMode(value) {
     setScopedStorageItem(KEY_NIGHT_MODE, value);
     emitPlaybackSettingsChanged();
+  }
+  function getCreditsRecommendations() {
+    if (typeof window === "undefined") return DEFAULT_CREDITS_RECOMMENDATIONS;
+    return (getScopedStorageItem(KEY_CREDITS_RECOMMENDATIONS) ?? "0") === "1";
+  }
+  function getCreditsThresholdMinutes() {
+    if (typeof window === "undefined") return DEFAULT_CREDITS_THRESHOLD_MINUTES;
+    const raw = Number.parseFloat(getScopedStorageItem(KEY_CREDITS_THRESHOLD_MINUTES) ?? "");
+    if (!Number.isFinite(raw) || raw <= 0) return DEFAULT_CREDITS_THRESHOLD_MINUTES;
+    return Math.max(1, Math.min(6, raw));
   }
 
   // lib/series-watchlist-feed.ts
@@ -172340,7 +172700,7 @@
           {
             type: "button",
             onClick: onAction,
-            className: "mt-6 rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm text-slate-100 transition hover:border-accent-400/40 hover:bg-white/10",
+            className: "mt-6 rounded-full border border-transparent bg-[#fcfcff14] px-5 py-3 text-sm text-slate-100 backdrop-blur-md transition hover:bg-[#fcfcff22]",
             children: actionLabel
           }
         ) : null
@@ -172361,29 +172721,36 @@
       return () => window.removeEventListener("resize", sync2);
     }, []);
     if (totalPages <= 1) return null;
-    return /* @__PURE__ */ jsx("div", { className: "flex max-w-full items-center justify-center overflow-x-auto rounded-[1.75rem] border border-white/10 bg-slate-950/60 px-2 py-4 sm:px-4", children: /* @__PURE__ */ jsx(
-      import_react57.Pagination,
-      {
-        total: totalPages,
-        page: currentPage,
-        onChange: onPageChange,
-        showControls: true,
-        siblings: narrow ? 0 : 2,
-        boundaries: 1,
-        classNames: {
-          wrapper: "gap-1 sm:gap-2",
-          item: [
-            "bg-white/5 border border-white/10 text-slate-200",
-            "hover:bg-white/10 hover:!border-accent-400/30 hover:text-white",
-            "data-[active=true]:bg-accent-400/90 data-[active=true]:!border-accent-400/70 data-[active=true]:text-slate-950 data-[active=true]:font-semibold",
-            "transition-all duration-200"
-          ].join(" "),
-          prev: "bg-white/5 border border-white/10 text-slate-200 hover:bg-white/10 hover:!border-accent-400/30",
-          next: "bg-white/5 border border-white/10 text-slate-200 hover:bg-white/10 hover:!border-accent-400/30",
-          cursor: "bg-accent-400 text-slate-950 font-semibold shadow-sm shadow-accent-500/30"
+    return (
+      // Samma formspråk som resten av appen: runda glasknappar (bg-white/[0.06])
+      // utan ram, aktiv sida i accentfärgen. Förut fyrkantiga rutor i en egen
+      // inramad låda — det läste som en annan app under raderna.
+      /* @__PURE__ */ jsx("div", { className: "flex max-w-full items-center justify-center overflow-x-auto px-2 py-3 sm:px-4", children: /* @__PURE__ */ jsx(
+        import_react57.Pagination,
+        {
+          total: totalPages,
+          page: currentPage,
+          onChange: onPageChange,
+          showControls: true,
+          radius: "full",
+          siblings: narrow ? 0 : 2,
+          boundaries: 1,
+          classNames: {
+            wrapper: "gap-1.5 sm:gap-2",
+            item: [
+              "h-10 w-10 min-w-10 rounded-full border-0 bg-white/[0.06] text-sm text-slate-300 backdrop-blur-md shadow-none",
+              "hover:bg-white/10 hover:text-white",
+              "data-[active=true]:bg-accent-500 data-[active=true]:text-white data-[active=true]:font-semibold",
+              "transition-colors duration-150"
+            ].join(" "),
+            prev: "h-10 w-10 min-w-10 rounded-full border-0 bg-white/[0.06] text-slate-300 backdrop-blur-md shadow-none hover:bg-white/10 hover:text-white",
+            next: "h-10 w-10 min-w-10 rounded-full border-0 bg-white/[0.06] text-slate-300 backdrop-blur-md shadow-none hover:bg-white/10 hover:text-white",
+            ellipsis: "h-10 w-10 min-w-10 rounded-full border-0 bg-transparent text-slate-500 shadow-none",
+            cursor: "h-10 w-10 min-w-10 rounded-full bg-accent-500 text-white font-semibold shadow-none"
+          }
         }
-      }
-    ) });
+      ) })
+    );
   }
 
   // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/auth-capabilities-shim.ts
@@ -172392,6 +172759,13 @@
   // lib/tauri-native-player.ts
   init_react_shim();
   var isAndroidTauriEnv = isTauriEnv && typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
+  function sameNativeTracks(a, b) {
+    if (a.length !== b.length) return false;
+    return a.every((track, index3) => {
+      const other = b[index3];
+      return other !== void 0 && track.id === other.id && track.lang === other.lang && track.title === other.title && track.channels === other.channels && track.codec === other.codec;
+    });
+  }
   async function np(cmd) {
     try {
       const res = await fetch("/api/native-player", {
@@ -172446,9 +172820,22 @@
   async function closeNativePlayer() {
     await np({ cmd: "close" });
   }
-  function setAndroidImmersive(on) {
+  function setAndroidScreenBrightness(value) {
     if (!isAndroidTauriEnv) return;
+    void np({ cmd: "setScreenBrightness", value });
+  }
+  function setAndroidImmersive(on, reason = "-") {
+    if (!isAndroidTauriEnv) return;
+    void fetch(`/api/debug-log?msg=${encodeURIComponent(`[immersive] ${on ? "P\xC5" : "av"} (${reason})`)}`).catch(() => {
+    });
     void np({ cmd: "setImmersive", on });
+  }
+  async function nativeGetAudioOutput() {
+    const data = await np({ cmd: "getAudioOutput" });
+    return { bluetooth: Boolean(data?.bluetooth), name: data?.name ?? null };
+  }
+  async function nativeSetAudioDelay(ms) {
+    await np({ cmd: "setAudioDelay", ms: Math.max(-2e3, Math.min(2e3, Math.round(ms))) });
   }
   async function nativeSetVideoTuning(t) {
     await np({ cmd: "setTuning", brightness: t.brightness, contrast: t.contrast, saturation: t.saturation });
@@ -172489,6 +172876,7 @@
     const [loadFailedError, setLoadFailedError] = useState(null);
     const [audioTracks, setAudioTracks] = useState([]);
     const [subtitleTracks, setSubtitleTracks] = useState([]);
+    const [cueText, setCueText] = useState("");
     const [selectedAudio, setSelectedAudio] = useState(-1);
     const prevRef = useRef({ fileLoaded: false, firstFrame: false, failToken: -1, timePos: 0 });
     useEffect(() => {
@@ -172506,8 +172894,11 @@
         setPausedForCache(s.pausedForCache);
         setCoreIdle(!s.fileLoaded || s.paused);
         setSid(s.selectedSub > 0 ? s.selectedSub : null);
-        setAudioTracks(s.tracks?.audio ?? []);
-        setSubtitleTracks(s.tracks?.sub ?? []);
+        const nextAudio = s.tracks?.audio ?? [];
+        const nextSub = s.tracks?.sub ?? [];
+        setAudioTracks((prev2) => sameNativeTracks(prev2, nextAudio) ? prev2 : nextAudio);
+        setSubtitleTracks((prev2) => sameNativeTracks(prev2, nextSub) ? prev2 : nextSub);
+        setCueText(typeof s.cueText === "string" ? s.cueText : "");
         setSelectedAudio(s.selectedAudio);
         if (s.fileLoaded && !prev.fileLoaded) {
           setFileLoaded(true);
@@ -172556,6 +172947,9 @@
     const setVolume = useCallback((vol) => {
       void np({ cmd: "setVolume", value: vol });
     }, []);
+    const setSpeed = useCallback((value) => {
+      void np({ cmd: "setSpeed", value });
+    }, []);
     const setMuted = useCallback((muted) => {
       void np({ cmd: "setMuted", value: muted });
     }, []);
@@ -172567,6 +172961,9 @@
     }, []);
     const resetFileLoaded = useCallback(() => {
       setFileLoaded(false);
+    }, []);
+    const resetTimePos = useCallback(() => {
+      setTimePos(0);
     }, []);
     const resetEnded = useCallback(() => {
       setEnded(false);
@@ -172590,6 +172987,7 @@
       fileLoaded,
       fileLoadedToken,
       resetEnded,
+      resetTimePos,
       playbackRestarted,
       playbackRestartedToken,
       pausedForCache,
@@ -172602,6 +173000,7 @@
       seekRelative,
       setPlayPause,
       setVolume,
+      setSpeed,
       setMuted,
       setAudioTrack,
       resetFileLoaded,
@@ -172611,7 +173010,8 @@
       audioTracks,
       subtitleTracks,
       selectedAudio,
-      setSubtitleTrack
+      setSubtitleTrack,
+      cueText
     };
   }
 
@@ -172680,6 +173080,13 @@
   }
   function getNextEpPreloadLeadSeconds() {
     return FIXED_NEXT_EP_PRELOAD_LEAD_SECONDS;
+  }
+
+  // lib/open-item-runtime.ts
+  var OPEN_ITEM_EVENT = "lumio-open-media-item";
+  function requestOpenMediaItem(request) {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(new CustomEvent(OPEN_ITEM_EVENT, { detail: request }));
   }
 
   // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/video-player-modal-shim.ts
@@ -172922,6 +173329,8 @@
     "wiki",
     "soundtrack",
     "tuning",
+    "audioDelay",
+    "nextEpisode",
     "more",
     "fullscreen"
   ];
@@ -173063,19 +173472,23 @@
     setScopedStorageItem(RENDER_KEY, JSON.stringify(tuning));
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT6));
   }
-  function renderTuningProperties(t) {
+  function renderTuningProperties(t, isNetworkStream = false) {
     const props = [
       ["hwdec", t.hwdec ? "auto-safe" : "no"],
       ["tone-mapping", t.toneMapping === "auto" ? "auto" : t.toneMapping],
       ["inverse-tone-mapping", t.inverseToneMapping ? "yes" : "no"],
       ["interpolation", t.interpolation ? "yes" : "no"],
-      ["video-sync", t.interpolation ? "display-resample" : "audio"],
-      // Buffer: explicit both ways so toggling off mid-session restores mpv's
-      // stock demuxer limits.
-      ["demuxer-max-bytes", t.largeBuffer ? "768MiB" : "150MiB"],
-      ["demuxer-max-back-bytes", t.largeBuffer ? "256MiB" : "50MiB"],
-      ["demuxer-readahead-secs", t.largeBuffer ? "120" : "1"]
+      ["video-sync", t.interpolation ? "display-resample" : "audio"]
     ];
+    if (!isNetworkStream) {
+      props.push(
+        ["demuxer-max-bytes", t.largeBuffer ? "768MiB" : "150MiB"],
+        ["demuxer-max-back-bytes", t.largeBuffer ? "256MiB" : "50MiB"],
+        ["demuxer-readahead-secs", t.largeBuffer ? "120" : "1"]
+      );
+    } else if (t.largeBuffer) {
+      props.push(["demuxer-max-back-bytes", "512MiB"]);
+    }
     if (t.profile === "light") {
       props.push(["scale", "bilinear"], ["dscale", "bilinear"], ["deband", "no"]);
     } else if (t.profile === "max") {
@@ -174965,6 +175378,138 @@
     );
   }
 
+  // components/player/player-episodes-panel.tsx
+  init_react_shim();
+
+  // lib/spoilers.ts
+  var CLEAR = { thumb: false, title: false, desc: false };
+  var SPOILER_THUMB_CLASS = "blur-[14px] scale-[1.04] transition-[filter,transform] duration-200 group-hover:blur-[0px] group-hover:scale-100 group-focus-within:blur-[0px] group-focus-within:scale-100";
+  var SPOILER_TEXT_CLASS = "blur-[5px] select-none transition-[filter] duration-200 group-hover:blur-[0px] group-focus-within:blur-[0px]";
+  function spoilerMaskFor(s, opts) {
+    if (!s.enabled) return CLEAR;
+    if (opts.watched) return CLEAR;
+    if (s.keepNextVisible && opts.isNextUp) return CLEAR;
+    return {
+      thumb: s.blurThumbnails,
+      title: s.blurTitles,
+      desc: s.blurDescriptions
+    };
+  }
+
+  // components/player/player-episodes-panel.tsx
+  init_jsx_runtime_shim();
+  function PlayerEpisodesPanel({
+    seasonNumber,
+    episodes,
+    currentEpisode,
+    currentRemaining,
+    onSelect,
+    onClose
+  }) {
+    const { t } = useLang();
+    const isTv = useTvMode();
+    const currentRef = useRef(null);
+    const spoiler = getSpoilerMaskSettings();
+    useEffect(() => {
+      if (!isTv) return;
+      let frames = 0;
+      let cancelled = false;
+      const attempt = () => {
+        if (cancelled) return;
+        const node = currentRef.current;
+        if (node) {
+          node.focus();
+          return;
+        }
+        if (frames++ < 60) requestAnimationFrame(attempt);
+      };
+      requestAnimationFrame(attempt);
+      return () => {
+        cancelled = true;
+      };
+    }, [isTv]);
+    return /* @__PURE__ */ jsxs(
+      "div",
+      {
+        className: "absolute inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden sm:w-[340px]",
+        style: {
+          background: "rgb(var(--base-950) / 0.96)",
+          backdropFilter: "blur(12px)",
+          borderLeft: "1px solid rgba(255,255,255,0.07)",
+          boxShadow: "-20px 0 60px rgba(0,0,0,0.5)"
+        },
+        onClick: (event) => event.stopPropagation(),
+        ...isTv ? { "data-panel-root": "" } : {},
+        children: [
+          /* @__PURE__ */ jsxs("div", { className: "flex flex-shrink-0 items-center justify-between border-b border-white/[0.07] px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top),var(--android-inset-top,0px))]", children: [
+            /* @__PURE__ */ jsxs("span", { className: "text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400", children: [
+              t("seasonLabel"),
+              " ",
+              seasonNumber
+            ] }),
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                type: "button",
+                ...isTv ? { "data-f": "" } : {},
+                onClick: onClose,
+                "aria-label": t("close"),
+                className: "flex h-7 w-7 items-center justify-center rounded-full text-slate-500 transition hover:bg-white/10 hover:text-white",
+                children: /* @__PURE__ */ jsx("svg", { className: "h-3.5 w-3.5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2.5, children: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12" }) })
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsx(
+            "div",
+            {
+              className: "flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain",
+              ...isTv ? { "data-scroll": "" } : {},
+              children: episodes.length === 0 ? /* @__PURE__ */ jsx("p", { className: "px-4 py-6 text-sm text-slate-500", children: t("noEpisodes") }) : episodes.map((episode) => {
+                const isCurrent = episode.number === currentEpisode;
+                const mask2 = spoilerMaskFor(spoiler, {
+                  watched: Boolean(episode.watched) || isCurrent,
+                  isNextUp: false
+                });
+                const isNext = currentEpisode != null && episode.number === currentEpisode + 1;
+                const etikett = isCurrent ? t("epPlaying") : isNext ? t("epNext") : null;
+                const delar = [
+                  episode.runtimeMinutes ? `${episode.runtimeMinutes} min` : null,
+                  isCurrent && currentRemaining ? t("epRemaining").replace("{time}", currentRemaining) : episode.watched && !isCurrent ? t("epWatched") : null
+                ].filter(Boolean);
+                const meta = delar.join(" \xB7 ");
+                return /* @__PURE__ */ jsxs(
+                  "button",
+                  {
+                    type: "button",
+                    ref: isCurrent ? currentRef : void 0,
+                    ...isTv ? { "data-f": "" } : {},
+                    onClick: () => onSelect(episode.number),
+                    className: `flex min-h-[44px] w-full items-center gap-3 border-b border-white/[0.04] px-4 py-2.5 text-left transition ${isCurrent ? "bg-accent-400/[0.22]" : "hover:bg-white/5"}`,
+                    children: [
+                      /* @__PURE__ */ jsx(
+                        "span",
+                        {
+                          className: `w-6 flex-none text-[13px] font-semibold tabular-nums ${isCurrent ? "text-white" : "text-slate-500"}`,
+                          children: episode.number
+                        }
+                      ),
+                      /* @__PURE__ */ jsxs("span", { className: "min-w-0 flex-1", children: [
+                        /* @__PURE__ */ jsx("span", { className: `block truncate text-sm ${isCurrent ? "text-white" : "text-slate-200"} ${mask2.title ? SPOILER_TEXT_CLASS : ""}`, children: episode.title }),
+                        meta ? /* @__PURE__ */ jsx("span", { className: "mt-0.5 block text-[11px] tabular-nums text-slate-500", children: meta }) : null
+                      ] }),
+                      etikett ? /* @__PURE__ */ jsx("span", { className: "flex-none rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400", children: etikett }) : null
+                    ]
+                  },
+                  episode.number
+                );
+              })
+            }
+          )
+        ]
+      }
+    );
+  }
+
   // lib/homekit-client.ts
   async function emitHomeKitEvent(input) {
     try {
@@ -175047,6 +175592,384 @@
   }
   function matchesShortcut(commandId, eventKey) {
     return normalizeShortcutKey(eventKey) === getShortcutKey(commandId);
+  }
+
+  // components/player/credits-recommendations.tsx
+  init_react_shim();
+  init_jsx_runtime_shim();
+  var PIP_W = "clamp(190px, min(29vw, 71vh), 460px)";
+  var PIP_H = "calc(clamp(190px, min(29vw, 71vh), 460px) * 9 / 16)";
+  var COVER_W = "max(100vw, 177.78vh)";
+  var COVER_H = "max(100vh, 56.25vw)";
+  var COVER_OFFSET_X = `calc((${COVER_W} - 100vw) / 2)`;
+  var COVER_OFFSET_Y = `calc((${COVER_H} - 100vh) / 2)`;
+  var PIP_INSET = "clamp(0.75rem, 2vw, 2rem)";
+  var PIP_TOP = `max(${PIP_INSET}, calc(env(safe-area-inset-top) + 0.5rem), calc(var(--android-inset-top, 0px) + 0.5rem))`;
+  function formatRemaining(seconds) {
+    if (!Number.isFinite(seconds) || seconds <= 0) return "0:00";
+    const total = Math.round(seconds);
+    const minutes = Math.floor(total / 60);
+    const rest = total % 60;
+    return `${minutes}:${String(rest).padStart(2, "0")}`;
+  }
+  function CreditsRecommendations({
+    recommendations,
+    progress: progress2,
+    remainingSeconds,
+    onBackToPlayback,
+    onInteract,
+    pipRef,
+    isTv
+  }) {
+    const { t } = useLang();
+    const [index3, setIndex] = useState(0);
+    const [failedLogos, setFailedLogos] = useState(/* @__PURE__ */ new Set());
+    const interactedRef = useRef(false);
+    const markInteracted = useCallback(() => {
+      if (interactedRef.current) return;
+      interactedRef.current = true;
+      onInteract();
+    }, [onInteract]);
+    const count = recommendations.length;
+    const current2 = recommendations[Math.min(index3, Math.max(0, count - 1))] ?? null;
+    const step = useCallback((direction) => {
+      markInteracted();
+      setIndex((value) => {
+        if (count === 0) return 0;
+        return Math.max(0, Math.min(count - 1, value + direction));
+      });
+    }, [count, markInteracted]);
+    const swipeStartRef = useRef(null);
+    const onTouchStart = useCallback((event) => {
+      const touch = event.touches[0];
+      swipeStartRef.current = touch ? { x: touch.clientX, y: touch.clientY } : null;
+    }, []);
+    const onTouchEnd = useCallback((event) => {
+      const start2 = swipeStartRef.current;
+      swipeStartRef.current = null;
+      const touch = event.changedTouches[0];
+      if (!start2 || !touch) return;
+      const dx = touch.clientX - start2.x;
+      const dy = touch.clientY - start2.y;
+      if (Math.abs(dx) < 45 || Math.abs(dx) <= Math.abs(dy)) return;
+      step(dx < 0 ? 1 : -1);
+    }, [step]);
+    useEffect(() => {
+      const onKey = (event) => {
+        if (event.key === "ArrowLeft") {
+          step(-1);
+          event.preventDefault();
+        } else if (event.key === "ArrowRight") {
+          step(1);
+          event.preventDefault();
+        }
+      };
+      window.addEventListener("keydown", onKey);
+      return () => window.removeEventListener("keydown", onKey);
+    }, [step]);
+    const metaParts = useMemo(() => {
+      if (!current2) return [];
+      const parts = [];
+      const genres = current2.item.genres?.slice(0, 3) ?? [];
+      if (genres.length > 0) parts.push(genres.join(" / "));
+      if (current2.item.year) parts.push(String(current2.item.year));
+      return parts;
+    }, [current2]);
+    if (!current2) return null;
+    const backdrop = current2.item.backdropUrl ?? current2.item.posterUrl ?? null;
+    return /* @__PURE__ */ jsxs(
+      "div",
+      {
+        className: "absolute inset-0 z-[70] overflow-hidden",
+        onPointerDown: markInteracted,
+        onWheel: markInteracted,
+        onTouchStart,
+        onTouchEnd,
+        children: [
+          [
+            // vänster om fönstret, full höjd
+            {
+              box: { left: 0, top: 0, right: `calc(${PIP_W} + ${PIP_INSET})`, bottom: 0 },
+              bgX: `calc(0px - ${COVER_OFFSET_X})`,
+              bgY: `calc(0px - ${COVER_OFFSET_Y})`
+            },
+            // ovanför fönstret
+            {
+              box: { left: `calc(100% - ${PIP_W} - ${PIP_INSET})`, top: 0, right: 0, height: PIP_TOP },
+              bgX: `calc(0px - 100vw + ${PIP_W} + ${PIP_INSET} - ${COVER_OFFSET_X})`,
+              bgY: `calc(0px - ${COVER_OFFSET_Y})`
+            },
+            // under fönstret
+            {
+              box: { left: `calc(100% - ${PIP_W} - ${PIP_INSET})`, top: `calc(${PIP_TOP} + ${PIP_H})`, right: 0, bottom: 0 },
+              bgX: `calc(0px - 100vw + ${PIP_W} + ${PIP_INSET} - ${COVER_OFFSET_X})`,
+              bgY: `calc(0px - ${PIP_TOP} - ${PIP_H} - ${COVER_OFFSET_Y})`
+            },
+            // till höger om fönstret
+            {
+              box: { right: 0, width: PIP_INSET, top: PIP_TOP, height: PIP_H },
+              bgX: `calc(0px - 100vw + ${PIP_INSET} - ${COVER_OFFSET_X})`,
+              bgY: `calc(0px - ${PIP_TOP} - ${COVER_OFFSET_Y})`
+            }
+          ].map((panel, panelIndex) => /* @__PURE__ */ jsxs("div", { className: "pointer-events-none absolute overflow-hidden", style: panel.box, children: [
+            backdrop && /* @__PURE__ */ jsx(
+              "div",
+              {
+                className: "absolute",
+                style: {
+                  backgroundImage: `url(${backdrop})`,
+                  /**
+                   * Bilden ska vara EN bild över hela ytan, inte fyra egna.
+                   *
+                   * `background-attachment: fixed` gjorde det på skrivbordet men
+                   * ignoreras av WebView på Android och iOS — där fick varje
+                   * panel en egen skalad kopia, och skarvarna syntes. Panelens
+                   * eget avstånd till skärmens hörn dras därför av explicit:
+                   * samma duk, fyra fönster mot den, överallt.
+                   */
+                  inset: 0,
+                  backgroundSize: `${COVER_W} ${COVER_H}`,
+                  backgroundPosition: `${panel.bgX} ${panel.bgY}`,
+                  backgroundRepeat: "no-repeat"
+                }
+              }
+            ),
+            /* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-[#050816]/30" })
+          ] }, panelIndex)),
+          /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute inset-y-0 left-0 w-[80%] bg-[linear-gradient(to_right,#050816_0%,rgba(5,8,22,0.94)_38%,rgba(5,8,22,0)_100%)]" }),
+          /* @__PURE__ */ jsxs("div", { className: "absolute inset-0 flex max-w-[58%] flex-col justify-center gap-[clamp(0.4rem,1.5vh,1rem)] px-[clamp(1rem,4vw,3.5rem)] py-[clamp(0.75rem,3vh,2rem)]", children: [
+            current2.logoUrl && !failedLogos.has(current2.logoUrl) ? /* @__PURE__ */ jsx(
+              "img",
+              {
+                src: current2.logoUrl,
+                alt: current2.heading,
+                className: "max-h-[clamp(2.25rem,10vh,6rem)] w-auto max-w-[min(100%,26rem)] self-start object-contain object-left drop-shadow-[0_3px_20px_rgba(0,0,0,0.55)]",
+                onError: () => setFailedLogos((prev) => new Set(prev).add(current2.logoUrl))
+              }
+            ) : /* @__PURE__ */ jsx("h2", { className: "font-display text-[clamp(1.35rem,5.2vh,3rem)] leading-none text-slate-50 drop-shadow-[0_3px_20px_rgba(0,0,0,0.55)]", children: current2.heading }),
+            (metaParts.length > 0 || current2.item.ratings?.imdb) && /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center gap-x-3 gap-y-1 text-[clamp(0.75rem,1.8vh,1rem)] text-slate-200/80", children: [
+              metaParts.map((part, partIndex) => /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-3", children: [
+                partIndex > 0 && /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "text-white/25", children: "|" }),
+                /* @__PURE__ */ jsx("span", { children: part })
+              ] }, part)),
+              current2.item.ratings?.imdb && /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-3", children: [
+                /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "text-white/25", children: "|" }),
+                /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-1.5", children: [
+                  /* @__PURE__ */ jsx("span", { className: "rounded bg-[#f5c518] px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-black", children: "IMDb" }),
+                  /* @__PURE__ */ jsx("span", { className: "font-medium text-white", children: current2.item.ratings.imdb })
+                ] })
+              ] })
+            ] }),
+            current2.item.overview && /* @__PURE__ */ jsx("p", { className: "max-w-[46ch] text-[clamp(0.75rem,1.9vh,1rem)] leading-relaxed text-slate-300/85 line-clamp-3 [@media(max-height:420px)]:line-clamp-2", children: current2.item.overview }),
+            /* @__PURE__ */ jsxs("div", { className: "mt-1 flex flex-wrap items-center gap-3", children: [
+              /* @__PURE__ */ jsxs(
+                "button",
+                {
+                  type: "button",
+                  "data-f": isTv ? "1" : void 0,
+                  "data-init": "",
+                  onClick: () => {
+                    markInteracted();
+                    current2.onPrimary();
+                  },
+                  className: "inline-flex h-10 items-center gap-2 rounded-full bg-accent-500 px-6 text-sm font-semibold text-white transition hover:bg-accent-400",
+                  children: [
+                    /* @__PURE__ */ jsx("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }),
+                    current2.primaryLabel
+                  ]
+                }
+              ),
+              count > 1 && /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
+                /* @__PURE__ */ jsx(
+                  "button",
+                  {
+                    type: "button",
+                    "data-f": isTv ? "1" : void 0,
+                    "aria-label": t("previous"),
+                    disabled: index3 === 0,
+                    onClick: () => step(-1),
+                    className: "grid h-9 w-9 place-items-center rounded-full border border-white/18 bg-white/5 text-slate-200 disabled:opacity-40",
+                    children: "\u2039"
+                  }
+                ),
+                /* @__PURE__ */ jsx(
+                  "button",
+                  {
+                    type: "button",
+                    "data-f": isTv ? "1" : void 0,
+                    "aria-label": t("next"),
+                    disabled: index3 >= count - 1,
+                    onClick: () => step(1),
+                    className: "grid h-9 w-9 place-items-center rounded-full border border-accent-500/70 bg-accent-500/15 text-white disabled:opacity-40",
+                    children: "\u203A"
+                  }
+                )
+              ] })
+            ] })
+          ] }),
+          count > 1 && /* @__PURE__ */ jsx("div", { className: "absolute bottom-[clamp(0.5rem,2.5vh,1.75rem)] left-[clamp(1rem,4vw,3.5rem)] flex items-center gap-2", children: recommendations.map((entry, dotIndex) => /* @__PURE__ */ jsx(
+            "span",
+            {
+              className: dotIndex === index3 ? "h-1.5 w-6 rounded-full bg-accent-500" : "h-1.5 w-1.5 rounded-full bg-white/30"
+            },
+            `${entry.item.source ?? "tmdb"}::${entry.item.id}`
+          )) }),
+          /* @__PURE__ */ jsxs(
+            "div",
+            {
+              ref: pipRef,
+              className: "absolute overflow-hidden rounded-lg border border-white/20 shadow-[0_14px_40px_rgba(0,0,0,0.6)]",
+              style: { right: PIP_INSET, top: PIP_TOP, width: PIP_W, height: PIP_H },
+              children: [
+                /* @__PURE__ */ jsx(
+                  "button",
+                  {
+                    type: "button",
+                    "data-f": isTv ? "1" : void 0,
+                    "aria-label": t("creditsBackToFilm"),
+                    onClick: () => {
+                      markInteracted();
+                      onBackToPlayback();
+                    },
+                    className: "absolute right-2 top-2 z-10 grid h-7 w-7 place-items-center rounded-full border border-white/25 bg-[rgba(4,7,14,0.78)] text-slate-100 transition hover:bg-[rgba(4,7,14,0.95)]",
+                    children: /* @__PURE__ */ jsx("svg", { className: "h-3.5 w-3.5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.4", strokeLinecap: "round", children: /* @__PURE__ */ jsx("path", { d: "M6 6l12 12M18 6L6 18" }) })
+                  }
+                ),
+                /* @__PURE__ */ jsxs("div", { className: "absolute inset-x-0 bottom-0 z-10 flex flex-col gap-1.5 bg-[linear-gradient(to_top,rgba(2,4,10,0.96)_40%,rgba(2,4,10,0))] px-3 pb-2 pt-4", children: [
+                  /* @__PURE__ */ jsxs("div", { className: "flex items-baseline justify-between gap-2", children: [
+                    /* @__PURE__ */ jsx("span", { className: "text-[10px] uppercase tracking-[0.13em] text-slate-300/75", children: t("creditsRemaining") }),
+                    /* @__PURE__ */ jsx("span", { className: "text-[11px] font-semibold tabular-nums text-white", children: formatRemaining(remainingSeconds) })
+                  ] }),
+                  /* @__PURE__ */ jsx("div", { className: "h-1 overflow-hidden rounded-full bg-white/15", children: /* @__PURE__ */ jsx(
+                    "div",
+                    {
+                      className: "h-full rounded-full bg-accent-500 transition-[width] duration-500 ease-linear",
+                      style: { width: `${Math.max(0, Math.min(100, progress2 * 100))}%` }
+                    }
+                  ) })
+                ] })
+              ]
+            }
+          )
+        ]
+      }
+    );
+  }
+
+  // lib/title-logo-cache.ts
+  var LOGO_CACHE_TTL_MS = 12 * 60 * 60 * 1e3;
+  var LOGO_NEGATIVE_CACHE_TTL_MS = 45 * 1e3;
+  var logoCache = /* @__PURE__ */ new Map();
+  var inflightRequests = /* @__PURE__ */ new Map();
+  function buildCacheKey(type, tmdbId) {
+    return `${type}:${tmdbId}`;
+  }
+  function normalizeTmdbId(raw) {
+    if (!raw) return null;
+    const trimmed = raw.trim();
+    if (!trimmed) return null;
+    const match = trimmed.match(/^(?:movie|tv)-(\d+)$/i);
+    const normalized = match?.[1] ?? trimmed;
+    return /^\d+$/.test(normalized) ? normalized : null;
+  }
+  function readCached(type, tmdbId) {
+    const key = buildCacheKey(type, tmdbId);
+    const entry = logoCache.get(key);
+    if (!entry) return void 0;
+    const ttl = entry.value === null ? LOGO_NEGATIVE_CACHE_TTL_MS : LOGO_CACHE_TTL_MS;
+    if (Date.now() - entry.updatedAt > ttl) {
+      logoCache.delete(key);
+      return void 0;
+    }
+    return entry.value;
+  }
+  function writeCached(type, tmdbId, value) {
+    logoCache.set(buildCacheKey(type, tmdbId), {
+      value,
+      updatedAt: Date.now()
+    });
+  }
+  function getCachedTitleLogo(type, rawTmdbId) {
+    const tmdbId = normalizeTmdbId(rawTmdbId);
+    if (!tmdbId) return void 0;
+    return readCached(type, tmdbId);
+  }
+  async function resolveTitleLogo(type, rawTmdbId, seedLogoUrl) {
+    const tmdbId = normalizeTmdbId(rawTmdbId);
+    if (!tmdbId) return null;
+    const normalizedSeed = typeof seedLogoUrl === "string" && seedLogoUrl.trim().length > 0 ? seedLogoUrl.trim() : null;
+    if (normalizedSeed) {
+      writeCached(type, tmdbId, normalizedSeed);
+      return normalizedSeed;
+    }
+    const cached = readCached(type, tmdbId);
+    if (cached !== void 0 && cached !== null) return cached;
+    const key = buildCacheKey(type, tmdbId);
+    const running = inflightRequests.get(key);
+    if (running) return running;
+    const request = (async () => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 2500);
+      try {
+        const response = await fetch(
+          `/api/title-logo?tmdbId=${encodeURIComponent(tmdbId)}&type=${type}`,
+          { signal: controller.signal }
+        );
+        if (!response.ok) return null;
+        const payload = await response.json().catch(() => null);
+        if (!payload) return null;
+        const nextLogo = typeof payload.logoUrl === "string" && payload.logoUrl.trim().length > 0 ? payload.logoUrl.trim() : null;
+        writeCached(type, tmdbId, nextLogo);
+        return nextLogo;
+      } catch {
+        return null;
+      } finally {
+        clearTimeout(timeout);
+        inflightRequests.delete(key);
+      }
+    })();
+    inflightRequests.set(key, request);
+    return request;
+  }
+
+  // lib/gesture-settings.ts
+  var VERTICAL_GESTURE_ACTIONS = ["brightness", "volume", "none"];
+  var HORIZONTAL_GESTURE_ACTIONS = ["seek", "none"];
+  var BRIGHTNESS_TARGETS = ["screen", "video"];
+  var DOUBLE_TAP_SECONDS = [0, 5, 10, 15, 30];
+  var KEY_LEFT = "gesture_vertical_left";
+  var KEY_RIGHT = "gesture_vertical_right";
+  var KEY_HORIZONTAL = "gesture_horizontal";
+  var KEY_BRIGHTNESS_TARGET = "gesture_brightness_target";
+  var KEY_DOUBLE_TAP = "gesture_double_tap_seconds";
+  var KEY_HOLD_SPEED = "gesture_hold_to_speed";
+  function read3(key) {
+    if (typeof window === "undefined") return null;
+    const stored = getScopedStorageItem(key);
+    return stored == null || stored === "" ? null : stored;
+  }
+  function getVerticalGestureLeft() {
+    const stored = read3(KEY_LEFT);
+    return VERTICAL_GESTURE_ACTIONS.includes(stored) ? stored : "brightness";
+  }
+  function getVerticalGestureRight() {
+    const stored = read3(KEY_RIGHT);
+    return VERTICAL_GESTURE_ACTIONS.includes(stored) ? stored : "volume";
+  }
+  function getHorizontalGesture() {
+    const stored = read3(KEY_HORIZONTAL);
+    return HORIZONTAL_GESTURE_ACTIONS.includes(stored) ? stored : "seek";
+  }
+  function getBrightnessTarget() {
+    const stored = read3(KEY_BRIGHTNESS_TARGET);
+    return BRIGHTNESS_TARGETS.includes(stored) ? stored : "screen";
+  }
+  function getDoubleTapSeconds() {
+    const raw = Number.parseInt(read3(KEY_DOUBLE_TAP) ?? "", 10);
+    return DOUBLE_TAP_SECONDS.includes(raw) ? raw : 10;
+  }
+  function getHoldToSpeed() {
+    return read3(KEY_HOLD_SPEED) === "1";
   }
 
   // lib/lan-streaming-settings.ts
@@ -175148,6 +176071,20 @@
   var BROWSER_MAX_FALLBACK_ATTEMPTS = 3;
   var PLAYER_PARENT_TIMEUPDATE_TICK_MS = 1e3;
   var PROXY_RESTART_MIN_GAP_MS = 3e4;
+  function sameAudioTracks(a, b) {
+    if (a.length !== b.length) return false;
+    return a.every((track, index3) => {
+      const other = b[index3];
+      return other !== void 0 && track.index === other.index && track.codec === other.codec && track.language === other.language && track.title === other.title && track.channels === other.channels;
+    });
+  }
+  function sameSubtitleTracks(a, b) {
+    if (a.length !== b.length) return false;
+    return a.every((track, index3) => {
+      const other = b[index3];
+      return other !== void 0 && track.sid === other.sid && track.language === other.language && track.title === other.title && track.external === other.external && track.selected === other.selected && track.forced === other.forced;
+    });
+  }
   function cuesToSrt(cues) {
     const stamp = (sec) => {
       const ms = Math.max(0, Math.round(sec * 1e3));
@@ -175176,6 +176113,17 @@ ${cue.text}
 ${cues.map((cue) => `${stamp(cue.start)} --> ${stamp(cue.end)}
 ${cue.text}`).join("\n\n")}
 `;
+  }
+  var DESKTOP_CHROME_QUERY = "(min-width: 768px) and (min-height: 520px)";
+  var LANDSCAPE_PHONE_QUERY = "(max-height: 519px) and (orientation: landscape)";
+  var PHONE_TOP_INSET = "max(env(safe-area-inset-top), var(--android-inset-top, 0px))";
+  var PHONE_LEFT_INSET = "env(safe-area-inset-left)";
+  var PHONE_RIGHT_INSET = "env(safe-area-inset-right)";
+  function readChromeViewport() {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return "desktop";
+    if (window.matchMedia(DESKTOP_CHROME_QUERY).matches) return "desktop";
+    if (window.matchMedia(LANDSCAPE_PHONE_QUERY).matches) return "landscape";
+    return "portrait";
   }
   var INTRODB_CACHE = /* @__PURE__ */ new Map();
   function buildIntroDbCacheKey(mediaType, tmdbId, imdbId, season, episode) {
@@ -175359,7 +176307,15 @@ ${cue.text}`).join("\n\n")}
     return {
       position: "fixed",
       bottom: Math.round(window.innerHeight - rect.top + 8),
-      right: Math.min(right, maxRight)
+      right: Math.min(right, maxRight),
+      // Menyn växer UPPÅT från kontrollraden och hade ingen höjdgräns: raderna
+      // är ~44 px, och ••• -menyns nio poster blir drygt 400 px. En telefon i
+      // liggande läge är ~412 px hög, så de översta posterna låg redan utanför
+      // skärmen utan att gå att nå — det syntes inte i porträtt, där det finns
+      // gott om höjd. Gränsen är utrymmet ovanför knappen, och rullningen gör
+      // resten nåbar i stället för avklippt.
+      maxHeight: Math.max(160, Math.round(rect.top - 16)),
+      overflowY: "auto"
     };
   }
   async function initHlsStream(originalUrl, track, start2, vcodec, channels, audioMode, nightMode, transcode) {
@@ -175507,7 +176463,7 @@ ${cue.text}`).join("\n\n")}
     } catch {
     }
   }
-  function VideoPlayerModal({ url, filename, title, onClose, imdbId, tmdbId, mediaType, season, episode, mediaId, mediaTitle, mediaSource, posterUrl, backdropUrl, year, initialTime, expectedDurationSeconds, onFirstPlay, hideStartSplash, forceProxy, onTimeUpdate, onOutroStart, onLoadFailed, onPlaybackEnded, onOpenedExternally, skipHomeKitOnClose, skipHomeKitOnOpen, overlayContent, autoFullscreen, sourceInfoHash, playbackTraceId }) {
+  function VideoPlayerModal({ url, filename, title, onClose, imdbId, tmdbId, mediaType, season, episode, mediaId, mediaTitle, mediaSource, posterUrl, backdropUrl, year, initialTime, expectedDurationSeconds, onFirstPlay, hideStartSplash, forceProxy, onTimeUpdate, onOutroStart, onCreditsOpenDetails, onCreditsFinished, episodes, onLoadFailed, onPlaybackEnded, onOpenedExternally, skipHomeKitOnClose, skipHomeKitOnOpen, overlayContent, autoFullscreen, sourceInfoHash, playbackTraceId }) {
     const STILL_WATCHING_CLOSE_SECONDS = 20;
     const [engineKind, setEngineKind] = useState("none");
     useEffect(() => {
@@ -175745,13 +176701,15 @@ ${cue.text}`).join("\n\n")}
       lastPlaybackInteractionRef.current = realTime;
       if (showStillWatchingPrompt) setShowStillWatchingPrompt(false);
     }
+    const creditsModeRef = useRef(false);
     function onMouseActivity() {
+      if (creditsModeRef.current) return;
       registerPlaybackInteraction();
       setControlsVisible(true);
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
       hideTimerRef.current = setTimeout(() => {
         const paused = useMpv ? mpv.paused : videoRef.current?.paused ?? true;
-        if (!paused) setControlsVisible(false);
+        if (!paused && openSurfaceRef.current === null) setControlsVisible(false);
       }, 3e3);
     }
     const onMouseActivityRef = useRef(() => {
@@ -175764,12 +176722,97 @@ ${cue.text}`).join("\n\n")}
     }
     const [playing, setPlaying] = useState(false);
     const [hasStarted, setHasStarted] = useState(false);
+    const [openSurface, setOpenSurface] = useState(null);
+    const openSurfaceRef = useRef(null);
+    openSurfaceRef.current = openSurface;
+    const surfaceSetter = (id4) => (value) => setOpenSurface((current2) => {
+      const next2 = typeof value === "function" ? value(current2 === id4) : value;
+      return next2 ? id4 : current2 === id4 ? null : current2;
+    });
+    const showSubMenu = openSurface === "subs";
+    const setShowSubMenu = surfaceSetter("subs");
+    const showAudioMenu = openSurface === "audio";
+    const setShowAudioMenu = surfaceSetter("audio");
+    const showAudioDelayMenu = openSurface === "audioDelay";
+    const setShowAudioDelayMenu = surfaceSetter("audioDelay");
+    const showCastMenu = openSurface === "cast";
+    const setShowCastMenu = surfaceSetter("cast");
+    const showAspectMenu = openSurface === "aspect";
+    const setShowAspectMenu = surfaceSetter("aspect");
+    const showCropZoomMenu = openSurface === "zoom";
+    const setShowCropZoomMenu = surfaceSetter("zoom");
+    const showMoreMenu = openSurface === "more";
+    const setShowMoreMenu = surfaceSetter("more");
+    const showWiki = openSurface === "wiki";
+    const setShowWiki = surfaceSetter("wiki");
+    const showSoundtrack = openSurface === "soundtrack";
+    const setShowSoundtrack = surfaceSetter("soundtrack");
+    const showEpisodes = openSurface === "episodes";
+    const setShowEpisodes = surfaceSetter("episodes");
+    const showTuningPanel = openSurface === "tuning";
+    const setShowTuningPanel = surfaceSetter("tuning");
     const [showStartTitle, setShowStartTitle] = useState(false);
     const [hasEverStarted, setHasEverStarted] = useState(false);
     const [playerLayout, setPlayerLayout] = useState(() => getPlayerLayout());
     useEffect(() => onPlayerLayoutChanged(() => setPlayerLayout(getPlayerLayout())), []);
+    const [chromeViewport, setChromeViewport] = useState(readChromeViewport);
+    useEffect(() => {
+      if (typeof window.matchMedia !== "function") return;
+      const queries = [DESKTOP_CHROME_QUERY, LANDSCAPE_PHONE_QUERY].map((q) => window.matchMedia(q));
+      const sync2 = () => setChromeViewport(readChromeViewport());
+      sync2();
+      queries.forEach((mq) => mq.addEventListener("change", sync2));
+      return () => queries.forEach((mq) => mq.removeEventListener("change", sync2));
+    }, []);
+    const chromeKind = isTv ? "tv" : chromeViewport;
+    const desktopChrome = chromeKind === "desktop";
+    const landscapeChrome = chromeKind === "landscape";
+    const portraitChrome = chromeKind === "portrait";
+    const phoneChrome = landscapeChrome || portraitChrome;
+    const newChrome = chromeKind !== "tv";
+    const playerAccentRgb = playerLayout.seekBarColor === "white" ? "255 255 255" : playerLayout.seekBarColor === "red" ? "239 68 68" : playerLayout.seekBarColor === "amber" ? "251 191 36" : "124 156 255";
+    const hiddenControls = useMemo(() => new Set(playerLayout.hidden), [playerLayout.hidden]);
+    const showsControl = (id4) => !hiddenControls.has(id4);
     const [videoTuning, setVideoTuningState] = useState(() => getVideoTuning());
     useEffect(() => onVideoTuningChanged(() => setVideoTuningState(getVideoTuning())), []);
+    const [dvColorFallback, setDvColorFallback] = useState(false);
+    const [dvColorFallbackMuted, setDvColorFallbackMuted] = useState(false);
+    const dvColorFallbackActive = dvColorFallback && !dvColorFallbackMuted;
+    const [gestureBrightness, setGestureBrightness] = useState(0);
+    useEffect(() => {
+      setGestureBrightness(0);
+    }, [playbackSessionIdentity]);
+    const effectiveVideoTuning = useMemo(
+      () => {
+        const base = dvColorFallbackActive ? { ...DEFAULT_TUNING, ...TUNING_PRESETS.vivid.patch } : videoTuning;
+        if (!gestureBrightness) return base;
+        return { ...base, brightness: Math.min(50, Math.max(-50, base.brightness + gestureBrightness)) };
+      },
+      [dvColorFallbackActive, videoTuning, gestureBrightness]
+    );
+    useEffect(() => {
+      setDvColorFallback(false);
+      setDvColorFallbackMuted(false);
+      if (!url || !hasStarted) return;
+      let cancelled = false;
+      void (async () => {
+        try {
+          const response = await fetch(`/api/video-color?url=${encodeURIComponent(url)}`);
+          const data = await response.json();
+          if (cancelled) return;
+          if (data?.dolbyVisionProfile != null) {
+            void fetch(`/api/debug-log?msg=${encodeURIComponent(`[dv] profil ${data.dolbyVisionProfile} bl_compat ${data.blCompatibilityId ?? "?"} korrigering ${data.needsColorFallback ? "P\xC5" : "av"}`)}`).catch(() => {
+            });
+          }
+          if (!data?.needsColorFallback) return;
+          setDvColorFallback(true);
+        } catch {
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }, [url, hasStarted]);
     const [streamQualityLabel, setStreamQualityLabel] = useState(null);
     useEffect(() => {
       if (!hasStarted || !getShowStreamQuality()) {
@@ -175815,7 +176858,7 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (!useMpv) return;
       const renderTuning = getRenderTuning();
-      for (const [prop, value] of renderTuningProperties(renderTuning)) {
+      for (const [prop, value] of renderTuningProperties(renderTuning, !isDirectLocalFileSource)) {
         void mpvCommand2(["set_property", prop, value]);
       }
       if (isMpvEngine) {
@@ -175832,15 +176875,15 @@ ${cue.text}`).join("\n\n")}
         void mpvCommand2(["set_property", prop, value]);
       }
       if (isDroidEngine) {
-        void nativeSetVideoTuning(videoTuning);
+        void nativeSetVideoTuning(effectiveVideoTuning);
         return;
       }
-      void mpvCommand2(["set_property", "brightness", videoTuning.brightness]);
-      void mpvCommand2(["set_property", "contrast", videoTuning.contrast]);
-      void mpvCommand2(["set_property", "saturation", videoTuning.saturation]);
-      void mpvCommand2(["set_property", "gamma", videoTuning.gamma]);
-      void mpvCommand2(["set_property", "sharpen", videoTuning.sharpen]);
-    }, [useMpv, videoTuning, hasStarted]);
+      void mpvCommand2(["set_property", "brightness", effectiveVideoTuning.brightness]);
+      void mpvCommand2(["set_property", "contrast", effectiveVideoTuning.contrast]);
+      void mpvCommand2(["set_property", "saturation", effectiveVideoTuning.saturation]);
+      void mpvCommand2(["set_property", "gamma", effectiveVideoTuning.gamma]);
+      void mpvCommand2(["set_property", "sharpen", effectiveVideoTuning.sharpen]);
+    }, [useMpv, effectiveVideoTuning, hasStarted, isDirectLocalFileSource]);
     const [requiresUserStart, setRequiresUserStart] = useState(false);
     const [hasEnded, setHasEnded] = useState(false);
     const [mpvStartupHoldReady, setMpvStartupHoldReady] = useState(false);
@@ -175861,20 +176904,15 @@ ${cue.text}`).join("\n\n")}
     const [volume, setVolume] = useState(1);
     const [muted, setMuted] = useState(false);
     const [buffered, setBuffered] = useState(0);
-    const [showWiki, setShowWiki] = useState(false);
-    const [showSoundtrack, setShowSoundtrack] = useState(false);
-    const [showTuningPanel, setShowTuningPanel] = useState(false);
     const [audioTracks, setAudioTracks] = useState([]);
     const [embeddedSubtitleTracks, setEmbeddedSubtitleTracks] = useState([]);
     const [mpvSubtitleTracks, setMpvSubtitleTracks] = useState([]);
     const [activeAudioTrack, setActiveAudioTrack] = useState(null);
-    const [showAudioMenu, setShowAudioMenu] = useState(false);
+    const audioDelayTriggerRef = useRef(null);
     const [subtitles, setSubtitles] = useState([]);
     const [subtitleLoadError, setSubtitleLoadError] = useState(null);
     const [subtitleDebugInfo, setSubtitleDebugInfo] = useState(null);
     const [subtitleClientDebugInfo, setSubtitleClientDebugInfo] = useState(null);
-    const [showSubMenu, setShowSubMenu] = useState(false);
-    const [showCastMenu, setShowCastMenu] = useState(false);
     const [castDevices, setCastDevices] = useState([]);
     const [castScanning, setCastScanning] = useState(false);
     const [castTarget, setCastTarget] = useState(null);
@@ -175950,6 +176988,9 @@ ${cue.text}`).join("\n\n")}
     }, [subDelay]);
     const [subtitleAutoSyncState, setSubtitleAutoSyncState] = useState({ type: "idle" });
     const [subSize, setSubSize] = useState(() => getDefaultSubtitleSize());
+    const [externalSubtitles, setExternalSubtitles] = useState([]);
+    const externalVttRef = useRef(/* @__PURE__ */ new Map());
+    const externalFileInputRef = useRef(null);
     const [subVerticalPos, setSubVerticalPos] = useState(() => getDefaultSubtitleVerticalPosition());
     const [subOpacity, setSubOpacity] = useState(() => getDefaultSubtitleOpacity());
     const [subTextColor, setSubTextColor] = useState(() => getSubtitleTextColor());
@@ -175962,11 +177003,12 @@ ${cue.text}`).join("\n\n")}
     const [autoSkipIntro] = useState(() => getAutoSkipIntro());
     const [rememberAspectRatio] = useState(() => getRememberAspectRatio());
     const [aspectRatioMode, setAspectRatioMode] = useState(() => getRememberAspectRatio() ? getDefaultAspectRatio() : "auto");
-    const [showAspectMenu, setShowAspectMenu] = useState(false);
     const [cropZoomMode, setCropZoomMode] = useState("off");
-    const [showCropZoomMenu, setShowCropZoomMenu] = useState(false);
-    const [showMoreMenu, setShowMoreMenu] = useState(false);
     const [copiedLink, setCopiedLink] = useState(false);
+    const [skipIntroDismissed, setSkipIntroDismissed] = useState(false);
+    useEffect(() => {
+      setSkipIntroDismissed(false);
+    }, [playbackSessionIdentity]);
     const iosWebKitRef = useRef(false);
     const autoMutedRef = useRef(false);
     const [downloadState, setDownloadState] = useState({ type: "idle" });
@@ -175975,6 +177017,10 @@ ${cue.text}`).join("\n\n")}
     const [introKind, setIntroKind] = useState(null);
     const [introDataReady, setIntroDataReady] = useState(false);
     const [outroSegment, setOutroSegment] = useState(null);
+    const [creditsMode, setCreditsMode] = useState(false);
+    creditsModeRef.current = creditsMode;
+    const creditsPipRef = useRef(null);
+    const creditsTouchedRef = useRef(false);
     const outroFiredRef = useRef(false);
     const onOutroStartRef = useRef(onOutroStart);
     onOutroStartRef.current = onOutroStart;
@@ -176040,6 +177086,7 @@ ${cue.text}`).join("\n\n")}
     const subtitleDownloadRequestIdRef = useRef(0);
     const subtitlesSnapshotRef = useRef([]);
     const didApplyPreferredAudioRef = useRef(false);
+    const loggedAudioTrackCountRef = useRef(-1);
     useEffect(() => {
       iosWebKitRef.current = isIosWebKitBrowser();
       if (typeof window !== "undefined") {
@@ -176075,8 +177122,12 @@ ${cue.text}`).join("\n\n")}
     const mpv = isDroidEngine ? droid : mpvDesktop;
     useEffect(() => {
       if (!isDroidEngine) return;
-      setAndroidImmersive(true);
-      return () => setAndroidImmersive(false);
+      setAndroidImmersive(true, "spelare-mount");
+      return () => {
+        setAndroidImmersive(false, "spelare-unmount");
+        screenBrightnessRef.current = 1;
+        setAndroidScreenBrightness(-1);
+      };
     }, [isDroidEngine]);
     useEffect(() => {
       if (!isDroidEngine) return;
@@ -176180,7 +177231,10 @@ ${cue.text}`).join("\n\n")}
           title: track.title ?? null,
           channels: typeof track.channels === "number" ? track.channels : null
         }));
-        setAudioTracks(normalized);
+        setAudioTracks((prev) => {
+          if (normalized.length === 0 && prev.length > 0) return prev;
+          return sameAudioTracks(prev, normalized) ? prev : normalized;
+        });
         const selected = (Array.isArray(tracks) ? tracks : []).find((track) => track.selected);
         setActiveAudioTrack((prev) => {
           if (selected) return selected.aid;
@@ -176194,7 +177248,8 @@ ${cue.text}`).join("\n\n")}
       if (!useMpv) return;
       try {
         const tracks = await getMpvSubtitleTracks2();
-        setMpvSubtitleTracks(Array.isArray(tracks) ? tracks : []);
+        const next2 = Array.isArray(tracks) ? tracks : [];
+        setMpvSubtitleTracks((prev) => sameSubtitleTracks(prev, next2) ? prev : next2);
       } catch {
       }
     }, [useMpv]);
@@ -176202,13 +177257,18 @@ ${cue.text}`).join("\n\n")}
       if (!useMpv) return;
       void refreshMpvAudioTracks();
       void refreshMpvSubtitleTracks();
-      const pollEveryMs = showAudioMenu || showSubMenu ? 3e3 : 15e3;
       const interval = window.setInterval(() => {
         void refreshMpvAudioTracks();
         void refreshMpvSubtitleTracks();
-      }, pollEveryMs);
+      }, 15e3);
       return () => window.clearInterval(interval);
-    }, [refreshMpvAudioTracks, refreshMpvSubtitleTracks, showAudioMenu, showSubMenu, useMpv, url]);
+    }, [refreshMpvAudioTracks, refreshMpvSubtitleTracks, useMpv, url]);
+    useEffect(() => {
+      if (!useMpv) return;
+      if (!showAudioMenu && !showSubMenu) return;
+      void refreshMpvAudioTracks();
+      void refreshMpvSubtitleTracks();
+    }, [showAudioMenu, showSubMenu, refreshMpvAudioTracks, refreshMpvSubtitleTracks, useMpv]);
     useEffect(() => {
       if (!useMpv) return;
       if (!mpv.fileLoaded || mpvStartupHoldReady) return;
@@ -176231,7 +177291,7 @@ ${cue.text}`).join("\n\n")}
               title: track.title ?? null,
               channels: typeof track.channels === "number" ? track.channels : null
             }));
-            setAudioTracks(normalized);
+            setAudioTracks((prev) => normalized.length === 0 && prev.length > 0 ? prev : normalized);
             const selected = (Array.isArray(tracks) ? tracks : []).find((track) => track.selected);
             setActiveAudioTrack((prev) => {
               if (selected) return selected.aid;
@@ -176242,7 +177302,8 @@ ${cue.text}`).join("\n\n")}
           }),
           getMpvSubtitleTracks2().then((tracks) => {
             if (cancelled) return;
-            setMpvSubtitleTracks(Array.isArray(tracks) ? tracks : []);
+            const nextSubs = Array.isArray(tracks) ? tracks : [];
+            setMpvSubtitleTracks((prev) => nextSubs.length === 0 && prev.length > 0 ? prev : nextSubs);
           }).catch(() => {
           })
         ]).then(() => {
@@ -176418,6 +177479,8 @@ ${cue.text}`).join("\n\n")}
     const subtitleClockBase = subtitleClockOverride ?? realTime;
     const subtitleTime = subtitleClockBase - subDelay + (subDrift ? subDrift.slope * (subtitleClockBase - subDrift.anchor) : 0);
     const activeCue = isMpvEngine ? null : cues.find((c) => subtitleTime >= c.start && subtitleTime <= c.end) ?? null;
+    const embeddedCueText = isDroidEngine && !activeCue ? (mpv.cueText ?? "").trim() : "";
+    const renderedSubtitleText = activeCue?.text ?? (embeddedCueText || null);
     const parsedEpisodeFromFilename = useMemo(() => filename ? parseEpisodeIdentifier(filename) : null, [filename]);
     const parsedEpisodeFromTitle = useMemo(() => parseEpisodeIdentifier(title), [title]);
     const inferredSeasonFromText = parsedEpisodeFromFilename?.season ?? parsedEpisodeFromTitle?.season ?? null;
@@ -176527,6 +177590,45 @@ ${cue.text}`).join("\n\n")}
         }
       })();
     }, [useMpv, nightMode, audioTuning, mpv.fileLoaded, mpv.fileLoadedToken]);
+    const [audioDelayMs, setAudioDelayMsState] = useState(() => getAudioDelayMs());
+    const [outputIsBluetooth, setOutputIsBluetooth] = useState(false);
+    const droidAudioDelayAppliedRef = useRef(false);
+    useEffect(() => {
+      droidAudioDelayAppliedRef.current = false;
+    }, [url]);
+    useEffect(() => onPlaybackSettingsChanged(() => setAudioDelayMsState(getAudioDelayMs())), []);
+    useEffect(() => {
+      if (!useMpv || !url) return;
+      let cancelled = false;
+      void (async () => {
+        try {
+          const data = isDroidEngine ? await nativeGetAudioOutput() : await (await fetch("/api/audio-output")).json();
+          if (cancelled) return;
+          setOutputIsBluetooth(Boolean(data?.bluetooth));
+        } catch {
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }, [useMpv, isDroidEngine, url]);
+    const effectiveAudioDelayMs = audioDelayMs + (outputIsBluetooth && getBluetoothAudioAutoOffset() ? BLUETOOTH_AUDIO_OFFSET_MS : 0);
+    useEffect(() => {
+      if (isDroidEngine) {
+        if (!mpv.fileLoaded) return;
+        if (effectiveAudioDelayMs === 0 && !droidAudioDelayAppliedRef.current) return;
+        if (!hasStarted) return;
+        droidAudioDelayAppliedRef.current = effectiveAudioDelayMs !== 0;
+        void nativeSetAudioDelay(effectiveAudioDelayMs);
+        return;
+      }
+      if (!isMpvEngine || !mpv.fileLoaded) return;
+      void (async () => {
+        await mpvCommand2(["set_property", "audio-delay", effectiveAudioDelayMs / 1e3]);
+        const faktisk = await mpvCommand2(["get_property", "audio-delay"]);
+        airplayLog(`audio-delay: beg\xE4rt ${effectiveAudioDelayMs} ms (manuellt ${audioDelayMs}, bt ${outputIsBluetooth ? "ja" : "nej"}) \u2192 mpv ${faktisk}`);
+      })();
+    }, [isDroidEngine, isMpvEngine, mpv.fileLoaded, mpv.fileLoadedToken, hasStarted, effectiveAudioDelayMs, audioDelayMs, outputIsBluetooth]);
     const onTimeUpdateRef = useRef(onTimeUpdate);
     onTimeUpdateRef.current = onTimeUpdate;
     useEffect(() => {
@@ -176736,16 +177838,23 @@ ${cue.text}`).join("\n\n")}
       if (!container) return;
       const rect = container.getBoundingClientRect();
       setContainerSize({ width: rect.width, height: rect.height });
-      if (useMpv) {
-        const overscan = desktopFullscreen ? 0 : 2;
-        mpvSetBounds2({
-          left: rect.left - overscan,
-          top: rect.top - overscan,
-          width: rect.width + overscan * 2,
-          height: rect.height + overscan * 2
-        });
+      if (!useMpv) return;
+      const pip = creditsMode ? creditsPipRef.current : null;
+      if (pip) {
+        const pipRect = pip.getBoundingClientRect();
+        if (pipRect.width > 0 && pipRect.height > 0) {
+          mpvSetBounds2({ left: pipRect.left, top: pipRect.top, width: pipRect.width, height: pipRect.height });
+          return;
+        }
       }
-    }, [desktopFullscreen, useMpv]);
+      const overscan = desktopFullscreen ? 0 : 2;
+      mpvSetBounds2({
+        left: rect.left - overscan,
+        top: rect.top - overscan,
+        width: rect.width + overscan * 2,
+        height: rect.height + overscan * 2
+      });
+    }, [desktopFullscreen, useMpv, creditsMode]);
     const scheduleBoundsResync = useCallback(() => {
       if (boundsSyncFrameRef.current !== null) {
         window.cancelAnimationFrame(boundsSyncFrameRef.current);
@@ -176841,6 +177950,7 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (!useMpv) return;
       let cancelled = false;
+      mpv.resetTimePos();
       mpv.resetFileLoaded();
       mpv.resetPlaybackRestarted();
       mpv.resetFirstFrameRendered();
@@ -177314,6 +178424,11 @@ ${cue.text}`).join("\n\n")}
         if (e.key === "Escape" || isTv && e.key === "Backspace" && !typing) {
           e.preventDefault();
           e.stopPropagation();
+          if (!isTv && openSurfaceRef.current !== null) {
+            setOpenSurface(null);
+            onMouseActivityRef.current();
+            return;
+          }
           if (useMpv) {
             void syncDesktopFullscreenState().then((fullscreen) => {
               if (!fullscreen) {
@@ -177500,6 +178615,30 @@ ${cue.text}`).join("\n\n")}
         setLoadingSub(false);
         setCues([]);
         setSubtitleLoadError(null);
+        return;
+      }
+      if (sub.source === "external") {
+        setActiveSubId(sub.id);
+        setSubtitleLoadError(null);
+        if (useMpv) {
+          try {
+            await mpvCommand2(["sub-add", sub.url, "select"]);
+            await refreshMpvSubtitleTracks();
+            setCues([]);
+          } catch (error) {
+            setSubtitleLoadError(error instanceof Error ? t("vpSubMpvFailedWith").replace("{message}", error.message) : t("vpSubMpvFailed"));
+          }
+          setLoadingSub(false);
+          return;
+        }
+        const vtt = externalVttRef.current.get(sub.id);
+        if (vtt) {
+          setCues(parseVtt(vtt));
+        } else {
+          setCues([]);
+          setSubtitleLoadError(t("subtitleFileUnsupported"));
+        }
+        setLoadingSub(false);
         return;
       }
       setLoadingSub(true);
@@ -177770,6 +178909,7 @@ ${cue.text}`).join("\n\n")}
       setShowAudioMenu(false);
       preferredAudioLangRef.current = getDefaultAudioLanguage() || null;
       didApplyPreferredAudioRef.current = false;
+      loggedAudioTrackCountRef.current = -1;
       setHasEnded(false);
       firstFrameLoggedRef.current = false;
       playbackEventRef.current = { started: false, wasPlaying: false };
@@ -178206,6 +179346,13 @@ ${cue.text}`).join("\n\n")}
       if (!preferredAudioLangRef.current || audioTracks.length === 0) return;
       if (didApplyPreferredAudioRef.current) return;
       const match = audioTracks.find((track) => audioTrackMatchesLanguage(track, preferredAudioLangRef.current));
+      if (audioTracks.length !== loggedAudioTrackCountRef.current) {
+        loggedAudioTrackCountRef.current = audioTracks.length;
+        void fetch(`/api/debug-log?msg=${encodeURIComponent(
+          `[audio-pref] \xF6nskat=${preferredAudioLangRef.current} motor=${engineKind} sp\xE5r=[${audioTracks.map((track) => `${track.index}:${track.language ?? "ok\xE4nt"}`).join(" ")}] tr\xE4ff=${match ? match.index : "INGEN"}`
+        )}`).catch(() => {
+        });
+      }
       if (!match) {
         return;
       }
@@ -178505,14 +179652,18 @@ ${cue.text}`).join("\n\n")}
       }));
     }, [embeddedSubtitleTracks, mpvSubtitleTracks, useMpv]);
     const subtitleOptions = useMemo(() => {
-      const merged = [...subtitles, ...embeddedSubtitleOptions];
+      const merged = [
+        // Egna filer först: den som öppnat en fil vill åt just den.
+        ...externalSubtitles,
+        ...getPreferEmbeddedSubtitles() ? [...embeddedSubtitleOptions, ...subtitles] : [...subtitles, ...embeddedSubtitleOptions]
+      ];
       const seen = /* @__PURE__ */ new Set();
       return merged.filter((option) => {
         if (seen.has(option.id)) return false;
         seen.add(option.id);
         return true;
       });
-    }, [subtitles, embeddedSubtitleOptions]);
+    }, [subtitles, embeddedSubtitleOptions, externalSubtitles]);
     useEffect(() => {
       if (embeddedSubtitleOptions.length === 0) return;
       setSubtitleLoadError((current2) => current2 === t("vpNoSubsFound") ? null : current2);
@@ -178635,10 +179786,268 @@ ${cue.text}`).join("\n\n")}
       skipButtonAutoHideSeconds > 0 && activeIntro && realTime - activeIntro.startMs / 1e3 > skipButtonAutoHideSeconds
     );
     const shouldShowSkipIntroButton = Boolean(
-      hasStarted && !autoSkipIntro && activeIntro && introDataReady && !skipButtonExpired
+      hasStarted && !autoSkipIntro && activeIntro && introDataReady && !skipButtonExpired && !skipIntroDismissed
     );
     const controlsReady = useMpv ? hasEverStarted || hasStarted || mpv.firstFrameRendered || mpvRevealPlaybackReady : hasEverStarted || hasStarted;
     const collapseMpvTopBar = useMpv && !controlsVisible && !desktopFullscreen;
+    const isLastEpisodeOfSeason = useMemo(() => {
+      if (!episodes || episodes.current == null) return false;
+      const numbers = episodes.items.map((entry) => entry.number).filter((value) => Number.isFinite(value));
+      if (numbers.length === 0) return false;
+      return episodes.current === Math.max(...numbers);
+    }, [episodes]);
+    const [nextSeasonNumber, setNextSeasonNumber] = useState(null);
+    const [seasonLookupSettled, setSeasonLookupSettled] = useState(false);
+    useEffect(() => {
+      if (mediaType !== "tv" || !isLastEpisodeOfSeason) {
+        setNextSeasonNumber(null);
+        setSeasonLookupSettled(true);
+        return;
+      }
+      const seriesTmdbId = wikiTmdbId ?? tmdbId;
+      const currentSeason = episodes?.seasonNumber ?? season;
+      if (!seriesTmdbId || currentSeason == null) {
+        setSeasonLookupSettled(true);
+        return;
+      }
+      setSeasonLookupSettled(false);
+      const controller = new AbortController();
+      void fetch(`/api/tv-info?tmdbId=${seriesTmdbId}`, { signal: controller.signal }).then((response) => response.json()).then((data) => {
+        if (controller.signal.aborted) return;
+        const today = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+        const next2 = (data.seasons ?? []).filter((entry) => entry.season_number > currentSeason && entry.episode_count > 0).filter((entry) => typeof entry.air_date === "string" && entry.air_date.length > 0 && entry.air_date <= today).sort((a, b) => a.season_number - b.season_number)[0];
+        setNextSeasonNumber(next2?.season_number ?? null);
+      }).catch(() => {
+      }).finally(() => {
+        if (!controller.signal.aborted) setSeasonLookupSettled(true);
+      });
+      return () => controller.abort();
+    }, [mediaType, isLastEpisodeOfSeason, wikiTmdbId, tmdbId, episodes?.seasonNumber, season]);
+    const creditsModeAllowed = Boolean(
+      getCreditsRecommendations() && !getAdvanceAtOutro() && (mediaType === "tv" ? isLastEpisodeOfSeason && seasonLookupSettled && nextSeasonNumber === null : true)
+    );
+    const creditsTriggerSeconds = (() => {
+      if (totalDuration <= 600) return null;
+      const tailSeconds = getCreditsThresholdMinutes() * 60;
+      const lateThreshold = Math.max(0, totalDuration - tailSeconds);
+      if (!outroSegment) return lateThreshold;
+      const outroEndsAt = outroSegment.endMs / 1e3;
+      if (totalDuration - outroEndsAt > tailSeconds) return lateThreshold;
+      return outroSegment.startMs / 1e3;
+    })();
+    const creditsFiredRef = useRef(false);
+    const creditsArmedAtRef = useRef(null);
+    useEffect(() => {
+      creditsFiredRef.current = false;
+      creditsArmedAtRef.current = null;
+    }, [url]);
+    const creditsLogRef = useRef({ last: "", at: 0 });
+    useEffect(() => {
+      const line = `till\xE5tet=${creditsModeAllowed} setting=${getCreditsRecommendations()} outroFlytt=${getAdvanceAtOutro()} typ=${mediaType ?? "-"} sistaAvsnitt=${isLastEpisodeOfSeason} s\xE4songKlar=${seasonLookupSettled} n\xE4staS\xE4song=${nextSeasonNumber} speltid=${Math.round(totalDuration)} bekr\xE4ftad=${durationConfirmed} tr\xF6skel=${creditsTriggerSeconds == null ? "null" : Math.round(creditsTriggerSeconds)} startad=${hasStarted}`;
+      const now3 = Date.now();
+      if (line !== creditsLogRef.current.last && now3 - creditsLogRef.current.at > 2e3) {
+        creditsLogRef.current = { last: line, at: now3 };
+        void fetch(`/api/debug-log?msg=${encodeURIComponent(`[credits] ${line}`)}`).catch(() => {
+        });
+      }
+    });
+    useEffect(() => {
+      if (!creditsModeAllowed || creditsMode || creditsFiredRef.current) return;
+      if (!hasStarted || !durationConfirmed || creditsTriggerSeconds == null) return;
+      if (realTime < creditsTriggerSeconds) creditsArmedAtRef.current = null;
+      if (realTime < creditsTriggerSeconds) return;
+      if (creditsArmedAtRef.current === null) {
+        creditsArmedAtRef.current = realTime;
+        return;
+      }
+      if (totalDuration - realTime < 5) return;
+      creditsFiredRef.current = true;
+      void fetch(`/api/debug-log?msg=${encodeURIComponent(`[credits] UTL\xD6ST vid ${Math.round(realTime)}s av ${Math.round(totalDuration)}s`)}`).catch(() => {
+      });
+      creditsTouchedRef.current = false;
+      setOpenSurface(null);
+      setCreditsMode(true);
+    }, [creditsModeAllowed, creditsMode, hasStarted, durationConfirmed, creditsTriggerSeconds, realTime, totalDuration]);
+    const leaveCreditsModeRef = useRef(() => {
+    });
+    const [creditsItems, setCreditsItems] = useState([]);
+    useEffect(() => {
+      if (!creditsMode) return;
+      void fetch(`/api/debug-log?msg=${encodeURIComponent(`[credits] kort=${creditsItems.length}`)}`).catch(() => {
+      });
+    }, [creditsMode, creditsItems.length]);
+    useEffect(() => {
+      if (!creditsMode) return;
+      const recommendationTmdbId = wikiTmdbId ?? tmdbId;
+      if (!recommendationTmdbId) return;
+      const controller = new AbortController();
+      const type = mediaType === "tv" ? "tv" : "movie";
+      void (async () => {
+        try {
+          const listResponse = await fetch(
+            `/api/recommendations?tmdbId=${recommendationTmdbId}&type=${type}`,
+            { signal: controller.signal }
+          );
+          const list = await listResponse.json();
+          const ids = (list.items ?? []).map((entry) => String(entry?.id ?? "").replace(/^(?:movie|tv)-/, "")).filter((id4) => /^\d+$/.test(id4)).slice(0, 5);
+          if (controller.signal.aborted) return;
+          if (ids.length === 0) {
+            leaveCreditsModeRef.current();
+            return;
+          }
+          const hydrated = await Promise.all(ids.map(async (id4) => {
+            try {
+              const response = await fetch(`/api/item?tmdbId=${id4}&type=${type}`, { signal: controller.signal });
+              const data = await response.json();
+              return data.item ?? null;
+            } catch {
+              return null;
+            }
+          }));
+          if (controller.signal.aborted) return;
+          const usable = hydrated.filter((entry) => entry !== null);
+          if (usable.length === 0) {
+            leaveCreditsModeRef.current();
+            return;
+          }
+          setCreditsItems(usable);
+        } catch {
+        }
+      })();
+      return () => controller.abort();
+    }, [creditsMode, wikiTmdbId, tmdbId, mediaType]);
+    const [creditsLogos, setCreditsLogos] = useState({});
+    useEffect(() => {
+      if (creditsItems.length === 0) return;
+      let alive = true;
+      void Promise.all(
+        creditsItems.map(async (item) => [item.id, await resolveTitleLogo(item.type, item.id)])
+      ).then((pairs) => {
+        if (!alive) return;
+        setCreditsLogos((prev) => {
+          const next2 = { ...prev };
+          for (const [id4, logo] of pairs) next2[id4] = logo;
+          return next2;
+        });
+      });
+      return () => {
+        alive = false;
+      };
+    }, [creditsItems]);
+    const creditsCards = useMemo(() => {
+      const cards = [];
+      for (const item of creditsItems) {
+        cards.push({
+          item,
+          heading: item.title,
+          logoUrl: creditsLogos[item.id] ?? getCachedTitleLogo(item.type, item.id) ?? null,
+          primaryLabel: t("play"),
+          /**
+           * Play betyder SPELA.
+           *
+           * Knappen anropade tidigare samma väg som "Mer info" och landade på
+           * titelns detaljsida, där man fick trycka en gång till. Den går nu
+           * via seamen med `autoPlay`, som armerar samma avsikt heron använder:
+           * detaljsidan öppnas och startar filmen själv.
+           *
+           * Direkt till seamen, inte via `onCreditsOpenDetails` — den propen
+           * betyder "visa titeln" och används av anropare som inte ska starta
+           * uppspelning.
+           */
+          onPrimary: () => requestOpenMediaItem({ item, autoPlay: true, source: "credits-play" })
+        });
+      }
+      return cards;
+    }, [creditsItems, creditsLogos, t, onCreditsOpenDetails]);
+    const creditsProgress = (() => {
+      if (totalDuration <= 0) return 0;
+      const start2 = creditsTriggerSeconds;
+      if (start2 == null) return 0;
+      const span = Math.max(1, totalDuration - start2);
+      return Math.max(0, Math.min(1, (realTime - start2) / span));
+    })();
+    const creditsRemainingSeconds = Math.max(0, totalDuration - realTime);
+    const creditsPipMounted = creditsMode && creditsCards.length > 0;
+    useEffect(() => {
+      if (!useMpv) return;
+      const raf = window.requestAnimationFrame(() => syncPlayerBounds());
+      const settle = window.setTimeout(() => syncPlayerBounds(), 260);
+      return () => {
+        window.cancelAnimationFrame(raf);
+        window.clearTimeout(settle);
+      };
+    }, [creditsMode, creditsPipMounted, useMpv, syncPlayerBounds]);
+    const leaveCreditsMode = useCallback(() => {
+      setCreditsMode(false);
+      window.requestAnimationFrame(() => scheduleBoundsResync());
+    }, [scheduleBoundsResync]);
+    leaveCreditsModeRef.current = leaveCreditsMode;
+    useEffect(() => {
+      if (!useMpv) return;
+      return () => {
+        setCreditsMode(false);
+        const container = containerRef.current;
+        if (!container) return;
+        const rect = container.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) return;
+        mpvSetBounds2({ left: rect.left, top: rect.top, width: rect.width, height: rect.height });
+      };
+    }, [useMpv, url]);
+    useEffect(() => {
+      if (!creditsMode || !useMpv) return;
+      const waitMs = creditsCards.length === 0 ? 8e3 : 600;
+      const timer = window.setTimeout(() => {
+        const pip = creditsPipRef.current;
+        if (pip) {
+          const rect = pip.getBoundingClientRect();
+          if (rect.width > 0 && rect.height > 0) return;
+        }
+        leaveCreditsMode();
+      }, waitMs);
+      return () => window.clearTimeout(timer);
+    }, [creditsMode, useMpv, creditsCards.length, leaveCreditsMode]);
+    const currentTitleAsItem = useCallback(() => {
+      if (!tmdbId) return null;
+      return {
+        id: String(tmdbId),
+        title: mediaTitle ?? title ?? "",
+        originalLanguage: null,
+        type: mediaType === "tv" ? "tv" : "movie",
+        year: year ?? null,
+        posterUrl: posterUrl ?? null,
+        backdropUrl: backdropUrl ?? null,
+        genres: [],
+        keywords: [],
+        providers: [],
+        ratings: { imdb: null, metacritic: null, rottenTomatoes: null },
+        overview: "",
+        source: "tmdb"
+      };
+    }, [tmdbId, mediaTitle, title, mediaType, year, posterUrl, backdropUrl]);
+    const finishCredits = useCallback(() => {
+      if (onCreditsFinished) {
+        onCreditsFinished();
+        return;
+      }
+      const item = currentTitleAsItem();
+      if (item) requestOpenMediaItem({ item, source: "credits-finished" });
+      onClose();
+    }, [onCreditsFinished, currentTitleAsItem, onClose]);
+    const openCreditsItem = useCallback((item) => {
+      if (onCreditsOpenDetails) {
+        onCreditsOpenDetails(item);
+        return;
+      }
+      requestOpenMediaItem({ item, source: "credits-pick" });
+      onClose();
+    }, [onCreditsOpenDetails, onClose]);
+    useEffect(() => {
+      if (!creditsMode) return;
+      const barEmpty = durationConfirmed && creditsRemainingSeconds < 1;
+      if (!mpv.ended && !barEmpty) return;
+      if (!barEmpty && creditsTouchedRef.current) return;
+      finishCredits();
+    }, [creditsMode, mpv.ended, durationConfirmed, creditsRemainingSeconds, finishCredits]);
     useEffect(() => {
       if (!autoSkipIntro || !activeIntro || !hasStarted || autoSkippedIntroRef.current) return;
       autoSkippedIntroRef.current = true;
@@ -178657,6 +180066,52 @@ ${cue.text}`).join("\n\n")}
       }
       onOutroStartRef.current?.();
     }, [episode, hasStarted, imdbId, mediaType, outroSegment, realTime, season, wikiTmdbId]);
+    const handleExternalSubtitleFile = useCallback(async (file) => {
+      setSubtitleLoadError(null);
+      try {
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        const decode = (label, fatal) => new TextDecoder(label, { fatal }).decode(bytes);
+        let content2;
+        if (bytes[0] === 255 && bytes[1] === 254 || bytes[0] === 254 && bytes[1] === 255) {
+          content2 = decode(bytes[0] === 255 ? "utf-16le" : "utf-16be", false);
+        } else {
+          try {
+            content2 = decode("utf-8", true);
+          } catch {
+            content2 = decode("windows-1252", false);
+          }
+        }
+        content2 = content2.replace(/^\uFEFF/, "");
+        const response = await fetch("/api/subtitles/upload", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: file.name, content: content2 })
+        });
+        if (!response.ok) throw new Error(`upload ${response.status}`);
+        const payload = await response.json();
+        if (!payload.path) throw new Error("upload: no path");
+        const id4 = `external:${Date.now()}`;
+        const option = {
+          id: id4,
+          language: "external",
+          lang3: "ext",
+          url: payload.path,
+          source: "external",
+          label: file.name
+        };
+        externalVttRef.current.set(id4, payload.vtt ?? null);
+        void fetch(`/api/debug-log?msg=${encodeURIComponent(
+          `[ext-sub] ${file.name} bytes=${bytes.length} vtt=${payload.vtt ? payload.vtt.length : "null"} cues=${payload.vtt ? parseVtt(payload.vtt).length : 0} mpv=${useMpv}`
+        )}`).catch(() => {
+        });
+        setExternalSubtitles((current2) => [option, ...current2]);
+        void selectSubtitle(option, { manual: true });
+      } catch (error) {
+        setSubtitleLoadError(
+          error instanceof Error ? t("subtitleFileLoadFailed").replace("{message}", error.message) : t("subtitleFileLoadFailed").replace("{message}", "")
+        );
+      }
+    }, [selectSubtitle, t]);
     const subtitleGroups = subtitleOptions.reduce((acc, s) => {
       var _a;
       ;
@@ -178891,1182 +180346,2580 @@ ${cue.text}`).join("\n\n")}
       lastAutoSyncedDelayRef.current = null;
       setSubtitleAutoSyncState({ type: "idle" });
     }, []);
-    const content = /* @__PURE__ */ jsxs("div", { ref: playerRootRef, "data-lumio-player-open": "1", "data-panel-root": isTv ? "1" : void 0, "data-tv-fullbleed": "", className: `fixed inset-x-0 top-0 z-[60] flex h-[100dvh] flex-col !mt-0 ${useMpv ? "" : "bg-black"}`, children: [
-      !hasEverStarted && (!hideStartSplash || clientOwnsSplash) && /* @__PURE__ */ jsxs(
-        "div",
+    const dtIconButtonClass = (state = "idle") => `flex h-[38px] w-[38px] flex-none items-center justify-center rounded-lg transition ${state === "open" ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : state === "active" ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-300 hover:bg-[rgb(var(--player-accent)/0.16)] hover:text-white"}`;
+    const dtLabelButtonClass = (state = "idle") => `flex h-[34px] flex-none items-center gap-[7px] rounded-lg px-3 text-[13px] font-semibold transition ${state === "open" ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : state === "active" ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-300 hover:bg-[rgb(var(--player-accent)/0.16)] hover:text-white"}`;
+    const dtStatusPillClass = "flex-none rounded-full border border-[rgb(var(--player-accent)/0.40)] px-[11px] py-[5px] text-[11px] font-semibold uppercase tracking-[0.12em] text-[rgb(var(--player-accent))]";
+    const dtDivider = /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "mx-2 h-[22px] w-px flex-none bg-white/[0.12]" });
+    const dtMenuSurfaceClass = newChrome ? "z-50 rounded-xl border border-white/10 bg-base-800/95 p-1.5 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-md" : "z-50 rounded-xl border border-white/10 bg-slate-900/95 py-2 shadow-xl backdrop-blur-sm";
+    const dtMenuHeadingClass = newChrome ? "px-3 pb-1.5 pt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500" : "px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-500";
+    const dtMenuRowClass = (active) => newChrome ? `flex w-full items-center justify-between gap-2.5 rounded-lg transition ${portraitChrome ? "px-3 py-3 text-[15px]" : "px-3 py-2.5 text-sm"} ${active ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-100 hover:bg-[rgb(var(--player-accent)/0.14)]"}` : `flex w-full items-center justify-between px-3 py-2 text-sm transition hover:bg-white/5 ${active ? "text-aurora-300" : "text-slate-300"}`;
+    const dtMoreRowClass = newChrome ? `flex w-full items-center gap-3 rounded-lg text-left text-slate-100 transition hover:bg-[rgb(var(--player-accent)/0.14)] ${portraitChrome ? "px-3 py-3.5" : "px-3 py-2.5"}` : "flex w-full items-center gap-3 rounded-[1.15rem] px-4 py-3 text-left text-slate-100 transition hover:bg-white/5";
+    const dtMoreIconClass = newChrome ? "h-[18px] w-[18px] flex-none text-slate-300" : "h-5 w-5 flex-none text-slate-200";
+    const dtMoreTextClass = newChrome ? portraitChrome ? "text-[15px] leading-tight" : "text-sm leading-tight" : "text-[15px] leading-tight";
+    const pickerStyle = (trigger, width) => portraitChrome ? { position: "fixed", left: 12, right: 12, bottom: 172, maxHeight: "55vh", overflowY: "auto" } : { ...getAnchoredMenuStyle(trigger, newChrome ? width : 0), width: newChrome ? width : void 0 };
+    const pickerHeading = (label) => portraitChrome ? /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-3 px-3 pb-1.5 pt-2", children: [
+      /* @__PURE__ */ jsx("span", { className: "text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400", children: label }),
+      /* @__PURE__ */ jsx(
+        "button",
         {
-          className: "absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-950",
-          style: {
-            transition: `opacity ${SPLASH_FADE_MS}ms ease-out`,
-            opacity: splashFading ? 0 : 1,
-            // Don't intercept clicks once we're fading — the player underneath
-            // is already playing, so the user should be able to interact with
-            // it through the dying splash.
-            pointerEvents: splashFading ? "none" : "auto"
+          type: "button",
+          onClick: () => setOpenSurface(null),
+          "aria-label": t("close"),
+          className: "flex h-6 w-6 flex-none items-center justify-center rounded-full text-slate-500",
+          children: /* @__PURE__ */ jsx("svg", { className: "h-3 w-3", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", strokeLinecap: "round", children: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12" }) })
+        }
+      )
+    ] }) : /* @__PURE__ */ jsx("div", { className: dtMenuHeadingClass, children: label });
+    const portraitPickerOpen = portraitChrome && (openSurface === "subs" || openSurface === "audio" || openSurface === "aspect" || openSurface === "zoom" || openSurface === "cast" || openSurface === "more");
+    const dtActiveTextClass = newChrome ? "text-[rgb(var(--player-accent))]" : "text-aurora-300";
+    const dtMenuDotClass = newChrome ? "ml-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-white" : "ml-2 h-2 w-2 flex-shrink-0 rounded-full bg-aurora-400";
+    const activeSubLangCode = activeSubId ? toSubtitleLangGroup(subtitleOptions.find((s) => s.id === activeSubId)?.language ?? null)?.toUpperCase() ?? "CC" : "CC";
+    const activeAudioLangCode = toAudioLangGroup(
+      (audioTracks.find((track) => track.index === activeAudioTrack) ?? audioTracks[0])?.language
+    )?.toUpperCase() ?? "AUD";
+    const [scrubPercent, setScrubPercent] = useState(null);
+    const handleSeekPointerDown = (event) => {
+      if (!totalDuration || event.button !== 0) return;
+      const element = event.currentTarget;
+      const percentAt = (clientX) => {
+        const rect = element.getBoundingClientRect();
+        if (rect.width <= 0) return 0;
+        return Math.min(100, Math.max(0, (clientX - rect.left) / rect.width * 100));
+      };
+      element.setPointerCapture(event.pointerId);
+      setScrubPercent(percentAt(event.clientX));
+      const onMove = (moveEvent) => setScrubPercent(percentAt(moveEvent.clientX));
+      const onUp = (upEvent) => {
+        element.removeEventListener("pointermove", onMove);
+        element.removeEventListener("pointerup", onUp);
+        element.removeEventListener("pointercancel", onUp);
+        const target = percentAt(upEvent.clientX);
+        setScrubPercent(null);
+        seekToAbsolute(target / 100 * totalDuration);
+      };
+      element.addEventListener("pointermove", onMove);
+      element.addEventListener("pointerup", onUp);
+      element.addEventListener("pointercancel", onUp);
+    };
+    const seekPercent = scrubPercent ?? progress2;
+    const seekTime = scrubPercent !== null ? scrubPercent / 100 * totalDuration : realTime;
+    const trackZone = (segment) => {
+      if (!segment || totalDuration <= 0) return null;
+      const left = segment.startMs / 1e3 / totalDuration * 100;
+      const width = (segment.endMs - segment.startMs) / 1e3 / totalDuration * 100;
+      if (!Number.isFinite(left) || !Number.isFinite(width) || width <= 0) return null;
+      return { left: Math.max(0, Math.min(100, left)), width: Math.max(0.5, Math.min(100 - left, width)) };
+    };
+    const introZone = trackZone(introSegment);
+    const outroZone = trackZone(outroSegment);
+    const playerIcon = (id4, cls) => {
+      switch (id4) {
+        case "nextEpisode":
+          return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
+            /* @__PURE__ */ jsx("path", { d: "M5 5l9 7-9 7z", fill: "currentColor" }),
+            /* @__PURE__ */ jsx("path", { d: "M18 5v14" })
+          ] });
+        case "subtitles":
+          return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", children: [
+            /* @__PURE__ */ jsx("rect", { x: "3", y: "5", width: "18", height: "14", rx: "3" }),
+            /* @__PURE__ */ jsx("path", { d: "M7.5 14.5h3M13.5 14.5h3" })
+          ] });
+        case "audioTrack":
+          return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", children: /* @__PURE__ */ jsx("path", { d: "M4 10v4M8 7v10M12 4v16M16 8v8M20 11v2" }) });
+        case "aspect":
+          return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", children: /* @__PURE__ */ jsx("rect", { x: "3", y: "6", width: "18", height: "12", rx: "2" }) });
+        case "cropZoom":
+          return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", children: [
+            /* @__PURE__ */ jsx("path", { d: "M4 9V5h4" }),
+            /* @__PURE__ */ jsx("path", { d: "M20 15v4h-4" }),
+            /* @__PURE__ */ jsx("path", { d: "M9 15H5v4" }),
+            /* @__PURE__ */ jsx("path", { d: "M15 9h4V5" })
+          ] });
+        case "wiki":
+          return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", children: [
+            /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "9" }),
+            /* @__PURE__ */ jsx("path", { d: "M12 8h.01" }),
+            /* @__PURE__ */ jsx("path", { d: "M11.5 12h1v4.5" })
+          ] });
+        case "soundtrack":
+          return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", children: [
+            /* @__PURE__ */ jsx("circle", { cx: "7", cy: "18", r: "3" }),
+            /* @__PURE__ */ jsx("circle", { cx: "18", cy: "15", r: "3" }),
+            /* @__PURE__ */ jsx("path", { d: "M10 18V7l11-3v11" })
+          ] });
+        case "cast":
+          return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", children: [
+            /* @__PURE__ */ jsx("path", { d: "M2 16.1a5 5 0 0 1 5.9 5.9" }),
+            /* @__PURE__ */ jsx("path", { d: "M2 12.05a9 9 0 0 1 9.95 9.95" }),
+            /* @__PURE__ */ jsx("path", { d: "M4 4h16a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-5" })
+          ] });
+        case "tuning":
+          return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.9", strokeLinecap: "round", children: [
+            /* @__PURE__ */ jsx("path", { d: "M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3" }),
+            /* @__PURE__ */ jsx("path", { d: "M1 14h6M9 8h6M17 16h6" })
+          ] });
+        case "fullscreen":
+          return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" }) });
+        case "more":
+          return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "currentColor", children: [
+            /* @__PURE__ */ jsx("circle", { cx: "5", cy: "12", r: "1.7" }),
+            /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "1.7" }),
+            /* @__PURE__ */ jsx("circle", { cx: "19", cy: "12", r: "1.7" })
+          ] });
+        default:
+          return null;
+      }
+    };
+    const downloadIcon = (cls) => /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
+      /* @__PURE__ */ jsx("path", { d: "M12 3v12" }),
+      /* @__PURE__ */ jsx("path", { d: "m7 10 5 5 5-5" }),
+      /* @__PURE__ */ jsx("path", { d: "M5 21h14" })
+    ] });
+    const seekIcon = (direction, cls) => /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.7", strokeLinecap: "round", strokeLinejoin: "round", children: [
+      direction === "back" ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+        /* @__PURE__ */ jsx("path", { d: "M12 4.5A7.5 7.5 0 1 1 4.5 12" }),
+        /* @__PURE__ */ jsx("path", { d: "m12 4.5-3-3" }),
+        /* @__PURE__ */ jsx("path", { d: "m12 4.5-3 3" })
+      ] }) : /* @__PURE__ */ jsxs(Fragment2, { children: [
+        /* @__PURE__ */ jsx("path", { d: "M12 4.5A7.5 7.5 0 1 0 19.5 12" }),
+        /* @__PURE__ */ jsx("path", { d: "m12 4.5 3-3" }),
+        /* @__PURE__ */ jsx("path", { d: "m12 4.5 3 3" })
+      ] }),
+      /* @__PURE__ */ jsx("text", { x: "12", y: "13", fontSize: "8", fontWeight: "700", fill: "currentColor", stroke: "none", textAnchor: "middle", dominantBaseline: "middle", children: "10" })
+    ] });
+    const desktopControls = {
+      playPause: /* @__PURE__ */ jsx("button", { type: "button", onClick: togglePlay, "aria-label": t("plPlayPause"), className: dtIconButtonClass(), children: isPlaying ? /* @__PURE__ */ jsx("svg", { className: "h-[19px] w-[19px]", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M6 19h4V5H6v14zm8-14v14h4V5h-4z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) }),
+      nextEpisode: episodes && episodes.items.length > 0 ? /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          onClick: () => setShowEpisodes((open) => !open),
+          title: t("plNextEpisode"),
+          "aria-label": t("plNextEpisode"),
+          className: dtIconButtonClass(showEpisodes ? "open" : "idle"),
+          children: playerIcon("nextEpisode", "h-[19px] w-[19px]")
+        }
+      ) : null,
+      mute: /* @__PURE__ */ jsx("button", { type: "button", onClick: toggleMute, "aria-label": t("plMute"), className: "flex-none p-1 text-slate-300 transition hover:text-white", children: muted || volume === 0 ? /* @__PURE__ */ jsx("svg", { className: "h-[18px] w-[18px]", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zM4.27 3 3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73 4.27 3zM12 4 9.91 6.09 12 8.18V4z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-[18px] w-[18px]", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" }) }) }),
+      volume: playerLayout.volumeStyle === "icon" ? null : playerLayout.volumeStyle === "stepper" ? /* @__PURE__ */ jsxs("span", { className: "flex flex-none items-center gap-1.5", children: [
+        /* @__PURE__ */ jsx("button", { type: "button", onClick: () => applyVolume((muted ? 0 : volume) - 0.05), className: "flex h-6 w-6 items-center justify-center rounded-full border border-white/[0.14] text-xs text-slate-300 transition hover:bg-white/10 hover:text-white", children: "\u2212" }),
+        /* @__PURE__ */ jsxs("span", { className: "min-w-[2.5rem] text-center text-xs tabular-nums text-slate-300", children: [
+          Math.round((muted ? 0 : volume) * 100),
+          "%"
+        ] }),
+        /* @__PURE__ */ jsx("button", { type: "button", onClick: () => applyVolume((muted ? 0 : volume) + 0.05), className: "flex h-6 w-6 items-center justify-center rounded-full border border-white/[0.14] text-xs text-slate-300 transition hover:bg-white/10 hover:text-white", children: "+" })
+      ] }) : (
+        /* Eget spår i stället för <input type="range">: designen har 84 × 4 px
+           med en 11 px punkt, och den nakna range-kontrollen gick inte att ge
+           den formen på ett sätt som höll i båda motorerna. */
+        /* @__PURE__ */ jsxs(
+          "div",
+          {
+            role: "slider",
+            tabIndex: 0,
+            "aria-label": t("plVolume"),
+            "aria-valuemin": 0,
+            "aria-valuemax": 100,
+            "aria-valuenow": Math.round((muted ? 0 : volume) * 100),
+            onClick: (event) => {
+              const rect = event.currentTarget.getBoundingClientRect();
+              applyVolume((event.clientX - rect.left) / rect.width);
+            },
+            onKeyDown: (event) => {
+              if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+              event.preventDefault();
+              applyVolume((muted ? 0 : volume) + (event.key === "ArrowLeft" ? -0.05 : 0.05));
+            },
+            className: "relative h-1 w-[84px] flex-none cursor-pointer rounded-full bg-white/[0.18]",
+            children: [
+              /* @__PURE__ */ jsx("div", { className: "absolute inset-y-0 left-0 rounded-full bg-slate-300", style: { width: `${(muted ? 0 : volume) * 100}%` } }),
+              /* @__PURE__ */ jsx("div", { className: "absolute top-1/2 h-[11px] w-[11px] -translate-y-1/2 rounded-full bg-white", style: { left: `calc(${(muted ? 0 : volume) * 100}% - 5px)` } })
+            ]
+          }
+        )
+      ),
+      /* Rena statusetiketter: de säger ATT segmentet hittats. Åtgärden ligger i
+         "Hoppa över intro"-pillret, och "hittades inte" utgår helt — det var en
+         rad som aldrig hade något att erbjuda. */
+      segmentBadges: mediaType === "tv" && (introSegment || outroSegment) ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+        introSegment ? /* @__PURE__ */ jsx("span", { className: dtStatusPillClass, children: introKind === "recap" ? t("recapFound") : t("introFound") }) : null,
+        outroSegment ? /* @__PURE__ */ jsx("span", { className: dtStatusPillClass, children: t("outroFound") }) : null
+      ] }) : null,
+      subtitles: /* @__PURE__ */ jsxs(
+        "button",
+        {
+          type: "button",
+          ref: subTriggerRef,
+          onClick: () => {
+            if (!showSubMenu) {
+              const activeLang = activeSubId ? toSubtitleLangGroup(subtitleOptions.find((s) => s.id === activeSubId)?.language ?? null) : null;
+              setSelectedLang(activeLang);
+            }
+            setShowSubMenu((v) => !v);
           },
+          title: t("subtitlesLabel"),
+          className: dtLabelButtonClass(showSubMenu ? "open" : activeSubId ? "active" : "idle"),
           children: [
-            (backdropUrl ?? posterUrl) && /* @__PURE__ */ jsxs(Fragment2, { children: [
-              /* @__PURE__ */ jsx(
-                "div",
-                {
-                  className: "pointer-events-none absolute inset-0 bg-cover bg-center opacity-20 transition-all duration-300",
-                  style: { backgroundImage: `url(${backdropUrl ?? posterUrl})` }
+            playerIcon("subtitles", "h-[17px] w-[17px]"),
+            activeSubLangCode
+          ]
+        }
+      ),
+      audioTrack: audioTracks.length > 0 ? /* @__PURE__ */ jsxs(
+        "button",
+        {
+          type: "button",
+          ref: audioTriggerRef,
+          onClick: () => setShowAudioMenu((v) => !v),
+          title: t("audioLanguage"),
+          className: dtLabelButtonClass(showAudioMenu ? "open" : "idle"),
+          children: [
+            playerIcon("audioTrack", "h-[17px] w-[17px]"),
+            activeAudioLangCode
+          ]
+        }
+      ) : null,
+      aspect: /* @__PURE__ */ jsxs(
+        "button",
+        {
+          type: "button",
+          ref: aspectTriggerRef,
+          onClick: () => setShowAspectMenu((value) => !value),
+          title: t("aspectRatio"),
+          className: dtLabelButtonClass(showAspectMenu ? "open" : aspectRatioMode !== "auto" ? "active" : "idle"),
+          children: [
+            playerIcon("aspect", "h-[17px] w-[17px]"),
+            /* @__PURE__ */ jsx("span", { className: "uppercase", children: aspectLabel })
+          ]
+        }
+      ),
+      /* Beskär/zoom finns inte utritad i desktopdesignen, men funktionen finns i
+         appen och tas inte bort i en omdesign. Den får etikettknappens form
+         intill bildformatet, som är dess närmaste släkting. */
+      cropZoom: /* @__PURE__ */ jsxs(
+        "button",
+        {
+          type: "button",
+          ref: cropTriggerRef,
+          onClick: () => setShowCropZoomMenu((value) => !value),
+          title: t("cropZoom"),
+          className: dtLabelButtonClass(showCropZoomMenu ? "open" : cropZoomMode !== "off" ? "active" : "idle"),
+          children: [
+            playerIcon("cropZoom", "h-[17px] w-[17px]"),
+            /* @__PURE__ */ jsx("span", { className: "uppercase", children: cropZoomLabel })
+          ]
+        }
+      ),
+      wiki: wikiTmdbId || resolvedImdbId ? /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          onClick: () => setShowWiki((v) => !v),
+          title: t("info"),
+          "aria-label": t("info"),
+          className: dtIconButtonClass(showWiki ? "open" : "idle"),
+          children: playerIcon("wiki", "h-[19px] w-[19px]")
+        }
+      ) : null,
+      soundtrack: title ? /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          onClick: () => setShowSoundtrack((v) => !v),
+          title: t("soundtrack"),
+          "aria-label": t("soundtrack"),
+          className: dtIconButtonClass(showSoundtrack ? "open" : "idle"),
+          children: playerIcon("soundtrack", "h-[19px] w-[19px]")
+        }
+      ) : null,
+      cast: !isClientSession() ? /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          onClick: () => {
+            const opening = !showCastMenu;
+            setShowCastMenu(opening);
+            if (opening && castDevices.length === 0) void scanCastDevices();
+            if (opening && isMpvEngine && !airplaySession) void prepareAirplaySession();
+          },
+          title: t("castTitle"),
+          "aria-label": t("castTitle"),
+          className: dtIconButtonClass(showCastMenu ? "open" : castTarget ? "active" : "idle"),
+          children: playerIcon("cast", "h-[19px] w-[19px]")
+        }
+      ) : null,
+      tuning: /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          ref: tuningTriggerRef,
+          onClick: () => setShowTuningPanel((v) => !v),
+          title: t("vtTitle"),
+          "aria-label": t("vtTitle"),
+          className: dtIconButtonClass(showTuningPanel ? "open" : "idle"),
+          children: playerIcon("tuning", "h-[19px] w-[19px]")
+        }
+      ),
+      more: /* @__PURE__ */ jsx(
+        "button",
+        {
+          ref: moreTriggerRef,
+          type: "button",
+          onClick: () => setShowMoreMenu((value) => !value),
+          title: t("moreActions"),
+          "aria-label": t("moreActions"),
+          className: dtIconButtonClass(showMoreMenu ? "open" : "idle"),
+          children: playerIcon("more", "h-[19px] w-[19px]")
+        }
+      ),
+      fullscreen: !isTauriEnv || isDesktopTauriEnv ? /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          onClick: toggleFullscreen,
+          title: t("plFullscreen"),
+          "aria-label": t("plFullscreen"),
+          className: dtIconButtonClass(),
+          children: cssFullscreen ? /* @__PURE__ */ jsx("svg", { className: "h-[18px] w-[18px]", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-[18px] w-[18px]", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" }) })
+        }
+      ) : null
+    };
+    const DESKTOP_ZONES = {
+      left: [["playPause", "nextEpisode"], ["mute", "volume"]],
+      center: [["segmentBadges"]],
+      right: [
+        ["subtitles", "audioTrack", "aspect", "cropZoom"],
+        ["wiki", "soundtrack", "cast"],
+        ["tuning", "more", "fullscreen"]
+      ]
+    };
+    const renderDesktopZone = (groups) => {
+      const filled = groups.map((group) => group.filter((id4) => showsControl(id4) && Boolean(desktopControls[id4])).sort((a, b) => playerLayout.order.indexOf(a) - playerLayout.order.indexOf(b))).filter((group) => group.length > 0);
+      return filled.map((group, index3) => /* @__PURE__ */ jsxs(react_shim_default.Fragment, { children: [
+        index3 > 0 ? dtDivider : null,
+        group.map((id4) => /* @__PURE__ */ jsx(react_shim_default.Fragment, { children: desktopControls[id4] }, id4))
+      ] }, group.join("+")));
+    };
+    const seekHeightClass = playerLayout.seekBarHeight === "slim" ? "h-1" : playerLayout.seekBarHeight === "chunky" ? "h-2.5" : "h-1.5";
+    const seekFillColorClass = "bg-[rgb(var(--player-accent))]";
+    const seekFillStyleClass = playerLayout.seekBarStyle === "glass" ? "shadow-[0_0_14px_rgba(255,255,255,0.35)]" : playerLayout.seekBarStyle === "pinstripe" ? "bg-[repeating-linear-gradient(45deg,transparent,transparent_4px,rgba(0,0,0,0.25)_4px,rgba(0,0,0,0.25)_8px)]" : "";
+    const renderSeekTrack = (widthClass) => /* @__PURE__ */ jsxs(
+      "div",
+      {
+        className: `relative cursor-pointer rounded-full bg-white/[0.18] ${widthClass} ${seekHeightClass}`,
+        onPointerDown: handleSeekPointerDown,
+        style: { touchAction: "none" },
+        children: [
+          /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "absolute -inset-y-3 inset-x-0" }),
+          !useMpv && !isServerStreamUrl(videoSrc) && /* @__PURE__ */ jsx("div", { className: "absolute inset-y-0 left-0 rounded-full bg-white/30", style: { width: `${buffered}%` } }),
+          introZone ? /* @__PURE__ */ jsx(
+            "div",
+            {
+              className: "absolute -bottom-[3px] -top-[3px] rounded border border-[rgb(var(--player-accent)/0.45)] bg-[rgb(var(--player-accent)/0.30)]",
+              style: { left: `${introZone.left}%`, width: `${introZone.width}%` }
+            }
+          ) : null,
+          outroZone ? /* @__PURE__ */ jsx(
+            "div",
+            {
+              className: "absolute -bottom-[3px] -top-[3px] rounded border border-[rgb(var(--player-accent)/0.45)] bg-[rgb(var(--player-accent)/0.30)]",
+              style: { left: `${outroZone.left}%`, width: `${outroZone.width}%` }
+            }
+          ) : null,
+          scrubPercent !== null && totalDuration > 0 ? /* @__PURE__ */ jsx(
+            "div",
+            {
+              className: "pointer-events-none absolute -top-9 z-20 -translate-x-1/2 rounded-md bg-black/85 px-2 py-1 text-[13px] font-semibold tabular-nums text-white shadow-lg backdrop-blur-sm",
+              style: { left: `clamp(1.75rem, ${seekPercent}%, calc(100% - 1.75rem))` },
+              children: fmt(seekTime)
+            }
+          ) : null,
+          totalDuration > 0 ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+            /* @__PURE__ */ jsx("div", { className: `absolute inset-y-0 left-0 rounded-full ${seekFillColorClass} ${seekFillStyleClass}`, style: { width: `${seekPercent}%` } }),
+            playerLayout.seekBarDot ? /* @__PURE__ */ jsx(
+              "div",
+              {
+                className: `absolute top-1/2 -translate-y-1/2 rounded-full bg-white ${desktopChrome ? "h-3.5 w-3.5" : "h-3 w-3"}`,
+                style: {
+                  left: `calc(${seekPercent}% - ${desktopChrome ? 7 : 6}px)`,
+                  boxShadow: desktopChrome ? "0 0 0 4px rgb(var(--player-accent) / 0.28)" : void 0
                 }
-              ),
-              /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-slate-950/30" })
-            ] }),
-            /* @__PURE__ */ jsxs("div", { className: "relative z-10 flex flex-col items-center gap-6 px-6 text-center", children: [
-              posterUrl && /* @__PURE__ */ jsx("div", { className: "h-48 w-32 overflow-hidden rounded-xl shadow-2xl", children: /* @__PURE__ */ jsx("img", { src: posterUrl, alt: title, className: "h-full w-full object-cover" }) }),
-              /* @__PURE__ */ jsxs("div", { children: [
-                /* @__PURE__ */ jsx("p", { className: "text-lg font-semibold text-white", children: title }),
-                year && /* @__PURE__ */ jsx("p", { className: "mt-0.5 text-sm text-slate-500", children: year })
-              ] }),
-              startError ? /* @__PURE__ */ jsx("p", { className: "max-w-xs text-sm text-rose-300", children: t("sourceNotResponding") }) : /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 text-sm text-slate-400", children: [
-                /* @__PURE__ */ jsx("svg", { className: "h-4 w-4 animate-spin", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: /* @__PURE__ */ jsx("path", { d: "M21 12a9 9 0 1 1-6.219-8.56", strokeLinecap: "round" }) }),
-                mediaType === "tv" ? t("startingEpisode") : t("startingMovie")
-              ] }),
-              /* @__PURE__ */ jsxs("div", { className: "flex flex-col items-center gap-3", children: [
-                clientOwnsSplash && resolveDirectStreamUrl2(url) && /* @__PURE__ */ jsx(
+              }
+            ) : null
+          ] }) : null
+        ]
+      }
+    );
+    const doubleTapHandledRef = useRef(false);
+    const lastTapRef = useRef(null);
+    const holdSpeedTimerRef = useRef(null);
+    const holdSpeedActiveRef = useRef(false);
+    const pinchRef = useRef(null);
+    const activePointersRef = useRef(/* @__PURE__ */ new Map());
+    const screenBrightnessRef = useRef(1);
+    const [gestureHud, setGestureHud] = useState(null);
+    const [sourceMismatchWarning, setSourceMismatchWarning] = useState(null);
+    const sourceMismatchTimerRef = useRef(null);
+    const gestureHudTimerRef = useRef(null);
+    const gestureRef = useRef(null);
+    const GESTURE_SEEK_SPAN_SECONDS = 90;
+    const showGestureHud = (kind, value, text) => {
+      if (gestureHudTimerRef.current) window.clearTimeout(gestureHudTimerRef.current);
+      setGestureHud({ kind, value, text });
+    };
+    const onGesturePointerDown = (event) => {
+      if (!phoneChrome || event.pointerType === "mouse") return;
+      const rect = event.currentTarget.getBoundingClientRect();
+      activePointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      if (activePointersRef.current.size === 2) {
+        const [a, b] = Array.from(activePointersRef.current.values());
+        pinchRef.current = { startDistance: Math.hypot(a.x - b.x, a.y - b.y), handled: false };
+        if (gestureRef.current) gestureRef.current.axis = "none";
+        return;
+      }
+      const tapSeconds = getDoubleTapSeconds();
+      const now3 = Date.now();
+      const previous = lastTapRef.current;
+      const edgeFraction = (event.clientX - rect.left) / (rect.width || 1);
+      const nearEdge = edgeFraction < 0.3 || edgeFraction > 0.7;
+      if (tapSeconds > 0 && nearEdge && previous && now3 - previous.at < 300 && Math.abs(event.clientX - previous.x) < 40) {
+        lastTapRef.current = null;
+        const direction = edgeFraction < 0.5 ? -1 : 1;
+        seekToAbsolute(Math.max(0, Math.min(totalDuration || 0, realTimeRef.current + direction * tapSeconds)));
+        showGestureHud("skip", direction * tapSeconds);
+        doubleTapHandledRef.current = true;
+        return;
+      }
+      lastTapRef.current = { at: now3, x: event.clientX };
+      if (getHoldToSpeed()) {
+        if (holdSpeedTimerRef.current) clearTimeout(holdSpeedTimerRef.current);
+        holdSpeedTimerRef.current = setTimeout(() => {
+          if (gestureRef.current?.axis) return;
+          holdSpeedActiveRef.current = true;
+          mpv.setSpeed(2);
+          showGestureHud("speed", 2);
+        }, 500);
+      }
+      gestureRef.current = {
+        x: event.clientX,
+        y: event.clientY,
+        left: rect.left,
+        top: rect.top,
+        closeOffset: 0,
+        width: rect.width || 1,
+        height: rect.height || 1,
+        axis: null,
+        startVolume: muted ? 0 : volume,
+        startBrightness: gestureBrightness,
+        // Skärmljuset lever i bryggan, inte i React — vi håller senaste satta
+        // nivån här så ett nytt svep fortsätter där det förra slutade.
+        startScreenBrightness: screenBrightnessRef.current,
+        screenBrightness: screenBrightnessRef.current,
+        startTime: realTimeRef.current,
+        pendingSeek: null
+      };
+      event.currentTarget.setPointerCapture(event.pointerId);
+    };
+    const onGesturePointerMove = (event) => {
+      if (activePointersRef.current.has(event.pointerId)) {
+        activePointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      }
+      const pinch = pinchRef.current;
+      if (pinch && activePointersRef.current.size === 2) {
+        const [a, b] = Array.from(activePointersRef.current.values());
+        const distance2 = Math.hypot(a.x - b.x, a.y - b.y);
+        const ratio = distance2 / (pinch.startDistance || 1);
+        if (!pinch.handled && (ratio > 1.25 || ratio < 0.8)) {
+          pinch.handled = true;
+          const modes = ASPECT_RATIO_MODES;
+          const current2 = modes.indexOf(aspectRatioMode);
+          const next3 = modes[(current2 + (ratio > 1 ? 1 : modes.length - 1)) % modes.length];
+          setAspectRatioMode(next3);
+          showGestureHud("aspect", 0, getAspectRatioLabel(next3, t));
+        }
+        return;
+      }
+      const gesture = gestureRef.current;
+      if (!gesture) return;
+      const dx = event.clientX - gesture.x;
+      const dy = event.clientY - gesture.y;
+      if (!gesture.axis) {
+        if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
+        const startedAtTop = gesture.y - gesture.top < gesture.height * 0.15;
+        if (startedAtTop && dy > 0 && Math.abs(dy) > Math.abs(dx)) {
+          gesture.axis = "close";
+          onMouseActivity();
+        }
+        const verticalAction = gesture.x - gesture.left < gesture.width / 2 ? getVerticalGestureLeft() : getVerticalGestureRight();
+        if (gesture.axis !== "close") {
+          gesture.axis = Math.abs(dx) > Math.abs(dy) ? getHorizontalGesture() === "seek" ? "seek" : "none" : verticalAction;
+        }
+        onMouseActivity();
+      }
+      if (gesture.axis === "none") return;
+      if (gesture.axis === "close") {
+        gesture.closeOffset = Math.max(0, dy);
+        if (gesture.closeOffset > gesture.height * 0.25) showGestureHud("close", 0, t("close"));
+        return;
+      }
+      if (gesture.axis === "seek") {
+        if (!totalDuration) return;
+        const target = Math.min(totalDuration, Math.max(0, gesture.startTime + dx / gesture.width * GESTURE_SEEK_SPAN_SECONDS));
+        gesture.pendingSeek = target;
+        setScrubPercent(target / totalDuration * 100);
+        return;
+      }
+      if (gesture.axis === "volume") {
+        const next3 = Math.min(1, Math.max(0, gesture.startVolume - dy / gesture.height));
+        applyVolume(next3);
+        showGestureHud("volume", Math.round(next3 * 100));
+        return;
+      }
+      if (isAndroidTauriEnv && getBrightnessTarget() === "screen") {
+        const level = Math.min(1, Math.max(0, gesture.startScreenBrightness - dy / gesture.height));
+        gesture.screenBrightness = level;
+        screenBrightnessRef.current = level;
+        setAndroidScreenBrightness(level);
+        showGestureHud("brightness", Math.round(level * 100));
+        return;
+      }
+      const next2 = Math.min(50, Math.max(-50, gesture.startBrightness - dy / gesture.height * 100));
+      setGestureBrightness(next2);
+      showGestureHud("brightness", Math.round(next2));
+    };
+    const endGesture = () => {
+      const gesture = gestureRef.current;
+      gestureRef.current = null;
+      if (holdSpeedTimerRef.current) {
+        clearTimeout(holdSpeedTimerRef.current);
+        holdSpeedTimerRef.current = null;
+      }
+      if (holdSpeedActiveRef.current) {
+        holdSpeedActiveRef.current = false;
+        mpv.setSpeed(1);
+        setGestureHud(null);
+        return true;
+      }
+      if (!gesture?.axis) return false;
+      if (gesture.axis === "close") {
+        const closed = gesture.closeOffset > gesture.height * 0.25;
+        if (closed) {
+          handleClose();
+          return true;
+        }
+        return true;
+      }
+      if (gesture.axis === "seek" && gesture.pendingSeek !== null) {
+        seekToAbsolute(gesture.pendingSeek);
+      }
+      setScrubPercent(null);
+      if (gestureHudTimerRef.current) window.clearTimeout(gestureHudTimerRef.current);
+      gestureHudTimerRef.current = window.setTimeout(() => setGestureHud(null), 700);
+      return true;
+    };
+    const toggleSubtitleMenu = () => {
+      if (!showSubMenu) {
+        const activeLang = activeSubId ? toSubtitleLangGroup(subtitleOptions.find((sub) => sub.id === activeSubId)?.language ?? null) : null;
+        setSelectedLang(activeLang);
+      }
+      setShowSubMenu((open) => !open);
+    };
+    const toggleCastMenu = () => {
+      const opening = !showCastMenu;
+      setShowCastMenu(opening);
+      if (opening && castDevices.length === 0) void scanCastDevices();
+      if (opening && isMpvEngine && !airplaySession) void prepareAirplaySession();
+    };
+    const phoneControls = {
+      subtitles: {
+        label: activeSubLangCode,
+        title: t("subtitlesLabel"),
+        state: showSubMenu ? "open" : activeSubId ? "active" : "idle",
+        onClick: toggleSubtitleMenu,
+        triggerRef: subTriggerRef
+      },
+      audioTrack: audioTracks.length > 0 ? {
+        label: activeAudioLangCode,
+        title: t("audioLanguage"),
+        state: showAudioMenu ? "open" : "idle",
+        onClick: () => setShowAudioMenu((open) => !open),
+        triggerRef: audioTriggerRef
+      } : void 0,
+      nextEpisode: episodes && episodes.items.length > 0 ? {
+        label: t("plShortEpisodes"),
+        title: t("plNextEpisode"),
+        state: showEpisodes ? "open" : "idle",
+        onClick: () => setShowEpisodes((open) => !open)
+      } : void 0,
+      tuning: {
+        label: t("plShortPicture"),
+        title: t("vtTitle"),
+        state: showTuningPanel ? "open" : "idle",
+        onClick: () => setShowTuningPanel((open) => !open),
+        triggerRef: tuningTriggerRef
+      },
+      wiki: wikiTmdbId || resolvedImdbId ? {
+        label: t("plShortWiki"),
+        title: t("info"),
+        state: showWiki ? "open" : "idle",
+        onClick: () => setShowWiki((open) => !open)
+      } : void 0,
+      soundtrack: title ? {
+        label: t("plShortMusic"),
+        title: t("soundtrack"),
+        state: showSoundtrack ? "open" : "idle",
+        onClick: () => setShowSoundtrack((open) => !open)
+      } : void 0,
+      cropZoom: {
+        label: t("plShortZoom"),
+        title: t("cropZoom"),
+        value: cropZoomLabel,
+        state: showCropZoomMenu ? "open" : cropZoomMode !== "off" ? "active" : "idle",
+        onClick: () => setShowCropZoomMenu((open) => !open),
+        triggerRef: cropTriggerRef
+      },
+      aspect: {
+        label: aspectLabel.toUpperCase(),
+        title: t("aspectRatio"),
+        value: aspectLabel,
+        state: showAspectMenu ? "open" : aspectRatioMode !== "auto" ? "active" : "idle",
+        onClick: () => setShowAspectMenu((open) => !open),
+        triggerRef: aspectTriggerRef
+      },
+      cast: !isClientSession() ? {
+        label: t("plShortCast"),
+        title: t("castTitle"),
+        state: showCastMenu ? "open" : castTarget ? "active" : "idle",
+        onClick: toggleCastMenu
+      } : void 0,
+      fullscreen: !isTauriEnv || isDesktopTauriEnv ? {
+        label: t("plShortFullscreen"),
+        title: t("plFullscreen"),
+        state: cssFullscreen ? "active" : "idle",
+        onClick: toggleFullscreen
+      } : void 0
+    };
+    const PHONE_ROW_ORDER = landscapeChrome ? ["subtitles", "audioTrack", "cropZoom", "tuning", "wiki", "soundtrack", "aspect", "fullscreen"] : ["subtitles", "audioTrack", "nextEpisode", "tuning", "wiki", "soundtrack", "cropZoom", "aspect"];
+    const LANDSCAPE_ROW_BUDGET = 6;
+    const phoneDedicatedIds = landscapeChrome ? ["nextEpisode", "cast"] : ["cast", "fullscreen"];
+    const phoneRowCandidates = PHONE_ROW_ORDER.filter((id4) => !phoneDedicatedIds.includes(id4) && showsControl(id4) && Boolean(phoneControls[id4]));
+    const phoneRowIds = landscapeChrome ? phoneRowCandidates.slice(0, LANDSCAPE_ROW_BUDGET) : phoneRowCandidates;
+    const phoneOverflowIds = landscapeChrome ? phoneRowCandidates.slice(LANDSCAPE_ROW_BUDGET) : [];
+    const phoneClusterIds = phoneDedicatedIds.filter((id4) => showsControl(id4) && Boolean(phoneControls[id4]));
+    const phoneStateClass = (state, idleClass = "text-slate-200") => state === "open" ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : state === "active" ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : idleClass;
+    const renderPhoneTile = (id4, spec) => /* @__PURE__ */ jsxs(
+      "button",
+      {
+        type: "button",
+        ref: spec.triggerRef,
+        onClick: spec.onClick,
+        title: spec.title,
+        "aria-label": spec.title,
+        className: `flex w-[54px] flex-none flex-col items-center gap-0.5 rounded-[10px] py-1 transition ${phoneStateClass(spec.state)}`,
+        children: [
+          playerIcon(id4, "h-[17px] w-[17px]"),
+          /* @__PURE__ */ jsx("span", { className: "text-[10px] font-semibold leading-none", children: spec.label })
+        ]
+      },
+      id4
+    );
+    const renderPhonePill = (id4, spec) => /* @__PURE__ */ jsxs(
+      "button",
+      {
+        type: "button",
+        ref: spec.triggerRef,
+        onClick: spec.onClick,
+        title: spec.title,
+        "aria-label": spec.title,
+        className: `flex h-10 flex-none items-center gap-[7px] rounded-full border border-white/[0.12] px-3.5 transition ${phoneStateClass(spec.state, "text-slate-300")}`,
+        children: [
+          playerIcon(id4, "h-[17px] w-[17px]"),
+          /* @__PURE__ */ jsx("span", { className: "text-[13px] font-medium leading-none", children: spec.label })
+        ]
+      },
+      id4
+    );
+    const renderPhoneOverflowRow = (id4, spec) => /* @__PURE__ */ jsxs("button", { type: "button", onClick: spec.onClick, className: dtMoreRowClass, children: [
+      playerIcon(id4, dtMoreIconClass),
+      /* @__PURE__ */ jsx("span", { className: `flex-1 ${dtMoreTextClass}`, children: spec.title }),
+      spec.value ? /* @__PURE__ */ jsx("span", { className: "flex-none text-[13px] text-slate-400", children: spec.value }) : null
+    ] }, id4);
+    const renderPhoneRoundButton = (id4, spec) => /* @__PURE__ */ jsx(
+      "button",
+      {
+        type: "button",
+        ref: spec.triggerRef,
+        onClick: spec.onClick,
+        title: spec.title,
+        "aria-label": spec.title,
+        className: `flex h-10 w-10 flex-none items-center justify-center rounded-full transition ${phoneStateClass(spec.state, "bg-[rgba(13,14,22,0.6)] text-slate-100")}`,
+        children: playerIcon(id4, "h-[19px] w-[19px]")
+      },
+      id4
+    );
+    const renderPhoneFlatButton = (id4, spec) => /* @__PURE__ */ jsx(
+      "button",
+      {
+        type: "button",
+        ref: spec.triggerRef,
+        onClick: spec.onClick,
+        title: spec.title,
+        "aria-label": spec.title,
+        className: `flex h-[34px] w-[34px] flex-none items-center justify-center rounded-lg transition ${spec.state === "idle" ? "text-slate-300" : "text-[rgb(var(--player-accent))]"}`,
+        children: playerIcon(id4, "h-[17px] w-[17px]")
+      },
+      id4
+    );
+    const downloadLabel = downloadState.type === "downloading" ? `${downloadState.progress}%` : downloadState.type === "done" ? t("downloadComplete") : downloadState.type === "picking-folder" ? "\u2026" : null;
+    const renderPhoneDownload = (variant) => {
+      if (isClientSession()) return null;
+      const downloading = downloadState.type === "downloading";
+      const busy = downloadState.type === "picking-folder";
+      const active = downloadLabel !== null;
+      return /* @__PURE__ */ jsxs(
+        "button",
+        {
+          type: "button",
+          onClick: () => {
+            void (downloading ? handleCancelDownload() : handleDownload());
+          },
+          disabled: busy,
+          title: downloading ? t("cancel") : t("downloadThisVideo"),
+          "aria-label": downloading ? t("cancel") : t("downloadThisVideo"),
+          className: variant === "round" ? `flex h-10 flex-none items-center gap-2 rounded-full transition ${active ? "bg-[rgb(var(--player-accent)/0.22)] px-4 text-white" : "w-10 justify-center bg-[rgba(13,14,22,0.6)] text-slate-100"}` : `flex h-[34px] flex-none items-center gap-1.5 rounded-lg transition ${active ? "px-2 text-[rgb(var(--player-accent))]" : "w-[34px] justify-center text-slate-300"}`,
+          children: [
+            downloadIcon(variant === "round" ? "h-[19px] w-[19px]" : "h-[17px] w-[17px]"),
+            downloadLabel ? /* @__PURE__ */ jsx("span", { className: `font-semibold tabular-nums ${variant === "round" ? "text-[13px]" : "text-xs"}`, children: downloadLabel }) : null
+          ]
+        }
+      );
+    };
+    const renderSegmentPills = () => {
+      if (mediaType !== "tv" || !showsControl("segmentBadges") || !introSegment && !outroSegment) return null;
+      return /* @__PURE__ */ jsxs(Fragment2, { children: [
+        introSegment ? /* @__PURE__ */ jsx("span", { className: dtStatusPillClass, children: introKind === "recap" ? t("recapFound") : t("introFound") }) : null,
+        outroSegment ? /* @__PURE__ */ jsx("span", { className: dtStatusPillClass, children: t("outroFound") }) : null
+      ] });
+    };
+    const renderPhoneClock = (bigClass, smallClass) => {
+      if (!showsControl("time")) return null;
+      const elapsedLabel = playerLayout.timeFormat === "remaining" ? `-${fmt(Math.max(0, totalDuration - seekTime))}` : fmt(seekTime);
+      return /* @__PURE__ */ jsxs("div", { className: "flex items-baseline gap-2", children: [
+        /* @__PURE__ */ jsx("span", { className: `font-semibold tabular-nums text-white ${bigClass}`, children: elapsedLabel }),
+        playerLayout.timeFormat === "elapsed-total" ? /* @__PURE__ */ jsxs("span", { className: `tabular-nums text-slate-400 ${smallClass}`, children: [
+          "/ ",
+          fmt(totalDuration)
+        ] }) : null
+      ] });
+    };
+    const content = /* @__PURE__ */ jsxs(
+      "div",
+      {
+        ref: playerRootRef,
+        "data-lumio-player-open": "1",
+        "data-panel-root": isTv ? "1" : void 0,
+        "data-tv-fullbleed": "",
+        style: { "--player-accent": playerAccentRgb },
+        className: `fixed inset-x-0 top-0 z-[60] flex h-[100dvh] flex-col !mt-0 ${useMpv ? "" : "bg-black"}`,
+        children: [
+          !hasEverStarted && (!hideStartSplash || clientOwnsSplash) && /* @__PURE__ */ jsxs(
+            "div",
+            {
+              className: "absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-950",
+              style: {
+                transition: `opacity ${SPLASH_FADE_MS}ms ease-out`,
+                opacity: splashFading ? 0 : 1,
+                // Don't intercept clicks once we're fading — the player underneath
+                // is already playing, so the user should be able to interact with
+                // it through the dying splash.
+                pointerEvents: splashFading ? "none" : "auto"
+              },
+              children: [
+                (backdropUrl ?? posterUrl) && /* @__PURE__ */ jsxs(Fragment2, { children: [
+                  /* @__PURE__ */ jsx(
+                    "div",
+                    {
+                      className: "pointer-events-none absolute inset-0 bg-cover bg-center opacity-20 transition-all duration-300",
+                      style: { backgroundImage: `url(${backdropUrl ?? posterUrl})` }
+                    }
+                  ),
+                  /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-slate-950/30" })
+                ] }),
+                /* @__PURE__ */ jsxs("div", { className: "relative z-10 flex flex-col items-center gap-6 px-6 text-center", children: [
+                  posterUrl && /* @__PURE__ */ jsx("div", { className: "h-48 w-32 overflow-hidden rounded-xl shadow-2xl", children: /* @__PURE__ */ jsx("img", { src: posterUrl, alt: title, className: "h-full w-full object-cover" }) }),
+                  /* @__PURE__ */ jsxs("div", { children: [
+                    /* @__PURE__ */ jsx("p", { className: "text-lg font-semibold text-white", children: title }),
+                    year && /* @__PURE__ */ jsx("p", { className: "mt-0.5 text-sm text-slate-500", children: year })
+                  ] }),
+                  startError ? /* @__PURE__ */ jsx("p", { className: "max-w-xs text-sm text-rose-300", children: t("sourceNotResponding") }) : /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 text-sm text-slate-400", children: [
+                    /* @__PURE__ */ jsx("svg", { className: "h-4 w-4 animate-spin", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: /* @__PURE__ */ jsx("path", { d: "M21 12a9 9 0 1 1-6.219-8.56", strokeLinecap: "round" }) }),
+                    mediaType === "tv" ? t("startingEpisode") : t("startingMovie")
+                  ] }),
+                  /* @__PURE__ */ jsxs("div", { className: "flex flex-col items-center gap-3", children: [
+                    clientOwnsSplash && resolveDirectStreamUrl2(url) && /* @__PURE__ */ jsx(
+                      "button",
+                      {
+                        type: "button",
+                        "data-f": isTv ? "1" : void 0,
+                        onClick: () => {
+                          if (openInExternalPlayer(url)) {
+                            (onOpenedExternally ?? onClose)();
+                          }
+                        },
+                        className: "rounded-full border border-orange-400/50 bg-orange-500/15 px-4 py-2 text-xs font-medium uppercase tracking-[0.16em] text-orange-200 transition hover:border-orange-400 hover:text-orange-100",
+                        children: t("openInExternalPlayer")
+                      }
+                    ),
+                    /* @__PURE__ */ jsx(
+                      "button",
+                      {
+                        type: "button",
+                        ref: splashCancelRef,
+                        "data-f": isTv ? "1" : void 0,
+                        "data-init": isTv ? "1" : void 0,
+                        onClick: handleClose,
+                        className: "text-xs text-slate-500 transition hover:text-slate-300",
+                        children: startError ? t("close") : t("cancel")
+                      }
+                    )
+                  ] })
+                ] })
+              ]
+            }
+          ),
+          !creditsMode && !(useMpv && desktopFullscreen) && !landscapeChrome && (desktopChrome ? (
+            /* Desktopens topplist, 52 px: titel + två metadata-chips i mitten, två
+               knappar till höger. Ljudutgången satt tidigare i •••-menyn — den är
+               information och inte en inställning, så den ligger nu som chip
+               intill upplösningen. */
+            /* @__PURE__ */ jsxs(
+              "div",
+              {
+                className: `absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-4 overflow-hidden px-[18px] transition-[height,opacity] duration-300 ${collapseMpvTopBar || cssFullscreen && !controlsVisible ? "h-0" : "h-[52px]"}`,
+                style: {
+                  // Spegelbild av kontrollradens gradient nedtill, samma stopp.
+                  // Solid platta + border-b gav en hård kant tvärs över bilden —
+                  // enda stället i spelaren med en sådan. Videon ligger bakom hela
+                  // containern, så gradienten mörknar bildens överkant i stället
+                  // för att kapa den.
+                  background: "linear-gradient(0deg,transparent 0%,rgba(0,0,0,0.35) 40%,rgba(0,0,0,0.85) 100%)",
+                  opacity: controlsVisible ? 1 : 0,
+                  pointerEvents: controlsVisible ? "auto" : "none"
+                },
+                children: [
+                  isDesktopTauriEnv ? /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "w-[68px] flex-none" }) : null,
+                  /* @__PURE__ */ jsxs("div", { className: "flex min-w-0 items-center gap-2.5", children: [
+                    /* @__PURE__ */ jsx("span", { className: "truncate text-sm font-medium text-slate-100", children: headerTitle }),
+                    streamQualityLabel ? /* @__PURE__ */ jsx("span", { className: "flex-none rounded-md border border-white/[0.14] px-[7px] py-[3px] text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400", children: streamQualityLabel }) : null,
+                    showsControl("audioOutput") ? /* @__PURE__ */ jsx(
+                      "span",
+                      {
+                        title: t("currentAudioOutput"),
+                        className: "flex-none rounded-md border border-white/[0.14] px-[7px] py-[3px] text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400",
+                        children: audioIndicator
+                      }
+                    ) : null
+                  ] }),
+                  /* @__PURE__ */ jsxs("div", { className: "flex flex-none items-center gap-2", children: [
+                    /* @__PURE__ */ jsxs(
+                      "button",
+                      {
+                        type: "button",
+                        onClick: () => {
+                          void handleCopyStreamLink();
+                        },
+                        className: "flex items-center gap-[7px] rounded-lg border border-[rgb(var(--player-accent)/0.40)] px-3 py-1.5 text-xs font-medium text-[rgb(var(--player-accent))] transition hover:bg-[rgb(var(--player-accent)/0.14)]",
+                        children: [
+                          /* @__PURE__ */ jsxs("svg", { className: "h-3.5 w-3.5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
+                            /* @__PURE__ */ jsx("path", { d: "M10 13a5 5 0 0 0 7.07 0l3.54-3.54a5 5 0 1 0-7.07-7.07L11 4" }),
+                            /* @__PURE__ */ jsx("path", { d: "M14 11a5 5 0 0 0-7.07 0L3.39 14.54a5 5 0 1 0 7.07 7.07L13 20" })
+                          ] }),
+                          copiedLink ? t("copied") : t("copyLink")
+                        ]
+                      }
+                    ),
+                    /* @__PURE__ */ jsx(
+                      "button",
+                      {
+                        type: "button",
+                        onClick: handleClose,
+                        className: "rounded-lg border border-white/[0.14] px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/[0.07] hover:text-white",
+                        children: t("close")
+                      }
+                    )
+                  ] })
+                ]
+              }
+            )
+          ) : portraitChrome ? (
+            /* Stående: 56 px list med titeln till vänster och två pillerknappar
+               till höger. Inga chips — designen håller porträttläget rent och
+               lägger metadata bakom Mer. */
+            /* @__PURE__ */ jsxs(
+              "div",
+              {
+                className: "absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-2.5 overflow-hidden border-b border-white/[0.07] px-3.5 transition-[height,opacity] duration-300",
+                style: {
+                  backgroundColor: "#0a0b12",
+                  opacity: controlsVisible ? 1 : 0,
+                  pointerEvents: controlsVisible ? "auto" : "none",
+                  /* Statusfältets höjd LÄGGS TILL listens 56 px, den äts inte av
+                     dem. Med `h-14` + `padding-top: env(safe-area-inset-top)` och
+                     overflow-hidden trycktes titeln och knapparna ner ur sin egen
+                     ruta: på en telefon med urklipp är insetet 44–59 px, alltså mer
+                     än listen är hög, och man såg halva raden. */
+                  height: collapseMpvTopBar || cssFullscreen && !controlsVisible ? 0 : `calc(3.5rem + ${PHONE_TOP_INSET})`,
+                  paddingTop: PHONE_TOP_INSET
+                },
+                children: [
+                  /* @__PURE__ */ jsx("span", { className: "min-w-0 flex-1 truncate text-sm font-medium text-slate-100", children: headerTitle }),
+                  /* @__PURE__ */ jsxs("div", { className: "flex flex-none items-center gap-2", children: [
+                    renderPhoneDownload("flat"),
+                    /* @__PURE__ */ jsx(
+                      "button",
+                      {
+                        type: "button",
+                        onClick: () => {
+                          void handleCopyStreamLink();
+                        },
+                        className: "rounded-full border border-[rgb(var(--player-accent)/0.40)] px-3 py-[7px] text-[11px] font-medium text-[rgb(var(--player-accent))]",
+                        children: copiedLink ? t("copied") : t("copyLink")
+                      }
+                    ),
+                    /* @__PURE__ */ jsx(
+                      "button",
+                      {
+                        type: "button",
+                        onClick: handleClose,
+                        className: "rounded-full border border-white/[0.14] px-3 py-[7px] text-[11px] font-medium text-slate-300",
+                        children: t("close")
+                      }
+                    )
+                  ] })
+                ]
+              }
+            )
+          ) : /* @__PURE__ */ jsxs(
+            "div",
+            {
+              className: `absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-4 overflow-hidden transition-[height,padding,opacity,background] duration-300 ${collapseMpvTopBar || cssFullscreen && !controlsVisible ? "h-0 px-4 py-0 opacity-0" : "min-h-[44px] px-4 pb-2.5 pt-[max(0.625rem,env(safe-area-inset-top),var(--android-inset-top,0px))]"}`,
+              style: {
+                // Spegelbild av kontrollradens gradient nedtill: solid svart
+                // upptill var det enda stället i spelaren med en hård kant, och
+                // den låg tvärs över bilden. Samma stopp som botten, vänd, så de
+                // två ytorna läser som samma familj.
+                background: useMpv ? "linear-gradient(0deg,transparent 0%,rgba(0,0,0,0.35) 40%,rgba(0,0,0,0.85) 100%)" : controlsVisible ? "rgba(0,0,0,0.8)" : "transparent",
+                pointerEvents: controlsVisible ? "auto" : "none"
+              },
+              children: [
+                !useMpv && /* @__PURE__ */ jsx(
+                  "div",
+                  {
+                    className: "pointer-events-none absolute inset-x-0 bottom-0 border-b border-white/10 transition-opacity duration-300",
+                    style: { opacity: controlsVisible ? 1 : 0 }
+                  }
+                ),
+                /* @__PURE__ */ jsxs(
+                  "span",
+                  {
+                    className: "relative flex min-w-0 flex-col transition-opacity duration-300",
+                    style: { opacity: controlsVisible ? 1 : 0 },
+                    children: [
+                      /* @__PURE__ */ jsx("span", { className: "truncate text-sm text-slate-300", children: headerTitle }),
+                      streamQualityLabel ? /* @__PURE__ */ jsx("span", { className: "truncate text-[10.5px] uppercase tracking-[0.14em] text-slate-500", children: streamQualityLabel }) : null
+                    ]
+                  }
+                ),
+                /* @__PURE__ */ jsxs(
+                  "div",
+                  {
+                    className: "relative flex items-center gap-2 transition-opacity duration-300",
+                    style: { opacity: controlsVisible ? 1 : 0 },
+                    children: [
+                      /* @__PURE__ */ jsx(
+                        "button",
+                        {
+                          type: "button",
+                          "data-f": isTv ? "1" : void 0,
+                          onClick: () => {
+                            void handleCopyStreamLink();
+                          },
+                          className: "rounded-full border border-white/10 px-3 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-300 transition hover:border-white/30 hover:text-white",
+                          children: t("copyLink")
+                        }
+                      ),
+                      /* @__PURE__ */ jsx(
+                        "button",
+                        {
+                          type: "button",
+                          "data-f": isTv ? "1" : void 0,
+                          onClick: handleClose,
+                          className: "rounded-full border border-white/10 px-3 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-300 transition hover:border-white/30 hover:text-white",
+                          children: t("close")
+                        }
+                      )
+                    ]
+                  }
+                )
+              ]
+            }
+          )),
+          /* @__PURE__ */ jsxs(
+            "div",
+            {
+              ref: containerRef,
+              className: `vp-container relative flex flex-1 items-center justify-center ${useMpv ? "bg-transparent" : "bg-black"}`,
+              style: { cursor: useMpv ? "default" : controlsVisible ? "default" : "none" },
+              onMouseMove: onMouseActivity,
+              children: [
+                isMpvEngine && /* Hidden WebKit video that owns the AirPlay hand-off — see the
+                   AirPlay row in the cast menu. */
+                /* eslint-disable-next-line jsx-a11y/media-has-caption */
+                /* @__PURE__ */ jsx(
+                  "video",
+                  {
+                    ref: airplayVideoRef,
+                    playsInline: true,
+                    style: { position: "absolute", bottom: 0, left: 0, width: 2, height: 2, opacity: 0, pointerEvents: "none" },
+                    ...{ "x-webkit-airplay": "allow" }
+                  }
+                ),
+                airplayActive && /* @__PURE__ */ jsxs("div", { className: "absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-black/80", children: [
+                  /* @__PURE__ */ jsxs("span", { className: "text-lg text-white", children: [
+                    t("castPlayingOn"),
+                    " AirPlay"
+                  ] }),
+                  /* @__PURE__ */ jsx(
+                    "button",
+                    {
+                      type: "button",
+                      "data-f": isTv ? "1" : void 0,
+                      className: "rounded-full border border-white/15 px-3 py-1 text-[11px] text-slate-200 hover:bg-white/10",
+                      onClick: () => {
+                        const v = airplayVideoRef.current;
+                        const resumeAt = v && v.currentTime > 0 ? (airplaySession?.offset ?? 0) + v.currentTime : realTimeRef.current;
+                        setAirplayActive(false);
+                        airplayWasExternalRef.current = false;
+                        stopAirplayVideo();
+                        void avplayerTeardown();
+                        setAirplaySession(null);
+                        setAirplayPrepare("idle");
+                        void mpvCommand2(["seek", resumeAt, "absolute"]);
+                        void setMpvPause2(false);
+                      },
+                      children: t("castStop")
+                    }
+                  )
+                ] }),
+                useMpv ? (
+                  // Transparent area — mpv NSView renders behind the WKWebView here
+                  /* @__PURE__ */ jsx("div", { style: { width: "100%", height: "100%", background: "transparent" } })
+                ) : videoSrc ? /* @__PURE__ */ jsx("div", { className: videoPresentation.wrapperClassName, children: /* @__PURE__ */ jsx("div", { style: aspectFrameStyle, className: aspectFrameStyle ? "relative flex items-center justify-center overflow-hidden" : "contents", children: /* @__PURE__ */ jsx(
+                  "video",
+                  {
+                    ref: videoRef,
+                    src: videoSrc,
+                    autoPlay: true,
+                    playsInline: true,
+                    className: "block",
+                    style: { ...videoPresentation.videoStyle, ...cropZoomVideoStyle, filter: tuningToCssFilter(effectiveVideoTuning) || void 0 },
+                    ...{ "x-webkit-airplay": "allow" },
+                    onLoadedMetadata: () => {
+                      if (!hasStarted) void attemptHtml5Start(false);
+                    },
+                    onCanPlay: () => {
+                      if (!hasStarted) void attemptHtml5Start(false);
+                    },
+                    onPlay: () => {
+                      setPlaying(true);
+                      if (!hasStarted) {
+                        hasStartedForUrlRef.current = true;
+                        setHasStarted(true);
+                        if (useMpv || !isServerStreamUrl(videoSrc)) {
+                          setHasEverStarted(true);
+                        }
+                        onFirstPlay?.();
+                      }
+                      if (!firstFrameLoggedRef.current) {
+                        firstFrameLoggedRef.current = true;
+                        void (async () => {
+                          let mpvFilename = null;
+                          let mpvMediaTitle = null;
+                          if (useMpv) {
+                            try {
+                              const { invoke: invoke5 } = await Promise.resolve().then(() => __toESM(require_core()));
+                              mpvFilename = await invoke5("mpv_get_property_ts", { name: "filename" }).catch(() => null);
+                              mpvMediaTitle = await invoke5("mpv_get_property_ts", { name: "media-title" }).catch(() => null);
+                            } catch {
+                            }
+                          }
+                          void emitDesktopPlaybackTelemetry({
+                            stage: "player.lifecycle",
+                            status: "ok",
+                            detail: "first_frame",
+                            context: {
+                              title,
+                              mediaId: mediaId ?? null,
+                              mediaSource: mediaSource ?? null,
+                              position: realTime,
+                              playbackTraceId,
+                              requestedFilename: (filename ?? "").slice(0, 100),
+                              mpvFilename: (mpvFilename ?? "").slice(0, 120) || null,
+                              mpvMediaTitle: (mpvMediaTitle ?? "").slice(0, 120) || null,
+                              season: season ?? null,
+                              episode: episode ?? null
+                            }
+                          });
+                          if (typeof season === "number" && typeof episode === "number") {
+                            const probe = `${mpvMediaTitle ?? ""} ${mpvFilename ?? ""}`;
+                            const m2 = /S(\d{1,2})E(\d{1,3})/i.exec(probe);
+                            if (m2) {
+                              const foundS = Number(m2[1]);
+                              const foundE = Number(m2[2]);
+                              if (foundS !== season || foundE !== episode) {
+                                const pad = (n) => String(n).padStart(2, "0");
+                                const text = t("vpWrongEpisodeWarning").replace("{found}", `S${pad(foundS)}E${pad(foundE)}`).replace("{wanted}", `S${pad(season)}E${pad(episode)}`);
+                                setSourceMismatchWarning(text);
+                                if (sourceMismatchTimerRef.current) window.clearTimeout(sourceMismatchTimerRef.current);
+                                sourceMismatchTimerRef.current = window.setTimeout(() => setSourceMismatchWarning(null), 12e3);
+                                void emitDesktopPlaybackTelemetry({ stage: "player.lifecycle", status: "error", detail: "source_episode_mismatch", context: { wanted: `S${pad(season)}E${pad(episode)}`, found: `S${pad(foundS)}E${pad(foundE)}`, playbackTraceId } });
+                              }
+                            }
+                          }
+                        })();
+                      }
+                      setRequiresUserStart(false);
+                      setControlsPaused(false);
+                    },
+                    onPause: () => {
+                      setPlaying(false);
+                      setControlsPaused(true);
+                    },
+                    onEnded: () => {
+                      setHasEnded(true);
+                      setPlaying(false);
+                      setControlsPaused(true);
+                      onPlaybackEnded?.();
+                    },
+                    onTimeUpdate: (e) => {
+                      const v = e.currentTarget;
+                      const now3 = Date.now();
+                      if (now3 - lastUiTickAtRef.current >= PLAYER_UI_TICK_MS) {
+                        setCurrentTime(v.currentTime);
+                        lastUiTickAtRef.current = now3;
+                      }
+                      const currentReal = v.currentTime + streamStartRef.current;
+                      if (currentReal > lastProgressSecondsRef.current + 0.25) {
+                        lastProgressSecondsRef.current = currentReal;
+                        lastProgressAtRef.current = Date.now();
+                      }
+                      if (subtitleClockOverride !== null) {
+                        const actualRealTime = currentReal;
+                        if (Math.abs(actualRealTime - subtitleClockOverride) <= 1.5) setSubtitleClockOverride(null);
+                      }
+                      if (v.buffered.length > 0) {
+                        const lastEnd = v.buffered.end(v.buffered.length - 1);
+                        if (v.duration > 0 && Number.isFinite(v.duration)) {
+                          const bufferedPercent = lastEnd / v.duration * 100;
+                          if (now3 - lastBufferedTickAtRef.current >= PLAYER_UI_TICK_MS && Math.abs(bufferedPercent - lastBufferedPercentRef.current) >= 0.5) {
+                            setBuffered(bufferedPercent);
+                            lastBufferedPercentRef.current = bufferedPercent;
+                            lastBufferedTickAtRef.current = now3;
+                          }
+                        }
+                        if (!proxyBufferReady && lastEnd - v.currentTime >= 4) {
+                          setProxyBufferReady(true);
+                          setSeekingProxy(false);
+                        }
+                      }
+                    },
+                    onCanPlayThrough: () => {
+                      setProxyBufferReady(true);
+                      setSeekingProxy(false);
+                    },
+                    onDurationChange: (e) => {
+                      const v = e.currentTarget;
+                      setDuration(v.duration);
+                      if (!isServerStreamUrl(videoSrc) && !didSeekRef.current && initialTime && initialTime > 0) {
+                        didSeekRef.current = true;
+                        v.currentTime = Math.min(initialTime, v.duration - 1);
+                      }
+                    },
+                    onVolumeChange: (e) => {
+                      setMuted(e.currentTarget.muted);
+                      setVolume(e.currentTarget.volume);
+                    },
+                    onWaiting: () => {
+                      stallLastProgressAtRef.current = Math.min(stallLastProgressAtRef.current, Date.now() - 5200);
+                    },
+                    onStalled: () => {
+                      stallLastProgressAtRef.current = Math.min(stallLastProgressAtRef.current, Date.now() - 5200);
+                    },
+                    onError: () => {
+                      const v = videoRef.current;
+                      const mediaError = v?.error;
+                      void fetch(`/api/debug-log?msg=${encodeURIComponent(
+                        `webvideo error code=${mediaError?.code ?? "?"} msg=${mediaError?.message ?? ""} src=${videoSrc.slice(0, 90)} t=${(v?.currentTime ?? 0).toFixed(1)}`
+                      )}`).catch(() => {
+                      });
+                      const currentReal = (v?.currentTime ?? 0) + streamStartRef.current;
+                      if (!isServerStreamUrl(videoSrc)) {
+                        applyStreamSrc(url, null, currentReal, videoCodec, getTrackChannels(null), effectiveProxyAudioMode, nightMode, shouldForceProxyTranscode);
+                        return;
+                      }
+                      const proxyUrl = isProxyUrl(videoSrc) ? new URL(videoSrc, window.location.href) : null;
+                      const alreadyTranscoding = proxyUrl ? proxyUrl.searchParams.get("transcode") === "1" : hlsTranscodeRef.current;
+                      if (!alreadyTranscoding && !proxyRetryRef.current) {
+                        proxyRetryRef.current = true;
+                        const origUrl = proxyUrl?.searchParams.get("url") ?? url;
+                        const trackRaw = proxyUrl?.searchParams.get("track") ?? null;
+                        const track = trackRaw !== null ? parseInt(trackRaw, 10) : activeAudioTrack;
+                        applyStreamSrc(origUrl, track, currentReal, videoCodec, getTrackChannels(track), effectiveProxyAudioMode, nightMode, true);
+                        return;
+                      }
+                      if (!hasStarted) {
+                        escalateBrowserFailure();
+                      }
+                    }
+                  }
+                ) }) }) : /* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-black" }),
+                /* @__PURE__ */ jsx(
+                  "div",
+                  {
+                    className: `absolute inset-0 z-10 ${phoneChrome ? "touch-none select-none" : ""}`,
+                    onPointerDown: (e) => {
+                      suppressNextOverlayToggleRef.current = e.pointerType !== "mouse" && !controlsVisible;
+                      if (suppressNextOverlayToggleRef.current) onMouseActivity();
+                      onGesturePointerDown(e);
+                    },
+                    onPointerMove: onGesturePointerMove,
+                    onPointerUp: (e) => {
+                      activePointersRef.current.delete(e.pointerId);
+                      if (activePointersRef.current.size < 2) pinchRef.current = null;
+                      if (doubleTapHandledRef.current) {
+                        doubleTapHandledRef.current = false;
+                        suppressNextOverlayToggleRef.current = true;
+                        endGesture();
+                        return;
+                      }
+                      if (endGesture()) suppressNextOverlayToggleRef.current = true;
+                    },
+                    onPointerCancel: (e) => {
+                      activePointersRef.current.delete(e.pointerId);
+                      if (activePointersRef.current.size < 2) pinchRef.current = null;
+                      endGesture();
+                    },
+                    onClick: () => {
+                      if (suppressNextOverlayToggleRef.current) {
+                        suppressNextOverlayToggleRef.current = false;
+                        return;
+                      }
+                      togglePlay();
+                    },
+                    onMouseMove: onMouseActivity
+                  }
+                ),
+                sourceMismatchWarning ? /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute inset-x-0 top-[max(4.5rem,calc(env(safe-area-inset-top)+3.5rem))] z-[57] flex justify-center px-4", children: /* @__PURE__ */ jsx("div", { role: "alert", className: "max-w-[min(92vw,34rem)] rounded-full border border-amber-300/30 bg-black/75 px-4 py-2 text-center text-sm font-medium text-amber-200 shadow-xl backdrop-blur-md", children: sourceMismatchWarning }) }) : null,
+                gestureHud ? /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute inset-0 z-[57] flex items-center justify-center", children: /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2.5 rounded-full bg-black/70 px-4 py-2.5 backdrop-blur-md", children: [
+                  gestureHud.kind === "volume" ? /* @__PURE__ */ jsx("svg", { className: "h-[18px] w-[18px] text-white", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" }) }) : /* @__PURE__ */ jsxs("svg", { className: "h-[18px] w-[18px] text-white", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.9", strokeLinecap: "round", children: [
+                    /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "4" }),
+                    /* @__PURE__ */ jsx("path", { d: "M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" })
+                  ] }),
+                  /* @__PURE__ */ jsx("span", { className: "min-w-[3ch] text-sm font-semibold tabular-nums text-white", children: gestureHud.kind === "aspect" || gestureHud.kind === "close" ? gestureHud.text : gestureHud.kind === "speed" ? `${gestureHud.value}\xD7` : gestureHud.kind === "skip" ? `${gestureHud.value > 0 ? "+" : ""}${gestureHud.value} s` : gestureHud.kind === "volume" ? `${gestureHud.value}%` : `${gestureHud.value > 0 ? "+" : ""}${gestureHud.value}` })
+                ] }) }) : null,
+                hasStarted && !isPlaying && !newChrome && /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute inset-0 z-20 flex items-center justify-center", children: /* @__PURE__ */ jsx("div", { className: "rounded-full bg-black/40 p-5 backdrop-blur-sm", children: /* @__PURE__ */ jsx("svg", { className: "h-12 w-12 text-white", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) }) }),
+                newChrome && hasStarted && /* @__PURE__ */ jsxs(
+                  "div",
+                  {
+                    className: `absolute inset-x-0 z-20 flex -translate-y-1/2 items-center justify-center transition-opacity duration-300 ${desktopChrome ? "top-[52%] gap-[60px]" : landscapeChrome ? "top-1/2 gap-14" : "gap-[34px]"}`,
+                    style: {
+                      opacity: controlsVisible && controlsReady ? 1 : 0,
+                      pointerEvents: controlsVisible && controlsReady ? "auto" : "none",
+                      // Liggande: designens -60 % lyfter klustret ur seekradens väg.
+                      transform: landscapeChrome ? "translateY(-60%)" : void 0,
+                      // Stående: centrerad på VIDEON, inte i ytan mellan listen och
+                      // kontrollerna. Bilden är brevlådad och ligger mitt i
+                      // videoytan — designens "centrerad över videon" är alltså
+                      // fönstrets mitt här, inte 56 + (höjd − 214) / 2, som la
+                      // cirkeln ~50 px för högt.
+                      top: portraitChrome ? "50%" : void 0
+                    },
+                    children: [
+                      showsControl("seekBack") ? /* @__PURE__ */ jsx(
+                        "button",
+                        {
+                          type: "button",
+                          onClick: () => seek(-10),
+                          "aria-label": "-10s",
+                          className: `text-white/90 transition hover:text-white ${desktopChrome ? "p-2" : landscapeChrome ? "p-2.5" : "p-2"}`,
+                          children: seekIcon("back", desktopChrome ? "h-10 w-10" : landscapeChrome ? "h-[34px] w-[34px]" : "h-7 w-7")
+                        }
+                      ) : null,
+                      /* @__PURE__ */ jsx(
+                        "button",
+                        {
+                          type: "button",
+                          onClick: togglePlay,
+                          "aria-label": t("plPlayPause"),
+                          className: `flex items-center justify-center rounded-full border-[1.5px] text-white transition ${desktopChrome ? "h-[86px] w-[86px] border-white/20 bg-[rgba(13,14,22,0.3)] hover:bg-[rgb(var(--player-accent)/0.20)]" : landscapeChrome ? "h-[78px] w-[78px] border-[rgb(var(--player-accent)/0.50)] bg-[rgb(var(--player-accent)/0.16)] shadow-[0_0_40px_rgb(var(--player-accent)/0.25)]" : "h-[58px] w-[58px] border-white/[0.22] bg-[rgba(13,14,22,0.34)]"}`,
+                          children: isPlaying ? /* @__PURE__ */ jsx("svg", { className: desktopChrome ? "h-[30px] w-[30px]" : landscapeChrome ? "h-[26px] w-[26px]" : "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M6 19h4V5H6v14zm8-14v14h4V5h-4z" }) }) : /* @__PURE__ */ jsx("svg", { className: desktopChrome ? "h-8 w-8" : landscapeChrome ? "h-7 w-7" : "h-[22px] w-[22px]", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) })
+                        }
+                      ),
+                      showsControl("seekForward") ? /* @__PURE__ */ jsx(
+                        "button",
+                        {
+                          type: "button",
+                          onClick: () => seek(10),
+                          "aria-label": "+10s",
+                          className: `text-white/90 transition hover:text-white ${desktopChrome ? "p-2" : landscapeChrome ? "p-2.5" : "p-2"}`,
+                          children: seekIcon("forward", desktopChrome ? "h-10 w-10" : landscapeChrome ? "h-[34px] w-[34px]" : "h-7 w-7")
+                        }
+                      ) : null
+                    ]
+                  }
+                ),
+                landscapeChrome && /* @__PURE__ */ jsxs(
+                  "div",
+                  {
+                    className: "absolute inset-x-[26px] top-5 z-[26] flex items-center justify-between gap-6 transition-opacity duration-300",
+                    style: {
+                      opacity: controlsVisible ? 1 : 0,
+                      pointerEvents: controlsVisible ? "auto" : "none",
+                      /* I landskap sitter urklippet i SIDAN, inte i toppen — annars
+                         hamnar bakåtpilen och nedladdningen under det. */
+                      marginLeft: PHONE_LEFT_INSET,
+                      marginRight: PHONE_RIGHT_INSET
+                    },
+                    children: [
+                      /* @__PURE__ */ jsxs("div", { className: "flex min-w-0 items-center gap-3", children: [
+                        /* @__PURE__ */ jsx("button", { type: "button", onClick: handleClose, "aria-label": t("close"), className: "flex-none p-1 text-white", children: /* @__PURE__ */ jsxs("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
+                          /* @__PURE__ */ jsx("path", { d: "M19 12H5" }),
+                          /* @__PURE__ */ jsx("path", { d: "m11 6-6 6 6 6" })
+                        ] }) }),
+                        /* @__PURE__ */ jsxs("div", { className: "min-w-0", children: [
+                          /* @__PURE__ */ jsx("div", { className: "truncate text-[17px] font-semibold text-white drop-shadow-[0_1px_10px_rgba(0,0,0,0.8)]", children: headerTitle }),
+                          streamQualityLabel ? /* @__PURE__ */ jsx("div", { className: "truncate text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400", children: streamQualityLabel }) : null
+                        ] })
+                      ] }),
+                      /* @__PURE__ */ jsxs("div", { className: "flex flex-none items-center gap-2", children: [
+                        renderSegmentPills(),
+                        (introSegment || outroSegment) && phoneClusterIds.length > 0 ? /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "mx-0.5 h-5 w-px flex-none bg-white/[0.16]" }) : null,
+                        phoneClusterIds.map((id4) => renderPhoneRoundButton(id4, phoneControls[id4])),
+                        renderPhoneDownload("round")
+                      ] })
+                    ]
+                  }
+                ),
+                seekingProxy && hasEverStarted && /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute inset-0 z-30 flex items-center justify-center", children: /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3 rounded-full bg-black/55 px-5 py-3 backdrop-blur-md", children: [
+                  /* @__PURE__ */ jsx("svg", { className: "h-6 w-6 animate-spin text-white", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: /* @__PURE__ */ jsx("path", { d: "M21 12a9 9 0 1 1-6.219-8.56", strokeLinecap: "round" }) }),
+                  /* @__PURE__ */ jsx("span", { className: "text-sm text-white/90", children: t("startingMovie") })
+                ] }) }),
+                !hasStarted && requiresUserStart && /* @__PURE__ */ jsx("div", { className: "absolute inset-0 z-40 flex items-center justify-center bg-black/35", children: /* @__PURE__ */ jsx(
                   "button",
                   {
                     type: "button",
                     "data-f": isTv ? "1" : void 0,
                     onClick: () => {
-                      if (openInExternalPlayer(url)) {
-                        (onOpenedExternally ?? onClose)();
-                      }
+                      void attemptHtml5Start(true);
                     },
-                    className: "rounded-full border border-orange-400/50 bg-orange-500/15 px-4 py-2 text-xs font-medium uppercase tracking-[0.16em] text-orange-200 transition hover:border-orange-400 hover:text-orange-100",
-                    children: t("openInExternalPlayer")
+                    className: "rounded-full border border-white/20 bg-black/55 px-5 py-2 text-xs uppercase tracking-[0.18em] text-white transition hover:border-white/40",
+                    children: t("pressToStart")
                   }
-                ),
-                /* @__PURE__ */ jsx(
-                  "button",
-                  {
-                    type: "button",
-                    ref: splashCancelRef,
-                    "data-f": isTv ? "1" : void 0,
-                    "data-init": isTv ? "1" : void 0,
-                    onClick: handleClose,
-                    className: "text-xs text-slate-500 transition hover:text-slate-300",
-                    children: startError ? t("close") : "Avbryt"
-                  }
-                )
-              ] })
-            ] })
-          ]
-        }
-      ),
-      !(useMpv && desktopFullscreen) && /* @__PURE__ */ jsxs(
-        "div",
-        {
-          className: `absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-4 overflow-hidden transition-[height,padding,opacity,background-color] duration-300 ${collapseMpvTopBar || cssFullscreen && !controlsVisible ? "h-0 px-4 py-0 opacity-0" : "min-h-[44px] px-4 pb-2.5 pt-[max(0.625rem,env(safe-area-inset-top),var(--android-inset-top,0px))]"}`,
-          style: {
-            backgroundColor: useMpv ? "#000" : controlsVisible ? "rgba(0,0,0,0.8)" : "transparent",
-            pointerEvents: controlsVisible ? "auto" : "none"
-          },
-          children: [
-            /* @__PURE__ */ jsx(
-              "div",
-              {
-                className: "pointer-events-none absolute inset-x-0 bottom-0 border-b border-white/10 transition-opacity duration-300",
-                style: { opacity: controlsVisible ? 1 : 0 }
-              }
-            ),
-            /* @__PURE__ */ jsxs(
-              "span",
-              {
-                className: "relative flex min-w-0 flex-col transition-opacity duration-300",
-                style: { opacity: controlsVisible ? 1 : 0 },
-                children: [
-                  /* @__PURE__ */ jsx("span", { className: "truncate text-sm text-slate-300", children: headerTitle }),
-                  streamQualityLabel ? /* @__PURE__ */ jsx("span", { className: "truncate text-[10.5px] uppercase tracking-[0.14em] text-slate-500", children: streamQualityLabel }) : null
-                ]
-              }
-            ),
-            /* @__PURE__ */ jsxs(
-              "div",
-              {
-                className: "relative flex items-center gap-2 transition-opacity duration-300",
-                style: { opacity: controlsVisible ? 1 : 0 },
-                children: [
-                  /* @__PURE__ */ jsx(
-                    "button",
-                    {
-                      type: "button",
-                      "data-f": isTv ? "1" : void 0,
-                      onClick: () => {
-                        void handleCopyStreamLink();
-                      },
-                      className: "rounded-full border border-white/10 px-3 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-300 transition hover:border-white/30 hover:text-white",
-                      children: t("copyLink")
-                    }
-                  ),
-                  /* @__PURE__ */ jsx(
-                    "button",
-                    {
-                      type: "button",
-                      "data-f": isTv ? "1" : void 0,
-                      onClick: handleClose,
-                      className: "rounded-full border border-white/10 px-3 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-300 transition hover:border-white/30 hover:text-white",
-                      children: t("close")
-                    }
-                  )
-                ]
-              }
-            )
-          ]
-        }
-      ),
-      /* @__PURE__ */ jsxs(
-        "div",
-        {
-          ref: containerRef,
-          className: `vp-container relative flex flex-1 items-center justify-center ${useMpv ? "bg-transparent" : "bg-black"}`,
-          style: { cursor: useMpv ? "default" : controlsVisible ? "default" : "none" },
-          onMouseMove: onMouseActivity,
-          children: [
-            isMpvEngine && /* Hidden WebKit video that owns the AirPlay hand-off — see the
-               AirPlay row in the cast menu. */
-            /* eslint-disable-next-line jsx-a11y/media-has-caption */
-            /* @__PURE__ */ jsx(
-              "video",
-              {
-                ref: airplayVideoRef,
-                playsInline: true,
-                style: { position: "absolute", bottom: 0, left: 0, width: 2, height: 2, opacity: 0, pointerEvents: "none" },
-                ...{ "x-webkit-airplay": "allow" }
-              }
-            ),
-            airplayActive && /* @__PURE__ */ jsxs("div", { className: "absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-black/80", children: [
-              /* @__PURE__ */ jsxs("span", { className: "text-lg text-white", children: [
-                t("castPlayingOn"),
-                " AirPlay"
-              ] }),
-              /* @__PURE__ */ jsx(
-                "button",
-                {
-                  type: "button",
-                  "data-f": isTv ? "1" : void 0,
-                  className: "rounded-full border border-white/15 px-3 py-1 text-[11px] text-slate-200 hover:bg-white/10",
-                  onClick: () => {
-                    const v = airplayVideoRef.current;
-                    const resumeAt = v && v.currentTime > 0 ? (airplaySession?.offset ?? 0) + v.currentTime : realTimeRef.current;
-                    setAirplayActive(false);
-                    airplayWasExternalRef.current = false;
-                    stopAirplayVideo();
-                    void avplayerTeardown();
-                    setAirplaySession(null);
-                    setAirplayPrepare("idle");
-                    void mpvCommand2(["seek", resumeAt, "absolute"]);
-                    void setMpvPause2(false);
-                  },
-                  children: t("castStop")
-                }
-              )
-            ] }),
-            useMpv ? (
-              // Transparent area — mpv NSView renders behind the WKWebView here
-              /* @__PURE__ */ jsx("div", { style: { width: "100%", height: "100%", background: "transparent" } })
-            ) : videoSrc ? /* @__PURE__ */ jsx("div", { className: videoPresentation.wrapperClassName, children: /* @__PURE__ */ jsx("div", { style: aspectFrameStyle, className: aspectFrameStyle ? "relative flex items-center justify-center overflow-hidden" : "contents", children: /* @__PURE__ */ jsx(
-              "video",
-              {
-                ref: videoRef,
-                src: videoSrc,
-                autoPlay: true,
-                playsInline: true,
-                className: "block",
-                style: { ...videoPresentation.videoStyle, ...cropZoomVideoStyle, filter: tuningToCssFilter(videoTuning) || void 0 },
-                ...{ "x-webkit-airplay": "allow" },
-                onLoadedMetadata: () => {
-                  if (!hasStarted) void attemptHtml5Start(false);
-                },
-                onCanPlay: () => {
-                  if (!hasStarted) void attemptHtml5Start(false);
-                },
-                onPlay: () => {
-                  setPlaying(true);
-                  if (!hasStarted) {
-                    hasStartedForUrlRef.current = true;
-                    setHasStarted(true);
-                    if (useMpv || !isServerStreamUrl(videoSrc)) {
-                      setHasEverStarted(true);
-                    }
-                    onFirstPlay?.();
-                  }
-                  if (!firstFrameLoggedRef.current) {
-                    firstFrameLoggedRef.current = true;
-                    void emitDesktopPlaybackTelemetry({
-                      stage: "player.lifecycle",
-                      status: "ok",
-                      detail: "first_frame",
-                      context: {
-                        title,
-                        mediaId: mediaId ?? null,
-                        mediaSource: mediaSource ?? null,
-                        position: realTime,
-                        playbackTraceId
-                      }
-                    });
-                  }
-                  setRequiresUserStart(false);
-                  setControlsPaused(false);
-                },
-                onPause: () => {
-                  setPlaying(false);
-                  setControlsPaused(true);
-                },
-                onEnded: () => {
-                  setHasEnded(true);
-                  setPlaying(false);
-                  setControlsPaused(true);
-                  onPlaybackEnded?.();
-                },
-                onTimeUpdate: (e) => {
-                  const v = e.currentTarget;
-                  const now3 = Date.now();
-                  if (now3 - lastUiTickAtRef.current >= PLAYER_UI_TICK_MS) {
-                    setCurrentTime(v.currentTime);
-                    lastUiTickAtRef.current = now3;
-                  }
-                  const currentReal = v.currentTime + streamStartRef.current;
-                  if (currentReal > lastProgressSecondsRef.current + 0.25) {
-                    lastProgressSecondsRef.current = currentReal;
-                    lastProgressAtRef.current = Date.now();
-                  }
-                  if (subtitleClockOverride !== null) {
-                    const actualRealTime = currentReal;
-                    if (Math.abs(actualRealTime - subtitleClockOverride) <= 1.5) setSubtitleClockOverride(null);
-                  }
-                  if (v.buffered.length > 0) {
-                    const lastEnd = v.buffered.end(v.buffered.length - 1);
-                    if (v.duration > 0 && Number.isFinite(v.duration)) {
-                      const bufferedPercent = lastEnd / v.duration * 100;
-                      if (now3 - lastBufferedTickAtRef.current >= PLAYER_UI_TICK_MS && Math.abs(bufferedPercent - lastBufferedPercentRef.current) >= 0.5) {
-                        setBuffered(bufferedPercent);
-                        lastBufferedPercentRef.current = bufferedPercent;
-                        lastBufferedTickAtRef.current = now3;
-                      }
-                    }
-                    if (!proxyBufferReady && lastEnd - v.currentTime >= 4) {
-                      setProxyBufferReady(true);
-                      setSeekingProxy(false);
-                    }
-                  }
-                },
-                onCanPlayThrough: () => {
-                  setProxyBufferReady(true);
-                  setSeekingProxy(false);
-                },
-                onDurationChange: (e) => {
-                  const v = e.currentTarget;
-                  setDuration(v.duration);
-                  if (!isServerStreamUrl(videoSrc) && !didSeekRef.current && initialTime && initialTime > 0) {
-                    didSeekRef.current = true;
-                    v.currentTime = Math.min(initialTime, v.duration - 1);
-                  }
-                },
-                onVolumeChange: (e) => {
-                  setMuted(e.currentTarget.muted);
-                  setVolume(e.currentTarget.volume);
-                },
-                onWaiting: () => {
-                  stallLastProgressAtRef.current = Math.min(stallLastProgressAtRef.current, Date.now() - 5200);
-                },
-                onStalled: () => {
-                  stallLastProgressAtRef.current = Math.min(stallLastProgressAtRef.current, Date.now() - 5200);
-                },
-                onError: () => {
-                  const v = videoRef.current;
-                  const mediaError = v?.error;
-                  void fetch(`/api/debug-log?msg=${encodeURIComponent(
-                    `webvideo error code=${mediaError?.code ?? "?"} msg=${mediaError?.message ?? ""} src=${videoSrc.slice(0, 90)} t=${(v?.currentTime ?? 0).toFixed(1)}`
-                  )}`).catch(() => {
-                  });
-                  const currentReal = (v?.currentTime ?? 0) + streamStartRef.current;
-                  if (!isServerStreamUrl(videoSrc)) {
-                    applyStreamSrc(url, null, currentReal, videoCodec, getTrackChannels(null), effectiveProxyAudioMode, nightMode, shouldForceProxyTranscode);
-                    return;
-                  }
-                  const proxyUrl = isProxyUrl(videoSrc) ? new URL(videoSrc, window.location.href) : null;
-                  const alreadyTranscoding = proxyUrl ? proxyUrl.searchParams.get("transcode") === "1" : hlsTranscodeRef.current;
-                  if (!alreadyTranscoding && !proxyRetryRef.current) {
-                    proxyRetryRef.current = true;
-                    const origUrl = proxyUrl?.searchParams.get("url") ?? url;
-                    const trackRaw = proxyUrl?.searchParams.get("track") ?? null;
-                    const track = trackRaw !== null ? parseInt(trackRaw, 10) : activeAudioTrack;
-                    applyStreamSrc(origUrl, track, currentReal, videoCodec, getTrackChannels(track), effectiveProxyAudioMode, nightMode, true);
-                    return;
-                  }
-                  if (!hasStarted) {
-                    escalateBrowserFailure();
-                  }
-                }
-              }
-            ) }) }) : /* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-black" }),
-            /* @__PURE__ */ jsx(
-              "div",
-              {
-                className: "absolute inset-0 z-10",
-                onPointerDown: (e) => {
-                  suppressNextOverlayToggleRef.current = e.pointerType !== "mouse" && !controlsVisible;
-                  if (suppressNextOverlayToggleRef.current) onMouseActivity();
-                },
-                onClick: () => {
-                  if (suppressNextOverlayToggleRef.current) {
-                    suppressNextOverlayToggleRef.current = false;
-                    return;
-                  }
-                  togglePlay();
-                },
-                onMouseMove: onMouseActivity
-              }
-            ),
-            hasStarted && !isPlaying && /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute inset-0 z-20 flex items-center justify-center", children: /* @__PURE__ */ jsx("div", { className: "rounded-full bg-black/40 p-5 backdrop-blur-sm", children: /* @__PURE__ */ jsx("svg", { className: "h-12 w-12 text-white", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) }) }),
-            seekingProxy && hasEverStarted && /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute inset-0 z-30 flex items-center justify-center", children: /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3 rounded-full bg-black/55 px-5 py-3 backdrop-blur-md", children: [
-              /* @__PURE__ */ jsx("svg", { className: "h-6 w-6 animate-spin text-white", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: /* @__PURE__ */ jsx("path", { d: "M21 12a9 9 0 1 1-6.219-8.56", strokeLinecap: "round" }) }),
-              /* @__PURE__ */ jsx("span", { className: "text-sm text-white/90", children: t("startingMovie") })
-            ] }) }),
-            !hasStarted && requiresUserStart && /* @__PURE__ */ jsx("div", { className: "absolute inset-0 z-40 flex items-center justify-center bg-black/35", children: /* @__PURE__ */ jsx(
-              "button",
-              {
-                type: "button",
-                "data-f": isTv ? "1" : void 0,
-                onClick: () => {
-                  void attemptHtml5Start(true);
-                },
-                className: "rounded-full border border-white/20 bg-black/55 px-5 py-2 text-xs uppercase tracking-[0.18em] text-white transition hover:border-white/40",
-                children: t("pressToStart")
-              }
-            ) }),
-            manualSyncOpen && /* @__PURE__ */ jsx(
-              "div",
-              {
-                className: "absolute inset-0 z-[70] flex items-end justify-center bg-slate-950/70 p-6 backdrop-blur-sm",
-                onClick: () => {
-                  setManualSyncOpen(false);
-                  setManualSyncTapTime(null);
-                },
-                children: /* @__PURE__ */ jsx(
+                ) }),
+                manualSyncOpen && /* @__PURE__ */ jsx(
                   "div",
                   {
-                    className: "mb-24 w-full max-w-xl rounded-2xl border border-white/10 bg-slate-900/95 p-5 shadow-2xl",
-                    onClick: (event) => event.stopPropagation(),
-                    children: manualSyncTapTime === null ? /* @__PURE__ */ jsxs(Fragment2, { children: [
-                      /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-200", children: t("subtitleManualSyncTapPrompt") }),
+                    className: "absolute inset-0 z-[70] flex items-end justify-center bg-slate-950/70 p-6 backdrop-blur-sm",
+                    onClick: () => {
+                      setManualSyncOpen(false);
+                      setManualSyncTapTime(null);
+                    },
+                    children: /* @__PURE__ */ jsx(
+                      "div",
+                      {
+                        className: "mb-24 w-full max-w-xl rounded-2xl border border-white/10 bg-slate-900/95 p-5 shadow-2xl",
+                        onClick: (event) => event.stopPropagation(),
+                        children: manualSyncTapTime === null ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+                          /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-200", children: t("subtitleManualSyncTapPrompt") }),
+                          /* @__PURE__ */ jsx(
+                            "button",
+                            {
+                              type: "button",
+                              autoFocus: true,
+                              "data-f": isTv ? "1" : void 0,
+                              onClick: () => setManualSyncTapTime(realTimeRef.current),
+                              className: "mt-4 w-full rounded-xl bg-aurora-500/80 px-4 py-3 text-sm font-semibold text-white transition hover:bg-aurora-400/80",
+                              children: t("subtitleManualSyncTapButton")
+                            }
+                          ),
+                          /* @__PURE__ */ jsx("p", { className: "mt-3 text-[11px] text-slate-500", children: t("subtitleManualSyncSecondHint") })
+                        ] }) : /* @__PURE__ */ jsxs(Fragment2, { children: [
+                          /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-200", children: manualSyncBusy ? t("subtitleManualSyncApplying") : t("subtitleManualSyncPickPrompt") }),
+                          manualSyncBusy && /* @__PURE__ */ jsxs("div", { className: "mt-3 flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-3", children: [
+                            /* @__PURE__ */ jsx("span", { className: "h-4 w-4 animate-spin rounded-full border-2 border-white/25 border-t-white/80" }),
+                            /* @__PURE__ */ jsx("span", { className: "text-xs text-slate-300", children: t("subtitleManualSyncRefining") })
+                          ] }),
+                          /* @__PURE__ */ jsx("div", { className: `mt-3 max-h-64 space-y-1 overflow-y-auto ${manualSyncBusy ? "pointer-events-none opacity-40" : ""}`, children: (() => {
+                            const near = cues.filter((cue) => Math.abs(cue.start - manualSyncTapTime) <= 120).sort((a, b) => Math.abs(a.start - manualSyncTapTime) - Math.abs(b.start - manualSyncTapTime)).slice(0, 40).sort((a, b) => a.start - b.start);
+                            if (near.length === 0) {
+                              return /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500", children: t("subtitleManualSyncNoCues") });
+                            }
+                            return near.map((cue) => /* @__PURE__ */ jsxs(
+                              "button",
+                              {
+                                type: "button",
+                                "data-f": isTv ? "1" : void 0,
+                                disabled: manualSyncBusy,
+                                onClick: () => {
+                                  void applyManualAnchor(cue);
+                                },
+                                className: "flex w-full items-baseline gap-3 rounded-lg px-3 py-2 text-left text-sm text-slate-200 transition hover:bg-white/10 disabled:opacity-50",
+                                children: [
+                                  /* @__PURE__ */ jsxs("span", { className: "shrink-0 font-mono text-[11px] text-slate-500", children: [
+                                    Math.floor(cue.start / 60),
+                                    ":",
+                                    String(Math.floor(cue.start % 60)).padStart(2, "0")
+                                  ] }),
+                                  /* @__PURE__ */ jsx("span", { className: "line-clamp-2", children: cue.text.replace(/\n/g, " ") })
+                                ]
+                              },
+                              `${cue.start}-${cue.text.slice(0, 12)}`
+                            ));
+                          })() }),
+                          /* @__PURE__ */ jsx(
+                            "button",
+                            {
+                              type: "button",
+                              "data-f": isTv ? "1" : void 0,
+                              onClick: () => setManualSyncTapTime(null),
+                              className: "mt-3 text-xs text-slate-400 underline-offset-2 hover:text-white hover:underline",
+                              children: t("cancel2")
+                            }
+                          )
+                        ] })
+                      }
+                    )
+                  }
+                ),
+                creditsMode && creditsCards.length > 0 && /* @__PURE__ */ jsx(
+                  CreditsRecommendations,
+                  {
+                    recommendations: creditsCards,
+                    progress: creditsProgress,
+                    remainingSeconds: creditsRemainingSeconds,
+                    onBackToPlayback: leaveCreditsMode,
+                    onInteract: () => {
+                      creditsTouchedRef.current = true;
+                    },
+                    pipRef: creditsPipRef,
+                    isTv
+                  }
+                ),
+                renderedSubtitleText && /* @__PURE__ */ jsx(
+                  "div",
+                  {
+                    className: "pointer-events-none absolute inset-x-0 z-30 flex justify-center px-8",
+                    style: { bottom: `calc(${subVerticalPos}% + 3.5rem)` },
+                    children: /* @__PURE__ */ jsx(
+                      "div",
+                      {
+                        className: "rounded px-3 py-1 text-center font-medium leading-snug",
+                        style: {
+                          fontSize: `${subSize / 100 * 1.25}rem`,
+                          color: subTextColor,
+                          backgroundColor: subBackgroundColor,
+                          opacity: subOpacity / 100,
+                          textShadow: `0 1px 6px ${subOutlineColor}, 0 0 2px ${subOutlineColor}, 1px 1px 3px ${subOutlineColor}, -1px -1px 3px ${subOutlineColor}`
+                        },
+                        children: renderedSubtitleText.split("\n").map((line, i) => /* @__PURE__ */ jsxs("span", { children: [
+                          i > 0 && /* @__PURE__ */ jsx("br", {}),
+                          line
+                        ] }, i))
+                      }
+                    )
+                  }
+                ),
+                showCastMenu && /* @__PURE__ */ jsxs("div", { className: `absolute z-[60] border border-white/10 p-4 ${desktopChrome ? "bottom-[92px] right-6 w-72 rounded-xl bg-base-800/95 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-md" : landscapeChrome ? "right-[26px] top-[72px] w-[260px] rounded-xl bg-base-800/95 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-md" : portraitChrome ? "inset-x-3 bottom-[172px] rounded-xl bg-base-800/95 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-md" : "bottom-20 right-4 w-72 rounded-2xl bg-slate-900/95 shadow-2xl backdrop-blur"}`, children: [
+                  /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between", children: [
+                    /* @__PURE__ */ jsx("p", { className: "text-xs uppercase tracking-[0.2em] text-slate-400", children: t("castTitle") }),
+                    /* @__PURE__ */ jsx(
+                      "button",
+                      {
+                        type: "button",
+                        "data-f": isTv ? "1" : void 0,
+                        onClick: () => void scanCastDevices(),
+                        disabled: castScanning,
+                        className: "text-[11px] text-slate-400 underline-offset-2 hover:text-white hover:underline disabled:opacity-50",
+                        children: t("castRescan")
+                      }
+                    )
+                  ] }),
+                  castTarget && /* @__PURE__ */ jsxs("div", { className: "mt-3 rounded-xl border border-aurora-400/30 bg-aurora-400/10 p-3", children: [
+                    /* @__PURE__ */ jsx("p", { className: "text-[11px] uppercase tracking-[0.18em] text-aurora-200", children: t("castPlayingOn") }),
+                    /* @__PURE__ */ jsx("p", { className: "mt-1 truncate text-sm text-white", children: castTarget.name }),
+                    /* @__PURE__ */ jsxs("div", { className: "mt-2 flex gap-2", children: [
                       /* @__PURE__ */ jsx(
                         "button",
                         {
                           type: "button",
-                          autoFocus: true,
                           "data-f": isTv ? "1" : void 0,
-                          onClick: () => setManualSyncTapTime(realTimeRef.current),
-                          className: "mt-4 w-full rounded-xl bg-aurora-500/80 px-4 py-3 text-sm font-semibold text-white transition hover:bg-aurora-400/80",
-                          children: t("subtitleManualSyncTapButton")
+                          onClick: () => void sendToCast(castTarget, "pause"),
+                          className: "rounded-full border border-white/15 px-3 py-1 text-[11px] text-slate-200 hover:bg-white/10",
+                          children: t("castPause")
                         }
                       ),
-                      /* @__PURE__ */ jsx("p", { className: "mt-3 text-[11px] text-slate-500", children: t("subtitleManualSyncSecondHint") })
-                    ] }) : /* @__PURE__ */ jsxs(Fragment2, { children: [
-                      /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-200", children: manualSyncBusy ? t("subtitleManualSyncApplying") : t("subtitleManualSyncPickPrompt") }),
-                      manualSyncBusy && /* @__PURE__ */ jsxs("div", { className: "mt-3 flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-3", children: [
-                        /* @__PURE__ */ jsx("span", { className: "h-4 w-4 animate-spin rounded-full border-2 border-white/25 border-t-white/80" }),
-                        /* @__PURE__ */ jsx("span", { className: "text-xs text-slate-300", children: t("subtitleManualSyncRefining") })
-                      ] }),
-                      /* @__PURE__ */ jsx("div", { className: `mt-3 max-h-64 space-y-1 overflow-y-auto ${manualSyncBusy ? "pointer-events-none opacity-40" : ""}`, children: (() => {
-                        const near = cues.filter((cue) => Math.abs(cue.start - manualSyncTapTime) <= 120).sort((a, b) => Math.abs(a.start - manualSyncTapTime) - Math.abs(b.start - manualSyncTapTime)).slice(0, 40).sort((a, b) => a.start - b.start);
-                        if (near.length === 0) {
-                          return /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500", children: t("subtitleManualSyncNoCues") });
-                        }
-                        return near.map((cue) => /* @__PURE__ */ jsxs(
-                          "button",
-                          {
-                            type: "button",
-                            "data-f": isTv ? "1" : void 0,
-                            disabled: manualSyncBusy,
-                            onClick: () => {
-                              void applyManualAnchor(cue);
-                            },
-                            className: "flex w-full items-baseline gap-3 rounded-lg px-3 py-2 text-left text-sm text-slate-200 transition hover:bg-white/10 disabled:opacity-50",
-                            children: [
-                              /* @__PURE__ */ jsxs("span", { className: "shrink-0 font-mono text-[11px] text-slate-500", children: [
-                                Math.floor(cue.start / 60),
-                                ":",
-                                String(Math.floor(cue.start % 60)).padStart(2, "0")
-                              ] }),
-                              /* @__PURE__ */ jsx("span", { className: "line-clamp-2", children: cue.text.replace(/\n/g, " ") })
-                            ]
-                          },
-                          `${cue.start}-${cue.text.slice(0, 12)}`
-                        ));
-                      })() }),
                       /* @__PURE__ */ jsx(
                         "button",
                         {
                           type: "button",
                           "data-f": isTv ? "1" : void 0,
-                          onClick: () => setManualSyncTapTime(null),
-                          className: "mt-3 text-xs text-slate-400 underline-offset-2 hover:text-white hover:underline",
-                          children: t("cancel2")
+                          onClick: () => void sendToCast(castTarget, "resume"),
+                          className: "rounded-full border border-white/15 px-3 py-1 text-[11px] text-slate-200 hover:bg-white/10",
+                          children: t("castResume")
+                        }
+                      ),
+                      /* @__PURE__ */ jsx(
+                        "button",
+                        {
+                          type: "button",
+                          "data-f": isTv ? "1" : void 0,
+                          onClick: () => void sendToCast(castTarget, "stop"),
+                          className: "rounded-full border border-white/15 px-3 py-1 text-[11px] text-slate-200 hover:bg-white/10",
+                          children: t("castStop")
                         }
                       )
                     ] })
-                  }
-                )
-              }
-            ),
-            activeCue && /* @__PURE__ */ jsx(
-              "div",
-              {
-                className: "pointer-events-none absolute inset-x-0 z-30 flex justify-center px-8",
-                style: { bottom: `calc(${subVerticalPos}% + 3.5rem)` },
-                children: /* @__PURE__ */ jsx(
+                  ] }),
+                  /* @__PURE__ */ jsx("div", { className: "mt-3 max-h-56 space-y-1 overflow-y-auto", children: castScanning && castDevices.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500", children: t("castScanning") }) : castDevices.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500", children: t("castNoDevices") }) : castDevices.filter((device) => device.kind !== "airplay").map((device) => /* @__PURE__ */ jsxs(
+                    "button",
+                    {
+                      type: "button",
+                      "data-f": isTv ? "1" : void 0,
+                      onClick: () => void sendToCast(device, "play"),
+                      className: "flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left transition hover:bg-white/10",
+                      children: [
+                        /* @__PURE__ */ jsx("span", { className: "truncate text-sm text-slate-200", children: device.name }),
+                        /* @__PURE__ */ jsx("span", { className: "shrink-0 text-[10px] uppercase tracking-[0.16em] text-slate-500", children: device.kind === "chromecast" ? "Cast" : "DLNA" })
+                      ]
+                    },
+                    device.id
+                  )) }),
+                  isMpvEngine && /* @__PURE__ */ jsxs(
+                    "button",
+                    {
+                      type: "button",
+                      "data-f": isTv ? "1" : void 0,
+                      disabled: airplayPrepare === "preparing" || airplaySession !== null && !(airplayTargetReady && airplayMediaReady),
+                      onClick: () => {
+                        if (!airplaySession) {
+                          void prepareAirplaySession();
+                          return;
+                        }
+                        const v = airplayVideoRef.current;
+                        if (!v) return;
+                        void v.play().catch(() => {
+                        });
+                        const show = v.webkitShowPlaybackTargetPicker;
+                        airplayLog(`row click, picker=${typeof show}, readyState=${v.readyState}`);
+                        if (typeof show === "function") show.call(v);
+                        else setCastError(t("castFailed"));
+                      },
+                      className: "flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left transition hover:bg-white/10 disabled:cursor-default disabled:opacity-50",
+                      children: [
+                        /* @__PURE__ */ jsx("span", { className: "truncate text-sm text-slate-200", children: "AirPlay" }),
+                        /* @__PURE__ */ jsx("span", { className: `shrink-0 text-[10px] uppercase tracking-[0.16em] ${airplayPrepare === "failed" ? "text-rose-300" : "text-slate-500"}`, children: airplayPrepare === "failed" ? t("castPrepareFailed") : airplaySession && airplayTargetReady && airplayMediaReady ? "AirPlay" : t("castPreparing") })
+                      ]
+                    }
+                  ),
+                  castError && /* @__PURE__ */ jsx("p", { className: "mt-3 text-[11px] leading-5 text-rose-300", children: castError })
+                ] }),
+                showSubMenu && // The CC panel is three columns wide — anchoring it at the trigger
+                // and growing leftward clipped it against the window's left edge.
+                // Pin it to the window's right edge instead; only `bottom` follows
+                // the trigger so it still opens just above the controls bar.
+                /* @__PURE__ */ jsxs(
                   "div",
                   {
-                    className: "rounded px-3 py-1 text-center font-medium leading-snug",
-                    style: {
-                      fontSize: `${subSize / 100 * 1.25}rem`,
-                      color: subTextColor,
-                      backgroundColor: subBackgroundColor,
-                      opacity: subOpacity / 100,
-                      textShadow: `0 1px 6px ${subOutlineColor}, 0 0 2px ${subOutlineColor}, 1px 1px 3px ${subOutlineColor}, -1px -1px 3px ${subOutlineColor}`
-                    },
-                    children: activeCue.text.split("\n").map((line, i) => /* @__PURE__ */ jsxs("span", { children: [
-                      i > 0 && /* @__PURE__ */ jsx("br", {}),
-                      line
-                    ] }, i))
+                    style: { ...getAnchoredMenuStyle(subTriggerRef.current), right: 16, left: "auto" },
+                    className: `z-[70] flex max-h-[75vh] w-[min(calc(100vw-2rem),20rem)] flex-col overflow-y-auto rounded-xl border border-white/10 shadow-xl backdrop-blur-sm sm:max-h-none sm:w-auto sm:flex-row sm:overflow-visible ${desktopChrome ? "bg-base-800/95" : "bg-slate-900/95"}`,
+                    onClick: (e) => e.stopPropagation(),
+                    children: [
+                      /* @__PURE__ */ jsxs("div", { className: "flex w-full flex-col border-b border-white/10 py-3 sm:w-40 sm:border-b-0 sm:border-r", children: [
+                        /* @__PURE__ */ jsx("div", { className: "px-4 pb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-500", children: t("subtitleLanguages") }),
+                        /* @__PURE__ */ jsxs("div", { className: "overflow-y-auto overscroll-contain", style: { maxHeight: "260px" }, children: [
+                          /* @__PURE__ */ jsxs(
+                            "button",
+                            {
+                              type: "button",
+                              "data-f": isTv ? "1" : void 0,
+                              onClick: () => {
+                                manualSubtitleOverrideRef.current = true;
+                                subtitlePreferenceRef.current = { mode: "off" };
+                                void selectSubtitle(null, { manual: true });
+                                setSelectedLang(null);
+                                setShowSubMenu(false);
+                              },
+                              className: `flex w-full items-center justify-between px-4 py-2 text-sm transition hover:bg-white/5 ${selectedLang === null ? "bg-white/5" : ""} ${activeSubId === null ? dtActiveTextClass : "text-slate-300"}`,
+                              children: [
+                                /* @__PURE__ */ jsx("span", { children: t("off") }),
+                                activeSubId === null && /* @__PURE__ */ jsx("span", { className: desktopChrome ? "h-1.5 w-1.5 rounded-full bg-white" : "h-2 w-2 rounded-full bg-aurora-400" })
+                              ]
+                            }
+                          ),
+                          Object.keys(subtitleGroups).map((lang2) => {
+                            const isActive = subtitleGroups[lang2].some((v) => v.id === activeSubId);
+                            return /* @__PURE__ */ jsxs(
+                              "button",
+                              {
+                                type: "button",
+                                "data-f": isTv ? "1" : void 0,
+                                onClick: () => {
+                                  subtitlePreferenceRef.current = { mode: "language", language: lang2 };
+                                  setSelectedLang(lang2);
+                                },
+                                className: `flex w-full items-center justify-between px-4 py-2 text-sm transition hover:bg-white/5 ${selectedLang === lang2 ? "bg-white/5" : ""} ${isActive ? dtActiveTextClass : "text-slate-300"}`,
+                                children: [
+                                  /* @__PURE__ */ jsx("span", { children: lang2 === "external" ? t("subtitleExternalGroup") : LANG_NAMES[lang2] ?? lang2.toUpperCase() }),
+                                  isActive && /* @__PURE__ */ jsx("span", { className: desktopChrome ? "h-1.5 w-1.5 rounded-full bg-white" : "h-2 w-2 rounded-full bg-aurora-400" })
+                                ]
+                              },
+                              lang2
+                            );
+                          })
+                        ] })
+                      ] }),
+                      /* @__PURE__ */ jsxs("div", { className: "flex w-full flex-col border-b border-white/10 py-3 sm:w-44 sm:border-b-0 sm:border-r", children: [
+                        /* @__PURE__ */ jsx("div", { className: "px-4 pb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-500", children: t("subtitleVariants") }),
+                        /* @__PURE__ */ jsx("div", { className: "overflow-y-auto overscroll-contain", style: { maxHeight: "260px" }, children: selectedLang ? subtitleGroups[selectedLang]?.map((sub) => {
+                          const isActive = sub.id === activeSubId;
+                          return /* @__PURE__ */ jsxs(
+                            "button",
+                            {
+                              type: "button",
+                              "data-f": isTv ? "1" : void 0,
+                              onClick: () => {
+                                void selectSubtitle(sub, { manual: true });
+                                setShowSubMenu(false);
+                              },
+                              className: `flex w-full items-center justify-between px-4 py-2 text-sm transition hover:bg-white/5 ${isActive ? "bg-white/5" : ""}`,
+                              children: [
+                                /* @__PURE__ */ jsxs("div", { className: "text-left", children: [
+                                  /* @__PURE__ */ jsx("div", { className: isActive ? dtActiveTextClass : "text-slate-300", children: sub.source === "external" ? sub.label ?? t("subtitleExternalGroup") : LANG_NAMES[selectedLang] ?? selectedLang }),
+                                  /* @__PURE__ */ jsx("div", { className: "text-xs text-slate-500", children: sub.source === "embedded" ? t("subtitleEmbeddedTrack") : sub.source === "external" ? t("subtitleExternalGroup") : t("subtitleProvider") })
+                                ] }),
+                                isActive && /* @__PURE__ */ jsx("span", { className: dtMenuDotClass })
+                              ]
+                            },
+                            sub.id
+                          );
+                        }) : /* @__PURE__ */ jsx("div", { className: "px-4 py-2 text-sm text-slate-600", children: t("selectLanguage") }) })
+                      ] }),
+                      /* @__PURE__ */ jsxs("div", { className: "w-full py-3 sm:w-48", children: [
+                        /* @__PURE__ */ jsx("div", { className: "px-4 pb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-500", children: t("subtitleSettings") }),
+                        /* @__PURE__ */ jsxs("div", { className: "px-4 pb-2", children: [
+                          /* @__PURE__ */ jsx(
+                            "input",
+                            {
+                              ref: externalFileInputRef,
+                              type: "file",
+                              accept: ".srt,.vtt,.ass,.ssa,.sub,.txt,text/vtt,text/plain,application/x-subrip",
+                              className: "hidden",
+                              onChange: (event) => {
+                                const file = event.target.files?.[0];
+                                event.target.value = "";
+                                if (file) void handleExternalSubtitleFile(file);
+                              }
+                            }
+                          ),
+                          /* @__PURE__ */ jsxs(
+                            "button",
+                            {
+                              type: "button",
+                              "data-f": isTv ? "1" : void 0,
+                              onClick: () => externalFileInputRef.current?.click(),
+                              className: "flex w-full items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-left text-xs text-slate-200 transition hover:border-white/20 hover:bg-white/[0.08]",
+                              children: [
+                                /* @__PURE__ */ jsx("svg", { className: "h-3.5 w-3.5 flex-none text-slate-400", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", "aria-hidden": true, children: /* @__PURE__ */ jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M12 4v11M7.5 8.5 12 4l4.5 4.5" }) }),
+                                /* @__PURE__ */ jsx("span", { children: t("subtitleLoadFile") })
+                              ]
+                            }
+                          )
+                        ] }),
+                        subtitleLoadError && subtitleOptions.length === 0 && /* @__PURE__ */ jsx("div", { className: "px-4 pb-2 text-[11px] leading-5 text-rose-300", children: subtitleLoadError }),
+                        /* @__PURE__ */ jsxs("div", { className: "px-4 pb-2", children: [
+                          /* @__PURE__ */ jsx(
+                            "button",
+                            {
+                              type: "button",
+                              "data-f": isTv ? "1" : void 0,
+                              onClick: () => {
+                                setShowSubMenu(false);
+                                setManualSyncTapTime(null);
+                                setManualSyncOpen(true);
+                              },
+                              disabled: cues.length < 2,
+                              className: `mt-2 w-full rounded-lg border px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.18em] transition ${cues.length >= 2 ? "border-white/15 bg-white/5 text-slate-200 hover:border-white/25 hover:bg-white/10" : "border-white/10 bg-white/5 text-slate-500"}`,
+                              children: t("subtitleManualSync")
+                            }
+                          ),
+                          subtitleAutoSyncState.type !== "idle" && subtitleAutoSyncState.type !== "analyzing" && /* @__PURE__ */ jsxs("div", { className: "mt-2 text-[11px] leading-5 text-slate-400", children: [
+                            subtitleAutoSyncState.message,
+                            subtitleAutoSyncState.type === "done" && lastAutoSyncedDelayRef.current !== null && /* @__PURE__ */ jsx(
+                              "button",
+                              {
+                                type: "button",
+                                "data-f": isTv ? "1" : void 0,
+                                onClick: undoSubtitleAutoSync,
+                                className: `ml-2 transition ${desktopChrome ? "text-[rgb(var(--player-accent))] hover:text-[rgb(var(--player-accent)/0.8)]" : "text-aurora-300 hover:text-aurora-200"}`,
+                                children: t("undo")
+                              }
+                            )
+                          ] }),
+                          subtitleAutoSyncState.type === "analyzing" && /* @__PURE__ */ jsx("div", { className: "mt-2 text-[11px] leading-5 text-slate-400", children: t("subtitleAutoSyncAnalyzing") })
+                        ] }),
+                        [
+                          { label: t("delay"), value: subDelay, unit: "s", dec: () => setSubDelay((v) => Math.max(-30, Math.round((v - 0.1) * 10) / 10)), inc: () => setSubDelay((v) => Math.min(30, Math.round((v + 0.1) * 10) / 10)) },
+                          { label: t("size"), value: subSize, unit: "%", dec: () => setSubSize((v) => Math.max(50, v - 10)), inc: () => setSubSize((v) => Math.min(200, v + 10)) },
+                          { label: t("verticalPosition"), value: subVerticalPos, unit: "%", dec: () => setSubVerticalPos((v) => Math.max(0, v - 5)), inc: () => setSubVerticalPos((v) => Math.min(90, v + 5)) }
+                        ].map(({ label, value, unit, dec, inc }) => /* @__PURE__ */ jsxs("div", { className: "px-4 py-2", children: [
+                          /* @__PURE__ */ jsx("div", { className: "mb-1.5 text-xs text-slate-400", children: label }),
+                          /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
+                            /* @__PURE__ */ jsx(
+                              "button",
+                              {
+                                type: "button",
+                                "data-f": isTv ? "1" : void 0,
+                                onClick: dec,
+                                className: "flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border border-white/10 text-sm text-white transition hover:bg-white/10",
+                                children: "\u2212"
+                              }
+                            ),
+                            /* @__PURE__ */ jsxs("span", { className: "flex-1 text-center text-sm tabular-nums text-white", children: [
+                              value,
+                              unit
+                            ] }),
+                            /* @__PURE__ */ jsx(
+                              "button",
+                              {
+                                type: "button",
+                                "data-f": isTv ? "1" : void 0,
+                                onClick: inc,
+                                className: "flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border border-white/10 text-sm text-white transition hover:bg-white/10",
+                                children: "+"
+                              }
+                            )
+                          ] })
+                        ] }, label))
+                      ] })
+                    ]
                   }
-                )
-              }
-            ),
-            showCastMenu && /* @__PURE__ */ jsxs("div", { className: "absolute bottom-20 right-4 z-[60] w-72 rounded-2xl border border-white/10 bg-slate-900/95 p-4 shadow-2xl backdrop-blur", children: [
-              /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between", children: [
-                /* @__PURE__ */ jsx("p", { className: "text-xs uppercase tracking-[0.2em] text-slate-400", children: t("castTitle") }),
-                /* @__PURE__ */ jsx(
-                  "button",
+                ),
+                overlayContent,
+                showStillWatchingPrompt && /* @__PURE__ */ jsx("div", { className: "absolute inset-0 z-[58] flex items-center justify-center bg-black/55 px-4 backdrop-blur-sm", onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ jsxs("div", { className: "w-full max-w-md rounded-3xl border border-white/10 bg-slate-950/90 p-6 text-center shadow-2xl", children: [
+                  /* @__PURE__ */ jsx("p", { className: "text-xs uppercase tracking-[0.24em] text-slate-400", children: t("playbackTitle") }),
+                  /* @__PURE__ */ jsx("h3", { className: "mt-3 text-2xl font-semibold text-white", children: t("stillWatching") }),
+                  /* @__PURE__ */ jsxs("div", { className: "mt-5 flex flex-col gap-3 sm:flex-row sm:justify-center", children: [
+                    /* @__PURE__ */ jsx(
+                      "button",
+                      {
+                        type: "button",
+                        "data-f": isTv ? "1" : void 0,
+                        onClick: handleStillWatchingContinue,
+                        className: "rounded-full bg-accent-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-400",
+                        children: t("stillWatchingContinue")
+                      }
+                    ),
+                    /* @__PURE__ */ jsx(
+                      "button",
+                      {
+                        type: "button",
+                        "data-f": isTv ? "1" : void 0,
+                        onClick: handleClose,
+                        className: "rounded-full border border-white/10 px-5 py-2.5 text-sm font-semibold text-slate-200 transition hover:border-white/20 hover:text-white",
+                        children: `${t("stillWatchingExit")} (${stillWatchingCountdown})`
+                      }
+                    )
+                  ] })
+                ] }) }),
+                showStartTitle && /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute left-8 top-10 z-[55] max-w-[70%]", children: /* @__PURE__ */ jsx("p", { className: "text-2xl font-semibold text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)] sm:text-3xl", children: title }) }),
+                showTuningPanel && /* @__PURE__ */ jsx(PlayerTuningPanel, { onClose: () => {
+                  setShowTuningPanel(false);
+                  if (isTv) requestAnimationFrame(() => tuningTriggerRef.current?.focus());
+                } }),
+                shouldShowSkipIntroButton && activeIntro && /* @__PURE__ */ jsxs(
+                  "div",
                   {
-                    type: "button",
-                    "data-f": isTv ? "1" : void 0,
-                    onClick: () => void scanCastDevices(),
-                    disabled: castScanning,
-                    className: "text-[11px] text-slate-400 underline-offset-2 hover:text-white hover:underline disabled:opacity-50",
-                    children: t("castRescan")
-                  }
-                )
-              ] }),
-              castTarget && /* @__PURE__ */ jsxs("div", { className: "mt-3 rounded-xl border border-aurora-400/30 bg-aurora-400/10 p-3", children: [
-                /* @__PURE__ */ jsx("p", { className: "text-[11px] uppercase tracking-[0.18em] text-aurora-200", children: t("castPlayingOn") }),
-                /* @__PURE__ */ jsx("p", { className: "mt-1 truncate text-sm text-white", children: castTarget.name }),
-                /* @__PURE__ */ jsxs("div", { className: "mt-2 flex gap-2", children: [
-                  /* @__PURE__ */ jsx(
-                    "button",
-                    {
-                      type: "button",
-                      "data-f": isTv ? "1" : void 0,
-                      onClick: () => void sendToCast(castTarget, "pause"),
-                      className: "rounded-full border border-white/15 px-3 py-1 text-[11px] text-slate-200 hover:bg-white/10",
-                      children: t("castPause")
-                    }
-                  ),
-                  /* @__PURE__ */ jsx(
-                    "button",
-                    {
-                      type: "button",
-                      "data-f": isTv ? "1" : void 0,
-                      onClick: () => void sendToCast(castTarget, "resume"),
-                      className: "rounded-full border border-white/15 px-3 py-1 text-[11px] text-slate-200 hover:bg-white/10",
-                      children: t("castResume")
-                    }
-                  ),
-                  /* @__PURE__ */ jsx(
-                    "button",
-                    {
-                      type: "button",
-                      "data-f": isTv ? "1" : void 0,
-                      onClick: () => void sendToCast(castTarget, "stop"),
-                      className: "rounded-full border border-white/15 px-3 py-1 text-[11px] text-slate-200 hover:bg-white/10",
-                      children: t("castStop")
-                    }
-                  )
-                ] })
-              ] }),
-              /* @__PURE__ */ jsx("div", { className: "mt-3 max-h-56 space-y-1 overflow-y-auto", children: castScanning && castDevices.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500", children: t("castScanning") }) : castDevices.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500", children: t("castNoDevices") }) : castDevices.filter((device) => device.kind !== "airplay").map((device) => /* @__PURE__ */ jsxs(
-                "button",
-                {
-                  type: "button",
-                  "data-f": isTv ? "1" : void 0,
-                  onClick: () => void sendToCast(device, "play"),
-                  className: "flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left transition hover:bg-white/10",
-                  children: [
-                    /* @__PURE__ */ jsx("span", { className: "truncate text-sm text-slate-200", children: device.name }),
-                    /* @__PURE__ */ jsx("span", { className: "shrink-0 text-[10px] uppercase tracking-[0.16em] text-slate-500", children: device.kind === "chromecast" ? "Cast" : "DLNA" })
-                  ]
-                },
-                device.id
-              )) }),
-              isMpvEngine && /* @__PURE__ */ jsxs(
-                "button",
-                {
-                  type: "button",
-                  "data-f": isTv ? "1" : void 0,
-                  disabled: airplayPrepare === "preparing" || airplaySession !== null && !(airplayTargetReady && airplayMediaReady),
-                  onClick: () => {
-                    if (!airplaySession) {
-                      void prepareAirplaySession();
-                      return;
-                    }
-                    const v = airplayVideoRef.current;
-                    if (!v) return;
-                    void v.play().catch(() => {
-                    });
-                    const show = v.webkitShowPlaybackTargetPicker;
-                    airplayLog(`row click, picker=${typeof show}, readyState=${v.readyState}`);
-                    if (typeof show === "function") show.call(v);
-                    else setCastError(t("castFailed"));
-                  },
-                  className: "flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left transition hover:bg-white/10 disabled:cursor-default disabled:opacity-50",
-                  children: [
-                    /* @__PURE__ */ jsx("span", { className: "truncate text-sm text-slate-200", children: "AirPlay" }),
-                    /* @__PURE__ */ jsx("span", { className: `shrink-0 text-[10px] uppercase tracking-[0.16em] ${airplayPrepare === "failed" ? "text-rose-300" : "text-slate-500"}`, children: airplayPrepare === "failed" ? t("castPrepareFailed") : airplaySession && airplayTargetReady && airplayMediaReady ? "AirPlay" : t("castPreparing") })
-                  ]
-                }
-              ),
-              castError && /* @__PURE__ */ jsx("p", { className: "mt-3 text-[11px] leading-5 text-rose-300", children: castError })
-            ] }),
-            showSubMenu && // The CC panel is three columns wide — anchoring it at the trigger
-            // and growing leftward clipped it against the window's left edge.
-            // Pin it to the window's right edge instead; only `bottom` follows
-            // the trigger so it still opens just above the controls bar.
-            /* @__PURE__ */ jsxs(
-              "div",
-              {
-                style: { ...getAnchoredMenuStyle(subTriggerRef.current), right: 16, left: "auto" },
-                className: "z-[70] flex max-h-[75vh] w-[min(calc(100vw-2rem),20rem)] flex-col overflow-y-auto rounded-xl border border-white/10 bg-slate-900/95 shadow-xl backdrop-blur-sm sm:max-h-none sm:w-auto sm:flex-row sm:overflow-visible",
-                onClick: (e) => e.stopPropagation(),
-                children: [
-                  /* @__PURE__ */ jsxs("div", { className: "flex w-full flex-col border-b border-white/10 py-3 sm:w-40 sm:border-b-0 sm:border-r", children: [
-                    /* @__PURE__ */ jsx("div", { className: "px-4 pb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-500", children: t("subtitleLanguages") }),
-                    /* @__PURE__ */ jsxs("div", { className: "overflow-y-auto overscroll-contain", style: { maxHeight: "260px" }, children: [
+                    className: `absolute z-[55] flex items-center gap-0.5 rounded-full border border-white/[0.14] bg-[rgba(13,14,22,0.82)] py-1 pl-4 pr-1 shadow-[0_12px_40px_rgba(0,0,0,0.5)] backdrop-blur-md transition-opacity duration-300 ${desktopChrome ? "bottom-32 right-6" : landscapeChrome ? "bottom-28 right-[26px]" : portraitChrome ? "bottom-[172px] right-3.5" : "bottom-24 right-4"}`,
+                    style: newChrome ? { opacity: controlsVisible ? 1 : 0, pointerEvents: controlsVisible ? "auto" : "none" } : void 0,
+                    onClick: (e) => e.stopPropagation(),
+                    children: [
                       /* @__PURE__ */ jsxs(
                         "button",
                         {
                           type: "button",
                           "data-f": isTv ? "1" : void 0,
-                          onClick: () => {
-                            manualSubtitleOverrideRef.current = true;
-                            subtitlePreferenceRef.current = { mode: "off" };
-                            void selectSubtitle(null, { manual: true });
-                            setSelectedLang(null);
-                            setShowSubMenu(false);
-                          },
-                          className: `flex w-full items-center justify-between px-4 py-2 text-sm transition hover:bg-white/5 ${selectedLang === null ? "bg-white/5" : ""} ${activeSubId === null ? "text-aurora-300" : "text-slate-300"}`,
+                          onClick: () => seekToAbsolute(activeIntro.endMs / 1e3),
+                          className: "flex items-center gap-2 py-1.5 pr-2 text-sm font-medium text-white",
                           children: [
-                            /* @__PURE__ */ jsx("span", { children: t("off") }),
-                            activeSubId === null && /* @__PURE__ */ jsx("span", { className: "h-2 w-2 rounded-full bg-aurora-400" })
+                            t("skipIntro"),
+                            /* @__PURE__ */ jsx("svg", { className: "h-[15px] w-[15px]", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", children: /* @__PURE__ */ jsx("path", { d: "m9 6 6 6-6 6" }) })
                           ]
                         }
                       ),
-                      Object.keys(subtitleGroups).map((lang2) => {
-                        const isActive = subtitleGroups[lang2].some((v) => v.id === activeSubId);
-                        return /* @__PURE__ */ jsxs(
-                          "button",
-                          {
-                            type: "button",
-                            "data-f": isTv ? "1" : void 0,
-                            onClick: () => {
-                              subtitlePreferenceRef.current = { mode: "language", language: lang2 };
-                              setSelectedLang(lang2);
-                            },
-                            className: `flex w-full items-center justify-between px-4 py-2 text-sm transition hover:bg-white/5 ${selectedLang === lang2 ? "bg-white/5" : ""} ${isActive ? "text-aurora-300" : "text-slate-300"}`,
-                            children: [
-                              /* @__PURE__ */ jsx("span", { children: LANG_NAMES[lang2] ?? lang2.toUpperCase() }),
-                              isActive && /* @__PURE__ */ jsx("span", { className: "h-2 w-2 rounded-full bg-aurora-400" })
-                            ]
-                          },
-                          lang2
-                        );
-                      })
-                    ] })
-                  ] }),
-                  /* @__PURE__ */ jsxs("div", { className: "flex w-full flex-col border-b border-white/10 py-3 sm:w-44 sm:border-b-0 sm:border-r", children: [
-                    /* @__PURE__ */ jsx("div", { className: "px-4 pb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-500", children: t("subtitleVariants") }),
-                    /* @__PURE__ */ jsx("div", { className: "overflow-y-auto overscroll-contain", style: { maxHeight: "260px" }, children: selectedLang ? subtitleGroups[selectedLang]?.map((sub) => {
-                      const isActive = sub.id === activeSubId;
-                      return /* @__PURE__ */ jsxs(
-                        "button",
-                        {
-                          type: "button",
-                          "data-f": isTv ? "1" : void 0,
-                          onClick: () => {
-                            void selectSubtitle(sub, { manual: true });
-                            setShowSubMenu(false);
-                          },
-                          className: `flex w-full items-center justify-between px-4 py-2 text-sm transition hover:bg-white/5 ${isActive ? "bg-white/5" : ""}`,
-                          children: [
-                            /* @__PURE__ */ jsxs("div", { className: "text-left", children: [
-                              /* @__PURE__ */ jsx("div", { className: isActive ? "text-aurora-300" : "text-slate-300", children: LANG_NAMES[selectedLang] ?? selectedLang }),
-                              /* @__PURE__ */ jsx("div", { className: "text-xs text-slate-500", children: sub.source === "embedded" ? "Embedded track" : t("subtitleProvider") })
-                            ] }),
-                            isActive && /* @__PURE__ */ jsx("span", { className: "h-2 w-2 flex-shrink-0 rounded-full bg-aurora-400" })
-                          ]
-                        },
-                        sub.id
-                      );
-                    }) : /* @__PURE__ */ jsx("div", { className: "px-4 py-2 text-sm text-slate-600", children: t("selectLanguage") }) })
-                  ] }),
-                  /* @__PURE__ */ jsxs("div", { className: "w-full py-3 sm:w-48", children: [
-                    /* @__PURE__ */ jsx("div", { className: "px-4 pb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-500", children: t("subtitleSettings") }),
-                    subtitleLoadError && subtitleOptions.length === 0 && /* @__PURE__ */ jsx("div", { className: "px-4 pb-2 text-[11px] leading-5 text-rose-300", children: subtitleLoadError }),
-                    /* @__PURE__ */ jsxs("div", { className: "px-4 pb-2", children: [
                       /* @__PURE__ */ jsx(
                         "button",
                         {
                           type: "button",
                           "data-f": isTv ? "1" : void 0,
-                          onClick: () => {
-                            setShowSubMenu(false);
-                            setManualSyncTapTime(null);
-                            setManualSyncOpen(true);
-                          },
-                          disabled: cues.length < 2,
-                          className: `mt-2 w-full rounded-lg border px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.18em] transition ${cues.length >= 2 ? "border-white/15 bg-white/5 text-slate-200 hover:border-white/25 hover:bg-white/10" : "border-white/10 bg-white/5 text-slate-500"}`,
-                          children: t("subtitleManualSync")
+                          onClick: () => setSkipIntroDismissed(true),
+                          title: t("dismiss"),
+                          "aria-label": t("dismiss"),
+                          className: "flex h-7 w-7 flex-none items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white",
+                          children: /* @__PURE__ */ jsx("svg", { className: "h-[13px] w-[13px]", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.4", strokeLinecap: "round", children: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12" }) })
                         }
-                      ),
-                      subtitleAutoSyncState.type !== "idle" && subtitleAutoSyncState.type !== "analyzing" && /* @__PURE__ */ jsxs("div", { className: "mt-2 text-[11px] leading-5 text-slate-400", children: [
-                        subtitleAutoSyncState.message,
-                        subtitleAutoSyncState.type === "done" && lastAutoSyncedDelayRef.current !== null && /* @__PURE__ */ jsx(
-                          "button",
-                          {
-                            type: "button",
-                            "data-f": isTv ? "1" : void 0,
-                            onClick: undoSubtitleAutoSync,
-                            className: "ml-2 text-aurora-300 transition hover:text-aurora-200",
-                            children: t("undo")
-                          }
-                        )
-                      ] }),
-                      subtitleAutoSyncState.type === "analyzing" && /* @__PURE__ */ jsx("div", { className: "mt-2 text-[11px] leading-5 text-slate-400", children: t("subtitleAutoSyncAnalyzing") })
-                    ] }),
-                    [
-                      { label: t("delay"), value: subDelay, unit: "s", dec: () => setSubDelay((v) => Math.max(-30, Math.round((v - 0.1) * 10) / 10)), inc: () => setSubDelay((v) => Math.min(30, Math.round((v + 0.1) * 10) / 10)) },
-                      { label: t("size"), value: subSize, unit: "%", dec: () => setSubSize((v) => Math.max(50, v - 10)), inc: () => setSubSize((v) => Math.min(200, v + 10)) },
-                      { label: t("verticalPosition"), value: subVerticalPos, unit: "%", dec: () => setSubVerticalPos((v) => Math.max(0, v - 5)), inc: () => setSubVerticalPos((v) => Math.min(90, v + 5)) }
-                    ].map(({ label, value, unit, dec, inc }) => /* @__PURE__ */ jsxs("div", { className: "px-4 py-2", children: [
-                      /* @__PURE__ */ jsx("div", { className: "mb-1.5 text-xs text-slate-400", children: label }),
-                      /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
-                        /* @__PURE__ */ jsx(
-                          "button",
-                          {
-                            type: "button",
-                            "data-f": isTv ? "1" : void 0,
-                            onClick: dec,
-                            className: "flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border border-white/10 text-sm text-white transition hover:bg-white/10",
-                            children: "\u2212"
-                          }
-                        ),
-                        /* @__PURE__ */ jsxs("span", { className: "flex-1 text-center text-sm tabular-nums text-white", children: [
-                          value,
-                          unit
-                        ] }),
-                        /* @__PURE__ */ jsx(
-                          "button",
-                          {
-                            type: "button",
-                            "data-f": isTv ? "1" : void 0,
-                            onClick: inc,
-                            className: "flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border border-white/10 text-sm text-white transition hover:bg-white/10",
-                            children: "+"
-                          }
-                        )
-                      ] })
-                    ] }, label))
-                  ] })
-                ]
-              }
-            ),
-            overlayContent,
-            showStillWatchingPrompt && /* @__PURE__ */ jsx("div", { className: "absolute inset-0 z-[58] flex items-center justify-center bg-black/55 px-4 backdrop-blur-sm", onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ jsxs("div", { className: "w-full max-w-md rounded-3xl border border-white/10 bg-slate-950/90 p-6 text-center shadow-2xl", children: [
-              /* @__PURE__ */ jsx("p", { className: "text-xs uppercase tracking-[0.24em] text-slate-400", children: t("playbackTitle") }),
-              /* @__PURE__ */ jsx("h3", { className: "mt-3 text-2xl font-semibold text-white", children: t("stillWatching") }),
-              /* @__PURE__ */ jsxs("div", { className: "mt-5 flex flex-col gap-3 sm:flex-row sm:justify-center", children: [
-                /* @__PURE__ */ jsx(
-                  "button",
-                  {
-                    type: "button",
-                    "data-f": isTv ? "1" : void 0,
-                    onClick: handleStillWatchingContinue,
-                    className: "rounded-full bg-accent-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-400",
-                    children: t("stillWatchingContinue")
+                      )
+                    ]
                   }
                 ),
-                /* @__PURE__ */ jsx(
-                  "button",
+                /* @__PURE__ */ jsxs(
+                  "div",
                   {
-                    type: "button",
-                    "data-f": isTv ? "1" : void 0,
-                    onClick: handleClose,
-                    className: "rounded-full border border-white/10 px-5 py-2.5 text-sm font-semibold text-slate-200 transition hover:border-white/20 hover:text-white",
-                    children: `${t("stillWatchingExit")} (${stillWatchingCountdown})`
-                  }
-                )
-              ] })
-            ] }) }),
-            showStartTitle && /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute left-8 top-10 z-[55] max-w-[70%]", children: /* @__PURE__ */ jsx("p", { className: "text-2xl font-semibold text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)] sm:text-3xl", children: title }) }),
-            showTuningPanel && /* @__PURE__ */ jsx(PlayerTuningPanel, { onClose: () => {
-              setShowTuningPanel(false);
-              if (isTv) requestAnimationFrame(() => tuningTriggerRef.current?.focus());
-            } }),
-            shouldShowSkipIntroButton && activeIntro && /* @__PURE__ */ jsx("div", { className: "absolute bottom-24 right-4 z-[55]", onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ jsx(
-              "button",
-              {
-                type: "button",
-                "data-f": isTv ? "1" : void 0,
-                onClick: () => seekToAbsolute(activeIntro.endMs / 1e3),
-                className: "rounded-full border border-white/15 bg-black/70 px-4 py-2 text-sm font-medium text-white shadow-xl backdrop-blur-md transition hover:border-white/30 hover:bg-black/85",
-                children: t("skipIntro")
-              }
-            ) }),
-            /* @__PURE__ */ jsxs(
-              "div",
-              {
-                ref: controlsRef,
-                className: "vp-controls absolute inset-x-0 bottom-0 z-40 bg-gradient-to-t from-black/80 via-black/30 to-transparent px-4 pb-[max(0.75rem,env(safe-area-inset-bottom),var(--android-inset-bottom,0px))] pt-10",
-                style: { opacity: controlsVisible && controlsReady ? 1 : 0, pointerEvents: controlsVisible && controlsReady ? "auto" : "none" },
-                onMouseMove: onMouseActivity,
-                onPointerDown: onMouseActivity,
-                onClick: (e) => e.stopPropagation(),
-                children: [
-                  (() => {
-                    const heightClass = playerLayout.seekBarHeight === "slim" ? "h-1" : playerLayout.seekBarHeight === "chunky" ? "h-2.5" : "h-1.5";
-                    const fillColorClass = playerLayout.seekBarColor === "white" ? "bg-white" : playerLayout.seekBarColor === "red" ? "bg-red-500" : playerLayout.seekBarColor === "amber" ? "bg-amber-400" : "bg-aurora-400";
-                    const styleClass = playerLayout.seekBarStyle === "glass" ? "opacity-80 backdrop-blur-sm shadow-[0_0_12px_rgba(255,255,255,0.25)]" : playerLayout.seekBarStyle === "pinstripe" ? "bg-[repeating-linear-gradient(45deg,transparent,transparent_4px,rgba(0,0,0,0.25)_4px,rgba(0,0,0,0.25)_8px)]" : "";
-                    return (
-                      // TV mode: the seek bar is a focus station. Left/right seek
-                      // while it has focus and are swallowed (stopPropagation) so the
-                      // focus engine doesn't move focus; up/down fall through and
-                      // leave the bar.
-                      /* @__PURE__ */ jsxs(
+                    ref: controlsRef,
+                    className: `vp-controls absolute inset-x-0 bottom-0 z-40 ${desktopChrome ? "bg-[linear-gradient(180deg,transparent_0%,rgba(0,0,0,0.35)_40%,rgba(0,0,0,0.85)_100%)] px-6 pb-5 pt-16" : landscapeChrome ? "bg-[linear-gradient(180deg,transparent_0%,rgba(0,0,0,0.45)_50%,rgba(0,0,0,0.85)_100%)] pb-3 pt-10" : portraitChrome ? "bg-[linear-gradient(180deg,transparent_0%,rgba(0,0,0,0.5)_35%,rgba(0,0,0,0.92)_100%)] pb-[max(1.375rem,env(safe-area-inset-bottom),var(--android-inset-bottom,0px))] pt-3.5" : "bg-gradient-to-t from-black/80 via-black/30 to-transparent px-4 pb-[max(0.75rem,env(safe-area-inset-bottom),var(--android-inset-bottom,0px))] pt-10"}`,
+                    style: {
+                      opacity: controlsVisible && controlsReady ? 1 : 0,
+                      pointerEvents: controlsVisible && controlsReady ? "auto" : "none",
+                      // Sidoinsetet gäller bara liggande telefon: där ligger urklippet i
+                      // sidan och skulle annars klippa tiden respektive Mer-brickan.
+                      //
+                      // Padding, inte margin: marginalen drog in HELA lådan, så gradienten
+                      // slutade en urklippsbredd från skärmkanten och lämnade en ljus
+                      // remsa i vänsterkanten. Padding håller bakgrunden full bredd och
+                      // flyttar bara innehållet. Basen 26px är designens sidmarginal.
+                      ...landscapeChrome ? {
+                        paddingLeft: `calc(26px + ${PHONE_LEFT_INSET})`,
+                        paddingRight: `calc(26px + ${PHONE_RIGHT_INSET})`
+                      } : {}
+                    },
+                    onMouseMove: onMouseActivity,
+                    onPointerDown: onMouseActivity,
+                    onClick: (e) => e.stopPropagation(),
+                    children: [
+                      portraitPickerOpen ? /* @__PURE__ */ jsx("div", { className: "fixed inset-0 z-0 bg-slate-950/60", onClick: () => setOpenSurface(null) }) : null,
+                      desktopChrome ? (() => {
+                        const timePillClass = "flex-none rounded-lg bg-[rgba(13,14,22,0.66)] px-2.5 py-[5px] text-[13px] font-semibold tabular-nums text-slate-100";
+                        const elapsedLabel = playerLayout.timeFormat === "remaining" ? `-${fmt(Math.max(0, totalDuration - seekTime))}` : fmt(seekTime);
+                        const totalLabel = playerLayout.timeFormat === "elapsed-total" ? fmt(totalDuration) : null;
+                        return /* @__PURE__ */ jsxs(Fragment2, { children: [
+                          /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3.5", children: [
+                            showsControl("time") ? /* @__PURE__ */ jsx("span", { className: timePillClass, children: elapsedLabel }) : null,
+                            renderSeekTrack("flex-1"),
+                            showsControl("time") && totalLabel ? /* @__PURE__ */ jsx("span", { className: timePillClass, children: totalLabel }) : null
+                          ] }),
+                          /* @__PURE__ */ jsxs("div", { className: "mt-3.5 flex items-center justify-between gap-6", children: [
+                            /* @__PURE__ */ jsx("div", { className: "flex items-center gap-1", children: renderDesktopZone(DESKTOP_ZONES.left) }),
+                            /* @__PURE__ */ jsx("div", { className: "flex items-center gap-2.5", children: renderDesktopZone(DESKTOP_ZONES.center) }),
+                            /* @__PURE__ */ jsx("div", { className: "flex items-center gap-1", children: renderDesktopZone(DESKTOP_ZONES.right) })
+                          ] })
+                        ] });
+                      })() : landscapeChrome ? (
+                        /* Liggande: spåret kant till kant, tiden till vänster och sju
+                           brickor till höger — den sjunde är Mer, som bär det som inte fick
+                           plats. Ingen sidoscroll: budgeten är just sex plus Mer. */
+                        /* @__PURE__ */ jsxs(Fragment2, { children: [
+                          renderSeekTrack("w-full"),
+                          /* @__PURE__ */ jsxs("div", { className: "mt-2 flex items-center justify-between gap-5", children: [
+                            renderPhoneClock("text-[15px]", "text-[13px]"),
+                            /* @__PURE__ */ jsxs("div", { className: "flex flex-none items-center gap-1.5", children: [
+                              phoneRowIds.map((id4) => renderPhoneTile(id4, phoneControls[id4])),
+                              /* @__PURE__ */ jsxs(
+                                "button",
+                                {
+                                  type: "button",
+                                  ref: moreTriggerRef,
+                                  onClick: () => setShowMoreMenu((open) => !open),
+                                  title: t("moreActions"),
+                                  "aria-label": t("moreActions"),
+                                  className: `flex w-[54px] flex-none flex-col items-center gap-0.5 rounded-[10px] py-1 transition ${showMoreMenu ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : "text-slate-200"}`,
+                                  children: [
+                                    playerIcon("more", "h-[17px] w-[17px]"),
+                                    /* @__PURE__ */ jsx("span", { className: "text-[10px] font-semibold leading-none", children: t("plShortMore") })
+                                  ]
+                                }
+                              )
+                            ] })
+                          ] })
+                        ] })
+                      ) : portraitChrome ? (
+                        /* Stående: seekrad och ikonrad i sidmarginalen, sedan den rullande
+                           pillerraden. `flex-none` på raden är NÖDVÄNDIGT — utan den blir
+                           min-height: auto noll i en höjdbegränsad flexkolumn och raden
+                           kollapsar (står i handoffens README, och det stämmer). */
+                        /* @__PURE__ */ jsxs(Fragment2, { children: [
+                          /* @__PURE__ */ jsxs("div", { className: "flex flex-col gap-2.5 px-3.5", children: [
+                            renderSeekTrack("w-full"),
+                            /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-3", children: [
+                              renderPhoneClock("text-sm", "text-xs"),
+                              /* @__PURE__ */ jsx("div", { className: "flex flex-none items-center gap-1", children: phoneClusterIds.map((id4) => renderPhoneFlatButton(id4, phoneControls[id4])) })
+                            ] })
+                          ] }),
+                          /* @__PURE__ */ jsxs("div", { className: "vp-controls-row mt-3 flex min-h-[44px] flex-none items-center gap-2 overflow-x-auto overflow-y-hidden px-3.5", children: [
+                            phoneRowIds.map((id4) => renderPhonePill(id4, phoneControls[id4])),
+                            /* @__PURE__ */ jsxs(
+                              "button",
+                              {
+                                type: "button",
+                                ref: moreTriggerRef,
+                                onClick: () => setShowMoreMenu((open) => !open),
+                                title: t("moreActions"),
+                                "aria-label": t("moreActions"),
+                                className: `flex h-10 flex-none items-center gap-[7px] rounded-full border border-white/[0.12] px-3.5 transition ${showMoreMenu ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : "text-slate-300"}`,
+                                children: [
+                                  playerIcon("more", "h-[17px] w-[17px]"),
+                                  /* @__PURE__ */ jsx("span", { className: "text-[13px] font-medium leading-none", children: t("plShortMore") })
+                                ]
+                              }
+                            )
+                          ] })
+                        ] })
+                      ) : /* @__PURE__ */ jsxs(Fragment2, { children: [
+                        (() => {
+                          const heightClass = playerLayout.seekBarHeight === "slim" ? "h-1" : playerLayout.seekBarHeight === "chunky" ? "h-2.5" : "h-1.5";
+                          const fillColorClass = playerLayout.seekBarColor === "white" ? "bg-white" : playerLayout.seekBarColor === "red" ? "bg-red-500" : playerLayout.seekBarColor === "amber" ? "bg-amber-400" : "bg-aurora-400";
+                          const styleClass = playerLayout.seekBarStyle === "glass" ? "opacity-80 backdrop-blur-sm shadow-[0_0_12px_rgba(255,255,255,0.25)]" : playerLayout.seekBarStyle === "pinstripe" ? "bg-[repeating-linear-gradient(45deg,transparent,transparent_4px,rgba(0,0,0,0.25)_4px,rgba(0,0,0,0.25)_8px)]" : "";
+                          return (
+                            // TV mode: the seek bar is a focus station. Left/right seek
+                            // while it has focus and are swallowed (stopPropagation) so the
+                            // focus engine doesn't move focus; up/down fall through and
+                            // leave the bar.
+                            /* @__PURE__ */ jsxs(
+                              "div",
+                              {
+                                className: `relative mb-3 cursor-pointer rounded-full bg-white/20 ${heightClass}`,
+                                onClick: handleSeekClick,
+                                "data-f": isTv ? "1" : void 0,
+                                tabIndex: isTv ? 0 : void 0,
+                                role: isTv ? "slider" : void 0,
+                                "aria-valuemin": isTv ? 0 : void 0,
+                                "aria-valuemax": isTv ? 100 : void 0,
+                                "aria-valuenow": isTv ? Math.round(progress2) : void 0,
+                                onKeyDown: isTv ? (e) => {
+                                  if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    seek(e.key === "ArrowLeft" ? -10 : 10);
+                                  }
+                                } : void 0,
+                                children: [
+                                  !useMpv && !isServerStreamUrl(videoSrc) && /* @__PURE__ */ jsx("div", { className: "absolute inset-y-0 left-0 rounded-full bg-white/30", style: { width: `${buffered}%` } }),
+                                  totalDuration > 0 && /* @__PURE__ */ jsxs(Fragment2, { children: [
+                                    /* @__PURE__ */ jsx("div", { className: `absolute inset-y-0 left-0 rounded-full ${fillColorClass}`, style: { width: `${progress2}%` }, children: styleClass ? /* @__PURE__ */ jsx("div", { className: `absolute inset-0 rounded-full ${styleClass}` }) : null }),
+                                    playerLayout.seekBarDot ? /* @__PURE__ */ jsx("div", { className: "absolute top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full bg-white shadow", style: { left: `calc(${progress2}% - 7px)` } }) : null
+                                  ] })
+                                ]
+                              }
+                            )
+                          );
+                        })(),
+                        /* @__PURE__ */ jsx("div", { className: "vp-controls-row flex items-center gap-4 overflow-x-auto whitespace-nowrap", children: (() => {
+                          const controls = {
+                            playPause: /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, "data-init": isTv ? "1" : void 0, onClick: togglePlay, className: "text-white hover:text-aurora-300", children: isPlaying ? /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M6 19h4V5H6v14zm8-14v14h4V5h-4z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) }),
+                            seekBack: /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, onClick: () => seek(-10), className: "text-xs text-slate-300 hover:text-white", children: "\u221210s" }),
+                            seekForward: /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, onClick: () => seek(10), className: "text-xs text-slate-300 hover:text-white", children: "+10s" }),
+                            time: /* @__PURE__ */ jsx("span", { className: "text-xs tabular-nums text-slate-300", children: playerLayout.timeFormat === "remaining" ? `-${fmt(Math.max(0, totalDuration - realTime))}` : playerLayout.timeFormat === "elapsed" ? fmt(realTime) : `${fmt(realTime)} / ${fmt(totalDuration)}` }),
+                            spacer: /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "flex-1" }),
+                            /* Ljudfördröjning. Bara på mpv-motorn: Android kan inte
+                               förskjuta ljudet (ingen A/V-offset i media3), och en spak som
+                               inte rör något är sämre än ingen spak — samma skäl som
+                               nattläget döljs där. */
+                            audioDelay: useMpv ? /* @__PURE__ */ jsx(
+                              "button",
+                              {
+                                type: "button",
+                                ref: audioDelayTriggerRef,
+                                "data-f": isTv ? "1" : void 0,
+                                onClick: () => setShowAudioDelayMenu((open) => !open),
+                                title: t("audioDelayTitle"),
+                                "aria-label": t("audioDelayTitle"),
+                                className: `rounded px-1.5 py-0.5 text-xs font-medium tabular-nums transition ${effectiveAudioDelayMs !== 0 ? "bg-aurora-500/25 text-aurora-200" : "text-slate-300 hover:text-white"}`,
+                                children: effectiveAudioDelayMs === 0 ? "A/V" : `${effectiveAudioDelayMs > 0 ? "+" : ""}${effectiveAudioDelayMs} ms`
+                              }
+                            ) : null,
+                            /* Nästa avsnitt kopplas in av den som äger avsnittsdatan
+                               (strömpluginet) — utan callback finns inget att hoppa till, och
+                               då ska knappen inte finnas. */
+                            nextEpisode: episodes && episodes.items.length > 0 ? /* @__PURE__ */ jsx(
+                              "button",
+                              {
+                                type: "button",
+                                "data-f": isTv ? "1" : void 0,
+                                onClick: () => setShowEpisodes((open) => !open),
+                                title: t("plNextEpisode"),
+                                "aria-label": t("plNextEpisode"),
+                                className: showEpisodes ? "text-aurora-300" : "text-slate-300 transition hover:text-white",
+                                children: /* @__PURE__ */ jsxs("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
+                                  /* @__PURE__ */ jsx("path", { d: "M5 5l9 7-9 7V5z", fill: "currentColor", stroke: "none" }),
+                                  /* @__PURE__ */ jsx("path", { d: "M18 5v14", strokeLinecap: "round" })
+                                ] })
+                              }
+                            ) : null,
+                            subtitles: /* @__PURE__ */ jsx(
+                              "button",
+                              {
+                                type: "button",
+                                ref: subTriggerRef,
+                                "data-f": isTv ? "1" : void 0,
+                                onClick: () => {
+                                  if (!showSubMenu) {
+                                    const activeLang = activeSubId ? toSubtitleLangGroup(subtitleOptions.find((s) => s.id === activeSubId)?.language ?? null) : null;
+                                    setSelectedLang(activeLang);
+                                  }
+                                  setShowSubMenu((v) => !v);
+                                },
+                                title: t("subtitlesLabel"),
+                                className: `shrink-0 rounded px-1.5 py-0.5 text-xs font-bold uppercase tracking-wider transition ${activeSubId ? "bg-aurora-400 text-black" : hasSubtitles || loadingSub || subtitleLoadError || resolvedImdbId ? "text-slate-300 hover:text-white" : "text-slate-500"}`,
+                                children: "CC"
+                              }
+                            ),
+                            cast: !isClientSession() && /* @__PURE__ */ jsx(
+                              "button",
+                              {
+                                type: "button",
+                                "data-f": isTv ? "1" : void 0,
+                                onClick: () => {
+                                  const opening = !showCastMenu;
+                                  setShowCastMenu(opening);
+                                  if (opening && castDevices.length === 0) void scanCastDevices();
+                                  if (opening && isMpvEngine && !airplaySession) void prepareAirplaySession();
+                                },
+                                title: t("castTitle"),
+                                className: `shrink-0 rounded px-1 py-0.5 transition ${castTarget ? "text-aurora-300" : "text-slate-300 hover:text-white"}`,
+                                children: /* @__PURE__ */ jsxs("svg", { width: "18", height: "18", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", children: [
+                                  /* @__PURE__ */ jsx("path", { d: "M2 16.1a5 5 0 0 1 5.9 5.9" }),
+                                  /* @__PURE__ */ jsx("path", { d: "M2 12.05a9 9 0 0 1 9.95 9.95" }),
+                                  /* @__PURE__ */ jsx("path", { d: "M2 8.05a13 13 0 0 1 13.95 13.95" }),
+                                  /* @__PURE__ */ jsx("path", { d: "M4 4h16a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-5" })
+                                ] })
+                              }
+                            ),
+                            audioTrack: audioTracks.length > 0 && /* @__PURE__ */ jsx(
+                              "button",
+                              {
+                                type: "button",
+                                ref: audioTriggerRef,
+                                "data-f": isTv ? "1" : void 0,
+                                onClick: () => setShowAudioMenu((v) => !v),
+                                title: t("audioLanguage"),
+                                className: `shrink-0 rounded px-1.5 py-0.5 text-xs font-bold uppercase tracking-wider transition ${showAudioMenu ? "bg-aurora-400 text-black" : "text-slate-300 hover:text-white"}`,
+                                children: toAudioLangGroup((audioTracks.find((t2) => t2.index === activeAudioTrack) ?? audioTracks[0])?.language)?.toUpperCase() ?? "AUD"
+                              }
+                            ),
+                            aspect: /* @__PURE__ */ jsx(
+                              "button",
+                              {
+                                type: "button",
+                                ref: aspectTriggerRef,
+                                "data-f": isTv ? "1" : void 0,
+                                onClick: () => setShowAspectMenu((value) => !value),
+                                title: t("aspectRatio"),
+                                className: `shrink-0 rounded px-1.5 py-0.5 text-xs font-bold uppercase tracking-wider transition ${showAspectMenu ? "bg-aurora-400 text-black" : "text-slate-300 hover:text-white"}`,
+                                children: aspectLabel
+                              }
+                            ),
+                            cropZoom: /* @__PURE__ */ jsx(
+                              "button",
+                              {
+                                type: "button",
+                                ref: cropTriggerRef,
+                                "data-f": isTv ? "1" : void 0,
+                                onClick: () => setShowCropZoomMenu((value) => !value),
+                                title: t("cropZoom"),
+                                className: `shrink-0 rounded px-1.5 py-0.5 text-xs font-bold uppercase tracking-wider transition ${showCropZoomMenu ? "bg-aurora-400 text-black" : "text-slate-300 hover:text-white"}`,
+                                children: cropZoomLabel
+                              }
+                            ),
+                            audioOutput: /* @__PURE__ */ jsx(
+                              "span",
+                              {
+                                title: t("currentAudioOutput"),
+                                className: "shrink-0 rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-300",
+                                children: audioIndicator
+                              }
+                            ),
+                            segmentBadges: mediaType === "tv" ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+                              /* @__PURE__ */ jsx("span", { className: `rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${introSegment ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-300" : "border-white/10 bg-white/5 text-slate-300"}`, children: introSegment ? `${introKind === "recap" ? "Recap" : "Intro"} found` : t("introDebugMissing") }),
+                              /* @__PURE__ */ jsx("span", { className: `rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${outroSegment ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-300" : "border-white/10 bg-white/5 text-slate-300"}`, children: outroSegment ? "Outro found" : "Outro missing" })
+                            ] }) : null,
+                            mute: /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, onClick: toggleMute, className: "text-slate-300 hover:text-white", children: muted || volume === 0 ? /* @__PURE__ */ jsx("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" }) }) }),
+                            volume: /* @__PURE__ */ jsx(Fragment2, { children: isTv || playerLayout.volumeStyle === "stepper" ? /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-1.5", children: [
+                              /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, onClick: () => applyVolume((muted ? 0 : volume) - 0.05), className: "flex h-5 w-5 items-center justify-center rounded-full border border-white/10 text-xs text-slate-300 hover:text-white", children: "\u2212" }),
+                              /* @__PURE__ */ jsxs("span", { className: "min-w-[2.5rem] text-center text-xs tabular-nums text-slate-300", children: [
+                                Math.round((muted ? 0 : volume) * 100),
+                                "%"
+                              ] }),
+                              /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, onClick: () => applyVolume((muted ? 0 : volume) + 0.05), className: "flex h-5 w-5 items-center justify-center rounded-full border border-white/10 text-xs text-slate-300 hover:text-white", children: "+" })
+                            ] }) : playerLayout.volumeStyle === "icon" ? null : (
+                              /* Explicit track styling — the bare native range was invisible
+                                  against the black controls bar (only the thumb showed). */
+                              /* @__PURE__ */ jsx(
+                                "input",
+                                {
+                                  type: "range",
+                                  min: 0,
+                                  max: 1,
+                                  step: 0.05,
+                                  value: muted ? 0 : volume,
+                                  onChange: handleVolumeChange,
+                                  className: "h-1 w-20 cursor-pointer appearance-none rounded-full border border-white/10 bg-white/20 accent-aurora-400"
+                                }
+                              )
+                            ) }),
+                            wiki: (wikiTmdbId || resolvedImdbId) && /* @__PURE__ */ jsx(
+                              "button",
+                              {
+                                type: "button",
+                                "data-f": isTv ? "1" : void 0,
+                                onClick: () => {
+                                  setShowWiki((v) => !v);
+                                  setShowSoundtrack(false);
+                                },
+                                title: t("info"),
+                                className: `rounded px-1.5 py-0.5 text-xs font-bold uppercase tracking-wider transition ${showWiki ? "bg-aurora-400 text-black" : "text-slate-300 hover:text-white"}`,
+                                children: "Wiki"
+                              }
+                            ),
+                            soundtrack: Boolean(title) && /* @__PURE__ */ jsx(
+                              "button",
+                              {
+                                type: "button",
+                                "data-f": isTv ? "1" : void 0,
+                                onClick: () => {
+                                  setShowSoundtrack((v) => !v);
+                                  setShowWiki(false);
+                                },
+                                title: t("soundtrack"),
+                                className: `rounded px-1.5 py-0.5 text-xs font-bold uppercase tracking-wider transition ${showSoundtrack ? "bg-green-500 text-black" : "text-slate-300 hover:text-white"}`,
+                                children: t("soundtrack")
+                              }
+                            ),
+                            tuning: /* @__PURE__ */ jsx(
+                              "button",
+                              {
+                                type: "button",
+                                ref: tuningTriggerRef,
+                                "data-f": isTv ? "1" : void 0,
+                                onClick: () => setShowTuningPanel((v) => !v),
+                                title: t("vtTitle"),
+                                className: `transition ${showTuningPanel ? "text-aurora-300" : "text-slate-300 hover:text-white"}`,
+                                children: /* @__PURE__ */ jsxs("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", children: [
+                                  /* @__PURE__ */ jsx("path", { d: "M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3" }),
+                                  /* @__PURE__ */ jsx("path", { d: "M1 14h6M9 8h6M17 16h6" })
+                                ] })
+                              }
+                            ),
+                            more: /* @__PURE__ */ jsx(Fragment2, { children: /* @__PURE__ */ jsx(
+                              "button",
+                              {
+                                ref: moreTriggerRef,
+                                type: "button",
+                                "data-f": isTv ? "1" : void 0,
+                                onClick: () => setShowMoreMenu((value) => !value),
+                                title: t("moreActions"),
+                                className: `shrink-0 rounded px-1.5 py-0.5 text-xs font-bold uppercase tracking-wider transition ${showMoreMenu ? "bg-aurora-400 text-black" : "text-slate-300 hover:text-white"}`,
+                                children: "\u2022\u2022\u2022"
+                              }
+                            ) }),
+                            fullscreen: (!isTauriEnv || isDesktopTauriEnv) && /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, onClick: toggleFullscreen, className: "shrink-0 text-slate-300 hover:text-white", children: cssFullscreen ? /* @__PURE__ */ jsx("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" }) }) })
+                          };
+                          return playerLayout.order.filter((id4) => showsControl(id4)).map((id4) => /* @__PURE__ */ jsx(react_shim_default.Fragment, { children: controls[id4] }, id4));
+                        })() })
+                      ] }),
+                      showAudioDelayMenu && useMpv && /* @__PURE__ */ jsxs(
                         "div",
                         {
-                          className: `relative mb-3 cursor-pointer rounded-full bg-white/20 ${heightClass}`,
-                          onClick: handleSeekClick,
-                          "data-f": isTv ? "1" : void 0,
-                          tabIndex: isTv ? 0 : void 0,
-                          role: isTv ? "slider" : void 0,
-                          "aria-valuemin": isTv ? 0 : void 0,
-                          "aria-valuemax": isTv ? 100 : void 0,
-                          "aria-valuenow": isTv ? Math.round(progress2) : void 0,
-                          onKeyDown: isTv ? (e) => {
-                            if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              seek(e.key === "ArrowLeft" ? -10 : 10);
-                            }
-                          } : void 0,
+                          style: getAnchoredMenuStyle(audioDelayTriggerRef.current, 244),
+                          className: "z-50 w-[244px] rounded-[1.1rem] border border-white/10 bg-base-800/95 p-3 shadow-2xl backdrop-blur-md",
+                          onClick: (event) => event.stopPropagation(),
                           children: [
-                            !useMpv && !isServerStreamUrl(videoSrc) && /* @__PURE__ */ jsx("div", { className: "absolute inset-y-0 left-0 rounded-full bg-white/30", style: { width: `${buffered}%` } }),
-                            totalDuration > 0 && /* @__PURE__ */ jsxs(Fragment2, { children: [
-                              /* @__PURE__ */ jsx("div", { className: `absolute inset-y-0 left-0 rounded-full ${fillColorClass}`, style: { width: `${progress2}%` }, children: styleClass ? /* @__PURE__ */ jsx("div", { className: `absolute inset-0 rounded-full ${styleClass}` }) : null }),
-                              playerLayout.seekBarDot ? /* @__PURE__ */ jsx("div", { className: "absolute top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full bg-white shadow", style: { left: `calc(${progress2}% - 7px)` } }) : null
-                            ] })
+                            /* @__PURE__ */ jsx("p", { className: "px-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500", children: t("audioDelayTitle") }),
+                            /* @__PURE__ */ jsxs("div", { className: "mt-2 flex items-center justify-between gap-2", children: [
+                              /* @__PURE__ */ jsx(
+                                "button",
+                                {
+                                  type: "button",
+                                  "data-f": isTv ? "1" : void 0,
+                                  onClick: () => setAudioDelayMs(audioDelayMs - AUDIO_DELAY_STEP_MS),
+                                  "aria-label": `\u2212${AUDIO_DELAY_STEP_MS} ms`,
+                                  className: "h-8 w-8 flex-none rounded-full border border-white/15 text-sm text-slate-200 transition hover:bg-white/10",
+                                  children: "\u2212"
+                                }
+                              ),
+                              /* @__PURE__ */ jsxs("span", { className: "flex-1 text-center text-sm font-semibold tabular-nums text-white", children: [
+                                effectiveAudioDelayMs > 0 ? "+" : "",
+                                effectiveAudioDelayMs,
+                                " ms"
+                              ] }),
+                              /* @__PURE__ */ jsx(
+                                "button",
+                                {
+                                  type: "button",
+                                  "data-f": isTv ? "1" : void 0,
+                                  onClick: () => setAudioDelayMs(audioDelayMs + AUDIO_DELAY_STEP_MS),
+                                  "aria-label": `+${AUDIO_DELAY_STEP_MS} ms`,
+                                  className: "h-8 w-8 flex-none rounded-full border border-white/15 text-sm text-slate-200 transition hover:bg-white/10 disabled:opacity-40",
+                                  children: "+"
+                                }
+                              )
+                            ] }),
+                            outputIsBluetooth && getBluetoothAudioAutoOffset() ? /* @__PURE__ */ jsxs("p", { className: "mt-2 px-1 text-[11px] leading-snug text-slate-500", children: [
+                              t("btAudioAutoOffset"),
+                              " (",
+                              BLUETOOTH_AUDIO_OFFSET_MS,
+                              " ms)"
+                            ] }) : null,
+                            audioDelayMs !== 0 ? /* @__PURE__ */ jsx(
+                              "button",
+                              {
+                                type: "button",
+                                "data-f": isTv ? "1" : void 0,
+                                onClick: () => setAudioDelayMs(0),
+                                className: "mt-2 w-full rounded-lg px-2 py-1.5 text-xs text-aurora-300 transition hover:bg-white/5",
+                                children: t("reset")
+                              }
+                            ) : null
                           ]
                         }
-                      )
-                    );
-                  })(),
-                  /* @__PURE__ */ jsx("div", { className: "vp-controls-row flex items-center gap-4 overflow-x-auto whitespace-nowrap", children: (() => {
-                    const controls = {
-                      playPause: /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, "data-init": isTv ? "1" : void 0, onClick: togglePlay, className: "text-white hover:text-aurora-300", children: isPlaying ? /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M6 19h4V5H6v14zm8-14v14h4V5h-4z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) }),
-                      seekBack: /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, onClick: () => seek(-10), className: "text-xs text-slate-300 hover:text-white", children: "\u221210s" }),
-                      seekForward: /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, onClick: () => seek(10), className: "text-xs text-slate-300 hover:text-white", children: "+10s" }),
-                      time: /* @__PURE__ */ jsx("span", { className: "text-xs tabular-nums text-slate-300", children: playerLayout.timeFormat === "remaining" ? `-${fmt(Math.max(0, totalDuration - realTime))}` : playerLayout.timeFormat === "elapsed" ? fmt(realTime) : `${fmt(realTime)} / ${fmt(totalDuration)}` }),
-                      spacer: /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "flex-1" }),
-                      subtitles: /* @__PURE__ */ jsx(
-                        "button",
+                      ),
+                      showAudioMenu && audioTracks.length > 0 && /* @__PURE__ */ jsxs(
+                        "div",
                         {
-                          type: "button",
-                          ref: subTriggerRef,
-                          "data-f": isTv ? "1" : void 0,
-                          onClick: () => {
-                            if (!showSubMenu) {
-                              const activeLang = activeSubId ? toSubtitleLangGroup(subtitleOptions.find((s) => s.id === activeSubId)?.language ?? null) : null;
-                              setSelectedLang(activeLang);
-                            }
-                            setShowSubMenu((v) => !v);
-                          },
-                          title: t("subtitlesLabel"),
-                          className: `shrink-0 rounded px-1.5 py-0.5 text-xs font-bold uppercase tracking-wider transition ${activeSubId ? "bg-aurora-400 text-black" : hasSubtitles || loadingSub || subtitleLoadError || resolvedImdbId ? "text-slate-300 hover:text-white" : "text-slate-500"}`,
-                          children: "CC"
+                          style: pickerStyle(audioTriggerRef.current, landscapeChrome ? 200 : 210),
+                          className: `${dtMenuSurfaceClass} ${newChrome ? "" : "min-w-[140px]"}`,
+                          onClick: (e) => e.stopPropagation(),
+                          children: [
+                            pickerHeading(t("audio")),
+                            audioTracks.map((track) => {
+                              const isActive = activeAudioTrack === track.index || activeAudioTrack === null && track === audioTracks[0];
+                              const label = toAudioLangGroup(track.language)?.toUpperCase() ?? `Track ${track.index}`;
+                              return /* @__PURE__ */ jsxs(
+                                "button",
+                                {
+                                  type: "button",
+                                  "data-f": isTv ? "1" : void 0,
+                                  onClick: () => switchAudioTrack(track),
+                                  className: dtMenuRowClass(isActive),
+                                  children: [
+                                    /* @__PURE__ */ jsx("span", { className: "text-left", children: label }),
+                                    isActive && /* @__PURE__ */ jsx("span", { className: dtMenuDotClass })
+                                  ]
+                                },
+                                track.index
+                              );
+                            }),
+                            newChrome && phoneChrome && useMpv && showsControl("audioDelay") ? (
+                              /* Telefon: fördröjningen pressas till EN rad. En egen rubrik
+                                 och en nollställningsrad hade tryckt menyn upp över
+                                 titelraden i liggande läge — det står i README:n. */
+                              /* @__PURE__ */ jsxs("div", { className: "mt-1 flex items-center justify-between gap-2 border-t border-white/[0.08] px-3 pb-1 pt-2.5", children: [
+                                /* @__PURE__ */ jsx("span", { className: portraitChrome ? "text-sm text-slate-300" : "text-[13px] text-slate-300", children: t("delay") }),
+                                /* @__PURE__ */ jsxs("div", { className: "flex flex-none items-center gap-1.5", children: [
+                                  /* @__PURE__ */ jsx(
+                                    "button",
+                                    {
+                                      type: "button",
+                                      onClick: () => setAudioDelayMs(audioDelayMs - AUDIO_DELAY_STEP_MS),
+                                      "aria-label": `\u2212${AUDIO_DELAY_STEP_MS} ms`,
+                                      className: `flex flex-none items-center justify-center rounded-full border border-white/[0.14] text-slate-300 ${portraitChrome ? "h-8 w-8 text-base" : "h-[30px] w-[30px] text-[15px]"}`,
+                                      children: "\u2212"
+                                    }
+                                  ),
+                                  /* @__PURE__ */ jsxs("span", { className: `min-w-[62px] text-center text-[13px] font-semibold tabular-nums ${effectiveAudioDelayMs !== 0 ? "text-[rgb(var(--player-accent))]" : "text-slate-300"}`, children: [
+                                    effectiveAudioDelayMs > 0 ? "+" : "",
+                                    effectiveAudioDelayMs,
+                                    " ms"
+                                  ] }),
+                                  /* @__PURE__ */ jsx(
+                                    "button",
+                                    {
+                                      type: "button",
+                                      onClick: () => setAudioDelayMs(audioDelayMs + AUDIO_DELAY_STEP_MS),
+                                      "aria-label": `+${AUDIO_DELAY_STEP_MS} ms`,
+                                      className: `flex flex-none items-center justify-center rounded-full border border-white/[0.14] text-slate-300 ${portraitChrome ? "h-8 w-8 text-base" : "h-[30px] w-[30px] text-[15px]"}`,
+                                      children: "+"
+                                    }
+                                  )
+                                ] })
+                              ] })
+                            ) : desktopChrome && useMpv && showsControl("audioDelay") ? /* @__PURE__ */ jsxs("div", { className: "mt-1 border-t border-white/[0.08] px-3 pb-1 pt-2.5", children: [
+                              /* @__PURE__ */ jsx("p", { className: "text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500", children: t("audioDelayTitle") }),
+                              /* @__PURE__ */ jsxs("div", { className: "mt-2 flex items-center gap-2", children: [
+                                /* @__PURE__ */ jsx(
+                                  "button",
+                                  {
+                                    type: "button",
+                                    onClick: () => setAudioDelayMs(audioDelayMs - AUDIO_DELAY_STEP_MS),
+                                    "aria-label": `\u2212${AUDIO_DELAY_STEP_MS} ms`,
+                                    className: "h-8 w-[34px] flex-none rounded-lg border border-white/[0.14] text-slate-300 transition hover:bg-white/10 hover:text-white",
+                                    children: "\u2212"
+                                  }
+                                ),
+                                /* @__PURE__ */ jsxs("span", { className: `flex-1 text-center text-sm font-semibold tabular-nums ${effectiveAudioDelayMs !== 0 ? "text-[rgb(var(--player-accent))]" : "text-slate-300"}`, children: [
+                                  effectiveAudioDelayMs > 0 ? "+" : "",
+                                  effectiveAudioDelayMs,
+                                  " ms"
+                                ] }),
+                                /* @__PURE__ */ jsx(
+                                  "button",
+                                  {
+                                    type: "button",
+                                    onClick: () => setAudioDelayMs(audioDelayMs + AUDIO_DELAY_STEP_MS),
+                                    "aria-label": `+${AUDIO_DELAY_STEP_MS} ms`,
+                                    className: "h-8 w-[34px] flex-none rounded-lg border border-white/[0.14] text-slate-300 transition hover:bg-white/10 hover:text-white",
+                                    children: "+"
+                                  }
+                                )
+                              ] }),
+                              outputIsBluetooth && getBluetoothAudioAutoOffset() ? /* @__PURE__ */ jsxs("p", { className: "mt-2 text-[11px] leading-snug text-slate-500", children: [
+                                t("btAudioAutoOffset"),
+                                " (",
+                                BLUETOOTH_AUDIO_OFFSET_MS,
+                                " ms)"
+                              ] }) : null,
+                              audioDelayMs !== 0 ? /* @__PURE__ */ jsx(
+                                "button",
+                                {
+                                  type: "button",
+                                  onClick: () => setAudioDelayMs(0),
+                                  className: "mt-1.5 py-1 text-[13px] text-[rgb(var(--player-accent))] transition hover:text-[rgb(var(--player-accent)/0.8)]",
+                                  children: t("reset")
+                                }
+                              ) : null
+                            ] }) : null
+                          ]
                         }
                       ),
-                      cast: !isClientSession() && /* @__PURE__ */ jsx(
-                        "button",
+                      showAspectMenu && /* @__PURE__ */ jsxs(
+                        "div",
                         {
-                          type: "button",
-                          "data-f": isTv ? "1" : void 0,
-                          onClick: () => {
-                            const opening = !showCastMenu;
-                            setShowCastMenu(opening);
-                            if (opening && castDevices.length === 0) void scanCastDevices();
-                            if (opening && isMpvEngine && !airplaySession) void prepareAirplaySession();
-                          },
-                          title: t("castTitle"),
-                          className: `shrink-0 rounded px-1 py-0.5 transition ${castTarget ? "text-aurora-300" : "text-slate-300 hover:text-white"}`,
-                          children: /* @__PURE__ */ jsxs("svg", { width: "18", height: "18", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", children: [
-                            /* @__PURE__ */ jsx("path", { d: "M2 16.1a5 5 0 0 1 5.9 5.9" }),
-                            /* @__PURE__ */ jsx("path", { d: "M2 12.05a9 9 0 0 1 9.95 9.95" }),
-                            /* @__PURE__ */ jsx("path", { d: "M2 8.05a13 13 0 0 1 13.95 13.95" }),
-                            /* @__PURE__ */ jsx("path", { d: "M4 4h16a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-5" })
-                          ] })
-                        }
-                      ),
-                      audioTrack: audioTracks.length > 0 && /* @__PURE__ */ jsx(
-                        "button",
-                        {
-                          type: "button",
-                          ref: audioTriggerRef,
-                          "data-f": isTv ? "1" : void 0,
-                          onClick: () => setShowAudioMenu((v) => !v),
-                          title: t("audioLanguage"),
-                          className: `shrink-0 rounded px-1.5 py-0.5 text-xs font-bold uppercase tracking-wider transition ${showAudioMenu ? "bg-aurora-400 text-black" : "text-slate-300 hover:text-white"}`,
-                          children: toAudioLangGroup((audioTracks.find((t2) => t2.index === activeAudioTrack) ?? audioTracks[0])?.language)?.toUpperCase() ?? "AUD"
-                        }
-                      ),
-                      aspect: /* @__PURE__ */ jsx(
-                        "button",
-                        {
-                          type: "button",
-                          ref: aspectTriggerRef,
-                          "data-f": isTv ? "1" : void 0,
-                          onClick: () => setShowAspectMenu((value) => !value),
-                          title: t("aspectRatio"),
-                          className: `shrink-0 rounded px-1.5 py-0.5 text-xs font-bold uppercase tracking-wider transition ${showAspectMenu ? "bg-aurora-400 text-black" : "text-slate-300 hover:text-white"}`,
-                          children: aspectLabel
-                        }
-                      ),
-                      cropZoom: /* @__PURE__ */ jsx(
-                        "button",
-                        {
-                          type: "button",
-                          ref: cropTriggerRef,
-                          "data-f": isTv ? "1" : void 0,
-                          onClick: () => setShowCropZoomMenu((value) => !value),
-                          title: t("cropZoom"),
-                          className: `shrink-0 rounded px-1.5 py-0.5 text-xs font-bold uppercase tracking-wider transition ${showCropZoomMenu ? "bg-aurora-400 text-black" : "text-slate-300 hover:text-white"}`,
-                          children: cropZoomLabel
-                        }
-                      ),
-                      audioOutput: /* @__PURE__ */ jsx(
-                        "span",
-                        {
-                          title: t("currentAudioOutput"),
-                          className: "shrink-0 rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-300",
-                          children: audioIndicator
-                        }
-                      ),
-                      segmentBadges: mediaType === "tv" ? /* @__PURE__ */ jsxs(Fragment2, { children: [
-                        /* @__PURE__ */ jsx("span", { className: `rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${introSegment ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-300" : "border-white/10 bg-white/5 text-slate-300"}`, children: introSegment ? `${introKind === "recap" ? "Recap" : "Intro"} found` : t("introDebugMissing") }),
-                        /* @__PURE__ */ jsx("span", { className: `rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${outroSegment ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-300" : "border-white/10 bg-white/5 text-slate-300"}`, children: outroSegment ? "Outro found" : "Outro missing" })
-                      ] }) : null,
-                      mute: /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, onClick: toggleMute, className: "text-slate-300 hover:text-white", children: muted || volume === 0 ? /* @__PURE__ */ jsx("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" }) }) }),
-                      volume: /* @__PURE__ */ jsx(Fragment2, { children: isTv || playerLayout.volumeStyle === "stepper" ? /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-1.5", children: [
-                        /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, onClick: () => applyVolume((muted ? 0 : volume) - 0.05), className: "flex h-5 w-5 items-center justify-center rounded-full border border-white/10 text-xs text-slate-300 hover:text-white", children: "\u2212" }),
-                        /* @__PURE__ */ jsxs("span", { className: "min-w-[2.5rem] text-center text-xs tabular-nums text-slate-300", children: [
-                          Math.round((muted ? 0 : volume) * 100),
-                          "%"
-                        ] }),
-                        /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, onClick: () => applyVolume((muted ? 0 : volume) + 0.05), className: "flex h-5 w-5 items-center justify-center rounded-full border border-white/10 text-xs text-slate-300 hover:text-white", children: "+" })
-                      ] }) : playerLayout.volumeStyle === "icon" ? null : (
-                        /* Explicit track styling — the bare native range was invisible
-                            against the black controls bar (only the thumb showed). */
-                        /* @__PURE__ */ jsx(
-                          "input",
-                          {
-                            type: "range",
-                            min: 0,
-                            max: 1,
-                            step: 0.05,
-                            value: muted ? 0 : volume,
-                            onChange: handleVolumeChange,
-                            className: "h-1 w-20 cursor-pointer appearance-none rounded-full border border-white/10 bg-white/20 accent-aurora-400"
-                          }
-                        )
-                      ) }),
-                      wiki: (wikiTmdbId || resolvedImdbId) && /* @__PURE__ */ jsx(
-                        "button",
-                        {
-                          type: "button",
-                          "data-f": isTv ? "1" : void 0,
-                          onClick: () => {
-                            setShowWiki((v) => !v);
-                            setShowSoundtrack(false);
-                          },
-                          title: t("info"),
-                          className: `rounded px-1.5 py-0.5 text-xs font-bold uppercase tracking-wider transition ${showWiki ? "bg-aurora-400 text-black" : "text-slate-300 hover:text-white"}`,
-                          children: "Wiki"
-                        }
-                      ),
-                      soundtrack: Boolean(title) && /* @__PURE__ */ jsx(
-                        "button",
-                        {
-                          type: "button",
-                          "data-f": isTv ? "1" : void 0,
-                          onClick: () => {
-                            setShowSoundtrack((v) => !v);
-                            setShowWiki(false);
-                          },
-                          title: t("soundtrack"),
-                          className: `rounded px-1.5 py-0.5 text-xs font-bold uppercase tracking-wider transition ${showSoundtrack ? "bg-green-500 text-black" : "text-slate-300 hover:text-white"}`,
-                          children: t("soundtrack")
-                        }
-                      ),
-                      tuning: /* @__PURE__ */ jsx(
-                        "button",
-                        {
-                          type: "button",
-                          ref: tuningTriggerRef,
-                          "data-f": isTv ? "1" : void 0,
-                          onClick: () => setShowTuningPanel((v) => !v),
-                          title: t("vtTitle"),
-                          className: `transition ${showTuningPanel ? "text-aurora-300" : "text-slate-300 hover:text-white"}`,
-                          children: /* @__PURE__ */ jsxs("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", children: [
-                            /* @__PURE__ */ jsx("path", { d: "M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3" }),
-                            /* @__PURE__ */ jsx("path", { d: "M1 14h6M9 8h6M17 16h6" })
-                          ] })
-                        }
-                      ),
-                      more: /* @__PURE__ */ jsxs(Fragment2, { children: [
-                        /* @__PURE__ */ jsx(
-                          "button",
-                          {
-                            ref: moreTriggerRef,
-                            type: "button",
-                            "data-f": isTv ? "1" : void 0,
-                            onClick: () => setShowMoreMenu((value) => !value),
-                            title: t("moreActions"),
-                            className: `shrink-0 rounded px-1.5 py-0.5 text-xs font-bold uppercase tracking-wider transition ${showMoreMenu ? "bg-aurora-400 text-black" : "text-slate-300 hover:text-white"}`,
-                            children: "\u2022\u2022\u2022"
-                          }
-                        ),
-                        showMoreMenu && /* @__PURE__ */ jsxs(
-                          "div",
-                          {
-                            ref: moreMenuRef,
-                            style: getAnchoredMenuStyle(moreTriggerRef.current),
-                            className: "z-50 w-64 rounded-[1.6rem] border border-white/10 bg-base-800/95 p-2.5 shadow-2xl backdrop-blur-md",
-                            onClick: (e) => e.stopPropagation(),
-                            children: [
-                              isMpvEngine && /* @__PURE__ */ jsxs(
+                          style: pickerStyle(aspectTriggerRef.current, landscapeChrome ? 180 : 170),
+                          className: `${dtMenuSurfaceClass} ${newChrome ? "" : "min-w-[150px]"}`,
+                          onClick: (e) => e.stopPropagation(),
+                          children: [
+                            pickerHeading(t("aspectRatio")),
+                            ["auto", "contain", "fill", "ratio_16_9", "ratio_4_3"].map((mode) => {
+                              const isActive = aspectRatioMode === mode;
+                              return /* @__PURE__ */ jsxs(
                                 "button",
                                 {
                                   type: "button",
                                   "data-f": isTv ? "1" : void 0,
                                   onClick: () => {
-                                    const next2 = nightMode === "off" ? "mild" : nightMode === "mild" ? "strong" : "off";
-                                    setNightMode(next2);
+                                    setAspectRatioMode(mode);
+                                    setShowAspectMenu(false);
                                   },
-                                  className: "flex w-full items-center gap-3 rounded-[1.15rem] px-4 py-3 text-left text-slate-100 transition hover:bg-white/5",
+                                  className: dtMenuRowClass(isActive),
                                   children: [
-                                    /* @__PURE__ */ jsx("svg", { className: "h-5 w-5 flex-none text-slate-200", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: /* @__PURE__ */ jsx("path", { d: "M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z", strokeLinecap: "round", strokeLinejoin: "round" }) }),
-                                    /* @__PURE__ */ jsxs("span", { className: "text-[15px] leading-tight", children: [
-                                      t("nightModeMenuLabel"),
-                                      ": ",
-                                      t(nightMode === "off" ? "nightModeOff" : nightMode === "mild" ? "nightModeMenuMild" : "nightModeMenuStrong")
-                                    ] })
+                                    /* @__PURE__ */ jsx("span", { children: getAspectRatioLabel(mode, t) }),
+                                    isActive && /* @__PURE__ */ jsx("span", { className: dtMenuDotClass })
                                   ]
-                                }
-                              ),
+                                },
+                                mode
+                              );
+                            })
+                          ]
+                        }
+                      ),
+                      showCropZoomMenu && /* @__PURE__ */ jsxs(
+                        "div",
+                        {
+                          style: pickerStyle(cropTriggerRef.current, 180),
+                          className: `${dtMenuSurfaceClass} ${newChrome ? "" : "min-w-[150px]"}`,
+                          onClick: (e) => e.stopPropagation(),
+                          children: [
+                            pickerHeading(t("cropZoom")),
+                            ["off", "crop", "zoom", "zoom_plus"].map((mode) => {
+                              const isActive = cropZoomMode === mode;
+                              return /* @__PURE__ */ jsxs(
+                                "button",
+                                {
+                                  type: "button",
+                                  "data-f": isTv ? "1" : void 0,
+                                  onClick: () => {
+                                    setCropZoomMode(mode);
+                                    setShowCropZoomMenu(false);
+                                  },
+                                  className: dtMenuRowClass(isActive),
+                                  children: [
+                                    /* @__PURE__ */ jsx("span", { children: getCropZoomLabel(mode, t) }),
+                                    isActive && /* @__PURE__ */ jsx("span", { className: dtMenuDotClass })
+                                  ]
+                                },
+                                mode
+                              );
+                            })
+                          ]
+                        }
+                      ),
+                      showMoreMenu && /* @__PURE__ */ jsxs(
+                        "div",
+                        {
+                          ref: moreMenuRef,
+                          style: portraitChrome ? { position: "fixed", left: 0, right: 0, bottom: 0, maxHeight: "70vh", overflowY: "auto" } : newChrome ? pickerStyle(moreTriggerRef.current, landscapeChrome ? 244 : 262) : getAnchoredMenuStyle(moreTriggerRef.current),
+                          className: portraitChrome ? "z-50 rounded-t-2xl border-t border-white/[0.07] bg-base-950/[0.96] px-3 pb-6 pt-3 shadow-[0_-20px_60px_rgba(0,0,0,0.6)] backdrop-blur-md" : newChrome ? dtMenuSurfaceClass : "z-50 w-64 rounded-[1.6rem] border border-white/10 bg-base-800/95 p-2.5 shadow-2xl backdrop-blur-md",
+                          onClick: (e) => e.stopPropagation(),
+                          children: [
+                            portraitChrome ? pickerHeading(t("moreActions")) : null,
+                            phoneOverflowIds.map((id4) => renderPhoneOverflowRow(id4, phoneControls[id4])),
+                            dvColorFallback && /* @__PURE__ */ jsxs(
+                              "button",
+                              {
+                                type: "button",
+                                "data-f": isTv ? "1" : void 0,
+                                onClick: () => setDvColorFallbackMuted((current2) => !current2),
+                                className: dtMoreRowClass,
+                                children: [
+                                  /* @__PURE__ */ jsxs("svg", { className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
+                                    /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "9" }),
+                                    /* @__PURE__ */ jsx("path", { d: "M12 3a9 9 0 0 1 0 18z", fill: "currentColor", stroke: "none" })
+                                  ] }),
+                                  /* @__PURE__ */ jsxs("span", { className: dtMoreTextClass, children: [
+                                    t("dvColorLabel"),
+                                    ": ",
+                                    dvColorFallbackActive ? t("dvColorAuto") : t("dvColorOff")
+                                  ] })
+                                ]
+                              }
+                            ),
+                            isMpvEngine && /* @__PURE__ */ jsxs(
+                              "button",
+                              {
+                                type: "button",
+                                "data-f": isTv ? "1" : void 0,
+                                onClick: () => {
+                                  const next2 = nightMode === "off" ? "mild" : nightMode === "mild" ? "strong" : "off";
+                                  setNightMode(next2);
+                                },
+                                className: dtMoreRowClass,
+                                children: [
+                                  /* @__PURE__ */ jsx("svg", { className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: /* @__PURE__ */ jsx("path", { d: "M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z", strokeLinecap: "round", strokeLinejoin: "round" }) }),
+                                  /* @__PURE__ */ jsxs("span", { className: dtMoreTextClass, children: [
+                                    t("nightModeMenuLabel"),
+                                    ": ",
+                                    t(nightMode === "off" ? "nightModeOff" : nightMode === "mild" ? "nightModeMenuMild" : "nightModeMenuStrong")
+                                  ] })
+                                ]
+                              }
+                            ),
+                            !(desktopChrome || portraitChrome) && /* @__PURE__ */ jsxs(
+                              "button",
+                              {
+                                type: "button",
+                                "data-f": isTv ? "1" : void 0,
+                                onClick: () => void handleCopyStreamLink(),
+                                className: dtMoreRowClass,
+                                children: [
+                                  /* @__PURE__ */ jsxs("svg", { className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
+                                    /* @__PURE__ */ jsx("path", { d: "M10 13a5 5 0 0 0 7.07 0l3.54-3.54a5 5 0 1 0-7.07-7.07L11 4", strokeLinecap: "round", strokeLinejoin: "round" }),
+                                    /* @__PURE__ */ jsx("path", { d: "M14 11a5 5 0 0 0-7.07 0L3.39 14.54a5 5 0 1 0 7.07 7.07L13 20", strokeLinecap: "round", strokeLinejoin: "round" })
+                                  ] }),
+                                  /* @__PURE__ */ jsx("span", { className: dtMoreTextClass, children: copiedLink ? t("copied") : t("copyStreamLink") })
+                                ]
+                              }
+                            ),
+                            !isClientSession() && !phoneChrome && /* @__PURE__ */ jsxs("div", { className: `flex items-center gap-2 transition ${newChrome ? "rounded-lg hover:bg-[rgb(var(--player-accent)/0.14)]" : "rounded-[1.15rem] hover:bg-white/5"}`, children: [
                               /* @__PURE__ */ jsxs(
                                 "button",
                                 {
                                   type: "button",
                                   "data-f": isTv ? "1" : void 0,
-                                  onClick: () => void handleCopyStreamLink(),
-                                  className: "flex w-full items-center gap-3 rounded-[1.15rem] px-4 py-3 text-left text-slate-100 transition hover:bg-white/5",
+                                  onClick: () => void handleDownload(),
+                                  disabled: downloadState.type === "picking-folder" || downloadState.type === "downloading",
+                                  className: `flex min-w-0 flex-1 items-center gap-3 text-left text-slate-100 disabled:cursor-wait disabled:opacity-70 ${desktopChrome ? "px-3 py-2.5" : "px-4 py-3"}`,
                                   children: [
-                                    /* @__PURE__ */ jsxs("svg", { className: "h-5 w-5 flex-none text-slate-200", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
-                                      /* @__PURE__ */ jsx("path", { d: "M10 13a5 5 0 0 0 7.07 0l3.54-3.54a5 5 0 1 0-7.07-7.07L11 4", strokeLinecap: "round", strokeLinejoin: "round" }),
-                                      /* @__PURE__ */ jsx("path", { d: "M14 11a5 5 0 0 0-7.07 0L3.39 14.54a5 5 0 1 0 7.07 7.07L13 20", strokeLinecap: "round", strokeLinejoin: "round" })
+                                    /* @__PURE__ */ jsxs("svg", { className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
+                                      /* @__PURE__ */ jsx("path", { d: "M12 3v12", strokeLinecap: "round" }),
+                                      /* @__PURE__ */ jsx("path", { d: "m7 10 5 5 5-5", strokeLinecap: "round", strokeLinejoin: "round" }),
+                                      /* @__PURE__ */ jsx("path", { d: "M5 21h14", strokeLinecap: "round" })
                                     ] }),
-                                    /* @__PURE__ */ jsx("span", { className: "text-[15px] leading-tight", children: copiedLink ? t("copied") : t("copyStreamLink") })
+                                    /* @__PURE__ */ jsx("span", { className: dtMoreTextClass, children: downloadState.type === "picking-folder" ? t("preparingDownload") : downloadState.type === "downloading" ? `${t("downloading")} ${downloadState.progress}%` : downloadState.type === "done" ? t("downloadComplete") : downloadState.type === "cancelled" ? t("cancel") : t("downloadThisVideo") })
                                   ]
                                 }
                               ),
-                              !isClientSession() && /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 rounded-[1.15rem] transition hover:bg-white/5", children: [
-                                /* @__PURE__ */ jsxs(
-                                  "button",
-                                  {
-                                    type: "button",
-                                    "data-f": isTv ? "1" : void 0,
-                                    onClick: () => void handleDownload(),
-                                    disabled: downloadState.type === "picking-folder" || downloadState.type === "downloading",
-                                    className: "flex min-w-0 flex-1 items-center gap-3 px-4 py-3 text-left text-slate-100 disabled:cursor-wait disabled:opacity-70",
-                                    children: [
-                                      /* @__PURE__ */ jsxs("svg", { className: "h-5 w-5 flex-none text-slate-200", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
-                                        /* @__PURE__ */ jsx("path", { d: "M12 3v12", strokeLinecap: "round" }),
-                                        /* @__PURE__ */ jsx("path", { d: "m7 10 5 5 5-5", strokeLinecap: "round", strokeLinejoin: "round" }),
-                                        /* @__PURE__ */ jsx("path", { d: "M5 21h14", strokeLinecap: "round" })
-                                      ] }),
-                                      /* @__PURE__ */ jsx("span", { className: "text-[15px] leading-tight", children: downloadState.type === "picking-folder" ? t("preparingDownload") : downloadState.type === "downloading" ? `${t("downloading")} ${downloadState.progress}%` : downloadState.type === "done" ? t("downloadComplete") : downloadState.type === "cancelled" ? t("cancel") : t("downloadThisVideo") })
-                                    ]
-                                  }
-                                ),
-                                downloadState.type === "downloading" && /* @__PURE__ */ jsx(
-                                  "button",
-                                  {
-                                    type: "button",
-                                    "data-f": isTv ? "1" : void 0,
-                                    onClick: () => void handleCancelDownload(),
-                                    className: "mr-3 flex h-7 w-7 flex-none items-center justify-center rounded-full border border-white/10 text-slate-300 transition hover:border-red-400/40 hover:text-red-300",
-                                    title: t("cancel"),
-                                    children: /* @__PURE__ */ jsx("svg", { className: "h-3.5 w-3.5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", children: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12", strokeLinecap: "round" }) })
-                                  }
-                                )
-                              ] }),
-                              !isClientSession() && /* @__PURE__ */ jsxs(
+                              downloadState.type === "downloading" && /* @__PURE__ */ jsx(
                                 "button",
                                 {
                                   type: "button",
                                   "data-f": isTv ? "1" : void 0,
-                                  onClick: () => void handleOpenExternal(),
-                                  onMouseDown: (e) => e.stopPropagation(),
-                                  className: "relative z-10 mt-1 flex w-full items-center gap-3 rounded-[1.15rem] bg-white/5 px-4 py-3 text-left text-slate-100 transition hover:bg-white/10",
-                                  children: [
-                                    /* @__PURE__ */ jsxs("svg", { className: "h-5 w-5 flex-none text-slate-200", viewBox: "0 0 24 24", fill: "currentColor", children: [
-                                      /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }),
-                                      /* @__PURE__ */ jsx("path", { d: "M4 5h3v14H4z", opacity: ".55" })
-                                    ] }),
-                                    /* @__PURE__ */ jsx("span", { className: "text-[15px] leading-tight", children: isDesktopTauriEnv ? `${t("openInExternalPrefix")} ${getExternalPlayerApp()}` : t("openInExternalPlayer") })
-                                  ]
+                                  onClick: () => void handleCancelDownload(),
+                                  className: "mr-3 flex h-7 w-7 flex-none items-center justify-center rounded-full border border-white/10 text-slate-300 transition hover:border-red-400/40 hover:text-red-300",
+                                  title: t("cancel"),
+                                  children: /* @__PURE__ */ jsx("svg", { className: "h-3.5 w-3.5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", children: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12", strokeLinecap: "round" }) })
                                 }
-                              ),
-                              downloadState.type === "error" && /* @__PURE__ */ jsx("div", { className: "px-4 pb-1 pt-3 text-xs text-red-300", children: downloadState.message })
-                            ]
-                          }
-                        )
-                      ] }),
-                      fullscreen: (!isTauriEnv || isDesktopTauriEnv) && /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, onClick: toggleFullscreen, className: "shrink-0 text-slate-300 hover:text-white", children: cssFullscreen ? /* @__PURE__ */ jsx("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" }) }) })
-                    };
-                    const hiddenControls = new Set(playerLayout.hidden);
-                    return playerLayout.order.filter((id4) => !hiddenControls.has(id4)).map((id4) => /* @__PURE__ */ jsx(react_shim_default.Fragment, { children: controls[id4] }, id4));
-                  })() }),
-                  showAudioMenu && audioTracks.length > 0 && /* @__PURE__ */ jsxs(
-                    "div",
-                    {
-                      style: getAnchoredMenuStyle(audioTriggerRef.current),
-                      className: "z-50 min-w-[140px] rounded-xl border border-white/10 bg-slate-900/95 py-2 shadow-xl backdrop-blur-sm",
-                      onClick: (e) => e.stopPropagation(),
-                      children: [
-                        /* @__PURE__ */ jsx("div", { className: "px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-500", children: t("audio") }),
-                        audioTracks.map((track) => {
-                          const isActive = activeAudioTrack === track.index || activeAudioTrack === null && track === audioTracks[0];
-                          const label = toAudioLangGroup(track.language)?.toUpperCase() ?? `Track ${track.index}`;
-                          return /* @__PURE__ */ jsxs(
-                            "button",
-                            {
-                              type: "button",
-                              "data-f": isTv ? "1" : void 0,
-                              onClick: () => switchAudioTrack(track),
-                              className: `flex w-full items-center justify-between px-3 py-2 text-sm transition hover:bg-white/5 ${isActive ? "text-aurora-300" : "text-slate-300"}`,
-                              children: [
-                                /* @__PURE__ */ jsx("span", { className: "text-left", children: label }),
-                                isActive && /* @__PURE__ */ jsx("span", { className: "ml-2 h-2 w-2 flex-shrink-0 rounded-full bg-aurora-400" })
-                              ]
-                            },
-                            track.index
-                          );
-                        })
-                      ]
-                    }
-                  ),
-                  showAspectMenu && /* @__PURE__ */ jsxs(
-                    "div",
-                    {
-                      style: getAnchoredMenuStyle(aspectTriggerRef.current),
-                      className: "z-50 min-w-[150px] rounded-xl border border-white/10 bg-slate-900/95 py-2 shadow-xl backdrop-blur-sm",
-                      onClick: (e) => e.stopPropagation(),
-                      children: [
-                        /* @__PURE__ */ jsx("div", { className: "px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-500", children: t("aspectRatio") }),
-                        ["auto", "contain", "fill", "ratio_16_9", "ratio_4_3"].map((mode) => {
-                          const isActive = aspectRatioMode === mode;
-                          return /* @__PURE__ */ jsxs(
-                            "button",
-                            {
-                              type: "button",
-                              "data-f": isTv ? "1" : void 0,
-                              onClick: () => {
-                                setAspectRatioMode(mode);
-                                setShowAspectMenu(false);
-                              },
-                              className: `flex w-full items-center justify-between px-3 py-2 text-sm transition hover:bg-white/5 ${isActive ? "text-aurora-300" : "text-slate-300"}`,
-                              children: [
-                                /* @__PURE__ */ jsx("span", { children: getAspectRatioLabel(mode, t) }),
-                                isActive && /* @__PURE__ */ jsx("span", { className: "ml-2 h-2 w-2 flex-shrink-0 rounded-full bg-aurora-400" })
-                              ]
-                            },
-                            mode
-                          );
-                        })
-                      ]
-                    }
-                  ),
-                  showCropZoomMenu && /* @__PURE__ */ jsxs(
-                    "div",
-                    {
-                      style: getAnchoredMenuStyle(cropTriggerRef.current),
-                      className: "z-50 min-w-[150px] rounded-xl border border-white/10 bg-slate-900/95 py-2 shadow-xl backdrop-blur-sm",
-                      onClick: (e) => e.stopPropagation(),
-                      children: [
-                        /* @__PURE__ */ jsx("div", { className: "px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-500", children: t("cropZoom") }),
-                        ["off", "crop", "zoom", "zoom_plus"].map((mode) => {
-                          const isActive = cropZoomMode === mode;
-                          return /* @__PURE__ */ jsxs(
-                            "button",
-                            {
-                              type: "button",
-                              "data-f": isTv ? "1" : void 0,
-                              onClick: () => {
-                                setCropZoomMode(mode);
-                                setShowCropZoomMenu(false);
-                              },
-                              className: `flex w-full items-center justify-between px-3 py-2 text-sm transition hover:bg-white/5 ${isActive ? "text-aurora-300" : "text-slate-300"}`,
-                              children: [
-                                /* @__PURE__ */ jsx("span", { children: getCropZoomLabel(mode, t) }),
-                                isActive && /* @__PURE__ */ jsx("span", { className: "ml-2 h-2 w-2 flex-shrink-0 rounded-full bg-aurora-400" })
-                              ]
-                            },
-                            mode
-                          );
-                        })
-                      ]
-                    }
-                  )
-                ]
-              }
-            ),
-            showWiki && /* @__PURE__ */ jsx(
-              PlayerWikiPanel,
-              {
-                tmdbId: wikiTmdbId,
-                mediaType: mediaType ?? "movie",
-                imdbId: resolvedImdbId,
-                onClose: () => setShowWiki(false)
-              },
-              `wiki:${playbackSessionIdentity}`
-            ),
-            showSoundtrack && /* @__PURE__ */ jsx(
-              PlayerSoundtrackPanel,
-              {
-                title,
-                year,
-                onClose: () => setShowSoundtrack(false)
-              },
-              `soundtrack:${playbackSessionIdentity}`
-            )
-          ]
-        }
-      )
-    ] });
+                              )
+                            ] }),
+                            !isClientSession() && /* @__PURE__ */ jsxs(
+                              "button",
+                              {
+                                type: "button",
+                                "data-f": isTv ? "1" : void 0,
+                                onClick: () => void handleOpenExternal(),
+                                onMouseDown: (e) => e.stopPropagation(),
+                                className: `relative z-10 mt-1 flex w-full items-center gap-3 bg-white/5 text-left text-slate-100 transition hover:bg-white/10 ${desktopChrome ? "rounded-lg px-3 py-2.5" : "rounded-[1.15rem] px-4 py-3"}`,
+                                children: [
+                                  /* @__PURE__ */ jsxs("svg", { className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "currentColor", children: [
+                                    /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }),
+                                    /* @__PURE__ */ jsx("path", { d: "M4 5h3v14H4z", opacity: ".55" })
+                                  ] }),
+                                  /* @__PURE__ */ jsx("span", { className: dtMoreTextClass, children: isDesktopTauriEnv ? `${t("openInExternalPrefix")} ${getExternalPlayerApp()}` : t("openInExternalPlayer") })
+                                ]
+                              }
+                            ),
+                            downloadState.type === "error" && /* @__PURE__ */ jsx("div", { className: "px-4 pb-1 pt-3 text-xs text-red-300", children: downloadState.message })
+                          ]
+                        }
+                      )
+                    ]
+                  }
+                ),
+                showWiki && /* @__PURE__ */ jsx(
+                  PlayerWikiPanel,
+                  {
+                    tmdbId: wikiTmdbId,
+                    mediaType: mediaType ?? "movie",
+                    imdbId: resolvedImdbId,
+                    onClose: () => setShowWiki(false)
+                  },
+                  `wiki:${playbackSessionIdentity}`
+                ),
+                showEpisodes && episodes && /* @__PURE__ */ jsx(
+                  PlayerEpisodesPanel,
+                  {
+                    seasonNumber: episodes.seasonNumber,
+                    episodes: episodes.items,
+                    currentEpisode: episodes.current,
+                    onSelect: (number2) => {
+                      setShowEpisodes(false);
+                      episodes.onSelect(number2);
+                    },
+                    onClose: () => setShowEpisodes(false)
+                  },
+                  `episodes:${playbackSessionIdentity}`
+                ),
+                showSoundtrack && /* @__PURE__ */ jsx(
+                  PlayerSoundtrackPanel,
+                  {
+                    title,
+                    year,
+                    onClose: () => setShowSoundtrack(false)
+                  },
+                  `soundtrack:${playbackSessionIdentity}`
+                )
+              ]
+            }
+          )
+        ]
+      }
+    );
     return portalEl ? (0, import_react_dom.createPortal)(content, portalEl) : content;
   }
 
@@ -180081,66 +182934,6 @@ ${cue.text}`).join("\n\n")}
 
   // components/player/next-episode-card.tsx
   init_react_shim();
-
-  // lib/spoiler-settings.ts
-  var KEY_ENABLED = "spoiler_blurEnabled";
-  var KEY_BLUR_THUMBNAILS = "spoiler_blurThumbnails";
-  var KEY_BLUR_TITLES = "spoiler_blurTitles";
-  var KEY_BLUR_DESCRIPTIONS = "spoiler_blurDescriptions";
-  var KEY_KEEP_NEXT_VISIBLE = "spoiler_keepNextVisible";
-  var DEFAULT_ENABLED = false;
-  var DEFAULT_BLUR_THUMBNAILS = true;
-  var DEFAULT_BLUR_TITLES = true;
-  var DEFAULT_BLUR_DESCRIPTIONS = true;
-  var DEFAULT_KEEP_NEXT_VISIBLE = true;
-  function getStoredBool(key, fallback) {
-    if (typeof window === "undefined") return fallback;
-    const raw = getScopedStorageItem(key);
-    if (raw === "1") return true;
-    if (raw === "0") return false;
-    return fallback;
-  }
-  function getSpoilerBlurEnabled() {
-    return getStoredBool(KEY_ENABLED, DEFAULT_ENABLED);
-  }
-  function getSpoilerBlurThumbnails() {
-    return getStoredBool(KEY_BLUR_THUMBNAILS, DEFAULT_BLUR_THUMBNAILS);
-  }
-  function getSpoilerBlurTitles() {
-    return getStoredBool(KEY_BLUR_TITLES, DEFAULT_BLUR_TITLES);
-  }
-  function getSpoilerBlurDescriptions() {
-    return getStoredBool(KEY_BLUR_DESCRIPTIONS, DEFAULT_BLUR_DESCRIPTIONS);
-  }
-  function getSpoilerKeepNextVisible() {
-    return getStoredBool(KEY_KEEP_NEXT_VISIBLE, DEFAULT_KEEP_NEXT_VISIBLE);
-  }
-  function getSpoilerMaskSettings() {
-    return {
-      enabled: getSpoilerBlurEnabled(),
-      blurThumbnails: getSpoilerBlurThumbnails(),
-      blurTitles: getSpoilerBlurTitles(),
-      blurDescriptions: getSpoilerBlurDescriptions(),
-      keepNextVisible: getSpoilerKeepNextVisible()
-    };
-  }
-
-  // lib/spoilers.ts
-  var CLEAR = { thumb: false, title: false, desc: false };
-  var SPOILER_THUMB_CLASS = "blur-[14px] scale-[1.04] transition-[filter,transform] duration-200 group-hover:blur-[0px] group-hover:scale-100 group-focus-within:blur-[0px] group-focus-within:scale-100";
-  var SPOILER_TEXT_CLASS = "blur-[5px] select-none transition-[filter] duration-200 group-hover:blur-[0px] group-focus-within:blur-[0px]";
-  function spoilerMaskFor(s, opts) {
-    if (!s.enabled) return CLEAR;
-    if (opts.watched) return CLEAR;
-    if (s.keepNextVisible && opts.isNextUp) return CLEAR;
-    return {
-      thumb: s.blurThumbnails,
-      title: s.blurTitles,
-      desc: s.blurDescriptions
-    };
-  }
-
-  // components/player/next-episode-card.tsx
   // eslint-disable-next-line @next/next/no-img-element
   init_jsx_runtime_shim();
   function NextEpisodeCard({
@@ -180232,12 +183025,12 @@ ${cue.text}`).join("\n\n")}
             ] }) }) }),
             /* @__PURE__ */ jsxs("div", { className: "min-w-0 flex-1", children: [
               /* @__PURE__ */ jsxs("p", { className: "text-[10px] uppercase tracking-[0.18em] text-slate-500", children: [
-                "Next on ",
+                t("nextOnSeries"),
+                " ",
                 /* @__PURE__ */ jsx("span", { className: "text-slate-300", children: seriesTitle })
               ] }),
               /* @__PURE__ */ jsxs("p", { className: "mt-0.5 text-xs font-medium text-white", children: [
-                "Episode ",
-                episode,
+                t("episodeNumber").replace("{n}", String(episode)),
                 " ",
                 /* @__PURE__ */ jsxs("span", { className: "text-slate-400", children: [
                   "(S",
@@ -180280,7 +183073,8 @@ ${cue.text}`).join("\n\n")}
                 className: "flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white transition hover:bg-white/20",
                 children: [
                   /* @__PURE__ */ jsx("svg", { width: "12", height: "12", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }),
-                  "Spela nu ",
+                  t("playNow"),
+                  " ",
                   countdown !== null ? `(${countdown})` : ""
                 ]
               }
@@ -180293,7 +183087,8 @@ ${cue.text}`).join("\n\n")}
                 className: "flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1 text-xs font-medium text-white transition hover:bg-white/10",
                 children: [
                   /* @__PURE__ */ jsx("svg", { width: "12", height: "12", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }),
-                  "Spela nu ",
+                  t("playNow"),
+                  " ",
                   countdown !== null ? `(${countdown})` : ""
                 ]
               }
@@ -181385,7 +184180,7 @@ ${cue.text}`).join("\n\n")}
 
   // ../lumio-official-plugins/plugins/plex/runtime/plex-grid.tsx
   init_react_shim();
-  var import_react68 = __toESM(require_dist89());
+  var import_react70 = __toESM(require_dist89());
   init_jsx_runtime_shim();
   function uniqueSorted(values) {
     return Array.from(new Set(values.filter(Boolean))).sort(
@@ -181456,7 +184251,7 @@ ${cue.text}`).join("\n\n")}
               }
             ) : /* @__PURE__ */ jsx("div", { className: "flex h-full items-end bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 p-4", children: /* @__PURE__ */ jsx("span", { className: "text-base font-semibold text-slate-100", children: item.title }) }),
             item.genres.length > 0 && /* @__PURE__ */ jsx("div", { className: "absolute inset-x-0 bottom-0 flex flex-wrap gap-1 p-2", children: item.genres.slice(0, 2).map((genre) => /* @__PURE__ */ jsx(
-              import_react68.Chip,
+              import_react70.Chip,
               {
                 size: "sm",
                 variant: "flat",
@@ -181727,7 +184522,7 @@ ${cue.text}`).join("\n\n")}
             onClick: () => {
               void load();
             },
-            className: "rounded-full border border-rose-200/30 px-3 py-1.5 text-xs uppercase tracking-[0.2em] transition hover:bg-white/10",
+            className: "rounded-full border border-transparent bg-white/10 px-3 py-1.5 text-xs uppercase tracking-[0.2em] backdrop-blur-md transition hover:bg-white/15",
             children: t("tryAgain")
           }
         )
@@ -181794,9 +184589,9 @@ ${cue.text}`).join("\n\n")}
       const incoming = params?.titleQuery ?? "";
       setFilters((current2) => current2.titleQuery === incoming ? current2 : { ...current2, titleQuery: incoming, page: 1 });
     }, [params?.titleQuery]);
-    const buttonBase = "rounded-full border border-white/10 px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] transition";
-    const buttonActive = "bg-white/15 text-white border-white/30";
-    const buttonInactive = "text-slate-400 hover:border-white/25 hover:text-slate-200";
+    const buttonBase = "rounded-full border border-transparent bg-[#fcfcff14] px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] backdrop-blur-md transition";
+    const buttonActive = "bg-[#fcfcff2e] text-white";
+    const buttonInactive = "text-slate-400 hover:bg-[#fcfcff22] hover:text-slate-200";
     return /* @__PURE__ */ jsxs("div", { className: "space-y-4", children: [
       showControls ? /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center justify-between gap-2 px-1", children: [
         /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [

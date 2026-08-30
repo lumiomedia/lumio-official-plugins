@@ -51,7 +51,7 @@ interface M3uChannel {
 const rememberedChannelLogoSrcs = new Map<string, string>()
 const CHANNELS_PER_PAGE = 28
 const FAVORITES_LIST_ID = '__favorites__'
-const neutralPillClass = 'rounded-full border border-white/[0.08] bg-white/[0.04] text-slate-300 transition hover:border-white/[0.14] hover:bg-white/[0.06] hover:text-white'
+const neutralPillClass = 'rounded-full border border-transparent bg-[#fcfcff14] text-slate-300 backdrop-blur-md transition hover:bg-[#fcfcff22] hover:text-white'
 /**
  * TV-lägets kontroller: större träffytor och läsbar text på tio fots avstånd.
  *
@@ -59,13 +59,13 @@ const neutralPillClass = 'rounded-full border border-white/[0.08] bg-white/[0.04
  * muspekare och inte med en fjärrkontroll. Måtten följer TV-skalets övriga
  * rader (minst 52 px) så fokusringen ser likadan ut här som i inställningarna.
  */
-const tvControlClass = 'h-[52px] rounded-2xl border border-white/10 bg-white/[0.05] px-6 text-[15px] text-slate-200 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white'
+const tvControlClass = 'h-[52px] rounded-2xl border border-transparent bg-[#fcfcff14] px-6 text-[15px] text-slate-200 backdrop-blur-md transition hover:bg-[#fcfcff22] hover:text-white'
 // Runda ikonknappar för TV: samma visuella språk som tvControlClass men
 // cirkulära — kortens EPG/nåla/spela-rad och menyknappen uppe till höger.
-const tvRoundControlClass = 'flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-slate-300 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white'
+const tvRoundControlClass = 'flex h-12 w-12 items-center justify-center rounded-full border border-transparent bg-[#fcfcff14] text-slate-300 backdrop-blur-md transition hover:bg-[#fcfcff22] hover:text-white'
 // Sidomenyns rader: fullbreddsvarianten av tvControlClass.
 const tvMenuItemClass = 'flex min-h-[52px] w-full items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.05] px-5 text-left text-[15px] text-slate-200 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white'
-const activePillClass = 'border-accent-400/50 bg-accent-400/10 text-accent-300'
+const activePillClass = 'border-transparent bg-[#fcfcff2e] text-white backdrop-blur-md'
 
 function logLiveTvStage(message: string, details?: Record<string, unknown>) {
   if (typeof window === 'undefined') return

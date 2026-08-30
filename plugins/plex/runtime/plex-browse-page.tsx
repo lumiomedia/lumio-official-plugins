@@ -67,9 +67,9 @@ export function PlexBrowsePage({ params, onOpenDetails }: BrowsePageProps) {
     setFilters((current) => current.titleQuery === incoming ? current : { ...current, titleQuery: incoming, page: 1 })
   }, [params?.titleQuery])
 
-  const buttonBase = 'rounded-full border border-white/10 px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] transition'
-  const buttonActive = 'bg-white/15 text-white border-white/30'
-  const buttonInactive = 'text-slate-400 hover:border-white/25 hover:text-slate-200'
+  const buttonBase = 'rounded-full border border-transparent bg-[#fcfcff14] px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] backdrop-blur-md transition'
+  const buttonActive = 'bg-[#fcfcff2e] text-white'
+  const buttonInactive = 'text-slate-400 hover:bg-[#fcfcff22] hover:text-slate-200'
 
   return (
     <div className="space-y-4">

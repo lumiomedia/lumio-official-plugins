@@ -107,7 +107,7 @@ const TEXT = {
   // language selector (useLang), so there is no Twitch-specific language chip.
   filterSort: { en: 'Sort by', sv: 'Sortera' },
   sortViewersDesc: { en: 'Most viewers', sv: 'Flest tittare' },
-  sortViewersAsc: { en: 'Fewest viewers', sv: 'Färst tittare' },
+  sortViewersAsc: { en: 'Fewest viewers', sv: 'Minst tittare' },
   // Following tabs
   tabOverview: { en: 'Overview', sv: 'Översikt' },
   tabLive: { en: 'Live', sv: 'Live' },
@@ -482,7 +482,7 @@ function SegmentedControl<T extends string>({
   return (
     <div className="flex items-center gap-2">
       <span className="text-[0.6rem] font-normal uppercase tracking-[0.2em] text-slate-400">{label}</span>
-      <div className="flex gap-1 rounded-full border border-white/[0.08] bg-white/[0.03] p-0.5">
+      <div className="flex gap-1 rounded-full border border-transparent bg-[#fcfcff14] p-0.5 backdrop-blur-md">
         {options.map((option) => (
           <button
             key={option.value}
@@ -490,8 +490,8 @@ function SegmentedControl<T extends string>({
             onClick={() => onChange(option.value)}
             className={`h-8 rounded-full px-3.5 text-[0.6rem] font-normal uppercase tracking-[0.16em] transition-all ${
               value === option.value
-                ? 'bg-white/[0.12] text-white'
-                : 'text-slate-300 hover:bg-white/[0.06] hover:text-white'
+                ? 'bg-[#fcfcff2e] text-white'
+                : 'text-slate-300 hover:bg-[#fcfcff22] hover:text-white'
             }`}
           >
             {option.label}
@@ -532,8 +532,8 @@ function TwitchPageNav({
           }}
           className={`h-9 rounded-full border px-4 text-[0.62rem] font-normal uppercase tracking-[0.2em] transition-all ${
             page.id === current
-              ? 'border-white/[0.24] bg-white/[0.1] text-white'
-              : 'border-white/[0.1] bg-white/[0.03] text-slate-300 hover:border-white/[0.16] hover:bg-white/[0.05] hover:text-white'
+              ? 'border-transparent bg-[#fcfcff2e] text-white backdrop-blur-md'
+              : 'border-transparent bg-[#fcfcff14] text-slate-300 backdrop-blur-md hover:bg-[#fcfcff22] hover:text-white'
           }`}
         >
           {page.label[lang] ?? page.label.en}
@@ -750,7 +750,7 @@ function LoadMoreButton({ onClick, label }: { onClick: () => void; label: string
       <button
         type="button"
         onClick={onClick}
-        className="h-10 rounded-full border border-white/[0.1] bg-white/[0.04] px-5 text-[0.65rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:border-white/[0.16] hover:bg-white/[0.06] hover:text-white"
+        className="h-10 rounded-full border border-transparent bg-[#fcfcff14] backdrop-blur-md px-5 text-[0.65rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:bg-[#fcfcff22] hover:text-white"
       >
         {label}
       </button>
@@ -887,7 +887,7 @@ function ChannelAvatarCard({
         event.preventDefault()
         onSelect(channel)
       }}
-      className="group flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-3 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-white/[0.16] hover:bg-white/[0.05]"
+      className="group flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-3 text-left transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/[0.05]"
       aria-label={channel.displayName || channel.login}
     >
       <div className="relative flex-none">
@@ -1016,8 +1016,8 @@ export function TwitchFollowingPage({ pageId, onNavigate }: BrowsePageProps) {
             onClick={() => setTab(entry.key)}
             className={`h-9 rounded-full border px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] transition-all ${
               tab === entry.key
-                ? 'border-white/[0.24] bg-white/[0.1] text-white'
-                : 'border-white/[0.1] bg-white/[0.03] text-slate-300 hover:border-white/[0.16] hover:bg-white/[0.05] hover:text-white'
+                ? 'border-transparent bg-[#fcfcff2e] text-white backdrop-blur-md'
+                : 'border-transparent bg-[#fcfcff14] text-slate-300 backdrop-blur-md hover:bg-[#fcfcff22] hover:text-white'
             }`}
           >
             {entry.label}
@@ -1327,8 +1327,8 @@ export function TwitchChannelPage({ userId, broadcasterId, login, displayName, i
   function tabButtonClass(key: 'vods' | 'clips') {
     return `h-9 rounded-full border px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] transition-all ${
       tab === key
-        ? 'border-white/[0.24] bg-white/[0.1] text-white'
-        : 'border-white/[0.1] bg-white/[0.03] text-slate-300 hover:border-white/[0.16] hover:bg-white/[0.05] hover:text-white'
+        ? 'border-transparent bg-[#fcfcff2e] text-white backdrop-blur-md'
+        : 'border-transparent bg-[#fcfcff14] text-slate-300 backdrop-blur-md hover:bg-[#fcfcff22] hover:text-white'
     }`
   }
 
@@ -1355,7 +1355,7 @@ export function TwitchChannelPage({ userId, broadcasterId, login, displayName, i
           <button
             type="button"
             onClick={() => void openTwitchUrl(`https://www.twitch.tv/${login}`)}
-            className="h-9 rounded-full border border-white/[0.14] bg-white/[0.04] px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:border-white/[0.24] hover:bg-white/[0.08] hover:text-white"
+            className="h-9 rounded-full border border-transparent bg-[#fcfcff14] backdrop-blur-md px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:bg-[#fcfcff22] hover:text-white"
           >
             {text('openOnTwitch')}
           </button>
@@ -1440,7 +1440,7 @@ function ChannelDrilldown({
       <button
         type="button"
         onClick={onBack}
-        className="flex h-9 items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.03] px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:border-white/[0.16] hover:bg-white/[0.05] hover:text-white"
+        className="flex h-9 items-center gap-1.5 rounded-full border border-transparent bg-[#fcfcff14] backdrop-blur-md px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:bg-white/[0.05] hover:text-white"
       >
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
           <polyline points="15 18 9 12 15 6" />
@@ -1493,7 +1493,7 @@ export function TwitchSearchPage({ pageId, onNavigate }: BrowsePageProps) {
         setSelectedCategory(null)
         setSelectedChannel(null)
       }}
-      className="flex h-9 items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.03] px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:border-white/[0.16] hover:bg-white/[0.05] hover:text-white"
+      className="flex h-9 items-center gap-1.5 rounded-full border border-transparent bg-[#fcfcff14] backdrop-blur-md px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:bg-white/[0.05] hover:text-white"
     >
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
         <polyline points="15 18 9 12 15 6" />
@@ -1571,7 +1571,7 @@ export function TwitchSearchPage({ pageId, onNavigate }: BrowsePageProps) {
             value={inputValue}
             onChange={(event) => setInputValue(event.target.value)}
             placeholder={text('searchPlaceholder')}
-            className="h-11 w-full rounded-full border border-white/[0.1] bg-white/[0.04] px-5 text-sm text-white placeholder:text-slate-500 outline-none transition-all focus:border-white/[0.2] focus:bg-white/[0.06]"
+            className="h-11 w-full rounded-full border border-transparent bg-[#fcfcff14] backdrop-blur-md px-5 text-sm text-white placeholder:text-slate-500 outline-none transition-all focus:bg-[#fcfcff22] focus:bg-white/[0.06]"
           />
         </form>
       </div>
@@ -1631,7 +1631,7 @@ function TwitchHomeRowShell({
         <button
           type="button"
           onClick={onOpenAll}
-          className="flex h-9 items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.03] px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:border-white/[0.16] hover:bg-white/[0.05] hover:text-white"
+          className="flex h-9 items-center gap-1.5 rounded-full border border-transparent bg-[#fcfcff14] backdrop-blur-md px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:bg-white/[0.05] hover:text-white"
         >
           {t('showAll')}
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">

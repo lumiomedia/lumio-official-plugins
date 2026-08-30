@@ -148,7 +148,7 @@ export function LiveTvHomeOverride(_props: HomeOverrideProps) {
               <button
                 type="button"
                 onClick={() => moveFocus(-1)}
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:border-white/35 hover:bg-white/10"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-transparent bg-[#fcfcff14] backdrop-blur-md text-white transition hover:bg-[#fcfcff22]"
                 aria-label={t('liveTvPreviousChannel')}
                 title={t('liveTvPreviousChannel')}
               >
@@ -159,7 +159,7 @@ export function LiveTvHomeOverride(_props: HomeOverrideProps) {
               <button
                 type="button"
                 onClick={() => moveFocus(1)}
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:border-white/35 hover:bg-white/10"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-transparent bg-[#fcfcff14] backdrop-blur-md text-white transition hover:bg-[#fcfcff22]"
                 aria-label={t('liveTvNextChannel')}
                 title={t('liveTvNextChannel')}
               >

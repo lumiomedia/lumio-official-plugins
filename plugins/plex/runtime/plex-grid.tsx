@@ -470,7 +470,7 @@ export function PlexGrid({
           <button
             type="button"
             onClick={() => { void load() }}
-            className="rounded-full border border-rose-200/30 px-3 py-1.5 text-xs uppercase tracking-[0.2em] transition hover:bg-white/10"
+            className="rounded-full border border-transparent bg-white/10 px-3 py-1.5 text-xs uppercase tracking-[0.2em] backdrop-blur-md transition hover:bg-white/15"
           >
             {t('tryAgain')}
           </button>
