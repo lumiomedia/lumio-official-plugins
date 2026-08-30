@@ -134,13 +134,7 @@ export function EpgSourcesSection({
         </button>
       </div>
       {!hasAny ? (
-        <p className="text-xs text-white/40">
-          {t('liveTvNoEpgSourcesPrefix')}{' '}
-          <code className="rounded bg-white/10 px-1">
-            https://epgshare01.online/epgshare01/epg_ripper_SE1.xml.gz
-          </code>{' '}
-          {t('liveTvNoEpgSourcesSuffix')}
-        </p>
+        <p className="text-xs text-white/40">{t('liveTvNoEpgSourcesPrefix')}</p>
       ) : null}
     </section>
   )
