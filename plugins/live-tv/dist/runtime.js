@@ -176085,15 +176085,16 @@
     const globalEpgListId = globalEpgUrls.length > 0 ? LIVE_TV_GLOBAL_EPG_ID : null;
     const visibleChannels = activeListId === FAVORITES_LIST_ID ? pinnedChannels : activeList?.channels ?? allSourceChannels;
     useEffect(() => {
-      if (!defaultTabAppliedRef.current && pinnedChannels.length > 0) {
+      if (loading) return;
+      if (!defaultTabAppliedRef.current) {
         defaultTabAppliedRef.current = true;
-        setActiveListId(FAVORITES_LIST_ID);
+        if (pinnedChannels.length > 0) setActiveListId(FAVORITES_LIST_ID);
         return;
       }
       if (activeListId === FAVORITES_LIST_ID && pinnedChannels.length === 0) {
         setActiveListId(null);
       }
-    }, [activeListId, pinnedChannels.length]);
+    }, [loading, activeListId, pinnedChannels.length]);
     const categories = Array.from(
       new Set(
         visibleChannels.flatMap(

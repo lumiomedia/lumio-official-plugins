@@ -617,15 +617,20 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
     : activeList?.channels ?? allSourceChannels
 
   useEffect(() => {
-    if (!defaultTabAppliedRef.current && pinnedChannels.length > 0) {
+    // Standardfliken (öppna på Favoriter när man HAR nålar) avgörs EN gång,
+    // när laddningen är klar — inte "första gången pins > 0": då kapade
+    // vyn till Favoriter mitt i sessionen så fort man nålade sin första
+    // kanal, och alla andra kanaler "försvann".
+    if (loading) return
+    if (!defaultTabAppliedRef.current) {
       defaultTabAppliedRef.current = true
-      setActiveListId(FAVORITES_LIST_ID)
+      if (pinnedChannels.length > 0) setActiveListId(FAVORITES_LIST_ID)
       return
     }
     if (activeListId === FAVORITES_LIST_ID && pinnedChannels.length === 0) {
       setActiveListId(null)
     }
-  }, [activeListId, pinnedChannels.length])
+  }, [loading, activeListId, pinnedChannels.length])
 
   const categories = Array.from(
     new Set(

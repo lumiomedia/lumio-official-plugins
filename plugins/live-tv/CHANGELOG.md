@@ -171,3 +171,6 @@
 
 ## 0.3.41
 - TV: Stäng är första fokus när en ström öppnas — ett OK-tryck stänger, i stället för att fjärren står kvar bakom spelaren.
+
+## 0.3.42
+- Att nåla en kanal kapar inte längre vyn till Favoriter (kanalen sorteras först i den vy man står i). Favoriter som startflik gäller bara vid öppning, när nålar redan finns.
