@@ -14,7 +14,9 @@ import {
   applyM3uUrls,
   clearLiveTvMemoryCache,
   clearStoredLiveTvChannels,
+  deleteLiveTvList,
   getLiveTvLists,
+  getM3uUrls,
   upsertLiveTvListFromFetch,
   getM3uDraftUrls,
   onLiveTvListsChanged,
@@ -139,6 +141,25 @@ export function LiveTvSettingsSection() {
     }
   }
 
+  /**
+   * Ta bort en lista helt: raden i inställningarna, kanalerna, cachen OCH
+   * M3U-adressen den kom ifrån (både aktiv och i utkastet) — annars kom
+   * feeden tillbaka vid nästa hämtning, och det gick inte att bli av med
+   * en gammal spellista när man bara ville ha kvar Xtream-inloggningen.
+   * Xtream-poster har sin egen Ta bort-knapp och rörs inte här.
+   */
+  function handleRemoveList(list: LiveTvList) {
+    const hostOf = (url: string) => {
+      try { return new URL(url).hostname || url } catch { return url }
+    }
+    const remaining = getM3uUrls().filter((url) => !url.startsWith('xtream://') && hostOf(url) !== list.name)
+    applyM3uUrls(remaining)
+    setM3uText(remaining.join('\n'))
+    deleteLiveTvList(list.id)
+    clearLiveTvMemoryCache()
+    clearStoredLiveTvChannels()
+  }
+
   function handleHomeOverrideToggle(checked: boolean) {
     setHomeOverrideError('')
     if (!checked) {
@@ -200,9 +221,18 @@ export function LiveTvSettingsSection() {
             <div key={list.id} className="space-y-2 border-b border-white/5 pb-4 last:border-b-0 last:pb-0">
               <div className="flex items-baseline justify-between gap-2">
                 <h4 className="text-sm font-semibold text-white">{list.name}</h4>
-                <span className="text-[10px] uppercase tracking-wider text-slate-500">
-                  {list.channels.length} {t('m3uChannels')}
-                </span>
+                <div className="flex items-baseline gap-3">
+                  <span className="text-[10px] uppercase tracking-wider text-slate-500">
+                    {list.channels.length} {t('m3uChannels')}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveList(list)}
+                    className="rounded bg-white/10 px-2.5 py-1 text-[10px] uppercase tracking-wider text-rose-300 transition hover:bg-white/15"
+                  >
+                    {t('liveTvXtreamRemove')}
+                  </button>
+                </div>
               </div>
               <EpgSourcesSection
                 autoUrl={list.urlTvg}

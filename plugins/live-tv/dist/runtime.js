@@ -164624,7 +164624,27 @@
           themeSystem: "Follow system",
           uiScale: "Interface scale",
           uiScaleDesc: "Scales the entire interface. Useful on 4K and ultrawide screens.",
+          fullCastTitle: "Full cast & crew",
+          fullCastOpen: "Full cast",
+          fullCastCastTab: "Cast",
+          fullCastCrewTab: "Crew",
+          fullCastSearch: "Search cast & crew",
+          fullCastSortBilling: "Billing order",
+          fullCastSortName: "Name",
+          fullCastSortPopularity: "Popularity",
+          fullCastKeyCrew: "Key crew",
+          fullCastStills: "Stills",
+          fullCastNoMatches: "No one matches the search.",
+          fullCastCounter: "{cast} cast \xB7 {crew} crew",
+          personCredits: "Credits",
+          personSortedByPopularity: "Sorted by popularity",
+          tvFontScale: "Text size",
+          tvFontScaleDesc: "Scales all text in TV mode without changing the layout.",
+          tvMenuScale: "Menu size",
+          tvMenuScaleDesc: "Scales the side menu \u2014 icons and labels \u2014 in TV mode.",
           menuScale: "Menu scale",
+          cornerScale: "Corner menu size",
+          cornerScaleDesc: "Scales the icons in the top-right corner. Per device \u2014 never mirrored to remote sessions.",
           menuScaleDesc: "Scales only the side menu \u2014 icons and labels \u2014 independently of the interface scale.",
           reduceMotion: "Reduce motion",
           reduceMotionDesc: "Turns off animations and soft transitions throughout the app.",
@@ -166982,7 +167002,27 @@
           themeSystem: "F\xF6lj systemet",
           uiScale: "Gr\xE4nssnittsskala",
           uiScaleDesc: "Skalar hela gr\xE4nssnittet. Bra p\xE5 4K- och ultrawide-sk\xE4rmar.",
+          fullCastTitle: "Rollista & team",
+          fullCastOpen: "Hela rollistan",
+          fullCastCastTab: "Roller",
+          fullCastCrewTab: "Team",
+          fullCastSearch: "S\xF6k i rollista & team",
+          fullCastSortBilling: "Rollordning",
+          fullCastSortName: "Namn",
+          fullCastSortPopularity: "Popularitet",
+          fullCastKeyCrew: "Nyckelpersoner",
+          fullCastStills: "Stillbilder",
+          fullCastNoMatches: "Ingen matchar s\xF6kningen.",
+          fullCastCounter: "{cast} roller \xB7 {crew} i teamet",
+          personCredits: "Filmografi",
+          personSortedByPopularity: "Sorterat p\xE5 popularitet",
+          tvFontScale: "Textstorlek",
+          tvFontScaleDesc: "Skalar all text i TV-l\xE4get utan att \xE4ndra layouten.",
+          tvMenuScale: "Menystorlek",
+          tvMenuScaleDesc: "Skalar sidomenyn \u2014 ikoner och etiketter \u2014 i TV-l\xE4get.",
           menuScale: "Menyskalning",
+          cornerScale: "H\xF6rnmenyns storlek",
+          cornerScaleDesc: "Skalar ikonerna i \xF6vre h\xF6gra h\xF6rnet. Per enhet \u2014 speglas aldrig till fj\xE4rrsessioner.",
           menuScaleDesc: "Skalar bara sidomenyn \u2014 ikoner och etiketter \u2014 oberoende av gr\xE4nssnittsskalan.",
           reduceMotion: "Minska r\xF6relse",
           reduceMotionDesc: "St\xE4nger av animationer och mjuka \xF6verg\xE5ngar i hela appen.",
@@ -175433,6 +175473,21 @@
         window.setTimeout(() => setM3uFetchState("idle"), 2200);
       }
     }
+    function handleRemoveList(list) {
+      const hostOf = (url) => {
+        try {
+          return new URL(url).hostname || url;
+        } catch {
+          return url;
+        }
+      };
+      const remaining = getM3uUrls().filter((url) => !url.startsWith("xtream://") && hostOf(url) !== list.name);
+      applyM3uUrls(remaining);
+      setM3uText(remaining.join("\n"));
+      deleteLiveTvList(list.id);
+      clearLiveTvMemoryCache();
+      clearStoredLiveTvChannels();
+    }
     function handleHomeOverrideToggle(checked) {
       setHomeOverrideError("");
       if (!checked) {
@@ -175487,10 +175542,21 @@
       lists.length > 0 ? /* @__PURE__ */ jsx("div", { className: "space-y-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4", children: lists.map((list) => /* @__PURE__ */ jsxs("div", { className: "space-y-2 border-b border-white/5 pb-4 last:border-b-0 last:pb-0", children: [
         /* @__PURE__ */ jsxs("div", { className: "flex items-baseline justify-between gap-2", children: [
           /* @__PURE__ */ jsx("h4", { className: "text-sm font-semibold text-white", children: list.name }),
-          /* @__PURE__ */ jsxs("span", { className: "text-[10px] uppercase tracking-wider text-slate-500", children: [
-            list.channels.length,
-            " ",
-            t("m3uChannels")
+          /* @__PURE__ */ jsxs("div", { className: "flex items-baseline gap-3", children: [
+            /* @__PURE__ */ jsxs("span", { className: "text-[10px] uppercase tracking-wider text-slate-500", children: [
+              list.channels.length,
+              " ",
+              t("m3uChannels")
+            ] }),
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                type: "button",
+                onClick: () => handleRemoveList(list),
+                className: "rounded bg-white/10 px-2.5 py-1 text-[10px] uppercase tracking-wider text-rose-300 transition hover:bg-white/15",
+                children: t("liveTvXtreamRemove")
+              }
+            )
           ] })
         ] }),
         /* @__PURE__ */ jsx(
