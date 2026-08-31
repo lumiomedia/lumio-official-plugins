@@ -159,3 +159,6 @@
 ## 0.1.0
 
 - Scaffolded metadata for the upcoming Live TV official plugin
+
+## 0.3.38
+- Om-release av 0.3.37: Ta bort-knapp per M3U-lista och egen Ta bort (utloggning) per Xtream-inloggning — så uppdateringen når appar som står kvar på 0.3.36.
