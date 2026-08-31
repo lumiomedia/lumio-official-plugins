@@ -24,6 +24,12 @@ import {
   getLiveTvMemoryCache,
   getLiveTvUrlsKey,
   getM3uUrls,
+  getXtreamLogins,
+  findXtreamLoginByPseudoUrl,
+  fetchXtreamChannels,
+  onXtreamLoginsChanged,
+  xtreamPseudoUrl,
+  XTREAM_URL_PREFIX,
   LIVE_TV_GLOBAL_EPG_ID,
   isChannelInLiveTvList,
   isLiveTvLogoLoaded,
@@ -175,14 +181,21 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
   useEffect(() => {
     const syncUrls = () => {
       try {
-        setUrls(getM3uUrls())
+        // Xtream-inloggningar är kanalkällor precis som M3U-länkarna; deras
+        // pseudo-URL:er ingår i urlsKey så cachen invalideras när de ändras.
+        setUrls([...getM3uUrls(), ...getXtreamLogins().map((login) => xtreamPseudoUrl(login))])
       } catch {
         setUrls([])
       }
     }
 
     syncUrls()
-    return onM3uUrlsChanged(syncUrls)
+    const offM3u = onM3uUrlsChanged(syncUrls)
+    const offXtream = onXtreamLoginsChanged(syncUrls)
+    return () => {
+      offM3u()
+      offXtream()
+    }
   }, [])
 
   useEffect(() => {
@@ -461,14 +474,21 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
           if (cancelled || nextChannels.length >= MAX_TOTAL_CHANNELS) break
           logLiveTvStage('fetching playlist', { url })
 
-          const result = await fetch('/api/m3u', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url }),
-          })
-            .then((r) => r.json())
-            .then((data: { channels?: unknown[]; urlTvg?: unknown }) => sanitizeChannels(data.channels ?? []))
-            .catch(() => [] as M3uChannel[])
+          const result = url.startsWith(XTREAM_URL_PREFIX)
+            ? await (async () => {
+                const login = findXtreamLoginByPseudoUrl(url)
+                if (!login) return [] as M3uChannel[]
+                const fetched = await fetchXtreamChannels(login, MAX_TOTAL_CHANNELS - nextChannels.length)
+                return fetched.channels
+              })().catch(() => [] as M3uChannel[])
+            : await fetch('/api/m3u', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url }),
+              })
+                .then((r) => r.json())
+                .then((data: { channels?: unknown[]; urlTvg?: unknown }) => sanitizeChannels(data.channels ?? []))
+                .catch(() => [] as M3uChannel[])
 
           if (cancelled) break
           nextChannels.push(...result)

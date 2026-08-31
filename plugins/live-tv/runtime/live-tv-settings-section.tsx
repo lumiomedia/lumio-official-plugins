@@ -23,6 +23,7 @@ import {
   type LiveTvList,
 } from './live-tv-data'
 import { EpgSourcesSection } from './epg-sources-section'
+import { XtreamLoginSection } from './xtream-login-section'
 
 const textareaClassNames = {
   base: 'w-full',
@@ -192,6 +193,7 @@ export function LiveTvSettingsSection() {
                 : t('m3uFetchList')}
         </button>
       </div>
+      <XtreamLoginSection />
       {lists.length > 0 ? (
         <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
           {lists.map((list) => (
