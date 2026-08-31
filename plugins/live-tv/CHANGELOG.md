@@ -165,3 +165,6 @@
 
 ## 0.3.39
 - TV: kanalkortet är EN fokusstation (hela blocket markeras). OK kliver in och markerar Spela — som är orange och ligger först — OK igen startar strömmen. Vänster/höger vandrar i kortets knapprad, Bakåt lämnar tillbaka fokus till kortet.
+
+## 0.3.40
+- Sökningen hittar kanaler ur HELA Xtream-utbudet (inte bara de 2000 lagrade): hela namnlistan hämtas en gång per session och träffarna spelas/nålas direkt. En rensa-knapp nollställer söket och lämnar tillbaka fokus till sökfältet.

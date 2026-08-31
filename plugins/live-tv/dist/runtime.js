@@ -175658,6 +175658,7 @@
   var FAVORITES_LIST_ID = "__favorites__";
   var neutralPillClass = "rounded-full border border-transparent bg-[#fcfcff14] text-slate-300 backdrop-blur-md transition hover:bg-[#fcfcff22] hover:text-white";
   var tvControlClass = "h-[52px] rounded-2xl border border-transparent bg-[#fcfcff14] px-6 text-[15px] text-slate-200 backdrop-blur-md transition hover:bg-[#fcfcff22] hover:text-white";
+  var xtreamFullSearchCache = /* @__PURE__ */ new Map();
   var tvRoundControlClass = "flex h-12 w-12 items-center justify-center rounded-full border border-transparent bg-[#fcfcff14] text-slate-300 backdrop-blur-md transition hover:bg-[#fcfcff22] hover:text-white";
   var tvMenuItemClass = "flex min-h-[52px] w-full items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.05] px-5 text-left text-[15px] text-slate-200 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white";
   var activePillClass = "border-transparent bg-[#fcfcff2e] text-white backdrop-blur-md";
@@ -175703,6 +175704,51 @@
     const [error, setError] = useState(null);
     const [urls, setUrls] = useState([]);
     const [search, setSearch] = useState("");
+    const [serverHits, setServerHits] = useState([]);
+    const [serverSearchState, setServerSearchState] = useState("idle");
+    useEffect(() => {
+      const query = search.trim().toLowerCase();
+      const logins = getXtreamLogins();
+      if (query.length < 2 || logins.length === 0) {
+        setServerHits([]);
+        setServerSearchState("idle");
+        return;
+      }
+      let cancelled = false;
+      const timer = window.setTimeout(async () => {
+        setServerSearchState("loading");
+        try {
+          const hits = [];
+          for (const login of logins) {
+            let full = xtreamFullSearchCache.get(login.id);
+            if (!full) {
+              const result = await fetchXtreamChannels({ ...login, categoryIds: [] }, 1e5);
+              full = result.channels;
+              xtreamFullSearchCache.set(login.id, full);
+            }
+            if (cancelled) return;
+            for (const channel of full) {
+              if (channel.name.toLowerCase().includes(query)) hits.push(channel);
+              if (hits.length >= 200) break;
+            }
+            if (hits.length >= 200) break;
+          }
+          if (!cancelled) {
+            setServerHits(hits);
+            setServerSearchState("done");
+          }
+        } catch {
+          if (!cancelled) {
+            setServerHits([]);
+            setServerSearchState("error");
+          }
+        }
+      }, 350);
+      return () => {
+        cancelled = true;
+        window.clearTimeout(timer);
+      };
+    }, [search]);
     const [activeChannel, setActiveChannel] = useState(null);
     const [activeGroup, setActiveGroup] = useState(null);
     const [groupDropdownOpen, setGroupDropdownOpen] = useState(false);
@@ -176045,10 +176091,12 @@
         return matchSearch && matchGroup;
       })
     );
-    const totalPages = Math.max(1, Math.ceil(filtered.length / CHANNELS_PER_PAGE));
+    const localChannelKeys = new Set(filtered.map((c) => `${c.name}::${c.url}`));
+    const withServerHits = search.trim().length >= 2 && serverHits.length > 0 ? [...filtered, ...serverHits.filter((c) => !localChannelKeys.has(`${c.name}::${c.url}`))] : filtered;
+    const totalPages = Math.max(1, Math.ceil(withServerHits.length / CHANNELS_PER_PAGE));
     const safeCurrentPage = Math.min(currentPage, totalPages);
     const pageStart = (safeCurrentPage - 1) * CHANNELS_PER_PAGE;
-    const pagedChannels = filtered.slice(pageStart, pageStart + CHANNELS_PER_PAGE);
+    const pagedChannels = withServerHits.slice(pageStart, pageStart + CHANNELS_PER_PAGE);
     const visibleChannelKey = pagedChannels.map((channel) => channel.url).join("|");
     useEffect(() => {
       if (currentPage !== safeCurrentPage) setCurrentPage(safeCurrentPage);
@@ -176259,6 +176307,7 @@
                   type: "button",
                   ...tvStation,
                   ...isTv ? { "data-init": "" } : {},
+                  "data-live-tv-search": "",
                   onClick: () => setSearchKeyboardOpen(true),
                   className: `${tvControlClass} w-[340px] text-left ${search ? "text-white" : "text-white/60"} outline-none`,
                   children: search || t("m3uSearch")
@@ -176269,12 +176318,33 @@
                   type: "search",
                   ...tvStation,
                   ...isTv ? { "data-init": "" } : {},
+                  "data-live-tv-search": "",
                   value: search,
                   onChange: (e) => setSearch(e.target.value),
                   placeholder: t("m3uSearch"),
                   className: isTv ? `${tvControlClass} w-[340px] text-white placeholder:text-white/60 outline-none` : "h-9 w-56 rounded-full border border-white/[0.14] bg-white/[0.04] px-4 text-[12px] text-white placeholder:text-white/70 outline-none transition hover:border-white/[0.18] hover:bg-white/[0.05] focus:border-white/[0.18] focus:bg-white/[0.05]"
                 }
               ),
+              search ? (
+                /* Rensa: nollställer söket och lämnar tillbaka fokus till
+                   sökfältet — snabb återgång dit man var. */
+                /* @__PURE__ */ jsx(
+                  "button",
+                  {
+                    type: "button",
+                    ...tvStation,
+                    onClick: () => {
+                      setSearch("");
+                      window.requestAnimationFrame(() => document.querySelector("[data-live-tv-search]")?.focus());
+                    },
+                    title: t("cancel"),
+                    "aria-label": t("cancel"),
+                    className: isTv ? `${tvRoundControlClass} !h-[52px] !w-[52px]` : "flex h-9 w-9 items-center justify-center rounded-full border border-white/[0.14] bg-white/[0.04] text-slate-300 transition hover:bg-white/10 hover:text-white",
+                    children: /* @__PURE__ */ jsx("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", children: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12" }) })
+                  }
+                )
+              ) : null,
+              serverSearchState === "loading" ? /* @__PURE__ */ jsx("span", { className: "text-[11px] uppercase tracking-[0.14em] text-white/50", children: "Xtream\u2026" }) : null,
               /* @__PURE__ */ jsxs("div", { ref: groupDropdownRef, className: isTv ? "relative w-[280px]" : "relative w-56", children: [
                 /* @__PURE__ */ jsxs(
                   "button",

@@ -68,6 +68,11 @@ const neutralPillClass = 'rounded-full border border-transparent bg-[#fcfcff14] 
 const tvControlClass = 'h-[52px] rounded-2xl border border-transparent bg-[#fcfcff14] px-6 text-[15px] text-slate-200 backdrop-blur-md transition hover:bg-[#fcfcff22] hover:text-white'
 // Runda ikonknappar för TV: samma visuella språk som tvControlClass men
 // cirkulära — kortens EPG/nåla/spela-rad och menyknappen uppe till höger.
+/** Hela serverutbudet per Xtream-inloggning, hämtat EN gång per session för
+    SÖKNINGEN. Det är lagringen som cappas till 2000 — namnlistan i minnet är
+    billig, och sökningen ska kunna hitta kanaler utanför de lagrade. */
+const xtreamFullSearchCache = new Map<string, M3uChannel[]>()
+
 const tvRoundControlClass = 'flex h-12 w-12 items-center justify-center rounded-full border border-transparent bg-[#fcfcff14] text-slate-300 backdrop-blur-md transition hover:bg-[#fcfcff22] hover:text-white'
 // Sidomenyns rader: fullbreddsvarianten av tvControlClass.
 const tvMenuItemClass = 'flex min-h-[52px] w-full items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.05] px-5 text-left text-[15px] text-slate-200 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white'
@@ -149,6 +154,45 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
   const [error, setError] = useState<string | null>(null)
   const [urls, setUrls] = useState<string[]>([])
   const [search, setSearch] = useState('')
+  // Serversök: träffar ur HELA Xtream-utbudet, inte bara de 2000 lagrade.
+  const [serverHits, setServerHits] = useState<M3uChannel[]>([])
+  const [serverSearchState, setServerSearchState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
+  useEffect(() => {
+    const query = search.trim().toLowerCase()
+    const logins = getXtreamLogins()
+    if (query.length < 2 || logins.length === 0) {
+      setServerHits([])
+      setServerSearchState('idle')
+      return
+    }
+    let cancelled = false
+    const timer = window.setTimeout(async () => {
+      setServerSearchState('loading')
+      try {
+        const hits: M3uChannel[] = []
+        for (const login of logins) {
+          let full = xtreamFullSearchCache.get(login.id)
+          if (!full) {
+            // categoryIds: [] = hela utbudet, oberoende av kategorivalet som
+            // styr vad som LAGRAS. Generöst tak — listan bor bara i minnet.
+            const result = await fetchXtreamChannels({ ...login, categoryIds: [] }, 100000)
+            full = result.channels
+            xtreamFullSearchCache.set(login.id, full)
+          }
+          if (cancelled) return
+          for (const channel of full) {
+            if (channel.name.toLowerCase().includes(query)) hits.push(channel)
+            if (hits.length >= 200) break
+          }
+          if (hits.length >= 200) break
+        }
+        if (!cancelled) { setServerHits(hits); setServerSearchState('done') }
+      } catch {
+        if (!cancelled) { setServerHits([]); setServerSearchState('error') }
+      }
+    }, 350)
+    return () => { cancelled = true; window.clearTimeout(timer) }
+  }, [search])
   const [activeChannel, setActiveChannel] = useState<M3uChannel | null>(null)
   const [activeGroup, setActiveGroup] = useState<string | null>(null)
   const [groupDropdownOpen, setGroupDropdownOpen] = useState(false)
@@ -606,10 +650,16 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
       return matchSearch && matchGroup
     }),
   )
-  const totalPages = Math.max(1, Math.ceil(filtered.length / CHANNELS_PER_PAGE))
+  // Serverträffarna EFTER de lokala, utan dubbletter — de spelas/nålas som
+  // vanliga kanaler men lagras inte.
+  const localChannelKeys = new Set(filtered.map((c) => `${c.name}::${c.url}`))
+  const withServerHits = search.trim().length >= 2 && serverHits.length > 0
+    ? [...filtered, ...serverHits.filter((c) => !localChannelKeys.has(`${c.name}::${c.url}`))]
+    : filtered
+  const totalPages = Math.max(1, Math.ceil(withServerHits.length / CHANNELS_PER_PAGE))
   const safeCurrentPage = Math.min(currentPage, totalPages)
   const pageStart = (safeCurrentPage - 1) * CHANNELS_PER_PAGE
-  const pagedChannels = filtered.slice(pageStart, pageStart + CHANNELS_PER_PAGE)
+  const pagedChannels = withServerHits.slice(pageStart, pageStart + CHANNELS_PER_PAGE)
   const visibleChannelKey = pagedChannels.map((channel) => channel.url).join('|')
 
   useEffect(() => {
@@ -873,6 +923,7 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
               // Sökfältet är vyns ingång: kliver man in i innehållet ska man
               // landa här, inte på en knapp längst till höger.
               {...(isTv ? { 'data-init': '' } : {})}
+              data-live-tv-search=""
               onClick={() => setSearchKeyboardOpen(true)}
               className={`${tvControlClass} w-[340px] text-left ${search ? 'text-white' : 'text-white/60'} outline-none`}
             >
@@ -883,6 +934,7 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
               type="search"
               {...tvStation}
               {...(isTv ? { 'data-init': '' } : {})}
+              data-live-tv-search=""
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t('m3uSearch')}
@@ -891,6 +943,26 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
                 : 'h-9 w-56 rounded-full border border-white/[0.14] bg-white/[0.04] px-4 text-[12px] text-white placeholder:text-white/70 outline-none transition hover:border-white/[0.18] hover:bg-white/[0.05] focus:border-white/[0.18] focus:bg-white/[0.05]'}
             />
           )}
+          {search ? (
+            /* Rensa: nollställer söket och lämnar tillbaka fokus till
+               sökfältet — snabb återgång dit man var. */
+            <button
+              type="button"
+              {...tvStation}
+              onClick={() => {
+                setSearch('')
+                window.requestAnimationFrame(() => document.querySelector<HTMLElement>('[data-live-tv-search]')?.focus())
+              }}
+              title={t('cancel')}
+              aria-label={t('cancel')}
+              className={isTv ? `${tvRoundControlClass} !h-[52px] !w-[52px]` : 'flex h-9 w-9 items-center justify-center rounded-full border border-white/[0.14] bg-white/[0.04] text-slate-300 transition hover:bg-white/10 hover:text-white'}
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12" /></svg>
+            </button>
+          ) : null}
+          {serverSearchState === 'loading' ? (
+            <span className="text-[11px] uppercase tracking-[0.14em] text-white/50">Xtream…</span>
+          ) : null}
           <div ref={groupDropdownRef} className={isTv ? 'relative w-[280px]' : 'relative w-56'}>
             <button
               type="button"
