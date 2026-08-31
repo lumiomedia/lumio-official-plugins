@@ -297,8 +297,10 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
 
       if (event.key === 'ArrowDown' && current === tvMenuButtonRef.current) {
         // Första kortets spela-knapp: primäråtgärden, inte närmaste i sidled.
-        const stations = document.querySelectorAll<HTMLElement>('.live-tv-channel-grid > div:first-child [data-f]')
-        const target = stations[stations.length - 1]
+        // Kortet självt är stationen (hela blocket markeras); äldre markup
+        // hade stationerna INUTI kortet — täck båda.
+        const target = document.querySelector<HTMLElement>('.live-tv-channel-grid > div:first-child[data-f]')
+          ?? document.querySelector<HTMLElement>('.live-tv-channel-grid > div:first-child [data-f]')
         if (!target) return
         event.preventDefault()
         event.stopPropagation()
@@ -1151,7 +1153,20 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
                 return (
                   <div
                     key={`${channel.url}-${i}-${pinVersion}`}
-                    className={`group relative flex min-h-[10.5rem] flex-col items-center gap-3 rounded-2xl border border-white/10 bg-slate-900/95 p-4 ${isTauriEnv ? '' : 'transition hover:-translate-y-0.5 hover:border-accent-400/30 hover:bg-slate-800'}`}
+                    // TV: HELA kortet är stationen (ett steg per kanal i
+                    // rutnätet). OK kliver in i kortet och markerar Spela;
+                    // OK igen startar strömmen. Kortets ring ritas av värdens
+                    // focus-card-ring (saknas klassen i en äldre värd blir
+                    // det bara ringlöst, aldrig trasigt).
+                    {...(isTv ? { 'data-f': '', tabIndex: 0 } : {})}
+                    onKeyDown={isTv ? (event) => {
+                      if (event.currentTarget !== event.target) return
+                      if (event.key !== 'Enter' && event.key !== ' ') return
+                      event.preventDefault()
+                      event.stopPropagation()
+                      event.currentTarget.querySelector<HTMLElement>('[data-card-play]')?.focus()
+                    } : undefined}
+                    className={`${isTv ? 'focus-card-ring ' : ''}group relative flex min-h-[10.5rem] flex-col items-center gap-3 rounded-2xl border border-white/10 bg-slate-900/95 p-4 ${isTauriEnv ? '' : 'transition hover:-translate-y-0.5 hover:border-accent-400/30 hover:bg-slate-800'}`}
                   >
                     {/* De absoluta hörnknapparna (nåla, plus) är skrivbordets.
                         TV får i stället en rad av tre runda stationer nedanför
@@ -1249,10 +1264,42 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
                       // har samma rad, så pilflödet i rutnätet håller geometrin
                       // både vågrätt och lodrätt. EPG-knappen står kvar efter
                       // aktivering (annars tappas fokus när stationen försvinner).
-                      <div className="mt-1 flex items-center justify-center gap-3">
+                      <div
+                        className="mt-1 flex items-center justify-center gap-3"
+                        // Inne i kortet: vänster/höger vandrar mellan knapparna,
+                        // Bakåt/Escape lämnar tillbaka fokus till kortet. Upp/ner
+                        // släpps till motorn, som utgår från kortet (stationen).
+                        onKeyDown={(event) => {
+                          const target = event.target as HTMLElement
+                          if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+                            const buttons = [...event.currentTarget.querySelectorAll<HTMLElement>('button')]
+                            const index = buttons.indexOf(target)
+                            const next = buttons[index + (event.key === 'ArrowRight' ? 1 : -1)]
+                            if (next) { event.preventDefault(); event.stopPropagation(); next.focus() }
+                            return
+                          }
+                          if (event.key === 'Escape' || event.key === 'Backspace') {
+                            event.preventDefault()
+                            event.stopPropagation()
+                            event.currentTarget.closest<HTMLElement>('[data-f]')?.focus()
+                          }
+                        }}
+                      >
                         <button
                           type="button"
-                          {...tvStation}
+                          data-card-play=""
+                          tabIndex={-1}
+                          title={t('play')}
+                          onClick={() => setActiveChannel(channel)}
+                          className="flex h-12 w-12 items-center justify-center rounded-full border border-transparent bg-accent-500 text-white transition hover:bg-accent-400"
+                        >
+                          <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                            <path d="M8 5.5v13l11-6.5-11-6.5Z" />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          tabIndex={-1}
                           title={t('liveTvFetchEpgForChannel')}
                           onClick={() => setTvEpgRequested((current) => ({ ...current, [channel.url]: true }))}
                           className={`${tvRoundControlClass} ${epgRequestedForCard ? '!border-emerald-300/40 !bg-emerald-400/10 !text-emerald-200' : ''}`}
@@ -1261,7 +1308,7 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
                         </button>
                         <button
                           type="button"
-                          {...tvStation}
+                          tabIndex={-1}
                           title={isPinned ? t('unpinChannel') : t('pinChannel')}
                           onClick={() => {
                             togglePinnedLiveTvChannel(channel)
@@ -1272,17 +1319,6 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
                           <svg width="18" height="18" viewBox="0 0 24 24" fill={isPinned ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
                             <path d="M12 17v5" strokeLinecap="round" />
                             <path d="M8 3h8l-1 6 3 3v2H6v-2l3-3-1-6Z" strokeLinejoin="round" />
-                          </svg>
-                        </button>
-                        <button
-                          type="button"
-                          {...tvStation}
-                          title={t('play')}
-                          onClick={() => setActiveChannel(channel)}
-                          className={`${tvRoundControlClass} hover:!border-accent-400/50 hover:!bg-accent-400/10 hover:!text-accent-300`}
-                        >
-                          <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                            <path d="M8 5.5v13l11-6.5-11-6.5Z" />
                           </svg>
                         </button>
                       </div>

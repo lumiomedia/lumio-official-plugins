@@ -169721,7 +169721,6 @@
   // lib/media-stream/filters.ts
   var init_filters = __esm({
     "lib/media-stream/filters.ts"() {
-      "use strict";
       init_profile_storage_shim();
     }
   });
@@ -175803,8 +175802,7 @@
         const current2 = active?.hasAttribute("data-f") ? active : document.querySelector('[data-fcur="1"]');
         if (!current2) return;
         if (event.key === "ArrowDown" && current2 === tvMenuButtonRef.current) {
-          const stations = document.querySelectorAll(".live-tv-channel-grid > div:first-child [data-f]");
-          const target = stations[stations.length - 1];
+          const target = document.querySelector(".live-tv-channel-grid > div:first-child[data-f]") ?? document.querySelector(".live-tv-channel-grid > div:first-child [data-f]");
           if (!target) return;
           event.preventDefault();
           event.stopPropagation();
@@ -176497,7 +176495,15 @@
                 return /* @__PURE__ */ jsxs(
                   "div",
                   {
-                    className: `group relative flex min-h-[10.5rem] flex-col items-center gap-3 rounded-2xl border border-white/10 bg-slate-900/95 p-4 ${isTauriEnv ? "" : "transition hover:-translate-y-0.5 hover:border-accent-400/30 hover:bg-slate-800"}`,
+                    ...isTv ? { "data-f": "", tabIndex: 0 } : {},
+                    onKeyDown: isTv ? (event) => {
+                      if (event.currentTarget !== event.target) return;
+                      if (event.key !== "Enter" && event.key !== " ") return;
+                      event.preventDefault();
+                      event.stopPropagation();
+                      event.currentTarget.querySelector("[data-card-play]")?.focus();
+                    } : void 0,
+                    className: `${isTv ? "focus-card-ring " : ""}group relative flex min-h-[10.5rem] flex-col items-center gap-3 rounded-2xl border border-white/10 bg-slate-900/95 p-4 ${isTauriEnv ? "" : "transition hover:-translate-y-0.5 hover:border-accent-400/30 hover:bg-slate-800"}`,
                     children: [
                       isTv ? null : /* @__PURE__ */ jsx(
                         "button",
@@ -176576,47 +176582,73 @@
                         // har samma rad, så pilflödet i rutnätet håller geometrin
                         // både vågrätt och lodrätt. EPG-knappen står kvar efter
                         // aktivering (annars tappas fokus när stationen försvinner).
-                        /* @__PURE__ */ jsxs("div", { className: "mt-1 flex items-center justify-center gap-3", children: [
-                          /* @__PURE__ */ jsx(
-                            "button",
-                            {
-                              type: "button",
-                              ...tvStation,
-                              title: t("liveTvFetchEpgForChannel"),
-                              onClick: () => setTvEpgRequested((current2) => ({ ...current2, [channel.url]: true })),
-                              className: `${tvRoundControlClass} ${epgRequestedForCard ? "!border-emerald-300/40 !bg-emerald-400/10 !text-emerald-200" : ""}`,
-                              children: /* @__PURE__ */ jsx("span", { className: "text-[10px] font-semibold uppercase tracking-[0.14em]", children: "EPG" })
-                            }
-                          ),
-                          /* @__PURE__ */ jsx(
-                            "button",
-                            {
-                              type: "button",
-                              ...tvStation,
-                              title: isPinned ? t("unpinChannel") : t("pinChannel"),
-                              onClick: () => {
-                                togglePinnedLiveTvChannel(channel);
-                                setPinVersion((value) => value + 1);
-                              },
-                              className: `${tvRoundControlClass} ${isPinned ? "!border-amber-400/40 !bg-amber-400/15 !text-amber-300" : ""}`,
-                              children: /* @__PURE__ */ jsxs("svg", { width: "18", height: "18", viewBox: "0 0 24 24", fill: isPinned ? "currentColor" : "none", stroke: "currentColor", strokeWidth: "2", children: [
-                                /* @__PURE__ */ jsx("path", { d: "M12 17v5", strokeLinecap: "round" }),
-                                /* @__PURE__ */ jsx("path", { d: "M8 3h8l-1 6 3 3v2H6v-2l3-3-1-6Z", strokeLinejoin: "round" })
-                              ] })
-                            }
-                          ),
-                          /* @__PURE__ */ jsx(
-                            "button",
-                            {
-                              type: "button",
-                              ...tvStation,
-                              title: t("play"),
-                              onClick: () => setActiveChannel(channel),
-                              className: `${tvRoundControlClass} hover:!border-accent-400/50 hover:!bg-accent-400/10 hover:!text-accent-300`,
-                              children: /* @__PURE__ */ jsx("svg", { className: "h-[18px] w-[18px]", viewBox: "0 0 24 24", fill: "currentColor", "aria-hidden": true, children: /* @__PURE__ */ jsx("path", { d: "M8 5.5v13l11-6.5-11-6.5Z" }) })
-                            }
-                          )
-                        ] })
+                        /* @__PURE__ */ jsxs(
+                          "div",
+                          {
+                            className: "mt-1 flex items-center justify-center gap-3",
+                            onKeyDown: (event) => {
+                              const target = event.target;
+                              if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+                                const buttons = [...event.currentTarget.querySelectorAll("button")];
+                                const index3 = buttons.indexOf(target);
+                                const next2 = buttons[index3 + (event.key === "ArrowRight" ? 1 : -1)];
+                                if (next2) {
+                                  event.preventDefault();
+                                  event.stopPropagation();
+                                  next2.focus();
+                                }
+                                return;
+                              }
+                              if (event.key === "Escape" || event.key === "Backspace") {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                event.currentTarget.closest("[data-f]")?.focus();
+                              }
+                            },
+                            children: [
+                              /* @__PURE__ */ jsx(
+                                "button",
+                                {
+                                  type: "button",
+                                  "data-card-play": "",
+                                  tabIndex: -1,
+                                  title: t("play"),
+                                  onClick: () => setActiveChannel(channel),
+                                  className: "flex h-12 w-12 items-center justify-center rounded-full border border-transparent bg-accent-500 text-white transition hover:bg-accent-400",
+                                  children: /* @__PURE__ */ jsx("svg", { className: "h-[18px] w-[18px]", viewBox: "0 0 24 24", fill: "currentColor", "aria-hidden": true, children: /* @__PURE__ */ jsx("path", { d: "M8 5.5v13l11-6.5-11-6.5Z" }) })
+                                }
+                              ),
+                              /* @__PURE__ */ jsx(
+                                "button",
+                                {
+                                  type: "button",
+                                  tabIndex: -1,
+                                  title: t("liveTvFetchEpgForChannel"),
+                                  onClick: () => setTvEpgRequested((current2) => ({ ...current2, [channel.url]: true })),
+                                  className: `${tvRoundControlClass} ${epgRequestedForCard ? "!border-emerald-300/40 !bg-emerald-400/10 !text-emerald-200" : ""}`,
+                                  children: /* @__PURE__ */ jsx("span", { className: "text-[10px] font-semibold uppercase tracking-[0.14em]", children: "EPG" })
+                                }
+                              ),
+                              /* @__PURE__ */ jsx(
+                                "button",
+                                {
+                                  type: "button",
+                                  tabIndex: -1,
+                                  title: isPinned ? t("unpinChannel") : t("pinChannel"),
+                                  onClick: () => {
+                                    togglePinnedLiveTvChannel(channel);
+                                    setPinVersion((value) => value + 1);
+                                  },
+                                  className: `${tvRoundControlClass} ${isPinned ? "!border-amber-400/40 !bg-amber-400/15 !text-amber-300" : ""}`,
+                                  children: /* @__PURE__ */ jsxs("svg", { width: "18", height: "18", viewBox: "0 0 24 24", fill: isPinned ? "currentColor" : "none", stroke: "currentColor", strokeWidth: "2", children: [
+                                    /* @__PURE__ */ jsx("path", { d: "M12 17v5", strokeLinecap: "round" }),
+                                    /* @__PURE__ */ jsx("path", { d: "M8 3h8l-1 6 3 3v2H6v-2l3-3-1-6Z", strokeLinejoin: "round" })
+                                  ] })
+                                }
+                              )
+                            ]
+                          }
+                        )
                       ) : null
                     ]
                   },

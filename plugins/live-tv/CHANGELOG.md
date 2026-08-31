@@ -162,3 +162,6 @@
 
 ## 0.3.38
 - Om-release av 0.3.37: Ta bort-knapp per M3U-lista och egen Ta bort (utloggning) per Xtream-inloggning — så uppdateringen når appar som står kvar på 0.3.36.
+
+## 0.3.39
+- TV: kanalkortet är EN fokusstation (hela blocket markeras). OK kliver in och markerar Spela — som är orange och ligger först — OK igen startar strömmen. Vänster/höger vandrar i kortets knapprad, Bakåt lämnar tillbaka fokus till kortet.
