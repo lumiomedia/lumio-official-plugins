@@ -174260,6 +174260,26 @@
                     {
                       type: "button",
                       ...tvStation,
+                      ...isTv ? { "data-init": "" } : {},
+                      ref: (node) => {
+                        if (!isTv || !node || node.dataset.focusAsserted === "1") return;
+                        node.dataset.focusAsserted = "1";
+                        let held = 0;
+                        const deadline = Date.now() + 4e3;
+                        const tick = () => {
+                          if (!node.isConnected) return;
+                          if (node.offsetParent !== null) {
+                            if (document.activeElement === node) {
+                              if (++held >= 5) return;
+                            } else {
+                              held = 0;
+                              node.focus();
+                            }
+                          }
+                          if (Date.now() < deadline) requestAnimationFrame(tick);
+                        };
+                        requestAnimationFrame(tick);
+                      },
                       onClick: handleClose,
                       className: "rounded-full border border-white/15 bg-black/45 px-3 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-200 transition hover:border-white/35 hover:text-white",
                       children: t("close")
@@ -174284,7 +174304,6 @@
                     {
                       type: "button",
                       ...tvStation,
-                      ...isTv ? { "data-init": "" } : {},
                       onClick: toggleMpvPause,
                       className: "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/35 hover:bg-white/15",
                       "aria-label": mpvPaused ? t("play") : t("liveTvPause"),

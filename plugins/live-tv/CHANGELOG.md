@@ -168,3 +168,6 @@
 
 ## 0.3.40
 - Sökningen hittar kanaler ur HELA Xtream-utbudet (inte bara de 2000 lagrade): hela namnlistan hämtas en gång per session och träffarna spelas/nålas direkt. En rensa-knapp nollställer söket och lämnar tillbaka fokus till sökfältet.
+
+## 0.3.41
+- TV: Stäng är första fokus när en ström öppnas — ett OK-tryck stänger, i stället för att fjärren står kvar bakom spelaren.
