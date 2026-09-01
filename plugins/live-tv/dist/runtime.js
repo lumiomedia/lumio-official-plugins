@@ -164627,6 +164627,23 @@
           fullCastTitle: "Full cast & crew",
           fullCastOpen: "Full cast",
           heroCast: "Cast",
+          newSeasonBadge: "New season",
+          homeCardShape: "Card shape",
+          homeCardShapeDesc: "Poster cards or wide backdrop cards on the home rows.",
+          homeRowTitle: "Row name",
+          homeRowTitleDesc: "Your own heading for this row. Empty = the name the source provides.",
+          homeRowTitleDefault: "From the source",
+          homeRowSpoilers: "Spoiler guard",
+          homeRowSpoilersDesc: "Follow the spoiler settings on this row. Off shows episode titles and stills unmasked \u2014 useful where you have already watched, like Continue watching.",
+          cardShapePoster: "Poster",
+          cardShapeLandscape: "Landscape",
+          qrAddonOpen: "Add via phone",
+          qrAddonTitle: "Scan with your phone",
+          qrAddonHint: "Open the page, paste a Stremio manifest URL and send \u2014 it installs right here.",
+          qrAddonNoLan: "No LAN address found \u2014 connect the device to your network.",
+          qrAddonInstallFailed: "Could not install the addon.",
+          qrAddonInstalled: "{name} installed",
+          stremioAddonConfigRequired: "This addon must be configured first \u2014 open its configure page in a browser, pick your options, and paste the personal manifest URL it gives you.",
           fullCastCastTab: "Cast",
           fullCastCrewTab: "Crew",
           fullCastSearch: "Search cast & crew",
@@ -167006,6 +167023,23 @@
           fullCastTitle: "Rollista & team",
           fullCastOpen: "Hela rollistan",
           heroCast: "Rollista",
+          newSeasonBadge: "Ny s\xE4song",
+          homeCardShape: "Kortform",
+          homeCardShapeDesc: "St\xE5ende affischkort eller liggande breda kort p\xE5 hemraderna.",
+          homeRowTitle: "Radnamn",
+          homeRowTitleDesc: "Din egen rubrik f\xF6r raden. Tom = namnet k\xE4llan ger.",
+          homeRowTitleDefault: "Fr\xE5n k\xE4llan",
+          homeRowSpoilers: "Spoilerskydd",
+          homeRowSpoilersDesc: "F\xF6lj spoilerinst\xE4llningarna p\xE5 den h\xE4r raden. Av visar avsnittstitlar och bilder omaskerade \u2014 bra d\xE4r du redan sett, som Forts\xE4tt titta.",
+          cardShapePoster: "St\xE5ende",
+          cardShapeLandscape: "Liggande",
+          qrAddonOpen: "L\xE4gg till via mobilen",
+          qrAddonTitle: "Skanna med mobilen",
+          qrAddonHint: "\xD6ppna sidan, klistra in en Stremio-manifest-URL och skicka \u2014 den installeras direkt h\xE4r.",
+          qrAddonNoLan: "Ingen LAN-adress hittad \u2014 anslut enheten till n\xE4tverket.",
+          qrAddonInstallFailed: "Kunde inte installera addonen.",
+          qrAddonInstalled: "{name} installerad",
+          stremioAddonConfigRequired: "Addonen m\xE5ste konfigureras f\xF6rst \u2014 \xF6ppna dess konfigurationssida i en webbl\xE4sare, g\xF6r dina val och klistra in den personliga manifest-URL du f\xE5r d\xE4r.",
           fullCastCastTab: "Roller",
           fullCastCrewTab: "Team",
           fullCastSearch: "S\xF6k i rollista & team",
@@ -169721,6 +169755,7 @@
   // lib/media-stream/filters.ts
   var init_filters = __esm({
     "lib/media-stream/filters.ts"() {
+      "use strict";
       init_profile_storage_shim();
     }
   });
@@ -173743,8 +173778,11 @@
     const mpvDesktop = useMpvPlayer(engineKind === "mpv");
     const droid = useNativePlayer(isDroidEngine);
     const mpv = isDroidEngine ? droid : mpvDesktop;
+    const IPTV_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
     const engineOpen = useCallback(
-      (url) => isDroidEngine ? openNativePlayer({ url }) : openMpvPlayer({ url }),
+      // Android-spelaren tar inga headers (np-bryggan saknar fältet) — den
+      // vägen är oförändrad tills bryggan stödjer det.
+      (url) => isDroidEngine ? openNativePlayer({ url }) : openMpvPlayer({ url, requestHeaders: { "User-Agent": IPTV_USER_AGENT } }),
       [isDroidEngine]
     );
     const engineClose = useCallback(
@@ -174065,8 +174103,19 @@
             hls.on(Hls.Events.LEVEL_LOADED, () => {
               if (!cancelled) setLoading(false);
             });
+            let renditionFallbacks = 0;
             hls.on(Hls.Events.ERROR, (_, data) => {
               if (cancelled) return;
+              const segmentGone = data.details === "fragLoadError" && data.response?.code === 404;
+              if (segmentGone && renditionFallbacks < 3) {
+                const levels = hls.levels ?? [];
+                const current2 = hls.currentLevel;
+                const next2 = levels.length > 1 ? (current2 + 1) % levels.length : -1;
+                renditionFallbacks += 1;
+                hls.currentLevel = next2;
+                hls.startLoad();
+                return;
+              }
               if (data.fatal) {
                 setError(
                   t("liveTvStreamErrorDetails").replace(

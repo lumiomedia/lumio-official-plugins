@@ -126,8 +126,21 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
   const mpvDesktop = useMpvPlayer(engineKind === 'mpv')
   const droid = useNativePlayer(isDroidEngine)
   const mpv = isDroidEngine ? droid : mpvDesktop
+  /**
+   * IPTV-paneler svarar 403 på tomma eller "app-doftande" User-Agents —
+   * särskilt DASH- och HLS-utlägg som filtrerar på webbläsarsträngar. mpv
+   * skickar sin egen som standard, och Android-spelaren ingen alls. En vanlig
+   * webbläsarsträng är vad panelerna förväntar sig; kanalens egen (från
+   * spellistans user-agent-attribut) vinner när den finns.
+   */
+  const IPTV_USER_AGENT =
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
   const engineOpen = useCallback(
-    (url: string) => (isDroidEngine ? openNativePlayer({ url }) : openMpvPlayer({ url })),
+    // Android-spelaren tar inga headers (np-bryggan saknar fältet) — den
+    // vägen är oförändrad tills bryggan stödjer det.
+    (url: string) => (isDroidEngine
+      ? openNativePlayer({ url })
+      : openMpvPlayer({ url, requestHeaders: { 'User-Agent': IPTV_USER_AGENT } })),
     [isDroidEngine],
   )
   const engineClose = useCallback(
@@ -505,8 +518,22 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
           hls.on(Hls.Events.LEVEL_LOADED, () => {
             if (!cancelled) setLoading(false)
           })
-          hls.on(Hls.Events.ERROR, (_: unknown, data: { fatal?: boolean; type?: string; details?: string }) => {
+          // Ett 404 på ETT segment betyder oftast att just den renditionen
+          // roterat bort hos utgivaren, inte att strömmen är död: byt nivå och
+          // fortsätt i stället för att fälla hela uppspelningen.
+          let renditionFallbacks = 0
+          hls.on(Hls.Events.ERROR, (_: unknown, data: { fatal?: boolean; type?: string; details?: string; response?: { code?: number } }) => {
             if (cancelled) return
+            const segmentGone = data.details === 'fragLoadError' && data.response?.code === 404
+            if (segmentGone && renditionFallbacks < 3) {
+              const levels: unknown[] = (hls as unknown as { levels?: unknown[] }).levels ?? []
+              const current = (hls as unknown as { currentLevel: number }).currentLevel
+              const next = levels.length > 1 ? (current + 1) % levels.length : -1
+              renditionFallbacks += 1
+              ;(hls as unknown as { currentLevel: number }).currentLevel = next
+              hls.startLoad()
+              return
+            }
             if (data.fatal) {
               setError(
                 t('liveTvStreamErrorDetails').replace(

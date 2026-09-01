@@ -174,3 +174,12 @@
 
 ## 0.3.42
 - Att nåla en kanal kapar inte längre vyn till Favoriter (kanalen sorteras först i den vy man står i). Favoriter som startflik gäller bara vid öppning, när nålar redan finns.
+
+## 0.3.43
+
+- IPTV-paneler som svarar 403 på appens egen User-Agent får nu en vanlig
+  webbläsarsträng (skrivbordsspelaren) — det är den kontrollen DASH- och
+  HLS-utlägg oftast fäller på.
+- Ett 404 på ETT HLS-segment fäller inte längre hela strömmen: spelaren byter
+  rendition och fortsätter, i stället för att visa uppspelningsfel när
+  utgivaren roterat bort just den kvaliteten.
