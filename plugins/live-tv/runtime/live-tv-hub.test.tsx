@@ -91,6 +91,12 @@ describe('LiveTvHub', () => {
     expect(screen.getAllByText('Viasat Sport').length).toBeGreaterThan(0)
   })
 
+  it('does not claim LIVE in the hero without a running programme', () => {
+    render(<LiveTvHub onOpenGrid={() => {}} />)
+    expect(screen.getByText('No programme information')).toBeInTheDocument()
+    expect(screen.queryByText('LIVE')).not.toBeInTheDocument()
+  })
+
   it('filters the channel list by group chip and opens the grid on demand', () => {
     const onOpenGrid = vi.fn()
     render(<LiveTvHub onOpenGrid={onOpenGrid} />)
