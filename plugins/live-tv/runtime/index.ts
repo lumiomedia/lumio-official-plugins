@@ -1,9 +1,14 @@
 import { createElement } from 'react'
+import * as sdk from '@/lib/plugin-sdk'
 import { useTvMode, type BrowsePageProps, type LumioPlugin } from '@/lib/plugin-sdk'
+import { getLiveTvHideHero, onLiveTvHideHeroChanged } from './live-tv-data'
 import { LiveTvSettingsSection } from './live-tv-settings-section'
 import { LiveTvHomeOverride } from './live-tv-home-override'
 import { LiveTvGrid } from './live-tv-grid'
 import { LiveTvHub } from './live-tv-hub'
+import { LiveTvEpgPage } from './live-tv-epg-page'
+import { LiveTvChannelPage } from './live-tv-channel-page'
+import { LiveTvSearchPage } from './live-tv-search-page'
 import { useEpgNowNextLater } from './hooks/useEpgNowNextLater'
 import { useEpgLoadStatus } from './hooks/useEpgLoadStatus'
 import { useChannelSchedule } from './hooks/useChannelSchedule'
@@ -58,18 +63,19 @@ function decodeInitialChannel(params?: BrowsePageProps['params']): M3uChannel | 
 
 const LIVE_TV_BROWSE_PAGE_ID = 'live-tv-browse'
 
-// Hubben är startvyn på desktop/mobil. TV-läget behåller rutnätet (det äger
-// fjärrnavigeringen), och en direktlänkad kanal eller view=grid öppnar
-// rutnätet direkt.
+// Sidans vyer (params.view): hub (standard), epg, channel, search, grid.
+// TV-läget behåller rutnätet (det äger fjärrnavigeringen). En direktlänkad
+// kanal utan view (äldre länkar, hemvyn) öppnar rutnätet med kanalen i spel.
 function LiveTvBrowsePage({ params, onNavigate }: BrowsePageProps) {
   const isTv = useTvMode()
-  const initialChannel = decodeInitialChannel(params)
-  if (isTv || initialChannel || params?.view === 'grid') {
-    return createElement(LiveTvGrid, { initialChannel, tvCompactTop: true })
+  const view = params?.view
+  if (isTv || view === 'grid' || (!view && params?.url)) {
+    return createElement(LiveTvGrid, { initialChannel: decodeInitialChannel(params), tvCompactTop: true })
   }
-  return createElement(LiveTvHub, {
-    onOpenGrid: () => onNavigate({ pageId: LIVE_TV_BROWSE_PAGE_ID, params: { view: 'grid' } }),
-  })
+  if (view === 'epg') return createElement(LiveTvEpgPage, { onNavigate })
+  if (view === 'channel') return createElement(LiveTvChannelPage, { params, onNavigate })
+  if (view === 'search') return createElement(LiveTvSearchPage, { params, onNavigate })
+  return createElement(LiveTvHub, { onNavigate })
 }
 
 export const LiveTvPlugin: LumioPlugin = {
@@ -93,10 +99,20 @@ export const LiveTvPlugin: LumioPlugin = {
       label: { en: 'Live TV', sv: 'Live TV' },
       View: LiveTvHomeOverride,
     })
+    // hideHero läses av appar från 0.1.57; typen saknas i äldre SDK, därför
+    // castet. Vid ändring i inställningarna knuffas registret så heron
+    // uppdateras direkt (funktionen finns bara i nyare appar — valfri).
     ctx.registerBrowsePage({
       id: LIVE_TV_BROWSE_PAGE_ID,
       label: { en: 'Live TV', sv: 'Live TV' },
       Page: LiveTvBrowsePage,
-    })
+      hideHero: () => getLiveTvHideHero(),
+    } as Parameters<typeof ctx.registerBrowsePage>[0])
+    if (typeof window !== 'undefined') {
+      onLiveTvHideHeroChanged(() => {
+        const notify = (sdk as unknown as { notifyPluginRegistryChanged?: () => void }).notifyPluginRegistryChanged
+        if (typeof notify === 'function') notify()
+      })
+    }
   },
 }

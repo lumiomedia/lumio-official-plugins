@@ -1,280 +1,56 @@
 'use client'
 
-import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from 'react'
-import { onPluginStorageChanged } from '@/lib/plugin-sdk'
-import { LiveTvLogoImage } from './live-tv-logo-image'
-import { useLiveTvEpgCache } from './hooks/useLiveTvEpgCache'
-import { computeNowNextLater } from './epg/lookup'
-import { buildNameToTvgIdIndex, resolveTvgId } from './epg/name-match'
-import type { EpgProgramme, NowNextLater } from './epg/types'
+import { useMemo, useState } from 'react'
+import type { BrowsePageProps } from '@/lib/plugin-sdk'
+import { channelKey, type M3uChannel } from './live-tv-data'
+import { useLiveTvModel } from './live-tv-model'
 import { useHubText } from './hub-strings'
+import { catchUpAcross, expiresLabel, type CatchUpItem } from './catch-up'
+import { topGroupsFromHistory } from './channel-history'
 import {
-  getChannelHistory,
-  onChannelHistoryChanged,
-  topGroupsFromHistory,
-  type ChannelHistoryEntry,
-} from './channel-history'
-import {
-  LIVE_TV_GLOBAL_EPG_ID,
-  LIVE_TV_PLUGIN_ID,
-  channelKey,
-  getAllLiveTvEpgUrls,
-  getLiveTvLists,
-  getLiveTvLogoSrc,
-  getPinnedLiveTvKeys,
-  onLiveTvListsChanged,
-  onPinnedLiveTvKeysChanged,
-  togglePinnedLiveTvChannel,
-  type LiveTvList,
-  type M3uChannel,
-} from './live-tv-data'
+  Btn,
+  ChannelBadge,
+  Icon,
+  Kicker,
+  LT,
+  LiveTag,
+  LiveTvHeader,
+  ProgressBar,
+  ScrollRow,
+  SectionTitle,
+  Tag,
+  formatClock,
+  heroGradient,
+  progressOf,
+  surfaceCard,
+} from './live-tv-ui'
+import { RemindersMenu, encodeChannelParams, useLiveTvChrome, useLiveTvNav } from './live-tv-shell'
 
 /**
  * Live TV-hubben (handoff §1): nu spelas, favoriter, fortsätt titta,
- * rekommenderat, alla kanaler. Allt underlag är lokalt (kanallistor,
- * EPG-cachen som redan hämtas, kanalhistorik) — hubben lägger inga nya
- * uppslag mot leverantörer.
+ * rekommenderat, alla kanaler. Inga nya uppslag mot leverantörer — allt är
+ * kanallistor, EPG-cachen som redan hämtas och lokal historik.
  */
 
-const EMPTY: NowNextLater = { now: null, next: null, later: null }
-const PLACEHOLDER_NAME_RE = /^[\s=\-_*•·]+|=+/
-const MAX_GROUP_CHIPS = 8
+export { flattenChannels, topGroups } from './live-tv-model'
+
 const MAX_FAVORITES = 12
 const MAX_RECOMMENDED = 12
-const MAX_ALL_CHANNELS = 48
+const MAX_ALL_CHANNELS = 60
 
 interface Props {
-  onOpenGrid: () => void
+  onNavigate: BrowsePageProps['onNavigate']
 }
 
-type PlayerComponent = ComponentType<{
-  channel: M3uChannel
-  onClose: () => void
-  listId?: string | null
-  epgUrls?: string[]
-}>
-
-type GuideComponent = ComponentType<{
-  open: boolean
-  onClose: () => void
-  onPlayChannel: (channel: M3uChannel) => void
-}>
-
-function isPlayableChannel(channel: M3uChannel): boolean {
-  if (!channel.url) return false
-  const trimmedName = channel.name.trim()
-  if (!trimmedName) return false
-  if (PLACEHOLDER_NAME_RE.test(trimmedName) && !channel.tvgId) return false
-  return true
-}
-
-export function flattenChannels(lists: LiveTvList[]): M3uChannel[] {
-  const seen = new Set<string>()
-  const out: M3uChannel[] = []
-  for (const list of lists) {
-    for (const channel of list.channels) {
-      if (!isPlayableChannel(channel)) continue
-      const key = channelKey(channel)
-      if (seen.has(key)) continue
-      seen.add(key)
-      out.push(channel)
-    }
-  }
-  return out
-}
-
-export function topGroups(channels: M3uChannel[], limit = MAX_GROUP_CHIPS): string[] {
-  const counts = new Map<string, number>()
-  for (const channel of channels) {
-    const group = channel.group?.trim()
-    if (!group) continue
-    counts.set(group, (counts.get(group) ?? 0) + 1)
-  }
-  return [...counts.entries()]
-    .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
-    .slice(0, limit)
-    .map(([group]) => group)
-}
-
-function initials(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean)
-  const letters = words.slice(0, 2).map((word) => word[0]?.toUpperCase() ?? '')
-  return letters.join('') || '•'
-}
-
-function progressOf(programme: EpgProgramme | null, nowMs: number): number {
-  if (!programme || programme.stop <= programme.start) return 0
-  return Math.min(1, Math.max(0, (nowMs - programme.start) / (programme.stop - programme.start)))
-}
-
-function ChannelLogo({ channel, className }: { channel: M3uChannel; className: string }) {
-  const [failed, setFailed] = useState(false)
-  const src = getLiveTvLogoSrc(channel.logo)
-  if (src && !failed) {
-    return (
-      <LiveTvLogoImage
-        src={src}
-        alt=""
-        className={`${className} rounded object-contain bg-slate-800/90 p-1`}
-        onError={() => setFailed(true)}
-      />
-    )
-  }
-  return (
-    <div
-      className={`${className} flex items-center justify-center rounded bg-slate-800/90 text-[11px] font-semibold text-white/70`}
-      aria-hidden="true"
-    >
-      {initials(channel.name)}
-    </div>
-  )
-}
-
-function LiveTag({ label }: { label: string }) {
-  return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-rose-200">
-      <span className="h-1.5 w-1.5 rounded-full bg-rose-400" />
-      {label}
-    </span>
-  )
-}
-
-function HeartButton({
-  pinned,
-  onToggle,
-  labelPin,
-  labelUnpin,
-  className = '',
-}: {
-  pinned: boolean
-  onToggle: () => void
-  labelPin: string
-  labelUnpin: string
-  className?: string
-}) {
-  return (
-    <button
-      type="button"
-      onClick={(event) => {
-        event.stopPropagation()
-        onToggle()
-      }}
-      aria-pressed={pinned}
-      aria-label={pinned ? labelUnpin : labelPin}
-      title={pinned ? labelUnpin : labelPin}
-      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70 transition hover:border-white/30 hover:text-white ${className}`}
-    >
-      <svg className="h-4 w-4" viewBox="0 0 24 24" fill={pinned ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
-        <path d="M12 21s-7-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 12C19 16.4 12 21 12 21z" />
-      </svg>
-    </button>
-  )
-}
-
-function Section({
-  title,
-  count,
-  action,
-  children,
-}: {
-  title: string
-  count?: number
-  action?: ReactNode
-  children: ReactNode
-}) {
-  return (
-    <section className="space-y-3">
-      <div className="flex items-center justify-between gap-3">
-        <h3 className="flex items-baseline gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-white/70">
-          {title}
-          {typeof count === 'number' ? <span className="text-xs font-normal tracking-normal text-white/40">{count}</span> : null}
-        </h3>
-        {action}
-      </div>
-      {children}
-    </section>
-  )
-}
-
-export function LiveTvHub({ onOpenGrid }: Props) {
+export function LiveTvHub({ onNavigate }: Props) {
   const { h, locale } = useHubText()
-  const [lists, setLists] = useState<LiveTvList[]>(() => getLiveTvLists())
-  const [pinnedKeys, setPinnedKeys] = useState<string[]>(() => getPinnedLiveTvKeys())
-  const [history, setHistory] = useState<ChannelHistoryEntry[]>(() => getChannelHistory())
+  const model = useLiveTvModel()
+  const go = useLiveTvNav(onNavigate)
+  const { play, chrome } = useLiveTvChrome(model)
   const [activeGroup, setActiveGroup] = useState<string | null>(null)
-  const [nowMs, setNowMs] = useState(() => Date.now())
-  const [activeChannel, setActiveChannel] = useState<M3uChannel | null>(null)
-  const [PlayerComponent, setPlayerComponent] = useState<PlayerComponent | null>(null)
-  const [guideOpen, setGuideOpen] = useState(false)
-  const [GuideComponentState, setGuideComponent] = useState<GuideComponent | null>(null)
+  const effectiveGroup = activeGroup && model.groups.includes(activeGroup) ? activeGroup : null
+  const { channels, nowFor, nowMs, pinnedKeys, pinnedSet, byKey, history } = model
 
-  useEffect(() => {
-    const sync = () => setLists(getLiveTvLists())
-    sync()
-    return onLiveTvListsChanged(sync)
-  }, [])
-  useEffect(() => onPinnedLiveTvKeysChanged(() => setPinnedKeys(getPinnedLiveTvKeys())), [])
-  useEffect(() => onChannelHistoryChanged(() => setHistory(getChannelHistory())), [])
-  useEffect(() => {
-    const timer = window.setInterval(() => setNowMs(Date.now()), 60_000)
-    return () => window.clearInterval(timer)
-  }, [])
-
-  // Spelaren och guiden laddas först när de behövs (samma mönster som hemvyn).
-  useEffect(() => {
-    if (!activeChannel || PlayerComponent) return
-    let cancelled = false
-    void import('./live-tv-player')
-      .then((mod) => {
-        if (!cancelled) setPlayerComponent(() => mod.LiveTvPlayer)
-      })
-      .catch(() => {
-        if (!cancelled) setActiveChannel(null)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [activeChannel, PlayerComponent])
-  useEffect(() => {
-    if (!guideOpen || GuideComponentState) return
-    let cancelled = false
-    void import('./live-tv-guide')
-      .then((mod) => {
-        if (!cancelled) setGuideComponent(() => mod.LiveTvGuide)
-      })
-      .catch(() => {
-        if (!cancelled) setGuideOpen(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [guideOpen, GuideComponentState])
-
-  const channels = useMemo(() => flattenChannels(lists), [lists])
-  const byKey = useMemo(() => new Map(channels.map((channel) => [channelKey(channel), channel])), [channels])
-  const groups = useMemo(() => topGroups(channels), [channels])
-  const effectiveGroup = activeGroup && groups.includes(activeGroup) ? activeGroup : null
-
-  const epgUrls = useMemo(() => getAllLiveTvEpgUrls(lists), [lists])
-  const epgListId = epgUrls.length > 0 ? LIVE_TV_GLOBAL_EPG_ID : null
-  const cache = useLiveTvEpgCache(epgListId, epgUrls)
-  // Ett namnindex för hela hubben i stället för ett per kort.
-  const nameIndex = useMemo(() => (cache ? buildNameToTvgIdIndex(cache) : new Map<string, string>()), [cache])
-  const nowFor = useMemo(() => {
-    const memo = new Map<string, NowNextLater>()
-    return (channel: M3uChannel): NowNextLater => {
-      if (!cache) return EMPTY
-      const key = channelKey(channel)
-      const hit = memo.get(key)
-      if (hit) return hit
-      const tvgId = resolveTvgId(channel.tvgId, channel.name, nameIndex)
-      const value = tvgId ? computeNowNextLater(cache, tvgId, nowMs) : EMPTY
-      memo.set(key, value)
-      return value
-    }
-  }, [cache, nameIndex, nowMs])
-
-  const pinnedSet = useMemo(() => new Set(pinnedKeys), [pinnedKeys])
   const favorites = useMemo(
     () =>
       pinnedKeys
@@ -283,6 +59,10 @@ export function LiveTvHub({ onOpenGrid }: Props) {
         .filter((channel) => !effectiveGroup || channel.group === effectiveGroup)
         .slice(0, MAX_FAVORITES),
     [pinnedKeys, byKey, effectiveGroup],
+  )
+  const catchUp = useMemo<CatchUpItem[]>(
+    () => catchUpAcross(channels, model.cache, model.nameIndex, nowMs, 12),
+    [channels, model.cache, model.nameIndex, nowMs],
   )
   const recent = useMemo(
     () =>
@@ -295,184 +75,150 @@ export function LiveTvHub({ onOpenGrid }: Props) {
     [history, byKey],
   )
   const recommended = useMemo(() => {
-    const preferredGroups = topGroupsFromHistory(history)
-    if (preferredGroups.length === 0) return [] as Array<{ channel: M3uChannel; group: string }>
+    const out: Array<{ channel: M3uChannel; reason: string }> = []
     const skip = new Set([...pinnedKeys, ...history.map((entry) => entry.key)])
-    const out: Array<{ channel: M3uChannel; group: string }> = []
-    for (const group of preferredGroups) {
+    for (const group of topGroupsFromHistory(history)) {
       for (const channel of channels) {
         if (channel.group !== group || skip.has(channelKey(channel))) continue
-        out.push({ channel, group })
+        if (!nowFor(channel).now && out.length >= 4) continue
+        out.push({ channel, reason: h('hubRecommendedBecause', { group }) })
+        skip.add(channelKey(channel))
+        if (out.length >= MAX_RECOMMENDED) return out
+      }
+    }
+    // Komplettera med kanaler i samma grupp som favoriterna.
+    for (const key of pinnedKeys) {
+      const fav = byKey.get(key)
+      if (!fav) continue
+      for (const channel of channels) {
+        if (channel.group !== fav.group || skip.has(channelKey(channel))) continue
+        out.push({ channel, reason: h('hubRecommendedFavourite', { channel: fav.name }) })
+        skip.add(channelKey(channel))
         if (out.length >= MAX_RECOMMENDED) return out
       }
     }
     return out
-  }, [history, pinnedKeys, channels])
+  }, [history, pinnedKeys, channels, byKey, nowFor, h])
   const filteredChannels = useMemo(
     () => (effectiveGroup ? channels.filter((channel) => channel.group === effectiveGroup) : channels),
     [channels, effectiveGroup],
   )
-
-  const hero = useMemo(() => {
-    const withProgramme = favorites.find((channel) => nowFor(channel).now)
-    return (
-      withProgramme ??
+  const hero = useMemo(
+    () =>
+      favorites.find((channel) => nowFor(channel).now) ??
       favorites[0] ??
       recent[0]?.channel ??
       channels.find((channel) => nowFor(channel).now) ??
       channels.find((channel) => Boolean(channel.tvgId)) ??
       channels[0] ??
-      null
-    )
-  }, [favorites, recent, channels, nowFor])
+      null,
+    [favorites, recent, channels, nowFor],
+  )
 
-  const formatTime = (ms: number) => new Date(ms).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+  const openChannel = (channel: M3uChannel) => go('channel', encodeChannelParams(channel))
   const formatWatched = (ms: number) => {
     const sameDay = new Date(ms).toDateString() === new Date(nowMs).toDateString()
-    const time = formatTime(ms)
+    const time = formatClock(ms, locale)
     return h('hubWatchedAt', { time: sameDay ? time : `${h('hubYesterday')} ${time}` })
   }
-  const play = (channel: M3uChannel) => setActiveChannel(channel)
-  const togglePin = (channel: M3uChannel) => setPinnedKeys(togglePinnedLiveTvChannel(channel))
 
   const header = (
-    <div className="flex flex-wrap items-center gap-3">
-      <h2 className="text-xl font-semibold text-white">{h('hubTitle')}</h2>
-      {groups.length > 0 ? (
-        <div className="flex flex-1 flex-wrap items-center gap-2">
-          {[null, ...groups].map((group) => {
-            const selected = group === effectiveGroup
-            return (
-              <button
-                key={group ?? '__all'}
-                type="button"
-                onClick={() => setActiveGroup(group)}
-                aria-pressed={selected}
-                className={`rounded-full border px-3 py-1 text-xs transition ${
-                  selected
-                    ? 'border-white/60 bg-white/15 text-white'
-                    : 'border-white/10 bg-white/5 text-white/70 hover:border-white/30 hover:text-white'
-                }`}
-              >
-                {group ?? h('hubAllGroups')}
-              </button>
-            )
-          })}
-        </div>
-      ) : null}
-      <div className="ml-auto flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setGuideOpen(true)}
-          className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-semibold text-white/80 transition hover:border-white/30 hover:text-white"
-        >
-          {h('hubOpenGuide')}
-        </button>
-        <button
-          type="button"
-          onClick={onOpenGrid}
-          className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-semibold text-white/80 transition hover:border-white/30 hover:text-white"
-        >
-          {h('hubOpenGrid')}
-        </button>
-      </div>
-    </div>
+    <LiveTvHeader
+      title={h('hubTitle')}
+      backLabel={h('back')}
+      right={
+        <>
+          <Btn variant="ghost" icon onClick={() => go('search')} ariaLabel={h('search')} title={h('search')}>
+            <Icon.Search />
+          </Btn>
+          <RemindersMenu model={model} onOpenChannel={openChannel} />
+          <Btn variant="ghost" icon onClick={() => go('grid')} ariaLabel={h('hubOpenGrid')} title={h('hubOpenGrid')}>
+            <Icon.Grid />
+          </Btn>
+        </>
+      }
+    >
+      {model.groups.length > 0
+        ? [null, ...model.groups].map((group) => (
+            <Btn
+              key={group ?? '__all'}
+              variant={group === effectiveGroup ? 'secondary' : 'ghost'}
+              small
+              pressed={group === effectiveGroup}
+              onClick={() => setActiveGroup(group)}
+            >
+              {group ?? h('hubAllGroups')}
+            </Btn>
+          ))
+        : null}
+    </LiveTvHeader>
   )
 
   if (channels.length === 0) {
     return (
-      <div className="space-y-6">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, color: LT.text }}>
         {header}
-        <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-6">
-          <p className="text-base font-semibold text-white">{h('hubEmptyTitle')}</p>
-          <p className="mt-1 text-sm text-slate-400">{h('hubEmptyBody')}</p>
+        <div style={{ ...surfaceCard, padding: 24 }}>
+          <p style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{h('hubEmptyTitle')}</p>
+          <p style={{ margin: '4px 0 0', fontSize: 14, color: LT.muted }}>{h('hubEmptyBody')}</p>
         </div>
       </div>
     )
   }
 
-  const heroInfo = hero ? nowFor(hero) : EMPTY
-  const heroProgress = progressOf(heroInfo.now, nowMs)
+  const heroInfo = hero ? nowFor(hero) : { now: null, next: null, later: null }
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, color: LT.text }}>
       {header}
 
       {hero ? (
         <div className="grid gap-4 lg:grid-cols-5">
-          <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-800/90 to-slate-950 p-5 lg:col-span-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-2">
-                {heroInfo.now ? <LiveTag label={h('hubLive')} /> : null}
-                {hero.group ? (
-                  <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-white/60">
-                    {hero.group}
-                  </span>
-                ) : null}
-              </div>
-              <HeartButton
-                pinned={pinnedSet.has(channelKey(hero))}
-                onToggle={() => togglePin(hero)}
-                labelPin={h('hubPin')}
-                labelUnpin={h('hubUnpin')}
-              />
+          <div className="lg:col-span-3" style={{ ...heroGradient, padding: 24, display: 'flex', flexDirection: 'column', gap: 10, minHeight: 220, justifyContent: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              {heroInfo.now ? <LiveTag label={h('hubLive')} /> : null}
+              {hero.group ? <Tag>{hero.group}</Tag> : null}
+              {model.locked.has(channelKey(hero)) ? <Tag variant="outline"><Icon.Lock /> {h('locked')}</Tag> : null}
             </div>
-            <div className="mt-4 flex items-center gap-4">
-              <ChannelLogo channel={hero} className="h-14 w-14" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-2xl font-semibold text-white sm:text-3xl">{heroInfo.now?.title ?? hero.name}</p>
-                <p className="mt-1 truncate text-sm text-white/70">
-                  {heroInfo.now
-                    ? `${hero.name} · ${formatTime(heroInfo.now.start)}–${formatTime(heroInfo.now.stop)}`
-                    : h('hubNoProgramme')}
-                </p>
-              </div>
+            <h2 className="truncate" style={{ fontSize: 30, margin: 0, fontWeight: 600, lineHeight: 1.15 }}>{heroInfo.now?.title ?? hero.name}</h2>
+            <div style={{ fontSize: 13, color: LT.muted }}>
+              {heroInfo.now
+                ? `${hero.name} · ${formatClock(heroInfo.now.start, locale)}–${formatClock(heroInfo.now.stop, locale)} · ${h('minutesLeft', { min: Math.max(0, Math.round((heroInfo.now.stop - nowMs) / 60_000)) })}`
+                : `${hero.name} · ${h('hubNoProgramme')}`}
             </div>
-            {heroInfo.now ? (
-              <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-white/10">
-                <div className="h-full rounded-full bg-emerald-400" style={{ width: `${Math.round(heroProgress * 100)}%` }} />
-              </div>
-            ) : null}
+            {heroInfo.now ? <ProgressBar value={progressOf(heroInfo.now.start, heroInfo.now.stop, nowMs)} width={320} /> : null}
             {heroInfo.next ? (
-              <p className="mt-2 truncate text-xs text-white/50">
-                {h('hubNext')}: {formatTime(heroInfo.next.start)} · {heroInfo.next.title}
-              </p>
+              <div style={{ fontSize: 12, color: LT.dim }}>{h('nextAt', { title: heroInfo.next.title, time: formatClock(heroInfo.next.start, locale) })}</div>
             ) : null}
-            <div className="mt-5 flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => play(hero)}
-                className="flex h-10 items-center gap-2 rounded-full border border-emerald-300/60 bg-emerald-400/15 px-5 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-100 transition hover:bg-emerald-400/25"
-              >
-                <svg className="h-3.5 w-3.5 translate-x-[1px]" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-                {h('hubWatchNow')}
-              </button>
+            <div style={{ display: 'flex', gap: 8, marginTop: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+              <Btn variant="primary" onClick={() => play({ channel: hero })}>
+                {h('hubWatchNow')} <Icon.ArrowRight />
+              </Btn>
+              <Btn variant="secondary" onClick={() => openChannel(hero)}>
+                {h('channelTitle')}
+              </Btn>
+              <Btn variant="ghost" icon onClick={() => model.togglePin(hero)} ariaLabel={pinnedSet.has(channelKey(hero)) ? h('hubUnpin') : h('hubPin')} style={{ color: pinnedSet.has(channelKey(hero)) ? LT.accent : undefined }}>
+                <Icon.Heart filled={pinnedSet.has(channelKey(hero))} />
+              </Btn>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => setGuideOpen(true)}
-            className="flex flex-col justify-between rounded-3xl border border-white/10 bg-white/[0.02] p-5 text-left transition hover:border-white/30 lg:col-span-2"
-          >
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">{h('hubGuideKicker')}</p>
-              <p className="mt-2 text-lg font-semibold text-white">{h('hubGuideTitle')}</p>
-              <p className="mt-2 text-sm text-slate-400">{h('hubGuideBody')}</p>
-            </div>
-            <span className="mt-5 inline-flex h-10 items-center justify-center rounded-full bg-white/10 px-5 text-xs font-semibold uppercase tracking-[0.18em] text-white">
-              {h('hubOpenGuide')}
-            </span>
-          </button>
+          <div className="lg:col-span-2" style={{ ...surfaceCard, borderRadius: LT.radiusLg, padding: 24, display: 'flex', flexDirection: 'column', gap: 10, justifyContent: 'center' }}>
+            <Kicker>{h('hubGuideKicker')}</Kicker>
+            <div style={{ fontSize: 17, fontWeight: 600 }}>{h('hubGuideTitle')}</div>
+            <p style={{ margin: 0, fontSize: 13, color: LT.muted }}>{h('hubGuideBody')}</p>
+            <Btn variant="primary" block onClick={() => go('epg')} style={{ marginTop: 6 }}>
+              {h('openEpg')} <Icon.Calendar />
+            </Btn>
+          </div>
         </div>
       ) : null}
 
-      <Section title={h('hubFavorites')} count={favorites.length}>
+      <section>
+        <SectionTitle title={h('hubFavorites')} sub={favorites.length > 0 ? h('channelsCount', { count: favorites.length }) : undefined} />
         {favorites.length === 0 ? (
-          <p className="text-sm text-slate-400">{h('hubFavoritesEmpty')}</p>
+          <p style={{ margin: 0, fontSize: 14, color: LT.muted }}>{h('hubFavoritesEmpty')}</p>
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             {favorites.map((channel) => {
               const info = nowFor(channel)
               return (
@@ -480,177 +226,198 @@ export function LiveTvHub({ onOpenGrid }: Props) {
                   key={channelKey(channel)}
                   role="button"
                   tabIndex={0}
-                  onClick={() => play(channel)}
+                  onClick={() => openChannel(channel)}
                   onKeyDown={(event) => {
                     if (event.key === 'Enter' || event.key === ' ') {
                       event.preventDefault()
-                      play(channel)
+                      openChannel(channel)
                     }
                   }}
-                  className="group flex cursor-pointer flex-col gap-2 rounded-2xl border border-white/10 bg-white/[0.02] p-3 transition hover:border-white/30"
+                  className="cursor-pointer transition hover:brightness-125"
+                  style={{ ...surfaceCard, padding: 12, display: 'flex', flexDirection: 'column', gap: 6 }}
                 >
-                  <div className="flex items-center gap-3">
-                    <ChannelLogo channel={channel} className="h-10 w-10" />
-                    <p className="min-w-0 flex-1 truncate text-sm font-semibold text-white">{channel.name}</p>
-                    <HeartButton
-                      pinned
-                      onToggle={() => togglePin(channel)}
-                      labelPin={h('hubPin')}
-                      labelUnpin={h('hubUnpin')}
-                    />
-                  </div>
-                  {info.now ? (
-                    <div className="flex items-center gap-2">
-                      <LiveTag label={h('hubLive')} />
-                      <p className="truncate text-xs text-white/80">{info.now.title}</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <ChannelBadge channel={channel} size={40} />
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div className="truncate" style={{ fontSize: 14, fontWeight: 500 }}>{channel.name}</div>
+                      {info.now ? <div style={{ marginTop: 2 }}><LiveTag label={h('hubLive')} /></div> : null}
                     </div>
-                  ) : (
-                    <p className="truncate text-xs text-white/40">{channel.group}</p>
-                  )}
-                  {info.next ? (
-                    <p className="truncate text-[11px] text-white/50">
-                      {h('hubNext')}: {formatTime(info.next.start)} · {info.next.title}
-                    </p>
-                  ) : null}
+                    <Btn
+                      variant="ghost"
+                      icon
+                      onClick={() => model.togglePin(channel)}
+                      ariaLabel={h('hubUnpin')}
+                      title={h('hubUnpin')}
+                      style={{ color: LT.accent, width: 30, height: 30 }}
+                    >
+                      <Icon.Heart size={16} filled />
+                    </Btn>
+                  </div>
+                  <div className="truncate" style={{ fontSize: 12, color: 'rgba(243,244,248,0.85)' }}>{info.now?.title ?? channel.group}</div>
+                  <div className="truncate" style={{ fontSize: 11, color: LT.dim }}>
+                    {info.next ? h('nextAt', { title: info.next.title, time: formatClock(info.next.start, locale) }) : h('hubNoProgramme')}
+                  </div>
                 </div>
               )
             })}
           </div>
         )}
-      </Section>
+      </section>
 
-      <Section title={h('hubContinue')} count={recent.length}>
-        {recent.length === 0 ? (
-          <p className="text-sm text-slate-400">{h('hubContinueEmpty')}</p>
+      <section>
+        <SectionTitle title={h('hubContinue')} sub={catchUp.length > 0 ? h('hubContinueCatchUp') : h('hubContinueRecent')} />
+        {catchUp.length === 0 && recent.length === 0 ? (
+          <p style={{ margin: 0, fontSize: 14, color: LT.muted }}>{h('hubContinueEmpty')}</p>
         ) : (
-          <div className="flex gap-3 overflow-x-auto pb-2">
+          <ScrollRow>
+            {catchUp.map((item) => {
+              const left = expiresLabel(item.expiresAt, nowMs)
+              return (
+                <button
+                  key={`${channelKey(item.channel)}-${item.programme.start}`}
+                  type="button"
+                  onClick={() => play({ channel: item.channel, url: item.url, label: `${item.channel.name} · ${item.programme.title}` })}
+                  className="transition hover:brightness-110"
+                  style={{ width: 220, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 6, background: 'transparent', border: 0, padding: 0, color: 'inherit', textAlign: 'left', cursor: 'pointer', scrollSnapAlign: 'start', fontFamily: 'inherit' }}
+                >
+                  <div style={{ height: 124, borderRadius: LT.radiusMd, background: 'linear-gradient(135deg, #1b2540, #2a3552)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <ChannelBadge channel={item.channel} size={44} radius={LT.radiusMd} />
+                    <span style={{ position: 'absolute', right: 8, top: 8 }}><Tag variant="accent">{h('catchUp')}</Tag></span>
+                    <span style={{ position: 'absolute', left: 8, bottom: 8, color: LT.text, opacity: 0.9 }}><Icon.Play size={22} /></span>
+                  </div>
+                  <div className="truncate" style={{ fontSize: 13, fontWeight: 500 }}>{item.programme.title}</div>
+                  <div className="truncate" style={{ fontSize: 11, color: LT.dim }}>
+                    {item.channel.name} · {formatClock(item.programme.start, locale)} · {Math.round((item.programme.stop - item.programme.start) / 60_000)} min
+                  </div>
+                  <div style={{ fontSize: 11, color: LT.dim }}>{left.days >= 1 ? h('availableDays', { days: left.days }) : h('availableHours', { hours: left.hours })}</div>
+                </button>
+              )
+            })}
             {recent.map(({ entry, channel }) => {
               const info = nowFor(channel)
               return (
                 <button
                   key={entry.key}
                   type="button"
-                  onClick={() => play(channel)}
-                  className="w-56 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] text-left transition hover:border-white/30"
+                  onClick={() => play({ channel })}
+                  className="transition hover:brightness-110"
+                  style={{ width: 220, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 6, background: 'transparent', border: 0, padding: 0, color: 'inherit', textAlign: 'left', cursor: 'pointer', scrollSnapAlign: 'start', fontFamily: 'inherit' }}
                 >
-                  <div className="relative flex h-28 items-center justify-center bg-gradient-to-br from-slate-800/80 to-slate-950">
-                    <ChannelLogo channel={channel} className="h-12 w-12" />
-                    <span className="absolute bottom-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-white">
-                      <svg className="h-3 w-3 translate-x-[1px]" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M8 5v14l11-7z" />
-                      </svg>
-                    </span>
+                  <div style={{ height: 124, borderRadius: LT.radiusMd, background: 'linear-gradient(135deg, #1b2540, #2a3552)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <ChannelBadge channel={channel} size={44} radius={LT.radiusMd} />
+                    <span style={{ position: 'absolute', left: 8, bottom: 8, color: LT.text, opacity: 0.9 }}><Icon.Play size={22} /></span>
                     {info.now ? (
-                      <div className="absolute inset-x-0 bottom-0 h-1 bg-white/10">
-                        <div className="h-full bg-emerald-400" style={{ width: `${Math.round(progressOf(info.now, nowMs) * 100)}%` }} />
+                      <div style={{ position: 'absolute', left: 8, right: 8, bottom: 8, height: 3, background: 'rgba(0,0,0,0.4)', borderRadius: 3, overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${Math.round(progressOf(info.now.start, info.now.stop, nowMs) * 100)}%`, background: LT.accent }} />
                       </div>
                     ) : null}
                   </div>
-                  <div className="space-y-0.5 p-3">
-                    <p className="truncate text-sm font-semibold text-white">{info.now?.title ?? channel.name}</p>
-                    <p className="truncate text-[11px] text-white/60">
-                      {channel.name}
-                      {channel.group ? ` · ${channel.group}` : ''}
-                    </p>
-                    <p className="truncate text-[11px] text-white/40">{formatWatched(entry.watchedAt)}</p>
+                  <div className="truncate" style={{ fontSize: 13, fontWeight: 500 }}>{info.now?.title ?? channel.name}</div>
+                  <div className="truncate" style={{ fontSize: 11, color: LT.dim }}>
+                    {channel.name}
+                    {channel.group ? ` · ${channel.group}` : ''}
                   </div>
+                  <div style={{ fontSize: 11, color: LT.dim }}>{formatWatched(entry.watchedAt)}</div>
                 </button>
               )
             })}
-          </div>
+          </ScrollRow>
         )}
-      </Section>
+      </section>
 
       {recommended.length > 0 ? (
-        <Section title={h('hubRecommended')}>
-          <div className="flex gap-3 overflow-x-auto pb-2">
-            {recommended.map(({ channel, group }) => {
+        <section>
+          <SectionTitle title={h('hubRecommended')} />
+          <ScrollRow>
+            {recommended.map(({ channel, reason }) => {
               const info = nowFor(channel)
               return (
                 <button
                   key={channelKey(channel)}
                   type="button"
-                  onClick={() => play(channel)}
-                  className="w-60 shrink-0 rounded-2xl border border-white/10 bg-white/[0.02] p-3 text-left transition hover:border-white/30"
+                  onClick={() => openChannel(channel)}
+                  className="transition hover:brightness-125"
+                  style={{ ...surfaceCard, width: 240, flexShrink: 0, padding: 12, display: 'flex', flexDirection: 'column', gap: 4, color: 'inherit', textAlign: 'left', cursor: 'pointer', scrollSnapAlign: 'start', fontFamily: 'inherit' }}
                 >
-                  <p className="truncate text-[10px] uppercase tracking-[0.18em] text-white/40">
-                    {h('hubRecommendedBecause', { group })}
-                  </p>
-                  <div className="mt-2 flex items-center gap-3">
-                    <ChannelLogo channel={channel} className="h-10 w-10" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-white">{channel.name}</p>
-                      <p className="truncate text-[11px] text-white/60">
-                        {info.now ? `${formatTime(info.now.start)} · ${info.now.title}` : channel.group}
-                      </p>
-                    </div>
+                  <Kicker>{reason}</Kicker>
+                  <div className="truncate" style={{ fontSize: 14, fontWeight: 500 }}>{info.now?.title ?? channel.name}</div>
+                  <div className="truncate" style={{ fontSize: 12, color: LT.dim }}>
+                    {channel.name} · {info.now ? h('guideNow') : info.next ? formatClock(info.next.start, locale) : channel.group}
                   </div>
                 </button>
               )
             })}
-          </div>
-        </Section>
+          </ScrollRow>
+        </section>
       ) : null}
 
-      <Section
-        title={h('hubAllChannels')}
-        count={filteredChannels.length}
-        action={
-          filteredChannels.length > MAX_ALL_CHANNELS ? (
-            <button
-              type="button"
-              onClick={onOpenGrid}
-              className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/70 transition hover:border-white/30 hover:text-white"
-            >
-              {h('hubShowAllInGrid', { count: filteredChannels.length })}
-            </button>
-          ) : null
-        }
-      >
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+      <section>
+        <SectionTitle
+          title={h('hubAllChannels')}
+          sub={h('channelsIn', { count: filteredChannels.length, group: effectiveGroup ?? h('hubAllGroups') })}
+          action={
+            filteredChannels.length > MAX_ALL_CHANNELS ? (
+              <Btn variant="ghost" small onClick={() => go('grid')}>{h('hubShowAllInGrid', { count: filteredChannels.length })}</Btn>
+            ) : null
+          }
+        />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {filteredChannels.slice(0, MAX_ALL_CHANNELS).map((channel) => {
             const info = nowFor(channel)
+            const isPinned = pinnedSet.has(channelKey(channel))
             return (
-              <button
+              <div
                 key={channelKey(channel)}
-                type="button"
-                onClick={() => play(channel)}
-                className="flex items-center gap-2 rounded-xl border border-white/5 bg-white/[0.02] px-2 py-1.5 text-left transition hover:border-white/30"
+                role="button"
+                tabIndex={0}
+                onClick={() => openChannel(channel)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    openChannel(channel)
+                  }
+                }}
+                className="cursor-pointer transition hover:brightness-125"
+                style={{ ...surfaceCard, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}
               >
-                <ChannelLogo channel={channel} className="h-8 w-8" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-semibold text-white">{channel.name}</p>
-                  <p className="truncate text-[11px] text-white/50">{info.now?.title ?? channel.group}</p>
+                <ChannelBadge channel={channel} size={44} radius={LT.radiusMd} />
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                    <div className="truncate" style={{ fontSize: 14, fontWeight: 500 }}>{channel.name}</div>
+                    {info.now ? <LiveTag label={h('hubLive')} /> : null}
+                  </div>
+                  <div className="truncate" style={{ fontSize: 12, color: LT.muted }}>{info.now?.title ?? channel.group}</div>
+                  {info.now ? (
+                    <div style={{ marginTop: 6, maxWidth: 220 }}>
+                      <ProgressBar value={progressOf(info.now.start, info.now.stop, nowMs)} height={3} />
+                    </div>
+                  ) : null}
                 </div>
-              </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }} onClick={(event) => event.stopPropagation()}>
+                  <Btn
+                    variant="ghost"
+                    icon
+                    onClick={() => model.togglePin(channel)}
+                    ariaLabel={isPinned ? h('hubUnpin') : h('hubPin')}
+                    title={isPinned ? h('hubUnpin') : h('hubPin')}
+                    style={{ color: isPinned ? LT.accent : undefined, width: 32, height: 32 }}
+                  >
+                    <Icon.Heart size={16} filled={isPinned} />
+                  </Btn>
+                  <Btn variant="ghost" icon onClick={() => openChannel(channel)} ariaLabel={h('channelTitle')} title={h('channelTitle')} style={{ width: 32, height: 32 }}>
+                    <Icon.Info size={16} />
+                  </Btn>
+                  <Btn variant="solid" icon onClick={() => play({ channel })} ariaLabel={h('hubWatchNow')} title={h('hubWatchNow')} style={{ width: 34, height: 34 }}>
+                    <Icon.Play size={13} />
+                  </Btn>
+                </div>
+              </div>
             )
           })}
         </div>
-      </Section>
+      </section>
 
-      {activeChannel && PlayerComponent ? (
-        <PlayerComponent
-          channel={activeChannel}
-          onClose={() => setActiveChannel(null)}
-          listId={epgListId}
-          epgUrls={epgUrls}
-        />
-      ) : null}
-
-      {guideOpen && GuideComponentState ? (
-        <GuideComponentState
-          open={guideOpen}
-          onClose={() => setGuideOpen(false)}
-          onPlayChannel={(channel) => {
-            setGuideOpen(false)
-            setActiveChannel(channel)
-          }}
-        />
-      ) : null}
+      {chrome}
     </div>
   )
 }
-
-// Oanvänd import hålls medvetet: onPluginStorageChanged re-exporteras för
-// tester som vill lyssna på hubbens nycklar via samma väg som datalagret.
-void onPluginStorageChanged

@@ -20,6 +20,30 @@ export interface M3uChannel {
   group: string
   url: string
   tvgId: string | null
+  /**
+   * Xtream-kanaler med tv_archive: underlag för catch-up (timeshift-URL).
+   * Saknas för M3U-listor och för paneler utan arkiv.
+   */
+  archive?: XtreamArchive
+}
+
+export interface XtreamArchive {
+  /** Antal dagar panelen behåller sändningar (tv_archive_duration). */
+  days: number
+  streamId: number
+  base: string
+  username: string
+  password: string
+}
+
+function sanitizeArchive(raw: unknown): XtreamArchive | undefined {
+  if (!raw || typeof raw !== 'object') return undefined
+  const a = raw as Record<string, unknown>
+  const days = Number(a.days)
+  const streamId = Number(a.streamId)
+  if (!Number.isFinite(days) || days <= 0 || !Number.isFinite(streamId) || streamId <= 0) return undefined
+  if (typeof a.base !== 'string' || typeof a.username !== 'string' || typeof a.password !== 'string') return undefined
+  return { days, streamId, base: a.base, username: a.username, password: a.password }
 }
 
 export const LIVE_TV_PLUGIN_ID = 'com.lumio.live-tv'
@@ -58,6 +82,7 @@ function sanitizeChannels(channels: unknown[]): M3uChannel[] {
       group: String(channel.group ?? 'Other').trim() || 'Other',
       url: String(channel.url ?? '').trim(),
       tvgId: typeof channel.tvgId === 'string' && channel.tvgId.trim().length > 0 ? channel.tvgId.trim() : null,
+      ...(sanitizeArchive(channel.archive) ? { archive: sanitizeArchive(channel.archive) } : {}),
     }))
     .filter((channel) => channel.url.length > 0)
 }
@@ -529,6 +554,8 @@ interface XtreamRawStream {
   stream_icon?: unknown
   category_id?: unknown
   epg_channel_id?: unknown
+  tv_archive?: unknown
+  tv_archive_duration?: unknown
 }
 
 function xtreamStreamToChannel(
@@ -540,12 +567,19 @@ function xtreamStreamToChannel(
   if (!Number.isFinite(streamId)) return null
   const icon = typeof stream.stream_icon === 'string' && stream.stream_icon.trim() ? stream.stream_icon.trim() : null
   const epgId = typeof stream.epg_channel_id === 'string' && stream.epg_channel_id.trim() ? stream.epg_channel_id.trim() : null
+  const archiveOn = String(stream.tv_archive ?? '0') === '1'
+  const archiveDays = Number.parseInt(String(stream.tv_archive_duration ?? '0'), 10)
+  const archive: XtreamArchive | undefined =
+    archiveOn && Number.isFinite(archiveDays) && archiveDays > 0
+      ? { days: archiveDays, streamId, base: login.base, username: login.username, password: login.password }
+      : undefined
   return {
     name: String(stream.name ?? 'Unknown').trim() || 'Unknown',
     logo: icon,
     group: categoryNames.get(String(stream.category_id ?? '')) ?? 'Other',
     url: `${login.base}/live/${encodeURIComponent(login.username)}/${encodeURIComponent(login.password)}/${streamId}.${login.format}`,
     tvgId: epgId,
+    ...(archive ? { archive } : {}),
   }
 }
 
@@ -598,4 +632,19 @@ export async function fetchXtreamChannels(login: XtreamLogin, maxChannels: numbe
 
 export function onPinnedLiveTvKeysChanged(listener: () => void): () => void {
   return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, LIVE_TV_PINS_KEY, listener)
+}
+
+/**
+ * "Dölj appens hjälte på Live TV-sidan" — pluginets eget val, läses av appen
+ * via browse-sidans hideHero() (appar från 0.1.57; äldre ignorerar det).
+ */
+const HIDE_HERO_KEY = 'hide_hero'
+export function getLiveTvHideHero(): boolean {
+  return readPluginJson<unknown>(LIVE_TV_PLUGIN_ID, HIDE_HERO_KEY, false) === true
+}
+export function setLiveTvHideHero(hide: boolean): void {
+  writePluginJson(LIVE_TV_PLUGIN_ID, HIDE_HERO_KEY, hide)
+}
+export function onLiveTvHideHeroChanged(listener: () => void): () => void {
+  return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, HIDE_HERO_KEY, listener)
 }

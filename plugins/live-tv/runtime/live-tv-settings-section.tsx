@@ -23,6 +23,8 @@ import {
   setM3uDraftUrls,
   updateLiveTvListEpg,
   type LiveTvList,
+  getLiveTvHideHero,
+  setLiveTvHideHero,
 } from './live-tv-data'
 import { EpgSourcesSection } from './epg-sources-section'
 import { XtreamLoginSection } from './xtream-login-section'
@@ -68,7 +70,8 @@ function xtreamUrlWithoutOutput(raw: string): string | null {
 }
 
 export function LiveTvSettingsSection() {
-  const { t } = useLang()
+  const { t, lang } = useLang()
+  const [hideHero, setHideHero] = useState<boolean>(() => getLiveTvHideHero())
   const [m3uText, setM3uText] = useState('')
   const [m3uFetchState, setM3uFetchState] = useState<'idle' | 'fetching' | 'done' | 'error'>('idle')
   const [homeOverrideEnabled, setHomeOverrideEnabled] = useState(false)
@@ -188,6 +191,23 @@ export function LiveTvSettingsSection() {
           {t('liveTvHomeOverrideDesc')}
         </p>
         {homeOverrideError ? <p className="mt-2 text-xs text-rose-300">{homeOverrideError}</p> : null}
+        <label className="mt-3 flex items-center gap-3 text-sm text-slate-200">
+          <input
+            type="checkbox"
+            checked={hideHero}
+            onChange={(event) => {
+              setLiveTvHideHero(event.target.checked)
+              setHideHero(event.target.checked)
+            }}
+            className="h-4 w-4 accent-amber-400"
+          />
+          {lang === 'sv' ? 'Dölj filmhjälten på Live TV-sidan' : 'Hide the movie hero on the Live TV page'}
+        </label>
+        <p className="mt-2 text-xs text-slate-500">
+          {lang === 'sv'
+            ? 'Live TV börjar då direkt med hubben i stället för under appens hjältekarusell.'
+            : 'Live TV then starts with the hub instead of below the app’s hero carousel.'}
+        </p>
       </div>
       <Textarea
         value={m3uText}

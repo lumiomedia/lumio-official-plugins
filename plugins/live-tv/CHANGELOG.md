@@ -12,6 +12,23 @@
   channel lists, the EPG cache that is already fetched, and local history.
 - Channel guide: Today/Tomorrow tabs (Tomorrow shows the whole day from local
   midnight), and the selected programme's detail strip gets a Watch button.
+- Live TV redesigned after the handoff, in the app's own colours (blur-free
+  glass surfaces): the hub gets the prototype layout with group filters, a
+  now-playing hero, favourites, continue watching (catch-up where the Xtream
+  panel offers an archive, otherwise recently watched), recommendations and a
+  richer all-channels list with play/info/favourite per row.
+- New full-page EPG grid (`view=epg`): sticky channel column, Today/Tomorrow,
+  now-line, programme strip with reminder bell and Watch.
+- New channel page (`view=channel`): hero, today's schedule with reminders,
+  replays, channel information and parental control. Locked channels ask for
+  the profile PIN before playing (needs app 0.1.57+; older apps ignore locks).
+- New search page (`view=search`): channels and today's programmes from the
+  EPG cache. People search is left out — the app has no person search API.
+- Reminders: local store and an in-app scheduler with a banner five minutes
+  before start (system notifications best-effort where the webview allows).
+- Catch-up: Xtream channels with `tv_archive` expose replays via timeshift
+  URLs; M3U lists have no catch-up.
+- Setting: hide the app's movie hero on the Live TV page (app 0.1.57+).
 
 ## 0.3.34
 

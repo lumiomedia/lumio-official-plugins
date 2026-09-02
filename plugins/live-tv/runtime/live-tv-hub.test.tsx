@@ -68,7 +68,7 @@ describe('LiveTvHub helpers', () => {
 describe('LiveTvHub', () => {
   it('shows the empty state when no lists exist', () => {
     writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [])
-    render(<LiveTvHub onOpenGrid={() => {}} />)
+    render(<LiveTvHub onNavigate={() => {}} />)
     expect(screen.getByText('No channels yet')).toBeInTheDocument()
   })
 
@@ -77,7 +77,7 @@ describe('LiveTvHub', () => {
     vi.mocked(useLiveTvEpgCache).mockReturnValue(seedCache(now))
     writePluginJson(LIVE_TV_PLUGIN_ID, 'pins', ['SVT1::http://example.test/svt1'])
     recordChannelWatch(channel('Eurosport', 'Sport'), 'global', now - 60_000)
-    render(<LiveTvHub onOpenGrid={() => {}} />)
+    render(<LiveTvHub onNavigate={() => {}} />)
 
     // Hero: favourite with a running programme wins.
     expect(screen.getAllByText('Rapport').length).toBeGreaterThan(0)
@@ -92,25 +92,26 @@ describe('LiveTvHub', () => {
   })
 
   it('does not claim LIVE in the hero without a running programme', () => {
-    render(<LiveTvHub onOpenGrid={() => {}} />)
-    expect(screen.getByText('No programme information')).toBeInTheDocument()
+    render(<LiveTvHub onNavigate={() => {}} />)
+    expect(screen.getAllByText(/No programme information/).length).toBeGreaterThan(0)
     expect(screen.queryByText('LIVE')).not.toBeInTheDocument()
   })
 
   it('filters the channel list by group chip and opens the grid on demand', () => {
-    const onOpenGrid = vi.fn()
-    render(<LiveTvHub onOpenGrid={onOpenGrid} />)
+    const onNavigate = vi.fn()
+    render(<LiveTvHub onNavigate={onNavigate} />)
     // Gruppchipsen renderas först i DOM:en; kanalrader kan bära samma gruppnamn.
     fireEvent.click(screen.getAllByRole('button', { name: 'Nyheter' })[0])
     expect(screen.getAllByText('SVT1').length).toBeGreaterThan(0)
     expect(screen.queryByText('Eurosport')).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'All channels' }))
-    expect(onOpenGrid).toHaveBeenCalledTimes(1)
+    fireEvent.click(screen.getAllByRole('button', { name: 'All channels' })[0])
+    expect(onNavigate).toHaveBeenCalledWith({ pageId: 'live-tv-browse', params: { view: 'grid' } })
   })
 
   it('opens the player when a channel is chosen', async () => {
-    render(<LiveTvHub onOpenGrid={() => {}} />)
-    fireEvent.click(screen.getAllByRole('button', { name: /TV4/ })[0])
+    render(<LiveTvHub onNavigate={() => {}} />)
+    // Hjältens "Watch now" öppnar spelaren; kanalraderna öppnar kanaldetaljen.
+    fireEvent.click(screen.getAllByRole('button', { name: 'Watch now' })[0])
     expect(await screen.findByTestId('player')).toBeInTheDocument()
   })
 })
