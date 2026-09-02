@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- New Live TV hub as the start view of the Live TV page on desktop and phone:
+  a "now playing" hero from the EPG cache, favourite channels, "Continue
+  watching" (a local history of the last 20 channels, recorded when the player
+  opens), "Recommended for you" (channels from the groups you watch most) and a
+  compact all-channels grid with group filter chips. The full channel grid stays
+  one tap away ("All channels") and remains the default on TV, where it owns
+  remote navigation. No new provider lookups: everything is built from the
+  channel lists, the EPG cache that is already fetched, and local history.
+
 ## 0.3.34
 
 - The aspect-ratio button in the player controls shows its icon only when the

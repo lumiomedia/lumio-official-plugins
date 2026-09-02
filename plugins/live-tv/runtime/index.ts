@@ -1,8 +1,9 @@
 import { createElement } from 'react'
-import type { BrowsePageProps, LumioPlugin } from '@/lib/plugin-sdk'
+import { useTvMode, type BrowsePageProps, type LumioPlugin } from '@/lib/plugin-sdk'
 import { LiveTvSettingsSection } from './live-tv-settings-section'
 import { LiveTvHomeOverride } from './live-tv-home-override'
 import { LiveTvGrid } from './live-tv-grid'
+import { LiveTvHub } from './live-tv-hub'
 import { useEpgNowNextLater } from './hooks/useEpgNowNextLater'
 import { useEpgLoadStatus } from './hooks/useEpgLoadStatus'
 import { useChannelSchedule } from './hooks/useChannelSchedule'
@@ -55,8 +56,20 @@ function decodeInitialChannel(params?: BrowsePageProps['params']): M3uChannel | 
   }
 }
 
-function LiveTvBrowsePage({ params }: BrowsePageProps) {
-  return createElement(LiveTvGrid, { initialChannel: decodeInitialChannel(params), tvCompactTop: true })
+const LIVE_TV_BROWSE_PAGE_ID = 'live-tv-browse'
+
+// Hubben är startvyn på desktop/mobil. TV-läget behåller rutnätet (det äger
+// fjärrnavigeringen), och en direktlänkad kanal eller view=grid öppnar
+// rutnätet direkt.
+function LiveTvBrowsePage({ params, onNavigate }: BrowsePageProps) {
+  const isTv = useTvMode()
+  const initialChannel = decodeInitialChannel(params)
+  if (isTv || initialChannel || params?.view === 'grid') {
+    return createElement(LiveTvGrid, { initialChannel, tvCompactTop: true })
+  }
+  return createElement(LiveTvHub, {
+    onOpenGrid: () => onNavigate({ pageId: LIVE_TV_BROWSE_PAGE_ID, params: { view: 'grid' } }),
+  })
 }
 
 export const LiveTvPlugin: LumioPlugin = {
@@ -81,7 +94,7 @@ export const LiveTvPlugin: LumioPlugin = {
       View: LiveTvHomeOverride,
     })
     ctx.registerBrowsePage({
-      id: 'live-tv-browse',
+      id: LIVE_TV_BROWSE_PAGE_ID,
       label: { en: 'Live TV', sv: 'Live TV' },
       Page: LiveTvBrowsePage,
     })

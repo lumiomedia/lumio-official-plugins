@@ -28,6 +28,7 @@ import {
 } from '@/lib/plugin-sdk'
 import { LiveTvLogoImage } from './live-tv-logo-image'
 import { getLiveTvLogoSrc } from './live-tv-data'
+import { recordChannelWatch } from './channel-history'
 import { PlayerNowOverlay } from './player-now-overlay'
 import { PlayerScheduleOverlay } from './player-schedule-overlay'
 
@@ -86,6 +87,10 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
    */
   const isTv = useTvMode()
   const tvStation = isTv ? { 'data-f': '' } : {}
+  // Hubbens "Fortsätt titta": en post per kanal, senast sedd först.
+  useEffect(() => {
+    recordChannelWatch(channel, listId)
+  }, [channel.url, channel.name, listId])
   const videoRef = useRef<HTMLVideoElement>(null)
   const stageRef = useRef<HTMLDivElement>(null)
   const controlsHideTimerRef = useRef<number | null>(null)

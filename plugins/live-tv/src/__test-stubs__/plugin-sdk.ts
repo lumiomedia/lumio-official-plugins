@@ -70,3 +70,16 @@ export function __resetForTests(): void {
   memory.clear()
   listeners.clear()
 }
+
+// Ytterligare SDK-yta som hubben och datalagret rör vid utan att testa den.
+export function getPluginHttpAssetUrl(path: string, asset: string | null | undefined): string | null {
+  return asset ? `${path}?src=${encodeURIComponent(asset)}` : null
+}
+export function isPluginImageLoaded(): boolean {
+  return false
+}
+export async function preloadPluginImage(): Promise<void> {}
+export function clearPluginMemoryCache(): void {}
+export function useTvMode(): boolean {
+  return false
+}

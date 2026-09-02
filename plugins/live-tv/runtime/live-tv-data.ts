@@ -75,7 +75,7 @@ function sanitizeStringArray(values: unknown): string[] {
   return values.filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
 }
 
-function channelKey(channel: Pick<M3uChannel, 'name' | 'url'>): string {
+export function channelKey(channel: Pick<M3uChannel, 'name' | 'url'>): string {
   return `${String(channel.name ?? '').trim()}::${String(channel.url ?? '').trim()}`
 }
 
@@ -594,4 +594,8 @@ export async function fetchXtreamChannels(login: XtreamLogin, maxChannels: numbe
     }
   }
   return { channels, urlTvg, total }
+}
+
+export function onPinnedLiveTvKeysChanged(listener: () => void): () => void {
+  return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, LIVE_TV_PINS_KEY, listener)
 }
