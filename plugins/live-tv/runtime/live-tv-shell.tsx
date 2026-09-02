@@ -42,6 +42,7 @@ type PlayerComponent = ComponentType<{
   onClose: () => void
   listId?: string | null
   epgUrls?: string[]
+  onSwitchChannel?: (channel: M3uChannel) => void
 }>
 
 export interface PlayRequest {
@@ -113,6 +114,7 @@ export function useLiveTvChrome(model: LiveTvModel): { play: (request: PlayReque
           onClose={() => setActive(null)}
           listId={model.epgListId}
           epgUrls={model.epgUrls}
+          onSwitchChannel={(channel) => setActive({ channel })}
         />
       ) : null}
       <PinGate

@@ -217,6 +217,7 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
     onClose: () => void
     listId?: string | null
     epgUrls?: string[]
+    onSwitchChannel?: (channel: M3uChannel) => void
   }> | null>(null)
   const urlsKey = getLiveTvUrlsKey(urls)
   const m3uErrorText = t('m3uError')
@@ -1415,6 +1416,7 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
           onClose={() => setActiveChannel(null)}
           listId={globalEpgListId}
           epgUrls={globalEpgUrls}
+          onSwitchChannel={setActiveChannel}
         />
       ) : null}
 

@@ -31,6 +31,7 @@ import { getLiveTvLogoSrc } from './live-tv-data'
 import { recordChannelWatch } from './channel-history'
 import { PlayerNowOverlay } from './player-now-overlay'
 import { PlayerScheduleOverlay } from './player-schedule-overlay'
+import { PlayerFavouritesRow, PlayerNextUpCard, PlayerProgrammeProgress } from './player-extras'
 
 interface M3uChannel {
   name: string
@@ -45,6 +46,8 @@ interface LiveTvPlayerProps {
   onClose: () => void
   listId?: string | null
   epgUrls?: string[]
+  /** Guide-radens kanalbyte (favoriter). Utan den visar Guide-knappen tablån. */
+  onSwitchChannel?: (channel: M3uChannel) => void
 }
 
 function isIosWebKitBrowser(): boolean {
@@ -76,7 +79,7 @@ function formatClock(seconds: number): string {
 
 const MPV_STARTUP_TIMEOUT_MS = 18_000
 
-export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: LiveTvPlayerProps) {
+export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], onSwitchChannel }: LiveTvPlayerProps) {
   const { t } = useLang()
   /**
    * TV-läget: spelaren är en helskärmsoverlay och därmed fokusfälla
@@ -101,6 +104,9 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
   const [htmlPaused, setHtmlPaused] = useState(false)
   const [controlsVisible, setControlsVisible] = useState(true)
   const [scheduleOpen, setScheduleOpen] = useState(false)
+  // Guide-raden (favoriter med nu-titel) under kontrollerna — handoff §4.
+  const [miniEpgOpen, setMiniEpgOpen] = useState(true)
+  const canSwitch = typeof onSwitchChannel === 'function' && !isTv
   const [portalEl] = useState<HTMLElement | null>(() => {
     if (typeof document === 'undefined') return null
     const div = document.createElement('div')
@@ -763,9 +769,16 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
             )}
             <div className="min-w-0">
               <p className="truncate font-semibold text-white">{channel.name}</p>
-              {channel.group && <p className="truncate text-xs text-slate-300">{channel.group}</p>}
+              <div className="min-w-0">
+                <PlayerNowOverlay channel={channel} listId={listId} urls={epgUrls} />
+              </div>
             </div>
           </div>
+          {!isTv ? (
+            <div className="hidden min-w-0 flex-1 justify-center sm:flex">
+              <PlayerNextUpCard channel={channel} listId={listId} urls={epgUrls} />
+            </div>
+          ) : null}
           <button
             type="button"
             {...tvStation}
@@ -806,6 +819,9 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
             pointerEvents: controlsVisible ? 'auto' : 'none',
           }}
         >
+          <div className="mb-2 px-1">
+            <PlayerProgrammeProgress channel={channel} listId={listId} urls={epgUrls} />
+          </div>
           <div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-black/55 px-4 py-3 text-white shadow-2xl backdrop-blur-md">
             <button
               type="button"
@@ -849,15 +865,15 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
             <button
               type="button"
               {...tvStation}
-              onClick={() => setScheduleOpen((open) => !open)}
+              onClick={() => (canSwitch ? setMiniEpgOpen((open) => !open) : setScheduleOpen((open) => !open))}
               className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-white transition ${
-                scheduleOpen
+                (canSwitch ? miniEpgOpen : scheduleOpen)
                   ? 'border-emerald-300/60 bg-emerald-400/20 hover:border-emerald-200/80'
                   : 'border-white/15 bg-white/10 hover:border-white/35 hover:bg-white/15'
               }`}
               aria-label={t('liveTvGuide')}
               title={t('liveTvGuide')}
-              aria-pressed={scheduleOpen}
+              aria-pressed={canSwitch ? miniEpgOpen : scheduleOpen}
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="4" width="18" height="16" rx="2" />
@@ -973,10 +989,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
                 <span className="inline-flex h-6 shrink-0 items-center rounded-full border border-red-400/35 bg-red-500/15 px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-red-200">
                   {t('liveTvLiveBadge')}
                 </span>
-                <p className="shrink-0 truncate text-sm font-semibold text-white">{channel.name}</p>
-                <div className="min-w-0 flex-1">
-                  <PlayerNowOverlay channel={channel} listId={listId} urls={epgUrls} />
-                </div>
+                <p className="min-w-0 truncate text-sm font-semibold text-white">{channel.name}</p>
               </div>
               <div className="mt-1 flex min-w-0 items-center gap-3 text-xs text-slate-300">
                 <span>{mpvPaused ? t('liveTvPaused') : t('liveTvPlaying')}</span>
@@ -997,6 +1010,9 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [] }: 
               <span>Live TV</span>
             </div>
           </div>
+          {canSwitch && miniEpgOpen && onSwitchChannel ? (
+            <PlayerFavouritesRow current={channel} listId={listId} urls={epgUrls} onSwitch={onSwitchChannel} />
+          ) : null}
         </div>
         <PlayerScheduleOverlay
           channel={channel}

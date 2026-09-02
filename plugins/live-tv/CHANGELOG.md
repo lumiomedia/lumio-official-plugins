@@ -29,6 +29,10 @@
 - Catch-up: Xtream channels with `tv_archive` expose replays via timeshift
   URLs; M3U lists have no catch-up.
 - Setting: hide the app's movie hero on the Live TV page (app 0.1.57+).
+- Player: the current programme sits under the channel name in the top bar, a
+  "Next up" card with "Remind me" floats top-centre, the programme's progress
+  runs above the controls, and the Guide button toggles a favourites row with
+  now-titles for switching channels (TV keeps the schedule overlay).
 
 ## 0.3.34
 
