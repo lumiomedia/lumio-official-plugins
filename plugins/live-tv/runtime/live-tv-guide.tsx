@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { onTvFocusEdge, useLang, useTvMode } from '@/lib/plugin-sdk'
 import { LiveTvLogoImage } from './live-tv-logo-image'
 import { useLiveTvEpgCache } from './hooks/useLiveTvEpgCache'
+import { useHubText } from './hub-strings'
 import { buildNameToTvgIdIndex, resolveTvgId } from './epg/name-match'
 import {
   getAllLiveTvEpgUrls,
@@ -29,6 +30,14 @@ const HEAD_HEIGHT = 32
 const CHANNEL_COL_WIDTH = 220
 const WINDOW_HOURS_BEFORE = 1
 const WINDOW_HOURS_TOTAL = 12
+// Imorgon-fliken visar hela dygnet från midnatt (lokal tid).
+const TOMORROW_WINDOW_HOURS = 24
+
+function startOfNextLocalDay(ms: number): number {
+  const d = new Date(ms)
+  d.setHours(24, 0, 0, 0)
+  return d.getTime()
+}
 
 function alignToHalfHour(ms: number): number {
   const date = new Date(ms)
@@ -85,6 +94,9 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
   const [lists, setLists] = useState<LiveTvList[]>(() => getLiveTvLists())
   const [activeListId, setActiveListId] = useState<string | null>(null)
   const [nowTick, setNowTick] = useState(() => Date.now())
+  // 0 = idag (rullande fönster runt nu), 1 = imorgon (hela dygnet).
+  const [dayOffset, setDayOffset] = useState<0 | 1>(0)
+  const { h } = useHubText()
   const [selectedChannel, setSelectedChannel] = useState<M3uChannel | null>(null)
   const [channelFilter, setChannelFilter] = useState<M3uChannel | null>(null)
   const [selectedProgramme, setSelectedProgramme] = useState<EpgProgramme | null>(null)
@@ -127,10 +139,13 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
   const cache = useLiveTvEpgCache(epgUrls.length > 0 ? LIVE_TV_GLOBAL_EPG_ID : null, epgUrls)
 
   const windowStart = useMemo(
-    () => alignToHalfHour(nowTick - WINDOW_HOURS_BEFORE * 3_600_000),
-    [nowTick],
+    () =>
+      dayOffset === 1
+        ? startOfNextLocalDay(nowTick)
+        : alignToHalfHour(nowTick - WINDOW_HOURS_BEFORE * 3_600_000),
+    [nowTick, dayOffset],
   )
-  const windowEnd = windowStart + WINDOW_HOURS_TOTAL * 3_600_000
+  const windowEnd = windowStart + (dayOffset === 1 ? TOMORROW_WINDOW_HOURS : WINDOW_HOURS_TOTAL) * 3_600_000
 
   const halfHourSlots = useMemo(() => {
     const slots: number[] = []
@@ -353,10 +368,30 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
           >
             {selectedChannel ? selectedChannel.name : t('liveTvSelectedChannel')}
           </button>
+          {([0, 1] as const).map((offset) => (
+            <button
+              key={offset}
+              type="button"
+              {...tvStation}
+              onClick={() => {
+                setDayOffset(offset)
+                setSelectedProgramme(null)
+              }}
+              aria-pressed={dayOffset === offset}
+              className={`rounded-full border px-3 py-1.5 text-[11px] uppercase tracking-[0.22em] transition ${
+                dayOffset === offset
+                  ? 'border-white/60 bg-white/15 text-white'
+                  : 'border-transparent bg-[#fcfcff14] backdrop-blur-md text-slate-200 hover:text-white'
+              }`}
+            >
+              {offset === 0 ? h('guideToday') : h('guideTomorrow')}
+            </button>
+          ))}
           <button
             type="button"
             {...tvStation}
             onClick={() => {
+              setDayOffset(0)
               const target = bodyRef.current
               if (!target) return
               target.scrollLeft = Math.max(0, nowLineLeft - target.clientWidth * 0.15)
@@ -557,6 +592,23 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
           {selectedProgramme.description ? (
             <p className="mt-1 line-clamp-2 text-xs text-white/60">{selectedProgramme.description}</p>
           ) : null}
+          {(() => {
+            const row = rows.find((entry) => entry.channel === selectedChannel)
+            if (!row) return null
+            return (
+              <button
+                type="button"
+                {...tvStation}
+                onClick={() => onPlayChannel(row.channel, row.list)}
+                className="mt-2 inline-flex h-8 items-center gap-2 rounded-full border border-emerald-300/60 bg-emerald-400/15 px-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-100 transition hover:bg-emerald-400/25"
+              >
+                <svg className="h-3 w-3 translate-x-[1px]" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+                {h('guideWatch')}
+              </button>
+            )
+          })()}
         </div>
       ) : null}
     </div>

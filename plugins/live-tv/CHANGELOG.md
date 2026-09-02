@@ -10,6 +10,8 @@
   one tap away ("All channels") and remains the default on TV, where it owns
   remote navigation. No new provider lookups: everything is built from the
   channel lists, the EPG cache that is already fetched, and local history.
+- Channel guide: Today/Tomorrow tabs (Tomorrow shows the whole day from local
+  midnight), and the selected programme's detail strip gets a Watch button.
 
 ## 0.3.34
 

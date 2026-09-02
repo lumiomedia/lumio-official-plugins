@@ -32,6 +32,9 @@ const EN = {
   hubEmptyBody: 'Add an M3U playlist or an Xtream login under Settings → Live TV.',
   hubPin: 'Add to favourites',
   hubUnpin: 'Remove from favourites',
+  guideToday: 'Today',
+  guideTomorrow: 'Tomorrow',
+  guideWatch: 'Watch',
 } as const
 
 const SV: Record<keyof typeof EN, string> = {
@@ -60,6 +63,9 @@ const SV: Record<keyof typeof EN, string> = {
   hubEmptyBody: 'Lägg till en M3U-lista eller en Xtream-inloggning under Inställningar → Live TV.',
   hubPin: 'Lägg till i favoriter',
   hubUnpin: 'Ta bort från favoriter',
+  guideToday: 'Idag',
+  guideTomorrow: 'Imorgon',
+  guideWatch: 'Titta',
 }
 
 export type HubStringKey = keyof typeof EN
