@@ -278,14 +278,14 @@ export function LiveTvHub({ onNavigate }: Props) {
                   type="button"
                   onClick={() => play({ channel: item.channel, url: item.url, label: `${item.channel.name} · ${item.programme.title}` })}
                   className="transition hover:brightness-110"
-                  style={{ width: 220, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 6, background: 'transparent', border: 0, padding: 0, color: 'inherit', textAlign: 'left', cursor: 'pointer', scrollSnapAlign: 'start', fontFamily: 'inherit' }}
+                  style={{ width: 220, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 6, background: 'transparent', border: 0, padding: 0, color: 'inherit', textAlign: 'left', cursor: 'pointer', scrollSnapAlign: 'start', fontFamily: 'inherit' }}
                 >
-                  <div style={{ height: 124, borderRadius: LT.radiusMd, background: 'linear-gradient(135deg, #1b2540, #2a3552)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ width: '100%', height: 124, borderRadius: LT.radiusMd, background: 'linear-gradient(135deg, #1b2540, #2a3552)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <ChannelBadge channel={item.channel} size={44} radius={LT.radiusMd} />
                     <span style={{ position: 'absolute', right: 8, top: 8 }}><Tag variant="accent">{h('catchUp')}</Tag></span>
                     <span style={{ position: 'absolute', left: 8, bottom: 8, color: LT.text, opacity: 0.9 }}><Icon.Play size={22} /></span>
                   </div>
-                  <div className="truncate" style={{ fontSize: 13, fontWeight: 500 }}>{item.programme.title}</div>
+                  <div className="truncate" style={{ width: '100%', fontSize: 13, fontWeight: 500 }}>{item.programme.title}</div>
                   <div className="truncate" style={{ fontSize: 11, color: LT.dim }}>
                     {item.channel.name} · {formatClock(item.programme.start, locale)} · {Math.round((item.programme.stop - item.programme.start) / 60_000)} min
                   </div>
@@ -301,9 +301,9 @@ export function LiveTvHub({ onNavigate }: Props) {
                   type="button"
                   onClick={() => play({ channel })}
                   className="transition hover:brightness-110"
-                  style={{ width: 220, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 6, background: 'transparent', border: 0, padding: 0, color: 'inherit', textAlign: 'left', cursor: 'pointer', scrollSnapAlign: 'start', fontFamily: 'inherit' }}
+                  style={{ width: 220, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 6, background: 'transparent', border: 0, padding: 0, color: 'inherit', textAlign: 'left', cursor: 'pointer', scrollSnapAlign: 'start', fontFamily: 'inherit' }}
                 >
-                  <div style={{ height: 124, borderRadius: LT.radiusMd, background: 'linear-gradient(135deg, #1b2540, #2a3552)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ width: '100%', height: 124, borderRadius: LT.radiusMd, background: 'linear-gradient(135deg, #1b2540, #2a3552)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <ChannelBadge channel={channel} size={44} radius={LT.radiusMd} />
                     <span style={{ position: 'absolute', left: 8, bottom: 8, color: LT.text, opacity: 0.9 }}><Icon.Play size={22} /></span>
                     {info.now ? (
@@ -312,7 +312,7 @@ export function LiveTvHub({ onNavigate }: Props) {
                       </div>
                     ) : null}
                   </div>
-                  <div className="truncate" style={{ fontSize: 13, fontWeight: 500 }}>{info.now?.title ?? channel.name}</div>
+                  <div className="truncate" style={{ width: '100%', fontSize: 13, fontWeight: 500 }}>{info.now?.title ?? channel.name}</div>
                   <div className="truncate" style={{ fontSize: 11, color: LT.dim }}>
                     {channel.name}
                     {channel.group ? ` · ${channel.group}` : ''}
@@ -337,7 +337,7 @@ export function LiveTvHub({ onNavigate }: Props) {
                   type="button"
                   onClick={() => openChannel(channel)}
                   className="transition hover:brightness-125"
-                  style={{ ...surfaceCard, width: 240, flexShrink: 0, padding: 12, display: 'flex', flexDirection: 'column', gap: 4, color: 'inherit', textAlign: 'left', cursor: 'pointer', scrollSnapAlign: 'start', fontFamily: 'inherit' }}
+                  style={{ ...surfaceCard, width: 240, flexShrink: 0, padding: 12, display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 4, color: 'inherit', textAlign: 'left', cursor: 'pointer', scrollSnapAlign: 'start', fontFamily: 'inherit' }}
                 >
                   <Kicker>{reason}</Kicker>
                   <div className="truncate" style={{ fontSize: 14, fontWeight: 500 }}>{info.now?.title ?? channel.name}</div>

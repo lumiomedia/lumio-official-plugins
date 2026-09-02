@@ -199,7 +199,7 @@ export function LiveTvChannelPage({ params, onNavigate }: Props) {
                         className="transition hover:brightness-110"
                         style={{ width: 220, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 6, background: 'transparent', border: 0, padding: 0, color: 'inherit', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit' }}
                       >
-                        <div style={{ height: 110, borderRadius: LT.radiusMd, background: 'linear-gradient(135deg, #1b2540, #2a3552)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                        <div style={{ width: '100%', height: 110, borderRadius: LT.radiusMd, background: 'linear-gradient(135deg, #1b2540, #2a3552)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                           <Icon.Play size={26} />
                           <span style={{ position: 'absolute', right: 8, top: 8 }}><Tag variant="accent">{h('catchUp')}</Tag></span>
                         </div>

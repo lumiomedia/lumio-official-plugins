@@ -105,7 +105,6 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
   const [controlsVisible, setControlsVisible] = useState(true)
   const [scheduleOpen, setScheduleOpen] = useState(false)
   // Guide-raden (favoriter med nu-titel) under kontrollerna — handoff §4.
-  const [miniEpgOpen, setMiniEpgOpen] = useState(true)
   const canSwitch = typeof onSwitchChannel === 'function' && !isTv
   const [portalEl] = useState<HTMLElement | null>(() => {
     if (typeof document === 'undefined') return null
@@ -865,15 +864,15 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
             <button
               type="button"
               {...tvStation}
-              onClick={() => (canSwitch ? setMiniEpgOpen((open) => !open) : setScheduleOpen((open) => !open))}
+              onClick={() => setScheduleOpen((open) => !open)}
               className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-white transition ${
-                (canSwitch ? miniEpgOpen : scheduleOpen)
+                scheduleOpen
                   ? 'border-emerald-300/60 bg-emerald-400/20 hover:border-emerald-200/80'
                   : 'border-white/15 bg-white/10 hover:border-white/35 hover:bg-white/15'
               }`}
               aria-label={t('liveTvGuide')}
               title={t('liveTvGuide')}
-              aria-pressed={canSwitch ? miniEpgOpen : scheduleOpen}
+              aria-pressed={scheduleOpen}
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="4" width="18" height="16" rx="2" />
@@ -1010,7 +1009,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
               <span>Live TV</span>
             </div>
           </div>
-          {canSwitch && miniEpgOpen && onSwitchChannel ? (
+          {canSwitch && onSwitchChannel ? (
             <PlayerFavouritesRow current={channel} listId={listId} urls={epgUrls} onSwitch={onSwitchChannel} />
           ) : null}
         </div>
