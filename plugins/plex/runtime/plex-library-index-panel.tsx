@@ -129,17 +129,8 @@ export function PlexLibraryIndexPanel() {
         ) : null}
       </div>
 
-      <label className="mt-4 flex items-center gap-3 text-sm text-slate-200">
-        <input
-          type="checkbox"
-          disabled={!mine}
-          checked={Boolean(source && mode?.sourceId === source.id)}
-          onChange={(event) => setLibraryMode(event.target.checked && source ? { sourceId: source.id } : null)}
-          className="h-4 w-4 accent-amber-400"
-        />
-        {t('plexIndexUseAsHome')}
-      </label>
-      <p className="mt-1 text-xs text-slate-500">{t('plexIndexUseAsHomeDesc')}</p>
+      {/* "Använd som startsida" bor i appens inställningar (Hem → Layout →
+          Bibliotek): inställningen är kärnans och gäller alla leverantörer. */}
     </div>
   )
 }
