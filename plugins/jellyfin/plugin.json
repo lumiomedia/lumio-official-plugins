@@ -1,0 +1,22 @@
+{
+  "id": "com.lumio.jellyfin",
+  "slug": "jellyfin",
+  "name": {
+    "en": "Jellyfin",
+    "sv": "Jellyfin"
+  },
+  "version": "0.1.0",
+  "description": {
+    "en": "Index your Jellyfin server as a library: home rows, search, details and playback straight from what you own.",
+    "sv": "Indexera din Jellyfin-server som bibliotek: startsida, sök, detaljsida och uppspelning direkt ur det du äger."
+  },
+  "runtimeBundlePath": "dist/runtime.js",
+  "official": true,
+  "bundled": true,
+  "removable": true,
+  "sdkCapabilities": [
+    "settings-section",
+    "library-provider",
+    "main-menu-item"
+  ]
+}
