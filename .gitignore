@@ -1,2 +1,5 @@
 .DS_Store
 
+
+# Git worktrees (e.g. a checkout frozen at a released commit for hotfix builds)
+.worktrees/
