@@ -6,6 +6,7 @@ import { LiveTvSettingsSection } from './live-tv-settings-section'
 import { LiveTvHomeOverride } from './live-tv-home-override'
 import { LiveTvGrid } from './live-tv-grid'
 import { LiveTvHub } from './live-tv-hub'
+import { LiveTvRemindersMount } from './live-tv-reminders-mount'
 import { LiveTvEpgPage } from './live-tv-epg-page'
 import { LiveTvChannelPage } from './live-tv-channel-page'
 import { useEpgNowNextLater } from './hooks/useEpgNowNextLater'
@@ -88,6 +89,8 @@ export const LiveTvPlugin: LumioPlugin = {
   preinstalled: true,
 
   register(ctx) {
+    // Påminnelser om kommande program, oavsett var i appen man står.
+    ctx.registerBootstrap({ id: 'live-tv-reminders', Mount: LiveTvRemindersMount })
     ctx.registerSettingsSection({
       id: 'm3u',
       label: { en: 'Live TV', sv: 'Live TV' },

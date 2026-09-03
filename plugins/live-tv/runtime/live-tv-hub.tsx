@@ -1,7 +1,7 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import type { BrowsePageProps } from '@/lib/plugin-sdk'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useTvMode, type BrowsePageProps } from '@/lib/plugin-sdk'
 import { channelKey, type M3uChannel } from './live-tv-data'
 import { useLiveTvModel } from './live-tv-model'
 import { useHubText } from './hub-strings'
@@ -48,6 +48,18 @@ export function LiveTvHub({ onNavigate }: Props) {
   const go = useLiveTvNav(onNavigate)
   const { play, chrome } = useLiveTvChrome(model)
   const [activeGroup, setActiveGroup] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
+  const [groupMenuOpen, setGroupMenuOpen] = useState(false)
+  const groupMenuRef = useRef<HTMLDivElement | null>(null)
+  const isTv = useTvMode()
+  useEffect(() => {
+    if (!groupMenuOpen) return
+    const onDown = (event: MouseEvent) => {
+      if (!groupMenuRef.current?.contains(event.target as Node)) setGroupMenuOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [groupMenuOpen])
   const effectiveGroup = activeGroup && model.groups.includes(activeGroup) ? activeGroup : null
   const { channels, nowFor, nowMs, pinnedKeys, pinnedSet, byKey, history } = model
 
@@ -99,9 +111,12 @@ export function LiveTvHub({ onNavigate }: Props) {
     }
     return out
   }, [history, pinnedKeys, channels, byKey, nowFor, h])
+  const needle = query.trim().toLowerCase()
   const filteredChannels = useMemo(
-    () => (effectiveGroup ? channels.filter((channel) => channel.group === effectiveGroup) : channels),
-    [channels, effectiveGroup],
+    () => channels
+      .filter((channel) => !effectiveGroup || channel.group === effectiveGroup)
+      .filter((channel) => !needle || channel.name.toLowerCase().includes(needle) || (channel.group ?? '').toLowerCase().includes(needle)),
+    [channels, effectiveGroup, needle],
   )
   const hero = useMemo(
     () =>
@@ -135,19 +150,49 @@ export function LiveTvHub({ onNavigate }: Props) {
         </>
       }
     >
-      {model.groups.length > 0
-        ? [null, ...model.groups].map((group) => (
-            <Btn
-              key={group ?? '__all'}
-              variant={group === effectiveGroup ? 'secondary' : 'ghost'}
-              small
-              pressed={group === effectiveGroup}
-              onClick={() => setActiveGroup(group)}
-            >
-              {group ?? h('hubAllGroups')}
-            </Btn>
-          ))
-        : null}
+      {/* Sök (öppet fält på skrivbord), grupper i en dropdown och EPG som knapp
+          — i stället för en chiprad som svämmade över med långa gruppnamn
+          (Jerry 2026-09-03). På TV finns inget tangentbord i fältet; där
+          söker man i rutnätet. */}
+      {!isTv ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, borderRadius: 999, border: `1px solid ${LT.line}`, background: 'rgba(255,255,255,0.04)', padding: '0 12px', height: 36, minWidth: 220 }}>
+          <Icon.Search size={14} />
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={h('searchPlaceholder')}
+            aria-label={h('search')}
+            style={{ flex: 1, minWidth: 0, background: 'transparent', border: 0, outline: 'none', color: LT.text, fontSize: 13, fontFamily: 'inherit' }}
+          />
+        </div>
+      ) : null}
+      {model.groups.length > 0 ? (
+        <div ref={groupMenuRef} style={{ position: 'relative' }}>
+          <Btn variant={effectiveGroup ? 'secondary' : 'ghost'} small pressed={groupMenuOpen} onClick={() => setGroupMenuOpen((open) => !open)}>
+            <span className="truncate" style={{ maxWidth: 220, display: 'inline-block', verticalAlign: 'bottom' }}>{effectiveGroup ?? h('hubAllGroups')}</span>
+            <Icon.ChevronDown size={14} />
+          </Btn>
+          {groupMenuOpen ? (
+            <div style={{ position: 'absolute', left: 0, top: 'calc(100% + 6px)', zIndex: 50, minWidth: 240, maxHeight: 360, overflowY: 'auto', background: '#0b1020', border: `1px solid ${LT.line}`, borderRadius: LT.radiusMd, padding: 6, boxShadow: '0 18px 40px rgba(0,0,0,0.45)' }}>
+              {[null, ...model.groups].map((group) => (
+                <button
+                  key={group ?? '__all'}
+                  type="button"
+                  onClick={() => { setActiveGroup(group); setGroupMenuOpen(false) }}
+                  className="truncate"
+                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', borderRadius: LT.radiusSm, border: 0, background: group === effectiveGroup ? 'rgba(255,255,255,0.10)' : 'transparent', color: group === effectiveGroup ? LT.text : LT.muted, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
+                >
+                  {group ?? h('hubAllGroups')}
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+      <Btn variant="secondary" small onClick={() => go('epg')}>
+        <Icon.Calendar size={14} /> {h('openEpg')}
+      </Btn>
     </LiveTvHeader>
   )
 
@@ -169,9 +214,9 @@ export function LiveTvHub({ onNavigate }: Props) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24, color: LT.text }}>
       {header}
 
-      {hero ? (
-        <div className="grid gap-4 lg:grid-cols-5">
-          <div className="lg:col-span-3" style={{ ...heroGradient, padding: 24, display: 'flex', flexDirection: 'column', gap: 10, minHeight: 220, justifyContent: 'center' }}>
+      {hero && !needle ? (
+        <div className="grid gap-4">
+          <div style={{ ...heroGradient, padding: 24, display: 'flex', flexDirection: 'column', gap: 10, minHeight: 220, justifyContent: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               {heroInfo.now ? <LiveTag label={h('hubLive')} /> : null}
               {hero.group ? <Tag>{hero.group}</Tag> : null}
@@ -198,14 +243,6 @@ export function LiveTvHub({ onNavigate }: Props) {
                 <Icon.Heart filled={pinnedSet.has(channelKey(hero))} />
               </Btn>
             </div>
-          </div>
-          <div className="lg:col-span-2" style={{ ...surfaceCard, borderRadius: LT.radiusLg, padding: 24, display: 'flex', flexDirection: 'column', gap: 10, justifyContent: 'center' }}>
-            <Kicker>{h('hubGuideKicker')}</Kicker>
-            <div style={{ fontSize: 17, fontWeight: 600 }}>{h('hubGuideTitle')}</div>
-            <p style={{ margin: 0, fontSize: 13, color: LT.muted }}>{h('hubGuideBody')}</p>
-            <Btn variant="primary" block onClick={() => go('epg')} style={{ marginTop: 6 }}>
-              {h('openEpg')} <Icon.Calendar />
-            </Btn>
           </div>
         </div>
       ) : null}

@@ -10,6 +10,9 @@ import {
   useTvMode,
 } from '@/lib/plugin-sdk'
 import { LiveTvLogoImage } from './live-tv-logo-image'
+import { startOfLocalDay, useLiveTvModel, type LiveTvModel } from './live-tv-model'
+import { Btn, ChannelBadge, Kicker, LT, LiveTag, ProgressBar, formatClock, progressOf } from './live-tv-ui'
+import { useHubText } from './hub-strings'
 import { NowBadge } from './now-badge'
 import { ResultsPagination } from './results-pagination'
 import {
@@ -194,6 +197,10 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
     return () => { cancelled = true; window.clearTimeout(timer) }
   }, [search])
   const [activeChannel, setActiveChannel] = useState<M3uChannel | null>(null)
+  // Högerkolumnen (60/40): dagens tablå för kanalen under pekaren/fokus.
+  const [previewChannel, setPreviewChannel] = useState<M3uChannel | null>(null)
+  const model = useLiveTvModel()
+  const h = useHubText()
   const [activeGroup, setActiveGroup] = useState<string | null>(null)
   const [groupDropdownOpen, setGroupDropdownOpen] = useState(false)
   const [pinVersion, setPinVersion] = useState(0)
@@ -1193,8 +1200,12 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
-            <div className="live-tv-channel-grid grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          // 60/40 (Jerry 2026-09-03): kanalerna till vänster, dagens tablå för
+          // kanalen under pekaren till höger, så bredbilden fylls i stället för
+          // att korten står i en rad med tomrum bredvid. Under xl: bara korten.
+          <div className="xl:flex xl:items-start xl:gap-6">
+          <div className="space-y-4 xl:w-[60%]">
+            <div className="live-tv-channel-grid grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-3 2xl:grid-cols-4">
               {pagedChannels.map((channel, i) => {
                 const logoSrc = loadedLogoUrls[channel.url] ?? null
                 const channelListKey = `${channel.name}::${channel.url}`
@@ -1231,6 +1242,8 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
                 return (
                   <div
                     key={`${channel.url}-${i}-${pinVersion}`}
+                    onMouseEnter={() => setPreviewChannel(channel)}
+                    onFocus={() => setPreviewChannel(channel)}
                     // TV: HELA kortet är stationen (ett steg per kanal i
                     // rutnätet). OK kliver in i kortet och markerar Spela;
                     // OK igen startar strömmen. Kortets ring ritas av värdens
@@ -1406,6 +1419,15 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
               })}
             </div>
             <ResultsPagination currentPage={safeCurrentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+          </div>
+          <aside className="hidden xl:block xl:sticky xl:top-4 xl:w-[40%]">
+            <ChannelSidePanel
+              channel={previewChannel ?? pagedChannels[0] ?? null}
+              model={model}
+              h={h}
+              onPlay={(channel) => setActiveChannel(channel)}
+            />
+          </aside>
           </div>
         )}
       </div>
@@ -1713,5 +1735,75 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
         />
       ) : null}
     </>
+  )
+}
+
+/**
+ * Dagens tablå för en kanal — högerkolumnen i rutnätets 60/40-layout. Ren
+ * information: klick på korten spelar som förut, panelens Spela-knapp är en
+ * genväg. Nu-programmet markeras och rullas in i bild.
+ */
+function ChannelSidePanel({
+  channel,
+  model,
+  h,
+  onPlay,
+}: {
+  channel: M3uChannel | null
+  model: LiveTvModel
+  h: ReturnType<typeof useHubText>
+  onPlay: (channel: M3uChannel) => void
+}) {
+  const { lang } = useLang()
+  const locale = lang === 'sv' ? 'sv-SE' : 'en-GB'
+  const nowRef = useRef<HTMLDivElement | null>(null)
+  const { nowMs } = model
+  const schedule = channel ? model.scheduleFor(channel, startOfLocalDay(nowMs), startOfLocalDay(nowMs, 1)) : []
+  const info = channel ? model.nowFor(channel) : { now: null, next: null, later: null }
+  useEffect(() => {
+    nowRef.current?.scrollIntoView({ block: 'center' })
+  }, [channel?.url, schedule.length])
+  if (!channel) return null
+  return (
+    <div style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${LT.line}`, borderRadius: LT.radiusLg, padding: 16, display: 'flex', flexDirection: 'column', gap: 12, maxHeight: 'calc(100vh - 140px)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <ChannelBadge channel={channel} size={48} radius={LT.radiusMd} />
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div className="truncate" style={{ fontSize: 16, fontWeight: 600 }}>{channel.name}</div>
+          <div className="truncate" style={{ fontSize: 12, color: LT.dim }}>{channel.group || '—'}</div>
+        </div>
+        <Btn variant="primary" small onClick={() => onPlay(channel)}>{h('hubWatchNow')}</Btn>
+      </div>
+      {info.now ? (
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <LiveTag label={h('hubLive')} />
+            <div className="truncate" style={{ fontSize: 14, fontWeight: 500 }}>{info.now.title}</div>
+          </div>
+          <div style={{ marginTop: 6 }}><ProgressBar value={progressOf(info.now.start, info.now.stop, nowMs)} height={3} /></div>
+        </div>
+      ) : null}
+      <Kicker>{h('hubGuideKicker')}</Kicker>
+      {schedule.length === 0 ? (
+        <p style={{ margin: 0, fontSize: 13, color: LT.muted }}>{h('hubNoProgramme')}</p>
+      ) : (
+        <div style={{ overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {schedule.map((programme) => {
+            const isNow = programme.start <= nowMs && programme.stop > nowMs
+            const past = programme.stop <= nowMs
+            return (
+              <div
+                key={programme.start}
+                ref={isNow ? nowRef : undefined}
+                style={{ display: 'flex', gap: 10, padding: '7px 10px', borderRadius: LT.radiusSm, background: isNow ? LT.accentDeep : 'transparent', opacity: past ? 0.5 : 1 }}
+              >
+                <span style={{ width: 44, flexShrink: 0, fontSize: 12, color: isNow ? LT.text : LT.dim, fontVariantNumeric: 'tabular-nums' }}>{formatClock(programme.start, locale)}</span>
+                <span className="truncate" style={{ fontSize: 13, fontWeight: isNow ? 600 : 400 }}>{programme.title}</span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
   )
 }

@@ -144,11 +144,20 @@ export function LiveTvEpgPage({ onNavigate }: Props) {
                       const left = ((start - windowStart) / 60_000) * PX_PER_MIN
                       const isNow = programme.start <= nowMs && programme.stop > nowMs
                       const isSelected = selected?.programme.start === programme.start && selected.channel.url === channel.url
+                      const reminded = isReminded(channel, programme)
                       return (
                         <button
                           key={programme.start}
                           type="button"
                           onClick={() => setSelected({ channel, programme })}
+                          // Dubbelklick = påminnelse av/på direkt i rutan (Jerry 2026-09-03):
+                          // ett klick markerar, men ingenting hände förrän man hittade
+                          // klockan i detaljraden. Klockikonen i rutan visar läget.
+                          onDoubleClick={() => {
+                            setSelected({ channel, programme })
+                            toggleReminder(channel, programme)
+                            setReminderTick((value) => value + 1)
+                          }}
                           title={`${programme.title} ${formatClock(programme.start, locale)}–${formatClock(programme.stop, locale)}`}
                           style={{
                             position: 'absolute',
@@ -169,10 +178,16 @@ export function LiveTvEpgPage({ onNavigate }: Props) {
                             fontFamily: 'inherit',
                           }}
                         >
-                          <div className="truncate" style={{ fontSize: 12, fontWeight: 500 }}>{programme.title}</div>
+                          <div className="truncate" style={{ fontSize: 12, fontWeight: 500, paddingRight: reminded ? 16 : 0 }}>{programme.title}</div>
                           <div style={{ fontSize: 10, color: LT.dim }}>
                             {formatClock(programme.start, locale)}–{formatClock(programme.stop, locale)}
                           </div>
+                          {reminded ? (
+                            <svg aria-label={h('reminderOn')} viewBox="0 0 24 24" width="12" height="12" fill="none" stroke={LT.accent} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', right: 6, top: 6 }}>
+                              <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2H4.5L6 16z" />
+                              <path d="M10 20a2 2 0 0 0 4 0" />
+                            </svg>
+                          ) : null}
                         </button>
                       )
                     })}

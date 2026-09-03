@@ -14,7 +14,7 @@ import {
   pinSupportAvailable,
   verifyActiveProfilePin,
 } from './channel-locks'
-import { reminderToChannel, removeReminder, startReminderScheduler, tryNativeNotification, type Reminder } from './reminders'
+import { reminderToChannel, removeReminder, type Reminder } from './reminders'
 
 export const LIVE_TV_BROWSE_PAGE_ID = 'live-tv-browse'
 export type LiveTvView = 'hub' | 'epg' | 'channel' | 'grid'
@@ -79,14 +79,10 @@ export function useLiveTvChrome(model: LiveTvModel): { play: (request: PlayReque
     }
   }, [active, PlayerComponentState])
 
-  useEffect(
-    () =>
-      startReminderScheduler((reminder) => {
-        setBanner(reminder)
-        tryNativeNotification(reminder.title, h('startsNow', { channel: reminder.channelName }))
-      }),
-    [h],
-  )
+  // Påminnelseschemat körs app-övergripande i pluginets bootstrap
+  // (live-tv-reminders-mount.tsx); sidans egen banner hålls kvar tyst för
+  // äldre värdar som inte monterar bootstraps.
+  void setBanner
 
   const play = useCallback(
     (request: PlayRequest) => {
