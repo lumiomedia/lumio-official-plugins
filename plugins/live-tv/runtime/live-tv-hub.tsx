@@ -128,9 +128,6 @@ export function LiveTvHub({ onNavigate }: Props) {
       backLabel={h('back')}
       right={
         <>
-          <Btn variant="ghost" icon onClick={() => go('search')} ariaLabel={h('search')} title={h('search')}>
-            <Icon.Search />
-          </Btn>
           <RemindersMenu model={model} onOpenChannel={openChannel} />
           <Btn variant="ghost" icon onClick={() => go('grid')} ariaLabel={h('hubOpenGrid')} title={h('hubOpenGrid')}>
             <Icon.Grid />

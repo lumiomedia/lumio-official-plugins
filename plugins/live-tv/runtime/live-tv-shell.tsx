@@ -17,7 +17,7 @@ import {
 import { reminderToChannel, removeReminder, startReminderScheduler, tryNativeNotification, type Reminder } from './reminders'
 
 export const LIVE_TV_BROWSE_PAGE_ID = 'live-tv-browse'
-export type LiveTvView = 'hub' | 'epg' | 'channel' | 'search' | 'grid'
+export type LiveTvView = 'hub' | 'epg' | 'channel' | 'grid'
 
 export function encodeChannelParams(channel: M3uChannel): Record<string, string> {
   return {

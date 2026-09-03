@@ -93,9 +93,6 @@ export function LiveTvEpgPage({ onNavigate }: Props) {
         backLabel={h('back')}
         right={
           <>
-            <Btn variant="ghost" icon onClick={() => go('search')} ariaLabel={h('search')} title={h('search')}>
-              <Icon.Search />
-            </Btn>
             <RemindersMenu model={model} onOpenChannel={(channel) => go('channel', encodeChannelParams(channel))} />
           </>
         }

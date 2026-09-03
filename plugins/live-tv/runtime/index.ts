@@ -8,7 +8,6 @@ import { LiveTvGrid } from './live-tv-grid'
 import { LiveTvHub } from './live-tv-hub'
 import { LiveTvEpgPage } from './live-tv-epg-page'
 import { LiveTvChannelPage } from './live-tv-channel-page'
-import { LiveTvSearchPage } from './live-tv-search-page'
 import { useEpgNowNextLater } from './hooks/useEpgNowNextLater'
 import { useEpgLoadStatus } from './hooks/useEpgLoadStatus'
 import { useChannelSchedule } from './hooks/useChannelSchedule'
@@ -63,7 +62,8 @@ function decodeInitialChannel(params?: BrowsePageProps['params']): M3uChannel | 
 
 const LIVE_TV_BROWSE_PAGE_ID = 'live-tv-browse'
 
-// Sidans vyer (params.view): hub (standard), epg, channel, search, grid.
+// Sidans vyer (params.view): hub (standard), epg, channel, grid. Sökvyn togs bort
+// 2026-09-03 (Jerry): kanalsök sker i hubbens och rutnätets egna fält.
 // TV-läget behåller rutnätet (det äger fjärrnavigeringen). En direktlänkad
 // kanal utan view (äldre länkar, hemvyn) öppnar rutnätet med kanalen i spel.
 function LiveTvBrowsePage({ params, onNavigate }: BrowsePageProps) {
@@ -74,7 +74,6 @@ function LiveTvBrowsePage({ params, onNavigate }: BrowsePageProps) {
   }
   if (view === 'epg') return createElement(LiveTvEpgPage, { onNavigate })
   if (view === 'channel') return createElement(LiveTvChannelPage, { params, onNavigate })
-  if (view === 'search') return createElement(LiveTvSearchPage, { params, onNavigate })
   return createElement(LiveTvHub, { onNavigate })
 }
 
