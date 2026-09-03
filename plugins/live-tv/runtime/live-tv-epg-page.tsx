@@ -155,6 +155,11 @@ export function LiveTvEpgPage({ onNavigate }: Props) {
                           // klockan i detaljraden. Klockikonen i rutan visar läget.
                           onDoubleClick={() => {
                             setSelected({ channel, programme })
+                            // Pågående program: ingen påminnelse att sätta — spela kanalen.
+                            if (isNow) {
+                              play({ channel })
+                              return
+                            }
                             toggleReminder(channel, programme)
                             setReminderTick((value) => value + 1)
                           }}

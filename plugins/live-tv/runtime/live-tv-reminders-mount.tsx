@@ -50,7 +50,8 @@ export function LiveTvRemindersMount() {
         small
         onClick={() => {
           setBanner(null)
-          requestOpenBrowsePage({ pageId: 'live-tv-browse', params: { view: 'channel', ...encodeChannelParams(channel) } })
+          // autoplay: kanalsidan startar strömmen direkt — Se nu ska inte landa på detaljer (Jerry).
+          requestOpenBrowsePage({ pageId: 'live-tv-browse', params: { view: 'channel', autoplay: '1', ...encodeChannelParams(channel) } })
         }}
       >
         {h('hubWatchNow')}

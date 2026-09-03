@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { BrowsePageProps } from '@/lib/plugin-sdk'
 import { channelKey, type M3uChannel } from './live-tv-data'
 import { qualityFromName, startOfLocalDay, useLiveTvModel } from './live-tv-model'
@@ -71,6 +71,15 @@ export function LiveTvChannelPage({ params, onNavigate }: Props) {
     () => (channel ? catchUpForChannel(channel, model.cache, model.nameIndex, nowMs, 8) : []),
     [channel, model.cache, model.nameIndex, nowMs],
   )
+  // Öppnad från påminnelsens Se nu: starta strömmen direkt i stället för att
+  // landa på detaljsidan. En gång per öppning.
+  const autoplayedRef = useRef(false)
+  useEffect(() => {
+    if (autoplayedRef.current || params?.autoplay !== '1' || !channel) return
+    autoplayedRef.current = true
+    play({ channel })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [channel?.url])
 
   if (!channel) {
     return (
@@ -146,6 +155,42 @@ export function LiveTvChannelPage({ params, onNavigate }: Props) {
             </div>
           </div>
 
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ ...surfaceCard, padding: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <Kicker>{h('channelInfo')}</Kicker>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, marginTop: 6 }}>
+              <Row label={h('quality')} value={quality ?? h('unknown')} />
+              <Row label={h('group')} value={channel.group || h('unknown')} />
+              <Row label={h('sourceList')} value={list?.name ?? h('unknown')} />
+              <Row label={h('epgSource')} value={model.tvgIdFor(channel) ? h('yes') : h('no')} />
+              <Row label={h('catchUp')} value={channel.archive ? h('availableDays', { days: channel.archive.days }) : h('no')} />
+            </div>
+          </div>
+          <div style={{ ...surfaceCard, padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <Kicker>{h('parental')}</Kicker>
+            <p style={{ margin: 0, fontSize: 12, color: LT.muted }}>{h('parentalBody')}</p>
+            <button
+              type="button"
+              onClick={requestLockToggle}
+              aria-pressed={locked}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'transparent', border: 0, cursor: 'pointer', padding: 0, marginTop: 4, color: 'inherit', fontFamily: 'inherit' }}
+            >
+              <span style={{ width: 36, height: 20, borderRadius: 10, background: locked ? LT.accent : LT.neutral, position: 'relative', transition: 'background 0.15s', flexShrink: 0 }}>
+                <span style={{ position: 'absolute', top: 2, left: locked ? 18 : 2, width: 16, height: 16, borderRadius: 999, background: LT.text, transition: 'left 0.15s' }} />
+              </span>
+              <span style={{ fontSize: 13 }}>{locked ? h('lockedWithPin') : h('noRestriction')}</span>
+            </button>
+            {lockNotice ? <div style={{ fontSize: 12, color: '#fecdd3' }}>{lockNotice}</div> : null}
+          </div>
+        </div>
+      </div>
+
+      {/* Dagens tablå och repriser i FULL bredd under hero + infokort: listan
+          gick tidigare bara till vänsterkolumnens kant medan högerkortet
+          stack ut — nu ligger de i linje (Jerry 2026-09-03). */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <section>
             <h3 style={{ fontSize: 16, margin: '0 0 10px', fontWeight: 600 }}>{h('today')}</h3>
             {today.length === 0 ? (
@@ -214,36 +259,6 @@ export function LiveTvChannelPage({ params, onNavigate }: Props) {
               )}
             </section>
           ) : null}
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div style={{ ...surfaceCard, padding: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <Kicker>{h('channelInfo')}</Kicker>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, marginTop: 6 }}>
-              <Row label={h('quality')} value={quality ?? h('unknown')} />
-              <Row label={h('group')} value={channel.group || h('unknown')} />
-              <Row label={h('sourceList')} value={list?.name ?? h('unknown')} />
-              <Row label={h('epgSource')} value={model.tvgIdFor(channel) ? h('yes') : h('no')} />
-              <Row label={h('catchUp')} value={channel.archive ? h('availableDays', { days: channel.archive.days }) : h('no')} />
-            </div>
-          </div>
-          <div style={{ ...surfaceCard, padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <Kicker>{h('parental')}</Kicker>
-            <p style={{ margin: 0, fontSize: 12, color: LT.muted }}>{h('parentalBody')}</p>
-            <button
-              type="button"
-              onClick={requestLockToggle}
-              aria-pressed={locked}
-              style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'transparent', border: 0, cursor: 'pointer', padding: 0, marginTop: 4, color: 'inherit', fontFamily: 'inherit' }}
-            >
-              <span style={{ width: 36, height: 20, borderRadius: 10, background: locked ? LT.accent : LT.neutral, position: 'relative', transition: 'background 0.15s', flexShrink: 0 }}>
-                <span style={{ position: 'absolute', top: 2, left: locked ? 18 : 2, width: 16, height: 16, borderRadius: 999, background: LT.text, transition: 'left 0.15s' }} />
-              </span>
-              <span style={{ fontSize: 13 }}>{locked ? h('lockedWithPin') : h('noRestriction')}</span>
-            </button>
-            {lockNotice ? <div style={{ fontSize: 12, color: '#fecdd3' }}>{lockNotice}</div> : null}
-          </div>
-        </div>
       </div>
 
       <PinGate
