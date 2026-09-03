@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useLang } from '@/lib/plugin-sdk'
+import { Card, Checkbox, PillBtn, TOKENS, inputStyle, useLang } from '@/lib/plugin-sdk'
 import {
   clearLiveTvMemoryCache,
   clearStoredLiveTvChannels,
@@ -118,53 +118,55 @@ export function XtreamLoginSection() {
   }
 
   return (
-    <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-      <div>
-        <h4 className="text-sm font-semibold text-white">{t('liveTvXtreamTitle')}</h4>
-        <p className="mt-1 text-xs text-slate-500">{t('liveTvXtreamDesc')}</p>
-      </div>
-      <input
-        type="url"
-        value={server}
-        onChange={(event) => setServer(event.target.value)}
-        placeholder={`${t('liveTvXtreamServer')} — http://host:8080`}
-        autoCapitalize="none"
-        autoCorrect="off"
-        spellCheck={false}
-        className={inputClass}
-      />
-      <div className="flex flex-col gap-3 sm:flex-row">
+    <Card>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div>
+          <div style={{ fontSize: 14.5, fontWeight: 600, color: TOKENS.text }}>{t('liveTvXtreamTitle')}</div>
+          <p style={{ margin: '4px 0 0', fontSize: 12, lineHeight: 1.5, color: TOKENS.textMute }}>{t('liveTvXtreamDesc')}</p>
+        </div>
         <input
-          type="text"
-          value={username}
-          onChange={(event) => setUsername(event.target.value)}
-          placeholder={t('liveTvXtreamUsername')}
+          type="url"
+          value={server}
+          onChange={(event) => setServer(event.target.value)}
+          placeholder={`${t('liveTvXtreamServer')} — http://host:8080`}
           autoCapitalize="none"
           autoCorrect="off"
           spellCheck={false}
-          className={inputClass}
+          style={inputStyle}
         />
-        <input
-          type="password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          placeholder={t('liveTvXtreamPassword')}
-          autoComplete="off"
-          className={inputClass}
-        />
+        <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+          <input
+            type="text"
+            value={username}
+            onChange={(event) => setUsername(event.target.value)}
+            placeholder={t('liveTvXtreamUsername')}
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            style={inputStyle}
+          />
+          <input
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder={t('liveTvXtreamPassword')}
+            autoComplete="off"
+            style={inputStyle}
+          />
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
+          {state === 'authError' ? <span style={{ marginRight: 'auto', fontSize: 12, color: TOKENS.red }}>{t('liveTvXtreamAuthFailed')}</span> : null}
+          {state === 'netError' ? <span style={{ marginRight: 'auto', fontSize: 12, color: TOKENS.red }}>{t('liveTvXtreamError')}</span> : null}
+          <PillBtn variant="accent" onClick={() => void handleConnect()} disabled={state === 'working'}>
+            {state === 'working' ? t('liveTvXtreamConnecting') : state === 'done' ? t('liveTvXtreamDone') : t('liveTvXtreamConnect')}
+          </PillBtn>
+        </div>
+        {notice ? <p style={{ margin: 0, fontSize: 12, color: TOKENS.warn }}>{notice}</p> : null}
+        {logins.map((login) => (
+          <XtreamLoginCard key={login.id} login={login} onRefresh={refreshChannels} onRemove={handleRemove} />
+        ))}
       </div>
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        {state === 'authError' ? <span className="mr-auto text-xs text-rose-300">{t('liveTvXtreamAuthFailed')}</span> : null}
-        {state === 'netError' ? <span className="mr-auto text-xs text-rose-300">{t('liveTvXtreamError')}</span> : null}
-        <button type="button" onClick={() => void handleConnect()} disabled={state === 'working'} className={actionButtonClass}>
-          {state === 'working' ? t('liveTvXtreamConnecting') : state === 'done' ? t('liveTvXtreamDone') : t('liveTvXtreamConnect')}
-        </button>
-      </div>
-      {notice ? <p className="text-xs text-amber-300/90">{notice}</p> : null}
-      {logins.map((login) => (
-        <XtreamLoginCard key={login.id} login={login} onRefresh={refreshChannels} onRemove={handleRemove} />
-      ))}
-    </div>
+    </Card>
   )
 }
 
@@ -221,53 +223,42 @@ function XtreamLoginCard({
   const needle = query.trim().toLowerCase()
   const filtered = (categories ?? []).filter((category) => !needle || category.name.toLowerCase().includes(needle))
 
+  const row = (checked: boolean, onChange: () => void, label: string) => (
+    <div style={{ padding: '6px 0' }}>
+      <Checkbox checked={checked} onChange={onChange} label={<span style={{ fontSize: 13 }}>{label}</span>} />
+    </div>
+  )
+
   return (
-    <div className="space-y-2 rounded-xl border border-white/5 bg-black/20 p-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="min-w-0 flex-1 truncate text-sm text-slate-200">{host}</span>
-        <button type="button" onClick={() => void handleToggleOpen()} className={smallButtonClass}>
+    <div style={{ padding: '12px 14px', borderRadius: 12, border: `1px solid ${TOKENS.border}`, background: TOKENS.surface0 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <span style={{ minWidth: 0, flex: 1, fontSize: 14, fontWeight: 600, color: TOKENS.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{host}</span>
+        <PillBtn size="sm" onClick={() => void handleToggleOpen()}>
           {t('liveTvXtreamCategories')}{login.categoryIds.length > 0 ? ` (${login.categoryIds.length})` : ''}
-        </button>
-        <button type="button" onClick={() => void handleApply([...selected]).catch(() => {})} disabled={busy} className={smallButtonClass}>
+        </PillBtn>
+        <PillBtn size="sm" variant="accent" onClick={() => void handleApply([...selected]).catch(() => {})} disabled={busy}>
           {t('liveTvXtreamApplyCategories')}
-        </button>
-        <button type="button" onClick={() => onRemove(login)} className={`${smallButtonClass} text-rose-300`}>
-          {t('liveTvXtreamRemove')}
-        </button>
+        </PillBtn>
+        <PillBtn size="sm" variant="danger" onClick={() => onRemove(login)}>{t('liveTvXtreamRemove')}</PillBtn>
       </div>
       {open ? (
-        <div className="space-y-2">
+        <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
           <input
             type="text"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder={t('liveTvXtreamSearchCategories')}
-            className={inputClass}
+            style={inputStyle}
           />
-          <div className="max-h-56 space-y-1 overflow-y-auto pr-1">
-            <label className="flex items-center gap-2 text-xs text-slate-300">
-              <input
-                type="checkbox"
-                checked={selected.size === 0}
-                onChange={() => setSelected(new Set())}
-                className="h-3.5 w-3.5 accent-amber-400"
-              />
-              {t('liveTvXtreamAllCategories')}
-            </label>
+          <div style={{ maxHeight: 224, overflowY: 'auto', paddingRight: 4 }}>
+            {row(selected.size === 0, () => setSelected(new Set()), t('liveTvXtreamAllCategories'))}
             {(categories === null ? [] : filtered).map((category) => (
-              <label key={category.id} className="flex items-center gap-2 text-xs text-slate-300">
-                <input
-                  type="checkbox"
-                  checked={selected.has(category.id)}
-                  onChange={() => toggleCategory(category.id)}
-                  className="h-3.5 w-3.5 accent-amber-400"
-                />
-                <span className="truncate">{category.name}</span>
-              </label>
+              <div key={category.id}>{row(selected.has(category.id), () => toggleCategory(category.id), category.name)}</div>
             ))}
           </div>
         </div>
       ) : null}
     </div>
   )
+
 }

@@ -1,24 +1,8 @@
 'use client'
 
-import { Input } from '@heroui/react'
-import { useEffect, useRef, useState } from 'react'
-import { onProfileChanged, useLang } from '@/lib/plugin-sdk'
-
-const inputClassNames = {
-  base: 'w-full',
-  inputWrapper: [
-    'bg-white/8 border border-white/10 !shadow-none rounded-[1.1rem]',
-    'hover:bg-white/10 hover:!border-white/10',
-    'group-data-[focus=true]:bg-white/10 group-data-[focus=true]:!border-white/10 group-data-[focus=true]:!shadow-none',
-    'transition-all duration-200 min-h-12',
-  ].join(' '),
-  input: 'text-sm text-slate-50 placeholder:text-slate-500 !shadow-none outline-none',
-}
-
-const settingsActionButtonClass =
-  'rounded-full border border-white/10 px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-slate-300 transition hover:border-white/25 hover:bg-white/10 hover:text-white active:bg-white/15 disabled:opacity-50'
-const settingsDangerActionButtonClass =
-  'rounded-full border border-red-400/30 px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-red-300 transition hover:border-red-400/40 hover:text-red-300 disabled:opacity-50'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { Card, Checkbox, PillBtn, TOKENS, eyebrowStyle, inputStyle, onProfileChanged, useLang } from '@/lib/plugin-sdk'
+import { monoFont } from '@/lib/plugin-sdk'
 
 interface HomeKitStatusPayload {
   enabled: boolean
@@ -183,114 +167,99 @@ export function HomeKitSettingsSection() {
     }
   }, [])
 
-  return (
-    <div className="space-y-3">
-      <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-slate-950/60 px-3 py-2 text-sm text-slate-300 transition hover:border-white/20">
-        <input
-          type="checkbox"
-          checked={homekitEnabled}
-          onChange={(e) => setHomekitEnabled(e.target.checked)}
-          className="h-4 w-4 flex-none accent-aurora-400"
-        />
-        {t('homekitEnableAccessory')}
-      </label>
-
-      <div className="grid gap-3 lg:grid-cols-2">
-        <div className="space-y-1.5 lg:col-span-2">
-          <label className="block text-xs text-slate-400">{t('name')}</label>
-          <Input type="text" value={homekitAccessoryName} onValueChange={setHomekitAccessoryName} placeholder="Lumio Cinema Sync" radius="lg" classNames={inputClassNames} />
-        </div>
-        <div className="space-y-1.5">
-          <label className="block text-xs text-slate-400">{t('homekitAccessoryIdLabel')}</label>
-          {/* Read-only on purpose. A controller looks the accessory up by this
-              id, so changing it invalidates every pairing -- and a field that
-              round-trips its value on save did exactly that by accident.
-              "Reset pairing" is the deliberate way to get a new identity. */}
-          <p className="rounded-lg border border-white/10 bg-slate-950/60 px-3 py-2 font-mono text-xs text-slate-300">{homekitUsername}</p>
-        </div>
-        <div className="space-y-1.5">
-          <label className="block text-xs text-slate-400">{t('homekitPinLabel')}</label>
-          <Input type="text" value={homekitPin} onValueChange={setHomekitPin} placeholder="0314-5154" radius="lg" classNames={inputClassNames} />
-        </div>
-        <div className="space-y-1.5">
-          <label className="block text-xs text-slate-400">{t('homekitSetupIdLabel')}</label>
-          <Input type="text" value={homekitSetupId} onValueChange={setHomekitSetupId} placeholder="LMIO" radius="lg" classNames={inputClassNames} />
-        </div>
-        <div className="space-y-1.5">
-          <label className="block text-xs text-slate-400">{t('homekitPortLabel')}</label>
-          <Input type="text" value={homekitPort} onValueChange={setHomekitPort} placeholder="51826" radius="lg" classNames={inputClassNames} />
-        </div>
-      </div>
-
-      <div className="rounded-lg border border-white/10 bg-slate-950/60 px-3 py-2 text-xs text-slate-400">
-        {t('homekitStatusLabel')}: <span className="text-slate-200">{homekitStatus}</span>
-        {publishedPin ? (
-          <div className="mt-2">
-            <p className="text-slate-400">{t('homekitPairingCodeLabel')}</p>
-            <p className="mt-0.5 select-all font-mono text-lg tracking-[0.2em] text-slate-100">{publishedPin}</p>
-            <p className="mt-0.5 text-slate-500">{t('homekitPairingCodeHint')}</p>
-          </div>
-        ) : null}
-        {homekitInfo ? <p className="mt-1 text-emerald-400">{homekitInfo}</p> : null}
-        {homekitError ? <p className="mt-1 text-red-400">{homekitError}</p> : null}
-      </div>
-
-      <div className="space-y-2 rounded-lg border border-white/10 bg-slate-950/60 p-3">
-        <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{t('homekitEventRules')}</p>
-        <p className="text-xs text-slate-500">{t('homekitEventRulesHint')}</p>
-        {[
-          { label: t('movieStarts'), enabled: hkMovieStartEnabled, setEnabled: setHkMovieStartEnabled },
-          { label: t('moviePaused'), enabled: hkMoviePauseEnabled, setEnabled: setHkMoviePauseEnabled },
-          { label: t('videoClosed'), enabled: hkPlayerClosedEnabled, setEnabled: setHkPlayerClosedEnabled },
-        ].map((rule) => (
-          <div key={rule.label} className="rounded-md border border-white/10 bg-white/[0.02] px-2 py-2">
-            <label className="flex cursor-pointer items-center gap-2 text-xs text-slate-300">
-              <input
-                type="checkbox"
-                checked={rule.enabled}
-                onChange={(e) => rule.setEnabled(e.target.checked)}
-                className="h-3.5 w-3.5 accent-aurora-400"
-              />
-              {rule.label}
-            </label>
-          </div>
-        ))}
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={() => setHomekitGuideOpen((v) => !v)} className={settingsActionButtonClass}>
-          {homekitGuideOpen ? t('closeGuide') : t('openGuide')}
-        </button>
-        <button type="button" onClick={() => void controlHomeKit('restart')} disabled={!homekitEnabled || homekitBusy !== 'idle'} className={settingsActionButtonClass}>
-          {homekitBusy === 'starting' ? t('starting') : t('startPairing')}
-        </button>
-        <button type="button" onClick={() => void controlHomeKit('reset')} disabled={homekitBusy !== 'idle'} className={settingsDangerActionButtonClass}>
-          {homekitBusy === 'resetting' ? t('resetting') : t('resetPairing')}
-        </button>
-        <button type="button" onClick={() => void saveAndApply()} disabled={homekitBusy !== 'idle'} className={settingsActionButtonClass}>
-          {homekitBusy === 'saving' ? t('saving') : t('save')}
-        </button>
-        <button type="button" onClick={() => void refreshHomeKitStatus()} disabled={homekitBusy !== 'idle'} className={settingsActionButtonClass}>
-          {t('refreshStatus')}
-        </button>
-      </div>
-
-      {homekitGuideOpen ? (
-        <div className="rounded-lg border border-white/10 bg-slate-950/60 p-3 text-xs text-slate-300">
-          <p className="mb-2 text-xs uppercase tracking-[0.2em] text-slate-500">{t('homekitGuideTitle')}</p>
-          <ol className="list-decimal space-y-1 pl-4">
-            <li>{t('homekitGuideStep1')}</li>
-            <li>{t('homekitGuideStep2')}</li>
-            <li>{t('homekitGuideStep3')}</li>
-            <li>{t('homekitGuideStep4')}</li>
-            <li>{t('homekitGuideStep5')}</li>
-          </ol>
-          <div className="mt-3 rounded-md border border-white/10 bg-white/[0.02] px-2 py-2">
-            <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">{t('homekitSwitchesToUse')}</p>
-            <p className="mt-1 text-slate-300">{t('homekitSwitchesList')}</p>
-          </div>
-        </div>
-      ) : null}
+  const field = (label: string, value: string, onChange: (value: string) => void, placeholder: string) => (
+    <div>
+      <div style={{ ...eyebrowStyle, marginBottom: 6 }}>{label}</div>
+      <input type="text" value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} style={inputStyle} />
     </div>
   )
+  const stack: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 12 }
+
+  return (
+    <div style={stack}>
+      <Card>
+        <Checkbox checked={homekitEnabled} onChange={(value) => setHomekitEnabled(value)} label={t('homekitEnableAccessory')} />
+        <div style={{ marginTop: 14, display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+          <div style={{ gridColumn: '1 / -1' }}>{field(t('name'), homekitAccessoryName, setHomekitAccessoryName, 'Lumio Cinema Sync')}</div>
+          <div>
+            <div style={{ ...eyebrowStyle, marginBottom: 6 }}>{t('homekitAccessoryIdLabel')}</div>
+            {/* Read-only on purpose. A controller looks the accessory up by this
+                id, so changing it invalidates every pairing -- and a field that
+                round-trips its value on save did exactly that by accident.
+                "Reset pairing" is the deliberate way to get a new identity. */}
+            <div style={{ ...inputStyle, display: 'flex', alignItems: 'center', fontFamily: monoFont, fontSize: 13, color: TOKENS.textDim }}>{homekitUsername}</div>
+          </div>
+          {field(t('homekitPinLabel'), homekitPin, setHomekitPin, '0314-5154')}
+          {field(t('homekitSetupIdLabel'), homekitSetupId, setHomekitSetupId, 'LMIO')}
+          {field(t('homekitPortLabel'), homekitPort, setHomekitPort, '51826')}
+        </div>
+      </Card>
+
+      <Card>
+        <div style={{ fontSize: 12, color: TOKENS.textDim }}>
+          {t('homekitStatusLabel')}: <span style={{ color: TOKENS.text }}>{homekitStatus}</span>
+        </div>
+        {publishedPin ? (
+          <div style={{ marginTop: 10 }}>
+            <div style={{ ...eyebrowStyle }}>{t('homekitPairingCodeLabel')}</div>
+            <div style={{ marginTop: 4, fontFamily: monoFont, fontSize: 22, letterSpacing: '0.2em', color: TOKENS.text, userSelect: 'all' }}>{publishedPin}</div>
+            <div style={{ marginTop: 4, fontSize: 12, color: TOKENS.textMute }}>{t('homekitPairingCodeHint')}</div>
+          </div>
+        ) : null}
+        {homekitInfo ? <p style={{ margin: '8px 0 0', fontSize: 12, color: TOKENS.mint }}>{homekitInfo}</p> : null}
+        {homekitError ? <p style={{ margin: '8px 0 0', fontSize: 12, color: TOKENS.red }}>{homekitError}</p> : null}
+        <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <PillBtn variant="accent" onClick={() => void saveAndApply()} disabled={homekitBusy !== 'idle'}>
+            {homekitBusy === 'saving' ? t('saving') : t('save')}
+          </PillBtn>
+          <PillBtn onClick={() => void controlHomeKit('restart')} disabled={!homekitEnabled || homekitBusy !== 'idle'}>
+            {homekitBusy === 'starting' ? t('starting') : t('startPairing')}
+          </PillBtn>
+          <PillBtn onClick={() => void refreshHomeKitStatus()} disabled={homekitBusy !== 'idle'}>{t('refreshStatus')}</PillBtn>
+          <PillBtn variant="danger" onClick={() => void controlHomeKit('reset')} disabled={homekitBusy !== 'idle'}>
+            {homekitBusy === 'resetting' ? t('resetting') : t('resetPairing')}
+          </PillBtn>
+        </div>
+      </Card>
+
+      <Card>
+        <div style={{ ...eyebrowStyle }}>{t('homekitEventRules')}</div>
+        <p style={{ margin: '4px 0 12px', fontSize: 12, lineHeight: 1.5, color: TOKENS.textMute }}>{t('homekitEventRulesHint')}</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {[
+            { label: t('movieStarts'), enabled: hkMovieStartEnabled, setEnabled: setHkMovieStartEnabled },
+            { label: t('moviePaused'), enabled: hkMoviePauseEnabled, setEnabled: setHkMoviePauseEnabled },
+            { label: t('videoClosed'), enabled: hkPlayerClosedEnabled, setEnabled: setHkPlayerClosedEnabled },
+          ].map((rule) => (
+            <div key={rule.label} style={{ padding: '10px 14px', borderRadius: 12, border: `1px solid ${TOKENS.border}`, background: TOKENS.surface0 }}>
+              <Checkbox checked={rule.enabled} onChange={(value) => rule.setEnabled(value)} label={rule.label} />
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div style={{ ...eyebrowStyle }}>{t('homekitGuideTitle')}</div>
+          <PillBtn size="sm" onClick={() => setHomekitGuideOpen((v) => !v)}>{homekitGuideOpen ? t('closeGuide') : t('openGuide')}</PillBtn>
+        </div>
+        {homekitGuideOpen ? (
+          <div style={{ marginTop: 12, fontSize: 13, lineHeight: 1.6, color: TOKENS.textDim }}>
+            <ol style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <li>{t('homekitGuideStep1')}</li>
+              <li>{t('homekitGuideStep2')}</li>
+              <li>{t('homekitGuideStep3')}</li>
+              <li>{t('homekitGuideStep4')}</li>
+              <li>{t('homekitGuideStep5')}</li>
+            </ol>
+            <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 12, border: `1px solid ${TOKENS.border}`, background: TOKENS.surface0 }}>
+              <div style={{ ...eyebrowStyle }}>{t('homekitSwitchesToUse')}</div>
+              <div style={{ marginTop: 4, color: TOKENS.textDim }}>{t('homekitSwitchesList')}</div>
+            </div>
+          </div>
+        ) : null}
+      </Card>
+    </div>
+  )
+
 }

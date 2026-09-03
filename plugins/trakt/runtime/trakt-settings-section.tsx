@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { Card, Checkbox, PillBtn, TOKENS } from '@/lib/plugin-sdk'
 import {
   TraktDeviceCodePanel,
   clearPendingTraktSync,
@@ -126,94 +127,77 @@ export function TraktSettingsSection() {
 
   const busy = login.phase === 'starting' || login.phase === 'waiting'
 
-  return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
-      {traktAuth ? (
-        <div className="space-y-3">
-          <div>
-            <p className="text-sm font-medium text-white">
-              {t('traktSignedInAs')} {traktAuth.name || traktAuth.username || t('traktSignedInFallback')}
-            </p>
-            <p className="text-xs text-slate-500">{t('traktSyncDesc')}</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => void handleTraktImport()} disabled={traktImportState === 'importing'} className={settingsActionButtonClass}>
-              {traktImportState === 'importing' ? t('traktImporting') : t('traktImportData')}
-            </button>
-            <button type="button" onClick={handleTraktDisconnect} className={settingsDangerActionButtonClass}>
-              {t('traktDisconnect')}
-            </button>
-          </div>
-          {traktImportState === 'done' ? <p className="text-xs text-emerald-300">{t('traktImportDone')}</p> : null}
-          {historyRefused ? (
-            <div className="rounded-lg border border-amber-400/20 bg-amber-400/[0.06] px-3 py-2">
-              <p className="text-xs font-medium text-amber-200">{t('traktHistoryRefused')}</p>
-              <p className="mt-1 text-xs leading-relaxed text-slate-400">{t('traktHistoryRefusedBody')}</p>
-            </div>
-          ) : null}
-          {limitSummary.hit ? (
-            <div className="rounded-lg border border-amber-400/20 bg-amber-400/[0.06] px-3 py-2">
-              <p className="text-xs font-medium text-amber-200">{t('traktMirrorIncomplete')}</p>
-              <p className="mt-1 text-xs leading-relaxed text-slate-400">
-                {t('traktMirrorIncompleteBody').replace('{count}', String(limitSummary.total))}
-              </p>
-            </div>
-          ) : null}
-          <div className="space-y-2 border-t border-white/5 pt-3">
-            <label className="flex cursor-pointer items-start gap-3">
-              <input
-                type="checkbox"
-                checked={autoRemoveMovies}
-                onChange={(event) => {
-                  setAutoRemoveWatchedMoviesEnabled(event.target.checked)
-                  setAutoRemoveMovies(event.target.checked)
-                }}
-                className="mt-0.5 h-4 w-4 shrink-0 accent-emerald-400"
-              />
-              <span>
-                <span className="block text-xs font-medium text-white">{t('traktAutoRemoveMovies')}</span>
-                <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">{t('traktAutoRemoveMoviesHint')}</span>
-              </span>
-            </label>
-            <label className="flex cursor-pointer items-start gap-3">
-              <input
-                type="checkbox"
-                checked={autoUnfollowSeries}
-                onChange={(event) => {
-                  setAutoUnfollowFinishedSeriesEnabled(event.target.checked)
-                  setAutoUnfollowSeries(event.target.checked)
-                }}
-                className="mt-0.5 h-4 w-4 shrink-0 accent-emerald-400"
-              />
-              <span>
-                <span className="block text-xs font-medium text-white">{t('traktAutoUnfollowSeries')}</span>
-                <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">{t('traktAutoUnfollowSeriesHint')}</span>
-              </span>
-            </label>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          <button
-            type="button"
-            onClick={login.start}
-            disabled={busy}
-            className={settingsActionButtonClass}
-          >
-            {busy ? t('traktWaiting') : t('traktConnect')}
-          </button>
-          {login.userCode ? (
-            <TraktDeviceCodePanel
-              userCode={login.userCode}
-              verificationUrl={login.verificationUrl}
-              notice={login.notice}
-              waiting={login.phase === 'waiting'}
-            />
-          ) : null}
-        </div>
-      )}
-      {login.error ? <p className="mt-3 text-sm text-red-300">{login.error}</p> : null}
-      {traktImportError ? <p className="mt-3 text-sm text-red-300">{traktImportError}</p> : null}
+  const warning = (title: string, body: string) => (
+    <div style={{ padding: '10px 14px', borderRadius: 12, border: `1px solid ${TOKENS.warn}`, background: 'rgba(243,201,105,0.08)' }}>
+      <div style={{ fontSize: 13, fontWeight: 600, color: TOKENS.warn }}>{title}</div>
+      <div style={{ marginTop: 4, fontSize: 12, lineHeight: 1.5, color: TOKENS.textDim }}>{body}</div>
     </div>
   )
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {traktAuth ? (
+        <>
+          <Card>
+            <div style={{ fontSize: 14.5, fontWeight: 600, color: TOKENS.text }}>
+              {t('traktSignedInAs')} {traktAuth.name || traktAuth.username || t('traktSignedInFallback')}
+            </div>
+            <p style={{ margin: '4px 0 12px', fontSize: 12, lineHeight: 1.5, color: TOKENS.textMute }}>{t('traktSyncDesc')}</p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <PillBtn variant="accent" onClick={() => void handleTraktImport()} disabled={traktImportState === 'importing'}>
+                {traktImportState === 'importing' ? t('traktImporting') : t('traktImportData')}
+              </PillBtn>
+              <PillBtn variant="danger" onClick={handleTraktDisconnect}>{t('traktDisconnect')}</PillBtn>
+            </div>
+            {traktImportState === 'done' ? <p style={{ margin: '10px 0 0', fontSize: 12, color: TOKENS.mint }}>{t('traktImportDone')}</p> : null}
+            {historyRefused ? <div style={{ marginTop: 12 }}>{warning(t('traktHistoryRefused'), t('traktHistoryRefusedBody'))}</div> : null}
+            {limitSummary.hit ? (
+              <div style={{ marginTop: 12 }}>{warning(t('traktMirrorIncomplete'), t('traktMirrorIncompleteBody').replace('{count}', String(limitSummary.total)))}</div>
+            ) : null}
+          </Card>
+          <Card>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <Checkbox
+                checked={autoRemoveMovies}
+                onChange={(value) => {
+                  setAutoRemoveWatchedMoviesEnabled(value)
+                  setAutoRemoveMovies(value)
+                }}
+                label={t('traktAutoRemoveMovies')}
+                hint={t('traktAutoRemoveMoviesHint')}
+              />
+              <Checkbox
+                checked={autoUnfollowSeries}
+                onChange={(value) => {
+                  setAutoUnfollowFinishedSeriesEnabled(value)
+                  setAutoUnfollowSeries(value)
+                }}
+                label={t('traktAutoUnfollowSeries')}
+                hint={t('traktAutoUnfollowSeriesHint')}
+              />
+            </div>
+          </Card>
+        </>
+      ) : (
+        <Card>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <PillBtn variant="accent" onClick={login.start} disabled={busy} style={{ alignSelf: 'flex-start' }}>
+              {busy ? t('traktWaiting') : t('traktConnect')}
+            </PillBtn>
+            {login.userCode ? (
+              <TraktDeviceCodePanel
+                userCode={login.userCode}
+                verificationUrl={login.verificationUrl}
+                notice={login.notice}
+                waiting={login.phase === 'waiting'}
+              />
+            ) : null}
+          </div>
+        </Card>
+      )}
+      {login.error ? <p style={{ margin: 0, fontSize: 13, color: TOKENS.red }}>{login.error}</p> : null}
+      {traktImportError ? <p style={{ margin: 0, fontSize: 13, color: TOKENS.red }}>{traktImportError}</p> : null}
+    </div>
+  )
+
 }

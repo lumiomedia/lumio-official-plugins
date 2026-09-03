@@ -1,7 +1,7 @@
 'use client'
 
-import { Textarea } from '@heroui/react'
 import { useEffect, useState } from 'react'
+import { Card, Checkbox, PillBtn, TOKENS, eyebrowStyle, inputStyle } from '@/lib/plugin-sdk'
 import {
   disableHomeOverridePlugin,
   getHomeOverridePluginId,
@@ -29,16 +29,6 @@ import {
 import { EpgSourcesSection } from './epg-sources-section'
 import { XtreamLoginSection } from './xtream-login-section'
 
-const textareaClassNames = {
-  base: 'w-full',
-  inputWrapper: [
-    'bg-white/8 border border-white/10 !shadow-none rounded-[1.1rem]',
-    'hover:bg-white/10 hover:!border-white/10',
-    'group-data-[focus=true]:bg-white/10 group-data-[focus=true]:!border-white/10 group-data-[focus=true]:!shadow-none',
-    'transition-all duration-200',
-  ].join(' '),
-  input: 'text-sm text-slate-50 placeholder:text-slate-500 resize-y',
-}
 
 const settingsActionButtonClass =
   'rounded-full border border-white/10 px-4 py-2 text-xs uppercase tracking-[0.22em] text-slate-300 transition hover:border-white/30 hover:text-white disabled:opacity-50'
@@ -176,98 +166,73 @@ export function LiveTvSettingsSection() {
   }
 
   return (
-    <div className="space-y-3">
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-        <label className="flex items-center gap-3 text-sm text-slate-200">
-          <input
-            type="checkbox"
-            checked={homeOverrideEnabled}
-            onChange={(event) => handleHomeOverrideToggle(event.target.checked)}
-            className="h-4 w-4 accent-amber-400"
-          />
-          {t('homeOverrideUseAsHome')}
-        </label>
-        <p className="mt-2 text-xs text-slate-500">
-          {t('liveTvHomeOverrideDesc')}
-        </p>
-        {homeOverrideError ? <p className="mt-2 text-xs text-rose-300">{homeOverrideError}</p> : null}
-        <label className="mt-3 flex items-center gap-3 text-sm text-slate-200">
-          <input
-            type="checkbox"
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <Card>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <Checkbox checked={homeOverrideEnabled} onChange={(value) => handleHomeOverrideToggle(value)} label={t('homeOverrideUseAsHome')} hint={t('liveTvHomeOverrideDesc')} />
+          {homeOverrideError ? <p style={{ margin: 0, fontSize: 12, color: TOKENS.red }}>{homeOverrideError}</p> : null}
+          <Checkbox
             checked={hideHero}
-            onChange={(event) => {
-              setLiveTvHideHero(event.target.checked)
-              setHideHero(event.target.checked)
+            onChange={(value) => {
+              setLiveTvHideHero(value)
+              setHideHero(value)
             }}
-            className="h-4 w-4 accent-amber-400"
+            label={lang === 'sv' ? 'Dölj filmhjälten på Live TV-sidan' : 'Hide the movie hero on the Live TV page'}
+            hint={lang === 'sv'
+              ? 'Live TV börjar då direkt med hubben i stället för under appens hjältekarusell.'
+              : 'Live TV then starts with the hub instead of below the app’s hero carousel.'}
           />
-          {lang === 'sv' ? 'Dölj filmhjälten på Live TV-sidan' : 'Hide the movie hero on the Live TV page'}
-        </label>
-        <p className="mt-2 text-xs text-slate-500">
-          {lang === 'sv'
-            ? 'Live TV börjar då direkt med hubben i stället för under appens hjältekarusell.'
-            : 'Live TV then starts with the hub instead of below the app’s hero carousel.'}
-        </p>
-      </div>
-      <Textarea
-        value={m3uText}
-        onValueChange={setM3uText}
-        placeholder={t('m3uUrlsPlaceholder')}
-        minRows={2}
-        maxRows={6}
-        radius="lg"
-        classNames={textareaClassNames}
-      />
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        <button
-          type="button"
-          onClick={() => void handleFetchM3uList()}
-          disabled={m3uFetchState === 'fetching'}
-          className={settingsActionButtonClass}
-        >
-          {m3uFetchState === 'fetching'
-            ? t('m3uLoading')
-            : m3uFetchState === 'done'
-              ? t('m3uFetchListDone')
-              : m3uFetchState === 'error'
-                ? t('m3uFetchListError')
-                : t('m3uFetchList')}
-        </button>
-      </div>
-      <XtreamLoginSection />
-      {lists.length > 0 ? (
-        <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-          {lists.map((list) => (
-            <div key={list.id} className="space-y-2 border-b border-white/5 pb-4 last:border-b-0 last:pb-0">
-              <div className="flex items-baseline justify-between gap-2">
-                <h4 className="text-sm font-semibold text-white">{list.name}</h4>
-                <div className="flex items-baseline gap-3">
-                  <span className="text-[10px] uppercase tracking-wider text-slate-500">
-                    {list.channels.length} {t('m3uChannels')}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveList(list)}
-                    className="rounded bg-white/10 px-2.5 py-1 text-[10px] uppercase tracking-wider text-rose-300 transition hover:bg-white/15"
-                  >
-                    {t('liveTvXtreamRemove')}
-                  </button>
-                </div>
-              </div>
-              <EpgSourcesSection
-                autoUrl={list.urlTvg}
-                manualUrls={list.epgUrls}
-                onChangeManual={(epgUrls) => updateLiveTvListEpg(list.id, { epgUrls })}
-                autoDisabled={list.autoEpgDisabled}
-                onToggleAuto={(disabled) => updateLiveTvListEpg(list.id, { autoEpgDisabled: disabled })}
-                listId={list.id}
-                allUrls={[list.autoEpgDisabled ? null : list.urlTvg, ...list.epgUrls]
-                  .filter((url): url is string => Boolean(url))}
-              />
-            </div>
-          ))}
         </div>
-      ) : null}
+      </Card>
+
+      <Card>
+        <div style={{ ...eyebrowStyle, marginBottom: 6 }}>M3U</div>
+        <textarea
+          value={m3uText}
+          onChange={(event) => setM3uText(event.target.value)}
+          placeholder={t('m3uUrlsPlaceholder')}
+          rows={3}
+          style={{ ...inputStyle, minHeight: 88, resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.5 }}
+        />
+        <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-end' }}>
+          <PillBtn variant="accent" onClick={() => void handleFetchM3uList()} disabled={m3uFetchState === 'fetching'}>
+            {m3uFetchState === 'fetching'
+              ? t('m3uLoading')
+              : m3uFetchState === 'done'
+                ? t('m3uFetchListDone')
+                : m3uFetchState === 'error'
+                  ? t('m3uFetchListError')
+                  : t('m3uFetchList')}
+          </PillBtn>
+        </div>
+      </Card>
+
+      <XtreamLoginSection />
+
+      {lists.map((list) => (
+        <Card key={list.id}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 14.5, fontWeight: 600, color: TOKENS.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{list.name}</div>
+              <div style={{ fontSize: 12, color: TOKENS.textMute, marginTop: 2 }}>{list.channels.length} {t('m3uChannels')}</div>
+            </div>
+            <PillBtn size="sm" variant="danger" onClick={() => handleRemoveList(list)}>{t('liveTvXtreamRemove')}</PillBtn>
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <EpgSourcesSection
+              autoUrl={list.urlTvg}
+              manualUrls={list.epgUrls}
+              onChangeManual={(epgUrls) => updateLiveTvListEpg(list.id, { epgUrls })}
+              autoDisabled={list.autoEpgDisabled}
+              onToggleAuto={(disabled) => updateLiveTvListEpg(list.id, { autoEpgDisabled: disabled })}
+              listId={list.id}
+              allUrls={[list.autoEpgDisabled ? null : list.urlTvg, ...list.epgUrls]
+                .filter((url): url is string => Boolean(url))}
+            />
+          </div>
+        </Card>
+      ))}
     </div>
   )
+
 }

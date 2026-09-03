@@ -1,7 +1,7 @@
 'use client'
 
-import { Input } from '@heroui/react'
 import { useEffect, useState } from 'react'
+import { Card, Checkbox, PillBtn, TOKENS, eyebrowStyle, inputStyle } from '@/lib/plugin-sdk'
 import {
   resolveAuthCapabilityStatus,
   disableHomeOverridePlugin,
@@ -19,16 +19,6 @@ import {
   setYouTubeSettings,
 } from './youtube-storage'
 
-const inputClassNames = {
-  base: 'w-full',
-  inputWrapper: [
-    'bg-white/8 border border-white/10 !shadow-none rounded-[1.1rem]',
-    'hover:bg-white/10 hover:!border-white/10',
-    'group-data-[focus=true]:bg-white/10 group-data-[focus=true]:!border-white/10 group-data-[focus=true]:!shadow-none',
-    'transition-all duration-200 min-h-12',
-  ].join(' '),
-  input: 'text-sm text-slate-50 placeholder:text-slate-500 !shadow-none outline-none',
-}
 
 const settingsActionButtonClass =
   'rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-slate-300 transition hover:border-white/20 hover:text-white disabled:opacity-40'
@@ -164,66 +154,84 @@ export function YouTubeSettingsSection() {
     }
   }
 
+  const field = (label: string, type: 'text' | 'password', value: string, placeholder: string, onChange: (value: string) => void) => (
+    <div>
+      <div style={{ ...eyebrowStyle, marginBottom: 6 }}>{label}</div>
+      <input type={type} value={value} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} style={inputStyle} />
+    </div>
+  )
+
   return (
-    <div className="space-y-5">
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-        <label className="flex items-center gap-3 text-sm text-slate-200">
-          <input
-            type="checkbox"
-            checked={homeOverrideEnabled}
-            onChange={(event) => handleHomeOverrideToggle(event.target.checked)}
-            className="h-4 w-4 accent-amber-400"
-          />
-          {t('homeOverrideUseAsHome')}
-        </label>
-        <p className="mt-2 text-xs text-slate-500">
-          {t('youtubeHomeOverrideDesc')}
-        </p>
-        {homeOverrideError ? <p className="mt-2 text-xs text-rose-300">{homeOverrideError}</p> : null}
-      </div>
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t('pluginYoutubeConnection')}</p>
-        <p className="mt-2 text-sm text-slate-300">{sessionLabel}</p>
-        {sessionDetail ? (
-          <p className="mt-2 text-xs text-amber-300">{sessionDetail}</p>
-        ) : null}
-        <p className="mt-2 text-xs text-slate-500">
-          {t('pluginYoutubeConnectionNote')}
-        </p>
-      </div>
-      <div className="space-y-1.5">
-        <label className="block text-xs text-slate-400">{t('pluginYoutubeClientId')}</label>
-        <Input
-          type="text"
-          value={clientId}
-          onValueChange={(value) => {
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <Card>
+        <Checkbox checked={homeOverrideEnabled} onChange={(value) => handleHomeOverrideToggle(value)} label={t('homeOverrideUseAsHome')} hint={t('youtubeHomeOverrideDesc')} />
+        {homeOverrideError ? <p style={{ margin: '8px 0 0', fontSize: 12, color: TOKENS.red }}>{homeOverrideError}</p> : null}
+      </Card>
+
+      <Card>
+        <div style={{ ...eyebrowStyle }}>{t('pluginYoutubeConnection')}</div>
+        <div style={{ marginTop: 6, fontSize: 14.5, fontWeight: 600, color: TOKENS.text }}>{sessionLabel}</div>
+        {sessionDetail ? <p style={{ margin: '6px 0 0', fontSize: 12, color: TOKENS.warn }}>{sessionDetail}</p> : null}
+        <p style={{ margin: '6px 0 12px', fontSize: 12, lineHeight: 1.5, color: TOKENS.textMute }}>{t('pluginYoutubeConnectionNote')}</p>
+        <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}>
+          {field(t('pluginYoutubeClientId'), 'text', clientId, '1234567890-xxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com', (value) => {
             setClientId(value)
             persist({ clientId: value, apiKey, hideShorts, hero, keepHero })
-          }}
-          placeholder="1234567890-xxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com"
-          radius="lg"
-          classNames={inputClassNames}
-        />
-      </div>
-
-      <div className="space-y-1.5">
-        <label className="block text-xs text-slate-400">{t('pluginYoutubeApiKey')}</label>
-        <Input
-          type="password"
-          value={apiKey}
-          onValueChange={(value) => {
+          })}
+          {field(t('pluginYoutubeApiKey'), 'password', apiKey, 'AIza...', (value) => {
             setApiKey(value)
             persist({ clientId, apiKey: value, hideShorts, hero, keepHero })
-          }}
-          placeholder="AIza..."
-          radius="lg"
-          classNames={inputClassNames}
-        />
-      </div>
+          })}
+        </div>
+        {error ? <p style={{ margin: '10px 0 0', fontSize: 13, color: TOKENS.red }}>{error}</p> : null}
+        <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <PillBtn variant="accent" onClick={handleConnect} disabled={busy !== 'idle' || !clientId.trim()}>
+            {busy === 'connecting' ? t('pluginYoutubeConnecting') : t('pluginYoutubeConnect')}
+          </PillBtn>
+          <PillBtn onClick={handleDisconnect} disabled={busy !== 'idle'}>
+            {busy === 'disconnecting' ? t('pluginYoutubeDisconnecting') : t('pluginYoutubeDisconnect')}
+          </PillBtn>
+          <PillBtn onClick={() => clearYouTubeCache()}>{t('pluginYoutubeClearCache')}</PillBtn>
+        </div>
+      </Card>
 
-      <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-4">
-        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t('pluginYoutubeOwnAppTitle')}</p>
-        <ol className="mt-3 space-y-2 text-sm text-slate-300">
+      <Card>
+        <div style={{ ...eyebrowStyle }}>{t('pluginYoutubeVideoOptions')}</div>
+        <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <Checkbox
+            checked={hero}
+            onChange={(next) => {
+              setHero(next)
+              persist({ clientId, apiKey, hideShorts, hero: next, keepHero })
+            }}
+            label={t('pluginYoutubeHero')}
+            hint={t('pluginYoutubeHeroHelp')}
+          />
+          <Checkbox
+            checked={keepHero}
+            onChange={(next) => {
+              setKeepHero(next)
+              persist({ clientId, apiKey, hideShorts, hero, keepHero: next })
+            }}
+            label={t('pluginYoutubeKeepHero')}
+            hint={t('pluginYoutubeKeepHeroHelp')}
+          />
+          <Checkbox
+            checked={hideShorts}
+            onChange={(next) => {
+              setHideShorts(next)
+              clearYouTubeCache()
+              persist({ clientId, apiKey, hideShorts: next, hero, keepHero })
+            }}
+            label={t('pluginYoutubeHideShorts')}
+            hint={t('pluginYoutubeHideShortsHelp')}
+          />
+        </div>
+      </Card>
+
+      <Card>
+        <div style={{ ...eyebrowStyle }}>{t('pluginYoutubeOwnAppTitle')}</div>
+        <ol style={{ margin: '10px 0 0', paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, lineHeight: 1.6, color: TOKENS.textDim }}>
           <li>{t('pluginYoutubeOwnAppStep1')}</li>
           <li>{t('pluginYoutubeOwnAppStep2')}</li>
           <li>{t('pluginYoutubeOwnAppStep3')}</li>
@@ -231,93 +239,9 @@ export function YouTubeSettingsSection() {
           <li>{t('pluginYoutubeOwnAppStep5')}</li>
           <li>{t('pluginYoutubeOwnAppStep6')}</li>
         </ol>
-        <p className="mt-3 text-xs text-slate-500">
-          {t('pluginYoutubeOwnAppNote')}
-        </p>
-      </div>
-
-      <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-4">
-        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t('pluginYoutubeVideoOptions')}</p>
-        <div className="mt-4 space-y-3">
-          <label className="flex items-center gap-3 text-sm text-slate-300">
-            <input
-              type="checkbox"
-              checked={hero}
-              onChange={(event) => {
-                const next = event.target.checked
-                setHero(next)
-                persist({ clientId, apiKey, hideShorts, hero: next, keepHero })
-              }}
-              className="h-4 w-4 accent-amber-400"
-            />
-            {t('pluginYoutubeHero')}
-          </label>
-          <p className="text-xs text-slate-500">
-            {t('pluginYoutubeHeroHelp')}
-          </p>
-          <label className="flex items-center gap-3 text-sm text-slate-300">
-            <input
-              type="checkbox"
-              checked={keepHero}
-              onChange={(event) => {
-                const next = event.target.checked
-                setKeepHero(next)
-                persist({ clientId, apiKey, hideShorts, hero, keepHero: next })
-              }}
-              className="h-4 w-4 accent-amber-400"
-            />
-            {t('pluginYoutubeKeepHero')}
-          </label>
-          <p className="text-xs text-slate-500">
-            {t('pluginYoutubeKeepHeroHelp')}
-          </p>
-          <label className="flex items-center gap-3 text-sm text-slate-300">
-            <input
-              type="checkbox"
-              checked={hideShorts}
-              onChange={(event) => {
-                const next = event.target.checked
-                setHideShorts(next)
-                clearYouTubeCache()
-                persist({ clientId, apiKey, hideShorts: next, hero, keepHero })
-              }}
-              className="h-4 w-4 accent-amber-400"
-            />
-            {t('pluginYoutubeHideShorts')}
-          </label>
-          <p className="text-xs text-slate-500">
-            {t('pluginYoutubeHideShortsHelp')}
-          </p>
-        </div>
-      </div>
-
-      {error ? <p className="text-sm text-rose-300">{error}</p> : null}
-
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={handleConnect}
-          disabled={busy !== 'idle' || !clientId.trim()}
-          className={settingsPrimaryActionButtonClass}
-        >
-          {busy === 'connecting' ? t('pluginYoutubeConnecting') : t('pluginYoutubeConnect')}
-        </button>
-        <button
-          type="button"
-          onClick={handleDisconnect}
-          disabled={busy !== 'idle'}
-          className={settingsActionButtonClass}
-        >
-          {busy === 'disconnecting' ? t('pluginYoutubeDisconnecting') : t('pluginYoutubeDisconnect')}
-        </button>
-        <button
-          type="button"
-          onClick={() => clearYouTubeCache()}
-          className={settingsActionButtonClass}
-        >
-          {t('pluginYoutubeClearCache')}
-        </button>
-      </div>
+        <p style={{ margin: '10px 0 0', fontSize: 12, lineHeight: 1.5, color: TOKENS.textMute }}>{t('pluginYoutubeOwnAppNote')}</p>
+      </Card>
     </div>
   )
+
 }

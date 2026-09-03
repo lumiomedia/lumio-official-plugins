@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { Card, PillBtn, TOKENS, eyebrowStyle, inputStyle } from '@/lib/plugin-sdk'
 import {
   onAuthCapabilitiesChanged,
   resolveAuthCapabilityStatus,
@@ -151,81 +152,56 @@ export function TwitchSettingsSection() {
     }
   }
 
-  return (
-    <div className="space-y-5">
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{text('connection')}</p>
-        <p className="mt-2 text-sm text-slate-300">{sessionLabel}</p>
-        {sessionDetail ? <p className="mt-2 text-xs text-amber-300">{sessionDetail}</p> : null}
-        <p className="mt-2 text-xs text-slate-500">{text('connectionNote')}</p>
-      </div>
-
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{text('homeRows')}</p>
-        <p className="mt-2 text-xs text-slate-500">{text('homeRowsNote')}</p>
-        <label className="mt-4 block text-xs text-slate-400">
-          {text('homeCategoryLabel')}
-          <input
-            type="text"
-            value={homeCategory}
-            placeholder={text('homeCategoryPlaceholder')}
-            onChange={(event) => {
-              setHomeCategory(event.target.value)
-              setTwitchHomeCategory(event.target.value)
-            }}
-            className={`${settingsTextInputClass} mt-1.5`}
-          />
-        </label>
-        <label className="mt-4 block text-xs text-slate-400">
-          {text('homeChannelsLabel')}
-          <input
-            type="text"
-            value={homeChannels}
-            placeholder={text('homeChannelsPlaceholder')}
-            onChange={(event) => {
-              setHomeChannels(event.target.value)
-              setTwitchHomeChannels(event.target.value)
-            }}
-            className={`${settingsTextInputClass} mt-1.5`}
-          />
-        </label>
-      </div>
-
-      {busy === 'connecting' && userCode ? (
-        <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-4">
-          <p className="text-xs text-slate-400">{text('deviceCodeIntro')}</p>
-          <p className="mt-2 text-2xl font-semibold tracking-[0.3em] text-white">{userCode}</p>
-          <button
-            type="button"
-            onClick={() => void openTwitchVerificationUrl(verificationUri)}
-            className={`${settingsPrimaryActionButtonClass} mt-3`}
-          >
-            {text('openVerificationUrl')}
-          </button>
-          <p className="mt-3 text-xs text-slate-500">{text('waitingForApproval')}</p>
-        </div>
-      ) : null}
-
-      {error ? <p className="text-sm text-rose-300">{error}</p> : null}
-
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={handleConnect}
-          disabled={busy !== 'idle'}
-          className={settingsPrimaryActionButtonClass}
-        >
-          {busy === 'connecting' ? text('connecting') : text('connect')}
-        </button>
-        <button
-          type="button"
-          onClick={handleDisconnect}
-          disabled={busy !== 'idle'}
-          className={settingsActionButtonClass}
-        >
-          {busy === 'disconnecting' ? text('disconnecting') : text('disconnect')}
-        </button>
-      </div>
+  const field = (label: string, value: string, placeholder: string, onChange: (value: string) => void) => (
+    <div>
+      <div style={{ ...eyebrowStyle, marginBottom: 6 }}>{label}</div>
+      <input type="text" value={value} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} style={inputStyle} />
     </div>
   )
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <Card>
+        <div style={{ ...eyebrowStyle }}>{text('connection')}</div>
+        <div style={{ marginTop: 6, fontSize: 14.5, fontWeight: 600, color: TOKENS.text }}>{sessionLabel}</div>
+        {sessionDetail ? <p style={{ margin: '6px 0 0', fontSize: 12, color: TOKENS.warn }}>{sessionDetail}</p> : null}
+        <p style={{ margin: '6px 0 12px', fontSize: 12, lineHeight: 1.5, color: TOKENS.textMute }}>{text('connectionNote')}</p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <PillBtn variant="accent" onClick={handleConnect} disabled={busy !== 'idle'}>
+            {busy === 'connecting' ? text('connecting') : text('connect')}
+          </PillBtn>
+          <PillBtn variant="danger" onClick={handleDisconnect} disabled={busy !== 'idle'}>
+            {busy === 'disconnecting' ? text('disconnecting') : text('disconnect')}
+          </PillBtn>
+        </div>
+        {busy === 'connecting' && userCode ? (
+          <div style={{ marginTop: 12, padding: '12px 16px', borderRadius: 12, border: `1px solid ${TOKENS.accent}`, background: TOKENS.accentSoft }}>
+            <div style={{ fontSize: 12, color: TOKENS.textDim }}>{text('deviceCodeIntro')}</div>
+            <div style={{ marginTop: 6, fontSize: 24, fontWeight: 600, letterSpacing: '0.3em', color: TOKENS.text }}>{userCode}</div>
+            <div style={{ marginTop: 10 }}>
+              <PillBtn variant="accent" size="sm" onClick={() => void openTwitchVerificationUrl(verificationUri)}>{text('openVerificationUrl')}</PillBtn>
+            </div>
+            <div style={{ marginTop: 10, fontSize: 12, color: TOKENS.textMute }}>{text('waitingForApproval')}</div>
+          </div>
+        ) : null}
+        {error ? <p style={{ margin: '10px 0 0', fontSize: 13, color: TOKENS.red }}>{error}</p> : null}
+      </Card>
+
+      <Card>
+        <div style={{ ...eyebrowStyle }}>{text('homeRows')}</div>
+        <p style={{ margin: '6px 0 12px', fontSize: 12, lineHeight: 1.5, color: TOKENS.textMute }}>{text('homeRowsNote')}</p>
+        <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
+          {field(text('homeCategoryLabel'), homeCategory, text('homeCategoryPlaceholder'), (value) => {
+            setHomeCategory(value)
+            setTwitchHomeCategory(value)
+          })}
+          {field(text('homeChannelsLabel'), homeChannels, text('homeChannelsPlaceholder'), (value) => {
+            setHomeChannels(value)
+            setTwitchHomeChannels(value)
+          })}
+        </div>
+      </Card>
+    </div>
+  )
+
 }

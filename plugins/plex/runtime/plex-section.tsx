@@ -1,10 +1,17 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { PlexLibraryIndexPanel } from './plex-library-index-panel'
 import {
+  Card,
+  Checkbox,
+  PillBtn,
+  Select,
+  TOKENS,
   disableHomeOverridePlugin,
+  eyebrowStyle,
   getHomeOverridePluginId,
+  inputStyle,
   onHomeOverridePluginChanged,
   tryEnableHomeOverridePlugin,
   removeScopedStorageItem,
@@ -33,19 +40,8 @@ import {
   switchPlexHomeProfile,
 } from './plex-sync'
 
-// ── Local style constants (mirrors settings-panel.tsx) ──────────────────────
 
-const settingsSelectClassName =
-  'rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-300 outline-none transition hover:border-white/20'
-
-const settingsActionButtonClass =
-  'rounded-full border border-white/10 px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-slate-300 transition hover:border-white/20 hover:text-white disabled:opacity-50'
-
-const settingsDangerActionButtonClass =
-  'rounded-full border border-red-400/30 px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-red-300 transition hover:border-red-400/40 hover:text-red-300 disabled:opacity-50'
 const HOME_OVERRIDE_PLUGIN_ID = 'com.lumio.plex'
-
-// ── Component ───────────────────────────────────────────────────────────────
 
 export function PlexSection() {
   const { t } = useLang()
@@ -478,219 +474,173 @@ export function PlexSection() {
     }
   }
 
+  const fieldLabel = (text: string) => <div style={{ ...eyebrowStyle, marginBottom: 6 }}>{text}</div>
+  const note = (text: string, tone: 'ok' | 'warn' | 'error' | 'dim' = 'dim') => (
+    <p style={{ margin: 0, fontSize: 12, lineHeight: 1.5, color: tone === 'ok' ? TOKENS.mint : tone === 'warn' ? TOKENS.warn : tone === 'error' ? TOKENS.red : TOKENS.textMute }}>{text}</p>
+  )
+  const stack: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 12 }
+
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
-      <div className="mb-4 rounded-2xl border border-white/10 bg-slate-950/50 p-4">
-        <label className="flex items-center gap-3 text-sm text-slate-200">
-          <input
-            type="checkbox"
-            checked={homeOverrideEnabled}
-            onChange={(event) => handleHomeOverrideToggle(event.target.checked)}
-            className="h-4 w-4 accent-amber-400"
-          />
-          {t('homeOverrideUseAsHome')}
-        </label>
-        <p className="mt-2 text-xs text-slate-500">
-          {t('plexHomeOverrideDesc')}
-        </p>
-        {homeOverrideError ? <p className="mt-2 text-xs text-rose-300">{homeOverrideError}</p> : null}
-      </div>
+    <div style={stack}>
+      {/* Gamla Plex-startsidan (ersätter raderna med Plex-vyn) — visas bara
+          om den redan är på, så den går att stänga av. Biblioteksläget under
+          Hem → Layout → Bibliotek är vägen framåt. */}
+      {homeOverrideEnabled ? (
+        <Card>
+          <Checkbox checked={homeOverrideEnabled} onChange={(value) => handleHomeOverrideToggle(value)} label={t('homeOverrideUseAsHome')} hint={t('plexHomeOverrideDesc')} />
+          {homeOverrideError ? <div style={{ marginTop: 8 }}>{note(homeOverrideError, 'error')}</div> : null}
+        </Card>
+      ) : null}
+
       {plexAuth ? (
-        <div className="space-y-4">
-          <div>
-            <p className="text-sm font-medium text-white">
-              {t('plexSignedInAs')} {plexAuth.title || plexAuth.username || t('plexSignedInFallback')}
-            </p>
-            {plexHomeUsers.length > 0 ? (
-              <p className="mt-1 text-xs text-slate-500">
-                {t('plexChooseProfile')}: {plexHomeUsers.find((user) => user.id === plexSelectedHomeUserId)?.title ?? plexAuth.title ?? plexAuth.username ?? t('plexSignedInFallback')}
-              </p>
-            ) : null}
-          </div>
-
-          {plexHomeUsers.length > 0 ? (
-            <div className="grid gap-3 2xl:grid-cols-[minmax(220px,1.15fr)_minmax(180px,0.9fr)_auto]">
-              <label className="space-y-1.5">
-                <span className="block text-[10px] uppercase tracking-[0.16em] text-slate-500">{t('plexChooseProfile')}</span>
-                <select
-                  value={plexSelectedHomeUserId}
-                  onChange={(event) => setPlexSelectedHomeUserId(event.target.value)}
-                  className={`w-full ${settingsSelectClassName}`}
-                >
-                  {plexHomeUsers.map((user) => (
-                    <option key={user.id} value={user.id} className="bg-slate-900">
-                      {user.title}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="space-y-1.5">
-                <span className="block text-[10px] uppercase tracking-[0.16em] text-slate-500">{t('plexProfilePin')}</span>
-                <input
-                  type="password"
-                  value={plexProfilePin}
-                  onChange={(event) => setPlexProfilePin(event.target.value)}
-                  placeholder={t('plexProfilePinPlaceholder')}
-                  className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-100 outline-none transition hover:border-white/20 focus:border-white/30"
-                />
-              </label>
-              <div className="flex items-end 2xl:justify-end">
-                <button
-                  type="button"
-                  onClick={() => void handlePlexProfileApply()}
-                  disabled={!plexSelectedHomeUserId || plexProfileSwitchState === 'switching'}
-                  className={`w-full ${settingsActionButtonClass} 2xl:w-auto`}
-                >
-                  {plexProfileSwitchState === 'switching' ? t('plexRefreshingProfiles') : t('plexApplyProfile')}
-                </button>
+        <>
+          <Card>
+            <div style={stack}>
+              <div>
+                <div style={{ fontSize: 14.5, fontWeight: 600, color: TOKENS.text }}>
+                  {t('plexSignedInAs')} {plexAuth.title || plexAuth.username || t('plexSignedInFallback')}
+                </div>
+                {plexHomeUsers.length > 0 ? (
+                  <div style={{ fontSize: 12, color: TOKENS.textMute, marginTop: 2 }}>
+                    {t('plexChooseProfile')}: {plexHomeUsers.find((user) => user.id === plexSelectedHomeUserId)?.title ?? plexAuth.title ?? plexAuth.username ?? t('plexSignedInFallback')}
+                  </div>
+                ) : null}
               </div>
+              {plexHomeUsers.length > 0 ? (
+                <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', alignItems: 'end' }}>
+                  <div>
+                    {fieldLabel(t('plexChooseProfile'))}
+                    <Select
+                      value={plexSelectedHomeUserId}
+                      options={plexHomeUsers.map((user) => ({ value: user.id, label: user.title }))}
+                      onChange={(value) => setPlexSelectedHomeUserId(value)}
+                      width="100%"
+                    />
+                  </div>
+                  <div>
+                    {fieldLabel(t('plexProfilePin'))}
+                    <input
+                      type="password"
+                      value={plexProfilePin}
+                      onChange={(event) => setPlexProfilePin(event.target.value)}
+                      placeholder={t('plexProfilePinPlaceholder')}
+                      style={inputStyle}
+                    />
+                  </div>
+                  <PillBtn
+                    variant="accent"
+                    onClick={() => void handlePlexProfileApply()}
+                    disabled={!plexSelectedHomeUserId || plexProfileSwitchState === 'switching'}
+                    style={{ minHeight: 44 }}
+                  >
+                    {plexProfileSwitchState === 'switching' ? t('plexRefreshingProfiles') : t('plexApplyProfile')}
+                  </PillBtn>
+                </div>
+              ) : null}
+              {plexProfileSuccess ? note(plexProfileSuccess, 'ok') : null}
             </div>
-          ) : null}
+          </Card>
 
-          {plexProfileSuccess ? (
-            <p className="text-xs text-emerald-300">{plexProfileSuccess}</p>
-          ) : null}
+          <Card>
+            <div style={stack}>
+              <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'minmax(0, 1fr) auto', alignItems: 'end' }}>
+                <div>
+                  {fieldLabel(t('plexChooseServer'))}
+                  <Select
+                    value={plexSelectedServerId}
+                    options={[{ value: '', label: t('plexChooseServer') }, ...plexServers.map((server) => ({ value: server.id, label: server.name }))]}
+                    onChange={(value) => { void handlePlexServerChange(value) }}
+                    width="100%"
+                  />
+                </div>
+                <PillBtn
+                  onClick={() => void refreshPlexResourcesAndLibraries(plexSelectedServerId || undefined, { selectedOnly: true })}
+                  disabled={plexRefreshState === 'refreshing'}
+                  style={{ minHeight: 44 }}
+                >
+                  {plexRefreshState === 'refreshing' ? t('plexRefreshingLibrariesButton') : t('plexRefreshLibraries')}
+                </PillBtn>
+              </div>
+              {plexRefreshMessage ? note(plexRefreshMessage, plexRefreshState === 'done' ? 'ok' : 'warn') : null}
+              {plexServers.length === 0 ? note(t('plexNoServers')) : null}
 
-          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
-            <label className="space-y-1.5">
-              <span className="block text-[10px] uppercase tracking-[0.16em] text-slate-500">{t('plexChooseServer')}</span>
-              <select
-                value={plexSelectedServerId}
-                onChange={(event) => { void handlePlexServerChange(event.target.value) }}
-                className={`w-full ${settingsSelectClassName}`}
-              >
-                <option value="">{t('plexChooseServer')}</option>
-                {plexServers.map((server) => (
-                  <option key={`${server.id}:${server.uri}`} value={server.id} className="bg-slate-900">
-                    {server.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="flex items-end">
-              <button
-                type="button"
-                onClick={() => void refreshPlexResourcesAndLibraries(plexSelectedServerId || undefined, { selectedOnly: true })}
-                disabled={plexRefreshState === 'refreshing'}
-                className={settingsActionButtonClass}
-              >
-                {plexRefreshState === 'refreshing' ? t('plexRefreshingLibrariesButton') : t('plexRefreshLibraries')}
-              </button>
-            </div>
-          </div>
-
-          {plexRefreshMessage ? (
-            <p className={`text-xs ${plexRefreshState === 'done' ? 'text-emerald-300' : 'text-amber-300'}`}>
-              {plexRefreshMessage}
-            </p>
-          ) : null}
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={handleClearPlexCaches}
-              className={settingsActionButtonClass}
-            >
-              {t('plexClearCache')}
-            </button>
-            {plexCacheMessage ? <span className="text-xs text-slate-400">{plexCacheMessage}</span> : null}
-          </div>
-
-          {plexServers.length === 0 ? (
-            <p className="text-xs text-slate-500">{t('plexNoServers')}</p>
-          ) : null}
-
-          {plexSelectedServerId ? (
-            <div className="space-y-2">
-              <p className="block text-[10px] uppercase tracking-[0.16em] text-slate-500">{t('plexChooseLibraries')}</p>
-              {plexLibraries.length === 0 ? (
-                <p className="text-xs text-slate-500">{t('plexNoLibraries')}</p>
-              ) : (
-                <div className="space-y-2">
-                  {/* Selected libraries in order with up/down reorder */}
-                  {plexSelectedLibraryKeys.length > 0 && (
-                    <div className="space-y-1.5">
+              {plexSelectedServerId ? (
+                <div>
+                  {fieldLabel(t('plexChooseLibraries'))}
+                  {plexLibraries.length === 0 ? (
+                    note(t('plexNoLibraries'))
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {plexSelectedLibraryKeys.map((key, idx) => {
                         const library = plexLibraries.find((l) => l.key === key)
                         if (!library) return null
                         return (
-                          <div key={key} className="flex items-center gap-2 rounded-xl border border-aurora-400/30 bg-aurora-400/5 px-3 py-2 text-sm text-slate-200">
-                            <span className="flex-1 truncate">{library.title}</span>
-                            <span className="text-[10px] uppercase tracking-[0.12em] text-slate-500">
-                              {library.type === 'movie' ? t('movies') : t('series')}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleMovePlexLibrary(key, -1)}
-                              disabled={idx === 0}
-                              className="rounded border border-white/10 px-1.5 py-0.5 text-[10px] text-slate-500 transition hover:border-white/20 hover:text-slate-300 disabled:opacity-30"
-                            >↑</button>
-                            <button
-                              type="button"
-                              onClick={() => handleMovePlexLibrary(key, 1)}
-                              disabled={idx === plexSelectedLibraryKeys.length - 1}
-                              className="rounded border border-white/10 px-1.5 py-0.5 text-[10px] text-slate-500 transition hover:border-white/20 hover:text-slate-300 disabled:opacity-30"
-                            >↓</button>
-                            <button
-                              type="button"
-                              onClick={() => handleTogglePlexLibrary(library)}
-                              className="rounded border border-white/10 px-1.5 py-0.5 text-[10px] text-red-400/70 transition hover:text-red-300"
-                            >✕</button>
+                          <div
+                            key={key}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 10,
+                              padding: '10px 14px',
+                              borderRadius: 12,
+                              border: `1px solid ${TOKENS.accent}`,
+                              background: TOKENS.accentSoft,
+                            }}
+                          >
+                            <span style={{ flex: 1, minWidth: 0, fontSize: 14.5, fontWeight: 600, color: TOKENS.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{library.title}</span>
+                            <span style={{ ...eyebrowStyle, marginBottom: 0 }}>{library.type === 'movie' ? t('movies') : t('series')}</span>
+                            <PillBtn size="sm" onClick={() => handleMovePlexLibrary(key, -1)} disabled={idx === 0} icon="chevUp" title="↑">{''}</PillBtn>
+                            <PillBtn size="sm" onClick={() => handleMovePlexLibrary(key, 1)} disabled={idx === plexSelectedLibraryKeys.length - 1} icon="chevDown" title="↓">{''}</PillBtn>
+                            <PillBtn size="sm" variant="danger" onClick={() => handleTogglePlexLibrary(library)} icon="close" title="✕">{''}</PillBtn>
                           </div>
                         )
                       })}
-                    </div>
-                  )}
-                  {/* Unselected libraries as add buttons */}
-                  {plexLibraries.filter((l) => !plexSelectedLibraryKeys.includes(l.key)).length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {plexLibraries.filter((l) => !plexSelectedLibraryKeys.includes(l.key)).map((library) => (
-                        <button
-                          key={library.key}
-                          type="button"
-                          onClick={() => handleTogglePlexLibrary(library)}
-                          className="rounded-xl border border-dashed border-white/15 px-3 py-1.5 text-xs text-slate-500 transition hover:border-white/30 hover:text-slate-300"
-                        >
-                          + {library.title}
-                        </button>
-                      ))}
+                      {plexLibraries.filter((l) => !plexSelectedLibraryKeys.includes(l.key)).length > 0 ? (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                          {plexLibraries.filter((l) => !plexSelectedLibraryKeys.includes(l.key)).map((library) => (
+                            <PillBtn key={library.key} size="sm" icon="plus" onClick={() => handleTogglePlexLibrary(library)}>
+                              {library.title}
+                            </PillBtn>
+                          ))}
+                        </div>
+                      ) : null}
                     </div>
                   )}
                 </div>
-              )}
-            </div>
-          ) : null}
+              ) : null}
 
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={handlePlexDisconnect}
-              className={settingsDangerActionButtonClass}
-            >
-              {t('plexDisconnect')}
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          <button
-            type="button"
-            onClick={() => void handlePlexConnect()}
-            disabled={plexLoginState === 'starting' || plexLoginState === 'polling'}
-            className={settingsActionButtonClass}
-          >
-            {plexLoginState === 'starting' || plexLoginState === 'polling' ? t('plexWaiting') : t('plexConnect')}
-          </button>
-          {plexCode ? (
-            <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3">
-              <p className="text-xs uppercase tracking-[0.18em] text-emerald-300">{t('plexOpenLinkAndCode')}</p>
-              <p className="mt-1 text-sm text-white break-all">{plexAuthUrl}</p>
-              <p className="mt-2 text-xl font-semibold tracking-[0.22em] text-emerald-200">{plexCode}</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+                <PillBtn onClick={handleClearPlexCaches}>{t('plexClearCache')}</PillBtn>
+                <PillBtn variant="danger" onClick={handlePlexDisconnect}>{t('plexDisconnect')}</PillBtn>
+                {plexCacheMessage ? <span style={{ fontSize: 12, color: TOKENS.textDim }}>{plexCacheMessage}</span> : null}
+              </div>
             </div>
-          ) : null}
-        </div>
+          </Card>
+        </>
+      ) : (
+        <Card>
+          <div style={stack}>
+            <PillBtn
+              variant="accent"
+              onClick={() => void handlePlexConnect()}
+              disabled={plexLoginState === 'starting' || plexLoginState === 'polling'}
+              style={{ alignSelf: 'flex-start' }}
+            >
+              {plexLoginState === 'starting' || plexLoginState === 'polling' ? t('plexWaiting') : t('plexConnect')}
+            </PillBtn>
+            {plexCode ? (
+              <div style={{ padding: '12px 16px', borderRadius: 12, border: `1px solid ${TOKENS.mint}`, background: 'rgba(60,214,163,0.10)' }}>
+                <div style={{ ...eyebrowStyle, color: TOKENS.mint }}>{t('plexOpenLinkAndCode')}</div>
+                <div style={{ marginTop: 4, fontSize: 14, color: TOKENS.text, wordBreak: 'break-all' }}>{plexAuthUrl}</div>
+                <div style={{ marginTop: 8, fontSize: 22, fontWeight: 600, letterSpacing: '0.22em', color: TOKENS.mint }}>{plexCode}</div>
+              </div>
+            ) : null}
+          </div>
+        </Card>
       )}
-      {plexLoginError ? <p className="mt-3 text-sm text-red-300">{plexLoginError}</p> : null}
+      {plexLoginError ? note(plexLoginError, 'error') : null}
       <PlexLibraryIndexPanel />
     </div>
   )
+
 }

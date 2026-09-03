@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { fetchLibraryStatus, getLibraryMode, onLibraryModeChanged, resetLibrarySource, runLibraryScan, setLibraryMode, useLang } from '@/lib/plugin-sdk'
+import { Card, PillBtn, TOKENS, fetchLibraryStatus, getLibraryMode, onLibraryModeChanged, resetLibrarySource, runLibraryScan, setLibraryMode, useLang } from '@/lib/plugin-sdk'
 import type { LibraryScanProgress, LibraryStatus } from '@/lib/plugin-sdk'
 import { ensureCanonicalPlexSettings } from './plex-storage'
 import { getPlexAuth } from './plex-storage'
@@ -64,16 +64,18 @@ export function PlexLibraryIndexPanel() {
   const formatWhen = (seconds: number | null | undefined) =>
     seconds ? new Date(seconds * 1000).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' }) : '–'
 
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-      <p className="text-sm font-semibold text-slate-100">{t('plexIndexTitle')}</p>
-      <p className="mt-1 text-xs text-slate-500">{t('plexIndexDesc')}</p>
+  const pct = progress?.total ? Math.min(100, Math.round((progress.done / Math.max(1, progress.total)) * 100)) : null
 
-      <div className="mt-3 text-xs text-slate-400">
+  return (
+    <Card>
+      <div style={{ fontSize: 14.5, fontWeight: 600, color: TOKENS.text }}>{t('plexIndexTitle')}</div>
+      <p style={{ margin: '4px 0 0', fontSize: 12, lineHeight: 1.5, color: TOKENS.textMute }}>{t('plexIndexDesc')}</p>
+
+      <div style={{ marginTop: 12, fontSize: 12, color: TOKENS.textDim }}>
         {mine ? (
           <>
-            <span className="text-slate-200">{t('plexIndexStatus').replace('{titles}', String(mine.titles)).replace('{unmatched}', String(status?.unmatched ?? 0))}</span>
-            <span className="mx-2 text-slate-600">·</span>
+            <span style={{ color: TOKENS.text }}>{t('plexIndexStatus').replace('{titles}', String(mine.titles)).replace('{unmatched}', String(status?.unmatched ?? 0))}</span>
+            <span style={{ margin: '0 8px', color: TOKENS.textMute }}>·</span>
             {t('plexIndexLastSync')}: {formatWhen(mine.lastDeltaSync ?? mine.lastFullSync)}
           </>
         ) : (
@@ -82,55 +84,32 @@ export function PlexLibraryIndexPanel() {
       </div>
 
       {progress ? (
-        <div className="mt-3">
-          <div className="flex items-center justify-between text-xs text-slate-300">
+        <div style={{ marginTop: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, color: TOKENS.textDim }}>
             <span>
               {progress.section ? `${progress.section} · ` : ''}
               {t('plexIndexRunning').replace('{done}', String(progress.done))}
               {progress.total ? ` / ${progress.total}` : ''}
             </span>
-            <button type="button" onClick={() => abortRef.current?.abort()} className="text-slate-500 hover:text-white">
-              {t('cancel')}
-            </button>
+            <PillBtn size="sm" onClick={() => abortRef.current?.abort()}>{t('cancel')}</PillBtn>
           </div>
-          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-            <div
-              className="h-full rounded-full bg-amber-400 transition-[width]"
-              style={{ width: progress.total ? `${Math.min(100, Math.round((progress.done / Math.max(1, progress.total)) * 100))}%` : '35%' }}
-            />
+          <div style={{ marginTop: 8, height: 6, width: '100%', overflow: 'hidden', borderRadius: 999, background: TOKENS.surface0 }}>
+            <div style={{ height: '100%', borderRadius: 999, background: TOKENS.accent, width: pct != null ? `${pct}%` : '35%', transition: 'width .3s' }} />
           </div>
         </div>
       ) : null}
-      {error ? <p className="mt-2 text-xs text-rose-300">{error}</p> : null}
+      {error ? <p style={{ margin: '8px 0 0', fontSize: 12, color: TOKENS.red }}>{error}</p> : null}
 
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          disabled={!connected || running}
-          onClick={() => void run('full')}
-          className="rounded-full bg-amber-400/90 px-4 py-1.5 text-xs font-semibold text-black transition hover:bg-amber-300 disabled:opacity-40"
-        >
+      <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+        <PillBtn variant="accent" disabled={!connected || running} onClick={() => void run('full')}>
           {mine ? t('plexIndexRebuild') : t('plexIndexBuild')}
-        </button>
-        {mine ? (
-          <button
-            type="button"
-            disabled={running}
-            onClick={() => void run('delta')}
-            className="rounded-full border border-white/15 px-4 py-1.5 text-xs font-semibold text-slate-200 transition hover:border-white/40 disabled:opacity-40"
-          >
-            {t('plexIndexUpdate')}
-          </button>
-        ) : null}
-        {mine ? (
-          <button type="button" disabled={running} onClick={() => void clear()} className="text-xs text-slate-500 hover:text-white disabled:opacity-40">
-            {t('plexIndexClear')}
-          </button>
-        ) : null}
+        </PillBtn>
+        {mine ? <PillBtn disabled={running} onClick={() => void run('delta')}>{t('plexIndexUpdate')}</PillBtn> : null}
+        {mine ? <PillBtn variant="danger" disabled={running} onClick={() => void clear()}>{t('plexIndexClear')}</PillBtn> : null}
       </div>
-
       {/* "Använd som startsida" bor i appens inställningar (Hem → Layout →
           Bibliotek): inställningen är kärnans och gäller alla leverantörer. */}
-    </div>
+    </Card>
   )
+
 }

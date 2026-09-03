@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { useLang } from '@/lib/plugin-sdk'
+import type * as React from 'react'
+import { PillBtn, TOKENS, eyebrowStyle, inputStyle, useLang } from '@/lib/plugin-sdk'
 import { useLiveTvEpgCache } from './hooks/useLiveTvEpgCache'
 
 interface Props {
@@ -54,64 +55,45 @@ export function EpgSourcesSection({
     }
     return null
   }
+  const sourceRow = (url: string, meta: React.ReactNode, right: React.ReactNode, dimmed = false) => (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '8px 12px', borderRadius: 10, border: `1px solid ${TOKENS.border}`, background: TOKENS.surface0 }}>
+      <span style={{ minWidth: 0, opacity: dimmed ? 0.45 : 1 }}>
+        <span style={{ display: 'block', fontSize: 12, color: TOKENS.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{url}</span>
+        {meta}
+      </span>
+      <span style={{ display: 'flex', flex: 'none', alignItems: 'center', gap: 8 }}>{right}</span>
+    </div>
+  )
+
   return (
-    <section className="space-y-2">
-      <h3 className="text-sm font-semibold text-white">{t('liveTvEpgSources')}</h3>
-      {autoUrl ? (
-        <div className="flex items-center justify-between rounded border border-white/5 bg-black/30 px-3 py-2">
-          <span className={`min-w-0 ${autoDisabled ? 'opacity-40' : ''}`}>
-            <span className="block truncate text-xs text-white/80">{autoUrl}</span>
-            {autoDisabled ? null : renderSourceMeta(autoUrl)}
-          </span>
-          <span className="ml-2 flex flex-none items-center gap-2">
-            <span
-              className={`rounded px-2 py-0.5 text-[10px] uppercase tracking-wider ${
-                autoDisabled
-                  ? 'bg-white/10 text-slate-400'
-                  : 'bg-emerald-500/20 text-emerald-300'
-              }`}
-            >
-              {autoDisabled ? `Auto · ${t('off')}` : 'Auto'}
-            </span>
-            {/* Härledd källa: den går att STÄNGA AV, inte radera. En radering
-                hade kommit tillbaka vid nästa M3U-hämtning, och användaren
-                hade inte haft någon väg att få den igen. */}
-            {onToggleAuto ? (
-              <button
-                type="button"
-                onClick={() => onToggleAuto(!autoDisabled)}
-                className={`text-xs ${
-                  autoDisabled
-                    ? 'text-emerald-300 hover:text-emerald-200'
-                    : 'text-red-300 hover:text-red-200'
-                }`}
-              >
-                {autoDisabled ? t('on') : t('remove')}
-              </button>
-            ) : null}
-          </span>
-        </div>
-      ) : null}
+    <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ ...eyebrowStyle }}>{t('liveTvEpgSources')}</div>
+      {autoUrl
+        ? sourceRow(
+            autoUrl,
+            autoDisabled ? null : renderSourceMeta(autoUrl),
+            <>
+              <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase', padding: '2px 8px', borderRadius: 999, background: autoDisabled ? TOKENS.surface2 : 'rgba(60,214,163,0.18)', color: autoDisabled ? TOKENS.textMute : TOKENS.mint }}>
+                {autoDisabled ? `Auto · ${t('off')}` : 'Auto'}
+              </span>
+              {/* Härledd källa: den går att STÄNGA AV, inte radera. En radering
+                  hade kommit tillbaka vid nästa M3U-hämtning, och användaren
+                  hade inte haft någon väg att få den igen. */}
+              {onToggleAuto ? (
+                <PillBtn size="sm" variant={autoDisabled ? 'accent' : 'danger'} onClick={() => onToggleAuto(!autoDisabled)}>
+                  {autoDisabled ? t('on') : t('remove')}
+                </PillBtn>
+              ) : null}
+            </>,
+            autoDisabled,
+          )
+        : null}
       {manualUrls.map((url, i) => (
-        <div
-          key={`${url}-${i}`}
-          className="flex items-center justify-between rounded border border-white/5 bg-black/30 px-3 py-2"
-        >
-          <span className="min-w-0">
-            <span className="block truncate text-xs text-white/80">{url}</span>
-            {renderSourceMeta(url)}
-          </span>
-          <button
-            type="button"
-            onClick={() => removeUrl(i)}
-            aria-label={t('remove')}
-            className="text-xs text-red-300 hover:text-red-200"
-          >
-            {t('remove')}
-          </button>
+        <div key={`${url}-${i}`}>
+          {sourceRow(url, renderSourceMeta(url), <PillBtn size="sm" variant="danger" onClick={() => removeUrl(i)}>{t('remove')}</PillBtn>)}
         </div>
       ))}
-      <div className="flex gap-2">
+      <div style={{ display: 'flex', gap: 8 }}>
         <input
           type="url"
           placeholder={t('liveTvEpgUrlPlaceholder')}
@@ -123,19 +105,12 @@ export function EpgSourcesSection({
               addUrl()
             }
           }}
-          className="flex-1 rounded border border-white/10 bg-black/40 px-3 py-1.5 text-xs text-white outline-none focus:border-emerald-400/60"
+          style={{ ...inputStyle, flex: 1 }}
         />
-        <button
-          type="button"
-          onClick={addUrl}
-          className="rounded bg-emerald-500/20 px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/30"
-        >
-          {t('add')}
-        </button>
+        <PillBtn variant="accent" onClick={addUrl} style={{ minHeight: 44 }}>{t('add')}</PillBtn>
       </div>
-      {!hasAny ? (
-        <p className="text-xs text-white/40">{t('liveTvNoEpgSourcesPrefix')}</p>
-      ) : null}
+      {!hasAny ? <p style={{ margin: 0, fontSize: 12, color: TOKENS.textMute }}>{t('liveTvNoEpgSourcesPrefix')}</p> : null}
     </section>
   )
+
 }
