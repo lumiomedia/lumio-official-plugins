@@ -57,7 +57,10 @@ export function PlexLibraryIndexPanel() {
   const clear = async () => {
     if (!source || running) return
     await resetLibrarySource(source.id)
-    if (mode?.sourceId === source.id) setLibraryMode(null)
+    if (mode?.sourceIds.includes(source.id)) {
+      const rest = mode.sourceIds.filter((id) => id !== source.id)
+      setLibraryMode(rest.length > 0 ? { sourceIds: rest } : null)
+    }
     refresh()
   }
 

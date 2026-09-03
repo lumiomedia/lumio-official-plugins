@@ -214,7 +214,11 @@ function JellyfinIndexPanel({ strings: s }: { strings: (typeof STR)['en'] | (typ
   const clear = async () => {
     if (!source || running) return
     await resetLibrarySource(source.id)
-    if (getStoredLibraryMode()?.sourceId === source.id) setLibraryMode(null)
+    const stored = getStoredLibraryMode()
+    if (stored?.sourceIds.includes(source.id)) {
+      const rest = stored.sourceIds.filter((id) => id !== source.id)
+      setLibraryMode(rest.length > 0 ? { sourceIds: rest } : null)
+    }
     refresh()
   }
 
