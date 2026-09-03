@@ -553,6 +553,17 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
         }
 
         if (!cancelled) {
+          // En tom hämtning får INTE skriva över en fylld cache. Xtream-panelen
+          // svarar ibland långsamt eller inte alls (tiotusentals kanaler bakom
+          // ett anrop), och varje fel ovan blir en tom lista — som sedan
+          // sparades som "kanalerna" och fick källan att se försvunnen ut
+          // efter ett TV-lägesbyte (Jerry 2026-09-03). Har vi något sedan
+          // förut behåller vi det och visar det.
+          if (nextChannels.length === 0 && initialChannels.length > 0) {
+            setChannels(initialChannels)
+            setError(null)
+            logLiveTvStage('fetch returned nothing — keeping cached channels', { total: initialChannels.length })
+          } else {
           const committedChannels = nextChannels.slice(0, MAX_TOTAL_CHANNELS)
           setLiveTvMemoryCache(urlsKey, committedChannels)
           storeLiveTvChannels(urlsKey, committedChannels)
@@ -562,6 +573,7 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
             total: nextChannels.length,
             committed: Math.min(nextChannels.length, MAX_TOTAL_CHANNELS),
           })
+          }
         }
       } catch {
         if (!cancelled) {
