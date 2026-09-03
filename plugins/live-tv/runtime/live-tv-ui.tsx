@@ -104,6 +104,11 @@ export const Icon = {
   Info: ({ size = 16, className }: IconProps) => (
     <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...stroke}><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></svg>
   ),
+  ChevronDown: ({ size = 14, className }: IconProps) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  ),
   Grid: ({ size = 18, className }: IconProps) => (
     <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...stroke}><rect x="3" y="3" width="8" height="8" rx="1.5" /><rect x="13" y="3" width="8" height="8" rx="1.5" /><rect x="3" y="13" width="8" height="8" rx="1.5" /><rect x="13" y="13" width="8" height="8" rx="1.5" /></svg>
   ),
