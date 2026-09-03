@@ -148,9 +148,13 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
   const engineOpen = useCallback(
     // Android-spelaren tar inga headers (np-bryggan saknar fältet) — den
     // vägen är oförändrad tills bryggan stödjer det.
+    // Råa MPEG-TS-strömmar (Xtream /live/…ts) får INGET UA-huvud: på appar
+    // före 0.1.58 lades det i mpv:s http-header-fields bredvid ffmpegs egen och
+    // panelen svarade 400 (svart ruta, 2026-09-03). HLS/DASH behåller
+    // webbläsarsträngen som 0.3.43 införde för paneler som 403:ar mpv:s egen.
     (url: string) => (isDroidEngine
       ? openNativePlayer({ url })
-      : openMpvPlayer({ url, requestHeaders: { 'User-Agent': IPTV_USER_AGENT } })),
+      : openMpvPlayer({ url, requestHeaders: /\.ts(?:[?#]|$)/i.test(url) ? undefined : { 'User-Agent': IPTV_USER_AGENT } })),
     [isDroidEngine],
   )
   const engineClose = useCallback(
