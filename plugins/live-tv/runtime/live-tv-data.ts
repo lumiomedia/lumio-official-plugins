@@ -639,8 +639,9 @@ export function onPinnedLiveTvKeysChanged(listener: () => void): () => void {
  * via browse-sidans hideHero() (appar från 0.1.57; äldre ignorerar det).
  */
 const HIDE_HERO_KEY = 'hide_hero'
+/** Dold som standard (Jerry 2026-09-03): Live TV börjar med hubben, inte under filmhjälten. Valet i inställningarna kan slå på den igen. */
 export function getLiveTvHideHero(): boolean {
-  return readPluginJson<unknown>(LIVE_TV_PLUGIN_ID, HIDE_HERO_KEY, false) === true
+  return readPluginJson<unknown>(LIVE_TV_PLUGIN_ID, HIDE_HERO_KEY, true) !== false
 }
 export function setLiveTvHideHero(hide: boolean): void {
   writePluginJson(LIVE_TV_PLUGIN_ID, HIDE_HERO_KEY, hide)
