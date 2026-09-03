@@ -1,7 +1,7 @@
 'use client'
 
 import type { LibraryBatch, LibraryMedia, LibraryProvider, LibraryScanProgress, LibrarySourceRef, LibraryTitle } from '@/lib/plugin-sdk'
-import { getPlexAuth, normalizePlexUris, type PlexSettingsState } from './plex-storage'
+import { ensurePlexClientIdentifier, getPlexAuth, normalizePlexUris, type PlexSettingsState } from './plex-storage'
 import { ensureCanonicalPlexSettings } from './plex-storage'
 
 /**
@@ -127,5 +127,26 @@ export const plexLibraryProvider: LibraryProvider = {
     if (!base || !token) return null
     const separator = media.playRef.includes('?') ? '&' : '?'
     return { url: `${base}${media.playRef}${separator}X-Plex-Token=${encodeURIComponent(token)}`, filename: media.playRef.split('/').pop() }
+  },
+
+  /**
+   * Progress tillbaka till Plex: `/:/timeline` under uppspelning (så Plex
+   * egna appar visar samma "Fortsätt titta") och `/:/scrobble` vid slutet.
+   * ratingKey ligger i indexnycklarna: titel `<källa>:<ratingKey>`, avsnitt
+   * `<titelnyckel>:e<ratingKey>`.
+   */
+  async reportProgress(_source, ref, state) {
+    const auth = getPlexAuth()
+    const settings = ensureCanonicalPlexSettings()
+    const token = settings.serverAccessToken ?? auth?.authToken ?? null
+    const base = normalizePlexUris(settings.serverUri, settings.serverUris)[0]
+    if (!base || !token) return
+    const ratingKey = ref.episodeKey ? ref.episodeKey.split(':e').pop() : ref.title.key.split(':').pop()
+    if (!ratingKey) return
+    const common = `X-Plex-Token=${encodeURIComponent(token)}&X-Plex-Client-Identifier=${encodeURIComponent(ensurePlexClientIdentifier())}`
+    const url = state.finished
+      ? `${base}/:/scrobble?identifier=com.plexapp.plugins.library&key=${encodeURIComponent(ratingKey)}&${common}`
+      : `${base}/:/timeline?ratingKey=${encodeURIComponent(ratingKey)}&key=${encodeURIComponent(`/library/metadata/${ratingKey}`)}&state=playing&time=${Math.max(0, state.positionMs)}&duration=${Math.max(0, state.durationMs)}&${common}`
+    await fetch(url, { method: 'GET', headers: { Accept: 'application/json' } })
   },
 }
