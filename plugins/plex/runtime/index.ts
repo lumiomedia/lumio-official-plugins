@@ -35,11 +35,15 @@ export const PlexPlugin: LumioPlugin = {
       label: { en: 'Plex', sv: 'Plex' },
       Page: PlexBrowsePage,
     })
+    // Menyvalet öppnar kärnans biblioteksvy för Plex-källan: startsidans
+    // rader, hero, sök och Visa alla — allt filtrerat mot indexet — utan att
+    // Plex behöver vara startsida. Pluginets egen bläddersida finns kvar som
+    // reserv för appar utan biblioteksvyn.
     ctx.registerMainMenuItem({
       id: 'plex',
       label: { en: 'Plex', sv: 'Plex' },
       defaultEnabled: true,
-      target: { pageId: 'plex-browse' },
+      target: { pageId: 'library', params: { provider: 'plex', fallbackPageId: 'plex-browse' } },
     })
     ctx.registerEpisodeSidebarProvider(plexEpisodeSidebarProvider)
     ctx.registerHomeOverride({
