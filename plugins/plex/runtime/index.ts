@@ -2,6 +2,7 @@
 // Plex plugin — registers Plex settings section.
 // PlexSection will be extracted from settings-panel.tsx in Task 5.
 
+import { plexLibraryProvider } from './plex-library-provider'
 import type { LumioPlugin } from '@/lib/plugin-sdk'
 import { plexPlaybackCapabilityProvider } from './playback-capability-provider'
 import { PlexBrowsePage } from './plex-browse-page'
@@ -22,6 +23,7 @@ export const PlexPlugin: LumioPlugin = {
 
   register(ctx) {
     ctx.registerPlaybackCapabilityProvider(plexPlaybackCapabilityProvider)
+    ctx.registerLibraryProvider(plexLibraryProvider)
     ctx.registerSyncIdentityProvider(plexSyncIdentityProvider)
     ctx.registerSettingsSection({
       id: 'plex',

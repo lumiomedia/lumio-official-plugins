@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { PlexLibraryIndexPanel } from './plex-library-index-panel'
 import {
   disableHomeOverridePlugin,
   getHomeOverridePluginId,
@@ -689,6 +690,7 @@ export function PlexSection() {
         </div>
       )}
       {plexLoginError ? <p className="mt-3 text-sm text-red-300">{plexLoginError}</p> : null}
+      <PlexLibraryIndexPanel />
     </div>
   )
 }
