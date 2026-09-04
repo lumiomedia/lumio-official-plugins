@@ -9,6 +9,7 @@ import { useHubText } from './hub-strings'
 import { isReminded, toggleReminder } from './reminders'
 import { Btn, ChannelBadge, Icon, LT, LiveTvHeader, formatClock, surfaceCard } from './live-tv-ui'
 import { ReminderBell, RemindersMenu, encodeChannelParams, useLiveTvChrome, useLiveTvNav } from './live-tv-shell'
+import { useIsMobileLayout } from './hooks/useIsMobileLayout'
 
 /**
  * Fullskärms-EPG (handoff §2): kanal × tid med fast kanalkolumn, Nu-linje,
@@ -18,6 +19,14 @@ import { ReminderBell, RemindersMenu, encodeChannelParams, useLiveTvChrome, useL
 const HOUR_PX = 240
 const PX_PER_MIN = HOUR_PX / 60
 const CHANNEL_COL = 160
+/**
+ * Kanalkolumnen på mobil: smalare, och den FÖLJER MED i sidoscrollen i stället
+ * för att ligga fast (Jerry 2026-09-03). Fastlåst åt 160 px av 328 px
+ * innehållsbredd, så knappt halva skärmen fanns kvar till själva tablån —
+ * mindre än en timme i taget. Skrivbordet har bredd nog och behåller den
+ * fasta kolumnen, som är det som gör en tablå läsbar när man scrollat långt.
+ */
+const CHANNEL_COL_MOBILE = 108
 const ROW_MIN_H = 56
 const MAX_ROWS = 80
 
@@ -40,6 +49,8 @@ export function LiveTvEpgPage({ onNavigate }: Props) {
   const [selected, setSelected] = useState<{ channel: M3uChannel; programme: EpgProgramme } | null>(null)
   const [reminderTick, setReminderTick] = useState(0)
   const scrollRef = useRef<HTMLDivElement | null>(null)
+  const isMobile = useIsMobileLayout()
+  const channelCol = isMobile ? CHANNEL_COL_MOBILE : CHANNEL_COL
   const { nowMs } = model
 
   // Idag: från en timme före nu och tolv timmar fram. Imorgon: 06–24.
@@ -112,16 +123,16 @@ export function LiveTvEpgPage({ onNavigate }: Props) {
         <div style={{ ...surfaceCard, padding: 20, fontSize: 14, color: LT.muted }}>{h('epgEmpty')}</div>
       ) : (
         <div ref={scrollRef} className="overflow-x-auto [scrollbar-width:thin]" style={{ position: 'relative' }}>
-          <div style={{ minWidth: CHANNEL_COL + gridWidth, position: 'relative' }}>
+          <div style={{ minWidth: channelCol + gridWidth, position: 'relative' }}>
             {/* Timlinje */}
-            <div style={{ display: 'flex', paddingLeft: CHANNEL_COL, height: 28, borderBottom: `1px solid ${LT.line}`, marginBottom: 6, position: 'sticky', top: 0, zIndex: 3, background: LT.bg }}>
+            <div style={{ display: 'flex', paddingLeft: channelCol, height: 28, borderBottom: `1px solid ${LT.line}`, marginBottom: 6, position: 'sticky', top: 0, zIndex: 3, background: LT.bg }}>
               {hourMarks.map((mark) => (
                 <div key={mark} style={{ width: HOUR_PX, flexShrink: 0, fontSize: 12, color: LT.dim }}>{formatClock(mark, locale)}</div>
               ))}
             </div>
             <div style={{ position: 'relative' }}>
               {nowVisible ? (
-                <div style={{ position: 'absolute', top: 0, bottom: 0, left: CHANNEL_COL + nowLeft, width: 2, background: LT.accent, zIndex: 2, pointerEvents: 'none' }}>
+                <div style={{ position: 'absolute', top: 0, bottom: 0, left: channelCol + nowLeft, width: 2, background: LT.accent, zIndex: 2, pointerEvents: 'none' }}>
                   <div style={{ position: 'absolute', top: -18, left: -14, fontSize: 10, color: LT.accentText, whiteSpace: 'nowrap' }}>{h('nowAt', { time: formatClock(nowMs, locale) })}</div>
                 </div>
               ) : null}
@@ -131,9 +142,9 @@ export function LiveTvEpgPage({ onNavigate }: Props) {
                     type="button"
                     onClick={() => go('channel', encodeChannelParams(channel))}
                     title={channel.name}
-                    style={{ width: CHANNEL_COL, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8, paddingRight: 8, position: 'sticky', left: 0, background: LT.bg, zIndex: 1, border: 0, color: 'inherit', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit' }}
+                    style={{ width: channelCol, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8, paddingRight: 8, background: LT.bg, zIndex: 1, border: 0, color: 'inherit', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit', ...(isMobile ? null : { position: 'sticky' as const, left: 0 }) }}
                   >
-                    <ChannelBadge channel={channel} size={28} />
+                    <ChannelBadge channel={channel} size={isMobile ? 22 : 28} />
                     <div className="truncate" style={{ fontSize: 12, fontWeight: 500 }}>{channel.name}</div>
                   </button>
                   <div style={{ display: 'flex', position: 'relative', width: gridWidth }}>

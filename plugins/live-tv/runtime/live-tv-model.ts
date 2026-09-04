@@ -123,7 +123,21 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
 
   const epgUrls = useMemo(() => getAllLiveTvEpgUrls(lists), [lists])
   const epgListId = epgUrls.length > 0 ? LIVE_TV_GLOBAL_EPG_ID : null
-  const cache = useLiveTvEpgCache(epgListId, epgUrls)
+  /**
+   * Cachen LÄSES under den konstanta nyckeln, inte under epgListId
+   * (Jerry 2026-09-03).
+   *
+   * epgListId är null tills kanallistorna hunnit laddas, och med null läste
+   * hooken ingenting. En VARM cache på disk låg därför oanvänd i flera
+   * sekunder vid varje omladdning — live-status och förloppsraden dök upp
+   * långt efter att sidan ritats, fast datan fanns hela tiden.
+   *
+   * Hämtningen är fortfarande grindad: ensureFresh avstår när urls är tom,
+   * så ingenting hämtas innan listorna vet vilka EPG-källor som gäller.
+   * epgListId lämnas orörd — live-tv-shell.tsx använder dess null-läge för
+   * att veta att EPG saknas.
+   */
+  const cache = useLiveTvEpgCache(LIVE_TV_GLOBAL_EPG_ID, epgUrls)
   const nameIndex = useMemo(() => (cache ? buildNameToTvgIdIndex(cache) : new Map<string, string>()), [cache])
   const tvgIdFor = useMemo(() => {
     const memo = new Map<string, string | null>()

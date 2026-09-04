@@ -275,12 +275,24 @@ export function LiveTvHeader({
   backLabel,
   children,
   right,
+  bottom,
 }: {
   title: string
   onBack?: () => void
   backLabel: string
   children?: ReactNode
   right?: ReactNode
+  /**
+   * EGEN RAD under resten av rubriken, vänster- och högerställd innehåll i
+   * samma linje (`space-between`).
+   *
+   * Behövs för att rubriken är en radbrytande flexrad: sökfältet (minst
+   * 220 px) fyller mobilens bredd, så allt efter det hamnar på nya rader i
+   * den ordning webbläsaren råkar få plats med dem — knapparna gick inte att
+   * placera. Den här platsen tar `width: 100%` och får därför ALLTID en egen
+   * rad, längst ned (Jerry 2026-09-03).
+   */
+  bottom?: ReactNode
 }) {
   return (
     <div
@@ -302,6 +314,7 @@ export function LiveTvHeader({
       <div style={{ fontSize: 18, fontWeight: 600, color: LT.text }}>{title}</div>
       {children ? <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginLeft: 12, alignItems: 'center' }}>{children}</div> : null}
       {right ? <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>{right}</div> : null}
+      {bottom ? <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>{bottom}</div> : null}
     </div>
   )
 }

@@ -63,18 +63,24 @@ function decodeInitialChannel(params?: BrowsePageProps['params']): M3uChannel | 
 
 const LIVE_TV_BROWSE_PAGE_ID = 'live-tv-browse'
 
-// Sidans vyer (params.view): hub (standard), epg, channel, grid. Sökvyn togs bort
-// 2026-09-03 (Jerry): kanalsök sker i hubbens och rutnätets egna fält.
-// TV-läget behåller rutnätet (det äger fjärrnavigeringen). En direktlänkad
-// kanal utan view (äldre länkar, hemvyn) öppnar rutnätet med kanalen i spel.
+// Sidans vyer (params.view): hub (standard), epg, channel. Sökvyn togs bort
+// 2026-09-03 (Jerry): kanalsök sker i hubbens egna fält.
+//
+// RUTNÄTET finns BARA på TV (Jerry 2026-09-03). Där äger det fjärrnavigeringen
+// och kan inte tas bort. På skrivbord och mobil är hubben vyn: rutnätet var en
+// äldre parallell yta som nåddes via två knappar och en direktlänk, med egen
+// sökning och eget urval — två sätt att göra samma sak, varav det ena inte
+// underhölls. En direktlänkad kanal utan view öppnar nu kanalsidan, som klarar
+// samma params (channelFromParams faller tillbaka på params när kanalen inte
+// finns i listorna).
 function LiveTvBrowsePage({ params, onNavigate }: BrowsePageProps) {
   const isTv = useTvMode()
   const view = params?.view
-  if (isTv || view === 'grid' || (!view && params?.url)) {
+  if (isTv) {
     return createElement(LiveTvGrid, { initialChannel: decodeInitialChannel(params), tvCompactTop: true })
   }
   if (view === 'epg') return createElement(LiveTvEpgPage, { onNavigate })
-  if (view === 'channel') return createElement(LiveTvChannelPage, { params, onNavigate })
+  if (view === 'channel' || (!view && params?.url)) return createElement(LiveTvChannelPage, { params, onNavigate })
   return createElement(LiveTvHub, { onNavigate })
 }
 

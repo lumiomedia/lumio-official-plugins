@@ -4,6 +4,20 @@ import type { EpgCacheEntry } from './types'
 
 const PLUGIN_ID = 'com.lumio.live-tv'
 const TTL_MS = 6 * 60 * 60 * 1000
+/**
+ * Egen, KORT livstid för en misslyckad hämtning (Jerry 2026-09-03).
+ *
+ * En felpost skrivs med `fetchedAt = nu` och tom `index`, så den räknades som
+ * färsk i hela sex timmar — `ensureFresh` avstod från att hämta om och tablån
+ * var död resten av kvällen, fast källan läkte sig själv sekunder senare.
+ * (Uppmätt: hämtningen föll på "error decoding response body" 21:54, samma
+ * URL svarade med full tablå direkt efteråt.) Timern i `refresh` räckte inte:
+ * den lever i minnet och försvinner vid varje omladdning.
+ *
+ * Varje ny miss skriver om posten och nollar klockan, så en källa som är
+ * verkligt trasig ger som mest ett försök per fönster — inte en storm.
+ */
+const FAILED_TTL_MS = 10 * 60 * 1000
 const RETRY_MS = 60 * 60 * 1000
 
 const inflight = new Map<string, Promise<void>>()
@@ -18,8 +32,14 @@ export function readCache(listId: string): EpgCacheEntry | null {
   return readPluginJson<EpgCacheEntry | null>(PLUGIN_ID, cacheKey(listId), null)
 }
 
+/** Tom post med registrerade fel = misslyckad hämtning, inte en tom tablå. */
+function isFailureEntry(entry: EpgCacheEntry): boolean {
+  return Object.keys(entry.index).length === 0 && (entry.failures?.length ?? 0) > 0
+}
+
 export function isFresh(entry: EpgCacheEntry | null, now = Date.now()): boolean {
-  return entry !== null && now - entry.fetchedAt < TTL_MS
+  if (entry === null) return false
+  return now - entry.fetchedAt < (isFailureEntry(entry) ? FAILED_TTL_MS : TTL_MS)
 }
 
 function sameSources(entry: EpgCacheEntry | null, urls: string[]): boolean {

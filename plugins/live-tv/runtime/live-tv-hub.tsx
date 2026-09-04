@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useTvMode, type BrowsePageProps } from '@/lib/plugin-sdk'
 import { channelKey, type M3uChannel } from './live-tv-data'
 import { useLiveTvModel } from './live-tv-model'
@@ -24,6 +24,8 @@ import {
   progressOf,
   surfaceCard,
 } from './live-tv-ui'
+import { useEpgLoadStatus } from './hooks/useEpgLoadStatus'
+import { useIsMobileLayout } from './hooks/useIsMobileLayout'
 import { RemindersMenu, encodeChannelParams, useLiveTvChrome, useLiveTvNav } from './live-tv-shell'
 
 /**
@@ -40,6 +42,12 @@ const MAX_ALL_CHANNELS = 60
 
 interface Props {
   onNavigate: BrowsePageProps['onNavigate']
+}
+
+/** Favoritkanaler: sidoscrollande rad på mobil, rutnät på skrivbord. */
+function FavoritesLayout({ mobile, children }: { mobile: boolean; children: ReactNode }) {
+  if (mobile) return <ScrollRow>{children}</ScrollRow>
+  return <div className="grid grid-cols-2 gap-3 md:grid-cols-4">{children}</div>
 }
 
 export function LiveTvHub({ onNavigate }: Props) {
@@ -62,6 +70,11 @@ export function LiveTvHub({ onNavigate }: Props) {
   }, [groupMenuOpen])
   const effectiveGroup = activeGroup && model.groups.includes(activeGroup) ? activeGroup : null
   const { channels, nowFor, nowMs, pinnedKeys, pinnedSet, byKey, history } = model
+  // Kall cache: hämtningen tar sekunder och kortet stod tyst med "Ingen
+  // programinformation", vilket ljuger — tablån var på väg (Jerry 2026-09-03).
+  const epgStatus = useEpgLoadStatus(model.epgListId, model.epgUrls)
+  // Mobilomgången 2026-09-03 rör BARA mobilen; skrivbordet ska se ut som förut.
+  const isMobile = useIsMobileLayout()
 
   const favorites = useMemo(
     () =>
@@ -137,62 +150,87 @@ export function LiveTvHub({ onNavigate }: Props) {
     return h('hubWatchedAt', { time: sameDay ? time : `${h('hubYesterday')} ${time}` })
   }
 
+  const epgButton = (
+    <Btn variant="secondary" small onClick={() => go('epg')}>
+      <Icon.Calendar size={14} /> {h('openEpg')}
+    </Btn>
+  )
+
+  /* Sök och gruppväljare bryts ut ur rubriken: på mobil ritas de i stället
+     som en filterrad precis ovanför "Alla kanaler" (Jerry 2026-09-03). Det är
+     den sektionen de filtrerar, och rubriken blev annars tre rader hög innan
+     man ens sett en kanal. Skrivbordet har plats och behåller dem uppe i
+     rubriken. Bara EN av de två platserna renderas åt gången, så den delade
+     `groupMenuRef` pekar alltid på den öppna väljaren. */
+  const searchField = !isTv ? (
+    // På TV finns inget tangentbord i fältet; där söker man i rutnätet.
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, borderRadius: 999, border: `1px solid ${LT.line}`, background: 'rgba(255,255,255,0.04)', padding: '0 12px', height: 36, ...(isMobile ? { flex: 1, minWidth: 0 } : { minWidth: 220 }) }}>
+      <Icon.Search size={14} />
+      <input
+        type="search"
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder={h('searchPlaceholder')}
+        aria-label={h('search')}
+        style={{ flex: 1, minWidth: 0, background: 'transparent', border: 0, outline: 'none', color: LT.text, fontSize: 13, fontFamily: 'inherit' }}
+      />
+    </div>
+  ) : null
+
+  const groupPicker = model.groups.length > 0 ? (
+    <div ref={groupMenuRef} style={{ position: 'relative', flexShrink: 0 }}>
+      <Btn variant={effectiveGroup ? 'secondary' : 'ghost'} small pressed={groupMenuOpen} onClick={() => setGroupMenuOpen((open) => !open)}>
+        <span className="truncate" style={{ maxWidth: isMobile ? 120 : 220, display: 'inline-block', verticalAlign: 'bottom' }}>{effectiveGroup ?? h('hubAllGroups')}</span>
+        <Icon.ChevronDown size={14} />
+      </Btn>
+      {groupMenuOpen ? (
+        /* HÖGERSTÄLLD och skärmbred på mobil (Jerry 2026-09-03). Med `left: 0`
+           föll listan ut från en knapp som börjar långt ut till höger: 240 px
+           meny från x=261 slutade på x=501 i en 360 px vid skärm, så 141 px av
+           varje kategorinamn låg utanför kanten. Knappen sitter sist i
+           filterraden, alltså i innehållets högerkant, så `right: 0` plus
+           skärmbredd minus sidmarginalerna (2 × 16 px) landar exakt innanför
+           båda kanterna. */
+        <div style={{ position: 'absolute', top: 'calc(100% + 6px)', zIndex: 50, maxHeight: 360, overflowY: 'auto', background: '#0b1020', border: `1px solid ${LT.line}`, borderRadius: LT.radiusMd, padding: 6, boxShadow: '0 18px 40px rgba(0,0,0,0.45)', ...(isMobile ? { right: 0, width: 'calc(100vw - 32px)' } : { left: 0, minWidth: 240 }) }}>
+          {[null, ...model.groups].map((group) => (
+            <button
+              key={group ?? '__all'}
+              type="button"
+              onClick={() => { setActiveGroup(group); setGroupMenuOpen(false) }}
+              className="truncate"
+              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', borderRadius: LT.radiusSm, border: 0, background: group === effectiveGroup ? 'rgba(255,255,255,0.10)' : 'transparent', color: group === effectiveGroup ? LT.text : LT.muted, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
+            >
+              {group ?? h('hubAllGroups')}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  ) : null
+
+  const filterRow = searchField || groupPicker ? (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      {searchField}
+      {groupPicker}
+    </div>
+  ) : null
+
   const header = (
     <LiveTvHeader
       title={h('hubTitle')}
       backLabel={h('back')}
-      right={
-        <>
-          <RemindersMenu model={model} onOpenChannel={openChannel} />
-          <Btn variant="ghost" icon onClick={() => go('grid')} ariaLabel={h('hubOpenGrid')} title={h('hubOpenGrid')}>
-            <Icon.Grid />
-          </Btn>
-        </>
-      }
+      /* EPG och påminnelseklockan ligger på SAMMA rad, aldrig på var sitt håll
+         i rubrikens radbrytning (Jerry 2026-09-03). På mobil är det en egen
+         rad under sökfältet: EPG längst till vänster, klockan längst till
+         höger. På skrivbord finns plats kvar på topprowen, och den är
+         godkänd som den är — där ligger de kvar uppe till höger.
+
+         Rutnätsikonen är borta: 'grid' fanns bara i LiveTvView-unionen,
+         skalet hade ingen renderare för den, så knappen ledde ingenstans. */
+      right={isMobile ? undefined : <>{epgButton}<RemindersMenu model={model} onOpenChannel={openChannel} /></>}
+      bottom={isMobile ? <>{epgButton}<RemindersMenu model={model} onOpenChannel={openChannel} /></> : undefined}
     >
-      {/* Sök (öppet fält på skrivbord), grupper i en dropdown och EPG som knapp
-          — i stället för en chiprad som svämmade över med långa gruppnamn
-          (Jerry 2026-09-03). På TV finns inget tangentbord i fältet; där
-          söker man i rutnätet. */}
-      {!isTv ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, borderRadius: 999, border: `1px solid ${LT.line}`, background: 'rgba(255,255,255,0.04)', padding: '0 12px', height: 36, minWidth: 220 }}>
-          <Icon.Search size={14} />
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={h('searchPlaceholder')}
-            aria-label={h('search')}
-            style={{ flex: 1, minWidth: 0, background: 'transparent', border: 0, outline: 'none', color: LT.text, fontSize: 13, fontFamily: 'inherit' }}
-          />
-        </div>
-      ) : null}
-      {model.groups.length > 0 ? (
-        <div ref={groupMenuRef} style={{ position: 'relative' }}>
-          <Btn variant={effectiveGroup ? 'secondary' : 'ghost'} small pressed={groupMenuOpen} onClick={() => setGroupMenuOpen((open) => !open)}>
-            <span className="truncate" style={{ maxWidth: 220, display: 'inline-block', verticalAlign: 'bottom' }}>{effectiveGroup ?? h('hubAllGroups')}</span>
-            <Icon.ChevronDown size={14} />
-          </Btn>
-          {groupMenuOpen ? (
-            <div style={{ position: 'absolute', left: 0, top: 'calc(100% + 6px)', zIndex: 50, minWidth: 240, maxHeight: 360, overflowY: 'auto', background: '#0b1020', border: `1px solid ${LT.line}`, borderRadius: LT.radiusMd, padding: 6, boxShadow: '0 18px 40px rgba(0,0,0,0.45)' }}>
-              {[null, ...model.groups].map((group) => (
-                <button
-                  key={group ?? '__all'}
-                  type="button"
-                  onClick={() => { setActiveGroup(group); setGroupMenuOpen(false) }}
-                  className="truncate"
-                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', borderRadius: LT.radiusSm, border: 0, background: group === effectiveGroup ? 'rgba(255,255,255,0.10)' : 'transparent', color: group === effectiveGroup ? LT.text : LT.muted, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
-                >
-                  {group ?? h('hubAllGroups')}
-                </button>
-              ))}
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-      <Btn variant="secondary" small onClick={() => go('epg')}>
-        <Icon.Calendar size={14} /> {h('openEpg')}
-      </Btn>
+      {isMobile ? null : filterRow}
     </LiveTvHeader>
   )
 
@@ -212,21 +250,49 @@ export function LiveTvHub({ onNavigate }: Props) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24, color: LT.text }}>
+      {/* Egen keyframe: pluginets buntar får inga klasser ur appens Tailwind. */}
+      <style>{'@keyframes lumio-livetv-spin{to{transform:rotate(360deg)}}'}</style>
       {header}
 
       {hero && !needle ? (
         <div className="grid gap-4">
-          <div style={{ ...heroGradient, padding: 24, display: 'flex', flexDirection: 'column', gap: 10, minHeight: 220, justifyContent: 'center' }}>
+          {/* minWidth 0 + brytbart namn: kortet är ENDA barnet i ett
+              `grid`-spår, och ett auto-spår blir minst så brett som barnets
+              min-content. Rubriken hade `truncate` (white-space: nowrap), och
+              ett långt kanalnamn i 30 px gav 350 px min-content — spåret växte
+              till 400 px i en 328 px spalt och sköt hela sidan i sidled på
+              telefonen (mätt 2026-09-03: scrollWidth 416 mot clientWidth 360).
+              På mobil bryter namnet rad i mindre grad i stället; skrivbordet
+              har plats och behåller en rad med ellips. */}
+          <div style={{ ...heroGradient, padding: isMobile ? 16 : 24, display: 'flex', flexDirection: 'column', gap: 10, minHeight: 220, justifyContent: 'center', ...(isMobile ? { minWidth: 0 } : null) }}>
+            {/* Plats RESERVERAD för det som dyker upp när EPG:n landar
+                (Jerry 2026-09-03): live-taggen, förloppsraden och
+                nästa-programmet ritas först när `now` finns, och utan
+                reservationen växte kortet i höjd flera tiotal pixlar och
+                sköt resten av sidan nedåt mitt i tittandet. Måtten är
+                elementens egna: taggen 21 px (11 px text, 3 px padding),
+                förloppet 4 px, nästa-raden 16 px (12 px text). */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               {heroInfo.now ? <LiveTag label={h('hubLive')} /> : null}
               {hero.group ? <Tag>{hero.group}</Tag> : null}
               {model.locked.has(channelKey(hero)) ? <Tag variant="outline"><Icon.Lock /> {h('locked')}</Tag> : null}
             </div>
-            <h2 className="truncate" style={{ fontSize: 30, margin: 0, fontWeight: 600, lineHeight: 1.15 }}>{heroInfo.now?.title ?? hero.name}</h2>
+            <h2
+              className={isMobile ? undefined : 'truncate'}
+              style={{
+                fontSize: isMobile ? 20 : 30,
+                margin: 0,
+                fontWeight: 600,
+                lineHeight: isMobile ? 1.25 : 1.15,
+                ...(isMobile ? { minWidth: 0, overflowWrap: 'anywhere' as const } : null),
+              }}
+            >
+              {heroInfo.now?.title ?? hero.name}
+            </h2>
             <div style={{ fontSize: 13, color: LT.muted }}>
               {heroInfo.now
                 ? `${hero.name} · ${formatClock(heroInfo.now.start, locale)}–${formatClock(heroInfo.now.stop, locale)} · ${h('minutesLeft', { min: Math.max(0, Math.round((heroInfo.now.stop - nowMs) / 60_000)) })}`
-                : `${hero.name} · ${h('hubNoProgramme')}`}
+                : `${hero.name} · ${epgStatus === 'loading' ? h('hubLoadingEpg') : h('hubNoProgramme')}`}
             </div>
             {heroInfo.now ? <ProgressBar value={progressOf(heroInfo.now.start, heroInfo.now.stop, nowMs)} width={320} /> : null}
             {heroInfo.next ? (
@@ -252,7 +318,13 @@ export function LiveTvHub({ onNavigate }: Props) {
         {favorites.length === 0 ? (
           <p style={{ margin: 0, fontSize: 14, color: LT.muted }}>{h('hubFavoritesEmpty')}</p>
         ) : (
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          /* Sidoscrollande rad på mobil, rutnät på skrivbord (Jerry
+             2026-09-03). Rutnätet gav två smala kolumner där varje kort blev
+             lägre än sitt innehåll och alla tre rader staplades på höjd;
+             raden håller korten 200 px breda och låter nästa kort kika in i
+             kanten, precis som Fortsätt titta strax nedanför. Samma
+             kortinnehåll i båda lägena. */
+          <FavoritesLayout mobile={isMobile}>
             {favorites.map((channel) => {
               const info = nowFor(channel)
               return (
@@ -268,7 +340,14 @@ export function LiveTvHub({ onNavigate }: Props) {
                     }
                   }}
                   className="cursor-pointer transition hover:brightness-125"
-                  style={{ ...surfaceCard, padding: 12, display: 'flex', flexDirection: 'column', gap: 6 }}
+                  style={{
+                    ...surfaceCard,
+                    padding: 12,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 6,
+                    ...(isMobile ? { width: 200, flexShrink: 0, scrollSnapAlign: 'start' as const } : null),
+                  }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <ChannelBadge channel={channel} size={40} />
@@ -294,7 +373,7 @@ export function LiveTvHub({ onNavigate }: Props) {
                 </div>
               )
             })}
-          </div>
+          </FavoritesLayout>
         )}
       </section>
 
@@ -386,14 +465,16 @@ export function LiveTvHub({ onNavigate }: Props) {
       ) : null}
 
       <section>
+        {/* Luft ner till rubriken: filterraden satt annars klistrad direkt på
+            "Alla kanaler" (Jerry 2026-09-03). SectionTitle har bara marginal
+            nedåt, så avståndet måste komma härifrån. */}
+        {isMobile ? <div style={{ marginBottom: 14 }}>{filterRow}</div> : null}
         <SectionTitle
           title={h('hubAllChannels')}
           sub={h('channelsIn', { count: filteredChannels.length, group: effectiveGroup ?? h('hubAllGroups') })}
-          action={
-            filteredChannels.length > MAX_ALL_CHANNELS ? (
-              <Btn variant="ghost" small onClick={() => go('grid')}>{h('hubShowAllInGrid', { count: filteredChannels.length })}</Btn>
-            ) : null
-          }
+          /* Ingen action längre: den enda knappen här var "visa alla i
+             rutnätet", och rutnätet finns bara på TV nu. Kanaler bortom taket
+             nås via sökfältet och gruppväljaren högst upp. */
         />
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {filteredChannels.slice(0, MAX_ALL_CHANNELS).map((channel) => {

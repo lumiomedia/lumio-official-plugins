@@ -93,19 +93,20 @@ describe('LiveTvHub', () => {
 
   it('does not claim LIVE in the hero without a running programme', () => {
     render(<LiveTvHub onNavigate={() => {}} />)
-    expect(screen.getAllByText(/No programme information/).length).toBeGreaterThan(0)
+    // Kall cache MEN en EPG-källa: tablån är på väg, och kortet säger det i
+    // stället för att hävda att det inte finns någon.
+    expect(screen.getAllByText(/Fetching guide/).length).toBeGreaterThan(0)
     expect(screen.queryByText('LIVE')).not.toBeInTheDocument()
   })
 
-  it('filters the channel list by group chip and opens the grid on demand', () => {
-    const onNavigate = vi.fn()
-    render(<LiveTvHub onNavigate={onNavigate} />)
-    // Gruppchipsen renderas först i DOM:en; kanalrader kan bära samma gruppnamn.
+  it('filters the channel list through the group dropdown', () => {
+    render(<LiveTvHub onNavigate={() => {}} />)
+    // Grupperna ligger i en dropdown, inte i en chiprad; rutnätsknappen finns
+    // inte kvar (rutnätet är bara TV).
+    fireEvent.click(screen.getByRole('button', { name: /^All/ }))
     fireEvent.click(screen.getAllByRole('button', { name: 'Nyheter' })[0])
     expect(screen.getAllByText('SVT1').length).toBeGreaterThan(0)
     expect(screen.queryByText('Eurosport')).not.toBeInTheDocument()
-    fireEvent.click(screen.getAllByRole('button', { name: 'All channels' })[0])
-    expect(onNavigate).toHaveBeenCalledWith({ pageId: 'live-tv-browse', params: { view: 'grid' } })
   })
 
   it('opens the player when a channel is chosen', async () => {
