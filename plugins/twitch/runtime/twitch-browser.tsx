@@ -522,7 +522,14 @@ function TwitchPageNav({
 }) {
   const { lang } = useLang()
   return (
-    <div className="flex flex-wrap gap-2">
+    /* EN rad som scrollar i sidled, aldrig radbrytning (Jerry 2026-09-03).
+       `flex-wrap` la de fyra flikarna på två rader i telefonens 328 px, alltså
+       80 px meny innan man sett en enda ström — och den andra raden såg ut som
+       en egen, lös knappgrupp. Samma lösning som appens egen menyrad
+       (explorer-hero.tsx): overflow-x med gömd rullningslist och poster som
+       inte får krympa. På skrivbordet får alla fyra plats på raden, så
+       overflow slår aldrig till där och utseendet är oförändrat. */
+    <div className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {TWITCH_PAGES.map((page) => (
         <button
           key={page.id}
@@ -530,7 +537,7 @@ function TwitchPageNav({
           onClick={() => {
             if (page.id !== current) onNavigate({ pageId: page.id })
           }}
-          className={`h-9 rounded-full border px-4 text-[0.62rem] font-normal uppercase tracking-[0.2em] transition-all ${
+          className={`h-9 shrink-0 whitespace-nowrap rounded-full border px-4 text-[0.62rem] font-normal uppercase tracking-[0.2em] transition-all ${
             page.id === current
               ? 'border-transparent bg-[#fcfcff2e] text-white backdrop-blur-md'
               : 'border-transparent bg-[#fcfcff14] text-slate-300 backdrop-blur-md hover:bg-[#fcfcff22] hover:text-white'
