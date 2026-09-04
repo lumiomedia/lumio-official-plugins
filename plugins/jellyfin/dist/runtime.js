@@ -348,6 +348,7 @@
       ctx.registerMediaStreamAvailabilityProvider = noop5;
       ctx.registerInstantPlayProvider = noop5;
       ctx.registerResumeRefreshProvider = noop5;
+      ctx.registerEpisodeSidebarProvider = noop5;
     }
     plugin2.register(ctx);
     notifyRegistryChanged();
@@ -166543,12 +166544,12 @@
       tvRemoveRow: "Remove",
       raAlwaysVlc: "Always open in VLC",
       dtMinutesShort: "{n}m",
-      epLayoutTitle: "Episode layout",
-      epLayoutDesc: "List shows a thumbnail beside the text. Cards show wide artwork you scroll through, with the text over the image.",
-      epLayoutList: "List",
-      epLayoutCards: "Cards",
-      epLayoutToggleTitle: "Switch episode layout",
-      detailsLayoutToggleTitle: "Switch layout: cards in rows or lists",
+      epLayoutTitle: "Details page layout",
+      epLayoutDesc: "Vertical stacks episodes, streams and recommendations in lists you scroll down through. Side-scrolling puts them in rows of cards you swipe sideways. Applies to both movies and series.",
+      epLayoutList: "Vertical",
+      epLayoutCards: "Side-scrolling",
+      epLayoutToggleTitle: "Switch layout: vertical or side-scrolling",
+      detailsLayoutToggleTitle: "Switch layout: vertical or side-scrolling",
       detailsTrailers: "Trailers",
       homeBubble: "Home",
       daPlacementTitle: "Action buttons",
@@ -167140,7 +167141,11 @@
       uiScale: "Interface scale",
       uiScaleDesc: "Scales the entire interface. Useful on 4K and ultrawide screens.",
       fullCastTitle: "Full cast & crew",
-      fullCastOpen: "Full cast",
+      fullCastOpen: "Cast",
+      dsLayoutTitle: "Streams",
+      dsLayoutDesc: "Where the stream list sits on the details page.",
+      dsLayoutSidebar: "Side panel",
+      dsLayoutInline: "Below the content",
       heroCast: "Cast",
       newSeasonBadge: "New season",
       homeCardShape: "Card shape",
@@ -167239,6 +167244,9 @@
       settingsTabThisComputer: "This computer",
       settingsTabStorage: "Storage",
       settingsTabHome: "Home",
+      /* Underfliken på sidan Hem & utseende: layout, navigering, hero, visning —
+         val som gäller fler sidor än Hem, därför inte 'Hem'. */
+      settingsTabAppearance: "Appearance",
       settingsTabZapp: "Zapp",
       settingsSearchPlaceholder: "Search settings",
       settingsNyBadge: "NEW",
@@ -168272,7 +168280,7 @@
       libraryModeTitle: "Library mode",
       libraryModeHint: "When a library is the home page, every row is filtered to what you own. Rows with nothing indexed are hidden; the count shows how many titles each row can offer right now.",
       libraryUseAsHome: "Use as home page",
-      libraryUseAsHomeHint: "Home page, details page, search and Zapp are then fed only from this library. Stream sources stay hidden while it is on.",
+      libraryUseAsHomeHint: "Tick one or more libraries. Home page, details page, search and Zapp are then fed only from them, together. Stream sources stay hidden while it is on.",
       librarySourcesTitle: "Indexed libraries",
       librarySourceNotIndexed: "Not indexed yet \u2014 build the index in the plugin's settings.",
       libraryModeOff: "No library is set as the home page. Turn it on under the library plugin's settings.",
@@ -168282,6 +168290,15 @@
       libraryBackToHome: "Back to Home",
       continueLayoutRows: "Rows",
       continueLayoutGrid: "Grid",
+      /* Settings → Display → Continue watching */
+      cwSectionHint: "The view has two modes, switched with the button next to the filter. Each mode has its own card format and count.",
+      cwModeRows: "Side-scrolling rows",
+      cwModeRowsDesc: "All, Series and Movies as rows you swipe sideways.",
+      cwModeGrid: "Grid",
+      cwModeGridDesc: "Everything in one grid you scroll down through.",
+      cwFormatLabel: "Card format",
+      cwFormatPortrait: "Portrait",
+      cwFormatLandscape: "Landscape",
       libraryVersionsTitle: "Versions in your library",
       libraryNotInLibrary: "Not in your library",
       libraryEpisodeNotInLibrary: "This episode is not in your library",
@@ -168990,12 +169007,12 @@
       tvRemoveRow: "Ta bort",
       raAlwaysVlc: "\xD6ppna alltid i VLC",
       dtMinutesShort: "{n} min",
-      epLayoutTitle: "Avsnittslayout",
-      epLayoutDesc: "Lista visar en miniatyr bredvid texten. Kort visar breda bilder du bl\xE4ddrar genom, med texten ovanp\xE5 bilden.",
-      epLayoutList: "Lista",
-      epLayoutCards: "Kort",
-      epLayoutToggleTitle: "Byt avsnittslayout",
-      detailsLayoutToggleTitle: "Byt layout: kort i rader eller listor",
+      epLayoutTitle: "Detaljsidans layout",
+      epLayoutDesc: "St\xE5ende l\xE4gger avsnitt, str\xF6mmar och rekommendationer i listor du rullar ned\xE5t i. Liggande l\xE4gger dem i rader med kort du bl\xE4ddrar i sidled. G\xE4ller b\xE5de filmer och serier.",
+      epLayoutList: "St\xE5ende",
+      epLayoutCards: "Liggande",
+      epLayoutToggleTitle: "Byt layout: st\xE5ende eller liggande",
+      detailsLayoutToggleTitle: "Byt layout: st\xE5ende eller liggande",
       detailsTrailers: "Trailers",
       homeBubble: "Hem",
       daPlacementTitle: "\xC5tg\xE4rdsknappar",
@@ -169587,7 +169604,11 @@
       uiScale: "Gr\xE4nssnittsskala",
       uiScaleDesc: "Skalar hela gr\xE4nssnittet. Bra p\xE5 4K- och ultrawide-sk\xE4rmar.",
       fullCastTitle: "Rollista & team",
-      fullCastOpen: "Hela rollistan",
+      fullCastOpen: "Rollista",
+      dsLayoutTitle: "Str\xF6mmar",
+      dsLayoutDesc: "Var str\xF6mlistan ligger p\xE5 detaljsidan.",
+      dsLayoutSidebar: "Sidopanel",
+      dsLayoutInline: "Under inneh\xE5llet",
       heroCast: "Rollista",
       newSeasonBadge: "Ny s\xE4song",
       homeCardShape: "Kortform",
@@ -169686,6 +169707,7 @@
       settingsTabThisComputer: "Den h\xE4r datorn",
       settingsTabStorage: "Lagring",
       settingsTabHome: "Hem",
+      settingsTabAppearance: "Utseende",
       settingsTabZapp: "Zapp",
       settingsSearchPlaceholder: "S\xF6k inst\xE4llningar",
       settingsNyBadge: "NY",
@@ -170709,7 +170731,7 @@
       libraryModeTitle: "Biblioteksl\xE4ge",
       libraryModeHint: "N\xE4r ett bibliotek \xE4r startsida filtreras varje rad mot det du \xE4ger. Rader utan indexerat inneh\xE5ll g\xF6ms; siffran visar hur m\xE5nga titlar raden kan visa just nu.",
       libraryUseAsHome: "Anv\xE4nd som startsida",
-      libraryUseAsHomeHint: "Startsida, detaljsida, s\xF6k och Zapp matas d\xE5 bara ur det h\xE4r biblioteket. Str\xF6mk\xE4llorna h\xE5lls dolda s\xE5 l\xE4nge det \xE4r p\xE5.",
+      libraryUseAsHomeHint: "Bocka i ett eller flera bibliotek. Startsida, detaljsida, s\xF6k och Zapp matas d\xE5 bara ur dem, tillsammans. Str\xF6mk\xE4llorna h\xE5lls dolda s\xE5 l\xE4nge det \xE4r p\xE5.",
       librarySourcesTitle: "Indexerade bibliotek",
       librarySourceNotIndexed: "Inte indexerat \xE4nnu \u2014 bygg indexet i pluginets inst\xE4llningar.",
       libraryModeOff: "Inget bibliotek \xE4r startsida. Sl\xE5 p\xE5 det under bibliotekspluginets inst\xE4llningar.",
@@ -170719,6 +170741,14 @@
       libraryBackToHome: "Tillbaka till Hem",
       continueLayoutRows: "Rader",
       continueLayoutGrid: "Rutn\xE4t",
+      cwSectionHint: "Vyn har tv\xE5 l\xE4gen som du v\xE4xlar med knappen bredvid filtret. Varje l\xE4ge har sitt eget kortformat och antal.",
+      cwModeRows: "Rullande rader",
+      cwModeRowsDesc: "Alla, Serier och Filmer som rader du bl\xE4ddrar i sidled.",
+      cwModeGrid: "Rutn\xE4t",
+      cwModeGridDesc: "Allt i ett rutn\xE4t du rullar ned\xE5t i.",
+      cwFormatLabel: "Kortformat",
+      cwFormatPortrait: "St\xE5ende",
+      cwFormatLandscape: "Liggande",
       libraryVersionsTitle: "Versioner i ditt bibliotek",
       libraryNotInLibrary: "Finns inte i ditt bibliotek",
       libraryEpisodeNotInLibrary: "Avsnittet finns inte i ditt bibliotek",
@@ -171212,19 +171242,31 @@
   init_react_shim();
   var KEY = "library_mode_v1";
   var EVENT = "lumio-library-mode";
+  function normalizeIds(ids) {
+    const list = Array.isArray(ids) ? ids : typeof ids === "string" && ids ? [ids] : [];
+    return [...new Set(list.filter((id4) => typeof id4 === "string" && id4.length > 0))].sort();
+  }
+  function parseMode(raw) {
+    if (!raw) return null;
+    try {
+      const parsed = JSON.parse(raw);
+      const ids = normalizeIds(parsed.sourceIds ?? parsed.sourceId);
+      return ids.length > 0 ? { sourceIds: ids } : null;
+    } catch {
+      return null;
+    }
+  }
   function getStoredLibraryMode() {
     if (typeof window === "undefined") return null;
     try {
-      const raw = getScopedStorageItem(KEY);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      return typeof parsed.sourceId === "string" && parsed.sourceId ? { sourceId: parsed.sourceId } : null;
+      return parseMode(getScopedStorageItem(KEY));
     } catch {
       return null;
     }
   }
   function setLibraryMode(mode) {
-    setScopedStorageItem(KEY, mode ? JSON.stringify(mode) : "");
+    const ids = mode ? normalizeIds(mode.sourceIds) : [];
+    setScopedStorageItem(KEY, ids.length > 0 ? JSON.stringify({ sourceIds: ids }) : "");
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT));
   }
   function onLibraryModeChanged(listener) {
@@ -172444,7 +172486,11 @@
     const clear = async () => {
       if (!source || running2) return;
       await resetLibrarySource(source.id);
-      if (getStoredLibraryMode()?.sourceId === source.id) setLibraryMode(null);
+      const stored = getStoredLibraryMode();
+      if (stored?.sourceIds.includes(source.id)) {
+        const rest = stored.sourceIds.filter((id4) => id4 !== source.id);
+        setLibraryMode(rest.length > 0 ? { sourceIds: rest } : null);
+      }
       refresh();
     };
     const formatWhen = (seconds) => seconds ? new Date(seconds * 1e3).toLocaleString(void 0, { dateStyle: "short", timeStyle: "short" }) : "\u2013";

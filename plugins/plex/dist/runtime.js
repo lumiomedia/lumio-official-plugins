@@ -162,6 +162,323 @@
     }
   });
 
+  // lib/plugin-registry.ts
+  var plugin_registry_exports = {};
+  __export(plugin_registry_exports, {
+    getAuthCapabilityProviders: () => getAuthCapabilityProviders,
+    getBootstraps: () => getBootstraps,
+    getBrowsePages: () => getBrowsePages,
+    getEpisodeSidebarProviders: () => getEpisodeSidebarProviders,
+    getHeroes: () => getHeroes,
+    getHomeOverrides: () => getHomeOverrides,
+    getHomeRows: () => getHomeRows,
+    getHomeSources: () => getHomeSources,
+    getInstantPlayProviders: () => getInstantPlayProviders,
+    getLibraryProviders: () => getLibraryProviders,
+    getMainMenuItems: () => getMainMenuItems,
+    getManagedAuthConsumers: () => getManagedAuthConsumers,
+    getMediaDetailsActions: () => getMediaDetailsActions,
+    getMediaDownloadActions: () => getMediaDownloadActions,
+    getMediaStreamAvailabilityProviders: () => getMediaStreamAvailabilityProviders,
+    getMediaStreamCatalogProviders: () => getMediaStreamCatalogProviders,
+    getOverviewStatusProviders: () => getOverviewStatusProviders,
+    getPlayableUrlRewriters: () => getPlayableUrlRewriters,
+    getPlaybackCapabilityProviders: () => getPlaybackCapabilityProviders,
+    getPluginRegistryRevision: () => getPluginRegistryRevision,
+    getResumeRefreshProviders: () => getResumeRefreshProviders,
+    getSettingsSections: () => getSettingsSections,
+    getStreamProviders: () => getStreamProviders,
+    getStreamRequestConfigProviders: () => getStreamRequestConfigProviders,
+    getSyncIdentityProviders: () => getSyncIdentityProviders,
+    getTopbarItems: () => getTopbarItems,
+    hasStreamProviders: () => hasStreamProviders,
+    notifyPluginRegistryChanged: () => notifyPluginRegistryChanged,
+    registerPlugin: () => registerPlugin,
+    subscribePluginRegistry: () => subscribePluginRegistry
+  });
+  function notifyRegistryChanged() {
+    registryRevision += 1;
+    for (const listener of registryListeners) {
+      try {
+        listener();
+      } catch (error) {
+        console.warn("[plugin-registry] listener failed", error);
+      }
+    }
+  }
+  function scheduleRegistryNotify() {
+    if (registryNotifyScheduled) return;
+    registryNotifyScheduled = true;
+    queueMicrotask(() => {
+      registryNotifyScheduled = false;
+      notifyRegistryChanged();
+    });
+  }
+  function makeContext(pluginId) {
+    const ctx = {
+      registerStreamProvider(provider) {
+        if (streamProviders.find((p) => p.id === provider.id)) return;
+        streamProviders.push(provider);
+      },
+      registerLibraryProvider(provider) {
+        if (libraryProviders.find((p) => p.id === provider.id)) return;
+        libraryProviders.push(provider);
+      },
+      registerMediaStreamCatalogProvider(provider) {
+        if (mediaStreamCatalogProviders.find((entry) => entry.id === provider.id)) return;
+        mediaStreamCatalogProviders.push(provider);
+      },
+      registerMediaStreamAvailabilityProvider(provider) {
+        if (mediaStreamAvailabilityProviders.find((entry) => entry.id === provider.id)) return;
+        mediaStreamAvailabilityProviders.push(provider);
+      },
+      registerInstantPlayProvider(provider) {
+        if (instantPlayProviders.find((entry) => entry.id === provider.id)) return;
+        instantPlayProviders.push(provider);
+      },
+      registerResumeRefreshProvider(provider) {
+        if (resumeRefreshProviders.find((entry) => entry.id === provider.id)) return;
+        resumeRefreshProviders.push(provider);
+      },
+      registerPlayableUrlRewriter(rewriter) {
+        if (playableUrlRewriters.find((entry) => entry.id === rewriter.id)) return;
+        playableUrlRewriters.push(rewriter);
+      },
+      registerStreamRequestConfigProvider(provider) {
+        if (streamRequestConfigProviders.find((entry) => entry.id === provider.id)) return;
+        streamRequestConfigProviders.push(provider);
+      },
+      registerEpisodeSidebarProvider(provider) {
+        if (episodeSidebarProviders.find((p) => p.id === provider.id)) return;
+        episodeSidebarProviders.push(provider);
+      },
+      registerPlaybackCapabilityProvider(provider) {
+        if (playbackCapabilityProviders.find((entry) => entry.id === provider.id)) return;
+        playbackCapabilityProviders.push(provider);
+      },
+      registerSyncIdentityProvider(provider) {
+        if (syncIdentityProviders.find((entry) => entry.id === provider.id)) return;
+        syncIdentityProviders.push(provider);
+      },
+      registerAuthCapabilityProvider(provider) {
+        if (authCapabilityProviders.find((entry) => entry.id === provider.id)) return;
+        authCapabilityProviders.push(provider);
+      },
+      registerOverviewStatusProvider(provider) {
+        if (overviewStatusProviders.find((entry) => entry.id === provider.id)) return;
+        overviewStatusProviders.push({ ...provider, pluginId });
+      },
+      registerSettingsSection(section) {
+        if (settingsSections.find((s) => s.id === section.id)) return;
+        settingsSections.push({
+          ...section,
+          pluginId
+        });
+      },
+      registerMediaDetailsAction(action) {
+        if (mediaDetailsActions.find((entry) => entry.id === action.id)) return;
+        mediaDetailsActions.push(action);
+      },
+      registerMediaDownloadAction(action) {
+        if (mediaDownloadActions.find((entry) => entry.id === action.id)) return;
+        mediaDownloadActions.push(action);
+      },
+      registerHomeRow(row) {
+        if (homeRows.find((r) => r.id === row.id)) return;
+        homeRows.push(row);
+      },
+      registerHomeSource(source) {
+        if (homeSources.find((entry) => entry.id === source.id)) return;
+        homeSources.push(source);
+      },
+      registerBootstrap(bootstrap) {
+        if (bootstraps.find((entry) => entry.id === bootstrap.id)) return;
+        bootstraps.push(bootstrap);
+      },
+      registerHero(hero) {
+        if (heroes.find((entry) => entry.id === hero.id)) return;
+        heroes.push(hero);
+      },
+      registerHomeOverride(homeOverride) {
+        if (homeOverrides.find((entry) => entry.id === homeOverride.id)) return;
+        homeOverrides.push({
+          ...homeOverride,
+          pluginId
+        });
+      },
+      registerBrowsePage(page) {
+        if (browsePages.find((entry) => entry.id === page.id)) return;
+        browsePages.push(page);
+      },
+      registerMainMenuItem(item) {
+        if (mainMenuItems.find((entry) => entry.id === item.id)) return;
+        mainMenuItems.push(item);
+      },
+      registerTopbarItem(item) {
+        if (topbarItems.find((entry) => entry.id === item.id)) return;
+        topbarItems.push(item);
+      },
+      registerManagedAuthConsumer(consumer) {
+        if (managedAuthConsumers.find((entry) => entry.id === consumer.id)) return;
+        managedAuthConsumers.push(consumer);
+      }
+    };
+    for (const key of Object.keys(ctx)) {
+      const original = ctx[key];
+      if (typeof original === "function" && String(key).startsWith("register")) {
+        ;
+        ctx[key] = (...args) => {
+          ;
+          original.apply(ctx, args);
+          scheduleRegistryNotify();
+        };
+      }
+    }
+    return ctx;
+  }
+  function registerPlugin(plugin2, options = {}) {
+    if (registeredPluginIds.has(plugin2.id)) return;
+    registeredPluginIds.add(plugin2.id);
+    const ctx = makeContext(plugin2.id);
+    if (options.suppressStreamContributions) {
+      const noop5 = () => {
+      };
+      ctx.registerStreamProvider = noop5;
+      ctx.registerPlaybackCapabilityProvider = noop5;
+      ctx.registerMediaStreamAvailabilityProvider = noop5;
+      ctx.registerInstantPlayProvider = noop5;
+      ctx.registerResumeRefreshProvider = noop5;
+      ctx.registerEpisodeSidebarProvider = noop5;
+    }
+    plugin2.register(ctx);
+    notifyRegistryChanged();
+  }
+  function getStreamProviders() {
+    return streamProviders;
+  }
+  function getLibraryProviders() {
+    return libraryProviders;
+  }
+  function getMediaStreamCatalogProviders() {
+    return mediaStreamCatalogProviders;
+  }
+  function getMediaStreamAvailabilityProviders() {
+    return mediaStreamAvailabilityProviders;
+  }
+  function getInstantPlayProviders() {
+    return instantPlayProviders;
+  }
+  function getResumeRefreshProviders() {
+    return [...resumeRefreshProviders].sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+  }
+  function getPlayableUrlRewriters() {
+    return [...playableUrlRewriters].sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+  }
+  function getStreamRequestConfigProviders() {
+    return [...streamRequestConfigProviders].sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+  }
+  function getEpisodeSidebarProviders() {
+    return episodeSidebarProviders;
+  }
+  function getPlaybackCapabilityProviders() {
+    return playbackCapabilityProviders;
+  }
+  function getSyncIdentityProviders() {
+    return syncIdentityProviders;
+  }
+  function getOverviewStatusProviders() {
+    return [...overviewStatusProviders].sort((a, b) => (a.order ?? 100) - (b.order ?? 100));
+  }
+  function getAuthCapabilityProviders() {
+    return authCapabilityProviders;
+  }
+  function getSettingsSections() {
+    return settingsSections;
+  }
+  function getMediaDetailsActions() {
+    return mediaDetailsActions;
+  }
+  function getMediaDownloadActions() {
+    return mediaDownloadActions;
+  }
+  function getHomeRows() {
+    return homeRows;
+  }
+  function getHomeSources() {
+    return homeSources;
+  }
+  function getBootstraps() {
+    return bootstraps;
+  }
+  function getHeroes() {
+    return heroes;
+  }
+  function getHomeOverrides() {
+    return homeOverrides;
+  }
+  function getBrowsePages() {
+    return browsePages;
+  }
+  function getMainMenuItems() {
+    return mainMenuItems;
+  }
+  function getTopbarItems() {
+    return topbarItems;
+  }
+  function getManagedAuthConsumers() {
+    return managedAuthConsumers;
+  }
+  function hasStreamProviders() {
+    return streamProviders.length > 0;
+  }
+  function getPluginRegistryRevision() {
+    return registryRevision;
+  }
+  function subscribePluginRegistry(listener) {
+    registryListeners.add(listener);
+    return () => {
+      registryListeners.delete(listener);
+    };
+  }
+  function notifyPluginRegistryChanged() {
+    notifyRegistryChanged();
+  }
+  var streamProviders, libraryProviders, mediaStreamCatalogProviders, mediaStreamAvailabilityProviders, instantPlayProviders, resumeRefreshProviders, playableUrlRewriters, streamRequestConfigProviders, episodeSidebarProviders, playbackCapabilityProviders, syncIdentityProviders, authCapabilityProviders, overviewStatusProviders, settingsSections, mediaDownloadActions, mediaDetailsActions, homeRows, homeSources, bootstraps, heroes, homeOverrides, browsePages, mainMenuItems, topbarItems, managedAuthConsumers, registeredPluginIds, registryRevision, registryListeners, registryNotifyScheduled;
+  var init_plugin_registry = __esm({
+    "lib/plugin-registry.ts"() {
+      "use strict";
+      streamProviders = [];
+      libraryProviders = [];
+      mediaStreamCatalogProviders = [];
+      mediaStreamAvailabilityProviders = [];
+      instantPlayProviders = [];
+      resumeRefreshProviders = [];
+      playableUrlRewriters = [];
+      streamRequestConfigProviders = [];
+      episodeSidebarProviders = [];
+      playbackCapabilityProviders = [];
+      syncIdentityProviders = [];
+      authCapabilityProviders = [];
+      overviewStatusProviders = [];
+      settingsSections = [];
+      mediaDownloadActions = [];
+      mediaDetailsActions = [];
+      homeRows = [];
+      homeSources = [];
+      bootstraps = [];
+      heroes = [];
+      homeOverrides = [];
+      browsePages = [];
+      mainMenuItems = [];
+      topbarItems = [];
+      managedAuthConsumers = [];
+      registeredPluginIds = /* @__PURE__ */ new Set();
+      registryRevision = 0;
+      registryListeners = /* @__PURE__ */ new Set();
+      registryNotifyScheduled = false;
+    }
+  });
+
   // node_modules/@tauri-apps/api/external/tslib/tslib.es6.cjs
   var require_tslib_es6 = __commonJS({
     "node_modules/@tauri-apps/api/external/tslib/tslib.es6.cjs"(exports) {
@@ -386,298 +703,6 @@
       exports.emitTo = emitTo;
       exports.listen = listen2;
       exports.once = once;
-    }
-  });
-
-  // lib/plugin-registry.ts
-  var plugin_registry_exports = {};
-  __export(plugin_registry_exports, {
-    getAuthCapabilityProviders: () => getAuthCapabilityProviders,
-    getBootstraps: () => getBootstraps,
-    getBrowsePages: () => getBrowsePages,
-    getEpisodeSidebarProviders: () => getEpisodeSidebarProviders,
-    getHeroes: () => getHeroes,
-    getHomeOverrides: () => getHomeOverrides,
-    getHomeRows: () => getHomeRows,
-    getHomeSources: () => getHomeSources,
-    getInstantPlayProviders: () => getInstantPlayProviders,
-    getMainMenuItems: () => getMainMenuItems,
-    getManagedAuthConsumers: () => getManagedAuthConsumers,
-    getMediaDetailsActions: () => getMediaDetailsActions,
-    getMediaDownloadActions: () => getMediaDownloadActions,
-    getMediaStreamAvailabilityProviders: () => getMediaStreamAvailabilityProviders,
-    getMediaStreamCatalogProviders: () => getMediaStreamCatalogProviders,
-    getOverviewStatusProviders: () => getOverviewStatusProviders,
-    getPlayableUrlRewriters: () => getPlayableUrlRewriters,
-    getPlaybackCapabilityProviders: () => getPlaybackCapabilityProviders,
-    getPluginRegistryRevision: () => getPluginRegistryRevision,
-    getResumeRefreshProviders: () => getResumeRefreshProviders,
-    getSettingsSections: () => getSettingsSections,
-    getStreamProviders: () => getStreamProviders,
-    getStreamRequestConfigProviders: () => getStreamRequestConfigProviders,
-    getSyncIdentityProviders: () => getSyncIdentityProviders,
-    getTopbarItems: () => getTopbarItems,
-    hasStreamProviders: () => hasStreamProviders,
-    registerPlugin: () => registerPlugin,
-    subscribePluginRegistry: () => subscribePluginRegistry
-  });
-  function notifyRegistryChanged() {
-    registryRevision += 1;
-    for (const listener of registryListeners) {
-      try {
-        listener();
-      } catch (error) {
-        console.warn("[plugin-registry] listener failed", error);
-      }
-    }
-  }
-  function scheduleRegistryNotify() {
-    if (registryNotifyScheduled) return;
-    registryNotifyScheduled = true;
-    queueMicrotask(() => {
-      registryNotifyScheduled = false;
-      notifyRegistryChanged();
-    });
-  }
-  function makeContext(pluginId) {
-    const ctx = {
-      registerStreamProvider(provider) {
-        if (streamProviders.find((p) => p.id === provider.id)) return;
-        streamProviders.push(provider);
-      },
-      registerMediaStreamCatalogProvider(provider) {
-        if (mediaStreamCatalogProviders.find((entry) => entry.id === provider.id)) return;
-        mediaStreamCatalogProviders.push(provider);
-      },
-      registerMediaStreamAvailabilityProvider(provider) {
-        if (mediaStreamAvailabilityProviders.find((entry) => entry.id === provider.id)) return;
-        mediaStreamAvailabilityProviders.push(provider);
-      },
-      registerInstantPlayProvider(provider) {
-        if (instantPlayProviders.find((entry) => entry.id === provider.id)) return;
-        instantPlayProviders.push(provider);
-      },
-      registerResumeRefreshProvider(provider) {
-        if (resumeRefreshProviders.find((entry) => entry.id === provider.id)) return;
-        resumeRefreshProviders.push(provider);
-      },
-      registerPlayableUrlRewriter(rewriter) {
-        if (playableUrlRewriters.find((entry) => entry.id === rewriter.id)) return;
-        playableUrlRewriters.push(rewriter);
-      },
-      registerStreamRequestConfigProvider(provider) {
-        if (streamRequestConfigProviders.find((entry) => entry.id === provider.id)) return;
-        streamRequestConfigProviders.push(provider);
-      },
-      registerEpisodeSidebarProvider(provider) {
-        if (episodeSidebarProviders.find((p) => p.id === provider.id)) return;
-        episodeSidebarProviders.push(provider);
-      },
-      registerPlaybackCapabilityProvider(provider) {
-        if (playbackCapabilityProviders.find((entry) => entry.id === provider.id)) return;
-        playbackCapabilityProviders.push(provider);
-      },
-      registerSyncIdentityProvider(provider) {
-        if (syncIdentityProviders.find((entry) => entry.id === provider.id)) return;
-        syncIdentityProviders.push(provider);
-      },
-      registerAuthCapabilityProvider(provider) {
-        if (authCapabilityProviders.find((entry) => entry.id === provider.id)) return;
-        authCapabilityProviders.push(provider);
-      },
-      registerOverviewStatusProvider(provider) {
-        if (overviewStatusProviders.find((entry) => entry.id === provider.id)) return;
-        overviewStatusProviders.push({ ...provider, pluginId });
-      },
-      registerSettingsSection(section) {
-        if (settingsSections.find((s) => s.id === section.id)) return;
-        settingsSections.push({
-          ...section,
-          pluginId
-        });
-      },
-      registerMediaDetailsAction(action) {
-        if (mediaDetailsActions.find((entry) => entry.id === action.id)) return;
-        mediaDetailsActions.push(action);
-      },
-      registerMediaDownloadAction(action) {
-        if (mediaDownloadActions.find((entry) => entry.id === action.id)) return;
-        mediaDownloadActions.push(action);
-      },
-      registerHomeRow(row) {
-        if (homeRows.find((r) => r.id === row.id)) return;
-        homeRows.push(row);
-      },
-      registerHomeSource(source) {
-        if (homeSources.find((entry) => entry.id === source.id)) return;
-        homeSources.push(source);
-      },
-      registerBootstrap(bootstrap) {
-        if (bootstraps.find((entry) => entry.id === bootstrap.id)) return;
-        bootstraps.push(bootstrap);
-      },
-      registerHero(hero) {
-        if (heroes.find((entry) => entry.id === hero.id)) return;
-        heroes.push(hero);
-      },
-      registerHomeOverride(homeOverride) {
-        if (homeOverrides.find((entry) => entry.id === homeOverride.id)) return;
-        homeOverrides.push({
-          ...homeOverride,
-          pluginId
-        });
-      },
-      registerBrowsePage(page) {
-        if (browsePages.find((entry) => entry.id === page.id)) return;
-        browsePages.push(page);
-      },
-      registerMainMenuItem(item) {
-        if (mainMenuItems.find((entry) => entry.id === item.id)) return;
-        mainMenuItems.push(item);
-      },
-      registerTopbarItem(item) {
-        if (topbarItems.find((entry) => entry.id === item.id)) return;
-        topbarItems.push(item);
-      },
-      registerManagedAuthConsumer(consumer) {
-        if (managedAuthConsumers.find((entry) => entry.id === consumer.id)) return;
-        managedAuthConsumers.push(consumer);
-      }
-    };
-    for (const key of Object.keys(ctx)) {
-      const original = ctx[key];
-      if (typeof original === "function" && String(key).startsWith("register")) {
-        ;
-        ctx[key] = (...args) => {
-          ;
-          original.apply(ctx, args);
-          scheduleRegistryNotify();
-        };
-      }
-    }
-    return ctx;
-  }
-  function registerPlugin(plugin2) {
-    if (registeredPluginIds.has(plugin2.id)) return;
-    registeredPluginIds.add(plugin2.id);
-    plugin2.register(makeContext(plugin2.id));
-    notifyRegistryChanged();
-  }
-  function getStreamProviders() {
-    return streamProviders;
-  }
-  function getMediaStreamCatalogProviders() {
-    return mediaStreamCatalogProviders;
-  }
-  function getMediaStreamAvailabilityProviders() {
-    return mediaStreamAvailabilityProviders;
-  }
-  function getInstantPlayProviders() {
-    return instantPlayProviders;
-  }
-  function getResumeRefreshProviders() {
-    return [...resumeRefreshProviders].sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
-  }
-  function getPlayableUrlRewriters() {
-    return [...playableUrlRewriters].sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
-  }
-  function getStreamRequestConfigProviders() {
-    return [...streamRequestConfigProviders].sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
-  }
-  function getEpisodeSidebarProviders() {
-    return episodeSidebarProviders;
-  }
-  function getPlaybackCapabilityProviders() {
-    return playbackCapabilityProviders;
-  }
-  function getSyncIdentityProviders() {
-    return syncIdentityProviders;
-  }
-  function getOverviewStatusProviders() {
-    return [...overviewStatusProviders].sort((a, b) => (a.order ?? 100) - (b.order ?? 100));
-  }
-  function getAuthCapabilityProviders() {
-    return authCapabilityProviders;
-  }
-  function getSettingsSections() {
-    return settingsSections;
-  }
-  function getMediaDetailsActions() {
-    return mediaDetailsActions;
-  }
-  function getMediaDownloadActions() {
-    return mediaDownloadActions;
-  }
-  function getHomeRows() {
-    return homeRows;
-  }
-  function getHomeSources() {
-    return homeSources;
-  }
-  function getBootstraps() {
-    return bootstraps;
-  }
-  function getHeroes() {
-    return heroes;
-  }
-  function getHomeOverrides() {
-    return homeOverrides;
-  }
-  function getBrowsePages() {
-    return browsePages;
-  }
-  function getMainMenuItems() {
-    return mainMenuItems;
-  }
-  function getTopbarItems() {
-    return topbarItems;
-  }
-  function getManagedAuthConsumers() {
-    return managedAuthConsumers;
-  }
-  function hasStreamProviders() {
-    return streamProviders.length > 0;
-  }
-  function getPluginRegistryRevision() {
-    return registryRevision;
-  }
-  function subscribePluginRegistry(listener) {
-    registryListeners.add(listener);
-    return () => {
-      registryListeners.delete(listener);
-    };
-  }
-  var streamProviders, mediaStreamCatalogProviders, mediaStreamAvailabilityProviders, instantPlayProviders, resumeRefreshProviders, playableUrlRewriters, streamRequestConfigProviders, episodeSidebarProviders, playbackCapabilityProviders, syncIdentityProviders, authCapabilityProviders, overviewStatusProviders, settingsSections, mediaDownloadActions, mediaDetailsActions, homeRows, homeSources, bootstraps, heroes, homeOverrides, browsePages, mainMenuItems, topbarItems, managedAuthConsumers, registeredPluginIds, registryRevision, registryListeners, registryNotifyScheduled;
-  var init_plugin_registry = __esm({
-    "lib/plugin-registry.ts"() {
-      streamProviders = [];
-      mediaStreamCatalogProviders = [];
-      mediaStreamAvailabilityProviders = [];
-      instantPlayProviders = [];
-      resumeRefreshProviders = [];
-      playableUrlRewriters = [];
-      streamRequestConfigProviders = [];
-      episodeSidebarProviders = [];
-      playbackCapabilityProviders = [];
-      syncIdentityProviders = [];
-      authCapabilityProviders = [];
-      overviewStatusProviders = [];
-      settingsSections = [];
-      mediaDownloadActions = [];
-      mediaDetailsActions = [];
-      homeRows = [];
-      homeSources = [];
-      bootstraps = [];
-      heroes = [];
-      homeOverrides = [];
-      browsePages = [];
-      mainMenuItems = [];
-      topbarItems = [];
-      managedAuthConsumers = [];
-      registeredPluginIds = /* @__PURE__ */ new Set();
-      registryRevision = 0;
-      registryListeners = /* @__PURE__ */ new Set();
-      registryNotifyScheduled = false;
     }
   });
 
@@ -1252,20 +1277,20 @@
           };
         }
         let cacheSize = 0;
-        let cache5 = /* @__PURE__ */ Object.create(null);
+        let cache6 = /* @__PURE__ */ Object.create(null);
         let previousCache = /* @__PURE__ */ Object.create(null);
         const update = (key, value) => {
-          cache5[key] = value;
+          cache6[key] = value;
           cacheSize++;
           if (cacheSize > maxCacheSize) {
             cacheSize = 0;
-            previousCache = cache5;
-            cache5 = /* @__PURE__ */ Object.create(null);
+            previousCache = cache6;
+            cache6 = /* @__PURE__ */ Object.create(null);
           }
         };
         return {
           get(key) {
-            let value = cache5[key];
+            let value = cache6[key];
             if (value !== void 0) {
               return value;
             }
@@ -1275,8 +1300,8 @@
             }
           },
           set(key, value) {
-            if (key in cache5) {
-              cache5[key] = value;
+            if (key in cache6) {
+              cache6[key] = value;
             } else {
               update(key, value);
             }
@@ -6537,9 +6562,9 @@
         }
         return res;
       };
-      function range(start2, end) {
-        const length = end - start2 + 1;
-        return Array.from({ length }, (_, index3) => index3 + start2);
+      function range(start3, end) {
+        const length = end - start3 + 1;
+        return Array.from({ length }, (_, index3) => index3 + start3);
       }
       function clamp2(value, min, max) {
         return Math.min(Math.max(value, min), max);
@@ -19189,9 +19214,9 @@
         toIterator: () => toIterator2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function forwardRef3(component) {
-        return (0, import_react75.forwardRef)(component);
+        return (0, import_react80.forwardRef)(component);
       }
       var toIterator2 = (obj) => {
         return {
@@ -20268,38 +20293,38 @@
       exports.strategies = void 0;
       exports.memoize = memoize;
       function memoize(fn, options) {
-        var cache5 = options && options.cache ? options.cache : cacheDefault;
+        var cache6 = options && options.cache ? options.cache : cacheDefault;
         var serializer = options && options.serializer ? options.serializer : serializerDefault;
         var strategy = options && options.strategy ? options.strategy : strategyDefault;
         return strategy(fn, {
-          cache: cache5,
+          cache: cache6,
           serializer
         });
       }
       function isPrimitive(value) {
         return value == null || typeof value === "number" || typeof value === "boolean";
       }
-      function monadic(fn, cache5, serializer, arg) {
+      function monadic(fn, cache6, serializer, arg) {
         var cacheKey = isPrimitive(arg) ? arg : serializer(arg);
-        var computedValue = cache5.get(cacheKey);
+        var computedValue = cache6.get(cacheKey);
         if (typeof computedValue === "undefined") {
           computedValue = fn.call(this, arg);
-          cache5.set(cacheKey, computedValue);
+          cache6.set(cacheKey, computedValue);
         }
         return computedValue;
       }
-      function variadic(fn, cache5, serializer) {
+      function variadic(fn, cache6, serializer) {
         var args = Array.prototype.slice.call(arguments, 3);
         var cacheKey = serializer(args);
-        var computedValue = cache5.get(cacheKey);
+        var computedValue = cache6.get(cacheKey);
         if (typeof computedValue === "undefined") {
           computedValue = fn.apply(this, args);
-          cache5.set(cacheKey, computedValue);
+          cache6.set(cacheKey, computedValue);
         }
         return computedValue;
       }
-      function assemble(fn, context, strategy, cache5, serialize) {
-        return strategy.bind(context, fn, cache5, serialize);
+      function assemble(fn, context, strategy, cache6, serialize) {
+        return strategy.bind(context, fn, cache6, serialize);
       }
       function strategyDefault(fn, options) {
         var strategy = fn.length === 1 ? monadic : variadic;
@@ -22429,8 +22454,8 @@
       var date_time_pattern_generator_1 = require_date_time_pattern_generator();
       var SPACE_SEPARATOR_START_REGEX = new RegExp("^".concat(regex_generated_1.SPACE_SEPARATOR_REGEX.source, "*"));
       var SPACE_SEPARATOR_END_REGEX = new RegExp("".concat(regex_generated_1.SPACE_SEPARATOR_REGEX.source, "*$"));
-      function createLocation(start2, end) {
-        return { start: start2, end };
+      function createLocation(start3, end) {
+        return { start: start3, end };
       }
       var hasNativeStartsWith = !!String.prototype.startsWith && "_a".startsWith("a", 1);
       var hasNativeFromCodePoint = !!String.fromCodePoint;
@@ -22681,7 +22706,7 @@
             return this.message.slice(startOffset, this.offset());
           };
           Parser2.prototype.parseLiteral = function(nestingLevel, parentArgType) {
-            var start2 = this.clonePosition();
+            var start3 = this.clonePosition();
             var value = "";
             while (true) {
               var parseQuoteResult = this.tryParseQuote(parentArgType);
@@ -22701,7 +22726,7 @@
               }
               break;
             }
-            var location2 = createLocation(start2, this.clonePosition());
+            var location2 = createLocation(start3, this.clonePosition());
             return {
               val: { type: types_1.TYPE.literal, value, location: location2 },
               err: null
@@ -23666,9 +23691,9 @@
           }
         };
       }
-      function createDefaultFormatters(cache5) {
-        if (cache5 === void 0) {
-          cache5 = {
+      function createDefaultFormatters(cache6) {
+        if (cache6 === void 0) {
+          cache6 = {
             number: {},
             dateTime: {},
             pluralRules: {}
@@ -23683,7 +23708,7 @@
             }
             return new ((_a = Intl.NumberFormat).bind.apply(_a, tslib_1.__spreadArray([void 0], args, false)))();
           }, {
-            cache: createFastMemoizeCache(cache5.number),
+            cache: createFastMemoizeCache(cache6.number),
             strategy: fast_memoize_1.strategies.variadic
           }),
           getDateTimeFormat: (0, fast_memoize_1.memoize)(function() {
@@ -23694,7 +23719,7 @@
             }
             return new ((_a = Intl.DateTimeFormat).bind.apply(_a, tslib_1.__spreadArray([void 0], args, false)))();
           }, {
-            cache: createFastMemoizeCache(cache5.dateTime),
+            cache: createFastMemoizeCache(cache6.dateTime),
             strategy: fast_memoize_1.strategies.variadic
           }),
           getPluralRules: (0, fast_memoize_1.memoize)(function() {
@@ -23705,7 +23730,7 @@
             }
             return new ((_a = Intl.PluralRules).bind.apply(_a, tslib_1.__spreadArray([void 0], args, false)))();
           }, {
-            cache: createFastMemoizeCache(cache5.pluralRules),
+            cache: createFastMemoizeCache(cache6.pluralRules),
             strategy: fast_memoize_1.strategies.variadic
           })
         };
@@ -24799,11 +24824,11 @@
         let dayOfWeek = Math.ceil(julian + 1) % 7;
         if (dayOfWeek < 0) dayOfWeek += 7;
         let region = $84a63d30beb0af0f$var$getRegion(locale);
-        let [start2, end] = $84a63d30beb0af0f$var$WEEKEND_DATA[region] || [
+        let [start3, end] = $84a63d30beb0af0f$var$WEEKEND_DATA[region] || [
           6,
           0
         ];
-        return dayOfWeek === start2 || dayOfWeek === end;
+        return dayOfWeek === start3 || dayOfWeek === end;
       }
       function $84a63d30beb0af0f$export$ee9d87258e1d19ed(date, locale) {
         return !$84a63d30beb0af0f$export$618d60ea299da42(date, locale);
@@ -25988,12 +26013,12 @@
           return super.getDaysInMonth($a90e2192fa9a0f41$var$toGregorian(date));
         }
         getMinimumMonthInYear(date) {
-          let start2 = $a90e2192fa9a0f41$var$getMinimums(date);
-          return start2 ? start2[1] : 1;
+          let start3 = $a90e2192fa9a0f41$var$getMinimums(date);
+          return start3 ? start3[1] : 1;
         }
         getMinimumDayInMonth(date) {
-          let start2 = $a90e2192fa9a0f41$var$getMinimums(date);
-          return start2 && date.month === start2[1] ? start2[2] : 1;
+          let start3 = $a90e2192fa9a0f41$var$getMinimums(date);
+          return start3 && date.month === start3[1] ? start3[2] : 1;
         }
         constructor(...args) {
           super(...args), this.identifier = "japanese";
@@ -26785,18 +26810,18 @@
           return this.formatter.formatToParts(value);
         }
         /** Formats a date range as a string. */
-        formatRange(start2, end) {
+        formatRange(start3, end) {
           if (typeof this.formatter.formatRange === "function")
-            return this.formatter.formatRange(start2, end);
-          if (end < start2) throw new RangeError("End date must be >= start date");
-          return `${this.formatter.format(start2)} \u2013 ${this.formatter.format(end)}`;
+            return this.formatter.formatRange(start3, end);
+          if (end < start3) throw new RangeError("End date must be >= start date");
+          return `${this.formatter.format(start3)} \u2013 ${this.formatter.format(end)}`;
         }
         /** Formats a date range as an array of parts. */
-        formatRangeToParts(start2, end) {
+        formatRangeToParts(start3, end) {
           if (typeof this.formatter.formatRangeToParts === "function")
-            return this.formatter.formatRangeToParts(start2, end);
-          if (end < start2) throw new RangeError("End date must be >= start date");
-          let startParts = this.formatter.formatToParts(start2);
+            return this.formatter.formatRangeToParts(start3, end);
+          if (end < start3) throw new RangeError("End date must be >= start date");
+          let startParts = this.formatter.formatToParts(start3);
           let endParts = this.formatter.formatToParts(end);
           return [
             ...startParts.map((p) => ({
@@ -28803,17 +28828,17 @@
         else if (shouldScrollBlock && block === "center") y += (scrollAreaTop + scrollAreaBottom) / 2 - (scrollPortTop + scrollPortBottom) / 2;
         else if (shouldScrollBlock && block === "end") y += scrollAreaBottom - scrollPortBottom;
         else if (shouldScrollBlock && block === "nearest") {
-          let start2 = scrollAreaTop - scrollPortTop;
+          let start3 = scrollAreaTop - scrollPortTop;
           let end = scrollAreaBottom - scrollPortBottom;
-          y += Math.abs(start2) <= Math.abs(end) ? start2 : end;
+          y += Math.abs(start3) <= Math.abs(end) ? start3 : end;
         }
         if (shouldScrollInline && inline === "start") x += scrollAreaLeft - scrollPortLeft;
         else if (shouldScrollInline && inline === "center") x += (scrollAreaLeft + scrollAreaRight) / 2 - (scrollPortLeft + scrollPortRight) / 2;
         else if (shouldScrollInline && inline === "end") x += scrollAreaRight - scrollPortRight;
         else if (shouldScrollInline && inline === "nearest") {
-          let start2 = scrollAreaLeft - scrollPortLeft;
+          let start3 = scrollAreaLeft - scrollPortLeft;
           let end = scrollAreaRight - scrollPortRight;
-          x += Math.abs(start2) <= Math.abs(end) ? start2 : end;
+          x += Math.abs(start3) <= Math.abs(end) ? start3 : end;
         }
         if (false) {
           scrollView.scrollLeft = x;
@@ -29750,16 +29775,16 @@
           return this.numberFormatter.formatToParts(value);
         }
         /** Formats a number range as a string. */
-        formatRange(start2, end) {
-          if (typeof this.numberFormatter.formatRange === "function") return this.numberFormatter.formatRange(start2, end);
-          if (end < start2) throw new RangeError("End date must be >= start date");
-          return `${this.format(start2)} \u2013 ${this.format(end)}`;
+        formatRange(start3, end) {
+          if (typeof this.numberFormatter.formatRange === "function") return this.numberFormatter.formatRange(start3, end);
+          if (end < start3) throw new RangeError("End date must be >= start date");
+          return `${this.format(start3)} \u2013 ${this.format(end)}`;
         }
         /** Formats a number range as an array of parts. */
-        formatRangeToParts(start2, end) {
-          if (typeof this.numberFormatter.formatRangeToParts === "function") return this.numberFormatter.formatRangeToParts(start2, end);
-          if (end < start2) throw new RangeError("End date must be >= start date");
-          let startParts = this.numberFormatter.formatToParts(start2);
+        formatRangeToParts(start3, end) {
+          if (typeof this.numberFormatter.formatRangeToParts === "function") return this.numberFormatter.formatRangeToParts(start3, end);
+          if (end < start3) throw new RangeError("End date must be >= start date");
+          let startParts = this.numberFormatter.formatToParts(start3);
           let endParts = this.numberFormatter.formatToParts(end);
           return [
             ...startParts.map((p) => ({
@@ -30174,10 +30199,10 @@
           if (substring.length === 0) return true;
           string = string.normalize("NFC");
           substring = substring.normalize("NFC");
-          let scan = 0;
+          let scan2 = 0;
           let sliceLen = substring.length;
-          for (; scan + sliceLen <= string.length; scan++) {
-            let slice = string.slice(scan, scan + sliceLen);
+          for (; scan2 + sliceLen <= string.length; scan2++) {
+            let slice = string.slice(scan2, scan2 + sliceLen);
             if (collator.compare(substring, slice) === 0) return true;
           }
           return false;
@@ -34566,9 +34591,9 @@
         current2 = null;
         const [nextBuilder] = builders2;
         if (nextBuilder)
-          start2(nextBuilder);
+          start3(nextBuilder);
       }
-      function start2(builder) {
+      function start3(builder) {
         motionUtils.removeItem(builders2, builder);
         current2 = builder;
         startViewAnimation2(builder).then((animation) => {
@@ -36149,9 +36174,9 @@
         }
       };
       function delay2(callback, timeout) {
-        const start3 = time2.now();
+        const start4 = time2.now();
         const checkElapsed = ({ timestamp }) => {
-          const elapsed = timestamp - start3;
+          const elapsed = timestamp - start4;
           if (elapsed >= timeout) {
             cancelFrame2(checkElapsed);
             callback(elapsed - timeout);
@@ -40225,9 +40250,9 @@
       }
       function getScrollAmount2(pointerPosition, scrollElement, axis) {
         const rect = scrollElement.getBoundingClientRect();
-        const start2 = axis === "x" ? Math.max(0, rect.left) : Math.max(0, rect.top);
+        const start3 = axis === "x" ? Math.max(0, rect.left) : Math.max(0, rect.top);
         const end = axis === "x" ? Math.min(window.innerWidth, rect.right) : Math.min(window.innerHeight, rect.bottom);
-        const distanceFromStart = pointerPosition - start2;
+        const distanceFromStart = pointerPosition - start3;
         const distanceFromEnd = end - pointerPosition;
         if (distanceFromStart < threshold2) {
           const intensity = 1 - distanceFromStart / threshold2;
@@ -41271,7 +41296,7 @@
         }
         const scrollAnimation = React.useRef(null);
         const needsStart = React.useRef(false);
-        const start2 = React.useCallback(() => {
+        const start3 = React.useCallback(() => {
           scrollAnimation.current = scroll2((_progress, { x, y }) => {
             values.scrollX.set(x.current);
             values.scrollXProgress.set(x.progress);
@@ -41292,18 +41317,18 @@
             needsStart.current = true;
             return;
           } else {
-            return start2();
+            return start3();
           }
-        }, [start2]);
+        }, [start3]);
         React.useEffect(() => {
           if (needsStart.current) {
             motionUtils.invariant(!isRefPending2(container), "Container ref is defined but not hydrated", "use-scroll-ref");
             motionUtils.invariant(!isRefPending2(target), "Target ref is defined but not hydrated", "use-scroll-ref");
-            return start2();
+            return start3();
           } else {
             return;
           }
-        }, [start2]);
+        }, [start3]);
         return values;
       }
       function useElementScroll2(ref) {
@@ -46907,7 +46932,7 @@
         let endEvent = (0, $d6e22460ce4d6b26$exports.useEffectEvent)(end);
         let moveProps = (0, $bOYSk$react.useMemo)(() => {
           let moveProps2 = {};
-          let start2 = () => {
+          let start3 = () => {
             (0, $521cd8692c5ee610$exports.disableTextSelection)();
             state.current.didMove = false;
           };
@@ -46931,7 +46956,7 @@
             };
             moveProps2.onMouseDown = (e) => {
               if (e.button === 0) {
-                start2();
+                start3();
                 e.stopPropagation();
                 e.preventDefault();
                 state.current.lastPosition = {
@@ -46972,7 +46997,7 @@
             moveProps2.onTouchStart = (e) => {
               if (e.changedTouches.length === 0 || state.current.id != null) return;
               let { pageX, pageY, identifier } = e.changedTouches[0];
-              start2();
+              start3();
               e.stopPropagation();
               e.preventDefault();
               state.current.lastPosition = {
@@ -47009,7 +47034,7 @@
             };
             moveProps2.onPointerDown = (e) => {
               if (e.button === 0 && state.current.id == null) {
-                start2();
+                start3();
                 e.stopPropagation();
                 e.preventDefault();
                 state.current.lastPosition = {
@@ -47025,7 +47050,7 @@
             };
           }
           let triggerKeyboardMove = (e, deltaX, deltaY) => {
-            start2();
+            start3();
             moveEvent(e, "keyboard", deltaX, deltaY);
             endEvent(e, "keyboard");
           };
@@ -48692,17 +48717,17 @@
         renderFn: () => renderFn2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function getValidChildren2(children) {
-        return import_react75.Children.toArray(children).filter(
-          (child) => (0, import_react75.isValidElement)(child)
+        return import_react80.Children.toArray(children).filter(
+          (child) => (0, import_react80.isValidElement)(child)
         );
       }
       var pickChildren2 = (children, targetChild) => {
         var _a;
         let target = [];
-        const withoutTargetChildren = (_a = import_react75.Children.map(children, (item) => {
-          if (!(0, import_react75.isValidElement)(item)) return item;
+        const withoutTargetChildren = (_a = import_react80.Children.map(children, (item) => {
+          if (!(0, import_react80.isValidElement)(item)) return item;
           if (item.type === targetChild) {
             target.push(item);
             return null;
@@ -49044,7 +49069,7 @@
           refs.forEach((ref) => assignRef(ref, node));
         };
       }
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function canUseDOM() {
         return !!(typeof window !== "undefined" && window.document && window.document.createElement);
       }
@@ -49130,17 +49155,17 @@
         };
       }
       function useDOMRef(ref) {
-        const domRef = (0, import_react75.useRef)(null);
-        (0, import_react75.useImperativeHandle)(ref, () => domRef.current);
+        const domRef = (0, import_react80.useRef)(null);
+        (0, import_react80.useImperativeHandle)(ref, () => domRef.current);
         return domRef;
       }
       function useFocusableRef(ref, focusableRef) {
-        const domRef = (0, import_react75.useRef)(null);
-        (0, import_react75.useImperativeHandle)(ref, () => createFocusableRef(domRef, focusableRef));
+        const domRef = (0, import_react80.useRef)(null);
+        (0, import_react80.useImperativeHandle)(ref, () => createFocusableRef(domRef, focusableRef));
         return domRef;
       }
       function useSyncRef(context, ref) {
-        (0, import_react75.useLayoutEffect)(() => {
+        (0, import_react80.useLayoutEffect)(() => {
           if (context && context.ref && ref && ref.current) {
             context.ref.current = ref.current;
             return () => {
@@ -49222,7 +49247,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_system_rsc = require_dist4();
       var import_i18n12 = require_main5();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_motion2 = require_cjs4();
       var import_utils8 = require_main4();
       var import_overlays = require_main9();
@@ -49231,7 +49256,7 @@
         name: "ProviderContext",
         strict: false
       });
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var HeroUIProvider = ({
         children,
         navigate,
@@ -49252,9 +49277,9 @@
       }) => {
         let contents = children;
         if (navigate) {
-          contents = /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_utils8.RouterProvider, { navigate, useHref, children: contents });
+          contents = /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_utils8.RouterProvider, { navigate, useHref, children: contents });
         }
-        const context = (0, import_react75.useMemo)(() => {
+        const context = (0, import_react80.useMemo)(() => {
           if (disableAnimation && skipFramerMotionAnimations) {
             import_framer_motion2.MotionGlobalConfig.skipAnimations = true;
           }
@@ -49277,7 +49302,7 @@
           labelPlacement,
           spinnerVariant
         ]);
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(ProviderContext, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_i18n12.I18nProvider, { locale, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion2.MotionConfig, { reducedMotion, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_overlays.OverlayProvider, { ...otherProps, children: contents }) }) }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(ProviderContext, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_i18n12.I18nProvider, { locale, children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_framer_motion2.MotionConfig, { reducedMotion, children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_overlays.OverlayProvider, { ...otherProps, children: contents }) }) }) });
       };
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useLabelPlacement(props) {
@@ -62062,14 +62087,14 @@
         }
       };
       function $51588fd411aace25$var$iterable(iterator) {
-        let cache5 = [];
+        let cache6 = [];
         let iterable = null;
         return {
           *[Symbol.iterator]() {
-            for (let item of cache5) yield item;
+            for (let item of cache6) yield item;
             if (!iterable) iterable = iterator();
             for (let item of iterable) {
-              cache5.push(item);
+              cache6.push(item);
               yield item;
             }
           }
@@ -62536,9 +62561,9 @@
         toIterator: () => toIterator2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function forwardRef3(component) {
-        return (0, import_react75.forwardRef)(component);
+        return (0, import_react80.forwardRef)(component);
       }
       var toIterator2 = (obj) => {
         return {
@@ -62750,7 +62775,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_rsc_utils = require_dist9();
       function useSeparator(props) {
         let domProps = (0, import_react_rsc_utils.filterDOMProps)(props, {
@@ -62781,14 +62806,14 @@
           elementType: typeof Component2 === "string" ? Component2 : "hr",
           orientation
         });
-        const styles = (0, import_react75.useMemo)(
+        const styles = (0, import_react80.useMemo)(
           () => (0, import_theme.divider)({
             orientation,
             className
           }),
           [orientation, className]
         );
-        const getDividerProps = (0, import_react75.useCallback)(
+        const getDividerProps = (0, import_react80.useCallback)(
           (props2 = {}) => ({
             className: styles,
             role: "separator",
@@ -62801,10 +62826,10 @@
         );
         return { Component: Component2, getDividerProps };
       }
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Divider = (0, import_system_rsc.forwardRef)((props, ref) => {
         const { Component: Component2, getDividerProps } = useDivider({ ...props });
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(Component2, { ref, ...getDividerProps() });
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(Component2, { ref, ...getDividerProps() });
       });
       Divider.displayName = "HeroUI.Divider";
       var divider_default = Divider;
@@ -65595,22 +65620,22 @@
         };
       }
       var import_focus2 = require_main14();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_button = require_main16();
       function useReactAriaAccordionItem(props, state, ref) {
         let { item, isDisabled: isDisabledProp } = props;
         let key = item.key;
         let manager = state.selectionManager;
-        let buttonId = (0, import_react75.useId)();
-        let regionId = (0, import_react75.useId)();
+        let buttonId = (0, import_react80.useId)();
+        let regionId = (0, import_react80.useId)();
         let isDisabled = state.disabledKeys.has(item.key) || isDisabledProp;
-        (0, import_react75.useEffect)(() => {
+        (0, import_react80.useEffect)(() => {
           let isFocused = key === state.focusedKey;
           if (isFocused && document.activeElement !== ref.current) {
             ref.current && (0, import_focus2.focusSafely)(ref.current);
           }
         }, [ref, key, state.focusedKey]);
-        let onSelect = (0, import_react75.useCallback)(
+        let onSelect = (0, import_react80.useCallback)(
           (e) => {
             if (!manager.canSelectItem(key)) {
               return;
@@ -65620,7 +65645,7 @@
           },
           [key, manager]
         );
-        const extendFocusSelection = (0, import_react75.useCallback)(
+        const extendFocusSelection = (0, import_react80.useCallback)(
           (toKey2) => {
             if (manager.selectionBehavior === "replace") {
               manager.extendSelection(toKey2);
@@ -65629,7 +65654,7 @@
           },
           [manager]
         );
-        const onKeyDown = (0, import_react75.useCallback)(
+        const onKeyDown = (0, import_react80.useCallback)(
           (event) => {
             const keyMap = {
               ArrowDown: () => {
@@ -65815,17 +65840,17 @@
         WarningIcon: () => WarningIcon
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Sun = ({ fill, filled, size, height, width, ...props }) => {
         if (filled) {
-          return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
             "svg",
             {
               height: size || height || 24,
               viewBox: "0 0 512 512",
               width: size || width || 24,
               ...props,
-              children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M256 118a22 22 0 01-22-22V48a22 22 0 0144 0v48a22 22 0 01-22 22zM256 486a22 22 0 01-22-22v-48a22 22 0 0144 0v48a22 22 0 01-22 22zM369.14 164.86a22 22 0 01-15.56-37.55l33.94-33.94a22 22 0 0131.11 31.11l-33.94 33.94a21.93 21.93 0 01-15.55 6.44zM108.92 425.08a22 22 0 01-15.55-37.56l33.94-33.94a22 22 0 1131.11 31.11l-33.94 33.94a21.94 21.94 0 01-15.56 6.45zM464 278h-48a22 22 0 010-44h48a22 22 0 010 44zM96 278H48a22 22 0 010-44h48a22 22 0 010 44zM403.08 425.08a21.94 21.94 0 01-15.56-6.45l-33.94-33.94a22 22 0 0131.11-31.11l33.94 33.94a22 22 0 01-15.55 37.56zM142.86 164.86a21.89 21.89 0 01-15.55-6.44l-33.94-33.94a22 22 0 0131.11-31.11l33.94 33.94a22 22 0 01-15.56 37.55zM256 358a102 102 0 11102-102 102.12 102.12 0 01-102 102z",
@@ -65835,8 +65860,8 @@
             }
           );
         }
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("svg", { height: size || height || 24, viewBox: "0 0 512 512", width: size || width || 24, ...props, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("svg", { height: size || height || 24, viewBox: "0 0 512 512", width: size || width || 24, ...props, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
             "path",
             {
               d: "M256 48v48M256 416v48M403.08 108.92l-33.94 33.94M142.86 369.14l-33.94 33.94M464 256h-48M96 256H48M403.08 403.08l-33.94-33.94M142.86 142.86l-33.94-33.94",
@@ -65847,7 +65872,7 @@
               strokeWidth: 32
             }
           ),
-          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
             "circle",
             {
               cx: 256,
@@ -65863,21 +65888,21 @@
         ] });
       };
       var Mail = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("svg", { height: size || height || 24, viewBox: "0 0 24 24", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("g", { fill: "none", stroke: fill, strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 1.5, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("path", { d: "M12 20.5H7c-3 0-5-1.5-5-5v-7c0-3.5 2-5 5-5h10c3 0 5 1.5 5 5v3" }),
-          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("path", { d: "M17 9l-3.13 2.5a3.166 3.166 0 01-3.75 0L7 9M19.21 14.77l-3.539 3.54a1.232 1.232 0 00-.3.59l-.19 1.35a.635.635 0 00.76.76l1.35-.19a1.189 1.189 0 00.59-.3l3.54-3.54a1.365 1.365 0 000-2.22 1.361 1.361 0 00-2.211.01zM18.7 15.28a3.185 3.185 0 002.22 2.22" })
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("svg", { height: size || height || 24, viewBox: "0 0 24 24", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("g", { fill: "none", stroke: fill, strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 1.5, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("path", { d: "M12 20.5H7c-3 0-5-1.5-5-5v-7c0-3.5 2-5 5-5h10c3 0 5 1.5 5 5v3" }),
+          /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("path", { d: "M17 9l-3.13 2.5a3.166 3.166 0 01-3.75 0L7 9M19.21 14.77l-3.539 3.54a1.232 1.232 0 00-.3.59l-.19 1.35a.635.635 0 00.76.76l1.35-.19a1.189 1.189 0 00.59-.3l3.54-3.54a1.365 1.365 0 000-2.22 1.361 1.361 0 00-2.211.01zM18.7 15.28a3.185 3.185 0 002.22 2.22" })
         ] }) });
       };
       var Moon = ({ fill, filled, size, height, width, ...props }) => {
         if (filled) {
-          return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
             "svg",
             {
               height: size || height || 24,
               viewBox: "0 0 512 512",
               width: size || width || 24,
               ...props,
-              children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M152.62 126.77c0-33 4.85-66.35 17.23-94.77C87.54 67.83 32 151.89 32 247.38 32 375.85 136.15 480 264.62 480c95.49 0 179.55-55.54 215.38-137.85-28.42 12.38-61.8 17.23-94.77 17.23-128.47 0-232.61-104.14-232.61-232.61z",
@@ -65887,7 +65912,7 @@
             }
           );
         }
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("svg", { height: size || height || 24, viewBox: "0 0 512 512", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("svg", { height: size || height || 24, viewBox: "0 0 512 512", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
           "path",
           {
             d: "M160 136c0-30.62 4.51-61.61 16-88C99.57 81.27 48 159.32 48 248c0 119.29 96.71 216 216 216 88.68 0 166.73-51.57 200-128-26.39 11.49-57.38 16-88 16-119.29 0-216-96.71-216-216z",
@@ -65901,7 +65926,7 @@
       };
       var Lock = ({ fill, size, height, width, ...props }) => {
         const color2 = fill;
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
           "svg",
           {
             "data-name": "Iconly/Curved/Lock",
@@ -65910,8 +65935,8 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("g", { transform: "translate(3.5 2)", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("g", { transform: "translate(3.5 2)", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M9.121,6.653V4.5A4.561,4.561,0,0,0,0,4.484V6.653",
@@ -65924,7 +65949,7 @@
                   transform: "translate(3.85 0.75)"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M.5,0V2.221",
@@ -65937,7 +65962,7 @@
                   transform: "translate(7.91 12.156)"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M7.66,0C1.915,0,0,1.568,0,6.271s1.915,6.272,7.66,6.272,7.661-1.568,7.661-6.272S13.4,0,7.66,0Z",
@@ -65956,7 +65981,7 @@
       };
       var Unlock = ({ fill, size, height, width, ...props }) => {
         const color2 = fill;
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
           "svg",
           {
             "data-name": "Iconly/Curved/Lock",
@@ -65965,8 +65990,8 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("g", { transform: "translate(3.5 2)", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("g", { transform: "translate(3.5 2)", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M8.927,3.237A4.562,4.562,0,0,0,0,4.484V6.653",
@@ -65979,7 +66004,7 @@
                   transform: "translate(3.849 0.75)"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M.5,0V2.221",
@@ -65992,7 +66017,7 @@
                   transform: "translate(7.91 12.156)"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M7.66,0C1.915,0,0,1.568,0,6.271s1.915,6.272,7.66,6.272,7.661-1.568,7.661-6.272S13.406,0,7.66,0Z",
@@ -66010,13 +66035,13 @@
         );
       };
       var Password = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("svg", { height: size || height || 24, viewBox: "0 0 24 24", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("g", { fill, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("path", { d: "M18.75 8v2.1a12.984 12.984 0 00-1.5-.1V8c0-3.15-.89-5.25-5.25-5.25S6.75 4.85 6.75 8v2a12.984 12.984 0 00-1.5.1V8c0-2.9.7-6.75 6.75-6.75S18.75 5.1 18.75 8z" }),
-          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("path", { d: "M18.75 10.1a12.984 12.984 0 00-1.5-.1H6.75a12.984 12.984 0 00-1.5.1C2.7 10.41 2 11.66 2 15v2c0 4 1 5 5 5h10c4 0 5-1 5-5v-2c0-3.34-.7-4.59-3.25-4.9zM8.71 16.71A1.052 1.052 0 018 17a1 1 0 01-.38-.08 1.032 1.032 0 01-.33-.21A1.052 1.052 0 017 16a1 1 0 01.08-.38 1.155 1.155 0 01.21-.33 1.032 1.032 0 01.33-.21 1 1 0 011.09.21 1.155 1.155 0 01.21.33A1 1 0 019 16a1.052 1.052 0 01-.29.71zm4.21-.33a1.155 1.155 0 01-.21.33A1.052 1.052 0 0112 17a1.033 1.033 0 01-.71-.29 1.155 1.155 0 01-.21-.33A1 1 0 0111 16a1.033 1.033 0 01.29-.71 1.047 1.047 0 011.42 0A1.033 1.033 0 0113 16a1 1 0 01-.08.38zm3.79.33a1.014 1.014 0 01-1.42 0 1.014 1.014 0 010-1.42 1.047 1.047 0 011.42 0c.04.05.08.1.12.16a.556.556 0 01.09.17.636.636 0 01.06.18 1.5 1.5 0 01.02.2 1.052 1.052 0 01-.29.71z" })
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("svg", { height: size || height || 24, viewBox: "0 0 24 24", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("g", { fill, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("path", { d: "M18.75 8v2.1a12.984 12.984 0 00-1.5-.1V8c0-3.15-.89-5.25-5.25-5.25S6.75 4.85 6.75 8v2a12.984 12.984 0 00-1.5.1V8c0-2.9.7-6.75 6.75-6.75S18.75 5.1 18.75 8z" }),
+          /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("path", { d: "M18.75 10.1a12.984 12.984 0 00-1.5-.1H6.75a12.984 12.984 0 00-1.5.1C2.7 10.41 2 11.66 2 15v2c0 4 1 5 5 5h10c4 0 5-1 5-5v-2c0-3.34-.7-4.59-3.25-4.9zM8.71 16.71A1.052 1.052 0 018 17a1 1 0 01-.38-.08 1.032 1.032 0 01-.33-.21A1.052 1.052 0 017 16a1 1 0 01.08-.38 1.155 1.155 0 01.21-.33 1.032 1.032 0 01.33-.21 1 1 0 011.09.21 1.155 1.155 0 01.21.33A1 1 0 019 16a1.052 1.052 0 01-.29.71zm4.21-.33a1.155 1.155 0 01-.21.33A1.052 1.052 0 0112 17a1.033 1.033 0 01-.71-.29 1.155 1.155 0 01-.21-.33A1 1 0 0111 16a1.033 1.033 0 01.29-.71 1.047 1.047 0 011.42 0A1.033 1.033 0 0113 16a1 1 0 01-.08.38zm3.79.33a1.014 1.014 0 01-1.42 0 1.014 1.014 0 010-1.42 1.047 1.047 0 011.42 0c.04.05.08.1.12.16a.556.556 0 01.09.17.636.636 0 01.06.18 1.5 1.5 0 01.02.2 1.052 1.052 0 01-.29.71z" })
         ] }) });
       };
       var Notification = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
           "svg",
           {
             fill: "none",
@@ -66025,7 +66050,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
               "path",
               {
                 clipRule: "evenodd",
@@ -66038,7 +66063,7 @@
         );
       };
       var User = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
           "svg",
           {
             height: size || height || 24,
@@ -66046,7 +66071,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(
               "g",
               {
                 fill: "none",
@@ -66056,14 +66081,14 @@
                 strokeMiterlimit: 10,
                 strokeWidth: 1.5,
                 children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+                  /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                     "path",
                     {
                       d: "M11.845 21.662C8.153 21.662 5 21.088 5 18.787s3.133-4.425 6.845-4.425c3.692 0 6.845 2.1 6.845 4.4s-3.134 2.9-6.845 2.9z",
                       "data-name": "Stroke 1"
                     }
                   ),
-                  /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("path", { d: "M11.837 11.174a4.372 4.372 0 10-.031 0z", "data-name": "Stroke 3" })
+                  /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("path", { d: "M11.837 11.174a4.372 4.372 0 10-.031 0z", "data-name": "Stroke 3" })
                 ]
               }
             )
@@ -66071,7 +66096,7 @@
         );
       };
       var VolumeUp = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
           "svg",
           {
             fill: "none",
@@ -66080,7 +66105,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
               "path",
               {
                 clipRule: "evenodd",
@@ -66093,7 +66118,7 @@
         );
       };
       var Camera = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
           "svg",
           {
             fill: "none",
@@ -66102,7 +66127,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
               "path",
               {
                 clipRule: "evenodd",
@@ -66115,7 +66140,7 @@
         );
       };
       var Activity2 = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
           "svg",
           {
             "data-name": "Iconly/Curved/Activity",
@@ -66124,7 +66149,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(
               "g",
               {
                 fill: "none",
@@ -66134,9 +66159,9 @@
                 strokeMiterlimit: 10,
                 strokeWidth: 1.5,
                 children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("path", { d: "M6.918 14.854l2.993-3.889 3.414 2.68 2.929-3.78" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("path", { d: "M19.668 2.35a1.922 1.922 0 11-1.922 1.922 1.921 1.921 0 011.922-1.922z" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("path", { d: "M20.756 9.269a20.809 20.809 0 01.194 3.034c0 6.938-2.312 9.25-9.25 9.25s-9.25-2.312-9.25-9.25 2.313-9.25 9.25-9.25a20.931 20.931 0 012.983.187" })
+                  /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("path", { d: "M6.918 14.854l2.993-3.889 3.414 2.68 2.929-3.78" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("path", { d: "M19.668 2.35a1.922 1.922 0 11-1.922 1.922 1.921 1.921 0 011.922-1.922z" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("path", { d: "M20.756 9.269a20.809 20.809 0 01.194 3.034c0 6.938-2.312 9.25-9.25 9.25s-9.25-2.312-9.25-9.25 2.313-9.25 9.25-9.25a20.931 20.931 0 012.983.187" })
                 ]
               }
             )
@@ -66144,7 +66169,7 @@
         );
       };
       var Plus = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
           "svg",
           {
             height: size || height || 24,
@@ -66152,15 +66177,15 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("g", { fill: "none", stroke: fill, strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 1.5, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("path", { d: "M6 12h12" }),
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("path", { d: "M12 18V6" })
+            children: /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("g", { fill: "none", stroke: fill, strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 1.5, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("path", { d: "M6 12h12" }),
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("path", { d: "M12 18V6" })
             ] })
           }
         );
       };
       var Minus = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
           "svg",
           {
             height: size || height || 24,
@@ -66168,7 +66193,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
               "path",
               {
                 d: "M6 12h12",
@@ -66183,7 +66208,7 @@
         );
       };
       var Eye = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(
           "svg",
           {
             fill: "none",
@@ -66193,7 +66218,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M12.9833 10C12.9833 11.65 11.65 12.9833 10 12.9833C8.35 12.9833 7.01666 11.65 7.01666 10C7.01666 8.35 8.35 7.01666 10 7.01666C11.65 7.01666 12.9833 8.35 12.9833 10Z",
@@ -66203,7 +66228,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M9.99999 16.8916C12.9417 16.8916 15.6833 15.1583 17.5917 12.1583C18.3417 10.9833 18.3417 9.00831 17.5917 7.83331C15.6833 4.83331 12.9417 3.09998 9.99999 3.09998C7.05833 3.09998 4.31666 4.83331 2.40833 7.83331C1.65833 9.00831 1.65833 10.9833 2.40833 12.1583C4.31666 15.1583 7.05833 16.8916 9.99999 16.8916Z",
@@ -66218,7 +66243,7 @@
         );
       };
       var Edit = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(
           "svg",
           {
             fill: "none",
@@ -66228,7 +66253,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M11.05 3.00002L4.20835 10.2417C3.95002 10.5167 3.70002 11.0584 3.65002 11.4334L3.34169 14.1334C3.23335 15.1084 3.93335 15.775 4.90002 15.6084L7.58335 15.15C7.95835 15.0834 8.48335 14.8084 8.74168 14.525L15.5834 7.28335C16.7667 6.03335 17.3 4.60835 15.4583 2.86668C13.625 1.14168 12.2334 1.75002 11.05 3.00002Z",
@@ -66239,7 +66264,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M9.90833 4.20831C10.2667 6.50831 12.1333 8.26665 14.45 8.49998",
@@ -66250,7 +66275,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M2.5 18.3333H17.5",
@@ -66266,7 +66291,7 @@
         );
       };
       var Delete = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(
           "svg",
           {
             fill: "none",
@@ -66276,7 +66301,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M17.5 4.98332C14.725 4.70832 11.9333 4.56665 9.15 4.56665C7.5 4.56665 5.85 4.64998 4.2 4.81665L2.5 4.98332",
@@ -66286,7 +66311,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M7.08331 4.14169L7.26665 3.05002C7.39998 2.25835 7.49998 1.66669 8.90831 1.66669H11.0916C12.5 1.66669 12.6083 2.29169 12.7333 3.05835L12.9166 4.14169",
@@ -66296,7 +66321,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M15.7084 7.61664L15.1667 16.0083C15.075 17.3166 15 18.3333 12.675 18.3333H7.32502C5.00002 18.3333 4.92502 17.3166 4.83335 16.0083L4.29169 7.61664",
@@ -66306,7 +66331,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M8.60834 13.75H11.3833",
@@ -66316,7 +66341,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M7.91669 10.4167H12.0834",
@@ -66331,7 +66356,7 @@
         );
       };
       var ChevronDown = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
           "svg",
           {
             fill: "none",
@@ -66340,7 +66365,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
               "path",
               {
                 d: "m19.92 8.95-6.52 6.52c-.77.77-2.03.77-2.8 0L4.08 8.95",
@@ -66355,7 +66380,7 @@
         );
       };
       var ChevronDownBold = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
           "svg",
           {
             fill: "none",
@@ -66364,7 +66389,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
               "path",
               {
                 d: "M17.9188 8.17969H11.6888H6.07877C5.11877 8.17969 4.63877 9.33969 5.31877 10.0197L10.4988 15.1997C11.3288 16.0297 12.6788 16.0297 13.5088 15.1997L15.4788 13.2297L18.6888 10.0197C19.3588 9.33969 18.8788 8.17969 17.9188 8.17969Z",
@@ -66375,7 +66400,7 @@
         );
       };
       var NewFile = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(
           "svg",
           {
             fill: "none",
@@ -66385,7 +66410,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M8 2V5",
@@ -66396,7 +66421,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M16 2V5",
@@ -66407,7 +66432,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M21 8.5V13.63C20.11 12.92 18.98 12.5 17.75 12.5C16.52 12.5 15.37 12.93 14.47 13.66C13.26 14.61 12.5 16.1 12.5 17.75C12.5 18.73 12.78 19.67 13.26 20.45C13.63 21.06 14.11 21.59 14.68 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z",
@@ -66418,7 +66443,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M7 11H13",
@@ -66429,7 +66454,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M7 16H9.62",
@@ -66440,7 +66465,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M23 17.75C23 18.73 22.72 19.67 22.24 20.45C21.96 20.93 21.61 21.35 21.2 21.69C20.28 22.51 19.08 23 17.75 23C16.6 23 15.54 22.63 14.68 22C14.11 21.59 13.63 21.06 13.26 20.45C12.78 19.67 12.5 18.73 12.5 17.75C12.5 16.1 13.26 14.61 14.47 13.66C15.37 12.93 16.52 12.5 17.75 12.5C18.98 12.5 20.11 12.92 21 13.63C22.22 14.59 23 16.08 23 17.75Z",
@@ -66451,7 +66476,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M17.75 20.25C17.75 18.87 18.87 17.75 20.25 17.75C18.87 17.75 17.75 16.63 17.75 15.25C17.75 16.63 16.63 17.75 15.25 17.75C16.63 17.75 17.75 18.87 17.75 20.25Z",
@@ -66466,7 +66491,7 @@
         );
       };
       var AddNoteBulk = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(
           "svg",
           {
             fill: "none",
@@ -66476,7 +66501,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M7.37 22h9.25a4.87 4.87 0 0 0 4.87-4.87V8.37a4.87 4.87 0 0 0-4.87-4.87H7.37A4.87 4.87 0 0 0 2.5 8.37v8.75c0 2.7 2.18 4.88 4.87 4.88Z",
@@ -66484,7 +66509,7 @@
                   opacity: 0.4
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M8.29 6.29c-.42 0-.75-.34-.75-.75V2.75a.749.749 0 1 1 1.5 0v2.78c0 .42-.33.76-.75.76ZM15.71 6.29c-.42 0-.75-.34-.75-.75V2.75a.749.749 0 1 1 1.5 0v2.78c0 .42-.33.76-.75.76ZM12 14.75h-1.69V13c0-.41-.34-.75-.75-.75s-.75.34-.75.75v1.75H7c-.41 0-.75.34-.75.75s.34.75.75.75h1.81V18c0 .41.34.75.75.75s.75-.34.75-.75v-1.75H12c.41 0 .75-.34.75-.75s-.34-.75-.75-.75Z",
@@ -66496,7 +66521,7 @@
         );
       };
       var CopyDocumentBulk = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(
           "svg",
           {
             fill: "none",
@@ -66506,7 +66531,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M15.5 13.15h-2.17c-1.78 0-3.23-1.44-3.23-3.23V7.75c0-.41-.33-.75-.75-.75H6.18C3.87 7 2 8.5 2 11.18v6.64C2 20.5 3.87 22 6.18 22h5.89c2.31 0 4.18-1.5 4.18-4.18V13.9c0-.42-.34-.75-.75-.75Z",
@@ -66514,14 +66539,14 @@
                   opacity: 0.4
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M17.82 2H11.93C9.67 2 7.84 3.44 7.76 6.01c.06 0 .11-.01.17-.01h5.89C16.13 6 18 7.5 18 10.18V16.83c0 .06-.01.11-.01.16 2.23-.07 4.01-1.55 4.01-4.16V6.18C22 3.5 20.13 2 17.82 2Z",
                   fill
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M11.98 7.15c-.31-.31-.84-.1-.84.33v2.62c0 1.1.93 2 2.07 2 .71.01 1.7.01 2.55.01.43 0 .65-.5.35-.8-1.09-1.09-3.03-3.04-4.13-4.16Z",
@@ -66533,7 +66558,7 @@
         );
       };
       var EditDocumentBulk = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(
           "svg",
           {
             fill: "none",
@@ -66543,7 +66568,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M15.48 3H7.52C4.07 3 2 5.06 2 8.52v7.95C2 19.94 4.07 22 7.52 22h7.95c3.46 0 5.52-2.06 5.52-5.52V8.52C21 5.06 18.93 3 15.48 3Z",
@@ -66551,7 +66576,7 @@
                   opacity: 0.4
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M21.02 2.98c-1.79-1.8-3.54-1.84-5.38 0L14.51 4.1c-.1.1-.13.24-.09.37.7 2.45 2.66 4.41 5.11 5.11.03.01.08.01.11.01.1 0 .2-.04.27-.11l1.11-1.12c.91-.91 1.36-1.78 1.36-2.67 0-.9-.45-1.79-1.36-2.71ZM17.86 10.42c-.27-.13-.53-.26-.77-.41-.2-.12-.4-.25-.59-.39-.16-.1-.34-.25-.52-.4-.02-.01-.08-.06-.16-.14-.31-.25-.64-.59-.95-.96-.02-.02-.08-.08-.13-.17-.1-.11-.25-.3-.38-.51-.11-.14-.24-.34-.36-.55-.15-.25-.28-.5-.4-.76-.13-.28-.23-.54-.32-.79L7.9 10.72c-.35.35-.69 1.01-.76 1.5l-.43 2.98c-.09.63.08 1.22.47 1.61.33.33.78.5 1.28.5.11 0 .22-.01.33-.02l2.97-.42c.49-.07 1.15-.4 1.5-.76l5.38-5.38c-.25-.08-.5-.19-.78-.31Z",
@@ -66563,7 +66588,7 @@
         );
       };
       var DeleteDocumentBulk = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(
           "svg",
           {
             fill: "none",
@@ -66573,14 +66598,14 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M21.07 5.23c-1.61-.16-3.22-.28-4.84-.37v-.01l-.22-1.3c-.15-.92-.37-2.3-2.71-2.3h-2.62c-2.33 0-2.55 1.32-2.71 2.29l-.21 1.28c-.93.06-1.86.12-2.79.21l-2.04.2c-.42.04-.72.41-.68.82.04.41.4.71.82.67l2.04-.2c5.24-.52 10.52-.32 15.82.21h.08c.38 0 .71-.29.75-.68a.766.766 0 0 0-.69-.82Z",
                   fill
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M19.23 8.14c-.24-.25-.57-.39-.91-.39H5.68c-.34 0-.68.14-.91.39-.23.25-.36.59-.34.94l.62 10.26c.11 1.52.25 3.42 3.74 3.42h6.42c3.49 0 3.63-1.89 3.74-3.42l.62-10.25c.02-.36-.11-.7-.34-.95Z",
@@ -66588,7 +66613,7 @@
                   opacity: 0.399
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   clipRule: "evenodd",
@@ -66608,7 +66633,7 @@
         width,
         ...props
       }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(
           "svg",
           {
             fill: "none",
@@ -66618,28 +66643,28 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M16.25 22.5C17.2165 22.5 18 21.7165 18 20.75C18 19.7835 17.2165 19 16.25 19C15.2835 19 14.5 19.7835 14.5 20.75C14.5 21.7165 15.2835 22.5 16.25 22.5Z",
                   fill
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M8.25 22.5C9.2165 22.5 10 21.7165 10 20.75C10 19.7835 9.2165 19 8.25 19C7.2835 19 6.5 19.7835 6.5 20.75C6.5 21.7165 7.2835 22.5 8.25 22.5Z",
                   fill
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M4.84 3.94L4.64 6.39C4.6 6.86 4.97 7.25 5.44 7.25H20.75C21.17 7.25 21.52 6.93 21.55 6.51C21.68 4.74 20.33 3.3 18.56 3.3H6.27C6.17 2.86 5.97 2.44 5.66 2.09C5.16 1.56 4.46 1.25 3.74 1.25H2C1.59 1.25 1.25 1.59 1.25 2C1.25 2.41 1.59 2.75 2 2.75H3.74C4.05 2.75 4.34 2.88 4.55 3.1C4.76 3.33 4.86 3.63 4.84 3.94Z",
                   fill
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M20.5101 8.75H5.17005C4.75005 8.75 4.41005 9.07 4.37005 9.48L4.01005 13.83C3.87005 15.54 5.21005 17 6.92005 17H18.0401C19.5401 17 20.8601 15.77 20.9701 14.27L21.3001 9.6C21.3401 9.14 20.9801 8.75 20.5101 8.75Z",
@@ -66657,7 +66682,7 @@
         width,
         ...props
       }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
           "svg",
           {
             fill: "none",
@@ -66666,7 +66691,7 @@
             width: size || width,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
               "path",
               {
                 d: "M6.09 13.28h3.09v7.2c0 1.68.91 2.02 2.02.76l7.57-8.6c.93-1.05.54-1.92-.87-1.92h-3.09v-7.2c0-1.68-.91-2.02-2.02-.76l-7.57 8.6c-.92 1.06-.53 1.92.87 1.92Z",
@@ -66687,7 +66712,7 @@
         width,
         ...props
       }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
           "svg",
           {
             fill: "none",
@@ -66696,7 +66721,7 @@
             width: size || width,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
               "path",
               {
                 d: "M19.32 10H4.69c-1.48 0-2.68-1.21-2.68-2.68V4.69c0-1.48 1.21-2.68 2.68-2.68h14.63C20.8 2.01 22 3.22 22 4.69v2.63C22 8.79 20.79 10 19.32 10ZM19.32 22H4.69c-1.48 0-2.68-1.21-2.68-2.68v-2.63c0-1.48 1.21-2.68 2.68-2.68h14.63c1.48 0 2.68 1.21 2.68 2.68v2.63c0 1.47-1.21 2.68-2.68 2.68ZM6 5v2M10 5v2M6 17v2M10 17v2M14 6h4M14 18h4",
@@ -66716,7 +66741,7 @@
         width,
         ...props
       }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(
           "svg",
           {
             fill: "none",
@@ -66726,7 +66751,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M18 18.86h-.76c-.8 0-1.56.31-2.12.87l-1.71 1.69c-.78.77-2.05.77-2.83 0l-1.71-1.69c-.56-.56-1.33-.87-2.12-.87H6c-1.66 0-3-1.33-3-2.97V4.98c0-1.64 1.34-2.97 3-2.97h12c1.66 0 3 1.33 3 2.97v10.91c0 1.63-1.34 2.97-3 2.97Z",
@@ -66737,7 +66762,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M12 10a2.33 2.33 0 1 0 0-4.66A2.33 2.33 0 0 0 12 10ZM16 15.66c0-1.8-1.79-3.26-4-3.26s-4 1.46-4 3.26",
@@ -66758,7 +66783,7 @@
         width,
         ...props
       }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(
           "svg",
           {
             fill: "none",
@@ -66768,7 +66793,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M9 22h6c5 0 7-2 7-7V9c0-5-2-7-7-7H9C4 2 2 4 2 9v6c0 5 2 7 7 7ZM18 6 6 18",
@@ -66778,7 +66803,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                 "path",
                 {
                   d: "M18 10V6h-4M6 14v4h4",
@@ -66793,7 +66818,7 @@
         );
       };
       var Search = ({ size, fill, width = 24, height = 24, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("svg", { fill: "none", height: size || height, viewBox: "0 0 24 24", width: size || width, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("svg", { fill: "none", height: size || height, viewBox: "0 0 24 24", width: size || width, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
           "path",
           {
             d: "M11.5 21a9.5 9.5 0 1 0 0-19 9.5 9.5 0 0 0 0 19ZM22 22l-2-2",
@@ -66824,8 +66849,8 @@
           )
         }
       );
-      var import_jsx_runtime32 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var CheckIcon = ({ filled = false, ...props }) => filled ? /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(
+      var import_jsx_runtime36 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var CheckIcon = ({ filled = false, ...props }) => filled ? /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(
         "svg",
         {
           "aria-hidden": "true",
@@ -66835,7 +66860,7 @@
           viewBox: "0 0 24 24",
           width: "1em",
           ...props,
-          children: /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(
+          children: /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(
             "path",
             {
               d: "M12 2C6.49 2 2 6.49 2 12C2 17.51 6.49 22 12 22C17.51 22 22 17.51 22 12C22 6.49 17.51 2 12 2ZM16.78 9.7L11.11 15.37C10.97 15.51 10.78 15.59 10.58 15.59C10.38 15.59 10.19 15.51 10.05 15.37L7.22 12.54C6.93 12.25 6.93 11.77 7.22 11.48C7.51 11.19 7.99 11.19 8.28 11.48L10.58 13.78L15.72 8.64C16.01 8.35 16.49 8.35 16.78 8.64C17.07 8.93 17.07 9.4 16.78 9.7Z",
@@ -66843,7 +66868,7 @@
             }
           )
         }
-      ) : /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(
+      ) : /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(
         "svg",
         {
           "aria-hidden": "true",
@@ -66857,7 +66882,7 @@
           viewBox: "0 0 24 24",
           width: "1em",
           ...props,
-          children: /* @__PURE__ */ (0, import_jsx_runtime32.jsx)("polyline", { points: "20 6 9 17 4 12" })
+          children: /* @__PURE__ */ (0, import_jsx_runtime36.jsx)("polyline", { points: "20 6 9 17 4 12" })
         }
       );
       var import_jsx_runtime42 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
@@ -67788,8 +67813,8 @@
           }
         ) })
       ] });
-      var import_jsx_runtime33 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var EditIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime33.jsxs)(
+      var import_jsx_runtime332 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var EditIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime332.jsxs)(
         "svg",
         {
           "aria-hidden": "true",
@@ -67801,7 +67826,7 @@
           width: "1em",
           ...props,
           children: [
-            /* @__PURE__ */ (0, import_jsx_runtime33.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime332.jsx)(
               "path",
               {
                 d: "M11.05 3.00002L4.20835 10.2417C3.95002 10.5167 3.70002 11.0584 3.65002 11.4334L3.34169 14.1334C3.23335 15.1084 3.93335 15.775 4.90002 15.6084L7.58335 15.15C7.95835 15.0834 8.48335 14.8084 8.74168 14.525L15.5834 7.28335C16.7667 6.03335 17.3 4.60835 15.4583 2.86668C13.625 1.14168 12.2334 1.75002 11.05 3.00002Z",
@@ -67812,7 +67837,7 @@
                 strokeWidth: 1.5
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime33.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime332.jsx)(
               "path",
               {
                 d: "M9.90833 4.20831C10.2667 6.50831 12.1333 8.26665 14.45 8.49998",
@@ -67823,7 +67848,7 @@
                 strokeWidth: 1.5
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime33.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime332.jsx)(
               "path",
               {
                 d: "M2.5 18.3333H17.5",
@@ -67837,8 +67862,8 @@
           ]
         }
       );
-      var import_jsx_runtime34 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var DeleteIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime34.jsxs)(
+      var import_jsx_runtime342 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var DeleteIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime342.jsxs)(
         "svg",
         {
           "aria-hidden": "true",
@@ -67850,7 +67875,7 @@
           width: "1em",
           ...props,
           children: [
-            /* @__PURE__ */ (0, import_jsx_runtime34.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime342.jsx)(
               "path",
               {
                 d: "M17.5 4.98332C14.725 4.70832 11.9333 4.56665 9.15 4.56665C7.5 4.56665 5.85 4.64998 4.2 4.81665L2.5 4.98332",
@@ -67860,7 +67885,7 @@
                 strokeWidth: 1.5
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime34.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime342.jsx)(
               "path",
               {
                 d: "M7.08331 4.14169L7.26665 3.05002C7.39998 2.25835 7.49998 1.66669 8.90831 1.66669H11.0916C12.5 1.66669 12.6083 2.29169 12.7333 3.05835L12.9166 4.14169",
@@ -67870,7 +67895,7 @@
                 strokeWidth: 1.5
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime34.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime342.jsx)(
               "path",
               {
                 d: "M15.7084 7.61664L15.1667 16.0083C15.075 17.3166 15 18.3333 12.675 18.3333H7.32502C5.00002 18.3333 4.92502 17.3166 4.83335 16.0083L4.29169 7.61664",
@@ -67880,7 +67905,7 @@
                 strokeWidth: 1.5
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime34.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime342.jsx)(
               "path",
               {
                 d: "M8.60834 13.75H11.3833",
@@ -67890,7 +67915,7 @@
                 strokeWidth: 1.5
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime34.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime342.jsx)(
               "path",
               {
                 d: "M7.91669 10.4167H12.0834",
@@ -67903,8 +67928,8 @@
           ]
         }
       );
-      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var EyeIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(
+      var import_jsx_runtime352 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var EyeIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime352.jsxs)(
         "svg",
         {
           "aria-hidden": "true",
@@ -67916,7 +67941,7 @@
           width: "1em",
           ...props,
           children: [
-            /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime352.jsx)(
               "path",
               {
                 d: "M12.9833 10C12.9833 11.65 11.65 12.9833 10 12.9833C8.35 12.9833 7.01666 11.65 7.01666 10C7.01666 8.35 8.35 7.01666 10 7.01666C11.65 7.01666 12.9833 8.35 12.9833 10Z",
@@ -67926,7 +67951,7 @@
                 strokeWidth: 1.5
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime352.jsx)(
               "path",
               {
                 d: "M9.99999 16.8916C12.9417 16.8916 15.6833 15.1583 17.5917 12.1583C18.3417 10.9833 18.3417 9.00831 17.5917 7.83331C15.6833 4.83331 12.9417 3.09998 9.99999 3.09998C7.05833 3.09998 4.31666 4.83331 2.40833 7.83331C1.65833 9.00831 1.65833 10.9833 2.40833 12.1583C4.31666 15.1583 7.05833 16.8916 9.99999 16.8916Z",
@@ -67939,8 +67964,8 @@
           ]
         }
       );
-      var import_jsx_runtime36 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var ArrowRightIcon = ({ strokeWidth = 1.5, ...otherProps }) => /* @__PURE__ */ (0, import_jsx_runtime36.jsxs)(
+      var import_jsx_runtime362 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var ArrowRightIcon = ({ strokeWidth = 1.5, ...otherProps }) => /* @__PURE__ */ (0, import_jsx_runtime362.jsxs)(
         "svg",
         {
           "aria-hidden": "true",
@@ -67952,7 +67977,7 @@
           width: "1em",
           ...otherProps,
           children: [
-            /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime362.jsx)(
               "path",
               {
                 d: "M16.835 6.91821L23.9166 13.9999L16.835 21.0815",
@@ -67963,7 +67988,7 @@
                 strokeWidth
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime362.jsx)(
               "path",
               {
                 d: "M4.08325 14H23.7183",
@@ -68948,14 +68973,14 @@
         useMeasure: () => useMeasure
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useMeasure() {
-        const [dimensions, setDimensions] = (0, import_react75.useState)({
+        const [dimensions, setDimensions] = (0, import_react80.useState)({
           width: null,
           height: null
         });
-        const previousObserver = (0, import_react75.useRef)(null);
-        const customRef = (0, import_react75.useCallback)((node) => {
+        const previousObserver = (0, import_react80.useRef)(null);
+        const customRef = (0, import_react80.useCallback)((node) => {
           if (previousObserver.current) {
             previousObserver.current.disconnect();
             previousObserver.current = null;
@@ -69151,15 +69176,15 @@
           }
         }
       };
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_motion2 = require_cjs4();
       var import_use_measure = require_dist18();
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var ResizablePanel2 = (0, import_react75.forwardRef)(
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var ResizablePanel2 = (0, import_react80.forwardRef)(
         (originalProps, ref) => {
           const { children, ...props } = originalProps;
           let [measureRef, bounds] = (0, import_use_measure.useMeasure)();
-          return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion2.LazyMotion, { features: import_framer_motion2.domAnimation, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_framer_motion2.LazyMotion, { features: import_framer_motion2.domAnimation, children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
             import_framer_motion2.m.div,
             {
               ref,
@@ -69167,7 +69192,7 @@
                 width: bounds.width && (bounds == null ? void 0 : bounds.width) > 0 ? bounds.width : "auto",
                 height: bounds.height && bounds.height > 0 ? bounds.height : "auto"
               },
-              children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ref: measureRef, ...props, children })
+              children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("div", { ref: measureRef, ...props, children })
             }
           ) });
         }
@@ -71104,14 +71129,14 @@
         ]);
         let moveProps = (0, $cvDGj$react.useMemo)(() => {
           let moveProps2 = {};
-          let start2 = () => {
+          let start3 = () => {
             (0, $f7e14e656343df57$exports.disableTextSelection)();
             state.current.didMove = false;
           };
           if (typeof PointerEvent === "undefined" && false) {
             moveProps2.onMouseDown = (e) => {
               if (e.button === 0) {
-                start2();
+                start3();
                 e.stopPropagation();
                 e.preventDefault();
                 state.current.lastPosition = {
@@ -71124,7 +71149,7 @@
             moveProps2.onTouchStart = (e) => {
               if (e.changedTouches.length === 0 || state.current.id != null) return;
               let { pageX, pageY, identifier } = e.changedTouches[0];
-              start2();
+              start3();
               e.stopPropagation();
               e.preventDefault();
               state.current.lastPosition = {
@@ -71136,7 +71161,7 @@
             };
           } else moveProps2.onPointerDown = (e) => {
             if (e.button === 0 && state.current.id == null) {
-              start2();
+              start3();
               e.stopPropagation();
               e.preventDefault();
               state.current.lastPosition = {
@@ -71148,7 +71173,7 @@
             }
           };
           let triggerKeyboardMove = (e, deltaX, deltaY) => {
-            start2();
+            start3();
             move(e, "keyboard", deltaX, deltaY);
             end(e, "keyboard");
           };
@@ -78139,9 +78164,9 @@
     current = null;
     const [nextBuilder] = builders;
     if (nextBuilder)
-      start(nextBuilder);
+      start2(nextBuilder);
   }
-  function start(builder) {
+  function start2(builder) {
     removeItem2(builders, builder);
     current = builder;
     startViewAnimation(builder).then((animation) => {
@@ -80155,9 +80180,9 @@
 
   // node_modules/motion-dom/dist/es/utils/delay.mjs
   function delay(callback, timeout) {
-    const start2 = time.now();
+    const start3 = time.now();
     const checkElapsed = ({ timestamp }) => {
-      const elapsed = timestamp - start2;
+      const elapsed = timestamp - start3;
       if (elapsed >= timeout) {
         cancelFrame(checkElapsed);
         callback(elapsed - timeout);
@@ -85276,7 +85301,7 @@
     }
     const scrollAnimation = useRef(null);
     const needsStart = useRef(false);
-    const start2 = useCallback(() => {
+    const start3 = useCallback(() => {
       scrollAnimation.current = scroll((_progress, { x, y }) => {
         values.scrollX.set(x.current);
         values.scrollXProgress.set(x.progress);
@@ -85297,18 +85322,18 @@
         needsStart.current = true;
         return;
       } else {
-        return start2();
+        return start3();
       }
-    }, [start2]);
+    }, [start3]);
     useEffect(() => {
       if (needsStart.current) {
         invariant(!isRefPending(container), "Container ref is defined but not hydrated", "use-scroll-ref");
         invariant(!isRefPending(target), "Target ref is defined but not hydrated", "use-scroll-ref");
-        return start2();
+        return start3();
       } else {
         return;
       }
-    }, [start2]);
+    }, [start3]);
     return values;
   }
   var createScrollMotionValues, isRefPending;
@@ -87163,9 +87188,9 @@
   }
   function getScrollAmount(pointerPosition, scrollElement, axis) {
     const rect = scrollElement.getBoundingClientRect();
-    const start2 = axis === "x" ? Math.max(0, rect.left) : Math.max(0, rect.top);
+    const start3 = axis === "x" ? Math.max(0, rect.left) : Math.max(0, rect.top);
     const end = axis === "x" ? Math.min(window.innerWidth, rect.right) : Math.min(window.innerHeight, rect.bottom);
-    const distanceFromStart = pointerPosition - start2;
+    const distanceFromStart = pointerPosition - start3;
     const distanceFromEnd = end - pointerPosition;
     if (distanceFromStart < threshold) {
       const intensity = 1 - distanceFromStart / threshold;
@@ -87822,7 +87847,7 @@
       var import_react510 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
-      var import_react75 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
+      var import_react80 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
       var import_tree = require_main12();
       var import_shared_utils = require_dist2();
       var import_theme = require_dist12();
@@ -87874,10 +87899,10 @@
         );
         const children = (0, import_react210.useMemo)(() => {
           let treeChildren = [];
-          import_react75.default.Children.map(childrenProp, (child) => {
+          import_react80.default.Children.map(childrenProp, (child) => {
             var _a2;
-            if (import_react75.default.isValidElement(child) && typeof ((_a2 = child.props) == null ? void 0 : _a2.children) !== "string") {
-              const clonedChild = import_react75.default.cloneElement(child, {
+            if (import_react80.default.isValidElement(child) && typeof ((_a2 = child.props) == null ? void 0 : _a2.children) !== "string") {
+              const clonedChild = import_react80.default.cloneElement(child, {
                 // @ts-ignore
                 hasChildItems: false
               });
@@ -87948,7 +87973,7 @@
             motionProps
           ]
         );
-        const getBaseProps = (0, import_react75.useCallback)((props2 = {}) => {
+        const getBaseProps = (0, import_react80.useCallback)((props2 = {}) => {
           return {
             ref: domRef,
             className: classNames,
@@ -87962,7 +87987,7 @@
             )
           };
         }, []);
-        const handleFocusChanged = (0, import_react75.useCallback)((isFocused, key) => {
+        const handleFocusChanged = (0, import_react80.useCallback)((isFocused, key) => {
           isFocused && setFocusedKey(key);
         }, []);
         return {
@@ -88208,7 +88233,7 @@
           getSubtitleProps
         };
       }
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var domAnimation2 = () => Promise.resolve().then(() => (init_dist(), dist_exports)).then((res) => res.default);
       var AccordionItem = (0, import_system3.forwardRef)((props, ref) => {
         const {
@@ -88238,24 +88263,24 @@
         const willChange = (0, import_framer_motion3.useWillChange)();
         const indicatorContent = (0, import_react410.useMemo)(() => {
           if (typeof indicator === "function") {
-            return indicator({ indicator: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_shared_icons.ChevronIcon, {}), isOpen, isDisabled });
+            return indicator({ indicator: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_shared_icons.ChevronIcon, {}), isOpen, isDisabled });
           }
           if (indicator) return indicator;
           return null;
         }, [indicator, isOpen, isDisabled]);
-        const indicatorComponent = indicatorContent || /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_shared_icons.ChevronIcon, {});
+        const indicatorComponent = indicatorContent || /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_shared_icons.ChevronIcon, {});
         const content = (0, import_react410.useMemo)(() => {
           if (disableAnimation) {
             if (keepContentMounted) {
-              return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ...getContentProps(), children });
+              return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("div", { ...getContentProps(), children });
             }
-            return isOpen && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ...getContentProps(), children });
+            return isOpen && /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("div", { ...getContentProps(), children });
           }
           const transitionVariants = {
             exit: { ...import_framer_utils.TRANSITION_VARIANTS.collapse.exit, overflowY: "hidden" },
             enter: { ...import_framer_utils.TRANSITION_VARIANTS.collapse.enter, overflowY: "unset" }
           };
-          return keepContentMounted ? /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+          return keepContentMounted ? /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
             import_framer_motion3.m.section,
             {
               animate: isOpen ? "enter" : "exit",
@@ -88267,10 +88292,10 @@
                 e.stopPropagation();
               },
               ...motionProps,
-              children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ...getContentProps(), children })
+              children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("div", { ...getContentProps(), children })
             },
             "accordion-content"
-          ) }) : /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion3.AnimatePresence, { initial: false, children: isOpen && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+          ) }) : /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_framer_motion3.AnimatePresence, { initial: false, children: isOpen && /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
             import_framer_motion3.m.section,
             {
               animate: "enter",
@@ -88282,19 +88307,19 @@
                 e.stopPropagation();
               },
               ...motionProps,
-              children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ...getContentProps(), children })
+              children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("div", { ...getContentProps(), children })
             },
             "accordion-content"
           ) }) });
         }, [isOpen, disableAnimation, keepContentMounted, children, motionProps]);
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(Component2, { ...getBaseProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(HeadingComponent, { ...getHeadingProps(), children: /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("button", { ...getButtonProps(), children: [
-            startContent && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { className: slots.startContent({ class: classNames == null ? void 0 : classNames.startContent }), children: startContent }),
-            /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { className: slots.titleWrapper({ class: classNames == null ? void 0 : classNames.titleWrapper }), children: [
-              title && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { ...getTitleProps(), children: title }),
-              subtitle && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { ...getSubtitleProps(), children: subtitle })
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(Component2, { ...getBaseProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(HeadingComponent, { ...getHeadingProps(), children: /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("button", { ...getButtonProps(), children: [
+            startContent && /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("div", { className: slots.startContent({ class: classNames == null ? void 0 : classNames.startContent }), children: startContent }),
+            /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("div", { className: slots.titleWrapper({ class: classNames == null ? void 0 : classNames.titleWrapper }), children: [
+              title && /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("span", { ...getTitleProps(), children: title }),
+              subtitle && /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("span", { ...getSubtitleProps(), children: subtitle })
             ] }),
-            !hideIndicator && indicatorComponent && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { ...getIndicatorProps(), children: indicatorComponent })
+            !hideIndicator && indicatorComponent && /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("span", { ...getIndicatorProps(), children: indicatorComponent })
           ] }) }),
           content
         ] });
@@ -88374,8 +88399,8 @@
         useSafeLayoutEffect: () => useSafeLayoutEffect
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var useSafeLayoutEffect = Boolean(globalThis == null ? void 0 : globalThis.document) ? import_react75.useLayoutEffect : import_react75.useEffect;
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var useSafeLayoutEffect = Boolean(globalThis == null ? void 0 : globalThis.document) ? import_react80.useLayoutEffect : import_react80.useEffect;
     }
   });
 
@@ -88406,7 +88431,7 @@
         useImage: () => useImage
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_utils = require_dist10();
       var import_use_safe_layout_effect = require_dist21();
       function useImage(props = {}) {
@@ -88422,16 +88447,16 @@
           shouldBypassImageLoad = false
         } = props;
         const isHydrated = (0, import_react_utils.useIsHydrated)();
-        const imageRef = (0, import_react75.useRef)(null);
-        const [status, setStatus] = (0, import_react75.useState)("pending");
-        const flush = (0, import_react75.useCallback)(() => {
+        const imageRef = (0, import_react80.useRef)(null);
+        const [status, setStatus] = (0, import_react80.useState)("pending");
+        const flush = (0, import_react80.useCallback)(() => {
           if (imageRef.current) {
             imageRef.current.onload = null;
             imageRef.current.onerror = null;
             imageRef.current = null;
           }
         }, []);
-        const load = (0, import_react75.useCallback)(() => {
+        const load = (0, import_react80.useCallback)(() => {
           if (!src) return "pending";
           if (ignoreFallback || shouldBypassImageLoad) return "loaded";
           flush();
@@ -88517,8 +88542,8 @@
       module.exports = __toCommonJS2(index_exports);
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist11();
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var AvatarIcon = () => /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var AvatarIcon = () => /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(
         "svg",
         {
           "aria-hidden": "true",
@@ -88528,14 +88553,14 @@
           viewBox: "0 0 24 24",
           width: "80%",
           children: [
-            /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
               "path",
               {
                 d: "M12 2C9.38 2 7.25 4.13 7.25 6.75C7.25 9.32 9.26 11.4 11.88 11.49C11.96 11.48 12.04 11.48 12.1 11.49C12.12 11.49 12.13 11.49 12.15 11.49C12.16 11.49 12.16 11.49 12.17 11.49C14.73 11.4 16.74 9.32 16.75 6.75C16.75 4.13 14.62 2 12 2Z",
                 fill: "currentColor"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
               "path",
               {
                 d: "M17.0809 14.1489C14.2909 12.2889 9.74094 12.2889 6.93094 14.1489C5.66094 14.9989 4.96094 16.1489 4.96094 17.3789C4.96094 18.6089 5.66094 19.7489 6.92094 20.5889C8.32094 21.5289 10.1609 21.9989 12.0009 21.9989C13.8409 21.9989 15.6809 21.5289 17.0809 20.5889C18.3409 19.7389 19.0409 18.5989 19.0409 17.3589C19.0309 16.1289 18.3409 14.9889 17.0809 14.1489Z",
@@ -88550,7 +88575,7 @@
       var import_react_utils2 = require_dist10();
       var import_shared_utils = require_dist2();
       var import_focus2 = require_main18();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_image = require_dist22();
       var import_interactions = require_main17();
       var import_react_utils = require_dist10();
@@ -88605,7 +88630,7 @@
         const isImgLoaded = imageStatus === "loaded";
         const shouldFilterDOMProps = !isHeroImage;
         const showFallback = (!src || !isImgLoaded) && showFallbackProp;
-        const slots = (0, import_react75.useMemo)(
+        const slots = (0, import_react80.useMemo)(
           () => {
             var _a2;
             return (0, import_theme.avatar)({
@@ -88631,10 +88656,10 @@
           ]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const canBeFocused = (0, import_react75.useMemo)(() => {
+        const canBeFocused = (0, import_react80.useMemo)(() => {
           return isFocusable || as === "button";
         }, [isFocusable, as]);
-        const getAvatarProps = (0, import_react75.useCallback)(
+        const getAvatarProps = (0, import_react80.useCallback)(
           (props = {}) => ({
             ref: domRef,
             tabIndex: canBeFocused ? 0 : -1,
@@ -88648,7 +88673,7 @@
           }),
           [canBeFocused, slots, baseStyles, focusProps, otherProps]
         );
-        const getImageProps = (0, import_react75.useCallback)(
+        const getImageProps = (0, import_react80.useCallback)(
           (props = {}) => ({
             ref: imgRef,
             src,
@@ -88796,7 +88821,7 @@
           getAvatarGroupCountProps
         };
       }
-      var import_jsx_runtime32 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime36 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var AvatarGroup = (0, import_system3.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -88805,12 +88830,12 @@
           remainingCount,
           getAvatarGroupCountProps,
           getAvatarGroupProps,
-          renderCount = (count) => /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(avatar_default, { ...getAvatarGroupCountProps(), name: `+${count}` })
+          renderCount = (count) => /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(avatar_default, { ...getAvatarGroupCountProps(), name: `+${count}` })
         } = useAvatarGroup({
           ...props,
           ref
         });
-        return /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(Component2, { ...getAvatarGroupProps(), children: /* @__PURE__ */ (0, import_jsx_runtime32.jsxs)(AvatarGroupProvider, { value: context, children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(Component2, { ...getAvatarGroupProps(), children: /* @__PURE__ */ (0, import_jsx_runtime36.jsxs)(AvatarGroupProvider, { value: context, children: [
           clones,
           remainingCount > 0 && renderCount(remainingCount)
         ] }) });
@@ -88851,7 +88876,7 @@
       var import_theme = require_dist12();
       var import_system = require_dist11();
       var import_shared_utils = require_dist2();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useBadge(originalProps) {
         var _a, _b;
         const globalContext = (0, import_system.useProviderContext)();
@@ -88859,19 +88884,19 @@
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.badge.variantKeys);
         const { as, children, className, content, classNames, ...otherProps } = props;
         const Component2 = as || "span";
-        const isOneChar = (0, import_react75.useMemo)(
+        const isOneChar = (0, import_react80.useMemo)(
           () => {
             var _a2;
             return ((_a2 = String(content)) == null ? void 0 : _a2.length) === 1 || (originalProps == null ? void 0 : originalProps.isOneChar);
           },
           [content, originalProps == null ? void 0 : originalProps.isOneChar]
         );
-        const isDot = (0, import_react75.useMemo)(() => {
+        const isDot = (0, import_react80.useMemo)(() => {
           var _a2;
           return ((_a2 = String(content)) == null ? void 0 : _a2.length) === 0;
         }, [content]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.badge, className);
-        const slots = (0, import_react75.useMemo)(
+        const slots = (0, import_react80.useMemo)(
           () => (0, import_theme.badge)({
             ...variantProps2,
             showOutline: !!(originalProps == null ? void 0 : originalProps.disableOutline) ? !(originalProps == null ? void 0 : originalProps.disableOutline) : originalProps == null ? void 0 : originalProps.showOutline,
@@ -88899,14 +88924,14 @@
         };
       }
       var import_system2 = require_dist11();
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Badge = (0, import_system2.forwardRef)((props, ref) => {
         const { Component: Component2, children, content, slots, classNames, getBadgeProps } = useBadge({
           ...props
         });
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { className: slots.base({ class: classNames == null ? void 0 : classNames.base }), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("div", { className: slots.base({ class: classNames == null ? void 0 : classNames.base }), children: [
           children,
-          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(Component2, { ref, ...getBadgeProps(), children: content })
+          /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(Component2, { ref, ...getBadgeProps(), children: content })
         ] });
       });
       Badge.displayName = "HeroUI.Badge";
@@ -88945,7 +88970,7 @@
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       function useSpinner(originalProps) {
         var _a, _b;
@@ -88953,19 +88978,19 @@
         const globalContext = (0, import_system.useProviderContext)();
         const variant = (_b = (_a = originalProps == null ? void 0 : originalProps.variant) != null ? _a : globalContext == null ? void 0 : globalContext.spinnerVariant) != null ? _b : "default";
         const { children, className, classNames, label: labelProp, ...otherProps } = props;
-        const slots = (0, import_react75.useMemo)(
+        const slots = (0, import_react80.useMemo)(
           () => (0, import_theme.spinner)({ ...variantProps2, variant }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), variant]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
         const label = labelProp || children;
-        const ariaLabel = (0, import_react75.useMemo)(() => {
+        const ariaLabel = (0, import_react80.useMemo)(() => {
           if (label && typeof label === "string") {
             return label;
           }
           return !otherProps["aria-label"] ? "Loading" : "";
         }, [children, label, otherProps["aria-label"]]);
-        const getSpinnerProps = (0, import_react75.useCallback)(
+        const getSpinnerProps = (0, import_react80.useCallback)(
           () => ({
             "aria-label": ariaLabel,
             className: slots.base({
@@ -88978,12 +89003,12 @@
         return { label, slots, classNames, variant, getSpinnerProps };
       }
       var import_system_rsc2 = require_dist14();
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Spinner = (0, import_system_rsc2.forwardRef)((props, ref) => {
         const { slots, classNames, label, variant, getSpinnerProps } = useSpinner({ ...props });
         if (variant === "wave" || variant === "dots") {
-          return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { ref, ...getSpinnerProps(), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [...new Array(3)].map((_, index3) => /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("div", { ref, ...getSpinnerProps(), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [...new Array(3)].map((_, index3) => /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
               "i",
               {
                 className: slots.dots({ class: classNames == null ? void 0 : classNames.dots }),
@@ -88993,19 +89018,19 @@
               },
               `dot-${index3}`
             )) }),
-            label && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
+            label && /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
           ] });
         }
         if (variant === "simple") {
-          return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { ref, ...getSpinnerProps(), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(
+          return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("div", { ref, ...getSpinnerProps(), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(
               "svg",
               {
                 className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }),
                 fill: "none",
                 viewBox: "0 0 24 24",
                 children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+                  /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                     "circle",
                     {
                       className: slots.circle1({ class: classNames == null ? void 0 : classNames.circle1 }),
@@ -89016,7 +89041,7 @@
                       strokeWidth: "4"
                     }
                   ),
-                  /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+                  /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
                     "path",
                     {
                       className: slots.circle2({ class: classNames == null ? void 0 : classNames.circle2 }),
@@ -89027,12 +89052,12 @@
                 ]
               }
             ),
-            label && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
+            label && /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
           ] });
         }
         if (variant === "spinner") {
-          return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { ref, ...getSpinnerProps(), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [...new Array(12)].map((_, index3) => /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("div", { ref, ...getSpinnerProps(), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [...new Array(12)].map((_, index3) => /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
               "i",
               {
                 className: slots.spinnerBars({ class: classNames == null ? void 0 : classNames.spinnerBars }),
@@ -89042,15 +89067,15 @@
               },
               `star-${index3}`
             )) }),
-            label && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
+            label && /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
           ] });
         }
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { ref, ...getSpinnerProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("i", { className: slots.circle1({ class: classNames == null ? void 0 : classNames.circle1 }) }),
-            /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("i", { className: slots.circle2({ class: classNames == null ? void 0 : classNames.circle2 }) })
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("div", { ref, ...getSpinnerProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("i", { className: slots.circle1({ class: classNames == null ? void 0 : classNames.circle1 }) }),
+            /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("i", { className: slots.circle2({ class: classNames == null ? void 0 : classNames.circle2 }) })
           ] }),
-          label && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
+          label && /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
         ] });
       });
       Spinner.displayName = "HeroUI.Spinner";
@@ -89088,13 +89113,13 @@
       module.exports = __toCommonJS2(index_exports);
       var import_framer_motion2 = require_cjs4();
       var import_shared_utils = require_dist2();
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var domAnimation2 = () => Promise.resolve().then(() => (init_dist(), dist_exports)).then((res) => res.default);
       var Ripple = (props) => {
         const { ripples = [], motionProps, color: color2 = "currentColor", style: style2, onClear } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_jsx_runtime31.Fragment, { children: ripples.map((ripple) => {
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_jsx_runtime35.Fragment, { children: ripples.map((ripple) => {
           const duration = (0, import_shared_utils.clamp)(0.01 * ripple.size, 0.2, ripple.size > 100 ? 0.75 : 0.5);
-          return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion2.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion2.AnimatePresence, { mode: "popLayout", children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_framer_motion2.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_framer_motion2.AnimatePresence, { mode: "popLayout", children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
             import_framer_motion2.m.span,
             {
               animate: {
@@ -89132,10 +89157,10 @@
       Ripple.displayName = "HeroUI.Ripple";
       var ripple_default = Ripple;
       var import_shared_utils2 = require_dist2();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useRipple(props = {}) {
-        const [ripples, setRipples] = (0, import_react75.useState)([]);
-        const onPress = (0, import_react75.useCallback)((event) => {
+        const [ripples, setRipples] = (0, import_react80.useState)([]);
+        const onPress = (0, import_react80.useCallback)((event) => {
           const trigger = event.target;
           const size = Math.max(trigger.clientWidth, trigger.clientHeight);
           setRipples((prevRipples) => [
@@ -89148,7 +89173,7 @@
             }
           ]);
         }, []);
-        const onClear = (0, import_react75.useCallback)((key) => {
+        const onClear = (0, import_react80.useCallback)((key) => {
           setRipples((prevState) => prevState.filter((ripple) => ripple.key !== key));
         }, []);
         return { ripples, onClear, onPress, ...props };
@@ -90988,14 +91013,14 @@
         ]);
         let moveProps = (0, $cvDGj$react.useMemo)(() => {
           let moveProps2 = {};
-          let start2 = () => {
+          let start3 = () => {
             (0, $f7e14e656343df57$exports.disableTextSelection)();
             state.current.didMove = false;
           };
           if (typeof PointerEvent === "undefined" && false) {
             moveProps2.onMouseDown = (e) => {
               if (e.button === 0) {
-                start2();
+                start3();
                 e.stopPropagation();
                 e.preventDefault();
                 state.current.lastPosition = {
@@ -91008,7 +91033,7 @@
             moveProps2.onTouchStart = (e) => {
               if (e.changedTouches.length === 0 || state.current.id != null) return;
               let { pageX, pageY, identifier } = e.changedTouches[0];
-              start2();
+              start3();
               e.stopPropagation();
               e.preventDefault();
               state.current.lastPosition = {
@@ -91020,7 +91045,7 @@
             };
           } else moveProps2.onPointerDown = (e) => {
             if (e.button === 0 && state.current.id == null) {
-              start2();
+              start3();
               e.stopPropagation();
               e.preventDefault();
               state.current.lastPosition = {
@@ -91032,7 +91057,7 @@
             }
           };
           let triggerKeyboardMove = (e, deltaX, deltaY) => {
-            start2();
+            start3();
             move(e, "keyboard", deltaX, deltaY);
             end(e, "keyboard");
           };
@@ -92235,7 +92260,7 @@
       var import_system2 = require_dist11();
       var import_system = require_dist11();
       var import_shared_utils = require_dist2();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_react_utils2 = require_dist10();
       var import_theme = require_dist12();
@@ -92312,7 +92337,7 @@
           ]
         );
         const { onPress: onRipplePressHandler, onClear: onClearRipple, ripples } = (0, import_ripple.useRipple)();
-        const handlePress = (0, import_react75.useCallback)(
+        const handlePress = (0, import_react80.useCallback)(
           (e) => {
             if (disableRipple || isDisabled || disableAnimation) return;
             domRef.current && onRipplePressHandler(e);
@@ -92330,7 +92355,7 @@
           domRef
         );
         const { isHovered, hoverProps } = (0, import_interactions.useHover)({ isDisabled });
-        const getButtonProps = (0, import_react75.useCallback)(
+        const getButtonProps = (0, import_react80.useCallback)(
           (props2 = {}) => ({
             "data-disabled": (0, import_shared_utils.dataAttr)(isDisabled),
             "data-focus": (0, import_shared_utils.dataAttr)(isFocused),
@@ -92379,7 +92404,7 @@
           };
           return buttonSpinnerSizeMap[size];
         }, [size]);
-        const getRippleProps = (0, import_react75.useCallback)(
+        const getRippleProps = (0, import_react80.useCallback)(
           () => ({ ripples, onClear: onClearRipple }),
           [ripples, onClearRipple]
         );
@@ -92400,14 +92425,14 @@
           isIconOnly
         };
       }
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Button = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
           domRef,
           children,
           spinnerSize,
-          spinner = /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_spinner.Spinner, { color: "current", size: spinnerSize }),
+          spinner = /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_spinner.Spinner, { color: "current", size: spinnerSize }),
           spinnerPlacement,
           startContent,
           endContent,
@@ -92417,13 +92442,13 @@
           getRippleProps,
           isIconOnly
         } = useButton({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(Component2, { ref: domRef, ...getButtonProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(Component2, { ref: domRef, ...getButtonProps(), children: [
           startContent,
           isLoading && spinnerPlacement === "start" && spinner,
           isLoading && isIconOnly ? null : children,
           isLoading && spinnerPlacement === "end" && spinner,
           endContent,
-          !disableRipple && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_ripple2.Ripple, { ...getRippleProps() })
+          !disableRipple && /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_ripple2.Ripple, { ...getRippleProps() })
         ] });
       });
       Button.displayName = "HeroUI.Button";
@@ -92549,7 +92574,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_theme = require_dist12();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_interactions = require_main17();
       var import_use_aria_button = require_dist27();
@@ -92581,7 +92606,7 @@
         const disableRipple = (_d = (_c = originalProps.disableRipple) != null ? _c : globalContext == null ? void 0 : globalContext.disableRipple) != null ? _d : false;
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
         const { onClear: onClearRipple, onPress: onRipplePressHandler, ripples } = (0, import_ripple.useRipple)();
-        const handlePress = (0, import_react75.useCallback)(
+        const handlePress = (0, import_react80.useCallback)(
           (e) => {
             if (disableRipple || disableAnimation) return;
             domRef.current && onRipplePressHandler(e);
@@ -92606,14 +92631,14 @@
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)({
           autoFocus
         });
-        const slots = (0, import_react75.useMemo)(
+        const slots = (0, import_react80.useMemo)(
           () => (0, import_theme.card)({
             ...variantProps2,
             disableAnimation
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation]
         );
-        const context = (0, import_react75.useMemo)(
+        const context = (0, import_react80.useMemo)(
           () => ({
             slots,
             classNames,
@@ -92631,7 +92656,7 @@
             originalProps.fullWidth
           ]
         );
-        const getCardProps = (0, import_react75.useCallback)(
+        const getCardProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ref: domRef,
@@ -92669,7 +92694,7 @@
             otherProps
           ]
         );
-        const getRippleProps = (0, import_react75.useCallback)(
+        const getRippleProps = (0, import_react80.useCallback)(
           () => ({ ripples, onClear: onClearRipple }),
           [ripples, onClearRipple]
         );
@@ -92699,8 +92724,8 @@
       });
       var import_system2 = require_dist11();
       var import_ripple2 = require_dist26();
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var Card = (0, import_system2.forwardRef)((props, ref) => {
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var Card2 = (0, import_system2.forwardRef)((props, ref) => {
         const {
           children,
           context,
@@ -92711,13 +92736,13 @@
           getCardProps,
           getRippleProps
         } = useCard({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(Component2, { ...getCardProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(CardProvider, { value: context, children }),
-          isPressable && !disableAnimation && !disableRipple && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_ripple2.Ripple, { ...getRippleProps() })
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(Component2, { ...getCardProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(CardProvider, { value: context, children }),
+          isPressable && !disableAnimation && !disableRipple && /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_ripple2.Ripple, { ...getRippleProps() })
         ] });
       });
-      Card.displayName = "HeroUI.Card";
-      var card_default = Card;
+      Card2.displayName = "HeroUI.Card";
+      var card_default = Card2;
       var import_system3 = require_dist11();
       var import_react_utils4 = require_dist10();
       var import_theme2 = require_dist12();
@@ -92736,7 +92761,7 @@
       var import_system4 = require_dist11();
       var import_react_utils5 = require_dist10();
       var import_theme3 = require_dist12();
-      var import_jsx_runtime32 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime36 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var CardBody = (0, import_system4.forwardRef)((props, ref) => {
         var _a;
         const { as, className, children, ...otherProps } = props;
@@ -92744,7 +92769,7 @@
         const domRef = (0, import_react_utils5.useDOMRef)(ref);
         const { slots, classNames } = useCardContext();
         const bodyStyles = (0, import_theme3.cn)(classNames == null ? void 0 : classNames.body, className);
-        return /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(Component2, { ref: domRef, className: (_a = slots.body) == null ? void 0 : _a.call(slots, { class: bodyStyles }), ...otherProps, children });
+        return /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(Component2, { ref: domRef, className: (_a = slots.body) == null ? void 0 : _a.call(slots, { class: bodyStyles }), ...otherProps, children });
       });
       CardBody.displayName = "HeroUI.CardBody";
       var card_body_default = CardBody;
@@ -92800,7 +92825,7 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useChip(originalProps) {
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.chip.variantKeys);
         const {
@@ -92821,13 +92846,13 @@
         const isCloseable = !!onClose;
         const isDotVariant = originalProps.variant === "dot";
         const { focusProps: closeFocusProps, isFocusVisible: isCloseButtonFocusVisible } = (0, import_focus2.useFocusRing)();
-        const isOneChar = (0, import_react75.useMemo)(
+        const isOneChar = (0, import_react80.useMemo)(
           () => typeof children === "string" && (children == null ? void 0 : children.length) === 1,
           [children]
         );
-        const hasStartContent = (0, import_react75.useMemo)(() => !!avatar || !!startContent, [avatar, startContent]);
-        const hasEndContent = (0, import_react75.useMemo)(() => !!endContent || isCloseable, [endContent, isCloseable]);
-        const slots = (0, import_react75.useMemo)(
+        const hasStartContent = (0, import_react80.useMemo)(() => !!avatar || !!startContent, [avatar, startContent]);
+        const hasEndContent = (0, import_react80.useMemo)(() => !!endContent || isCloseable, [endContent, isCloseable]);
+        const slots = (0, import_react80.useMemo)(
           () => (0, import_theme.chip)({
             ...variantProps2,
             hasStartContent,
@@ -92866,13 +92891,13 @@
           };
         };
         const getAvatarClone = (avatar2) => {
-          if (!(0, import_react75.isValidElement)(avatar2)) return null;
-          return (0, import_react75.cloneElement)(avatar2, {
+          if (!(0, import_react80.isValidElement)(avatar2)) return null;
+          return (0, import_react80.cloneElement)(avatar2, {
             // @ts-ignore
             className: slots.avatar({ class: classNames == null ? void 0 : classNames.avatar })
           });
         };
-        const getContentClone = (content) => (0, import_react75.isValidElement)(content) ? (0, import_react75.cloneElement)(content, {
+        const getContentClone = (content) => (0, import_react80.isValidElement)(content) ? (0, import_react80.cloneElement)(content, {
           // @ts-ignore
           className: (0, import_theme.cn)("max-h-[80%]", content.props.className)
         }) : null;
@@ -92892,7 +92917,7 @@
       var import_shared_icons = require_dist17();
       var import_system2 = require_dist11();
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Chip2 = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -92909,21 +92934,21 @@
           ...props,
           ref
         });
-        const start2 = (0, import_react210.useMemo)(() => {
+        const start3 = (0, import_react210.useMemo)(() => {
           if (isDot && !startContent) {
-            return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { className: slots.dot({ class: classNames == null ? void 0 : classNames.dot }) });
+            return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("span", { className: slots.dot({ class: classNames == null ? void 0 : classNames.dot }) });
           }
           return startContent;
         }, [slots, startContent, isDot]);
         const end = (0, import_react210.useMemo)(() => {
           if (isCloseable) {
-            return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { ...getCloseButtonProps(), children: endContent || /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_shared_icons.CloseFilledIcon, {}) });
+            return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("span", { ...getCloseButtonProps(), children: endContent || /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_shared_icons.CloseFilledIcon, {}) });
           }
           return endContent;
         }, [endContent, isCloseable, getCloseButtonProps]);
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(Component2, { ...getChipProps(), children: [
-          start2,
-          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children }),
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(Component2, { ...getChipProps(), children: [
+          start3,
+          /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("span", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children }),
           end
         ] });
       });
@@ -93041,14 +93066,14 @@
         useCallbackRef: () => useCallbackRef
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_safe_layout_effect = require_dist21();
       function useCallbackRef(fn, deps = []) {
-        const ref = (0, import_react75.useRef)(fn);
+        const ref = (0, import_react80.useRef)(fn);
         (0, import_use_safe_layout_effect.useSafeLayoutEffect)(() => {
           ref.current = fn;
         });
-        return (0, import_react75.useCallback)((...args) => {
+        return (0, import_react80.useCallback)((...args) => {
           var _a;
           return (_a = ref.current) == null ? void 0 : _a.call(ref, ...args);
         }, deps);
@@ -106485,13 +106510,13 @@
         useSlottedContext: () => useSlottedContext
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       var DEFAULT_SLOT = /* @__PURE__ */ Symbol("default");
       function useObjectRef(ref) {
-        const objRef = (0, import_react75.useRef)(null);
-        const cleanupRef = (0, import_react75.useRef)(void 0);
-        const refEffect = (0, import_react75.useCallback)(
+        const objRef = (0, import_react80.useRef)(null);
+        const cleanupRef = (0, import_react80.useRef)(void 0);
+        const refEffect = (0, import_react80.useCallback)(
           (instance) => {
             if (typeof ref === "function") {
               const refCallback = ref;
@@ -106512,7 +106537,7 @@
           },
           [ref]
         );
-        return (0, import_react75.useMemo)(
+        return (0, import_react80.useMemo)(
           () => ({
             get current() {
               return objRef.current;
@@ -106532,7 +106557,7 @@
         );
       }
       function useSlottedContext(context, slot) {
-        let ctx = (0, import_react75.useContext)(context);
+        let ctx = (0, import_react80.useContext)(context);
         if (slot === null) {
           return null;
         }
@@ -106552,7 +106577,7 @@
       function useContextProps(props, ref, context) {
         let ctx = useSlottedContext(context, props.slot) || {};
         let { ref: contextRef, ...contextProps } = ctx;
-        let mergedRef = useObjectRef((0, import_react75.useMemo)(() => (0, import_shared_utils.mergeRefs)(ref, contextRef), [ref, contextRef]));
+        let mergedRef = useObjectRef((0, import_react80.useMemo)(() => (0, import_shared_utils.mergeRefs)(ref, contextRef), [ref, contextRef]));
         let mergedProps = (0, import_shared_utils.mergeProps)(contextProps, props);
         if ("style" in contextProps && contextProps.style && "style" in props && props.style) {
           if (typeof contextProps.style === "function" || typeof props.style === "function") {
@@ -106571,13 +106596,13 @@
       var import_form = require_main22();
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist32();
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var FormContext = (0, import_react210.createContext)(null);
       var Form = (0, import_react210.forwardRef)(function Form2(props, ref) {
         [props, ref] = useContextProps(props, ref, FormContext);
         let { validationErrors, validationBehavior = "native", children, className, ...domProps } = props;
         const styles = (0, import_react210.useMemo)(() => (0, import_theme.form)({ className }), [className]);
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("form", { noValidate: validationBehavior !== "native", ...domProps, ref, className: styles, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(FormContext.Provider, { value: { ...props, validationBehavior }, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_form.FormValidationContext.Provider, { value: validationErrors != null ? validationErrors : {}, children }) }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("form", { noValidate: validationBehavior !== "native", ...domProps, ref, className: styles, children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(FormContext.Provider, { value: { ...props, validationBehavior }, children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_form.FormValidationContext.Provider, { value: validationErrors != null ? validationErrors : {}, children }) }) });
       });
       var import_system = require_dist11();
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
@@ -106704,7 +106729,7 @@
       var import_system2 = require_dist11();
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_toggle = require_main21();
       var import_theme = require_dist12();
@@ -106779,7 +106804,7 @@
           };
           onChange = (0, import_shared_utils.chain)(dispatch, onChange);
         }
-        const labelId = (0, import_react75.useId)();
+        const labelId = (0, import_react80.useId)();
         const ariaCheckboxProps = (0, import_react210.useMemo)(
           () => ({
             name,
@@ -106868,7 +106893,7 @@
           toggleState.setSelected(isInputRefChecked);
         }, [inputRef.current]);
         const onChangeProp = (0, import_use_callback_ref.useCallbackRef)(onChange);
-        const handleCheckboxChange = (0, import_react75.useCallback)(
+        const handleCheckboxChange = (0, import_react80.useCallback)(
           (event) => {
             if (isReadOnly || isDisabled) {
               event.preventDefault();
@@ -106879,7 +106904,7 @@
           [isReadOnly, isDisabled, onChangeProp]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getBaseProps = (0, import_react75.useCallback)(() => {
+        const getBaseProps = (0, import_react80.useCallback)(() => {
           return {
             ref: domRef,
             className: slots.base({ class: baseStyles }),
@@ -106909,7 +106934,7 @@
           hoverProps,
           otherProps
         ]);
-        const getWrapperProps = (0, import_react75.useCallback)(
+        const getWrapperProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -106919,7 +106944,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.wrapper]
         );
-        const getInputProps = (0, import_react75.useCallback)(() => {
+        const getInputProps = (0, import_react80.useCallback)(() => {
           return {
             ref: (0, import_react_utils2.mergeRefs)(inputRef, ref),
             ...(0, import_shared_utils.mergeProps)(inputProps, focusProps),
@@ -106927,14 +106952,14 @@
             onChange: (0, import_shared_utils.chain)(inputProps.onChange, handleCheckboxChange)
           };
         }, [inputProps, focusProps, handleCheckboxChange, classNames == null ? void 0 : classNames.hiddenInput]);
-        const getLabelProps = (0, import_react75.useCallback)(
+        const getLabelProps = (0, import_react80.useCallback)(
           () => ({
             id: labelId,
             className: slots.label({ class: classNames == null ? void 0 : classNames.label })
           }),
           [slots, classNames == null ? void 0 : classNames.label, isDisabled, isSelected, isInvalid]
         );
-        const getIconProps = (0, import_react75.useCallback)(
+        const getIconProps = (0, import_react80.useCallback)(
           () => ({
             isSelected,
             isIndeterminate,
@@ -106960,10 +106985,10 @@
           getIconProps
         };
       }
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       function CheckIcon(props) {
         const { isSelected, disableAnimation, ...otherProps } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
           "svg",
           {
             "aria-hidden": "true",
@@ -106980,21 +107005,21 @@
             } : {},
             viewBox: "0 0 17 18",
             ...otherProps,
-            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("polyline", { points: "1 9 7 14 15 4" })
+            children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("polyline", { points: "1 9 7 14 15 4" })
           }
         );
       }
       function IndeterminateIcon(props) {
         const { isSelected, disableAnimation, ...otherProps } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("svg", { stroke: "currentColor", strokeWidth: 3, viewBox: "0 0 24 24", ...otherProps, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("line", { x1: "21", x2: "3", y1: "12", y2: "12" }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("svg", { stroke: "currentColor", strokeWidth: 3, viewBox: "0 0 24 24", ...otherProps, children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("line", { x1: "21", x2: "3", y1: "12", y2: "12" }) });
       }
       function CheckboxIcon(props) {
         const { isIndeterminate, ...otherProps } = props;
         const BaseIcon = isIndeterminate ? IndeterminateIcon : CheckIcon;
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(BaseIcon, { ...otherProps });
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(BaseIcon, { ...otherProps });
       }
       var import_jsx_runtime210 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var Checkbox = (0, import_system2.forwardRef)((props, ref) => {
+      var Checkbox2 = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
           children,
@@ -107012,8 +107037,8 @@
           children && /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("span", { ...getLabelProps(), children })
         ] });
       });
-      Checkbox.displayName = "HeroUI.Checkbox";
-      var checkbox_default = Checkbox;
+      Checkbox2.displayName = "HeroUI.Checkbox";
+      var checkbox_default = Checkbox2;
       var import_system4 = require_dist11();
       var import_system3 = require_dist11();
       var import_react410 = (init_react_shim(), __toCommonJS(react_shim_exports));
@@ -107187,7 +107212,7 @@
           getErrorMessageProps
         };
       }
-      var import_jsx_runtime32 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime36 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var CheckboxGroup = (0, import_system4.forwardRef)((props, ref) => {
         const {
           children,
@@ -107202,10 +107227,10 @@
           getDescriptionProps,
           getErrorMessageProps
         } = useCheckboxGroup({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime32.jsxs)("div", { ...getGroupProps(), children: [
-          label && /* @__PURE__ */ (0, import_jsx_runtime32.jsx)("span", { ...getLabelProps(), children: label }),
-          /* @__PURE__ */ (0, import_jsx_runtime32.jsx)("div", { ...getWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(CheckboxGroupProvider, { value: context, children }) }),
-          isInvalid && errorMessage ? /* @__PURE__ */ (0, import_jsx_runtime32.jsx)("div", { ...getErrorMessageProps(), children: errorMessage }) : description ? /* @__PURE__ */ (0, import_jsx_runtime32.jsx)("div", { ...getDescriptionProps(), children: description }) : null
+        return /* @__PURE__ */ (0, import_jsx_runtime36.jsxs)("div", { ...getGroupProps(), children: [
+          label && /* @__PURE__ */ (0, import_jsx_runtime36.jsx)("span", { ...getLabelProps(), children: label }),
+          /* @__PURE__ */ (0, import_jsx_runtime36.jsx)("div", { ...getWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(CheckboxGroupProvider, { value: context, children }) }),
+          isInvalid && errorMessage ? /* @__PURE__ */ (0, import_jsx_runtime36.jsx)("div", { ...getErrorMessageProps(), children: errorMessage }) : description ? /* @__PURE__ */ (0, import_jsx_runtime36.jsx)("div", { ...getDescriptionProps(), children: description }) : null
         ] });
       });
       CheckboxGroup.displayName = "HeroUI.CheckboxGroup";
@@ -107243,13 +107268,13 @@
       var import_system_rsc2 = require_dist14();
       var import_theme = require_dist12();
       var import_system_rsc = require_dist14();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       function useCode(originalProps) {
         const [props, variantProps2] = (0, import_system_rsc.mapPropsVariants)(originalProps, import_theme.code.variantKeys);
         const { as, children, className, ...otherProps } = props;
         const Component2 = as || "code";
-        const styles = (0, import_react75.useMemo)(
+        const styles = (0, import_react80.useMemo)(
           () => (0, import_theme.code)({
             ...variantProps2,
             className
@@ -107264,10 +107289,10 @@
         };
         return { Component: Component2, children, getCodeProps };
       }
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Code = (0, import_system_rsc2.forwardRef)((props, ref) => {
         const { Component: Component2, children, getCodeProps } = useCode({ ...props });
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(Component2, { ref, ...getCodeProps(), children });
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(Component2, { ref, ...getCodeProps(), children });
       });
       Code.displayName = "HeroUI.Code";
       var code_default = Code;
@@ -109106,14 +109131,14 @@
         ]);
         let moveProps = (0, $cvDGj$react.useMemo)(() => {
           let moveProps2 = {};
-          let start2 = () => {
+          let start3 = () => {
             (0, $f7e14e656343df57$exports.disableTextSelection)();
             state.current.didMove = false;
           };
           if (typeof PointerEvent === "undefined" && false) {
             moveProps2.onMouseDown = (e) => {
               if (e.button === 0) {
-                start2();
+                start3();
                 e.stopPropagation();
                 e.preventDefault();
                 state.current.lastPosition = {
@@ -109126,7 +109151,7 @@
             moveProps2.onTouchStart = (e) => {
               if (e.changedTouches.length === 0 || state.current.id != null) return;
               let { pageX, pageY, identifier } = e.changedTouches[0];
-              start2();
+              start3();
               e.stopPropagation();
               e.preventDefault();
               state.current.lastPosition = {
@@ -109138,7 +109163,7 @@
             };
           } else moveProps2.onPointerDown = (e) => {
             if (e.button === 0 && state.current.id == null) {
-              start2();
+              start3();
               e.stopPropagation();
               e.preventDefault();
               state.current.lastPosition = {
@@ -109150,7 +109175,7 @@
             }
           };
           let triggerKeyboardMove = (e, deltaX, deltaY) => {
-            start2();
+            start3();
             move(e, "keyboard", deltaX, deltaY);
             end(e, "keyboard");
           };
@@ -110330,7 +110355,7 @@
       var import_react_utils = require_dist10();
       var import_focus2 = require_main18();
       var import_shared_utils = require_dist2();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useLink(originalProps) {
         var _a, _b, _c, _d;
         const globalContext = (0, import_system.useProviderContext)();
@@ -110373,7 +110398,7 @@
           otherProps.rel = (_c = otherProps.rel) != null ? _c : "noopener noreferrer";
           otherProps.target = (_d = otherProps.target) != null ? _d : "_blank";
         }
-        const styles = (0, import_react75.useMemo)(
+        const styles = (0, import_react80.useMemo)(
           () => (0, import_theme.link)({
             ...variantProps2,
             disableAnimation,
@@ -110381,7 +110406,7 @@
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation, className]
         );
-        const getLinkProps = (0, import_react75.useCallback)(() => {
+        const getLinkProps = (0, import_react80.useCallback)(() => {
           return {
             ref: domRef,
             className: styles,
@@ -110395,19 +110420,19 @@
         }, [styles, isFocused, isFocusVisible, focusProps, linkProps, otherProps]);
         return { Component: Component2, children, anchorIcon, showAnchorIcon, getLinkProps };
       }
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Link = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
           children,
           showAnchorIcon,
-          anchorIcon = /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_shared_icons.LinkIcon, { className: import_theme2.linkAnchorClasses }),
+          anchorIcon = /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_shared_icons.LinkIcon, { className: import_theme2.linkAnchorClasses }),
           getLinkProps
         } = useLink({
           ref,
           ...props
         });
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(Component2, { ...getLinkProps(), children: /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(import_jsx_runtime31.Fragment, { children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(Component2, { ...getLinkProps(), children: /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(import_jsx_runtime35.Fragment, { children: [
           children,
           showAnchorIcon && anchorIcon
         ] }) });
@@ -110466,7 +110491,7 @@
         usePagination: () => usePagination
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_i18n12 = require_main5();
       var import_shared_utils = require_dist2();
       var PaginationItemType2 = /* @__PURE__ */ ((PaginationItemType22) => {
@@ -110485,19 +110510,19 @@
           showControls = false,
           onChange
         } = props;
-        const [activePage, setActivePage] = (0, import_react75.useState)(page || initialPage);
+        const [activePage, setActivePage] = (0, import_react80.useState)(page || initialPage);
         const { direction } = (0, import_i18n12.useLocale)();
         const isRTL = direction === "rtl";
         const onChangeActivePage = (newPage) => {
           setActivePage(newPage);
           onChange && onChange(newPage);
         };
-        (0, import_react75.useEffect)(() => {
+        (0, import_react80.useEffect)(() => {
           if (page && page !== activePage) {
             setActivePage(page);
           }
         }, [page]);
-        const setPage = (0, import_react75.useCallback)(
+        const setPage = (0, import_react80.useCallback)(
           (pageNumber) => {
             if (pageNumber <= 0) {
               onChangeActivePage(1);
@@ -110513,7 +110538,7 @@
         const previous = () => setPage(activePage - 1);
         const first = () => setPage(1);
         const last = () => setPage(total);
-        const formatRange = (0, import_react75.useCallback)(
+        const formatRange = (0, import_react80.useCallback)(
           (range2) => {
             if (showControls) {
               return [
@@ -110527,7 +110552,7 @@
           },
           [isRTL, showControls]
         );
-        const paginationRange = (0, import_react75.useMemo)(() => {
+        const paginationRange = (0, import_react80.useMemo)(() => {
           const totalPageNumbers = siblings * 2 + 3 + boundaries * 2;
           if (totalPageNumbers >= total) {
             return formatRange((0, import_shared_utils.range)(1, total));
@@ -110689,7 +110714,7 @@
         useIntersectionObserver: () => useIntersectionObserver
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useIntersectionObserver({
         threshold: threshold2 = 0,
         root = null,
@@ -110700,15 +110725,15 @@
         onChange
       } = {}) {
         var _a;
-        const [ref, setRef2] = (0, import_react75.useState)(null);
-        const [state, setState] = (0, import_react75.useState)(() => ({
+        const [ref, setRef2] = (0, import_react80.useState)(null);
+        const [state, setState] = (0, import_react80.useState)(() => ({
           isIntersecting: initialIsIntersecting,
           entry: void 0
         }));
-        const callbackRef = (0, import_react75.useRef)();
+        const callbackRef = (0, import_react80.useRef)();
         callbackRef.current = onChange;
         const frozen = ((_a = state.entry) == null ? void 0 : _a.isIntersecting) && freezeOnceVisible;
-        (0, import_react75.useEffect)(() => {
+        (0, import_react80.useEffect)(() => {
           if (!isEnabled) return;
           if (!ref) return;
           if (!("IntersectionObserver" in window)) return;
@@ -110736,8 +110761,8 @@
             observer2.disconnect();
           };
         }, [ref, isEnabled, JSON.stringify(threshold2), root, rootMargin, frozen, freezeOnceVisible]);
-        const prevRef = (0, import_react75.useRef)(null);
-        (0, import_react75.useEffect)(() => {
+        const prevRef = (0, import_react80.useRef)(null);
+        (0, import_react80.useEffect)(() => {
           var _a2;
           if (!ref && ((_a2 = state.entry) == null ? void 0 : _a2.target) && !freezeOnceVisible && !frozen && prevRef.current !== state.entry.target) {
             prevRef.current = state.entry.target;
@@ -110804,7 +110829,7 @@
       var import_theme3 = require_dist12();
       var import_shared_utils = require_dist2();
       var import_use_pagination = require_dist38();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_use_pagination2 = require_dist38();
       var import_scroll_into_view_if_needed = __toESM2(require_dist40());
@@ -110837,9 +110862,9 @@
         } = props;
         const Component2 = as || "nav";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const cursorRef = (0, import_react75.useRef)(null);
-        const itemsRef = (0, import_react75.useRef)();
-        const cursorTimer = (0, import_react75.useRef)();
+        const cursorRef = (0, import_react80.useRef)(null);
+        const itemsRef = (0, import_react80.useRef)();
+        const cursorTimer = (0, import_react80.useRef)();
         const disableAnimation = (_b = (_a = originalProps == null ? void 0 : originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
         const disableCursorAnimation = (_d = (_c = originalProps == null ? void 0 : originalProps.disableCursorAnimation) != null ? _c : disableAnimation) != null ? _d : false;
         function getItemsRefMap() {
@@ -110897,13 +110922,13 @@
           onChange
         });
         const [setRef2, isVisible] = (0, import_use_intersection_observer.useIntersectionObserver)();
-        (0, import_react75.useEffect)(() => {
+        (0, import_react80.useEffect)(() => {
           if (domRef.current) {
             setRef2(domRef.current);
           }
         }, [domRef.current]);
-        const activePageRef = (0, import_react75.useRef)(activePage);
-        (0, import_react75.useEffect)(() => {
+        const activePageRef = (0, import_react80.useRef)(activePage);
+        (0, import_react80.useEffect)(() => {
           if (activePage && !disableAnimation && isVisible) {
             scrollTo(activePage, activePage === activePageRef.current);
           }
@@ -110918,7 +110943,7 @@
           originalProps.isCompact,
           originalProps.showControls
         ]);
-        const slots = (0, import_react75.useMemo)(
+        const slots = (0, import_react80.useMemo)(
           () => (0, import_theme.pagination)({
             ...variantProps2,
             disableAnimation,
@@ -111105,10 +111130,10 @@
           getItemProps
         };
       }
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var PaginationItem = (0, import_system2.forwardRef)((props, ref) => {
         const { Component: Component2, children, getItemProps } = usePaginationItem({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(Component2, { ...getItemProps(), children });
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(Component2, { ...getItemProps(), children });
       });
       PaginationItem.displayName = "HeroUI.PaginationItem";
       var pagination_item_default = PaginationItem;
@@ -111123,7 +111148,7 @@
       });
       PaginationCursor.displayName = "HeroUI.PaginationCursor";
       var pagination_cursor_default = PaginationCursor;
-      var import_jsx_runtime32 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime36 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var import_react410 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var Pagination2 = (0, import_system4.forwardRef)((props, ref) => {
         const {
@@ -111153,9 +111178,9 @@
         const renderChevronIcon = (0, import_react310.useCallback)(
           (key) => {
             if (key === import_use_pagination3.PaginationItemType.PREV && !isRTL || key === import_use_pagination3.PaginationItemType.NEXT && isRTL) {
-              return /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(import_shared_icons.ChevronIcon, {});
+              return /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(import_shared_icons.ChevronIcon, {});
             }
-            return /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(
+            return /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(
               import_shared_icons.ChevronIcon,
               {
                 className: slots.chevronNext({
@@ -111168,7 +111193,7 @@
         );
         const renderPrevItem = (0, import_react310.useCallback)(
           (value) => {
-            return /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(
+            return /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(
               pagination_item_default,
               {
                 className: slots.prev({
@@ -111188,7 +111213,7 @@
         );
         const renderNextItem = (0, import_react310.useCallback)(
           (value) => {
-            return /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(
+            return /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(
               pagination_item_default,
               {
                 className: slots.next({
@@ -111223,9 +111248,9 @@
               const itemChildren = {
                 [import_use_pagination3.PaginationItemType.PREV]: renderChevronIcon(import_use_pagination3.PaginationItemType.PREV),
                 [import_use_pagination3.PaginationItemType.NEXT]: renderChevronIcon(import_use_pagination3.PaginationItemType.NEXT),
-                [import_use_pagination3.PaginationItemType.DOTS]: /* @__PURE__ */ (0, import_jsx_runtime32.jsxs)(import_jsx_runtime32.Fragment, { children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(import_shared_icons.EllipsisIcon, { className: slots == null ? void 0 : slots.ellipsis({ class: classNames == null ? void 0 : classNames.ellipsis }) }),
-                  /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(
+                [import_use_pagination3.PaginationItemType.DOTS]: /* @__PURE__ */ (0, import_jsx_runtime36.jsxs)(import_jsx_runtime36.Fragment, { children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(import_shared_icons.EllipsisIcon, { className: slots == null ? void 0 : slots.ellipsis({ class: classNames == null ? void 0 : classNames.ellipsis }) }),
+                  /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(
                     import_shared_icons.ForwardIcon,
                     {
                       className: slots == null ? void 0 : slots.forwardIcon({ class: classNames == null ? void 0 : classNames.forwardIcon }),
@@ -111265,7 +111290,7 @@
               return renderNextItem(value);
             }
             if (value === import_use_pagination3.PaginationItemType.DOTS) {
-              return /* @__PURE__ */ (0, import_jsx_runtime32.jsxs)(
+              return /* @__PURE__ */ (0, import_jsx_runtime36.jsxs)(
                 pagination_item_default,
                 {
                   className: slots.item({
@@ -111276,8 +111301,8 @@
                   value,
                   onPress: () => isBefore ? setPage(activePage - dotsJump >= 1 ? activePage - dotsJump : 1) : setPage(activePage + dotsJump <= total ? activePage + dotsJump : total),
                   children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(import_shared_icons.EllipsisIcon, { className: slots == null ? void 0 : slots.ellipsis({ class: classNames == null ? void 0 : classNames.ellipsis }) }),
-                    /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(
+                    /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(import_shared_icons.EllipsisIcon, { className: slots == null ? void 0 : slots.ellipsis({ class: classNames == null ? void 0 : classNames.ellipsis }) }),
+                    /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(
                       import_shared_icons.ForwardIcon,
                       {
                         className: slots == null ? void 0 : slots.forwardIcon({ class: classNames == null ? void 0 : classNames.forwardIcon }),
@@ -111310,8 +111335,8 @@
             renderNextItem
           ]
         );
-        return /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(Component2, { ...getBaseProps(), children: /* @__PURE__ */ (0, import_jsx_runtime32.jsxs)("ul", { ...getWrapperProps(), children: [
-          !disableCursorAnimation && !disableAnimation && /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(pagination_cursor_default, { ...getCursorProps() }),
+        return /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(Component2, { ...getBaseProps(), children: /* @__PURE__ */ (0, import_jsx_runtime36.jsxs)("ul", { ...getWrapperProps(), children: [
+          !disableCursorAnimation && !disableAnimation && /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(pagination_cursor_default, { ...getCursorProps() }),
           range.map(renderItem)
         ] }) });
       });
@@ -111648,7 +111673,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_system2 = require_dist11();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_interactions = require_main17();
@@ -111694,8 +111719,8 @@
         const Component2 = as || "label";
         const domRef = (0, import_react_utils2.useDOMRef)(ref);
         const inputRef = (0, import_react210.useRef)(null);
-        const labelId = (0, import_react75.useId)();
-        const descriptionId = (0, import_react75.useId)();
+        const labelId = (0, import_react80.useId)();
+        const descriptionId = (0, import_react80.useId)();
         const isRequired = (0, import_react210.useMemo)(() => {
           var _a2;
           return (_a2 = groupContext.isRequired) != null ? _a2 : false;
@@ -111749,7 +111774,7 @@
           [color2, size, isDisabled, isInvalid, disableAnimation]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getBaseProps = (0, import_react75.useCallback)(
+        const getBaseProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -111784,7 +111809,7 @@
             otherProps
           ]
         );
-        const getWrapperProps = (0, import_react75.useCallback)(
+        const getWrapperProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -111794,7 +111819,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.wrapper]
         );
-        const getInputProps = (0, import_react75.useCallback)(
+        const getInputProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ref: inputRef,
@@ -111805,7 +111830,7 @@
           },
           [inputProps, focusProps, onChange]
         );
-        const getLabelProps = (0, import_react75.useCallback)(
+        const getLabelProps = (0, import_react80.useCallback)(
           (props2 = {}) => ({
             ...props2,
             id: labelId,
@@ -111813,21 +111838,21 @@
           }),
           [slots, classNames == null ? void 0 : classNames.label, isDisabled, isSelected, isInvalid]
         );
-        const getLabelWrapperProps = (0, import_react75.useCallback)(
+        const getLabelWrapperProps = (0, import_react80.useCallback)(
           (props2 = {}) => ({
             ...props2,
             className: slots.labelWrapper({ class: classNames == null ? void 0 : classNames.labelWrapper })
           }),
           [slots, classNames == null ? void 0 : classNames.labelWrapper]
         );
-        const getControlProps = (0, import_react75.useCallback)(
+        const getControlProps = (0, import_react80.useCallback)(
           (props2 = {}) => ({
             ...props2,
             className: slots.control({ class: classNames == null ? void 0 : classNames.control })
           }),
           [slots, classNames == null ? void 0 : classNames.control]
         );
-        const getDescriptionProps = (0, import_react75.useCallback)(
+        const getDescriptionProps = (0, import_react80.useCallback)(
           (props2 = {}) => ({
             ...props2,
             id: descriptionId,
@@ -111852,7 +111877,7 @@
           getDescriptionProps
         };
       }
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Radio = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -111866,12 +111891,12 @@
           getControlProps,
           getDescriptionProps
         } = useRadio({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(Component2, { ...getBaseProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("input", { ...getInputProps() }),
-          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { ...getWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { ...getControlProps() }) }),
-          /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { ...getLabelWrapperProps(), children: [
-            children && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { ...getLabelProps(), children }),
-            description && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { ...getDescriptionProps(), children: description })
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(Component2, { ...getBaseProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("input", { ...getInputProps() }),
+          /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("span", { ...getWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("span", { ...getControlProps() }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("div", { ...getLabelWrapperProps(), children: [
+            children && /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("span", { ...getLabelProps(), children }),
+            description && /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("span", { ...getDescriptionProps(), children: description })
           ] })
         ] });
       });
@@ -112100,20 +112125,20 @@
         useClipboard: () => useClipboard
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var transformValue2 = (text) => {
         return text.replace(/[\u00A0]/g, " ");
       };
       function useClipboard({ timeout = 2e3 } = {}) {
-        const [error, setError] = (0, import_react75.useState)(null);
-        const [copied, setCopied] = (0, import_react75.useState)(false);
-        const [copyTimeout, setCopyTimeout] = (0, import_react75.useState)(null);
-        const onClearTimeout = (0, import_react75.useCallback)(() => {
+        const [error, setError] = (0, import_react80.useState)(null);
+        const [copied, setCopied] = (0, import_react80.useState)(false);
+        const [copyTimeout, setCopyTimeout] = (0, import_react80.useState)(null);
+        const onClearTimeout = (0, import_react80.useCallback)(() => {
           if (copyTimeout) {
             clearTimeout(copyTimeout);
           }
         }, [copyTimeout]);
-        const handleCopyResult = (0, import_react75.useCallback)(
+        const handleCopyResult = (0, import_react80.useCallback)(
           (value) => {
             onClearTimeout();
             setCopyTimeout(setTimeout(() => setCopied(false), timeout));
@@ -112121,7 +112146,7 @@
           },
           [onClearTimeout, timeout]
         );
-        const copy = (0, import_react75.useCallback)(
+        const copy = (0, import_react80.useCallback)(
           (valueToCopy) => {
             if ("clipboard" in navigator) {
               const transformedValue = typeof valueToCopy === "string" ? transformValue2(valueToCopy) : valueToCopy;
@@ -112132,7 +112157,7 @@
           },
           [handleCopyResult]
         );
-        const reset = (0, import_react75.useCallback)(() => {
+        const reset = (0, import_react80.useCallback)(() => {
           setCopied(false);
           setError(null);
           onClearTimeout();
@@ -114294,14 +114319,14 @@
         ]);
         let moveProps = (0, $cvDGj$react.useMemo)(() => {
           let moveProps2 = {};
-          let start2 = () => {
+          let start3 = () => {
             (0, $f7e14e656343df57$exports.disableTextSelection)();
             state.current.didMove = false;
           };
           if (typeof PointerEvent === "undefined" && false) {
             moveProps2.onMouseDown = (e) => {
               if (e.button === 0) {
-                start2();
+                start3();
                 e.stopPropagation();
                 e.preventDefault();
                 state.current.lastPosition = {
@@ -114314,7 +114339,7 @@
             moveProps2.onTouchStart = (e) => {
               if (e.changedTouches.length === 0 || state.current.id != null) return;
               let { pageX, pageY, identifier } = e.changedTouches[0];
-              start2();
+              start3();
               e.stopPropagation();
               e.preventDefault();
               state.current.lastPosition = {
@@ -114326,7 +114351,7 @@
             };
           } else moveProps2.onPointerDown = (e) => {
             if (e.button === 0 && state.current.id == null) {
-              start2();
+              start3();
               e.stopPropagation();
               e.preventDefault();
               state.current.lastPosition = {
@@ -114338,7 +114363,7 @@
             }
           };
           let triggerKeyboardMove = (e, deltaX, deltaY) => {
-            start2();
+            start3();
             move(e, "keyboard", deltaX, deltaY);
             end(e, "keyboard");
           };
@@ -115430,7 +115455,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_focus2 = require_main36();
       var import_interactions = require_main35();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var visibleOverlays = [];
       function useAriaOverlay(props, ref) {
         const {
@@ -115442,7 +115467,7 @@
           shouldCloseOnBlur,
           shouldCloseOnInteractOutside
         } = props;
-        (0, import_react75.useEffect)(() => {
+        (0, import_react80.useEffect)(() => {
           if (isOpen && !visibleOverlays.includes(ref)) {
             visibleOverlays.push(ref);
             return () => {
@@ -115572,7 +115597,7 @@
       var import_shared_utils2 = require_dist2();
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_aria_utils2 = require_dist13();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_tooltip = require_main33();
       var import_tooltip2 = require_main34();
       var import_overlays = require_main9();
@@ -115636,9 +115661,9 @@
         });
         const triggerRef = (0, import_react210.useRef)(null);
         const overlayRef = (0, import_react210.useRef)(null);
-        const tooltipId = (0, import_react75.useId)();
+        const tooltipId = (0, import_react80.useId)();
         const isOpen = state.isOpen && !isDisabled;
-        (0, import_react75.useImperativeHandle)(
+        (0, import_react80.useImperativeHandle)(
           ref,
           () => (
             // @ts-ignore
@@ -115772,7 +115797,7 @@
           getTooltipProps
         };
       }
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var domAnimation2 = () => Promise.resolve().then(() => (init_dist(), dist_exports)).then((res) => res.default);
       var Tooltip = (0, import_system2.forwardRef)((props, ref) => {
         var _a;
@@ -115797,18 +115822,18 @@
           const childrenNum = import_react310.Children.count(children);
           if (childrenNum !== 1) throw new Error();
           if (!(0, import_react310.isValidElement)(children)) {
-            trigger = /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("p", { ...getTriggerProps(), children });
+            trigger = /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("p", { ...getTriggerProps(), children });
           } else {
             const child = children;
             const childRef = (_a = child.props.ref) != null ? _a : child.ref;
             trigger = (0, import_react310.cloneElement)(child, getTriggerProps(child.props, childRef));
           }
         } catch {
-          trigger = /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", {});
+          trigger = /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("span", {});
           (0, import_shared_utils2.warn)("Tooltip must have only one child node. Please, check your code.");
         }
         const { ref: tooltipRef, id: id4, style: style2, ...otherTooltipProps } = getTooltipProps();
-        const animatedContent = /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ref: tooltipRef, id: id4, style: style2, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+        const animatedContent = /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("div", { ref: tooltipRef, id: id4, style: style2, children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
           import_framer_motion2.m.div,
           {
             animate: "enter",
@@ -115819,13 +115844,13 @@
             style: {
               ...(0, import_aria_utils2.getTransformOrigins)(placement)
             },
-            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(Component2, { ...getTooltipContentProps(), children: content })
+            children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(Component2, { ...getTooltipContentProps(), children: content })
           },
           `${id4}-tooltip-inner`
         ) }, `${id4}-tooltip-content`);
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(import_jsx_runtime31.Fragment, { children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(import_jsx_runtime35.Fragment, { children: [
           trigger,
-          disableAnimation ? isOpen && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_overlays2.OverlayContainer, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ref: tooltipRef, id: id4, style: style2, ...otherTooltipProps, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(Component2, { ...getTooltipContentProps(), children: content }) }) }) : /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion2.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion2.AnimatePresence, { children: isOpen && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_overlays2.OverlayContainer, { portalContainer, children: animatedContent }) }) })
+          disableAnimation ? isOpen && /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_overlays2.OverlayContainer, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("div", { ref: tooltipRef, id: id4, style: style2, ...otherTooltipProps, children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(Component2, { ...getTooltipContentProps(), children: content }) }) }) : /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_framer_motion2.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_framer_motion2.AnimatePresence, { children: isOpen && /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_overlays2.OverlayContainer, { portalContainer, children: animatedContent }) }) })
         ] });
       });
       Tooltip.displayName = "HeroUI.Tooltip";
@@ -115867,7 +115892,7 @@
       var import_shared_utils = require_dist2();
       var import_use_clipboard = require_dist44();
       var import_focus2 = require_main18();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useSnippet(originalProps) {
         var _a, _b, _c, _d;
         const globalContext = (0, import_system.useProviderContext)();
@@ -115905,26 +115930,26 @@
           ...userTooltipProps
         };
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const preRef = (0, import_react75.useRef)(null);
+        const preRef = (0, import_react80.useRef)(null);
         const { copy, copied } = (0, import_use_clipboard.useClipboard)({ timeout });
         const isMultiLine = children && Array.isArray(children);
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)({
           autoFocus
         });
-        const slots = (0, import_react75.useMemo)(
+        const slots = (0, import_react80.useMemo)(
           () => (0, import_theme.snippet)({
             ...variantProps2,
             disableAnimation
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation]
         );
-        const symbolBefore = (0, import_react75.useMemo)(() => {
+        const symbolBefore = (0, import_react80.useMemo)(() => {
           if (!symbol || typeof symbol !== "string") return symbol;
           const str = symbol.trim();
           return str ? `${str} ` : "";
         }, [symbol]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getSnippetProps = (0, import_react75.useCallback)(
+        const getSnippetProps = (0, import_react80.useCallback)(
           () => ({
             className: slots.base({
               class: baseStyles
@@ -115935,7 +115960,7 @@
           }),
           [slots, baseStyles, isMultiLine, otherProps]
         );
-        const onCopy = (0, import_react75.useCallback)(() => {
+        const onCopy = (0, import_react80.useCallback)(() => {
           var _a2;
           if (disableCopy) {
             return;
@@ -115965,7 +115990,7 @@
           isIconOnly: true,
           ...userButtonProps
         };
-        const getCopyButtonProps = (0, import_react75.useCallback)(
+        const getCopyButtonProps = (0, import_react80.useCallback)(
           () => ({
             ...copyButtonProps,
             "data-copied": (0, import_shared_utils.dataAttr)(copied),
@@ -116013,7 +116038,7 @@
       var import_shared_icons = require_dist17();
       var import_button = require_dist28();
       var import_shared_utils2 = require_dist2();
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Snippet = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -116023,8 +116048,8 @@
           slots,
           classNames,
           copied,
-          copyIcon = /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_shared_icons.CopyLinearIcon, {}),
-          checkIcon = /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_shared_icons.CheckLinearIcon, {}),
+          copyIcon = /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_shared_icons.CopyLinearIcon, {}),
+          checkIcon = /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_shared_icons.CheckLinearIcon, {}),
           symbolBefore,
           disableCopy,
           disableTooltip,
@@ -116037,7 +116062,7 @@
           getCopyButtonProps
         } = useSnippet({ ...props, ref });
         const TooltipContent = (0, import_react210.useCallback)(
-          ({ children: children2 }) => /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_tooltip.Tooltip, { ...tooltipProps, isDisabled: copied || tooltipProps.isDisabled, children: children2 }),
+          ({ children: children2 }) => /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_tooltip.Tooltip, { ...tooltipProps, isDisabled: copied || tooltipProps.isDisabled, children: children2 }),
           [(0, import_shared_utils2.objectToDeps)(tooltipProps)]
         );
         const contents = (0, import_react210.useMemo)(() => {
@@ -116046,14 +116071,14 @@
           }
           const clonedCheckIcon = checkIcon && (0, import_react210.cloneElement)(checkIcon, { className: slots.checkIcon() });
           const clonedCopyIcon = copyIcon && (0, import_react210.cloneElement)(copyIcon, { className: slots.copyIcon() });
-          const copyButton = /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(import_button.Button, { ...getCopyButtonProps(), children: [
+          const copyButton = /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(import_button.Button, { ...getCopyButtonProps(), children: [
             clonedCheckIcon,
             clonedCopyIcon
           ] });
           if (disableTooltip) {
             return copyButton;
           }
-          return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(TooltipContent, { children: copyButton });
+          return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(TooltipContent, { children: copyButton });
         }, [
           slots,
           classNames == null ? void 0 : classNames.copyButton,
@@ -116068,17 +116093,17 @@
         ]);
         const preContent = (0, import_react210.useMemo)(() => {
           if (isMultiLine && children && Array.isArray(children)) {
-            return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children: children.map((t, index3) => /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("pre", { className: slots.pre({ class: classNames == null ? void 0 : classNames.pre }), children: [
-              !hideSymbol && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { className: slots.symbol({ class: classNames == null ? void 0 : classNames.symbol }), children: symbolBefore }),
+            return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("div", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children: children.map((t, index3) => /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("pre", { className: slots.pre({ class: classNames == null ? void 0 : classNames.pre }), children: [
+              !hideSymbol && /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("span", { className: slots.symbol({ class: classNames == null ? void 0 : classNames.symbol }), children: symbolBefore }),
               t
             ] }, `${index3}-${t}`)) });
           }
-          return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("pre", { ref: preRef, className: slots.pre({ class: classNames == null ? void 0 : classNames.pre }), children: [
-            !hideSymbol && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { className: slots.symbol({ class: classNames == null ? void 0 : classNames.symbol }), children: symbolBefore }),
+          return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("pre", { ref: preRef, className: slots.pre({ class: classNames == null ? void 0 : classNames.pre }), children: [
+            !hideSymbol && /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("span", { className: slots.symbol({ class: classNames == null ? void 0 : classNames.symbol }), children: symbolBefore }),
             children
           ] });
         }, [children, hideSymbol, isMultiLine, symbolBefore, classNames == null ? void 0 : classNames.pre, slots]);
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(Component2, { ref: domRef, ...getSnippetProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(Component2, { ref: domRef, ...getSnippetProps(), children: [
           preContent,
           contents
         ] });
@@ -116155,7 +116180,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist11();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
       var import_use_safe_layout_effect = require_dist21();
@@ -116190,10 +116215,10 @@
           ...otherProps
         } = props;
         const Component2 = as || "label";
-        const domRef = (0, import_react75.useRef)(null);
-        const inputRef = (0, import_react75.useRef)(null);
+        const domRef = (0, import_react80.useRef)(null);
+        const inputRef = (0, import_react80.useRef)(null);
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        const labelId = (0, import_react75.useId)();
+        const labelId = (0, import_react80.useId)();
         const ariaSwitchProps = (0, import_react210.useMemo)(() => {
           const ariaLabel = otherProps["aria-label"] || typeof children === "string" ? children : void 0;
           return {
@@ -116260,7 +116285,7 @@
             "data-pressed": (0, import_shared_utils.dataAttr)(pressed)
           };
         };
-        const getWrapperProps = (0, import_react75.useCallback)(
+        const getWrapperProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -116279,14 +116304,14 @@
             onChange: (0, import_shared_utils.chain)(onChange, inputProps.onChange)
           };
         };
-        const getThumbProps = (0, import_react75.useCallback)(
+        const getThumbProps = (0, import_react80.useCallback)(
           (props2 = {}) => ({
             ...props2,
             className: slots.thumb({ class: (0, import_theme.cn)(classNames == null ? void 0 : classNames.thumb, props2 == null ? void 0 : props2.className) })
           }),
           [slots, classNames == null ? void 0 : classNames.thumb]
         );
-        const getLabelProps = (0, import_react75.useCallback)(
+        const getLabelProps = (0, import_react80.useCallback)(
           (props2 = {}) => ({
             ...props2,
             id: labelId,
@@ -116294,7 +116319,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.label, isDisabled, isSelected]
         );
-        const getThumbIconProps = (0, import_react75.useCallback)(
+        const getThumbIconProps = (0, import_react80.useCallback)(
           (props2 = {
             includeStateProps: false
           }) => (0, import_shared_utils.mergeProps)(
@@ -116309,7 +116334,7 @@
           ),
           [slots, classNames == null ? void 0 : classNames.thumbIcon, isSelected]
         );
-        const getStartContentProps = (0, import_react75.useCallback)(
+        const getStartContentProps = (0, import_react80.useCallback)(
           (props2 = {}) => ({
             width: "1em",
             height: "1em",
@@ -116318,7 +116343,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.startContent, isSelected]
         );
-        const getEndContentProps = (0, import_react75.useCallback)(
+        const getEndContentProps = (0, import_react80.useCallback)(
           (props2 = {}) => ({
             width: "1em",
             height: "1em",
@@ -116352,8 +116377,8 @@
           getEndContentProps
         };
       }
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var Switch = (0, import_system2.forwardRef)((props, ref) => {
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var Switch2 = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
           children,
@@ -116372,18 +116397,18 @@
         const clonedThumbIcon = typeof thumbIcon === "function" ? thumbIcon(getThumbIconProps({ includeStateProps: true })) : thumbIcon && (0, import_react310.cloneElement)(thumbIcon, getThumbIconProps());
         const clonedStartContent = startContent && (0, import_react310.cloneElement)(startContent, getStartContentProps());
         const clonedEndContent = endContent && (0, import_react310.cloneElement)(endContent, getEndContentProps());
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(Component2, { ...getBaseProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("input", { ...getInputProps() }),
-          /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("span", { ...getWrapperProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(Component2, { ...getBaseProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("input", { ...getInputProps() }),
+          /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("span", { ...getWrapperProps(), children: [
             startContent && clonedStartContent,
-            /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { ...getThumbProps(), children: thumbIcon && clonedThumbIcon }),
+            /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("span", { ...getThumbProps(), children: thumbIcon && clonedThumbIcon }),
             endContent && clonedEndContent
           ] }),
-          children && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { ...getLabelProps(), children })
+          children && /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("span", { ...getLabelProps(), children })
         ] });
       });
-      Switch.displayName = "HeroUI.Switch";
-      var switch_default = Switch;
+      Switch2.displayName = "HeroUI.Switch";
+      var switch_default = Switch2;
     }
   });
 
@@ -116415,7 +116440,7 @@
         useUser: () => useUser
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
@@ -116441,12 +116466,12 @@
         const shouldFilterDOMProps = typeof Component2 === "string";
         const domRef = (0, import_react_utils2.useDOMRef)(ref);
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)({});
-        const canBeFocused = (0, import_react75.useMemo)(() => {
+        const canBeFocused = (0, import_react80.useMemo)(() => {
           return isFocusable || as === "button";
         }, [isFocusable, as]);
-        const slots = (0, import_react75.useMemo)(() => (0, import_theme.user)(), []);
+        const slots = (0, import_react80.useMemo)(() => (0, import_theme.user)(), []);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getUserProps = (0, import_react75.useCallback)(
+        const getUserProps = (0, import_react80.useCallback)(
           () => ({
             ref: domRef,
             tabIndex: canBeFocused ? 0 : -1,
@@ -116478,17 +116503,17 @@
       }
       var import_system = require_dist11();
       var import_avatar = require_dist23();
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var User = (0, import_system.forwardRef)((props, ref) => {
         const { Component: Component2, name, slots, classNames, description, avatarProps, getUserProps } = useUser({
           ...props,
           ref
         });
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(Component2, { ...getUserProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_avatar.Avatar, { ...avatarProps }),
-          /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { className: slots.name({ class: classNames == null ? void 0 : classNames.name }), children: name }),
-            /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { className: slots.description({ class: classNames == null ? void 0 : classNames.description }), children: description })
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(Component2, { ...getUserProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_avatar.Avatar, { ...avatarProps }),
+          /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("span", { className: slots.name({ class: classNames == null ? void 0 : classNames.name }), children: name }),
+            /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("span", { className: slots.description({ class: classNames == null ? void 0 : classNames.description }), children: description })
           ] })
         ] });
       });
@@ -116523,12 +116548,12 @@
         useIsMounted: () => useIsMounted2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useIsMounted2(props = {}) {
         const { rerender = false, delay: delay2 = 0 } = props;
-        const isMountedRef = (0, import_react75.useRef)(false);
-        const [isMounted, setIsMounted] = (0, import_react75.useState)(false);
-        (0, import_react75.useEffect)(() => {
+        const isMountedRef = (0, import_react80.useRef)(false);
+        const [isMounted, setIsMounted] = (0, import_react80.useState)(false);
+        (0, import_react80.useEffect)(() => {
           isMountedRef.current = true;
           let timer = null;
           if (rerender) {
@@ -116550,7 +116575,7 @@
             }
           };
         }, [rerender]);
-        return [(0, import_react75.useCallback)(() => isMountedRef.current, []), isMounted];
+        return [(0, import_react80.useCallback)(() => isMountedRef.current, []), isMounted];
       }
     }
   });
@@ -116645,9 +116670,9 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_is_mounted2 = require_dist50();
-      var import_progress2 = require_dist51();
+      var import_progress3 = require_dist51();
       function useProgress(originalProps) {
         var _a, _b;
         const globalContext = (0, import_system.useProviderContext)();
@@ -116678,7 +116703,7 @@
         });
         const isIndeterminate = originalProps.isIndeterminate;
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        const { progressBarProps, labelProps } = (0, import_progress2.useProgressBar)({
+        const { progressBarProps, labelProps } = (0, import_progress3.useProgressBar)({
           id: id4,
           label,
           value,
@@ -116690,7 +116715,7 @@
           "aria-labelledby": originalProps["aria-labelledby"],
           "aria-label": originalProps["aria-label"]
         });
-        const slots = (0, import_react75.useMemo)(
+        const slots = (0, import_react80.useMemo)(
           () => (0, import_theme.progress)({
             ...variantProps2,
             disableAnimation
@@ -116698,11 +116723,11 @@
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation]
         );
         const selfMounted = disableAnimation ? true : isMounted;
-        const percentage = (0, import_react75.useMemo)(
+        const percentage = (0, import_react80.useMemo)(
           () => isIndeterminate || !selfMounted ? void 0 : (0, import_shared_utils.clampPercentage)((value - minValue) / (maxValue - minValue) * 100),
           [selfMounted, isIndeterminate, value, minValue, maxValue]
         );
-        const getProgressBarProps = (0, import_react75.useCallback)(
+        const getProgressBarProps = (0, import_react80.useCallback)(
           (props2 = {}) => ({
             ref: domRef,
             "data-indeterminate": (0, import_shared_utils.dataAttr)(isIndeterminate),
@@ -116720,7 +116745,7 @@
             otherProps
           ]
         );
-        const getLabelProps = (0, import_react75.useCallback)(
+        const getLabelProps = (0, import_react80.useCallback)(
           (props2 = {}) => ({
             className: slots.label({ class: classNames == null ? void 0 : classNames.label }),
             ...(0, import_shared_utils.mergeProps)(labelProps, props2)
@@ -116739,7 +116764,7 @@
           getLabelProps
         };
       }
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Progress = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -116753,12 +116778,12 @@
         } = useProgress({ ...props, ref });
         const progressBarProps = getProgressBarProps();
         const shouldShowLabelWrapper = label || showValueLabel;
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(Component2, { ...progressBarProps, children: [
-          shouldShowLabelWrapper ? /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { className: slots.labelWrapper({ class: classNames == null ? void 0 : classNames.labelWrapper }), children: [
-            label && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { ...getLabelProps(), children: label }),
-            showValueLabel && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { className: slots.value({ class: classNames == null ? void 0 : classNames.value }), children: progressBarProps["aria-valuetext"] })
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(Component2, { ...progressBarProps, children: [
+          shouldShowLabelWrapper ? /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("div", { className: slots.labelWrapper({ class: classNames == null ? void 0 : classNames.labelWrapper }), children: [
+            label && /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("span", { ...getLabelProps(), children: label }),
+            showValueLabel && /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("span", { className: slots.value({ class: classNames == null ? void 0 : classNames.value }), children: progressBarProps["aria-valuetext"] })
           ] }) : null,
-          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { className: slots.track({ class: classNames == null ? void 0 : classNames.track }), children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("div", { className: slots.track({ class: classNames == null ? void 0 : classNames.track }), children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
             "div",
             {
               className: slots.indicator({ class: classNames == null ? void 0 : classNames.indicator }),
@@ -117732,7 +117757,7 @@
       var import_interactions = require_main17();
       var import_shared_utils = require_dist2();
       var import_utils8 = require_main38();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_textfield = require_main40();
       var import_form = require_dist33();
       function useInput(originalProps) {
@@ -117762,13 +117787,13 @@
           },
           ...otherProps
         } = props;
-        const handleValueChange = (0, import_react75.useCallback)(
+        const handleValueChange = (0, import_react80.useCallback)(
           (value) => {
             onValueChange(value != null ? value : "");
           },
           [onValueChange]
         );
-        const [isFocusWithin, setFocusWithin] = (0, import_react75.useState)(false);
+        const [isFocusWithin, setFocusWithin] = (0, import_react80.useState)(false);
         const Component2 = as || "div";
         const disableAnimation = (_c = (_b = originalProps.disableAnimation) != null ? _b : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _c : false;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
@@ -117788,7 +117813,7 @@
         const isHiddenType = type === "hidden";
         const isMultiline = originalProps.isMultiline;
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className, isFilled ? "is-filled" : "");
-        const handleClear = (0, import_react75.useCallback)(() => {
+        const handleClear = (0, import_react80.useCallback)(() => {
           var _a2;
           if (isFileTypeInput) {
             domRef.current.value = "";
@@ -117865,7 +117890,7 @@
         const hasStartContent = !!startContent;
         const isLabelOutside = shouldLabelBeOutside ? isOutsideLeft || isOutsideTop || hasPlaceholder || labelPlacement === "outside" && hasStartContent : false;
         const isLabelOutsideAsPlaceholder = labelPlacement === "outside" && !hasPlaceholder && !hasStartContent;
-        const slots = (0, import_react75.useMemo)(
+        const slots = (0, import_react80.useMemo)(
           () => (0, import_theme.input)({
             ...variantProps2,
             isInvalid,
@@ -117882,7 +117907,7 @@
             disableAnimation
           ]
         );
-        const getBaseProps = (0, import_react75.useCallback)(
+        const getBaseProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ref: baseDomRef,
@@ -117935,7 +117960,7 @@
             originalProps.isDisabled
           ]
         );
-        const getLabelProps = (0, import_react75.useCallback)(
+        const getLabelProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "label",
@@ -117945,7 +117970,7 @@
           },
           [slots, isLabelHovered, labelProps, classNames == null ? void 0 : classNames.label]
         );
-        const handleKeyDown = (0, import_react75.useCallback)(
+        const handleKeyDown = (0, import_react80.useCallback)(
           (e) => {
             if (e.key === "Escape" && inputValue && (isClearable || onClear) && !originalProps.isReadOnly) {
               setInputValue("");
@@ -117954,7 +117979,7 @@
           },
           [inputValue, setInputValue, onClear, isClearable, originalProps.isReadOnly]
         );
-        const getInputProps = (0, import_react75.useCallback)(
+        const getInputProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "input",
@@ -118004,7 +118029,7 @@
             handleKeyDown
           ]
         );
-        const getInputWrapperProps = (0, import_react75.useCallback)(
+        const getInputWrapperProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ref: inputWrapperRef,
@@ -118037,7 +118062,7 @@
             classNames == null ? void 0 : classNames.inputWrapper
           ]
         );
-        const getInnerWrapperProps = (0, import_react75.useCallback)(
+        const getInnerWrapperProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -118055,7 +118080,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.innerWrapper]
         );
-        const getMainWrapperProps = (0, import_react75.useCallback)(
+        const getMainWrapperProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -118067,7 +118092,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.mainWrapper]
         );
-        const getHelperWrapperProps = (0, import_react75.useCallback)(
+        const getHelperWrapperProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -118079,7 +118104,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getDescriptionProps = (0, import_react75.useCallback)(
+        const getDescriptionProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -118090,7 +118115,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.description]
         );
-        const getErrorMessageProps = (0, import_react75.useCallback)(
+        const getErrorMessageProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -118101,7 +118126,7 @@
           },
           [slots, errorMessageProps, classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getClearButtonProps = (0, import_react75.useCallback)(
+        const getClearButtonProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -118152,7 +118177,7 @@
           getClearButtonProps
         };
       }
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Input = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -118179,10 +118204,10 @@
           getErrorMessageProps,
           getClearButtonProps
         } = useInput({ ...props, ref });
-        const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("label", { ...getLabelProps(), children: label }) : null;
+        const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("label", { ...getLabelProps(), children: label }) : null;
         const end = (0, import_react210.useMemo)(() => {
           if (isClearable) {
-            return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("button", { ...getClearButtonProps(), children: endContent || /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_shared_icons.CloseFilledIcon, {}) });
+            return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("button", { ...getClearButtonProps(), children: endContent || /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_shared_icons.CloseFilledIcon, {}) });
           }
           return endContent;
         }, [isClearable, getClearButtonProps]);
@@ -118190,7 +118215,7 @@
           const shouldShowError = isInvalid && errorMessage;
           const hasContent = shouldShowError || description;
           if (!hasHelper || !hasContent) return null;
-          return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ...getHelperWrapperProps(), children: shouldShowError ? /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ...getErrorMessageProps(), children: errorMessage }) : /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ...getDescriptionProps(), children: description }) });
+          return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("div", { ...getHelperWrapperProps(), children: shouldShowError ? /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("div", { ...getErrorMessageProps(), children: errorMessage }) : /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("div", { ...getDescriptionProps(), children: description }) });
         }, [
           hasHelper,
           isInvalid,
@@ -118201,24 +118226,24 @@
           getDescriptionProps
         ]);
         const innerWrapper = (0, import_react210.useMemo)(() => {
-          return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { ...getInnerWrapperProps(), children: [
+          return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("div", { ...getInnerWrapperProps(), children: [
             startContent,
-            /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("input", { ...getInputProps() }),
+            /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("input", { ...getInputProps() }),
             end
           ] });
         }, [startContent, end, getInputProps, getInnerWrapperProps]);
         const mainWrapper = (0, import_react210.useMemo)(() => {
           if (shouldLabelBeOutside) {
-            return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { ...getMainWrapperProps(), children: [
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { ...getInputWrapperProps(), children: [
+            return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("div", { ...getMainWrapperProps(), children: [
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("div", { ...getInputWrapperProps(), children: [
                 !isOutsideLeft && !isOutsideTop ? labelContent : null,
                 innerWrapper
               ] }),
               helperWrapper
             ] });
           }
-          return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(import_jsx_runtime31.Fragment, { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { ...getInputWrapperProps(), children: [
+          return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(import_jsx_runtime35.Fragment, { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("div", { ...getInputWrapperProps(), children: [
               labelContent,
               innerWrapper
             ] }),
@@ -118237,7 +118262,7 @@
           getErrorMessageProps,
           getDescriptionProps
         ]);
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(Component2, { ...getBaseProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(Component2, { ...getBaseProps(), children: [
           isOutsideLeft || isOutsideTop ? labelContent : null,
           mainWrapper
         ] });
@@ -118517,7 +118542,7 @@
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_aria_utils = require_dist13();
       var import_overlays = require_main9();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       var import_use_safe_layout_effect = require_dist21();
       var import_use_aria_overlay = require_dist45();
@@ -118585,7 +118610,7 @@
           if (!updatePositionDeps.length) return;
           updatePosition();
         }, updatePositionDeps);
-        (0, import_react75.useEffect)(() => {
+        (0, import_react80.useEffect)(() => {
           var _a, _b;
           if (state.isOpen && popoverRef.current) {
             if (isNonModal) {
@@ -118822,15 +118847,15 @@
         name: "PopoverContext",
         errorMessage: "usePopoverContext: `context` is undefined. Seems you forgot to wrap all popover components within `<Popover />`"
       });
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Popover = (0, import_system2.forwardRef)((props, ref) => {
         const { children, ...otherProps } = props;
         const context = usePopover({ ...otherProps, ref });
         const [trigger, content] = import_react310.Children.toArray(children);
-        const overlay = /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_overlays4.Overlay, { portalContainer: context.portalContainer, children: content });
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(PopoverProvider, { value: context, children: [
+        const overlay = /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_overlays4.Overlay, { portalContainer: context.portalContainer, children: content });
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(PopoverProvider, { value: context, children: [
           trigger,
-          context.disableAnimation && context.isOpen ? overlay : /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion2.AnimatePresence, { children: context.isOpen ? overlay : null })
+          context.disableAnimation && context.isOpen ? overlay : /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_framer_motion2.AnimatePresence, { children: context.isOpen ? overlay : null })
         ] });
       });
       Popover.displayName = "HeroUI.Popover";
@@ -118874,7 +118899,7 @@
       var import_framer_motion22 = require_cjs4();
       var import_aria_utils3 = require_dist13();
       var import_dialog = require_main42();
-      var import_jsx_runtime32 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime36 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var domAnimation2 = () => Promise.resolve().then(() => (init_dist(), dist_exports)).then((res) => res.default);
       var PopoverContent = (props) => {
         const { as, children, className, ...otherProps } = props;
@@ -118899,19 +118924,19 @@
           ...otherProps
         });
         const Component2 = as || OverlayComponent || "div";
-        const content = children && /* @__PURE__ */ (0, import_jsx_runtime32.jsxs)(import_jsx_runtime32.Fragment, { children: [
-          !isNonModal && /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(import_overlays5.DismissButton, { onDismiss: onClose }),
-          /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(Component2, { ...dialogProps, children: /* @__PURE__ */ (0, import_jsx_runtime32.jsx)("div", { ...getContentProps({ className }), children: typeof children === "function" ? children(titleProps) : children }) }),
-          /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(import_overlays5.DismissButton, { onDismiss: onClose })
+        const content = children && /* @__PURE__ */ (0, import_jsx_runtime36.jsxs)(import_jsx_runtime36.Fragment, { children: [
+          !isNonModal && /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(import_overlays5.DismissButton, { onDismiss: onClose }),
+          /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(Component2, { ...dialogProps, children: /* @__PURE__ */ (0, import_jsx_runtime36.jsx)("div", { ...getContentProps({ className }), children: typeof children === "function" ? children(titleProps) : children }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(import_overlays5.DismissButton, { onDismiss: onClose })
         ] });
         const backdropContent = (0, import_react510.useMemo)(() => {
           if (backdrop === "transparent") {
             return null;
           }
           if (disableAnimation) {
-            return /* @__PURE__ */ (0, import_jsx_runtime32.jsx)("div", { ...getBackdropProps() });
+            return /* @__PURE__ */ (0, import_jsx_runtime36.jsx)("div", { ...getBackdropProps() });
           }
-          return /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(import_framer_motion22.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(import_framer_motion22.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(
             import_framer_motion22.m.div,
             {
               animate: "enter",
@@ -118923,7 +118948,7 @@
           ) });
         }, [backdrop, disableAnimation, getBackdropProps]);
         const style2 = placement ? (0, import_aria_utils3.getTransformOrigins)(placement === "center" ? "top" : placement) : void 0;
-        const contents = /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(import_jsx_runtime32.Fragment, { children: disableAnimation ? content : /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(import_framer_motion22.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(
+        const contents = /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(import_jsx_runtime36.Fragment, { children: disableAnimation ? content : /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(import_framer_motion22.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(
           import_framer_motion22.m.div,
           {
             animate: "enter",
@@ -118935,7 +118960,7 @@
             children: content
           }
         ) }) });
-        return /* @__PURE__ */ (0, import_jsx_runtime32.jsxs)("div", { ...getPopoverProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime36.jsxs)("div", { ...getPopoverProps(), children: [
           backdropContent,
           contents
         ] });
@@ -120335,7 +120360,7 @@
       var import_theme = require_dist12();
       var import_tree = require_main12();
       var import_react_utils = require_dist10();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme2 = require_dist12();
       function useMenu(props) {
         var _a;
@@ -120368,7 +120393,7 @@
         const innerState = (0, import_tree.useTreeState)({ ...otherProps, ...userMenuProps, children });
         const state = propState || innerState;
         const { menuProps } = (0, import_menu.useMenu)({ ...otherProps, ...userMenuProps, onAction }, state, domRef);
-        const slots = (0, import_react75.useMemo)(() => (0, import_theme.menu)({ className }), [className]);
+        const slots = (0, import_react80.useMemo)(() => (0, import_theme.menu)({ className }), [className]);
         const baseStyles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.base, className);
         const getBaseProps = (props2 = {}) => {
           return {
@@ -120602,10 +120627,10 @@
           getSelectedIconProps
         };
       }
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       function MenuSelectedIcon(props) {
         const { isSelected, disableAnimation, ...otherProps } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
           "svg",
           {
             "aria-hidden": "true",
@@ -120613,7 +120638,7 @@
             role: "presentation",
             viewBox: "0 0 17 18",
             ...otherProps,
-            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
               "polyline",
               {
                 fill: "none",
@@ -120676,7 +120701,7 @@
       };
       MenuItem.displayName = "HeroUI.MenuItem";
       var menu_item_default = MenuItem;
-      var import_jsx_runtime32 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime36 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var MenuSection = (0, import_system3.forwardRef)(
         ({
           item,
@@ -120707,14 +120732,14 @@
             heading: item.rendered,
             "aria-label": item["aria-label"]
           });
-          return /* @__PURE__ */ (0, import_jsx_runtime32.jsxs)(
+          return /* @__PURE__ */ (0, import_jsx_runtime36.jsxs)(
             Component2,
             {
               "data-slot": "base",
               ...(0, import_shared_utils2.mergeProps)(itemProps, otherProps),
               className: slots.base({ class: baseStyles }),
               children: [
-                item.rendered && /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(
+                item.rendered && /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(
                   "span",
                   {
                     ...headingProps,
@@ -120723,7 +120748,7 @@
                     children: item.rendered
                   }
                 ),
-                /* @__PURE__ */ (0, import_jsx_runtime32.jsxs)(
+                /* @__PURE__ */ (0, import_jsx_runtime36.jsxs)(
                   "ul",
                   {
                     ...groupProps,
@@ -120733,7 +120758,7 @@
                     children: [
                       [...item.childNodes].map((node) => {
                         const { key: nodeKey, props: nodeProps } = node;
-                        let menuItem2 = /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(
+                        let menuItem2 = /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(
                           menu_item_default,
                           {
                             classNames: itemClasses,
@@ -120754,7 +120779,7 @@
                         }
                         return menuItem2;
                       }),
-                      showDivider && /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(
+                      showDivider && /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(
                         import_divider.Divider,
                         {
                           as: "li",
@@ -121026,7 +121051,7 @@
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
       var import_react_utils2 = require_dist10();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var getMenuItem = (props, key) => {
         if (props) {
           const mergedChildren = Array.isArray(props.children) ? props.children : [...(props == null ? void 0 : props.items) || []];
@@ -121070,10 +121095,10 @@
           ...otherProps
         } = props;
         const Component2 = as || "div";
-        const triggerRef = (0, import_react75.useRef)(null);
+        const triggerRef = (0, import_react80.useRef)(null);
         const menuTriggerRef = triggerRefProp || triggerRef;
-        const menuRef = (0, import_react75.useRef)(null);
-        const popoverRef = (0, import_react75.useRef)(null);
+        const menuRef = (0, import_react80.useRef)(null);
+        const popoverRef = (0, import_react80.useRef)(null);
         const state = (0, import_menu.useMenuTriggerState)({
           trigger,
           isOpen,
@@ -121090,7 +121115,7 @@
           state,
           menuTriggerRef
         );
-        const styles = (0, import_react75.useMemo)(
+        const styles = (0, import_react80.useMemo)(
           () => (0, import_theme.dropdown)({
             className
           }),
@@ -121153,12 +121178,12 @@
           getMenuTriggerProps
         };
       }
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Dropdown = (props) => {
         const { children, ...otherProps } = props;
         const context = useDropdown(otherProps);
         const [menuTrigger, menu] = import_react210.default.Children.toArray(children);
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(DropdownProvider, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(import_popover.Popover, { ...context.getPopoverProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(DropdownProvider, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(import_popover.Popover, { ...context.getPopoverProps(), children: [
           menuTrigger,
           menu
         ] }) });
@@ -121178,10 +121203,10 @@
       var import_focus2 = require_main18();
       var import_system2 = require_dist11();
       var import_menu3 = require_dist56();
-      var import_jsx_runtime32 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime36 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var DropdownMenu = (0, import_system2.forwardRef)(function DropdownMenu2(props, ref) {
         const { getMenuProps } = useDropdownContext();
-        return /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(import_popover3.PopoverContent, { children: /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(import_focus2.FocusScope, { contain: true, restoreFocus: true, children: /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(import_menu3.Menu, { ...getMenuProps(props, ref) }) }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(import_popover3.PopoverContent, { children: /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(import_focus2.FocusScope, { contain: true, restoreFocus: true, children: /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(import_menu3.Menu, { ...getMenuProps(props, ref) }) }) });
       });
       var dropdown_menu_default = DropdownMenu;
     }
@@ -121217,7 +121242,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist11();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
@@ -121302,7 +121327,7 @@
             }
           };
         };
-        const getWrapperProps = (0, import_react75.useCallback)(() => {
+        const getWrapperProps = (0, import_react80.useCallback)(() => {
           const fallbackStyle = showFallback ? {
             backgroundImage: `url(${fallbackSrc})`
           } : {};
@@ -121314,7 +121339,7 @@
             }
           };
         }, [slots, showFallback, fallbackSrc, classNames == null ? void 0 : classNames.wrapper, w]);
-        const getBlurredImgProps = (0, import_react75.useCallback)(() => {
+        const getBlurredImgProps = (0, import_react80.useCallback)(() => {
           return {
             src,
             "aria-hidden": (0, import_shared_utils.dataAttr)(true),
@@ -121337,7 +121362,7 @@
           getBlurredImgProps
         };
       }
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Image2 = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -121356,19 +121381,19 @@
           ...props,
           ref
         });
-        const img = /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(Component2, { ref: domRef, ...getImgProps() });
+        const img = /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(Component2, { ref: domRef, ...getImgProps() });
         if (removeWrapper) {
           return img;
         }
-        const zoomed = /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { className: slots.zoomedWrapper({ class: classNames == null ? void 0 : classNames.zoomedWrapper }), children: img });
+        const zoomed = /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("div", { className: slots.zoomedWrapper({ class: classNames == null ? void 0 : classNames.zoomedWrapper }), children: img });
         if (isBlurred) {
-          return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { ...getWrapperProps(), children: [
+          return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("div", { ...getWrapperProps(), children: [
             isZoomed ? zoomed : img,
             (0, import_react310.cloneElement)(img, getBlurredImgProps())
           ] });
         }
         if (isZoomed || !disableSkeleton || fallbackSrc) {
-          return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { ...getWrapperProps(), children: [
+          return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("div", { ...getWrapperProps(), children: [
             " ",
             isZoomed ? zoomed : img
           ] });
@@ -121408,7 +121433,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_overlays = require_main9();
       var import_utils8 = require_main4();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_aria_overlay = require_dist45();
       function useAriaModalOverlay(props = {
         shouldBlockScroll: true
@@ -121425,7 +121450,7 @@
           isDisabled: !state.isOpen || !props.shouldBlockScroll
         });
         (0, import_overlays.useOverlayFocusContain)();
-        (0, import_react75.useEffect)(() => {
+        (0, import_react80.useEffect)(() => {
           if (state.isOpen && ref.current) {
             return (0, import_overlays.ariaHideOutside)([ref.current]);
           }
@@ -121475,9 +121500,9 @@
         useViewportSize: () => useViewportSize
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react75 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
+      var import_react80 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
       var visualViewport = typeof document !== "undefined" && window.visualViewport;
-      var IsSSRContext = import_react75.default.createContext(false);
+      var IsSSRContext = import_react80.default.createContext(false);
       function getSnapshot() {
         return false;
       }
@@ -121489,15 +121514,15 @@
         };
       }
       function useIsSSR() {
-        if (typeof import_react75.default["useSyncExternalStore"] === "function") {
-          return import_react75.default["useSyncExternalStore"](subscribe, getSnapshot, getServerSnapshot);
+        if (typeof import_react80.default["useSyncExternalStore"] === "function") {
+          return import_react80.default["useSyncExternalStore"](subscribe, getSnapshot, getServerSnapshot);
         }
-        return (0, import_react75.useContext)(IsSSRContext);
+        return (0, import_react80.useContext)(IsSSRContext);
       }
       function useViewportSize() {
         let isSSR = useIsSSR();
-        let [size, setSize] = (0, import_react75.useState)(() => isSSR ? { width: 0, height: 0 } : getViewportSize());
-        (0, import_react75.useEffect)(() => {
+        let [size, setSize] = (0, import_react80.useState)(() => isSSR ? { width: 0, height: 0 } : getViewportSize());
+        (0, import_react80.useEffect)(() => {
           let onResize = () => {
             setSize((size2) => {
               let newSize = getViewportSize();
@@ -121673,7 +121698,7 @@
       var import_utils8 = require_main4();
       var import_utils22 = require_main46();
       var import_use_callback_ref = require_dist31();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useDisclosure2(props = {}) {
         const {
           id: idProp,
@@ -121687,22 +121712,22 @@
         const onOpenPropCallbackRef = (0, import_use_callback_ref.useCallbackRef)(onOpenProp);
         const onClosePropCallbackRef = (0, import_use_callback_ref.useCallbackRef)(onCloseProp);
         const [isOpen, setIsOpen] = (0, import_utils22.useControlledState)(isOpenProp, defaultOpen || false, onChange);
-        const reactId = (0, import_react75.useId)();
+        const reactId = (0, import_react80.useId)();
         const id4 = idProp || reactId;
         const isControlled = isOpenProp !== void 0;
-        const onClose = (0, import_react75.useCallback)(() => {
+        const onClose = (0, import_react80.useCallback)(() => {
           if (!isControlled) {
             setIsOpen(false);
           }
           onClosePropCallbackRef == null ? void 0 : onClosePropCallbackRef();
         }, [isControlled, onClosePropCallbackRef]);
-        const onOpen = (0, import_react75.useCallback)(() => {
+        const onOpen = (0, import_react80.useCallback)(() => {
           if (!isControlled) {
             setIsOpen(true);
           }
           onOpenPropCallbackRef == null ? void 0 : onOpenPropCallbackRef();
         }, [isControlled, onOpenPropCallbackRef]);
-        const onOpenChange = (0, import_react75.useCallback)(() => {
+        const onOpenChange = (0, import_react80.useCallback)(() => {
           const action = isOpen ? onClose : onOpen;
           action();
         }, [isOpen, onOpen, onClose]);
@@ -123560,14 +123585,14 @@
         ]);
         let moveProps = (0, $cvDGj$react.useMemo)(() => {
           let moveProps2 = {};
-          let start2 = () => {
+          let start3 = () => {
             (0, $f7e14e656343df57$exports.disableTextSelection)();
             state.current.didMove = false;
           };
           if (typeof PointerEvent === "undefined" && false) {
             moveProps2.onMouseDown = (e) => {
               if (e.button === 0) {
-                start2();
+                start3();
                 e.stopPropagation();
                 e.preventDefault();
                 state.current.lastPosition = {
@@ -123580,7 +123605,7 @@
             moveProps2.onTouchStart = (e) => {
               if (e.changedTouches.length === 0 || state.current.id != null) return;
               let { pageX, pageY, identifier } = e.changedTouches[0];
-              start2();
+              start3();
               e.stopPropagation();
               e.preventDefault();
               state.current.lastPosition = {
@@ -123592,7 +123617,7 @@
             };
           } else moveProps2.onPointerDown = (e) => {
             if (e.button === 0 && state.current.id == null) {
-              start2();
+              start3();
               e.stopPropagation();
               e.preventDefault();
               state.current.lastPosition = {
@@ -123604,7 +123629,7 @@
             }
           };
           let triggerKeyboardMove = (e, deltaX, deltaY) => {
-            start2();
+            start3();
             move(e, "keyboard", deltaX, deltaY);
             end(e, "keyboard");
           };
@@ -123818,15 +123843,15 @@
         useDraggable: () => useDraggable2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_interactions = require_main47();
       function useDraggable2(props) {
         const { targetRef, isDisabled = false, canOverflow = false } = props;
-        const boundary = (0, import_react75.useRef)({ minLeft: 0, minTop: 0, maxLeft: 0, maxTop: 0 });
-        const isDragging2 = (0, import_react75.useRef)(false);
-        const transform2 = (0, import_react75.useRef)({ offsetX: 0, offsetY: 0 });
-        const prevTargetRef = (0, import_react75.useRef)(null);
-        (0, import_react75.useEffect)(() => {
+        const boundary = (0, import_react80.useRef)({ minLeft: 0, minTop: 0, maxLeft: 0, maxTop: 0 });
+        const isDragging2 = (0, import_react80.useRef)(false);
+        const transform2 = (0, import_react80.useRef)({ offsetX: 0, offsetY: 0 });
+        const prevTargetRef = (0, import_react80.useRef)(null);
+        (0, import_react80.useEffect)(() => {
           var _a;
           const currentTarget = (_a = targetRef == null ? void 0 : targetRef.current) != null ? _a : null;
           if (prevTargetRef.current !== currentTarget) {
@@ -123834,7 +123859,7 @@
             prevTargetRef.current = currentTarget;
           }
         }, [targetRef == null ? void 0 : targetRef.current]);
-        const onMoveStart = (0, import_react75.useCallback)(() => {
+        const onMoveStart = (0, import_react80.useCallback)(() => {
           var _a, _b, _c, _d, _e;
           isDragging2.current = true;
           const { offsetX, offsetY } = transform2.current;
@@ -123856,7 +123881,7 @@
             maxTop
           };
         }, [targetRef]);
-        const onMove = (0, import_react75.useCallback)(
+        const onMove = (0, import_react80.useCallback)(
           (e) => {
             if (isDisabled) {
               return;
@@ -123879,7 +123904,7 @@
           },
           [isDisabled, canOverflow, targetRef]
         );
-        const onMoveEnd = (0, import_react75.useCallback)(() => {
+        const onMoveEnd = (0, import_react80.useCallback)(() => {
           isDragging2.current = false;
         }, []);
         const { moveProps } = (0, import_interactions.useMove)({
@@ -123887,12 +123912,12 @@
           onMove,
           onMoveEnd
         });
-        const preventDefault = (0, import_react75.useCallback)((e) => {
+        const preventDefault = (0, import_react80.useCallback)((e) => {
           if (isDragging2.current) {
             e.preventDefault();
           }
         }, []);
-        (0, import_react75.useEffect)(() => {
+        (0, import_react80.useEffect)(() => {
           if (!isDisabled) {
             document.body.addEventListener("touchmove", preventDefault, { passive: false });
           }
@@ -123950,7 +123975,7 @@
       var import_overlays2 = require_main9();
       var import_system2 = require_dist11();
       var import_use_aria_modal_overlay = require_dist59();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist12();
       var import_system = require_dist11();
       var import_use_aria_button = require_dist27();
@@ -123982,13 +124007,13 @@
         } = props;
         const Component2 = as || "section";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const closeButtonRef = (0, import_react75.useRef)(null);
-        const [headerMounted, setHeaderMounted] = (0, import_react75.useState)(false);
-        const [bodyMounted, setBodyMounted] = (0, import_react75.useState)(false);
+        const closeButtonRef = (0, import_react80.useRef)(null);
+        const [headerMounted, setHeaderMounted] = (0, import_react80.useState)(false);
+        const [bodyMounted, setBodyMounted] = (0, import_react80.useState)(false);
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        const dialogId = (0, import_react75.useId)();
-        const headerId = (0, import_react75.useId)();
-        const bodyId = (0, import_react75.useId)();
+        const dialogId = (0, import_react80.useId)();
+        const headerId = (0, import_react80.useId)();
+        const bodyId = (0, import_react80.useId)();
         const state = (0, import_overlays.useOverlayTriggerState)({
           isOpen,
           defaultOpen,
@@ -124011,7 +124036,7 @@
         const { buttonProps: closeButtonProps } = (0, import_use_aria_button.useAriaButton)({ onPress: state.close }, closeButtonRef);
         const { isFocusVisible: isCloseButtonFocusVisible, focusProps: closeButtonFocusProps } = (0, import_focus2.useFocusRing)();
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react75.useMemo)(
+        const slots = (0, import_react80.useMemo)(
           () => (0, import_theme.modal)({
             ...variantProps2,
             disableAnimation
@@ -124033,7 +124058,7 @@
             "aria-describedby": bodyMounted ? bodyId : void 0
           };
         };
-        const getBackdropProps = (0, import_react75.useCallback)(
+        const getBackdropProps = (0, import_react80.useCallback)(
           (props2 = {}) => ({
             className: slots.backdrop({ class: classNames == null ? void 0 : classNames.backdrop }),
             ...underlayProps,
@@ -124080,12 +124105,12 @@
         name: "ModalContext",
         errorMessage: "useModalContext: `context` is undefined. Seems you forgot to wrap all popover components within `<Modal />`"
       });
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Modal = (0, import_system2.forwardRef)((props, ref) => {
         const { children, ...otherProps } = props;
         const context = useModal({ ...otherProps, ref });
-        const overlay = /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_overlays2.Overlay, { portalContainer: context.portalContainer, children });
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(ModalProvider, { value: context, children: context.disableAnimation && context.isOpen ? overlay : /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion2.AnimatePresence, { children: context.isOpen ? overlay : null }) });
+        const overlay = /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_overlays2.Overlay, { portalContainer: context.portalContainer, children });
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(ModalProvider, { value: context, children: context.disableAnimation && context.isOpen ? overlay : /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_framer_motion2.AnimatePresence, { children: context.isOpen ? overlay : null }) });
       });
       Modal.displayName = "HeroUI.Modal";
       var modal_default = Modal;
@@ -124226,7 +124251,7 @@
       var import_system3 = require_dist11();
       var import_react_utils3 = require_dist10();
       var import_theme2 = require_dist12();
-      var import_jsx_runtime32 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime36 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var ModalHeader = (0, import_system3.forwardRef)((props, ref) => {
         const { as, children, className, ...otherProps } = props;
         const { slots, classNames, headerId, setHeaderMounted } = useModalContext();
@@ -124236,7 +124261,7 @@
           setHeaderMounted(true);
           return () => setHeaderMounted(false);
         }, [setHeaderMounted]);
-        return /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(
           Component2,
           {
             ref: domRef,
@@ -124328,7 +124353,7 @@
         useScrollPosition: () => useScrollPosition
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var isBrowser3 = typeof window !== "undefined";
       function getScrollPosition(element) {
         if (!isBrowser3) return { x: 0, y: 0 };
@@ -124339,11 +124364,11 @@
       }
       var useScrollPosition = (props) => {
         const { elementRef, delay: delay2 = 30, callback, isEnabled } = props;
-        const position = (0, import_react75.useRef)(
+        const position = (0, import_react80.useRef)(
           isEnabled ? getScrollPosition(elementRef == null ? void 0 : elementRef.current) : { x: 0, y: 0 }
         );
-        const throttleTimeout = (0, import_react75.useRef)(null);
-        const handler = (0, import_react75.useCallback)(() => {
+        const throttleTimeout = (0, import_react80.useRef)(null);
+        const handler = (0, import_react80.useCallback)(() => {
           const currPos = getScrollPosition(elementRef == null ? void 0 : elementRef.current);
           if (typeof callback === "function") {
             callback({ prevPos: position.current, currPos });
@@ -124351,7 +124376,7 @@
           position.current = currPos;
           throttleTimeout.current = null;
         }, [callback, elementRef]);
-        (0, import_react75.useEffect)(() => {
+        (0, import_react80.useEffect)(() => {
           if (!isEnabled) return;
           const handleScroll = () => {
             if (delay2) {
@@ -124405,9 +124430,9 @@
         useResizeObserver: () => useResizeObserver
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useResize(callback, immediatelyInvoke = true) {
-        (0, import_react75.useEffect)(() => {
+        (0, import_react80.useEffect)(() => {
           const fn = () => callback();
           if (immediatelyInvoke) {
             fn();
@@ -124421,7 +124446,7 @@
       }
       function useResizeObserver(options) {
         const { ref, box, onResize } = options;
-        (0, import_react75.useEffect)(() => {
+        (0, import_react80.useEffect)(() => {
           let element = ref == null ? void 0 : ref.current;
           if (!element) {
             return;
@@ -124645,7 +124670,7 @@
         useNavbarContext: () => useNavbarContext
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
@@ -124679,10 +124704,10 @@
         const Component2 = as || "nav";
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const prevWidth = (0, import_react75.useRef)(0);
-        const navHeight = (0, import_react75.useRef)(0);
-        const [isHidden, setIsHidden] = (0, import_react75.useState)(false);
-        const handleMenuOpenChange = (0, import_react75.useCallback)(
+        const prevWidth = (0, import_react80.useRef)(0);
+        const navHeight = (0, import_react80.useRef)(0);
+        const [isHidden, setIsHidden] = (0, import_react80.useState)(false);
+        const handleMenuOpenChange = (0, import_react80.useCallback)(
           (isOpen) => {
             onMenuOpenChange(isOpen || false);
           },
@@ -124719,12 +124744,12 @@
             }
           }
         });
-        (0, import_react75.useEffect)(() => {
+        (0, import_react80.useEffect)(() => {
           var _a2;
           updateWidth();
           navHeight.current = ((_a2 = domRef.current) == null ? void 0 : _a2.offsetHeight) || 0;
         }, []);
-        const slots = (0, import_react75.useMemo)(
+        const slots = (0, import_react80.useMemo)(
           () => (0, import_theme.navbar)({
             ...variantProps2,
             disableAnimation,
@@ -124826,7 +124851,7 @@
           }
         }
       };
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var domAnimation2 = () => Promise.resolve().then(() => (init_dist(), dist_exports)).then((res) => res.default);
       var NavbarMenu = (0, import_system2.forwardRef)((props, ref) => {
         var _a, _b;
@@ -124836,7 +124861,7 @@
         const styles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.menu, className);
         if (disableAnimation) {
           if (!isMenuOpen) return null;
-          return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_overlays2.Overlay, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_overlays2.Overlay, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
             "ul",
             {
               ref: domRef,
@@ -124851,7 +124876,7 @@
             }
           ) });
         }
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion3.AnimatePresence, { mode: "wait", children: isMenuOpen ? /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_overlays2.Overlay, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_framer_motion3.AnimatePresence, { mode: "wait", children: isMenuOpen ? /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_overlays2.Overlay, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
           import_framer_motion3.m.ul,
           {
             ref: domRef,
@@ -124901,7 +124926,7 @@
       var import_system4 = require_dist11();
       var import_react_utils5 = require_dist10();
       var import_theme3 = require_dist12();
-      var import_jsx_runtime32 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime36 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var NavbarBrand = (0, import_system4.forwardRef)((props, ref) => {
         var _a;
         const { as, className, children, ...otherProps } = props;
@@ -124909,7 +124934,7 @@
         const domRef = (0, import_react_utils5.useDOMRef)(ref);
         const { slots, classNames } = useNavbarContext();
         const styles = (0, import_theme3.cn)(classNames == null ? void 0 : classNames.brand, className);
-        return /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(Component2, { ref: domRef, className: (_a = slots.brand) == null ? void 0 : _a.call(slots, { class: styles }), ...otherProps, children });
+        return /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(Component2, { ref: domRef, className: (_a = slots.brand) == null ? void 0 : _a.call(slots, { class: styles }), ...otherProps, children });
       });
       NavbarBrand.displayName = "HeroUI.NavbarBrand";
       var navbar_brand_default = NavbarBrand;
@@ -128853,17 +128878,17 @@
         else if (shouldScrollBlock && block === "center") y += (scrollAreaTop + scrollAreaBottom) / 2 - (scrollPortTop + scrollPortBottom) / 2;
         else if (shouldScrollBlock && block === "end") y += scrollAreaBottom - scrollPortBottom;
         else if (shouldScrollBlock && block === "nearest") {
-          let start2 = scrollAreaTop - scrollPortTop;
+          let start3 = scrollAreaTop - scrollPortTop;
           let end = scrollAreaBottom - scrollPortBottom;
-          y += Math.abs(start2) <= Math.abs(end) ? start2 : end;
+          y += Math.abs(start3) <= Math.abs(end) ? start3 : end;
         }
         if (shouldScrollInline && inline === "start") x += scrollAreaLeft - scrollPortLeft;
         else if (shouldScrollInline && inline === "center") x += (scrollAreaLeft + scrollAreaRight) / 2 - (scrollPortLeft + scrollPortRight) / 2;
         else if (shouldScrollInline && inline === "end") x += scrollAreaRight - scrollPortRight;
         else if (shouldScrollInline && inline === "nearest") {
-          let start2 = scrollAreaLeft - scrollPortLeft;
+          let start3 = scrollAreaLeft - scrollPortLeft;
           let end = scrollAreaRight - scrollPortRight;
-          x += Math.abs(start2) <= Math.abs(end) ? start2 : end;
+          x += Math.abs(start3) <= Math.abs(end) ? start3 : end;
         }
         if (false) {
           scrollView.scrollLeft = x;
@@ -130870,10 +130895,10 @@
       var utils = require_utils6();
       var defaultKeyExtractor = (index3) => index3;
       var defaultRangeExtractor = (range) => {
-        const start2 = Math.max(range.startIndex - range.overscan, 0);
+        const start3 = Math.max(range.startIndex - range.overscan, 0);
         const end = Math.min(range.endIndex + range.overscan, range.count - 1);
         const arr = [];
-        for (let i = start2; i <= end; i++) {
+        for (let i = start3; i <= end; i++) {
           arr.push(i);
         }
         return arr;
@@ -131271,14 +131296,14 @@
               for (let i = min; i < count; i++) {
                 const key = getItemKey(i);
                 const furthestMeasurement = this.options.lanes === 1 ? measurements[i - 1] : this.getFurthestMeasurement(measurements, i);
-                const start2 = furthestMeasurement ? furthestMeasurement.end + this.options.gap : paddingStart + scrollMargin;
+                const start3 = furthestMeasurement ? furthestMeasurement.end + this.options.gap : paddingStart + scrollMargin;
                 const measuredSize = itemSizeCache.get(key);
                 const size = typeof measuredSize === "number" ? measuredSize : this.options.estimateSize(i);
-                const end = start2 + size;
+                const end = start3 + size;
                 const lane = furthestMeasurement ? furthestMeasurement.lane : i % this.options.lanes;
                 measurements[i] = {
                   index: i,
-                  start: start2,
+                  start: start3,
                   size,
                   end,
                   key,
@@ -131741,7 +131766,7 @@
         useTable: () => useTable
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_table = require_main50();
       var import_table2 = require_main53();
       var import_system = require_dist11();
@@ -131843,7 +131868,7 @@
             onCellAction
           ]
         );
-        const getBaseProps = (0, import_react75.useCallback)(
+        const getBaseProps = (0, import_react80.useCallback)(
           (props2) => ({
             ...props2,
             ref: domBaseRef,
@@ -131851,7 +131876,7 @@
           }),
           [baseStyles, slots]
         );
-        const getWrapperProps = (0, import_react75.useCallback)(
+        const getWrapperProps = (0, import_react80.useCallback)(
           (props2) => ({
             ...props2,
             ref: domBaseRef,
@@ -131859,7 +131884,7 @@
           }),
           [classNames == null ? void 0 : classNames.wrapper, slots]
         );
-        const getTableProps = (0, import_react75.useCallback)(
+        const getTableProps = (0, import_react80.useCallback)(
           (props2) => ({
             ...(0, import_shared_utils.mergeProps)(
               gridProps,
@@ -131897,7 +131922,7 @@
       var import_shared_utils11 = require_dist2();
       var import_react92 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system11 = require_dist11();
-      var import_react76 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react710 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system9 = require_dist11();
       var import_react_virtual = require_cjs6();
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
@@ -131905,7 +131930,7 @@
       var import_shared_utils2 = require_dist2();
       var import_table3 = require_main53();
       var import_theme2 = require_dist12();
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var TableRowGroup = (0, import_react310.forwardRef)((props, ref) => {
         var _a;
         const { as, className, children, slots, classNames, ...otherProps } = props;
@@ -131913,7 +131938,7 @@
         const domRef = (0, import_react_utils2.useDOMRef)(ref);
         const { rowGroupProps } = (0, import_table3.useTableRowGroup)();
         const theadStyles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.thead, className);
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
           Component2,
           {
             ref: domRef,
@@ -131967,7 +131992,7 @@
       var import_visually_hidden = require_main8();
       var import_interactions = require_main17();
       var import_theme4 = require_dist12();
-      var import_jsx_runtime32 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime36 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var normalizeWidth = (value) => {
         return typeof value === "number" ? `${value}px` : value;
       };
@@ -131994,7 +132019,7 @@
           className: (_d = slots.sortIcon) == null ? void 0 : _d.call(slots, { class: classNames == null ? void 0 : classNames.sortIcon })
         };
         const customSortIcon = typeof sortIcon === "function" ? sortIcon(sortIconProps) : (0, import_react410.isValidElement)(sortIcon) && (0, import_react410.cloneElement)(sortIcon, sortIconProps);
-        return /* @__PURE__ */ (0, import_jsx_runtime32.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime36.jsxs)(
           Component2,
           {
             ref: domRef,
@@ -132014,8 +132039,8 @@
             ),
             className: (_e = slots.th) == null ? void 0 : _e.call(slots, { align, class: thStyles }),
             children: [
-              hideHeader ? /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(import_visually_hidden.VisuallyHidden, { children: node.rendered }) : node.rendered,
-              allowsSorting && (customSortIcon || /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(import_shared_icons.ChevronDownIcon, { strokeWidth: 3, ...sortIconProps }))
+              hideHeader ? /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(import_visually_hidden.VisuallyHidden, { children: node.rendered }) : node.rendered,
+              allowsSorting && (customSortIcon || /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(import_shared_icons.ChevronDownIcon, { strokeWidth: 3, ...sortIconProps }))
             ]
           }
         );
@@ -132404,7 +132429,7 @@
           ref
         });
         const { rowHeight = 40, maxTableHeight = 600 } = props;
-        const Wrapper = (0, import_react76.useCallback)(
+        const Wrapper = (0, import_react710.useCallback)(
           ({ children }) => {
             return /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(
               BaseComponent,
@@ -132420,10 +132445,10 @@
         );
         const items = [...collection.body.childNodes];
         const count = items.length;
-        const parentRef = (0, import_react76.useRef)(null);
-        const [headerHeight, setHeaderHeight] = (0, import_react76.useState)(0);
-        const headerRef = (0, import_react76.useRef)(null);
-        (0, import_react76.useLayoutEffect)(() => {
+        const parentRef = (0, import_react710.useRef)(null);
+        const [headerHeight, setHeaderHeight] = (0, import_react710.useState)(0);
+        const headerRef = (0, import_react710.useRef)(null);
+        (0, import_react710.useLayoutEffect)(() => {
           if (headerRef.current) {
             setHeaderHeight(headerRef.current.getBoundingClientRect().height);
           }
@@ -132790,7 +132815,7 @@
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var spacing = {
         px: "1px",
         0: "0px",
@@ -132836,7 +132861,7 @@
         const [props, variantProps2] = (0, import_system_rsc.mapPropsVariants)(originalProps, import_theme.spacer.variantKeys);
         const { as, className, x = 1, y = 1, ...otherProps } = props;
         const Component2 = as || "span";
-        const styles = (0, import_react75.useMemo)(
+        const styles = (0, import_react80.useMemo)(
           () => (0, import_theme.spacer)({
             ...variantProps2,
             className
@@ -132859,10 +132884,10 @@
         });
         return { Component: Component2, getSpacerProps };
       }
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Spacer = (0, import_system_rsc2.forwardRef)((props, ref) => {
         const { Component: Component2, getSpacerProps } = useSpacer({ ...props });
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(Component2, { ref, ...getSpacerProps() });
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(Component2, { ref, ...getSpacerProps() });
       });
       Spacer.displayName = "HeroUI.Spacer";
       var spacer_default = Spacer;
@@ -132901,12 +132926,12 @@
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useKbd(originalProps) {
         const [props, variantProps2] = (0, import_system_rsc.mapPropsVariants)(originalProps, import_theme.kbd.variantKeys);
         const { as, children, className, keys: keys3, title, classNames, ...otherProps } = props;
         const Component2 = as || "kbd";
-        const slots = (0, import_react75.useMemo)(
+        const slots = (0, import_react80.useMemo)(
           () => (0, import_theme.kbd)({
             ...variantProps2
           }),
@@ -132969,13 +132994,13 @@
         win: "Win",
         alt: "Alt"
       };
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Kbd = (0, import_system_rsc2.forwardRef)((props, ref) => {
         const { Component: Component2, children, slots, classNames, keysToRender, getKbdProps } = useKbd({
           ...props
         });
         const keysContent = (0, import_react210.useMemo)(() => {
-          return keysToRender.map((key) => /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+          return keysToRender.map((key) => /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
             "abbr",
             {
               className: slots.abbr({ class: classNames == null ? void 0 : classNames.abbr }),
@@ -132985,9 +133010,9 @@
             key
           ));
         }, [keysToRender]);
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(Component2, { ref, ...getKbdProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(Component2, { ref, ...getKbdProps(), children: [
           keysContent,
-          children && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children })
+          children && /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("span", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children })
         ] });
       });
       Kbd.displayName = "HeroUI.Kbd";
@@ -133242,14 +133267,14 @@
         }
       };
       function $6caebf02f33d362d$var$iterable(iterator) {
-        let cache5 = [];
+        let cache6 = [];
         let iterable = null;
         return {
           *[Symbol.iterator]() {
-            for (let item of cache5) yield item;
+            for (let item of cache6) yield item;
             if (!iterable) iterable = iterator();
             for (let item of iterable) {
-              cache5.push(item);
+              cache6.push(item);
               yield item;
             }
           }
@@ -133849,7 +133874,7 @@
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
       var import_react_utils2 = require_dist10();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_tabs = require_main55();
       var import_tabs2 = require_main56();
       function useTabs(originalProps) {
@@ -133883,7 +133908,7 @@
           state,
           domRef
         );
-        const slots = (0, import_react75.useMemo)(
+        const slots = (0, import_react80.useMemo)(
           () => (0, import_theme.tabs)({
             ...variantProps2,
             disableAnimation,
@@ -133892,7 +133917,7 @@
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation, isVertical]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const values = (0, import_react75.useMemo)(
+        const values = (0, import_react80.useMemo)(
           () => ({
             state,
             slots,
@@ -133914,7 +133939,7 @@
             classNames
           ]
         );
-        const getBaseProps = (0, import_react75.useCallback)(
+        const getBaseProps = (0, import_react80.useCallback)(
           (props2) => ({
             "data-slot": "base",
             className: slots.base({ class: (0, import_theme.cn)(baseStyles, props2 == null ? void 0 : props2.className) }),
@@ -133927,7 +133952,7 @@
           }),
           [baseStyles, otherProps, slots]
         );
-        const getWrapperProps = (0, import_react75.useCallback)(
+        const getWrapperProps = (0, import_react80.useCallback)(
           (props2) => ({
             "data-slot": "tabWrapper",
             className: slots.tabWrapper({ class: (0, import_theme.cn)(classNames == null ? void 0 : classNames.tabWrapper, props2 == null ? void 0 : props2.className) }),
@@ -133936,7 +133961,7 @@
           }),
           [classNames, slots, placement, isVertical]
         );
-        const getTabListProps = (0, import_react75.useCallback)(
+        const getTabListProps = (0, import_react80.useCallback)(
           (props2) => ({
             ref: domRef,
             "data-slot": "tabList",
@@ -133945,7 +133970,7 @@
           }),
           [domRef, tabListProps, classNames, slots]
         );
-        const getTabCursorProps = (0, import_react75.useCallback)(
+        const getTabCursorProps = (0, import_react80.useCallback)(
           (props2) => ({
             "data-slot": "cursor",
             className: slots.cursor({
@@ -133974,7 +133999,7 @@
       var import_tabs3 = require_main56();
       var import_interactions = require_main17();
       var import_theme2 = require_dist12();
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Tab = (0, import_system2.forwardRef)((props, ref) => {
         var _a;
         const {
@@ -134019,7 +134044,7 @@
             boundary: listRef == null ? void 0 : listRef.current
           });
         };
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
           Component2,
           {
             ref: (0, import_react_utils3.mergeRefs)(domRef, tabRef),
@@ -134050,7 +134075,7 @@
             className: (_a = slots.tab) == null ? void 0 : _a.call(slots, { class: tabStyles }),
             title: otherProps == null ? void 0 : otherProps.titleValue,
             type: Component2 === "button" ? "button" : void 0,
-            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
               "div",
               {
                 className: slots.tabContent({
@@ -134103,7 +134128,7 @@
       });
       TabPanel.displayName = "HeroUI.TabPanel";
       var tab_panel_default = TabPanel;
-      var import_jsx_runtime32 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime36 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Tabs = (0, import_system4.forwardRef)(function Tabs2(props, ref) {
         const {
           Component: Component2,
@@ -134127,7 +134152,7 @@
           isDisabled: values.isDisabled,
           shouldSelectOnPressUp: values.shouldSelectOnPressUp
         };
-        const tabs2 = [...state.collection].map((item) => /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(tab_default, { item, ...tabsProps, ...item.props }, item.key));
+        const tabs2 = [...state.collection].map((item) => /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(tab_default, { item, ...tabsProps, ...item.props }, item.key));
         const variant = props == null ? void 0 : props.variant;
         const previousVariant = (0, import_react210.useRef)(void 0);
         const isVertical = props == null ? void 0 : props.isVertical;
@@ -134210,13 +134235,13 @@
           return () => observer2.disconnect();
         }, [domRef.current, onResize, selectedKey]);
         const renderTabs = (0, import_react210.useMemo)(
-          () => /* @__PURE__ */ (0, import_jsx_runtime32.jsxs)(import_jsx_runtime32.Fragment, { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime32.jsx)("div", { ...getBaseProps(), children: /* @__PURE__ */ (0, import_jsx_runtime32.jsxs)(Component2, { ...getTabListProps(), children: [
-              !values.disableAnimation && !values.disableCursorAnimation && selectedKey != null && /* @__PURE__ */ (0, import_jsx_runtime32.jsx)("span", { ...getTabCursorProps(), ref: cursorRef }),
+          () => /* @__PURE__ */ (0, import_jsx_runtime36.jsxs)(import_jsx_runtime36.Fragment, { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime36.jsx)("div", { ...getBaseProps(), children: /* @__PURE__ */ (0, import_jsx_runtime36.jsxs)(Component2, { ...getTabListProps(), children: [
+              !values.disableAnimation && !values.disableCursorAnimation && selectedKey != null && /* @__PURE__ */ (0, import_jsx_runtime36.jsx)("span", { ...getTabCursorProps(), ref: cursorRef }),
               tabs2
             ] }) }),
             [...state.collection].map((item) => {
-              return /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(
+              return /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(
                 tab_panel_default,
                 {
                   classNames: values.classNames,
@@ -134250,7 +134275,7 @@
           ]
         );
         if ("placement" in props || "isVertical" in props) {
-          return /* @__PURE__ */ (0, import_jsx_runtime32.jsx)("div", { ...getWrapperProps(), children: renderTabs });
+          return /* @__PURE__ */ (0, import_jsx_runtime36.jsx)("div", { ...getWrapperProps(), children: renderTabs });
         }
         return renderTabs;
       });
@@ -134293,7 +134318,7 @@
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist11();
       function useSkeleton(originalProps) {
         var _a, _b;
@@ -134302,7 +134327,7 @@
         const { as, children, isLoaded = false, className, classNames, ...otherProps } = props;
         const Component2 = as || "div";
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        const slots = (0, import_react75.useMemo)(
+        const slots = (0, import_react80.useMemo)(
           () => (0, import_theme.skeleton)({
             ...variantProps2,
             disableAnimation
@@ -134324,10 +134349,10 @@
         };
         return { Component: Component2, children, slots, classNames, getSkeletonProps, getContentProps };
       }
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Skeleton = (0, import_system3.forwardRef)((props, ref) => {
         const { Component: Component2, children, getSkeletonProps, getContentProps } = useSkeleton({ ...props });
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(Component2, { ref, ...getSkeletonProps(), children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ...getContentProps(), children }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(Component2, { ref, ...getSkeletonProps(), children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("div", { ...getContentProps(), children }) });
       });
       Skeleton.displayName = "HeroUI.Skeleton";
       var skeleton_default = Skeleton;
@@ -134361,7 +134386,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_shared_utils = require_dist2();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useDataScrollOverflow(props = {}) {
         const {
           domRef,
@@ -134372,8 +134397,8 @@
           onVisibilityChange,
           updateDeps = []
         } = props;
-        const visibleRef = (0, import_react75.useRef)(visibility);
-        (0, import_react75.useEffect)(() => {
+        const visibleRef = (0, import_react80.useRef)(visibility);
+        (0, import_react80.useEffect)(() => {
           const el = domRef == null ? void 0 : domRef.current;
           if (!el || !isEnabled) return;
           const setAttributes = (direction, hasBefore, hasAfter, prefix, suffix) => {
@@ -134475,7 +134500,7 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_use_data_scroll_overflow = require_dist72();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       function useScrollShadow(originalProps) {
         var _a;
@@ -134504,7 +134529,7 @@
           updateDeps: [children],
           overflowCheck: (_a = originalProps.orientation) != null ? _a : "vertical"
         });
-        const styles = (0, import_react75.useMemo)(
+        const styles = (0, import_react80.useMemo)(
           () => (0, import_theme.scrollShadow)({
             ...variantProps2,
             className
@@ -134528,10 +134553,10 @@
         };
         return { Component: Component2, styles, domRef, children, getBaseProps };
       }
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var ScrollShadow = (0, import_system2.forwardRef)((props, ref) => {
         const { Component: Component2, children, getBaseProps } = useScrollShadow({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(Component2, { ...getBaseProps(), children });
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(Component2, { ...getBaseProps(), children });
       });
       ScrollShadow.displayName = "HeroUI.ScrollShadow";
       var scroll_shadow_default = ScrollShadow;
@@ -135059,7 +135084,7 @@
       var import_theme = require_dist12();
       var import_list = require_main58();
       var import_react_utils = require_dist10();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme2 = require_dist12();
       function useListbox(props) {
         var _a;
@@ -135091,7 +135116,7 @@
         const innerState = (0, import_list.useListState)({ ...props, children, onSelectionChange });
         const state = propState || innerState;
         const { listBoxProps } = (0, import_listbox.useListBox)({ ...props, onAction }, state, domRef);
-        const slots = (0, import_react75.useMemo)(() => (0, import_theme.listbox)(), []);
+        const slots = (0, import_react80.useMemo)(() => (0, import_theme.listbox)(), []);
         const baseStyles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.base, className);
         const getBaseProps = (props2 = {}) => {
           return {
@@ -135308,10 +135333,10 @@
           getSelectedIconProps
         };
       }
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       function ListboxSelectedIcon(props) {
         const { isSelected, disableAnimation, ...otherProps } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
           "svg",
           {
             "aria-hidden": "true",
@@ -135319,7 +135344,7 @@
             role: "presentation",
             viewBox: "0 0 17 18",
             ...otherProps,
-            children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
               "polyline",
               {
                 fill: "none",
@@ -135378,7 +135403,7 @@
       };
       ListboxItem.displayName = "HeroUI.ListboxItem";
       var listbox_item_default = ListboxItem;
-      var import_jsx_runtime32 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime36 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var ListboxSection = (0, import_system3.forwardRef)(
         ({
           item,
@@ -135410,14 +135435,14 @@
             heading: item.rendered,
             "aria-label": item["aria-label"]
           });
-          return /* @__PURE__ */ (0, import_jsx_runtime32.jsxs)(
+          return /* @__PURE__ */ (0, import_jsx_runtime36.jsxs)(
             Component2,
             {
               "data-slot": "base",
               ...(0, import_shared_utils2.mergeProps)(itemProps, otherProps),
               className: slots.base({ class: baseStyles }),
               children: [
-                item.rendered && /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(
+                item.rendered && /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(
                   "span",
                   {
                     ...headingProps,
@@ -135426,7 +135451,7 @@
                     children: item.rendered
                   }
                 ),
-                /* @__PURE__ */ (0, import_jsx_runtime32.jsxs)(
+                /* @__PURE__ */ (0, import_jsx_runtime36.jsxs)(
                   "ul",
                   {
                     ...groupProps,
@@ -135436,7 +135461,7 @@
                     children: [
                       [...item.childNodes].map((node) => {
                         const { key: nodeKey, props: nodeProps } = node;
-                        let listboxItem2 = /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(
+                        let listboxItem2 = /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(
                           listbox_item_default,
                           {
                             classNames: itemClasses,
@@ -135455,7 +135480,7 @@
                         }
                         return listboxItem2;
                       }),
-                      showDivider && /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(
+                      showDivider && /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(
                         import_divider.Divider,
                         {
                           as: "li",
@@ -135476,7 +135501,7 @@
       );
       ListboxSection.displayName = "HeroUI.ListboxSection";
       var listbox_section_default = ListboxSection;
-      var import_react76 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react710 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_virtual = require_cjs6();
       var import_shared_utils5 = require_dist2();
       var import_system4 = require_dist11();
@@ -135671,8 +135696,8 @@
         }
         const { maxListboxHeight, itemHeight } = virtualization;
         const listHeight = Math.min(maxListboxHeight, itemHeight * state.collection.size);
-        const parentRef = (0, import_react76.useRef)(null);
-        const itemSizes = (0, import_react76.useMemo)(
+        const parentRef = (0, import_react710.useRef)(null);
+        const itemSizes = (0, import_react710.useMemo)(
           () => getItemSizesForCollection([...state.collection], itemHeight),
           [state.collection, itemHeight]
         );
@@ -135733,7 +135758,7 @@
           }
           return listboxItem2;
         };
-        const [scrollState, setScrollState] = (0, import_react76.useState)({
+        const [scrollState, setScrollState] = (0, import_react710.useState)({
           isTop: false,
           isBottom: true,
           isMiddle: false
@@ -135889,27 +135914,27 @@
         useLayoutEffect: () => useLayoutEffect2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react75 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
-      var useLayoutEffect2 = typeof document !== "undefined" ? import_react75.default.useLayoutEffect : () => {
+      var import_react80 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
+      var useLayoutEffect2 = typeof document !== "undefined" ? import_react80.default.useLayoutEffect : () => {
       };
       function useEffectEvent2(fn) {
-        const ref = (0, import_react75.useRef)(null);
+        const ref = (0, import_react80.useRef)(null);
         useLayoutEffect2(() => {
           ref.current = fn;
         }, [fn]);
-        return (0, import_react75.useCallback)((...args) => {
+        return (0, import_react80.useCallback)((...args) => {
           const f = ref.current;
           return f == null ? void 0 : f(...args);
         }, []);
       }
       function useFormReset(ref, initialValue, onReset) {
-        let resetValue = (0, import_react75.useRef)(initialValue);
+        let resetValue = (0, import_react80.useRef)(initialValue);
         let handleReset = useEffectEvent2(() => {
           if (onReset) {
             onReset(resetValue.current);
           }
         });
-        (0, import_react75.useEffect)(() => {
+        (0, import_react80.useEffect)(() => {
           var _a;
           let form = (_a = ref == null ? void 0 : ref.current) == null ? void 0 : _a.form;
           form == null ? void 0 : form.addEventListener("reset", handleReset);
@@ -137753,14 +137778,14 @@
         ]);
         let moveProps = (0, $cvDGj$react.useMemo)(() => {
           let moveProps2 = {};
-          let start2 = () => {
+          let start3 = () => {
             (0, $f7e14e656343df57$exports.disableTextSelection)();
             state.current.didMove = false;
           };
           if (typeof PointerEvent === "undefined" && false) {
             moveProps2.onMouseDown = (e) => {
               if (e.button === 0) {
-                start2();
+                start3();
                 e.stopPropagation();
                 e.preventDefault();
                 state.current.lastPosition = {
@@ -137773,7 +137798,7 @@
             moveProps2.onTouchStart = (e) => {
               if (e.changedTouches.length === 0 || state.current.id != null) return;
               let { pageX, pageY, identifier } = e.changedTouches[0];
-              start2();
+              start3();
               e.stopPropagation();
               e.preventDefault();
               state.current.lastPosition = {
@@ -137785,7 +137810,7 @@
             };
           } else moveProps2.onPointerDown = (e) => {
             if (e.button === 0 && state.current.id == null) {
-              start2();
+              start3();
               e.stopPropagation();
               e.preventDefault();
               state.current.lastPosition = {
@@ -137797,7 +137822,7 @@
             }
           };
           let triggerKeyboardMove = (e, deltaX, deltaY) => {
-            start2();
+            start3();
             move(e, "keyboard", deltaX, deltaY);
             end(e, "keyboard");
           };
@@ -139431,11 +139456,11 @@
       var import_menu = require_main61();
       var import_selection = require_main13();
       var import_utils8 = require_main4();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useMultiSelect(props, state, ref) {
         const { disallowEmptySelection, isDisabled } = props;
         const collator = (0, import_i18n12.useCollator)({ usage: "search", sensitivity: "base" });
-        const delegate = (0, import_react75.useMemo)(
+        const delegate = (0, import_react80.useMemo)(
           () => new import_selection.ListKeyboardDelegate(state.collection, state.disabledKeys, null, collator),
           [state.collection, state.disabledKeys, collator]
         );
@@ -139710,7 +139735,7 @@
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_aria_button = require_dist27();
       var import_focus2 = require_main18();
       var import_shared_utils = require_dist2();
@@ -139794,9 +139819,9 @@
         const Component2 = as || "button";
         const shouldFilterDOMProps = typeof Component2 === "string";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const triggerRef = (0, import_react75.useRef)(null);
-        const listBoxRef = (0, import_react75.useRef)(null);
-        const popoverRef = (0, import_react75.useRef)(null);
+        const triggerRef = (0, import_react80.useRef)(null);
+        const listBoxRef = (0, import_react80.useRef)(null);
+        const popoverRef = (0, import_react80.useRef)(null);
         let state = (0, import_use_aria_multiselect.useMultiSelectState)({
           ...props,
           isOpen,
@@ -139857,7 +139882,7 @@
           state,
           triggerRef
         );
-        const handleClear = (0, import_react75.useCallback)(() => {
+        const handleClear = (0, import_react80.useCallback)(() => {
           var _a2;
           state.setSelectedKeys(/* @__PURE__ */ new Set([]));
           onClear == null ? void 0 : onClear();
@@ -139886,7 +139911,7 @@
         const hasLabel = !!label;
         const hasLabelOutside = hasLabel && (isOutsideLeft || shouldLabelBeOutside && hasPlaceholder);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react75.useMemo)(
+        const slots = (0, import_react80.useMemo)(
           () => (0, import_theme.select)({
             ...variantProps2,
             isInvalid,
@@ -139902,14 +139927,14 @@
         const errorMessage = typeof props.errorMessage === "function" ? props.errorMessage({ isInvalid, validationErrors, validationDetails }) : props.errorMessage || (validationErrors == null ? void 0 : validationErrors.join(" "));
         const hasHelper = !!description || !!errorMessage;
         const hasEndContent = !!endContent;
-        (0, import_react75.useEffect)(() => {
+        (0, import_react80.useEffect)(() => {
           if (state.isOpen && popoverRef.current && triggerRef.current) {
             let selectRect = triggerRef.current.getBoundingClientRect();
             let popover = popoverRef.current;
             popover.style.width = selectRect.width + "px";
           }
         }, [state.isOpen]);
-        (0, import_react75.useEffect)(() => {
+        (0, import_react80.useEffect)(() => {
           if (state.isOpen && popoverRef.current && listBoxRef.current) {
             let selectedItem = listBoxRef.current.querySelector("[aria-selected=true] [data-label=true]");
             let scrollShadow = scrollShadowRef.current;
@@ -139920,7 +139945,7 @@
             }
           }
         }, [state.isOpen, disableAnimation]);
-        const getBaseProps = (0, import_react75.useCallback)(
+        const getBaseProps = (0, import_react80.useCallback)(
           (props2 = {}) => ({
             "data-slot": "base",
             "data-filled": (0, import_shared_utils.dataAttr)(isFilled),
@@ -139937,7 +139962,7 @@
           }),
           [slots, hasHelper, hasValue, hasLabel, hasLabelOutside, isFilled, baseStyles]
         );
-        const getTriggerProps = (0, import_react75.useCallback)(
+        const getTriggerProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ref: triggerRef,
@@ -139977,7 +140002,7 @@
             shouldFilterDOMProps
           ]
         );
-        const getHiddenSelectProps = (0, import_react75.useCallback)(
+        const getHiddenSelectProps = (0, import_react80.useCallback)(
           (props2 = {}) => ({
             state,
             triggerRef,
@@ -140002,7 +140027,7 @@
             triggerRef
           ]
         );
-        const getLabelProps = (0, import_react75.useCallback)(
+        const getLabelProps = (0, import_react80.useCallback)(
           (props2 = {}) => ({
             "data-slot": "label",
             className: slots.label({
@@ -140013,7 +140038,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.label, labelProps]
         );
-        const getValueProps = (0, import_react75.useCallback)(
+        const getValueProps = (0, import_react80.useCallback)(
           (props2 = {}) => ({
             "data-slot": "value",
             className: slots.value({
@@ -140024,7 +140049,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.value, valueProps]
         );
-        const getListboxWrapperProps = (0, import_react75.useCallback)(
+        const getListboxWrapperProps = (0, import_react80.useCallback)(
           (props2 = {}) => ({
             "data-slot": "listboxWrapper",
             className: slots.listboxWrapper({
@@ -140061,7 +140086,7 @@
             ...(0, import_shared_utils.mergeProps)(slotsProps.listboxProps, props2, menuProps)
           };
         };
-        const getPopoverProps = (0, import_react75.useCallback)(
+        const getPopoverProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             var _a2, _b2;
             const popoverProps2 = (0, import_shared_utils.mergeProps)(slotsProps.popoverProps, props2);
@@ -140093,7 +140118,7 @@
             state.selectedItems
           ]
         );
-        const getSelectorIconProps = (0, import_react75.useCallback)(
+        const getSelectorIconProps = (0, import_react80.useCallback)(
           () => ({
             "data-slot": "selectorIcon",
             "aria-hidden": (0, import_shared_utils.dataAttr)(true),
@@ -140102,7 +140127,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.selectorIcon, state.isOpen]
         );
-        const getInnerWrapperProps = (0, import_react75.useCallback)(
+        const getInnerWrapperProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -140114,7 +140139,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.innerWrapper]
         );
-        const getHelperWrapperProps = (0, import_react75.useCallback)(
+        const getHelperWrapperProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -140126,7 +140151,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getDescriptionProps = (0, import_react75.useCallback)(
+        const getDescriptionProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -140137,7 +140162,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.description]
         );
-        const getMainWrapperProps = (0, import_react75.useCallback)(
+        const getMainWrapperProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -140149,7 +140174,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.mainWrapper]
         );
-        const getEndWrapperProps = (0, import_react75.useCallback)(
+        const getEndWrapperProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -140161,7 +140186,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.endWrapper]
         );
-        const getEndContentProps = (0, import_react75.useCallback)(
+        const getEndContentProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -140173,7 +140198,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.endContent]
         );
-        const getErrorMessageProps = (0, import_react75.useCallback)(
+        const getErrorMessageProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -140184,7 +140209,7 @@
           },
           [slots, errorMessageProps, classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getSpinnerProps = (0, import_react75.useCallback)(
+        const getSpinnerProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               "aria-hidden": (0, import_shared_utils.dataAttr)(true),
@@ -140199,7 +140224,7 @@
           },
           [slots, spinnerRef, spinnerProps, classNames == null ? void 0 : classNames.spinner]
         );
-        const getClearButtonProps = (0, import_react75.useCallback)(
+        const getClearButtonProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -140266,7 +140291,7 @@
           getEndContentProps
         };
       }
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       function useHiddenSelect(props, state, triggerRef) {
         var _a;
         let data = selectData.get(state) || {};
@@ -140324,20 +140349,20 @@
         let { state, triggerRef, selectRef, label, name, isDisabled, form } = props;
         let { containerProps, selectProps } = useHiddenSelect({ ...props, selectRef }, state, triggerRef);
         if (state.collection.size <= 300) {
-          return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ...containerProps, "data-testid": "hidden-select-container", children: /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("label", { children: [
+          return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("div", { ...containerProps, "data-testid": "hidden-select-container", children: /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("label", { children: [
             label,
-            /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("select", { ...selectProps, ref: selectRef, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("option", {}),
+            /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("select", { ...selectProps, ref: selectRef, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("option", {}),
               [...state.collection.getKeys()].map((key) => {
                 let item = state.collection.getItem(key);
                 if ((item == null ? void 0 : item.type) === "item") {
-                  return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("option", { value: item.key, children: item.textValue }, item.key);
+                  return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("option", { value: item.key, children: item.textValue }, item.key);
                 }
               })
             ] })
           ] }) });
         } else if (name) {
-          return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
             "input",
             {
               autoComplete: selectProps.autoComplete,
@@ -140352,7 +140377,7 @@
         return null;
       }
       var import_jsx_runtime210 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var Select = (0, import_system2.forwardRef)(function Select2(props, ref) {
+      var Select2 = (0, import_system2.forwardRef)(function Select22(props, ref) {
         var _a;
         const {
           Component: Component2,
@@ -140469,7 +140494,7 @@
           disableAnimation ? popoverContent : /* @__PURE__ */ (0, import_jsx_runtime210.jsx)(import_framer_motion2.AnimatePresence, { children: popoverContent })
         ] });
       });
-      var select_default = Select;
+      var select_default = Select2;
     }
   });
 
@@ -141039,7 +141064,7 @@
       var import_visually_hidden = require_main8();
       var import_slider = require_main63();
       var import_react_utils = require_dist10();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_interactions = require_main17();
       var import_focus2 = require_main18();
       var import_shared_utils = require_dist2();
@@ -141063,7 +141088,7 @@
         } = props;
         const Component2 = as || "div";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const inputRef = (0, import_react75.useRef)(null);
+        const inputRef = (0, import_react80.useRef)(null);
         const numberFormatter = (0, import_i18n12.useNumberFormatter)(formatOptions);
         const { thumbProps, inputProps, isDragging: isDragging2, isFocused } = (0, import_slider.useSliderThumb)(
           {
@@ -141127,7 +141152,7 @@
           getInputProps
         };
       }
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var SliderThumb = (0, import_system.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -141144,14 +141169,14 @@
         const thumbProps = {
           ...getThumbProps(),
           index: index3,
-          children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_visually_hidden.VisuallyHidden, { children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("input", { ...getInputProps() }) })
+          children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_visually_hidden.VisuallyHidden, { children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("input", { ...getInputProps() }) })
         };
         const content = (0, import_react_utils2.renderFn)({
           Component: Component2,
           props: thumbProps,
           renderCustom: renderThumb
         });
-        return showTooltip ? /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_tooltip.Tooltip, { ...getTooltipProps(), children: content }) : content;
+        return showTooltip ? /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_tooltip.Tooltip, { ...getTooltipProps(), children: content }) : content;
       });
       SliderThumb.displayName = "HeroUI.SliderThumb";
       var slider_thumb_default = SliderThumb;
@@ -141181,7 +141206,7 @@
           showSteps = false,
           showTooltip = false,
           orientation = "horizontal",
-          marks = [],
+          marks: marks2 = [],
           startContent,
           endContent,
           fillOffset: fillOffset2,
@@ -141252,7 +141277,7 @@
         const { isHovered, hoverProps } = (0, import_interactions2.useHover)({ isDisabled: originalProps.isDisabled });
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
         const isVertical = orientation === "vertical";
-        const hasMarks = (marks == null ? void 0 : marks.length) > 0;
+        const hasMarks = (marks2 == null ? void 0 : marks2.length) > 0;
         const hasSingleThumb = fillOffset2 === void 0 ? state.values.length === 1 : false;
         const slots = (0, import_react210.useMemo)(
           () => (0, import_theme.slider)({
@@ -141433,7 +141458,7 @@
           domRef,
           label,
           steps: steps2,
-          marks,
+          marks: marks2,
           startContent,
           endContent,
           getStepProps,
@@ -141460,7 +141485,7 @@
           state,
           label,
           steps: steps2,
-          marks,
+          marks: marks2,
           startContent,
           endContent,
           getStepProps,
@@ -141497,7 +141522,7 @@
               /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("div", { ...getFillerProps() }),
               Number.isFinite(steps2) && Array.from({ length: steps2 }, (_, index3) => /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("div", { ...getStepProps(index3) }, index3)),
               state.values.map((_, index3) => /* @__PURE__ */ (0, import_jsx_runtime210.jsx)(slider_thumb_default, { ...getThumbProps(index3) }, index3)),
-              (marks == null ? void 0 : marks.length) > 0 && marks.map((mark, index3) => /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("div", { ...getMarkProps(mark), children: mark.label }, index3))
+              (marks2 == null ? void 0 : marks2.length) > 0 && marks2.map((mark, index3) => /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("div", { ...getMarkProps(mark), children: mark.label }, index3))
             ] }),
             endContent && /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("div", { ...getEndContentProps(), children: endContent })
           ] })
@@ -142090,7 +142115,7 @@
       var import_react_utils = require_dist10();
       var import_breadcrumbs = require_main66();
       var import_shared_utils = require_dist2();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useBreadcrumbItem(originalProps) {
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.breadcrumbItem.variantKeys);
         const {
@@ -142117,7 +142142,7 @@
           domRef
         );
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)();
-        const slots = (0, import_react75.useMemo)(
+        const slots = (0, import_react80.useMemo)(
           () => (0, import_theme.breadcrumbItem)({
             ...variantProps2,
             isCurrent,
@@ -142166,7 +142191,7 @@
           getSeparatorProps
         };
       }
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Breadcrumbs = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -142184,13 +142209,13 @@
           ...props,
           ref
         });
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(WrapperComponent, { ...getBaseProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(Component2, { ...getItemProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(WrapperComponent, { ...getBaseProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(Component2, { ...getItemProps(), children: [
             startContent,
             children,
             endContent
           ] }),
-          !isLast && !hideSeparator && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { ...getSeparatorProps(), children: separator })
+          !isLast && !hideSeparator && /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("span", { ...getSeparatorProps(), children: separator })
         ] });
       });
       Breadcrumbs.displayName = "HeroUI.Breadcrumbs";
@@ -146284,7 +146309,7 @@
       var import_input = require_dist53();
       var import_framer_motion2 = require_cjs4();
       var import_shared_utils = require_dist2();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_utils = require_dist10();
       var import_combobox = require_main67();
       var import_i18n12 = require_main5();
@@ -146378,10 +146403,10 @@
             disabledKeys: /* @__PURE__ */ new Set([...state.collection.getKeys()])
           }
         };
-        const buttonRef = (0, import_react75.useRef)(null);
-        const inputWrapperRef = (0, import_react75.useRef)(null);
-        const listBoxRef = (0, import_react75.useRef)(null);
-        const popoverRef = (0, import_react75.useRef)(null);
+        const buttonRef = (0, import_react80.useRef)(null);
+        const inputWrapperRef = (0, import_react80.useRef)(null);
+        const listBoxRef = (0, import_react80.useRef)(null);
+        const popoverRef = (0, import_react80.useRef)(null);
         const inputRef = (0, import_react_utils.useDOMRef)(ref);
         const scrollShadowRef = (0, import_react_utils.useDOMRef)(scrollRefProp);
         const {
@@ -146480,7 +146505,7 @@
             state.setInputValue(item.textValue);
           }
         }, [inputRef.current]);
-        (0, import_react75.useEffect)(() => {
+        (0, import_react80.useEffect)(() => {
           let keyToFocus;
           if (state.value && state.collection.getItem(state.value) && !state.disabledKeys.has(state.value)) {
             keyToFocus = state.value;
@@ -146493,7 +146518,7 @@
           }
           state.selectionManager.setFocusedKey(keyToFocus);
         }, [state.collection, state.disabledKeys, state.value, state.isOpen, state.inputValue]);
-        (0, import_react75.useEffect)(() => {
+        (0, import_react80.useEffect)(() => {
           if (state.isOpen && popoverRef.current && listBoxRef.current) {
             let selectedItem = listBoxRef.current.querySelector("[aria-selected=true] [data-label=true]");
             let scrollShadow = scrollShadowRef.current;
@@ -146505,7 +146530,7 @@
             }
           }
         }, [state.isOpen, disableAnimation]);
-        (0, import_react75.useEffect)(() => {
+        (0, import_react80.useEffect)(() => {
           if (isOpen) {
             if (popoverRef.current && inputWrapperRef.current) {
               let rect = inputWrapperRef.current.getBoundingClientRect();
@@ -146525,7 +146550,7 @@
           };
         }
         const Component2 = as || "div";
-        const slots = (0, import_react75.useMemo)(
+        const slots = (0, import_react80.useMemo)(
           () => (0, import_theme.autocomplete)({
             ...variantProps2,
             isClearable,
@@ -146691,15 +146716,15 @@
           getEndContentWrapperProps
         };
       }
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Autocomplete = (0, import_system2.forwardRef)(function Autocomplete2(props, ref) {
         var _a;
         const {
           Component: Component2,
           isOpen,
           disableAnimation,
-          selectorIcon = /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_shared_icons.ChevronDownIcon, {}),
-          clearIcon = /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_shared_icons.CloseIcon, {}),
+          selectorIcon = /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_shared_icons.ChevronDownIcon, {}),
+          clearIcon = /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_shared_icons.CloseIcon, {}),
           endContent,
           getBaseProps,
           getSelectorButtonProps,
@@ -146712,19 +146737,19 @@
           getEndContentWrapperProps
         } = useAutocomplete({ ...props, ref });
         const listboxProps = getListBoxProps();
-        const popoverContent = isOpen ? /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_popover.FreeSoloPopover, { ...getPopoverProps(), children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_scroll_shadow.ScrollShadow, { ...getListBoxWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_listbox.Listbox, { ...listboxProps }) }) }) : ((_a = listboxProps.state) == null ? void 0 : _a.collection.size) === 0 ? /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ...getEmptyPopoverProps() }) : null;
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(Component2, { ...getBaseProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+        const popoverContent = isOpen ? /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_popover.FreeSoloPopover, { ...getPopoverProps(), children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_scroll_shadow.ScrollShadow, { ...getListBoxWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_listbox.Listbox, { ...listboxProps }) }) }) : ((_a = listboxProps.state) == null ? void 0 : _a.collection.size) === 0 ? /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("div", { ...getEmptyPopoverProps() }) : null;
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(Component2, { ...getBaseProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
             import_input.Input,
             {
               ...getInputProps(),
-              endContent: /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { ...getEndContentWrapperProps(), children: [
-                endContent || /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_button.Button, { ...getClearButtonProps(), children: clearIcon }),
-                selectorIcon && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: selectorIcon })
+              endContent: /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("div", { ...getEndContentWrapperProps(), children: [
+                endContent || /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_button.Button, { ...getClearButtonProps(), children: clearIcon }),
+                selectorIcon && /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: selectorIcon })
               ] })
             }
           ),
-          disableAnimation ? popoverContent : /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion2.AnimatePresence, { children: popoverContent })
+          disableAnimation ? popoverContent : /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_framer_motion2.AnimatePresence, { children: popoverContent })
         ] });
       });
       var autocomplete_default = Autocomplete;
@@ -147510,28 +147535,28 @@
       }
       function $df1d8e967e73ec8e$export$b6df97c887c38e1a(state) {
         let stringFormatter = (0, $idq92$reactariai18n.useLocalizedStringFormatter)((0, $parcel$interopDefault($bd6dc95a3c5ee5cd$exports)), "@react-aria/calendar");
-        let start2, end;
+        let start3, end;
         var _state_value;
-        if ("highlightedRange" in state) ({ start: start2, end } = state.highlightedRange || {});
-        else start2 = end = (_state_value = state.value) !== null && _state_value !== void 0 ? _state_value : void 0;
+        if ("highlightedRange" in state) ({ start: start3, end } = state.highlightedRange || {});
+        else start3 = end = (_state_value = state.value) !== null && _state_value !== void 0 ? _state_value : void 0;
         let dateFormatter = (0, $idq92$reactariai18n.useDateFormatter)({
           weekday: "long",
           month: "long",
           year: "numeric",
           day: "numeric",
-          era: $df1d8e967e73ec8e$export$134cbb7fb09a9522(start2) || $df1d8e967e73ec8e$export$134cbb7fb09a9522(end),
+          era: $df1d8e967e73ec8e$export$134cbb7fb09a9522(start3) || $df1d8e967e73ec8e$export$134cbb7fb09a9522(end),
           timeZone: state.timeZone
         });
         let anchorDate = "anchorDate" in state ? state.anchorDate : null;
         return (0, $idq92$react.useMemo)(() => {
-          if (!anchorDate && start2 && end) {
-            if ((0, $idq92$internationalizeddate.isSameDay)(start2, end)) {
-              let date = dateFormatter.format(start2.toDate(state.timeZone));
+          if (!anchorDate && start3 && end) {
+            if ((0, $idq92$internationalizeddate.isSameDay)(start3, end)) {
+              let date = dateFormatter.format(start3.toDate(state.timeZone));
               return stringFormatter.format("selectedDateDescription", {
                 date
               });
             } else {
-              let dateRange = $df1d8e967e73ec8e$var$formatRange(dateFormatter, stringFormatter, start2, end, state.timeZone);
+              let dateRange = $df1d8e967e73ec8e$var$formatRange(dateFormatter, stringFormatter, start3, end, state.timeZone);
               return stringFormatter.format("selectedRangeDescription", {
                 dateRange
               });
@@ -147539,7 +147564,7 @@
           }
           return "";
         }, [
-          start2,
+          start3,
           end,
           anchorDate,
           state.timeZone,
@@ -147585,8 +147610,8 @@
           isAria
         ]);
       }
-      function $df1d8e967e73ec8e$var$formatRange(dateFormatter, stringFormatter, start2, end, timeZone) {
-        let parts = dateFormatter.formatRangeToParts(start2.toDate(timeZone), end.toDate(timeZone));
+      function $df1d8e967e73ec8e$var$formatRange(dateFormatter, stringFormatter, start3, end, timeZone) {
+        let parts = dateFormatter.formatRangeToParts(start3.toDate(timeZone), end.toDate(timeZone));
         let separatorIndex = -1;
         for (let i = 0; i < parts.length; i++) {
           let part = parts[i];
@@ -148376,14 +148401,14 @@
             }));
           },
           focusNextPage() {
-            let start2 = startDate.add(pageDuration);
+            let start3 = startDate.add(pageDuration);
             setFocusedDate((0, $4301262d71f567b9$exports.constrainValue)(focusedDate.add(pageDuration), minValue, maxValue));
-            setStartDate((0, $4301262d71f567b9$exports.alignStart)((0, $4301262d71f567b9$exports.constrainStart)(focusedDate, start2, pageDuration, locale, minValue, maxValue), pageDuration, locale));
+            setStartDate((0, $4301262d71f567b9$exports.alignStart)((0, $4301262d71f567b9$exports.constrainStart)(focusedDate, start3, pageDuration, locale, minValue, maxValue), pageDuration, locale));
           },
           focusPreviousPage() {
-            let start2 = startDate.subtract(pageDuration);
+            let start3 = startDate.subtract(pageDuration);
             setFocusedDate((0, $4301262d71f567b9$exports.constrainValue)(focusedDate.subtract(pageDuration), minValue, maxValue));
-            setStartDate((0, $4301262d71f567b9$exports.alignStart)((0, $4301262d71f567b9$exports.constrainStart)(focusedDate, start2, pageDuration, locale, minValue, maxValue), pageDuration, locale));
+            setStartDate((0, $4301262d71f567b9$exports.alignStart)((0, $4301262d71f567b9$exports.constrainStart)(focusedDate, start3, pageDuration, locale, minValue, maxValue), pageDuration, locale));
           },
           focusSectionStart() {
             if (visibleDuration.days) focusCell(startDate);
@@ -148507,8 +148532,8 @@
         let [anchorDate, setAnchorDateState] = (0, $e7F0I$react.useState)(null);
         let alignment = "center";
         if (value && value.start && value.end) {
-          let start2 = (0, $4301262d71f567b9$exports.alignCenter)((0, $e7F0I$internationalizeddate.toCalendarDate)(value.start), visibleDuration, locale, minValue, maxValue);
-          let end = start2.add(visibleDuration).subtract({
+          let start3 = (0, $4301262d71f567b9$exports.alignCenter)((0, $e7F0I$internationalizeddate.toCalendarDate)(value.start), visibleDuration, locale, minValue, maxValue);
+          let end = start3.add(visibleDuration).subtract({
             days: 1
           });
           if (value.end.compare(end) > 0) alignment = "start";
@@ -148619,14 +148644,14 @@
           setDragging
         };
       }
-      function $e49f7b861e5e8049$var$makeRange(start2, end) {
-        if (!start2 || !end) return null;
-        if (end.compare(start2) < 0) [start2, end] = [
+      function $e49f7b861e5e8049$var$makeRange(start3, end) {
+        if (!start3 || !end) return null;
+        if (end.compare(start3) < 0) [start3, end] = [
           end,
-          start2
+          start3
         ];
         return {
-          start: (0, $e7F0I$internationalizeddate.toCalendarDate)(start2),
+          start: (0, $e7F0I$internationalizeddate.toCalendarDate)(start3),
           end: (0, $e7F0I$internationalizeddate.toCalendarDate)(end)
         };
       }
@@ -149232,11 +149257,11 @@
         let dayOfWeek = Math.ceil(julian + 1) % 7;
         if (dayOfWeek < 0) dayOfWeek += 7;
         let region = $1f0f7ebf1ae6c530$var$getRegion(locale);
-        let [start2, end] = $1f0f7ebf1ae6c530$var$WEEKEND_DATA[region] || [
+        let [start3, end] = $1f0f7ebf1ae6c530$var$WEEKEND_DATA[region] || [
           6,
           0
         ];
-        return dayOfWeek === start2 || dayOfWeek === end;
+        return dayOfWeek === start3 || dayOfWeek === end;
       }
       function $1f0f7ebf1ae6c530$export$ee9d87258e1d19ed(date, locale) {
         return !$1f0f7ebf1ae6c530$export$618d60ea299da42(date, locale);
@@ -150338,12 +150363,12 @@
           return super.getDaysInMonth($b0ac0602ef646b2c$var$toGregorian(date));
         }
         getMinimumMonthInYear(date) {
-          let start2 = $b0ac0602ef646b2c$var$getMinimums(date);
-          return start2 ? start2[1] : 1;
+          let start3 = $b0ac0602ef646b2c$var$getMinimums(date);
+          return start3 ? start3[1] : 1;
         }
         getMinimumDayInMonth(date) {
-          let start2 = $b0ac0602ef646b2c$var$getMinimums(date);
-          return start2 && date.month === start2[1] ? start2[2] : 1;
+          let start3 = $b0ac0602ef646b2c$var$getMinimums(date);
+          return start3 && date.month === start3[1] ? start3[2] : 1;
         }
         constructor(...args) {
           super(...args), this.identifier = "japanese";
@@ -151105,18 +151130,18 @@
           return this.formatter.formatToParts(value);
         }
         /** Formats a date range as a string. */
-        formatRange(start2, end) {
+        formatRange(start3, end) {
           if (typeof this.formatter.formatRange === "function")
-            return this.formatter.formatRange(start2, end);
-          if (end < start2) throw new RangeError("End date must be >= start date");
-          return `${this.formatter.format(start2)} \u2013 ${this.formatter.format(end)}`;
+            return this.formatter.formatRange(start3, end);
+          if (end < start3) throw new RangeError("End date must be >= start date");
+          return `${this.formatter.format(start3)} \u2013 ${this.formatter.format(end)}`;
         }
         /** Formats a date range as an array of parts. */
-        formatRangeToParts(start2, end) {
+        formatRangeToParts(start3, end) {
           if (typeof this.formatter.formatRangeToParts === "function")
-            return this.formatter.formatRangeToParts(start2, end);
-          if (end < start2) throw new RangeError("End date must be >= start date");
-          let startParts = this.formatter.formatToParts(start2);
+            return this.formatter.formatRangeToParts(start3, end);
+          if (end < start3) throw new RangeError("End date must be >= start date");
+          let startParts = this.formatter.formatToParts(start3);
           let endParts = this.formatter.formatToParts(end);
           return [
             ...startParts.map((p) => ({
@@ -151349,7 +151374,7 @@
       var import_theme2 = require_dist12();
       var import_date = require_main74();
       var import_system = require_dist11();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist12();
       var import_utils8 = require_main38();
       var import_react_utils = require_dist10();
@@ -151395,7 +151420,7 @@
         const visibleMonths = (0, import_shared_utils.clamp)(visibleMonthsProp, 1, 3);
         const showMonthAndYearPickers = originalProps.showMonthAndYearPickers && visibleMonths === 1;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const handleHeaderExpandedChange = (0, import_react75.useCallback)(
+        const handleHeaderExpandedChange = (0, import_react80.useCallback)(
           (isExpanded) => {
             onHeaderExpandedChange(isExpanded || false);
           },
@@ -151406,10 +151431,10 @@
           isHeaderDefaultExpanded != null ? isHeaderDefaultExpanded : false,
           handleHeaderExpandedChange
         );
-        const visibleDuration = (0, import_react75.useMemo)(() => ({ months: visibleMonths }), [visibleMonths]);
+        const visibleDuration = (0, import_react80.useMemo)(() => ({ months: visibleMonths }), [visibleMonths]);
         const hasMultipleMonths = visibleMonths > 1;
         const shouldFilterDOMProps = typeof Component2 === "string";
-        const slots = (0, import_react75.useMemo)(
+        const slots = (0, import_react80.useMemo)(
           () => (0, import_theme.calendar)({
             ...variantProps2,
             showMonthAndYearPickers,
@@ -151612,8 +151637,8 @@
       var import_framer_motion3 = require_cjs4();
       var import_i18n62 = require_main5();
       var import_framer_utils = require_dist19();
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var ChevronLeftIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var ChevronLeftIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
         "svg",
         {
           "aria-hidden": "true",
@@ -151624,7 +151649,7 @@
           viewBox: "0 0 16 16",
           width: "1em",
           ...props,
-          children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+          children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
             "path",
             {
               d: "M10 3.33334L6 8.00001L10 12.6667",
@@ -151672,7 +151697,7 @@
       var import_interactions = require_main17();
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils3 = require_dist2();
-      var import_jsx_runtime32 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime36 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       function CalendarCell(originalProps) {
         const { state, slots, isPickerVisible, currentMonth, classNames, firstDayOfWeek, ...props } = originalProps;
         const ref = (0, import_react310.useRef)(null);
@@ -151707,7 +151732,7 @@
         const { hoverProps, isHovered } = (0, import_interactions.useHover)({
           isDisabled: isDisabled || isUnavailable || state.isReadOnly
         });
-        return /* @__PURE__ */ (0, import_jsx_runtime32.jsx)("td", { className: slots == null ? void 0 : slots.cell({ class: classNames == null ? void 0 : classNames.cell }), "data-slot": "cell", ...cellProps, children: /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime36.jsx)("td", { className: slots == null ? void 0 : slots.cell({ class: classNames == null ? void 0 : classNames.cell }), "data-slot": "cell", ...cellProps, children: /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(
           "span",
           {
             ...(0, import_shared_utils3.mergeProps)(buttonProps, hoverProps, focusProps),
@@ -151728,7 +151753,7 @@
             "data-selection-start": (0, import_shared_utils3.dataAttr)(isSelectionStart),
             "data-today": (0, import_shared_utils3.dataAttr)((0, import_date3.isToday)(props.date, state.timeZone)),
             "data-unavailable": (0, import_shared_utils3.dataAttr)(isUnavailable),
-            children: /* @__PURE__ */ (0, import_jsx_runtime32.jsx)("span", { children: formattedDate })
+            children: /* @__PURE__ */ (0, import_jsx_runtime36.jsx)("span", { children: formattedDate })
           }
         ) });
       }
@@ -151948,7 +151973,7 @@
           }
         ) : /* @__PURE__ */ (0, import_jsx_runtime62.jsx)("header", { ...headerProps, children: headerTitle });
       }
-      var import_react76 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react710 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils7 = require_dist2();
       var import_use_aria_button = require_dist27();
       var import_interactions2 = require_main17();
@@ -151998,12 +152023,12 @@
       var import_shared_utils6 = require_dist2();
       var import_scroll_into_view_if_needed = __toESM2(require_dist40());
       var import_date5 = require_main74();
-      function getYearRange(start2, end) {
+      function getYearRange(start3, end) {
         const years = [];
-        if (!start2 || !end) {
+        if (!start3 || !end) {
           return years;
         }
-        let current2 = (0, import_date5.startOfYear)(start2);
+        let current2 = (0, import_date5.startOfYear)(start3);
         while (current2.compare(end) <= 0) {
           years.push(current2);
           current2 = (0, import_date5.startOfYear)(current2.add({ years: 1 }));
@@ -152223,7 +152248,7 @@
           onPickerItemPressed,
           onPickerItemKeyDown
         } = useCalendarPicker(props);
-        const EmptyItem = (0, import_react76.useCallback)(
+        const EmptyItem = (0, import_react710.useCallback)(
           (props2) => /* @__PURE__ */ (0, import_jsx_runtime82.jsx)(
             "div",
             {
@@ -152237,7 +152262,7 @@
           ),
           [slots, classNames == null ? void 0 : classNames.pickerItem]
         );
-        const PickerItemWrapper = (0, import_react76.useCallback)(
+        const PickerItemWrapper = (0, import_react710.useCallback)(
           ({ children }) => /* @__PURE__ */ (0, import_jsx_runtime82.jsxs)(import_jsx_runtime82.Fragment, { children: [
             Array.from({ length: EMPTY_ITEMS_OFFSET }, (_, i) => /* @__PURE__ */ (0, import_jsx_runtime82.jsx)(EmptyItem, {}, i)),
             children,
@@ -155036,7 +155061,7 @@
             ...commonFieldProps,
             value: (_state_value_start = (_state_value = state.value) === null || _state_value === void 0 ? void 0 : _state_value.start) !== null && _state_value_start !== void 0 ? _state_value_start : null,
             defaultValue: (_state_defaultValue = state.defaultValue) === null || _state_defaultValue === void 0 ? void 0 : _state_defaultValue.start,
-            onChange: (start2) => state.setDateTime("start", start2),
+            onChange: (start3) => state.setDateTime("start", start3),
             autoFocus: props.autoFocus,
             name: props.startName,
             form: props.form,
@@ -157151,14 +157176,14 @@
                   if (part.source === "shared" && part.type === "literal") separatorIndex = i;
                   else if (part.source === "endRange") break;
                 }
-                let start2 = "";
+                let start3 = "";
                 let end = "";
                 for (let i = 0; i < parts.length; i++) {
-                  if (i < separatorIndex) start2 += parts[i].value;
+                  if (i < separatorIndex) start3 += parts[i].value;
                   else if (i > separatorIndex) end += parts[i].value;
                 }
                 return {
-                  start: start2,
+                  start: start3,
                   end
                 };
               } catch {
@@ -157329,7 +157354,7 @@
       var import_datepicker2 = require_main77();
       var import_shared_utils = require_dist2();
       var import_theme = require_dist12();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_form = require_dist33();
       function useDateInput(originalProps) {
         var _a, _b, _c, _d, _e, _f, _g;
@@ -157396,7 +157421,7 @@
           label
         });
         const shouldLabelBeOutside = labelPlacement === "outside" || labelPlacement === "outside-left" || labelPlacement === "outside-top";
-        const slots = (0, import_react75.useMemo)(
+        const slots = (0, import_react80.useMemo)(
           () => (0, import_theme.dateInput)({
             ...variantProps2,
             disableAnimation,
@@ -157516,7 +157541,7 @@
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system3 = require_dist11();
       var import_shared_utils2 = require_dist2();
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var DateInputGroup = (0, import_system3.forwardRef)((props, ref) => {
         const {
           as,
@@ -157539,7 +157564,7 @@
           ...otherProps
         } = props;
         const Component2 = as || "div";
-        const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("span", { ...labelProps, children: label }) : null;
+        const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("span", { ...labelProps, children: label }) : null;
         const errorMessage = typeof errorMessageProp === "function" ? errorMessageProp({
           isInvalid,
           validationErrors,
@@ -157548,7 +157573,7 @@
         const hasHelper = !!description || !!errorMessage;
         const helperWrapper = (0, import_react210.useMemo)(() => {
           if (!hasHelper) return null;
-          return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ...helperWrapperProps, children: isInvalid && errorMessage ? /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ...errorMessageProps, children: errorMessage }) : description ? /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ...descriptionProps, children: description }) : null });
+          return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("div", { ...helperWrapperProps, children: isInvalid && errorMessage ? /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("div", { ...errorMessageProps, children: errorMessage }) : description ? /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("div", { ...descriptionProps, children: description }) : null });
         }, [
           hasHelper,
           errorMessage,
@@ -157557,11 +157582,11 @@
           errorMessageProps,
           descriptionProps
         ]);
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(Component2, { ...otherProps, ref, "data-has-helper": (0, import_shared_utils2.dataAttr)(hasHelper), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(Component2, { ...otherProps, ref, "data-has-helper": (0, import_shared_utils2.dataAttr)(hasHelper), children: [
           shouldLabelBeOutside ? labelContent : null,
-          /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { ...groupProps, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("div", { ...groupProps, children: [
             !shouldLabelBeOutside ? labelContent : null,
-            /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { ...wrapperProps, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("div", { ...wrapperProps, children: [
               startContent,
               children,
               endContent
@@ -157606,12 +157631,12 @@
           }
         );
       };
-      var import_jsx_runtime32 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime36 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var DateInputField = (0, import_react410.forwardRef)((props, ref) => {
         const { as, state, slots, inputProps, classNames, ...otherProps } = props;
         const Component2 = as || "div";
-        return /* @__PURE__ */ (0, import_jsx_runtime32.jsxs)(Component2, { ...otherProps, ref, children: [
-          state.segments.map((segment, i) => /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime36.jsxs)(Component2, { ...otherProps, ref, children: [
+          state.segments.map((segment, i) => /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(
             DateInputSegment,
             {
               classNames,
@@ -157621,7 +157646,7 @@
             },
             i
           )),
-          /* @__PURE__ */ (0, import_jsx_runtime32.jsx)("input", { ...inputProps })
+          /* @__PURE__ */ (0, import_jsx_runtime36.jsx)("input", { ...inputProps })
         ] });
       });
       DateInputField.displayName = "HeroUI.DateInputField";
@@ -157894,7 +157919,7 @@
       var import_form = require_dist33();
       var import_shared_utils = require_dist2();
       var import_theme = require_dist12();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
       var import_i18n12 = require_main5();
@@ -158109,7 +158134,7 @@
           onHeaderExpandedChange,
           ...restUserCalendarProps
         } = userCalendarProps;
-        const handleHeaderExpandedChange = (0, import_react75.useCallback)(
+        const handleHeaderExpandedChange = (0, import_react80.useCallback)(
           (isExpanded) => {
             onHeaderExpandedChange == null ? void 0 : onHeaderExpandedChange(isExpanded || false);
           },
@@ -158412,7 +158437,7 @@
           getSelectorIconProps
         };
       }
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var DatePicker = (0, import_system3.forwardRef)(function DatePicker2(props, ref) {
         const { selectorButtonPlacement = "end", ...otherProps } = props;
         const {
@@ -158432,11 +158457,11 @@
           CalendarTopContent,
           CalendarBottomContent
         } = useDatePicker({ ...otherProps, ref });
-        const selectorContent = (0, import_react410.isValidElement)(selectorIcon) ? (0, import_react410.cloneElement)(selectorIcon, getSelectorIconProps()) : /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_shared_icons.CalendarBoldIcon, { ...getSelectorIconProps() });
+        const selectorContent = (0, import_react410.isValidElement)(selectorIcon) ? (0, import_react410.cloneElement)(selectorIcon, getSelectorIconProps()) : /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_shared_icons.CalendarBoldIcon, { ...getSelectorIconProps() });
         const calendarBottomContent = (0, import_react310.useMemo)(() => {
           if (isCalendarHeaderExpanded) return null;
-          return showTimeField ? /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(import_jsx_runtime31.Fragment, { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_date_input.TimeInput, { ...getTimeInputProps() }),
+          return showTimeField ? /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(import_jsx_runtime35.Fragment, { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_date_input.TimeInput, { ...getTimeInputProps() }),
             CalendarBottomContent
           ] }) : CalendarBottomContent;
         }, [state, showTimeField, CalendarBottomContent, isCalendarHeaderExpanded]);
@@ -158444,7 +158469,7 @@
           if (isCalendarHeaderExpanded) return null;
           return CalendarTopContent;
         }, [showTimeField, CalendarTopContent, isCalendarHeaderExpanded]);
-        const popoverContent = state.isOpen ? /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_popover.FreeSoloPopover, { ...getPopoverProps(), children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+        const popoverContent = state.isOpen ? /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_popover.FreeSoloPopover, { ...getPopoverProps(), children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
           import_calendar.Calendar,
           {
             ...getCalendarProps(),
@@ -158454,16 +158479,16 @@
         ) }) : null;
         const dateInputProps = {
           ...getDateInputProps(),
-          endContent: selectorButtonPlacement === "end" ? /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: endContent || selectorContent }) : endContent,
-          startContent: selectorButtonPlacement === "start" ? /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: startContent || selectorContent }) : startContent
+          endContent: selectorButtonPlacement === "end" ? /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: endContent || selectorContent }) : endContent,
+          startContent: selectorButtonPlacement === "start" ? /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: startContent || selectorContent }) : startContent
         };
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)(import_jsx_runtime31.Fragment, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_date_input.DateInput, { ...dateInputProps }),
-          disableAnimation ? popoverContent : /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion2.AnimatePresence, { children: popoverContent })
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)(import_jsx_runtime35.Fragment, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_date_input.DateInput, { ...dateInputProps }),
+          disableAnimation ? popoverContent : /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_framer_motion2.AnimatePresence, { children: popoverContent })
         ] });
       });
       var date_picker_default = DatePicker;
-      var import_react76 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react710 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react82 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system5 = require_dist11();
       var import_button2 = require_dist28();
@@ -158853,7 +158878,7 @@
           getDateInputGroupProps
         };
       }
-      var import_jsx_runtime32 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime36 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var DateRangePicker = (0, import_system5.forwardRef)(function DateRangePicker2(props, ref) {
         const { selectorButtonPlacement = "end", ...otherProps } = props;
         const {
@@ -158879,22 +158904,22 @@
           CalendarTopContent,
           CalendarBottomContent
         } = useDateRangePicker({ ...otherProps, ref });
-        const selectorContent = (0, import_react82.isValidElement)(selectorIcon) ? (0, import_react82.cloneElement)(selectorIcon, getSelectorIconProps()) : /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(import_shared_icons2.CalendarBoldIcon, { ...getSelectorIconProps() });
-        const calendarBottomContent = (0, import_react76.useMemo)(() => {
+        const selectorContent = (0, import_react82.isValidElement)(selectorIcon) ? (0, import_react82.cloneElement)(selectorIcon, getSelectorIconProps()) : /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(import_shared_icons2.CalendarBoldIcon, { ...getSelectorIconProps() });
+        const calendarBottomContent = (0, import_react710.useMemo)(() => {
           if (isCalendarHeaderExpanded) return null;
-          return showTimeField ? /* @__PURE__ */ (0, import_jsx_runtime32.jsxs)("div", { className: slots == null ? void 0 : slots.bottomContent({ class: classNames == null ? void 0 : classNames.bottomContent }), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime32.jsxs)("div", { className: slots == null ? void 0 : slots.timeInputWrapper({ class: classNames == null ? void 0 : classNames.timeInputWrapper }), children: [
-              /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(import_date_input3.TimeInput, { ...getStartTimeInputProps() }),
-              /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(import_date_input3.TimeInput, { ...getEndTimeInputProps() })
+          return showTimeField ? /* @__PURE__ */ (0, import_jsx_runtime36.jsxs)("div", { className: slots == null ? void 0 : slots.bottomContent({ class: classNames == null ? void 0 : classNames.bottomContent }), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime36.jsxs)("div", { className: slots == null ? void 0 : slots.timeInputWrapper({ class: classNames == null ? void 0 : classNames.timeInputWrapper }), children: [
+              /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(import_date_input3.TimeInput, { ...getStartTimeInputProps() }),
+              /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(import_date_input3.TimeInput, { ...getEndTimeInputProps() })
             ] }),
             CalendarBottomContent
           ] }) : CalendarBottomContent;
         }, [state, showTimeField, CalendarBottomContent, isCalendarHeaderExpanded]);
-        const calendarTopContent = (0, import_react76.useMemo)(() => {
+        const calendarTopContent = (0, import_react710.useMemo)(() => {
           if (isCalendarHeaderExpanded) return null;
           return CalendarTopContent;
         }, [showTimeField, CalendarTopContent, isCalendarHeaderExpanded]);
-        const popoverContent = state.isOpen ? /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(import_popover2.FreeSoloPopover, { ...getPopoverProps(), offset: 20, children: /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(
+        const popoverContent = state.isOpen ? /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(import_popover2.FreeSoloPopover, { ...getPopoverProps(), offset: 20, children: /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(
           import_calendar2.RangeCalendar,
           {
             ...getCalendarProps(),
@@ -158904,16 +158929,16 @@
         ) }) : null;
         const dateInputGroupProps = {
           ...getDateInputGroupProps(),
-          endContent: selectorButtonPlacement === "end" ? /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(import_button2.Button, { ...getSelectorButtonProps(), children: endContent || selectorContent }) : endContent,
-          startContent: selectorButtonPlacement === "start" ? /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(import_button2.Button, { ...getSelectorButtonProps(), children: startContent || selectorContent }) : startContent
+          endContent: selectorButtonPlacement === "end" ? /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(import_button2.Button, { ...getSelectorButtonProps(), children: endContent || selectorContent }) : endContent,
+          startContent: selectorButtonPlacement === "start" ? /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(import_button2.Button, { ...getSelectorButtonProps(), children: startContent || selectorContent }) : startContent
         };
-        return /* @__PURE__ */ (0, import_jsx_runtime32.jsxs)(import_jsx_runtime32.Fragment, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime32.jsxs)(import_date_input3.DateInputGroup, { ...dateInputGroupProps, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(date_range_picker_field_default, { ...getStartDateInputProps() }),
-            /* @__PURE__ */ (0, import_jsx_runtime32.jsx)("span", { ...getSeparatorProps(), "aria-hidden": "true", role: "separator", children: "-" }),
-            /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(date_range_picker_field_default, { ...getEndDateInputProps() })
+        return /* @__PURE__ */ (0, import_jsx_runtime36.jsxs)(import_jsx_runtime36.Fragment, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime36.jsxs)(import_date_input3.DateInputGroup, { ...dateInputGroupProps, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(date_range_picker_field_default, { ...getStartDateInputProps() }),
+            /* @__PURE__ */ (0, import_jsx_runtime36.jsx)("span", { ...getSeparatorProps(), "aria-hidden": "true", role: "separator", children: "-" }),
+            /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(date_range_picker_field_default, { ...getEndDateInputProps() })
           ] }),
-          disableAnimation ? popoverContent : /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(import_framer_motion22.AnimatePresence, { children: popoverContent })
+          disableAnimation ? popoverContent : /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(import_framer_motion22.AnimatePresence, { children: popoverContent })
         ] });
       });
       var date_range_picker_default = DateRangePicker;
@@ -158955,7 +158980,7 @@
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist12();
       var import_utils8 = require_main38();
       var import_shared_utils = require_dist2();
@@ -158990,16 +159015,16 @@
         const Component2 = as || "div";
         const shouldFilterDOMProps = typeof Component2 === "string";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const handleClose = (0, import_react75.useCallback)(() => {
+        const handleClose = (0, import_react80.useCallback)(() => {
           setIsVisible(false);
           onClose == null ? void 0 : onClose();
         }, [setIsVisible, onClose]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react75.useMemo)(
+        const slots = (0, import_react80.useMemo)(
           () => (0, import_theme.alert)({ hasContent: !(0, import_shared_utils.isEmpty)(description) || !(0, import_shared_utils.isEmpty)(children), ...variantProps2 }),
           [description, (0, import_shared_utils.objectToDeps)(variantProps2)]
         );
-        const getBaseProps = (0, import_react75.useCallback)(() => {
+        const getBaseProps = (0, import_react80.useCallback)(() => {
           return {
             "data-visible": (0, import_shared_utils.dataAttr)(isVisible),
             "data-closeable": (0, import_shared_utils.dataAttr)(isClosable),
@@ -159014,35 +159039,35 @@
             className: slots.base({ class: baseStyles })
           };
         }, [slots, baseStyles]);
-        const getMainWrapperProps = (0, import_react75.useCallback)(() => {
+        const getMainWrapperProps = (0, import_react80.useCallback)(() => {
           return {
             className: slots.mainWrapper({ class: classNames == null ? void 0 : classNames.mainWrapper })
           };
         }, [slots, classNames == null ? void 0 : classNames.mainWrapper]);
-        const getDescriptionProps = (0, import_react75.useCallback)(() => {
+        const getDescriptionProps = (0, import_react80.useCallback)(() => {
           return {
             className: slots.description({ class: classNames == null ? void 0 : classNames.description })
           };
         }, [slots, classNames == null ? void 0 : classNames.description]);
-        const getTitleProps = (0, import_react75.useCallback)(() => {
+        const getTitleProps = (0, import_react80.useCallback)(() => {
           return {
             className: slots.title({ class: classNames == null ? void 0 : classNames.title })
           };
         }, [slots, classNames == null ? void 0 : classNames.title]);
-        const getCloseButtonProps = (0, import_react75.useCallback)(
+        const getCloseButtonProps = (0, import_react80.useCallback)(
           () => ({
             ...closeButtonProps,
             className: slots.closeButton({ class: classNames == null ? void 0 : classNames.closeButton })
           }),
           [slots, classNames == null ? void 0 : classNames.closeButton]
         );
-        const getAlertIconProps = (0, import_react75.useCallback)(
+        const getAlertIconProps = (0, import_react80.useCallback)(
           () => ({
             className: slots.alertIcon({ class: classNames == null ? void 0 : classNames.alertIcon })
           }),
           [slots, classNames == null ? void 0 : classNames.alertIcon]
         );
-        const getIconWrapperProps = (0, import_react75.useCallback)(
+        const getIconWrapperProps = (0, import_react80.useCallback)(
           () => ({
             className: slots.iconWrapper({ class: classNames == null ? void 0 : classNames.iconWrapper })
           }),
@@ -159070,7 +159095,7 @@
           getIconWrapperProps
         };
       }
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var iconMap = {
         primary: import_shared_icons.InfoCircleIcon,
         secondary: import_shared_icons.InfoCircleIcon,
@@ -159103,16 +159128,16 @@
         if (!isVisible) return null;
         const customIcon = icon && (0, import_react210.isValidElement)(icon) ? (0, import_react210.cloneElement)(icon, getAlertIconProps()) : null;
         const IconComponent = iconMap[color2] || iconMap.primary;
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { ref: domRef, role: "alert", ...getBaseProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("div", { ref: domRef, role: "alert", ...getBaseProps(), children: [
           startContent,
-          /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ...getIconWrapperProps(), children: customIcon || /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(IconComponent, { ...getAlertIconProps() }) }),
-          /* @__PURE__ */ (0, import_jsx_runtime31.jsxs)("div", { ...getMainWrapperProps(), children: [
-            !(0, import_shared_utils2.isEmpty)(title) && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ...getTitleProps(), children: title }),
-            !(0, import_shared_utils2.isEmpty)(description) && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { ...getDescriptionProps(), children: description }),
+          /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("div", { ...getIconWrapperProps(), children: customIcon || /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(IconComponent, { ...getAlertIconProps() }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("div", { ...getMainWrapperProps(), children: [
+            !(0, import_shared_utils2.isEmpty)(title) && /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("div", { ...getTitleProps(), children: title }),
+            !(0, import_shared_utils2.isEmpty)(description) && /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("div", { ...getDescriptionProps(), children: description }),
             children
           ] }),
           endContent,
-          (isClosable || onClose) && /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+          (isClosable || onClose) && /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
             import_button.Button,
             {
               isIconOnly: true,
@@ -159121,7 +159146,7 @@
               variant: "light",
               onPress: handleClose,
               ...getCloseButtonProps(),
-              children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_shared_icons.CloseIcon, { height: 20, width: 20 })
+              children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_shared_icons.CloseIcon, { height: 20, width: 20 })
             }
           )
         ] });
@@ -159168,7 +159193,7 @@
       var import_modal = require_dist63();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_utils = require_dist19();
       var import_shared_utils = require_dist2();
       function useDrawer(originalProps) {
@@ -159183,7 +159208,7 @@
           ...otherProps
         } = originalProps;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const motionProps = (0, import_react75.useMemo)(() => {
+        const motionProps = (0, import_react80.useMemo)(() => {
           if (!(0, import_shared_utils.isEmpty)(drawerMotionProps)) return drawerMotionProps;
           const key = placement === "left" || placement === "right" ? "x" : "y";
           return {
@@ -159210,14 +159235,14 @@
           };
         }, [placement, drawerMotionProps]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react75.useMemo)(
+        const slots = (0, import_react80.useMemo)(
           () => (0, import_theme.drawer)({
             size,
             placement
           }),
           [size, placement]
         );
-        const getModalProps = (0, import_react75.useCallback)(() => {
+        const getModalProps = (0, import_react80.useCallback)(() => {
           return {
             classNames: {
               ...classNames,
@@ -159231,10 +159256,10 @@
         }, [baseStyles, classNames, motionProps, scrollBehavior, size, otherProps]);
         return { domRef, getModalProps };
       }
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Drawer = (0, import_system.forwardRef)(({ children, ...props }, ref) => {
         const { domRef, getModalProps } = useDrawer({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_modal.Modal, { ref: domRef, ...getModalProps(), children });
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_modal.Modal, { ref: domRef, ...getModalProps(), children });
       });
       Drawer.displayName = "HeroUI.Drawer";
       var drawer_default = Drawer;
@@ -159504,7 +159529,7 @@
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
       var import_use_form_reset = require_dist75();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_utils8 = require_main38();
       var import_form = require_main22();
       var import_form2 = require_main39();
@@ -159550,7 +159575,7 @@
           autoFocus,
           isTextInput: true
         });
-        const handleValueChange = (0, import_react75.useCallback)(
+        const handleValueChange = (0, import_react80.useCallback)(
           (value2) => {
             onValueChange(value2 != null ? value2 : "");
           },
@@ -159582,7 +159607,7 @@
         const errorMessage = typeof props.errorMessage === "function" ? props.errorMessage({ isInvalid, validationErrors, validationDetails }) : props.errorMessage || (validationErrors == null ? void 0 : validationErrors.join(" "));
         const description = props.description;
         const hasHelper = !!description || !!errorMessage;
-        const slots = (0, import_react75.useMemo)(
+        const slots = (0, import_react80.useMemo)(
           () => (0, import_theme.inputOtp)({
             ...variantProps2,
             disableAnimation,
@@ -159591,7 +159616,7 @@
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation, isInvalid, isReadOnly]
         );
-        const getBaseProps = (0, import_react75.useCallback)(
+        const getBaseProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ref: baseDomRef,
@@ -159626,7 +159651,7 @@
           },
           [baseDomRef, slots, baseStyles, isDisabled, isInvalid, isRequired, isReadOnly, value, length]
         );
-        const getInputOtpProps = (0, import_react75.useCallback)(
+        const getInputOtpProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             var _a2;
             const otpProps = {
@@ -159670,7 +159695,7 @@
             autoFocus
           ]
         );
-        const getSegmentWrapperProps = (0, import_react75.useCallback)(
+        const getSegmentWrapperProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.segmentWrapper({
@@ -159684,7 +159709,7 @@
           },
           [classNames == null ? void 0 : classNames.segmentWrapper, isDisabled]
         );
-        const getHelperWrapperProps = (0, import_react75.useCallback)(
+        const getHelperWrapperProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.helperWrapper({
@@ -159696,7 +159721,7 @@
           },
           [classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getErrorMessageProps = (0, import_react75.useCallback)(
+        const getErrorMessageProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.errorMessage({
@@ -159708,7 +159733,7 @@
           },
           [classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getDescriptionProps = (0, import_react75.useCallback)(
+        const getDescriptionProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.description({
@@ -159750,7 +159775,7 @@
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils2 = require_dist2();
       var import_theme2 = require_dist12();
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var InputOtpSegment = ({
         ...props
       }) => {
@@ -159762,14 +159787,14 @@
         const displayValue = (0, import_react210.useMemo)(() => {
           var _a2, _b;
           if (props.isActive && !props.char) {
-            return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { className: (0, import_theme2.cn)((_a2 = slots.caret) == null ? void 0 : _a2.call(slots, { class: caretStyles })) });
+            return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("div", { className: (0, import_theme2.cn)((_a2 = slots.caret) == null ? void 0 : _a2.call(slots, { class: caretStyles })) });
           }
           if (props.char) {
-            return type === "password" ? /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { className: (0, import_theme2.cn)((_b = slots.passwordChar) == null ? void 0 : _b.call(slots, { class: passwordCharStyles })) }) : /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { children: props.char });
+            return type === "password" ? /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("div", { className: (0, import_theme2.cn)((_b = slots.passwordChar) == null ? void 0 : _b.call(slots, { class: passwordCharStyles })) }) : /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("div", { children: props.char });
           }
-          return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)("div", { children: props.placeholderChar });
+          return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("div", { children: props.placeholderChar });
         }, [props.char, props.isActive, props.placeholderChar, type]);
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
           "div",
           {
             className: (0, import_theme2.cn)((_a = slots.segment) == null ? void 0 : _a.call(slots, { class: segmentStyles })),
@@ -160760,7 +160785,7 @@
       var import_shared_utils = require_dist2();
       var import_numberfield = require_main78();
       var import_numberfield2 = require_main79();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_form = require_dist33();
       function useNumberInput(originalProps) {
         var _a, _b, _c;
@@ -160788,7 +160813,7 @@
           hideStepper,
           ...otherProps
         } = props;
-        const [isFocusWithin, setFocusWithin] = (0, import_react75.useState)(false);
+        const [isFocusWithin, setFocusWithin] = (0, import_react80.useState)(false);
         const Component2 = as || "div";
         const disableAnimation = (_c = (_b = originalProps.disableAnimation) != null ? _b : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _c : false;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
@@ -160818,7 +160843,7 @@
         const isFilled = !(0, import_shared_utils.isEmpty)(state.inputValue) && !(0, import_shared_utils.isEmpty)(inputValue);
         const isFilledWithin = isFilled || isFocusWithin;
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className, isFilled ? "is-filled" : "");
-        const handleClear = (0, import_react75.useCallback)(() => {
+        const handleClear = (0, import_react80.useCallback)(() => {
           var _a2;
           state.setInputValue("");
           onClear == null ? void 0 : onClear();
@@ -160862,7 +160887,7 @@
         const hasStartContent = !!startContent;
         const isLabelOutside = shouldLabelBeOutside ? labelPlacement === "outside-left" || isOutsideTop || hasPlaceholder || labelPlacement === "outside" && hasStartContent : false;
         const isLabelOutsideAsPlaceholder = labelPlacement === "outside" && !hasPlaceholder && !hasStartContent;
-        const slots = (0, import_react75.useMemo)(
+        const slots = (0, import_react80.useMemo)(
           () => (0, import_theme.numberInput)({
             ...variantProps2,
             isInvalid,
@@ -160879,7 +160904,7 @@
             disableAnimation
           ]
         );
-        const handleKeyDown = (0, import_react75.useCallback)(
+        const handleKeyDown = (0, import_react80.useCallback)(
           (e) => {
             var _a2, _b2;
             const inputElement = e.currentTarget;
@@ -160909,7 +160934,7 @@
           },
           [inputValue, state, onClear, isClearable, originalProps.isReadOnly]
         );
-        const getBaseProps = (0, import_react75.useCallback)(
+        const getBaseProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ref: baseDomRef,
@@ -160959,7 +160984,7 @@
             originalProps.isDisabled
           ]
         );
-        const getLabelProps = (0, import_react75.useCallback)(
+        const getLabelProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "label",
@@ -160969,7 +160994,7 @@
           },
           [slots, isLabelHovered, labelProps, classNames == null ? void 0 : classNames.label]
         );
-        const getNumberInputProps = (0, import_react75.useCallback)(
+        const getNumberInputProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "input",
@@ -161011,7 +161036,7 @@
             handleKeyDown
           ]
         );
-        const getHiddenNumberInputProps = (0, import_react75.useCallback)(
+        const getHiddenNumberInputProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               name: originalProps.name,
@@ -161023,7 +161048,7 @@
           },
           [inputValue, originalProps.name]
         );
-        const getInputWrapperProps = (0, import_react75.useCallback)(
+        const getInputWrapperProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ref: inputWrapperRef,
@@ -161056,7 +161081,7 @@
             classNames == null ? void 0 : classNames.inputWrapper
           ]
         );
-        const getInnerWrapperProps = (0, import_react75.useCallback)(
+        const getInnerWrapperProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ref: innerWrapperRef,
@@ -161074,7 +161099,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.innerWrapper]
         );
-        const getMainWrapperProps = (0, import_react75.useCallback)(
+        const getMainWrapperProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -161086,7 +161111,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.mainWrapper]
         );
-        const getHelperWrapperProps = (0, import_react75.useCallback)(
+        const getHelperWrapperProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -161098,7 +161123,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getDescriptionProps = (0, import_react75.useCallback)(
+        const getDescriptionProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -161109,7 +161134,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.description]
         );
-        const getErrorMessageProps = (0, import_react75.useCallback)(
+        const getErrorMessageProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -161120,7 +161145,7 @@
           },
           [slots, errorMessageProps, classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getClearButtonProps = (0, import_react75.useCallback)(
+        const getClearButtonProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -161136,7 +161161,7 @@
           },
           [slots, isClearButtonFocusVisible, clearPressProps, clearFocusProps, classNames == null ? void 0 : classNames.clearButton]
         );
-        const getStepperWrapperProps = (0, import_react75.useCallback)(
+        const getStepperWrapperProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -161148,7 +161173,7 @@
           },
           [slots]
         );
-        const getStepperIncreaseButtonProps = (0, import_react75.useCallback)(
+        const getStepperIncreaseButtonProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -161163,7 +161188,7 @@
           },
           [slots, incrementButtonProps, classNames == null ? void 0 : classNames.stepperButton]
         );
-        const getStepperDecreaseButtonProps = (0, import_react75.useCallback)(
+        const getStepperDecreaseButtonProps = (0, import_react80.useCallback)(
           (props2 = {}) => {
             return {
               type: "button",
@@ -161220,9 +161245,9 @@
       }
       var import_button = require_dist28();
       var import_shared_icons = require_dist17();
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var NumberInputStepper = ({ direction, ...otherProps }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_button.Button, { disableRipple: true, isIconOnly: true, ...otherProps, children: direction == "up" ? /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_shared_icons.ChevronUpIcon, {}) : /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_shared_icons.ChevronDownIcon, {}) });
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_button.Button, { disableRipple: true, isIconOnly: true, ...otherProps, children: direction == "up" ? /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_shared_icons.ChevronUpIcon, {}) : /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_shared_icons.ChevronDownIcon, {}) });
       };
       NumberInputStepper.displayName = "HeroUI.NumberInputStepper";
       var number_input_stepper_default = NumberInputStepper;
@@ -162082,16 +162107,16 @@
             this.checkLabels(newLandmark.role);
             return;
           }
-          let start2 = 0;
+          let start3 = 0;
           let end = this.landmarks.length - 1;
-          while (start2 <= end) {
-            let mid = Math.floor((start2 + end) / 2);
+          while (start3 <= end) {
+            let mid = Math.floor((start3 + end) / 2);
             let comparedPosition = newLandmark.ref.current.compareDocumentPosition(this.landmarks[mid].ref.current);
             let isNewAfterExisting = Boolean(comparedPosition & Node.DOCUMENT_POSITION_PRECEDING || comparedPosition & Node.DOCUMENT_POSITION_CONTAINS);
-            if (isNewAfterExisting) start2 = mid + 1;
+            if (isNewAfterExisting) start3 = mid + 1;
             else end = mid - 1;
           }
-          this.landmarks.splice(start2, 0, newLandmark);
+          this.landmarks.splice(start3, 0, newLandmark);
           this.checkLabels(newLandmark.role);
         }
         updateLandmark(landmark) {
@@ -162774,13 +162799,13 @@
       var import_spinner = require_dist25();
       var import_framer_motion22 = require_cjs4();
       var import_shared_utils = require_dist2();
-      var import_jsx_runtime31 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime35 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var domAnimation2 = () => Promise.resolve().then(() => (init_src(), src_exports)).then((res) => res.default);
       var Ripple = (props) => {
         const { ripples = [], motionProps, color: color2 = "currentColor", style: style2, onClear } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_jsx_runtime31.Fragment, { children: ripples.map((ripple) => {
+        return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_jsx_runtime35.Fragment, { children: ripples.map((ripple) => {
           const duration = (0, import_shared_utils.clamp)(0.01 * ripple.size, 0.2, ripple.size > 100 ? 0.75 : 0.5);
-          return /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion22.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(import_framer_motion22.AnimatePresence, { mode: "popLayout", children: /* @__PURE__ */ (0, import_jsx_runtime31.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_framer_motion22.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(import_framer_motion22.AnimatePresence, { mode: "popLayout", children: /* @__PURE__ */ (0, import_jsx_runtime35.jsx)(
             import_framer_motion22.m.span,
             {
               animate: {
@@ -162818,10 +162843,10 @@
       Ripple.displayName = "HeroUI.Ripple";
       var ripple_default = Ripple;
       var import_shared_utils2 = require_dist2();
-      var import_react75 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react80 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useRipple(props = {}) {
-        const [ripples, setRipples] = (0, import_react75.useState)([]);
-        const onPress = (0, import_react75.useCallback)((event) => {
+        const [ripples, setRipples] = (0, import_react80.useState)([]);
+        const onPress = (0, import_react80.useCallback)((event) => {
           const trigger = event.target;
           const size = Math.max(trigger.clientWidth, trigger.clientHeight);
           setRipples((prevRipples) => [
@@ -162834,7 +162859,7 @@
             }
           ]);
         }, []);
-        const onClear = (0, import_react75.useCallback)((key) => {
+        const onClear = (0, import_react80.useCallback)((key) => {
           setRipples((prevState) => prevState.filter((ripple) => ripple.key !== key));
         }, []);
         return { ripples, onClear, onPress, ...props };
@@ -163299,7 +163324,7 @@
       var button_default = Button;
       var import_shared_icons = require_dist17();
       var import_framer_motion3 = require_cjs4();
-      var import_react76 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react710 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_spinner2 = require_dist25();
       var import_system3 = require_dist11();
       var import_theme2 = require_dist12();
@@ -163793,7 +163818,7 @@
           isLoading
         };
       }
-      var import_jsx_runtime32 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime36 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var iconMap = {
         default: import_shared_icons.InfoFilledIcon,
         primary: import_shared_icons.InfoFilledIcon,
@@ -163834,30 +163859,30 @@
           ...props,
           ref
         });
-        const customIcon = typeof icon === "function" ? icon(getIconProps()) : (0, import_react76.isValidElement)(icon) && (0, import_react76.cloneElement)(icon, getIconProps());
+        const customIcon = typeof icon === "function" ? icon(getIconProps()) : (0, import_react710.isValidElement)(icon) && (0, import_react710.cloneElement)(icon, getIconProps());
         const IconComponent = severity ? iconMap[severity] : iconMap[color2] || iconMap.default;
-        const customLoadingComponent = loadingComponent && (0, import_react76.isValidElement)(loadingComponent) ? (0, import_react76.cloneElement)(loadingComponent, getLoadingComponentProps()) : null;
-        const loadingIconComponent = isLoading ? customLoadingComponent || /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(import_spinner2.Spinner, { ...getSpinnerComponentProps() }) : null;
-        const customCloseIcon = typeof closeIcon === "function" ? closeIcon({}) : (0, import_react76.isValidElement)(closeIcon) && (0, import_react76.cloneElement)(closeIcon, {});
-        const toastContent = /* @__PURE__ */ (0, import_jsx_runtime32.jsxs)(Component2, { ref: domRef, ...getToastProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime32.jsxs)("div", { ...getContentProps(), children: [
-            hideIcon && !isLoading ? null : loadingIconComponent || customIcon || /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(IconComponent, { ...getIconProps() }),
-            /* @__PURE__ */ (0, import_jsx_runtime32.jsxs)("div", { ...getWrapperProps(), children: [
-              /* @__PURE__ */ (0, import_jsx_runtime32.jsx)("div", { ...getTitleProps(), children: props.toast.content.title }),
-              /* @__PURE__ */ (0, import_jsx_runtime32.jsx)("div", { ...getDescriptionProps(), children: props.toast.content.description })
+        const customLoadingComponent = loadingComponent && (0, import_react710.isValidElement)(loadingComponent) ? (0, import_react710.cloneElement)(loadingComponent, getLoadingComponentProps()) : null;
+        const loadingIconComponent = isLoading ? customLoadingComponent || /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(import_spinner2.Spinner, { ...getSpinnerComponentProps() }) : null;
+        const customCloseIcon = typeof closeIcon === "function" ? closeIcon({}) : (0, import_react710.isValidElement)(closeIcon) && (0, import_react710.cloneElement)(closeIcon, {});
+        const toastContent = /* @__PURE__ */ (0, import_jsx_runtime36.jsxs)(Component2, { ref: domRef, ...getToastProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime36.jsxs)("div", { ...getContentProps(), children: [
+            hideIcon && !isLoading ? null : loadingIconComponent || customIcon || /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(IconComponent, { ...getIconProps() }),
+            /* @__PURE__ */ (0, import_jsx_runtime36.jsxs)("div", { ...getWrapperProps(), children: [
+              /* @__PURE__ */ (0, import_jsx_runtime36.jsx)("div", { ...getTitleProps(), children: props.toast.content.title }),
+              /* @__PURE__ */ (0, import_jsx_runtime36.jsx)("div", { ...getDescriptionProps(), children: props.toast.content.description })
             ] })
           ] }),
-          isProgressBarVisible && /* @__PURE__ */ (0, import_jsx_runtime32.jsx)("div", { className: slots.progressTrack({ class: classNames == null ? void 0 : classNames.progressTrack }), children: /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(
+          isProgressBarVisible && /* @__PURE__ */ (0, import_jsx_runtime36.jsx)("div", { className: slots.progressTrack({ class: classNames == null ? void 0 : classNames.progressTrack }), children: /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(
             "div",
             {
               ref: progressBarRef,
               className: slots.progressIndicator({ class: classNames == null ? void 0 : classNames.progressIndicator })
             }
           ) }),
-          /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(button_default, { isIconOnly: true, ...getCloseButtonProps(), children: customCloseIcon || /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(import_shared_icons.CloseIcon, { ...getCloseIconProps() }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(button_default, { isIconOnly: true, ...getCloseButtonProps(), children: customCloseIcon || /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(import_shared_icons.CloseIcon, { ...getCloseIconProps() }) }),
           endContent
         ] });
-        return /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(import_jsx_runtime32.Fragment, { children: disableAnimation ? toastContent : /* @__PURE__ */ (0, import_jsx_runtime32.jsx)(import_framer_motion3.m.div, { ...getMotionDivProps(), children: toastContent }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(import_jsx_runtime36.Fragment, { children: disableAnimation ? toastContent : /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(import_framer_motion3.m.div, { ...getMotionDivProps(), children: toastContent }) });
       });
       Toast.displayName = "HeroUI.Toast";
       var toast_default = Toast;
@@ -164551,8 +164576,8 @@
         async listen(event$1, handler) {
           if (this._handleTauriEvent(event$1, handler)) {
             return () => {
-              const listeners = this.listeners[event$1];
-              listeners.splice(listeners.indexOf(handler), 1);
+              const listeners2 = this.listeners[event$1];
+              listeners2.splice(listeners2.indexOf(handler), 1);
             };
           }
           return event.listen(event$1, handler, {
@@ -164581,8 +164606,8 @@
         async once(event$1, handler) {
           if (this._handleTauriEvent(event$1, handler)) {
             return () => {
-              const listeners = this.listeners[event$1];
-              listeners.splice(listeners.indexOf(handler), 1);
+              const listeners2 = this.listeners[event$1];
+              listeners2.splice(listeners2.indexOf(handler), 1);
             };
           }
           return event.once(event$1, handler, {
@@ -166173,9 +166198,38 @@
     PlexPlugin: () => PlexPlugin
   });
 
+  // lib/stremio/timing.ts
+  var start = 0;
+  var marks = [];
+  function markStreamPhase(phase, detail) {
+    const now3 = Date.now();
+    const orphan = phase === "url-selected" && !marks.some((m2) => m2.phase === "id-resolved");
+    if (phase === "id-resolved" || marks.length === 0 || orphan) {
+      start = now3;
+      marks = [];
+      if (phase !== "id-resolved") timelineKey = null;
+    }
+    marks.push({ phase, offsetMs: now3 - start, ...detail ? { detail } : {} });
+  }
+  var timelineKey = null;
+  function formatStreamTimeline() {
+    return `[stream-timing] ${marks.map((m2) => {
+      const via = m2.detail && typeof m2.detail.via === "string" ? `(${m2.detail.via})` : "";
+      return `${m2.phase}=${m2.offsetMs}${via}`;
+    }).join(" ")}`;
+  }
+  function sendToDebugLog(line) {
+    if (typeof window === "undefined") return;
+    void fetch(`/api/debug-log?msg=${encodeURIComponent(line)}`).catch(() => {
+    });
+  }
+  function emitStreamTimeline(send = sendToDebugLog) {
+    if (marks.length === 0) return;
+    send(formatStreamTimeline());
+  }
+
   // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/profile-storage-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
-  var getActiveProfileId = () => sdk.getActiveProfileId();
   var getScopedStorageItem = (baseKey) => sdk.getScopedStorageItem(baseKey);
   var setScopedStorageItem = (baseKey, value) => sdk.setScopedStorageItem(baseKey, value);
   var removeScopedStorageItem = (baseKey) => sdk.removeScopedStorageItem(baseKey);
@@ -166365,14 +166419,17 @@
       streamProviderMaxResults: "Max results",
       streamProviderMaxSize: "Max size (MB, 0 = no limit)",
       streamProviderSelection: "Stream provider",
-      streamProviderManifestUrl: "Manifest URL (stremio:// or https://)",
       streamProviderCustomUrl: "Custom URL",
       streamProviderNoUrl: "No URL set",
       streamProviderAddComet: "+ Comet",
       streamProviderAddJackettio: "+ Jackettio",
+      // boundary-exempt: pluginets UI-sträng, bundlas av pluginet; tas bort när pluginet bär egna strängar
       streamProviderAddAiostreams: "+ AIOStreams",
+      // boundary-exempt: pluginets UI-sträng, bundlas av pluginet; tas bort när pluginet bär egna strängar
       aiostreamsOpenConfig: "Open the configurator",
+      // boundary-exempt: pluginets UI-sträng, bundlas av pluginet; tas bort när pluginet bär egna strängar
       aiostreamsManifestLabel: "Manifest URL",
+      // boundary-exempt: pluginets UI-sträng, bundlas av pluginet; tas bort när pluginet bär egna strängar
       streamProviderAddCustom: "+ Custom URL",
       useGlobal: "Use global",
       clearFilters: "Clear filters",
@@ -166517,11 +166574,13 @@
       tvRemoveRow: "Remove",
       raAlwaysVlc: "Always open in VLC",
       dtMinutesShort: "{n}m",
-      epLayoutTitle: "Episode layout",
-      epLayoutDesc: "List shows a thumbnail beside the text. Cards show wide artwork you scroll through, with the text over the image.",
-      epLayoutList: "List",
-      epLayoutCards: "Cards",
-      epLayoutToggleTitle: "Switch episode layout",
+      epLayoutTitle: "Details page layout",
+      epLayoutDesc: "Vertical stacks episodes, streams and recommendations in lists you scroll down through. Side-scrolling puts them in rows of cards you swipe sideways. Applies to both movies and series.",
+      epLayoutList: "Vertical",
+      epLayoutCards: "Side-scrolling",
+      epLayoutToggleTitle: "Switch layout: vertical or side-scrolling",
+      detailsLayoutToggleTitle: "Switch layout: vertical or side-scrolling",
+      detailsTrailers: "Trailers",
       homeBubble: "Home",
       daPlacementTitle: "Action buttons",
       daPlacementDesc: "Where Follow, Watched, Trailer and Sources sit on the details page.",
@@ -166587,6 +166646,7 @@
       dismiss: "Dismiss",
       // Filters
       filters: "Filters",
+      showResults: "Show results",
       refine: "Refine",
       reset: "Reset",
       type: "Type",
@@ -166824,6 +166884,7 @@
       plPlayPause: "Play/Pause",
       plSeekBack: "Seek back 10s",
       plSeekForward: "Seek forward 10s",
+      plSeek: "Timeline",
       plTime: "Time display",
       plSpacer: "Spacer (left/right split)",
       plSegmentBadges: "Intro/outro badges",
@@ -167109,7 +167170,50 @@
       themeSystem: "Follow system",
       uiScale: "Interface scale",
       uiScaleDesc: "Scales the entire interface. Useful on 4K and ultrawide screens.",
+      fullCastTitle: "Full cast & crew",
+      fullCastOpen: "Cast",
+      dsLayoutTitle: "Streams",
+      dsLayoutDesc: "Where the stream list sits on the details page.",
+      dsLayoutSidebar: "Side panel",
+      dsLayoutInline: "Below the content",
+      heroCast: "Cast",
+      newSeasonBadge: "New season",
+      homeCardShape: "Card shape",
+      homeCardShapeDesc: "Poster cards or wide backdrop cards on the home rows.",
+      homeRowTitle: "Row name",
+      homeRowTitleDesc: "Your own heading for this row. Empty = the name the source provides.",
+      homeRowTitleDefault: "From the source",
+      homeRowSpoilers: "Spoiler guard",
+      homeRowSpoilersDesc: "Follow the spoiler settings on this row. Off shows episode titles and stills unmasked \u2014 useful where you have already watched, like Continue watching.",
+      cardShapePoster: "Poster",
+      cardShapeLandscape: "Landscape",
+      qrAddonOpen: "Add via phone",
+      qrAddonTitle: "Scan with your phone",
+      qrAddonHint: "Open the page, paste a Stremio manifest URL and send \u2014 it installs right here.",
+      qrAddonNoLan: "No LAN address found \u2014 connect the device to your network.",
+      qrAddonInstallFailed: "Could not install the addon.",
+      qrAddonInstalled: "{name} installed",
+      stremioAddonConfigRequired: "This addon must be configured first \u2014 open its configure page in a browser, pick your options, and paste the personal manifest URL it gives you.",
+      fullCastCastTab: "Cast",
+      fullCastCrewTab: "Crew",
+      fullCastSearch: "Search cast & crew",
+      fullCastSortBilling: "Billing order",
+      fullCastSortName: "Name",
+      fullCastSortPopularity: "Popularity",
+      fullCastKeyCrew: "Key crew",
+      fullCastStills: "Stills",
+      fullCastNoMatches: "No one matches the search.",
+      fullCastCounter: "{cast} cast \xB7 {crew} crew",
+      fullCastEpisodes: "{n} ep",
+      personCredits: "Credits",
+      personSortedByPopularity: "Sorted by popularity",
+      tvFontScale: "Text size",
+      tvFontScaleDesc: "Scales all text in TV mode without changing the layout.",
+      tvMenuScale: "Menu size",
+      tvMenuScaleDesc: "Scales the side menu \u2014 icons and labels \u2014 in TV mode.",
       menuScale: "Menu scale",
+      cornerScale: "Corner menu size",
+      cornerScaleDesc: "Scales the icons in the top-right corner. Per device \u2014 never mirrored to remote sessions.",
       menuScaleDesc: "Scales only the side menu \u2014 icons and labels \u2014 independently of the interface scale.",
       reduceMotion: "Reduce motion",
       reduceMotionDesc: "Turns off animations and soft transitions throughout the app.",
@@ -167141,9 +167245,21 @@
       traktConflictMerge: "Merge (keep both)",
       traktConflictTrakt: "Trakt wins",
       traktConflictLocal: "This device wins",
-      showTraktCommentsDesc: "Public Trakt comments under movies and series. Spoiler-marked ones stay hidden until you click them.",
+      showTraktCommentsDesc: "Public Trakt comments under movies and series, and a button to write your own. Spoiler-marked ones stay hidden until you click them. Trakt only accepts comments in English.",
       showTraktCommentsNeedsTrakt: "Requires a connected Trakt account (Tracking \u2192 Trakt).",
       traktCommentsConnectHint: "Connect Trakt under Settings \u2192 Tracking to see comments.",
+      traktCommentWrite: "Write a comment",
+      traktCommentPlaceholder: "What did you think?",
+      traktCommentEnglishHint: "Trakt only accepts comments in English, at least 5 words. Spoilers must be marked.",
+      traktCommentWords: "{n} words",
+      traktCommentSpoilerToggle: "Contains spoilers",
+      traktCommentSend: "Post",
+      traktCommentLooksSwedish: "This looks like Swedish \u2014 Trakt removes comments that are not in English and can suspend the account.",
+      traktCommentSendAnyway: "Post anyway",
+      traktCommentBanned: "Trakt has disabled commenting for this account.",
+      traktCommentRateLimited: "Wait a moment before posting again.",
+      traktCommentReviewNote: "From 200 words this is posted as a review.",
+      traktCommentFailed: "The comment could not be posted.",
       shortcutsBindableTitle: "KEYS (CLICK TO CHANGE)",
       shortcutsTracks: "Tracks",
       shortcutsGlobal: "Global",
@@ -167158,6 +167274,9 @@
       settingsTabThisComputer: "This computer",
       settingsTabStorage: "Storage",
       settingsTabHome: "Home",
+      /* Underfliken på sidan Hem & utseende: layout, navigering, hero, visning —
+         val som gäller fler sidor än Hem, därför inte 'Hem'. */
+      settingsTabAppearance: "Appearance",
       settingsTabZapp: "Zapp",
       settingsSearchPlaceholder: "Search settings",
       settingsNyBadge: "NEW",
@@ -167220,10 +167339,8 @@
       switchProfile: "Switch profile",
       profileSwitcher: "Profile",
       streamProviderTitle: "Stream provider",
-      streamProviderDesc: "Choose which Stremio-compatible stream provider is used to find streams.",
       configure: "Configure",
       customScraper: "Custom",
-      customScraperDesc: "Any Stremio-compatible stream provider.",
       rdApiKeyLabel: "Stream provider API key",
       streamProviderManifestPlaceholder: "Paste manifest URL here...",
       customManifestPlaceholder: "https://your-stream-provider.example.com/manifest.json",
@@ -168028,7 +168145,9 @@
       onboardingLanguageHint: "Subtitles in your preferred language are selected automatically when available, with the fallback used when the primary is missing.",
       onboardingPluginsEyebrow: "PLUGINS",
       onboardingPluginsTitle: "Choose your plugins",
-      onboardingPluginsDesc: "Tick the plugins you want to install right away. Everything can be added or removed later under Settings \u2192 Plugins.",
+      onboardingPluginsDesc: "Tick the plugins you want active. Built-in plugins are enabled right away and fetch their latest runtime when online; community plugins are fetched from their developer. Everything can be added or removed later under Settings \u2192 Plugins.",
+      onboardingBundledBadge: "Built in",
+      onboardingInstalledBadge: "Already active",
       onboardingOfficialGroup: "Official",
       onboardingExternalGroup: "External",
       onboardingThirdParty: "Third-party",
@@ -168043,6 +168162,8 @@
       streamsLayoutDesc: "In the side panel, or as a section on the page above Recommendations. Series get streams under each episode.",
       streamsLayoutSidebar: "Side panel",
       streamsLayoutInline: "On the page",
+      castCountTitle: "Cast members shown",
+      castCountDesc: "How many of the cast appear on the details page. Phones page them eight at a time; desktop scrolls.",
       gestTabLabel: "Gestures",
       gestTitle: "Swipe gestures",
       gestHint: "What a swipe does in the player. Phone and tablet only.",
@@ -168065,6 +168186,9 @@
       gestDoubleTapOff: "Off",
       gestHoldSpeedTitle: "Hold to fast-forward",
       gestHoldSpeedDesc: "Press and hold anywhere to play at double speed; release to return to normal.",
+      externalDisplayVideoOnlyTitle: "External display: video only there",
+      externalDisplayVideoOnlyDesc: "With glasses or an HDMI screen connected, the video plays only on the external display. The phone goes dark and shows the controls when you tap \u2014 less glare, longer battery.",
+      externalDisplayPlayingThere: "Playing on the external display",
       onboardingPerfEyebrow: "Performance",
       onboardingPerfTitle: "Matched to your device",
       onboardingPerfDesc: "We measured this device and set a ceiling for what autoplay may pick on its own. You can raise it now, or change it any time under Playback.",
@@ -168072,12 +168196,15 @@
       onboardingPerfCapLabel: "Largest stream autoplay may pick",
       onboardingPerfUnlimited: "No limit",
       onboardingPerfLater: "This only sets the starting point. Nothing is blocked \u2014 you can always pick any stream yourself from the list.",
-      onboardingWillInstall: "{count} plugin(s) will be installed when you finish.",
+      onboardingPerfNetMeasuring: "Measuring your connection speed\u2026",
+      onboardingPerfNetResult: "Connection \u2248 {mbps} Mbit/s \u2014 the suggested ceiling follows it.",
+      onboardingPerfNetFailed: "Could not measure the connection; the suggestion is based on the device alone.",
+      onboardingWillInstall: "{count} plugin(s) will be enabled \u2014 latest runtime fetched \u2014 when you finish.",
       onboardingInstallFailed: "{names} could not be installed right now \u2014 you can find them under Settings \u2192 Plugins.",
-      onboardingOpenAppNow: "Open Lumio now",
-      onboardingInstallProgress: "Installing plugins {done} / {total}",
+      onboardingOpenAppNow: "Open Lumio",
+      onboardingInstallProgress: "Enabling plugins and fetching latest runtimes {done} / {total}",
       onboardingInstallQueued: "Queued",
-      onboardingInstallWorking: "Downloading\u2026",
+      onboardingInstallWorking: "Enabling \xB7 fetching latest\u2026",
       onboardingInstallDone: "Done",
       onboardingInstallError: "Failed",
       onboardingInstallBackground: "This continues in the background \u2014 you can open Lumio right away and check Settings \u2192 Plugins later.",
@@ -168169,6 +168296,61 @@
       kpCatalogsSuffix: "catalogs",
       kpProvidedCatalogs: "Provided catalogs",
       kpMetricActiveAddons: "Active addons",
+      sourcesEmptyTitle: "No sources yet",
+      coreStreamsToggle: "Use Lumio's own stream list (beta)",
+      coreStreamsToggleDesc: "Streams are fetched and played by the app itself, straight from your sources. Takes effect after a restart.",
+      coreStreamsHidden: "{count} streams hidden by quality filters",
+      coreStreamsSelectEpisode: "Pick an episode to see its streams.",
+      coreStreamsSource: "Source",
+      coreStreamsCached: "Cached",
+      coreStreamsLoading: "Checking sources\u2026",
+      streamNotServingMedia: "The source did not deliver playable media. Try another stream.",
+      libraryRowSuffix: "in your library",
+      libraryModeTab: "Library",
+      libraryModeTitle: "Library mode",
+      libraryModeHint: "When a library is the home page, every row is filtered to what you own. Rows with nothing indexed are hidden; the count shows how many titles each row can offer right now.",
+      libraryUseAsHome: "Use as home page",
+      libraryUseAsHomeHint: "Tick one or more libraries. Home page, details page, search and Zapp are then fed only from them, together. Stream sources stay hidden while it is on.",
+      librarySourcesTitle: "Indexed libraries",
+      librarySourceNotIndexed: "Not indexed yet \u2014 build the index in the plugin's settings.",
+      libraryModeOff: "No library is set as the home page. Turn it on under the library plugin's settings.",
+      libraryRowIndexed: "{count} indexed",
+      libraryMetricTitles: "Titles",
+      librarySearchPlaceholder: "Search your library",
+      libraryBackToHome: "Back to Home",
+      continueLayoutRows: "Rows",
+      continueLayoutGrid: "Grid",
+      /* Settings → Display → Continue watching */
+      cwSectionHint: "The view has two modes, switched with the button next to the filter. Each mode has its own card format and count.",
+      cwModeRows: "Side-scrolling rows",
+      cwModeRowsDesc: "All, Series and Movies as rows you swipe sideways.",
+      cwModeGrid: "Grid",
+      cwModeGridDesc: "Everything in one grid you scroll down through.",
+      cwFormatLabel: "Card format",
+      cwFormatPortrait: "Portrait",
+      cwFormatLandscape: "Landscape",
+      libraryVersionsTitle: "Versions in your library",
+      libraryNotInLibrary: "Not in your library",
+      libraryEpisodeNotInLibrary: "This episode is not in your library",
+      libraryRowNotLoaded: "not loaded yet",
+      libraryRowRecent: "Recently added to your library",
+      libraryRowContinue: "Library progress in Last watched",
+      libraryRowUnseen: "Unseen favourites",
+      libraryRowGenre: "Genre",
+      plexIndexTitle: "Library index",
+      plexIndexDesc: "Lumio indexes your Plex libraries locally so the home page, recommendations and Zapp can run entirely on what you own.",
+      plexIndexEmpty: "No index yet.",
+      plexIndexStatus: "{titles} titles \xB7 {unmatched} unmatched",
+      plexIndexLastSync: "Last synced",
+      plexIndexRunning: "{done} titles",
+      plexIndexBuild: "Build index",
+      plexIndexRebuild: "Rebuild",
+      plexIndexUpdate: "Update",
+      plexIndexClear: "Remove index",
+      plexIndexUseAsHome: "Use Plex as the home page",
+      plexIndexUseAsHomeDesc: "Hero, rows, recommendations and Zapp come from your library only. Everything shown is playable.",
+      sourcesEmptyBody: "Lumio finds streams through sources you add yourself. Paste a source's manifest URL below \u2014 it usually ends in /manifest.json. Lumio does not host, index or recommend any source.",
+      sourceAddInvalid: "That URL did not return a valid manifest. Check the address and try again.",
       kpMetricActiveAddonsSub: "installed",
       kpMetricTotalCatalogs: "Total catalogs",
       kpMetricTotalCatalogsSub: "from all sources",
@@ -168514,8 +168696,24 @@
       liveTvEpgSources: "EPG sources",
       liveTvEpgSourceStats: "{channels} channels \xB7 {programmes} programmes",
       liveTvEpgUrlPlaceholder: "XMLTV URL (e.g. https://epgshare01.online/epgshare01/epg_ripper_SE1.xml.gz)",
-      liveTvNoEpgSourcesPrefix: "No EPG sources yet. Try",
-      liveTvNoEpgSourcesSuffix: "for Swedish channels.",
+      liveTvNoEpgSourcesPrefix: "No EPG sources yet.",
+      liveTvXtreamTitle: "Xtream login",
+      liveTvXtreamDesc: "For providers that use an Xtream Codes login (server, username, password) instead of an M3U link.",
+      liveTvXtreamServer: "Server URL",
+      liveTvXtreamUsername: "Username",
+      liveTvXtreamPassword: "Password",
+      liveTvXtreamConnect: "Log in & fetch",
+      liveTvXtreamConnecting: "Logging in\u2026",
+      liveTvXtreamDone: "Fetched",
+      liveTvXtreamAuthFailed: "Login rejected \u2014 check the username and password.",
+      liveTvXtreamError: "Could not reach the panel. Check the server URL.",
+      liveTvXtreamExpires: "Expires",
+      liveTvXtreamCategories: "Categories",
+      liveTvXtreamAllCategories: "All categories",
+      liveTvXtreamSearchCategories: "Search categories",
+      liveTvXtreamApplyCategories: "Update channels",
+      liveTvXtreamRemove: "Remove",
+      liveTvXtreamCapped: "Showing the first {max} of {total} channels \u2014 narrow the selection with categories.",
       liveTvFetchEpgForChannel: "Fetch EPG for this channel",
       liveTvNoEpg: "No EPG",
       liveTvNoGuideAvailable: "No guide available",
@@ -168684,14 +168882,17 @@
       streamProviderMaxResults: "Maxresultat",
       streamProviderMaxSize: "Maxstorlek (MB, 0 = ingen gr\xE4ns)",
       streamProviderSelection: "Streamleverant\xF6r",
-      streamProviderManifestUrl: "Manifest-URL (stremio:// eller https://)",
       streamProviderCustomUrl: "Egen URL",
       streamProviderNoUrl: "Ingen URL angiven",
       streamProviderAddComet: "+ Comet",
       streamProviderAddJackettio: "+ Jackettio",
+      // boundary-exempt: pluginets UI-sträng, bundlas av pluginet; tas bort när pluginet bär egna strängar
       streamProviderAddAiostreams: "+ AIOStreams",
+      // boundary-exempt: pluginets UI-sträng, bundlas av pluginet; tas bort när pluginet bär egna strängar
       aiostreamsOpenConfig: "\xD6ppna konfiguratorn",
+      // boundary-exempt: pluginets UI-sträng, bundlas av pluginet; tas bort när pluginet bär egna strängar
       aiostreamsManifestLabel: "Manifest-URL",
+      // boundary-exempt: pluginets UI-sträng, bundlas av pluginet; tas bort när pluginet bär egna strängar
       streamProviderAddCustom: "+ Egen URL",
       useGlobal: "Anv\xE4nd globalt",
       clearFilters: "Rensa filter",
@@ -168836,11 +169037,13 @@
       tvRemoveRow: "Ta bort",
       raAlwaysVlc: "\xD6ppna alltid i VLC",
       dtMinutesShort: "{n} min",
-      epLayoutTitle: "Avsnittslayout",
-      epLayoutDesc: "Lista visar en miniatyr bredvid texten. Kort visar breda bilder du bl\xE4ddrar genom, med texten ovanp\xE5 bilden.",
-      epLayoutList: "Lista",
-      epLayoutCards: "Kort",
-      epLayoutToggleTitle: "Byt avsnittslayout",
+      epLayoutTitle: "Detaljsidans layout",
+      epLayoutDesc: "St\xE5ende l\xE4gger avsnitt, str\xF6mmar och rekommendationer i listor du rullar ned\xE5t i. Liggande l\xE4gger dem i rader med kort du bl\xE4ddrar i sidled. G\xE4ller b\xE5de filmer och serier.",
+      epLayoutList: "St\xE5ende",
+      epLayoutCards: "Liggande",
+      epLayoutToggleTitle: "Byt layout: st\xE5ende eller liggande",
+      detailsLayoutToggleTitle: "Byt layout: st\xE5ende eller liggande",
+      detailsTrailers: "Trailers",
       homeBubble: "Hem",
       daPlacementTitle: "\xC5tg\xE4rdsknappar",
       daPlacementDesc: "Var F\xF6lj, Sedd, Trailer och K\xE4llor sitter p\xE5 detaljsidan.",
@@ -168906,6 +169109,7 @@
       dismiss: "St\xE4ng",
       // Filters
       filters: "Filter",
+      showResults: "Visa resultat",
       refine: "F\xF6rfina",
       reset: "\xC5terst\xE4ll",
       type: "Typ",
@@ -169143,6 +169347,7 @@
       plPlayPause: "Spela/Pausa",
       plSeekBack: "Spola bak\xE5t 10s",
       plSeekForward: "Spola fram\xE5t 10s",
+      plSeek: "Tidslinje",
       plTime: "Tidsvisning",
       plSpacer: "Mellanrum (v\xE4nster/h\xF6ger-delning)",
       plSegmentBadges: "Intro/outro-m\xE4rken",
@@ -169428,7 +169633,50 @@
       themeSystem: "F\xF6lj systemet",
       uiScale: "Gr\xE4nssnittsskala",
       uiScaleDesc: "Skalar hela gr\xE4nssnittet. Bra p\xE5 4K- och ultrawide-sk\xE4rmar.",
+      fullCastTitle: "Rollista & team",
+      fullCastOpen: "Rollista",
+      dsLayoutTitle: "Str\xF6mmar",
+      dsLayoutDesc: "Var str\xF6mlistan ligger p\xE5 detaljsidan.",
+      dsLayoutSidebar: "Sidopanel",
+      dsLayoutInline: "Under inneh\xE5llet",
+      heroCast: "Rollista",
+      newSeasonBadge: "Ny s\xE4song",
+      homeCardShape: "Kortform",
+      homeCardShapeDesc: "St\xE5ende affischkort eller liggande breda kort p\xE5 hemraderna.",
+      homeRowTitle: "Radnamn",
+      homeRowTitleDesc: "Din egen rubrik f\xF6r raden. Tom = namnet k\xE4llan ger.",
+      homeRowTitleDefault: "Fr\xE5n k\xE4llan",
+      homeRowSpoilers: "Spoilerskydd",
+      homeRowSpoilersDesc: "F\xF6lj spoilerinst\xE4llningarna p\xE5 den h\xE4r raden. Av visar avsnittstitlar och bilder omaskerade \u2014 bra d\xE4r du redan sett, som Forts\xE4tt titta.",
+      cardShapePoster: "St\xE5ende",
+      cardShapeLandscape: "Liggande",
+      qrAddonOpen: "L\xE4gg till via mobilen",
+      qrAddonTitle: "Skanna med mobilen",
+      qrAddonHint: "\xD6ppna sidan, klistra in en Stremio-manifest-URL och skicka \u2014 den installeras direkt h\xE4r.",
+      qrAddonNoLan: "Ingen LAN-adress hittad \u2014 anslut enheten till n\xE4tverket.",
+      qrAddonInstallFailed: "Kunde inte installera addonen.",
+      qrAddonInstalled: "{name} installerad",
+      stremioAddonConfigRequired: "Addonen m\xE5ste konfigureras f\xF6rst \u2014 \xF6ppna dess konfigurationssida i en webbl\xE4sare, g\xF6r dina val och klistra in den personliga manifest-URL du f\xE5r d\xE4r.",
+      fullCastCastTab: "Roller",
+      fullCastCrewTab: "Team",
+      fullCastSearch: "S\xF6k i rollista & team",
+      fullCastSortBilling: "Rollordning",
+      fullCastSortName: "Namn",
+      fullCastSortPopularity: "Popularitet",
+      fullCastKeyCrew: "Nyckelpersoner",
+      fullCastStills: "Stillbilder",
+      fullCastNoMatches: "Ingen matchar s\xF6kningen.",
+      fullCastCounter: "{cast} roller \xB7 {crew} i teamet",
+      fullCastEpisodes: "{n} avsnitt",
+      personCredits: "Filmografi",
+      personSortedByPopularity: "Sorterat p\xE5 popularitet",
+      tvFontScale: "Textstorlek",
+      tvFontScaleDesc: "Skalar all text i TV-l\xE4get utan att \xE4ndra layouten.",
+      tvMenuScale: "Menystorlek",
+      tvMenuScaleDesc: "Skalar sidomenyn \u2014 ikoner och etiketter \u2014 i TV-l\xE4get.",
       menuScale: "Menyskalning",
+      cornerScale: "H\xF6rnmenyns storlek",
+      cornerScaleDesc: "Skalar ikonerna i \xF6vre h\xF6gra h\xF6rnet. Per enhet \u2014 speglas aldrig till fj\xE4rrsessioner.",
       menuScaleDesc: "Skalar bara sidomenyn \u2014 ikoner och etiketter \u2014 oberoende av gr\xE4nssnittsskalan.",
       reduceMotion: "Minska r\xF6relse",
       reduceMotionDesc: "St\xE4nger av animationer och mjuka \xF6verg\xE5ngar i hela appen.",
@@ -169460,9 +169708,21 @@
       traktConflictMerge: "Sl\xE5 ihop (beh\xE5ll b\xE5da)",
       traktConflictTrakt: "Trakt vinner",
       traktConflictLocal: "Den h\xE4r enheten vinner",
-      showTraktCommentsDesc: "Publika Trakt-kommentarer under filmer och serier. Spoilerm\xE4rkta d\xF6ljs tills du klickar p\xE5 dem.",
+      showTraktCommentsDesc: "Publika Trakt-kommentarer under filmer och serier, och en knapp f\xF6r att skriva egna. Spoilerm\xE4rkta d\xF6ljs tills du klickar p\xE5 dem. Trakt tar bara emot kommentarer p\xE5 engelska.",
       showTraktCommentsNeedsTrakt: "Kr\xE4ver ett anslutet Trakt-konto (Sp\xE5rning \u2192 Trakt).",
       traktCommentsConnectHint: "Anslut Trakt under Inst\xE4llningar \u2192 Sp\xE5rning f\xF6r att se kommentarer.",
+      traktCommentWrite: "Skriv kommentar",
+      traktCommentPlaceholder: "Vad tyckte du?",
+      traktCommentEnglishHint: "Trakt tar bara emot kommentarer p\xE5 engelska, minst 5 ord. Spoilers m\xE5ste markeras.",
+      traktCommentWords: "{n} ord",
+      traktCommentSpoilerToggle: "Inneh\xE5ller spoilers",
+      traktCommentSend: "Skicka",
+      traktCommentLooksSwedish: "Det h\xE4r ser ut som svenska \u2014 Trakt tar bort kommentarer p\xE5 andra spr\xE5k \xE4n engelska och kan st\xE4nga av kontot.",
+      traktCommentSendAnyway: "Skicka \xE4nd\xE5",
+      traktCommentBanned: "Trakt har st\xE4ngt av kommentering f\xF6r det h\xE4r kontot.",
+      traktCommentRateLimited: "V\xE4nta en stund innan du skickar igen.",
+      traktCommentReviewNote: "Fr\xE5n 200 ord publiceras det som en recension.",
+      traktCommentFailed: "Kommentaren kunde inte skickas.",
       shortcutsBindableTitle: "TANGENTER (KLICKA F\xD6R ATT \xC4NDRA)",
       shortcutsTracks: "Sp\xE5r",
       shortcutsGlobal: "Globalt",
@@ -169477,6 +169737,7 @@
       settingsTabThisComputer: "Den h\xE4r datorn",
       settingsTabStorage: "Lagring",
       settingsTabHome: "Hem",
+      settingsTabAppearance: "Utseende",
       settingsTabZapp: "Zapp",
       settingsSearchPlaceholder: "S\xF6k inst\xE4llningar",
       settingsNyBadge: "NY",
@@ -169539,10 +169800,8 @@
       switchProfile: "Byt profil",
       profileSwitcher: "Profil",
       streamProviderTitle: "Streamleverant\xF6r",
-      streamProviderDesc: "V\xE4lj vilken Stremio-kompatibel stream provider som anv\xE4nds f\xF6r att hitta streams.",
       configure: "Konfigurera",
       customScraper: "Anpassad",
-      customScraperDesc: "Valfri Stremio-kompatibel stream provider.",
       rdApiKeyLabel: "API-nyckel f\xF6r stream provider",
       streamProviderManifestPlaceholder: "Klistra in manifest-URL h\xE4r...",
       customManifestPlaceholder: "https://din-stream-provider.example.com/manifest.json",
@@ -170337,7 +170596,9 @@
       onboardingLanguageHint: "Undertexter p\xE5 ditt f\xF6redragna spr\xE5k v\xE4ljs automatiskt n\xE4r de finns, och reservspr\xE5ket anv\xE4nds n\xE4r det prim\xE4ra saknas.",
       onboardingPluginsEyebrow: "TILL\xC4GG",
       onboardingPluginsTitle: "V\xE4lj dina till\xE4gg",
-      onboardingPluginsDesc: "Bocka f\xF6r de till\xE4gg du vill installera direkt. Allt g\xE5r att l\xE4gga till eller ta bort senare under Inst\xE4llningar \u2192 Plugins.",
+      onboardingPluginsDesc: "Bocka f\xF6r de till\xE4gg du vill ha aktiva. Inbyggda till\xE4gg aktiveras direkt och h\xE4mtar senaste runtime n\xE4r n\xE4tet finns; till\xE4gg fr\xE5n communityn h\xE4mtas fr\xE5n utvecklaren. Allt g\xE5r att l\xE4gga till eller ta bort senare under Inst\xE4llningar \u2192 Plugins.",
+      onboardingBundledBadge: "Inbyggt",
+      onboardingInstalledBadge: "Redan aktivt",
       onboardingOfficialGroup: "Officiella",
       onboardingExternalGroup: "Externa",
       onboardingThirdParty: "Tredjepart",
@@ -170352,6 +170613,8 @@
       streamsLayoutDesc: "I sidopanelen, eller som en sektion p\xE5 sidan ovanf\xF6r Rekommendationer. Serier f\xE5r str\xF6mmarna under varje avsnitt.",
       streamsLayoutSidebar: "Sidopanel",
       streamsLayoutInline: "P\xE5 sidan",
+      castCountTitle: "Antal sk\xE5despelare",
+      castCountDesc: "Hur m\xE5nga ur ensemblen som visas p\xE5 detaljsidan. Telefonen visar dem i sidor om \xE5tta; skrivbordet rullar.",
       gestTabLabel: "Gester",
       gestTitle: "Svepgester",
       gestHint: "Vad ett svep g\xF6r i spelaren. Endast telefon och surfplatta.",
@@ -170374,6 +170637,9 @@
       gestDoubleTapOff: "Av",
       gestHoldSpeedTitle: "H\xE5ll f\xF6r snabbspolning",
       gestHoldSpeedDesc: "H\xE5ll fingret nedtryckt f\xF6r dubbel hastighet; sl\xE4pp f\xF6r att \xE5terg\xE5.",
+      externalDisplayVideoOnlyTitle: "Extern sk\xE4rm: videon bara d\xE4r",
+      externalDisplayVideoOnlyDesc: "Med glas\xF6gon eller en HDMI-sk\xE4rm ansluten spelas videon bara p\xE5 den externa sk\xE4rmen. Telefonen sl\xE4cks och visar kontrollerna n\xE4r du trycker \u2014 mindre bl\xE4ndning, l\xE4ngre batteri.",
+      externalDisplayPlayingThere: "Spelas p\xE5 den externa sk\xE4rmen",
       onboardingPerfEyebrow: "Prestanda",
       onboardingPerfTitle: "Anpassat efter din enhet",
       onboardingPerfDesc: "Vi m\xE4tte den h\xE4r enheten och satte ett tak f\xF6r vad autospelningen f\xE5r v\xE4lja p\xE5 egen hand. Du kan h\xF6ja det nu, eller \xE4ndra det n\xE4r som helst under Uppspelning.",
@@ -170381,12 +170647,15 @@
       onboardingPerfCapLabel: "St\xF6rsta str\xF6m autospelningen f\xE5r v\xE4lja",
       onboardingPerfUnlimited: "Ingen gr\xE4ns",
       onboardingPerfLater: "Det h\xE4r s\xE4tter bara utg\xE5ngsl\xE4get. Ingenting sp\xE4rras \u2014 du kan alltid v\xE4lja vilken str\xF6m du vill sj\xE4lv ur listan.",
-      onboardingWillInstall: "{count} till\xE4gg installeras n\xE4r du \xE4r klar.",
+      onboardingPerfNetMeasuring: "M\xE4ter anslutningens hastighet\u2026",
+      onboardingPerfNetResult: "Anslutning \u2248 {mbps} Mbit/s \u2014 f\xF6rslaget f\xF6ljer den.",
+      onboardingPerfNetFailed: "Anslutningen gick inte att m\xE4ta; f\xF6rslaget bygger bara p\xE5 enheten.",
+      onboardingWillInstall: "{count} till\xE4gg aktiveras \u2014 senaste runtime h\xE4mtas \u2014 n\xE4r du \xE4r klar.",
       onboardingInstallFailed: "{names} kunde inte installeras just nu \u2014 du hittar dem under Inst\xE4llningar \u2192 Plugins.",
-      onboardingOpenAppNow: "\xD6ppna Lumio nu",
-      onboardingInstallProgress: "Installerar plugins {done} / {total}",
+      onboardingOpenAppNow: "\xD6ppna Lumio",
+      onboardingInstallProgress: "Aktiverar till\xE4gg och h\xE4mtar senaste runtime {done} / {total}",
       onboardingInstallQueued: "I k\xF6",
-      onboardingInstallWorking: "H\xE4mtar\u2026",
+      onboardingInstallWorking: "Aktiverar \xB7 h\xE4mtar senaste\u2026",
       onboardingInstallDone: "Klar",
       onboardingInstallError: "Misslyckades",
       onboardingInstallBackground: "Det h\xE4r forts\xE4tter i bakgrunden \u2014 du kan \xF6ppna Lumio direkt och titta under Inst\xE4llningar \u2192 Plugins senare.",
@@ -170478,6 +170747,60 @@
       kpCatalogsSuffix: "kataloger",
       kpProvidedCatalogs: "Tillhandah\xE5llna kataloger",
       kpMetricActiveAddons: "Aktiva addons",
+      sourcesEmptyTitle: "Inga k\xE4llor \xE4n",
+      coreStreamsToggle: "Anv\xE4nd Lumios egna str\xF6mlista (beta)",
+      coreStreamsToggleDesc: "Str\xF6mmar h\xE4mtas och spelas av appen sj\xE4lv, direkt fr\xE5n dina k\xE4llor. Sl\xE5r igenom efter omstart.",
+      coreStreamsHidden: "{count} str\xF6mmar dolda av kvalitetsfilter",
+      coreStreamsSelectEpisode: "V\xE4lj ett avsnitt f\xF6r att se dess str\xF6mmar.",
+      coreStreamsSource: "K\xE4lla",
+      coreStreamsCached: "Cachad",
+      coreStreamsLoading: "Fr\xE5gar k\xE4llorna\u2026",
+      streamNotServingMedia: "K\xE4llan levererade ingen spelbar media. Prova en annan str\xF6m.",
+      libraryRowSuffix: "i ditt bibliotek",
+      libraryModeTab: "Bibliotek",
+      libraryModeTitle: "Biblioteksl\xE4ge",
+      libraryModeHint: "N\xE4r ett bibliotek \xE4r startsida filtreras varje rad mot det du \xE4ger. Rader utan indexerat inneh\xE5ll g\xF6ms; siffran visar hur m\xE5nga titlar raden kan visa just nu.",
+      libraryUseAsHome: "Anv\xE4nd som startsida",
+      libraryUseAsHomeHint: "Bocka i ett eller flera bibliotek. Startsida, detaljsida, s\xF6k och Zapp matas d\xE5 bara ur dem, tillsammans. Str\xF6mk\xE4llorna h\xE5lls dolda s\xE5 l\xE4nge det \xE4r p\xE5.",
+      librarySourcesTitle: "Indexerade bibliotek",
+      librarySourceNotIndexed: "Inte indexerat \xE4nnu \u2014 bygg indexet i pluginets inst\xE4llningar.",
+      libraryModeOff: "Inget bibliotek \xE4r startsida. Sl\xE5 p\xE5 det under bibliotekspluginets inst\xE4llningar.",
+      libraryRowIndexed: "{count} indexerade",
+      libraryMetricTitles: "Titlar",
+      librarySearchPlaceholder: "S\xF6k i ditt bibliotek",
+      libraryBackToHome: "Tillbaka till Hem",
+      continueLayoutRows: "Rader",
+      continueLayoutGrid: "Rutn\xE4t",
+      cwSectionHint: "Vyn har tv\xE5 l\xE4gen som du v\xE4xlar med knappen bredvid filtret. Varje l\xE4ge har sitt eget kortformat och antal.",
+      cwModeRows: "Rullande rader",
+      cwModeRowsDesc: "Alla, Serier och Filmer som rader du bl\xE4ddrar i sidled.",
+      cwModeGrid: "Rutn\xE4t",
+      cwModeGridDesc: "Allt i ett rutn\xE4t du rullar ned\xE5t i.",
+      cwFormatLabel: "Kortformat",
+      cwFormatPortrait: "St\xE5ende",
+      cwFormatLandscape: "Liggande",
+      libraryVersionsTitle: "Versioner i ditt bibliotek",
+      libraryNotInLibrary: "Finns inte i ditt bibliotek",
+      libraryEpisodeNotInLibrary: "Avsnittet finns inte i ditt bibliotek",
+      libraryRowNotLoaded: "inte laddad \xE4nnu",
+      libraryRowRecent: "Nyligen tillagt i biblioteket",
+      libraryRowContinue: "Bibliotekets progress i Senast sedda",
+      libraryRowUnseen: "Osedda favoriter",
+      libraryRowGenre: "Genre",
+      plexIndexTitle: "Biblioteksindex",
+      plexIndexDesc: "Lumio indexerar dina Plex-bibliotek lokalt s\xE5 att startsidan, rekommendationerna och Zapp kan bygga helt p\xE5 det du \xE4ger.",
+      plexIndexEmpty: "Inget index \xE4nnu.",
+      plexIndexStatus: "{titles} titlar \xB7 {unmatched} omatchade",
+      plexIndexLastSync: "Senast synkat",
+      plexIndexRunning: "{done} titlar",
+      plexIndexBuild: "Bygg index",
+      plexIndexRebuild: "Bygg om",
+      plexIndexUpdate: "Uppdatera",
+      plexIndexClear: "Ta bort index",
+      plexIndexUseAsHome: "Anv\xE4nd Plex som startsida",
+      plexIndexUseAsHomeDesc: "Hj\xE4lte, rader, rekommendationer och Zapp kommer bara fr\xE5n ditt bibliotek. Allt som visas g\xE5r att spela.",
+      sourcesEmptyBody: "Lumio hittar str\xF6mmar via k\xE4llor du sj\xE4lv l\xE4gger till. Klistra in k\xE4llans manifest-URL nedan \u2014 den slutar oftast p\xE5 /manifest.json. Lumio varken lagrar, indexerar eller rekommenderar n\xE5gon k\xE4lla.",
+      sourceAddInvalid: "Den URL:en gav inget giltigt manifest. Kontrollera adressen och f\xF6rs\xF6k igen.",
       kpMetricActiveAddonsSub: "installerade",
       kpMetricTotalCatalogs: "Totalt kataloger",
       kpMetricTotalCatalogsSub: "fr\xE5n alla k\xE4llor",
@@ -170823,8 +171146,24 @@
       liveTvEpgSources: "EPG-k\xE4llor",
       liveTvEpgSourceStats: "{channels} kanaler \xB7 {programmes} program",
       liveTvEpgUrlPlaceholder: "XMLTV-URL (t.ex. https://epgshare01.online/epgshare01/epg_ripper_SE1.xml.gz)",
-      liveTvNoEpgSourcesPrefix: "Inga EPG-k\xE4llor \xE4nnu. Testa",
-      liveTvNoEpgSourcesSuffix: "f\xF6r svenska kanaler.",
+      liveTvNoEpgSourcesPrefix: "Inga EPG-k\xE4llor \xE4nnu.",
+      liveTvXtreamTitle: "Xtream-inloggning",
+      liveTvXtreamDesc: "F\xF6r leverant\xF6rer med Xtream Codes-inloggning (server, anv\xE4ndarnamn, l\xF6senord) i st\xE4llet f\xF6r M3U-l\xE4nk.",
+      liveTvXtreamServer: "Server-URL",
+      liveTvXtreamUsername: "Anv\xE4ndarnamn",
+      liveTvXtreamPassword: "L\xF6senord",
+      liveTvXtreamConnect: "Logga in & h\xE4mta",
+      liveTvXtreamConnecting: "Loggar in\u2026",
+      liveTvXtreamDone: "H\xE4mtat",
+      liveTvXtreamAuthFailed: "Inloggningen nekades \u2014 kontrollera anv\xE4ndarnamn och l\xF6senord.",
+      liveTvXtreamError: "Kunde inte n\xE5 panelen. Kontrollera server-URL:en.",
+      liveTvXtreamExpires: "G\xE5r ut",
+      liveTvXtreamCategories: "Kategorier",
+      liveTvXtreamAllCategories: "Alla kategorier",
+      liveTvXtreamSearchCategories: "S\xF6k kategorier",
+      liveTvXtreamApplyCategories: "Uppdatera kanaler",
+      liveTvXtreamRemove: "Ta bort",
+      liveTvXtreamCapped: "Visar de f\xF6rsta {max} av {total} kanalerna \u2014 avgr\xE4nsa med kategorier.",
       liveTvFetchEpgForChannel: "H\xE4mta EPG f\xF6r kanalen",
       liveTvNoEpg: "Ingen EPG",
       liveTvNoGuideAvailable: "Ingen tabl\xE5 tillg\xE4nglig",
@@ -170939,26 +171278,178 @@
     return sdk3?.useTvFocus ? sdk3.useTvFocus() : null;
   }
 
+  // lib/plugin-sdk.ts
+  init_plugin_registry();
+
+  // lib/library/ids.ts
+  init_react_shim();
+
+  // lib/library/mode.ts
+  init_react_shim();
+  var KEY = "library_mode_v1";
+  var EVENT = "lumio-library-mode";
+  function normalizeIds(ids) {
+    const list = Array.isArray(ids) ? ids : typeof ids === "string" && ids ? [ids] : [];
+    return [...new Set(list.filter((id4) => typeof id4 === "string" && id4.length > 0))].sort();
+  }
+  function parseMode(raw) {
+    if (!raw) return null;
+    try {
+      const parsed = JSON.parse(raw);
+      const ids = normalizeIds(parsed.sourceIds ?? parsed.sourceId);
+      return ids.length > 0 ? { sourceIds: ids } : null;
+    } catch {
+      return null;
+    }
+  }
+  var libraryScope = null;
+  function getStoredLibraryMode() {
+    if (typeof window === "undefined") return null;
+    try {
+      return parseMode(getScopedStorageItem(KEY));
+    } catch {
+      return null;
+    }
+  }
+  function getLibraryMode() {
+    if (libraryScope) return libraryScope;
+    return getStoredLibraryMode();
+  }
+  function setLibraryMode(mode) {
+    const ids = mode ? normalizeIds(mode.sourceIds) : [];
+    setScopedStorageItem(KEY, ids.length > 0 ? JSON.stringify({ sourceIds: ids }) : "");
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT));
+  }
+  function onLibraryModeChanged(listener) {
+    if (typeof window === "undefined") return () => {
+    };
+    window.addEventListener(EVENT, listener);
+    return () => window.removeEventListener(EVENT, listener);
+  }
+
+  // lib/library/ids.ts
+  var LIBRARY_INDEX_CHANGED_EVENT = "lumio-library-index-changed";
+  var cache2 = null;
+  function notifyLibraryIndexChanged() {
+    cache2 = null;
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(LIBRARY_INDEX_CHANGED_EVENT));
+  }
+
+  // lib/library/client.ts
+  async function readJson(response) {
+    if (!response.ok) throw new Error(`library: HTTP ${response.status}`);
+    return await response.json();
+  }
+  async function fetchLibraryStatus() {
+    return readJson(await fetch("/api/library/status", { cache: "no-store" }));
+  }
+  async function postLibraryBatch(source, batch) {
+    return readJson(
+      await fetch("/api/library/batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source, upsert: batch.upsert ?? [], remove: batch.remove ?? [] })
+      })
+    );
+  }
+  async function fetchLibraryKeys(sourceId) {
+    const params = sourceId ? `?sourceId=${encodeURIComponent(sourceId)}` : "";
+    const payload = await readJson(await fetch(`/api/library/keys${params}`, { cache: "no-store" }));
+    return payload.keys;
+  }
+  async function resetLibrarySource(sourceId) {
+    const payload = await readJson(
+      await fetch("/api/library/reset", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sourceId }) })
+    );
+    notifyLibraryIndexChanged();
+    return payload.removed;
+  }
+  async function fetchLibraryItem(ref) {
+    const params = new URLSearchParams();
+    if (ref.key) params.set("key", ref.key);
+    if (ref.tmdbId != null) params.set("tmdbId", String(ref.tmdbId));
+    if (ref.imdbId) params.set("imdbId", ref.imdbId);
+    const response = await fetch(`/api/library/item?${params}`, { cache: "no-store" });
+    if (response.status === 404) return null;
+    const payload = await readJson(response);
+    return payload.item;
+  }
+
+  // lib/library/scan.ts
+  var running = false;
+  async function runLibraryScan(provider, source, options) {
+    if (running) throw new Error("library scan already running");
+    running = true;
+    try {
+      return await runLibraryScanInner(provider, source, options);
+    } finally {
+      running = false;
+    }
+  }
+  async function runLibraryScanInner(provider, source, options) {
+    const io = options.io ?? { postBatch: postLibraryBatch, fetchKeys: fetchLibraryKeys };
+    const startedAt = Date.now();
+    const sourceRecord = { id: source.id, provider: provider.id, name: source.name, enabled: true };
+    const seen = /* @__PURE__ */ new Set();
+    let titles = 0;
+    let unmatched = 0;
+    const report = (progress2) => options.onProgress?.(progress2);
+    const emit2 = async (batch) => {
+      if (options.signal?.aborted) return;
+      for (const title of batch.upsert ?? []) {
+        seen.add(title.key);
+        titles += 1;
+        if (!title.tmdbId && !title.imdbId) unmatched += 1;
+      }
+      await io.postBatch(sourceRecord, batch);
+      report({ phase: "titles", done: titles });
+    };
+    report({ phase: "listing", done: 0 });
+    const before = options.mode === "full" ? new Set(await io.fetchKeys(source.id)) : /* @__PURE__ */ new Set();
+    const result = options.mode === "full" ? await provider.scanAll(source, emit2, report, options.signal ?? new AbortController().signal) : await provider.scanDelta(source, source.cursor ?? null, emit2, report, options.signal ?? new AbortController().signal);
+    let removed = 0;
+    if (options.mode === "full" && !options.signal?.aborted) {
+      report({ phase: "pruning", done: titles });
+      const gone = [...before].filter((key) => !seen.has(key));
+      if (gone.length > 0) {
+        await io.postBatch(sourceRecord, { remove: gone });
+        removed = gone.length;
+      }
+    }
+    const now3 = Math.floor(Date.now() / 1e3);
+    await io.postBatch(
+      {
+        ...sourceRecord,
+        cursor: result.cursor ?? source.cursor ?? null,
+        ...options.mode === "full" ? { lastFullSync: now3 } : { lastDeltaSync: now3 }
+      },
+      {}
+    );
+    notifyLibraryIndexChanged();
+    report({ phase: "done", done: titles, total: titles });
+    return { titles, removed, unmatched, cursor: result.cursor ?? null, durationMs: Date.now() - startedAt };
+  }
+
   // lib/home-override-settings.ts
-  var KEY = "custom_home_override_plugin";
-  var EVENT = "lumio-home-override-changed";
+  var KEY2 = "custom_home_override_plugin";
+  var EVENT2 = "lumio-home-override-changed";
   function emitChanged() {
     if (typeof window === "undefined") return;
-    window.dispatchEvent(new CustomEvent(EVENT));
+    window.dispatchEvent(new CustomEvent(EVENT2));
   }
   function getHomeOverridePluginId() {
     if (typeof window === "undefined") return null;
-    const value = getScopedStorageItem(KEY)?.trim() ?? "";
+    const value = getScopedStorageItem(KEY2)?.trim() ?? "";
     return value || null;
   }
   function setHomeOverridePluginId(pluginId) {
     const normalized = pluginId.trim();
     if (!normalized) return;
-    setScopedStorageItem(KEY, normalized);
+    setScopedStorageItem(KEY2, normalized);
     emitChanged();
   }
   function clearHomeOverridePluginId() {
-    removeScopedStorageItem(KEY);
+    removeScopedStorageItem(KEY2);
     emitChanged();
   }
   function disableHomeOverridePlugin(pluginId) {
@@ -170979,10 +171470,10 @@
     if (typeof window === "undefined") return () => {
     };
     const wrapped = () => listener();
-    window.addEventListener(EVENT, wrapped);
+    window.addEventListener(EVENT2, wrapped);
     const offProfile = onProfileChanged(wrapped);
     return () => {
-      window.removeEventListener(EVENT, wrapped);
+      window.removeEventListener(EVENT2, wrapped);
       offProfile();
     };
   }
@@ -171032,7 +171523,7 @@
 
   // lib/trakt-storage.ts
   var AUTH_KEY = "trakt_auth";
-  var EVENT2 = "lumio-trakt-auth-changed";
+  var EVENT3 = "lumio-trakt-auth-changed";
   function getTraktAuth() {
     if (typeof window === "undefined") return null;
     try {
@@ -171057,7 +171548,7 @@
   }
   function emitChanged2() {
     if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent(EVENT2));
+      window.dispatchEvent(new CustomEvent(EVENT3));
     }
   }
   function setTraktAuth(auth) {
@@ -171080,8 +171571,8 @@
   }
 
   // lib/watched-episodes.ts
-  var KEY2 = "watched_episodes";
-  var EVENT3 = "lumio-watched-episodes-changed";
+  var KEY3 = "watched_episodes";
+  var EVENT4 = "lumio-watched-episodes-changed";
   var DETAIL_EVENT = "lumio-watched-episode-mutated";
   function epKey(tmdbId, season, episode) {
     return `${tmdbId}-S${season}E${episode}`;
@@ -171089,7 +171580,7 @@
   function read() {
     if (typeof window === "undefined") return {};
     try {
-      const parsed = JSON.parse(getScopedStorageItem(KEY2) ?? "{}");
+      const parsed = JSON.parse(getScopedStorageItem(KEY3) ?? "{}");
       const out = {};
       for (const [key, value] of Object.entries(parsed)) {
         if (typeof value === "string" && value.trim().length > 0) out[key] = value;
@@ -171101,9 +171592,9 @@
     }
   }
   function write(data) {
-    setScopedStorageItem(KEY2, JSON.stringify(data));
+    setScopedStorageItem(KEY3, JSON.stringify(data));
     if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent(EVENT3));
+      window.dispatchEvent(new CustomEvent(EVENT4));
     }
   }
   function timestampOf(value) {
@@ -171144,8 +171635,8 @@
   function onWatchedEpisodesChanged(listener) {
     if (typeof window === "undefined") return () => {
     };
-    window.addEventListener(EVENT3, listener);
-    return () => window.removeEventListener(EVENT3, listener);
+    window.addEventListener(EVENT4, listener);
+    return () => window.removeEventListener(EVENT4, listener);
   }
 
   // lib/watched-movies.ts
@@ -171318,7 +171809,7 @@
     if (pathOnly.endsWith(".m3u8") || pathOnly.endsWith(".mpd")) return true;
     return lower.includes("/live/") || lower.includes("hls/") || lower.includes("/dash/");
   }
-  function sourceCacheUrl(originalUrl) {
+  function sourceCacheUrl(originalUrl, requestHeaders) {
     if (!/^https?:\/\//i.test(originalUrl)) return null;
     if (isLiveStreamUrl(originalUrl)) return null;
     try {
@@ -171326,10 +171817,11 @@
     } catch {
       return null;
     }
-    return `${window.location.origin}/api/source-cache?u=${encodeURIComponent(originalUrl)}`;
+    const headerParam = requestHeaders && Object.keys(requestHeaders).length > 0 ? `&h=${encodeURIComponent(JSON.stringify(requestHeaders))}` : "";
+    return `${window.location.origin}/api/source-cache?u=${encodeURIComponent(originalUrl)}${headerParam}`;
   }
-  function warmSourceCache(originalUrl) {
-    const wrapped = sourceCacheUrl(originalUrl);
+  function warmSourceCache(originalUrl, requestHeaders) {
+    const wrapped = sourceCacheUrl(originalUrl, requestHeaders);
     if (!wrapped) return;
     void fetch(wrapped, { headers: { Range: "bytes=0-1" } }).then((r) => r.body?.cancel()).catch(() => {
     });
@@ -171346,24 +171838,31 @@
   }
   async function openMpvPlayer(args) {
     const { shouldAbort: _ignored, ...rest } = args;
-    const cached = sourceCacheUrl(args.url);
+    const cached = sourceCacheUrl(args.url, args.requestHeaders);
     if (cached) {
       if (args.shouldAbort?.()) return;
-      return (0, import_core.invoke)("mpv_open", { args: { ...rest, url: cached } });
+      markStreamPhase("mpv-open", { via: "source-cache" });
+      await (0, import_core.invoke)("mpv_open", { args: { ...rest, url: cached } });
+      markStreamPhase("mpv-open-done");
+      return;
     }
     let url = args.url;
+    let via = "direct";
     for (const rewriter of getPlayableUrlRewriters()) {
       try {
         const rewritten = await rewriter.rewrite(url);
         if (rewritten) {
           url = rewritten;
+          via = "rewriter";
           break;
         }
       } catch {
       }
     }
     if (args.shouldAbort?.()) return;
-    return (0, import_core.invoke)("mpv_open", { args: { ...rest, url } });
+    markStreamPhase("mpv-open", { via });
+    await (0, import_core.invoke)("mpv_open", { args: { ...rest, url } });
+    markStreamPhase("mpv-open-done");
   }
   async function closeMpvPlayer() {
     return (0, import_core.invoke)("mpv_close");
@@ -171420,6 +171919,13 @@
       return await (0, import_core.invoke)("mpv_get_af") || "(tom)";
     } catch (e) {
       return `(ol\xE4sbar: ${String(e)})`;
+    }
+  }
+  async function mpvRenderIsGpu() {
+    try {
+      return await (0, import_core.invoke)("mpv_render_is_gpu");
+    } catch {
+      return false;
     }
   }
   async function mpvCommand(args) {
@@ -171620,216 +172126,6 @@
     }
   ];
   var DEFAULT_SCRAPER_URL = SCRAPER_PRESETS[0].url;
-  var CONFIGS_KEY = "scraper_configs_v2";
-  var GLOBAL_STREAM_PROVIDER_TOKEN_KEY_PREFIX = "scraper_global_debrid_token_";
-  var GLOBAL_STREAM_PROVIDER_COOKIE_PREFIX = "lumio_provider_token_";
-  var LEGACY_STREAM_PROVIDER_COOKIE_PREFIX = "lumio_debrid_token_";
-  var LEGACY_RD_API_KEY = "rd_api_key";
-  var VALID_STREAM_PROVIDERS = /* @__PURE__ */ new Set([
-    "none",
-    "realdebrid",
-    "alldebrid",
-    "easydebrid",
-    "offcloud",
-    "torbox",
-    "putio"
-  ]);
-  function normalizeStreamProvider(provider) {
-    const normalized = provider?.trim().toLowerCase() || "realdebrid";
-    return VALID_STREAM_PROVIDERS.has(normalized) ? normalized : "realdebrid";
-  }
-  var JACKETTIO_STREAM_PROVIDERS = ["realdebrid", "alldebrid"];
-  function normalizeJackettioProvider(provider) {
-    const normalized = provider?.trim().toLowerCase() || "realdebrid";
-    return JACKETTIO_STREAM_PROVIDERS.includes(normalized) ? normalized : "realdebrid";
-  }
-  var DEFAULT_TORRENTIO_CONFIG = {
-    id: "torrentio",
-    preset: "torrentio",
-    enabled: true,
-    options: {
-      streamProvider: "realdebrid",
-      debridProvider: "realdebrid",
-      qualityFilter: [],
-      languages: [],
-      providers: [],
-      sort: "quality",
-      limit: 0
-    }
-  };
-  var TORRENTSDB_AUTOADD_KEY = "scraper_torrentsdb_autoadded_v1";
-  function dropAutoAddedTorrentsDb(configs) {
-    try {
-      if (getScopedStorageItem(TORRENTSDB_AUTOADD_KEY) !== "1") return configs;
-    } catch {
-      return configs;
-    }
-    const next2 = configs.filter((config) => config.preset !== "torrentsdb");
-    if (next2.length === configs.length) return configs;
-    try {
-      setScraperConfigs(next2);
-    } catch {
-    }
-    return next2;
-  }
-  function getGlobalStreamProviderTokenStorageKey(provider) {
-    const normalized = normalizeStreamProvider(provider);
-    return `${GLOBAL_STREAM_PROVIDER_TOKEN_KEY_PREFIX}${normalized}`;
-  }
-  function getGlobalStreamProviderCookieKey(provider) {
-    const normalized = normalizeStreamProvider(provider);
-    return `${GLOBAL_STREAM_PROVIDER_COOKIE_PREFIX}${normalized}`;
-  }
-  function getLegacyGlobalStreamProviderCookieKey(provider) {
-    const normalized = normalizeStreamProvider(provider);
-    return `${LEGACY_STREAM_PROVIDER_COOKIE_PREFIX}${normalized}`;
-  }
-  function readCookieValue(name) {
-    if (typeof document === "undefined") return "";
-    const prefix = `${encodeURIComponent(name)}=`;
-    const entry = document.cookie.split("; ").find((cookie) => cookie.startsWith(prefix));
-    if (!entry) return "";
-    try {
-      return decodeURIComponent(entry.slice(prefix.length));
-    } catch {
-      return "";
-    }
-  }
-  function getGlobalStreamProviderAccessKey(provider) {
-    if (typeof window === "undefined") return "";
-    const normalizedProvider = normalizeStreamProvider(provider);
-    const storageKey = getGlobalStreamProviderTokenStorageKey(normalizedProvider);
-    const key = getScopedStorageItem(storageKey) ?? "";
-    if (key.trim()) return key;
-    const unscopedKey = getItem(storageKey) ?? "";
-    if (unscopedKey.trim()) return unscopedKey;
-    const cookieKey = readCookieValue(getGlobalStreamProviderCookieKey(normalizedProvider));
-    if (cookieKey.trim()) return cookieKey;
-    const legacyCookieKey = readCookieValue(getLegacyGlobalStreamProviderCookieKey(normalizedProvider));
-    if (legacyCookieKey.trim()) return legacyCookieKey;
-    if (normalizedProvider === "realdebrid") {
-      const legacy = getScopedStorageItem(LEGACY_RD_API_KEY) ?? getItem(LEGACY_RD_API_KEY) ?? readCookieValue(LEGACY_RD_API_KEY) ?? "";
-      return legacy;
-    }
-    return "";
-  }
-  function getScraperConfigs() {
-    if (typeof window === "undefined") return [DEFAULT_TORRENTIO_CONFIG];
-    try {
-      const scoped = getScopedStorageItem(CONFIGS_KEY);
-      const raw = scoped ?? (getActiveProfileId() ? null : getItem(CONFIGS_KEY));
-      if (!raw) {
-        return [DEFAULT_TORRENTIO_CONFIG];
-      }
-      const parsed = JSON.parse(raw);
-      return dropAutoAddedTorrentsDb(parsed.map(normalizeScraperConfig));
-    } catch {
-      return [DEFAULT_TORRENTIO_CONFIG];
-    }
-  }
-  function setScraperConfigs(configs) {
-    setScopedStorageItem(CONFIGS_KEY, JSON.stringify(configs));
-  }
-  function normalizeScraperConfig(config) {
-    if (config.preset === "mediafusion") {
-      const opts = config.options;
-      config = {
-        ...config,
-        id: config.id === "mediafusion" ? "jackettio" : config.id,
-        preset: "jackettio",
-        options: {
-          streamProvider: opts.streamProvider ?? opts.debridProvider ?? "realdebrid",
-          debridProvider: opts.debridProvider ?? "realdebrid",
-          languages: [],
-          qualityFilter: [],
-          maxTorrents: 0,
-          hideUncached: false
-        }
-      };
-    }
-    switch (config.preset) {
-      case "torrentio": {
-        const opts = config.options;
-        return {
-          ...config,
-          options: {
-            streamProvider: normalizeStreamProvider(opts.streamProvider ?? opts.debridProvider),
-            debridProvider: normalizeStreamProvider(opts.streamProvider ?? opts.debridProvider),
-            qualityFilter: opts.qualityFilter ?? [],
-            languages: opts.languages ?? [],
-            providers: opts.providers ?? [],
-            sort: opts.sort ?? "quality",
-            limit: opts.limit ?? 0
-          }
-        };
-      }
-      case "torrentsdb": {
-        const opts = config.options;
-        return {
-          ...config,
-          options: {
-            streamProvider: normalizeStreamProvider(opts.streamProvider ?? opts.debridProvider),
-            debridProvider: normalizeStreamProvider(opts.streamProvider ?? opts.debridProvider),
-            qualityFilter: opts.qualityFilter ?? [],
-            languages: opts.languages ?? []
-          }
-        };
-      }
-      case "comet": {
-        const opts = config.options;
-        return {
-          ...config,
-          options: {
-            streamProvider: normalizeStreamProvider(opts.streamProvider ?? opts.debridProvider),
-            debridProvider: normalizeStreamProvider(opts.streamProvider ?? opts.debridProvider),
-            languages: opts.languages ?? [],
-            qualityFilter: opts.qualityFilter ?? [],
-            maxResults: opts.maxResults ?? 5,
-            maxSize: opts.maxSize ?? 0,
-            cachedOnly: opts.cachedOnly ?? false,
-            sortCachedUncachedTogether: opts.sortCachedUncachedTogether ?? false
-          }
-        };
-      }
-      case "jackettio": {
-        const opts = config.options;
-        return {
-          ...config,
-          options: {
-            streamProvider: normalizeJackettioProvider(opts.streamProvider ?? opts.debridProvider),
-            debridProvider: normalizeJackettioProvider(opts.streamProvider ?? opts.debridProvider),
-            languages: opts.languages ?? [],
-            qualityFilter: opts.qualityFilter ?? [],
-            maxTorrents: opts.maxTorrents ?? 0,
-            hideUncached: opts.hideUncached ?? false
-          }
-        };
-      }
-      case "aiostreams": {
-        const opts = config.options;
-        return {
-          ...config,
-          options: { manifestUrl: opts.manifestUrl ?? "" }
-        };
-      }
-      case "orion": {
-        const opts = config.options;
-        return {
-          ...config,
-          options: {
-            orionKey: opts.orionKey ?? "",
-            streamProvider: normalizeStreamProvider(opts.streamProvider ?? opts.debridProvider),
-            debridProvider: normalizeStreamProvider(opts.streamProvider ?? opts.debridProvider)
-          }
-        };
-      }
-      default:
-        return config;
-    }
-  }
-  function getStreamProviderConfigs() {
-    return getScraperConfigs();
-  }
 
   // lib/playback-settings.ts
   var KEY_DEFAULT_SUBTITLE_LANGUAGE = "playback_defaultSubtitleLanguage";
@@ -172150,6 +172446,11 @@
     if (typeof window === "undefined") return false;
     return getScopedStorageItem(KEY_BT_AUTO_OFFSET) === "1";
   }
+  var KEY_EXTERNAL_DISPLAY_VIDEO_ONLY = "playback_external_display_video_only";
+  function getExternalDisplayVideoOnly() {
+    if (typeof window === "undefined") return true;
+    return getScopedStorageItem(KEY_EXTERNAL_DISPLAY_VIDEO_ONLY) !== "0";
+  }
   var BLUETOOTH_AUDIO_OFFSET_MS = -150;
   function getNightMode() {
     const stored = getStoredString(KEY_NIGHT_MODE, DEFAULT_NIGHT_MODE);
@@ -172173,244 +172474,41 @@
   // lib/series-watchlist-feed.ts
   init_plugin_registry();
 
-  // lib/media-stream/filters.ts
-  var FILTER_KEY = "stream_provider_filters";
-  var LEGACY_FILTER_KEY = "rd_stream_filters";
-  var LEVEL_KEY = "stream_filter_level";
-  function getStreamFilterLevel() {
-    if (typeof window === "undefined") return "balanced";
-    const raw = getScopedStorageItem(LEVEL_KEY);
-    return raw === "strict" || raw === "off" ? raw : "balanced";
-  }
-  var DEFAULT_FILTERS = {
-    hideCam: true,
-    hideTs: true,
-    hideScr: true,
-    hideBelow720p: true
-  };
-  function getStreamFilters() {
-    try {
-      if (typeof window === "undefined") return DEFAULT_FILTERS;
-      const raw = getScopedStorageItem(FILTER_KEY) ?? getScopedStorageItem(LEGACY_FILTER_KEY);
-      if (!raw) return DEFAULT_FILTERS;
-      return { ...DEFAULT_FILTERS, ...JSON.parse(raw) };
-    } catch {
-      return DEFAULT_FILTERS;
-    }
-  }
-  function buildTorrentioQualityFilter(filters) {
-    const level = getStreamFilterLevel();
-    if (level === "off") return "";
-    const strict = level === "strict";
-    const parts = [];
-    if (strict || filters.hideCam) parts.push("cam", "hdcam");
-    if (strict || filters.hideTs) parts.push("ts", "tc");
-    if (strict || filters.hideScr) parts.push("scr", "dvdscr", "r5");
-    return parts.join(",");
-  }
-
   // lib/media-stream/availability-throttle.ts
   var RATE_LIMIT_COOLDOWN_MS = 10 * 60 * 1e3;
 
-  // lib/media-stream/storage.ts
-  function getStreamProviderAccessKey(provider) {
-    return getGlobalStreamProviderAccessKey(provider);
-  }
-
-  // lib/media-stream/url-builder.ts
-  function buildScraperUrl(config) {
-    switch (config.preset) {
-      case "torrentio":
-        return buildTorrentioUrl(config.options);
-      case "torrentsdb":
-        return buildTorrentsDbUrl(config.options);
-      case "comet":
-        return buildCometUrl(config.options);
-      case "jackettio":
-        return buildJackettioUrl(config.options);
-      case "aiostreams":
-        return buildAiostreamsUrl(config.options);
-      case "orion":
-        return buildOrionUrl(config.options);
-      case "custom":
-        return buildCustomUrl(config.options);
-      default:
-        return "";
+  // lib/media-stream/core-addons.ts
+  var KEY4 = "core_stream_addons_v1";
+  function readCoreStreamAddons() {
+    if (typeof window === "undefined") return [];
+    try {
+      const raw = getScopedStorageItem(KEY4);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter((entry) => Boolean(entry) && typeof entry === "object" && typeof entry.url === "string" && entry.url.length > 0);
+    } catch {
+      return [];
     }
   }
-  function getScraperTypeForApi(config) {
-    return config.preset === "torrentio" ? "torrentio" : "preconfigured";
-  }
-  function buildTorrentioSegments(options) {
-    const segments = [];
-    if (options.providers.length > 0) segments.push(`providers=${options.providers.join(",")}`);
-    if (options.sort && options.sort !== "quality") segments.push(`sort=${options.sort}`);
-    if (options.languages.length > 0) segments.push(`language=${options.languages.join(",")}`);
-    if (options.qualityFilter.length > 0) segments.push(`qualityfilter=${options.qualityFilter.join(",")}`);
-    if (options.limit > 0) segments.push(`limit=${options.limit}`);
-    return segments;
-  }
-  function buildTorrentioUrl(options) {
-    return buildTorrentioCacheUrl(options);
-  }
-  function buildTorrentioCacheUrl(options) {
-    const streamProvider = (options.streamProvider ?? options.debridProvider ?? "realdebrid").trim().toLowerCase();
-    const accessKey = getStreamProviderAccessKey(streamProvider);
-    const segments = buildTorrentioSegments(options);
-    if (accessKey && streamProvider !== "none") segments.push(`${streamProvider}=${accessKey}`);
-    const base = "https://torrentio.strem.fun";
-    return segments.length > 0 ? `${base}/${segments.join("|")}` : base;
-  }
-  function buildTorrentsDbUrl(options) {
-    const streamProvider = (options.streamProvider ?? options.debridProvider).trim().toLowerCase();
-    const accessKey = getStreamProviderAccessKey(streamProvider);
-    const cfg = {};
-    if (accessKey && streamProvider !== "none") cfg[streamProvider] = accessKey;
-    const b64 = btoa(JSON.stringify(cfg));
-    return `https://torrentsdb.com/${b64}`;
-  }
-  var COMET_RESOLUTION_MAP = {
-    "240p": "r240p",
-    "360p": "r360p",
-    "480p": "r480p",
-    "576p": "r576p",
-    "720p": "r720p",
-    "1080p": "r1080p",
-    "1440p": "r1440p",
-    "2160p": "r2160p",
-    "unknown": "unknown"
-  };
-  function buildCometUrl(options) {
-    const streamProvider = (options.streamProvider ?? options.debridProvider).trim().toLowerCase();
-    const accessKey = getStreamProviderAccessKey(streamProvider);
-    const resolutions = {};
-    for (const q of options.qualityFilter) {
-      const key = COMET_RESOLUTION_MAP[q];
-      if (key) resolutions[key] = false;
-    }
-    const cfg = {
-      debridServices: accessKey && streamProvider !== "none" ? [{ service: streamProvider, apiKey: accessKey }] : [],
-      enableTorrent: !accessKey || streamProvider === "none",
-      deduplicateStreams: false,
-      scrapeDebridAccountTorrents: false,
-      maxResultsPerResolution: options.maxResults,
-      maxSize: options.maxSize > 0 ? options.maxSize * 1024 * 1024 * 1024 : 0,
-      cachedOnly: options.cachedOnly,
-      sortCachedUncachedTogether: options.sortCachedUncachedTogether,
-      removeTrash: true,
-      debridStreamProxyPassword: "",
-      resultFormat: ["all"],
-      resolutions,
-      languages: {
-        required: [],
-        allowed: [],
-        exclude: [],
-        preferred: options.languages
-      },
-      options: {
-        remove_ranks_under: -1e10,
-        allow_english_in_languages: false,
-        remove_unknown_languages: false
-      }
-    };
-    return `https://comet.elfhosted.com/${btoa(JSON.stringify(cfg))}`;
-  }
-  var JACKETTIO_QUALITY_MAP = {
-    "unknown": 0,
-    "360p": 360,
-    "480p": 480,
-    "720p": 720,
-    "1080p": 1080,
-    "2160p": 2160
-  };
-  function buildJackettioUrl(options) {
-    const streamProvider = (options.streamProvider ?? options.debridProvider ?? "realdebrid").trim().toLowerCase();
-    const accessKey = getStreamProviderAccessKey(streamProvider);
-    if (!accessKey || streamProvider === "none") return "";
-    const excluded = new Set(
-      options.qualityFilter.map((q) => JACKETTIO_QUALITY_MAP[q]).filter((v) => v !== void 0)
-    );
-    const qualities = Object.values(JACKETTIO_QUALITY_MAP).filter((v) => !excluded.has(v));
-    const cfg = {
-      qualities,
-      excludeKeywords: [],
-      maxTorrents: options.maxTorrents > 0 ? options.maxTorrents : 8,
-      priotizeLanguages: options.languages,
-      priotizePackTorrents: 2,
-      forceCacheNextEpisode: false,
-      sortCached: [["quality", true], ["size", true]],
-      sortUncached: [["seeders", true]],
-      hideUncached: options.hideUncached,
-      indexers: ["all"],
-      indexerTimeoutSec: 60,
-      passkey: "",
-      metaLanguage: "",
-      enableMediaFlow: false,
-      mediaflowProxyUrl: "",
-      mediaflowApiPassword: "",
-      mediaflowPublicIp: "",
-      debridId: streamProvider,
-      debridApiKey: accessKey
-    };
-    return `https://jackettio.elfhosted.com/${btoa(JSON.stringify(cfg))}`;
-  }
-  function buildAiostreamsUrl(options) {
-    return options.manifestUrl.trim().replace(/^stremio:\/\//, "https://").replace(/\/manifest\.json$/i, "").replace(/\/$/, "");
-  }
-  function buildOrionUrl(options) {
-    if (!options.orionKey.trim()) return "";
-    const streamProvider = (options.streamProvider ?? options.debridProvider).trim().toLowerCase();
-    const rdToken = getStreamProviderAccessKey(streamProvider);
-    const params = [];
-    if (rdToken && streamProvider !== "none") params.push(`${streamProvider}=${rdToken}`);
-    const key = options.orionKey.trim();
-    return params.length > 0 ? `https://addon.orionoid.com/${key}/${params.join("|")}` : `https://addon.orionoid.com/${key}`;
-  }
-  function buildCustomUrl(options) {
-    return options.rawUrl.trim().replace(/^stremio:\/\//, "https://").replace(/\/manifest\.json$/i, "").replace(/\/$/, "");
-  }
-  function buildStreamProviderUrl(config) {
-    return buildScraperUrl(config);
-  }
-  function getStreamProviderTypeForApi(config) {
-    return getScraperTypeForApi(config);
+  function getEnabledCoreStreamAddons() {
+    return readCoreStreamAddons().filter((entry) => entry.enabled !== false);
   }
 
-  // lib/media-stream/request-context.ts
-  init_plugin_registry();
-  var DEFAULT_STREAM_PROVIDER_URL = "https://torrentio.strem.fun";
-  function getPrimaryStreamProviderConfig() {
-    const configs = getStreamProviderConfigs().filter((config) => config.enabled);
-    return configs.find((config) => config.preset === "torrentio") ?? configs[0] ?? null;
-  }
-  function getPrimaryStreamProviderRequestContext() {
-    const primary = getPrimaryStreamProviderConfig();
-    const qualityFilter = buildTorrentioQualityFilter(getStreamFilters());
-    const streamProviderUrl = primary ? buildStreamProviderUrl(primary) || DEFAULT_STREAM_PROVIDER_URL : DEFAULT_STREAM_PROVIDER_URL;
-    const streamProviderType = primary ? getStreamProviderTypeForApi(primary) : "torrentio";
-    return {
-      streamProviderUrl,
-      streamProviderType,
-      qualityFilter,
-      streamHeaders: {
-        "x-stream-provider-url": streamProviderUrl,
-        "x-stream-provider-type": streamProviderType,
-        "x-quality-filter": qualityFilter
-      },
-      browserStreamUrl: ({ imdbId, mediaType, season, episode }) => {
-        if (streamProviderType !== "torrentio") return null;
-        const configSegment = getStreamRequestConfigProviders()[0]?.buildConfigSegment(qualityFilter) ?? null;
-        if (!configSegment) return null;
-        const streamPath = mediaType === "series" && season && episode ? `stream/series/${imdbId}:${season}:${episode}.json` : `stream/movie/${imdbId}.json`;
-        return `${streamProviderUrl}/${configSegment}/${streamPath}`;
-      }
-    };
+  // lib/stremio/source-request.ts
+  function buildSourceRequest(addons) {
+    const first = addons.find((addon) => addon.enabled);
+    if (!first) return null;
+    return { url: first.url, headers: { "x-source-manifest-url": first.url } };
   }
 
   // lib/series-watchlist-feed.ts
   var STREAM_CACHE_TTL_MS = 30 * 60 * 1e3;
   var SERIES_STATUS_CACHE_TTL_MS = 15 * 60 * 1e3;
   var FAILED_CHECK_RETRY_MS = 5 * 60 * 1e3;
+
+  // lib/media-stream/request-context.ts
+  init_plugin_registry();
 
   // lib/release-watchlist-feed.ts
   init_plugin_registry();
@@ -172709,7 +172807,7 @@
   }
 
   // components/results/results-pagination.tsx
-  var import_react57 = __toESM(require_dist89());
+  var import_react59 = __toESM(require_dist89());
   init_react_shim();
   init_jsx_runtime_shim();
   function ResultsPagination({ currentPage, totalPages, onPageChange }) {
@@ -172726,7 +172824,7 @@
       // utan ram, aktiv sida i accentfärgen. Förut fyrkantiga rutor i en egen
       // inramad låda — det läste som en annan app under raderna.
       /* @__PURE__ */ jsx("div", { className: "flex max-w-full items-center justify-center overflow-x-auto px-2 py-3 sm:px-4", children: /* @__PURE__ */ jsx(
-        import_react57.Pagination,
+        import_react59.Pagination,
         {
           total: totalPages,
           page: currentPage,
@@ -172824,6 +172922,10 @@
     if (!isAndroidTauriEnv) return;
     void np({ cmd: "setScreenBrightness", value });
   }
+  function setAndroidExternalDisplayVideoOnly(on) {
+    if (!isAndroidTauriEnv) return;
+    void np({ cmd: "setExternalDisplayVideoOnly", on });
+  }
   function setAndroidImmersive(on, reason = "-") {
     if (!isAndroidTauriEnv) return;
     void fetch(`/api/debug-log?msg=${encodeURIComponent(`[immersive] ${on ? "P\xC5" : "av"} (${reason})`)}`).catch(() => {
@@ -172878,6 +172980,7 @@
     const [subtitleTracks, setSubtitleTracks] = useState([]);
     const [cueText, setCueText] = useState("");
     const [selectedAudio, setSelectedAudio] = useState(-1);
+    const [externalDisplay, setExternalDisplay] = useState(false);
     const prevRef = useRef({ fileLoaded: false, firstFrame: false, failToken: -1, timePos: 0 });
     useEffect(() => {
       if (!isAndroidTauriEnv || !enabled) return;
@@ -172892,6 +172995,7 @@
         setPaused(s.paused);
         setEnded(s.ended);
         setPausedForCache(s.pausedForCache);
+        setExternalDisplay(s.externalDisplay === true);
         setCoreIdle(!s.fileLoaded || s.paused);
         setSid(s.selectedSub > 0 ? s.selectedSub : null);
         const nextAudio = s.tracks?.audio ?? [];
@@ -173011,7 +173115,8 @@
       subtitleTracks,
       selectedAudio,
       setSubtitleTrack,
-      cueText
+      cueText,
+      externalDisplay
     };
   }
 
@@ -173092,27 +173197,159 @@
   // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/video-player-modal-shim.ts
   init_react_shim();
 
+  // components/player/player-control-icons.tsx
+  init_jsx_runtime_shim();
+  function playerControlIcon(id4, cls) {
+    switch (id4) {
+      case "nextEpisode":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
+          /* @__PURE__ */ jsx("path", { d: "M5 5l9 7-9 7z", fill: "currentColor" }),
+          /* @__PURE__ */ jsx("path", { d: "M18 5v14" })
+        ] });
+      case "subtitles":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", children: [
+          /* @__PURE__ */ jsx("rect", { x: "3", y: "5", width: "18", height: "14", rx: "3" }),
+          /* @__PURE__ */ jsx("path", { d: "M7.5 14.5h3M13.5 14.5h3" })
+        ] });
+      case "audioTrack":
+        return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", children: /* @__PURE__ */ jsx("path", { d: "M4 10v4M8 7v10M12 4v16M16 8v8M20 11v2" }) });
+      case "aspect":
+        return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", children: /* @__PURE__ */ jsx("rect", { x: "3", y: "6", width: "18", height: "12", rx: "2" }) });
+      case "cropZoom":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", children: [
+          /* @__PURE__ */ jsx("path", { d: "M4 9V5h4" }),
+          /* @__PURE__ */ jsx("path", { d: "M20 15v4h-4" }),
+          /* @__PURE__ */ jsx("path", { d: "M9 15H5v4" }),
+          /* @__PURE__ */ jsx("path", { d: "M15 9h4V5" })
+        ] });
+      case "wiki":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", children: [
+          /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "9" }),
+          /* @__PURE__ */ jsx("path", { d: "M12 8h.01" }),
+          /* @__PURE__ */ jsx("path", { d: "M11.5 12h1v4.5" })
+        ] });
+      case "soundtrack":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", children: [
+          /* @__PURE__ */ jsx("circle", { cx: "7", cy: "18", r: "3" }),
+          /* @__PURE__ */ jsx("circle", { cx: "18", cy: "15", r: "3" }),
+          /* @__PURE__ */ jsx("path", { d: "M10 18V7l11-3v11" })
+        ] });
+      case "cast":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", children: [
+          /* @__PURE__ */ jsx("path", { d: "M2 16.1a5 5 0 0 1 5.9 5.9" }),
+          /* @__PURE__ */ jsx("path", { d: "M2 12.05a9 9 0 0 1 9.95 9.95" }),
+          /* @__PURE__ */ jsx("path", { d: "M4 4h16a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-5" })
+        ] });
+      case "tuning":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.9", strokeLinecap: "round", children: [
+          /* @__PURE__ */ jsx("path", { d: "M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3" }),
+          /* @__PURE__ */ jsx("path", { d: "M1 14h6M9 8h6M17 16h6" })
+        ] });
+      case "fullscreen":
+        return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" }) });
+      case "more":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "currentColor", children: [
+          /* @__PURE__ */ jsx("circle", { cx: "5", cy: "12", r: "1.7" }),
+          /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "1.7" }),
+          /* @__PURE__ */ jsx("circle", { cx: "19", cy: "12", r: "1.7" })
+        ] });
+      default:
+        return null;
+    }
+  }
+
   // components/player/video-player-modal.tsx
   init_react_shim();
   var import_react_dom = __toESM(require_react_dom());
   var import_core4 = __toESM(require_core());
   var import_window = __toESM(require_window());
 
+  // lib/library/source-provider.ts
+  init_plugin_registry();
+  var SOURCES_TTL_MS = 6e4;
+  var sourcesCache = null;
+  async function getLibrarySources(force = false) {
+    if (!force && sourcesCache && Date.now() - sourcesCache.at < SOURCES_TTL_MS) return sourcesCache.sources;
+    try {
+      const status = await fetchLibraryStatus();
+      sourcesCache = { at: Date.now(), sources: status.sources };
+      return status.sources;
+    } catch {
+      return sourcesCache?.sources ?? [];
+    }
+  }
+  async function resolveLibraryProvider(sourceId) {
+    const sources = await getLibrarySources();
+    const source = sources.find((entry) => entry.id === sourceId);
+    if (!source) return null;
+    const provider = getLibraryProviders().find((entry) => entry.id === source.provider);
+    if (!provider) return null;
+    return { provider, source: { id: source.id, name: source.name ?? source.id, cursor: source.cursor ?? null } };
+  }
+
+  // lib/library/progress.ts
+  var REPORT_EVERY_MS = 15e3;
+  var FINISHED_RATIO = 0.92;
+  var TITLE_TTL_MS = 5 * 6e4;
+  var lastReport = /* @__PURE__ */ new Map();
+  var finishedSent = /* @__PURE__ */ new Set();
+  var titleCache = /* @__PURE__ */ new Map();
+  function isLibraryStreamUrl(url) {
+    return Boolean(url && /X-Plex-Token=|[?&]api_key=|MediaBrowser Token/i.test(url));
+  }
+  async function libraryTitleFor(entry) {
+    const key = entry.id;
+    const hit = titleCache.get(key);
+    if (hit && Date.now() - hit.at < TITLE_TTL_MS) return hit.title;
+    const tmdb = entry.tmdbId ? Number.parseInt(entry.tmdbId, 10) : Number.parseInt(entry.id.match(/^(?:movie|tv)-(\d+)$/)?.[1] ?? "", 10);
+    const title = await fetchLibraryItem({ tmdbId: Number.isFinite(tmdb) ? tmdb : null, imdbId: entry.imdbId ?? null }).catch(() => null);
+    titleCache.set(key, { at: Date.now(), title });
+    return title;
+  }
+  function reportLibraryProgress(entry) {
+    if (!getLibraryMode() || !isLibraryStreamUrl(entry.url)) return;
+    if (entry.type !== "movie" && entry.type !== "tv") return;
+    const scopeKey = `${entry.id}:${entry.season ?? ""}:${entry.episode ?? ""}`;
+    const finished = entry.duration > 0 && entry.currentTime / entry.duration >= FINISHED_RATIO;
+    if (finished && finishedSent.has(scopeKey)) return;
+    const now3 = Date.now();
+    if (!finished && now3 - (lastReport.get(scopeKey) ?? 0) < REPORT_EVERY_MS) return;
+    lastReport.set(scopeKey, now3);
+    if (finished) finishedSent.add(scopeKey);
+    void (async () => {
+      const title = await libraryTitleFor(entry);
+      if (!title) return;
+      const episode = entry.type === "tv" && entry.season != null && entry.episode != null ? (title.episodes ?? []).find((candidate) => candidate.season === entry.season && candidate.episode === entry.episode) ?? null : null;
+      if (entry.type === "tv" && !episode) return;
+      const media = (title.media ?? []).filter((item) => episode ? item.episodeKey === episode.key : !item.episodeKey);
+      const chosen = media.find((item) => entry.url && entry.url.includes(item.playRef.split("?")[0])) ?? media[0];
+      if (!chosen) return;
+      const match = await resolveLibraryProvider(title.sourceId);
+      if (!match?.provider.reportProgress) return;
+      await match.provider.reportProgress(match.source, { title, media: chosen, episodeKey: episode?.key ?? null }, {
+        positionMs: Math.round(entry.currentTime * 1e3),
+        durationMs: Math.round(entry.duration * 1e3),
+        finished
+      }).catch(() => {
+      });
+    })();
+  }
+
   // lib/playback-availability.ts
   init_plugin_registry();
 
   // lib/video-progress.ts
-  var EVENT4 = "lumio-stream-progress-changed";
+  var EVENT5 = "lumio-stream-progress-changed";
   if (typeof window !== "undefined") {
     void Promise.resolve().then(() => (init_plugin_registry(), plugin_registry_exports)).then(({ subscribePluginRegistry: subscribePluginRegistry2 }) => {
       subscribePluginRegistry2(() => {
-        window.dispatchEvent(new CustomEvent(EVENT4));
+        window.dispatchEvent(new CustomEvent(EVENT5));
         window.dispatchEvent(new CustomEvent(HISTORY_EVENT));
       });
     }).catch(() => {
     });
   }
-  var KEY3 = "stream_progress_list";
+  var KEY5 = "stream_progress_list";
   var MAX = 20;
   var HISTORY_KEY = "stream_history_list";
   var HISTORY_EVENT = "lumio-stream-history-changed";
@@ -173132,7 +173369,7 @@
   function read2() {
     if (typeof window === "undefined") return [];
     try {
-      return JSON.parse(getScopedStorageItem(KEY3) ?? "[]");
+      return JSON.parse(getScopedStorageItem(KEY5) ?? "[]");
     } catch {
       return [];
     }
@@ -173216,9 +173453,10 @@
   function saveStreamProgress(entry) {
     const sanitizedEntry = sanitizeEntry(entry);
     const list = sortByWatchedAtDesc(dedupeProgressEntries([sanitizedEntry, ...read2()])).slice(0, MAX);
-    setScopedStorageItem(KEY3, JSON.stringify(list));
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT4));
+    setScopedStorageItem(KEY5, JSON.stringify(list));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT5));
     appendHistoryEntry(sanitizedEntry);
+    reportLibraryProgress(sanitizedEntry);
   }
   function removeStreamProgress(id4, season, episode) {
     const key = entryKey(id4, season, episode);
@@ -173228,8 +173466,26 @@
       const entryLookupKey = entryKey(entry.id, entry.season, entry.episode);
       return entryLookupKey !== key && entryLookupKey !== prefixedMovieKey && entryLookupKey !== prefixedTvKey;
     });
-    setScopedStorageItem(KEY3, JSON.stringify(list));
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT4));
+    setScopedStorageItem(KEY5, JSON.stringify(list));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT5));
+  }
+
+  // lib/android-media-keys.ts
+  var EVENT6 = "lumio-media-key";
+  var listeners = 0;
+  function onMediaKey(listener) {
+    if (typeof window === "undefined") return () => {
+    };
+    const handler = (event) => {
+      const detail = event.detail;
+      if (detail?.action) listener(detail.action);
+    };
+    listeners += 1;
+    window.addEventListener(EVENT6, handler);
+    return () => {
+      listeners -= 1;
+      window.removeEventListener(EVENT6, handler);
+    };
   }
 
   // lib/resume-playback.ts
@@ -173335,7 +173591,7 @@
     "fullscreen"
   ];
   var LAYOUT_KEY = "player_layout";
-  var EVENT5 = "lumio-player-layout-changed";
+  var EVENT7 = "lumio-player-layout-changed";
   function defaultLayout() {
     return {
       order: [...PLAYER_CONTROL_IDS],
@@ -173389,8 +173645,8 @@
   function onPlayerLayoutChanged(listener) {
     if (typeof window === "undefined") return () => {
     };
-    window.addEventListener(EVENT5, listener);
-    return () => window.removeEventListener(EVENT5, listener);
+    window.addEventListener(EVENT7, listener);
+    return () => window.removeEventListener(EVENT7, listener);
   }
 
   // components/player/player-tuning-panel.tsx
@@ -173405,12 +173661,12 @@
     cinema: { labelKey: "vtPresetCinema", patch: { brightness: -4, gamma: -6, saturation: -5 } },
     sharp: { labelKey: "vtPresetSharp", patch: { sharpen: 0.6, saturation: 8 } }
   };
-  var KEY4 = "video_tuning";
-  var EVENT6 = "lumio-video-tuning-changed";
+  var KEY6 = "video_tuning";
+  var EVENT8 = "lumio-video-tuning-changed";
   function getVideoTuning() {
     if (typeof window === "undefined") return { ...DEFAULT_TUNING };
     try {
-      const raw = getScopedStorageItem(KEY4);
+      const raw = getScopedStorageItem(KEY6);
       if (!raw) return { ...DEFAULT_TUNING };
       const parsed = JSON.parse(raw);
       const clamp2 = (v, lo, hi, dflt) => {
@@ -173429,14 +173685,14 @@
     }
   }
   function setVideoTuning(tuning) {
-    setScopedStorageItem(KEY4, JSON.stringify(tuning));
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT6));
+    setScopedStorageItem(KEY6, JSON.stringify(tuning));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT8));
   }
   function onVideoTuningChanged(listener) {
     if (typeof window === "undefined") return () => {
     };
-    window.addEventListener(EVENT6, listener);
-    return () => window.removeEventListener(EVENT6, listener);
+    window.addEventListener(EVENT8, listener);
+    return () => window.removeEventListener(EVENT8, listener);
   }
   var TONE_MAPPINGS = ["auto", "hable", "mobius", "reinhard", "bt.2390"];
   var DEFAULT_RENDER_TUNING = {
@@ -173470,7 +173726,7 @@
   }
   function setRenderTuning(tuning) {
     setScopedStorageItem(RENDER_KEY, JSON.stringify(tuning));
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT6));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT8));
   }
   function renderTuningProperties(t, isNetworkStream = false) {
     const props = [
@@ -173514,12 +173770,12 @@
     voiceClarity: false,
     downmixStereo: false
   };
-  var KEY5 = "audio_tuning";
-  var EVENT7 = "lumio-audio-tuning-changed";
+  var KEY7 = "audio_tuning";
+  var EVENT9 = "lumio-audio-tuning-changed";
   function getAudioTuning() {
     if (typeof window === "undefined") return { ...DEFAULT_AUDIO_TUNING };
     try {
-      const raw = getScopedStorageItem(KEY5);
+      const raw = getScopedStorageItem(KEY7);
       if (!raw) return { ...DEFAULT_AUDIO_TUNING };
       const parsed = JSON.parse(raw);
       return {
@@ -173533,14 +173789,14 @@
     }
   }
   function setAudioTuning(tuning) {
-    setScopedStorageItem(KEY5, JSON.stringify(tuning));
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT7));
+    setScopedStorageItem(KEY7, JSON.stringify(tuning));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT9));
   }
   function onAudioTuningChanged(listener) {
     if (typeof window === "undefined") return () => {
     };
-    window.addEventListener(EVENT7, listener);
-    return () => window.removeEventListener(EVENT7, listener);
+    window.addEventListener(EVENT9, listener);
+    return () => window.removeEventListener(EVENT9, listener);
   }
   function audioTuningFilters(t) {
     const filters = [];
@@ -173826,13 +174082,23 @@
       return false;
     }
   }
-  function openInVlc(url) {
+  function positionExtra(startSeconds) {
+    const ms = Math.round((startSeconds ?? 0) * 1e3);
+    return ms > 0 ? `;l.position=${ms}` : "";
+  }
+  function openInVlc(url, startSeconds) {
     if (typeof window === "undefined") return false;
     if (!vlcSupported()) return false;
     const direct = resolveDirectStreamUrl(url);
     if (!direct) return false;
     const isAndroid = /Android/i.test(navigator.userAgent);
-    window.location.href = isAndroid ? `vlc://${direct}` : `vlc-x-callback://x-callback-url/stream?url=${encodeURIComponent(direct)}`;
+    if (isAndroid) {
+      const scheme = /^http:\/\//i.test(direct) ? "http" : "https";
+      const rest = direct.replace(/^https?:\/\//i, "");
+      window.location.href = `intent://${rest}#Intent;action=android.intent.action.VIEW;scheme=${scheme};package=org.videolan.vlc;type=video/*${positionExtra(startSeconds)};end`;
+      return true;
+    }
+    window.location.href = `vlc-x-callback://x-callback-url/stream?url=${encodeURIComponent(direct)}`;
     return true;
   }
   function isAppleMobile() {
@@ -173845,14 +174111,14 @@
       return false;
     }
   }
-  function openInExternalPlayer(url) {
+  function openInExternalPlayer(url, startSeconds) {
     if (typeof window === "undefined") return false;
     const direct = resolveDirectStreamUrl(url);
     if (!direct) return false;
     if (/Android/i.test(navigator.userAgent)) {
       const scheme = /^http:\/\//i.test(direct) ? "http" : "https";
       const rest = direct.replace(/^https?:\/\//i, "");
-      window.location.href = `intent://${rest}#Intent;action=android.intent.action.VIEW;scheme=${scheme};type=video/*;end`;
+      window.location.href = `intent://${rest}#Intent;action=android.intent.action.VIEW;scheme=${scheme};type=video/*${positionExtra(startSeconds)};end`;
       return true;
     }
     if (isAppleMobile()) {
@@ -173960,7 +174226,7 @@
     return isTvSurface() ? 10 : 6;
   }
   var QUEUE_BYPASS_MS = 8e3;
-  var cache2 = /* @__PURE__ */ new Map();
+  var cache3 = /* @__PURE__ */ new Map();
   var errorCache = /* @__PURE__ */ new Map();
   var inflight = /* @__PURE__ */ new Map();
   var queue = [];
@@ -174115,7 +174381,7 @@
       if (cachedError && cachedError.expiresAt > now3) {
         throw new Error(cachedError.message);
       }
-      const cached = cache2.get(key);
+      const cached = cache3.get(key);
       if (cached && cached.expiresAt > now3) {
         return cached.data;
       }
@@ -174146,7 +174412,7 @@
         release();
       }
     })().then((data) => {
-      cache2.set(key, {
+      cache3.set(key, {
         expiresAt: Date.now() + ttlMs,
         data
       });
@@ -174173,7 +174439,7 @@
 
   // lib/services/wiki-request-cache.ts
   var WIKI_TTL_MS = 5 * 6e4;
-  var cache3 = /* @__PURE__ */ new Map();
+  var cache4 = /* @__PURE__ */ new Map();
   var inflight2 = /* @__PURE__ */ new Map();
   function withAbortSignal2(promise, signal) {
     if (!signal) return promise;
@@ -174190,7 +174456,7 @@
     const key = params.toString();
     const now3 = Date.now();
     if (!options.forceRefresh) {
-      const cached = cache3.get(key);
+      const cached = cache4.get(key);
       if (cached && cached.expiresAt > now3) {
         return cached.data;
       }
@@ -174206,7 +174472,7 @@
       forceRefresh: options.forceRefresh,
       priority: "normal"
     }).then((data) => {
-      cache3.set(key, {
+      cache4.set(key, {
         expiresAt: Date.now() + WIKI_TTL_MS,
         data
       });
@@ -174304,7 +174570,7 @@
 
   // lib/services/media-prefetch-cache.ts
   var inflight3 = /* @__PURE__ */ new Map();
-  var cache4 = /* @__PURE__ */ new Map();
+  var cache5 = /* @__PURE__ */ new Map();
   var PREFETCH_TTL_MS = 5 * 6e4;
   var PREFETCH_RECOMMENDATIONS = false;
   function buildKey(kind, identity) {
@@ -174324,11 +174590,11 @@
   async function prefetchOnce(kind, identity, fn, signal) {
     const key = buildKey(kind, identity);
     const now3 = Date.now();
-    const expiresAt = cache4.get(key);
+    const expiresAt = cache5.get(key);
     if (expiresAt && expiresAt > now3) return;
-    const running = inflight3.get(key);
-    if (running) {
-      await withAbort(running, signal);
+    const running2 = inflight3.get(key);
+    if (running2) {
+      await withAbort(running2, signal);
       return;
     }
     const request = fn().catch(() => {
@@ -174337,7 +174603,7 @@
     });
     inflight3.set(key, request);
     await withAbort(request, signal);
-    cache4.set(key, Date.now() + PREFETCH_TTL_MS);
+    cache5.set(key, Date.now() + PREFETCH_TTL_MS);
   }
   async function prefetchMediaWarmup(options) {
     const tasks = [];
@@ -174366,8 +174632,9 @@
         streamParams.set("type", "movie");
       }
       const streamTask = prefetchOnce("streams", streamParams.toString(), async () => {
-        const { streamHeaders } = getPrimaryStreamProviderRequestContext();
-        await fetchJsonWithRetry(`/api/streams?${streamParams.toString()}`, { headers: streamHeaders }, {
+        const source = buildSourceRequest(getEnabledCoreStreamAddons());
+        if (!source) return;
+        await fetchJsonWithRetry(`/api/streams?${streamParams.toString()}`, { headers: source.headers }, {
           timeoutMs: 5400,
           retries: 1,
           retryDelayMs: 260
@@ -174533,8 +174800,8 @@
     const cacheKey = `${stremioType}:${videoId}:${osApiKey ? "rest" : "addon"}:${mediaUrl ? "hash" : "nohash"}`;
     const cached = resultCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) return cached.subtitles;
-    const running = inflight4.get(cacheKey);
-    if (running) return running;
+    const running2 = inflight4.get(cacheKey);
+    if (running2) return running2;
     const parseSubtitles = (payload) => {
       const subtitles = payload?.subtitles;
       if (!Array.isArray(subtitles)) return [];
@@ -174625,22 +174892,22 @@
     if (credits.length === 0) return null;
     return /* @__PURE__ */ jsxs("div", { children: [
       /* @__PURE__ */ jsx("div", { className: "mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500", children: title }),
-      /* @__PURE__ */ jsx("div", { className: "flex gap-2 overflow-x-auto pb-1", ...isTv ? { "data-row": "" } : {}, children: credits.map((credit) => /* @__PURE__ */ jsxs(
+      /* @__PURE__ */ jsx("div", { className: isTv ? "grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(120px,1fr))]" : "flex gap-2 overflow-x-auto pb-1", children: credits.map((credit) => /* @__PURE__ */ jsxs(
         "button",
         {
           type: "button",
           ...isTv && onCreditClick ? { "data-f": "" } : {},
           onClick: () => onCreditClick?.({ id: credit.id, mediaType: credit.mediaType, title: credit.title }),
-          className: `group relative w-[80px] flex-shrink-0 text-left ${onCreditClick ? "cursor-pointer" : "cursor-default"}`,
+          className: `group relative text-left ${isTv ? "w-full" : "w-[80px] flex-shrink-0"} ${onCreditClick ? "cursor-pointer" : "cursor-default"}`,
           children: [
             credit.posterUrl ? /* @__PURE__ */ jsx(
               "img",
               {
                 src: credit.posterUrl,
                 alt: credit.title,
-                className: "h-[120px] w-[80px] rounded-lg object-cover ring-1 ring-white/10 transition group-hover:scale-[1.03] group-hover:ring-white/40"
+                className: `${isTv ? "aspect-[2/3] h-auto w-full" : "h-[120px] w-[80px]"} rounded-lg object-cover ring-1 ring-white/10 transition group-hover:scale-[1.03] group-hover:ring-white/40`
               }
-            ) : /* @__PURE__ */ jsx("div", { className: "flex h-[120px] w-[80px] items-center justify-center rounded-lg bg-white/5 ring-1 ring-white/10", children: /* @__PURE__ */ jsxs("svg", { width: "20", height: "20", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.5", className: "text-slate-600", children: [
+            ) : /* @__PURE__ */ jsx("div", { className: `flex ${isTv ? "aspect-[2/3] w-full" : "h-[120px] w-[80px]"} items-center justify-center rounded-lg bg-white/5 ring-1 ring-white/10`, children: /* @__PURE__ */ jsxs("svg", { width: "20", height: "20", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.5", className: "text-slate-600", children: [
               /* @__PURE__ */ jsx("rect", { x: "2", y: "3", width: "20", height: "14", rx: "2" }),
               /* @__PURE__ */ jsx("path", { d: "m8 21 4-4 4 4" })
             ] }) }),
@@ -174664,6 +174931,7 @@
     const [person, setPerson] = useState(null);
     const [fetchError, setFetchError] = useState(false);
     const [errorKind, setErrorKind] = useState(null);
+    const isTvPerson = useTvMode();
     const [expanded, setExpanded] = useState(defaultExpanded);
     const [bioExpanded, setBioExpanded] = useState(false);
     useEffect(() => {
@@ -174784,7 +175052,7 @@
                 {
                   type: "button",
                   onClick: () => setBioExpanded((value) => !value),
-                  className: "text-xs font-medium text-accent-300 transition hover:text-accent-200",
+                  className: "text-[0.65rem] font-normal uppercase tracking-[0.22em] text-slate-400 transition hover:text-white focus-visible:text-white focus-visible:outline-none",
                   children: bioExpanded ? t("readLess") : t("readMore")
                 }
               )
@@ -174894,7 +175162,9 @@
               className: "text-sm leading-7 text-slate-300",
               style: bioExpanded ? void 0 : {
                 display: "-webkit-box",
-                WebkitLineClamp: 7,
+                // TV: skärmen är stor och vyn hade tomrum — visa mer av
+                // texten direkt i stället för att gömma den bakom Läs mer.
+                WebkitLineClamp: isTvPerson ? 14 : 7,
                 WebkitBoxOrient: "vertical",
                 overflow: "hidden"
               },
@@ -174953,7 +175223,7 @@
     return /* @__PURE__ */ jsxs(
       "div",
       {
-        className: "absolute inset-y-0 right-0 z-40 flex w-[min(340px,88vw)] flex-col overflow-hidden",
+        className: "absolute inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden sm:w-[min(340px,88vw)]",
         style: {
           background: "rgb(var(--base-950) / 0.96)",
           backdropFilter: "blur(12px)",
@@ -174970,7 +175240,7 @@
                   type: "button",
                   ...isTv ? { "data-f": "" } : {},
                   onClick: onBack,
-                  className: "flex h-7 w-7 items-center justify-center rounded-full text-slate-500 transition hover:bg-white/10 hover:text-white",
+                  className: "flex h-9 w-9 items-center justify-center rounded-full bg-[#fcfcff14] text-slate-200 backdrop-blur-md transition hover:bg-[#fcfcff22] hover:text-white",
                   title: "Back",
                   children: /* @__PURE__ */ jsx("svg", { className: "h-3.5 w-3.5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2.5, children: /* @__PURE__ */ jsx("path", { d: "m15 18-6-6 6-6" }) })
                 }
@@ -174984,7 +175254,7 @@
                 ref: closeRef,
                 ...isTv ? { "data-f": "", "data-init": "" } : {},
                 onClick: onClose,
-                className: "flex h-7 w-7 items-center justify-center rounded-full text-slate-500 transition hover:bg-white/10 hover:text-white",
+                className: "flex h-9 w-9 items-center justify-center rounded-full bg-[#fcfcff14] text-slate-200 backdrop-blur-md transition hover:bg-[#fcfcff22] hover:text-white",
                 children: /* @__PURE__ */ jsx("svg", { className: "h-3.5 w-3.5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2.5, children: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12" }) })
               }
             )
@@ -175091,12 +175361,12 @@
     return /* @__PURE__ */ jsxs(
       "div",
       {
-        className: "absolute inset-y-0 right-0 z-[80] flex w-[340px] flex-col overflow-hidden",
+        className: "absolute inset-y-0 right-0 z-[80] flex w-full flex-col overflow-hidden sm:w-[min(340px,88vw)]",
         style: { background: "rgb(var(--base-950) / 0.96)", backdropFilter: "blur(12px)", borderLeft: "1px solid rgba(255,255,255,0.07)" },
         onClick: (e) => e.stopPropagation(),
         ...isTv ? { "data-panel-root": "" } : {},
         children: [
-          /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between border-b border-white/[0.07] px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top),var(--android-inset-top,0px))]", children: [
+          /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between border-b border-white/[0.07] px-4 pb-3 pt-[max(0.75rem,calc(env(safe-area-inset-top)+0.5rem),calc(var(--android-inset-top,0px)+0.5rem))]", children: [
             /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
               onBack ? /* @__PURE__ */ jsx(
                 "button",
@@ -175104,7 +175374,7 @@
                   type: "button",
                   ...isTv ? { "data-f": "" } : {},
                   onClick: onBack,
-                  className: "flex h-7 w-7 items-center justify-center rounded-full text-slate-500 transition hover:bg-white/10 hover:text-white",
+                  className: "flex h-9 w-9 items-center justify-center rounded-full bg-[#fcfcff14] text-slate-200 backdrop-blur-md transition hover:bg-[#fcfcff22] hover:text-white",
                   title: "Back",
                   children: /* @__PURE__ */ jsx("svg", { className: "h-3.5 w-3.5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2.5, children: /* @__PURE__ */ jsx("path", { d: "m15 18-6-6 6-6" }) })
                 }
@@ -175118,7 +175388,7 @@
                 ref: closeRef,
                 ...isTv ? { "data-f": "", "data-init": "" } : {},
                 onClick: onClose,
-                className: "flex h-7 w-7 items-center justify-center rounded-full text-slate-500 transition hover:bg-white/10 hover:text-white",
+                className: "flex h-9 w-9 items-center justify-center rounded-full bg-[#fcfcff14] text-slate-200 backdrop-blur-md transition hover:bg-[#fcfcff22] hover:text-white",
                 children: /* @__PURE__ */ jsx("svg", { className: "h-3.5 w-3.5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2.5, children: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12" }) })
               }
             )
@@ -175555,7 +175825,7 @@
   }
 
   // lib/keyboard-shortcuts.ts
-  var KEY6 = "keyboard_shortcuts";
+  var KEY8 = "keyboard_shortcuts";
   var SHORTCUT_COMMANDS = [
     { id: "playPause", category: "player", defaultKey: " ", labelKey: "shortcutsPlayPause" },
     { id: "seekBack", category: "player", defaultKey: "ArrowLeft", labelKey: "shortcutsSeekBackward" },
@@ -175575,7 +175845,7 @@
   function readOverrides() {
     if (typeof window === "undefined") return {};
     try {
-      const raw = getScopedStorageItem(KEY6);
+      const raw = getScopedStorageItem(KEY8);
       if (!raw) return {};
       const parsed = JSON.parse(raw);
       return parsed && typeof parsed === "object" ? parsed : {};
@@ -175645,12 +175915,12 @@
       swipeStartRef.current = touch ? { x: touch.clientX, y: touch.clientY } : null;
     }, []);
     const onTouchEnd = useCallback((event) => {
-      const start2 = swipeStartRef.current;
+      const start3 = swipeStartRef.current;
       swipeStartRef.current = null;
       const touch = event.changedTouches[0];
-      if (!start2 || !touch) return;
-      const dx = touch.clientX - start2.x;
-      const dy = touch.clientY - start2.y;
+      if (!start3 || !touch) return;
+      const dx = touch.clientX - start3.x;
+      const dy = touch.clientY - start3.y;
       if (Math.abs(dx) < 45 || Math.abs(dx) <= Math.abs(dy)) return;
       step(dx < 0 ? 1 : -1);
     }, [step]);
@@ -175905,8 +176175,8 @@
     const cached = readCached(type, tmdbId);
     if (cached !== void 0 && cached !== null) return cached;
     const key = buildCacheKey(type, tmdbId);
-    const running = inflightRequests.get(key);
-    if (running) return running;
+    const running2 = inflightRequests.get(key);
+    if (running2) return running2;
     const request = (async () => {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 2500);
@@ -176042,11 +176312,11 @@
 
   // lib/tauri-avplayer.ts
   var import_core3 = __toESM(require_core());
-  async function avplayerPrepare(url, start2, sub) {
+  async function avplayerPrepare(url, start3, sub) {
     if (!isTauriEnv) return { streamUrl: url, offset: 0 };
     return (0, import_core3.invoke)("avplayer_prepare", {
       url,
-      start: start2 ?? null,
+      start: start3 ?? null,
       subContent: sub?.subContent ?? null,
       subIndex: sub?.subIndex ?? null,
       audioTrack: sub?.audioTrack ?? null,
@@ -176146,10 +176416,10 @@ ${cue.text}`).join("\n\n")}
       const timeLine = lines.find((l) => l.includes("-->"));
       if (!timeLine) continue;
       const [s, e] = timeLine.split("-->");
-      const start2 = parseTimestamp(s);
+      const start3 = parseTimestamp(s);
       const end = parseTimestamp(e.trim().split(/\s+/)[0]);
       const text = lines.filter((l) => !l.includes("-->") && !/^\d+$/.test(l.trim()) && l.trim() !== "WEBVTT").join("\n").trim().replace(/<\d{2}:\d{2}[^>]*>/g, "").replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&nbsp;/g, " ");
-      if (text) cues.push({ start: start2, end, text });
+      if (text) cues.push({ start: start3, end, text });
     }
     return cues;
   }
@@ -176283,10 +176553,10 @@ ${cue.text}`).join("\n\n")}
   var isProxyUrl = (src) => src.startsWith("/api/proxy-stream");
   var isHlsUrl = (src) => src.startsWith("/api/hls-stream/");
   var isServerStreamUrl = (src) => isProxyUrl(src) || isHlsUrl(src);
-  function buildStreamQuery(originalUrl, track, start2, vcodec, channels, audioMode, nightMode, transcode) {
+  function buildStreamQuery(originalUrl, track, start3, vcodec, channels, audioMode, nightMode, transcode) {
     const p = new URLSearchParams({ url: originalUrl });
     if (track !== null) p.set("track", String(track));
-    if (start2 > 0) p.set("start", String(Math.floor(start2)));
+    if (start3 > 0) p.set("start", String(Math.floor(start3)));
     if (vcodec) p.set("vcodec", vcodec);
     if (channels && channels > 0) p.set("channels", String(channels));
     if (audioMode) p.set("audioMode", audioMode);
@@ -176294,9 +176564,9 @@ ${cue.text}`).join("\n\n")}
     if (transcode) p.set("transcode", "1");
     return p;
   }
-  function buildProxyUrl(originalUrl, track, start2, vcodec, channels, audioMode, nightMode, transcode) {
-    const p = buildStreamQuery(originalUrl, track, start2, vcodec, channels, audioMode, nightMode, transcode);
-    console.log("[sync] buildProxyUrl", { track, start: Math.floor(start2), vcodec, channels, audioMode, transcode: Boolean(transcode) });
+  function buildProxyUrl(originalUrl, track, start3, vcodec, channels, audioMode, nightMode, transcode) {
+    const p = buildStreamQuery(originalUrl, track, start3, vcodec, channels, audioMode, nightMode, transcode);
+    console.log("[sync] buildProxyUrl", { track, start: Math.floor(start3), vcodec, channels, audioMode, transcode: Boolean(transcode) });
     return `/api/proxy-stream?${p.toString()}`;
   }
   function getAnchoredMenuStyle(trigger, menuWidth = 0) {
@@ -176318,9 +176588,9 @@ ${cue.text}`).join("\n\n")}
       overflowY: "auto"
     };
   }
-  async function initHlsStream(originalUrl, track, start2, vcodec, channels, audioMode, nightMode, transcode) {
-    const p = buildStreamQuery(originalUrl, track, start2, vcodec, channels, audioMode, nightMode, transcode);
-    console.log("[sync] initHlsStream", { track, start: Math.floor(start2), vcodec, channels, audioMode, transcode: Boolean(transcode) });
+  async function initHlsStream(originalUrl, track, start3, vcodec, channels, audioMode, nightMode, transcode) {
+    const p = buildStreamQuery(originalUrl, track, start3, vcodec, channels, audioMode, nightMode, transcode);
+    console.log("[sync] initHlsStream", { track, start: Math.floor(start3), vcodec, channels, audioMode, transcode: Boolean(transcode) });
     const res = await fetch(`/api/hls-stream/init?${p.toString()}`);
     if (!res.ok) throw new Error(`hls init failed: ${res.status}`);
     return await res.json();
@@ -176371,9 +176641,9 @@ ${cue.text}`).join("\n\n")}
       const time2 = video.currentTime;
       const ranges = video.buffered;
       for (let i = 0; i < ranges.length; i += 1) {
-        const start2 = ranges.start(i);
+        const start3 = ranges.start(i);
         const end = ranges.end(i);
-        if (time2 >= start2 && time2 <= end) {
+        if (time2 >= start3 && time2 <= end) {
           return Math.max(0, end - time2);
         }
       }
@@ -176463,7 +176733,7 @@ ${cue.text}`).join("\n\n")}
     } catch {
     }
   }
-  function VideoPlayerModal({ url, filename, title, onClose, imdbId, tmdbId, mediaType, season, episode, mediaId, mediaTitle, mediaSource, posterUrl, backdropUrl, year, initialTime, expectedDurationSeconds, onFirstPlay, hideStartSplash, forceProxy, onTimeUpdate, onOutroStart, onCreditsOpenDetails, onCreditsFinished, episodes, onLoadFailed, onPlaybackEnded, onOpenedExternally, skipHomeKitOnClose, skipHomeKitOnOpen, overlayContent, autoFullscreen, sourceInfoHash, playbackTraceId }) {
+  function VideoPlayerModal({ url, filename, title, onClose, imdbId, tmdbId, mediaType, season, episode, mediaId, mediaTitle, mediaSource, posterUrl, backdropUrl, year, initialTime, expectedDurationSeconds, onFirstPlay, hideStartSplash, forceProxy, requestHeaders, onTimeUpdate, onOutroStart, onCreditsOpenDetails, onCreditsFinished, episodes, onLoadFailed, onPlaybackEnded, onOpenedExternally, skipHomeKitOnClose, skipHomeKitOnOpen, overlayContent, autoFullscreen, sourceInfoHash, playbackTraceId }) {
     const STILL_WATCHING_CLOSE_SECONDS = 20;
     const [engineKind, setEngineKind] = useState("none");
     useEffect(() => {
@@ -176485,7 +176755,7 @@ ${cue.text}`).join("\n\n")}
       if (isClientSession()) {
         let vlcPref = false;
         vlcPref = getItem("remote_open_in_vlc") === "1";
-        if (vlcPref && openInVlc(url)) {
+        if (vlcPref && openInVlc(url, initialTime)) {
           onClose();
         }
       }
@@ -176612,14 +176882,14 @@ ${cue.text}`).join("\n\n")}
       void fetch(`/api/hls-stream/${sessionId}/playlist.m3u8`, { method: "DELETE" }).catch(() => {
       });
     }, []);
-    const applyStreamSrc = useCallback((originalUrl, track, start2, vcodec, channels, audioMode, night, transcode) => {
+    const applyStreamSrc = useCallback((originalUrl, track, start3, vcodec, channels, audioMode, night, transcode) => {
       setProxyBufferReady(false);
       if (!useHlsForProxy) {
-        setVideoSrc(buildProxyUrl(originalUrl, track, start2, vcodec, channels, audioMode, night, transcode));
+        setVideoSrc(buildProxyUrl(originalUrl, track, start3, vcodec, channels, audioMode, night, transcode));
         return;
       }
       const prev = hlsSessionIdRef.current;
-      void initHlsStream(originalUrl, track, start2, vcodec, channels, audioMode, night, transcode).then(({ sessionId, playlistUrl }) => {
+      void initHlsStream(originalUrl, track, start3, vcodec, channels, audioMode, night, transcode).then(({ sessionId, playlistUrl }) => {
         if (prev && prev !== sessionId) endHlsSessionOnServer(prev);
         hlsSessionIdRef.current = sessionId;
         hlsTranscodeRef.current = transcode;
@@ -176710,7 +176980,7 @@ ${cue.text}`).join("\n\n")}
       hideTimerRef.current = setTimeout(() => {
         const paused = useMpv ? mpv.paused : videoRef.current?.paused ?? true;
         if (!paused && openSurfaceRef.current === null) setControlsVisible(false);
-      }, 3e3);
+      }, isTv ? 5e3 : 3e3);
     }
     const onMouseActivityRef = useRef(() => {
     });
@@ -176765,11 +177035,27 @@ ${cue.text}`).join("\n\n")}
       return () => queries.forEach((mq) => mq.removeEventListener("change", sync2));
     }, []);
     const chromeKind = isTv ? "tv" : chromeViewport;
-    const desktopChrome = chromeKind === "desktop";
+    const tvChrome = chromeKind === "tv";
+    const desktopChrome = chromeKind === "desktop" || tvChrome;
     const landscapeChrome = chromeKind === "landscape";
     const portraitChrome = chromeKind === "portrait";
     const phoneChrome = landscapeChrome || portraitChrome;
-    const newChrome = chromeKind !== "tv";
+    const newChrome = true;
+    const dtStation = isTv ? { "data-f": "1" } : {};
+    const tvSurface2 = (id4) => isTv ? { "data-tv-surface": id4, "data-panel-root": "1" } : {};
+    useEffect(() => {
+      if (!isTv || openSurface === null) return;
+      const raf = window.requestAnimationFrame(() => {
+        const root = playerRootRef.current;
+        if (!root) return;
+        const panels = root.querySelectorAll("[data-panel-root]");
+        const surface = root.querySelector(`[data-tv-surface="${openSurface}"]`) ?? (panels.length > 0 ? panels[panels.length - 1] : null);
+        if (!surface || surface === root) return;
+        const target = surface.querySelector("[data-init]") ?? surface.querySelector('[aria-current="true"][data-f], [data-f][aria-pressed="true"]') ?? surface.querySelector("[data-f]");
+        target?.focus();
+      });
+      return () => window.cancelAnimationFrame(raf);
+    }, [isTv, openSurface]);
     const playerAccentRgb = playerLayout.seekBarColor === "white" ? "255 255 255" : playerLayout.seekBarColor === "red" ? "239 68 68" : playerLayout.seekBarColor === "amber" ? "251 191 36" : "124 156 255";
     const hiddenControls = useMemo(() => new Set(playerLayout.hidden), [playerLayout.hidden]);
     const showsControl = (id4) => !hiddenControls.has(id4);
@@ -176797,11 +177083,22 @@ ${cue.text}`).join("\n\n")}
       let cancelled = false;
       void (async () => {
         try {
+          if (useMpv && await mpvRenderIsGpu()) {
+            const colorspace = await mpvCommand2(["get_property", "video-params/colorspace"]);
+            if (!cancelled && colorspace === "dolbyvision") {
+              void fetch(`/api/debug-log?msg=${encodeURIComponent("[dv] mpv gpu-v\xE4g: motorn renderar DV sj\xE4lv \u2014 ingen korrigering")}`).catch(() => {
+              });
+            }
+            return;
+          }
           const response = await fetch(`/api/video-color?url=${encodeURIComponent(url)}`);
           const data = await response.json();
           if (cancelled) return;
           if (data?.dolbyVisionProfile != null) {
             void fetch(`/api/debug-log?msg=${encodeURIComponent(`[dv] profil ${data.dolbyVisionProfile} bl_compat ${data.blCompatibilityId ?? "?"} korrigering ${data.needsColorFallback ? "P\xC5" : "av"}`)}`).catch(() => {
+            });
+          } else if (data?.colorTransfer === "smpte2084") {
+            void fetch(`/api/debug-log?msg=${encodeURIComponent("[dv] HDR (PQ) utan DOVI-post \u2014 ingen korrigering")}`).catch(() => {
             });
           }
           if (!data?.needsColorFallback) return;
@@ -176812,7 +177109,7 @@ ${cue.text}`).join("\n\n")}
       return () => {
         cancelled = true;
       };
-    }, [url, hasStarted]);
+    }, [url, hasStarted, useMpv]);
     const [streamQualityLabel, setStreamQualityLabel] = useState(null);
     useEffect(() => {
       if (!hasStarted || !getShowStreamQuality()) {
@@ -176899,6 +177196,7 @@ ${cue.text}`).join("\n\n")}
     const mpvRevealPlaybackRestartTokenRef = useRef(0);
     const mpvRevealStartPositionRef = useRef(initialTime ?? 0);
     const prevResetUrlRef = useRef(url);
+    const timedUrlRef = useRef(null);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
     const [volume, setVolume] = useState(1);
@@ -176916,6 +177214,7 @@ ${cue.text}`).join("\n\n")}
     const [castDevices, setCastDevices] = useState([]);
     const [castScanning, setCastScanning] = useState(false);
     const [castTarget, setCastTarget] = useState(null);
+    const castSeekRef = useRef(null);
     const [castError, setCastError] = useState(null);
     const [airplaySession, setAirplaySession] = useState(null);
     const [airplayPrepare, setAirplayPrepare] = useState("idle");
@@ -177120,6 +177419,18 @@ ${cue.text}`).join("\n\n")}
     const mpvDesktop = useMpvPlayer(isMpvEngine);
     const droid = useNativePlayer(isDroidEngine);
     const mpv = isDroidEngine ? droid : mpvDesktop;
+    const externalDisplayActive = isDroidEngine && droid.externalDisplay;
+    useEffect(() => {
+      if (!isDroidEngine) return;
+      setAndroidExternalDisplayVideoOnly(getExternalDisplayVideoOnly());
+    }, [isDroidEngine]);
+    useEffect(() => {
+      if (!externalDisplayActive) return;
+      setAndroidScreenBrightness(controlsVisible ? 0.45 : 0.02);
+      return () => {
+        setAndroidScreenBrightness(-1);
+      };
+    }, [externalDisplayActive, controlsVisible]);
     useEffect(() => {
       if (!isDroidEngine) return;
       setAndroidImmersive(true, "spelare-mount");
@@ -177269,12 +177580,15 @@ ${cue.text}`).join("\n\n")}
       void refreshMpvAudioTracks();
       void refreshMpvSubtitleTracks();
     }, [showAudioMenu, showSubMenu, refreshMpvAudioTracks, refreshMpvSubtitleTracks, useMpv]);
+    const firstFrameRenderedRef = useRef(false);
+    firstFrameRenderedRef.current = mpv.firstFrameRendered;
     useEffect(() => {
       if (!useMpv) return;
       if (!mpv.fileLoaded || mpvStartupHoldReady) return;
       const tickAt = Date.now();
       let cancelled = false;
       let audioAt = null;
+      let firstFrameAt = null;
       let subsAt = null;
       let introAt = null;
       void refreshMpvAudioTracks();
@@ -177314,12 +177628,19 @@ ${cue.text}`).join("\n\n")}
         const audioReady = mpvStartupTracksReady && (audioTracks.length > 0 || hardTimeout);
         const subtitlesReady = mpvStartupTracksReady && (!loadingSub || elapsed > 2500);
         const introReady = introDataReady || elapsed > 2e3;
-        const extraHoldDone = elapsed > ((initialTime ?? 0) > 0 ? 600 : 800);
+        const extraHoldDone = elapsed > ((initialTime ?? 0) > 0 ? 400 : 500);
         if (audioReady && audioAt === null) audioAt = elapsed;
         if (subtitlesReady && subsAt === null) subsAt = elapsed;
         if (introReady && introAt === null) introAt = elapsed;
-        if (extraHoldDone && audioReady && subtitlesReady && introReady) {
+        const firstFrame = firstFrameRenderedRef.current;
+        if (firstFrame && firstFrameAt === null) firstFrameAt = elapsed;
+        const readyToReveal = firstFrame ? audioReady : extraHoldDone && audioReady && subtitlesReady && introReady;
+        if (readyToReveal) {
           window.clearInterval(interval);
+          void fetch(`/api/debug-log?msg=${encodeURIComponent(
+            `[startup-hold] elapsed=${elapsed} audio=${audioAt ?? "-"} subs=${subsAt ?? "-"} intro=${introAt ?? "-"} firstFrame=${firstFrameAt ?? "-"} releasedOnFirstFrame=${firstFrame && !extraHoldDone} subsPending=${!subtitlesReady} introPending=${!introReady}`
+          )}`).catch(() => {
+          });
           void emitDesktopPlaybackTelemetry({
             stage: "player.startup_hold",
             status: "ok",
@@ -177333,7 +177654,9 @@ ${cue.text}`).join("\n\n")}
               // att data kom — det är där en förladdning skulle löna sig.
               subtitlesTimedOut: subsAt !== null && subsAt > 2500,
               introTimedOut: introAt !== null && introAt > 2e3,
-              heldByCosmetic: elapsed <= ((initialTime ?? 0) > 0 ? 700 : 900)
+              firstFrameAtMs: firstFrameAt,
+              releasedOnFirstFrame: firstFrame && !extraHoldDone,
+              heldByCosmetic: elapsed <= ((initialTime ?? 0) > 0 ? 500 : 600)
             }
           });
           setMpvStartupHoldReady(true);
@@ -177783,6 +178106,7 @@ ${cue.text}`).join("\n\n")}
     }, [useMpv, videoSrc]);
     const seek = useCallback((delta) => {
       registerPlaybackInteraction();
+      castSeekRef.current?.(realTimeRef.current + delta);
       if (useMpv) {
         void mpvCommand2(["seek", delta, "relative"]);
         return;
@@ -177957,7 +178281,7 @@ ${cue.text}`).join("\n\n")}
       mpv.resetLoadFailed();
       mpv.resetEnded();
       prematureEndHandledRef.current = false;
-      warmSourceCache(url);
+      warmSourceCache(url, requestHeaders);
       let openPromise;
       void closeMpvPlayer2().catch(() => {
       }).then(() => {
@@ -177967,6 +178291,7 @@ ${cue.text}`).join("\n\n")}
           url,
           start: initialTime ?? 0,
           audioLang: getDefaultAudioLanguage() || void 0,
+          requestHeaders,
           shouldAbort: () => cancelled
         });
         return openPromise;
@@ -178007,6 +178332,8 @@ ${cue.text}`).join("\n\n")}
       }
       hasStartedForUrlRef.current = true;
       setHasStarted(true);
+      markStreamPhase("first-frame");
+      emitStreamTimeline();
       onFirstPlay?.();
     }, [hasStarted, mpv.timePos, mpvRevealPlaybackReady, mpvStartupHoldReady, onFirstPlay, useMpv]);
     useEffect(() => {
@@ -178424,9 +178751,21 @@ ${cue.text}`).join("\n\n")}
         if (e.key === "Escape" || isTv && e.key === "Backspace" && !typing) {
           e.preventDefault();
           e.stopPropagation();
-          if (!isTv && openSurfaceRef.current !== null) {
+          if (openSurfaceRef.current !== null) {
+            const surface = openSurfaceRef.current;
             setOpenSurface(null);
             onMouseActivityRef.current();
+            if (isTv) {
+              const trigger = surface === "subs" ? subTriggerRef.current : surface === "audio" ? audioTriggerRef.current : surface === "audioDelay" ? audioDelayTriggerRef.current : surface === "aspect" ? aspectTriggerRef.current : surface === "zoom" ? cropTriggerRef.current : surface === "more" ? moreTriggerRef.current : surface === "tuning" ? tuningTriggerRef.current : null;
+              window.requestAnimationFrame(() => {
+                if (trigger && trigger.isConnected) trigger.focus();
+                else tvFocus?.focusInit(playerRootRef.current);
+              });
+            }
+            return;
+          }
+          if (isTv && controlsVisibleRef.current) {
+            setControlsVisible(false);
             return;
           }
           if (useMpv) {
@@ -178884,6 +179223,10 @@ ${cue.text}`).join("\n\n")}
       setStartError(false);
       const contentChanged = prevResetUrlRef.current !== url;
       prevResetUrlRef.current = url;
+      if (url && timedUrlRef.current !== url) {
+        timedUrlRef.current = url;
+        markStreamPhase("url-selected");
+      }
       if (contentChanged) {
         setSubtitles([]);
         setActiveSubId(null);
@@ -179160,6 +179503,8 @@ ${cue.text}`).join("\n\n")}
             try {
               const aniParams = new URLSearchParams({ imdb_id: introDbImdbId, episode: String(episode) });
               if (season != null) aniParams.set("season", String(season));
+              const showTitle = (mediaTitle ?? title ?? "").trim();
+              if (showTitle) aniParams.set("title", showTitle);
               const aniData = await fetch(`/api/aniskip?${aniParams.toString()}`).then((r) => r.json());
               if (cancelled) return;
               if (aniData.intro != null || aniData.outro != null) {
@@ -179247,10 +179592,10 @@ ${cue.text}`).join("\n\n")}
           const OUTRO_RE = /\b(credits|outro|ending|ed ?\d*|eftertexter|sluttexter)\b/i;
           const introIndex = chapters.findIndex((c) => INTRO_RE.test(c.title));
           if (introIndex >= 0) {
-            const start2 = chapters[introIndex].time;
-            const end = introIndex + 1 < chapters.length ? chapters[introIndex + 1].time : start2 + 90;
-            if (end > start2 && end - start2 <= 240) {
-              setIntroSegment({ startMs: Math.round(start2 * 1e3), endMs: Math.round(end * 1e3) });
+            const start3 = chapters[introIndex].time;
+            const end = introIndex + 1 < chapters.length ? chapters[introIndex + 1].time : start3 + 90;
+            if (end > start3 && end - start3 <= 240) {
+              setIntroSegment({ startMs: Math.round(start3 * 1e3), endMs: Math.round(end * 1e3) });
               setIntroKind("intro");
             }
           }
@@ -179710,6 +180055,7 @@ ${cue.text}`).join("\n\n")}
     }, [useMpv, mpv.fileLoaded, mpv.fileLoadedToken, activeSubId, subtitleOptions]);
     const seekToAbsolute = useCallback((targetTime) => {
       setSubtitleClockOverride(Math.max(0, targetTime));
+      castSeekRef.current?.(targetTime);
       if (useMpv) {
         void mpvCommand2(["seek", targetTime, "absolute"]);
         return;
@@ -179961,10 +180307,10 @@ ${cue.text}`).join("\n\n")}
     }, [creditsItems, creditsLogos, t, onCreditsOpenDetails]);
     const creditsProgress = (() => {
       if (totalDuration <= 0) return 0;
-      const start2 = creditsTriggerSeconds;
-      if (start2 == null) return 0;
-      const span = Math.max(1, totalDuration - start2);
-      return Math.max(0, Math.min(1, (realTime - start2) / span));
+      const start3 = creditsTriggerSeconds;
+      if (start3 == null) return 0;
+      const span = Math.max(1, totalDuration - start3);
+      return Math.max(0, Math.min(1, (realTime - start3) / span));
     })();
     const creditsRemainingSeconds = Math.max(0, totalDuration - realTime);
     const creditsPipMounted = creditsMode && creditsCards.length > 0;
@@ -180185,7 +180531,7 @@ ${cue.text}`).join("\n\n")}
         setCastScanning(false);
       }
     }, [t]);
-    const sendToCast = useCallback(async (device, action) => {
+    const sendToCast = useCallback(async (device, action, positionOverride) => {
       setCastError(null);
       try {
         const res = await fetch("/api/cast/control", {
@@ -180199,7 +180545,7 @@ ${cue.text}`).join("\n\n")}
             url,
             title: mediaTitle ?? title,
             action,
-            position: action === "play" ? realTimeRef.current : void 0
+            position: action === "play" || action === "seek" ? positionOverride ?? realTimeRef.current : void 0
           })
         });
         if (!res.ok) {
@@ -180216,6 +180562,11 @@ ${cue.text}`).join("\n\n")}
         setCastError(t("castFailed"));
       }
     }, [mediaTitle, t, title, url, useMpv]);
+    useEffect(() => {
+      castSeekRef.current = castTarget ? (seconds) => {
+        void sendToCast(castTarget, "seek", Math.max(0, seconds));
+      } : null;
+    }, [castTarget, sendToCast]);
     const prepareAirplaySession = useCallback(async () => {
       setAirplayPrepare("preparing");
       try {
@@ -180412,64 +180763,7 @@ ${cue.text}`).join("\n\n")}
     };
     const introZone = trackZone(introSegment);
     const outroZone = trackZone(outroSegment);
-    const playerIcon = (id4, cls) => {
-      switch (id4) {
-        case "nextEpisode":
-          return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
-            /* @__PURE__ */ jsx("path", { d: "M5 5l9 7-9 7z", fill: "currentColor" }),
-            /* @__PURE__ */ jsx("path", { d: "M18 5v14" })
-          ] });
-        case "subtitles":
-          return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", children: [
-            /* @__PURE__ */ jsx("rect", { x: "3", y: "5", width: "18", height: "14", rx: "3" }),
-            /* @__PURE__ */ jsx("path", { d: "M7.5 14.5h3M13.5 14.5h3" })
-          ] });
-        case "audioTrack":
-          return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", children: /* @__PURE__ */ jsx("path", { d: "M4 10v4M8 7v10M12 4v16M16 8v8M20 11v2" }) });
-        case "aspect":
-          return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", children: /* @__PURE__ */ jsx("rect", { x: "3", y: "6", width: "18", height: "12", rx: "2" }) });
-        case "cropZoom":
-          return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", children: [
-            /* @__PURE__ */ jsx("path", { d: "M4 9V5h4" }),
-            /* @__PURE__ */ jsx("path", { d: "M20 15v4h-4" }),
-            /* @__PURE__ */ jsx("path", { d: "M9 15H5v4" }),
-            /* @__PURE__ */ jsx("path", { d: "M15 9h4V5" })
-          ] });
-        case "wiki":
-          return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", children: [
-            /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "9" }),
-            /* @__PURE__ */ jsx("path", { d: "M12 8h.01" }),
-            /* @__PURE__ */ jsx("path", { d: "M11.5 12h1v4.5" })
-          ] });
-        case "soundtrack":
-          return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", children: [
-            /* @__PURE__ */ jsx("circle", { cx: "7", cy: "18", r: "3" }),
-            /* @__PURE__ */ jsx("circle", { cx: "18", cy: "15", r: "3" }),
-            /* @__PURE__ */ jsx("path", { d: "M10 18V7l11-3v11" })
-          ] });
-        case "cast":
-          return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", children: [
-            /* @__PURE__ */ jsx("path", { d: "M2 16.1a5 5 0 0 1 5.9 5.9" }),
-            /* @__PURE__ */ jsx("path", { d: "M2 12.05a9 9 0 0 1 9.95 9.95" }),
-            /* @__PURE__ */ jsx("path", { d: "M4 4h16a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-5" })
-          ] });
-        case "tuning":
-          return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.9", strokeLinecap: "round", children: [
-            /* @__PURE__ */ jsx("path", { d: "M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3" }),
-            /* @__PURE__ */ jsx("path", { d: "M1 14h6M9 8h6M17 16h6" })
-          ] });
-        case "fullscreen":
-          return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" }) });
-        case "more":
-          return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "currentColor", children: [
-            /* @__PURE__ */ jsx("circle", { cx: "5", cy: "12", r: "1.7" }),
-            /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "1.7" }),
-            /* @__PURE__ */ jsx("circle", { cx: "19", cy: "12", r: "1.7" })
-          ] });
-        default:
-          return null;
-      }
-    };
+    const playerIcon = (id4, cls) => playerControlIcon(id4, cls);
     const downloadIcon = (cls) => /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
       /* @__PURE__ */ jsx("path", { d: "M12 3v12" }),
       /* @__PURE__ */ jsx("path", { d: "m7 10 5 5 5-5" }),
@@ -180488,11 +180782,12 @@ ${cue.text}`).join("\n\n")}
       /* @__PURE__ */ jsx("text", { x: "12", y: "13", fontSize: "8", fontWeight: "700", fill: "currentColor", stroke: "none", textAnchor: "middle", dominantBaseline: "middle", children: "10" })
     ] });
     const desktopControls = {
-      playPause: /* @__PURE__ */ jsx("button", { type: "button", onClick: togglePlay, "aria-label": t("plPlayPause"), className: dtIconButtonClass(), children: isPlaying ? /* @__PURE__ */ jsx("svg", { className: "h-[19px] w-[19px]", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M6 19h4V5H6v14zm8-14v14h4V5h-4z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) }),
+      playPause: /* @__PURE__ */ jsx("button", { type: "button", ...dtStation, onClick: togglePlay, "aria-label": t("plPlayPause"), className: dtIconButtonClass(), children: isPlaying ? /* @__PURE__ */ jsx("svg", { className: "h-[19px] w-[19px]", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M6 19h4V5H6v14zm8-14v14h4V5h-4z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) }),
       nextEpisode: episodes && episodes.items.length > 0 ? /* @__PURE__ */ jsx(
         "button",
         {
           type: "button",
+          ...dtStation,
           onClick: () => setShowEpisodes((open) => !open),
           title: t("plNextEpisode"),
           "aria-label": t("plNextEpisode"),
@@ -180500,14 +180795,14 @@ ${cue.text}`).join("\n\n")}
           children: playerIcon("nextEpisode", "h-[19px] w-[19px]")
         }
       ) : null,
-      mute: /* @__PURE__ */ jsx("button", { type: "button", onClick: toggleMute, "aria-label": t("plMute"), className: "flex-none p-1 text-slate-300 transition hover:text-white", children: muted || volume === 0 ? /* @__PURE__ */ jsx("svg", { className: "h-[18px] w-[18px]", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zM4.27 3 3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73 4.27 3zM12 4 9.91 6.09 12 8.18V4z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-[18px] w-[18px]", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" }) }) }),
-      volume: playerLayout.volumeStyle === "icon" ? null : playerLayout.volumeStyle === "stepper" ? /* @__PURE__ */ jsxs("span", { className: "flex flex-none items-center gap-1.5", children: [
-        /* @__PURE__ */ jsx("button", { type: "button", onClick: () => applyVolume((muted ? 0 : volume) - 0.05), className: "flex h-6 w-6 items-center justify-center rounded-full border border-white/[0.14] text-xs text-slate-300 transition hover:bg-white/10 hover:text-white", children: "\u2212" }),
+      mute: /* @__PURE__ */ jsx("button", { type: "button", ...dtStation, onClick: toggleMute, "aria-label": t("plMute"), className: "flex-none p-1 text-slate-300 transition hover:text-white", children: muted || volume === 0 ? /* @__PURE__ */ jsx("svg", { className: "h-[18px] w-[18px]", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zM4.27 3 3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73 4.27 3zM12 4 9.91 6.09 12 8.18V4z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-[18px] w-[18px]", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" }) }) }),
+      volume: playerLayout.volumeStyle === "icon" ? null : playerLayout.volumeStyle === "stepper" || isTv ? /* @__PURE__ */ jsxs("span", { className: "flex flex-none items-center gap-1.5", children: [
+        /* @__PURE__ */ jsx("button", { type: "button", ...dtStation, onClick: () => applyVolume((muted ? 0 : volume) - 0.05), className: "flex h-6 w-6 items-center justify-center rounded-full border border-white/[0.14] text-xs text-slate-300 transition hover:bg-white/10 hover:text-white", children: "\u2212" }),
         /* @__PURE__ */ jsxs("span", { className: "min-w-[2.5rem] text-center text-xs tabular-nums text-slate-300", children: [
           Math.round((muted ? 0 : volume) * 100),
           "%"
         ] }),
-        /* @__PURE__ */ jsx("button", { type: "button", onClick: () => applyVolume((muted ? 0 : volume) + 0.05), className: "flex h-6 w-6 items-center justify-center rounded-full border border-white/[0.14] text-xs text-slate-300 transition hover:bg-white/10 hover:text-white", children: "+" })
+        /* @__PURE__ */ jsx("button", { type: "button", ...dtStation, onClick: () => applyVolume((muted ? 0 : volume) + 0.05), className: "flex h-6 w-6 items-center justify-center rounded-full border border-white/[0.14] text-xs text-slate-300 transition hover:bg-white/10 hover:text-white", children: "+" })
       ] }) : (
         /* Eget spår i stället för <input type="range">: designen har 84 × 4 px
            med en 11 px punkt, och den nakna range-kontrollen gick inte att ge
@@ -180515,6 +180810,7 @@ ${cue.text}`).join("\n\n")}
         /* @__PURE__ */ jsxs(
           "div",
           {
+            ...dtStation,
             role: "slider",
             tabIndex: 0,
             "aria-label": t("plVolume"),
@@ -180549,6 +180845,7 @@ ${cue.text}`).join("\n\n")}
         "button",
         {
           type: "button",
+          ...dtStation,
           ref: subTriggerRef,
           onClick: () => {
             if (!showSubMenu) {
@@ -180569,6 +180866,7 @@ ${cue.text}`).join("\n\n")}
         "button",
         {
           type: "button",
+          ...dtStation,
           ref: audioTriggerRef,
           onClick: () => setShowAudioMenu((v) => !v),
           title: t("audioLanguage"),
@@ -180583,6 +180881,7 @@ ${cue.text}`).join("\n\n")}
         "button",
         {
           type: "button",
+          ...dtStation,
           ref: aspectTriggerRef,
           onClick: () => setShowAspectMenu((value) => !value),
           title: t("aspectRatio"),
@@ -180600,6 +180899,7 @@ ${cue.text}`).join("\n\n")}
         "button",
         {
           type: "button",
+          ...dtStation,
           ref: cropTriggerRef,
           onClick: () => setShowCropZoomMenu((value) => !value),
           title: t("cropZoom"),
@@ -180614,6 +180914,7 @@ ${cue.text}`).join("\n\n")}
         "button",
         {
           type: "button",
+          ...dtStation,
           onClick: () => setShowWiki((v) => !v),
           title: t("info"),
           "aria-label": t("info"),
@@ -180625,6 +180926,7 @@ ${cue.text}`).join("\n\n")}
         "button",
         {
           type: "button",
+          ...dtStation,
           onClick: () => setShowSoundtrack((v) => !v),
           title: t("soundtrack"),
           "aria-label": t("soundtrack"),
@@ -180636,6 +180938,7 @@ ${cue.text}`).join("\n\n")}
         "button",
         {
           type: "button",
+          ...dtStation,
           onClick: () => {
             const opening = !showCastMenu;
             setShowCastMenu(opening);
@@ -180652,6 +180955,7 @@ ${cue.text}`).join("\n\n")}
         "button",
         {
           type: "button",
+          ...dtStation,
           ref: tuningTriggerRef,
           onClick: () => setShowTuningPanel((v) => !v),
           title: t("vtTitle"),
@@ -180676,6 +180980,7 @@ ${cue.text}`).join("\n\n")}
         "button",
         {
           type: "button",
+          ...dtStation,
           onClick: toggleFullscreen,
           title: t("plFullscreen"),
           "aria-label": t("plFullscreen"),
@@ -180703,10 +181008,70 @@ ${cue.text}`).join("\n\n")}
     const seekHeightClass = playerLayout.seekBarHeight === "slim" ? "h-1" : playerLayout.seekBarHeight === "chunky" ? "h-2.5" : "h-1.5";
     const seekFillColorClass = "bg-[rgb(var(--player-accent))]";
     const seekFillStyleClass = playerLayout.seekBarStyle === "glass" ? "shadow-[0_0_14px_rgba(255,255,255,0.35)]" : playerLayout.seekBarStyle === "pinstripe" ? "bg-[repeating-linear-gradient(45deg,transparent,transparent_4px,rgba(0,0,0,0.25)_4px,rgba(0,0,0,0.25)_8px)]" : "";
+    const tvSeekHoldStartedAtRef = useRef(0);
+    const handleTvSeekKey = (event) => {
+      if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!event.repeat) tvSeekHoldStartedAtRef.current = Date.now();
+        const held = event.repeat && Date.now() - tvSeekHoldStartedAtRef.current > 1e3;
+        const step = held ? 60 : 10;
+        seek(event.key === "ArrowLeft" ? -step : step);
+        return;
+      }
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        event.stopPropagation();
+        togglePlay();
+      }
+    };
+    useEffect(() => onMediaKey((action) => {
+      switch (action) {
+        case "playpause":
+          togglePlay();
+          break;
+        case "play":
+          if (!isPlaying) togglePlay();
+          break;
+        case "pause":
+          if (isPlaying) togglePlay();
+          break;
+        case "rewind":
+          seek(-10);
+          break;
+        case "fastforward":
+          seek(10);
+          break;
+        case "stop":
+          handleClose();
+          break;
+        case "next":
+        case "previous": {
+          if (!episodes || episodes.current == null) break;
+          const index3 = episodes.items.findIndex((episode2) => episode2.number === episodes.current);
+          const target = episodes.items[index3 + (action === "next" ? 1 : -1)];
+          if (target) episodes.onSelect(target.number);
+          break;
+        }
+      }
+      onMouseActivityRef.current();
+    }), [togglePlay, isPlaying, seek, handleClose, episodes]);
+    const tvSeekStation = isTv ? {
+      "data-f": "1",
+      "data-init": "1",
+      tabIndex: 0,
+      role: "slider",
+      "aria-label": t("plSeek"),
+      "aria-valuemin": 0,
+      "aria-valuemax": 100,
+      "aria-valuenow": Math.round(seekPercent),
+      onKeyDown: handleTvSeekKey
+    } : {};
     const renderSeekTrack = (widthClass) => /* @__PURE__ */ jsxs(
       "div",
       {
-        className: `relative cursor-pointer rounded-full bg-white/[0.18] ${widthClass} ${seekHeightClass}`,
+        ...tvSeekStation,
+        className: `vp-seek-track relative cursor-pointer rounded-full bg-white/[0.18] ${widthClass} ${seekHeightClass}`,
         onPointerDown: handleSeekPointerDown,
         style: { touchAction: "none" },
         children: [
@@ -180751,6 +181116,23 @@ ${cue.text}`).join("\n\n")}
       }
     );
     const doubleTapHandledRef = useRef(false);
+    const clickLayerRef = useRef(null);
+    const revealTapGuardRef = useRef(false);
+    useEffect(() => {
+      const swallowRevealClick = (event) => {
+        if (!revealTapGuardRef.current) return;
+        revealTapGuardRef.current = false;
+        const root = playerRootRef.current;
+        const target = event.target;
+        if (!root || !target || !root.contains(target)) return;
+        if (clickLayerRef.current && target === clickLayerRef.current) return;
+        event.stopPropagation();
+        event.preventDefault();
+        suppressNextOverlayToggleRef.current = false;
+      };
+      document.addEventListener("click", swallowRevealClick, true);
+      return () => document.removeEventListener("click", swallowRevealClick, true);
+    }, []);
     const lastTapRef = useRef(null);
     const holdSpeedTimerRef = useRef(null);
     const holdSpeedActiveRef = useRef(false);
@@ -181118,6 +181500,7 @@ ${cue.text}`).join("\n\n")}
         ref: playerRootRef,
         "data-lumio-player-open": "1",
         "data-panel-root": isTv ? "1" : void 0,
+        "data-tv-player": tvChrome ? "1" : void 0,
         "data-tv-fullbleed": "",
         style: { "--player-accent": playerAccentRgb },
         className: `fixed inset-x-0 top-0 z-[60] flex h-[100dvh] flex-col !mt-0 ${useMpv ? "" : "bg-black"}`,
@@ -181162,7 +181545,7 @@ ${cue.text}`).join("\n\n")}
                         type: "button",
                         "data-f": isTv ? "1" : void 0,
                         onClick: () => {
-                          if (openInExternalPlayer(url)) {
+                          if (openInExternalPlayer(url, realTime > 0 ? realTime : initialTime)) {
                             (onOpenedExternally ?? onClose)();
                           }
                         },
@@ -181195,7 +181578,7 @@ ${cue.text}`).join("\n\n")}
             /* @__PURE__ */ jsxs(
               "div",
               {
-                className: `absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-4 overflow-hidden px-[18px] transition-[height,opacity] duration-300 ${collapseMpvTopBar || cssFullscreen && !controlsVisible ? "h-0" : "h-[52px]"}`,
+                className: `vp-topbar absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-4 overflow-hidden px-[18px] transition-[height,opacity] duration-300 ${collapseMpvTopBar || cssFullscreen && !controlsVisible ? "h-0" : "h-[52px]"}`,
                 style: {
                   // Spegelbild av kontrollradens gradient nedtill, samma stopp.
                   // Solid platta + border-b gav en hård kant tvärs över bilden —
@@ -181225,6 +181608,7 @@ ${cue.text}`).join("\n\n")}
                       "button",
                       {
                         type: "button",
+                        ...dtStation,
                         onClick: () => {
                           void handleCopyStreamLink();
                         },
@@ -181242,6 +181626,7 @@ ${cue.text}`).join("\n\n")}
                       "button",
                       {
                         type: "button",
+                        ...dtStation,
                         onClick: handleClose,
                         className: "rounded-lg border border-white/[0.14] px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/[0.07] hover:text-white",
                         children: t("close")
@@ -181411,6 +181796,7 @@ ${cue.text}`).join("\n\n")}
                     }
                   )
                 ] }),
+                externalDisplayActive ? /* @__PURE__ */ jsx("div", { className: "absolute inset-0 z-[15] flex items-end justify-center bg-black pb-[22vh]", "aria-hidden": true, children: /* @__PURE__ */ jsx("p", { className: "text-[12px] uppercase tracking-[0.2em] text-slate-600", children: t("externalDisplayPlayingThere") }) }) : null,
                 useMpv ? (
                   // Transparent area — mpv NSView renders behind the WKWebView here
                   /* @__PURE__ */ jsx("div", { style: { width: "100%", height: "100%", background: "transparent" } })
@@ -181586,15 +181972,22 @@ ${cue.text}`).join("\n\n")}
                 /* @__PURE__ */ jsx(
                   "div",
                   {
+                    ref: clickLayerRef,
                     className: `absolute inset-0 z-10 ${phoneChrome ? "touch-none select-none" : ""}`,
                     onPointerDown: (e) => {
                       suppressNextOverlayToggleRef.current = e.pointerType !== "mouse" && !controlsVisible;
-                      if (suppressNextOverlayToggleRef.current) onMouseActivity();
+                      if (suppressNextOverlayToggleRef.current) {
+                        revealTapGuardRef.current = true;
+                        onMouseActivity();
+                      }
                       onGesturePointerDown(e);
                     },
                     onPointerMove: onGesturePointerMove,
                     onPointerUp: (e) => {
                       activePointersRef.current.delete(e.pointerId);
+                      window.setTimeout(() => {
+                        revealTapGuardRef.current = false;
+                      }, 0);
                       if (activePointersRef.current.size < 2) pinchRef.current = null;
                       if (doubleTapHandledRef.current) {
                         doubleTapHandledRef.current = false;
@@ -181649,6 +182042,7 @@ ${cue.text}`).join("\n\n")}
                         "button",
                         {
                           type: "button",
+                          ...dtStation,
                           onClick: () => seek(-10),
                           "aria-label": "-10s",
                           className: `text-white/90 transition hover:text-white ${desktopChrome ? "p-2" : landscapeChrome ? "p-2.5" : "p-2"}`,
@@ -181659,6 +182053,7 @@ ${cue.text}`).join("\n\n")}
                         "button",
                         {
                           type: "button",
+                          ...dtStation,
                           onClick: togglePlay,
                           "aria-label": t("plPlayPause"),
                           className: `flex items-center justify-center rounded-full border-[1.5px] text-white transition ${desktopChrome ? "h-[86px] w-[86px] border-white/20 bg-[rgba(13,14,22,0.3)] hover:bg-[rgb(var(--player-accent)/0.20)]" : landscapeChrome ? "h-[78px] w-[78px] border-[rgb(var(--player-accent)/0.50)] bg-[rgb(var(--player-accent)/0.16)] shadow-[0_0_40px_rgb(var(--player-accent)/0.25)]" : "h-[58px] w-[58px] border-white/[0.22] bg-[rgba(13,14,22,0.34)]"}`,
@@ -181669,6 +182064,7 @@ ${cue.text}`).join("\n\n")}
                         "button",
                         {
                           type: "button",
+                          ...dtStation,
                           onClick: () => seek(10),
                           "aria-label": "+10s",
                           className: `text-white/90 transition hover:text-white ${desktopChrome ? "p-2" : landscapeChrome ? "p-2.5" : "p-2"}`,
@@ -181839,7 +182235,7 @@ ${cue.text}`).join("\n\n")}
                     )
                   }
                 ),
-                showCastMenu && /* @__PURE__ */ jsxs("div", { className: `absolute z-[60] border border-white/10 p-4 ${desktopChrome ? "bottom-[92px] right-6 w-72 rounded-xl bg-base-800/95 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-md" : landscapeChrome ? "right-[26px] top-[72px] w-[260px] rounded-xl bg-base-800/95 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-md" : portraitChrome ? "inset-x-3 bottom-[172px] rounded-xl bg-base-800/95 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-md" : "bottom-20 right-4 w-72 rounded-2xl bg-slate-900/95 shadow-2xl backdrop-blur"}`, children: [
+                showCastMenu && /* @__PURE__ */ jsxs("div", { ...tvSurface2("cast"), className: `absolute z-[60] border border-white/10 p-4 ${desktopChrome ? "bottom-[92px] right-6 w-72 rounded-xl bg-base-800/95 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-md" : landscapeChrome ? "right-[26px] top-[72px] w-[260px] rounded-xl bg-base-800/95 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-md" : portraitChrome ? "inset-x-3 bottom-[172px] rounded-xl bg-base-800/95 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-md" : "bottom-20 right-4 w-72 rounded-2xl bg-slate-900/95 shadow-2xl backdrop-blur"}`, children: [
                   /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between", children: [
                     /* @__PURE__ */ jsx("p", { className: "text-xs uppercase tracking-[0.2em] text-slate-400", children: t("castTitle") }),
                     /* @__PURE__ */ jsx(
@@ -181940,6 +182336,7 @@ ${cue.text}`).join("\n\n")}
                 /* @__PURE__ */ jsxs(
                   "div",
                   {
+                    ...tvSurface2("subs"),
                     style: { ...getAnchoredMenuStyle(subTriggerRef.current), right: 16, left: "auto" },
                     className: `z-[70] flex max-h-[75vh] w-[min(calc(100vw-2rem),20rem)] flex-col overflow-y-auto rounded-xl border border-white/10 shadow-xl backdrop-blur-sm sm:max-h-none sm:w-auto sm:flex-row sm:overflow-visible ${desktopChrome ? "bg-base-800/95" : "bg-slate-900/95"}`,
                     onClick: (e) => e.stopPropagation(),
@@ -182207,7 +182604,7 @@ ${cue.text}`).join("\n\n")}
                     children: [
                       portraitPickerOpen ? /* @__PURE__ */ jsx("div", { className: "fixed inset-0 z-0 bg-slate-950/60", onClick: () => setOpenSurface(null) }) : null,
                       desktopChrome ? (() => {
-                        const timePillClass = "flex-none rounded-lg bg-[rgba(13,14,22,0.66)] px-2.5 py-[5px] text-[13px] font-semibold tabular-nums text-slate-100";
+                        const timePillClass = "vp-time-pill flex-none rounded-lg bg-[rgba(13,14,22,0.66)] px-2.5 py-[5px] text-[13px] font-semibold tabular-nums text-slate-100";
                         const elapsedLabel = playerLayout.timeFormat === "remaining" ? `-${fmt(Math.max(0, totalDuration - seekTime))}` : fmt(seekTime);
                         const totalLabel = playerLayout.timeFormat === "elapsed-total" ? fmt(totalDuration) : null;
                         return /* @__PURE__ */ jsxs(Fragment2, { children: [
@@ -182593,6 +182990,7 @@ ${cue.text}`).join("\n\n")}
                       showAudioMenu && audioTracks.length > 0 && /* @__PURE__ */ jsxs(
                         "div",
                         {
+                          ...tvSurface2("audio"),
                           style: pickerStyle(audioTriggerRef.current, landscapeChrome ? 200 : 210),
                           className: `${dtMenuSurfaceClass} ${newChrome ? "" : "min-w-[140px]"}`,
                           onClick: (e) => e.stopPropagation(),
@@ -182605,6 +183003,7 @@ ${cue.text}`).join("\n\n")}
                                 "button",
                                 {
                                   type: "button",
+                                  ...dtStation,
                                   "data-f": isTv ? "1" : void 0,
                                   onClick: () => switchAudioTrack(track),
                                   className: dtMenuRowClass(isActive),
@@ -182627,6 +183026,7 @@ ${cue.text}`).join("\n\n")}
                                     "button",
                                     {
                                       type: "button",
+                                      ...dtStation,
                                       onClick: () => setAudioDelayMs(audioDelayMs - AUDIO_DELAY_STEP_MS),
                                       "aria-label": `\u2212${AUDIO_DELAY_STEP_MS} ms`,
                                       className: `flex flex-none items-center justify-center rounded-full border border-white/[0.14] text-slate-300 ${portraitChrome ? "h-8 w-8 text-base" : "h-[30px] w-[30px] text-[15px]"}`,
@@ -182642,6 +183042,7 @@ ${cue.text}`).join("\n\n")}
                                     "button",
                                     {
                                       type: "button",
+                                      ...dtStation,
                                       onClick: () => setAudioDelayMs(audioDelayMs + AUDIO_DELAY_STEP_MS),
                                       "aria-label": `+${AUDIO_DELAY_STEP_MS} ms`,
                                       className: `flex flex-none items-center justify-center rounded-full border border-white/[0.14] text-slate-300 ${portraitChrome ? "h-8 w-8 text-base" : "h-[30px] w-[30px] text-[15px]"}`,
@@ -182657,6 +183058,7 @@ ${cue.text}`).join("\n\n")}
                                   "button",
                                   {
                                     type: "button",
+                                    ...dtStation,
                                     onClick: () => setAudioDelayMs(audioDelayMs - AUDIO_DELAY_STEP_MS),
                                     "aria-label": `\u2212${AUDIO_DELAY_STEP_MS} ms`,
                                     className: "h-8 w-[34px] flex-none rounded-lg border border-white/[0.14] text-slate-300 transition hover:bg-white/10 hover:text-white",
@@ -182672,6 +183074,7 @@ ${cue.text}`).join("\n\n")}
                                   "button",
                                   {
                                     type: "button",
+                                    ...dtStation,
                                     onClick: () => setAudioDelayMs(audioDelayMs + AUDIO_DELAY_STEP_MS),
                                     "aria-label": `+${AUDIO_DELAY_STEP_MS} ms`,
                                     className: "h-8 w-[34px] flex-none rounded-lg border border-white/[0.14] text-slate-300 transition hover:bg-white/10 hover:text-white",
@@ -182689,6 +183092,7 @@ ${cue.text}`).join("\n\n")}
                                 "button",
                                 {
                                   type: "button",
+                                  ...dtStation,
                                   onClick: () => setAudioDelayMs(0),
                                   className: "mt-1.5 py-1 text-[13px] text-[rgb(var(--player-accent))] transition hover:text-[rgb(var(--player-accent)/0.8)]",
                                   children: t("reset")
@@ -182701,6 +183105,7 @@ ${cue.text}`).join("\n\n")}
                       showAspectMenu && /* @__PURE__ */ jsxs(
                         "div",
                         {
+                          ...tvSurface2("aspect"),
                           style: pickerStyle(aspectTriggerRef.current, landscapeChrome ? 180 : 170),
                           className: `${dtMenuSurfaceClass} ${newChrome ? "" : "min-w-[150px]"}`,
                           onClick: (e) => e.stopPropagation(),
@@ -182712,6 +183117,7 @@ ${cue.text}`).join("\n\n")}
                                 "button",
                                 {
                                   type: "button",
+                                  ...dtStation,
                                   "data-f": isTv ? "1" : void 0,
                                   onClick: () => {
                                     setAspectRatioMode(mode);
@@ -182732,6 +183138,7 @@ ${cue.text}`).join("\n\n")}
                       showCropZoomMenu && /* @__PURE__ */ jsxs(
                         "div",
                         {
+                          ...tvSurface2("zoom"),
                           style: pickerStyle(cropTriggerRef.current, 180),
                           className: `${dtMenuSurfaceClass} ${newChrome ? "" : "min-w-[150px]"}`,
                           onClick: (e) => e.stopPropagation(),
@@ -182743,6 +183150,7 @@ ${cue.text}`).join("\n\n")}
                                 "button",
                                 {
                                   type: "button",
+                                  ...dtStation,
                                   "data-f": isTv ? "1" : void 0,
                                   onClick: () => {
                                     setCropZoomMode(mode);
@@ -182764,6 +183172,7 @@ ${cue.text}`).join("\n\n")}
                         "div",
                         {
                           ref: moreMenuRef,
+                          ...tvSurface2("more"),
                           style: portraitChrome ? { position: "fixed", left: 0, right: 0, bottom: 0, maxHeight: "70vh", overflowY: "auto" } : newChrome ? pickerStyle(moreTriggerRef.current, landscapeChrome ? 244 : 262) : getAnchoredMenuStyle(moreTriggerRef.current),
                           className: portraitChrome ? "z-50 rounded-t-2xl border-t border-white/[0.07] bg-base-950/[0.96] px-3 pb-6 pt-3 shadow-[0_-20px_60px_rgba(0,0,0,0.6)] backdrop-blur-md" : newChrome ? dtMenuSurfaceClass : "z-50 w-64 rounded-[1.6rem] border border-white/10 bg-base-800/95 p-2.5 shadow-2xl backdrop-blur-md",
                           onClick: (e) => e.stopPropagation(),
@@ -182774,6 +183183,7 @@ ${cue.text}`).join("\n\n")}
                               "button",
                               {
                                 type: "button",
+                                ...dtStation,
                                 "data-f": isTv ? "1" : void 0,
                                 onClick: () => setDvColorFallbackMuted((current2) => !current2),
                                 className: dtMoreRowClass,
@@ -182794,6 +183204,7 @@ ${cue.text}`).join("\n\n")}
                               "button",
                               {
                                 type: "button",
+                                ...dtStation,
                                 "data-f": isTv ? "1" : void 0,
                                 onClick: () => {
                                   const next2 = nightMode === "off" ? "mild" : nightMode === "mild" ? "strong" : "off";
@@ -182814,6 +183225,7 @@ ${cue.text}`).join("\n\n")}
                               "button",
                               {
                                 type: "button",
+                                ...dtStation,
                                 "data-f": isTv ? "1" : void 0,
                                 onClick: () => void handleCopyStreamLink(),
                                 className: dtMoreRowClass,
@@ -182831,6 +183243,7 @@ ${cue.text}`).join("\n\n")}
                                 "button",
                                 {
                                   type: "button",
+                                  ...dtStation,
                                   "data-f": isTv ? "1" : void 0,
                                   onClick: () => void handleDownload(),
                                   disabled: downloadState.type === "picking-folder" || downloadState.type === "downloading",
@@ -182849,6 +183262,7 @@ ${cue.text}`).join("\n\n")}
                                 "button",
                                 {
                                   type: "button",
+                                  ...dtStation,
                                   "data-f": isTv ? "1" : void 0,
                                   onClick: () => void handleCancelDownload(),
                                   className: "mr-3 flex h-7 w-7 flex-none items-center justify-center rounded-full border border-white/10 text-slate-300 transition hover:border-red-400/40 hover:text-red-300",
@@ -182861,6 +183275,7 @@ ${cue.text}`).join("\n\n")}
                               "button",
                               {
                                 type: "button",
+                                ...dtStation,
                                 "data-f": isTv ? "1" : void 0,
                                 onClick: () => void handleOpenExternal(),
                                 onMouseDown: (e) => e.stopPropagation(),
@@ -182963,6 +183378,24 @@ ${cue.text}`).join("\n\n")}
     const onPlayNowRef = useRef(onPlayNow);
     const didAutoPlayRef = useRef(false);
     onPlayNowRef.current = onPlayNow;
+    const playButtonRef = useRef(null);
+    useEffect(() => {
+      if (!isTv) return;
+      let timer = null;
+      const arm = () => {
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => {
+          const btn = playButtonRef.current;
+          if (btn && btn.isConnected && document.activeElement !== btn) btn.focus();
+        }, 1e4);
+      };
+      arm();
+      window.addEventListener("keydown", arm, true);
+      return () => {
+        if (timer) clearTimeout(timer);
+        window.removeEventListener("keydown", arm, true);
+      };
+    }, [isTv]);
     useEffect(() => {
       if (!skipStraightToNext || didAutoPlayRef.current) return;
       if (!urlReady && !allowManualPlayWhenNotReady) return;
@@ -183069,6 +183502,7 @@ ${cue.text}`).join("\n\n")}
               {
                 type: "button",
                 ...tvStation,
+                ref: playButtonRef,
                 onClick: handlePlayNow,
                 className: "flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white transition hover:bg-white/20",
                 children: [
@@ -183083,6 +183517,7 @@ ${cue.text}`).join("\n\n")}
               {
                 type: "button",
                 ...tvStation,
+                ref: playButtonRef,
                 onClick: handlePlayNow,
                 className: "flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1 text-xs font-medium text-white transition hover:bg-white/10",
                 children: [
@@ -183103,6 +183538,520 @@ ${cue.text}`).join("\n\n")}
   function NextEpisodeCard2(props) {
     const hostComponent = globalThis.__lumioPluginRuntime?.components?.NextEpisodeCard;
     return createElement(hostComponent ?? NextEpisodeCard, props);
+  }
+
+  // components/settings/redesigned/primitives.tsx
+  init_react_shim();
+
+  // lib/tv-tab-heading.tsx
+  init_react_shim();
+  init_jsx_runtime_shim();
+  var TvTabHeadingContext = createContext2(null);
+
+  // components/settings/redesigned/primitives.tsx
+  var import_react_dom2 = __toESM(require_react_dom());
+  init_jsx_runtime_shim();
+  var TOKENS = {
+    bg: "var(--tk-bg)",
+    surface0: "var(--tk-surface0)",
+    surface1: "var(--tk-surface1)",
+    surface2: "var(--tk-surface2)",
+    surface3: "var(--tk-surface3)",
+    border: "var(--tk-border)",
+    borderStrong: "var(--tk-border-strong)",
+    text: "#EAEEF6",
+    textDim: "#9AA5BC",
+    textMute: "#6B7691",
+    accent: "#7C8CFF",
+    accentSoft: "rgba(124,140,255,0.22)",
+    mint: "#3CD6A3",
+    orange: "#FF8B5A",
+    red: "#FF5A6A",
+    cyan: "#5FD3E8",
+    warn: "#F3C969"
+  };
+  var inputStyle = {
+    width: "100%",
+    minHeight: 44,
+    padding: "10px 14px",
+    borderRadius: 10,
+    border: `1px solid ${TOKENS.border}`,
+    background: TOKENS.surface0,
+    color: TOKENS.text,
+    fontSize: 14,
+    outline: "none",
+    boxSizing: "border-box"
+  };
+  var eyebrowStyle = {
+    fontSize: 11,
+    fontWeight: 600,
+    letterSpacing: "0.14em",
+    color: TOKENS.textMute,
+    textTransform: "uppercase"
+  };
+  var ICON_PATHS = {
+    sparkle: /* @__PURE__ */ jsx(Fragment2, { children: /* @__PURE__ */ jsx("path", { d: "M12 3v18M3 12h18M5.5 5.5l13 13M18.5 5.5l-13 13" }) }),
+    database: /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("ellipse", { cx: "12", cy: "5.5", rx: "7.5", ry: "2.5" }),
+      /* @__PURE__ */ jsx("path", { d: "M4.5 5.5v6c0 1.4 3.4 2.5 7.5 2.5s7.5-1.1 7.5-2.5v-6" }),
+      /* @__PURE__ */ jsx("path", { d: "M4.5 11.5v6c0 1.4 3.4 2.5 7.5 2.5s7.5-1.1 7.5-2.5v-6" })
+    ] }),
+    layers: /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("path", { d: "M12 3 3 8l9 5 9-5-9-5z" }),
+      /* @__PURE__ */ jsx("path", { d: "M3 13l9 5 9-5" }),
+      /* @__PURE__ */ jsx("path", { d: "M3 18l9 5 9-5" })
+    ] }),
+    plug: /* @__PURE__ */ jsx(Fragment2, { children: /* @__PURE__ */ jsx("path", { d: "M9 2v4M15 2v4M7 6h10v6a5 5 0 0 1-10 0V6zM12 17v5" }) }),
+    close: /* @__PURE__ */ jsx(Fragment2, { children: /* @__PURE__ */ jsx("path", { d: "M6 6l12 12M18 6 6 18" }) }),
+    search: /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("circle", { cx: "11", cy: "11", r: "6.5" }),
+      /* @__PURE__ */ jsx("path", { d: "m20 20-4-4" })
+    ] }),
+    chevDown: /* @__PURE__ */ jsx("path", { d: "M6 9l6 6 6-6" }),
+    chevUp: /* @__PURE__ */ jsx("path", { d: "M6 15l6-6 6 6" }),
+    chevRight: /* @__PURE__ */ jsx("path", { d: "M9 6l6 6-6 6" }),
+    drag: /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("circle", { cx: "9", cy: "6", r: "1", fill: "currentColor" }),
+      /* @__PURE__ */ jsx("circle", { cx: "9", cy: "12", r: "1", fill: "currentColor" }),
+      /* @__PURE__ */ jsx("circle", { cx: "9", cy: "18", r: "1", fill: "currentColor" }),
+      /* @__PURE__ */ jsx("circle", { cx: "15", cy: "6", r: "1", fill: "currentColor" }),
+      /* @__PURE__ */ jsx("circle", { cx: "15", cy: "12", r: "1", fill: "currentColor" }),
+      /* @__PURE__ */ jsx("circle", { cx: "15", cy: "18", r: "1", fill: "currentColor" })
+    ] }),
+    plus: /* @__PURE__ */ jsx("path", { d: "M12 5v14M5 12h14" }),
+    check: /* @__PURE__ */ jsx("path", { d: "M5 13l4 4L19 7" }),
+    image: /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("rect", { x: "3", y: "4", width: "18", height: "16", rx: "2" }),
+      /* @__PURE__ */ jsx("circle", { cx: "9", cy: "10", r: "1.6" }),
+      /* @__PURE__ */ jsx("path", { d: "m3 17 5-5 5 5 3-3 5 5" })
+    ] }),
+    film: /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("rect", { x: "3", y: "4", width: "18", height: "16", rx: "2" }),
+      /* @__PURE__ */ jsx("path", { d: "M7 4v16M17 4v16M3 9h4M3 14h4M17 9h4M17 14h4" })
+    ] }),
+    tv: /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("rect", { x: "3", y: "5", width: "18", height: "13", rx: "2" }),
+      /* @__PURE__ */ jsx("path", { d: "M8 21h8M12 18v3" })
+    ] }),
+    list: /* @__PURE__ */ jsx(Fragment2, { children: /* @__PURE__ */ jsx("path", { d: "M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01" }) }),
+    star: /* @__PURE__ */ jsx("path", { d: "M12 3l2.6 5.3 5.9.9-4.3 4.2 1 5.9L12 16.6 6.8 19.3l1-5.9L3.5 9.2l5.9-.9L12 3z" }),
+    trending: /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("path", { d: "M3 17l6-6 4 4 8-8" }),
+      /* @__PURE__ */ jsx("path", { d: "M14 7h7v7" })
+    ] }),
+    clock: /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "9" }),
+      /* @__PURE__ */ jsx("path", { d: "M12 7v5l3 2" })
+    ] }),
+    folder: /* @__PURE__ */ jsx("path", { d: "M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" }),
+    history: /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("path", { d: "M3 12a9 9 0 1 0 3-6.7L3 8" }),
+      /* @__PURE__ */ jsx("path", { d: "M3 3v5h5M12 8v5l3 2" })
+    ] }),
+    zap: /* @__PURE__ */ jsx("path", { d: "M13 2 4 14h7l-1 8 9-12h-7l1-8z" }),
+    youtube: /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("rect", { x: "2.5", y: "6", width: "19", height: "12", rx: "3" }),
+      /* @__PURE__ */ jsx("path", { d: "M10.5 9.5v5l4-2.5z", fill: "currentColor", stroke: "none" })
+    ] }),
+    cog: /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "3" }),
+      /* @__PURE__ */ jsx("path", { d: "M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" })
+    ] }),
+    upload: /* @__PURE__ */ jsx("path", { d: "M12 16V4M6 10l6-6 6 6M4 20h16" }),
+    refresh: /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("path", { d: "M3 12a9 9 0 0 1 15.5-6.3L21 8" }),
+      /* @__PURE__ */ jsx("path", { d: "M21 3v5h-5" }),
+      /* @__PURE__ */ jsx("path", { d: "M21 12a9 9 0 0 1-15.5 6.3L3 16" }),
+      /* @__PURE__ */ jsx("path", { d: "M3 21v-5h5" })
+    ] }),
+    globe: /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "9" }),
+      /* @__PURE__ */ jsx("path", { d: "M3 12h18M12 3a13 13 0 0 1 0 18M12 3a13 13 0 0 0 0 18" })
+    ] }),
+    calendar: /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("rect", { x: "3", y: "5", width: "18", height: "16", rx: "2" }),
+      /* @__PURE__ */ jsx("path", { d: "M3 9h18M8 3v4M16 3v4" })
+    ] }),
+    eye: /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("path", { d: "M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" }),
+      /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "3" })
+    ] }),
+    bookmark: /* @__PURE__ */ jsx("path", { d: "M6 4h12v17l-6-3.5L6 21z" }),
+    award: /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("circle", { cx: "12", cy: "9", r: "6" }),
+      /* @__PURE__ */ jsx("path", { d: "m8.5 14-1.5 7 5-2.5L17 21l-1.5-7" })
+    ] }),
+    grid: /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("rect", { x: "3", y: "3", width: "7", height: "7", rx: "1" }),
+      /* @__PURE__ */ jsx("rect", { x: "14", y: "3", width: "7", height: "7", rx: "1" }),
+      /* @__PURE__ */ jsx("rect", { x: "3", y: "14", width: "7", height: "7", rx: "1" }),
+      /* @__PURE__ */ jsx("rect", { x: "14", y: "14", width: "7", height: "7", rx: "1" })
+    ] }),
+    carousel: /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("rect", { x: "6", y: "6", width: "12", height: "12", rx: "1.5" }),
+      /* @__PURE__ */ jsx("path", { d: "M3 8v8M21 8v8" })
+    ] }),
+    rows: /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("rect", { x: "3", y: "5", width: "18", height: "4", rx: "1" }),
+      /* @__PURE__ */ jsx("rect", { x: "3", y: "11", width: "18", height: "2", rx: "1" }),
+      /* @__PURE__ */ jsx("rect", { x: "3", y: "15", width: "18", height: "4", rx: "1" })
+    ] }),
+    showcase: /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("rect", { x: "3", y: "6", width: "9", height: "12", rx: "1.5" }),
+      /* @__PURE__ */ jsx("rect", { x: "14", y: "6", width: "3", height: "5", rx: "0.7" }),
+      /* @__PURE__ */ jsx("rect", { x: "18", y: "6", width: "3", height: "5", rx: "0.7" }),
+      /* @__PURE__ */ jsx("rect", { x: "14", y: "13", width: "3", height: "5", rx: "0.7" }),
+      /* @__PURE__ */ jsx("rect", { x: "18", y: "13", width: "3", height: "5", rx: "0.7" })
+    ] }),
+    play: /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "9" }),
+      /* @__PURE__ */ jsx("path", { d: "M10 8l6 4-6 4z", fill: "currentColor", stroke: "none" })
+    ] }),
+    trash: /* @__PURE__ */ jsx("path", { d: "M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" }),
+    user: /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("circle", { cx: "12", cy: "8", r: "3.5" }),
+      /* @__PURE__ */ jsx("path", { d: "M4.5 20a7.5 7.5 0 0 1 15 0" })
+    ] }),
+    keyboard: /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("rect", { x: "2.5", y: "6", width: "19", height: "12", rx: "2" }),
+      /* @__PURE__ */ jsx("path", { d: "M6 10h.01M9 10h.01M12 10h.01M15 10h.01M18 10h.01M6 14h12" })
+    ] }),
+    warning: /* @__PURE__ */ jsx("path", { d: "M10.3 3.86l-8.61 14.92A2 2 0 0 0 3.44 22h17.12a2 2 0 0 0 1.74-3.22L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01" }),
+    copy: /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("rect", { x: "8", y: "8", width: "12", height: "12", rx: "2" }),
+      /* @__PURE__ */ jsx("path", { d: "M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" })
+    ] })
+  };
+  function Icon({
+    name,
+    size = 18,
+    color: color2,
+    style: style2,
+    fill
+  }) {
+    const path = ICON_PATHS[name];
+    if (!path) return null;
+    return /* @__PURE__ */ jsx(
+      "svg",
+      {
+        width: size,
+        height: size,
+        viewBox: "0 0 24 24",
+        fill: fill || "none",
+        stroke: color2 || "currentColor",
+        strokeWidth: "1.6",
+        strokeLinecap: "round",
+        strokeLinejoin: "round",
+        style: style2,
+        "aria-hidden": "true",
+        children: path
+      }
+    );
+  }
+  function Checkbox({
+    checked,
+    onChange,
+    disabled,
+    label,
+    hint,
+    right
+  }) {
+    return /* @__PURE__ */ jsxs(
+      "label",
+      {
+        style: {
+          display: "flex",
+          alignItems: hint ? "flex-start" : "center",
+          gap: 12,
+          cursor: disabled ? "default" : "pointer",
+          opacity: disabled ? 0.55 : 1,
+          userSelect: "none"
+        },
+        children: [
+          /* @__PURE__ */ jsx(
+            "span",
+            {
+              onClick: (e) => {
+                e.preventDefault();
+                if (!disabled && onChange) onChange(!checked);
+              },
+              style: {
+                width: 22,
+                height: 22,
+                borderRadius: 6,
+                background: checked ? TOKENS.accent : TOKENS.surface2,
+                border: `1.5px solid ${checked ? TOKENS.accent : TOKENS.borderStrong}`,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "all .14s ease",
+                flexShrink: 0,
+                marginTop: hint ? 2 : 0
+              },
+              children: checked ? /* @__PURE__ */ jsx(Icon, { name: "check", size: 14, color: TOKENS.surface0 }) : null
+            }
+          ),
+          label ? /* @__PURE__ */ jsxs("span", { style: { flex: 1, display: "flex", flexDirection: "column", gap: 2 }, children: [
+            /* @__PURE__ */ jsx("span", { style: { fontSize: 14.5, color: TOKENS.text, fontWeight: 500 }, children: label }),
+            hint ? /* @__PURE__ */ jsx("span", { style: { fontSize: 12.5, color: TOKENS.textMute, lineHeight: 1.4 }, children: hint }) : null
+          ] }) : null,
+          right
+        ]
+      }
+    );
+  }
+  function Select({
+    value,
+    options,
+    onChange,
+    width,
+    dim,
+    compact,
+    placeholder
+  }) {
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+    const menuRef = useRef(null);
+    const [menuPos, setMenuPos] = useState(null);
+    useEffect(() => {
+      const onDoc = (e) => {
+        if (ref.current?.contains(e.target)) return;
+        if (menuRef.current?.contains(e.target)) return;
+        setOpen(false);
+      };
+      document.addEventListener("mousedown", onDoc);
+      return () => document.removeEventListener("mousedown", onDoc);
+    }, []);
+    useEffect(() => {
+      if (!open) {
+        setMenuPos(null);
+        return;
+      }
+      const update = () => {
+        const rect = ref.current?.getBoundingClientRect();
+        if (!rect) return;
+        const gap = 4;
+        const margin = 12;
+        const spaceBelow = window.innerHeight - rect.bottom - gap - margin;
+        const spaceAbove = rect.top - gap - margin;
+        const openUp = spaceBelow < 160 && spaceAbove > spaceBelow;
+        const maxHeight = Math.min(260, Math.max(120, openUp ? spaceAbove : spaceBelow));
+        setMenuPos({
+          // Bottom-anchor when opening upward so a short list still hugs the
+          // trigger instead of floating maxHeight above it.
+          ...openUp ? { bottom: window.innerHeight - rect.top + gap } : { top: rect.bottom + gap },
+          left: rect.left,
+          width: rect.width,
+          maxHeight
+        });
+      };
+      update();
+      window.addEventListener("scroll", update, true);
+      window.addEventListener("resize", update);
+      return () => {
+        window.removeEventListener("scroll", update, true);
+        window.removeEventListener("resize", update);
+      };
+    }, [open]);
+    const normalized = options.map(
+      (o) => typeof o === "object" ? o : { value: o, label: String(o) }
+    );
+    const current2 = normalized.find((o) => o.value === value);
+    const label = current2 ? current2.label : placeholder ?? String(value);
+    return /* @__PURE__ */ jsxs("div", { ref, style: { position: "relative", width: width || "100%" }, children: [
+      /* @__PURE__ */ jsxs(
+        "button",
+        {
+          type: "button",
+          onClick: () => setOpen((o) => !o),
+          style: {
+            width: "100%",
+            textAlign: "left",
+            padding: compact ? "7px 10px" : "10px 12px",
+            background: TOKENS.surface2,
+            border: `1px solid ${open ? TOKENS.accent : TOKENS.borderStrong}`,
+            borderRadius: 8,
+            color: dim ? TOKENS.textDim : TOKENS.text,
+            fontSize: compact ? 13 : 14,
+            fontWeight: 500,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            cursor: "pointer",
+            gap: 8,
+            transition: "border-color .14s"
+          },
+          children: [
+            /* @__PURE__ */ jsx("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: label }),
+            /* @__PURE__ */ jsx(
+              Icon,
+              {
+                name: "chevDown",
+                size: 14,
+                color: TOKENS.textDim,
+                style: { transform: open ? "rotate(180deg)" : "none", transition: "transform .15s" }
+              }
+            )
+          ]
+        }
+      ),
+      open && menuPos ? (0, import_react_dom2.createPortal)(
+        /* @__PURE__ */ jsx(
+          "div",
+          {
+            ref: menuRef,
+            style: {
+              position: "fixed",
+              top: menuPos.top,
+              bottom: menuPos.bottom,
+              left: menuPos.left,
+              width: menuPos.width,
+              background: TOKENS.surface2,
+              border: `1px solid ${TOKENS.borderStrong}`,
+              borderRadius: 10,
+              padding: 4,
+              zIndex: 1e4,
+              boxShadow: "0 16px 40px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3)",
+              maxHeight: menuPos.maxHeight,
+              overflowY: "auto"
+            },
+            children: normalized.map((o) => {
+              const active = o.value === value;
+              return /* @__PURE__ */ jsxs(
+                "div",
+                {
+                  onClick: () => {
+                    if (onChange) onChange(o.value);
+                    setOpen(false);
+                  },
+                  style: {
+                    padding: "8px 10px",
+                    borderRadius: 6,
+                    cursor: "pointer",
+                    fontSize: 13.5,
+                    color: active ? TOKENS.text : TOKENS.textDim,
+                    background: active ? TOKENS.accentSoft : "transparent",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between"
+                  },
+                  onMouseEnter: (e) => {
+                    if (!active) e.currentTarget.style.background = TOKENS.surface3;
+                  },
+                  onMouseLeave: (e) => {
+                    if (!active) e.currentTarget.style.background = "transparent";
+                  },
+                  children: [
+                    /* @__PURE__ */ jsx("span", { children: o.label }),
+                    active ? /* @__PURE__ */ jsx(Icon, { name: "check", size: 13, color: TOKENS.accent }) : null
+                  ]
+                },
+                String(o.value)
+              );
+            })
+          }
+        ),
+        document.body
+      ) : null
+    ] });
+  }
+  function PillBtn({
+    children,
+    onClick,
+    variant = "ghost",
+    size = "md",
+    disabled,
+    icon,
+    type,
+    style: style2,
+    title
+  }) {
+    const sizes = {
+      sm: { padding: "6px 10px", fontSize: 12 },
+      md: { padding: "9px 14px", fontSize: 13 },
+      lg: { padding: "11px 18px", fontSize: 14 }
+    };
+    const variants = {
+      ghost: {
+        background: "transparent",
+        border: `1px solid ${TOKENS.borderStrong}`,
+        color: TOKENS.text
+      },
+      primary: {
+        background: TOKENS.orange,
+        border: `1px solid ${TOKENS.orange}`,
+        color: "#1A0E07",
+        fontWeight: 600
+      },
+      accent: {
+        background: TOKENS.accentSoft,
+        border: `1px solid ${TOKENS.accent}`,
+        color: "#fff"
+      },
+      danger: {
+        background: "transparent",
+        border: `1px solid rgba(255,90,106,.4)`,
+        color: TOKENS.red
+      }
+    };
+    return /* @__PURE__ */ jsxs(
+      "button",
+      {
+        type: type || "button",
+        onClick,
+        disabled,
+        title,
+        style: {
+          ...sizes[size],
+          ...variants[variant],
+          borderRadius: 8,
+          cursor: disabled ? "default" : "pointer",
+          opacity: disabled ? 0.5 : 1,
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+          fontWeight: variants[variant].fontWeight || 500,
+          letterSpacing: 0.2,
+          whiteSpace: "nowrap",
+          transition: "transform .08s, filter .12s",
+          ...style2
+        },
+        onMouseDown: (e) => {
+          if (!disabled) e.currentTarget.style.transform = "scale(0.97)";
+        },
+        onMouseUp: (e) => {
+          ;
+          e.currentTarget.style.transform = "scale(1)";
+        },
+        onMouseLeave: (e) => {
+          ;
+          e.currentTarget.style.transform = "scale(1)";
+        },
+        children: [
+          icon ? /* @__PURE__ */ jsx(Icon, { name: icon, size: 14 }) : null,
+          children
+        ]
+      }
+    );
+  }
+  function Card({
+    children,
+    padding = 16,
+    style: style2
+  }) {
+    return /* @__PURE__ */ jsx(
+      "div",
+      {
+        style: {
+          background: TOKENS.surface1,
+          border: `1px solid ${TOKENS.border}`,
+          borderRadius: 14,
+          padding,
+          ...style2
+        },
+        children
+      }
+    );
   }
 
   // lib/plugin-sdk.ts
@@ -183429,6 +184378,124 @@ ${cue.text}`).join("\n\n")}
     return () => window.removeEventListener(SETTINGS_EVENT, listener);
   }
 
+  // ../lumio-official-plugins/plugins/plex/runtime/plex-library-provider.ts
+  var PAGE_SIZE = 200;
+  var EPISODE_CONCURRENCY = 3;
+  var PLEX_LIBRARY_PROVIDER_ID = "plex";
+  function plexLibrarySourceId(settings) {
+    return settings.serverId ? `plex-${settings.serverId}` : null;
+  }
+  function plexLibrarySourceRef(settings) {
+    const id4 = plexLibrarySourceId(settings);
+    if (!id4) return null;
+    return { id: id4, name: settings.serverName ?? "Plex" };
+  }
+  async function postJson(url, body, signal) {
+    const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal });
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      throw new Error(`Plex ${response.status}: ${text.slice(0, 200)}`);
+    }
+    return await response.json();
+  }
+  async function mapWithLimit(items, limit, fn) {
+    const out = new Array(items.length);
+    let next2 = 0;
+    const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+      while (next2 < items.length) {
+        const index3 = next2++;
+        out[index3] = await fn(items[index3]);
+      }
+    });
+    await Promise.all(workers);
+    return out;
+  }
+  async function scan(source, updatedAtMin, emit2, progress2, signal) {
+    const auth = getPlexAuth();
+    const settings = ensureCanonicalPlexSettings();
+    if (!auth || !settings.serverUri || settings.libraries.length === 0) {
+      throw new Error("Plex \xE4r inte anslutet eller saknar valda bibliotek");
+    }
+    const scanStartedAt = Math.floor(Date.now() / 1e3);
+    let done = 0;
+    for (const library of settings.libraries) {
+      if (signal.aborted) break;
+      let start3 = 0;
+      let total = null;
+      progress2({ phase: "listing", section: library.title, done, total: total ?? void 0 });
+      while (!signal.aborted) {
+        const page = await postJson(
+          "/api/plugins/plex/index-page",
+          { auth, settings, sourceId: source.id, libraryKey: library.key, kind: library.type, start: start3, size: PAGE_SIZE, updatedAtMin },
+          signal
+        );
+        total = page.total ?? total;
+        if (page.items.length === 0) break;
+        let items = page.items;
+        if (library.type === "show") {
+          progress2({ phase: "episodes", section: library.title, done, total: total ?? void 0 });
+          items = await mapWithLimit(items, EPISODE_CONCURRENCY, async (title) => {
+            const ratingKey = title.key.slice(source.id.length + 1);
+            try {
+              const leaves = await postJson(
+                "/api/plugins/plex/index-episodes",
+                { auth, settings, sourceId: source.id, showRatingKey: ratingKey },
+                signal
+              );
+              return { ...title, episodes: leaves.episodes ?? [], media: leaves.media ?? [] };
+            } catch {
+              return title;
+            }
+          });
+        }
+        await emit2({ upsert: items });
+        done += items.length;
+        progress2({ phase: "titles", section: library.title, done, total: total ?? void 0 });
+        if (page.nextStart == null) break;
+        start3 = page.nextStart;
+      }
+    }
+    return { cursor: String(scanStartedAt) };
+  }
+  var plexLibraryProvider = {
+    id: PLEX_LIBRARY_PROVIDER_ID,
+    label: { en: "Plex", sv: "Plex" },
+    pluginId: "com.lumio.plex",
+    scanAll: (source, emit2, progress2, signal) => scan(source, null, emit2, progress2, signal),
+    scanDelta: (source, cursor, emit2, progress2, signal) => {
+      const since = cursor ? Number.parseInt(cursor, 10) : NaN;
+      return scan(source, Number.isFinite(since) ? since : null, emit2, progress2, signal);
+    },
+    async resolvePlayback(_source, media) {
+      const auth = getPlexAuth();
+      const settings = ensureCanonicalPlexSettings();
+      const token = settings.serverAccessToken ?? auth?.authToken ?? null;
+      const uris = normalizePlexUris(settings.serverUri, settings.serverUris);
+      const base = uris[0];
+      if (!base || !token) return null;
+      const separator = media.playRef.includes("?") ? "&" : "?";
+      return { url: `${base}${media.playRef}${separator}X-Plex-Token=${encodeURIComponent(token)}`, filename: media.playRef.split("/").pop() };
+    },
+    /**
+     * Progress tillbaka till Plex: `/:/timeline` under uppspelning (så Plex
+     * egna appar visar samma "Fortsätt titta") och `/:/scrobble` vid slutet.
+     * ratingKey ligger i indexnycklarna: titel `<källa>:<ratingKey>`, avsnitt
+     * `<titelnyckel>:e<ratingKey>`.
+     */
+    async reportProgress(_source, ref, state) {
+      const auth = getPlexAuth();
+      const settings = ensureCanonicalPlexSettings();
+      const token = settings.serverAccessToken ?? auth?.authToken ?? null;
+      const base = normalizePlexUris(settings.serverUri, settings.serverUris)[0];
+      if (!base || !token) return;
+      const ratingKey = ref.episodeKey ? ref.episodeKey.split(":e").pop() : ref.title.key.split(":").pop();
+      if (!ratingKey) return;
+      const common = `X-Plex-Token=${encodeURIComponent(token)}&X-Plex-Client-Identifier=${encodeURIComponent(ensurePlexClientIdentifier())}`;
+      const url = state.finished ? `${base}/:/scrobble?identifier=com.plexapp.plugins.library&key=${encodeURIComponent(ratingKey)}&${common}` : `${base}/:/timeline?ratingKey=${encodeURIComponent(ratingKey)}&key=${encodeURIComponent(`/library/metadata/${ratingKey}`)}&state=playing&time=${Math.max(0, state.positionMs)}&duration=${Math.max(0, state.durationMs)}&${common}`;
+      await fetch(url, { method: "GET", headers: { Accept: "application/json" } });
+    }
+  };
+
   // ../lumio-official-plugins/plugins/plex/runtime/plex-sync.ts
   var plexLibraryInFlight = /* @__PURE__ */ new Map();
   var plexLibraryCooldownUntil = /* @__PURE__ */ new Map();
@@ -183694,16 +184761,16 @@ ${cue.text}`).join("\n\n")}
         settings.libraries.map(async (library) => {
           for (const serverUri of uris) {
             const items2 = [];
-            let start2 = 0;
+            let start3 = 0;
             try {
               while (items2.length < perLibraryLimit) {
                 const batchSize = Math.min(60, perLibraryLimit - items2.length);
                 const plexType = library.type === "movie" ? 1 : 2;
-                const url = `${serverUri}/library/sections/${library.key}/all?type=${plexType}&sort=titleSort:asc&X-Plex-Container-Start=${start2}&X-Plex-Container-Size=${batchSize}`;
+                const url = `${serverUri}/library/sections/${library.key}/all?type=${plexType}&sort=titleSort:asc&X-Plex-Container-Start=${start3}&X-Plex-Container-Size=${batchSize}`;
                 logPlexDebug("[plex-direct] fetch", {
                   library: `${library.title} (${library.key})`,
                   uri: serverUri,
-                  start: start2,
+                  start: start3,
                   batchSize
                 });
                 const response = await fetchWithTimeoutAndRetry(
@@ -183728,11 +184795,11 @@ ${cue.text}`).join("\n\n")}
                   library: `${library.title} (${library.key})`,
                   uri: serverUri,
                   count: metadata.length,
-                  start: start2
+                  start: start3
                 });
                 if (metadata.length === 0) break;
                 items2.push(...mapPlexMetadataEntries(metadata, serverUri, token, library.type));
-                start2 += metadata.length;
+                start3 += metadata.length;
                 if (metadata.length < batchSize) break;
               }
             } catch (error) {
@@ -184180,7 +185247,7 @@ ${cue.text}`).join("\n\n")}
 
   // ../lumio-official-plugins/plugins/plex/runtime/plex-grid.tsx
   init_react_shim();
-  var import_react70 = __toESM(require_dist89());
+  var import_react74 = __toESM(require_dist89());
   init_jsx_runtime_shim();
   function uniqueSorted(values) {
     return Array.from(new Set(values.filter(Boolean))).sort(
@@ -184251,7 +185318,7 @@ ${cue.text}`).join("\n\n")}
               }
             ) : /* @__PURE__ */ jsx("div", { className: "flex h-full items-end bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 p-4", children: /* @__PURE__ */ jsx("span", { className: "text-base font-semibold text-slate-100", children: item.title }) }),
             item.genres.length > 0 && /* @__PURE__ */ jsx("div", { className: "absolute inset-x-0 bottom-0 flex flex-wrap gap-1 p-2", children: item.genres.slice(0, 2).map((genre) => /* @__PURE__ */ jsx(
-              import_react70.Chip,
+              import_react74.Chip,
               {
                 size: "sm",
                 variant: "flat",
@@ -184719,10 +185786,92 @@ ${cue.text}`).join("\n\n")}
 
   // ../lumio-official-plugins/plugins/plex/runtime/plex-section.tsx
   init_react_shim();
+
+  // ../lumio-official-plugins/plugins/plex/runtime/plex-library-index-panel.tsx
+  init_react_shim();
   init_jsx_runtime_shim();
-  var settingsSelectClassName = "rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-300 outline-none transition hover:border-white/20";
-  var settingsActionButtonClass = "rounded-full border border-white/10 px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-slate-300 transition hover:border-white/20 hover:text-white disabled:opacity-50";
-  var settingsDangerActionButtonClass = "rounded-full border border-red-400/30 px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-red-300 transition hover:border-red-400/40 hover:text-red-300 disabled:opacity-50";
+  function PlexLibraryIndexPanel() {
+    const { t } = useLang();
+    const [status, setStatus] = useState(null);
+    const [progress2, setProgress] = useState(null);
+    const [error, setError] = useState(null);
+    const [mode, setMode] = useState(() => getLibraryMode());
+    const abortRef = useRef(null);
+    const settings = ensureCanonicalPlexSettings();
+    const source = plexLibrarySourceRef(settings);
+    const connected = Boolean(getPlexAuth() && settings.serverUri && settings.libraries.length > 0);
+    const refresh = () => {
+      void fetchLibraryStatus().then(setStatus).catch(() => setStatus(null));
+    };
+    useEffect(() => {
+      refresh();
+      return onLibraryModeChanged(() => setMode(getLibraryMode()));
+    }, []);
+    const mine = status?.sources.find((entry) => entry.id === source?.id) ?? null;
+    const running2 = progress2 !== null && progress2.phase !== "done";
+    const run = async (kind) => {
+      if (!source || running2) return;
+      setError(null);
+      const controller = new AbortController();
+      abortRef.current = controller;
+      setProgress({ phase: "listing", done: 0 });
+      try {
+        await runLibraryScan(plexLibraryProvider, { ...source, cursor: mine?.cursor ?? null }, {
+          mode: kind,
+          signal: controller.signal,
+          onProgress: setProgress
+        });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setProgress(null);
+        abortRef.current = null;
+        refresh();
+      }
+    };
+    const clear = async () => {
+      if (!source || running2) return;
+      await resetLibrarySource(source.id);
+      if (mode?.sourceIds.includes(source.id)) {
+        const rest = mode.sourceIds.filter((id4) => id4 !== source.id);
+        setLibraryMode(rest.length > 0 ? { sourceIds: rest } : null);
+      }
+      refresh();
+    };
+    const formatWhen = (seconds) => seconds ? new Date(seconds * 1e3).toLocaleString(void 0, { dateStyle: "short", timeStyle: "short" }) : "\u2013";
+    const pct = progress2?.total ? Math.min(100, Math.round(progress2.done / Math.max(1, progress2.total) * 100)) : null;
+    return /* @__PURE__ */ jsxs(Card, { children: [
+      /* @__PURE__ */ jsx("div", { style: { fontSize: 14.5, fontWeight: 600, color: TOKENS.text }, children: t("plexIndexTitle") }),
+      /* @__PURE__ */ jsx("p", { style: { margin: "4px 0 0", fontSize: 12, lineHeight: 1.5, color: TOKENS.textMute }, children: t("plexIndexDesc") }),
+      /* @__PURE__ */ jsx("div", { style: { marginTop: 12, fontSize: 12, color: TOKENS.textDim }, children: mine ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+        /* @__PURE__ */ jsx("span", { style: { color: TOKENS.text }, children: t("plexIndexStatus").replace("{titles}", String(mine.titles)).replace("{unmatched}", String(status?.unmatched ?? 0)) }),
+        /* @__PURE__ */ jsx("span", { style: { margin: "0 8px", color: TOKENS.textMute }, children: "\xB7" }),
+        t("plexIndexLastSync"),
+        ": ",
+        formatWhen(mine.lastDeltaSync ?? mine.lastFullSync)
+      ] }) : t("plexIndexEmpty") }),
+      progress2 ? /* @__PURE__ */ jsxs("div", { style: { marginTop: 12 }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12, color: TOKENS.textDim }, children: [
+          /* @__PURE__ */ jsxs("span", { children: [
+            progress2.section ? `${progress2.section} \xB7 ` : "",
+            t("plexIndexRunning").replace("{done}", String(progress2.done)),
+            progress2.total ? ` / ${progress2.total}` : ""
+          ] }),
+          /* @__PURE__ */ jsx(PillBtn, { size: "sm", onClick: () => abortRef.current?.abort(), children: t("cancel") })
+        ] }),
+        /* @__PURE__ */ jsx("div", { style: { marginTop: 8, height: 6, width: "100%", overflow: "hidden", borderRadius: 999, background: TOKENS.surface0 }, children: /* @__PURE__ */ jsx("div", { style: { height: "100%", borderRadius: 999, background: TOKENS.accent, width: pct != null ? `${pct}%` : "35%", transition: "width .3s" } }) })
+      ] }) : null,
+      error ? /* @__PURE__ */ jsx("p", { style: { margin: "8px 0 0", fontSize: 12, color: TOKENS.red }, children: error }) : null,
+      /* @__PURE__ */ jsxs("div", { style: { marginTop: 12, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }, children: [
+        /* @__PURE__ */ jsx(PillBtn, { variant: "accent", disabled: !connected || running2, onClick: () => void run("full"), children: mine ? t("plexIndexRebuild") : t("plexIndexBuild") }),
+        mine ? /* @__PURE__ */ jsx(PillBtn, { disabled: running2, onClick: () => void run("delta"), children: t("plexIndexUpdate") }) : null,
+        mine ? /* @__PURE__ */ jsx(PillBtn, { variant: "danger", disabled: running2, onClick: () => void clear(), children: t("plexIndexClear") }) : null
+      ] })
+    ] });
+  }
+
+  // ../lumio-official-plugins/plugins/plex/runtime/plex-section.tsx
+  init_jsx_runtime_shim();
   var HOME_OVERRIDE_PLUGIN_ID = "com.lumio.plex";
   function PlexSection() {
     const { t } = useLang();
@@ -185085,199 +186234,152 @@ ${cue.text}`).join("\n\n")}
         setHomeOverrideError(t("homeOverrideAlreadySet"));
       }
     }
-    return /* @__PURE__ */ jsxs("div", { className: "rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3", children: [
-      /* @__PURE__ */ jsxs("div", { className: "mb-4 rounded-2xl border border-white/10 bg-slate-950/50 p-4", children: [
-        /* @__PURE__ */ jsxs("label", { className: "flex items-center gap-3 text-sm text-slate-200", children: [
-          /* @__PURE__ */ jsx(
-            "input",
-            {
-              type: "checkbox",
-              checked: homeOverrideEnabled,
-              onChange: (event) => handleHomeOverrideToggle(event.target.checked),
-              className: "h-4 w-4 accent-amber-400"
-            }
-          ),
-          t("homeOverrideUseAsHome")
-        ] }),
-        /* @__PURE__ */ jsx("p", { className: "mt-2 text-xs text-slate-500", children: t("plexHomeOverrideDesc") }),
-        homeOverrideError ? /* @__PURE__ */ jsx("p", { className: "mt-2 text-xs text-rose-300", children: homeOverrideError }) : null
-      ] }),
-      plexAuth ? /* @__PURE__ */ jsxs("div", { className: "space-y-4", children: [
-        /* @__PURE__ */ jsxs("div", { children: [
-          /* @__PURE__ */ jsxs("p", { className: "text-sm font-medium text-white", children: [
-            t("plexSignedInAs"),
-            " ",
-            plexAuth.title || plexAuth.username || t("plexSignedInFallback")
+    const fieldLabel = (text) => /* @__PURE__ */ jsx("div", { style: { ...eyebrowStyle, marginBottom: 6 }, children: text });
+    const note = (text, tone = "dim") => /* @__PURE__ */ jsx("p", { style: { margin: 0, fontSize: 12, lineHeight: 1.5, color: tone === "ok" ? TOKENS.mint : tone === "warn" ? TOKENS.warn : tone === "error" ? TOKENS.red : TOKENS.textMute }, children: text });
+    const stack = { display: "flex", flexDirection: "column", gap: 12 };
+    return /* @__PURE__ */ jsxs("div", { style: stack, children: [
+      homeOverrideEnabled ? /* @__PURE__ */ jsxs(Card, { children: [
+        /* @__PURE__ */ jsx(Checkbox, { checked: homeOverrideEnabled, onChange: (value) => handleHomeOverrideToggle(value), label: t("homeOverrideUseAsHome"), hint: t("plexHomeOverrideDesc") }),
+        homeOverrideError ? /* @__PURE__ */ jsx("div", { style: { marginTop: 8 }, children: note(homeOverrideError, "error") }) : null
+      ] }) : null,
+      plexAuth ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+        /* @__PURE__ */ jsx(Card, { children: /* @__PURE__ */ jsxs("div", { style: stack, children: [
+          /* @__PURE__ */ jsxs("div", { children: [
+            /* @__PURE__ */ jsxs("div", { style: { fontSize: 14.5, fontWeight: 600, color: TOKENS.text }, children: [
+              t("plexSignedInAs"),
+              " ",
+              plexAuth.title || plexAuth.username || t("plexSignedInFallback")
+            ] }),
+            plexHomeUsers.length > 0 ? /* @__PURE__ */ jsxs("div", { style: { fontSize: 12, color: TOKENS.textMute, marginTop: 2 }, children: [
+              t("plexChooseProfile"),
+              ": ",
+              plexHomeUsers.find((user) => user.id === plexSelectedHomeUserId)?.title ?? plexAuth.title ?? plexAuth.username ?? t("plexSignedInFallback")
+            ] }) : null
           ] }),
-          plexHomeUsers.length > 0 ? /* @__PURE__ */ jsxs("p", { className: "mt-1 text-xs text-slate-500", children: [
-            t("plexChooseProfile"),
-            ": ",
-            plexHomeUsers.find((user) => user.id === plexSelectedHomeUserId)?.title ?? plexAuth.title ?? plexAuth.username ?? t("plexSignedInFallback")
-          ] }) : null
-        ] }),
-        plexHomeUsers.length > 0 ? /* @__PURE__ */ jsxs("div", { className: "grid gap-3 2xl:grid-cols-[minmax(220px,1.15fr)_minmax(180px,0.9fr)_auto]", children: [
-          /* @__PURE__ */ jsxs("label", { className: "space-y-1.5", children: [
-            /* @__PURE__ */ jsx("span", { className: "block text-[10px] uppercase tracking-[0.16em] text-slate-500", children: t("plexChooseProfile") }),
+          plexHomeUsers.length > 0 ? /* @__PURE__ */ jsxs("div", { style: { display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", alignItems: "end" }, children: [
+            /* @__PURE__ */ jsxs("div", { children: [
+              fieldLabel(t("plexChooseProfile")),
+              /* @__PURE__ */ jsx(
+                Select,
+                {
+                  value: plexSelectedHomeUserId,
+                  options: plexHomeUsers.map((user) => ({ value: user.id, label: user.title })),
+                  onChange: (value) => setPlexSelectedHomeUserId(value),
+                  width: "100%"
+                }
+              )
+            ] }),
+            /* @__PURE__ */ jsxs("div", { children: [
+              fieldLabel(t("plexProfilePin")),
+              /* @__PURE__ */ jsx(
+                "input",
+                {
+                  type: "password",
+                  value: plexProfilePin,
+                  onChange: (event) => setPlexProfilePin(event.target.value),
+                  placeholder: t("plexProfilePinPlaceholder"),
+                  style: inputStyle
+                }
+              )
+            ] }),
             /* @__PURE__ */ jsx(
-              "select",
+              PillBtn,
               {
-                value: plexSelectedHomeUserId,
-                onChange: (event) => setPlexSelectedHomeUserId(event.target.value),
-                className: `w-full ${settingsSelectClassName}`,
-                children: plexHomeUsers.map((user) => /* @__PURE__ */ jsx("option", { value: user.id, className: "bg-slate-900", children: user.title }, user.id))
+                variant: "accent",
+                onClick: () => void handlePlexProfileApply(),
+                disabled: !plexSelectedHomeUserId || plexProfileSwitchState === "switching",
+                style: { minHeight: 44 },
+                children: plexProfileSwitchState === "switching" ? t("plexRefreshingProfiles") : t("plexApplyProfile")
               }
             )
-          ] }),
-          /* @__PURE__ */ jsxs("label", { className: "space-y-1.5", children: [
-            /* @__PURE__ */ jsx("span", { className: "block text-[10px] uppercase tracking-[0.16em] text-slate-500", children: t("plexProfilePin") }),
+          ] }) : null,
+          plexProfileSuccess ? note(plexProfileSuccess, "ok") : null
+        ] }) }),
+        /* @__PURE__ */ jsx(Card, { children: /* @__PURE__ */ jsxs("div", { style: stack, children: [
+          /* @__PURE__ */ jsxs("div", { style: { display: "grid", gap: 12, gridTemplateColumns: "minmax(0, 1fr) auto", alignItems: "end" }, children: [
+            /* @__PURE__ */ jsxs("div", { children: [
+              fieldLabel(t("plexChooseServer")),
+              /* @__PURE__ */ jsx(
+                Select,
+                {
+                  value: plexSelectedServerId,
+                  options: [{ value: "", label: t("plexChooseServer") }, ...plexServers.map((server) => ({ value: server.id, label: server.name }))],
+                  onChange: (value) => {
+                    void handlePlexServerChange(value);
+                  },
+                  width: "100%"
+                }
+              )
+            ] }),
             /* @__PURE__ */ jsx(
-              "input",
+              PillBtn,
               {
-                type: "password",
-                value: plexProfilePin,
-                onChange: (event) => setPlexProfilePin(event.target.value),
-                placeholder: t("plexProfilePinPlaceholder"),
-                className: "w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-100 outline-none transition hover:border-white/20 focus:border-white/30"
+                onClick: () => void refreshPlexResourcesAndLibraries(plexSelectedServerId || void 0, { selectedOnly: true }),
+                disabled: plexRefreshState === "refreshing",
+                style: { minHeight: 44 },
+                children: plexRefreshState === "refreshing" ? t("plexRefreshingLibrariesButton") : t("plexRefreshLibraries")
               }
             )
           ] }),
-          /* @__PURE__ */ jsx("div", { className: "flex items-end 2xl:justify-end", children: /* @__PURE__ */ jsx(
-            "button",
-            {
-              type: "button",
-              onClick: () => void handlePlexProfileApply(),
-              disabled: !plexSelectedHomeUserId || plexProfileSwitchState === "switching",
-              className: `w-full ${settingsActionButtonClass} 2xl:w-auto`,
-              children: plexProfileSwitchState === "switching" ? t("plexRefreshingProfiles") : t("plexApplyProfile")
-            }
-          ) })
-        ] }) : null,
-        plexProfileSuccess ? /* @__PURE__ */ jsx("p", { className: "text-xs text-emerald-300", children: plexProfileSuccess }) : null,
-        /* @__PURE__ */ jsxs("div", { className: "grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]", children: [
-          /* @__PURE__ */ jsxs("label", { className: "space-y-1.5", children: [
-            /* @__PURE__ */ jsx("span", { className: "block text-[10px] uppercase tracking-[0.16em] text-slate-500", children: t("plexChooseServer") }),
-            /* @__PURE__ */ jsxs(
-              "select",
-              {
-                value: plexSelectedServerId,
-                onChange: (event) => {
-                  void handlePlexServerChange(event.target.value);
-                },
-                className: `w-full ${settingsSelectClassName}`,
-                children: [
-                  /* @__PURE__ */ jsx("option", { value: "", children: t("plexChooseServer") }),
-                  plexServers.map((server) => /* @__PURE__ */ jsx("option", { value: server.id, className: "bg-slate-900", children: server.name }, `${server.id}:${server.uri}`))
-                ]
-              }
-            )
-          ] }),
-          /* @__PURE__ */ jsx("div", { className: "flex items-end", children: /* @__PURE__ */ jsx(
-            "button",
-            {
-              type: "button",
-              onClick: () => void refreshPlexResourcesAndLibraries(plexSelectedServerId || void 0, { selectedOnly: true }),
-              disabled: plexRefreshState === "refreshing",
-              className: settingsActionButtonClass,
-              children: plexRefreshState === "refreshing" ? t("plexRefreshingLibrariesButton") : t("plexRefreshLibraries")
-            }
-          ) })
-        ] }),
-        plexRefreshMessage ? /* @__PURE__ */ jsx("p", { className: `text-xs ${plexRefreshState === "done" ? "text-emerald-300" : "text-amber-300"}`, children: plexRefreshMessage }) : null,
-        /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
-          /* @__PURE__ */ jsx(
-            "button",
-            {
-              type: "button",
-              onClick: handleClearPlexCaches,
-              className: settingsActionButtonClass,
-              children: t("plexClearCache")
-            }
-          ),
-          plexCacheMessage ? /* @__PURE__ */ jsx("span", { className: "text-xs text-slate-400", children: plexCacheMessage }) : null
-        ] }),
-        plexServers.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500", children: t("plexNoServers") }) : null,
-        plexSelectedServerId ? /* @__PURE__ */ jsxs("div", { className: "space-y-2", children: [
-          /* @__PURE__ */ jsx("p", { className: "block text-[10px] uppercase tracking-[0.16em] text-slate-500", children: t("plexChooseLibraries") }),
-          plexLibraries.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500", children: t("plexNoLibraries") }) : /* @__PURE__ */ jsxs("div", { className: "space-y-2", children: [
-            plexSelectedLibraryKeys.length > 0 && /* @__PURE__ */ jsx("div", { className: "space-y-1.5", children: plexSelectedLibraryKeys.map((key, idx) => {
-              const library = plexLibraries.find((l) => l.key === key);
-              if (!library) return null;
-              return /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 rounded-xl border border-aurora-400/30 bg-aurora-400/5 px-3 py-2 text-sm text-slate-200", children: [
-                /* @__PURE__ */ jsx("span", { className: "flex-1 truncate", children: library.title }),
-                /* @__PURE__ */ jsx("span", { className: "text-[10px] uppercase tracking-[0.12em] text-slate-500", children: library.type === "movie" ? t("movies") : t("series") }),
-                /* @__PURE__ */ jsx(
-                  "button",
+          plexRefreshMessage ? note(plexRefreshMessage, plexRefreshState === "done" ? "ok" : "warn") : null,
+          plexServers.length === 0 ? note(t("plexNoServers")) : null,
+          plexSelectedServerId ? /* @__PURE__ */ jsxs("div", { children: [
+            fieldLabel(t("plexChooseLibraries")),
+            plexLibraries.length === 0 ? note(t("plexNoLibraries")) : /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 8 }, children: [
+              plexSelectedLibraryKeys.map((key, idx) => {
+                const library = plexLibraries.find((l) => l.key === key);
+                if (!library) return null;
+                return /* @__PURE__ */ jsxs(
+                  "div",
                   {
-                    type: "button",
-                    onClick: () => handleMovePlexLibrary(key, -1),
-                    disabled: idx === 0,
-                    className: "rounded border border-white/10 px-1.5 py-0.5 text-[10px] text-slate-500 transition hover:border-white/20 hover:text-slate-300 disabled:opacity-30",
-                    children: "\u2191"
-                  }
-                ),
-                /* @__PURE__ */ jsx(
-                  "button",
-                  {
-                    type: "button",
-                    onClick: () => handleMovePlexLibrary(key, 1),
-                    disabled: idx === plexSelectedLibraryKeys.length - 1,
-                    className: "rounded border border-white/10 px-1.5 py-0.5 text-[10px] text-slate-500 transition hover:border-white/20 hover:text-slate-300 disabled:opacity-30",
-                    children: "\u2193"
-                  }
-                ),
-                /* @__PURE__ */ jsx(
-                  "button",
-                  {
-                    type: "button",
-                    onClick: () => handleTogglePlexLibrary(library),
-                    className: "rounded border border-white/10 px-1.5 py-0.5 text-[10px] text-red-400/70 transition hover:text-red-300",
-                    children: "\u2715"
-                  }
-                )
-              ] }, key);
-            }) }),
-            plexLibraries.filter((l) => !plexSelectedLibraryKeys.includes(l.key)).length > 0 && /* @__PURE__ */ jsx("div", { className: "flex flex-wrap gap-2", children: plexLibraries.filter((l) => !plexSelectedLibraryKeys.includes(l.key)).map((library) => /* @__PURE__ */ jsxs(
-              "button",
-              {
-                type: "button",
-                onClick: () => handleTogglePlexLibrary(library),
-                className: "rounded-xl border border-dashed border-white/15 px-3 py-1.5 text-xs text-slate-500 transition hover:border-white/30 hover:text-slate-300",
-                children: [
-                  "+ ",
-                  library.title
-                ]
-              },
-              library.key
-            )) })
+                    style: {
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "10px 14px",
+                      borderRadius: 12,
+                      border: `1px solid ${TOKENS.accent}`,
+                      background: TOKENS.accentSoft
+                    },
+                    children: [
+                      /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, fontSize: 14.5, fontWeight: 600, color: TOKENS.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: library.title }),
+                      /* @__PURE__ */ jsx("span", { style: { ...eyebrowStyle, marginBottom: 0 }, children: library.type === "movie" ? t("movies") : t("series") }),
+                      /* @__PURE__ */ jsx(PillBtn, { size: "sm", onClick: () => handleMovePlexLibrary(key, -1), disabled: idx === 0, icon: "chevUp", title: "\u2191", children: "" }),
+                      /* @__PURE__ */ jsx(PillBtn, { size: "sm", onClick: () => handleMovePlexLibrary(key, 1), disabled: idx === plexSelectedLibraryKeys.length - 1, icon: "chevDown", title: "\u2193", children: "" }),
+                      /* @__PURE__ */ jsx(PillBtn, { size: "sm", variant: "danger", onClick: () => handleTogglePlexLibrary(library), icon: "close", title: "\u2715", children: "" })
+                    ]
+                  },
+                  key
+                );
+              }),
+              plexLibraries.filter((l) => !plexSelectedLibraryKeys.includes(l.key)).length > 0 ? /* @__PURE__ */ jsx("div", { style: { display: "flex", flexWrap: "wrap", gap: 8 }, children: plexLibraries.filter((l) => !plexSelectedLibraryKeys.includes(l.key)).map((library) => /* @__PURE__ */ jsx(PillBtn, { size: "sm", icon: "plus", onClick: () => handleTogglePlexLibrary(library), children: library.title }, library.key)) }) : null
+            ] })
+          ] }) : null,
+          /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }, children: [
+            /* @__PURE__ */ jsx(PillBtn, { onClick: handleClearPlexCaches, children: t("plexClearCache") }),
+            /* @__PURE__ */ jsx(PillBtn, { variant: "danger", onClick: handlePlexDisconnect, children: t("plexDisconnect") }),
+            plexCacheMessage ? /* @__PURE__ */ jsx("span", { style: { fontSize: 12, color: TOKENS.textDim }, children: plexCacheMessage }) : null
           ] })
-        ] }) : null,
-        /* @__PURE__ */ jsx("div", { className: "flex flex-wrap gap-2", children: /* @__PURE__ */ jsx(
-          "button",
-          {
-            type: "button",
-            onClick: handlePlexDisconnect,
-            className: settingsDangerActionButtonClass,
-            children: t("plexDisconnect")
-          }
-        ) })
-      ] }) : /* @__PURE__ */ jsxs("div", { className: "space-y-3", children: [
+        ] }) })
+      ] }) : /* @__PURE__ */ jsx(Card, { children: /* @__PURE__ */ jsxs("div", { style: stack, children: [
         /* @__PURE__ */ jsx(
-          "button",
+          PillBtn,
           {
-            type: "button",
+            variant: "accent",
             onClick: () => void handlePlexConnect(),
             disabled: plexLoginState === "starting" || plexLoginState === "polling",
-            className: settingsActionButtonClass,
+            style: { alignSelf: "flex-start" },
             children: plexLoginState === "starting" || plexLoginState === "polling" ? t("plexWaiting") : t("plexConnect")
           }
         ),
-        plexCode ? /* @__PURE__ */ jsxs("div", { className: "rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3", children: [
-          /* @__PURE__ */ jsx("p", { className: "text-xs uppercase tracking-[0.18em] text-emerald-300", children: t("plexOpenLinkAndCode") }),
-          /* @__PURE__ */ jsx("p", { className: "mt-1 text-sm text-white break-all", children: plexAuthUrl }),
-          /* @__PURE__ */ jsx("p", { className: "mt-2 text-xl font-semibold tracking-[0.22em] text-emerald-200", children: plexCode })
+        plexCode ? /* @__PURE__ */ jsxs("div", { style: { padding: "12px 16px", borderRadius: 12, border: `1px solid ${TOKENS.mint}`, background: "rgba(60,214,163,0.10)" }, children: [
+          /* @__PURE__ */ jsx("div", { style: { ...eyebrowStyle, color: TOKENS.mint }, children: t("plexOpenLinkAndCode") }),
+          /* @__PURE__ */ jsx("div", { style: { marginTop: 4, fontSize: 14, color: TOKENS.text, wordBreak: "break-all" }, children: plexAuthUrl }),
+          /* @__PURE__ */ jsx("div", { style: { marginTop: 8, fontSize: 22, fontWeight: 600, letterSpacing: "0.22em", color: TOKENS.mint }, children: plexCode })
         ] }) : null
-      ] }),
-      plexLoginError ? /* @__PURE__ */ jsx("p", { className: "mt-3 text-sm text-red-300", children: plexLoginError }) : null
+      ] }) }),
+      plexLoginError ? note(plexLoginError, "error") : null,
+      /* @__PURE__ */ jsx(PlexLibraryIndexPanel, {})
     ] });
   }
 
@@ -185862,6 +186964,7 @@ ${cue.text}`).join("\n\n")}
     preinstalled: true,
     register(ctx) {
       ctx.registerPlaybackCapabilityProvider(plexPlaybackCapabilityProvider);
+      ctx.registerLibraryProvider(plexLibraryProvider);
       ctx.registerSyncIdentityProvider(plexSyncIdentityProvider);
       ctx.registerSettingsSection({
         id: "plex",
@@ -185877,7 +186980,7 @@ ${cue.text}`).join("\n\n")}
         id: "plex",
         label: { en: "Plex", sv: "Plex" },
         defaultEnabled: true,
-        target: { pageId: "plex-browse" }
+        target: { pageId: "library", params: { provider: "plex", fallbackPageId: "plex-browse" } }
       });
       ctx.registerEpisodeSidebarProvider(plexEpisodeSidebarProvider);
       ctx.registerHomeOverride({
