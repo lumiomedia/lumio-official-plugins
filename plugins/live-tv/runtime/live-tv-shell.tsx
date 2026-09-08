@@ -181,7 +181,7 @@ export function useLiveTvChrome(model: LiveTvModel): { play: (request: PlayReque
 }
 
 /** Klock-ikonen i toppbaren med rullista över kommande påminnelser. */
-export function RemindersMenu({ model, onOpenChannel }: { model: LiveTvModel; onOpenChannel: (channel: M3uChannel) => void }) {
+export function RemindersMenu({ model, onOpenChannel, tvStation }: { model: LiveTvModel; onOpenChannel: (channel: M3uChannel) => void; tvStation?: Record<string, string> }) {
   const { h, locale } = useHubText()
   const [open, setOpen] = useState(false)
   useEffect(() => {
@@ -195,7 +195,7 @@ export function RemindersMenu({ model, onOpenChannel }: { model: LiveTvModel; on
   }, [open])
   return (
     <div style={{ position: 'relative' }} data-reminders-menu="">
-      <Btn variant="ghost" icon onClick={() => setOpen((value) => !value)} ariaLabel={h('reminders')} title={h('reminders')} pressed={open}>
+      <Btn variant="ghost" icon onClick={() => setOpen((value) => !value)} ariaLabel={h('reminders')} title={h('reminders')} pressed={open} tvStation={tvStation}>
         <span style={{ position: 'relative', display: 'inline-flex' }}>
           <Icon.Bell />
           {model.reminders.length > 0 ? (
@@ -259,9 +259,9 @@ export function RemindersMenu({ model, onOpenChannel }: { model: LiveTvModel; on
 }
 
 /** Klockknapp för ett program: fylld när påminnelse finns. */
-export function ReminderBell({ on, onToggle, label }: { on: boolean; onToggle: () => void; label: string }) {
+export function ReminderBell({ on, onToggle, label, tvStation }: { on: boolean; onToggle: () => void; label: string; tvStation?: Record<string, string> }) {
   return (
-    <Btn variant="ghost" icon onClick={onToggle} ariaLabel={label} title={label} pressed={on} style={{ color: on ? LT.accent : undefined }}>
+    <Btn variant="ghost" icon onClick={onToggle} ariaLabel={label} title={label} pressed={on} style={{ color: on ? LT.accent : undefined }} tvStation={tvStation}>
       <Icon.Bell size={16} filled={on} />
     </Btn>
   )

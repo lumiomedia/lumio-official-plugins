@@ -210,6 +210,62 @@ export function storeLiveTvChannels(urlsKey: string, channels: M3uChannel[]): vo
   writePluginJson(LIVE_TV_PLUGIN_ID, getLiveTvChannelsStorageKey(urlsKey), { channels })
 }
 
+/**
+ * Kanalindexet i värden (Rust, `/api/live-tv/*`): hela källutbudet på disk i
+ * stället för 2000 kanaler i webbläsarlagringen (Jerry 2026-09-06). Saknar
+ * värden endpointen (äldre app) faller allt tillbaka på plugin-lagringen med
+ * dess cap, så det här är alltid säkert att anropa.
+ */
+let liveTvIndexProbe: Promise<boolean> | null = null
+export function liveTvIndexAvailable(): Promise<boolean> {
+  if (!liveTvIndexProbe) {
+    liveTvIndexProbe = fetch('/api/live-tv/status', { cache: 'no-store' })
+      .then((response) => response.ok)
+      .catch(() => false)
+  }
+  return liveTvIndexProbe
+}
+
+const INDEX_BATCH = 1000
+const INDEX_PAGE = 5000
+
+export async function pushLiveTvChannelsToIndex(urlsKey: string, channels: M3uChannel[]): Promise<boolean> {
+  if (!urlsKey || !(await liveTvIndexAvailable())) return false
+  for (let offset = 0; offset < Math.max(channels.length, 1); offset += INDEX_BATCH) {
+    const response = await fetch('/api/live-tv/batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source: urlsKey, replace: offset === 0, channels: channels.slice(offset, offset + INDEX_BATCH) }),
+    })
+    if (!response.ok) return false
+    if (channels.length === 0) break
+  }
+  return true
+}
+
+/** Alla kanaler för källuppsättningen ur värdens index; null = indexet saknar källan (eller värden saknar indexet). */
+export async function readLiveTvChannelsFromIndex(urlsKey: string): Promise<M3uChannel[] | null> {
+  if (!urlsKey || !(await liveTvIndexAvailable())) return null
+  const out: M3uChannel[] = []
+  let offset = 0
+  for (;;) {
+    const response = await fetch(`/api/live-tv/query?${new URLSearchParams({ source: urlsKey, offset: String(offset), limit: String(INDEX_PAGE) })}`, { cache: 'no-store' })
+    if (!response.ok) return null
+    const data = (await response.json()) as { items?: unknown[]; total?: number; known?: boolean }
+    if (data.known === false) return null
+    const page = sanitizeChannels(data.items ?? [])
+    out.push(...page)
+    offset += page.length
+    if (page.length === 0 || offset >= (data.total ?? offset)) break
+  }
+  return out
+}
+
+export async function clearLiveTvIndex(urlsKey?: string): Promise<void> {
+  if (!(await liveTvIndexAvailable())) return
+  await fetch('/api/live-tv/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ source: urlsKey ?? null }) }).catch(() => {})
+}
+
 export function clearLiveTvMemoryCache(urlsKey?: string): void {
   if (!urlsKey) {
     clearPluginMemoryCacheByPrefix(LIVE_TV_PLUGIN_ID, LIVE_TV_CHANNELS_PREFIX)

@@ -175,6 +175,16 @@ Bad:
 - naming provider-specific playback logic in core UI
 - assuming a plugin owns app-level navigation outside the SDK
 
+## Menu entries
+
+Any plugin can get an entry in the main menu: register a browse page and a
+`registerMainMenuItem(...)` pointing at it. Library plugins point the entry at
+the core library view (`LIBRARY_BROWSE_PAGE_ID`) with `params.provider` and a
+`fallbackPageId` for the not-yet-connected state. Leave `defaultEnabled` at
+`true` for a plugin whose tab is the product; the user can still switch it off
+in the menu settings. The full contract is in
+[plugin-contracts.md](./plugin-contracts.md#main-menu-entries).
+
 ## Marketplace expectations
 
 Every marketplace plugin should have:

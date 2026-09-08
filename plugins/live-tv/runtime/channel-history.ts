@@ -69,6 +69,11 @@ export function recordChannelWatch(
   return next
 }
 
+/** Ta bort en kanal ur Fortsätt titta (hållmenyn på TV, Jerry 2026-09-06). */
+export function removeChannelHistoryEntry(key: string): void {
+  writePluginJson(LIVE_TV_PLUGIN_ID, CHANNEL_HISTORY_KEY, getChannelHistory().filter((item) => item.key !== key))
+}
+
 export function clearChannelHistory(): void {
   writePluginJson(LIVE_TV_PLUGIN_ID, CHANNEL_HISTORY_KEY, [])
 }

@@ -47,6 +47,9 @@ import {
   storeLiveTvChannels,
   togglePinnedLiveTvChannel,
   type LiveTvList,
+  readLiveTvChannelsFromIndex,
+  pushLiveTvChannelsToIndex,
+  liveTvIndexAvailable,
 } from './live-tv-data'
 
 interface M3uChannel {
@@ -121,7 +124,15 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
    */
   tvCompactTop?: boolean
 }) {
-  const MAX_TOTAL_CHANNELS = 2000
+  /**
+   * Taket på 2000 gällde webbläsarlagringen. Med värdens kanalindex
+   * (/api/live-tv, Rust) lagras hela utbudet på disk och taket släpps —
+   * 11 000 kanaler i minnet är billigt, det var lagringen som inte rymde dem.
+   * Mot en äldre värd utan indexet gäller taket som förut.
+   */
+  const [indexAvailable, setIndexAvailable] = useState<boolean | null>(null)
+  useEffect(() => { void liveTvIndexAvailable().then(setIndexAvailable) }, [])
+  const MAX_TOTAL_CHANNELS = indexAvailable ? Number.MAX_SAFE_INTEGER : 2000
   const { t, lang } = useLang()
   /**
    * TV-läget behöver fokusstationer. Sidan hade sex kontroller — sök,
@@ -200,7 +211,10 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
   // Högerkolumnen (60/40): dagens tablå för kanalen under pekaren/fokus.
   const [previewChannel, setPreviewChannel] = useState<M3uChannel | null>(null)
   const model = useLiveTvModel()
-  const h = useHubText()
+  // useHubText returnerar { lang, locale, h } sedan hubbens omgörning — det
+  // var hela objektet som skickades som `h`, och ChannelSidePanel kraschade
+  // med "h is not a function" (Jerry 2026-09-06).
+  const { h } = useHubText()
   const [activeGroup, setActiveGroup] = useState<string | null>(null)
   const [groupDropdownOpen, setGroupDropdownOpen] = useState(false)
   const [pinVersion, setPinVersion] = useState(0)
@@ -484,6 +498,8 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
   }
 
   useEffect(() => {
+    // Vänta in svaret om värdens index finns: taket och lagringsvägen hänger på det.
+    if (indexAvailable === null) return
     let cancelled = false
     logLiveTvStage('loaded m3u urls', { count: urls.length })
     if (urls.length === 0) {
@@ -493,7 +509,11 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
       return
     }
 
-    const storedChannels = readStoredLiveTvChannels(urlsKey)
+    void (async () => {
+    // Indexet i värden först (hela utbudet), plugin-lagringen som reserv.
+    const indexed = indexAvailable ? await readLiveTvChannelsFromIndex(urlsKey) : null
+    if (cancelled) return
+    const storedChannels = indexed && indexed.length > 0 ? indexed : readStoredLiveTvChannels(urlsKey)
     const cached = getLiveTvMemoryCache(urlsKey)
     const initialChannels = storedChannels.length > 0 ? storedChannels : (cached?.channels ?? [])
 
@@ -566,7 +586,14 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
           } else {
           const committedChannels = nextChannels.slice(0, MAX_TOTAL_CHANNELS)
           setLiveTvMemoryCache(urlsKey, committedChannels)
-          storeLiveTvChannels(urlsKey, committedChannels)
+          if (indexAvailable) {
+            // Hela utbudet till värdens index; plugin-lagringen får bara de
+            // första 2000 som reserv för en äldre värd.
+            void pushLiveTvChannelsToIndex(urlsKey, committedChannels)
+            storeLiveTvChannels(urlsKey, committedChannels.slice(0, 2000))
+          } else {
+            storeLiveTvChannels(urlsKey, committedChannels)
+          }
           setChannels(committedChannels)
           setError(null)
           logLiveTvStage('channels committed to state', {
@@ -595,10 +622,11 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
       }
     })()
 
+    })()
     return () => {
       cancelled = true
     }
-  }, [urlsKey, m3uErrorText, reloadToken])
+  }, [urlsKey, m3uErrorText, reloadToken, indexAvailable])
 
   useEffect(() => {
     setCurrentPage(1)
@@ -1017,7 +1045,16 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
               </svg>
             </button>
             {groupDropdownOpen ? (
-              <div className="absolute left-0 top-full z-50 mt-2 min-w-full overflow-hidden rounded-2xl border border-white/10 bg-[#080c1a] py-2 shadow-2xl">
+              // Spellistor har fler grupper än en skärm rymmer — Free-TV har
+              // 97. Utan höjdtak växte luckan rakt ut ur telefonen i stående
+              // läge och de nedersta länderna gick inte att nå alls
+              // (overflow-hidden klippte dem, och sidan bakom rullade inte
+              // med luckan). Samma tak och egen rullning som hubbens meny.
+              // data-scroll: TV-fokusmotorn rullar in raden man står på.
+              <div
+                {...(isTv ? { 'data-scroll': '' } : {})}
+                className="absolute left-0 top-full z-50 mt-2 max-h-[min(60vh,360px)] min-w-full overflow-y-auto overscroll-contain rounded-2xl border border-white/10 bg-[#080c1a] py-2 shadow-2xl"
+              >
                 <button
                   type="button"
                   {...tvStation}
@@ -1763,7 +1800,7 @@ function ChannelSidePanel({
 }: {
   channel: M3uChannel | null
   model: LiveTvModel
-  h: ReturnType<typeof useHubText>
+  h: ReturnType<typeof useHubText>['h']
   onPlay: (channel: M3uChannel) => void
 }) {
   const { lang } = useLang()

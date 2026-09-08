@@ -31,10 +31,14 @@ export const JellyfinPlugin: LumioPlugin = {
       label: { en: 'Jellyfin', sv: 'Jellyfin' },
       Page: JellyfinFallbackPage,
     })
+    // Menyvalet är på som standard, precis som Plex: fliken öppnar kärnans
+    // biblioteksvy för källan, och utan index visas reservsidan (inloggning).
+    // Med `defaultEnabled: false` syntes en aktiverad server aldrig i menyn
+    // förrän användaren hittade menyinställningen (Jerry 2026-09-06).
     ctx.registerMainMenuItem({
       id: 'jellyfin',
       label: { en: 'Jellyfin', sv: 'Jellyfin' },
-      defaultEnabled: false,
+      defaultEnabled: true,
       target: { pageId: LIBRARY_BROWSE_PAGE_ID, params: { provider: 'jellyfin', fallbackPageId: 'jellyfin-setup' } },
     })
   },

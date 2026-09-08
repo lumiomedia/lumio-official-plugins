@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { BrowsePageProps } from '@/lib/plugin-sdk'
+import { useTvMode, type BrowsePageProps } from '@/lib/plugin-sdk'
 import { channelKey, type M3uChannel } from './live-tv-data'
 import { qualityFromName, startOfLocalDay, useLiveTvModel } from './live-tv-model'
 import { useHubText } from './hub-strings'
@@ -52,6 +52,9 @@ export function LiveTvChannelPage({ params, onNavigate }: Props) {
   const { h, locale } = useHubText()
   const model = useLiveTvModel()
   const go = useLiveTvNav(onNavigate)
+  // TV (Jerry 2026-09-06): sidan saknade fokusstationer helt.
+  const isTv = useTvMode()
+  const tvStation = isTv ? { 'data-f': '' } : undefined
   const { play, chrome } = useLiveTvChrome(model)
   const [reminderTick, setReminderTick] = useState(0)
   const [lockGate, setLockGate] = useState(false)
@@ -84,7 +87,7 @@ export function LiveTvChannelPage({ params, onNavigate }: Props) {
   if (!channel) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, color: LT.text }}>
-        <LiveTvHeader title={h('channelTitle')} onBack={() => go('hub')} backLabel={h('back')} />
+        <LiveTvHeader title={h('channelTitle')} onBack={() => go('hub')} backLabel={h('back')} backTvStation={isTv ? { 'data-f': '', 'data-init': '' } : undefined} />
         <div style={{ ...surfaceCard, padding: 20, color: LT.muted }}>{h('hubEmptyBody')}</div>
       </div>
     )
@@ -112,12 +115,19 @@ export function LiveTvChannelPage({ params, onNavigate }: Props) {
         title={h('channelTitle')}
         onBack={() => go('hub')}
         backLabel={h('back')}
-        right={<RemindersMenu model={model} onOpenChannel={(target) => go('channel', encodeChannelParams(target))} />}
+        backTvStation={tvStation}
+        right={<RemindersMenu model={model} onOpenChannel={(target) => go('channel', encodeChannelParams(target))} tvStation={tvStation} />}
       />
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 24, minWidth: 0 }}>
-          <div style={{ ...heroGradient, padding: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {/* TV: hero, kanalinformation och föräldrakontroll som TRE kort bredvid
+          varandra i en rad, tablån under (Jerry 2026-09-06). Skrivbordet
+          behåller hero till vänster och de två infokorten staplade till höger. */}
+      <div
+        className={isTv ? undefined : 'grid gap-6 lg:grid-cols-[1fr_300px]'}
+        style={isTv ? { display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px 320px', gap: 16, alignItems: 'stretch' } : undefined}
+      >
+        <div style={{ display: isTv ? 'contents' : 'flex', flexDirection: 'column', gap: 24, minWidth: 0 }}>
+          <div style={{ ...heroGradient, padding: 24, display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <ChannelBadge channel={channel} size={56} radius={LT.radiusMd} />
               <div style={{ minWidth: 0, flex: 1 }}>
@@ -128,7 +138,7 @@ export function LiveTvChannelPage({ params, onNavigate }: Props) {
                   {locked ? <LockedTag label={h('lockedWithPin')} /> : null}
                 </div>
               </div>
-              <Btn variant="ghost" icon onClick={() => model.togglePin(channel)} ariaLabel={pinned ? h('hubUnpin') : h('hubPin')} title={pinned ? h('hubUnpin') : h('hubPin')} style={{ color: pinned ? LT.accent : undefined }}>
+              <Btn variant="ghost" icon onClick={() => model.togglePin(channel)} tvStation={tvStation} ariaLabel={pinned ? h('hubUnpin') : h('hubPin')} title={pinned ? h('hubUnpin') : h('hubPin')} style={{ color: pinned ? LT.accent : undefined }}>
                 <Icon.Heart filled={pinned} />
               </Btn>
             </div>
@@ -146,10 +156,10 @@ export function LiveTvChannelPage({ params, onNavigate }: Props) {
             ) : null}
             {info.next ? <div style={{ fontSize: 12, color: LT.dim }}>{h('nextAt', { title: info.next.title, time: formatClock(info.next.start, locale) })}</div> : null}
             <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
-              <Btn variant="primary" onClick={() => play({ channel })}>
+              <Btn variant="primary" onClick={() => play({ channel })} tvStation={isTv ? { 'data-f': '', 'data-init': '' } : undefined}>
                 {h('hubWatchNow')} <Icon.Play size={12} />
               </Btn>
-              <Btn variant="secondary" onClick={() => go('epg')}>
+              <Btn variant="secondary" onClick={() => go('epg')} tvStation={tvStation}>
                 {h('openEpg')}
               </Btn>
             </div>
@@ -157,8 +167,8 @@ export function LiveTvChannelPage({ params, onNavigate }: Props) {
 
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div style={{ ...surfaceCard, padding: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ display: isTv ? 'contents' : 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ ...surfaceCard, padding: isTv ? 16 : 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
             <Kicker>{h('channelInfo')}</Kicker>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, marginTop: 6 }}>
               <Row label={h('quality')} value={quality ?? h('unknown')} />
@@ -168,11 +178,12 @@ export function LiveTvChannelPage({ params, onNavigate }: Props) {
               <Row label={h('catchUp')} value={channel.archive ? h('availableDays', { days: channel.archive.days }) : h('no')} />
             </div>
           </div>
-          <div style={{ ...surfaceCard, padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ ...surfaceCard, padding: isTv ? 16 : 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
             <Kicker>{h('parental')}</Kicker>
             <p style={{ margin: 0, fontSize: 12, color: LT.muted }}>{h('parentalBody')}</p>
             <button
               type="button"
+              {...(tvStation ?? {})}
               onClick={requestLockToggle}
               aria-pressed={locked}
               style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'transparent', border: 0, cursor: 'pointer', padding: 0, marginTop: 4, color: 'inherit', fontFamily: 'inherit' }}
@@ -209,9 +220,10 @@ export function LiveTvChannelPage({ params, onNavigate }: Props) {
                         {isNow ? <span style={{ marginLeft: 8 }}><LiveTag label={h('hubLive')} /></span> : null}
                       </div>
                       {isNow ? (
-                        <Btn variant="ghost" small onClick={() => play({ channel })}>{h('guideWatch')}</Btn>
+                        <Btn variant="ghost" small onClick={() => play({ channel })} tvStation={tvStation}>{h('guideWatch')}</Btn>
                       ) : !past ? (
                         <ReminderBell
+                          tvStation={tvStation}
                           on={reminded}
                           label={reminded ? h('reminderOn') : h('reminderOff')}
                           onToggle={() => {
@@ -240,6 +252,7 @@ export function LiveTvChannelPage({ params, onNavigate }: Props) {
                       <button
                         key={item.programme.start}
                         type="button"
+                        {...(tvStation ?? {})}
                         onClick={() => play({ channel, url: item.url, label: `${channel.name} · ${item.programme.title}` })}
                         className="transition hover:brightness-110"
                         style={{ width: 220, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 6, background: 'transparent', border: 0, padding: 0, color: 'inherit', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit' }}

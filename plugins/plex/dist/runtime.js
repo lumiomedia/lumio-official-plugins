@@ -46,6 +46,233 @@
   var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
   var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 
+  // node_modules/@tauri-apps/api/external/tslib/tslib.es6.cjs
+  var require_tslib_es6 = __commonJS({
+    "node_modules/@tauri-apps/api/external/tslib/tslib.es6.cjs"(exports) {
+      "use strict";
+      function __classPrivateFieldGet2(receiver, state, kind, f) {
+        if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
+        if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+        return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
+      }
+      function __classPrivateFieldSet2(receiver, state, value, kind, f) {
+        if (kind === "m") throw new TypeError("Private method is not writable");
+        if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
+        if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
+        return kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value), value;
+      }
+      exports.__classPrivateFieldGet = __classPrivateFieldGet2;
+      exports.__classPrivateFieldSet = __classPrivateFieldSet2;
+    }
+  });
+
+  // node_modules/@tauri-apps/api/core.cjs
+  var require_core = __commonJS({
+    "node_modules/@tauri-apps/api/core.cjs"(exports) {
+      "use strict";
+      var tslib_es6 = require_tslib_es6();
+      var _Channel_onmessage;
+      var _Channel_nextMessageIndex;
+      var _Channel_pendingMessages;
+      var _Channel_messageEndIndex;
+      var _Resource_rid;
+      var SERIALIZE_TO_IPC_FN = "__TAURI_TO_IPC_KEY__";
+      function transformCallback(callback, once = false) {
+        return window.__TAURI_INTERNALS__.transformCallback(callback, once);
+      }
+      var Channel = class {
+        constructor(onmessage) {
+          _Channel_onmessage.set(this, void 0);
+          _Channel_nextMessageIndex.set(this, 0);
+          _Channel_pendingMessages.set(this, []);
+          _Channel_messageEndIndex.set(this, void 0);
+          tslib_es6.__classPrivateFieldSet(this, _Channel_onmessage, onmessage || (() => {
+          }), "f");
+          this.id = transformCallback((rawMessage) => {
+            const index3 = rawMessage.index;
+            if ("end" in rawMessage) {
+              if (index3 == tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")) {
+                this.cleanupCallback();
+              } else {
+                tslib_es6.__classPrivateFieldSet(this, _Channel_messageEndIndex, index3, "f");
+              }
+              return;
+            }
+            const message = rawMessage.message;
+            if (index3 == tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")) {
+              tslib_es6.__classPrivateFieldGet(this, _Channel_onmessage, "f").call(this, message);
+              tslib_es6.__classPrivateFieldSet(this, _Channel_nextMessageIndex, tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") + 1, "f");
+              while (tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") in tslib_es6.__classPrivateFieldGet(this, _Channel_pendingMessages, "f")) {
+                const message2 = tslib_es6.__classPrivateFieldGet(this, _Channel_pendingMessages, "f")[tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")];
+                tslib_es6.__classPrivateFieldGet(this, _Channel_onmessage, "f").call(this, message2);
+                delete tslib_es6.__classPrivateFieldGet(this, _Channel_pendingMessages, "f")[tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")];
+                tslib_es6.__classPrivateFieldSet(this, _Channel_nextMessageIndex, tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") + 1, "f");
+              }
+              if (tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") === tslib_es6.__classPrivateFieldGet(this, _Channel_messageEndIndex, "f")) {
+                this.cleanupCallback();
+              }
+            } else {
+              tslib_es6.__classPrivateFieldGet(this, _Channel_pendingMessages, "f")[index3] = message;
+            }
+          });
+        }
+        cleanupCallback() {
+          window.__TAURI_INTERNALS__.unregisterCallback(this.id);
+        }
+        set onmessage(handler) {
+          tslib_es6.__classPrivateFieldSet(this, _Channel_onmessage, handler, "f");
+        }
+        get onmessage() {
+          return tslib_es6.__classPrivateFieldGet(this, _Channel_onmessage, "f");
+        }
+        [(_Channel_onmessage = /* @__PURE__ */ new WeakMap(), _Channel_nextMessageIndex = /* @__PURE__ */ new WeakMap(), _Channel_pendingMessages = /* @__PURE__ */ new WeakMap(), _Channel_messageEndIndex = /* @__PURE__ */ new WeakMap(), SERIALIZE_TO_IPC_FN)]() {
+          return `__CHANNEL__:${this.id}`;
+        }
+        toJSON() {
+          return this[SERIALIZE_TO_IPC_FN]();
+        }
+      };
+      var PluginListener = class {
+        constructor(plugin2, event, channelId) {
+          this.plugin = plugin2;
+          this.event = event;
+          this.channelId = channelId;
+        }
+        async unregister() {
+          return invoke5(`plugin:${this.plugin}|remove_listener`, {
+            event: this.event,
+            channelId: this.channelId
+          });
+        }
+      };
+      async function addPluginListener(plugin2, event, cb) {
+        const handler = new Channel(cb);
+        try {
+          await invoke5(`plugin:${plugin2}|register_listener`, {
+            event,
+            handler
+          });
+          return new PluginListener(plugin2, event, handler.id);
+        } catch {
+          await invoke5(`plugin:${plugin2}|registerListener`, { event, handler });
+          return new PluginListener(plugin2, event, handler.id);
+        }
+      }
+      async function checkPermissions(plugin2) {
+        return invoke5(`plugin:${plugin2}|check_permissions`);
+      }
+      async function requestPermissions(plugin2) {
+        return invoke5(`plugin:${plugin2}|request_permissions`);
+      }
+      async function invoke5(cmd, args = {}, options) {
+        return window.__TAURI_INTERNALS__.invoke(cmd, args, options);
+      }
+      function convertFileSrc(filePath, protocol = "asset") {
+        return window.__TAURI_INTERNALS__.convertFileSrc(filePath, protocol);
+      }
+      var Resource = class {
+        get rid() {
+          return tslib_es6.__classPrivateFieldGet(this, _Resource_rid, "f");
+        }
+        constructor(rid) {
+          _Resource_rid.set(this, void 0);
+          tslib_es6.__classPrivateFieldSet(this, _Resource_rid, rid, "f");
+        }
+        /**
+         * Destroys and cleans up this resource from memory.
+         * **You should not call any method on this object anymore and should drop any reference to it.**
+         */
+        async close() {
+          return invoke5("plugin:resources|close", {
+            rid: this.rid
+          });
+        }
+      };
+      _Resource_rid = /* @__PURE__ */ new WeakMap();
+      function isTauri() {
+        return !!(globalThis || window).isTauri;
+      }
+      exports.Channel = Channel;
+      exports.PluginListener = PluginListener;
+      exports.Resource = Resource;
+      exports.SERIALIZE_TO_IPC_FN = SERIALIZE_TO_IPC_FN;
+      exports.addPluginListener = addPluginListener;
+      exports.checkPermissions = checkPermissions;
+      exports.convertFileSrc = convertFileSrc;
+      exports.invoke = invoke5;
+      exports.isTauri = isTauri;
+      exports.requestPermissions = requestPermissions;
+      exports.transformCallback = transformCallback;
+    }
+  });
+
+  // node_modules/@tauri-apps/api/event.cjs
+  var require_event = __commonJS({
+    "node_modules/@tauri-apps/api/event.cjs"(exports) {
+      "use strict";
+      var core = require_core();
+      exports.TauriEvent = void 0;
+      (function(TauriEvent) {
+        TauriEvent["WINDOW_RESIZED"] = "tauri://resize";
+        TauriEvent["WINDOW_MOVED"] = "tauri://move";
+        TauriEvent["WINDOW_CLOSE_REQUESTED"] = "tauri://close-requested";
+        TauriEvent["WINDOW_DESTROYED"] = "tauri://destroyed";
+        TauriEvent["WINDOW_FOCUS"] = "tauri://focus";
+        TauriEvent["WINDOW_BLUR"] = "tauri://blur";
+        TauriEvent["WINDOW_SCALE_FACTOR_CHANGED"] = "tauri://scale-change";
+        TauriEvent["WINDOW_THEME_CHANGED"] = "tauri://theme-changed";
+        TauriEvent["WINDOW_CREATED"] = "tauri://window-created";
+        TauriEvent["WEBVIEW_CREATED"] = "tauri://webview-created";
+        TauriEvent["DRAG_ENTER"] = "tauri://drag-enter";
+        TauriEvent["DRAG_OVER"] = "tauri://drag-over";
+        TauriEvent["DRAG_DROP"] = "tauri://drag-drop";
+        TauriEvent["DRAG_LEAVE"] = "tauri://drag-leave";
+      })(exports.TauriEvent || (exports.TauriEvent = {}));
+      async function _unlisten(event, eventId) {
+        window.__TAURI_EVENT_PLUGIN_INTERNALS__.unregisterListener(event, eventId);
+        await core.invoke("plugin:event|unlisten", {
+          event,
+          eventId
+        });
+      }
+      async function listen2(event, handler, options) {
+        var _a;
+        const target = typeof (options === null || options === void 0 ? void 0 : options.target) === "string" ? { kind: "AnyLabel", label: options.target } : (_a = options === null || options === void 0 ? void 0 : options.target) !== null && _a !== void 0 ? _a : { kind: "Any" };
+        return core.invoke("plugin:event|listen", {
+          event,
+          target,
+          handler: core.transformCallback(handler)
+        }).then((eventId) => {
+          return async () => _unlisten(event, eventId);
+        });
+      }
+      async function once(event, handler, options) {
+        return listen2(event, (eventData) => {
+          void _unlisten(event, eventData.id);
+          handler(eventData);
+        }, options);
+      }
+      async function emit2(event, payload) {
+        await core.invoke("plugin:event|emit", {
+          event,
+          payload
+        });
+      }
+      async function emitTo(target, event, payload) {
+        const eventTarget = typeof target === "string" ? { kind: "AnyLabel", label: target } : target;
+        await core.invoke("plugin:event|emit_to", {
+          target: eventTarget,
+          event,
+          payload
+        });
+      }
+      exports.emit = emit2;
+      exports.emitTo = emitTo;
+      exports.listen = listen2;
+      exports.once = once;
+    }
+  });
+
   // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/react-shim.ts
   var react_shim_exports = {};
   __export(react_shim_exports, {
@@ -143,25 +370,6 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/jsx-runtime-shim.ts
-  var jsx_runtime_shim_exports = {};
-  __export(jsx_runtime_shim_exports, {
-    Fragment: () => Fragment2,
-    jsx: () => jsx,
-    jsxDEV: () => jsxDEV,
-    jsxs: () => jsxs
-  });
-  var runtime, Fragment2, jsx, jsxs, jsxDEV;
-  var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/jsx-runtime-shim.ts"() {
-      runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
-      Fragment2 = runtime.Fragment;
-      jsx = runtime.jsx;
-      jsxs = runtime.jsxs;
-      jsxDEV = runtime.jsxDEV;
-    }
-  });
-
   // lib/plugin-registry.ts
   var plugin_registry_exports = {};
   __export(plugin_registry_exports, {
@@ -194,6 +402,7 @@
     hasStreamProviders: () => hasStreamProviders,
     notifyPluginRegistryChanged: () => notifyPluginRegistryChanged,
     registerPlugin: () => registerPlugin,
+    replaceMainMenuItems: () => replaceMainMenuItems,
     subscribePluginRegistry: () => subscribePluginRegistry
   });
   function notifyRegistryChanged() {
@@ -422,6 +631,17 @@
   function getMainMenuItems() {
     return mainMenuItems;
   }
+  function replaceMainMenuItems(owner, items) {
+    const previous = new Set(ownedMainMenuItemIds.get(owner) ?? []);
+    for (let index3 = mainMenuItems.length - 1; index3 >= 0; index3 -= 1) {
+      if (previous.has(mainMenuItems[index3].id)) mainMenuItems.splice(index3, 1);
+    }
+    for (const item of items) {
+      if (!mainMenuItems.find((entry) => entry.id === item.id)) mainMenuItems.push(item);
+    }
+    ownedMainMenuItemIds.set(owner, items.map((item) => item.id));
+    notifyRegistryChanged();
+  }
   function getTopbarItems() {
     return topbarItems;
   }
@@ -443,7 +663,7 @@
   function notifyPluginRegistryChanged() {
     notifyRegistryChanged();
   }
-  var streamProviders, libraryProviders, mediaStreamCatalogProviders, mediaStreamAvailabilityProviders, instantPlayProviders, resumeRefreshProviders, playableUrlRewriters, streamRequestConfigProviders, episodeSidebarProviders, playbackCapabilityProviders, syncIdentityProviders, authCapabilityProviders, overviewStatusProviders, settingsSections, mediaDownloadActions, mediaDetailsActions, homeRows, homeSources, bootstraps, heroes, homeOverrides, browsePages, mainMenuItems, topbarItems, managedAuthConsumers, registeredPluginIds, registryRevision, registryListeners, registryNotifyScheduled;
+  var streamProviders, libraryProviders, mediaStreamCatalogProviders, mediaStreamAvailabilityProviders, instantPlayProviders, resumeRefreshProviders, playableUrlRewriters, streamRequestConfigProviders, episodeSidebarProviders, playbackCapabilityProviders, syncIdentityProviders, authCapabilityProviders, overviewStatusProviders, settingsSections, mediaDownloadActions, mediaDetailsActions, homeRows, homeSources, bootstraps, heroes, homeOverrides, browsePages, mainMenuItems, topbarItems, managedAuthConsumers, registeredPluginIds, registryRevision, registryListeners, registryNotifyScheduled, ownedMainMenuItemIds;
   var init_plugin_registry = __esm({
     "lib/plugin-registry.ts"() {
       "use strict";
@@ -476,233 +696,26 @@
       registryRevision = 0;
       registryListeners = /* @__PURE__ */ new Set();
       registryNotifyScheduled = false;
+      ownedMainMenuItemIds = /* @__PURE__ */ new Map();
     }
   });
 
-  // node_modules/@tauri-apps/api/external/tslib/tslib.es6.cjs
-  var require_tslib_es6 = __commonJS({
-    "node_modules/@tauri-apps/api/external/tslib/tslib.es6.cjs"(exports) {
-      "use strict";
-      function __classPrivateFieldGet2(receiver, state, kind, f) {
-        if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
-        if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
-        return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
-      }
-      function __classPrivateFieldSet2(receiver, state, value, kind, f) {
-        if (kind === "m") throw new TypeError("Private method is not writable");
-        if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
-        if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
-        return kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value), value;
-      }
-      exports.__classPrivateFieldGet = __classPrivateFieldGet2;
-      exports.__classPrivateFieldSet = __classPrivateFieldSet2;
-    }
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/jsx-runtime-shim.ts
+  var jsx_runtime_shim_exports = {};
+  __export(jsx_runtime_shim_exports, {
+    Fragment: () => Fragment2,
+    jsx: () => jsx,
+    jsxDEV: () => jsxDEV,
+    jsxs: () => jsxs
   });
-
-  // node_modules/@tauri-apps/api/core.cjs
-  var require_core = __commonJS({
-    "node_modules/@tauri-apps/api/core.cjs"(exports) {
-      "use strict";
-      var tslib_es6 = require_tslib_es6();
-      var _Channel_onmessage;
-      var _Channel_nextMessageIndex;
-      var _Channel_pendingMessages;
-      var _Channel_messageEndIndex;
-      var _Resource_rid;
-      var SERIALIZE_TO_IPC_FN = "__TAURI_TO_IPC_KEY__";
-      function transformCallback(callback, once = false) {
-        return window.__TAURI_INTERNALS__.transformCallback(callback, once);
-      }
-      var Channel = class {
-        constructor(onmessage) {
-          _Channel_onmessage.set(this, void 0);
-          _Channel_nextMessageIndex.set(this, 0);
-          _Channel_pendingMessages.set(this, []);
-          _Channel_messageEndIndex.set(this, void 0);
-          tslib_es6.__classPrivateFieldSet(this, _Channel_onmessage, onmessage || (() => {
-          }), "f");
-          this.id = transformCallback((rawMessage) => {
-            const index3 = rawMessage.index;
-            if ("end" in rawMessage) {
-              if (index3 == tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")) {
-                this.cleanupCallback();
-              } else {
-                tslib_es6.__classPrivateFieldSet(this, _Channel_messageEndIndex, index3, "f");
-              }
-              return;
-            }
-            const message = rawMessage.message;
-            if (index3 == tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")) {
-              tslib_es6.__classPrivateFieldGet(this, _Channel_onmessage, "f").call(this, message);
-              tslib_es6.__classPrivateFieldSet(this, _Channel_nextMessageIndex, tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") + 1, "f");
-              while (tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") in tslib_es6.__classPrivateFieldGet(this, _Channel_pendingMessages, "f")) {
-                const message2 = tslib_es6.__classPrivateFieldGet(this, _Channel_pendingMessages, "f")[tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")];
-                tslib_es6.__classPrivateFieldGet(this, _Channel_onmessage, "f").call(this, message2);
-                delete tslib_es6.__classPrivateFieldGet(this, _Channel_pendingMessages, "f")[tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")];
-                tslib_es6.__classPrivateFieldSet(this, _Channel_nextMessageIndex, tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") + 1, "f");
-              }
-              if (tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") === tslib_es6.__classPrivateFieldGet(this, _Channel_messageEndIndex, "f")) {
-                this.cleanupCallback();
-              }
-            } else {
-              tslib_es6.__classPrivateFieldGet(this, _Channel_pendingMessages, "f")[index3] = message;
-            }
-          });
-        }
-        cleanupCallback() {
-          window.__TAURI_INTERNALS__.unregisterCallback(this.id);
-        }
-        set onmessage(handler) {
-          tslib_es6.__classPrivateFieldSet(this, _Channel_onmessage, handler, "f");
-        }
-        get onmessage() {
-          return tslib_es6.__classPrivateFieldGet(this, _Channel_onmessage, "f");
-        }
-        [(_Channel_onmessage = /* @__PURE__ */ new WeakMap(), _Channel_nextMessageIndex = /* @__PURE__ */ new WeakMap(), _Channel_pendingMessages = /* @__PURE__ */ new WeakMap(), _Channel_messageEndIndex = /* @__PURE__ */ new WeakMap(), SERIALIZE_TO_IPC_FN)]() {
-          return `__CHANNEL__:${this.id}`;
-        }
-        toJSON() {
-          return this[SERIALIZE_TO_IPC_FN]();
-        }
-      };
-      var PluginListener = class {
-        constructor(plugin2, event, channelId) {
-          this.plugin = plugin2;
-          this.event = event;
-          this.channelId = channelId;
-        }
-        async unregister() {
-          return invoke5(`plugin:${this.plugin}|remove_listener`, {
-            event: this.event,
-            channelId: this.channelId
-          });
-        }
-      };
-      async function addPluginListener(plugin2, event, cb) {
-        const handler = new Channel(cb);
-        try {
-          await invoke5(`plugin:${plugin2}|register_listener`, {
-            event,
-            handler
-          });
-          return new PluginListener(plugin2, event, handler.id);
-        } catch {
-          await invoke5(`plugin:${plugin2}|registerListener`, { event, handler });
-          return new PluginListener(plugin2, event, handler.id);
-        }
-      }
-      async function checkPermissions(plugin2) {
-        return invoke5(`plugin:${plugin2}|check_permissions`);
-      }
-      async function requestPermissions(plugin2) {
-        return invoke5(`plugin:${plugin2}|request_permissions`);
-      }
-      async function invoke5(cmd, args = {}, options) {
-        return window.__TAURI_INTERNALS__.invoke(cmd, args, options);
-      }
-      function convertFileSrc(filePath, protocol = "asset") {
-        return window.__TAURI_INTERNALS__.convertFileSrc(filePath, protocol);
-      }
-      var Resource = class {
-        get rid() {
-          return tslib_es6.__classPrivateFieldGet(this, _Resource_rid, "f");
-        }
-        constructor(rid) {
-          _Resource_rid.set(this, void 0);
-          tslib_es6.__classPrivateFieldSet(this, _Resource_rid, rid, "f");
-        }
-        /**
-         * Destroys and cleans up this resource from memory.
-         * **You should not call any method on this object anymore and should drop any reference to it.**
-         */
-        async close() {
-          return invoke5("plugin:resources|close", {
-            rid: this.rid
-          });
-        }
-      };
-      _Resource_rid = /* @__PURE__ */ new WeakMap();
-      function isTauri() {
-        return !!(globalThis || window).isTauri;
-      }
-      exports.Channel = Channel;
-      exports.PluginListener = PluginListener;
-      exports.Resource = Resource;
-      exports.SERIALIZE_TO_IPC_FN = SERIALIZE_TO_IPC_FN;
-      exports.addPluginListener = addPluginListener;
-      exports.checkPermissions = checkPermissions;
-      exports.convertFileSrc = convertFileSrc;
-      exports.invoke = invoke5;
-      exports.isTauri = isTauri;
-      exports.requestPermissions = requestPermissions;
-      exports.transformCallback = transformCallback;
-    }
-  });
-
-  // node_modules/@tauri-apps/api/event.cjs
-  var require_event = __commonJS({
-    "node_modules/@tauri-apps/api/event.cjs"(exports) {
-      "use strict";
-      var core = require_core();
-      exports.TauriEvent = void 0;
-      (function(TauriEvent) {
-        TauriEvent["WINDOW_RESIZED"] = "tauri://resize";
-        TauriEvent["WINDOW_MOVED"] = "tauri://move";
-        TauriEvent["WINDOW_CLOSE_REQUESTED"] = "tauri://close-requested";
-        TauriEvent["WINDOW_DESTROYED"] = "tauri://destroyed";
-        TauriEvent["WINDOW_FOCUS"] = "tauri://focus";
-        TauriEvent["WINDOW_BLUR"] = "tauri://blur";
-        TauriEvent["WINDOW_SCALE_FACTOR_CHANGED"] = "tauri://scale-change";
-        TauriEvent["WINDOW_THEME_CHANGED"] = "tauri://theme-changed";
-        TauriEvent["WINDOW_CREATED"] = "tauri://window-created";
-        TauriEvent["WEBVIEW_CREATED"] = "tauri://webview-created";
-        TauriEvent["DRAG_ENTER"] = "tauri://drag-enter";
-        TauriEvent["DRAG_OVER"] = "tauri://drag-over";
-        TauriEvent["DRAG_DROP"] = "tauri://drag-drop";
-        TauriEvent["DRAG_LEAVE"] = "tauri://drag-leave";
-      })(exports.TauriEvent || (exports.TauriEvent = {}));
-      async function _unlisten(event, eventId) {
-        window.__TAURI_EVENT_PLUGIN_INTERNALS__.unregisterListener(event, eventId);
-        await core.invoke("plugin:event|unlisten", {
-          event,
-          eventId
-        });
-      }
-      async function listen2(event, handler, options) {
-        var _a;
-        const target = typeof (options === null || options === void 0 ? void 0 : options.target) === "string" ? { kind: "AnyLabel", label: options.target } : (_a = options === null || options === void 0 ? void 0 : options.target) !== null && _a !== void 0 ? _a : { kind: "Any" };
-        return core.invoke("plugin:event|listen", {
-          event,
-          target,
-          handler: core.transformCallback(handler)
-        }).then((eventId) => {
-          return async () => _unlisten(event, eventId);
-        });
-      }
-      async function once(event, handler, options) {
-        return listen2(event, (eventData) => {
-          void _unlisten(event, eventData.id);
-          handler(eventData);
-        }, options);
-      }
-      async function emit2(event, payload) {
-        await core.invoke("plugin:event|emit", {
-          event,
-          payload
-        });
-      }
-      async function emitTo(target, event, payload) {
-        const eventTarget = typeof target === "string" ? { kind: "AnyLabel", label: target } : target;
-        await core.invoke("plugin:event|emit_to", {
-          target: eventTarget,
-          event,
-          payload
-        });
-      }
-      exports.emit = emit2;
-      exports.emitTo = emitTo;
-      exports.listen = listen2;
-      exports.once = once;
+  var runtime, Fragment2, jsx, jsxs, jsxDEV;
+  var init_jsx_runtime_shim = __esm({
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/jsx-runtime-shim.ts"() {
+      runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
+      Fragment2 = runtime.Fragment;
+      jsx = runtime.jsx;
+      jsxs = runtime.jsxs;
+      jsxDEV = runtime.jsxDEV;
     }
   });
 
@@ -30596,7 +30609,7 @@
           acc[key] = createRenderStep2(flagRunNextFrame, allowKeepAlive ? key : void 0);
           return acc;
         }, {});
-        const { setup, read: read4, resolveKeyframes, preUpdate, update, preRender, render, postRender } = steps2;
+        const { setup, read: read5, resolveKeyframes, preUpdate, update, preRender, render, postRender } = steps2;
         const processBatch = () => {
           const useManualTiming = motionUtils.MotionGlobalConfig.useManualTiming;
           const timestamp = useManualTiming ? state.timestamp : performance.now();
@@ -30607,7 +30620,7 @@
           state.timestamp = timestamp;
           state.isProcessing = true;
           setup.process(state);
-          read4.process(state);
+          read5.process(state);
           resolveKeyframes.process(state);
           preUpdate.process(state);
           update.process(state);
@@ -72857,7 +72870,7 @@
       acc[key] = createRenderStep(flagRunNextFrame, allowKeepAlive ? key : void 0);
       return acc;
     }, {});
-    const { setup, read: read4, resolveKeyframes, preUpdate, update, preRender, render, postRender } = steps2;
+    const { setup, read: read5, resolveKeyframes, preUpdate, update, preRender, render, postRender } = steps2;
     const processBatch = () => {
       const useManualTiming = MotionGlobalConfig.useManualTiming;
       const timestamp = useManualTiming ? state.timestamp : performance.now();
@@ -72868,7 +72881,7 @@
       state.timestamp = timestamp;
       state.isProcessing = true;
       setup.process(state);
-      read4.process(state);
+      read5.process(state);
       resolveKeyframes.process(state);
       preUpdate.process(state);
       update.process(state);
@@ -164576,8 +164589,8 @@
         async listen(event$1, handler) {
           if (this._handleTauriEvent(event$1, handler)) {
             return () => {
-              const listeners2 = this.listeners[event$1];
-              listeners2.splice(listeners2.indexOf(handler), 1);
+              const listeners3 = this.listeners[event$1];
+              listeners3.splice(listeners3.indexOf(handler), 1);
             };
           }
           return event.listen(event$1, handler, {
@@ -164606,8 +164619,8 @@
         async once(event$1, handler) {
           if (this._handleTauriEvent(event$1, handler)) {
             return () => {
-              const listeners2 = this.listeners[event$1];
-              listeners2.splice(listeners2.indexOf(handler), 1);
+              const listeners3 = this.listeners[event$1];
+              listeners3.splice(listeners3.indexOf(handler), 1);
             };
           }
           return event.once(event$1, handler, {
@@ -166228,6 +166241,333 @@
     send(formatStreamTimeline());
   }
 
+  // lib/tauri-mpv.ts
+  var import_core = __toESM(require_core());
+  var import_event = __toESM(require_event());
+  init_react_shim();
+
+  // lib/session-host.ts
+  function normalizeHost(rawHost) {
+    return rawHost.trim().toLowerCase().replace(/\.+$/, "");
+  }
+  function isLocalAppHost(hostname) {
+    const host = normalizeHost(hostname);
+    if (!host) return false;
+    if (host === "localhost" || host === "127.0.0.1" || host === "::1") return true;
+    if (host === "tauri.localhost" || host.endsWith(".tauri.localhost")) return true;
+    return false;
+  }
+  function isLanClientHost(hostname) {
+    return !isLocalAppHost(hostname);
+  }
+  function isLanClientSession() {
+    if (typeof window === "undefined") return false;
+    return isLanClientHost(window.location.hostname);
+  }
+  function isClientSession() {
+    return isLanClientSession();
+  }
+
+  // lib/tauri-mpv.ts
+  init_plugin_registry();
+  function detectTauriEnv() {
+    if (typeof window === "undefined") return false;
+    const maybeTauriWindow = window;
+    if (maybeTauriWindow.__TAURI_INTERNALS__ || maybeTauriWindow.__TAURI__) {
+      return true;
+    }
+    const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "";
+    if (userAgent.includes("Tauri")) return true;
+    const host = window.location.hostname;
+    const port = window.location.port;
+    return isLocalAppHost(host) && port === "3011";
+  }
+  var isTauriEnv = detectTauriEnv();
+  var hasTauriIpc = typeof window !== "undefined" && Boolean(
+    window.__TAURI_INTERNALS__ || window.__TAURI__
+  );
+  var isDesktopTauriEnv = isTauriEnv && hasTauriIpc && !(typeof navigator !== "undefined" && /android/i.test(navigator.userAgent));
+  function isLiveStreamUrl(url) {
+    const lower = url.toLowerCase();
+    const pathOnly = lower.split("?")[0].split("#")[0];
+    if (pathOnly.endsWith(".m3u8") || pathOnly.endsWith(".mpd")) return true;
+    return lower.includes("/live/") || lower.includes("hls/") || lower.includes("/dash/");
+  }
+  function sourceCacheUrl(originalUrl, requestHeaders) {
+    if (!/^https?:\/\//i.test(originalUrl)) return null;
+    if (isLiveStreamUrl(originalUrl)) return null;
+    try {
+      if (isLocalAppHost(new URL(originalUrl).hostname)) return null;
+    } catch {
+      return null;
+    }
+    const headerParam = requestHeaders && Object.keys(requestHeaders).length > 0 ? `&h=${encodeURIComponent(JSON.stringify(requestHeaders))}` : "";
+    return `${window.location.origin}/api/source-cache?u=${encodeURIComponent(originalUrl)}${headerParam}`;
+  }
+  function warmSourceCache(originalUrl, requestHeaders) {
+    const wrapped = sourceCacheUrl(originalUrl, requestHeaders);
+    if (!wrapped) return;
+    void fetch(wrapped, { headers: { Range: "bytes=0-1" } }).then((r) => r.body?.cancel()).catch(() => {
+    });
+  }
+  function releaseSourceCache(originalUrl) {
+    if (!sourceCacheUrl(originalUrl)) return;
+    void fetch("/api/source-cache/release", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ u: originalUrl }),
+      keepalive: true
+    }).catch(() => {
+    });
+  }
+  async function openMpvPlayer(args) {
+    const { shouldAbort: _ignored, ...rest } = args;
+    const cached = sourceCacheUrl(args.url, args.requestHeaders);
+    if (cached) {
+      if (args.shouldAbort?.()) return;
+      markStreamPhase("mpv-open", { via: "source-cache" });
+      await (0, import_core.invoke)("mpv_open", { args: { ...rest, url: cached } });
+      markStreamPhase("mpv-open-done");
+      return;
+    }
+    let url = args.url;
+    let via = "direct";
+    for (const rewriter of getPlayableUrlRewriters()) {
+      try {
+        const rewritten = await rewriter.rewrite(url);
+        if (rewritten) {
+          url = rewritten;
+          via = "rewriter";
+          break;
+        }
+      } catch {
+      }
+    }
+    if (args.shouldAbort?.()) return;
+    markStreamPhase("mpv-open", { via });
+    await (0, import_core.invoke)("mpv_open", { args: { ...rest, url } });
+    markStreamPhase("mpv-open-done");
+  }
+  async function closeMpvPlayer() {
+    return (0, import_core.invoke)("mpv_close");
+  }
+  async function setMpvPause(paused) {
+    return (0, import_core.invoke)("mpv_set_pause", { paused });
+  }
+  async function setMpvAudioTrack(aid) {
+    return (0, import_core.invoke)("mpv_set_audio_track", { aid });
+  }
+  async function setMpvVideoGeometry(args) {
+    try {
+      return await (0, import_core.invoke)("mpv_set_video_geometry", {
+        aspectOverride: args.aspectOverride ?? null,
+        panscan: args.panscan,
+        videoZoom: args.videoZoom
+      });
+    } catch (error) {
+      const message = String(error ?? "");
+      if (!/mpv not initialized/i.test(message)) {
+        console.warn("[mpv] set video geometry error:", error);
+      }
+    }
+  }
+  async function setMpvSubtitleTrack(sid) {
+    return (0, import_core.invoke)("mpv_set_subtitle_track", { sid });
+  }
+  async function getMpvSid() {
+    return (0, import_core.invoke)("mpv_get_sid");
+  }
+  async function getMpvSubtitleTracks() {
+    return (0, import_core.invoke)("mpv_get_subtitle_tracks");
+  }
+  async function getMpvAudioTracks() {
+    return (0, import_core.invoke)("mpv_get_audio_tracks");
+  }
+  async function toggleWindowFullscreen() {
+    return (0, import_core.invoke)("toggle_window_fullscreen");
+  }
+  async function getWindowFullscreen() {
+    return (0, import_core.invoke)("get_window_fullscreen");
+  }
+  async function getWindowNativeFullscreen() {
+    return (0, import_core.invoke)("get_window_native_fullscreen");
+  }
+  async function setWindowFullscreen(fullscreen) {
+    return (0, import_core.invoke)("set_window_fullscreen", { fullscreen });
+  }
+  async function setWindowNativeFullscreen(fullscreen) {
+    return (0, import_core.invoke)("set_window_native_fullscreen", { fullscreen });
+  }
+  async function mpvGetAudioFilterChain() {
+    try {
+      return await (0, import_core.invoke)("mpv_get_af") || "(tom)";
+    } catch (e) {
+      return `(ol\xE4sbar: ${String(e)})`;
+    }
+  }
+  async function mpvRenderIsGpu() {
+    try {
+      return await (0, import_core.invoke)("mpv_render_is_gpu");
+    } catch {
+      return false;
+    }
+  }
+  async function mpvCommand(args) {
+    try {
+      if (args[0] === "set_property" && args.length >= 3) {
+        const value = typeof args[2] === "boolean" ? args[2] ? "yes" : "no" : String(args[2]);
+        return await (0, import_core.invoke)("mpv_set_property_strings", { props: [{ name: String(args[1]), value }] });
+      }
+      if (args[0] === "get_property" && args.length >= 2) {
+        return await (0, import_core.invoke)("mpv_get_property_ts", { name: String(args[1]) });
+      }
+      return await (0, import_core.invoke)("mpv_command_ts", { args });
+    } catch (e) {
+      console.warn("[mpv] command error:", args, e);
+    }
+  }
+  async function mpvSetPropertyStrings(props) {
+    try {
+      return await (0, import_core.invoke)("mpv_set_property_strings", { props });
+    } catch (e) {
+      console.warn("[mpv] set property error:", props, e);
+    }
+  }
+  async function mpvApplySubtitleStyle(args) {
+    try {
+      return await (0, import_core.invoke)("mpv_apply_subtitle_style", { args });
+    } catch (e) {
+      console.warn("[mpv] apply subtitle style error:", args, e);
+    }
+  }
+  function mpvSetBounds(rect) {
+    if (rect.width <= 0 || rect.height <= 0) return;
+    void (0, import_core.invoke)("mpv_set_bounds", {
+      x: rect.left,
+      y: rect.top,
+      w: rect.width,
+      h: rect.height,
+      windowHeight: window.innerHeight,
+      scale: window.devicePixelRatio
+    });
+  }
+  function useMpvPlayer(enabled = true) {
+    const [timePos, setTimePos] = useState(0);
+    const [duration, setDuration] = useState(0);
+    const [paused, setPaused] = useState(false);
+    const [ended, setEnded] = useState(false);
+    const [sid, setSid] = useState(null);
+    const [fileLoaded, setFileLoaded] = useState(false);
+    const [fileLoadedToken, setFileLoadedToken] = useState(0);
+    const [playbackRestarted, setPlaybackRestarted] = useState(false);
+    const [playbackRestartedToken, setPlaybackRestartedToken] = useState(0);
+    const [pausedForCache, setPausedForCache] = useState(false);
+    const [coreIdle, setCoreIdle] = useState(true);
+    const [firstFrameRendered, setFirstFrameRendered] = useState(false);
+    const [loadFailed, setLoadFailed] = useState(false);
+    const [loadFailedToken, setLoadFailedToken] = useState(0);
+    const [loadFailedError, setLoadFailedError] = useState(null);
+    useEffect(() => {
+      if (!isTauriEnv || !enabled) return;
+      const cleanups = [];
+      void (0, import_event.listen)("mpv://time-pos", (e) => setTimePos(e.payload)).then((u) => cleanups.push(u));
+      void (0, import_event.listen)("mpv://duration", (e) => setDuration(e.payload)).then((u) => cleanups.push(u));
+      void (0, import_event.listen)("mpv://paused", (e) => setPaused(e.payload)).then((u) => cleanups.push(u));
+      void (0, import_event.listen)("mpv://ended", () => setEnded(true)).then((u) => cleanups.push(u));
+      void (0, import_event.listen)("mpv://sid", (e) => setSid(e.payload)).then((u) => cleanups.push(u));
+      void (0, import_event.listen)("mpv://file-loaded", () => {
+        setFileLoaded(true);
+        setFileLoadedToken((t) => t + 1);
+      }).then((u) => cleanups.push(u));
+      void (0, import_event.listen)("mpv://playback-restart", () => {
+        setPlaybackRestarted(true);
+        setPlaybackRestartedToken((t) => t + 1);
+      }).then((u) => cleanups.push(u));
+      void (0, import_event.listen)("mpv://paused-for-cache", (e) => setPausedForCache(e.payload)).then((u) => cleanups.push(u));
+      void (0, import_event.listen)("mpv://core-idle", (e) => setCoreIdle(e.payload)).then((u) => cleanups.push(u));
+      void (0, import_event.listen)("mpv://first-frame-rendered", () => {
+        void fetch(`/api/debug-log?msg=${encodeURIComponent(`${performance.now().toFixed(0)} first-frame-rendered received`)}`);
+        setFirstFrameRendered(true);
+      }).then((u) => cleanups.push(u));
+      void (0, import_event.listen)("mpv://load-failed", (e) => {
+        setLoadFailedError(typeof e.payload === "number" ? e.payload : null);
+        setLoadFailed(true);
+        setLoadFailedToken((t) => t + 1);
+      }).then((u) => cleanups.push(u));
+      return () => cleanups.forEach((fn) => fn());
+    }, [enabled]);
+    const seek = useCallback((time2) => {
+      void mpvCommand(["seek", time2, "absolute"]);
+    }, []);
+    const seekRelative = useCallback((delta) => {
+      void mpvCommand(["seek", delta, "relative"]);
+    }, []);
+    const setPlayPause = useCallback((pause) => {
+      void mpvCommand(["set_property", "pause", pause]);
+    }, []);
+    const setVolume = useCallback((vol) => {
+      void mpvSetPropertyStrings([{ name: "volume", value: String(Math.round(vol * 100)) }]);
+    }, []);
+    const setSpeed = useCallback((value) => {
+      void mpvSetPropertyStrings([{ name: "speed", value: String(value) }]);
+    }, []);
+    const setMuted = useCallback((muted) => {
+      void mpvSetPropertyStrings([{ name: "mute", value: muted ? "yes" : "no" }]);
+    }, []);
+    const setAudioTrack = useCallback((aid) => {
+      void setMpvAudioTrack(aid);
+    }, []);
+    const resetTimePos = useCallback(() => {
+      setTimePos(0);
+    }, []);
+    const resetFileLoaded = useCallback(() => {
+      setFileLoaded(false);
+    }, []);
+    const resetEnded = useCallback(() => {
+      setEnded(false);
+    }, []);
+    const resetPlaybackRestarted = useCallback(() => {
+      setPlaybackRestarted(false);
+    }, []);
+    const resetFirstFrameRendered = useCallback(() => {
+      setFirstFrameRendered(false);
+    }, []);
+    const resetLoadFailed = useCallback(() => {
+      setLoadFailed(false);
+      setLoadFailedError(null);
+    }, []);
+    return {
+      timePos,
+      duration,
+      paused,
+      ended,
+      sid,
+      fileLoaded,
+      fileLoadedToken,
+      resetTimePos,
+      resetEnded,
+      playbackRestarted,
+      playbackRestartedToken,
+      pausedForCache,
+      coreIdle,
+      firstFrameRendered,
+      loadFailed,
+      loadFailedToken,
+      loadFailedError,
+      seek,
+      seekRelative,
+      setPlayPause,
+      setVolume,
+      setSpeed,
+      setMuted,
+      setAudioTrack,
+      resetFileLoaded,
+      resetPlaybackRestarted,
+      resetFirstFrameRendered,
+      resetLoadFailed
+    };
+  }
+
   // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/profile-storage-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
   var getScopedStorageItem = (baseKey) => sdk.getScopedStorageItem(baseKey);
@@ -166332,7 +166672,7 @@
       m3uFetchList: "Fetch list",
       m3uFetchListDone: "List fetched",
       m3uFetchListError: "Could not fetch list",
-      liveTvLists: "Channel lists",
+      liveTvLists: "Live TV",
       liveTvCreateList: "Create list",
       liveTvListName: "List name",
       liveTvNoLists: "No channel lists yet.",
@@ -166592,6 +166932,8 @@
       sideMenuTitle: "Side menu",
       sideMenuDesc: "A floating icon rail on the left instead of the horizontal menu. Search moves into the rail. Desktop only.",
       sideMenuOn: "Side menu",
+      menuChipTitle: "Menu pill (TV style)",
+      menuChipDesc: "The TV mode menu pill in the top-left corner, with search inside the menu. Replaces the side menu and the top bar on desktop, and the top bar on mobile.",
       sideMenuOff: "Horizontal menu",
       vlcToggleOn: "VLC on",
       vlcToggleOff: "VLC off",
@@ -166904,8 +167246,8 @@
       appTheme: "Theme",
       appThemeDesc: "Background tone across the whole app.",
       themeMidnight: "Midnight",
-      themeMidnightDesc: "Today's Lumio: deep blue background.",
-      themePitchDesc: "Near-black for OLED and dark rooms.",
+      themeMidnightDesc: "Deep blue background.",
+      themePitchDesc: "Default. Near-black for OLED and dark rooms.",
       themeSystemDesc: "Switches with the macOS appearance setting.",
       accentColor: "Accent color",
       profileSharedTab: "Shared settings",
@@ -167121,6 +167463,12 @@
       remoteSessionModeDesc: "Which UI browser sessions served by this app get. Auto inherits the TV mode choice above plus the device\u2019s own detection; Desktop and TV force one mode.",
       remoteSessionModeDesktop: "Desktop",
       remoteSessionModeTv: "TV",
+      tvMenuPlacementTitle: "Menu placement",
+      tvMenuChipHiddenTitle: "Hide the Menu pill",
+      tvMenuChipHiddenHint: "The menu stays and still opens with \u25C2 or \u25B4 from the content.",
+      tvMenuPlacementHint: "Where the menu sits. The content is the same either way.",
+      tvMenuPlacementTop: "Top",
+      tvMenuPlacementSide: "Side",
       tvSegmentsEyebrow: "Rows per segment",
       tvSegmentLabel: "Segment",
       tvSegmentDesc: "Each segment has its own rows in TV mode. It starts out mirroring your normal home screen, so nothing changes until you change it here.",
@@ -167612,6 +167960,33 @@
       homeSourceFrenchCinema: "French Cinema",
       homeSourceKdrama: "K-Drama",
       tvSegmentAnime: "Anime",
+      tvBackAgainToExit: "Press Back again to exit",
+      tvHeroFeatured: "Featured",
+      tvHeroMyList: "My list",
+      tvHeroPagerDot: "Featured title {n} of {total}",
+      tvHeroRuntimeHm: "{h} h {m} min",
+      tvHeroRuntimeM: "{m} min",
+      tvHeroStreamsN: "{n} streams",
+      // TV-skalets rader. Hintraden ("HÅLL ▸ snabbspola" m.fl.) togs bort:
+      // förklarande text i varje bild är inte information man behöver mer än
+      // en gång. Positionsräknaren behöver ingen nyckel.
+      tvGenreRowTitle: "Genres",
+      tvRowFailed: "Could not be loaded",
+      tvRowNoRenderer: "Not available in TV mode yet",
+      tvQuickPlay: "Play",
+      tvQuickMarkWatched: "Mark as watched",
+      tvQuickUnmarkWatched: "Mark as unwatched",
+      tvQuickMoreInfo: "More info",
+      tvQuickShowAllRow: "Show all in this row",
+      tvQuickUnfollow: "Unfollow",
+      tvMenuChip: "Menu",
+      tvMenuSearch: "Search",
+      tvSearchFilters: "Search & filters",
+      tvMenuSources: "Libraries and sources",
+      tvQuickRemoveContinue: "Remove from Continue watching",
+      tvCollectionHint: "Film collection \u2014 press OK to browse the movies in release order.",
+      tvProviderHint: "Streaming service \u2014 press OK to see the movies and series available on {name}, sorted by popularity.",
+      tvCollectionSummary: "{count} films ({years}): {titles}",
       homeSourceAnimeSeries: "Anime Series",
       homeSourceMoodComfort: "Comfort Watch",
       homeSourceMoodMind: "Mind Benders",
@@ -167638,7 +168013,7 @@
       homeSourcePrestigeDrama: "Prestige Drama",
       homeSourceAnimeMovies: "Anime Movies",
       homeSourceAnimeTopSeries: "Top Rated Anime",
-      homeSourceStreamingServices: "Streaming services",
+      homeSourceStreamingServices: "Streaming",
       homeSourceStudios: "Studios",
       liveTvList: "Live TV list",
       liveTvChooseList: "Choose a Live TV list",
@@ -167775,6 +168150,16 @@
       nextEpPopupAuto: "Auto",
       creditsRecommendations: "Recommendations during the credits",
       creditsRecommendationsDesc: "When the credits start, the picture shrinks to a corner window and the next title is shown. Applies to films and season finales \u2014 never mid-season.",
+      statsHudMenuLabel: "Statistics",
+      playbackSpeedMenuLabel: "Speed",
+      stripSdhTitle: "Hide hearing-impaired text",
+      stripSdhHint: "Removes [sounds], (sighs), \u266A lyrics and speaker names from subtitles.",
+      appUpdateChannel: "Update channel",
+      appUpdateChannelStable: "Stable",
+      appUpdateChannelBeta: "Beta",
+      appUpdateChannelHint: "Beta gets test builds before they are released to everyone.",
+      exitOnCloseTitle: "Quit fully on close",
+      exitOnCloseHint: "Android/TV: end the process when you leave the app instead of keeping it in the background. Frees memory on small boxes.",
       creditsFinishedSeason: "Season %s is over",
       creditsNextSeason: "Season %s",
       creditsFinishedTitle: "You finished",
@@ -167933,7 +168318,7 @@
       syncFailed: "Sync failed",
       genericError: "Error",
       dlDone: "Done",
-      introFound: "Intro found",
+      introFound: "Intro",
       /* Korta etiketter i telefonens kontrollrad — brickan är 62 px och pillret
          ska rymmas i en rullande rad, så namnen är avsiktligt kortare än de
          fullständiga (som ligger kvar som titel och i Mer-menyn). */
@@ -167945,8 +168330,8 @@
       plShortCast: "Cast",
       plShortFullscreen: "Fullscreen",
       plShortMore: "More",
-      recapFound: "Recap found",
-      outroFound: "Outro found",
+      recapFound: "Recap",
+      outroFound: "Outro",
       introDebugAutoOn: "Auto-skip on",
       introDebugAutoOff: "Auto-skip off",
       aspectAuto: "Auto",
@@ -168162,6 +168547,13 @@
       streamsLayoutDesc: "In the side panel, or as a section on the page above Recommendations. Series get streams under each episode.",
       streamsLayoutSidebar: "Side panel",
       streamsLayoutInline: "On the page",
+      tvStreamsLayoutCards: "Side-scrolling",
+      tvTypeWithRemote: "type",
+      tvTypeKeyHint: "Type the key with the remote. It is saved when you press Done and is never shown on screen.",
+      streamSizeSmall: "Small",
+      streamSizeMedium: "Medium",
+      streamSizeLarge: "Large",
+      tvStreamsLayoutHint: "Side-scrolling: streams sit on the page as a row of cards. Side panel: a Streams button next to Play opens the list.",
       castCountTitle: "Cast members shown",
       castCountDesc: "How many of the cast appear on the details page. Phones page them eight at a time; desktop scrolls.",
       gestTabLabel: "Gestures",
@@ -168297,14 +168689,13 @@
       kpProvidedCatalogs: "Provided catalogs",
       kpMetricActiveAddons: "Active addons",
       sourcesEmptyTitle: "No sources yet",
-      coreStreamsToggle: "Use Lumio's own stream list (beta)",
-      coreStreamsToggleDesc: "Streams are fetched and played by the app itself, straight from your sources. Takes effect after a restart.",
       coreStreamsHidden: "{count} streams hidden by quality filters",
       coreStreamsSelectEpisode: "Pick an episode to see its streams.",
       coreStreamsSource: "Source",
       coreStreamsCached: "Cached",
       coreStreamsLoading: "Checking sources\u2026",
       streamNotServingMedia: "The source did not deliver playable media. Try another stream.",
+      libraryServerUnreachable: "Could not get a playback address from {source}. Check that the server is running.",
       libraryRowSuffix: "in your library",
       libraryModeTab: "Library",
       libraryModeTitle: "Library mode",
@@ -168312,6 +168703,17 @@
       libraryUseAsHome: "Use as home page",
       libraryUseAsHomeHint: "Tick one or more libraries. Home page, details page, search and Zapp are then fed only from them, together. Stream sources stay hidden while it is on.",
       librarySourcesTitle: "Indexed libraries",
+      localLibraryTitle: "Local folders",
+      localLibraryHint: "Each folder becomes its own library with a menu entry, like Plex or Jellyfin. Files are matched against TMDB by name: \u201CTitle (Year).mkv\u201D for movies, \u201CSeries/Season 01/Series S01E04.mkv\u201D for episodes.",
+      localLibraryAdd: "Add folder",
+      localLibraryRemove: "Remove",
+      localLibraryUpdate: "Update",
+      localLibraryRebuild: "Rebuild",
+      localLibraryBuild: "Build index",
+      localLibraryEmpty: "No folders yet.",
+      localLibraryScanning: "Indexing\u2026 {done}",
+      localLibraryNotIndexed: "Not indexed yet",
+      libraryRowUnmatched: "Not identified",
       librarySourceNotIndexed: "Not indexed yet \u2014 build the index in the plugin's settings.",
       libraryModeOff: "No library is set as the home page. Turn it on under the library plugin's settings.",
       libraryRowIndexed: "{count} indexed",
@@ -168471,6 +168873,8 @@
       hpMoveDown: "Move down",
       hpSourceLabel: "Source",
       hpCardCountLabel: "Number of cards",
+      hpMobileRowsLabel: "Rows on phone",
+      hpMobileRowsAuto: "Auto",
       hpPopularStreaming: "Popular streaming",
       hpListLabel: "List",
       hpAllChannels: "All channels",
@@ -168795,7 +169199,7 @@
       m3uFetchList: "H\xE4mta lista",
       m3uFetchListDone: "Listan h\xE4mtad",
       m3uFetchListError: "Kunde inte h\xE4mta listan",
-      liveTvLists: "Kanallistor",
+      liveTvLists: "Live TV",
       liveTvCreateList: "Skapa lista",
       liveTvListName: "Listnamn",
       liveTvNoLists: "Inga kanallistor \xE4nnu.",
@@ -169055,6 +169459,8 @@
       sideMenuTitle: "Sidomeny",
       sideMenuDesc: "En flytande ikonrad till v\xE4nster i st\xE4llet f\xF6r den horisontella menyn. S\xF6ket flyttar in i raden. Endast skrivbord.",
       sideMenuOn: "Sidomeny",
+      menuChipTitle: "Menypill (TV-stil)",
+      menuChipDesc: "TV-l\xE4gets menypill uppe till v\xE4nster, med s\xF6k inne i menyn. Ers\xE4tter sidomenyn och toppraden p\xE5 skrivbord, och toppraden p\xE5 mobil.",
       sideMenuOff: "Horisontell meny",
       vlcToggleOn: "VLC p\xE5",
       vlcToggleOff: "VLC av",
@@ -169367,8 +169773,8 @@
       appTheme: "Tema",
       appThemeDesc: "Bakgrundston i hela appen.",
       themeMidnight: "Midnatt",
-      themeMidnightDesc: "Dagens Lumio: djupbl\xE5 bakgrund.",
-      themePitchDesc: "N\xE4stan svart f\xF6r OLED och m\xF6rka rum.",
+      themeMidnightDesc: "Djupbl\xE5 bakgrund.",
+      themePitchDesc: "Standard. N\xE4stan svart f\xF6r OLED och m\xF6rka rum.",
       themeSystemDesc: "Byter med macOS utseende-inst\xE4llning.",
       accentColor: "Accentf\xE4rg",
       profileSharedTab: "Delade inst\xE4llningar",
@@ -169584,6 +169990,12 @@
       remoteSessionModeDesc: "Vilket gr\xE4nssnitt webbl\xE4sarsessioner mot den h\xE4r appen f\xE5r. Auto \xE4rver TV-l\xE4gesvalet ovan plus enhetens egen detektering; Skrivbord och TV tvingar ett l\xE4ge.",
       remoteSessionModeDesktop: "Skrivbord",
       remoteSessionModeTv: "TV",
+      tvMenuPlacementTitle: "Menyns placering",
+      tvMenuChipHiddenTitle: "D\xF6lj menypillret",
+      tvMenuChipHiddenHint: "Menyn finns kvar och \xF6ppnas som vanligt med \u25C2 eller \u25B4 fr\xE5n inneh\xE5llet.",
+      tvMenuPlacementHint: "Var menyn sitter. Inneh\xE5llet \xE4r detsamma i b\xE5da l\xE4gena.",
+      tvMenuPlacementTop: "Topp",
+      tvMenuPlacementSide: "Sida",
       tvSegmentsEyebrow: "Rader per segment",
       tvSegmentLabel: "Segment",
       tvSegmentDesc: "Varje segment har egna rader i TV-l\xE4get. Utg\xE5ngsl\xE4get speglar din vanliga startsida, s\xE5 inget \xE4ndras f\xF6rr\xE4n du g\xF6r det h\xE4r.",
@@ -170073,6 +170485,30 @@
       homeSourceFrenchCinema: "Fransk film",
       homeSourceKdrama: "K-drama",
       tvSegmentAnime: "Anime",
+      tvBackAgainToExit: "Tryck Back igen f\xF6r att avsluta",
+      tvHeroFeatured: "Utvalt",
+      tvHeroMyList: "Min lista",
+      tvHeroPagerDot: "Utvald titel {n} av {total}",
+      tvHeroRuntimeHm: "{h} h {m} min",
+      tvHeroRuntimeM: "{m} min",
+      tvHeroStreamsN: "{n} str\xF6mmar",
+      tvGenreRowTitle: "Genrer",
+      tvRowFailed: "Kunde inte h\xE4mtas",
+      tvRowNoRenderer: "Finns inte i TV-l\xE4get \xE4nnu",
+      tvQuickPlay: "Spela",
+      tvQuickMarkWatched: "Markera som sedd",
+      tvQuickUnmarkWatched: "Markera som osedd",
+      tvQuickMoreInfo: "Mer info",
+      tvQuickShowAllRow: "Visa alla i raden",
+      tvQuickUnfollow: "Sluta f\xF6lja",
+      tvMenuChip: "Menu",
+      tvMenuSearch: "S\xF6k",
+      tvSearchFilters: "S\xF6k & filter",
+      tvMenuSources: "Bibliotek och k\xE4llor",
+      tvQuickRemoveContinue: "Ta bort fr\xE5n Forts\xE4tt titta",
+      tvCollectionHint: "Filmsamling \u2014 tryck OK f\xF6r att se filmerna i premi\xE4rordning.",
+      tvProviderHint: "Streamingtj\xE4nst \u2014 tryck OK f\xF6r att se filmer och serier som finns p\xE5 {name}, sorterade efter popularitet.",
+      tvCollectionSummary: "{count} filmer ({years}): {titles}",
       homeSourceAnimeSeries: "Animeserier",
       homeSourceMoodComfort: "Mysfilm",
       homeSourceMoodMind: "Tanken\xF6tter",
@@ -170232,6 +170668,16 @@
       nextEpPopupAuto: "Auto",
       creditsRecommendations: "Rekommendationer vid eftertexterna",
       creditsRecommendationsDesc: "N\xE4r eftertexterna b\xF6rjar krymper bilden till ett h\xF6rnf\xF6nster och n\xE4sta titel visas. G\xE4ller filmer och s\xE4songsavslut \u2014 aldrig mitt i en s\xE4song.",
+      statsHudMenuLabel: "Statistik",
+      playbackSpeedMenuLabel: "Hastighet",
+      stripSdhTitle: "D\xF6lj h\xF6rselskadetext",
+      stripSdhHint: "Tar bort [ljud], (suckar), \u266A s\xE5ngtext och talarnamn ur undertexterna.",
+      appUpdateChannel: "Uppdateringskanal",
+      appUpdateChannelStable: "Stabil",
+      appUpdateChannelBeta: "Beta",
+      appUpdateChannelHint: "Beta f\xE5r testbyggen innan de sl\xE4pps till alla.",
+      exitOnCloseTitle: "Avsluta helt vid st\xE4ngning",
+      exitOnCloseHint: "Android/TV: avsluta processen n\xE4r du l\xE4mnar appen i st\xE4llet f\xF6r att l\xE5ta den ligga i bakgrunden. Frig\xF6r minne p\xE5 sm\xE5 boxar.",
       creditsFinishedSeason: "S\xE4song %s \xE4r slut",
       creditsNextSeason: "S\xE4song %s",
       creditsFinishedTitle: "Du s\xE5g klart",
@@ -170387,7 +170833,7 @@
       syncFailed: "Fel vid synk",
       genericError: "Fel",
       dlDone: "Klar",
-      introFound: "Intro hittad",
+      introFound: "Intro",
       plShortEpisodes: "Avsnitt",
       plShortPicture: "Bild",
       plShortWiki: "Wiki",
@@ -170396,8 +170842,8 @@
       plShortCast: "Casta",
       plShortFullscreen: "Fullsk\xE4rm",
       plShortMore: "Mer",
-      recapFound: "Recap hittad",
-      outroFound: "Outro hittad",
+      recapFound: "Recap",
+      outroFound: "Outro",
       introDebugAutoOn: "Auto-skip p\xE5",
       introDebugAutoOff: "Auto-skip av",
       aspectAuto: "Auto",
@@ -170613,6 +171059,13 @@
       streamsLayoutDesc: "I sidopanelen, eller som en sektion p\xE5 sidan ovanf\xF6r Rekommendationer. Serier f\xE5r str\xF6mmarna under varje avsnitt.",
       streamsLayoutSidebar: "Sidopanel",
       streamsLayoutInline: "P\xE5 sidan",
+      tvStreamsLayoutCards: "Rullande",
+      tvTypeWithRemote: "skriv",
+      tvTypeKeyHint: "Skriv in nyckeln med fj\xE4rrkontrollen. Den sparas n\xE4r du trycker Klar och visas aldrig p\xE5 sk\xE4rmen.",
+      streamSizeSmall: "Liten",
+      streamSizeMedium: "Mellan",
+      streamSizeLarge: "Stor",
+      tvStreamsLayoutHint: "Rullande: str\xF6mmarna ligger p\xE5 sidan som en rad kort. Sidopanel: en Str\xF6mmar-knapp bredvid Spela \xF6ppnar listan.",
       castCountTitle: "Antal sk\xE5despelare",
       castCountDesc: "Hur m\xE5nga ur ensemblen som visas p\xE5 detaljsidan. Telefonen visar dem i sidor om \xE5tta; skrivbordet rullar.",
       gestTabLabel: "Gester",
@@ -170748,14 +171201,13 @@
       kpProvidedCatalogs: "Tillhandah\xE5llna kataloger",
       kpMetricActiveAddons: "Aktiva addons",
       sourcesEmptyTitle: "Inga k\xE4llor \xE4n",
-      coreStreamsToggle: "Anv\xE4nd Lumios egna str\xF6mlista (beta)",
-      coreStreamsToggleDesc: "Str\xF6mmar h\xE4mtas och spelas av appen sj\xE4lv, direkt fr\xE5n dina k\xE4llor. Sl\xE5r igenom efter omstart.",
       coreStreamsHidden: "{count} str\xF6mmar dolda av kvalitetsfilter",
       coreStreamsSelectEpisode: "V\xE4lj ett avsnitt f\xF6r att se dess str\xF6mmar.",
       coreStreamsSource: "K\xE4lla",
       coreStreamsCached: "Cachad",
       coreStreamsLoading: "Fr\xE5gar k\xE4llorna\u2026",
       streamNotServingMedia: "K\xE4llan levererade ingen spelbar media. Prova en annan str\xF6m.",
+      libraryServerUnreachable: "Fick ingen uppspelningsadress fr\xE5n {source}. Kontrollera att servern \xE4r ig\xE5ng.",
       libraryRowSuffix: "i ditt bibliotek",
       libraryModeTab: "Bibliotek",
       libraryModeTitle: "Biblioteksl\xE4ge",
@@ -170763,6 +171215,17 @@
       libraryUseAsHome: "Anv\xE4nd som startsida",
       libraryUseAsHomeHint: "Bocka i ett eller flera bibliotek. Startsida, detaljsida, s\xF6k och Zapp matas d\xE5 bara ur dem, tillsammans. Str\xF6mk\xE4llorna h\xE5lls dolda s\xE5 l\xE4nge det \xE4r p\xE5.",
       librarySourcesTitle: "Indexerade bibliotek",
+      localLibraryTitle: "Lokala mappar",
+      localLibraryHint: "Varje mapp blir ett eget bibliotek med egen menying\xE5ng, som Plex eller Jellyfin. Filerna matchas mot TMDB via namnet: \u201DTitel (\xC5r).mkv\u201D f\xF6r filmer, \u201DSerie/Season 01/Serie S01E04.mkv\u201D f\xF6r avsnitt.",
+      localLibraryAdd: "L\xE4gg till mapp",
+      localLibraryRemove: "Ta bort",
+      localLibraryUpdate: "Uppdatera",
+      localLibraryRebuild: "Bygg om",
+      localLibraryBuild: "Bygg index",
+      localLibraryEmpty: "Inga mappar \xE4nnu.",
+      localLibraryScanning: "Indexerar\u2026 {done}",
+      localLibraryNotIndexed: "Inte indexerad \xE4nnu",
+      libraryRowUnmatched: "Ej identifierade",
       librarySourceNotIndexed: "Inte indexerat \xE4nnu \u2014 bygg indexet i pluginets inst\xE4llningar.",
       libraryModeOff: "Inget bibliotek \xE4r startsida. Sl\xE5 p\xE5 det under bibliotekspluginets inst\xE4llningar.",
       libraryRowIndexed: "{count} indexerade",
@@ -170921,6 +171384,8 @@
       hpMoveDown: "Flytta ner",
       hpSourceLabel: "K\xE4lla",
       hpCardCountLabel: "Antal kort",
+      hpMobileRowsLabel: "Rader p\xE5 telefon",
+      hpMobileRowsAuto: "Auto",
       hpPopularStreaming: "Popul\xE4ra streaming",
       hpListLabel: "Lista",
       hpAllChannels: "Alla kanaler",
@@ -171248,8 +171713,7 @@
         offProfile();
       };
     }, [detached]);
-    if (!detached) return ctx;
-    return {
+    const detachedValue = useMemo(() => ({
       lang: detachedLang,
       setLang: (l) => {
         setScopedStorageItem(STORAGE_KEY, l);
@@ -171259,7 +171723,9 @@
         }
       },
       t: (key) => strings[detachedLang][key] ?? strings.en[key]
-    };
+    }), [detachedLang]);
+    if (!detached) return ctx;
+    return detachedValue;
   }
 
   // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/tv-focus-shim.ts
@@ -171302,6 +171768,10 @@
       return null;
     }
   }
+  function librarySourceParam() {
+    const mode = getLibraryMode();
+    return mode ? mode.sourceIds.join(",") : void 0;
+  }
   var libraryScope = null;
   function getStoredLibraryMode() {
     if (typeof window === "undefined") return null;
@@ -171329,10 +171799,80 @@
 
   // lib/library/ids.ts
   var LIBRARY_INDEX_CHANGED_EVENT = "lumio-library-index-changed";
+  var EMPTY = {
+    movies: { tmdb: /* @__PURE__ */ new Set(), imdb: /* @__PURE__ */ new Set() },
+    series: { tmdb: /* @__PURE__ */ new Set(), imdb: /* @__PURE__ */ new Set() },
+    total: 0,
+    loadedAt: 0
+  };
   var cache2 = null;
+  var inflight = null;
+  var listeners = /* @__PURE__ */ new Set();
   function notifyLibraryIndexChanged() {
     cache2 = null;
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(LIBRARY_INDEX_CHANGED_EVENT));
+  }
+  async function loadLibraryIdSets(force = false) {
+    if (cache2 && !force) return cache2;
+    if (inflight) return inflight;
+    inflight = (async () => {
+      try {
+        const sourceParam = librarySourceParam();
+        const response = await fetch(`/api/library/query?kind=ids${sourceParam ? `&sourceId=${encodeURIComponent(sourceParam)}` : ""}`, { cache: "no-store" });
+        if (!response.ok) return cache2 ?? EMPTY;
+        const payload = await response.json();
+        cache2 = {
+          movies: { tmdb: new Set(payload.movies.tmdb), imdb: new Set(payload.movies.imdb) },
+          series: { tmdb: new Set(payload.series.tmdb), imdb: new Set(payload.series.imdb) },
+          total: payload.total,
+          loadedAt: Date.now()
+        };
+        for (const listener of listeners) listener();
+        return cache2;
+      } catch {
+        return cache2 ?? EMPTY;
+      } finally {
+        inflight = null;
+      }
+    })();
+    return inflight;
+  }
+  function tmdbIdOf(item) {
+    const match = /^(?:movie|tv)-(\d+)$/.exec(item.id);
+    return match ? Number.parseInt(match[1], 10) : null;
+  }
+  function itemInLibrary(item, sets) {
+    const bucket = item.type === "tv" ? sets.series : sets.movies;
+    const tmdb = tmdbIdOf(item);
+    if (tmdb != null && bucket.tmdb.has(tmdb)) return true;
+    return Boolean(item.imdbId && bucket.imdb.has(item.imdbId));
+  }
+  function useLibraryIdSets() {
+    const [mode, setMode] = useState(() => getLibraryMode());
+    const [sets, setSets] = useState(() => getLibraryMode() ? cache2 : null);
+    useEffect(() => onLibraryModeChanged(() => setMode(getLibraryMode())), []);
+    useEffect(() => {
+      if (!mode) {
+        setSets(null);
+        return;
+      }
+      let cancelled = false;
+      const sync2 = () => {
+        void loadLibraryIdSets(true).then((next2) => {
+          if (!cancelled) setSets(next2);
+        });
+      };
+      sync2();
+      const onChanged = () => sync2();
+      window.addEventListener(LIBRARY_INDEX_CHANGED_EVENT, onChanged);
+      listeners.add(onChanged);
+      return () => {
+        cancelled = true;
+        window.removeEventListener(LIBRARY_INDEX_CHANGED_EVENT, onChanged);
+        listeners.delete(onChanged);
+      };
+    }, [mode]);
+    return mode ? sets : null;
   }
 
   // lib/library/client.ts
@@ -171369,6 +171909,10 @@
     if (ref.key) params.set("key", ref.key);
     if (ref.tmdbId != null) params.set("tmdbId", String(ref.tmdbId));
     if (ref.imdbId) params.set("imdbId", ref.imdbId);
+    if (!ref.key) {
+      const scope = ref.sourceId ?? librarySourceParam();
+      if (scope) params.set("sourceId", scope);
+    }
     const response = await fetch(`/api/library/item?${params}`, { cache: "no-store" });
     if (response.status === 404) return null;
     const payload = await readJson(response);
@@ -171757,375 +172301,11 @@
   // lib/trakt-device-login.tsx
   init_react_shim();
 
-  // lib/tauri-mpv.ts
-  var import_core = __toESM(require_core());
-  var import_event = __toESM(require_event());
-  init_react_shim();
-
-  // lib/session-host.ts
-  function normalizeHost(rawHost) {
-    return rawHost.trim().toLowerCase().replace(/\.+$/, "");
-  }
-  function isLocalAppHost(hostname) {
-    const host = normalizeHost(hostname);
-    if (!host) return false;
-    if (host === "localhost" || host === "127.0.0.1" || host === "::1") return true;
-    if (host === "tauri.localhost" || host.endsWith(".tauri.localhost")) return true;
-    return false;
-  }
-  function isLanClientHost(hostname) {
-    return !isLocalAppHost(hostname);
-  }
-  function isLanClientSession() {
-    if (typeof window === "undefined") return false;
-    return isLanClientHost(window.location.hostname);
-  }
-  function isClientSession() {
-    return isLanClientSession();
-  }
-
-  // lib/tauri-mpv.ts
-  init_plugin_registry();
-  function detectTauriEnv() {
-    if (typeof window === "undefined") return false;
-    const maybeTauriWindow = window;
-    if (maybeTauriWindow.__TAURI_INTERNALS__ || maybeTauriWindow.__TAURI__) {
-      return true;
-    }
-    const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "";
-    if (userAgent.includes("Tauri")) return true;
-    const host = window.location.hostname;
-    const port = window.location.port;
-    return isLocalAppHost(host) && port === "3011";
-  }
-  var isTauriEnv = detectTauriEnv();
-  var hasTauriIpc = typeof window !== "undefined" && Boolean(
-    window.__TAURI_INTERNALS__ || window.__TAURI__
-  );
-  var isDesktopTauriEnv = isTauriEnv && hasTauriIpc && !(typeof navigator !== "undefined" && /android/i.test(navigator.userAgent));
-  function isLiveStreamUrl(url) {
-    const lower = url.toLowerCase();
-    const pathOnly = lower.split("?")[0].split("#")[0];
-    if (pathOnly.endsWith(".m3u8") || pathOnly.endsWith(".mpd")) return true;
-    return lower.includes("/live/") || lower.includes("hls/") || lower.includes("/dash/");
-  }
-  function sourceCacheUrl(originalUrl, requestHeaders) {
-    if (!/^https?:\/\//i.test(originalUrl)) return null;
-    if (isLiveStreamUrl(originalUrl)) return null;
-    try {
-      if (isLocalAppHost(new URL(originalUrl).hostname)) return null;
-    } catch {
-      return null;
-    }
-    const headerParam = requestHeaders && Object.keys(requestHeaders).length > 0 ? `&h=${encodeURIComponent(JSON.stringify(requestHeaders))}` : "";
-    return `${window.location.origin}/api/source-cache?u=${encodeURIComponent(originalUrl)}${headerParam}`;
-  }
-  function warmSourceCache(originalUrl, requestHeaders) {
-    const wrapped = sourceCacheUrl(originalUrl, requestHeaders);
-    if (!wrapped) return;
-    void fetch(wrapped, { headers: { Range: "bytes=0-1" } }).then((r) => r.body?.cancel()).catch(() => {
-    });
-  }
-  function releaseSourceCache(originalUrl) {
-    if (!sourceCacheUrl(originalUrl)) return;
-    void fetch("/api/source-cache/release", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ u: originalUrl }),
-      keepalive: true
-    }).catch(() => {
-    });
-  }
-  async function openMpvPlayer(args) {
-    const { shouldAbort: _ignored, ...rest } = args;
-    const cached = sourceCacheUrl(args.url, args.requestHeaders);
-    if (cached) {
-      if (args.shouldAbort?.()) return;
-      markStreamPhase("mpv-open", { via: "source-cache" });
-      await (0, import_core.invoke)("mpv_open", { args: { ...rest, url: cached } });
-      markStreamPhase("mpv-open-done");
-      return;
-    }
-    let url = args.url;
-    let via = "direct";
-    for (const rewriter of getPlayableUrlRewriters()) {
-      try {
-        const rewritten = await rewriter.rewrite(url);
-        if (rewritten) {
-          url = rewritten;
-          via = "rewriter";
-          break;
-        }
-      } catch {
-      }
-    }
-    if (args.shouldAbort?.()) return;
-    markStreamPhase("mpv-open", { via });
-    await (0, import_core.invoke)("mpv_open", { args: { ...rest, url } });
-    markStreamPhase("mpv-open-done");
-  }
-  async function closeMpvPlayer() {
-    return (0, import_core.invoke)("mpv_close");
-  }
-  async function setMpvPause(paused) {
-    return (0, import_core.invoke)("mpv_set_pause", { paused });
-  }
-  async function setMpvAudioTrack(aid) {
-    return (0, import_core.invoke)("mpv_set_audio_track", { aid });
-  }
-  async function setMpvVideoGeometry(args) {
-    try {
-      return await (0, import_core.invoke)("mpv_set_video_geometry", {
-        aspectOverride: args.aspectOverride ?? null,
-        panscan: args.panscan,
-        videoZoom: args.videoZoom
-      });
-    } catch (error) {
-      const message = String(error ?? "");
-      if (!/mpv not initialized/i.test(message)) {
-        console.warn("[mpv] set video geometry error:", error);
-      }
-    }
-  }
-  async function setMpvSubtitleTrack(sid) {
-    return (0, import_core.invoke)("mpv_set_subtitle_track", { sid });
-  }
-  async function getMpvSid() {
-    return (0, import_core.invoke)("mpv_get_sid");
-  }
-  async function getMpvSubtitleTracks() {
-    return (0, import_core.invoke)("mpv_get_subtitle_tracks");
-  }
-  async function getMpvAudioTracks() {
-    return (0, import_core.invoke)("mpv_get_audio_tracks");
-  }
-  async function toggleWindowFullscreen() {
-    return (0, import_core.invoke)("toggle_window_fullscreen");
-  }
-  async function getWindowFullscreen() {
-    return (0, import_core.invoke)("get_window_fullscreen");
-  }
-  async function getWindowNativeFullscreen() {
-    return (0, import_core.invoke)("get_window_native_fullscreen");
-  }
-  async function setWindowFullscreen(fullscreen) {
-    return (0, import_core.invoke)("set_window_fullscreen", { fullscreen });
-  }
-  async function setWindowNativeFullscreen(fullscreen) {
-    return (0, import_core.invoke)("set_window_native_fullscreen", { fullscreen });
-  }
-  async function mpvGetAudioFilterChain() {
-    try {
-      return await (0, import_core.invoke)("mpv_get_af") || "(tom)";
-    } catch (e) {
-      return `(ol\xE4sbar: ${String(e)})`;
-    }
-  }
-  async function mpvRenderIsGpu() {
-    try {
-      return await (0, import_core.invoke)("mpv_render_is_gpu");
-    } catch {
-      return false;
-    }
-  }
-  async function mpvCommand(args) {
-    try {
-      if (args[0] === "set_property" && args.length >= 3) {
-        const value = typeof args[2] === "boolean" ? args[2] ? "yes" : "no" : String(args[2]);
-        return await (0, import_core.invoke)("mpv_set_property_strings", { props: [{ name: String(args[1]), value }] });
-      }
-      if (args[0] === "get_property" && args.length >= 2) {
-        return await (0, import_core.invoke)("mpv_get_property_ts", { name: String(args[1]) });
-      }
-      return await (0, import_core.invoke)("mpv_command_ts", { args });
-    } catch (e) {
-      console.warn("[mpv] command error:", args, e);
-    }
-  }
-  async function mpvSetPropertyStrings(props) {
-    try {
-      return await (0, import_core.invoke)("mpv_set_property_strings", { props });
-    } catch (e) {
-      console.warn("[mpv] set property error:", props, e);
-    }
-  }
-  async function mpvApplySubtitleStyle(args) {
-    try {
-      return await (0, import_core.invoke)("mpv_apply_subtitle_style", { args });
-    } catch (e) {
-      console.warn("[mpv] apply subtitle style error:", args, e);
-    }
-  }
-  function mpvSetBounds(rect) {
-    if (rect.width <= 0 || rect.height <= 0) return;
-    void (0, import_core.invoke)("mpv_set_bounds", {
-      x: rect.left,
-      y: rect.top,
-      w: rect.width,
-      h: rect.height,
-      windowHeight: window.innerHeight,
-      scale: window.devicePixelRatio
-    });
-  }
-  function useMpvPlayer(enabled = true) {
-    const [timePos, setTimePos] = useState(0);
-    const [duration, setDuration] = useState(0);
-    const [paused, setPaused] = useState(false);
-    const [ended, setEnded] = useState(false);
-    const [sid, setSid] = useState(null);
-    const [fileLoaded, setFileLoaded] = useState(false);
-    const [fileLoadedToken, setFileLoadedToken] = useState(0);
-    const [playbackRestarted, setPlaybackRestarted] = useState(false);
-    const [playbackRestartedToken, setPlaybackRestartedToken] = useState(0);
-    const [pausedForCache, setPausedForCache] = useState(false);
-    const [coreIdle, setCoreIdle] = useState(true);
-    const [firstFrameRendered, setFirstFrameRendered] = useState(false);
-    const [loadFailed, setLoadFailed] = useState(false);
-    const [loadFailedToken, setLoadFailedToken] = useState(0);
-    const [loadFailedError, setLoadFailedError] = useState(null);
-    useEffect(() => {
-      if (!isTauriEnv || !enabled) return;
-      const cleanups = [];
-      void (0, import_event.listen)("mpv://time-pos", (e) => setTimePos(e.payload)).then((u) => cleanups.push(u));
-      void (0, import_event.listen)("mpv://duration", (e) => setDuration(e.payload)).then((u) => cleanups.push(u));
-      void (0, import_event.listen)("mpv://paused", (e) => setPaused(e.payload)).then((u) => cleanups.push(u));
-      void (0, import_event.listen)("mpv://ended", () => setEnded(true)).then((u) => cleanups.push(u));
-      void (0, import_event.listen)("mpv://sid", (e) => setSid(e.payload)).then((u) => cleanups.push(u));
-      void (0, import_event.listen)("mpv://file-loaded", () => {
-        setFileLoaded(true);
-        setFileLoadedToken((t) => t + 1);
-      }).then((u) => cleanups.push(u));
-      void (0, import_event.listen)("mpv://playback-restart", () => {
-        setPlaybackRestarted(true);
-        setPlaybackRestartedToken((t) => t + 1);
-      }).then((u) => cleanups.push(u));
-      void (0, import_event.listen)("mpv://paused-for-cache", (e) => setPausedForCache(e.payload)).then((u) => cleanups.push(u));
-      void (0, import_event.listen)("mpv://core-idle", (e) => setCoreIdle(e.payload)).then((u) => cleanups.push(u));
-      void (0, import_event.listen)("mpv://first-frame-rendered", () => {
-        void fetch(`/api/debug-log?msg=${encodeURIComponent(`${performance.now().toFixed(0)} first-frame-rendered received`)}`);
-        setFirstFrameRendered(true);
-      }).then((u) => cleanups.push(u));
-      void (0, import_event.listen)("mpv://load-failed", (e) => {
-        setLoadFailedError(typeof e.payload === "number" ? e.payload : null);
-        setLoadFailed(true);
-        setLoadFailedToken((t) => t + 1);
-      }).then((u) => cleanups.push(u));
-      return () => cleanups.forEach((fn) => fn());
-    }, [enabled]);
-    const seek = useCallback((time2) => {
-      void mpvCommand(["seek", time2, "absolute"]);
-    }, []);
-    const seekRelative = useCallback((delta) => {
-      void mpvCommand(["seek", delta, "relative"]);
-    }, []);
-    const setPlayPause = useCallback((pause) => {
-      void mpvCommand(["set_property", "pause", pause]);
-    }, []);
-    const setVolume = useCallback((vol) => {
-      void mpvSetPropertyStrings([{ name: "volume", value: String(Math.round(vol * 100)) }]);
-    }, []);
-    const setSpeed = useCallback((value) => {
-      void mpvSetPropertyStrings([{ name: "speed", value: String(value) }]);
-    }, []);
-    const setMuted = useCallback((muted) => {
-      void mpvSetPropertyStrings([{ name: "mute", value: muted ? "yes" : "no" }]);
-    }, []);
-    const setAudioTrack = useCallback((aid) => {
-      void setMpvAudioTrack(aid);
-    }, []);
-    const resetTimePos = useCallback(() => {
-      setTimePos(0);
-    }, []);
-    const resetFileLoaded = useCallback(() => {
-      setFileLoaded(false);
-    }, []);
-    const resetEnded = useCallback(() => {
-      setEnded(false);
-    }, []);
-    const resetPlaybackRestarted = useCallback(() => {
-      setPlaybackRestarted(false);
-    }, []);
-    const resetFirstFrameRendered = useCallback(() => {
-      setFirstFrameRendered(false);
-    }, []);
-    const resetLoadFailed = useCallback(() => {
-      setLoadFailed(false);
-      setLoadFailedError(null);
-    }, []);
-    return {
-      timePos,
-      duration,
-      paused,
-      ended,
-      sid,
-      fileLoaded,
-      fileLoadedToken,
-      resetTimePos,
-      resetEnded,
-      playbackRestarted,
-      playbackRestartedToken,
-      pausedForCache,
-      coreIdle,
-      firstFrameRendered,
-      loadFailed,
-      loadFailedToken,
-      loadFailedError,
-      seek,
-      seekRelative,
-      setPlayPause,
-      setVolume,
-      setSpeed,
-      setMuted,
-      setAudioTrack,
-      resetFileLoaded,
-      resetPlaybackRestarted,
-      resetFirstFrameRendered,
-      resetLoadFailed
-    };
-  }
-
   // lib/open-external.ts
   var isAndroidTauri = isTauriEnv && typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
 
   // lib/trakt-device-login.tsx
   init_jsx_runtime_shim();
-
-  // lib/media-stream/config.ts
-  var SCRAPER_PRESETS = [
-    {
-      id: "torrentio",
-      name: "Torrentio",
-      url: "https://torrentio.strem.fun",
-      type: "torrentio",
-      description: "Publik scraper, stabil och snabb. Kr\xE4ver Real-Debrid API-nyckel.",
-      configUrl: "https://torrentio.strem.fun/configure"
-    },
-    {
-      id: "comet",
-      name: "Comet",
-      url: "",
-      type: "preconfigured",
-      description: "Snabb scraper med bra tr\xE4ffar. Kr\xE4ver konfiguration med RD-nyckel.",
-      configUrl: "https://comet.elfhosted.com"
-    },
-    {
-      id: "jackettio",
-      name: "Jackettio",
-      url: "",
-      type: "preconfigured",
-      description: "Jackett-baserad scraper med breda indexers. Kr\xE4ver Real-Debrid eller AllDebrid.",
-      configUrl: "https://jackettio.elfhosted.com/configure"
-    },
-    {
-      id: "aiostreams",
-      name: "AIOStreams",
-      url: "",
-      type: "preconfigured",
-      description: "Aggregerar m\xE5nga addons och debrid-tj\xE4nster bakom en enda konfiguration.",
-      configUrl: "https://aiostreams-nightly.fortheweak.cloud/stremio/configure"
-    }
-  ];
-  var DEFAULT_SCRAPER_URL = SCRAPER_PRESETS[0].url;
 
   // lib/playback-settings.ts
   var KEY_DEFAULT_SUBTITLE_LANGUAGE = "playback_defaultSubtitleLanguage";
@@ -172470,12 +172650,67 @@
     if (!Number.isFinite(raw) || raw <= 0) return DEFAULT_CREDITS_THRESHOLD_MINUTES;
     return Math.max(1, Math.min(6, raw));
   }
+  var KEY_STATS_HUD = "playback_statsHud";
+  var KEY_STRIP_SDH = "playback_stripSdh";
+  function getStatsHud() {
+    if (typeof window === "undefined") return false;
+    return getScopedStorageItem(KEY_STATS_HUD) === "1";
+  }
+  function setStatsHud(value) {
+    setScopedStorageItem(KEY_STATS_HUD, value ? "1" : "0");
+    emitPlaybackSettingsChanged();
+  }
+  function getStripSdh() {
+    if (typeof window === "undefined") return false;
+    return getScopedStorageItem(KEY_STRIP_SDH) === "1";
+  }
+  function setStripSdh(value) {
+    setScopedStorageItem(KEY_STRIP_SDH, value ? "1" : "0");
+    emitPlaybackSettingsChanged();
+  }
 
   // lib/series-watchlist-feed.ts
   init_plugin_registry();
 
   // lib/media-stream/availability-throttle.ts
   var RATE_LIMIT_COOLDOWN_MS = 10 * 60 * 1e3;
+
+  // lib/media-stream/config.ts
+  var SCRAPER_PRESETS = [
+    {
+      id: "torrentio",
+      name: "Torrentio",
+      url: "https://torrentio.strem.fun",
+      type: "torrentio",
+      description: "Publik scraper, stabil och snabb. Kr\xE4ver Real-Debrid API-nyckel.",
+      configUrl: "https://torrentio.strem.fun/configure"
+    },
+    {
+      id: "comet",
+      name: "Comet",
+      url: "",
+      type: "preconfigured",
+      description: "Snabb scraper med bra tr\xE4ffar. Kr\xE4ver konfiguration med RD-nyckel.",
+      configUrl: "https://comet.elfhosted.com"
+    },
+    {
+      id: "jackettio",
+      name: "Jackettio",
+      url: "",
+      type: "preconfigured",
+      description: "Jackett-baserad scraper med breda indexers. Kr\xE4ver Real-Debrid eller AllDebrid.",
+      configUrl: "https://jackettio.elfhosted.com/configure"
+    },
+    {
+      id: "aiostreams",
+      name: "AIOStreams",
+      url: "",
+      type: "preconfigured",
+      description: "Aggregerar m\xE5nga addons och debrid-tj\xE4nster bakom en enda konfiguration.",
+      configUrl: "https://aiostreams-nightly.fortheweak.cloud/stremio/configure"
+    }
+  ];
+  var DEFAULT_SCRAPER_URL = SCRAPER_PRESETS[0].url;
 
   // lib/media-stream/core-addons.ts
   var KEY4 = "core_stream_addons_v1";
@@ -172506,9 +172741,6 @@
   var STREAM_CACHE_TTL_MS = 30 * 60 * 1e3;
   var SERIES_STATUS_CACHE_TTL_MS = 15 * 60 * 1e3;
   var FAILED_CHECK_RETRY_MS = 5 * 60 * 1e3;
-
-  // lib/media-stream/request-context.ts
-  init_plugin_registry();
 
   // lib/release-watchlist-feed.ts
   init_plugin_registry();
@@ -172981,6 +173213,7 @@
     const [cueText, setCueText] = useState("");
     const [selectedAudio, setSelectedAudio] = useState(-1);
     const [externalDisplay, setExternalDisplay] = useState(false);
+    const [stats, setStats] = useState(null);
     const prevRef = useRef({ fileLoaded: false, firstFrame: false, failToken: -1, timePos: 0 });
     useEffect(() => {
       if (!isAndroidTauriEnv || !enabled) return;
@@ -172996,6 +173229,12 @@
         setEnded(s.ended);
         setPausedForCache(s.pausedForCache);
         setExternalDisplay(s.externalDisplay === true);
+        setStats((prev2) => {
+          const next2 = s.stats ?? null;
+          if (!next2 || !prev2) return next2;
+          const same = Object.keys(next2).every((key) => prev2[key] === next2[key]);
+          return same ? prev2 : next2;
+        });
         setCoreIdle(!s.fileLoaded || s.paused);
         setSid(s.selectedSub > 0 ? s.selectedSub : null);
         const nextAudio = s.tracks?.audio ?? [];
@@ -173116,7 +173355,8 @@
       selectedAudio,
       setSubtitleTrack,
       cueText,
-      externalDisplay
+      externalDisplay,
+      stats
     };
   }
 
@@ -173258,6 +173498,47 @@
     }
   }
 
+  // lib/playback-speed-store.ts
+  var PLAYBACK_SPEED_OPTIONS = [0.75, 1, 1.25, 1.5, 1.75, 2];
+  var KEY5 = "playback_speed_by_title_v1";
+  var MAX_ENTRIES = 200;
+  function read2() {
+    try {
+      const raw = getScopedStorageItem(KEY5);
+      const parsed = raw ? JSON.parse(raw) : null;
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+  function playbackSpeedKey(mediaType, tmdbId) {
+    if (!tmdbId) return null;
+    return `${mediaType === "tv" ? "tv" : "movie"}:${tmdbId}`;
+  }
+  function getSavedPlaybackSpeed(mediaType, tmdbId) {
+    const key = playbackSpeedKey(mediaType, tmdbId);
+    if (!key) return 1;
+    const value = read2()[key];
+    return PLAYBACK_SPEED_OPTIONS.includes(value) ? value : 1;
+  }
+  function savePlaybackSpeed(mediaType, tmdbId, speed) {
+    const key = playbackSpeedKey(mediaType, tmdbId);
+    if (!key) return;
+    const store2 = read2();
+    if (speed === 1) delete store2[key];
+    else store2[key] = speed;
+    const keys3 = Object.keys(store2);
+    for (let index3 = 0; index3 < keys3.length - MAX_ENTRIES; index3 += 1) delete store2[keys3[index3]];
+    try {
+      setScopedStorageItem(KEY5, JSON.stringify(store2));
+    } catch {
+    }
+  }
+  function nextPlaybackSpeed(current2) {
+    const index3 = PLAYBACK_SPEED_OPTIONS.indexOf(current2);
+    return PLAYBACK_SPEED_OPTIONS[(index3 + 1) % PLAYBACK_SPEED_OPTIONS.length];
+  }
+
   // components/player/video-player-modal.tsx
   init_react_shim();
   var import_react_dom = __toESM(require_react_dom());
@@ -173335,9 +173616,6 @@
     })();
   }
 
-  // lib/playback-availability.ts
-  init_plugin_registry();
-
   // lib/video-progress.ts
   var EVENT5 = "lumio-stream-progress-changed";
   if (typeof window !== "undefined") {
@@ -173349,7 +173627,7 @@
     }).catch(() => {
     });
   }
-  var KEY5 = "stream_progress_list";
+  var KEY6 = "stream_progress_list";
   var MAX = 20;
   var HISTORY_KEY = "stream_history_list";
   var HISTORY_EVENT = "lumio-stream-history-changed";
@@ -173366,10 +173644,10 @@
       imdbId: typeof entry.imdbId === "string" && entry.imdbId.trim().length > 0 ? entry.imdbId.trim() : null
     };
   }
-  function read2() {
+  function read3() {
     if (typeof window === "undefined") return [];
     try {
-      return JSON.parse(getScopedStorageItem(KEY5) ?? "[]");
+      return JSON.parse(getScopedStorageItem(KEY6) ?? "[]");
     } catch {
       return [];
     }
@@ -173417,7 +173695,7 @@
       const raw = getScopedStorageItem(HISTORY_KEY);
       const parsed = raw ? JSON.parse(raw) : [];
       if (parsed.length > 0) return parsed;
-      const seed = read2();
+      const seed = read3();
       if (seed.length > 0) {
         const seenKeys = /* @__PURE__ */ new Set();
         const dedupedSeed = [];
@@ -173452,8 +173730,8 @@
   }
   function saveStreamProgress(entry) {
     const sanitizedEntry = sanitizeEntry(entry);
-    const list = sortByWatchedAtDesc(dedupeProgressEntries([sanitizedEntry, ...read2()])).slice(0, MAX);
-    setScopedStorageItem(KEY5, JSON.stringify(list));
+    const list = sortByWatchedAtDesc(dedupeProgressEntries([sanitizedEntry, ...read3()])).slice(0, MAX);
+    setScopedStorageItem(KEY6, JSON.stringify(list));
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT5));
     appendHistoryEntry(sanitizedEntry);
     reportLibraryProgress(sanitizedEntry);
@@ -173462,17 +173740,17 @@
     const key = entryKey(id4, season, episode);
     const prefixedMovieKey = entryKey(id4.startsWith("movie-") ? id4 : `movie-${id4}`, season, episode);
     const prefixedTvKey = entryKey(id4.startsWith("tv-") ? id4 : `tv-${id4}`, season, episode);
-    const list = read2().filter((entry) => {
+    const list = read3().filter((entry) => {
       const entryLookupKey = entryKey(entry.id, entry.season, entry.episode);
       return entryLookupKey !== key && entryLookupKey !== prefixedMovieKey && entryLookupKey !== prefixedTvKey;
     });
-    setScopedStorageItem(KEY5, JSON.stringify(list));
+    setScopedStorageItem(KEY6, JSON.stringify(list));
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT5));
   }
 
   // lib/android-media-keys.ts
   var EVENT6 = "lumio-media-key";
-  var listeners = 0;
+  var listeners2 = 0;
   function onMediaKey(listener) {
     if (typeof window === "undefined") return () => {
     };
@@ -173480,10 +173758,10 @@
       const detail = event.detail;
       if (detail?.action) listener(detail.action);
     };
-    listeners += 1;
+    listeners2 += 1;
     window.addEventListener(EVENT6, handler);
     return () => {
-      listeners -= 1;
+      listeners2 -= 1;
       window.removeEventListener(EVENT6, handler);
     };
   }
@@ -173661,12 +173939,12 @@
     cinema: { labelKey: "vtPresetCinema", patch: { brightness: -4, gamma: -6, saturation: -5 } },
     sharp: { labelKey: "vtPresetSharp", patch: { sharpen: 0.6, saturation: 8 } }
   };
-  var KEY6 = "video_tuning";
+  var KEY7 = "video_tuning";
   var EVENT8 = "lumio-video-tuning-changed";
   function getVideoTuning() {
     if (typeof window === "undefined") return { ...DEFAULT_TUNING };
     try {
-      const raw = getScopedStorageItem(KEY6);
+      const raw = getScopedStorageItem(KEY7);
       if (!raw) return { ...DEFAULT_TUNING };
       const parsed = JSON.parse(raw);
       const clamp2 = (v, lo, hi, dflt) => {
@@ -173685,7 +173963,7 @@
     }
   }
   function setVideoTuning(tuning) {
-    setScopedStorageItem(KEY6, JSON.stringify(tuning));
+    setScopedStorageItem(KEY7, JSON.stringify(tuning));
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT8));
   }
   function onVideoTuningChanged(listener) {
@@ -173770,12 +174048,12 @@
     voiceClarity: false,
     downmixStereo: false
   };
-  var KEY7 = "audio_tuning";
+  var KEY8 = "audio_tuning";
   var EVENT9 = "lumio-audio-tuning-changed";
   function getAudioTuning() {
     if (typeof window === "undefined") return { ...DEFAULT_AUDIO_TUNING };
     try {
-      const raw = getScopedStorageItem(KEY7);
+      const raw = getScopedStorageItem(KEY8);
       if (!raw) return { ...DEFAULT_AUDIO_TUNING };
       const parsed = JSON.parse(raw);
       return {
@@ -173789,7 +174067,7 @@
     }
   }
   function setAudioTuning(tuning) {
-    setScopedStorageItem(KEY7, JSON.stringify(tuning));
+    setScopedStorageItem(KEY8, JSON.stringify(tuning));
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT9));
   }
   function onAudioTuningChanged(listener) {
@@ -174227,8 +174505,21 @@
   }
   var QUEUE_BYPASS_MS = 8e3;
   var cache3 = /* @__PURE__ */ new Map();
+  var CACHE_MAX_ENTRIES = 400;
+  function rememberResponse(key, entry) {
+    cache3.delete(key);
+    cache3.set(key, entry);
+    if (cache3.size <= CACHE_MAX_ENTRIES) return;
+    const now3 = Date.now();
+    for (const [k, v] of cache3) if (v.expiresAt <= now3) cache3.delete(k);
+    while (cache3.size > CACHE_MAX_ENTRIES) {
+      const oldest = cache3.keys().next().value;
+      if (oldest === void 0) break;
+      cache3.delete(oldest);
+    }
+  }
   var errorCache = /* @__PURE__ */ new Map();
-  var inflight = /* @__PURE__ */ new Map();
+  var inflight2 = /* @__PURE__ */ new Map();
   var queue = [];
   var activeRequests = 0;
   var queueSeq = 0;
@@ -174386,7 +174677,7 @@
         return cached.data;
       }
     }
-    const existing = inflight.get(key);
+    const existing = inflight2.get(key);
     if (existing) return withAbortSignal(existing, options.signal);
     const request = (async () => {
       const release = await acquireRequestSlot(options.priority ?? "normal", requestGroup);
@@ -174412,7 +174703,7 @@
         release();
       }
     })().then((data) => {
-      cache3.set(key, {
+      rememberResponse(key, {
         expiresAt: Date.now() + ttlMs,
         data
       });
@@ -174431,16 +174722,16 @@
       }
       throw error;
     }).finally(() => {
-      inflight.delete(key);
+      inflight2.delete(key);
     });
-    inflight.set(key, request);
+    inflight2.set(key, request);
     return withAbortSignal(request, options.signal);
   }
 
   // lib/services/wiki-request-cache.ts
   var WIKI_TTL_MS = 5 * 6e4;
   var cache4 = /* @__PURE__ */ new Map();
-  var inflight2 = /* @__PURE__ */ new Map();
+  var inflight3 = /* @__PURE__ */ new Map();
   function withAbortSignal2(promise, signal) {
     if (!signal) return promise;
     if (signal.aborted) return Promise.reject(new DOMException("Aborted", "AbortError"));
@@ -174461,7 +174752,7 @@
         return cached.data;
       }
     }
-    const existing = inflight2.get(key);
+    const existing = inflight3.get(key);
     if (existing) return withAbortSignal2(existing, options.signal);
     const request = fetchApiJsonCached(`/api/wiki?${key}`, {
       timeoutMs: options.timeoutMs ?? 5200,
@@ -174478,9 +174769,9 @@
       });
       return data;
     }).finally(() => {
-      inflight2.delete(key);
+      inflight3.delete(key);
     });
-    inflight2.set(key, request);
+    inflight3.set(key, request);
     return withAbortSignal2(request, options.signal);
   }
 
@@ -174569,7 +174860,7 @@
   }
 
   // lib/services/media-prefetch-cache.ts
-  var inflight3 = /* @__PURE__ */ new Map();
+  var inflight4 = /* @__PURE__ */ new Map();
   var cache5 = /* @__PURE__ */ new Map();
   var PREFETCH_TTL_MS = 5 * 6e4;
   var PREFETCH_RECOMMENDATIONS = false;
@@ -174592,18 +174883,22 @@
     const now3 = Date.now();
     const expiresAt = cache5.get(key);
     if (expiresAt && expiresAt > now3) return;
-    const running2 = inflight3.get(key);
+    const running2 = inflight4.get(key);
     if (running2) {
       await withAbort(running2, signal);
       return;
     }
     const request = fn().catch(() => {
     }).finally(() => {
-      inflight3.delete(key);
+      inflight4.delete(key);
     });
-    inflight3.set(key, request);
+    inflight4.set(key, request);
     await withAbort(request, signal);
     cache5.set(key, Date.now() + PREFETCH_TTL_MS);
+    if (cache5.size > 500) {
+      const now4 = Date.now();
+      for (const [k, at] of cache5) if (at <= now4) cache5.delete(k);
+    }
   }
   async function prefetchMediaWarmup(options) {
     const tasks = [];
@@ -174730,7 +175025,7 @@
   var FETCH_TIMEOUT_MS = 4800;
   var MAX_CACHE_ENTRIES = 600;
   var resultCache = /* @__PURE__ */ new Map();
-  var inflight4 = /* @__PURE__ */ new Map();
+  var inflight5 = /* @__PURE__ */ new Map();
   function sleep2(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
@@ -174800,7 +175095,7 @@
     const cacheKey = `${stremioType}:${videoId}:${osApiKey ? "rest" : "addon"}:${mediaUrl ? "hash" : "nohash"}`;
     const cached = resultCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) return cached.subtitles;
-    const running2 = inflight4.get(cacheKey);
+    const running2 = inflight5.get(cacheKey);
     if (running2) return running2;
     const parseSubtitles = (payload) => {
       const subtitles = payload?.subtitles;
@@ -174857,9 +175152,9 @@
       });
       return subtitles;
     })().finally(() => {
-      inflight4.delete(cacheKey);
+      inflight5.delete(cacheKey);
     });
-    inflight4.set(cacheKey, request);
+    inflight5.set(cacheKey, request);
     return request;
   }
 
@@ -175454,10 +175749,7 @@
                       className: "flex flex-col items-center text-center transition hover:opacity-80 active:opacity-60",
                       title: actor.name,
                       children: [
-                        /* @__PURE__ */ jsx("div", { className: "mb-1.5 h-16 w-16 overflow-hidden rounded-full bg-white/[0.05] ring-1 ring-transparent transition hover:ring-white/20", children: actor.profileUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          /* @__PURE__ */ jsx("img", { src: actor.profileUrl, alt: actor.name, className: "h-full w-full object-cover" })
-                        ) : /* @__PURE__ */ jsx("div", { className: "flex h-full w-full items-center justify-center text-xl text-slate-600", children: actor.name.charAt(0) }) }),
+                        /* @__PURE__ */ jsx("div", { className: "mb-1.5 h-16 w-16 overflow-hidden rounded-full bg-white/[0.05] ring-1 ring-transparent transition hover:ring-white/20", children: actor.profileUrl ? /* @__PURE__ */ jsx("img", { src: actor.profileUrl, alt: actor.name, className: "h-full w-full object-cover" }) : /* @__PURE__ */ jsx("div", { className: "flex h-full w-full items-center justify-center text-xl text-slate-600", children: actor.name.charAt(0) }) }),
                         /* @__PURE__ */ jsx("p", { className: "w-full truncate text-[11px] font-medium text-slate-200", children: actor.name }),
                         /* @__PURE__ */ jsx("p", { className: "w-full truncate text-[10px] text-slate-500", children: actor.character })
                       ]
@@ -175608,10 +175900,18 @@
                 }
               )
             ] }),
-            state === "embed" && result?.embedUrl && /* @__PURE__ */ jsxs("div", { className: "flex min-h-0 flex-1 flex-col", children: [
+            state === "embed" && result?.embedUrl && /**
+             * GRID, inte flex: `grid-rows-[auto_1fr]` ger iframen en RÄKNAD höjd.
+             *
+             * Med flex fick iframen `flex-1` + `height: 100%`, och 100 % av ett
+             * flexutrymme som ännu är noll blir noll — Spotify renderade då sin
+             * kompakta spelare och panelen slutade en bit ner i stället för att
+             * fylla nedåt (Jerry 2026-09-08). Raden `1fr` är alltid uträknad, så
+             * iframen får sin höjd redan i första layouten.
+             */
+            /* @__PURE__ */ jsxs("div", { className: "grid min-h-0 flex-1 grid-rows-[auto_1fr]", children: [
               /* @__PURE__ */ jsxs("div", { className: "flex flex-shrink-0 items-center gap-3 border-b border-white/[0.06] px-4 py-3", children: [
-                result.coverUrl && // eslint-disable-next-line @next/next/no-img-element
-                /* @__PURE__ */ jsx("img", { src: result.coverUrl, alt: result.albumName ?? "", className: "h-10 w-10 rounded object-cover" }),
+                result.coverUrl && /* @__PURE__ */ jsx("img", { src: result.coverUrl, alt: result.albumName ?? "", className: "h-10 w-10 rounded object-cover" }),
                 /* @__PURE__ */ jsxs("div", { className: "flex-1 min-w-0", children: [
                   /* @__PURE__ */ jsx("p", { className: "truncate text-sm font-medium text-white", children: result.albumName }),
                   /* @__PURE__ */ jsx("p", { className: "truncate text-[11px] text-slate-500", children: result.artist })
@@ -175633,11 +175933,10 @@
                 "iframe",
                 {
                   src: result.embedUrl,
-                  width: "100%",
                   allow: "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture",
                   loading: "lazy",
-                  className: "min-h-0 flex-1",
-                  style: { border: "none", display: "block", height: "100%" },
+                  className: "h-full w-full min-h-0",
+                  style: { border: "none", display: "block" },
                   title: result.albumName ?? t("soundtrack")
                 }
               )
@@ -175794,9 +176093,11 @@
   }
 
   // lib/playback/playback-session-client.ts
+  var tauriCore = null;
   async function invokeDesktop(command, payload) {
     if (!isPluginDesktopHost()) return null;
-    const { invoke: invoke5 } = await Promise.resolve().then(() => __toESM(require_core()));
+    tauriCore ?? (tauriCore = Promise.resolve().then(() => __toESM(require_core())));
+    const { invoke: invoke5 } = await tauriCore;
     try {
       if (payload) return await invoke5(command, payload);
       return await invoke5(command);
@@ -175825,7 +176126,7 @@
   }
 
   // lib/keyboard-shortcuts.ts
-  var KEY8 = "keyboard_shortcuts";
+  var KEY9 = "keyboard_shortcuts";
   var SHORTCUT_COMMANDS = [
     { id: "playPause", category: "player", defaultKey: " ", labelKey: "shortcutsPlayPause" },
     { id: "seekBack", category: "player", defaultKey: "ArrowLeft", labelKey: "shortcutsSeekBackward" },
@@ -175845,7 +176146,7 @@
   function readOverrides() {
     if (typeof window === "undefined") return {};
     try {
-      const raw = getScopedStorageItem(KEY8);
+      const raw = getScopedStorageItem(KEY9);
       if (!raw) return {};
       const parsed = JSON.parse(raw);
       return parsed && typeof parsed === "object" ? parsed : {};
@@ -176004,9 +176305,9 @@
                 }
               }
             ),
-            /* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-[#050816]/30" })
+            /* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-[rgb(var(--base-950)/0.3)]" })
           ] }, panelIndex)),
-          /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute inset-y-0 left-0 w-[80%] bg-[linear-gradient(to_right,#050816_0%,rgba(5,8,22,0.94)_38%,rgba(5,8,22,0)_100%)]" }),
+          /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute inset-y-0 left-0 w-[80%] bg-[linear-gradient(to_right,rgb(var(--base-950))_0%,rgb(var(--base-950)/0.94)_38%,rgb(var(--base-950)/0)_100%)]" }),
           /* @__PURE__ */ jsxs("div", { className: "absolute inset-0 flex max-w-[58%] flex-col justify-center gap-[clamp(0.4rem,1.5vh,1rem)] px-[clamp(1rem,4vw,3.5rem)] py-[clamp(0.75rem,3vh,2rem)]", children: [
             current2.logoUrl && !failedLogos.has(current2.logoUrl) ? /* @__PURE__ */ jsx(
               "img",
@@ -176130,6 +176431,16 @@
   var LOGO_CACHE_TTL_MS = 12 * 60 * 60 * 1e3;
   var LOGO_NEGATIVE_CACHE_TTL_MS = 45 * 1e3;
   var logoCache = /* @__PURE__ */ new Map();
+  function rememberLogo(key, entry) {
+    logoCache.set(key, entry);
+    if (logoCache.size > 500) {
+      const now3 = Date.now();
+      for (const [k, v] of logoCache) {
+        const ttl = v.value === null ? LOGO_NEGATIVE_CACHE_TTL_MS : LOGO_CACHE_TTL_MS;
+        if (now3 - v.updatedAt > ttl) logoCache.delete(k);
+      }
+    }
+  }
   var inflightRequests = /* @__PURE__ */ new Map();
   function buildCacheKey(type, tmdbId) {
     return `${type}:${tmdbId}`;
@@ -176154,7 +176465,7 @@
     return entry.value;
   }
   function writeCached(type, tmdbId, value) {
-    logoCache.set(buildCacheKey(type, tmdbId), {
+    rememberLogo(buildCacheKey(type, tmdbId), {
       value,
       updatedAt: Date.now()
     });
@@ -176179,7 +176490,7 @@
     if (running2) return running2;
     const request = (async () => {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 2500);
+      const timeout = setTimeout(() => controller.abort(), 6e3);
       try {
         const response = await fetch(
           `/api/title-logo?tmdbId=${encodeURIComponent(tmdbId)}&type=${type}`,
@@ -176213,33 +176524,33 @@
   var KEY_BRIGHTNESS_TARGET = "gesture_brightness_target";
   var KEY_DOUBLE_TAP = "gesture_double_tap_seconds";
   var KEY_HOLD_SPEED = "gesture_hold_to_speed";
-  function read3(key) {
+  function read4(key) {
     if (typeof window === "undefined") return null;
     const stored = getScopedStorageItem(key);
     return stored == null || stored === "" ? null : stored;
   }
   function getVerticalGestureLeft() {
-    const stored = read3(KEY_LEFT);
+    const stored = read4(KEY_LEFT);
     return VERTICAL_GESTURE_ACTIONS.includes(stored) ? stored : "brightness";
   }
   function getVerticalGestureRight() {
-    const stored = read3(KEY_RIGHT);
+    const stored = read4(KEY_RIGHT);
     return VERTICAL_GESTURE_ACTIONS.includes(stored) ? stored : "volume";
   }
   function getHorizontalGesture() {
-    const stored = read3(KEY_HORIZONTAL);
+    const stored = read4(KEY_HORIZONTAL);
     return HORIZONTAL_GESTURE_ACTIONS.includes(stored) ? stored : "seek";
   }
   function getBrightnessTarget() {
-    const stored = read3(KEY_BRIGHTNESS_TARGET);
+    const stored = read4(KEY_BRIGHTNESS_TARGET);
     return BRIGHTNESS_TARGETS.includes(stored) ? stored : "screen";
   }
   function getDoubleTapSeconds() {
-    const raw = Number.parseInt(read3(KEY_DOUBLE_TAP) ?? "", 10);
+    const raw = Number.parseInt(read4(KEY_DOUBLE_TAP) ?? "", 10);
     return DOUBLE_TAP_SECONDS.includes(raw) ? raw : 10;
   }
   function getHoldToSpeed() {
-    return read3(KEY_HOLD_SPEED) === "1";
+    return read4(KEY_HOLD_SPEED) === "1";
   }
 
   // lib/lan-streaming-settings.ts
@@ -176257,7 +176568,7 @@
 
   // lib/subtitle-delay-store.ts
   var STORAGE_KEY2 = "lumio_subtitle_delays_v1";
-  var MAX_ENTRIES = 400;
+  var MAX_ENTRIES2 = 400;
   function readStore() {
     if (typeof window === "undefined") return {};
     try {
@@ -176273,8 +176584,8 @@
     if (typeof window === "undefined") return;
     try {
       const keys3 = Object.keys(store2);
-      if (keys3.length > MAX_ENTRIES) {
-        keys3.sort((a, b) => (store2[a]?.t ?? 0) - (store2[b]?.t ?? 0)).slice(0, keys3.length - MAX_ENTRIES).forEach((key) => {
+      if (keys3.length > MAX_ENTRIES2) {
+        keys3.sort((a, b) => (store2[a]?.t ?? 0) - (store2[b]?.t ?? 0)).slice(0, keys3.length - MAX_ENTRIES2).forEach((key) => {
           delete store2[key];
         });
       }
@@ -176408,6 +176719,10 @@ ${cue.text}`).join("\n\n")}
     const parts = ts.trim().split(":");
     if (parts.length === 3) return +parts[0] * 3600 + +parts[1] * 60 + parseFloat(parts[2]);
     return +parts[0] * 60 + parseFloat(parts[1]);
+  }
+  function stripSdhText(text) {
+    const lines = text.split("\n").map((line) => line.replace(/\[[^\]]*\]/g, "").replace(/\([^)]*\)/g, "").replace(/♪[^♪]*♪?/g, "").replace(/^\s*-?\s*[A-ZÅÄÖ][A-ZÅÄÖ0-9 .'’-]{1,24}:\s*/, (match) => match.trim().startsWith("-") ? "- " : "").replace(/\s{2,}/g, " ").trim());
+    return lines.filter((line) => line.length > 0 && line !== "-").join("\n");
   }
   function parseVtt(vtt) {
     const cues = [];
@@ -176733,7 +177048,7 @@ ${cue.text}`).join("\n\n")}
     } catch {
     }
   }
-  function VideoPlayerModal({ url, filename, title, onClose, imdbId, tmdbId, mediaType, season, episode, mediaId, mediaTitle, mediaSource, posterUrl, backdropUrl, year, initialTime, expectedDurationSeconds, onFirstPlay, hideStartSplash, forceProxy, requestHeaders, onTimeUpdate, onOutroStart, onCreditsOpenDetails, onCreditsFinished, episodes, onLoadFailed, onPlaybackEnded, onOpenedExternally, skipHomeKitOnClose, skipHomeKitOnOpen, overlayContent, autoFullscreen, sourceInfoHash, playbackTraceId }) {
+  function VideoPlayerModal({ url, filename, title, onClose, imdbId, tmdbId, mediaType, season, episode, mediaId, mediaTitle, mediaSource, posterUrl, backdropUrl, year, initialTime, expectedDurationSeconds, onFirstPlay, hideStartSplash, forceProxy, requestHeaders, onTimeUpdate, onOutroStart, onCreditsOpenDetails, onCreditsFinished, episodes, onLoadFailed, onPlaybackEnded, onOpenedExternally, skipHomeKitOnClose, skipHomeKitOnOpen, overlayContent, autoFullscreen, sourceInfoHash, playbackTraceId, scrubPreview }) {
     const STILL_WATCHING_CLOSE_SECONDS = 20;
     const [engineKind, setEngineKind] = useState("none");
     useEffect(() => {
@@ -176874,7 +177189,11 @@ ${cue.text}`).join("\n\n")}
     const boundsResyncTimersRef = useRef([]);
     const didSeekRef = useRef(false);
     const { lang, t } = useLang();
-    const derivedTmdbId = mediaId && !mediaId.startsWith("local-") ? mediaId.replace(/^(movie|tv)-/, "") : null;
+    const derivedTmdbId = (() => {
+      if (!mediaId || mediaId.startsWith("local-")) return null;
+      const bare = mediaId.replace(/^(movie|tv)-/, "");
+      return /^\d+$/.test(bare) ? bare : null;
+    })();
     const wikiTmdbId = tmdbId ?? derivedTmdbId;
     const inferredMediaType = mediaType ?? (season != null || episode != null ? "tv" : "movie");
     const endHlsSessionOnServer = useCallback((sessionId) => {
@@ -176993,6 +177312,11 @@ ${cue.text}`).join("\n\n")}
     const [playing, setPlaying] = useState(false);
     const [hasStarted, setHasStarted] = useState(false);
     const [openSurface, setOpenSurface] = useState(null);
+    const [statsHud, setStatsHudState] = useState(() => getStatsHud());
+    const [stripSdh, setStripSdhState] = useState(() => getStripSdh());
+    const [playbackSpeed, setPlaybackSpeedState] = useState(() => getSavedPlaybackSpeed(mediaType, tmdbId ?? null));
+    const playbackSpeedRef = useRef(playbackSpeed);
+    playbackSpeedRef.current = playbackSpeed;
     const openSurfaceRef = useRef(null);
     openSurfaceRef.current = openSurface;
     const surfaceSetter = (id4) => (value) => setOpenSurface((current2) => {
@@ -177056,7 +177380,8 @@ ${cue.text}`).join("\n\n")}
       });
       return () => window.cancelAnimationFrame(raf);
     }, [isTv, openSurface]);
-    const playerAccentRgb = playerLayout.seekBarColor === "white" ? "255 255 255" : playerLayout.seekBarColor === "red" ? "239 68 68" : playerLayout.seekBarColor === "amber" ? "251 191 36" : "124 156 255";
+    const themeAccentRgb = (typeof document !== "undefined" ? getComputedStyle(document.documentElement).getPropertyValue("--accent-500").trim() : "") || "244 132 95";
+    const playerAccentRgb = playerLayout.seekBarColor === "white" ? "255 255 255" : playerLayout.seekBarColor === "red" ? "239 68 68" : playerLayout.seekBarColor === "amber" ? "251 191 36" : themeAccentRgb;
     const hiddenControls = useMemo(() => new Set(playerLayout.hidden), [playerLayout.hidden]);
     const showsControl = (id4) => !hiddenControls.has(id4);
     const [videoTuning, setVideoTuningState] = useState(() => getVideoTuning());
@@ -177803,7 +178128,8 @@ ${cue.text}`).join("\n\n")}
     const subtitleTime = subtitleClockBase - subDelay + (subDrift ? subDrift.slope * (subtitleClockBase - subDrift.anchor) : 0);
     const activeCue = isMpvEngine ? null : cues.find((c) => subtitleTime >= c.start && subtitleTime <= c.end) ?? null;
     const embeddedCueText = isDroidEngine && !activeCue ? (mpv.cueText ?? "").trim() : "";
-    const renderedSubtitleText = activeCue?.text ?? (embeddedCueText || null);
+    const rawSubtitleText = activeCue?.text ?? (embeddedCueText || null);
+    const renderedSubtitleText = rawSubtitleText && stripSdh ? stripSdhText(rawSubtitleText) || null : rawSubtitleText;
     const parsedEpisodeFromFilename = useMemo(() => filename ? parseEpisodeIdentifier(filename) : null, [filename]);
     const parsedEpisodeFromTitle = useMemo(() => parseEpisodeIdentifier(title), [title]);
     const inferredSeasonFromText = parsedEpisodeFromFilename?.season ?? parsedEpisodeFromTitle?.season ?? null;
@@ -177913,6 +178239,101 @@ ${cue.text}`).join("\n\n")}
         }
       })();
     }, [useMpv, nightMode, audioTuning, mpv.fileLoaded, mpv.fileLoadedToken]);
+    useEffect(() => {
+      if (!useMpv || !mpv.fileLoaded) return;
+      if (playbackSpeed !== 1) mpv.setSpeed(playbackSpeed);
+    }, [useMpv, mpv.fileLoaded, mpv.fileLoadedToken, playbackSpeed]);
+    useEffect(() => {
+      if (!isMpvEngine || !mpv.fileLoaded) return;
+      void mpvCommand2(["set_property", "sub-filter-sdh", stripSdh ? "yes" : "no"]);
+    }, [isMpvEngine, mpv.fileLoaded, mpv.fileLoadedToken, stripSdh]);
+    const [statsLines, setStatsLines] = useState([]);
+    useEffect(() => {
+      if (!statsHud || useMpv && !mpv.fileLoaded) {
+        setStatsLines([]);
+        return;
+      }
+      let cancelled = false;
+      const props = ["video-codec", "hwdec-current", "video-params/w", "video-params/h", "video-bitrate", "estimated-vf-fps", "frame-drop-count", "demuxer-cache-duration", "audio-codec-name", "audio-params/samplerate", "speed"];
+      const tickVideo = () => {
+        const v = videoRef.current;
+        if (!v) {
+          setStatsLines([]);
+          return;
+        }
+        const quality = typeof v.getVideoPlaybackQuality === "function" ? v.getVideoPlaybackQuality() : null;
+        let bufferedAhead = 0;
+        for (let i = 0; i < v.buffered.length; i += 1) {
+          if (v.buffered.start(i) <= v.currentTime && v.buffered.end(i) >= v.currentTime) {
+            bufferedAhead = v.buffered.end(i) - v.currentTime;
+            break;
+          }
+        }
+        const heap = performance.memory?.usedJSHeapSize;
+        setStatsLines([
+          `Video  ${v.videoWidth || "?"}\xD7${v.videoHeight || "?"}  (web)`,
+          `Frames  ${quality?.totalVideoFrames ?? "\u2013"}   Drops  ${quality?.droppedVideoFrames ?? "\u2013"}`,
+          `Buffer  ${bufferedAhead.toFixed(0)} s   Ready ${v.readyState}/4`,
+          `Speed  ${v.playbackRate}\xD7${heap ? `   Heap ${(heap / 1048576).toFixed(0)} MB` : ""}`
+        ]);
+      };
+      const tickDroid = () => {
+        const s = droid.stats;
+        if (!s) {
+          setStatsLines([]);
+          return;
+        }
+        const heap = performance.memory?.usedJSHeapSize;
+        const short = (mime) => mime.replace(/^video\//, "").replace(/^audio\//, "") || "\u2013";
+        setStatsLines([
+          `Video  ${short(s.videoCodec)}  ${s.width || "?"}\xD7${s.height || "?"}  ${s.fps > 0 ? `${s.fps.toFixed(1)} fps` : ""}`,
+          `Decoder  ${s.decoder || "\u2013"}`,
+          `Bitrate  ${s.bitrate > 0 ? `${(s.bitrate / 1e6).toFixed(1)} Mbit/s` : "\u2013"}`,
+          `Drops  ${s.dropped}   Buffer  ${s.buffered.toFixed(0)} s`,
+          `Audio  ${short(s.audioCodec)}  ${s.sampleRate > 0 ? `${s.sampleRate} Hz` : ""}${s.channels > 0 ? `  ${s.channels}ch` : ""}`,
+          `Speed  ${s.speed}\xD7${heap ? `   Heap ${(heap / 1048576).toFixed(0)} MB` : ""}`
+        ]);
+      };
+      const tick = async () => {
+        if (isDroidEngine) {
+          tickDroid();
+          return;
+        }
+        if (!useMpv) {
+          tickVideo();
+          return;
+        }
+        const values = await Promise.all(props.map((name) => mpvCommand2(["get_property", name]).catch(() => null)));
+        if (cancelled) return;
+        const [codec, hwdec, w, h, bitrate, fps, drops, cache6, acodec, arate, spd] = values;
+        const num = (v) => {
+          if (typeof v === "number") return Number.isFinite(v) ? v : null;
+          if (typeof v === "string") {
+            const parsed = Number.parseFloat(v.trim());
+            return Number.isFinite(parsed) ? parsed : null;
+          }
+          return null;
+        };
+        const heap = performance.memory?.usedJSHeapSize;
+        const lines = [
+          `Video  ${String(codec ?? "\u2013")}  ${num(w) ?? "?"}\xD7${num(h) ?? "?"}  ${num(fps) != null ? `${num(fps).toFixed(1)} fps` : ""}`,
+          `Hwdec  ${String(hwdec ?? "no")}`,
+          `Bitrate  ${num(bitrate) != null ? `${(num(bitrate) / 1e6).toFixed(1)} Mbit/s` : "\u2013"}`,
+          `Drops  ${num(drops) ?? 0}   Cache  ${num(cache6) != null ? `${num(cache6).toFixed(0)} s` : "\u2013"}`,
+          `Audio  ${String(acodec ?? "\u2013")}  ${num(arate) != null ? `${num(arate)} Hz` : ""}`,
+          `Speed  ${num(spd) ?? 1}\xD7${heap ? `   Heap ${(heap / 1048576).toFixed(0)} MB` : ""}`
+        ];
+        setStatsLines(lines);
+      };
+      void tick();
+      const id4 = window.setInterval(() => {
+        void tick();
+      }, 1e3);
+      return () => {
+        cancelled = true;
+        window.clearInterval(id4);
+      };
+    }, [statsHud, useMpv, isDroidEngine, droid.stats, mpv.fileLoaded, mpv.fileLoadedToken]);
     const [audioDelayMs, setAudioDelayMsState] = useState(() => getAudioDelayMs());
     const [outputIsBluetooth, setOutputIsBluetooth] = useState(false);
     const droidAudioDelayAppliedRef = useRef(false);
@@ -180094,33 +180515,27 @@ ${cue.text}`).join("\n\n")}
       const targetTime = (e.clientX - rect.left) / rect.width * totalDuration;
       seekToAbsolute(targetTime);
     }
-    function applyVolume(raw) {
-      const val = Math.min(1, Math.max(0, raw));
-      setVolume(val);
-      setMuted(val === 0);
+    const volumeCeiling = useMpv ? 2 : 1;
+    function pushVolume(val) {
       if (useMpv) {
+        if (val > 1) void mpvCommand2(["set_property", "volume-max", 200]);
         void mpvCommand2(["set_property", "volume", Math.round(val * 100)]);
         void mpvCommand2(["set_property", "mute", val === 0 ? "yes" : "no"]);
         return;
       }
       const v = videoRef.current;
       if (!v) return;
-      v.volume = val;
+      v.volume = Math.min(1, val);
       v.muted = val === 0;
     }
-    function handleVolumeChange(e) {
-      const val = Number(e.target.value);
+    function applyVolume(raw) {
+      const val = Math.min(volumeCeiling, Math.max(0, raw));
       setVolume(val);
       setMuted(val === 0);
-      if (useMpv) {
-        void mpvCommand2(["set_property", "volume", Math.round(val * 100)]);
-        void mpvCommand2(["set_property", "mute", val === 0 ? "yes" : "no"]);
-        return;
-      }
-      const v = videoRef.current;
-      if (!v) return;
-      v.volume = val;
-      v.muted = val === 0;
+      pushVolume(val);
+    }
+    function handleVolumeChange(e) {
+      applyVolume(Number(e.target.value));
     }
     const episodeCode = season != null && episode != null ? `S${String(season).padStart(2, "0")}E${String(episode).padStart(2, "0")}` : null;
     const headerTitle = episodeCode ? getSeriesNameFirst() ? `${title} \xB7 ${episodeCode}` : `${episodeCode} \xB7 ${title}` : title;
@@ -180217,6 +180632,7 @@ ${cue.text}`).join("\n\n")}
     const leaveCreditsModeRef = useRef(() => {
     });
     const [creditsItems, setCreditsItems] = useState([]);
+    const creditsLibraryIdSets = useLibraryIdSets();
     useEffect(() => {
       if (!creditsMode) return;
       void fetch(`/api/debug-log?msg=${encodeURIComponent(`[credits] kort=${creditsItems.length}`)}`).catch(() => {
@@ -180235,7 +180651,7 @@ ${cue.text}`).join("\n\n")}
             { signal: controller.signal }
           );
           const list = await listResponse.json();
-          const ids = (list.items ?? []).map((entry) => String(entry?.id ?? "").replace(/^(?:movie|tv)-/, "")).filter((id4) => /^\d+$/.test(id4)).slice(0, 5);
+          const ids = (list.items ?? []).map((entry) => String(entry?.id ?? "").replace(/^(?:movie|tv)-/, "")).filter((id4) => /^\d+$/.test(id4)).slice(0, creditsLibraryIdSets ? 24 : 5);
           if (controller.signal.aborted) return;
           if (ids.length === 0) {
             leaveCreditsModeRef.current();
@@ -180251,7 +180667,8 @@ ${cue.text}`).join("\n\n")}
             }
           }));
           if (controller.signal.aborted) return;
-          const usable = hydrated.filter((entry) => entry !== null);
+          const hydratedItems = hydrated.filter((entry) => entry !== null);
+          const usable = creditsLibraryIdSets ? hydratedItems.filter((entry) => itemInLibrary(entry, creditsLibraryIdSets)).slice(0, 5) : hydratedItems;
           if (usable.length === 0) {
             leaveCreditsModeRef.current();
             return;
@@ -180261,7 +180678,7 @@ ${cue.text}`).join("\n\n")}
         }
       })();
       return () => controller.abort();
-    }, [creditsMode, wikiTmdbId, tmdbId, mediaType]);
+    }, [creditsMode, wikiTmdbId, tmdbId, mediaType, creditsLibraryIdSets]);
     const [creditsLogos, setCreditsLogos] = useState({});
     useEffect(() => {
       if (creditsItems.length === 0) return;
@@ -180819,7 +181236,7 @@ ${cue.text}`).join("\n\n")}
             "aria-valuenow": Math.round((muted ? 0 : volume) * 100),
             onClick: (event) => {
               const rect = event.currentTarget.getBoundingClientRect();
-              applyVolume((event.clientX - rect.left) / rect.width);
+              applyVolume((event.clientX - rect.left) / rect.width * volumeCeiling);
             },
             onKeyDown: (event) => {
               if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
@@ -180828,8 +181245,8 @@ ${cue.text}`).join("\n\n")}
             },
             className: "relative h-1 w-[84px] flex-none cursor-pointer rounded-full bg-white/[0.18]",
             children: [
-              /* @__PURE__ */ jsx("div", { className: "absolute inset-y-0 left-0 rounded-full bg-slate-300", style: { width: `${(muted ? 0 : volume) * 100}%` } }),
-              /* @__PURE__ */ jsx("div", { className: "absolute top-1/2 h-[11px] w-[11px] -translate-y-1/2 rounded-full bg-white", style: { left: `calc(${(muted ? 0 : volume) * 100}% - 5px)` } })
+              /* @__PURE__ */ jsx("div", { className: "absolute inset-y-0 left-0 rounded-full bg-slate-300", style: { width: `${(muted ? 0 : volume) / volumeCeiling * 100}%` } }),
+              /* @__PURE__ */ jsx("div", { className: "absolute top-1/2 h-[11px] w-[11px] -translate-y-1/2 rounded-full bg-white", style: { left: `calc(${(muted ? 0 : volume) / volumeCeiling * 100}% - 5px)` } })
             ]
           }
         )
@@ -180969,6 +181386,7 @@ ${cue.text}`).join("\n\n")}
         {
           ref: moreTriggerRef,
           type: "button",
+          ...dtStation,
           onClick: () => setShowMoreMenu((value) => !value),
           title: t("moreActions"),
           "aria-label": t("moreActions"),
@@ -181073,6 +181491,12 @@ ${cue.text}`).join("\n\n")}
         ...tvSeekStation,
         className: `vp-seek-track relative cursor-pointer rounded-full bg-white/[0.18] ${widthClass} ${seekHeightClass}`,
         onPointerDown: handleSeekPointerDown,
+        onWheel: (event) => {
+          if (!desktopChrome || !totalDuration) return;
+          event.preventDefault();
+          const step = event.shiftKey ? 1 : 10;
+          seek(event.deltaY < 0 ? step : -step);
+        },
         style: { touchAction: "none" },
         children: [
           /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "absolute -inset-y-3 inset-x-0" }),
@@ -181091,14 +181515,53 @@ ${cue.text}`).join("\n\n")}
               style: { left: `${outroZone.left}%`, width: `${outroZone.width}%` }
             }
           ) : null,
-          scrubPercent !== null && totalDuration > 0 ? /* @__PURE__ */ jsx(
-            "div",
-            {
-              className: "pointer-events-none absolute -top-9 z-20 -translate-x-1/2 rounded-md bg-black/85 px-2 py-1 text-[13px] font-semibold tabular-nums text-white shadow-lg backdrop-blur-sm",
-              style: { left: `clamp(1.75rem, ${seekPercent}%, calc(100% - 1.75rem))` },
-              children: fmt(seekTime)
-            }
-          ) : null,
+          scrubPercent !== null && totalDuration > 0 ? (() => {
+            const thumb = scrubPreview && scrubPreview.intervalMs > 0 && scrubPreview.tileWidth > 0 && scrubPreview.tileHeight > 0 ? (() => {
+              const perTile = scrubPreview.tileWidth * scrubPreview.tileHeight;
+              const declared = scrubPreview.thumbnailCount;
+              const declaredMax = declared >= perTile ? declared - 1 : declared * perTile - 1;
+              const byDuration = totalDuration > 0 ? Math.floor(totalDuration * 1e3 / scrubPreview.intervalMs) : Number.POSITIVE_INFINITY;
+              const idx = Math.max(0, Math.min(declaredMax, byDuration, Math.floor(seekTime * 1e3 / scrubPreview.intervalMs)));
+              const tileIndex = Math.floor(idx / perTile);
+              const within = idx % perTile;
+              const col = within % scrubPreview.tileWidth;
+              const row = Math.floor(within / scrubPreview.tileWidth);
+              const scale2 = Math.min(1, 240 / scrubPreview.width);
+              return {
+                url: scrubPreview.urlTemplate.replace("{index}", String(tileIndex)),
+                w: Math.round(scrubPreview.width * scale2),
+                h: Math.round(scrubPreview.height * scale2),
+                x: -Math.round(col * scrubPreview.width * scale2),
+                y: -Math.round(row * scrubPreview.height * scale2),
+                sheetW: Math.round(scrubPreview.width * scrubPreview.tileWidth * scale2),
+                sheetH: Math.round(scrubPreview.height * scrubPreview.tileHeight * scale2)
+              };
+            })() : null;
+            return /* @__PURE__ */ jsxs(
+              "div",
+              {
+                className: "pointer-events-none absolute z-20 -translate-x-1/2 overflow-hidden rounded-md bg-black/85 text-center text-[13px] font-semibold tabular-nums text-white shadow-lg backdrop-blur-sm",
+                style: { left: `clamp(1.75rem, ${seekPercent}%, calc(100% - 1.75rem))`, top: thumb ? `calc(-2.25rem - ${thumb.h}px)` : "-2.25rem" },
+                children: [
+                  thumb ? /* @__PURE__ */ jsx(
+                    "div",
+                    {
+                      "aria-hidden": true,
+                      style: {
+                        width: thumb.w,
+                        height: thumb.h,
+                        backgroundImage: `url("${thumb.url}")`,
+                        backgroundPosition: `${thumb.x}px ${thumb.y}px`,
+                        backgroundSize: `${thumb.sheetW}px ${thumb.sheetH}px`,
+                        backgroundRepeat: "no-repeat"
+                      }
+                    }
+                  ) : null,
+                  /* @__PURE__ */ jsx("div", { className: "px-2 py-1", children: fmt(seekTime) })
+                ]
+              }
+            );
+          })() : null,
           totalDuration > 0 ? /* @__PURE__ */ jsxs(Fragment2, { children: [
             /* @__PURE__ */ jsx("div", { className: `absolute inset-y-0 left-0 rounded-full ${seekFillColorClass} ${seekFillStyleClass}`, style: { width: `${seekPercent}%` } }),
             playerLayout.seekBarDot ? /* @__PURE__ */ jsx(
@@ -181278,7 +181741,7 @@ ${cue.text}`).join("\n\n")}
       }
       if (holdSpeedActiveRef.current) {
         holdSpeedActiveRef.current = false;
-        mpv.setSpeed(1);
+        mpv.setSpeed(playbackSpeedRef.current);
         setGestureHud(null);
         return true;
       }
@@ -182211,6 +182674,15 @@ ${cue.text}`).join("\n\n")}
                     isTv
                   }
                 ),
+                statsHud && statsLines.length > 0 && /* @__PURE__ */ jsx(
+                  "div",
+                  {
+                    className: "pointer-events-none absolute right-4 top-4 z-40 rounded-xl border border-white/10 px-3 py-2 font-mono text-[11px] leading-[1.5] text-white/90 shadow-[0_8px_24px_rgba(0,0,0,0.35)]",
+                    style: { background: "rgba(58, 59, 66, 0.92)" },
+                    "aria-hidden": true,
+                    children: statsLines.map((line) => /* @__PURE__ */ jsx("div", { children: line }, line.split(" ")[0]))
+                  }
+                ),
                 renderedSubtitleText && /* @__PURE__ */ jsx(
                   "div",
                   {
@@ -182474,8 +182946,26 @@ ${cue.text}`).join("\n\n")}
                           ] }),
                           subtitleAutoSyncState.type === "analyzing" && /* @__PURE__ */ jsx("div", { className: "mt-2 text-[11px] leading-5 text-slate-400", children: t("subtitleAutoSyncAnalyzing") })
                         ] }),
+                        /* @__PURE__ */ jsx("div", { className: "px-4 py-2", children: /* @__PURE__ */ jsxs(
+                          "button",
+                          {
+                            type: "button",
+                            "data-f": isTv ? "1" : void 0,
+                            onClick: () => {
+                              const next2 = !stripSdh;
+                              setStripSdhState(next2);
+                              setStripSdh(next2);
+                            },
+                            className: `flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-xs transition ${stripSdh ? "border-white/25 bg-white/10 text-white" : "border-white/10 bg-white/5 text-slate-300 hover:border-white/20"}`,
+                            title: t("stripSdhHint"),
+                            children: [
+                              /* @__PURE__ */ jsx("span", { children: t("stripSdhTitle") }),
+                              /* @__PURE__ */ jsx("span", { className: "text-slate-400", children: t(stripSdh ? "on" : "off") })
+                            ]
+                          }
+                        ) }),
                         [
-                          { label: t("delay"), value: subDelay, unit: "s", dec: () => setSubDelay((v) => Math.max(-30, Math.round((v - 0.1) * 10) / 10)), inc: () => setSubDelay((v) => Math.min(30, Math.round((v + 0.1) * 10) / 10)) },
+                          { label: t("delay"), value: subDelay, unit: "s", dec: () => setSubDelay((v) => Math.max(-180, Math.round((v - 0.1) * 10) / 10)), inc: () => setSubDelay((v) => Math.min(180, Math.round((v + 0.1) * 10) / 10)) },
                           { label: t("size"), value: subSize, unit: "%", dec: () => setSubSize((v) => Math.max(50, v - 10)), inc: () => setSubSize((v) => Math.min(200, v + 10)) },
                           { label: t("verticalPosition"), value: subVerticalPos, unit: "%", dec: () => setSubVerticalPos((v) => Math.max(0, v - 5)), inc: () => setSubVerticalPos((v) => Math.min(90, v + 5)) }
                         ].map(({ label, value, unit, dec, inc }) => /* @__PURE__ */ jsxs("div", { className: "px-4 py-2", children: [
@@ -182863,7 +183353,7 @@ ${cue.text}`).join("\n\n")}
                                 {
                                   type: "range",
                                   min: 0,
-                                  max: 1,
+                                  max: volumeCeiling,
                                   step: 0.05,
                                   value: muted ? 0 : volume,
                                   onChange: handleVolumeChange,
@@ -183200,6 +183690,52 @@ ${cue.text}`).join("\n\n")}
                                 ]
                               }
                             ),
+                            /* @__PURE__ */ jsxs(
+                              "button",
+                              {
+                                type: "button",
+                                ...dtStation,
+                                "data-f": isTv ? "1" : void 0,
+                                onClick: () => {
+                                  const next2 = nextPlaybackSpeed(playbackSpeed);
+                                  setPlaybackSpeedState(next2);
+                                  savePlaybackSpeed(mediaType, tmdbId ?? null, next2);
+                                  mpv.setSpeed(next2);
+                                },
+                                className: dtMoreRowClass,
+                                children: [
+                                  /* @__PURE__ */ jsx("svg", { className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: /* @__PURE__ */ jsx("path", { d: "M13 3 4 14h7l-1 7 9-11h-7l1-7Z", strokeLinecap: "round", strokeLinejoin: "round" }) }),
+                                  /* @__PURE__ */ jsxs("span", { className: dtMoreTextClass, children: [
+                                    t("playbackSpeedMenuLabel"),
+                                    ": ",
+                                    playbackSpeed,
+                                    "\xD7"
+                                  ] })
+                                ]
+                              }
+                            ),
+                            /* @__PURE__ */ jsxs(
+                              "button",
+                              {
+                                type: "button",
+                                ...dtStation,
+                                "data-f": isTv ? "1" : void 0,
+                                onClick: () => {
+                                  const next2 = !statsHud;
+                                  setStatsHudState(next2);
+                                  setStatsHud(next2);
+                                },
+                                className: dtMoreRowClass,
+                                children: [
+                                  /* @__PURE__ */ jsx("svg", { className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: /* @__PURE__ */ jsx("path", { d: "M4 20V10M10 20V4M16 20v-7M22 20H2", strokeLinecap: "round", strokeLinejoin: "round" }) }),
+                                  /* @__PURE__ */ jsxs("span", { className: dtMoreTextClass, children: [
+                                    t("statsHudMenuLabel"),
+                                    ": ",
+                                    t(statsHud ? "on" : "off")
+                                  ] })
+                                ]
+                              }
+                            ),
                             isMpvEngine && /* @__PURE__ */ jsxs(
                               "button",
                               {
@@ -183349,7 +183885,6 @@ ${cue.text}`).join("\n\n")}
 
   // components/player/next-episode-card.tsx
   init_react_shim();
-  // eslint-disable-next-line @next/next/no-img-element
   init_jsx_runtime_shim();
   function NextEpisodeCard({
     seriesTitle,
@@ -184043,10 +184578,11 @@ ${cue.text}`).join("\n\n")}
       "div",
       {
         style: {
-          background: TOKENS.surface1,
-          border: `1px solid ${TOKENS.border}`,
+          background: "rgba(255, 255, 255, 0.055)",
+          border: "1px solid rgba(255, 255, 255, 0.12)",
           borderRadius: 14,
           padding,
+          marginBottom: 10,
           ...style2
         },
         children

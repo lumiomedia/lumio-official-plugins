@@ -1,10 +1,9 @@
 import { createElement } from 'react'
 import * as sdk from '@/lib/plugin-sdk'
-import { useTvMode, type BrowsePageProps, type LumioPlugin } from '@/lib/plugin-sdk'
+import { type BrowsePageProps, type LumioPlugin } from '@/lib/plugin-sdk'
 import { getLiveTvHideHero, onLiveTvHideHeroChanged } from './live-tv-data'
 import { LiveTvSettingsSection } from './live-tv-settings-section'
 import { LiveTvHomeOverride } from './live-tv-home-override'
-import { LiveTvGrid } from './live-tv-grid'
 import { LiveTvHub } from './live-tv-hub'
 import { LiveTvRemindersMount } from './live-tv-reminders-mount'
 import { LiveTvEpgPage } from './live-tv-epg-page'
@@ -41,44 +40,21 @@ if (typeof window !== 'undefined') {
   }
 }
 
-interface M3uChannel {
-  name: string
-  logo: string | null
-  group: string
-  url: string
-  tvgId: string | null
-}
-
-function decodeInitialChannel(params?: BrowsePageProps['params']): M3uChannel | null {
-  const url = params?.url?.trim()
-  if (!url) return null
-  return {
-    name: params?.name?.trim() || 'Unknown',
-    logo: params?.logo?.trim() || null,
-    group: params?.group?.trim() || 'Other',
-    url,
-    tvgId: params?.tvgId?.trim() || null,
-  }
-}
-
 const LIVE_TV_BROWSE_PAGE_ID = 'live-tv-browse'
 
 // Sidans vyer (params.view): hub (standard), epg, channel. Sökvyn togs bort
 // 2026-09-03 (Jerry): kanalsök sker i hubbens egna fält.
 //
-// RUTNÄTET finns BARA på TV (Jerry 2026-09-03). Där äger det fjärrnavigeringen
-// och kan inte tas bort. På skrivbord och mobil är hubben vyn: rutnätet var en
-// äldre parallell yta som nåddes via två knappar och en direktlänk, med egen
-// sökning och eget urval — två sätt att göra samma sak, varav det ena inte
-// underhölls. En direktlänkad kanal utan view öppnar nu kanalsidan, som klarar
-// samma params (channelFromParams faller tillbaka på params när kanalen inte
-// finns i listorna).
+// Hubben är vyn på ALLA ytor, TV också (Jerry 2026-09-06, "vill ha samma
+// Live TV-plugin som på desktop"). Rutnätet var en äldre parallell yta med
+// egen sökning och eget urval; på TV levde det kvar ett tag för att det ägde
+// fjärrnavigeringen, men hubben, kanalsidan och EPG-sidan bär numera sina
+// egna stationer. Rutnätet finns bara kvar för startsideöverstyrningen
+// (live-tv-home-override.tsx), som är en annan funktion. En direktlänkad kanal
+// utan view öppnar kanalsidan, som klarar samma params (channelFromParams
+// faller tillbaka på params när kanalen inte finns i listorna).
 function LiveTvBrowsePage({ params, onNavigate }: BrowsePageProps) {
-  const isTv = useTvMode()
   const view = params?.view
-  if (isTv) {
-    return createElement(LiveTvGrid, { initialChannel: decodeInitialChannel(params), tvCompactTop: true })
-  }
   if (view === 'epg') return createElement(LiveTvEpgPage, { onNavigate })
   if (view === 'channel' || (!view && params?.url)) return createElement(LiveTvChannelPage, { params, onNavigate })
   return createElement(LiveTvHub, { onNavigate })

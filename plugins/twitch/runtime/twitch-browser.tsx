@@ -1,8 +1,10 @@
 'use client'
 
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import {
+  getTvKeyboardPanel,
   onAuthCapabilitiesChanged,
+  requestBrowseBack,
   useLang,
   type BrowsePageProps,
   type HomeRowProps,
@@ -37,6 +39,15 @@ import type { TwitchStream, TwitchCategory, TwitchVideo, TwitchClip, EnrichedFol
 type StreamLanguage = '' | 'sv' | 'en'
 type StreamSort = 'viewers-desc' | 'viewers-asc'
 type FollowingTab = 'overview' | 'live' | 'channels' | 'videos'
+
+/**
+ * TV-läget (Jerry 2026-09-06): allt som går att trycka på är en fokusstation
+ * för värdens motor (data-f). Läses ur dokumentet i stället för en hook så
+ * att även små hjälpkomponenter kan märka sina knappar utan omskrivning —
+ * TV-läget byter aldrig under körning.
+ */
+const isTvDom = () => typeof document !== 'undefined' && document.documentElement.getAttribute('data-tv') === '1'
+const tvf = () => (isTvDom() ? { 'data-f': '' } : {})
 
 // Cap the number of followed channels we fan out VOD requests to on the
 // Following → Videos tab, to stay well within Helix rate limits.
@@ -130,6 +141,7 @@ const TEXT = {
   watchLive: { en: 'Watch live', sv: 'Titta live' },
   openOnTwitch: { en: 'Open on Twitch', sv: 'Öppna på Twitch' },
   backToChannel: { en: 'Back', sv: 'Tillbaka' },
+  backToApp: { en: 'Back', sv: 'Tillbaka' },
 } as const
 
 type TextKey = keyof typeof TEXT
@@ -486,7 +498,7 @@ function SegmentedControl<T extends string>({
         {options.map((option) => (
           <button
             key={option.value}
-            type="button"
+            type="button" {...tvf()}
             onClick={() => onChange(option.value)}
             className={`h-8 rounded-full px-3.5 text-[0.6rem] font-normal uppercase tracking-[0.16em] transition-all ${
               value === option.value
@@ -521,6 +533,31 @@ function TwitchPageNav({
   onNavigate: (target: { pageId: string }) => void
 }) {
   const { lang } = useLang()
+  // Skrivbord (mus, inte TV): ingen Tillbaka — värdens menypill/sidomeny är
+  // vägen ut där (Jerry 2026-09-07, "behövs ingen backknapp här"). Mobil och
+  // TV behåller knappen: pillret är dolt på Twitch-sidorna där.
+  const desktopPointer = !isTvDom() && typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(pointer: fine) and (min-width: 640px)').matches
+  // Värdens menypill kan stå på samma rad (skrivbord i pill-läge): flikraden
+  // börjar då till höger om pillret — mätt, eftersom pillrets bredd följer
+  // etiketten. Utan pill (mobil, TV) ingen förskjutning.
+  const navRef = useRef<HTMLDivElement | null>(null)
+  const [chipClear, setChipClear] = useState(0)
+  useLayoutEffect(() => {
+    if (isTvDom()) return
+    const el = navRef.current
+    if (!el) return
+    const measure = () => {
+      const chip = document.querySelector('.mc-chip')
+      const rect = chip ? chip.getBoundingClientRect() : null
+      const hasChip = Boolean(rect && rect.width > 0 && rect.height > 0)
+      const next = hasChip ? Math.max(0, Math.round(rect!.right + 12 - el.getBoundingClientRect().left)) : 0
+      setChipClear((current) => (Math.abs(current - next) >= 1 ? next : current))
+    }
+    measure()
+    const settle = window.setTimeout(measure, 300)
+    window.addEventListener('resize', measure)
+    return () => { window.clearTimeout(settle); window.removeEventListener('resize', measure) }
+  }, [])
   return (
     /* EN rad som scrollar i sidled, aldrig radbrytning (Jerry 2026-09-03).
        `flex-wrap` la de fyra flikarna på två rader i telefonens 328 px, alltså
@@ -529,11 +566,43 @@ function TwitchPageNav({
        (explorer-hero.tsx): overflow-x med gömd rullningslist och poster som
        inte får krympa. På skrivbordet får alla fyra plats på raden, så
        overflow slår aldrig till där och utseendet är oförändrat. */
-    <div className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    // TV: 8 px luft i rullbehållaren (ring 1 px + 2 px offset) — med 4 px klipptes
+    // ringens vänstra sida på första chipet (Jerry 2026-09-06).
+    // Även 6 px LODRÄTT: overflow-x klipper i höjdled också, och fokusringen
+    // (1 px + 2 px offset) förlorade topp och botten (Jerry 2026-09-06).
+    // Mobil: pl-3 mot -mx-2 ger +4 px, så Tillbaka står 20 px från kanten —
+    // exakt där menypillret står på andra sidor (Jerry 2026-09-07, "linjera
+    // menyn så close är samma som på kalendern"). Värden lägger raden på
+    // pillrets linje; +3 px centrerar de 36 px höga knapparna på pillrets 42.
+    <div
+      ref={navRef}
+      className="-mx-2 -my-1.5 flex items-center gap-2 overflow-x-auto py-1.5 pl-3 pr-2 sm:pl-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      style={{
+        scrollPaddingInline: 8,
+        ...(isTvDom() ? null : { marginTop: 'calc(-0.375rem + 3px)' }),
+        ...(chipClear > 0 ? { paddingLeft: chipClear } : null),
+      }}
+    >
+      {desktopPointer ? null : <button
+        type="button" {...tvf()}
+        // Tillbaka på mobil och TV (Jerry 2026-09-07): värdens menypill visas
+        // inte på Twitch-sidorna där, den här knappen är vägen ut.
+        onClick={() => requestBrowseBack()}
+        aria-label={TEXT.backToApp[lang]}
+        className="flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-[#fcfcff14] pl-3 pr-4 text-xs text-slate-200 backdrop-blur-md transition hover:bg-[#fcfcff22] hover:text-white sm:text-sm"
+      >
+        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" /></svg>
+        {TEXT.backToApp[lang]}
+      </button>}
       {TWITCH_PAGES.map((page) => (
         <button
           key={page.id}
-          type="button"
+          type="button" {...tvf()}
+          {...(isTvDom() && page.id === current ? { 'data-init': '' } : {})}
+          // TV: HÖGER från sista chipet (Sök) ska nå sorteringen uppe till
+          // höger, inte falla ner i rutnätet (Jerry 2026-09-06). Väljaren
+          // träffar inget på sidor utan sortering — då gäller geometrin.
+          {...(isTvDom() && page.id === TWITCH_PAGES[TWITCH_PAGES.length - 1].id ? { 'data-f-right': '[data-twitch-sort] [data-f]' } : {})}
           onClick={() => {
             if (page.id !== current) onNavigate({ pageId: page.id })
           }}
@@ -560,7 +629,7 @@ function StreamCard({
   const text = useTwitchText()
   return (
     <div
-      role="button"
+      role="button" {...tvf()}
       tabIndex={0}
       onClick={() => onPlay(stream)}
       onKeyDown={(event) => {
@@ -610,18 +679,24 @@ function TwitchGridShell({
   subtitle,
   children,
   actions,
+  nav,
 }: {
   title: string
   subtitle?: string
   children: ReactNode
   actions?: ReactNode
+  /** TV: sidflikarna UNDER titel och text (Jerry 2026-09-06), inte ovanför. */
+  nav?: ReactNode
 }) {
   return (
     <section className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
+        {/* min-w-0: utan den kunde sorteringen till höger klämma flikraden
+            så att chipsen klipptes. */}
+        <div className="min-w-0">
           <h2 className="text-2xl font-semibold text-white">{title}</h2>
           {subtitle ? <p className="mt-1 text-sm text-slate-400">{subtitle}</p> : null}
+          {nav ? <div className="mt-4">{nav}</div> : null}
         </div>
         {actions}
       </div>
@@ -653,7 +728,7 @@ function StreamFilterBar({
 }) {
   const text = useTwitchText()
   return (
-    <div className="flex flex-wrap items-center gap-4">
+    <div className="flex flex-wrap items-center gap-4" data-twitch-sort="">
       <SegmentedControl<StreamSort>
         label={text('filterSort')}
         value={sort}
@@ -706,8 +781,8 @@ export function TwitchBrowsePage({ pageId, onNavigate }: BrowsePageProps) {
 
   return (
     <div className="space-y-6">
-      <TwitchPageNav current={pageId} onNavigate={onNavigate} />
-      <TwitchGridShell title={text('liveNowTitle')} subtitle={text('liveNowSubtitle')} actions={filterBar}>
+      {isTvDom() ? null : <TwitchPageNav current={pageId} onNavigate={onNavigate} />}
+      <TwitchGridShell title={text('liveNowTitle')} subtitle={text('liveNowSubtitle')} actions={filterBar} nav={isTvDom() ? <TwitchPageNav current={pageId} onNavigate={onNavigate} /> : undefined}>
         {body}
       </TwitchGridShell>
 
@@ -725,7 +800,7 @@ function CategoryCard({
 }) {
   return (
     <div
-      role="button"
+      role="button" {...tvf()}
       tabIndex={0}
       onClick={() => onSelect(category)}
       onKeyDown={(event) => {
@@ -755,7 +830,7 @@ function LoadMoreButton({ onClick, label }: { onClick: () => void; label: string
   return (
     <div className="flex justify-center pt-2">
       <button
-        type="button"
+        type="button" {...tvf()}
         onClick={onClick}
         className="h-10 rounded-full border border-transparent bg-[#fcfcff14] backdrop-blur-md px-5 text-[0.65rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:bg-[#fcfcff22] hover:text-white"
       >
@@ -857,8 +932,8 @@ export function TwitchCategoriesPage({ pageId, onNavigate }: BrowsePageProps) {
 
   return (
     <div className="space-y-6">
-      {pageNav}
-      <TwitchGridShell title={text('categoriesTitle')} subtitle={text('categoriesSubtitle')}>
+      {isTvDom() ? null : pageNav}
+      <TwitchGridShell title={text('categoriesTitle')} subtitle={text('categoriesSubtitle')} nav={isTvDom() ? pageNav : undefined}>
         {categories.length === 0 ? (
           <p className="text-sm text-slate-400">{text('categoriesEmpty')}</p>
         ) : (
@@ -886,7 +961,7 @@ function ChannelAvatarCard({
   const initial = (channel.displayName || channel.login || '?').charAt(0).toUpperCase()
   return (
     <div
-      role="button"
+      role="button" {...tvf()}
       tabIndex={0}
       onClick={() => onSelect(channel)}
       onKeyDown={(event) => {
@@ -1011,15 +1086,16 @@ export function TwitchFollowingPage({ pageId, onNavigate }: BrowsePageProps) {
         <div>
           <h2 className="text-2xl font-semibold text-white">{text('followingTitle')}</h2>
           <p className="mt-1 text-sm text-slate-400">{text('followingSubtitle')}</p>
+          {isTvDom() ? <div className="mt-4">{pageNav}</div> : null}
         </div>
-        {pageNav}
+        {isTvDom() ? null : pageNav}
       </div>
 
       <div className="flex flex-wrap gap-2">
         {tabs.map((entry) => (
           <button
             key={entry.key}
-            type="button"
+            type="button" {...tvf()}
             onClick={() => setTab(entry.key)}
             className={`h-9 rounded-full border px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] transition-all ${
               tab === entry.key
@@ -1249,7 +1325,7 @@ function formatClipDate(value: string): string {
 function VideoCard({ video, onPlay }: { video: TwitchVideo; onPlay: (video: TwitchVideo) => void }) {
   return (
     <div
-      role="button"
+      role="button" {...tvf()}
       tabIndex={0}
       onClick={() => onPlay(video)}
       onKeyDown={(event) => {
@@ -1288,7 +1364,7 @@ function VideoCard({ video, onPlay }: { video: TwitchVideo; onPlay: (video: Twit
 function ClipCard({ clip, onPlay }: { clip: TwitchClip; onPlay: (clip: TwitchClip) => void }) {
   return (
     <div
-      role="button"
+      role="button" {...tvf()}
       tabIndex={0}
       onClick={() => onPlay(clip)}
       onKeyDown={(event) => {
@@ -1323,7 +1399,7 @@ function ClipCard({ clip, onPlay }: { clip: TwitchClip; onPlay: (clip: TwitchCli
   )
 }
 
-export function TwitchChannelPage({ userId, broadcasterId, login, displayName, isLive, liveTitle }: SelectedChannel) {
+export function TwitchChannelPage({ userId, broadcasterId, login, displayName, isLive, liveTitle, hideActions }: SelectedChannel & { hideActions?: boolean }) {
   const text = useTwitchText()
   const [tab, setTab] = useState<'vods' | 'clips'>('vods')
   const { videos, loading: videosLoading, error: videosError } = useChannelVideos(userId)
@@ -1347,9 +1423,11 @@ export function TwitchChannelPage({ userId, broadcasterId, login, displayName, i
           {login ? <p className="text-sm text-slate-400">@{login}</p> : null}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {isLive ? (
+          {/* Nedborrad kanal (ChannelDrilldown) lägger Live/Öppna på Twitch
+              bredvid Tillbaka i stället — då döljs de här. */}
+          {!hideActions && isLive ? (
             <button
-              type="button"
+              type="button" {...tvf()}
               onClick={() => setLiveOpen(true)}
               className="flex h-9 items-center rounded-full bg-accent-500 px-4 text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-accent-400"
             >
@@ -1359,17 +1437,19 @@ export function TwitchChannelPage({ userId, broadcasterId, login, displayName, i
               {text('watchLive')}
             </button>
           ) : null}
-          <button
-            type="button"
-            onClick={() => void openTwitchUrl(`https://www.twitch.tv/${login}`)}
-            className="h-9 rounded-full border border-transparent bg-[#fcfcff14] backdrop-blur-md px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:bg-[#fcfcff22] hover:text-white"
-          >
-            {text('openOnTwitch')}
-          </button>
-          <button type="button" onClick={() => setTab('vods')} className={tabButtonClass('vods')}>
+          {!hideActions ? (
+            <button
+              type="button" {...tvf()}
+              onClick={() => void openTwitchUrl(`https://www.twitch.tv/${login}`)}
+              className="h-9 rounded-full border border-transparent bg-[#fcfcff14] backdrop-blur-md px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:bg-[#fcfcff22] hover:text-white"
+            >
+              {text('openOnTwitch')}
+            </button>
+          ) : null}
+          <button type="button" {...tvf()} onClick={() => setTab('vods')} className={tabButtonClass('vods')}>
             {text('vodsTab')}
           </button>
-          <button type="button" onClick={() => setTab('clips')} className={tabButtonClass('clips')}>
+          <button type="button" {...tvf()} onClick={() => setTab('clips')} className={tabButtonClass('clips')}>
             {text('clipsTab')}
           </button>
         </div>
@@ -1441,20 +1521,48 @@ function ChannelDrilldown({
   backLabel?: string
 }) {
   const text = useTwitchText()
+  const [liveOpen, setLiveOpen] = useState(false)
+  void onNavigate
+  // Öppnad kanal: ingen Live/Kategorier/Följer-meny (Jerry 2026-09-06) —
+  // Tillbaka är första station, och kanalens egna val står bredvid den.
   return (
     <div className="space-y-6">
-      <TwitchPageNav current="" onNavigate={onNavigate} />
-      <button
-        type="button"
-        onClick={onBack}
-        className="flex h-9 items-center gap-1.5 rounded-full border border-transparent bg-[#fcfcff14] backdrop-blur-md px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:bg-white/[0.05] hover:text-white"
-      >
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-          <polyline points="15 18 9 12 15 6" />
-        </svg>
-        {backLabel ?? text('backToChannel')}
-      </button>
-      <TwitchChannelPage {...channel} />
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button" {...tvf()}
+          {...(isTvDom() ? { 'data-init': '' } : {})}
+          onClick={onBack}
+          className="flex h-9 items-center gap-1.5 rounded-full border border-transparent bg-[#fcfcff14] backdrop-blur-md px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:bg-white/[0.05] hover:text-white"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          {backLabel ?? text('backToChannel')}
+        </button>
+        {channel.isLive ? (
+          <button
+            type="button" {...tvf()}
+            onClick={() => setLiveOpen(true)}
+            className="flex h-9 items-center rounded-full bg-accent-500 px-4 text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-accent-400"
+          >
+            <svg className="mr-1.5 h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+            {text('watchLive')}
+          </button>
+        ) : null}
+        <button
+          type="button" {...tvf()}
+          onClick={() => void openTwitchUrl(`https://www.twitch.tv/${channel.login}`)}
+          className="h-9 rounded-full border border-transparent bg-[#fcfcff14] backdrop-blur-md px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:bg-[#fcfcff22] hover:text-white"
+        >
+          {text('openOnTwitch')}
+        </button>
+      </div>
+      <TwitchChannelPage {...channel} hideActions />
+      {liveOpen ? (
+        <TwitchPlayerModal kind="live" id={channel.login} title={channel.liveTitle ?? channel.displayName ?? channel.login} onClose={() => setLiveOpen(false)} />
+      ) : null}
     </div>
   )
 }
@@ -1464,6 +1572,9 @@ export function TwitchSearchPage({ pageId, onNavigate }: BrowsePageProps) {
   const pageNav = <TwitchPageNav current={pageId} onNavigate={onNavigate} />
   const [inputValue, setInputValue] = useState('')
   const [query, setQuery] = useState('')
+  // TV: sökfältet är en station som öppnar värdens tangentbord (Jerry 2026-09-06).
+  const [tvKeyboardOpen, setTvKeyboardOpen] = useState(false)
+  const TvKeyboardPanel = isTvDom() ? getTvKeyboardPanel() : null
   const { channels, categories, loading, error } = useTwitchSearch(query)
   const [selectedCategory, setSelectedCategory] = useState<TwitchCategory | null>(null)
   const [selectedChannel, setSelectedChannel] = useState<SelectedChannel | null>(null)
@@ -1495,7 +1606,7 @@ export function TwitchSearchPage({ pageId, onNavigate }: BrowsePageProps) {
 
   const backToResults = (
     <button
-      type="button"
+      type="button" {...tvf()}
       onClick={() => {
         setSelectedCategory(null)
         setSelectedChannel(null)
@@ -1560,11 +1671,12 @@ export function TwitchSearchPage({ pageId, onNavigate }: BrowsePageProps) {
 
   return (
     <div className="space-y-6">
-      {pageNav}
+      {isTvDom() ? null : pageNav}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-semibold text-white">{text('searchTitle')}</h2>
           <p className="mt-1 text-sm text-slate-400">{text('searchSubtitle')}</p>
+          {isTvDom() ? <div className="mt-4">{pageNav}</div> : null}
         </div>
         <form
           className="w-full sm:w-auto sm:min-w-[22rem] sm:max-w-md sm:flex-1"
@@ -1573,6 +1685,15 @@ export function TwitchSearchPage({ pageId, onNavigate }: BrowsePageProps) {
             setQuery(inputValue)
           }}
         >
+          {TvKeyboardPanel ? (
+            <button
+              type="button" {...tvf()}
+              onClick={() => setTvKeyboardOpen(true)}
+              className="h-11 w-full rounded-full border border-transparent bg-[#fcfcff14] px-5 text-left text-sm text-white"
+            >
+              {inputValue || text('searchPlaceholder')}
+            </button>
+          ) : (
           <input
             type="search"
             value={inputValue}
@@ -1580,6 +1701,16 @@ export function TwitchSearchPage({ pageId, onNavigate }: BrowsePageProps) {
             placeholder={text('searchPlaceholder')}
             className="h-11 w-full rounded-full border border-transparent bg-[#fcfcff14] backdrop-blur-md px-5 text-sm text-white placeholder:text-slate-500 outline-none transition-all focus:bg-[#fcfcff22] focus:bg-white/[0.06]"
           />
+          )}
+          {TvKeyboardPanel && tvKeyboardOpen ? (
+            <TvKeyboardPanel
+              title={text('searchTitle')}
+              placeholder={text('searchPlaceholder')}
+              initial={inputValue}
+              onDone={(value) => { setInputValue(value); setQuery(value); setTvKeyboardOpen(false) }}
+              onClose={() => setTvKeyboardOpen(false)}
+            />
+          ) : null}
         </form>
       </div>
 
@@ -1636,7 +1767,7 @@ function TwitchHomeRowShell({
           <p className="mt-0.5 text-sm text-slate-400">{subtitle}</p>
         </div>
         <button
-          type="button"
+          type="button" {...tvf()}
           onClick={onOpenAll}
           className="flex h-9 items-center gap-1.5 rounded-full border border-transparent bg-[#fcfcff14] backdrop-blur-md px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] text-slate-200 transition-all hover:bg-white/[0.05] hover:text-white"
         >
@@ -1966,7 +2097,7 @@ export function TwitchHero({ onNavigate, onActiveChange, onBackdropChange }: Plu
             {text('live')}
           </span>
           <button
-            type="button"
+            type="button" {...tvf()}
             onClick={() => onNavigate({ pageId: 'twitch-live' })}
             className="rounded-full border border-white/15 bg-white/10 px-2.5 py-0.5 text-[10px] uppercase tracking-[0.18em] text-slate-300 transition hover:border-white/30 hover:bg-white/20 hover:text-white"
           >
@@ -1989,7 +2120,7 @@ export function TwitchHero({ onNavigate, onActiveChange, onBackdropChange }: Plu
 
         <div className="flex flex-wrap items-center gap-2">
           <button
-            type="button"
+            type="button" {...tvf()}
             onClick={() => setPlayerStream(stream)}
             className="flex h-10 items-center rounded-full bg-accent-500 px-6 text-sm font-semibold text-white transition hover:bg-accent-400"
           >
@@ -1999,7 +2130,7 @@ export function TwitchHero({ onNavigate, onActiveChange, onBackdropChange }: Plu
             {text('watchNow')}
           </button>
           <button
-            type="button"
+            type="button" {...tvf()}
             onClick={() => onNavigate({ pageId: 'twitch-live' })}
             className="h-10 rounded-full border border-white/20 bg-white/[0.06] px-6 text-sm font-semibold text-white transition hover:bg-white/10"
           >

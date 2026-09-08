@@ -195,6 +195,907 @@
     }
   });
 
+  // node_modules/@tauri-apps/api/external/tslib/tslib.es6.cjs
+  var require_tslib_es6 = __commonJS({
+    "node_modules/@tauri-apps/api/external/tslib/tslib.es6.cjs"(exports) {
+      "use strict";
+      function __classPrivateFieldGet2(receiver, state, kind, f) {
+        if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
+        if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+        return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
+      }
+      function __classPrivateFieldSet2(receiver, state, value, kind, f) {
+        if (kind === "m") throw new TypeError("Private method is not writable");
+        if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
+        if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
+        return kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value), value;
+      }
+      exports.__classPrivateFieldGet = __classPrivateFieldGet2;
+      exports.__classPrivateFieldSet = __classPrivateFieldSet2;
+    }
+  });
+
+  // node_modules/@tauri-apps/api/core.cjs
+  var require_core = __commonJS({
+    "node_modules/@tauri-apps/api/core.cjs"(exports) {
+      "use strict";
+      var tslib_es6 = require_tslib_es6();
+      var _Channel_onmessage;
+      var _Channel_nextMessageIndex;
+      var _Channel_pendingMessages;
+      var _Channel_messageEndIndex;
+      var _Resource_rid;
+      var SERIALIZE_TO_IPC_FN = "__TAURI_TO_IPC_KEY__";
+      function transformCallback(callback, once = false) {
+        return window.__TAURI_INTERNALS__.transformCallback(callback, once);
+      }
+      var Channel = class {
+        constructor(onmessage) {
+          _Channel_onmessage.set(this, void 0);
+          _Channel_nextMessageIndex.set(this, 0);
+          _Channel_pendingMessages.set(this, []);
+          _Channel_messageEndIndex.set(this, void 0);
+          tslib_es6.__classPrivateFieldSet(this, _Channel_onmessage, onmessage || (() => {
+          }), "f");
+          this.id = transformCallback((rawMessage) => {
+            const index3 = rawMessage.index;
+            if ("end" in rawMessage) {
+              if (index3 == tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")) {
+                this.cleanupCallback();
+              } else {
+                tslib_es6.__classPrivateFieldSet(this, _Channel_messageEndIndex, index3, "f");
+              }
+              return;
+            }
+            const message = rawMessage.message;
+            if (index3 == tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")) {
+              tslib_es6.__classPrivateFieldGet(this, _Channel_onmessage, "f").call(this, message);
+              tslib_es6.__classPrivateFieldSet(this, _Channel_nextMessageIndex, tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") + 1, "f");
+              while (tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") in tslib_es6.__classPrivateFieldGet(this, _Channel_pendingMessages, "f")) {
+                const message2 = tslib_es6.__classPrivateFieldGet(this, _Channel_pendingMessages, "f")[tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")];
+                tslib_es6.__classPrivateFieldGet(this, _Channel_onmessage, "f").call(this, message2);
+                delete tslib_es6.__classPrivateFieldGet(this, _Channel_pendingMessages, "f")[tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")];
+                tslib_es6.__classPrivateFieldSet(this, _Channel_nextMessageIndex, tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") + 1, "f");
+              }
+              if (tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") === tslib_es6.__classPrivateFieldGet(this, _Channel_messageEndIndex, "f")) {
+                this.cleanupCallback();
+              }
+            } else {
+              tslib_es6.__classPrivateFieldGet(this, _Channel_pendingMessages, "f")[index3] = message;
+            }
+          });
+        }
+        cleanupCallback() {
+          window.__TAURI_INTERNALS__.unregisterCallback(this.id);
+        }
+        set onmessage(handler) {
+          tslib_es6.__classPrivateFieldSet(this, _Channel_onmessage, handler, "f");
+        }
+        get onmessage() {
+          return tslib_es6.__classPrivateFieldGet(this, _Channel_onmessage, "f");
+        }
+        [(_Channel_onmessage = /* @__PURE__ */ new WeakMap(), _Channel_nextMessageIndex = /* @__PURE__ */ new WeakMap(), _Channel_pendingMessages = /* @__PURE__ */ new WeakMap(), _Channel_messageEndIndex = /* @__PURE__ */ new WeakMap(), SERIALIZE_TO_IPC_FN)]() {
+          return `__CHANNEL__:${this.id}`;
+        }
+        toJSON() {
+          return this[SERIALIZE_TO_IPC_FN]();
+        }
+      };
+      var PluginListener = class {
+        constructor(plugin2, event, channelId) {
+          this.plugin = plugin2;
+          this.event = event;
+          this.channelId = channelId;
+        }
+        async unregister() {
+          return invoke5(`plugin:${this.plugin}|remove_listener`, {
+            event: this.event,
+            channelId: this.channelId
+          });
+        }
+      };
+      async function addPluginListener(plugin2, event, cb) {
+        const handler = new Channel(cb);
+        try {
+          await invoke5(`plugin:${plugin2}|register_listener`, {
+            event,
+            handler
+          });
+          return new PluginListener(plugin2, event, handler.id);
+        } catch {
+          await invoke5(`plugin:${plugin2}|registerListener`, { event, handler });
+          return new PluginListener(plugin2, event, handler.id);
+        }
+      }
+      async function checkPermissions(plugin2) {
+        return invoke5(`plugin:${plugin2}|check_permissions`);
+      }
+      async function requestPermissions(plugin2) {
+        return invoke5(`plugin:${plugin2}|request_permissions`);
+      }
+      async function invoke5(cmd, args = {}, options) {
+        return window.__TAURI_INTERNALS__.invoke(cmd, args, options);
+      }
+      function convertFileSrc(filePath, protocol = "asset") {
+        return window.__TAURI_INTERNALS__.convertFileSrc(filePath, protocol);
+      }
+      var Resource = class {
+        get rid() {
+          return tslib_es6.__classPrivateFieldGet(this, _Resource_rid, "f");
+        }
+        constructor(rid) {
+          _Resource_rid.set(this, void 0);
+          tslib_es6.__classPrivateFieldSet(this, _Resource_rid, rid, "f");
+        }
+        /**
+         * Destroys and cleans up this resource from memory.
+         * **You should not call any method on this object anymore and should drop any reference to it.**
+         */
+        async close() {
+          return invoke5("plugin:resources|close", {
+            rid: this.rid
+          });
+        }
+      };
+      _Resource_rid = /* @__PURE__ */ new WeakMap();
+      function isTauri() {
+        return !!(globalThis || window).isTauri;
+      }
+      exports.Channel = Channel;
+      exports.PluginListener = PluginListener;
+      exports.Resource = Resource;
+      exports.SERIALIZE_TO_IPC_FN = SERIALIZE_TO_IPC_FN;
+      exports.addPluginListener = addPluginListener;
+      exports.checkPermissions = checkPermissions;
+      exports.convertFileSrc = convertFileSrc;
+      exports.invoke = invoke5;
+      exports.isTauri = isTauri;
+      exports.requestPermissions = requestPermissions;
+      exports.transformCallback = transformCallback;
+    }
+  });
+
+  // node_modules/@tauri-apps/api/event.cjs
+  var require_event = __commonJS({
+    "node_modules/@tauri-apps/api/event.cjs"(exports) {
+      "use strict";
+      var core = require_core();
+      exports.TauriEvent = void 0;
+      (function(TauriEvent) {
+        TauriEvent["WINDOW_RESIZED"] = "tauri://resize";
+        TauriEvent["WINDOW_MOVED"] = "tauri://move";
+        TauriEvent["WINDOW_CLOSE_REQUESTED"] = "tauri://close-requested";
+        TauriEvent["WINDOW_DESTROYED"] = "tauri://destroyed";
+        TauriEvent["WINDOW_FOCUS"] = "tauri://focus";
+        TauriEvent["WINDOW_BLUR"] = "tauri://blur";
+        TauriEvent["WINDOW_SCALE_FACTOR_CHANGED"] = "tauri://scale-change";
+        TauriEvent["WINDOW_THEME_CHANGED"] = "tauri://theme-changed";
+        TauriEvent["WINDOW_CREATED"] = "tauri://window-created";
+        TauriEvent["WEBVIEW_CREATED"] = "tauri://webview-created";
+        TauriEvent["DRAG_ENTER"] = "tauri://drag-enter";
+        TauriEvent["DRAG_OVER"] = "tauri://drag-over";
+        TauriEvent["DRAG_DROP"] = "tauri://drag-drop";
+        TauriEvent["DRAG_LEAVE"] = "tauri://drag-leave";
+      })(exports.TauriEvent || (exports.TauriEvent = {}));
+      async function _unlisten(event, eventId) {
+        window.__TAURI_EVENT_PLUGIN_INTERNALS__.unregisterListener(event, eventId);
+        await core.invoke("plugin:event|unlisten", {
+          event,
+          eventId
+        });
+      }
+      async function listen2(event, handler, options) {
+        var _a;
+        const target2 = typeof (options === null || options === void 0 ? void 0 : options.target) === "string" ? { kind: "AnyLabel", label: options.target } : (_a = options === null || options === void 0 ? void 0 : options.target) !== null && _a !== void 0 ? _a : { kind: "Any" };
+        return core.invoke("plugin:event|listen", {
+          event,
+          target: target2,
+          handler: core.transformCallback(handler)
+        }).then((eventId) => {
+          return async () => _unlisten(event, eventId);
+        });
+      }
+      async function once(event, handler, options) {
+        return listen2(event, (eventData) => {
+          void _unlisten(event, eventData.id);
+          handler(eventData);
+        }, options);
+      }
+      async function emit(event, payload) {
+        await core.invoke("plugin:event|emit", {
+          event,
+          payload
+        });
+      }
+      async function emitTo(target2, event, payload) {
+        const eventTarget = typeof target2 === "string" ? { kind: "AnyLabel", label: target2 } : target2;
+        await core.invoke("plugin:event|emit_to", {
+          target: eventTarget,
+          event,
+          payload
+        });
+      }
+      exports.emit = emit;
+      exports.emitTo = emitTo;
+      exports.listen = listen2;
+      exports.once = once;
+    }
+  });
+
+  // lib/session-host.ts
+  function normalizeHost(rawHost) {
+    return rawHost.trim().toLowerCase().replace(/\.+$/, "");
+  }
+  function isLocalAppHost(hostname) {
+    const host = normalizeHost(hostname);
+    if (!host) return false;
+    if (host === "localhost" || host === "127.0.0.1" || host === "::1") return true;
+    if (host === "tauri.localhost" || host.endsWith(".tauri.localhost")) return true;
+    return false;
+  }
+  function isLanClientHost(hostname) {
+    return !isLocalAppHost(hostname);
+  }
+  function isLanClientSession() {
+    if (typeof window === "undefined") return false;
+    return isLanClientHost(window.location.hostname);
+  }
+  function isClientSession() {
+    return isLanClientSession();
+  }
+  var init_session_host = __esm({
+    "lib/session-host.ts"() {
+    }
+  });
+
+  // lib/plugin-registry.ts
+  var plugin_registry_exports = {};
+  __export(plugin_registry_exports, {
+    getAuthCapabilityProviders: () => getAuthCapabilityProviders,
+    getBootstraps: () => getBootstraps,
+    getBrowsePages: () => getBrowsePages,
+    getEpisodeSidebarProviders: () => getEpisodeSidebarProviders,
+    getHeroes: () => getHeroes,
+    getHomeOverrides: () => getHomeOverrides,
+    getHomeRows: () => getHomeRows,
+    getHomeSources: () => getHomeSources,
+    getInstantPlayProviders: () => getInstantPlayProviders,
+    getLibraryProviders: () => getLibraryProviders,
+    getMainMenuItems: () => getMainMenuItems,
+    getManagedAuthConsumers: () => getManagedAuthConsumers,
+    getMediaDetailsActions: () => getMediaDetailsActions,
+    getMediaDownloadActions: () => getMediaDownloadActions,
+    getMediaStreamAvailabilityProviders: () => getMediaStreamAvailabilityProviders,
+    getMediaStreamCatalogProviders: () => getMediaStreamCatalogProviders,
+    getOverviewStatusProviders: () => getOverviewStatusProviders,
+    getPlayableUrlRewriters: () => getPlayableUrlRewriters,
+    getPlaybackCapabilityProviders: () => getPlaybackCapabilityProviders,
+    getPluginRegistryRevision: () => getPluginRegistryRevision,
+    getResumeRefreshProviders: () => getResumeRefreshProviders,
+    getSettingsSections: () => getSettingsSections,
+    getStreamProviders: () => getStreamProviders,
+    getStreamRequestConfigProviders: () => getStreamRequestConfigProviders,
+    getSyncIdentityProviders: () => getSyncIdentityProviders,
+    getTopbarItems: () => getTopbarItems,
+    hasStreamProviders: () => hasStreamProviders,
+    notifyPluginRegistryChanged: () => notifyPluginRegistryChanged,
+    registerPlugin: () => registerPlugin,
+    replaceMainMenuItems: () => replaceMainMenuItems,
+    subscribePluginRegistry: () => subscribePluginRegistry
+  });
+  function notifyRegistryChanged() {
+    registryRevision += 1;
+    for (const listener of registryListeners) {
+      try {
+        listener();
+      } catch (error) {
+        console.warn("[plugin-registry] listener failed", error);
+      }
+    }
+  }
+  function scheduleRegistryNotify() {
+    if (registryNotifyScheduled) return;
+    registryNotifyScheduled = true;
+    queueMicrotask(() => {
+      registryNotifyScheduled = false;
+      notifyRegistryChanged();
+    });
+  }
+  function makeContext(pluginId) {
+    const ctx = {
+      registerStreamProvider(provider) {
+        if (streamProviders.find((p) => p.id === provider.id)) return;
+        streamProviders.push(provider);
+      },
+      registerLibraryProvider(provider) {
+        if (libraryProviders.find((p) => p.id === provider.id)) return;
+        libraryProviders.push(provider);
+      },
+      registerMediaStreamCatalogProvider(provider) {
+        if (mediaStreamCatalogProviders.find((entry) => entry.id === provider.id)) return;
+        mediaStreamCatalogProviders.push(provider);
+      },
+      registerMediaStreamAvailabilityProvider(provider) {
+        if (mediaStreamAvailabilityProviders.find((entry) => entry.id === provider.id)) return;
+        mediaStreamAvailabilityProviders.push(provider);
+      },
+      registerInstantPlayProvider(provider) {
+        if (instantPlayProviders.find((entry) => entry.id === provider.id)) return;
+        instantPlayProviders.push(provider);
+      },
+      registerResumeRefreshProvider(provider) {
+        if (resumeRefreshProviders.find((entry) => entry.id === provider.id)) return;
+        resumeRefreshProviders.push(provider);
+      },
+      registerPlayableUrlRewriter(rewriter) {
+        if (playableUrlRewriters.find((entry) => entry.id === rewriter.id)) return;
+        playableUrlRewriters.push(rewriter);
+      },
+      registerStreamRequestConfigProvider(provider) {
+        if (streamRequestConfigProviders.find((entry) => entry.id === provider.id)) return;
+        streamRequestConfigProviders.push(provider);
+      },
+      registerEpisodeSidebarProvider(provider) {
+        if (episodeSidebarProviders.find((p) => p.id === provider.id)) return;
+        episodeSidebarProviders.push(provider);
+      },
+      registerPlaybackCapabilityProvider(provider) {
+        if (playbackCapabilityProviders.find((entry) => entry.id === provider.id)) return;
+        playbackCapabilityProviders.push(provider);
+      },
+      registerSyncIdentityProvider(provider) {
+        if (syncIdentityProviders.find((entry) => entry.id === provider.id)) return;
+        syncIdentityProviders.push(provider);
+      },
+      registerAuthCapabilityProvider(provider) {
+        if (authCapabilityProviders.find((entry) => entry.id === provider.id)) return;
+        authCapabilityProviders.push(provider);
+      },
+      registerOverviewStatusProvider(provider) {
+        if (overviewStatusProviders.find((entry) => entry.id === provider.id)) return;
+        overviewStatusProviders.push({ ...provider, pluginId });
+      },
+      registerSettingsSection(section) {
+        if (settingsSections.find((s) => s.id === section.id)) return;
+        settingsSections.push({
+          ...section,
+          pluginId
+        });
+      },
+      registerMediaDetailsAction(action) {
+        if (mediaDetailsActions.find((entry) => entry.id === action.id)) return;
+        mediaDetailsActions.push(action);
+      },
+      registerMediaDownloadAction(action) {
+        if (mediaDownloadActions.find((entry) => entry.id === action.id)) return;
+        mediaDownloadActions.push(action);
+      },
+      registerHomeRow(row) {
+        if (homeRows.find((r) => r.id === row.id)) return;
+        homeRows.push(row);
+      },
+      registerHomeSource(source) {
+        if (homeSources.find((entry) => entry.id === source.id)) return;
+        homeSources.push(source);
+      },
+      registerBootstrap(bootstrap) {
+        if (bootstraps.find((entry) => entry.id === bootstrap.id)) return;
+        bootstraps.push(bootstrap);
+      },
+      registerHero(hero) {
+        if (heroes.find((entry) => entry.id === hero.id)) return;
+        heroes.push(hero);
+      },
+      registerHomeOverride(homeOverride) {
+        if (homeOverrides.find((entry) => entry.id === homeOverride.id)) return;
+        homeOverrides.push({
+          ...homeOverride,
+          pluginId
+        });
+      },
+      registerBrowsePage(page) {
+        if (browsePages.find((entry) => entry.id === page.id)) return;
+        browsePages.push(page);
+      },
+      registerMainMenuItem(item) {
+        if (mainMenuItems.find((entry) => entry.id === item.id)) return;
+        mainMenuItems.push(item);
+      },
+      registerTopbarItem(item) {
+        if (topbarItems.find((entry) => entry.id === item.id)) return;
+        topbarItems.push(item);
+      },
+      registerManagedAuthConsumer(consumer) {
+        if (managedAuthConsumers.find((entry) => entry.id === consumer.id)) return;
+        managedAuthConsumers.push(consumer);
+      }
+    };
+    for (const key of Object.keys(ctx)) {
+      const original = ctx[key];
+      if (typeof original === "function" && String(key).startsWith("register")) {
+        ;
+        ctx[key] = (...args) => {
+          ;
+          original.apply(ctx, args);
+          scheduleRegistryNotify();
+        };
+      }
+    }
+    return ctx;
+  }
+  function registerPlugin(plugin2, options = {}) {
+    if (registeredPluginIds.has(plugin2.id)) return;
+    registeredPluginIds.add(plugin2.id);
+    const ctx = makeContext(plugin2.id);
+    if (options.suppressStreamContributions) {
+      const noop5 = () => {
+      };
+      ctx.registerStreamProvider = noop5;
+      ctx.registerPlaybackCapabilityProvider = noop5;
+      ctx.registerMediaStreamAvailabilityProvider = noop5;
+      ctx.registerInstantPlayProvider = noop5;
+      ctx.registerResumeRefreshProvider = noop5;
+      ctx.registerEpisodeSidebarProvider = noop5;
+    }
+    plugin2.register(ctx);
+    notifyRegistryChanged();
+  }
+  function getStreamProviders() {
+    return streamProviders;
+  }
+  function getLibraryProviders() {
+    return libraryProviders;
+  }
+  function getMediaStreamCatalogProviders() {
+    return mediaStreamCatalogProviders;
+  }
+  function getMediaStreamAvailabilityProviders() {
+    return mediaStreamAvailabilityProviders;
+  }
+  function getInstantPlayProviders() {
+    return instantPlayProviders;
+  }
+  function getResumeRefreshProviders() {
+    return [...resumeRefreshProviders].sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+  }
+  function getPlayableUrlRewriters() {
+    return [...playableUrlRewriters].sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+  }
+  function getStreamRequestConfigProviders() {
+    return [...streamRequestConfigProviders].sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+  }
+  function getEpisodeSidebarProviders() {
+    return episodeSidebarProviders;
+  }
+  function getPlaybackCapabilityProviders() {
+    return playbackCapabilityProviders;
+  }
+  function getSyncIdentityProviders() {
+    return syncIdentityProviders;
+  }
+  function getOverviewStatusProviders() {
+    return [...overviewStatusProviders].sort((a, b) => (a.order ?? 100) - (b.order ?? 100));
+  }
+  function getAuthCapabilityProviders() {
+    return authCapabilityProviders;
+  }
+  function getSettingsSections() {
+    return settingsSections;
+  }
+  function getMediaDetailsActions() {
+    return mediaDetailsActions;
+  }
+  function getMediaDownloadActions() {
+    return mediaDownloadActions;
+  }
+  function getHomeRows() {
+    return homeRows;
+  }
+  function getHomeSources() {
+    return homeSources;
+  }
+  function getBootstraps() {
+    return bootstraps;
+  }
+  function getHeroes() {
+    return heroes;
+  }
+  function getHomeOverrides() {
+    return homeOverrides;
+  }
+  function getBrowsePages() {
+    return browsePages;
+  }
+  function getMainMenuItems() {
+    return mainMenuItems;
+  }
+  function replaceMainMenuItems(owner, items) {
+    const previous = new Set(ownedMainMenuItemIds.get(owner) ?? []);
+    for (let index3 = mainMenuItems.length - 1; index3 >= 0; index3 -= 1) {
+      if (previous.has(mainMenuItems[index3].id)) mainMenuItems.splice(index3, 1);
+    }
+    for (const item of items) {
+      if (!mainMenuItems.find((entry) => entry.id === item.id)) mainMenuItems.push(item);
+    }
+    ownedMainMenuItemIds.set(owner, items.map((item) => item.id));
+    notifyRegistryChanged();
+  }
+  function getTopbarItems() {
+    return topbarItems;
+  }
+  function getManagedAuthConsumers() {
+    return managedAuthConsumers;
+  }
+  function hasStreamProviders() {
+    return streamProviders.length > 0;
+  }
+  function getPluginRegistryRevision() {
+    return registryRevision;
+  }
+  function subscribePluginRegistry(listener) {
+    registryListeners.add(listener);
+    return () => {
+      registryListeners.delete(listener);
+    };
+  }
+  function notifyPluginRegistryChanged() {
+    notifyRegistryChanged();
+  }
+  var streamProviders, libraryProviders, mediaStreamCatalogProviders, mediaStreamAvailabilityProviders, instantPlayProviders, resumeRefreshProviders, playableUrlRewriters, streamRequestConfigProviders, episodeSidebarProviders, playbackCapabilityProviders, syncIdentityProviders, authCapabilityProviders, overviewStatusProviders, settingsSections, mediaDownloadActions, mediaDetailsActions, homeRows, homeSources, bootstraps, heroes, homeOverrides, browsePages, mainMenuItems, topbarItems, managedAuthConsumers, registeredPluginIds, registryRevision, registryListeners, registryNotifyScheduled, ownedMainMenuItemIds;
+  var init_plugin_registry = __esm({
+    "lib/plugin-registry.ts"() {
+      "use strict";
+      streamProviders = [];
+      libraryProviders = [];
+      mediaStreamCatalogProviders = [];
+      mediaStreamAvailabilityProviders = [];
+      instantPlayProviders = [];
+      resumeRefreshProviders = [];
+      playableUrlRewriters = [];
+      streamRequestConfigProviders = [];
+      episodeSidebarProviders = [];
+      playbackCapabilityProviders = [];
+      syncIdentityProviders = [];
+      authCapabilityProviders = [];
+      overviewStatusProviders = [];
+      settingsSections = [];
+      mediaDownloadActions = [];
+      mediaDetailsActions = [];
+      homeRows = [];
+      homeSources = [];
+      bootstraps = [];
+      heroes = [];
+      homeOverrides = [];
+      browsePages = [];
+      mainMenuItems = [];
+      topbarItems = [];
+      managedAuthConsumers = [];
+      registeredPluginIds = /* @__PURE__ */ new Set();
+      registryRevision = 0;
+      registryListeners = /* @__PURE__ */ new Set();
+      registryNotifyScheduled = false;
+      ownedMainMenuItemIds = /* @__PURE__ */ new Map();
+    }
+  });
+
+  // lib/tauri-mpv.ts
+  function detectTauriEnv() {
+    if (typeof window === "undefined") return false;
+    const maybeTauriWindow = window;
+    if (maybeTauriWindow.__TAURI_INTERNALS__ || maybeTauriWindow.__TAURI__) {
+      return true;
+    }
+    const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "";
+    if (userAgent.includes("Tauri")) return true;
+    const host = window.location.hostname;
+    const port = window.location.port;
+    return isLocalAppHost(host) && port === "3011";
+  }
+  function isLiveStreamUrl(url) {
+    const lower = url.toLowerCase();
+    const pathOnly = lower.split("?")[0].split("#")[0];
+    if (pathOnly.endsWith(".m3u8") || pathOnly.endsWith(".mpd")) return true;
+    return lower.includes("/live/") || lower.includes("hls/") || lower.includes("/dash/");
+  }
+  function sourceCacheUrl(originalUrl, requestHeaders) {
+    if (!/^https?:\/\//i.test(originalUrl)) return null;
+    if (isLiveStreamUrl(originalUrl)) return null;
+    try {
+      if (isLocalAppHost(new URL(originalUrl).hostname)) return null;
+    } catch {
+      return null;
+    }
+    const headerParam = requestHeaders && Object.keys(requestHeaders).length > 0 ? `&h=${encodeURIComponent(JSON.stringify(requestHeaders))}` : "";
+    return `${window.location.origin}/api/source-cache?u=${encodeURIComponent(originalUrl)}${headerParam}`;
+  }
+  function warmSourceCache(originalUrl, requestHeaders) {
+    const wrapped = sourceCacheUrl(originalUrl, requestHeaders);
+    if (!wrapped) return;
+    void fetch(wrapped, { headers: { Range: "bytes=0-1" } }).then((r) => r.body?.cancel()).catch(() => {
+    });
+  }
+  function releaseSourceCache(originalUrl) {
+    if (!sourceCacheUrl(originalUrl)) return;
+    void fetch("/api/source-cache/release", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ u: originalUrl }),
+      keepalive: true
+    }).catch(() => {
+    });
+  }
+  async function openMpvPlayer(args) {
+    const { shouldAbort: _ignored, ...rest } = args;
+    const cached = sourceCacheUrl(args.url, args.requestHeaders);
+    if (cached) {
+      if (args.shouldAbort?.()) return;
+      markStreamPhase("mpv-open", { via: "source-cache" });
+      await (0, import_core.invoke)("mpv_open", { args: { ...rest, url: cached } });
+      markStreamPhase("mpv-open-done");
+      return;
+    }
+    let url = args.url;
+    let via = "direct";
+    for (const rewriter of getPlayableUrlRewriters()) {
+      try {
+        const rewritten = await rewriter.rewrite(url);
+        if (rewritten) {
+          url = rewritten;
+          via = "rewriter";
+          break;
+        }
+      } catch {
+      }
+    }
+    if (args.shouldAbort?.()) return;
+    markStreamPhase("mpv-open", { via });
+    await (0, import_core.invoke)("mpv_open", { args: { ...rest, url } });
+    markStreamPhase("mpv-open-done");
+  }
+  async function mpvCaptureFrame(key) {
+    return (0, import_core.invoke)("mpv_capture_frame", { key });
+  }
+  async function closeMpvPlayer() {
+    return (0, import_core.invoke)("mpv_close");
+  }
+  async function setMpvPause(paused) {
+    return (0, import_core.invoke)("mpv_set_pause", { paused });
+  }
+  async function setMpvAudioTrack(aid) {
+    return (0, import_core.invoke)("mpv_set_audio_track", { aid });
+  }
+  async function setMpvVideoGeometry(args) {
+    try {
+      return await (0, import_core.invoke)("mpv_set_video_geometry", {
+        aspectOverride: args.aspectOverride ?? null,
+        panscan: args.panscan,
+        videoZoom: args.videoZoom
+      });
+    } catch (error) {
+      const message = String(error ?? "");
+      if (!/mpv not initialized/i.test(message)) {
+        console.warn("[mpv] set video geometry error:", error);
+      }
+    }
+  }
+  async function setMpvSubtitleTrack(sid) {
+    return (0, import_core.invoke)("mpv_set_subtitle_track", { sid });
+  }
+  async function getMpvSid() {
+    return (0, import_core.invoke)("mpv_get_sid");
+  }
+  async function getMpvSubtitleTracks() {
+    return (0, import_core.invoke)("mpv_get_subtitle_tracks");
+  }
+  async function getMpvAudioTracks() {
+    return (0, import_core.invoke)("mpv_get_audio_tracks");
+  }
+  async function toggleWindowFullscreen() {
+    return (0, import_core.invoke)("toggle_window_fullscreen");
+  }
+  async function getWindowFullscreen() {
+    return (0, import_core.invoke)("get_window_fullscreen");
+  }
+  async function getWindowNativeFullscreen() {
+    return (0, import_core.invoke)("get_window_native_fullscreen");
+  }
+  async function setWindowFullscreen(fullscreen) {
+    return (0, import_core.invoke)("set_window_fullscreen", { fullscreen });
+  }
+  async function setWindowNativeFullscreen(fullscreen) {
+    return (0, import_core.invoke)("set_window_native_fullscreen", { fullscreen });
+  }
+  async function mpvGetAudioFilterChain() {
+    try {
+      return await (0, import_core.invoke)("mpv_get_af") || "(tom)";
+    } catch (e) {
+      return `(ol\xE4sbar: ${String(e)})`;
+    }
+  }
+  async function mpvRenderIsGpu() {
+    try {
+      return await (0, import_core.invoke)("mpv_render_is_gpu");
+    } catch {
+      return false;
+    }
+  }
+  async function mpvCommand(args) {
+    try {
+      if (args[0] === "set_property" && args.length >= 3) {
+        const value = typeof args[2] === "boolean" ? args[2] ? "yes" : "no" : String(args[2]);
+        return await (0, import_core.invoke)("mpv_set_property_strings", { props: [{ name: String(args[1]), value }] });
+      }
+      if (args[0] === "get_property" && args.length >= 2) {
+        return await (0, import_core.invoke)("mpv_get_property_ts", { name: String(args[1]) });
+      }
+      return await (0, import_core.invoke)("mpv_command_ts", { args });
+    } catch (e) {
+      console.warn("[mpv] command error:", args, e);
+    }
+  }
+  async function mpvSetPropertyStrings(props) {
+    try {
+      return await (0, import_core.invoke)("mpv_set_property_strings", { props });
+    } catch (e) {
+      console.warn("[mpv] set property error:", props, e);
+    }
+  }
+  async function setMpvAspect(value) {
+    return mpvSetPropertyStrings([{ name: "video-aspect-override", value }]);
+  }
+  async function mpvApplySubtitleStyle(args) {
+    try {
+      return await (0, import_core.invoke)("mpv_apply_subtitle_style", { args });
+    } catch (e) {
+      console.warn("[mpv] apply subtitle style error:", args, e);
+    }
+  }
+  function mpvSetBounds(rect) {
+    if (rect.width <= 0 || rect.height <= 0) return;
+    void (0, import_core.invoke)("mpv_set_bounds", {
+      x: rect.left,
+      y: rect.top,
+      w: rect.width,
+      h: rect.height,
+      windowHeight: window.innerHeight,
+      scale: window.devicePixelRatio
+    });
+  }
+  function useMpvPlayer(enabled = true) {
+    const [timePos, setTimePos] = useState(0);
+    const [duration, setDuration] = useState(0);
+    const [paused, setPaused] = useState(false);
+    const [ended, setEnded] = useState(false);
+    const [sid, setSid] = useState(null);
+    const [fileLoaded, setFileLoaded] = useState(false);
+    const [fileLoadedToken, setFileLoadedToken] = useState(0);
+    const [playbackRestarted, setPlaybackRestarted] = useState(false);
+    const [playbackRestartedToken, setPlaybackRestartedToken] = useState(0);
+    const [pausedForCache, setPausedForCache] = useState(false);
+    const [coreIdle, setCoreIdle] = useState(true);
+    const [firstFrameRendered, setFirstFrameRendered] = useState(false);
+    const [loadFailed, setLoadFailed] = useState(false);
+    const [loadFailedToken, setLoadFailedToken] = useState(0);
+    const [loadFailedError, setLoadFailedError] = useState(null);
+    useEffect(() => {
+      if (!isTauriEnv || !enabled) return;
+      const cleanups = [];
+      void (0, import_event.listen)("mpv://time-pos", (e) => setTimePos(e.payload)).then((u) => cleanups.push(u));
+      void (0, import_event.listen)("mpv://duration", (e) => setDuration(e.payload)).then((u) => cleanups.push(u));
+      void (0, import_event.listen)("mpv://paused", (e) => setPaused(e.payload)).then((u) => cleanups.push(u));
+      void (0, import_event.listen)("mpv://ended", () => setEnded(true)).then((u) => cleanups.push(u));
+      void (0, import_event.listen)("mpv://sid", (e) => setSid(e.payload)).then((u) => cleanups.push(u));
+      void (0, import_event.listen)("mpv://file-loaded", () => {
+        setFileLoaded(true);
+        setFileLoadedToken((t) => t + 1);
+      }).then((u) => cleanups.push(u));
+      void (0, import_event.listen)("mpv://playback-restart", () => {
+        setPlaybackRestarted(true);
+        setPlaybackRestartedToken((t) => t + 1);
+      }).then((u) => cleanups.push(u));
+      void (0, import_event.listen)("mpv://paused-for-cache", (e) => setPausedForCache(e.payload)).then((u) => cleanups.push(u));
+      void (0, import_event.listen)("mpv://core-idle", (e) => setCoreIdle(e.payload)).then((u) => cleanups.push(u));
+      void (0, import_event.listen)("mpv://first-frame-rendered", () => {
+        void fetch(`/api/debug-log?msg=${encodeURIComponent(`${performance.now().toFixed(0)} first-frame-rendered received`)}`);
+        setFirstFrameRendered(true);
+      }).then((u) => cleanups.push(u));
+      void (0, import_event.listen)("mpv://load-failed", (e) => {
+        setLoadFailedError(typeof e.payload === "number" ? e.payload : null);
+        setLoadFailed(true);
+        setLoadFailedToken((t) => t + 1);
+      }).then((u) => cleanups.push(u));
+      return () => cleanups.forEach((fn) => fn());
+    }, [enabled]);
+    const seek = useCallback((time2) => {
+      void mpvCommand(["seek", time2, "absolute"]);
+    }, []);
+    const seekRelative = useCallback((delta) => {
+      void mpvCommand(["seek", delta, "relative"]);
+    }, []);
+    const setPlayPause = useCallback((pause) => {
+      void mpvCommand(["set_property", "pause", pause]);
+    }, []);
+    const setVolume = useCallback((vol) => {
+      void mpvSetPropertyStrings([{ name: "volume", value: String(Math.round(vol * 100)) }]);
+    }, []);
+    const setSpeed = useCallback((value) => {
+      void mpvSetPropertyStrings([{ name: "speed", value: String(value) }]);
+    }, []);
+    const setMuted = useCallback((muted) => {
+      void mpvSetPropertyStrings([{ name: "mute", value: muted ? "yes" : "no" }]);
+    }, []);
+    const setAudioTrack = useCallback((aid) => {
+      void setMpvAudioTrack(aid);
+    }, []);
+    const resetTimePos = useCallback(() => {
+      setTimePos(0);
+    }, []);
+    const resetFileLoaded = useCallback(() => {
+      setFileLoaded(false);
+    }, []);
+    const resetEnded = useCallback(() => {
+      setEnded(false);
+    }, []);
+    const resetPlaybackRestarted = useCallback(() => {
+      setPlaybackRestarted(false);
+    }, []);
+    const resetFirstFrameRendered = useCallback(() => {
+      setFirstFrameRendered(false);
+    }, []);
+    const resetLoadFailed = useCallback(() => {
+      setLoadFailed(false);
+      setLoadFailedError(null);
+    }, []);
+    return {
+      timePos,
+      duration,
+      paused,
+      ended,
+      sid,
+      fileLoaded,
+      fileLoadedToken,
+      resetTimePos,
+      resetEnded,
+      playbackRestarted,
+      playbackRestartedToken,
+      pausedForCache,
+      coreIdle,
+      firstFrameRendered,
+      loadFailed,
+      loadFailedToken,
+      loadFailedError,
+      seek,
+      seekRelative,
+      setPlayPause,
+      setVolume,
+      setSpeed,
+      setMuted,
+      setAudioTrack,
+      resetFileLoaded,
+      resetPlaybackRestarted,
+      resetFirstFrameRendered,
+      resetLoadFailed
+    };
+  }
+  var import_core, import_event, isTauriEnv, hasTauriIpc, isDesktopTauriEnv;
+  var init_tauri_mpv = __esm({
+    "lib/tauri-mpv.ts"() {
+      "use strict";
+      "use client";
+      init_timing();
+      import_core = __toESM(require_core());
+      import_event = __toESM(require_event());
+      init_react_shim();
+      init_session_host();
+      init_plugin_registry();
+      isTauriEnv = detectTauriEnv();
+      hasTauriIpc = typeof window !== "undefined" && Boolean(
+        window.__TAURI_INTERNALS__ || window.__TAURI__
+      );
+      isDesktopTauriEnv = isTauriEnv && hasTauriIpc && !(typeof navigator !== "undefined" && /android/i.test(navigator.userAgent));
+    }
+  });
+
   // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/profile-storage-shim.ts
   var sdk, getActiveProfile, getActiveProfileId, getProfileStorageKey, getScopedStorageItem, setScopedStorageItem, removeScopedStorageItem, onProfileChanged, profileHasPin, checkProfilePin;
   var init_profile_storage_shim = __esm({
@@ -367,8 +1268,7 @@
         offProfile();
       };
     }, [detached]);
-    if (!detached) return ctx;
-    return {
+    const detachedValue = useMemo(() => ({
       lang: detachedLang,
       setLang: (l) => {
         setScopedStorageItem(STORAGE_KEY, l);
@@ -378,7 +1278,9 @@
         }
       },
       t: (key) => strings[detachedLang][key] ?? strings.en[key]
-    };
+    }), [detachedLang]);
+    if (!detached) return ctx;
+    return detachedValue;
   }
   var strings, detachedLangContextValue, LangContext, LANG_CHANGED_EVENT, STORAGE_KEY, DEFAULT_LANG;
   var init_i18n = __esm({
@@ -427,7 +1329,7 @@
           m3uFetchList: "Fetch list",
           m3uFetchListDone: "List fetched",
           m3uFetchListError: "Could not fetch list",
-          liveTvLists: "Channel lists",
+          liveTvLists: "Live TV",
           liveTvCreateList: "Create list",
           liveTvListName: "List name",
           liveTvNoLists: "No channel lists yet.",
@@ -687,6 +1589,8 @@
           sideMenuTitle: "Side menu",
           sideMenuDesc: "A floating icon rail on the left instead of the horizontal menu. Search moves into the rail. Desktop only.",
           sideMenuOn: "Side menu",
+          menuChipTitle: "Menu pill (TV style)",
+          menuChipDesc: "The TV mode menu pill in the top-left corner, with search inside the menu. Replaces the side menu and the top bar on desktop, and the top bar on mobile.",
           sideMenuOff: "Horizontal menu",
           vlcToggleOn: "VLC on",
           vlcToggleOff: "VLC off",
@@ -999,8 +1903,8 @@
           appTheme: "Theme",
           appThemeDesc: "Background tone across the whole app.",
           themeMidnight: "Midnight",
-          themeMidnightDesc: "Today's Lumio: deep blue background.",
-          themePitchDesc: "Near-black for OLED and dark rooms.",
+          themeMidnightDesc: "Deep blue background.",
+          themePitchDesc: "Default. Near-black for OLED and dark rooms.",
           themeSystemDesc: "Switches with the macOS appearance setting.",
           accentColor: "Accent color",
           profileSharedTab: "Shared settings",
@@ -1216,6 +2120,12 @@
           remoteSessionModeDesc: "Which UI browser sessions served by this app get. Auto inherits the TV mode choice above plus the device\u2019s own detection; Desktop and TV force one mode.",
           remoteSessionModeDesktop: "Desktop",
           remoteSessionModeTv: "TV",
+          tvMenuPlacementTitle: "Menu placement",
+          tvMenuChipHiddenTitle: "Hide the Menu pill",
+          tvMenuChipHiddenHint: "The menu stays and still opens with \u25C2 or \u25B4 from the content.",
+          tvMenuPlacementHint: "Where the menu sits. The content is the same either way.",
+          tvMenuPlacementTop: "Top",
+          tvMenuPlacementSide: "Side",
           tvSegmentsEyebrow: "Rows per segment",
           tvSegmentLabel: "Segment",
           tvSegmentDesc: "Each segment has its own rows in TV mode. It starts out mirroring your normal home screen, so nothing changes until you change it here.",
@@ -1707,6 +2617,33 @@
           homeSourceFrenchCinema: "French Cinema",
           homeSourceKdrama: "K-Drama",
           tvSegmentAnime: "Anime",
+          tvBackAgainToExit: "Press Back again to exit",
+          tvHeroFeatured: "Featured",
+          tvHeroMyList: "My list",
+          tvHeroPagerDot: "Featured title {n} of {total}",
+          tvHeroRuntimeHm: "{h} h {m} min",
+          tvHeroRuntimeM: "{m} min",
+          tvHeroStreamsN: "{n} streams",
+          // TV-skalets rader. Hintraden ("HÅLL ▸ snabbspola" m.fl.) togs bort:
+          // förklarande text i varje bild är inte information man behöver mer än
+          // en gång. Positionsräknaren behöver ingen nyckel.
+          tvGenreRowTitle: "Genres",
+          tvRowFailed: "Could not be loaded",
+          tvRowNoRenderer: "Not available in TV mode yet",
+          tvQuickPlay: "Play",
+          tvQuickMarkWatched: "Mark as watched",
+          tvQuickUnmarkWatched: "Mark as unwatched",
+          tvQuickMoreInfo: "More info",
+          tvQuickShowAllRow: "Show all in this row",
+          tvQuickUnfollow: "Unfollow",
+          tvMenuChip: "Menu",
+          tvMenuSearch: "Search",
+          tvSearchFilters: "Search & filters",
+          tvMenuSources: "Libraries and sources",
+          tvQuickRemoveContinue: "Remove from Continue watching",
+          tvCollectionHint: "Film collection \u2014 press OK to browse the movies in release order.",
+          tvProviderHint: "Streaming service \u2014 press OK to see the movies and series available on {name}, sorted by popularity.",
+          tvCollectionSummary: "{count} films ({years}): {titles}",
           homeSourceAnimeSeries: "Anime Series",
           homeSourceMoodComfort: "Comfort Watch",
           homeSourceMoodMind: "Mind Benders",
@@ -1733,7 +2670,7 @@
           homeSourcePrestigeDrama: "Prestige Drama",
           homeSourceAnimeMovies: "Anime Movies",
           homeSourceAnimeTopSeries: "Top Rated Anime",
-          homeSourceStreamingServices: "Streaming services",
+          homeSourceStreamingServices: "Streaming",
           homeSourceStudios: "Studios",
           liveTvList: "Live TV list",
           liveTvChooseList: "Choose a Live TV list",
@@ -1870,6 +2807,16 @@
           nextEpPopupAuto: "Auto",
           creditsRecommendations: "Recommendations during the credits",
           creditsRecommendationsDesc: "When the credits start, the picture shrinks to a corner window and the next title is shown. Applies to films and season finales \u2014 never mid-season.",
+          statsHudMenuLabel: "Statistics",
+          playbackSpeedMenuLabel: "Speed",
+          stripSdhTitle: "Hide hearing-impaired text",
+          stripSdhHint: "Removes [sounds], (sighs), \u266A lyrics and speaker names from subtitles.",
+          appUpdateChannel: "Update channel",
+          appUpdateChannelStable: "Stable",
+          appUpdateChannelBeta: "Beta",
+          appUpdateChannelHint: "Beta gets test builds before they are released to everyone.",
+          exitOnCloseTitle: "Quit fully on close",
+          exitOnCloseHint: "Android/TV: end the process when you leave the app instead of keeping it in the background. Frees memory on small boxes.",
           creditsFinishedSeason: "Season %s is over",
           creditsNextSeason: "Season %s",
           creditsFinishedTitle: "You finished",
@@ -2028,7 +2975,7 @@
           syncFailed: "Sync failed",
           genericError: "Error",
           dlDone: "Done",
-          introFound: "Intro found",
+          introFound: "Intro",
           /* Korta etiketter i telefonens kontrollrad — brickan är 62 px och pillret
              ska rymmas i en rullande rad, så namnen är avsiktligt kortare än de
              fullständiga (som ligger kvar som titel och i Mer-menyn). */
@@ -2040,8 +2987,8 @@
           plShortCast: "Cast",
           plShortFullscreen: "Fullscreen",
           plShortMore: "More",
-          recapFound: "Recap found",
-          outroFound: "Outro found",
+          recapFound: "Recap",
+          outroFound: "Outro",
           introDebugAutoOn: "Auto-skip on",
           introDebugAutoOff: "Auto-skip off",
           aspectAuto: "Auto",
@@ -2257,6 +3204,13 @@
           streamsLayoutDesc: "In the side panel, or as a section on the page above Recommendations. Series get streams under each episode.",
           streamsLayoutSidebar: "Side panel",
           streamsLayoutInline: "On the page",
+          tvStreamsLayoutCards: "Side-scrolling",
+          tvTypeWithRemote: "type",
+          tvTypeKeyHint: "Type the key with the remote. It is saved when you press Done and is never shown on screen.",
+          streamSizeSmall: "Small",
+          streamSizeMedium: "Medium",
+          streamSizeLarge: "Large",
+          tvStreamsLayoutHint: "Side-scrolling: streams sit on the page as a row of cards. Side panel: a Streams button next to Play opens the list.",
           castCountTitle: "Cast members shown",
           castCountDesc: "How many of the cast appear on the details page. Phones page them eight at a time; desktop scrolls.",
           gestTabLabel: "Gestures",
@@ -2392,14 +3346,13 @@
           kpProvidedCatalogs: "Provided catalogs",
           kpMetricActiveAddons: "Active addons",
           sourcesEmptyTitle: "No sources yet",
-          coreStreamsToggle: "Use Lumio's own stream list (beta)",
-          coreStreamsToggleDesc: "Streams are fetched and played by the app itself, straight from your sources. Takes effect after a restart.",
           coreStreamsHidden: "{count} streams hidden by quality filters",
           coreStreamsSelectEpisode: "Pick an episode to see its streams.",
           coreStreamsSource: "Source",
           coreStreamsCached: "Cached",
           coreStreamsLoading: "Checking sources\u2026",
           streamNotServingMedia: "The source did not deliver playable media. Try another stream.",
+          libraryServerUnreachable: "Could not get a playback address from {source}. Check that the server is running.",
           libraryRowSuffix: "in your library",
           libraryModeTab: "Library",
           libraryModeTitle: "Library mode",
@@ -2407,6 +3360,17 @@
           libraryUseAsHome: "Use as home page",
           libraryUseAsHomeHint: "Tick one or more libraries. Home page, details page, search and Zapp are then fed only from them, together. Stream sources stay hidden while it is on.",
           librarySourcesTitle: "Indexed libraries",
+          localLibraryTitle: "Local folders",
+          localLibraryHint: "Each folder becomes its own library with a menu entry, like Plex or Jellyfin. Files are matched against TMDB by name: \u201CTitle (Year).mkv\u201D for movies, \u201CSeries/Season 01/Series S01E04.mkv\u201D for episodes.",
+          localLibraryAdd: "Add folder",
+          localLibraryRemove: "Remove",
+          localLibraryUpdate: "Update",
+          localLibraryRebuild: "Rebuild",
+          localLibraryBuild: "Build index",
+          localLibraryEmpty: "No folders yet.",
+          localLibraryScanning: "Indexing\u2026 {done}",
+          localLibraryNotIndexed: "Not indexed yet",
+          libraryRowUnmatched: "Not identified",
           librarySourceNotIndexed: "Not indexed yet \u2014 build the index in the plugin's settings.",
           libraryModeOff: "No library is set as the home page. Turn it on under the library plugin's settings.",
           libraryRowIndexed: "{count} indexed",
@@ -2566,6 +3530,8 @@
           hpMoveDown: "Move down",
           hpSourceLabel: "Source",
           hpCardCountLabel: "Number of cards",
+          hpMobileRowsLabel: "Rows on phone",
+          hpMobileRowsAuto: "Auto",
           hpPopularStreaming: "Popular streaming",
           hpListLabel: "List",
           hpAllChannels: "All channels",
@@ -2890,7 +3856,7 @@
           m3uFetchList: "H\xE4mta lista",
           m3uFetchListDone: "Listan h\xE4mtad",
           m3uFetchListError: "Kunde inte h\xE4mta listan",
-          liveTvLists: "Kanallistor",
+          liveTvLists: "Live TV",
           liveTvCreateList: "Skapa lista",
           liveTvListName: "Listnamn",
           liveTvNoLists: "Inga kanallistor \xE4nnu.",
@@ -3150,6 +4116,8 @@
           sideMenuTitle: "Sidomeny",
           sideMenuDesc: "En flytande ikonrad till v\xE4nster i st\xE4llet f\xF6r den horisontella menyn. S\xF6ket flyttar in i raden. Endast skrivbord.",
           sideMenuOn: "Sidomeny",
+          menuChipTitle: "Menypill (TV-stil)",
+          menuChipDesc: "TV-l\xE4gets menypill uppe till v\xE4nster, med s\xF6k inne i menyn. Ers\xE4tter sidomenyn och toppraden p\xE5 skrivbord, och toppraden p\xE5 mobil.",
           sideMenuOff: "Horisontell meny",
           vlcToggleOn: "VLC p\xE5",
           vlcToggleOff: "VLC av",
@@ -3462,8 +4430,8 @@
           appTheme: "Tema",
           appThemeDesc: "Bakgrundston i hela appen.",
           themeMidnight: "Midnatt",
-          themeMidnightDesc: "Dagens Lumio: djupbl\xE5 bakgrund.",
-          themePitchDesc: "N\xE4stan svart f\xF6r OLED och m\xF6rka rum.",
+          themeMidnightDesc: "Djupbl\xE5 bakgrund.",
+          themePitchDesc: "Standard. N\xE4stan svart f\xF6r OLED och m\xF6rka rum.",
           themeSystemDesc: "Byter med macOS utseende-inst\xE4llning.",
           accentColor: "Accentf\xE4rg",
           profileSharedTab: "Delade inst\xE4llningar",
@@ -3679,6 +4647,12 @@
           remoteSessionModeDesc: "Vilket gr\xE4nssnitt webbl\xE4sarsessioner mot den h\xE4r appen f\xE5r. Auto \xE4rver TV-l\xE4gesvalet ovan plus enhetens egen detektering; Skrivbord och TV tvingar ett l\xE4ge.",
           remoteSessionModeDesktop: "Skrivbord",
           remoteSessionModeTv: "TV",
+          tvMenuPlacementTitle: "Menyns placering",
+          tvMenuChipHiddenTitle: "D\xF6lj menypillret",
+          tvMenuChipHiddenHint: "Menyn finns kvar och \xF6ppnas som vanligt med \u25C2 eller \u25B4 fr\xE5n inneh\xE5llet.",
+          tvMenuPlacementHint: "Var menyn sitter. Inneh\xE5llet \xE4r detsamma i b\xE5da l\xE4gena.",
+          tvMenuPlacementTop: "Topp",
+          tvMenuPlacementSide: "Sida",
           tvSegmentsEyebrow: "Rader per segment",
           tvSegmentLabel: "Segment",
           tvSegmentDesc: "Varje segment har egna rader i TV-l\xE4get. Utg\xE5ngsl\xE4get speglar din vanliga startsida, s\xE5 inget \xE4ndras f\xF6rr\xE4n du g\xF6r det h\xE4r.",
@@ -4168,6 +5142,30 @@
           homeSourceFrenchCinema: "Fransk film",
           homeSourceKdrama: "K-drama",
           tvSegmentAnime: "Anime",
+          tvBackAgainToExit: "Tryck Back igen f\xF6r att avsluta",
+          tvHeroFeatured: "Utvalt",
+          tvHeroMyList: "Min lista",
+          tvHeroPagerDot: "Utvald titel {n} av {total}",
+          tvHeroRuntimeHm: "{h} h {m} min",
+          tvHeroRuntimeM: "{m} min",
+          tvHeroStreamsN: "{n} str\xF6mmar",
+          tvGenreRowTitle: "Genrer",
+          tvRowFailed: "Kunde inte h\xE4mtas",
+          tvRowNoRenderer: "Finns inte i TV-l\xE4get \xE4nnu",
+          tvQuickPlay: "Spela",
+          tvQuickMarkWatched: "Markera som sedd",
+          tvQuickUnmarkWatched: "Markera som osedd",
+          tvQuickMoreInfo: "Mer info",
+          tvQuickShowAllRow: "Visa alla i raden",
+          tvQuickUnfollow: "Sluta f\xF6lja",
+          tvMenuChip: "Menu",
+          tvMenuSearch: "S\xF6k",
+          tvSearchFilters: "S\xF6k & filter",
+          tvMenuSources: "Bibliotek och k\xE4llor",
+          tvQuickRemoveContinue: "Ta bort fr\xE5n Forts\xE4tt titta",
+          tvCollectionHint: "Filmsamling \u2014 tryck OK f\xF6r att se filmerna i premi\xE4rordning.",
+          tvProviderHint: "Streamingtj\xE4nst \u2014 tryck OK f\xF6r att se filmer och serier som finns p\xE5 {name}, sorterade efter popularitet.",
+          tvCollectionSummary: "{count} filmer ({years}): {titles}",
           homeSourceAnimeSeries: "Animeserier",
           homeSourceMoodComfort: "Mysfilm",
           homeSourceMoodMind: "Tanken\xF6tter",
@@ -4327,6 +5325,16 @@
           nextEpPopupAuto: "Auto",
           creditsRecommendations: "Rekommendationer vid eftertexterna",
           creditsRecommendationsDesc: "N\xE4r eftertexterna b\xF6rjar krymper bilden till ett h\xF6rnf\xF6nster och n\xE4sta titel visas. G\xE4ller filmer och s\xE4songsavslut \u2014 aldrig mitt i en s\xE4song.",
+          statsHudMenuLabel: "Statistik",
+          playbackSpeedMenuLabel: "Hastighet",
+          stripSdhTitle: "D\xF6lj h\xF6rselskadetext",
+          stripSdhHint: "Tar bort [ljud], (suckar), \u266A s\xE5ngtext och talarnamn ur undertexterna.",
+          appUpdateChannel: "Uppdateringskanal",
+          appUpdateChannelStable: "Stabil",
+          appUpdateChannelBeta: "Beta",
+          appUpdateChannelHint: "Beta f\xE5r testbyggen innan de sl\xE4pps till alla.",
+          exitOnCloseTitle: "Avsluta helt vid st\xE4ngning",
+          exitOnCloseHint: "Android/TV: avsluta processen n\xE4r du l\xE4mnar appen i st\xE4llet f\xF6r att l\xE5ta den ligga i bakgrunden. Frig\xF6r minne p\xE5 sm\xE5 boxar.",
           creditsFinishedSeason: "S\xE4song %s \xE4r slut",
           creditsNextSeason: "S\xE4song %s",
           creditsFinishedTitle: "Du s\xE5g klart",
@@ -4482,7 +5490,7 @@
           syncFailed: "Fel vid synk",
           genericError: "Fel",
           dlDone: "Klar",
-          introFound: "Intro hittad",
+          introFound: "Intro",
           plShortEpisodes: "Avsnitt",
           plShortPicture: "Bild",
           plShortWiki: "Wiki",
@@ -4491,8 +5499,8 @@
           plShortCast: "Casta",
           plShortFullscreen: "Fullsk\xE4rm",
           plShortMore: "Mer",
-          recapFound: "Recap hittad",
-          outroFound: "Outro hittad",
+          recapFound: "Recap",
+          outroFound: "Outro",
           introDebugAutoOn: "Auto-skip p\xE5",
           introDebugAutoOff: "Auto-skip av",
           aspectAuto: "Auto",
@@ -4708,6 +5716,13 @@
           streamsLayoutDesc: "I sidopanelen, eller som en sektion p\xE5 sidan ovanf\xF6r Rekommendationer. Serier f\xE5r str\xF6mmarna under varje avsnitt.",
           streamsLayoutSidebar: "Sidopanel",
           streamsLayoutInline: "P\xE5 sidan",
+          tvStreamsLayoutCards: "Rullande",
+          tvTypeWithRemote: "skriv",
+          tvTypeKeyHint: "Skriv in nyckeln med fj\xE4rrkontrollen. Den sparas n\xE4r du trycker Klar och visas aldrig p\xE5 sk\xE4rmen.",
+          streamSizeSmall: "Liten",
+          streamSizeMedium: "Mellan",
+          streamSizeLarge: "Stor",
+          tvStreamsLayoutHint: "Rullande: str\xF6mmarna ligger p\xE5 sidan som en rad kort. Sidopanel: en Str\xF6mmar-knapp bredvid Spela \xF6ppnar listan.",
           castCountTitle: "Antal sk\xE5despelare",
           castCountDesc: "Hur m\xE5nga ur ensemblen som visas p\xE5 detaljsidan. Telefonen visar dem i sidor om \xE5tta; skrivbordet rullar.",
           gestTabLabel: "Gester",
@@ -4843,14 +5858,13 @@
           kpProvidedCatalogs: "Tillhandah\xE5llna kataloger",
           kpMetricActiveAddons: "Aktiva addons",
           sourcesEmptyTitle: "Inga k\xE4llor \xE4n",
-          coreStreamsToggle: "Anv\xE4nd Lumios egna str\xF6mlista (beta)",
-          coreStreamsToggleDesc: "Str\xF6mmar h\xE4mtas och spelas av appen sj\xE4lv, direkt fr\xE5n dina k\xE4llor. Sl\xE5r igenom efter omstart.",
           coreStreamsHidden: "{count} str\xF6mmar dolda av kvalitetsfilter",
           coreStreamsSelectEpisode: "V\xE4lj ett avsnitt f\xF6r att se dess str\xF6mmar.",
           coreStreamsSource: "K\xE4lla",
           coreStreamsCached: "Cachad",
           coreStreamsLoading: "Fr\xE5gar k\xE4llorna\u2026",
           streamNotServingMedia: "K\xE4llan levererade ingen spelbar media. Prova en annan str\xF6m.",
+          libraryServerUnreachable: "Fick ingen uppspelningsadress fr\xE5n {source}. Kontrollera att servern \xE4r ig\xE5ng.",
           libraryRowSuffix: "i ditt bibliotek",
           libraryModeTab: "Bibliotek",
           libraryModeTitle: "Biblioteksl\xE4ge",
@@ -4858,6 +5872,17 @@
           libraryUseAsHome: "Anv\xE4nd som startsida",
           libraryUseAsHomeHint: "Bocka i ett eller flera bibliotek. Startsida, detaljsida, s\xF6k och Zapp matas d\xE5 bara ur dem, tillsammans. Str\xF6mk\xE4llorna h\xE5lls dolda s\xE5 l\xE4nge det \xE4r p\xE5.",
           librarySourcesTitle: "Indexerade bibliotek",
+          localLibraryTitle: "Lokala mappar",
+          localLibraryHint: "Varje mapp blir ett eget bibliotek med egen menying\xE5ng, som Plex eller Jellyfin. Filerna matchas mot TMDB via namnet: \u201DTitel (\xC5r).mkv\u201D f\xF6r filmer, \u201DSerie/Season 01/Serie S01E04.mkv\u201D f\xF6r avsnitt.",
+          localLibraryAdd: "L\xE4gg till mapp",
+          localLibraryRemove: "Ta bort",
+          localLibraryUpdate: "Uppdatera",
+          localLibraryRebuild: "Bygg om",
+          localLibraryBuild: "Bygg index",
+          localLibraryEmpty: "Inga mappar \xE4nnu.",
+          localLibraryScanning: "Indexerar\u2026 {done}",
+          localLibraryNotIndexed: "Inte indexerad \xE4nnu",
+          libraryRowUnmatched: "Ej identifierade",
           librarySourceNotIndexed: "Inte indexerat \xE4nnu \u2014 bygg indexet i pluginets inst\xE4llningar.",
           libraryModeOff: "Inget bibliotek \xE4r startsida. Sl\xE5 p\xE5 det under bibliotekspluginets inst\xE4llningar.",
           libraryRowIndexed: "{count} indexerade",
@@ -5016,6 +6041,8 @@
           hpMoveDown: "Flytta ner",
           hpSourceLabel: "K\xE4lla",
           hpCardCountLabel: "Antal kort",
+          hpMobileRowsLabel: "Rader p\xE5 telefon",
+          hpMobileRowsAuto: "Auto",
           hpPopularStreaming: "Popul\xE4ra streaming",
           hpListLabel: "Lista",
           hpAllChannels: "Alla kanaler",
@@ -5352,323 +6379,6 @@
     }
   });
 
-  // lib/plugin-registry.ts
-  var plugin_registry_exports = {};
-  __export(plugin_registry_exports, {
-    getAuthCapabilityProviders: () => getAuthCapabilityProviders,
-    getBootstraps: () => getBootstraps,
-    getBrowsePages: () => getBrowsePages,
-    getEpisodeSidebarProviders: () => getEpisodeSidebarProviders,
-    getHeroes: () => getHeroes,
-    getHomeOverrides: () => getHomeOverrides,
-    getHomeRows: () => getHomeRows,
-    getHomeSources: () => getHomeSources,
-    getInstantPlayProviders: () => getInstantPlayProviders,
-    getLibraryProviders: () => getLibraryProviders,
-    getMainMenuItems: () => getMainMenuItems,
-    getManagedAuthConsumers: () => getManagedAuthConsumers,
-    getMediaDetailsActions: () => getMediaDetailsActions,
-    getMediaDownloadActions: () => getMediaDownloadActions,
-    getMediaStreamAvailabilityProviders: () => getMediaStreamAvailabilityProviders,
-    getMediaStreamCatalogProviders: () => getMediaStreamCatalogProviders,
-    getOverviewStatusProviders: () => getOverviewStatusProviders,
-    getPlayableUrlRewriters: () => getPlayableUrlRewriters,
-    getPlaybackCapabilityProviders: () => getPlaybackCapabilityProviders,
-    getPluginRegistryRevision: () => getPluginRegistryRevision,
-    getResumeRefreshProviders: () => getResumeRefreshProviders,
-    getSettingsSections: () => getSettingsSections,
-    getStreamProviders: () => getStreamProviders,
-    getStreamRequestConfigProviders: () => getStreamRequestConfigProviders,
-    getSyncIdentityProviders: () => getSyncIdentityProviders,
-    getTopbarItems: () => getTopbarItems,
-    hasStreamProviders: () => hasStreamProviders,
-    notifyPluginRegistryChanged: () => notifyPluginRegistryChanged,
-    registerPlugin: () => registerPlugin,
-    subscribePluginRegistry: () => subscribePluginRegistry
-  });
-  function notifyRegistryChanged() {
-    registryRevision += 1;
-    for (const listener of registryListeners) {
-      try {
-        listener();
-      } catch (error) {
-        console.warn("[plugin-registry] listener failed", error);
-      }
-    }
-  }
-  function scheduleRegistryNotify() {
-    if (registryNotifyScheduled) return;
-    registryNotifyScheduled = true;
-    queueMicrotask(() => {
-      registryNotifyScheduled = false;
-      notifyRegistryChanged();
-    });
-  }
-  function makeContext(pluginId) {
-    const ctx = {
-      registerStreamProvider(provider) {
-        if (streamProviders.find((p) => p.id === provider.id)) return;
-        streamProviders.push(provider);
-      },
-      registerLibraryProvider(provider) {
-        if (libraryProviders.find((p) => p.id === provider.id)) return;
-        libraryProviders.push(provider);
-      },
-      registerMediaStreamCatalogProvider(provider) {
-        if (mediaStreamCatalogProviders.find((entry) => entry.id === provider.id)) return;
-        mediaStreamCatalogProviders.push(provider);
-      },
-      registerMediaStreamAvailabilityProvider(provider) {
-        if (mediaStreamAvailabilityProviders.find((entry) => entry.id === provider.id)) return;
-        mediaStreamAvailabilityProviders.push(provider);
-      },
-      registerInstantPlayProvider(provider) {
-        if (instantPlayProviders.find((entry) => entry.id === provider.id)) return;
-        instantPlayProviders.push(provider);
-      },
-      registerResumeRefreshProvider(provider) {
-        if (resumeRefreshProviders.find((entry) => entry.id === provider.id)) return;
-        resumeRefreshProviders.push(provider);
-      },
-      registerPlayableUrlRewriter(rewriter) {
-        if (playableUrlRewriters.find((entry) => entry.id === rewriter.id)) return;
-        playableUrlRewriters.push(rewriter);
-      },
-      registerStreamRequestConfigProvider(provider) {
-        if (streamRequestConfigProviders.find((entry) => entry.id === provider.id)) return;
-        streamRequestConfigProviders.push(provider);
-      },
-      registerEpisodeSidebarProvider(provider) {
-        if (episodeSidebarProviders.find((p) => p.id === provider.id)) return;
-        episodeSidebarProviders.push(provider);
-      },
-      registerPlaybackCapabilityProvider(provider) {
-        if (playbackCapabilityProviders.find((entry) => entry.id === provider.id)) return;
-        playbackCapabilityProviders.push(provider);
-      },
-      registerSyncIdentityProvider(provider) {
-        if (syncIdentityProviders.find((entry) => entry.id === provider.id)) return;
-        syncIdentityProviders.push(provider);
-      },
-      registerAuthCapabilityProvider(provider) {
-        if (authCapabilityProviders.find((entry) => entry.id === provider.id)) return;
-        authCapabilityProviders.push(provider);
-      },
-      registerOverviewStatusProvider(provider) {
-        if (overviewStatusProviders.find((entry) => entry.id === provider.id)) return;
-        overviewStatusProviders.push({ ...provider, pluginId });
-      },
-      registerSettingsSection(section) {
-        if (settingsSections.find((s) => s.id === section.id)) return;
-        settingsSections.push({
-          ...section,
-          pluginId
-        });
-      },
-      registerMediaDetailsAction(action) {
-        if (mediaDetailsActions.find((entry) => entry.id === action.id)) return;
-        mediaDetailsActions.push(action);
-      },
-      registerMediaDownloadAction(action) {
-        if (mediaDownloadActions.find((entry) => entry.id === action.id)) return;
-        mediaDownloadActions.push(action);
-      },
-      registerHomeRow(row) {
-        if (homeRows.find((r) => r.id === row.id)) return;
-        homeRows.push(row);
-      },
-      registerHomeSource(source) {
-        if (homeSources.find((entry) => entry.id === source.id)) return;
-        homeSources.push(source);
-      },
-      registerBootstrap(bootstrap) {
-        if (bootstraps.find((entry) => entry.id === bootstrap.id)) return;
-        bootstraps.push(bootstrap);
-      },
-      registerHero(hero) {
-        if (heroes.find((entry) => entry.id === hero.id)) return;
-        heroes.push(hero);
-      },
-      registerHomeOverride(homeOverride) {
-        if (homeOverrides.find((entry) => entry.id === homeOverride.id)) return;
-        homeOverrides.push({
-          ...homeOverride,
-          pluginId
-        });
-      },
-      registerBrowsePage(page) {
-        if (browsePages.find((entry) => entry.id === page.id)) return;
-        browsePages.push(page);
-      },
-      registerMainMenuItem(item) {
-        if (mainMenuItems.find((entry) => entry.id === item.id)) return;
-        mainMenuItems.push(item);
-      },
-      registerTopbarItem(item) {
-        if (topbarItems.find((entry) => entry.id === item.id)) return;
-        topbarItems.push(item);
-      },
-      registerManagedAuthConsumer(consumer) {
-        if (managedAuthConsumers.find((entry) => entry.id === consumer.id)) return;
-        managedAuthConsumers.push(consumer);
-      }
-    };
-    for (const key of Object.keys(ctx)) {
-      const original = ctx[key];
-      if (typeof original === "function" && String(key).startsWith("register")) {
-        ;
-        ctx[key] = (...args) => {
-          ;
-          original.apply(ctx, args);
-          scheduleRegistryNotify();
-        };
-      }
-    }
-    return ctx;
-  }
-  function registerPlugin(plugin2, options = {}) {
-    if (registeredPluginIds.has(plugin2.id)) return;
-    registeredPluginIds.add(plugin2.id);
-    const ctx = makeContext(plugin2.id);
-    if (options.suppressStreamContributions) {
-      const noop5 = () => {
-      };
-      ctx.registerStreamProvider = noop5;
-      ctx.registerPlaybackCapabilityProvider = noop5;
-      ctx.registerMediaStreamAvailabilityProvider = noop5;
-      ctx.registerInstantPlayProvider = noop5;
-      ctx.registerResumeRefreshProvider = noop5;
-      ctx.registerEpisodeSidebarProvider = noop5;
-    }
-    plugin2.register(ctx);
-    notifyRegistryChanged();
-  }
-  function getStreamProviders() {
-    return streamProviders;
-  }
-  function getLibraryProviders() {
-    return libraryProviders;
-  }
-  function getMediaStreamCatalogProviders() {
-    return mediaStreamCatalogProviders;
-  }
-  function getMediaStreamAvailabilityProviders() {
-    return mediaStreamAvailabilityProviders;
-  }
-  function getInstantPlayProviders() {
-    return instantPlayProviders;
-  }
-  function getResumeRefreshProviders() {
-    return [...resumeRefreshProviders].sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
-  }
-  function getPlayableUrlRewriters() {
-    return [...playableUrlRewriters].sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
-  }
-  function getStreamRequestConfigProviders() {
-    return [...streamRequestConfigProviders].sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
-  }
-  function getEpisodeSidebarProviders() {
-    return episodeSidebarProviders;
-  }
-  function getPlaybackCapabilityProviders() {
-    return playbackCapabilityProviders;
-  }
-  function getSyncIdentityProviders() {
-    return syncIdentityProviders;
-  }
-  function getOverviewStatusProviders() {
-    return [...overviewStatusProviders].sort((a, b) => (a.order ?? 100) - (b.order ?? 100));
-  }
-  function getAuthCapabilityProviders() {
-    return authCapabilityProviders;
-  }
-  function getSettingsSections() {
-    return settingsSections;
-  }
-  function getMediaDetailsActions() {
-    return mediaDetailsActions;
-  }
-  function getMediaDownloadActions() {
-    return mediaDownloadActions;
-  }
-  function getHomeRows() {
-    return homeRows;
-  }
-  function getHomeSources() {
-    return homeSources;
-  }
-  function getBootstraps() {
-    return bootstraps;
-  }
-  function getHeroes() {
-    return heroes;
-  }
-  function getHomeOverrides() {
-    return homeOverrides;
-  }
-  function getBrowsePages() {
-    return browsePages;
-  }
-  function getMainMenuItems() {
-    return mainMenuItems;
-  }
-  function getTopbarItems() {
-    return topbarItems;
-  }
-  function getManagedAuthConsumers() {
-    return managedAuthConsumers;
-  }
-  function hasStreamProviders() {
-    return streamProviders.length > 0;
-  }
-  function getPluginRegistryRevision() {
-    return registryRevision;
-  }
-  function subscribePluginRegistry(listener) {
-    registryListeners.add(listener);
-    return () => {
-      registryListeners.delete(listener);
-    };
-  }
-  function notifyPluginRegistryChanged() {
-    notifyRegistryChanged();
-  }
-  var streamProviders, libraryProviders, mediaStreamCatalogProviders, mediaStreamAvailabilityProviders, instantPlayProviders, resumeRefreshProviders, playableUrlRewriters, streamRequestConfigProviders, episodeSidebarProviders, playbackCapabilityProviders, syncIdentityProviders, authCapabilityProviders, overviewStatusProviders, settingsSections, mediaDownloadActions, mediaDetailsActions, homeRows, homeSources, bootstraps, heroes, homeOverrides, browsePages, mainMenuItems, topbarItems, managedAuthConsumers, registeredPluginIds, registryRevision, registryListeners, registryNotifyScheduled;
-  var init_plugin_registry = __esm({
-    "lib/plugin-registry.ts"() {
-      "use strict";
-      streamProviders = [];
-      libraryProviders = [];
-      mediaStreamCatalogProviders = [];
-      mediaStreamAvailabilityProviders = [];
-      instantPlayProviders = [];
-      resumeRefreshProviders = [];
-      playableUrlRewriters = [];
-      streamRequestConfigProviders = [];
-      episodeSidebarProviders = [];
-      playbackCapabilityProviders = [];
-      syncIdentityProviders = [];
-      authCapabilityProviders = [];
-      overviewStatusProviders = [];
-      settingsSections = [];
-      mediaDownloadActions = [];
-      mediaDetailsActions = [];
-      homeRows = [];
-      homeSources = [];
-      bootstraps = [];
-      heroes = [];
-      homeOverrides = [];
-      browsePages = [];
-      mainMenuItems = [];
-      topbarItems = [];
-      managedAuthConsumers = [];
-      registeredPluginIds = /* @__PURE__ */ new Set();
-      registryRevision = 0;
-      registryListeners = /* @__PURE__ */ new Set();
-      registryNotifyScheduled = false;
-    }
-  });
-
   // lib/library/mode.ts
   function normalizeIds(ids) {
     const list = Array.isArray(ids) ? ids : typeof ids === "string" && ids ? [ids] : [];
@@ -5728,7 +6438,69 @@
     cache2 = null;
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(LIBRARY_INDEX_CHANGED_EVENT));
   }
-  var LIBRARY_INDEX_CHANGED_EVENT, cache2;
+  async function loadLibraryIdSets(force = false) {
+    if (cache2 && !force) return cache2;
+    if (inflight) return inflight;
+    inflight = (async () => {
+      try {
+        const sourceParam = librarySourceParam();
+        const response = await fetch(`/api/library/query?kind=ids${sourceParam ? `&sourceId=${encodeURIComponent(sourceParam)}` : ""}`, { cache: "no-store" });
+        if (!response.ok) return cache2 ?? EMPTY;
+        const payload = await response.json();
+        cache2 = {
+          movies: { tmdb: new Set(payload.movies.tmdb), imdb: new Set(payload.movies.imdb) },
+          series: { tmdb: new Set(payload.series.tmdb), imdb: new Set(payload.series.imdb) },
+          total: payload.total,
+          loadedAt: Date.now()
+        };
+        for (const listener of listeners) listener();
+        return cache2;
+      } catch {
+        return cache2 ?? EMPTY;
+      } finally {
+        inflight = null;
+      }
+    })();
+    return inflight;
+  }
+  function tmdbIdOf(item) {
+    const match = /^(?:movie|tv)-(\d+)$/.exec(item.id);
+    return match ? Number.parseInt(match[1], 10) : null;
+  }
+  function itemInLibrary(item, sets) {
+    const bucket = item.type === "tv" ? sets.series : sets.movies;
+    const tmdb = tmdbIdOf(item);
+    if (tmdb != null && bucket.tmdb.has(tmdb)) return true;
+    return Boolean(item.imdbId && bucket.imdb.has(item.imdbId));
+  }
+  function useLibraryIdSets() {
+    const [mode, setMode] = useState(() => getLibraryMode());
+    const [sets, setSets] = useState(() => getLibraryMode() ? cache2 : null);
+    useEffect(() => onLibraryModeChanged(() => setMode(getLibraryMode())), []);
+    useEffect(() => {
+      if (!mode) {
+        setSets(null);
+        return;
+      }
+      let cancelled = false;
+      const sync2 = () => {
+        void loadLibraryIdSets(true).then((next2) => {
+          if (!cancelled) setSets(next2);
+        });
+      };
+      sync2();
+      const onChanged = () => sync2();
+      window.addEventListener(LIBRARY_INDEX_CHANGED_EVENT, onChanged);
+      listeners.add(onChanged);
+      return () => {
+        cancelled = true;
+        window.removeEventListener(LIBRARY_INDEX_CHANGED_EVENT, onChanged);
+        listeners.delete(onChanged);
+      };
+    }, [mode]);
+    return mode ? sets : null;
+  }
+  var LIBRARY_INDEX_CHANGED_EVENT, EMPTY, cache2, inflight, listeners;
   var init_ids = __esm({
     "lib/library/ids.ts"() {
       "use strict";
@@ -5736,7 +6508,15 @@
       init_react_shim();
       init_mode();
       LIBRARY_INDEX_CHANGED_EVENT = "lumio-library-index-changed";
+      EMPTY = {
+        movies: { tmdb: /* @__PURE__ */ new Set(), imdb: /* @__PURE__ */ new Set() },
+        series: { tmdb: /* @__PURE__ */ new Set(), imdb: /* @__PURE__ */ new Set() },
+        total: 0,
+        loadedAt: 0
+      };
       cache2 = null;
+      inflight = null;
+      listeners = /* @__PURE__ */ new Set();
     }
   });
 
@@ -5783,7 +6563,7 @@
   }
   async function libraryHas(ids, episode) {
     const payload = await readJson(
-      await fetch(`/api/library/query?${queryString({ kind: "has", tmdbId: ids.tmdbId ?? void 0, imdbId: ids.imdbId ?? void 0, season: episode?.season, episode: episode?.episode })}`, { cache: "no-store" })
+      await fetch(`/api/library/query?${queryString({ kind: "has", tmdbId: ids.tmdbId ?? void 0, imdbId: ids.imdbId ?? void 0, season: episode?.season, episode: episode?.episode, sourceId: librarySourceParam() })}`, { cache: "no-store" })
     );
     return payload.has;
   }
@@ -5792,6 +6572,10 @@
     if (ref.key) params.set("key", ref.key);
     if (ref.tmdbId != null) params.set("tmdbId", String(ref.tmdbId));
     if (ref.imdbId) params.set("imdbId", ref.imdbId);
+    if (!ref.key) {
+      const scope = ref.sourceId ?? librarySourceParam();
+      if (scope) params.set("sourceId", scope);
+    }
     const response = await fetch(`/api/library/item?${params}`, { cache: "no-store" });
     if (response.status === 404) return null;
     const payload = await readJson(response);
@@ -5865,6 +6649,41 @@
       init_client();
       init_ids();
       running = false;
+    }
+  });
+
+  // lib/tv-hold.ts
+  function tvHoldHandlers(onShort, onHold) {
+    return {
+      onKeyDown: (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        if (event.repeat || !event.currentTarget) return;
+        const hold = { timer: 0, fired: false };
+        const element = event.currentTarget;
+        hold.timer = window.setTimeout(() => {
+          hold.fired = true;
+          onHold(element);
+        }, TV_HOLD_MS);
+        holds.set(event.currentTarget, hold);
+      },
+      onKeyUp: (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        if (!event.currentTarget) return;
+        const hold = holds.get(event.currentTarget);
+        if (!hold) return;
+        window.clearTimeout(hold.timer);
+        holds.delete(event.currentTarget);
+        if (!hold.fired) onShort();
+      }
+    };
+  }
+  var TV_HOLD_MS, holds;
+  var init_tv_hold = __esm({
+    "lib/tv-hold.ts"() {
+      "use strict";
+      TV_HOLD_MS = 650;
+      holds = /* @__PURE__ */ new WeakMap();
     }
   });
 
@@ -5975,10 +6794,18 @@
   // lib/plugin-assets.ts
   function getBucketSet(bucket) {
     const existing = loadedPluginImageSrcs.get(bucket);
-    if (existing) return existing;
+    if (existing) return trimBucket(existing);
     const next2 = /* @__PURE__ */ new Set();
     loadedPluginImageSrcs.set(bucket, next2);
     return next2;
+  }
+  function trimBucket(set) {
+    while (set.size > 600) {
+      const oldest = set.values().next().value;
+      if (oldest === void 0) break;
+      set.delete(oldest);
+    }
+    return set;
   }
   function getPendingImageKey(bucket, src) {
     return `${bucket}::${src}`;
@@ -7300,574 +8127,6 @@
     }
   });
 
-  // node_modules/@tauri-apps/api/external/tslib/tslib.es6.cjs
-  var require_tslib_es6 = __commonJS({
-    "node_modules/@tauri-apps/api/external/tslib/tslib.es6.cjs"(exports) {
-      "use strict";
-      function __classPrivateFieldGet2(receiver, state, kind, f) {
-        if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
-        if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
-        return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
-      }
-      function __classPrivateFieldSet2(receiver, state, value, kind, f) {
-        if (kind === "m") throw new TypeError("Private method is not writable");
-        if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
-        if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
-        return kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value), value;
-      }
-      exports.__classPrivateFieldGet = __classPrivateFieldGet2;
-      exports.__classPrivateFieldSet = __classPrivateFieldSet2;
-    }
-  });
-
-  // node_modules/@tauri-apps/api/core.cjs
-  var require_core = __commonJS({
-    "node_modules/@tauri-apps/api/core.cjs"(exports) {
-      "use strict";
-      var tslib_es6 = require_tslib_es6();
-      var _Channel_onmessage;
-      var _Channel_nextMessageIndex;
-      var _Channel_pendingMessages;
-      var _Channel_messageEndIndex;
-      var _Resource_rid;
-      var SERIALIZE_TO_IPC_FN = "__TAURI_TO_IPC_KEY__";
-      function transformCallback(callback, once = false) {
-        return window.__TAURI_INTERNALS__.transformCallback(callback, once);
-      }
-      var Channel = class {
-        constructor(onmessage) {
-          _Channel_onmessage.set(this, void 0);
-          _Channel_nextMessageIndex.set(this, 0);
-          _Channel_pendingMessages.set(this, []);
-          _Channel_messageEndIndex.set(this, void 0);
-          tslib_es6.__classPrivateFieldSet(this, _Channel_onmessage, onmessage || (() => {
-          }), "f");
-          this.id = transformCallback((rawMessage) => {
-            const index3 = rawMessage.index;
-            if ("end" in rawMessage) {
-              if (index3 == tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")) {
-                this.cleanupCallback();
-              } else {
-                tslib_es6.__classPrivateFieldSet(this, _Channel_messageEndIndex, index3, "f");
-              }
-              return;
-            }
-            const message = rawMessage.message;
-            if (index3 == tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")) {
-              tslib_es6.__classPrivateFieldGet(this, _Channel_onmessage, "f").call(this, message);
-              tslib_es6.__classPrivateFieldSet(this, _Channel_nextMessageIndex, tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") + 1, "f");
-              while (tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") in tslib_es6.__classPrivateFieldGet(this, _Channel_pendingMessages, "f")) {
-                const message2 = tslib_es6.__classPrivateFieldGet(this, _Channel_pendingMessages, "f")[tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")];
-                tslib_es6.__classPrivateFieldGet(this, _Channel_onmessage, "f").call(this, message2);
-                delete tslib_es6.__classPrivateFieldGet(this, _Channel_pendingMessages, "f")[tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")];
-                tslib_es6.__classPrivateFieldSet(this, _Channel_nextMessageIndex, tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") + 1, "f");
-              }
-              if (tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") === tslib_es6.__classPrivateFieldGet(this, _Channel_messageEndIndex, "f")) {
-                this.cleanupCallback();
-              }
-            } else {
-              tslib_es6.__classPrivateFieldGet(this, _Channel_pendingMessages, "f")[index3] = message;
-            }
-          });
-        }
-        cleanupCallback() {
-          window.__TAURI_INTERNALS__.unregisterCallback(this.id);
-        }
-        set onmessage(handler) {
-          tslib_es6.__classPrivateFieldSet(this, _Channel_onmessage, handler, "f");
-        }
-        get onmessage() {
-          return tslib_es6.__classPrivateFieldGet(this, _Channel_onmessage, "f");
-        }
-        [(_Channel_onmessage = /* @__PURE__ */ new WeakMap(), _Channel_nextMessageIndex = /* @__PURE__ */ new WeakMap(), _Channel_pendingMessages = /* @__PURE__ */ new WeakMap(), _Channel_messageEndIndex = /* @__PURE__ */ new WeakMap(), SERIALIZE_TO_IPC_FN)]() {
-          return `__CHANNEL__:${this.id}`;
-        }
-        toJSON() {
-          return this[SERIALIZE_TO_IPC_FN]();
-        }
-      };
-      var PluginListener = class {
-        constructor(plugin2, event, channelId) {
-          this.plugin = plugin2;
-          this.event = event;
-          this.channelId = channelId;
-        }
-        async unregister() {
-          return invoke5(`plugin:${this.plugin}|remove_listener`, {
-            event: this.event,
-            channelId: this.channelId
-          });
-        }
-      };
-      async function addPluginListener(plugin2, event, cb) {
-        const handler = new Channel(cb);
-        try {
-          await invoke5(`plugin:${plugin2}|register_listener`, {
-            event,
-            handler
-          });
-          return new PluginListener(plugin2, event, handler.id);
-        } catch {
-          await invoke5(`plugin:${plugin2}|registerListener`, { event, handler });
-          return new PluginListener(plugin2, event, handler.id);
-        }
-      }
-      async function checkPermissions(plugin2) {
-        return invoke5(`plugin:${plugin2}|check_permissions`);
-      }
-      async function requestPermissions(plugin2) {
-        return invoke5(`plugin:${plugin2}|request_permissions`);
-      }
-      async function invoke5(cmd, args = {}, options) {
-        return window.__TAURI_INTERNALS__.invoke(cmd, args, options);
-      }
-      function convertFileSrc(filePath, protocol = "asset") {
-        return window.__TAURI_INTERNALS__.convertFileSrc(filePath, protocol);
-      }
-      var Resource = class {
-        get rid() {
-          return tslib_es6.__classPrivateFieldGet(this, _Resource_rid, "f");
-        }
-        constructor(rid) {
-          _Resource_rid.set(this, void 0);
-          tslib_es6.__classPrivateFieldSet(this, _Resource_rid, rid, "f");
-        }
-        /**
-         * Destroys and cleans up this resource from memory.
-         * **You should not call any method on this object anymore and should drop any reference to it.**
-         */
-        async close() {
-          return invoke5("plugin:resources|close", {
-            rid: this.rid
-          });
-        }
-      };
-      _Resource_rid = /* @__PURE__ */ new WeakMap();
-      function isTauri() {
-        return !!(globalThis || window).isTauri;
-      }
-      exports.Channel = Channel;
-      exports.PluginListener = PluginListener;
-      exports.Resource = Resource;
-      exports.SERIALIZE_TO_IPC_FN = SERIALIZE_TO_IPC_FN;
-      exports.addPluginListener = addPluginListener;
-      exports.checkPermissions = checkPermissions;
-      exports.convertFileSrc = convertFileSrc;
-      exports.invoke = invoke5;
-      exports.isTauri = isTauri;
-      exports.requestPermissions = requestPermissions;
-      exports.transformCallback = transformCallback;
-    }
-  });
-
-  // node_modules/@tauri-apps/api/event.cjs
-  var require_event = __commonJS({
-    "node_modules/@tauri-apps/api/event.cjs"(exports) {
-      "use strict";
-      var core = require_core();
-      exports.TauriEvent = void 0;
-      (function(TauriEvent) {
-        TauriEvent["WINDOW_RESIZED"] = "tauri://resize";
-        TauriEvent["WINDOW_MOVED"] = "tauri://move";
-        TauriEvent["WINDOW_CLOSE_REQUESTED"] = "tauri://close-requested";
-        TauriEvent["WINDOW_DESTROYED"] = "tauri://destroyed";
-        TauriEvent["WINDOW_FOCUS"] = "tauri://focus";
-        TauriEvent["WINDOW_BLUR"] = "tauri://blur";
-        TauriEvent["WINDOW_SCALE_FACTOR_CHANGED"] = "tauri://scale-change";
-        TauriEvent["WINDOW_THEME_CHANGED"] = "tauri://theme-changed";
-        TauriEvent["WINDOW_CREATED"] = "tauri://window-created";
-        TauriEvent["WEBVIEW_CREATED"] = "tauri://webview-created";
-        TauriEvent["DRAG_ENTER"] = "tauri://drag-enter";
-        TauriEvent["DRAG_OVER"] = "tauri://drag-over";
-        TauriEvent["DRAG_DROP"] = "tauri://drag-drop";
-        TauriEvent["DRAG_LEAVE"] = "tauri://drag-leave";
-      })(exports.TauriEvent || (exports.TauriEvent = {}));
-      async function _unlisten(event, eventId) {
-        window.__TAURI_EVENT_PLUGIN_INTERNALS__.unregisterListener(event, eventId);
-        await core.invoke("plugin:event|unlisten", {
-          event,
-          eventId
-        });
-      }
-      async function listen2(event, handler, options) {
-        var _a;
-        const target2 = typeof (options === null || options === void 0 ? void 0 : options.target) === "string" ? { kind: "AnyLabel", label: options.target } : (_a = options === null || options === void 0 ? void 0 : options.target) !== null && _a !== void 0 ? _a : { kind: "Any" };
-        return core.invoke("plugin:event|listen", {
-          event,
-          target: target2,
-          handler: core.transformCallback(handler)
-        }).then((eventId) => {
-          return async () => _unlisten(event, eventId);
-        });
-      }
-      async function once(event, handler, options) {
-        return listen2(event, (eventData) => {
-          void _unlisten(event, eventData.id);
-          handler(eventData);
-        }, options);
-      }
-      async function emit(event, payload) {
-        await core.invoke("plugin:event|emit", {
-          event,
-          payload
-        });
-      }
-      async function emitTo(target2, event, payload) {
-        const eventTarget = typeof target2 === "string" ? { kind: "AnyLabel", label: target2 } : target2;
-        await core.invoke("plugin:event|emit_to", {
-          target: eventTarget,
-          event,
-          payload
-        });
-      }
-      exports.emit = emit;
-      exports.emitTo = emitTo;
-      exports.listen = listen2;
-      exports.once = once;
-    }
-  });
-
-  // lib/session-host.ts
-  function normalizeHost(rawHost) {
-    return rawHost.trim().toLowerCase().replace(/\.+$/, "");
-  }
-  function isLocalAppHost(hostname) {
-    const host = normalizeHost(hostname);
-    if (!host) return false;
-    if (host === "localhost" || host === "127.0.0.1" || host === "::1") return true;
-    if (host === "tauri.localhost" || host.endsWith(".tauri.localhost")) return true;
-    return false;
-  }
-  function isLanClientHost(hostname) {
-    return !isLocalAppHost(hostname);
-  }
-  function isLanClientSession() {
-    if (typeof window === "undefined") return false;
-    return isLanClientHost(window.location.hostname);
-  }
-  function isClientSession() {
-    return isLanClientSession();
-  }
-  var init_session_host = __esm({
-    "lib/session-host.ts"() {
-    }
-  });
-
-  // lib/tauri-mpv.ts
-  function detectTauriEnv() {
-    if (typeof window === "undefined") return false;
-    const maybeTauriWindow = window;
-    if (maybeTauriWindow.__TAURI_INTERNALS__ || maybeTauriWindow.__TAURI__) {
-      return true;
-    }
-    const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "";
-    if (userAgent.includes("Tauri")) return true;
-    const host = window.location.hostname;
-    const port = window.location.port;
-    return isLocalAppHost(host) && port === "3011";
-  }
-  function isLiveStreamUrl(url) {
-    const lower = url.toLowerCase();
-    const pathOnly = lower.split("?")[0].split("#")[0];
-    if (pathOnly.endsWith(".m3u8") || pathOnly.endsWith(".mpd")) return true;
-    return lower.includes("/live/") || lower.includes("hls/") || lower.includes("/dash/");
-  }
-  function sourceCacheUrl(originalUrl, requestHeaders) {
-    if (!/^https?:\/\//i.test(originalUrl)) return null;
-    if (isLiveStreamUrl(originalUrl)) return null;
-    try {
-      if (isLocalAppHost(new URL(originalUrl).hostname)) return null;
-    } catch {
-      return null;
-    }
-    const headerParam = requestHeaders && Object.keys(requestHeaders).length > 0 ? `&h=${encodeURIComponent(JSON.stringify(requestHeaders))}` : "";
-    return `${window.location.origin}/api/source-cache?u=${encodeURIComponent(originalUrl)}${headerParam}`;
-  }
-  function warmSourceCache(originalUrl, requestHeaders) {
-    const wrapped = sourceCacheUrl(originalUrl, requestHeaders);
-    if (!wrapped) return;
-    void fetch(wrapped, { headers: { Range: "bytes=0-1" } }).then((r) => r.body?.cancel()).catch(() => {
-    });
-  }
-  function releaseSourceCache(originalUrl) {
-    if (!sourceCacheUrl(originalUrl)) return;
-    void fetch("/api/source-cache/release", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ u: originalUrl }),
-      keepalive: true
-    }).catch(() => {
-    });
-  }
-  async function openMpvPlayer(args) {
-    const { shouldAbort: _ignored, ...rest } = args;
-    const cached = sourceCacheUrl(args.url, args.requestHeaders);
-    if (cached) {
-      if (args.shouldAbort?.()) return;
-      markStreamPhase("mpv-open", { via: "source-cache" });
-      await (0, import_core.invoke)("mpv_open", { args: { ...rest, url: cached } });
-      markStreamPhase("mpv-open-done");
-      return;
-    }
-    let url = args.url;
-    let via = "direct";
-    for (const rewriter of getPlayableUrlRewriters()) {
-      try {
-        const rewritten = await rewriter.rewrite(url);
-        if (rewritten) {
-          url = rewritten;
-          via = "rewriter";
-          break;
-        }
-      } catch {
-      }
-    }
-    if (args.shouldAbort?.()) return;
-    markStreamPhase("mpv-open", { via });
-    await (0, import_core.invoke)("mpv_open", { args: { ...rest, url } });
-    markStreamPhase("mpv-open-done");
-  }
-  async function closeMpvPlayer() {
-    return (0, import_core.invoke)("mpv_close");
-  }
-  async function setMpvPause(paused) {
-    return (0, import_core.invoke)("mpv_set_pause", { paused });
-  }
-  async function setMpvAudioTrack(aid) {
-    return (0, import_core.invoke)("mpv_set_audio_track", { aid });
-  }
-  async function setMpvVideoGeometry(args) {
-    try {
-      return await (0, import_core.invoke)("mpv_set_video_geometry", {
-        aspectOverride: args.aspectOverride ?? null,
-        panscan: args.panscan,
-        videoZoom: args.videoZoom
-      });
-    } catch (error) {
-      const message = String(error ?? "");
-      if (!/mpv not initialized/i.test(message)) {
-        console.warn("[mpv] set video geometry error:", error);
-      }
-    }
-  }
-  async function setMpvSubtitleTrack(sid) {
-    return (0, import_core.invoke)("mpv_set_subtitle_track", { sid });
-  }
-  async function getMpvSid() {
-    return (0, import_core.invoke)("mpv_get_sid");
-  }
-  async function getMpvSubtitleTracks() {
-    return (0, import_core.invoke)("mpv_get_subtitle_tracks");
-  }
-  async function getMpvAudioTracks() {
-    return (0, import_core.invoke)("mpv_get_audio_tracks");
-  }
-  async function toggleWindowFullscreen() {
-    return (0, import_core.invoke)("toggle_window_fullscreen");
-  }
-  async function getWindowFullscreen() {
-    return (0, import_core.invoke)("get_window_fullscreen");
-  }
-  async function getWindowNativeFullscreen() {
-    return (0, import_core.invoke)("get_window_native_fullscreen");
-  }
-  async function setWindowFullscreen(fullscreen) {
-    return (0, import_core.invoke)("set_window_fullscreen", { fullscreen });
-  }
-  async function setWindowNativeFullscreen(fullscreen) {
-    return (0, import_core.invoke)("set_window_native_fullscreen", { fullscreen });
-  }
-  async function mpvGetAudioFilterChain() {
-    try {
-      return await (0, import_core.invoke)("mpv_get_af") || "(tom)";
-    } catch (e) {
-      return `(ol\xE4sbar: ${String(e)})`;
-    }
-  }
-  async function mpvRenderIsGpu() {
-    try {
-      return await (0, import_core.invoke)("mpv_render_is_gpu");
-    } catch {
-      return false;
-    }
-  }
-  async function mpvCommand(args) {
-    try {
-      if (args[0] === "set_property" && args.length >= 3) {
-        const value = typeof args[2] === "boolean" ? args[2] ? "yes" : "no" : String(args[2]);
-        return await (0, import_core.invoke)("mpv_set_property_strings", { props: [{ name: String(args[1]), value }] });
-      }
-      if (args[0] === "get_property" && args.length >= 2) {
-        return await (0, import_core.invoke)("mpv_get_property_ts", { name: String(args[1]) });
-      }
-      return await (0, import_core.invoke)("mpv_command_ts", { args });
-    } catch (e) {
-      console.warn("[mpv] command error:", args, e);
-    }
-  }
-  async function mpvSetPropertyStrings(props) {
-    try {
-      return await (0, import_core.invoke)("mpv_set_property_strings", { props });
-    } catch (e) {
-      console.warn("[mpv] set property error:", props, e);
-    }
-  }
-  async function setMpvAspect(value) {
-    return mpvSetPropertyStrings([{ name: "video-aspect-override", value }]);
-  }
-  async function mpvApplySubtitleStyle(args) {
-    try {
-      return await (0, import_core.invoke)("mpv_apply_subtitle_style", { args });
-    } catch (e) {
-      console.warn("[mpv] apply subtitle style error:", args, e);
-    }
-  }
-  function mpvSetBounds(rect) {
-    if (rect.width <= 0 || rect.height <= 0) return;
-    void (0, import_core.invoke)("mpv_set_bounds", {
-      x: rect.left,
-      y: rect.top,
-      w: rect.width,
-      h: rect.height,
-      windowHeight: window.innerHeight,
-      scale: window.devicePixelRatio
-    });
-  }
-  function useMpvPlayer(enabled = true) {
-    const [timePos, setTimePos] = useState(0);
-    const [duration, setDuration] = useState(0);
-    const [paused, setPaused] = useState(false);
-    const [ended, setEnded] = useState(false);
-    const [sid, setSid] = useState(null);
-    const [fileLoaded, setFileLoaded] = useState(false);
-    const [fileLoadedToken, setFileLoadedToken] = useState(0);
-    const [playbackRestarted, setPlaybackRestarted] = useState(false);
-    const [playbackRestartedToken, setPlaybackRestartedToken] = useState(0);
-    const [pausedForCache, setPausedForCache] = useState(false);
-    const [coreIdle, setCoreIdle] = useState(true);
-    const [firstFrameRendered, setFirstFrameRendered] = useState(false);
-    const [loadFailed, setLoadFailed] = useState(false);
-    const [loadFailedToken, setLoadFailedToken] = useState(0);
-    const [loadFailedError, setLoadFailedError] = useState(null);
-    useEffect(() => {
-      if (!isTauriEnv || !enabled) return;
-      const cleanups = [];
-      void (0, import_event.listen)("mpv://time-pos", (e) => setTimePos(e.payload)).then((u) => cleanups.push(u));
-      void (0, import_event.listen)("mpv://duration", (e) => setDuration(e.payload)).then((u) => cleanups.push(u));
-      void (0, import_event.listen)("mpv://paused", (e) => setPaused(e.payload)).then((u) => cleanups.push(u));
-      void (0, import_event.listen)("mpv://ended", () => setEnded(true)).then((u) => cleanups.push(u));
-      void (0, import_event.listen)("mpv://sid", (e) => setSid(e.payload)).then((u) => cleanups.push(u));
-      void (0, import_event.listen)("mpv://file-loaded", () => {
-        setFileLoaded(true);
-        setFileLoadedToken((t) => t + 1);
-      }).then((u) => cleanups.push(u));
-      void (0, import_event.listen)("mpv://playback-restart", () => {
-        setPlaybackRestarted(true);
-        setPlaybackRestartedToken((t) => t + 1);
-      }).then((u) => cleanups.push(u));
-      void (0, import_event.listen)("mpv://paused-for-cache", (e) => setPausedForCache(e.payload)).then((u) => cleanups.push(u));
-      void (0, import_event.listen)("mpv://core-idle", (e) => setCoreIdle(e.payload)).then((u) => cleanups.push(u));
-      void (0, import_event.listen)("mpv://first-frame-rendered", () => {
-        void fetch(`/api/debug-log?msg=${encodeURIComponent(`${performance.now().toFixed(0)} first-frame-rendered received`)}`);
-        setFirstFrameRendered(true);
-      }).then((u) => cleanups.push(u));
-      void (0, import_event.listen)("mpv://load-failed", (e) => {
-        setLoadFailedError(typeof e.payload === "number" ? e.payload : null);
-        setLoadFailed(true);
-        setLoadFailedToken((t) => t + 1);
-      }).then((u) => cleanups.push(u));
-      return () => cleanups.forEach((fn) => fn());
-    }, [enabled]);
-    const seek = useCallback((time2) => {
-      void mpvCommand(["seek", time2, "absolute"]);
-    }, []);
-    const seekRelative = useCallback((delta) => {
-      void mpvCommand(["seek", delta, "relative"]);
-    }, []);
-    const setPlayPause = useCallback((pause) => {
-      void mpvCommand(["set_property", "pause", pause]);
-    }, []);
-    const setVolume = useCallback((vol) => {
-      void mpvSetPropertyStrings([{ name: "volume", value: String(Math.round(vol * 100)) }]);
-    }, []);
-    const setSpeed = useCallback((value) => {
-      void mpvSetPropertyStrings([{ name: "speed", value: String(value) }]);
-    }, []);
-    const setMuted = useCallback((muted) => {
-      void mpvSetPropertyStrings([{ name: "mute", value: muted ? "yes" : "no" }]);
-    }, []);
-    const setAudioTrack = useCallback((aid) => {
-      void setMpvAudioTrack(aid);
-    }, []);
-    const resetTimePos = useCallback(() => {
-      setTimePos(0);
-    }, []);
-    const resetFileLoaded = useCallback(() => {
-      setFileLoaded(false);
-    }, []);
-    const resetEnded = useCallback(() => {
-      setEnded(false);
-    }, []);
-    const resetPlaybackRestarted = useCallback(() => {
-      setPlaybackRestarted(false);
-    }, []);
-    const resetFirstFrameRendered = useCallback(() => {
-      setFirstFrameRendered(false);
-    }, []);
-    const resetLoadFailed = useCallback(() => {
-      setLoadFailed(false);
-      setLoadFailedError(null);
-    }, []);
-    return {
-      timePos,
-      duration,
-      paused,
-      ended,
-      sid,
-      fileLoaded,
-      fileLoadedToken,
-      resetTimePos,
-      resetEnded,
-      playbackRestarted,
-      playbackRestartedToken,
-      pausedForCache,
-      coreIdle,
-      firstFrameRendered,
-      loadFailed,
-      loadFailedToken,
-      loadFailedError,
-      seek,
-      seekRelative,
-      setPlayPause,
-      setVolume,
-      setSpeed,
-      setMuted,
-      setAudioTrack,
-      resetFileLoaded,
-      resetPlaybackRestarted,
-      resetFirstFrameRendered,
-      resetLoadFailed
-    };
-  }
-  var import_core, import_event, isTauriEnv, hasTauriIpc, isDesktopTauriEnv;
-  var init_tauri_mpv = __esm({
-    "lib/tauri-mpv.ts"() {
-      "use strict";
-      "use client";
-      init_timing();
-      import_core = __toESM(require_core());
-      import_event = __toESM(require_event());
-      init_react_shim();
-      init_session_host();
-      init_plugin_registry();
-      isTauriEnv = detectTauriEnv();
-      hasTauriIpc = typeof window !== "undefined" && Boolean(
-        window.__TAURI_INTERNALS__ || window.__TAURI__
-      );
-      isDesktopTauriEnv = isTauriEnv && hasTauriIpc && !(typeof navigator !== "undefined" && /android/i.test(navigator.userAgent));
-    }
-  });
-
   // lib/open-external.ts
   async function openAndroidUrl(url) {
     try {
@@ -8193,384 +8452,6 @@
     }
   });
 
-  // lib/media-stream/addon-url.ts
-  function canonicalAddonUrl(value) {
-    return value.trim().replace(/^stremio:\/\//, "https://").replace(/\/+$/, "").replace(/\/manifest\.json$/i, "").replace(/\/+$/, "");
-  }
-  var init_addon_url = __esm({
-    "lib/media-stream/addon-url.ts"() {
-    }
-  });
-
-  // lib/media-stream/config.ts
-  function normalizeScraperUrl(raw) {
-    return raw.trim().replace(/\/manifest\.json$/i, "").replace(/\/$/, "");
-  }
-  function getScraperUrl() {
-    if (typeof window === "undefined") return DEFAULT_SCRAPER_URL;
-    const value = getScopedStorageItem(KEY_URL);
-    return value && value.trim() ? value : DEFAULT_SCRAPER_URL;
-  }
-  function getScraperType() {
-    if (typeof window === "undefined") return DEFAULT_SCRAPER_TYPE;
-    const value = getScopedStorageItem(KEY_TYPE);
-    if (value === "torrentio" || value === "preconfigured") return value;
-    return DEFAULT_SCRAPER_TYPE;
-  }
-  function setScraperConfig(url, type) {
-    if (url === DEFAULT_SCRAPER_URL && type === DEFAULT_SCRAPER_TYPE) {
-      removeScopedStorageItem(KEY_URL);
-      removeScopedStorageItem(KEY_TYPE);
-    } else {
-      setScopedStorageItem(KEY_URL, url);
-      setScopedStorageItem(KEY_TYPE, type);
-    }
-  }
-  function savePresetUrl(id4, url) {
-    if (url) {
-      setScopedStorageItem(KEY_PRESET_URL(id4), url);
-    } else {
-      removeScopedStorageItem(KEY_PRESET_URL(id4));
-    }
-  }
-  function loadPresetUrl(id4) {
-    if (typeof window === "undefined") return "";
-    return getScopedStorageItem(KEY_PRESET_URL(id4)) ?? "";
-  }
-  function normalizeStreamProvider(provider) {
-    const normalized = provider?.trim().toLowerCase() || "realdebrid";
-    return VALID_STREAM_PROVIDERS.has(normalized) ? normalized : "realdebrid";
-  }
-  function normalizeJackettioProvider(provider) {
-    const normalized = provider?.trim().toLowerCase() || "realdebrid";
-    return JACKETTIO_STREAM_PROVIDERS.includes(normalized) ? normalized : "realdebrid";
-  }
-  function dropAutoAddedTorrentsDb(configs) {
-    try {
-      if (getScopedStorageItem(TORRENTSDB_AUTOADD_KEY) !== "1") return configs;
-    } catch {
-      return configs;
-    }
-    const next2 = configs.filter((config) => config.preset !== "torrentsdb");
-    if (next2.length === configs.length) return configs;
-    try {
-      setScraperConfigs(next2);
-    } catch {
-    }
-    return next2;
-  }
-  function getActiveStreamProviderId() {
-    if (typeof window === "undefined") return "realdebrid";
-    const configs = getScraperConfigs();
-    const first = configs.find((c) => {
-      if (!c.enabled) return false;
-      const provider = normalizeStreamProvider(c.options.debridProvider);
-      return provider && provider !== "none";
-    });
-    return normalizeStreamProvider(first?.options?.debridProvider);
-  }
-  function getGlobalStreamProviderTokenStorageKey(provider) {
-    const normalized = normalizeStreamProvider(provider);
-    return `${GLOBAL_STREAM_PROVIDER_TOKEN_KEY_PREFIX}${normalized}`;
-  }
-  function getGlobalStreamProviderCookieKey(provider) {
-    const normalized = normalizeStreamProvider(provider);
-    return `${GLOBAL_STREAM_PROVIDER_COOKIE_PREFIX}${normalized}`;
-  }
-  function getLegacyGlobalStreamProviderCookieKey(provider) {
-    const normalized = normalizeStreamProvider(provider);
-    return `${LEGACY_STREAM_PROVIDER_COOKIE_PREFIX}${normalized}`;
-  }
-  function readCookieValue(name) {
-    if (typeof document === "undefined") return "";
-    const prefix = `${encodeURIComponent(name)}=`;
-    const entry = document.cookie.split("; ").find((cookie) => cookie.startsWith(prefix));
-    if (!entry) return "";
-    try {
-      return decodeURIComponent(entry.slice(prefix.length));
-    } catch {
-      return "";
-    }
-  }
-  function writeCookieValue(name, value) {
-    if (typeof document === "undefined") return;
-    document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; path=/; max-age=31536000; SameSite=Lax`;
-  }
-  function clearCookieValue(name) {
-    if (typeof document === "undefined") return;
-    document.cookie = `${encodeURIComponent(name)}=; path=/; max-age=0; SameSite=Lax`;
-  }
-  function getGlobalStreamProviderAccessKey(provider) {
-    if (typeof window === "undefined") return "";
-    const normalizedProvider = normalizeStreamProvider(provider);
-    const storageKey = getGlobalStreamProviderTokenStorageKey(normalizedProvider);
-    const key = getScopedStorageItem(storageKey) ?? "";
-    if (key.trim()) return key;
-    const unscopedKey = getItem(storageKey) ?? "";
-    if (unscopedKey.trim()) return unscopedKey;
-    const cookieKey = readCookieValue(getGlobalStreamProviderCookieKey(normalizedProvider));
-    if (cookieKey.trim()) return cookieKey;
-    const legacyCookieKey = readCookieValue(getLegacyGlobalStreamProviderCookieKey(normalizedProvider));
-    if (legacyCookieKey.trim()) return legacyCookieKey;
-    if (normalizedProvider === "realdebrid") {
-      const legacy = getScopedStorageItem(LEGACY_RD_API_KEY) ?? getItem(LEGACY_RD_API_KEY) ?? readCookieValue(LEGACY_RD_API_KEY) ?? "";
-      return legacy;
-    }
-    return "";
-  }
-  function getScraperStreamProviderId(config) {
-    if (config.preset === "aiostreams") return "none";
-    const opts = config.options;
-    return normalizeStreamProvider(opts.streamProvider ?? opts.debridProvider);
-  }
-  function setGlobalStreamProviderAccessKey(provider, value) {
-    const normalizedProvider = normalizeStreamProvider(provider);
-    const trimmed = value.trim();
-    const storageKey = getGlobalStreamProviderTokenStorageKey(normalizedProvider);
-    if (trimmed) {
-      setScopedStorageItem(storageKey, trimmed);
-      writeCookieValue(getGlobalStreamProviderCookieKey(normalizedProvider), trimmed);
-      writeCookieValue(getLegacyGlobalStreamProviderCookieKey(normalizedProvider), trimmed);
-    } else {
-      removeScopedStorageItem(storageKey);
-      removeItem(storageKey);
-      clearCookieValue(getGlobalStreamProviderCookieKey(normalizedProvider));
-      clearCookieValue(getLegacyGlobalStreamProviderCookieKey(normalizedProvider));
-    }
-    if (normalizedProvider === "realdebrid") {
-      if (trimmed) {
-        setScopedStorageItem(LEGACY_RD_API_KEY, trimmed);
-        writeCookieValue(LEGACY_RD_API_KEY, trimmed);
-      } else {
-        removeScopedStorageItem(LEGACY_RD_API_KEY);
-        removeItem(LEGACY_RD_API_KEY);
-        clearCookieValue(LEGACY_RD_API_KEY);
-      }
-    }
-  }
-  function clearGlobalStreamProviderAccessKey(provider) {
-    setGlobalStreamProviderAccessKey(provider, "");
-  }
-  function getScraperConfigs() {
-    if (typeof window === "undefined") return [DEFAULT_TORRENTIO_CONFIG];
-    try {
-      const scoped = getScopedStorageItem(CONFIGS_KEY);
-      const raw = scoped ?? (getActiveProfileId() ? null : getItem(CONFIGS_KEY));
-      if (!raw) {
-        return [DEFAULT_TORRENTIO_CONFIG];
-      }
-      const parsed = JSON.parse(raw);
-      return dropAutoAddedTorrentsDb(parsed.map(normalizeScraperConfig));
-    } catch {
-      return [DEFAULT_TORRENTIO_CONFIG];
-    }
-  }
-  function setScraperConfigs(configs) {
-    setScopedStorageItem(CONFIGS_KEY, JSON.stringify(configs));
-  }
-  function normalizeScraperConfig(config) {
-    if (config.preset === "mediafusion") {
-      const opts = config.options;
-      config = {
-        ...config,
-        id: config.id === "mediafusion" ? "jackettio" : config.id,
-        preset: "jackettio",
-        options: {
-          streamProvider: opts.streamProvider ?? opts.debridProvider ?? "realdebrid",
-          debridProvider: opts.debridProvider ?? "realdebrid",
-          languages: [],
-          qualityFilter: [],
-          maxTorrents: 0,
-          hideUncached: false
-        }
-      };
-    }
-    switch (config.preset) {
-      case "torrentio": {
-        const opts = config.options;
-        return {
-          ...config,
-          options: {
-            streamProvider: normalizeStreamProvider(opts.streamProvider ?? opts.debridProvider),
-            debridProvider: normalizeStreamProvider(opts.streamProvider ?? opts.debridProvider),
-            qualityFilter: opts.qualityFilter ?? [],
-            languages: opts.languages ?? [],
-            providers: opts.providers ?? [],
-            sort: opts.sort ?? "quality",
-            limit: opts.limit ?? 0
-          }
-        };
-      }
-      case "torrentsdb": {
-        const opts = config.options;
-        return {
-          ...config,
-          options: {
-            streamProvider: normalizeStreamProvider(opts.streamProvider ?? opts.debridProvider),
-            debridProvider: normalizeStreamProvider(opts.streamProvider ?? opts.debridProvider),
-            qualityFilter: opts.qualityFilter ?? [],
-            languages: opts.languages ?? []
-          }
-        };
-      }
-      case "comet": {
-        const opts = config.options;
-        return {
-          ...config,
-          options: {
-            streamProvider: normalizeStreamProvider(opts.streamProvider ?? opts.debridProvider),
-            debridProvider: normalizeStreamProvider(opts.streamProvider ?? opts.debridProvider),
-            languages: opts.languages ?? [],
-            qualityFilter: opts.qualityFilter ?? [],
-            maxResults: opts.maxResults ?? 5,
-            maxSize: opts.maxSize ?? 0,
-            cachedOnly: opts.cachedOnly ?? false,
-            sortCachedUncachedTogether: opts.sortCachedUncachedTogether ?? false
-          }
-        };
-      }
-      case "jackettio": {
-        const opts = config.options;
-        return {
-          ...config,
-          options: {
-            streamProvider: normalizeJackettioProvider(opts.streamProvider ?? opts.debridProvider),
-            debridProvider: normalizeJackettioProvider(opts.streamProvider ?? opts.debridProvider),
-            languages: opts.languages ?? [],
-            qualityFilter: opts.qualityFilter ?? [],
-            maxTorrents: opts.maxTorrents ?? 0,
-            hideUncached: opts.hideUncached ?? false
-          }
-        };
-      }
-      case "aiostreams": {
-        const opts = config.options;
-        return {
-          ...config,
-          options: { manifestUrl: opts.manifestUrl ?? "" }
-        };
-      }
-      case "orion": {
-        const opts = config.options;
-        return {
-          ...config,
-          options: {
-            orionKey: opts.orionKey ?? "",
-            streamProvider: normalizeStreamProvider(opts.streamProvider ?? opts.debridProvider),
-            debridProvider: normalizeStreamProvider(opts.streamProvider ?? opts.debridProvider)
-          }
-        };
-      }
-      default:
-        return config;
-    }
-  }
-  function normalizeStreamProviderUrl(raw) {
-    return normalizeScraperUrl(raw);
-  }
-  function getStreamProviderUrl() {
-    return getScraperUrl();
-  }
-  function getStreamProviderType() {
-    return getScraperType();
-  }
-  function setStreamProviderConfig(url, type) {
-    setScraperConfig(url, type);
-  }
-  function saveStreamProviderPresetUrl(id4, url) {
-    savePresetUrl(id4, url);
-  }
-  function loadStreamProviderPresetUrl(id4) {
-    return loadPresetUrl(id4);
-  }
-  function getStreamProviderConfigs() {
-    return getScraperConfigs();
-  }
-  function setStreamProviderConfigs(configs) {
-    setScraperConfigs(configs);
-  }
-  var KEY_URL, KEY_TYPE, KEY_PRESET_URL, SCRAPER_PRESETS, DEFAULT_SCRAPER_URL, DEFAULT_SCRAPER_TYPE, CONFIGS_KEY, GLOBAL_STREAM_PROVIDER_TOKEN_KEY_PREFIX, GLOBAL_STREAM_PROVIDER_COOKIE_PREFIX, LEGACY_STREAM_PROVIDER_COOKIE_PREFIX, LEGACY_RD_API_KEY, VALID_STREAM_PROVIDERS, JACKETTIO_STREAM_PROVIDERS, DEFAULT_TORRENTIO_CONFIG, TORRENTSDB_AUTOADD_KEY, DEFAULT_STREAM_PROVIDER_URL, DEFAULT_STREAM_PROVIDER_TYPE, STREAM_PROVIDER_PRESETS;
-  var init_config = __esm({
-    "lib/media-stream/config.ts"() {
-      "use strict";
-      init_addon_url();
-      init_app_storage();
-      init_profile_storage_shim();
-      KEY_URL = "stream_scraper_url";
-      KEY_TYPE = "stream_scraper_type";
-      KEY_PRESET_URL = (id4) => `scraper_url_${id4}`;
-      SCRAPER_PRESETS = [
-        {
-          id: "torrentio",
-          name: "Torrentio",
-          url: "https://torrentio.strem.fun",
-          type: "torrentio",
-          description: "Publik scraper, stabil och snabb. Kr\xE4ver Real-Debrid API-nyckel.",
-          configUrl: "https://torrentio.strem.fun/configure"
-        },
-        {
-          id: "comet",
-          name: "Comet",
-          url: "",
-          type: "preconfigured",
-          description: "Snabb scraper med bra tr\xE4ffar. Kr\xE4ver konfiguration med RD-nyckel.",
-          configUrl: "https://comet.elfhosted.com"
-        },
-        {
-          id: "jackettio",
-          name: "Jackettio",
-          url: "",
-          type: "preconfigured",
-          description: "Jackett-baserad scraper med breda indexers. Kr\xE4ver Real-Debrid eller AllDebrid.",
-          configUrl: "https://jackettio.elfhosted.com/configure"
-        },
-        {
-          id: "aiostreams",
-          name: "AIOStreams",
-          url: "",
-          type: "preconfigured",
-          description: "Aggregerar m\xE5nga addons och debrid-tj\xE4nster bakom en enda konfiguration.",
-          configUrl: "https://aiostreams-nightly.fortheweak.cloud/stremio/configure"
-        }
-      ];
-      DEFAULT_SCRAPER_URL = SCRAPER_PRESETS[0].url;
-      DEFAULT_SCRAPER_TYPE = "torrentio";
-      CONFIGS_KEY = "scraper_configs_v2";
-      GLOBAL_STREAM_PROVIDER_TOKEN_KEY_PREFIX = "scraper_global_debrid_token_";
-      GLOBAL_STREAM_PROVIDER_COOKIE_PREFIX = "lumio_provider_token_";
-      LEGACY_STREAM_PROVIDER_COOKIE_PREFIX = "lumio_debrid_token_";
-      LEGACY_RD_API_KEY = "rd_api_key";
-      VALID_STREAM_PROVIDERS = /* @__PURE__ */ new Set([
-        "none",
-        "realdebrid",
-        "alldebrid",
-        "easydebrid",
-        "offcloud",
-        "torbox",
-        "putio"
-      ]);
-      JACKETTIO_STREAM_PROVIDERS = ["realdebrid", "alldebrid"];
-      DEFAULT_TORRENTIO_CONFIG = {
-        id: "torrentio",
-        preset: "torrentio",
-        enabled: true,
-        options: {
-          streamProvider: "realdebrid",
-          debridProvider: "realdebrid",
-          qualityFilter: [],
-          languages: [],
-          providers: [],
-          sort: "quality",
-          limit: 0
-        }
-      };
-      TORRENTSDB_AUTOADD_KEY = "scraper_torrentsdb_autoadded_v1";
-      DEFAULT_STREAM_PROVIDER_URL = DEFAULT_SCRAPER_URL;
-      DEFAULT_STREAM_PROVIDER_TYPE = DEFAULT_SCRAPER_TYPE;
-      STREAM_PROVIDER_PRESETS = SCRAPER_PRESETS;
-    }
-  });
-
   // lib/playback-settings.ts
   function getStoredString(key, fallback = "") {
     if (typeof window === "undefined") return fallback;
@@ -8782,7 +8663,23 @@
     if (!Number.isFinite(raw) || raw <= 0) return DEFAULT_CREDITS_THRESHOLD_MINUTES;
     return Math.max(1, Math.min(6, raw));
   }
-  var KEY_DEFAULT_SUBTITLE_LANGUAGE, KEY_FALLBACK_SUBTITLE_LANGUAGE, KEY_DEFAULT_AUDIO_LANGUAGE, KEY_AUDIO_OUTPUT_MODE, KEY_DEFAULT_SUBTITLE_SIZE, KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION, KEY_DEFAULT_SUBTITLE_OPACITY, KEY_SUBTITLE_TEXT_COLOR, KEY_SUBTITLE_BACKGROUND_COLOR, KEY_SUBTITLE_OUTLINE_COLOR, KEY_DEFAULT_ASPECT_RATIO, KEY_REMEMBER_ASPECT_RATIO, KEY_AUTO_SKIP_INTRO, KEY_HIDE_WATCHED_MOVIES_HOME, KEY_STILL_WATCHING_ENABLED, KEY_STILL_WATCHING_MAX_MINUTES, KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, KEY_CREDITS_RECOMMENDATIONS, KEY_CREDITS_THRESHOLD_MINUTES, KEY_NIGHT_MODE, KEY_AUDIO_DELAY_MS, KEY_BT_AUTO_OFFSET, KEY_STAY_FULLSCREEN_ON_CLOSE, KEY_HIDE_SKIP_BUTTON_AFTER, KEY_SHOW_TITLE_ON_START, KEY_SERIES_NAME_FIRST, HIDE_SKIP_BUTTON_OPTIONS, PLAYBACK_SETTINGS_CHANGED_EVENT, LANG_NAMES, NIGHT_MODE_OPTIONS, ASPECT_RATIO_MODES, LANG3_TO_2, DEFAULT_SUBTITLE_SIZE, DEFAULT_AUDIO_OUTPUT_MODE, DEFAULT_SUBTITLE_VERTICAL_POSITION, DEFAULT_SUBTITLE_OPACITY, DEFAULT_SUBTITLE_TEXT_COLOR, DEFAULT_SUBTITLE_BACKGROUND_COLOR, DEFAULT_SUBTITLE_OUTLINE_COLOR, DEFAULT_ASPECT_RATIO, DEFAULT_REMEMBER_ASPECT_RATIO, DEFAULT_AUTO_SKIP_INTRO, DEFAULT_HIDE_WATCHED_MOVIES_HOME, DEFAULT_STILL_WATCHING_ENABLED, DEFAULT_STILL_WATCHING_MAX_MINUTES, DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, DEFAULT_CREDITS_RECOMMENDATIONS, DEFAULT_CREDITS_THRESHOLD_MINUTES, DEFAULT_NIGHT_MODE, KEY_UPGRADE_SUBTITLE_WHEN_BETTER, KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES, KEY_EXTRA_SUBTITLE_LANGUAGES, KEY_RAW_MPV_CONF, KEY_PREFER_EMBEDDED_SUBTITLES, KEY_EXTERNAL_PLAYER_APP, AUDIO_DELAY_STEP_MS, AUDIO_DELAY_LIMIT_MS, KEY_EXTERNAL_DISPLAY_VIDEO_ONLY, BLUETOOTH_AUDIO_OFFSET_MS;
+  function getStatsHud() {
+    if (typeof window === "undefined") return false;
+    return getScopedStorageItem(KEY_STATS_HUD) === "1";
+  }
+  function setStatsHud(value) {
+    setScopedStorageItem(KEY_STATS_HUD, value ? "1" : "0");
+    emitPlaybackSettingsChanged();
+  }
+  function getStripSdh() {
+    if (typeof window === "undefined") return false;
+    return getScopedStorageItem(KEY_STRIP_SDH) === "1";
+  }
+  function setStripSdh(value) {
+    setScopedStorageItem(KEY_STRIP_SDH, value ? "1" : "0");
+    emitPlaybackSettingsChanged();
+  }
+  var KEY_DEFAULT_SUBTITLE_LANGUAGE, KEY_FALLBACK_SUBTITLE_LANGUAGE, KEY_DEFAULT_AUDIO_LANGUAGE, KEY_AUDIO_OUTPUT_MODE, KEY_DEFAULT_SUBTITLE_SIZE, KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION, KEY_DEFAULT_SUBTITLE_OPACITY, KEY_SUBTITLE_TEXT_COLOR, KEY_SUBTITLE_BACKGROUND_COLOR, KEY_SUBTITLE_OUTLINE_COLOR, KEY_DEFAULT_ASPECT_RATIO, KEY_REMEMBER_ASPECT_RATIO, KEY_AUTO_SKIP_INTRO, KEY_HIDE_WATCHED_MOVIES_HOME, KEY_STILL_WATCHING_ENABLED, KEY_STILL_WATCHING_MAX_MINUTES, KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, KEY_CREDITS_RECOMMENDATIONS, KEY_CREDITS_THRESHOLD_MINUTES, KEY_NIGHT_MODE, KEY_AUDIO_DELAY_MS, KEY_BT_AUTO_OFFSET, KEY_STAY_FULLSCREEN_ON_CLOSE, KEY_HIDE_SKIP_BUTTON_AFTER, KEY_SHOW_TITLE_ON_START, KEY_SERIES_NAME_FIRST, HIDE_SKIP_BUTTON_OPTIONS, PLAYBACK_SETTINGS_CHANGED_EVENT, LANG_NAMES, NIGHT_MODE_OPTIONS, ASPECT_RATIO_MODES, LANG3_TO_2, DEFAULT_SUBTITLE_SIZE, DEFAULT_AUDIO_OUTPUT_MODE, DEFAULT_SUBTITLE_VERTICAL_POSITION, DEFAULT_SUBTITLE_OPACITY, DEFAULT_SUBTITLE_TEXT_COLOR, DEFAULT_SUBTITLE_BACKGROUND_COLOR, DEFAULT_SUBTITLE_OUTLINE_COLOR, DEFAULT_ASPECT_RATIO, DEFAULT_REMEMBER_ASPECT_RATIO, DEFAULT_AUTO_SKIP_INTRO, DEFAULT_HIDE_WATCHED_MOVIES_HOME, DEFAULT_STILL_WATCHING_ENABLED, DEFAULT_STILL_WATCHING_MAX_MINUTES, DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, DEFAULT_CREDITS_RECOMMENDATIONS, DEFAULT_CREDITS_THRESHOLD_MINUTES, DEFAULT_NIGHT_MODE, KEY_UPGRADE_SUBTITLE_WHEN_BETTER, KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES, KEY_EXTRA_SUBTITLE_LANGUAGES, KEY_RAW_MPV_CONF, KEY_PREFER_EMBEDDED_SUBTITLES, KEY_EXTERNAL_PLAYER_APP, AUDIO_DELAY_STEP_MS, AUDIO_DELAY_LIMIT_MS, KEY_EXTERNAL_DISPLAY_VIDEO_ONLY, BLUETOOTH_AUDIO_OFFSET_MS, KEY_STATS_HUD, KEY_STRIP_SDH;
   var init_playback_settings = __esm({
     "lib/playback-settings.ts"() {
       "use strict";
@@ -8920,6 +8817,8 @@
       AUDIO_DELAY_LIMIT_MS = 2e3;
       KEY_EXTERNAL_DISPLAY_VIDEO_ONLY = "playback_external_display_video_only";
       BLUETOOTH_AUDIO_OFFSET_MS = -150;
+      KEY_STATS_HUD = "playback_statsHud";
+      KEY_STRIP_SDH = "playback_stripSdh";
     }
   });
 
@@ -9033,7 +8932,7 @@
       return true;
     });
   }
-  var FILTER_KEY, LEGACY_FILTER_KEY, LEVEL_KEY, CONTEXT_GLOBAL_KEY, DEFAULT_FILTERS, buildTorrentioQualityFilter;
+  var FILTER_KEY, LEGACY_FILTER_KEY, LEVEL_KEY, CONTEXT_GLOBAL_KEY, DEFAULT_FILTERS;
   var init_filters = __esm({
     "lib/media-stream/filters.ts"() {
       init_profile_storage_shim();
@@ -9047,7 +8946,6 @@
         hideScr: true,
         hideBelow720p: true
       };
-      buildTorrentioQualityFilter = buildQualityFilterParam;
     }
   });
 
@@ -9077,6 +8975,60 @@
       nextSlotAt = 0;
       RATE_LIMIT_COOLDOWN_MS = 10 * 60 * 1e3;
       rateLimitedUntil = 0;
+    }
+  });
+
+  // lib/media-stream/addon-url.ts
+  function canonicalAddonUrl(value) {
+    return value.trim().replace(/^stremio:\/\//, "https://").replace(/\/+$/, "").replace(/\/manifest\.json$/i, "").replace(/\/+$/, "");
+  }
+  var init_addon_url = __esm({
+    "lib/media-stream/addon-url.ts"() {
+    }
+  });
+
+  // lib/media-stream/config.ts
+  var SCRAPER_PRESETS, DEFAULT_SCRAPER_URL;
+  var init_config = __esm({
+    "lib/media-stream/config.ts"() {
+      init_addon_url();
+      init_app_storage();
+      init_profile_storage_shim();
+      SCRAPER_PRESETS = [
+        {
+          id: "torrentio",
+          name: "Torrentio",
+          url: "https://torrentio.strem.fun",
+          type: "torrentio",
+          description: "Publik scraper, stabil och snabb. Kr\xE4ver Real-Debrid API-nyckel.",
+          configUrl: "https://torrentio.strem.fun/configure"
+        },
+        {
+          id: "comet",
+          name: "Comet",
+          url: "",
+          type: "preconfigured",
+          description: "Snabb scraper med bra tr\xE4ffar. Kr\xE4ver konfiguration med RD-nyckel.",
+          configUrl: "https://comet.elfhosted.com"
+        },
+        {
+          id: "jackettio",
+          name: "Jackettio",
+          url: "",
+          type: "preconfigured",
+          description: "Jackett-baserad scraper med breda indexers. Kr\xE4ver Real-Debrid eller AllDebrid.",
+          configUrl: "https://jackettio.elfhosted.com/configure"
+        },
+        {
+          id: "aiostreams",
+          name: "AIOStreams",
+          url: "",
+          type: "preconfigured",
+          description: "Aggregerar m\xE5nga addons och debrid-tj\xE4nster bakom en enda konfiguration.",
+          configUrl: "https://aiostreams-nightly.fortheweak.cloud/stremio/configure"
+        }
+      ];
+      DEFAULT_SCRAPER_URL = SCRAPER_PRESETS[0].url;
     }
   });
 
@@ -9255,6 +9207,13 @@
     }
     return null;
   }
+  function rememberFailedCheck(key, retryAt) {
+    failedCheckRetryAt.set(key, retryAt);
+    if (failedCheckRetryAt.size > 500) {
+      const now3 = Date.now();
+      for (const [k, at] of failedCheckRetryAt) if (at <= now3) failedCheckRetryAt.delete(k);
+    }
+  }
   async function checkEpisodeHasStream(imdbId, season, episode) {
     if (typeof window === "undefined" || !imdbId) return null;
     const cacheKey2 = getCacheKey(imdbId, season, episode);
@@ -9289,7 +9248,7 @@
       writeStreamCache(cache6);
       return hasStream;
     })().catch(() => {
-      failedCheckRetryAt.set(cacheKey2, Date.now() + FAILED_CHECK_RETRY_MS);
+      rememberFailedCheck(cacheKey2, Date.now() + FAILED_CHECK_RETRY_MS);
       return null;
     }).finally(() => {
       streamCheckInFlight.delete(cacheKey2);
@@ -9318,317 +9277,6 @@
       providerLookupInProgress = /* @__PURE__ */ new Set();
       FAILED_CHECK_RETRY_MS = 5 * 60 * 1e3;
       failedCheckRetryAt = /* @__PURE__ */ new Map();
-    }
-  });
-
-  // lib/media-stream/storage.ts
-  function getActiveStreamProvider() {
-    return getActiveStreamProviderId();
-  }
-  function getStreamProviderAccessKey(provider) {
-    return getGlobalStreamProviderAccessKey(provider);
-  }
-  function setStreamProviderAccessKey(provider, value) {
-    setGlobalStreamProviderAccessKey(provider, value);
-  }
-  function clearStreamProviderAccessKey(provider) {
-    clearGlobalStreamProviderAccessKey(provider);
-  }
-  function getScraperStreamProvider(config) {
-    return getScraperStreamProviderId(config);
-  }
-  var init_storage = __esm({
-    "lib/media-stream/storage.ts"() {
-      "use strict";
-      init_config();
-    }
-  });
-
-  // lib/media-stream/url-builder.ts
-  function buildScraperUrl(config) {
-    switch (config.preset) {
-      case "torrentio":
-        return buildTorrentioUrl(config.options);
-      case "torrentsdb":
-        return buildTorrentsDbUrl(config.options);
-      case "comet":
-        return buildCometUrl(config.options);
-      case "jackettio":
-        return buildJackettioUrl(config.options);
-      case "aiostreams":
-        return buildAiostreamsUrl(config.options);
-      case "orion":
-        return buildOrionUrl(config.options);
-      case "custom":
-        return buildCustomUrl(config.options);
-      default:
-        return "";
-    }
-  }
-  function buildScraperCacheUrl(config) {
-    if (config.preset !== "torrentio") {
-      return buildScraperUrl(config);
-    }
-    return buildTorrentioCacheUrl(config.options);
-  }
-  function resolveScraperAccessKey(config) {
-    switch (config.preset) {
-      case "torrentio": {
-        const opts = config.options;
-        return getStreamProviderAccessKey(opts.streamProvider ?? opts.debridProvider).trim();
-      }
-      case "torrentsdb": {
-        const opts = config.options;
-        return getStreamProviderAccessKey(opts.streamProvider ?? opts.debridProvider).trim();
-      }
-      case "comet": {
-        const opts = config.options;
-        return getStreamProviderAccessKey(opts.streamProvider ?? opts.debridProvider).trim();
-      }
-      case "jackettio": {
-        const opts = config.options;
-        return getStreamProviderAccessKey(opts.streamProvider ?? opts.debridProvider).trim();
-      }
-      case "orion": {
-        const opts = config.options;
-        return getStreamProviderAccessKey(opts.streamProvider ?? opts.debridProvider).trim();
-      }
-      default:
-        return "";
-    }
-  }
-  function getScraperTypeForApi(config) {
-    return config.preset === "torrentio" ? "torrentio" : "preconfigured";
-  }
-  function getScraperDisplayName(config) {
-    switch (config.preset) {
-      case "torrentio":
-        return "Torrentio";
-      case "torrentsdb":
-        return "TorrentsDB";
-      case "comet":
-        return "Comet";
-      case "jackettio":
-        return "Jackettio";
-      case "aiostreams":
-        return "AIOStreams";
-      case "orion":
-        return "Orion";
-      case "custom": {
-        const opts = config.options;
-        try {
-          return new URL(opts.rawUrl.replace(/^stremio:\/\//, "https://")).hostname;
-        } catch {
-          return "Custom";
-        }
-      }
-      default:
-        return "Scraper";
-    }
-  }
-  function buildTorrentioSegments(options) {
-    const segments = [];
-    if (options.providers.length > 0) segments.push(`providers=${options.providers.join(",")}`);
-    if (options.sort && options.sort !== "quality") segments.push(`sort=${options.sort}`);
-    if (options.languages.length > 0) segments.push(`language=${options.languages.join(",")}`);
-    if (options.qualityFilter.length > 0) segments.push(`qualityfilter=${options.qualityFilter.join(",")}`);
-    if (options.limit > 0) segments.push(`limit=${options.limit}`);
-    return segments;
-  }
-  function buildTorrentioUrl(options) {
-    return buildTorrentioCacheUrl(options);
-  }
-  function buildTorrentioCacheUrl(options) {
-    const streamProvider = (options.streamProvider ?? options.debridProvider ?? "realdebrid").trim().toLowerCase();
-    const accessKey = getStreamProviderAccessKey(streamProvider);
-    const segments = buildTorrentioSegments(options);
-    if (accessKey && streamProvider !== "none") segments.push(`${streamProvider}=${accessKey}`);
-    const base = "https://torrentio.strem.fun";
-    return segments.length > 0 ? `${base}/${segments.join("|")}` : base;
-  }
-  function buildTorrentsDbUrl(options) {
-    const streamProvider = (options.streamProvider ?? options.debridProvider).trim().toLowerCase();
-    const accessKey = getStreamProviderAccessKey(streamProvider);
-    const cfg = {};
-    if (accessKey && streamProvider !== "none") cfg[streamProvider] = accessKey;
-    const b64 = btoa(JSON.stringify(cfg));
-    return `https://torrentsdb.com/${b64}`;
-  }
-  function buildCometUrl(options) {
-    const streamProvider = (options.streamProvider ?? options.debridProvider).trim().toLowerCase();
-    const accessKey = getStreamProviderAccessKey(streamProvider);
-    const resolutions = {};
-    for (const q of options.qualityFilter) {
-      const key = COMET_RESOLUTION_MAP[q];
-      if (key) resolutions[key] = false;
-    }
-    const cfg = {
-      debridServices: accessKey && streamProvider !== "none" ? [{ service: streamProvider, apiKey: accessKey }] : [],
-      enableTorrent: !accessKey || streamProvider === "none",
-      deduplicateStreams: false,
-      scrapeDebridAccountTorrents: false,
-      maxResultsPerResolution: options.maxResults,
-      maxSize: options.maxSize > 0 ? options.maxSize * 1024 * 1024 * 1024 : 0,
-      cachedOnly: options.cachedOnly,
-      sortCachedUncachedTogether: options.sortCachedUncachedTogether,
-      removeTrash: true,
-      debridStreamProxyPassword: "",
-      resultFormat: ["all"],
-      resolutions,
-      languages: {
-        required: [],
-        allowed: [],
-        exclude: [],
-        preferred: options.languages
-      },
-      options: {
-        remove_ranks_under: -1e10,
-        allow_english_in_languages: false,
-        remove_unknown_languages: false
-      }
-    };
-    return `https://comet.elfhosted.com/${btoa(JSON.stringify(cfg))}`;
-  }
-  function buildJackettioUrl(options) {
-    const streamProvider = (options.streamProvider ?? options.debridProvider ?? "realdebrid").trim().toLowerCase();
-    const accessKey = getStreamProviderAccessKey(streamProvider);
-    if (!accessKey || streamProvider === "none") return "";
-    const excluded = new Set(
-      options.qualityFilter.map((q) => JACKETTIO_QUALITY_MAP[q]).filter((v) => v !== void 0)
-    );
-    const qualities = Object.values(JACKETTIO_QUALITY_MAP).filter((v) => !excluded.has(v));
-    const cfg = {
-      qualities,
-      excludeKeywords: [],
-      maxTorrents: options.maxTorrents > 0 ? options.maxTorrents : 8,
-      priotizeLanguages: options.languages,
-      priotizePackTorrents: 2,
-      forceCacheNextEpisode: false,
-      sortCached: [["quality", true], ["size", true]],
-      sortUncached: [["seeders", true]],
-      hideUncached: options.hideUncached,
-      indexers: ["all"],
-      indexerTimeoutSec: 60,
-      passkey: "",
-      metaLanguage: "",
-      enableMediaFlow: false,
-      mediaflowProxyUrl: "",
-      mediaflowApiPassword: "",
-      mediaflowPublicIp: "",
-      debridId: streamProvider,
-      debridApiKey: accessKey
-    };
-    return `https://jackettio.elfhosted.com/${btoa(JSON.stringify(cfg))}`;
-  }
-  function buildAiostreamsUrl(options) {
-    return options.manifestUrl.trim().replace(/^stremio:\/\//, "https://").replace(/\/manifest\.json$/i, "").replace(/\/$/, "");
-  }
-  function buildOrionUrl(options) {
-    if (!options.orionKey.trim()) return "";
-    const streamProvider = (options.streamProvider ?? options.debridProvider).trim().toLowerCase();
-    const rdToken = getStreamProviderAccessKey(streamProvider);
-    const params = [];
-    if (rdToken && streamProvider !== "none") params.push(`${streamProvider}=${rdToken}`);
-    const key = options.orionKey.trim();
-    return params.length > 0 ? `https://addon.orionoid.com/${key}/${params.join("|")}` : `https://addon.orionoid.com/${key}`;
-  }
-  function buildCustomUrl(options) {
-    return options.rawUrl.trim().replace(/^stremio:\/\//, "https://").replace(/\/manifest\.json$/i, "").replace(/\/$/, "");
-  }
-  function buildStreamProviderUrl(config) {
-    return buildScraperUrl(config);
-  }
-  function buildStreamProviderCacheUrl(config) {
-    return buildScraperCacheUrl(config);
-  }
-  function resolveStreamProviderAccessKey(config) {
-    return resolveScraperAccessKey(config);
-  }
-  function getStreamProviderTypeForApi(config) {
-    return getScraperTypeForApi(config);
-  }
-  function getStreamProviderDisplayName(config) {
-    return getScraperDisplayName(config);
-  }
-  var COMET_RESOLUTION_MAP, JACKETTIO_QUALITY_MAP;
-  var init_url_builder = __esm({
-    "lib/media-stream/url-builder.ts"() {
-      "use strict";
-      init_storage();
-      COMET_RESOLUTION_MAP = {
-        "240p": "r240p",
-        "360p": "r360p",
-        "480p": "r480p",
-        "576p": "r576p",
-        "720p": "r720p",
-        "1080p": "r1080p",
-        "1440p": "r1440p",
-        "2160p": "r2160p",
-        "unknown": "unknown"
-      };
-      JACKETTIO_QUALITY_MAP = {
-        "unknown": 0,
-        "360p": 360,
-        "480p": 480,
-        "720p": 720,
-        "1080p": 1080,
-        "2160p": 2160
-      };
-    }
-  });
-
-  // lib/media-stream/request-context.ts
-  function getPrimaryStreamProviderConfig() {
-    const configs = getStreamProviderConfigs().filter((config) => config.enabled);
-    return configs.find((config) => config.preset === "torrentio") ?? configs[0] ?? null;
-  }
-  function getPrimaryStreamProviderRequestContext() {
-    const primary = getPrimaryStreamProviderConfig();
-    const qualityFilter = buildTorrentioQualityFilter(getStreamFilters());
-    const streamProviderUrl = primary ? buildStreamProviderUrl(primary) || DEFAULT_STREAM_PROVIDER_URL2 : DEFAULT_STREAM_PROVIDER_URL2;
-    const streamProviderType = primary ? getStreamProviderTypeForApi(primary) : "torrentio";
-    return {
-      streamProviderUrl,
-      streamProviderType,
-      qualityFilter,
-      streamHeaders: {
-        "x-stream-provider-url": streamProviderUrl,
-        "x-stream-provider-type": streamProviderType,
-        "x-quality-filter": qualityFilter
-      },
-      browserStreamUrl: ({ imdbId, mediaType, season, episode }) => {
-        if (streamProviderType !== "torrentio") return null;
-        const configSegment = getStreamRequestConfigProviders()[0]?.buildConfigSegment(qualityFilter) ?? null;
-        if (!configSegment) return null;
-        const streamPath = mediaType === "series" && season && episode ? `stream/series/${imdbId}:${season}:${episode}.json` : `stream/movie/${imdbId}.json`;
-        return `${streamProviderUrl}/${configSegment}/${streamPath}`;
-      }
-    };
-  }
-  function buildDirectStreamProviderUrl(imdbId, type, season, episode) {
-    const primary = getPrimaryStreamProviderConfig();
-    if (!primary) return null;
-    const baseUrl = buildStreamProviderUrl(primary) || DEFAULT_STREAM_PROVIDER_URL2;
-    const streamPath = type === "series" && season && episode ? `stream/series/${imdbId}:${season}:${episode}.json` : `stream/movie/${imdbId}.json`;
-    return `${baseUrl}/${streamPath}`;
-  }
-  function buildDirectCachedStreamProviderUrl(imdbId, type, season, episode) {
-    const primary = getPrimaryStreamProviderConfig();
-    if (!primary) return null;
-    const cacheUrl = buildStreamProviderCacheUrl(primary);
-    if (!cacheUrl) return null;
-    const streamPath = type === "series" && season && episode ? `stream/series/${imdbId}:${season}:${episode}.json` : `stream/movie/${imdbId}.json`;
-    return `${cacheUrl}/${streamPath}`;
-  }
-  var DEFAULT_STREAM_PROVIDER_URL2;
-  var init_request_context = __esm({
-    "lib/media-stream/request-context.ts"() {
-      "use strict";
-      init_config();
-      init_url_builder();
-      init_filters();
-      init_plugin_registry();
-      DEFAULT_STREAM_PROVIDER_URL2 = "https://torrentio.strem.fun";
     }
   });
 
@@ -9751,6 +9399,13 @@
     }
     return null;
   }
+  function rememberFailedCheck2(key, retryAt) {
+    failedCheckRetryAt2.set(key, retryAt);
+    if (failedCheckRetryAt2.size > 500) {
+      const now3 = Date.now();
+      for (const [k, at] of failedCheckRetryAt2) if (at <= now3) failedCheckRetryAt2.delete(k);
+    }
+  }
   async function checkMovieHasStream(imdbId) {
     if (typeof window === "undefined" || !imdbId) return null;
     const cacheKey2 = getCacheKey2(imdbId);
@@ -9785,7 +9440,7 @@
       writeStreamCache2(cache6);
       return hasStream;
     })().catch(() => {
-      failedCheckRetryAt2.set(cacheKey2, Date.now() + FAILED_CHECK_RETRY_MS2);
+      rememberFailedCheck2(cacheKey2, Date.now() + FAILED_CHECK_RETRY_MS2);
       return null;
     }).finally(() => {
       movieStreamInFlight.delete(cacheKey2);
@@ -40022,7 +39677,7 @@
           acc[key] = createRenderStep2(flagRunNextFrame, allowKeepAlive ? key : void 0);
           return acc;
         }, {});
-        const { setup, read: read7, resolveKeyframes, preUpdate, update, preRender, render, postRender } = steps2;
+        const { setup, read: read8, resolveKeyframes, preUpdate, update, preRender, render, postRender } = steps2;
         const processBatch = () => {
           const useManualTiming = motionUtils.MotionGlobalConfig.useManualTiming;
           const timestamp = useManualTiming ? state.timestamp : performance.now();
@@ -40033,7 +39688,7 @@
           state.timestamp = timestamp;
           state.isProcessing = true;
           setup.process(state);
-          read7.process(state);
+          read8.process(state);
           resolveKeyframes.process(state);
           preUpdate.process(state);
           update.process(state);
@@ -82283,7 +81938,7 @@
       acc[key] = createRenderStep(flagRunNextFrame, allowKeepAlive ? key : void 0);
       return acc;
     }, {});
-    const { setup, read: read7, resolveKeyframes, preUpdate, update, preRender, render, postRender } = steps2;
+    const { setup, read: read8, resolveKeyframes, preUpdate, update, preRender, render, postRender } = steps2;
     const processBatch = () => {
       const useManualTiming = MotionGlobalConfig.useManualTiming;
       const timestamp = useManualTiming ? state.timestamp : performance.now();
@@ -82294,7 +81949,7 @@
       state.timestamp = timestamp;
       state.isProcessing = true;
       setup.process(state);
-      read7.process(state);
+      read8.process(state);
       resolveKeyframes.process(state);
       preUpdate.process(state);
       update.process(state);
@@ -173745,6 +173400,7 @@
     const [cueText, setCueText] = useState("");
     const [selectedAudio, setSelectedAudio] = useState(-1);
     const [externalDisplay, setExternalDisplay] = useState(false);
+    const [stats, setStats] = useState(null);
     const prevRef = useRef({ fileLoaded: false, firstFrame: false, failToken: -1, timePos: 0 });
     useEffect(() => {
       if (!isAndroidTauriEnv || !enabled) return;
@@ -173760,6 +173416,12 @@
         setEnded(s.ended);
         setPausedForCache(s.pausedForCache);
         setExternalDisplay(s.externalDisplay === true);
+        setStats((prev2) => {
+          const next2 = s.stats ?? null;
+          if (!next2 || !prev2) return next2;
+          const same = Object.keys(next2).every((key) => prev2[key] === next2[key]);
+          return same ? prev2 : next2;
+        });
         setCoreIdle(!s.fileLoaded || s.paused);
         setSid(s.selectedSub > 0 ? s.selectedSub : null);
         const nextAudio = s.tracks?.audio ?? [];
@@ -173880,7 +173542,8 @@
       selectedAudio,
       setSubtitleTrack,
       cueText,
-      externalDisplay
+      externalDisplay,
+      stats
     };
   }
   var isAndroidTauriEnv, deviceCapsCache, deviceCapsPromise;
@@ -173995,7 +173658,7 @@
 
   // lib/zapp-runtime.ts
   function requestZappLaunch(request = {}) {
-    for (const listener of listeners) {
+    for (const listener of listeners2) {
       try {
         listener(request);
       } catch {
@@ -174003,17 +173666,17 @@
     }
   }
   function onZappLaunchRequested(listener) {
-    listeners.add(listener);
+    listeners2.add(listener);
     return () => {
-      listeners.delete(listener);
+      listeners2.delete(listener);
     };
   }
-  var listeners;
+  var listeners2;
   var init_zapp_runtime = __esm({
     "lib/zapp-runtime.ts"() {
       "use strict";
       "use client";
-      listeners = /* @__PURE__ */ new Set();
+      listeners2 = /* @__PURE__ */ new Set();
     }
   });
 
@@ -174146,6 +173809,54 @@
     "components/player/player-control-icons.tsx"() {
       "use client";
       init_jsx_runtime_shim();
+    }
+  });
+
+  // lib/playback-speed-store.ts
+  function read5() {
+    try {
+      const raw = getScopedStorageItem(KEY9);
+      const parsed = raw ? JSON.parse(raw) : null;
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+  function playbackSpeedKey(mediaType, tmdbId) {
+    if (!tmdbId) return null;
+    return `${mediaType === "tv" ? "tv" : "movie"}:${tmdbId}`;
+  }
+  function getSavedPlaybackSpeed(mediaType, tmdbId) {
+    const key = playbackSpeedKey(mediaType, tmdbId);
+    if (!key) return 1;
+    const value = read5()[key];
+    return PLAYBACK_SPEED_OPTIONS.includes(value) ? value : 1;
+  }
+  function savePlaybackSpeed(mediaType, tmdbId, speed) {
+    const key = playbackSpeedKey(mediaType, tmdbId);
+    if (!key) return;
+    const store2 = read5();
+    if (speed === 1) delete store2[key];
+    else store2[key] = speed;
+    const keys3 = Object.keys(store2);
+    for (let index3 = 0; index3 < keys3.length - MAX_ENTRIES; index3 += 1) delete store2[keys3[index3]];
+    try {
+      setScopedStorageItem(KEY9, JSON.stringify(store2));
+    } catch {
+    }
+  }
+  function nextPlaybackSpeed(current2) {
+    const index3 = PLAYBACK_SPEED_OPTIONS.indexOf(current2);
+    return PLAYBACK_SPEED_OPTIONS[(index3 + 1) % PLAYBACK_SPEED_OPTIONS.length];
+  }
+  var PLAYBACK_SPEED_OPTIONS, KEY9, MAX_ENTRIES;
+  var init_playback_speed_store = __esm({
+    "lib/playback-speed-store.ts"() {
+      "use client";
+      init_profile_storage_shim();
+      PLAYBACK_SPEED_OPTIONS = [0.75, 1, 1.25, 1.5, 1.75, 2];
+      KEY9 = "playback_speed_by_title_v1";
+      MAX_ENTRIES = 200;
     }
   });
 
@@ -174600,8 +174311,8 @@
         async listen(event$1, handler) {
           if (this._handleTauriEvent(event$1, handler)) {
             return () => {
-              const listeners3 = this.listeners[event$1];
-              listeners3.splice(listeners3.indexOf(handler), 1);
+              const listeners4 = this.listeners[event$1];
+              listeners4.splice(listeners4.indexOf(handler), 1);
             };
           }
           return event.listen(event$1, handler, {
@@ -174630,8 +174341,8 @@
         async once(event$1, handler) {
           if (this._handleTauriEvent(event$1, handler)) {
             return () => {
-              const listeners3 = this.listeners[event$1];
-              listeners3.splice(listeners3.indexOf(handler), 1);
+              const listeners4 = this.listeners[event$1];
+              listeners4.splice(listeners4.indexOf(handler), 1);
             };
           }
           return event.once(event$1, handler, {
@@ -176304,20 +176015,10 @@
     }
   });
 
-  // lib/core-streams/settings.ts
-  var init_settings = __esm({
-    "lib/core-streams/settings.ts"() {
-      "use client";
-      init_profile_storage_shim();
-    }
-  });
-
   // lib/playback-availability.ts
   var init_playback_availability = __esm({
     "lib/playback-availability.ts"() {
-      init_plugin_registry();
       init_core_addons();
-      init_settings();
     }
   });
 
@@ -176334,10 +176035,10 @@
       imdbId: typeof entry.imdbId === "string" && entry.imdbId.trim().length > 0 ? entry.imdbId.trim() : null
     };
   }
-  function read5() {
+  function read6() {
     if (typeof window === "undefined") return [];
     try {
-      return JSON.parse(getScopedStorageItem(KEY9) ?? "[]");
+      return JSON.parse(getScopedStorageItem(KEY10) ?? "[]");
     } catch {
       return [];
     }
@@ -176385,7 +176086,7 @@
       const raw = getScopedStorageItem(HISTORY_KEY);
       const parsed = raw ? JSON.parse(raw) : [];
       if (parsed.length > 0) return parsed;
-      const seed = read5();
+      const seed = read6();
       if (seed.length > 0) {
         const seenKeys = /* @__PURE__ */ new Set();
         const dedupedSeed = [];
@@ -176420,8 +176121,8 @@
   }
   function saveStreamProgress(entry) {
     const sanitizedEntry = sanitizeEntry(entry);
-    const list = sortByWatchedAtDesc(dedupeProgressEntries([sanitizedEntry, ...read5()])).slice(0, MAX);
-    setScopedStorageItem(KEY9, JSON.stringify(list));
+    const list = sortByWatchedAtDesc(dedupeProgressEntries([sanitizedEntry, ...read6()])).slice(0, MAX);
+    setScopedStorageItem(KEY10, JSON.stringify(list));
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT7));
     appendHistoryEntry(sanitizedEntry);
     reportLibraryProgress(sanitizedEntry);
@@ -176430,14 +176131,14 @@
     const key = entryKey(id4, season, episode);
     const prefixedMovieKey = entryKey(id4.startsWith("movie-") ? id4 : `movie-${id4}`, season, episode);
     const prefixedTvKey = entryKey(id4.startsWith("tv-") ? id4 : `tv-${id4}`, season, episode);
-    const list = read5().filter((entry) => {
+    const list = read6().filter((entry) => {
       const entryLookupKey = entryKey(entry.id, entry.season, entry.episode);
       return entryLookupKey !== key && entryLookupKey !== prefixedMovieKey && entryLookupKey !== prefixedTvKey;
     });
-    setScopedStorageItem(KEY9, JSON.stringify(list));
+    setScopedStorageItem(KEY10, JSON.stringify(list));
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT7));
   }
-  var EVENT7, KEY9, MAX, HISTORY_KEY, HISTORY_EVENT, HISTORY_MAX;
+  var EVENT7, KEY10, MAX, HISTORY_KEY, HISTORY_EVENT, HISTORY_MAX;
   var init_video_progress = __esm({
     "lib/video-progress.ts"() {
       init_progress2();
@@ -176454,7 +176155,7 @@
         }).catch(() => {
         });
       }
-      KEY9 = "stream_progress_list";
+      KEY10 = "stream_progress_list";
       MAX = 20;
       HISTORY_KEY = "stream_history_list";
       HISTORY_EVENT = "lumio-stream-history-changed";
@@ -176470,19 +176171,19 @@
       const detail = event.detail;
       if (detail?.action) listener(detail.action);
     };
-    listeners2 += 1;
+    listeners3 += 1;
     window.addEventListener(EVENT8, handler);
     return () => {
-      listeners2 -= 1;
+      listeners3 -= 1;
       window.removeEventListener(EVENT8, handler);
     };
   }
-  var EVENT8, listeners2;
+  var EVENT8, listeners3;
   var init_android_media_keys = __esm({
     "lib/android-media-keys.ts"() {
       "use client";
       EVENT8 = "lumio-media-key";
-      listeners2 = 0;
+      listeners3 = 0;
     }
   });
 
@@ -176670,7 +176371,7 @@
   function getVideoTuning() {
     if (typeof window === "undefined") return { ...DEFAULT_TUNING };
     try {
-      const raw = getScopedStorageItem(KEY10);
+      const raw = getScopedStorageItem(KEY11);
       if (!raw) return { ...DEFAULT_TUNING };
       const parsed = JSON.parse(raw);
       const clamp2 = (v, lo, hi, dflt) => {
@@ -176689,7 +176390,7 @@
     }
   }
   function setVideoTuning(tuning) {
-    setScopedStorageItem(KEY10, JSON.stringify(tuning));
+    setScopedStorageItem(KEY11, JSON.stringify(tuning));
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT10));
   }
   function onVideoTuningChanged(listener) {
@@ -176755,7 +176456,7 @@
     const mul = (v) => (1 + v / 100).toFixed(3);
     return `brightness(${mul(t.brightness)}) contrast(${mul(t.contrast)}) saturate(${mul(t.saturation)})`;
   }
-  var DEFAULT_TUNING, TUNING_PRESETS, KEY10, EVENT10, TONE_MAPPINGS, DEFAULT_RENDER_TUNING, RENDER_KEY;
+  var DEFAULT_TUNING, TUNING_PRESETS, KEY11, EVENT10, TONE_MAPPINGS, DEFAULT_RENDER_TUNING, RENDER_KEY;
   var init_video_tuning = __esm({
     "lib/video-tuning.ts"() {
       "use client";
@@ -176768,7 +176469,7 @@
         cinema: { labelKey: "vtPresetCinema", patch: { brightness: -4, gamma: -6, saturation: -5 } },
         sharp: { labelKey: "vtPresetSharp", patch: { sharpen: 0.6, saturation: 8 } }
       };
-      KEY10 = "video_tuning";
+      KEY11 = "video_tuning";
       EVENT10 = "lumio-video-tuning-changed";
       TONE_MAPPINGS = ["auto", "hable", "mobius", "reinhard", "bt.2390"];
       DEFAULT_RENDER_TUNING = {
@@ -176788,7 +176489,7 @@
   function getAudioTuning() {
     if (typeof window === "undefined") return { ...DEFAULT_AUDIO_TUNING };
     try {
-      const raw = getScopedStorageItem(KEY11);
+      const raw = getScopedStorageItem(KEY12);
       if (!raw) return { ...DEFAULT_AUDIO_TUNING };
       const parsed = JSON.parse(raw);
       return {
@@ -176802,7 +176503,7 @@
     }
   }
   function setAudioTuning(tuning) {
-    setScopedStorageItem(KEY11, JSON.stringify(tuning));
+    setScopedStorageItem(KEY12, JSON.stringify(tuning));
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT11));
   }
   function onAudioTuningChanged(listener) {
@@ -176818,7 +176519,7 @@
     if (t.normalize) filters.push("lavfi=[dynaudnorm=f=250:g=15]");
     return filters;
   }
-  var DEFAULT_AUDIO_TUNING, KEY11, EVENT11;
+  var DEFAULT_AUDIO_TUNING, KEY12, EVENT11;
   var init_audio_tuning = __esm({
     "lib/audio-tuning.ts"() {
       "use client";
@@ -176829,7 +176530,7 @@
         voiceClarity: false,
         downmixStereo: false
       };
-      KEY11 = "audio_tuning";
+      KEY12 = "audio_tuning";
       EVENT11 = "lumio-audio-tuning-changed";
     }
   });
@@ -177282,6 +176983,18 @@
   function maxConcurrentRequests() {
     return isTvSurface() ? 10 : 6;
   }
+  function rememberResponse(key, entry) {
+    cache3.delete(key);
+    cache3.set(key, entry);
+    if (cache3.size <= CACHE_MAX_ENTRIES) return;
+    const now3 = Date.now();
+    for (const [k, v] of cache3) if (v.expiresAt <= now3) cache3.delete(k);
+    while (cache3.size > CACHE_MAX_ENTRIES) {
+      const oldest = cache3.keys().next().value;
+      if (oldest === void 0) break;
+      cache3.delete(oldest);
+    }
+  }
   function classifyRequestGroup(pathAndQuery) {
     if (pathAndQuery.startsWith("/api/item")) return "item";
     if (pathAndQuery.startsWith("/api/recommendations")) return "recommendations";
@@ -177434,7 +177147,7 @@
         return cached.data;
       }
     }
-    const existing = inflight.get(key);
+    const existing = inflight2.get(key);
     if (existing) return withAbortSignal(existing, options.signal);
     const request = (async () => {
       const release = await acquireRequestSlot(options.priority ?? "normal", requestGroup);
@@ -177460,7 +177173,7 @@
         release();
       }
     })().then((data) => {
-      cache3.set(key, {
+      rememberResponse(key, {
         expiresAt: Date.now() + ttlMs,
         data
       });
@@ -177479,12 +177192,12 @@
       }
       throw error;
     }).finally(() => {
-      inflight.delete(key);
+      inflight2.delete(key);
     });
-    inflight.set(key, request);
+    inflight2.set(key, request);
     return withAbortSignal(request, options.signal);
   }
-  var DEFAULT_TTL_MS, QUEUE_BYPASS_MS, cache3, errorCache, inflight, queue, activeRequests, queueSeq, activeByGroup, tvSurface;
+  var DEFAULT_TTL_MS, QUEUE_BYPASS_MS, cache3, CACHE_MAX_ENTRIES, errorCache, inflight2, queue, activeRequests, queueSeq, activeByGroup, tvSurface;
   var init_api_json_cache = __esm({
     "lib/services/api-json-cache.ts"() {
       init_tv_focus_shim();
@@ -177493,8 +177206,9 @@
       DEFAULT_TTL_MS = 2 * 6e4;
       QUEUE_BYPASS_MS = 8e3;
       cache3 = /* @__PURE__ */ new Map();
+      CACHE_MAX_ENTRIES = 400;
       errorCache = /* @__PURE__ */ new Map();
-      inflight = /* @__PURE__ */ new Map();
+      inflight2 = /* @__PURE__ */ new Map();
       queue = [];
       activeRequests = 0;
       queueSeq = 0;
@@ -177524,7 +177238,7 @@
         return cached.data;
       }
     }
-    const existing = inflight2.get(key);
+    const existing = inflight3.get(key);
     if (existing) return withAbortSignal2(existing, options.signal);
     const request = fetchApiJsonCached(`/api/wiki?${key}`, {
       timeoutMs: options.timeoutMs ?? 5200,
@@ -177541,18 +177255,18 @@
       });
       return data;
     }).finally(() => {
-      inflight2.delete(key);
+      inflight3.delete(key);
     });
-    inflight2.set(key, request);
+    inflight3.set(key, request);
     return withAbortSignal2(request, options.signal);
   }
-  var WIKI_TTL_MS, cache4, inflight2;
+  var WIKI_TTL_MS, cache4, inflight3;
   var init_wiki_request_cache = __esm({
     "lib/services/wiki-request-cache.ts"() {
       init_api_json_cache();
       WIKI_TTL_MS = 5 * 6e4;
       cache4 = /* @__PURE__ */ new Map();
-      inflight2 = /* @__PURE__ */ new Map();
+      inflight3 = /* @__PURE__ */ new Map();
     }
   });
 
@@ -177673,18 +177387,22 @@
     const now3 = Date.now();
     const expiresAt = cache5.get(key);
     if (expiresAt && expiresAt > now3) return;
-    const running2 = inflight3.get(key);
+    const running2 = inflight4.get(key);
     if (running2) {
       await withAbort(running2, signal);
       return;
     }
     const request = fn().catch(() => {
     }).finally(() => {
-      inflight3.delete(key);
+      inflight4.delete(key);
     });
-    inflight3.set(key, request);
+    inflight4.set(key, request);
     await withAbort(request, signal);
     cache5.set(key, Date.now() + PREFETCH_TTL_MS);
+    if (cache5.size > 500) {
+      const now4 = Date.now();
+      for (const [k, at] of cache5) if (at <= now4) cache5.delete(k);
+    }
   }
   async function prefetchMediaWarmup(options) {
     const tasks = [];
@@ -177797,7 +177515,7 @@
     }
     await Promise.allSettled(tasks);
   }
-  var inflight3, cache5, PREFETCH_TTL_MS, PREFETCH_RECOMMENDATIONS;
+  var inflight4, cache5, PREFETCH_TTL_MS, PREFETCH_RECOMMENDATIONS;
   var init_media_prefetch_cache = __esm({
     "lib/services/media-prefetch-cache.ts"() {
       init_fetch_client();
@@ -177806,7 +177524,7 @@
       init_api_json_cache();
       init_core_addons();
       init_source_request();
-      inflight3 = /* @__PURE__ */ new Map();
+      inflight4 = /* @__PURE__ */ new Map();
       cache5 = /* @__PURE__ */ new Map();
       PREFETCH_TTL_MS = 5 * 6e4;
       PREFETCH_RECOMMENDATIONS = false;
@@ -177856,7 +177574,7 @@
     const cacheKey2 = `${stremioType}:${videoId}:${osApiKey ? "rest" : "addon"}:${mediaUrl ? "hash" : "nohash"}`;
     const cached = resultCache.get(cacheKey2);
     if (cached && cached.expiresAt > Date.now()) return cached.subtitles;
-    const running2 = inflight4.get(cacheKey2);
+    const running2 = inflight5.get(cacheKey2);
     if (running2) return running2;
     const parseSubtitles = (payload) => {
       const subtitles = payload?.subtitles;
@@ -177913,12 +177631,12 @@
       });
       return subtitles;
     })().finally(() => {
-      inflight4.delete(cacheKey2);
+      inflight5.delete(cacheKey2);
     });
-    inflight4.set(cacheKey2, request);
+    inflight5.set(cacheKey2, request);
     return request;
   }
-  var NON_EMPTY_CACHE_TTL_MS, EMPTY_CACHE_TTL_MS, FETCH_TIMEOUT_MS, MAX_CACHE_ENTRIES, resultCache, inflight4, LANG3_TO_22;
+  var NON_EMPTY_CACHE_TTL_MS, EMPTY_CACHE_TTL_MS, FETCH_TIMEOUT_MS, MAX_CACHE_ENTRIES, resultCache, inflight5, LANG3_TO_22;
   var init_os_client = __esm({
     "lib/opensubtitles/os-client.ts"() {
       init_opensubtitles_settings();
@@ -177927,7 +177645,7 @@
       FETCH_TIMEOUT_MS = 4800;
       MAX_CACHE_ENTRIES = 600;
       resultCache = /* @__PURE__ */ new Map();
-      inflight4 = /* @__PURE__ */ new Map();
+      inflight5 = /* @__PURE__ */ new Map();
       LANG3_TO_22 = {
         eng: "en",
         swe: "sv",
@@ -178573,10 +178291,7 @@
                       className: "flex flex-col items-center text-center transition hover:opacity-80 active:opacity-60",
                       title: actor.name,
                       children: [
-                        /* @__PURE__ */ jsx("div", { className: "mb-1.5 h-16 w-16 overflow-hidden rounded-full bg-white/[0.05] ring-1 ring-transparent transition hover:ring-white/20", children: actor.profileUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          /* @__PURE__ */ jsx("img", { src: actor.profileUrl, alt: actor.name, className: "h-full w-full object-cover" })
-                        ) : /* @__PURE__ */ jsx("div", { className: "flex h-full w-full items-center justify-center text-xl text-slate-600", children: actor.name.charAt(0) }) }),
+                        /* @__PURE__ */ jsx("div", { className: "mb-1.5 h-16 w-16 overflow-hidden rounded-full bg-white/[0.05] ring-1 ring-transparent transition hover:ring-white/20", children: actor.profileUrl ? /* @__PURE__ */ jsx("img", { src: actor.profileUrl, alt: actor.name, className: "h-full w-full object-cover" }) : /* @__PURE__ */ jsx("div", { className: "flex h-full w-full items-center justify-center text-xl text-slate-600", children: actor.name.charAt(0) }) }),
                         /* @__PURE__ */ jsx("p", { className: "w-full truncate text-[11px] font-medium text-slate-200", children: actor.name }),
                         /* @__PURE__ */ jsx("p", { className: "w-full truncate text-[10px] text-slate-500", children: actor.character })
                       ]
@@ -178736,10 +178451,18 @@
                 }
               )
             ] }),
-            state === "embed" && result?.embedUrl && /* @__PURE__ */ jsxs("div", { className: "flex min-h-0 flex-1 flex-col", children: [
+            state === "embed" && result?.embedUrl && /**
+             * GRID, inte flex: `grid-rows-[auto_1fr]` ger iframen en RÄKNAD höjd.
+             *
+             * Med flex fick iframen `flex-1` + `height: 100%`, och 100 % av ett
+             * flexutrymme som ännu är noll blir noll — Spotify renderade då sin
+             * kompakta spelare och panelen slutade en bit ner i stället för att
+             * fylla nedåt (Jerry 2026-09-08). Raden `1fr` är alltid uträknad, så
+             * iframen får sin höjd redan i första layouten.
+             */
+            /* @__PURE__ */ jsxs("div", { className: "grid min-h-0 flex-1 grid-rows-[auto_1fr]", children: [
               /* @__PURE__ */ jsxs("div", { className: "flex flex-shrink-0 items-center gap-3 border-b border-white/[0.06] px-4 py-3", children: [
-                result.coverUrl && // eslint-disable-next-line @next/next/no-img-element
-                /* @__PURE__ */ jsx("img", { src: result.coverUrl, alt: result.albumName ?? "", className: "h-10 w-10 rounded object-cover" }),
+                result.coverUrl && /* @__PURE__ */ jsx("img", { src: result.coverUrl, alt: result.albumName ?? "", className: "h-10 w-10 rounded object-cover" }),
                 /* @__PURE__ */ jsxs("div", { className: "flex-1 min-w-0", children: [
                   /* @__PURE__ */ jsx("p", { className: "truncate text-sm font-medium text-white", children: result.albumName }),
                   /* @__PURE__ */ jsx("p", { className: "truncate text-[11px] text-slate-500", children: result.artist })
@@ -178761,11 +178484,10 @@
                 "iframe",
                 {
                   src: result.embedUrl,
-                  width: "100%",
                   allow: "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture",
                   loading: "lazy",
-                  className: "min-h-0 flex-1",
-                  style: { border: "none", display: "block", height: "100%" },
+                  className: "h-full w-full min-h-0",
+                  style: { border: "none", display: "block" },
                   title: result.albumName ?? t("soundtrack")
                 }
               )
@@ -178952,7 +178674,8 @@
   // lib/playback/playback-session-client.ts
   async function invokeDesktop(command, payload) {
     if (!isPluginDesktopHost()) return null;
-    const { invoke: invoke5 } = await Promise.resolve().then(() => __toESM(require_core()));
+    tauriCore ?? (tauriCore = Promise.resolve().then(() => __toESM(require_core())));
+    const { invoke: invoke5 } = await tauriCore;
     try {
       if (payload) return await invoke5(command, payload);
       return await invoke5(command);
@@ -178979,9 +178702,11 @@
     });
     return Boolean(result?.closed);
   }
+  var tauriCore;
   var init_playback_session_client = __esm({
     "lib/playback/playback-session-client.ts"() {
       init_plugin_sdk();
+      tauriCore = null;
     }
   });
 
@@ -178989,7 +178714,7 @@
   function readOverrides() {
     if (typeof window === "undefined") return {};
     try {
-      const raw = getScopedStorageItem(KEY12);
+      const raw = getScopedStorageItem(KEY13);
       if (!raw) return {};
       const parsed = JSON.parse(raw);
       return parsed && typeof parsed === "object" ? parsed : {};
@@ -179007,11 +178732,11 @@
   function matchesShortcut(commandId, eventKey) {
     return normalizeShortcutKey(eventKey) === getShortcutKey(commandId);
   }
-  var KEY12, SHORTCUT_COMMANDS, SUBTITLE_DELAY_STEP_SECONDS, DEFAULTS;
+  var KEY13, SHORTCUT_COMMANDS, SUBTITLE_DELAY_STEP_SECONDS, DEFAULTS;
   var init_keyboard_shortcuts = __esm({
     "lib/keyboard-shortcuts.ts"() {
       init_profile_storage_shim();
-      KEY12 = "keyboard_shortcuts";
+      KEY13 = "keyboard_shortcuts";
       SHORTCUT_COMMANDS = [
         { id: "playPause", category: "player", defaultKey: " ", labelKey: "shortcutsPlayPause" },
         { id: "seekBack", category: "player", defaultKey: "ArrowLeft", labelKey: "shortcutsSeekBackward" },
@@ -179161,9 +178886,9 @@
                 }
               }
             ),
-            /* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-[#050816]/30" })
+            /* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-[rgb(var(--base-950)/0.3)]" })
           ] }, panelIndex)),
-          /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute inset-y-0 left-0 w-[80%] bg-[linear-gradient(to_right,#050816_0%,rgba(5,8,22,0.94)_38%,rgba(5,8,22,0)_100%)]" }),
+          /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute inset-y-0 left-0 w-[80%] bg-[linear-gradient(to_right,rgb(var(--base-950))_0%,rgb(var(--base-950)/0.94)_38%,rgb(var(--base-950)/0)_100%)]" }),
           /* @__PURE__ */ jsxs("div", { className: "absolute inset-0 flex max-w-[58%] flex-col justify-center gap-[clamp(0.4rem,1.5vh,1rem)] px-[clamp(1rem,4vw,3.5rem)] py-[clamp(0.75rem,3vh,2rem)]", children: [
             current2.logoUrl && !failedLogos.has(current2.logoUrl) ? /* @__PURE__ */ jsx(
               "img",
@@ -179300,6 +179025,16 @@
   });
 
   // lib/title-logo-cache.ts
+  function rememberLogo(key, entry) {
+    logoCache.set(key, entry);
+    if (logoCache.size > 500) {
+      const now3 = Date.now();
+      for (const [k, v] of logoCache) {
+        const ttl = v.value === null ? LOGO_NEGATIVE_CACHE_TTL_MS : LOGO_CACHE_TTL_MS;
+        if (now3 - v.updatedAt > ttl) logoCache.delete(k);
+      }
+    }
+  }
   function buildCacheKey(type, tmdbId) {
     return `${type}:${tmdbId}`;
   }
@@ -179323,7 +179058,7 @@
     return entry.value;
   }
   function writeCached(type, tmdbId, value) {
-    logoCache.set(buildCacheKey(type, tmdbId), {
+    rememberLogo(buildCacheKey(type, tmdbId), {
       value,
       updatedAt: Date.now()
     });
@@ -179348,7 +179083,7 @@
     if (running2) return running2;
     const request = (async () => {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 2500);
+      const timeout = setTimeout(() => controller.abort(), 6e3);
       try {
         const response = await fetch(
           `/api/title-logo?tmdbId=${encodeURIComponent(tmdbId)}&type=${type}`,
@@ -179381,33 +179116,33 @@
   });
 
   // lib/gesture-settings.ts
-  function read6(key) {
+  function read7(key) {
     if (typeof window === "undefined") return null;
     const stored = getScopedStorageItem(key);
     return stored == null || stored === "" ? null : stored;
   }
   function getVerticalGestureLeft() {
-    const stored = read6(KEY_LEFT);
+    const stored = read7(KEY_LEFT);
     return VERTICAL_GESTURE_ACTIONS.includes(stored) ? stored : "brightness";
   }
   function getVerticalGestureRight() {
-    const stored = read6(KEY_RIGHT);
+    const stored = read7(KEY_RIGHT);
     return VERTICAL_GESTURE_ACTIONS.includes(stored) ? stored : "volume";
   }
   function getHorizontalGesture() {
-    const stored = read6(KEY_HORIZONTAL);
+    const stored = read7(KEY_HORIZONTAL);
     return HORIZONTAL_GESTURE_ACTIONS.includes(stored) ? stored : "seek";
   }
   function getBrightnessTarget() {
-    const stored = read6(KEY_BRIGHTNESS_TARGET);
+    const stored = read7(KEY_BRIGHTNESS_TARGET);
     return BRIGHTNESS_TARGETS.includes(stored) ? stored : "screen";
   }
   function getDoubleTapSeconds() {
-    const raw = Number.parseInt(read6(KEY_DOUBLE_TAP) ?? "", 10);
+    const raw = Number.parseInt(read7(KEY_DOUBLE_TAP) ?? "", 10);
     return DOUBLE_TAP_SECONDS.includes(raw) ? raw : 10;
   }
   function getHoldToSpeed() {
-    return read6(KEY_HOLD_SPEED) === "1";
+    return read7(KEY_HOLD_SPEED) === "1";
   }
   var VERTICAL_GESTURE_ACTIONS, HORIZONTAL_GESTURE_ACTIONS, BRIGHTNESS_TARGETS, DOUBLE_TAP_SECONDS, KEY_LEFT, KEY_RIGHT, KEY_HORIZONTAL, KEY_BRIGHTNESS_TARGET, KEY_DOUBLE_TAP, KEY_HOLD_SPEED;
   var init_gesture_settings = __esm({
@@ -179462,8 +179197,8 @@
     if (typeof window === "undefined") return;
     try {
       const keys3 = Object.keys(store2);
-      if (keys3.length > MAX_ENTRIES) {
-        keys3.sort((a, b) => (store2[a]?.t ?? 0) - (store2[b]?.t ?? 0)).slice(0, keys3.length - MAX_ENTRIES).forEach((key) => {
+      if (keys3.length > MAX_ENTRIES2) {
+        keys3.sort((a, b) => (store2[a]?.t ?? 0) - (store2[b]?.t ?? 0)).slice(0, keys3.length - MAX_ENTRIES2).forEach((key) => {
           delete store2[key];
         });
       }
@@ -179498,12 +179233,12 @@
     }
     writeStore(store2);
   }
-  var STORAGE_KEY3, MAX_ENTRIES;
+  var STORAGE_KEY3, MAX_ENTRIES2;
   var init_subtitle_delay_store = __esm({
     "lib/subtitle-delay-store.ts"() {
       init_profile_storage_shim();
       STORAGE_KEY3 = "lumio_subtitle_delays_v1";
-      MAX_ENTRIES = 400;
+      MAX_ENTRIES2 = 400;
     }
   });
 
@@ -179599,6 +179334,10 @@ ${cue.text}`).join("\n\n")}
     const parts = ts.trim().split(":");
     if (parts.length === 3) return +parts[0] * 3600 + +parts[1] * 60 + parseFloat(parts[2]);
     return +parts[0] * 60 + parseFloat(parts[1]);
+  }
+  function stripSdhText(text) {
+    const lines = text.split("\n").map((line) => line.replace(/\[[^\]]*\]/g, "").replace(/\([^)]*\)/g, "").replace(/♪[^♪]*♪?/g, "").replace(/^\s*-?\s*[A-ZÅÄÖ][A-ZÅÄÖ0-9 .'’-]{1,24}:\s*/, (match) => match.trim().startsWith("-") ? "- " : "").replace(/\s{2,}/g, " ").trim());
+    return lines.filter((line) => line.length > 0 && line !== "-").join("\n");
   }
   function parseVtt(vtt) {
     const cues = [];
@@ -179918,7 +179657,7 @@ ${cue.text}`).join("\n\n")}
     } catch {
     }
   }
-  function VideoPlayerModal({ url, filename, title, onClose, imdbId, tmdbId, mediaType, season, episode, mediaId, mediaTitle, mediaSource, posterUrl, backdropUrl, year, initialTime, expectedDurationSeconds, onFirstPlay, hideStartSplash, forceProxy, requestHeaders, onTimeUpdate, onOutroStart, onCreditsOpenDetails, onCreditsFinished, episodes, onLoadFailed, onPlaybackEnded, onOpenedExternally, skipHomeKitOnClose, skipHomeKitOnOpen, overlayContent, autoFullscreen, sourceInfoHash, playbackTraceId }) {
+  function VideoPlayerModal({ url, filename, title, onClose, imdbId, tmdbId, mediaType, season, episode, mediaId, mediaTitle, mediaSource, posterUrl, backdropUrl, year, initialTime, expectedDurationSeconds, onFirstPlay, hideStartSplash, forceProxy, requestHeaders, onTimeUpdate, onOutroStart, onCreditsOpenDetails, onCreditsFinished, episodes, onLoadFailed, onPlaybackEnded, onOpenedExternally, skipHomeKitOnClose, skipHomeKitOnOpen, overlayContent, autoFullscreen, sourceInfoHash, playbackTraceId, scrubPreview }) {
     const STILL_WATCHING_CLOSE_SECONDS = 20;
     const [engineKind, setEngineKind] = useState("none");
     useEffect(() => {
@@ -180059,7 +179798,11 @@ ${cue.text}`).join("\n\n")}
     const boundsResyncTimersRef = useRef([]);
     const didSeekRef = useRef(false);
     const { lang, t } = useLang();
-    const derivedTmdbId = mediaId && !mediaId.startsWith("local-") ? mediaId.replace(/^(movie|tv)-/, "") : null;
+    const derivedTmdbId = (() => {
+      if (!mediaId || mediaId.startsWith("local-")) return null;
+      const bare = mediaId.replace(/^(movie|tv)-/, "");
+      return /^\d+$/.test(bare) ? bare : null;
+    })();
     const wikiTmdbId = tmdbId ?? derivedTmdbId;
     const inferredMediaType = mediaType ?? (season != null || episode != null ? "tv" : "movie");
     const endHlsSessionOnServer = useCallback((sessionId) => {
@@ -180178,6 +179921,11 @@ ${cue.text}`).join("\n\n")}
     const [playing, setPlaying] = useState(false);
     const [hasStarted, setHasStarted] = useState(false);
     const [openSurface, setOpenSurface] = useState(null);
+    const [statsHud, setStatsHudState] = useState(() => getStatsHud());
+    const [stripSdh, setStripSdhState] = useState(() => getStripSdh());
+    const [playbackSpeed, setPlaybackSpeedState] = useState(() => getSavedPlaybackSpeed(mediaType, tmdbId ?? null));
+    const playbackSpeedRef = useRef(playbackSpeed);
+    playbackSpeedRef.current = playbackSpeed;
     const openSurfaceRef = useRef(null);
     openSurfaceRef.current = openSurface;
     const surfaceSetter = (id4) => (value) => setOpenSurface((current2) => {
@@ -180241,7 +179989,8 @@ ${cue.text}`).join("\n\n")}
       });
       return () => window.cancelAnimationFrame(raf);
     }, [isTv, openSurface]);
-    const playerAccentRgb = playerLayout.seekBarColor === "white" ? "255 255 255" : playerLayout.seekBarColor === "red" ? "239 68 68" : playerLayout.seekBarColor === "amber" ? "251 191 36" : "124 156 255";
+    const themeAccentRgb = (typeof document !== "undefined" ? getComputedStyle(document.documentElement).getPropertyValue("--accent-500").trim() : "") || "244 132 95";
+    const playerAccentRgb = playerLayout.seekBarColor === "white" ? "255 255 255" : playerLayout.seekBarColor === "red" ? "239 68 68" : playerLayout.seekBarColor === "amber" ? "251 191 36" : themeAccentRgb;
     const hiddenControls = useMemo(() => new Set(playerLayout.hidden), [playerLayout.hidden]);
     const showsControl = (id4) => !hiddenControls.has(id4);
     const [videoTuning, setVideoTuningState] = useState(() => getVideoTuning());
@@ -180988,7 +180737,8 @@ ${cue.text}`).join("\n\n")}
     const subtitleTime = subtitleClockBase - subDelay + (subDrift ? subDrift.slope * (subtitleClockBase - subDrift.anchor) : 0);
     const activeCue = isMpvEngine ? null : cues.find((c) => subtitleTime >= c.start && subtitleTime <= c.end) ?? null;
     const embeddedCueText = isDroidEngine && !activeCue ? (mpv.cueText ?? "").trim() : "";
-    const renderedSubtitleText = activeCue?.text ?? (embeddedCueText || null);
+    const rawSubtitleText = activeCue?.text ?? (embeddedCueText || null);
+    const renderedSubtitleText = rawSubtitleText && stripSdh ? stripSdhText(rawSubtitleText) || null : rawSubtitleText;
     const parsedEpisodeFromFilename = useMemo(() => filename ? parseEpisodeIdentifier(filename) : null, [filename]);
     const parsedEpisodeFromTitle = useMemo(() => parseEpisodeIdentifier(title), [title]);
     const inferredSeasonFromText = parsedEpisodeFromFilename?.season ?? parsedEpisodeFromTitle?.season ?? null;
@@ -181098,6 +180848,101 @@ ${cue.text}`).join("\n\n")}
         }
       })();
     }, [useMpv, nightMode, audioTuning, mpv.fileLoaded, mpv.fileLoadedToken]);
+    useEffect(() => {
+      if (!useMpv || !mpv.fileLoaded) return;
+      if (playbackSpeed !== 1) mpv.setSpeed(playbackSpeed);
+    }, [useMpv, mpv.fileLoaded, mpv.fileLoadedToken, playbackSpeed]);
+    useEffect(() => {
+      if (!isMpvEngine || !mpv.fileLoaded) return;
+      void mpvCommand2(["set_property", "sub-filter-sdh", stripSdh ? "yes" : "no"]);
+    }, [isMpvEngine, mpv.fileLoaded, mpv.fileLoadedToken, stripSdh]);
+    const [statsLines, setStatsLines] = useState([]);
+    useEffect(() => {
+      if (!statsHud || useMpv && !mpv.fileLoaded) {
+        setStatsLines([]);
+        return;
+      }
+      let cancelled = false;
+      const props = ["video-codec", "hwdec-current", "video-params/w", "video-params/h", "video-bitrate", "estimated-vf-fps", "frame-drop-count", "demuxer-cache-duration", "audio-codec-name", "audio-params/samplerate", "speed"];
+      const tickVideo = () => {
+        const v = videoRef.current;
+        if (!v) {
+          setStatsLines([]);
+          return;
+        }
+        const quality = typeof v.getVideoPlaybackQuality === "function" ? v.getVideoPlaybackQuality() : null;
+        let bufferedAhead = 0;
+        for (let i = 0; i < v.buffered.length; i += 1) {
+          if (v.buffered.start(i) <= v.currentTime && v.buffered.end(i) >= v.currentTime) {
+            bufferedAhead = v.buffered.end(i) - v.currentTime;
+            break;
+          }
+        }
+        const heap = performance.memory?.usedJSHeapSize;
+        setStatsLines([
+          `Video  ${v.videoWidth || "?"}\xD7${v.videoHeight || "?"}  (web)`,
+          `Frames  ${quality?.totalVideoFrames ?? "\u2013"}   Drops  ${quality?.droppedVideoFrames ?? "\u2013"}`,
+          `Buffer  ${bufferedAhead.toFixed(0)} s   Ready ${v.readyState}/4`,
+          `Speed  ${v.playbackRate}\xD7${heap ? `   Heap ${(heap / 1048576).toFixed(0)} MB` : ""}`
+        ]);
+      };
+      const tickDroid = () => {
+        const s = droid.stats;
+        if (!s) {
+          setStatsLines([]);
+          return;
+        }
+        const heap = performance.memory?.usedJSHeapSize;
+        const short = (mime) => mime.replace(/^video\//, "").replace(/^audio\//, "") || "\u2013";
+        setStatsLines([
+          `Video  ${short(s.videoCodec)}  ${s.width || "?"}\xD7${s.height || "?"}  ${s.fps > 0 ? `${s.fps.toFixed(1)} fps` : ""}`,
+          `Decoder  ${s.decoder || "\u2013"}`,
+          `Bitrate  ${s.bitrate > 0 ? `${(s.bitrate / 1e6).toFixed(1)} Mbit/s` : "\u2013"}`,
+          `Drops  ${s.dropped}   Buffer  ${s.buffered.toFixed(0)} s`,
+          `Audio  ${short(s.audioCodec)}  ${s.sampleRate > 0 ? `${s.sampleRate} Hz` : ""}${s.channels > 0 ? `  ${s.channels}ch` : ""}`,
+          `Speed  ${s.speed}\xD7${heap ? `   Heap ${(heap / 1048576).toFixed(0)} MB` : ""}`
+        ]);
+      };
+      const tick = async () => {
+        if (isDroidEngine) {
+          tickDroid();
+          return;
+        }
+        if (!useMpv) {
+          tickVideo();
+          return;
+        }
+        const values = await Promise.all(props.map((name) => mpvCommand2(["get_property", name]).catch(() => null)));
+        if (cancelled) return;
+        const [codec, hwdec, w, h, bitrate, fps, drops, cache6, acodec, arate, spd] = values;
+        const num = (v) => {
+          if (typeof v === "number") return Number.isFinite(v) ? v : null;
+          if (typeof v === "string") {
+            const parsed = Number.parseFloat(v.trim());
+            return Number.isFinite(parsed) ? parsed : null;
+          }
+          return null;
+        };
+        const heap = performance.memory?.usedJSHeapSize;
+        const lines = [
+          `Video  ${String(codec ?? "\u2013")}  ${num(w) ?? "?"}\xD7${num(h) ?? "?"}  ${num(fps) != null ? `${num(fps).toFixed(1)} fps` : ""}`,
+          `Hwdec  ${String(hwdec ?? "no")}`,
+          `Bitrate  ${num(bitrate) != null ? `${(num(bitrate) / 1e6).toFixed(1)} Mbit/s` : "\u2013"}`,
+          `Drops  ${num(drops) ?? 0}   Cache  ${num(cache6) != null ? `${num(cache6).toFixed(0)} s` : "\u2013"}`,
+          `Audio  ${String(acodec ?? "\u2013")}  ${num(arate) != null ? `${num(arate)} Hz` : ""}`,
+          `Speed  ${num(spd) ?? 1}\xD7${heap ? `   Heap ${(heap / 1048576).toFixed(0)} MB` : ""}`
+        ];
+        setStatsLines(lines);
+      };
+      void tick();
+      const id4 = window.setInterval(() => {
+        void tick();
+      }, 1e3);
+      return () => {
+        cancelled = true;
+        window.clearInterval(id4);
+      };
+    }, [statsHud, useMpv, isDroidEngine, droid.stats, mpv.fileLoaded, mpv.fileLoadedToken]);
     const [audioDelayMs, setAudioDelayMsState] = useState(() => getAudioDelayMs());
     const [outputIsBluetooth, setOutputIsBluetooth] = useState(false);
     const droidAudioDelayAppliedRef = useRef(false);
@@ -183279,33 +183124,27 @@ ${cue.text}`).join("\n\n")}
       const targetTime = (e.clientX - rect.left) / rect.width * totalDuration;
       seekToAbsolute(targetTime);
     }
-    function applyVolume(raw) {
-      const val = Math.min(1, Math.max(0, raw));
-      setVolume(val);
-      setMuted(val === 0);
+    const volumeCeiling = useMpv ? 2 : 1;
+    function pushVolume(val) {
       if (useMpv) {
+        if (val > 1) void mpvCommand2(["set_property", "volume-max", 200]);
         void mpvCommand2(["set_property", "volume", Math.round(val * 100)]);
         void mpvCommand2(["set_property", "mute", val === 0 ? "yes" : "no"]);
         return;
       }
       const v = videoRef.current;
       if (!v) return;
-      v.volume = val;
+      v.volume = Math.min(1, val);
       v.muted = val === 0;
     }
-    function handleVolumeChange(e) {
-      const val = Number(e.target.value);
+    function applyVolume(raw) {
+      const val = Math.min(volumeCeiling, Math.max(0, raw));
       setVolume(val);
       setMuted(val === 0);
-      if (useMpv) {
-        void mpvCommand2(["set_property", "volume", Math.round(val * 100)]);
-        void mpvCommand2(["set_property", "mute", val === 0 ? "yes" : "no"]);
-        return;
-      }
-      const v = videoRef.current;
-      if (!v) return;
-      v.volume = val;
-      v.muted = val === 0;
+      pushVolume(val);
+    }
+    function handleVolumeChange(e) {
+      applyVolume(Number(e.target.value));
     }
     const episodeCode = season != null && episode != null ? `S${String(season).padStart(2, "0")}E${String(episode).padStart(2, "0")}` : null;
     const headerTitle = episodeCode ? getSeriesNameFirst() ? `${title} \xB7 ${episodeCode}` : `${episodeCode} \xB7 ${title}` : title;
@@ -183402,6 +183241,7 @@ ${cue.text}`).join("\n\n")}
     const leaveCreditsModeRef = useRef(() => {
     });
     const [creditsItems, setCreditsItems] = useState([]);
+    const creditsLibraryIdSets = useLibraryIdSets();
     useEffect(() => {
       if (!creditsMode) return;
       void fetch(`/api/debug-log?msg=${encodeURIComponent(`[credits] kort=${creditsItems.length}`)}`).catch(() => {
@@ -183420,7 +183260,7 @@ ${cue.text}`).join("\n\n")}
             { signal: controller.signal }
           );
           const list = await listResponse.json();
-          const ids = (list.items ?? []).map((entry) => String(entry?.id ?? "").replace(/^(?:movie|tv)-/, "")).filter((id4) => /^\d+$/.test(id4)).slice(0, 5);
+          const ids = (list.items ?? []).map((entry) => String(entry?.id ?? "").replace(/^(?:movie|tv)-/, "")).filter((id4) => /^\d+$/.test(id4)).slice(0, creditsLibraryIdSets ? 24 : 5);
           if (controller.signal.aborted) return;
           if (ids.length === 0) {
             leaveCreditsModeRef.current();
@@ -183436,7 +183276,8 @@ ${cue.text}`).join("\n\n")}
             }
           }));
           if (controller.signal.aborted) return;
-          const usable = hydrated.filter((entry) => entry !== null);
+          const hydratedItems = hydrated.filter((entry) => entry !== null);
+          const usable = creditsLibraryIdSets ? hydratedItems.filter((entry) => itemInLibrary(entry, creditsLibraryIdSets)).slice(0, 5) : hydratedItems;
           if (usable.length === 0) {
             leaveCreditsModeRef.current();
             return;
@@ -183446,7 +183287,7 @@ ${cue.text}`).join("\n\n")}
         }
       })();
       return () => controller.abort();
-    }, [creditsMode, wikiTmdbId, tmdbId, mediaType]);
+    }, [creditsMode, wikiTmdbId, tmdbId, mediaType, creditsLibraryIdSets]);
     const [creditsLogos, setCreditsLogos] = useState({});
     useEffect(() => {
       if (creditsItems.length === 0) return;
@@ -184004,7 +183845,7 @@ ${cue.text}`).join("\n\n")}
             "aria-valuenow": Math.round((muted ? 0 : volume) * 100),
             onClick: (event) => {
               const rect = event.currentTarget.getBoundingClientRect();
-              applyVolume((event.clientX - rect.left) / rect.width);
+              applyVolume((event.clientX - rect.left) / rect.width * volumeCeiling);
             },
             onKeyDown: (event) => {
               if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
@@ -184013,8 +183854,8 @@ ${cue.text}`).join("\n\n")}
             },
             className: "relative h-1 w-[84px] flex-none cursor-pointer rounded-full bg-white/[0.18]",
             children: [
-              /* @__PURE__ */ jsx("div", { className: "absolute inset-y-0 left-0 rounded-full bg-slate-300", style: { width: `${(muted ? 0 : volume) * 100}%` } }),
-              /* @__PURE__ */ jsx("div", { className: "absolute top-1/2 h-[11px] w-[11px] -translate-y-1/2 rounded-full bg-white", style: { left: `calc(${(muted ? 0 : volume) * 100}% - 5px)` } })
+              /* @__PURE__ */ jsx("div", { className: "absolute inset-y-0 left-0 rounded-full bg-slate-300", style: { width: `${(muted ? 0 : volume) / volumeCeiling * 100}%` } }),
+              /* @__PURE__ */ jsx("div", { className: "absolute top-1/2 h-[11px] w-[11px] -translate-y-1/2 rounded-full bg-white", style: { left: `calc(${(muted ? 0 : volume) / volumeCeiling * 100}% - 5px)` } })
             ]
           }
         )
@@ -184154,6 +183995,7 @@ ${cue.text}`).join("\n\n")}
         {
           ref: moreTriggerRef,
           type: "button",
+          ...dtStation,
           onClick: () => setShowMoreMenu((value) => !value),
           title: t("moreActions"),
           "aria-label": t("moreActions"),
@@ -184258,6 +184100,12 @@ ${cue.text}`).join("\n\n")}
         ...tvSeekStation,
         className: `vp-seek-track relative cursor-pointer rounded-full bg-white/[0.18] ${widthClass} ${seekHeightClass}`,
         onPointerDown: handleSeekPointerDown,
+        onWheel: (event) => {
+          if (!desktopChrome || !totalDuration) return;
+          event.preventDefault();
+          const step = event.shiftKey ? 1 : 10;
+          seek(event.deltaY < 0 ? step : -step);
+        },
         style: { touchAction: "none" },
         children: [
           /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "absolute -inset-y-3 inset-x-0" }),
@@ -184276,14 +184124,53 @@ ${cue.text}`).join("\n\n")}
               style: { left: `${outroZone.left}%`, width: `${outroZone.width}%` }
             }
           ) : null,
-          scrubPercent !== null && totalDuration > 0 ? /* @__PURE__ */ jsx(
-            "div",
-            {
-              className: "pointer-events-none absolute -top-9 z-20 -translate-x-1/2 rounded-md bg-black/85 px-2 py-1 text-[13px] font-semibold tabular-nums text-white shadow-lg backdrop-blur-sm",
-              style: { left: `clamp(1.75rem, ${seekPercent}%, calc(100% - 1.75rem))` },
-              children: fmt(seekTime)
-            }
-          ) : null,
+          scrubPercent !== null && totalDuration > 0 ? (() => {
+            const thumb = scrubPreview && scrubPreview.intervalMs > 0 && scrubPreview.tileWidth > 0 && scrubPreview.tileHeight > 0 ? (() => {
+              const perTile = scrubPreview.tileWidth * scrubPreview.tileHeight;
+              const declared = scrubPreview.thumbnailCount;
+              const declaredMax = declared >= perTile ? declared - 1 : declared * perTile - 1;
+              const byDuration = totalDuration > 0 ? Math.floor(totalDuration * 1e3 / scrubPreview.intervalMs) : Number.POSITIVE_INFINITY;
+              const idx = Math.max(0, Math.min(declaredMax, byDuration, Math.floor(seekTime * 1e3 / scrubPreview.intervalMs)));
+              const tileIndex = Math.floor(idx / perTile);
+              const within = idx % perTile;
+              const col = within % scrubPreview.tileWidth;
+              const row = Math.floor(within / scrubPreview.tileWidth);
+              const scale2 = Math.min(1, 240 / scrubPreview.width);
+              return {
+                url: scrubPreview.urlTemplate.replace("{index}", String(tileIndex)),
+                w: Math.round(scrubPreview.width * scale2),
+                h: Math.round(scrubPreview.height * scale2),
+                x: -Math.round(col * scrubPreview.width * scale2),
+                y: -Math.round(row * scrubPreview.height * scale2),
+                sheetW: Math.round(scrubPreview.width * scrubPreview.tileWidth * scale2),
+                sheetH: Math.round(scrubPreview.height * scrubPreview.tileHeight * scale2)
+              };
+            })() : null;
+            return /* @__PURE__ */ jsxs(
+              "div",
+              {
+                className: "pointer-events-none absolute z-20 -translate-x-1/2 overflow-hidden rounded-md bg-black/85 text-center text-[13px] font-semibold tabular-nums text-white shadow-lg backdrop-blur-sm",
+                style: { left: `clamp(1.75rem, ${seekPercent}%, calc(100% - 1.75rem))`, top: thumb ? `calc(-2.25rem - ${thumb.h}px)` : "-2.25rem" },
+                children: [
+                  thumb ? /* @__PURE__ */ jsx(
+                    "div",
+                    {
+                      "aria-hidden": true,
+                      style: {
+                        width: thumb.w,
+                        height: thumb.h,
+                        backgroundImage: `url("${thumb.url}")`,
+                        backgroundPosition: `${thumb.x}px ${thumb.y}px`,
+                        backgroundSize: `${thumb.sheetW}px ${thumb.sheetH}px`,
+                        backgroundRepeat: "no-repeat"
+                      }
+                    }
+                  ) : null,
+                  /* @__PURE__ */ jsx("div", { className: "px-2 py-1", children: fmt(seekTime) })
+                ]
+              }
+            );
+          })() : null,
           totalDuration > 0 ? /* @__PURE__ */ jsxs(Fragment2, { children: [
             /* @__PURE__ */ jsx("div", { className: `absolute inset-y-0 left-0 rounded-full ${seekFillColorClass} ${seekFillStyleClass}`, style: { width: `${seekPercent}%` } }),
             playerLayout.seekBarDot ? /* @__PURE__ */ jsx(
@@ -184463,7 +184350,7 @@ ${cue.text}`).join("\n\n")}
       }
       if (holdSpeedActiveRef.current) {
         holdSpeedActiveRef.current = false;
-        mpv.setSpeed(1);
+        mpv.setSpeed(playbackSpeedRef.current);
         setGestureHud(null);
         return true;
       }
@@ -185396,6 +185283,15 @@ ${cue.text}`).join("\n\n")}
                     isTv
                   }
                 ),
+                statsHud && statsLines.length > 0 && /* @__PURE__ */ jsx(
+                  "div",
+                  {
+                    className: "pointer-events-none absolute right-4 top-4 z-40 rounded-xl border border-white/10 px-3 py-2 font-mono text-[11px] leading-[1.5] text-white/90 shadow-[0_8px_24px_rgba(0,0,0,0.35)]",
+                    style: { background: "rgba(58, 59, 66, 0.92)" },
+                    "aria-hidden": true,
+                    children: statsLines.map((line) => /* @__PURE__ */ jsx("div", { children: line }, line.split(" ")[0]))
+                  }
+                ),
                 renderedSubtitleText && /* @__PURE__ */ jsx(
                   "div",
                   {
@@ -185659,8 +185555,26 @@ ${cue.text}`).join("\n\n")}
                           ] }),
                           subtitleAutoSyncState.type === "analyzing" && /* @__PURE__ */ jsx("div", { className: "mt-2 text-[11px] leading-5 text-slate-400", children: t("subtitleAutoSyncAnalyzing") })
                         ] }),
+                        /* @__PURE__ */ jsx("div", { className: "px-4 py-2", children: /* @__PURE__ */ jsxs(
+                          "button",
+                          {
+                            type: "button",
+                            "data-f": isTv ? "1" : void 0,
+                            onClick: () => {
+                              const next2 = !stripSdh;
+                              setStripSdhState(next2);
+                              setStripSdh(next2);
+                            },
+                            className: `flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-xs transition ${stripSdh ? "border-white/25 bg-white/10 text-white" : "border-white/10 bg-white/5 text-slate-300 hover:border-white/20"}`,
+                            title: t("stripSdhHint"),
+                            children: [
+                              /* @__PURE__ */ jsx("span", { children: t("stripSdhTitle") }),
+                              /* @__PURE__ */ jsx("span", { className: "text-slate-400", children: t(stripSdh ? "on" : "off") })
+                            ]
+                          }
+                        ) }),
                         [
-                          { label: t("delay"), value: subDelay, unit: "s", dec: () => setSubDelay((v) => Math.max(-30, Math.round((v - 0.1) * 10) / 10)), inc: () => setSubDelay((v) => Math.min(30, Math.round((v + 0.1) * 10) / 10)) },
+                          { label: t("delay"), value: subDelay, unit: "s", dec: () => setSubDelay((v) => Math.max(-180, Math.round((v - 0.1) * 10) / 10)), inc: () => setSubDelay((v) => Math.min(180, Math.round((v + 0.1) * 10) / 10)) },
                           { label: t("size"), value: subSize, unit: "%", dec: () => setSubSize((v) => Math.max(50, v - 10)), inc: () => setSubSize((v) => Math.min(200, v + 10)) },
                           { label: t("verticalPosition"), value: subVerticalPos, unit: "%", dec: () => setSubVerticalPos((v) => Math.max(0, v - 5)), inc: () => setSubVerticalPos((v) => Math.min(90, v + 5)) }
                         ].map(({ label, value, unit, dec, inc }) => /* @__PURE__ */ jsxs("div", { className: "px-4 py-2", children: [
@@ -186048,7 +185962,7 @@ ${cue.text}`).join("\n\n")}
                                 {
                                   type: "range",
                                   min: 0,
-                                  max: 1,
+                                  max: volumeCeiling,
                                   step: 0.05,
                                   value: muted ? 0 : volume,
                                   onChange: handleVolumeChange,
@@ -186385,6 +186299,52 @@ ${cue.text}`).join("\n\n")}
                                 ]
                               }
                             ),
+                            /* @__PURE__ */ jsxs(
+                              "button",
+                              {
+                                type: "button",
+                                ...dtStation,
+                                "data-f": isTv ? "1" : void 0,
+                                onClick: () => {
+                                  const next2 = nextPlaybackSpeed(playbackSpeed);
+                                  setPlaybackSpeedState(next2);
+                                  savePlaybackSpeed(mediaType, tmdbId ?? null, next2);
+                                  mpv.setSpeed(next2);
+                                },
+                                className: dtMoreRowClass,
+                                children: [
+                                  /* @__PURE__ */ jsx("svg", { className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: /* @__PURE__ */ jsx("path", { d: "M13 3 4 14h7l-1 7 9-11h-7l1-7Z", strokeLinecap: "round", strokeLinejoin: "round" }) }),
+                                  /* @__PURE__ */ jsxs("span", { className: dtMoreTextClass, children: [
+                                    t("playbackSpeedMenuLabel"),
+                                    ": ",
+                                    playbackSpeed,
+                                    "\xD7"
+                                  ] })
+                                ]
+                              }
+                            ),
+                            /* @__PURE__ */ jsxs(
+                              "button",
+                              {
+                                type: "button",
+                                ...dtStation,
+                                "data-f": isTv ? "1" : void 0,
+                                onClick: () => {
+                                  const next2 = !statsHud;
+                                  setStatsHudState(next2);
+                                  setStatsHud(next2);
+                                },
+                                className: dtMoreRowClass,
+                                children: [
+                                  /* @__PURE__ */ jsx("svg", { className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: /* @__PURE__ */ jsx("path", { d: "M4 20V10M10 20V4M16 20v-7M22 20H2", strokeLinecap: "round", strokeLinejoin: "round" }) }),
+                                  /* @__PURE__ */ jsxs("span", { className: dtMoreTextClass, children: [
+                                    t("statsHudMenuLabel"),
+                                    ": ",
+                                    t(statsHud ? "on" : "off")
+                                  ] })
+                                ]
+                              }
+                            ),
                             isMpvEngine && /* @__PURE__ */ jsxs(
                               "button",
                               {
@@ -186528,6 +186488,8 @@ ${cue.text}`).join("\n\n")}
       "use strict";
       "use client";
       init_player_control_icons();
+      init_playback_settings();
+      init_playback_speed_store();
       init_react_shim();
       init_timing();
       import_react_dom = __toESM(require_react_dom());
@@ -186567,6 +186529,7 @@ ${cue.text}`).join("\n\n")}
       init_playback_settings();
       init_autoplay_settings();
       init_credits_recommendations();
+      init_ids();
       init_title_logo_cache();
       init_open_item_runtime();
       init_gesture_settings();
@@ -186707,16 +186670,13 @@ ${cue.text}`).join("\n\n")}
         className: `group absolute bottom-6 right-6 z-[300] w-80 overflow-hidden rounded-2xl border border-white/10 bg-slate-900/95 shadow-2xl backdrop-blur-sm transition-transform duration-500 ${visible ? "translate-x-0" : "translate-x-[120%]"}`,
         children: [
           /* @__PURE__ */ jsxs("div", { className: "flex gap-3 p-3", children: [
-            /* @__PURE__ */ jsx("div", { className: "h-[72px] w-[128px] flex-shrink-0 overflow-hidden rounded-xl bg-white/5", children: stillUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              /* @__PURE__ */ jsx(
-                "img",
-                {
-                  src: stillUrl,
-                  alt: episodeTitle,
-                  className: `h-full w-full object-cover ${spoilerMask.thumb ? SPOILER_THUMB_CLASS : ""}`
-                }
-              )
+            /* @__PURE__ */ jsx("div", { className: "h-[72px] w-[128px] flex-shrink-0 overflow-hidden rounded-xl bg-white/5", children: stillUrl ? /* @__PURE__ */ jsx(
+              "img",
+              {
+                src: stillUrl,
+                alt: episodeTitle,
+                className: `h-full w-full object-cover ${spoilerMask.thumb ? SPOILER_THUMB_CLASS : ""}`
+              }
             ) : /* @__PURE__ */ jsx("div", { className: "flex h-full w-full items-center justify-center", children: /* @__PURE__ */ jsxs("svg", { width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.5", className: "text-slate-600", children: [
               /* @__PURE__ */ jsx("rect", { x: "2", y: "3", width: "20", height: "14", rx: "2" }),
               /* @__PURE__ */ jsx("path", { d: "m8 21 4-4 4 4" })
@@ -187204,10 +187164,11 @@ ${cue.text}`).join("\n\n")}
       "div",
       {
         style: {
-          background: TOKENS.surface1,
-          border: `1px solid ${TOKENS.border}`,
+          background: "rgba(255, 255, 255, 0.055)",
+          border: "1px solid rgba(255, 255, 255, 0.12)",
           borderRadius: 14,
           padding,
+          marginBottom: 10,
           ...style2
         },
         children
@@ -187587,8 +187548,8 @@ ${cue.text}`).join("\n\n")}
          */
         emit(eventName, arg) {
           if (eventName in this.eventListeners) {
-            const listeners3 = this.eventListeners[eventName];
-            for (const listener of listeners3)
+            const listeners4 = this.eventListeners[eventName];
+            for (const listener of listeners4)
               listener(arg);
             return true;
           }
@@ -187813,12 +187774,9 @@ ${cue.text}`).join("\n\n")}
   // lib/plugin-sdk.ts
   var plugin_sdk_exports = {};
   __export(plugin_sdk_exports, {
+    BROWSE_BACK_EVENT: () => BROWSE_BACK_EVENT,
     Card: () => Card,
     Checkbox: () => Checkbox,
-    DEFAULT_SCRAPER_TYPE: () => DEFAULT_SCRAPER_TYPE,
-    DEFAULT_SCRAPER_URL: () => DEFAULT_SCRAPER_URL,
-    DEFAULT_STREAM_PROVIDER_TYPE: () => DEFAULT_STREAM_PROVIDER_TYPE,
-    DEFAULT_STREAM_PROVIDER_URL: () => DEFAULT_STREAM_PROVIDER_URL,
     FieldGroup: () => FieldGroup,
     Icon: () => Icon,
     LIBRARY_BROWSE_PAGE_ID: () => LIBRARY_BROWSE_PAGE_ID,
@@ -187831,8 +187789,6 @@ ${cue.text}`).join("\n\n")}
     ResultsLoadingIndicator: () => ResultsLoadingIndicator,
     ResultsPagination: () => ResultsPagination,
     ResultsState: () => ResultsState,
-    SCRAPER_PRESETS: () => SCRAPER_PRESETS,
-    STREAM_PROVIDER_PRESETS: () => STREAM_PROVIDER_PRESETS,
     Section: () => Section,
     Select: () => Select,
     Switch: () => Switch,
@@ -187841,11 +187797,8 @@ ${cue.text}`).join("\n\n")}
     VideoPlayerModal: () => VideoPlayerModal2,
     activeProfileHasPin: () => activeProfileHasPin,
     applyFilters: () => applyFilters,
-    buildDirectCachedStreamProviderUrl: () => buildDirectCachedStreamProviderUrl,
-    buildDirectStreamProviderUrl: () => buildDirectStreamProviderUrl,
-    buildStreamProviderCacheUrl: () => buildStreamProviderCacheUrl,
-    buildStreamProviderUrl: () => buildStreamProviderUrl,
     cancelDesktopPlaybackSessions: () => cancelDesktopPlaybackSessions,
+    capturePlayerFrame: () => capturePlayerFrame,
     checkEpisodeHasStream: () => checkEpisodeHasStream,
     checkMovieHasStream: () => checkMovieHasStream,
     checkPluginPathExists: () => checkPluginPathExists,
@@ -187853,7 +187806,6 @@ ${cue.text}`).join("\n\n")}
     clearPendingTraktSync: () => clearPendingTraktSync,
     clearPluginMemoryCache: () => clearPluginMemoryCache,
     clearPluginMemoryCacheByPrefix: () => clearPluginMemoryCacheByPrefix,
-    clearStreamProviderAccessKey: () => clearStreamProviderAccessKey,
     clearTraktAuth: () => clearTraktAuth,
     closeMpvPlayer: () => closeMpvPlayer,
     closeNativePlayer: () => closeNativePlayer,
@@ -187869,7 +187821,6 @@ ${cue.text}`).join("\n\n")}
     fetchTraktProfile: () => fetchTraktProfile,
     getActiveProfile: () => getActiveProfile,
     getActiveProfileId: () => getActiveProfileId,
-    getActiveStreamProvider: () => getActiveStreamProvider,
     getAutoPlayNextEpisode: () => getAutoPlayNextEpisode,
     getHideWatchedMoviesHome: () => getHideWatchedMoviesHome,
     getHls: () => getHls,
@@ -187881,22 +187832,12 @@ ${cue.text}`).join("\n\n")}
     getPluginHttpAssetUrl: () => getPluginHttpAssetUrl,
     getPluginMemoryCache: () => getPluginMemoryCache,
     getPluginStorageKey: () => getPluginStorageKey,
-    getPrimaryStreamProviderRequestContext: () => getPrimaryStreamProviderRequestContext,
     getProfileStorageKey: () => getProfileStorageKey,
     getScopedStorageItem: () => getScopedStorageItem,
-    getScraperConfigs: () => getScraperConfigs,
-    getScraperStreamProvider: () => getScraperStreamProvider,
-    getScraperType: () => getScraperType,
-    getScraperUrl: () => getScraperUrl,
     getStoredLibraryMode: () => getStoredLibraryMode,
-    getStreamProviderAccessKey: () => getStreamProviderAccessKey,
-    getStreamProviderConfigs: () => getStreamProviderConfigs,
-    getStreamProviderDisplayName: () => getStreamProviderDisplayName,
-    getStreamProviderType: () => getStreamProviderType,
-    getStreamProviderTypeForApi: () => getStreamProviderTypeForApi,
-    getStreamProviderUrl: () => getStreamProviderUrl,
     getTraktAuth: () => getTraktAuth,
     getTraktLimitSummary: () => getTraktLimitSummary,
+    getTvGlassMenu: () => getTvGlassMenu,
     getTvKeyboardPanel: () => getTvKeyboardPanel,
     getWatchedForSeries: () => getWatchedForSeries,
     getWatchedMovies: () => getWatchedMovies,
@@ -187917,18 +187858,15 @@ ${cue.text}`).join("\n\n")}
     launchLibretroGame: () => launchLibretroGame,
     launchPluginProgram: () => launchPluginProgram,
     libraryHas: () => libraryHas,
-    loadPresetUrl: () => loadPresetUrl,
-    loadStreamProviderPresetUrl: () => loadStreamProviderPresetUrl,
     lockBodyScroll: () => lockBodyScroll,
     lookupPluginStreams: () => lookupPluginStreams,
     lookupPluginStreamsBatch: () => lookupPluginStreamsBatch,
     lookupPluginStreamsBatchRanked: () => lookupPluginStreamsBatchRanked,
     monoFont: () => monoFont,
+    mpvCaptureFrame: () => mpvCaptureFrame,
     mpvSetBounds: () => mpvSetBounds,
     nativeSetBounds: () => nativeSetBounds,
     nativeSetVideoGeometry: () => nativeSetVideoGeometry,
-    normalizeScraperUrl: () => normalizeScraperUrl,
-    normalizeStreamProviderUrl: () => normalizeStreamProviderUrl,
     notifyAuthCapabilitiesChanged: () => notifyAuthCapabilitiesChanged,
     notifyPluginRegistryChanged: () => notifyPluginRegistryChanged,
     onAuthCapabilitiesChanged: () => onAuthCapabilitiesChanged,
@@ -187950,6 +187888,8 @@ ${cue.text}`).join("\n\n")}
     openNativePlayer: () => openNativePlayer,
     pickPluginFiles: () => pickPluginFiles,
     pickPluginFolder: () => pickPluginFolder,
+    playerFrameId: () => playerFrameId,
+    playerFrameUrl: () => playerFrameUrl,
     preloadPluginImage: () => preloadPluginImage,
     queryLibrary: () => queryLibrary,
     readPluginJson: () => readPluginJson,
@@ -187957,6 +187897,7 @@ ${cue.text}`).join("\n\n")}
     removePluginStorageByPrefix: () => removePluginStorageByPrefix,
     removePluginStorageItem: () => removePluginStorageItem,
     removeScopedStorageItem: () => removeScopedStorageItem,
+    requestBrowseBack: () => requestBrowseBack,
     requestOpenBrowsePage: () => requestOpenBrowsePage,
     requestOpenMediaItem: () => requestOpenMediaItem,
     requestPlaySeriesEpisode: () => requestPlaySeriesEpisode,
@@ -187965,10 +187906,7 @@ ${cue.text}`).join("\n\n")}
     resolveAllAuthCapabilityStatuses: () => resolveAllAuthCapabilityStatuses,
     resolveAuthCapabilityStatus: () => resolveAuthCapabilityStatus,
     resolvePluginText: () => resolvePluginText,
-    resolveStreamProviderAccessKey: () => resolveStreamProviderAccessKey,
     runLibraryScan: () => runLibraryScan,
-    savePresetUrl: () => savePresetUrl,
-    saveStreamProviderPresetUrl: () => saveStreamProviderPresetUrl,
     scanPluginDirectory: () => scanPluginDirectory,
     sendLibretroInput: () => sendLibretroInput,
     setAndroidImmersive: () => setAndroidImmersive,
@@ -187982,11 +187920,6 @@ ${cue.text}`).join("\n\n")}
     setMpvVideoGeometry: () => setMpvVideoGeometry,
     setPluginMemoryCache: () => setPluginMemoryCache,
     setScopedStorageItem: () => setScopedStorageItem,
-    setScraperConfig: () => setScraperConfig,
-    setScraperConfigs: () => setScraperConfigs,
-    setStreamProviderAccessKey: () => setStreamProviderAccessKey,
-    setStreamProviderConfig: () => setStreamProviderConfig,
-    setStreamProviderConfigs: () => setStreamProviderConfigs,
     setTraktAuth: () => setTraktAuth,
     setWatched: () => setWatched,
     setWindowFullscreen: () => setWindowFullscreen,
@@ -187999,6 +187932,7 @@ ${cue.text}`).join("\n\n")}
     toggleWindowFullscreen: () => toggleWindowFullscreen,
     traktActivationUrl: () => traktActivationUrl,
     tryEnableHomeOverridePlugin: () => tryEnableHomeOverridePlugin,
+    tvHoldHandlers: () => tvHoldHandlers,
     unlockBodyScroll: () => unlockBodyScroll,
     useLang: () => useLang,
     useMpvPlayer: () => useMpvPlayer,
@@ -188009,6 +187943,10 @@ ${cue.text}`).join("\n\n")}
     writePluginJson: () => writePluginJson,
     writePluginStorageItem: () => writePluginStorageItem
   });
+  function requestBrowseBack() {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(new CustomEvent(BROWSE_BACK_EVENT));
+  }
   function activeProfileHasPin() {
     const id4 = getActiveProfileId();
     return id4 ? profileHasPin(id4) : false;
@@ -188020,6 +187958,10 @@ ${cue.text}`).join("\n\n")}
   function getTvKeyboardPanel() {
     if (typeof window === "undefined") return null;
     return window.__lumioPluginRuntime?.components?.TvKeyboardPanel ?? null;
+  }
+  function getTvGlassMenu() {
+    if (typeof window === "undefined") return null;
+    return window.__lumioPluginRuntime?.components?.TvGlassMenu ?? null;
   }
   function getHls() {
     if (typeof window === "undefined") return null;
@@ -188257,9 +188199,46 @@ ${cue.text}`).join("\n\n")}
     if (layout2 === "slider") return PLUGIN_HOME_ROW_SLIDER_TRACK_CLASS;
     return options?.gridClassName?.trim() || PLUGIN_HOME_ROW_GRID_TRACK_CLASS;
   }
-  var PLUGIN_HOME_ROW_SLIDER_TRACK_CLASS, PLUGIN_HOME_ROW_GRID_TRACK_CLASS, LIBRARY_BROWSE_PAGE_ID;
+  function playerFrameId(key) {
+    let h1 = 5381;
+    let h2 = 52711;
+    for (let i = 0; i < key.length; i++) {
+      const c = key.charCodeAt(i);
+      h1 = (h1 * 33 ^ c) >>> 0;
+      h2 = (h2 * 31 ^ c) >>> 0;
+    }
+    return `f${h1.toString(16)}${h2.toString(16)}`;
+  }
+  function playerFrameUrl(key, version2) {
+    const v = version2 == null ? "" : `&v=${encodeURIComponent(String(version2))}`;
+    return `/api/player-frame?key=${playerFrameId(key)}${v}`;
+  }
+  async function capturePlayerFrame(key, video) {
+    try {
+      if (isDesktopTauriEnv) {
+        await mpvCaptureFrame(playerFrameId(key));
+        return true;
+      }
+      if (!video || video.readyState < 2 || video.videoWidth === 0) return false;
+      const scale2 = Math.min(1, 640 / video.videoWidth);
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(video.videoWidth * scale2));
+      canvas.height = Math.max(1, Math.round(video.videoHeight * scale2));
+      const context = canvas.getContext("2d");
+      if (!context) return false;
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.82));
+      if (!blob) return false;
+      const response = await fetch(`/api/player-frame?key=${playerFrameId(key)}`, { method: "PUT", body: blob, headers: { "content-type": "image/jpeg" } });
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }
+  var BROWSE_BACK_EVENT, PLUGIN_HOME_ROW_SLIDER_TRACK_CLASS, PLUGIN_HOME_ROW_GRID_TRACK_CLASS, LIBRARY_BROWSE_PAGE_ID;
   var init_plugin_sdk = __esm({
     "lib/plugin-sdk.ts"() {
+      init_tauri_mpv();
       init_timing();
       init_profile_storage_shim();
       init_i18n();
@@ -188270,6 +188249,7 @@ ${cue.text}`).join("\n\n")}
       init_mode();
       init_profile_storage_shim();
       init_tv_focus_shim();
+      init_tv_hold();
       init_plugin_storage();
       init_plugin_assets();
       init_home_override_settings();
@@ -188278,16 +188258,12 @@ ${cue.text}`).join("\n\n")}
       init_trakt_watchlist_limit();
       init_watchlist_auto_remove();
       init_trakt_device_login();
-      init_config();
       init_playback_settings();
       init_series_watchlist_feed();
-      init_storage();
-      init_request_context();
       init_watched_movies();
       init_release_watchlist_feed();
       init_filter_media();
       init_languages();
-      init_url_builder();
       init_results_loading_indicator();
       init_results_state();
       init_results_pagination();
@@ -188303,6 +188279,7 @@ ${cue.text}`).join("\n\n")}
       init_video_player_modal_shim();
       init_next_episode_card_shim();
       init_primitives();
+      BROWSE_BACK_EVENT = "lumio-browse-back";
       PLUGIN_HOME_ROW_SLIDER_TRACK_CLASS = "thin-slider-scrollbar flex gap-3 overflow-x-auto pb-3";
       PLUGIN_HOME_ROW_GRID_TRACK_CLASS = "grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6";
       LIBRARY_BROWSE_PAGE_ID = "library";
@@ -188423,6 +188400,41 @@ ${cue.text}`).join("\n\n")}
   function storeLiveTvChannels(urlsKey, channels) {
     if (!urlsKey) return;
     writePluginJson(LIVE_TV_PLUGIN_ID, getLiveTvChannelsStorageKey(urlsKey), { channels });
+  }
+  function liveTvIndexAvailable() {
+    if (!liveTvIndexProbe) {
+      liveTvIndexProbe = fetch("/api/live-tv/status", { cache: "no-store" }).then((response) => response.ok).catch(() => false);
+    }
+    return liveTvIndexProbe;
+  }
+  async function pushLiveTvChannelsToIndex(urlsKey, channels) {
+    if (!urlsKey || !await liveTvIndexAvailable()) return false;
+    for (let offset = 0; offset < Math.max(channels.length, 1); offset += INDEX_BATCH) {
+      const response = await fetch("/api/live-tv/batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source: urlsKey, replace: offset === 0, channels: channels.slice(offset, offset + INDEX_BATCH) })
+      });
+      if (!response.ok) return false;
+      if (channels.length === 0) break;
+    }
+    return true;
+  }
+  async function readLiveTvChannelsFromIndex(urlsKey) {
+    if (!urlsKey || !await liveTvIndexAvailable()) return null;
+    const out = [];
+    let offset = 0;
+    for (; ; ) {
+      const response = await fetch(`/api/live-tv/query?${new URLSearchParams({ source: urlsKey, offset: String(offset), limit: String(INDEX_PAGE) })}`, { cache: "no-store" });
+      if (!response.ok) return null;
+      const data = await response.json();
+      if (data.known === false) return null;
+      const page = sanitizeChannels(data.items ?? []);
+      out.push(...page);
+      offset += page.length;
+      if (page.length === 0 || offset >= (data.total ?? offset)) break;
+    }
+    return out;
   }
   function clearLiveTvMemoryCache(urlsKey) {
     if (!urlsKey) {
@@ -188698,7 +188710,7 @@ ${cue.text}`).join("\n\n")}
   function onLiveTvHideHeroChanged(listener) {
     return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, HIDE_HERO_KEY, listener);
   }
-  var LIVE_TV_PLUGIN_ID, LIVE_TV_GLOBAL_EPG_ID, M3U_URLS_KEY, M3U_DRAFT_URLS_KEY, LIVE_TV_LISTS_KEY, LIVE_TV_PINS_KEY, LIVE_TV_CHANNELS_PREFIX, LIVE_TV_LOGO_BUCKET, XTREAM_LOGINS_KEY, XTREAM_URL_PREFIX, HIDE_HERO_KEY;
+  var LIVE_TV_PLUGIN_ID, LIVE_TV_GLOBAL_EPG_ID, M3U_URLS_KEY, M3U_DRAFT_URLS_KEY, LIVE_TV_LISTS_KEY, LIVE_TV_PINS_KEY, LIVE_TV_CHANNELS_PREFIX, LIVE_TV_LOGO_BUCKET, liveTvIndexProbe, INDEX_BATCH, INDEX_PAGE, XTREAM_LOGINS_KEY, XTREAM_URL_PREFIX, HIDE_HERO_KEY;
   var init_live_tv_data = __esm({
     "../lumio-official-plugins/plugins/live-tv/runtime/live-tv-data.ts"() {
       "use strict";
@@ -188712,6 +188724,9 @@ ${cue.text}`).join("\n\n")}
       LIVE_TV_PINS_KEY = "pins";
       LIVE_TV_CHANNELS_PREFIX = "channels:";
       LIVE_TV_LOGO_BUCKET = "com.lumio.live-tv:logo";
+      liveTvIndexProbe = null;
+      INDEX_BATCH = 1e3;
+      INDEX_PAGE = 5e3;
       XTREAM_LOGINS_KEY = "xtream_logins";
       XTREAM_URL_PREFIX = "xtream://";
       HIDE_HERO_KEY = "hide_hero";
@@ -188787,7 +188802,7 @@ ${cue.text}`).join("\n\n")}
     emitPluginStorageChanged(PLUGIN_ID, cacheKey(listId));
   }
   async function refresh(listId, urls) {
-    const existing = inflight5.get(listId);
+    const existing = inflight6.get(listId);
     if (existing) return existing;
     const task = (async () => {
       try {
@@ -188815,10 +188830,10 @@ ${cue.text}`).join("\n\n")}
           retryTimers.set(listId, timer);
         }
       } finally {
-        inflight5.delete(listId);
+        inflight6.delete(listId);
       }
     })();
-    inflight5.set(listId, task);
+    inflight6.set(listId, task);
     return task;
   }
   async function ensureFresh(listId, urls) {
@@ -188830,7 +188845,7 @@ ${cue.text}`).join("\n\n")}
     }
     return existing;
   }
-  var PLUGIN_ID, TTL_MS, FAILED_TTL_MS, RETRY_MS, inflight5, retryTimers, retryScheduled;
+  var PLUGIN_ID, TTL_MS, FAILED_TTL_MS, RETRY_MS, inflight6, retryTimers, retryScheduled;
   var init_cache = __esm({
     "../lumio-official-plugins/plugins/live-tv/runtime/epg/cache.ts"() {
       "use strict";
@@ -188840,7 +188855,7 @@ ${cue.text}`).join("\n\n")}
       TTL_MS = 6 * 60 * 60 * 1e3;
       FAILED_TTL_MS = 10 * 60 * 1e3;
       RETRY_MS = 60 * 60 * 1e3;
-      inflight5 = /* @__PURE__ */ new Map();
+      inflight6 = /* @__PURE__ */ new Map();
       retryTimers = /* @__PURE__ */ new Map();
       retryScheduled = /* @__PURE__ */ new Set();
     }
@@ -188984,9 +188999,9 @@ ${cue.text}`).join("\n\n")}
     return result;
   }
   function computeNowNextLater(cache6, tvgId, now3 = Date.now()) {
-    if (!cache6 || !tvgId) return EMPTY;
+    if (!cache6 || !tvgId) return EMPTY2;
     const list = cache6.index[tvgId];
-    if (!list || list.length === 0) return EMPTY;
+    if (!list || list.length === 0) return EMPTY2;
     const idx = findCurrentIndex(list, now3);
     const candidate = idx >= 0 ? list[idx] : null;
     const isCurrent = candidate !== null && candidate.stop > now3;
@@ -189002,11 +189017,11 @@ ${cue.text}`).join("\n\n")}
     if (!list || list.length === 0) return [];
     return list.filter((p) => p.stop > fromMs && p.start < toMs);
   }
-  var EMPTY;
+  var EMPTY2;
   var init_lookup = __esm({
     "../lumio-official-plugins/plugins/live-tv/runtime/epg/lookup.ts"() {
       "use strict";
-      EMPTY = { now: null, next: null, later: null };
+      EMPTY2 = { now: null, next: null, later: null };
     }
   });
 
@@ -189125,6 +189140,9 @@ ${cue.text}`).join("\n\n")}
     const next2 = [entry, ...getChannelHistory().filter((item) => item.key !== key)].slice(0, CHANNEL_HISTORY_LIMIT);
     writePluginJson(LIVE_TV_PLUGIN_ID, CHANNEL_HISTORY_KEY, next2);
     return next2;
+  }
+  function removeChannelHistoryEntry(key) {
+    writePluginJson(LIVE_TV_PLUGIN_ID, CHANNEL_HISTORY_KEY, getChannelHistory().filter((item) => item.key !== key));
   }
   function onChannelHistoryChanged(listener) {
     return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, CHANNEL_HISTORY_KEY, listener);
@@ -189406,36 +189424,110 @@ ${cue.text}`).join("\n\n")}
     backLabel,
     children,
     right,
-    bottom
+    bottom,
+    backTvStation
   }) {
+    const isTv = useTvMode();
+    const [menuChip, setMenuChip] = useState(() => typeof document !== "undefined" && document.documentElement.getAttribute("data-menu-chip") === "1");
+    useEffect(() => {
+      if (typeof document === "undefined") return;
+      const root = document.documentElement;
+      const read8 = () => setMenuChip(root.getAttribute("data-menu-chip") === "1");
+      read8();
+      const observer2 = new MutationObserver(read8);
+      observer2.observe(root, { attributes: true, attributeFilter: ["data-menu-chip"] });
+      return () => observer2.disconnect();
+    }, []);
+    const chipRow = isTv || menuChip;
+    const chipMode = typeof document !== "undefined" && document.documentElement.getAttribute("data-menu-chip-mode") === "1";
+    const desktopPointer = !isTv && !chipMode && typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(pointer: fine) and (min-width: 640px)").matches;
+    const headerRef = useRef(null);
+    const [tvShift, setTvShift] = useState(0);
+    const [chipClear, setChipClear] = useState(0);
+    const [edgeFit, setEdgeFit] = useState(false);
+    const tvShiftRef = useRef(0);
+    useLayoutEffect(() => {
+      if (isTv && !chipRow) return;
+      const el = headerRef.current;
+      if (!el) return;
+      const ROW_PADDING = 8;
+      const measure2 = () => {
+        const chip = document.querySelector(".mc-chip");
+        const chipRect = chip ? chip.getBoundingClientRect() : null;
+        const hasChip = Boolean(chipRect && chipRect.width > 0 && chipRect.height > 0);
+        if (!hasChip) {
+          if (chipClear !== 0) setChipClear(0);
+          if (tvShiftRef.current !== 0) {
+            tvShiftRef.current = 0;
+            setTvShift(0);
+          }
+          setEdgeFit(!isTv);
+          return;
+        }
+        setEdgeFit(false);
+        const chipTop = chipRect.top;
+        const natural = el.getBoundingClientRect().top - tvShiftRef.current;
+        const next2 = Math.round(chipTop - ROW_PADDING - natural);
+        const clear = Math.round(chipRect.right + 12 - el.getBoundingClientRect().left);
+        if (Math.abs(clear - chipClear) >= 1) setChipClear(clear);
+        if (Math.abs(next2 - tvShiftRef.current) < 1) return;
+        tvShiftRef.current = next2;
+        setTvShift(next2);
+      };
+      measure2();
+      const settle = window.setTimeout(measure2, 300);
+      window.addEventListener("resize", measure2);
+      return () => {
+        window.clearTimeout(settle);
+        window.removeEventListener("resize", measure2);
+      };
+    }, [chipRow, isTv]);
+    const mobileEdge = edgeFit && typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(max-width: 639px)").matches;
     return /* @__PURE__ */ jsxs(
       "div",
       {
+        ref: headerRef,
+        "data-live-tv-header": "",
         style: {
           display: "flex",
           alignItems: "center",
           gap: 12,
-          minHeight: 64,
-          padding: "8px 0",
+          minHeight: chipRow || edgeFit ? 42 : 64,
+          padding: edgeFit ? `3px 0 8px ${mobileEdge ? 4 : 0}px` : "8px 0",
           borderBottom: `1px solid ${LT.line}`,
-          flexWrap: "wrap"
+          flexWrap: "wrap",
+          ...chipRow ? { marginTop: tvShift, paddingLeft: chipClear } : null
         },
         children: [
-          onBack ? /* @__PURE__ */ jsx(Btn, { variant: "ghost", icon: true, onClick: onBack, ariaLabel: backLabel, title: backLabel, children: /* @__PURE__ */ jsx(Icon2.Back, {}) }) : null,
+          onBack ? /* @__PURE__ */ jsx(
+            Btn,
+            {
+              variant: backTvStation ? "secondary" : "ghost",
+              icon: true,
+              onClick: onBack,
+              ariaLabel: backLabel,
+              title: backLabel,
+              tvStation: backTvStation,
+              style: backTvStation ? { background: LT.neutral, borderColor: "transparent", color: LT.text } : void 0,
+              children: /* @__PURE__ */ jsx(Icon2.Back, {})
+            }
+          ) : null,
           /* @__PURE__ */ jsx("div", { style: { fontSize: 18, fontWeight: 600, color: LT.text }, children: title }),
-          children ? /* @__PURE__ */ jsx("div", { style: { display: "flex", gap: 6, flexWrap: "wrap", marginLeft: 12, alignItems: "center" }, children }) : null,
+          children && !desktopPointer ? /* @__PURE__ */ jsx("div", { style: { display: "flex", gap: 6, flexWrap: "wrap", marginLeft: 12, alignItems: "center" }, children }) : null,
           right ? /* @__PURE__ */ jsx("div", { style: { display: "flex", alignItems: "center", gap: 6, marginLeft: "auto" }, children: right }) : null,
+          children && desktopPointer ? /* @__PURE__ */ jsx("div", { style: { width: "100%", display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", paddingTop: 4 }, children }) : null,
           bottom ? /* @__PURE__ */ jsx("div", { style: { width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }, children: bottom }) : null
         ]
       }
     );
   }
-  function ScrollRow({ children, gap = 12 }) {
+  function ScrollRow({ children, gap = 12, tvRow = false }) {
     return /* @__PURE__ */ jsx(
       "div",
       {
         className: "flex overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-        style: { gap, paddingBottom: 6, scrollSnapType: "x proximity" },
+        ...tvRow ? { "data-row": "", "data-scroll": "" } : {},
+        style: tvRow ? { gap, padding: 6, margin: -6, scrollSnapType: "x proximity", scrollPaddingInline: 6 } : { gap, paddingBottom: 6, scrollSnapType: "x proximity" },
         children
       }
     );
@@ -189528,6 +189620,7 @@ ${cue.text}`).join("\n\n")}
     "../lumio-official-plugins/plugins/live-tv/runtime/live-tv-ui.tsx"() {
       "use strict";
       "use client";
+      init_plugin_sdk();
       init_react_shim();
       init_live_tv_logo_image();
       init_live_tv_data();
@@ -189664,6 +189757,7 @@ ${cue.text}`).join("\n\n")}
         hubContinueCatchUp: "Replays & catch-up",
         hubContinueRecent: "Recently watched",
         hubContinueEmpty: "Channels you watch show up here.",
+        hubRemoveRecent: "Remove from Continue watching",
         hubRecommended: "Recommended for you",
         hubRecommendedBecause: "You often watch {group}",
         hubRecommendedFavourite: "Because you follow {channel}",
@@ -189760,6 +189854,7 @@ ${cue.text}`).join("\n\n")}
         hubContinueCatchUp: "Repriser & catch-up",
         hubContinueRecent: "Senast sedda",
         hubContinueEmpty: "Kanaler du tittar p\xE5 dyker upp h\xE4r.",
+        hubRemoveRecent: "Ta bort fr\xE5n Forts\xE4tt titta",
         hubRecommended: "Rekommenderat f\xF6r dig",
         hubRecommendedBecause: "Du ser ofta {group}",
         hubRecommendedFavourite: "Eftersom du f\xF6ljer {channel}",
@@ -189842,10 +189937,10 @@ ${cue.text}`).join("\n\n")}
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
   function useEpgNowNextLater(channel, listId, urls, enabled = true) {
-    const [data, setData] = useState(EMPTY3);
+    const [data, setData] = useState(EMPTY4);
     useEffect(() => {
       if (!enabled || !listId) {
-        setData(EMPTY3);
+        setData(EMPTY4);
         return;
       }
       let cancelled = false;
@@ -189857,7 +189952,7 @@ ${cue.text}`).join("\n\n")}
         const nameIndex = cache6 ? buildNameToTvgIdIndex(cache6) : /* @__PURE__ */ new Map();
         const resolvedTvgId = resolveTvgId(channel.tvgId, channel.name ?? "", nameIndex);
         if (!resolvedTvgId) {
-          setData(EMPTY3);
+          setData(EMPTY4);
           cancelBoundary();
           cancelBoundary = () => {
           };
@@ -189879,7 +189974,7 @@ ${cue.text}`).join("\n\n")}
     }, [channel.tvgId, channel.name, listId, urls.join("|"), enabled]);
     return data;
   }
-  var PLUGIN_ID3, EMPTY3;
+  var PLUGIN_ID3, EMPTY4;
   var init_useEpgNowNextLater = __esm({
     "../lumio-official-plugins/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts"() {
       "use strict";
@@ -189890,7 +189985,7 @@ ${cue.text}`).join("\n\n")}
       init_auto_roll();
       init_name_match();
       PLUGIN_ID3 = "com.lumio.live-tv";
-      EMPTY3 = { now: null, next: null, later: null };
+      EMPTY4 = { now: null, next: null, later: null };
     }
   });
 
@@ -190870,6 +190965,24 @@ ${cue.text}`).join("\n\n")}
       const timeout = window.setTimeout(() => setLoading(false), 900);
       return () => window.clearTimeout(timeout);
     }, [mpvFileLoaded, mpvFirstFrameRendered, mpvPlaybackRestarted, hasNativeSurface]);
+    const [htmlPlaying, setHtmlPlaying] = useState(false);
+    const frameReady = hasNativeSurface ? mpvFirstFrameRendered : htmlPlaying;
+    useEffect(() => {
+      if (!frameReady) return;
+      const key = channelKey(channel);
+      const capture = () => {
+        void capturePlayerFrame(key, videoRef.current);
+      };
+      const first = window.setTimeout(capture, 6e3);
+      const repeat = window.setInterval(capture, 9e4);
+      return () => {
+        window.clearTimeout(first);
+        window.clearInterval(repeat);
+      };
+    }, [frameReady, channel]);
+    useEffect(() => {
+      setHtmlPlaying(false);
+    }, [channel.url]);
     const handleClose = useCallback(() => {
       if (closingRef.current) return;
       closingRef.current = true;
@@ -191007,6 +191120,7 @@ ${cue.text}`).join("\n\n")}
                   onLoadedMetadata: () => setLoading(false),
                   onPlaying: () => {
                     setLoading(false);
+                    setHtmlPlaying(true);
                     setError(null);
                     tryEnterMobileFullscreen();
                   },
@@ -191287,6 +191401,7 @@ ${cue.text}`).join("\n\n")}
       init_live_tv_logo_image();
       init_live_tv_data();
       init_channel_history();
+      init_live_tv_data();
       init_player_now_overlay();
       init_player_schedule_overlay();
       init_player_extras();
@@ -191794,7 +191909,6 @@ ${cue.text}`).join("\n\n")}
   });
   init_react_shim();
   init_plugin_sdk();
-  init_plugin_sdk();
   init_live_tv_data();
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/live-tv-settings-section.tsx
@@ -191897,6 +192011,19 @@ ${cue.text}`).join("\n\n")}
     const [password, setPassword] = useState("");
     const [state, setState] = useState("idle");
     const [notice, setNotice] = useState(null);
+    const isTv = useTvMode();
+    const TvKeyboardPanel = isTv ? getTvKeyboardPanel() : null;
+    const [tvField, setTvField] = useState(null);
+    const tvFieldButton = (field, value, placeholder, secret = false) => /* @__PURE__ */ jsx(
+      "button",
+      {
+        type: "button",
+        "data-f": "",
+        onClick: () => setTvField(field),
+        style: { ...inputStyle, textAlign: "left", cursor: "pointer", color: value ? TOKENS.text : TOKENS.textMute, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+        children: value ? secret ? "\u2022".repeat(Math.min(value.length, 24)) : value : placeholder
+      }
+    );
     useEffect(() => {
       const sync2 = () => setLogins(getXtreamLogins());
       sync2();
@@ -191962,7 +192089,7 @@ ${cue.text}`).join("\n\n")}
         /* @__PURE__ */ jsx("div", { style: { fontSize: 14.5, fontWeight: 600, color: TOKENS.text }, children: t("liveTvXtreamTitle") }),
         /* @__PURE__ */ jsx("p", { style: { margin: "4px 0 0", fontSize: 12, lineHeight: 1.5, color: TOKENS.textMute }, children: t("liveTvXtreamDesc") })
       ] }),
-      /* @__PURE__ */ jsx(
+      TvKeyboardPanel ? tvFieldButton("server", server, `${t("liveTvXtreamServer")} \u2014 http://host:8080`) : /* @__PURE__ */ jsx(
         "input",
         {
           type: "url",
@@ -191976,7 +192103,7 @@ ${cue.text}`).join("\n\n")}
         }
       ),
       /* @__PURE__ */ jsxs("div", { style: { display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }, children: [
-        /* @__PURE__ */ jsx(
+        TvKeyboardPanel ? tvFieldButton("username", username, t("liveTvXtreamUsername")) : /* @__PURE__ */ jsx(
           "input",
           {
             type: "text",
@@ -191989,7 +192116,7 @@ ${cue.text}`).join("\n\n")}
             style: inputStyle
           }
         ),
-        /* @__PURE__ */ jsx(
+        TvKeyboardPanel ? tvFieldButton("password", password, t("liveTvXtreamPassword"), true) : /* @__PURE__ */ jsx(
           "input",
           {
             type: "password",
@@ -192001,6 +192128,21 @@ ${cue.text}`).join("\n\n")}
           }
         )
       ] }),
+      TvKeyboardPanel && tvField ? /* @__PURE__ */ jsx(
+        TvKeyboardPanel,
+        {
+          title: tvField === "server" ? t("liveTvXtreamServer") : tvField === "username" ? t("liveTvXtreamUsername") : t("liveTvXtreamPassword"),
+          placeholder: tvField === "server" ? "http://host:8080" : "",
+          initial: tvField === "server" ? server : tvField === "username" ? username : password,
+          onDone: (value) => {
+            if (tvField === "server") setServer(value);
+            else if (tvField === "username") setUsername(value);
+            else setPassword(value);
+            setTvField(null);
+          },
+          onClose: () => setTvField(null)
+        }
+      ) : null,
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end", gap: 8 }, children: [
         state === "authError" ? /* @__PURE__ */ jsx("span", { style: { marginRight: "auto", fontSize: 12, color: TOKENS.red }, children: t("liveTvXtreamAuthFailed") }) : null,
         state === "netError" ? /* @__PURE__ */ jsx("span", { style: { marginRight: "auto", fontSize: 12, color: TOKENS.red }, children: t("liveTvXtreamError") }) : null,
@@ -192332,7 +192474,7 @@ ${cue.text}`).join("\n\n")}
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/live-tv-model.ts
   init_live_tv_data();
-  var EMPTY2 = { now: null, next: null, later: null };
+  var EMPTY3 = { now: null, next: null, later: null };
   var PLACEHOLDER_NAME_RE = /^[\s=\-_*•·]+|=+/;
   var MAX_GROUP_CHIPS = 8;
   function isPlayableChannel(channel) {
@@ -192410,12 +192552,12 @@ ${cue.text}`).join("\n\n")}
     const nowFor = useMemo(() => {
       const memo3 = /* @__PURE__ */ new Map();
       return (channel) => {
-        if (!cache6) return EMPTY2;
+        if (!cache6) return EMPTY3;
         const key = channelKey(channel);
         const hit = memo3.get(key);
         if (hit) return hit;
         const tvgId = tvgIdFor(channel);
-        const value = tvgId ? computeNowNextLater(cache6, tvgId, nowMs) : EMPTY2;
+        const value = tvgId ? computeNowNextLater(cache6, tvgId, nowMs) : EMPTY3;
         memo3.set(key, value);
         return value;
       };
@@ -192571,7 +192713,11 @@ ${cue.text}`).join("\n\n")}
     })).filter((channel) => channel.url.length > 0);
   }
   function LiveTvGrid({ initialChannel = null, tvCompactTop = false }) {
-    const MAX_TOTAL_CHANNELS = 2e3;
+    const [indexAvailable, setIndexAvailable] = useState(null);
+    useEffect(() => {
+      void liveTvIndexAvailable().then(setIndexAvailable);
+    }, []);
+    const MAX_TOTAL_CHANNELS = indexAvailable ? Number.MAX_SAFE_INTEGER : 2e3;
     const { t, lang } = useLang();
     const isTv = useTvMode();
     const tvStation = isTv ? { "data-f": "" } : {};
@@ -192634,7 +192780,7 @@ ${cue.text}`).join("\n\n")}
     const [activeChannel, setActiveChannel] = useState(null);
     const [previewChannel, setPreviewChannel] = useState(null);
     const model = useLiveTvModel();
-    const h = useHubText();
+    const { h } = useHubText();
     const [activeGroup, setActiveGroup] = useState(null);
     const [groupDropdownOpen, setGroupDropdownOpen] = useState(false);
     const [pinVersion, setPinVersion] = useState(0);
@@ -192841,6 +192987,7 @@ ${cue.text}`).join("\n\n")}
       setListPickerChannelKey((current2) => current2 === key ? null : key);
     }
     useEffect(() => {
+      if (indexAvailable === null) return;
       let cancelled = false;
       logLiveTvStage("loaded m3u urls", { count: urls.length });
       if (urls.length === 0) {
@@ -192849,90 +192996,99 @@ ${cue.text}`).join("\n\n")}
         logLiveTvStage("no m3u urls configured");
         return;
       }
-      const storedChannels = readStoredLiveTvChannels(urlsKey);
-      const cached = getLiveTvMemoryCache(urlsKey);
-      const initialChannels = storedChannels.length > 0 ? storedChannels : cached?.channels ?? [];
-      if (initialChannels.length > 0) {
-        setChannels(initialChannels);
-        setError(null);
-        setLoading(false);
-        logLiveTvStage("channels restored from persistent cache", { total: initialChannels.length });
-      }
-      if (cached) {
-        setChannels(cached.channels);
-        setError(null);
-        setLoading(false);
-        setRefreshing(false);
-        logLiveTvStage("channels restored from memory cache", { total: cached.channels.length });
-        return;
-      }
-      if (initialChannels.length > 0 && reloadToken === 0) {
-        setRefreshing(false);
-        return;
-      }
-      setLoading(initialChannels.length === 0);
-      setRefreshing(initialChannels.length > 0);
       void (async () => {
-        try {
-          const nextChannels = [];
-          for (const url of urls) {
-            if (cancelled || nextChannels.length >= MAX_TOTAL_CHANNELS) break;
-            logLiveTvStage("fetching playlist", { url });
-            const result = url.startsWith(XTREAM_URL_PREFIX) ? await (async () => {
-              const login = findXtreamLoginByPseudoUrl(url);
-              if (!login) return [];
-              const fetched = await fetchXtreamChannels(login, MAX_TOTAL_CHANNELS - nextChannels.length);
-              return fetched.channels;
-            })().catch(() => []) : await fetch("/api/m3u", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ url })
-            }).then((r) => r.json()).then((data) => sanitizeChannels2(data.channels ?? [])).catch(() => []);
-            if (cancelled) break;
-            nextChannels.push(...result);
-            logLiveTvStage("playlist fetched", { url, fetched: result.length, accumulated: nextChannels.length });
-            await new Promise((resolve) => setTimeout(resolve, 0));
-          }
-          if (!cancelled) {
-            if (nextChannels.length === 0 && initialChannels.length > 0) {
-              setChannels(initialChannels);
-              setError(null);
-              logLiveTvStage("fetch returned nothing \u2014 keeping cached channels", { total: initialChannels.length });
-            } else {
-              const committedChannels = nextChannels.slice(0, MAX_TOTAL_CHANNELS);
-              setLiveTvMemoryCache(urlsKey, committedChannels);
-              storeLiveTvChannels(urlsKey, committedChannels);
-              setChannels(committedChannels);
-              setError(null);
-              logLiveTvStage("channels committed to state", {
-                total: nextChannels.length,
-                committed: Math.min(nextChannels.length, MAX_TOTAL_CHANNELS)
-              });
-            }
-          }
-        } catch {
-          if (!cancelled) {
-            const fallbackChannels = initialChannels;
-            if (fallbackChannels.length > 0) {
-              setChannels(fallbackChannels);
-              setError(null);
-              logLiveTvStage("using cached channels after fetch failure", { total: fallbackChannels.length });
-            } else {
-              setError(t("m3uError"));
-            }
-          }
-          logLiveTvStage("live tv load failed");
-        } finally {
-          if (!cancelled) {
-            setLoading(false);
-            setRefreshing(false);
-          }
+        const indexed = indexAvailable ? await readLiveTvChannelsFromIndex(urlsKey) : null;
+        if (cancelled) return;
+        const storedChannels = indexed && indexed.length > 0 ? indexed : readStoredLiveTvChannels(urlsKey);
+        const cached = getLiveTvMemoryCache(urlsKey);
+        const initialChannels = storedChannels.length > 0 ? storedChannels : cached?.channels ?? [];
+        if (initialChannels.length > 0) {
+          setChannels(initialChannels);
+          setError(null);
+          setLoading(false);
+          logLiveTvStage("channels restored from persistent cache", { total: initialChannels.length });
         }
+        if (cached) {
+          setChannels(cached.channels);
+          setError(null);
+          setLoading(false);
+          setRefreshing(false);
+          logLiveTvStage("channels restored from memory cache", { total: cached.channels.length });
+          return;
+        }
+        if (initialChannels.length > 0 && reloadToken === 0) {
+          setRefreshing(false);
+          return;
+        }
+        setLoading(initialChannels.length === 0);
+        setRefreshing(initialChannels.length > 0);
+        void (async () => {
+          try {
+            const nextChannels = [];
+            for (const url of urls) {
+              if (cancelled || nextChannels.length >= MAX_TOTAL_CHANNELS) break;
+              logLiveTvStage("fetching playlist", { url });
+              const result = url.startsWith(XTREAM_URL_PREFIX) ? await (async () => {
+                const login = findXtreamLoginByPseudoUrl(url);
+                if (!login) return [];
+                const fetched = await fetchXtreamChannels(login, MAX_TOTAL_CHANNELS - nextChannels.length);
+                return fetched.channels;
+              })().catch(() => []) : await fetch("/api/m3u", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url })
+              }).then((r) => r.json()).then((data) => sanitizeChannels2(data.channels ?? [])).catch(() => []);
+              if (cancelled) break;
+              nextChannels.push(...result);
+              logLiveTvStage("playlist fetched", { url, fetched: result.length, accumulated: nextChannels.length });
+              await new Promise((resolve) => setTimeout(resolve, 0));
+            }
+            if (!cancelled) {
+              if (nextChannels.length === 0 && initialChannels.length > 0) {
+                setChannels(initialChannels);
+                setError(null);
+                logLiveTvStage("fetch returned nothing \u2014 keeping cached channels", { total: initialChannels.length });
+              } else {
+                const committedChannels = nextChannels.slice(0, MAX_TOTAL_CHANNELS);
+                setLiveTvMemoryCache(urlsKey, committedChannels);
+                if (indexAvailable) {
+                  void pushLiveTvChannelsToIndex(urlsKey, committedChannels);
+                  storeLiveTvChannels(urlsKey, committedChannels.slice(0, 2e3));
+                } else {
+                  storeLiveTvChannels(urlsKey, committedChannels);
+                }
+                setChannels(committedChannels);
+                setError(null);
+                logLiveTvStage("channels committed to state", {
+                  total: nextChannels.length,
+                  committed: Math.min(nextChannels.length, MAX_TOTAL_CHANNELS)
+                });
+              }
+            }
+          } catch {
+            if (!cancelled) {
+              const fallbackChannels = initialChannels;
+              if (fallbackChannels.length > 0) {
+                setChannels(fallbackChannels);
+                setError(null);
+                logLiveTvStage("using cached channels after fetch failure", { total: fallbackChannels.length });
+              } else {
+                setError(t("m3uError"));
+              }
+            }
+            logLiveTvStage("live tv load failed");
+          } finally {
+            if (!cancelled) {
+              setLoading(false);
+              setRefreshing(false);
+            }
+          }
+        })();
       })();
       return () => {
         cancelled = true;
       };
-    }, [urlsKey, m3uErrorText, reloadToken]);
+    }, [urlsKey, m3uErrorText, reloadToken, indexAvailable]);
     useEffect(() => {
       setCurrentPage(1);
     }, [search, activeGroup, activeListId]);
@@ -194481,7 +194637,7 @@ ${cue.text}`).join("\n\n")}
     ] });
     return { play, chrome };
   }
-  function RemindersMenu({ model, onOpenChannel }) {
+  function RemindersMenu({ model, onOpenChannel, tvStation }) {
     const { h, locale } = useHubText();
     const [open, setOpen] = useState(false);
     useEffect(() => {
@@ -194494,7 +194650,7 @@ ${cue.text}`).join("\n\n")}
       return () => window.removeEventListener("mousedown", close);
     }, [open]);
     return /* @__PURE__ */ jsxs("div", { style: { position: "relative" }, "data-reminders-menu": "", children: [
-      /* @__PURE__ */ jsx(Btn, { variant: "ghost", icon: true, onClick: () => setOpen((value) => !value), ariaLabel: h("reminders"), title: h("reminders"), pressed: open, children: /* @__PURE__ */ jsxs("span", { style: { position: "relative", display: "inline-flex" }, children: [
+      /* @__PURE__ */ jsx(Btn, { variant: "ghost", icon: true, onClick: () => setOpen((value) => !value), ariaLabel: h("reminders"), title: h("reminders"), pressed: open, tvStation, children: /* @__PURE__ */ jsxs("span", { style: { position: "relative", display: "inline-flex" }, children: [
         /* @__PURE__ */ jsx(Icon2.Bell, {}),
         model.reminders.length > 0 ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: -3, right: -3, width: 8, height: 8, borderRadius: 999, background: LT.accent } }) : null
       ] }) }),
@@ -194549,8 +194705,8 @@ ${cue.text}`).join("\n\n")}
       ) : null
     ] });
   }
-  function ReminderBell({ on, onToggle, label }) {
-    return /* @__PURE__ */ jsx(Btn, { variant: "ghost", icon: true, onClick: onToggle, ariaLabel: label, title: label, pressed: on, style: { color: on ? LT.accent : void 0 }, children: /* @__PURE__ */ jsx(Icon2.Bell, { size: 16, filled: on }) });
+  function ReminderBell({ on, onToggle, label, tvStation }) {
+    return /* @__PURE__ */ jsx(Btn, { variant: "ghost", icon: true, onClick: onToggle, ariaLabel: label, title: label, pressed: on, style: { color: on ? LT.accent : void 0 }, tvStation, children: /* @__PURE__ */ jsx(Icon2.Bell, { size: 16, filled: on }) });
   }
   function LockedTag({ label }) {
     return /* @__PURE__ */ jsxs(Tag, { variant: "outline", children: [
@@ -194565,9 +194721,27 @@ ${cue.text}`).join("\n\n")}
   var MAX_FAVORITES = 12;
   var MAX_RECOMMENDED = 12;
   var MAX_ALL_CHANNELS = 60;
-  function FavoritesLayout({ mobile, children }) {
-    if (mobile) return /* @__PURE__ */ jsx(ScrollRow, { children });
+  function FrameBackdrop({ channel, version: version2 }) {
+    return /* @__PURE__ */ jsx(
+      "img",
+      {
+        src: playerFrameUrl(channelKey(channel), version2 ?? null),
+        alt: "",
+        "aria-hidden": "true",
+        draggable: false,
+        onError: (event) => {
+          event.currentTarget.style.display = "none";
+        },
+        style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.55, borderRadius: "inherit", pointerEvents: "none" }
+      }
+    );
+  }
+  function FavoritesLayout({ mobile, tvRow = false, children }) {
+    if (mobile) return /* @__PURE__ */ jsx(ScrollRow, { tvRow, children });
     return /* @__PURE__ */ jsx("div", { className: "grid grid-cols-2 gap-3 md:grid-cols-4", children });
+  }
+  function tvSpotlightCount() {
+    return typeof window !== "undefined" && window.innerWidth >= 1600 ? 3 : 2;
   }
   function LiveTvHub({ onNavigate }) {
     const { h, locale } = useHubText();
@@ -194579,6 +194753,39 @@ ${cue.text}`).join("\n\n")}
     const [groupMenuOpen, setGroupMenuOpen] = useState(false);
     const groupMenuRef = useRef(null);
     const isTv = useTvMode();
+    const tvStation = isTv ? { "data-f": "" } : void 0;
+    const TvKeyboardPanel = isTv ? getTvKeyboardPanel() : null;
+    const [searchKeyboardOpen, setSearchKeyboardOpen] = useState(false);
+    const searchChipRef = useRef(null);
+    const focusFirstResultSoon = () => {
+      let tries = 0;
+      const attempt = () => {
+        const first = document.querySelector("[data-live-tv-all-channels] [data-f]");
+        if (first) {
+          first.focus({ preventScroll: true });
+          return;
+        }
+        if (++tries < 20) window.setTimeout(attempt, 100);
+        else searchChipRef.current?.focus({ preventScroll: true });
+      };
+      window.setTimeout(attempt, 80);
+    };
+    const TvGlassMenu = isTv ? getTvGlassMenu() : null;
+    const [tvMenu, setTvMenu] = useState(null);
+    useEffect(() => {
+      if (!isTv || !groupMenuOpen) return;
+      const onKey = (event) => {
+        if (!["Escape", "Backspace", "GoBack", "ArrowLeft", "ArrowRight"].includes(event.key)) return;
+        event.preventDefault();
+        event.stopPropagation();
+        setGroupMenuOpen(false);
+        window.setTimeout(() => groupMenuRef.current?.querySelector("button")?.focus({ preventScroll: true }), 0);
+      };
+      window.addEventListener("keydown", onKey, true);
+      const first = groupMenuRef.current?.querySelector("[data-f][data-init]") ?? groupMenuRef.current?.querySelector('[role="menu"] [data-f]');
+      first?.focus({ preventScroll: true });
+      return () => window.removeEventListener("keydown", onKey, true);
+    }, [isTv, groupMenuOpen]);
     useEffect(() => {
       if (!groupMenuOpen) return;
       const onDown = (event) => {
@@ -194640,38 +194847,75 @@ ${cue.text}`).join("\n\n")}
       [favorites, recent, channels, nowFor]
     );
     const openChannel = (channel) => go("channel", encodeChannelParams(channel));
+    const tvChannelHandlers = (channel, recentKey) => isTv ? tvHoldHandlers(
+      () => play({ channel }),
+      (element) => setTvMenu({
+        title: channel.name,
+        element,
+        actions: [
+          { key: "play", label: h("hubWatchNow"), run: () => play({ channel }) },
+          { key: "pin", label: pinnedSet.has(channelKey(channel)) ? h("hubUnpin") : h("hubPin"), run: () => model.togglePin(channel) },
+          { key: "info", label: h("channelTitle"), run: () => openChannel(channel) },
+          ...recentKey ? [{ key: "remove", label: h("hubRemoveRecent"), run: () => removeChannelHistoryEntry(recentKey) }] : []
+        ]
+      })
+    ) : {};
     const formatWatched = (ms) => {
       const sameDay = new Date(ms).toDateString() === new Date(nowMs).toDateString();
       const time2 = formatClock(ms, locale);
       return h("hubWatchedAt", { time: sameDay ? time2 : `${h("hubYesterday")} ${time2}` });
     };
-    const epgButton = /* @__PURE__ */ jsxs(Btn, { variant: "secondary", small: true, onClick: () => go("epg"), children: [
+    const epgButton = /* @__PURE__ */ jsxs(Btn, { variant: "secondary", small: true, onClick: () => go("epg"), tvStation: isTv ? { "data-f": "", "data-live-tv-epg": "", "data-f-left": "[data-live-tv-group]", "data-f-right": "[data-live-tv-bell]" } : void 0, children: [
       /* @__PURE__ */ jsx(Icon2.Calendar, { size: 14 }),
       " ",
       h("openEpg")
     ] });
-    const searchField = !isTv ? (
-      // På TV finns inget tangentbord i fältet; där söker man i rutnätet.
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, borderRadius: 999, border: `1px solid ${LT.line}`, background: "rgba(255,255,255,0.04)", padding: "0 12px", height: 36, ...isMobile ? { flex: 1, minWidth: 0 } : { minWidth: 220 } }, children: [
-        /* @__PURE__ */ jsx(Icon2.Search, { size: 14 }),
-        /* @__PURE__ */ jsx(
-          "input",
-          {
-            type: "search",
-            value: query,
-            onChange: (event) => setQuery(event.target.value),
-            placeholder: h("searchPlaceholder"),
-            "aria-label": h("search"),
-            style: { flex: 1, minWidth: 0, background: "transparent", border: 0, outline: "none", color: LT.text, fontSize: 13, fontFamily: "inherit" }
-          }
-        )
-      ] })
-    ) : null;
+    const searchField = isTv ? TvKeyboardPanel ? /* @__PURE__ */ jsxs(
+      "button",
+      {
+        type: "button",
+        ref: searchChipRef,
+        ...tvStation ?? {},
+        "data-live-tv-search": "",
+        "data-f-right": "[data-live-tv-group]",
+        onClick: () => setSearchKeyboardOpen(true),
+        className: "truncate",
+        style: { display: "flex", alignItems: "center", gap: 8, borderRadius: 999, border: "1px solid transparent", background: LT.neutral, padding: "0 14px", height: 36, minWidth: 260, maxWidth: 360, color: query ? LT.text : LT.muted, fontSize: 13, fontFamily: "inherit", cursor: "pointer", textAlign: "left" },
+        children: [
+          /* @__PURE__ */ jsx(Icon2.Search, { size: 14 }),
+          /* @__PURE__ */ jsx("span", { className: "truncate", children: query || h("searchPlaceholder") })
+        ]
+      }
+    ) : null : /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, borderRadius: 999, border: `1px solid ${LT.line}`, background: "rgba(255,255,255,0.04)", padding: "0 12px", height: 36, ...isMobile ? { flex: 1, minWidth: 0 } : { minWidth: 220 } }, children: [
+      /* @__PURE__ */ jsx(Icon2.Search, { size: 14 }),
+      /* @__PURE__ */ jsx(
+        "input",
+        {
+          type: "search",
+          value: query,
+          onChange: (event) => setQuery(event.target.value),
+          placeholder: h("searchPlaceholder"),
+          "aria-label": h("search"),
+          style: { flex: 1, minWidth: 0, background: "transparent", border: 0, outline: "none", color: LT.text, fontSize: 13, fontFamily: "inherit" }
+        }
+      )
+    ] });
     const groupPicker = model.groups.length > 0 ? /* @__PURE__ */ jsxs("div", { ref: groupMenuRef, style: { position: "relative", flexShrink: 0 }, children: [
-      /* @__PURE__ */ jsxs(Btn, { variant: effectiveGroup ? "secondary" : "ghost", small: true, pressed: groupMenuOpen, onClick: () => setGroupMenuOpen((open) => !open), children: [
-        /* @__PURE__ */ jsx("span", { className: "truncate", style: { maxWidth: isMobile ? 120 : 220, display: "inline-block", verticalAlign: "bottom" }, children: effectiveGroup ?? h("hubAllGroups") }),
-        /* @__PURE__ */ jsx(Icon2.ChevronDown, { size: 14 })
-      ] }),
+      /* @__PURE__ */ jsxs(
+        Btn,
+        {
+          variant: effectiveGroup || isTv ? "secondary" : "ghost",
+          small: true,
+          pressed: groupMenuOpen,
+          onClick: () => setGroupMenuOpen((open) => !open),
+          tvStation: isTv ? { "data-f": "", "data-live-tv-group": "", "data-f-right": "[data-live-tv-epg]", "data-f-left": "[data-live-tv-search]" } : void 0,
+          style: isTv ? { background: LT.neutral, borderColor: "transparent", color: LT.text } : void 0,
+          children: [
+            /* @__PURE__ */ jsx("span", { className: "truncate", style: { maxWidth: isMobile ? 120 : 220, display: "inline-block", verticalAlign: "bottom" }, children: effectiveGroup ?? h("hubAllGroups") }),
+            /* @__PURE__ */ jsx(Icon2.ChevronDown, { size: 14 })
+          ]
+        }
+      ),
       groupMenuOpen ? (
         /* HÖGERSTÄLLD och skärmbred på mobil (Jerry 2026-09-03). Med `left: 0`
            föll listan ut från en knapp som börjar långt ut till höger: 240 px
@@ -194680,10 +194924,12 @@ ${cue.text}`).join("\n\n")}
            filterraden, alltså i innehållets högerkant, så `right: 0` plus
            skärmbredd minus sidmarginalerna (2 × 16 px) landar exakt innanför
            båda kanterna. */
-        /* @__PURE__ */ jsx("div", { style: { position: "absolute", top: "calc(100% + 6px)", zIndex: 50, maxHeight: 360, overflowY: "auto", background: "#0b1020", border: `1px solid ${LT.line}`, borderRadius: LT.radiusMd, padding: 6, boxShadow: "0 18px 40px rgba(0,0,0,0.45)", ...isMobile ? { right: 0, width: "calc(100vw - 32px)" } : { left: 0, minWidth: 240 } }, children: [null, ...model.groups].map((group) => /* @__PURE__ */ jsx(
+        /* @__PURE__ */ jsx("div", { role: "menu", ...isTv ? { "data-panel-root": "", "data-scroll": "" } : {}, style: { position: "absolute", top: "calc(100% + 6px)", zIndex: 50, maxHeight: 360, overflowY: "auto", background: "#0b1020", border: `1px solid ${LT.line}`, borderRadius: LT.radiusMd, padding: 6, boxShadow: "0 18px 40px rgba(0,0,0,0.45)", ...isMobile ? { right: 0, width: "calc(100vw - 32px)" } : { left: 0, minWidth: 240 } }, children: [null, ...model.groups].map((group) => /* @__PURE__ */ jsx(
           "button",
           {
             type: "button",
+            ...tvStation ?? {},
+            ...isTv && group === effectiveGroup ? { "data-init": "" } : {},
             onClick: () => {
               setActiveGroup(group);
               setGroupMenuOpen(false);
@@ -194705,14 +194951,12 @@ ${cue.text}`).join("\n\n")}
       {
         title: h("hubTitle"),
         backLabel: h("back"),
-        right: isMobile ? void 0 : /* @__PURE__ */ jsxs(Fragment2, { children: [
+        right: /* @__PURE__ */ jsxs(Fragment2, { children: [
           epgButton,
-          /* @__PURE__ */ jsx(RemindersMenu, { model, onOpenChannel: openChannel })
+          /* @__PURE__ */ jsx(RemindersMenu, { model, onOpenChannel: openChannel, tvStation: isTv ? { "data-f": "", "data-live-tv-bell": "", "data-f-left": "[data-live-tv-epg]" } : void 0 })
         ] }),
-        bottom: isMobile ? /* @__PURE__ */ jsxs(Fragment2, { children: [
-          epgButton,
-          /* @__PURE__ */ jsx(RemindersMenu, { model, onOpenChannel: openChannel })
-        ] }) : void 0,
+        onBack: () => requestBrowseBack(),
+        backTvStation: isTv ? { "data-f": "", "data-init": "" } : void 0,
         children: isMobile ? null : filterRow
       }
     );
@@ -194729,7 +194973,60 @@ ${cue.text}`).join("\n\n")}
     return /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 24, color: LT.text }, children: [
       /* @__PURE__ */ jsx("style", { children: "@keyframes lumio-livetv-spin{to{transform:rotate(360deg)}}" }),
       header,
-      hero && !needle ? /* @__PURE__ */ jsx("div", { className: "grid gap-4", children: /* @__PURE__ */ jsxs("div", { style: { ...heroGradient, padding: isMobile ? 16 : 24, display: "flex", flexDirection: "column", gap: 10, minHeight: 220, justifyContent: "center", ...isMobile ? { minWidth: 0 } : null }, children: [
+      hero && !needle && isTv ? (
+        /* TV (Jerry 2026-09-06): det stora kortet blev enormt på en TV. I
+           stället en rad kompakta spotlightkort — heron först, sedan
+           favoriter och senast sedda — två på bredden, tre på breda TV-apparater.
+           Varje kort är EN station: OK spelar kanalen. Programinfo och förlopp
+           när EPG:n finns, annars gruppen. */
+        /* @__PURE__ */ jsx("div", { style: { display: "grid", gridTemplateColumns: `repeat(${tvSpotlightCount()}, minmax(0, 1fr))`, gap: 16 }, "data-row": "", children: (() => {
+          const seen = /* @__PURE__ */ new Set();
+          const picks = [];
+          for (const candidate of [hero, ...favorites, ...recent.map((r) => r.channel), ...channels.filter((c) => nowFor(c).now)]) {
+            const key = channelKey(candidate);
+            if (seen.has(key)) continue;
+            seen.add(key);
+            picks.push(candidate);
+            if (picks.length >= tvSpotlightCount()) break;
+          }
+          return picks.map((channel) => {
+            const info = nowFor(channel);
+            return /* @__PURE__ */ jsxs(
+              "div",
+              {
+                role: "button",
+                tabIndex: 0,
+                ...tvStation ?? {},
+                onClick: () => play({ channel }),
+                ...tvChannelHandlers(channel),
+                className: "cursor-pointer transition hover:brightness-125",
+                style: { ...heroGradient, padding: 18, display: "flex", flexDirection: "column", gap: 8, minWidth: 0 },
+                children: [
+                  /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12, minWidth: 0 }, children: [
+                    /* @__PURE__ */ jsx(ChannelBadge, { channel, size: 56, radius: LT.radiusMd }),
+                    /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: 1 }, children: [
+                      /* @__PURE__ */ jsx("div", { className: "truncate", style: { fontSize: 18, fontWeight: 600 }, children: channel.name }),
+                      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, marginTop: 4, flexWrap: "wrap" }, children: [
+                        info.now ? /* @__PURE__ */ jsx(LiveTag, { label: h("hubLive") }) : null,
+                        channel.group ? /* @__PURE__ */ jsx(Tag, { children: channel.group }) : null
+                      ] })
+                    ] }),
+                    /* @__PURE__ */ jsx("span", { style: { color: LT.text, opacity: 0.9 }, children: /* @__PURE__ */ jsx(Icon2.Play, { size: 22 }) })
+                  ] }),
+                  /* @__PURE__ */ jsx("div", { className: "truncate", style: { fontSize: 15, color: LT.text }, children: info.now ? info.now.title : epgStatus === "loading" ? h("hubLoadingEpg") : h("hubNoProgramme") }),
+                  info.now ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+                    /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: LT.muted }, children: `${formatClock(info.now.start, locale)}\u2013${formatClock(info.now.stop, locale)} \xB7 ${h("minutesLeft", { min: Math.max(0, Math.round((info.now.stop - nowMs) / 6e4)) })}` }),
+                    /* @__PURE__ */ jsx(ProgressBar, { value: progressOf(info.now.start, info.now.stop, nowMs), width: "100%" })
+                  ] }) : null,
+                  info.next ? /* @__PURE__ */ jsx("div", { className: "truncate", style: { fontSize: 12, color: LT.dim }, children: h("nextAt", { title: info.next.title, time: formatClock(info.next.start, locale) }) }) : null
+                ]
+              },
+              channelKey(channel)
+            );
+          });
+        })() })
+      ) : null,
+      hero && !needle && !isTv ? /* @__PURE__ */ jsx("div", { className: "grid gap-4", children: /* @__PURE__ */ jsxs("div", { style: { ...heroGradient, padding: isMobile ? 16 : 24, display: "flex", flexDirection: "column", gap: 10, minHeight: 220, justifyContent: "center", ...isMobile ? { minWidth: 0 } : null }, children: [
         /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }, children: [
           heroInfo.now ? /* @__PURE__ */ jsx(LiveTag, { label: h("hubLive") }) : null,
           hero.group ? /* @__PURE__ */ jsx(Tag, { children: hero.group }) : null,
@@ -194775,37 +195072,43 @@ ${cue.text}`).join("\n\n")}
              raden håller korten 200 px breda och låter nästa kort kika in i
              kanten, precis som Fortsätt titta strax nedanför. Samma
              kortinnehåll i båda lägena. */
-          /* @__PURE__ */ jsx(FavoritesLayout, { mobile: isMobile, children: favorites.map((channel) => {
+          /* @__PURE__ */ jsx(FavoritesLayout, { mobile: isMobile || isTv, tvRow: isTv, children: favorites.map((channel) => {
             const info = nowFor(channel);
             return /* @__PURE__ */ jsxs(
               "div",
               {
                 role: "button",
                 tabIndex: 0,
+                ...tvStation ?? {},
                 onClick: () => openChannel(channel),
-                onKeyDown: (event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    openChannel(channel);
+                ...isTv ? tvChannelHandlers(channel) : {
+                  onKeyDown: (event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      openChannel(channel);
+                    }
                   }
                 },
                 className: "cursor-pointer transition hover:brightness-125",
                 style: {
                   ...surfaceCard,
+                  position: "relative",
+                  overflow: "hidden",
                   padding: 12,
                   display: "flex",
                   flexDirection: "column",
                   gap: 6,
-                  ...isMobile ? { width: 200, flexShrink: 0, scrollSnapAlign: "start" } : null
+                  ...isMobile || isTv ? { width: isTv ? 260 : 200, flexShrink: 0, scrollSnapAlign: "start" } : null
                 },
                 children: [
+                  /* @__PURE__ */ jsx(FrameBackdrop, { channel }),
                   /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
                     /* @__PURE__ */ jsx(ChannelBadge, { channel, size: 40 }),
                     /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: 1 }, children: [
                       /* @__PURE__ */ jsx("div", { className: "truncate", style: { fontSize: 14, fontWeight: 500 }, children: channel.name }),
                       info.now ? /* @__PURE__ */ jsx("div", { style: { marginTop: 2 }, children: /* @__PURE__ */ jsx(LiveTag, { label: h("hubLive") }) }) : null
                     ] }),
-                    /* @__PURE__ */ jsx(
+                    !isTv ? /* @__PURE__ */ jsx(
                       Btn,
                       {
                         variant: "ghost",
@@ -194816,7 +195119,7 @@ ${cue.text}`).join("\n\n")}
                         style: { color: LT.accent, width: 30, height: 30 },
                         children: /* @__PURE__ */ jsx(Icon2.Heart, { size: 16, filled: true })
                       }
-                    )
+                    ) : /* @__PURE__ */ jsx("span", { style: { color: LT.accent, display: "inline-flex" }, children: /* @__PURE__ */ jsx(Icon2.Heart, { size: 16, filled: true }) })
                   ] }),
                   /* @__PURE__ */ jsx("div", { className: "truncate", style: { fontSize: 12, color: "rgba(243,244,248,0.85)" }, children: info.now?.title ?? channel.group }),
                   /* @__PURE__ */ jsx("div", { className: "truncate", style: { fontSize: 11, color: LT.dim }, children: info.next ? h("nextAt", { title: info.next.title, time: formatClock(info.next.start, locale) }) : h("hubNoProgramme") })
@@ -194829,18 +195132,20 @@ ${cue.text}`).join("\n\n")}
       ] }),
       /* @__PURE__ */ jsxs("section", { children: [
         /* @__PURE__ */ jsx(SectionTitle, { title: h("hubContinue"), sub: catchUp.length > 0 ? h("hubContinueCatchUp") : h("hubContinueRecent") }),
-        catchUp.length === 0 && recent.length === 0 ? /* @__PURE__ */ jsx("p", { style: { margin: 0, fontSize: 14, color: LT.muted }, children: h("hubContinueEmpty") }) : /* @__PURE__ */ jsxs(ScrollRow, { children: [
+        catchUp.length === 0 && recent.length === 0 ? /* @__PURE__ */ jsx("p", { style: { margin: 0, fontSize: 14, color: LT.muted }, children: h("hubContinueEmpty") }) : /* @__PURE__ */ jsxs(ScrollRow, { tvRow: isTv, children: [
           catchUp.map((item) => {
             const left = expiresLabel(item.expiresAt, nowMs);
             return /* @__PURE__ */ jsxs(
               "button",
               {
                 type: "button",
+                ...tvStation ?? {},
+                "data-live-tv-tile-card": "",
                 onClick: () => play({ channel: item.channel, url: item.url, label: `${item.channel.name} \xB7 ${item.programme.title}` }),
                 className: "transition hover:brightness-110",
                 style: { width: 220, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "stretch", gap: 6, background: "transparent", border: 0, padding: 0, color: "inherit", textAlign: "left", cursor: "pointer", scrollSnapAlign: "start", fontFamily: "inherit" },
                 children: [
-                  /* @__PURE__ */ jsxs("div", { style: { width: "100%", height: 124, borderRadius: LT.radiusMd, background: "linear-gradient(135deg, #1b2540, #2a3552)", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }, children: [
+                  /* @__PURE__ */ jsxs("div", { "data-live-tv-tile": "", style: { width: "100%", height: 124, borderRadius: LT.radiusMd, background: "linear-gradient(135deg, #1b2540, #2a3552)", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }, children: [
                     /* @__PURE__ */ jsx(ChannelBadge, { channel: item.channel, size: 44, radius: LT.radiusMd }),
                     /* @__PURE__ */ jsx("span", { style: { position: "absolute", right: 8, top: 8 }, children: /* @__PURE__ */ jsx(Tag, { variant: "accent", children: h("catchUp") }) }),
                     /* @__PURE__ */ jsx("span", { style: { position: "absolute", left: 8, bottom: 8, color: LT.text, opacity: 0.9 }, children: /* @__PURE__ */ jsx(Icon2.Play, { size: 22 }) })
@@ -194866,11 +195171,15 @@ ${cue.text}`).join("\n\n")}
               "button",
               {
                 type: "button",
+                ...tvStation ?? {},
+                "data-live-tv-tile-card": "",
                 onClick: () => play({ channel }),
+                ...tvChannelHandlers(channel, entry.key),
                 className: "transition hover:brightness-110",
                 style: { width: 220, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "stretch", gap: 6, background: "transparent", border: 0, padding: 0, color: "inherit", textAlign: "left", cursor: "pointer", scrollSnapAlign: "start", fontFamily: "inherit" },
                 children: [
-                  /* @__PURE__ */ jsxs("div", { style: { width: "100%", height: 124, borderRadius: LT.radiusMd, background: "linear-gradient(135deg, #1b2540, #2a3552)", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }, children: [
+                  /* @__PURE__ */ jsxs("div", { "data-live-tv-tile": "", style: { width: "100%", height: 124, borderRadius: LT.radiusMd, background: "linear-gradient(135deg, #1b2540, #2a3552)", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }, children: [
+                    /* @__PURE__ */ jsx(FrameBackdrop, { channel, version: entry.watchedAt }),
                     /* @__PURE__ */ jsx(ChannelBadge, { channel, size: 44, radius: LT.radiusMd }),
                     /* @__PURE__ */ jsx("span", { style: { position: "absolute", left: 8, bottom: 8, color: LT.text, opacity: 0.9 }, children: /* @__PURE__ */ jsx(Icon2.Play, { size: 22 }) }),
                     info.now ? /* @__PURE__ */ jsx("div", { style: { position: "absolute", left: 8, right: 8, bottom: 8, height: 3, background: "rgba(0,0,0,0.4)", borderRadius: 3, overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { height: "100%", width: `${Math.round(progressOf(info.now.start, info.now.stop, nowMs) * 100)}%`, background: LT.accent } }) }) : null
@@ -194890,13 +195199,15 @@ ${cue.text}`).join("\n\n")}
       ] }),
       recommended.length > 0 ? /* @__PURE__ */ jsxs("section", { children: [
         /* @__PURE__ */ jsx(SectionTitle, { title: h("hubRecommended") }),
-        /* @__PURE__ */ jsx(ScrollRow, { children: recommended.map(({ channel, reason }) => {
+        /* @__PURE__ */ jsx(ScrollRow, { tvRow: isTv, children: recommended.map(({ channel, reason }) => {
           const info = nowFor(channel);
           return /* @__PURE__ */ jsxs(
             "button",
             {
               type: "button",
+              ...tvStation ?? {},
               onClick: () => openChannel(channel),
+              ...tvChannelHandlers(channel),
               className: "transition hover:brightness-125",
               style: { ...surfaceCard, width: 240, flexShrink: 0, padding: 12, display: "flex", flexDirection: "column", alignItems: "stretch", gap: 4, color: "inherit", textAlign: "left", cursor: "pointer", scrollSnapAlign: "start", fontFamily: "inherit" },
               children: [
@@ -194922,7 +195233,7 @@ ${cue.text}`).join("\n\n")}
             sub: h("channelsIn", { count: filteredChannels.length, group: effectiveGroup ?? h("hubAllGroups") })
           }
         ),
-        /* @__PURE__ */ jsx("div", { className: "grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3", children: filteredChannels.slice(0, MAX_ALL_CHANNELS).map((channel) => {
+        /* @__PURE__ */ jsx("div", { className: "grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3", "data-live-tv-all-channels": "", children: filteredChannels.slice(0, MAX_ALL_CHANNELS).map((channel) => {
           const info = nowFor(channel);
           const isPinned = pinnedSet.has(channelKey(channel));
           return /* @__PURE__ */ jsxs(
@@ -194930,11 +195241,14 @@ ${cue.text}`).join("\n\n")}
             {
               role: "button",
               tabIndex: 0,
+              ...tvStation ?? {},
               onClick: () => openChannel(channel),
-              onKeyDown: (event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  openChannel(channel);
+              ...isTv ? tvChannelHandlers(channel) : {
+                onKeyDown: (event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    openChannel(channel);
+                  }
                 }
               },
               className: "cursor-pointer transition hover:brightness-125",
@@ -194971,7 +195285,26 @@ ${cue.text}`).join("\n\n")}
           );
         }) })
       ] }),
-      chrome
+      chrome,
+      TvGlassMenu && tvMenu ? /* @__PURE__ */ jsx(TvGlassMenu, { target: tvMenu, onClose: () => setTvMenu(null) }) : null,
+      TvKeyboardPanel && searchKeyboardOpen ? /* @__PURE__ */ jsx("div", { "data-live-tv-host-ui": "", children: /* @__PURE__ */ jsx(
+        TvKeyboardPanel,
+        {
+          title: h("search"),
+          placeholder: h("searchPlaceholder"),
+          initial: query,
+          onDone: (value) => {
+            setQuery(value);
+            setSearchKeyboardOpen(false);
+            if (value.trim()) focusFirstResultSoon();
+            else searchChipRef.current?.focus({ preventScroll: true });
+          },
+          onClose: () => {
+            setSearchKeyboardOpen(false);
+            window.setTimeout(() => searchChipRef.current?.focus({ preventScroll: true }), 50);
+          }
+        }
+      ) }) : null
     ] });
   }
 
@@ -195044,6 +195377,7 @@ ${cue.text}`).join("\n\n")}
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/live-tv-epg-page.tsx
   init_react_shim();
+  init_plugin_sdk();
   init_live_tv_data();
   init_hub_strings();
   init_reminders();
@@ -195070,6 +195404,8 @@ ${cue.text}`).join("\n\n")}
     const [reminderTick, setReminderTick] = useState(0);
     const scrollRef = useRef(null);
     const isMobile = useIsMobileLayout();
+    const isTv = useTvMode();
+    const tvStation = isTv ? { "data-f": "" } : void 0;
     const channelCol = isMobile ? CHANNEL_COL_MOBILE : CHANNEL_COL;
     const { nowMs } = model;
     const windowStart = dayOffset === 0 ? alignToHour(nowMs - 36e5) : startOfLocalDay(nowMs, 1) + 6 * 36e5;
@@ -195114,20 +195450,21 @@ ${cue.text}`).join("\n\n")}
           title: h("epgTitle"),
           onBack: () => go("hub"),
           backLabel: h("back"),
-          right: /* @__PURE__ */ jsx(Fragment2, { children: /* @__PURE__ */ jsx(RemindersMenu, { model, onOpenChannel: (channel) => go("channel", encodeChannelParams(channel)) }) }),
+          backTvStation: tvStation,
+          right: /* @__PURE__ */ jsx(Fragment2, { children: /* @__PURE__ */ jsx(RemindersMenu, { model, onOpenChannel: (channel) => go("channel", encodeChannelParams(channel)), tvStation }) }),
           children: [
             /* @__PURE__ */ jsx(Btn, { variant: dayOffset === 0 ? "primary" : "ghost", small: true, pressed: dayOffset === 0, onClick: () => {
               setDayOffset(0);
               setSelected(null);
-            }, children: h("guideToday") }),
+            }, tvStation: isTv ? { "data-f": "", "data-init": "" } : void 0, children: h("guideToday") }),
             /* @__PURE__ */ jsx(Btn, { variant: dayOffset === 1 ? "primary" : "ghost", small: true, pressed: dayOffset === 1, onClick: () => {
               setDayOffset(1);
               setSelected(null);
-            }, children: h("guideTomorrow") }),
+            }, tvStation, children: h("guideTomorrow") }),
             /* @__PURE__ */ jsxs(Btn, { variant: "secondary", small: true, onClick: () => {
               setDayOffset(0);
               window.setTimeout(scrollToNow, 0);
-            }, style: { marginLeft: 8 }, children: [
+            }, style: { marginLeft: 8 }, tvStation, children: [
               h("guideNow"),
               " ",
               /* @__PURE__ */ jsx("span", { style: { width: 8, height: 8, borderRadius: 999, border: `1.5px solid ${LT.accent}` } })
@@ -195135,7 +195472,7 @@ ${cue.text}`).join("\n\n")}
           ]
         }
       ),
-      rows.length === 0 ? /* @__PURE__ */ jsx("div", { style: { ...surfaceCard, padding: 20, fontSize: 14, color: LT.muted }, children: h("epgEmpty") }) : /* @__PURE__ */ jsx("div", { ref: scrollRef, className: "overflow-x-auto [scrollbar-width:thin]", style: { position: "relative" }, children: /* @__PURE__ */ jsxs("div", { style: { minWidth: channelCol + gridWidth, position: "relative" }, children: [
+      rows.length === 0 ? /* @__PURE__ */ jsx("div", { style: { ...surfaceCard, padding: 20, fontSize: 14, color: LT.muted }, children: h("epgEmpty") }) : /* @__PURE__ */ jsx("div", { ref: scrollRef, ...isTv ? { "data-scroll": "" } : {}, className: "overflow-x-auto [scrollbar-width:thin]", style: { position: "relative" }, children: /* @__PURE__ */ jsxs("div", { style: { minWidth: channelCol + gridWidth, position: "relative" }, children: [
         /* @__PURE__ */ jsx("div", { style: { display: "flex", paddingLeft: channelCol, height: 28, borderBottom: `1px solid ${LT.line}`, marginBottom: 6, position: "sticky", top: 0, zIndex: 3, background: LT.bg }, children: hourMarks.map((mark) => /* @__PURE__ */ jsx("div", { style: { width: HOUR_PX, flexShrink: 0, fontSize: 12, color: LT.dim }, children: formatClock(mark, locale) }, mark)) }),
         /* @__PURE__ */ jsxs("div", { style: { position: "relative" }, children: [
           nowVisible ? /* @__PURE__ */ jsx("div", { style: { position: "absolute", top: 0, bottom: 0, left: channelCol + nowLeft, width: 2, background: LT.accent, zIndex: 2, pointerEvents: "none" }, children: /* @__PURE__ */ jsx("div", { style: { position: "absolute", top: -18, left: -14, fontSize: 10, color: LT.accentText, whiteSpace: "nowrap" }, children: h("nowAt", { time: formatClock(nowMs, locale) }) }) }) : null,
@@ -195144,6 +195481,7 @@ ${cue.text}`).join("\n\n")}
               "button",
               {
                 type: "button",
+                ...tvStation ?? {},
                 onClick: () => go("channel", encodeChannelParams(channel)),
                 title: channel.name,
                 style: { width: channelCol, flexShrink: 0, display: "flex", alignItems: "center", gap: 8, paddingRight: 8, background: LT.bg, zIndex: 1, border: 0, color: "inherit", textAlign: "left", cursor: "pointer", fontFamily: "inherit", ...isMobile ? null : { position: "sticky", left: 0 } },
@@ -195165,6 +195503,7 @@ ${cue.text}`).join("\n\n")}
                 "button",
                 {
                   type: "button",
+                  ...tvStation ?? {},
                   onClick: () => setSelected({ channel, programme }),
                   onDoubleClick: () => {
                     setSelected({ channel, programme });
@@ -195237,7 +195576,7 @@ ${cue.text}`).join("\n\n")}
             }
           }
         ) : null,
-        /* @__PURE__ */ jsxs(Btn, { variant: "primary", onClick: () => play({ channel: selected.channel }), children: [
+        /* @__PURE__ */ jsxs(Btn, { variant: "primary", onClick: () => play({ channel: selected.channel }), tvStation, children: [
           h("guideWatch"),
           " ",
           /* @__PURE__ */ jsx(Icon2.Play, { size: 12 })
@@ -195249,6 +195588,7 @@ ${cue.text}`).join("\n\n")}
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/live-tv-channel-page.tsx
   init_react_shim();
+  init_plugin_sdk();
   init_live_tv_data();
   init_hub_strings();
   init_reminders();
@@ -195269,6 +195609,8 @@ ${cue.text}`).join("\n\n")}
     const { h, locale } = useHubText();
     const model = useLiveTvModel();
     const go = useLiveTvNav(onNavigate);
+    const isTv = useTvMode();
+    const tvStation = isTv ? { "data-f": "" } : void 0;
     const { play, chrome } = useLiveTvChrome(model);
     const [reminderTick, setReminderTick] = useState(0);
     const [lockGate, setLockGate] = useState(false);
@@ -195294,7 +195636,7 @@ ${cue.text}`).join("\n\n")}
     }, [channel?.url]);
     if (!channel) {
       return /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 16, color: LT.text }, children: [
-        /* @__PURE__ */ jsx(LiveTvHeader, { title: h("channelTitle"), onBack: () => go("hub"), backLabel: h("back") }),
+        /* @__PURE__ */ jsx(LiveTvHeader, { title: h("channelTitle"), onBack: () => go("hub"), backLabel: h("back"), backTvStation: isTv ? { "data-f": "", "data-init": "" } : void 0 }),
         /* @__PURE__ */ jsx("div", { style: { ...surfaceCard, padding: 20, color: LT.muted }, children: h("hubEmptyBody") })
       ] });
     }
@@ -195319,76 +195661,85 @@ ${cue.text}`).join("\n\n")}
           title: h("channelTitle"),
           onBack: () => go("hub"),
           backLabel: h("back"),
-          right: /* @__PURE__ */ jsx(RemindersMenu, { model, onOpenChannel: (target2) => go("channel", encodeChannelParams(target2)) })
+          backTvStation: tvStation,
+          right: /* @__PURE__ */ jsx(RemindersMenu, { model, onOpenChannel: (target2) => go("channel", encodeChannelParams(target2)), tvStation })
         }
       ),
-      /* @__PURE__ */ jsxs("div", { className: "grid gap-6 lg:grid-cols-[1fr_300px]", children: [
-        /* @__PURE__ */ jsx("div", { style: { display: "flex", flexDirection: "column", gap: 24, minWidth: 0 }, children: /* @__PURE__ */ jsxs("div", { style: { ...heroGradient, padding: 24, display: "flex", flexDirection: "column", gap: 10 }, children: [
-          /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12 }, children: [
-            /* @__PURE__ */ jsx(ChannelBadge, { channel, size: 56, radius: LT.radiusMd }),
-            /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: 1 }, children: [
-              /* @__PURE__ */ jsx("div", { className: "truncate", style: { fontSize: 22, fontWeight: 500 }, children: channel.name }),
-              /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }, children: [
-                channel.group ? /* @__PURE__ */ jsx(Tag, { children: channel.group }) : null,
-                info.now ? /* @__PURE__ */ jsx(LiveTag, { label: h("hubLive") }) : null,
-                locked ? /* @__PURE__ */ jsx(LockedTag, { label: h("lockedWithPin") }) : null
+      /* @__PURE__ */ jsxs(
+        "div",
+        {
+          className: isTv ? void 0 : "grid gap-6 lg:grid-cols-[1fr_300px]",
+          style: isTv ? { display: "grid", gridTemplateColumns: "minmax(0, 1fr) 320px 320px", gap: 16, alignItems: "stretch" } : void 0,
+          children: [
+            /* @__PURE__ */ jsx("div", { style: { display: isTv ? "contents" : "flex", flexDirection: "column", gap: 24, minWidth: 0 }, children: /* @__PURE__ */ jsxs("div", { style: { ...heroGradient, padding: 24, display: "flex", flexDirection: "column", gap: 10, minWidth: 0 }, children: [
+              /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12 }, children: [
+                /* @__PURE__ */ jsx(ChannelBadge, { channel, size: 56, radius: LT.radiusMd }),
+                /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: 1 }, children: [
+                  /* @__PURE__ */ jsx("div", { className: "truncate", style: { fontSize: 22, fontWeight: 500 }, children: channel.name }),
+                  /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }, children: [
+                    channel.group ? /* @__PURE__ */ jsx(Tag, { children: channel.group }) : null,
+                    info.now ? /* @__PURE__ */ jsx(LiveTag, { label: h("hubLive") }) : null,
+                    locked ? /* @__PURE__ */ jsx(LockedTag, { label: h("lockedWithPin") }) : null
+                  ] })
+                ] }),
+                /* @__PURE__ */ jsx(Btn, { variant: "ghost", icon: true, onClick: () => model.togglePin(channel), tvStation, ariaLabel: pinned ? h("hubUnpin") : h("hubPin"), title: pinned ? h("hubUnpin") : h("hubPin"), style: { color: pinned ? LT.accent : void 0 }, children: /* @__PURE__ */ jsx(Icon2.Heart, { filled: pinned }) })
+              ] }),
+              /* @__PURE__ */ jsx("div", { style: { fontSize: 17, fontWeight: 500 }, children: info.now?.title ?? h("hubNoProgramme") }),
+              info.now?.description ? /* @__PURE__ */ jsx("p", { style: { margin: 0, fontSize: 13, color: LT.muted, maxWidth: "60ch" }, children: info.now.description }) : null,
+              info.now ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+                /* @__PURE__ */ jsx(ProgressBar, { value: progressOf(info.now.start, info.now.stop, nowMs), width: 320 }),
+                /* @__PURE__ */ jsxs("div", { style: { fontSize: 12, color: LT.dim }, children: [
+                  formatClock(info.now.start, locale),
+                  "\u2013",
+                  formatClock(info.now.stop, locale),
+                  " \xB7 ",
+                  h("minutesLeft", { min: Math.max(0, Math.round((info.now.stop - nowMs) / 6e4)) })
+                ] })
+              ] }) : null,
+              info.next ? /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: LT.dim }, children: h("nextAt", { title: info.next.title, time: formatClock(info.next.start, locale) }) }) : null,
+              /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 8, marginTop: 6, flexWrap: "wrap" }, children: [
+                /* @__PURE__ */ jsxs(Btn, { variant: "primary", onClick: () => play({ channel }), tvStation: isTv ? { "data-f": "", "data-init": "" } : void 0, children: [
+                  h("hubWatchNow"),
+                  " ",
+                  /* @__PURE__ */ jsx(Icon2.Play, { size: 12 })
+                ] }),
+                /* @__PURE__ */ jsx(Btn, { variant: "secondary", onClick: () => go("epg"), tvStation, children: h("openEpg") })
               ] })
-            ] }),
-            /* @__PURE__ */ jsx(Btn, { variant: "ghost", icon: true, onClick: () => model.togglePin(channel), ariaLabel: pinned ? h("hubUnpin") : h("hubPin"), title: pinned ? h("hubUnpin") : h("hubPin"), style: { color: pinned ? LT.accent : void 0 }, children: /* @__PURE__ */ jsx(Icon2.Heart, { filled: pinned }) })
-          ] }),
-          /* @__PURE__ */ jsx("div", { style: { fontSize: 17, fontWeight: 500 }, children: info.now?.title ?? h("hubNoProgramme") }),
-          info.now?.description ? /* @__PURE__ */ jsx("p", { style: { margin: 0, fontSize: 13, color: LT.muted, maxWidth: "60ch" }, children: info.now.description }) : null,
-          info.now ? /* @__PURE__ */ jsxs(Fragment2, { children: [
-            /* @__PURE__ */ jsx(ProgressBar, { value: progressOf(info.now.start, info.now.stop, nowMs), width: 320 }),
-            /* @__PURE__ */ jsxs("div", { style: { fontSize: 12, color: LT.dim }, children: [
-              formatClock(info.now.start, locale),
-              "\u2013",
-              formatClock(info.now.stop, locale),
-              " \xB7 ",
-              h("minutesLeft", { min: Math.max(0, Math.round((info.now.stop - nowMs) / 6e4)) })
+            ] }) }),
+            /* @__PURE__ */ jsxs("div", { style: { display: isTv ? "contents" : "flex", flexDirection: "column", gap: 12 }, children: [
+              /* @__PURE__ */ jsxs("div", { style: { ...surfaceCard, padding: isTv ? 16 : 12, display: "flex", flexDirection: "column", gap: 6 }, children: [
+                /* @__PURE__ */ jsx(Kicker, { children: h("channelInfo") }),
+                /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 6, fontSize: 13, marginTop: 6 }, children: [
+                  /* @__PURE__ */ jsx(Row, { label: h("quality"), value: quality ?? h("unknown") }),
+                  /* @__PURE__ */ jsx(Row, { label: h("group"), value: channel.group || h("unknown") }),
+                  /* @__PURE__ */ jsx(Row, { label: h("sourceList"), value: list?.name ?? h("unknown") }),
+                  /* @__PURE__ */ jsx(Row, { label: h("epgSource"), value: model.tvgIdFor(channel) ? h("yes") : h("no") }),
+                  /* @__PURE__ */ jsx(Row, { label: h("catchUp"), value: channel.archive ? h("availableDays", { days: channel.archive.days }) : h("no") })
+                ] })
+              ] }),
+              /* @__PURE__ */ jsxs("div", { style: { ...surfaceCard, padding: isTv ? 16 : 12, display: "flex", flexDirection: "column", gap: 8 }, children: [
+                /* @__PURE__ */ jsx(Kicker, { children: h("parental") }),
+                /* @__PURE__ */ jsx("p", { style: { margin: 0, fontSize: 12, color: LT.muted }, children: h("parentalBody") }),
+                /* @__PURE__ */ jsxs(
+                  "button",
+                  {
+                    type: "button",
+                    ...tvStation ?? {},
+                    onClick: requestLockToggle,
+                    "aria-pressed": locked,
+                    style: { display: "flex", alignItems: "center", gap: 8, background: "transparent", border: 0, cursor: "pointer", padding: 0, marginTop: 4, color: "inherit", fontFamily: "inherit" },
+                    children: [
+                      /* @__PURE__ */ jsx("span", { style: { width: 36, height: 20, borderRadius: 10, background: locked ? LT.accent : LT.neutral, position: "relative", transition: "background 0.15s", flexShrink: 0 }, children: /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: 2, left: locked ? 18 : 2, width: 16, height: 16, borderRadius: 999, background: LT.text, transition: "left 0.15s" } }) }),
+                      /* @__PURE__ */ jsx("span", { style: { fontSize: 13 }, children: locked ? h("lockedWithPin") : h("noRestriction") })
+                    ]
+                  }
+                ),
+                lockNotice ? /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: "#fecdd3" }, children: lockNotice }) : null
+              ] })
             ] })
-          ] }) : null,
-          info.next ? /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: LT.dim }, children: h("nextAt", { title: info.next.title, time: formatClock(info.next.start, locale) }) }) : null,
-          /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 8, marginTop: 6, flexWrap: "wrap" }, children: [
-            /* @__PURE__ */ jsxs(Btn, { variant: "primary", onClick: () => play({ channel }), children: [
-              h("hubWatchNow"),
-              " ",
-              /* @__PURE__ */ jsx(Icon2.Play, { size: 12 })
-            ] }),
-            /* @__PURE__ */ jsx(Btn, { variant: "secondary", onClick: () => go("epg"), children: h("openEpg") })
-          ] })
-        ] }) }),
-        /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 12 }, children: [
-          /* @__PURE__ */ jsxs("div", { style: { ...surfaceCard, padding: 12, display: "flex", flexDirection: "column", gap: 6 }, children: [
-            /* @__PURE__ */ jsx(Kicker, { children: h("channelInfo") }),
-            /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 6, fontSize: 13, marginTop: 6 }, children: [
-              /* @__PURE__ */ jsx(Row, { label: h("quality"), value: quality ?? h("unknown") }),
-              /* @__PURE__ */ jsx(Row, { label: h("group"), value: channel.group || h("unknown") }),
-              /* @__PURE__ */ jsx(Row, { label: h("sourceList"), value: list?.name ?? h("unknown") }),
-              /* @__PURE__ */ jsx(Row, { label: h("epgSource"), value: model.tvgIdFor(channel) ? h("yes") : h("no") }),
-              /* @__PURE__ */ jsx(Row, { label: h("catchUp"), value: channel.archive ? h("availableDays", { days: channel.archive.days }) : h("no") })
-            ] })
-          ] }),
-          /* @__PURE__ */ jsxs("div", { style: { ...surfaceCard, padding: 12, display: "flex", flexDirection: "column", gap: 8 }, children: [
-            /* @__PURE__ */ jsx(Kicker, { children: h("parental") }),
-            /* @__PURE__ */ jsx("p", { style: { margin: 0, fontSize: 12, color: LT.muted }, children: h("parentalBody") }),
-            /* @__PURE__ */ jsxs(
-              "button",
-              {
-                type: "button",
-                onClick: requestLockToggle,
-                "aria-pressed": locked,
-                style: { display: "flex", alignItems: "center", gap: 8, background: "transparent", border: 0, cursor: "pointer", padding: 0, marginTop: 4, color: "inherit", fontFamily: "inherit" },
-                children: [
-                  /* @__PURE__ */ jsx("span", { style: { width: 36, height: 20, borderRadius: 10, background: locked ? LT.accent : LT.neutral, position: "relative", transition: "background 0.15s", flexShrink: 0 }, children: /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: 2, left: locked ? 18 : 2, width: 16, height: 16, borderRadius: 999, background: LT.text, transition: "left 0.15s" } }) }),
-                  /* @__PURE__ */ jsx("span", { style: { fontSize: 13 }, children: locked ? h("lockedWithPin") : h("noRestriction") })
-                ]
-              }
-            ),
-            lockNotice ? /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: "#fecdd3" }, children: lockNotice }) : null
-          ] })
-        ] })
-      ] }),
+          ]
+        }
+      ),
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 24 }, children: [
         /* @__PURE__ */ jsxs("section", { children: [
           /* @__PURE__ */ jsx("h3", { style: { fontSize: 16, margin: "0 0 10px", fontWeight: 600 }, children: h("today") }),
@@ -195402,9 +195753,10 @@ ${cue.text}`).join("\n\n")}
                 programme.title,
                 isNow2 ? /* @__PURE__ */ jsx("span", { style: { marginLeft: 8 }, children: /* @__PURE__ */ jsx(LiveTag, { label: h("hubLive") }) }) : null
               ] }),
-              isNow2 ? /* @__PURE__ */ jsx(Btn, { variant: "ghost", small: true, onClick: () => play({ channel }), children: h("guideWatch") }) : !past ? /* @__PURE__ */ jsx(
+              isNow2 ? /* @__PURE__ */ jsx(Btn, { variant: "ghost", small: true, onClick: () => play({ channel }), tvStation, children: h("guideWatch") }) : !past ? /* @__PURE__ */ jsx(
                 ReminderBell,
                 {
+                  tvStation,
                   on: reminded,
                   label: reminded ? h("reminderOn") : h("reminderOff"),
                   onToggle: () => {
@@ -195424,6 +195776,7 @@ ${cue.text}`).join("\n\n")}
               "button",
               {
                 type: "button",
+                ...tvStation ?? {},
                 onClick: () => play({ channel, url: item.url, label: `${channel.name} \xB7 ${item.programme.title}` }),
                 className: "transition hover:brightness-110",
                 style: { width: 220, flexShrink: 0, display: "flex", flexDirection: "column", gap: 6, background: "transparent", border: 0, padding: 0, color: "inherit", textAlign: "left", cursor: "pointer", fontFamily: "inherit" },
@@ -195486,24 +195839,9 @@ ${cue.text}`).join("\n\n")}
     } catch {
     }
   }
-  function decodeInitialChannel(params) {
-    const url = params?.url?.trim();
-    if (!url) return null;
-    return {
-      name: params?.name?.trim() || "Unknown",
-      logo: params?.logo?.trim() || null,
-      group: params?.group?.trim() || "Other",
-      url,
-      tvgId: params?.tvgId?.trim() || null
-    };
-  }
   var LIVE_TV_BROWSE_PAGE_ID2 = "live-tv-browse";
   function LiveTvBrowsePage({ params, onNavigate }) {
-    const isTv = useTvMode();
     const view = params?.view;
-    if (isTv) {
-      return createElement(LiveTvGrid, { initialChannel: decodeInitialChannel(params), tvCompactTop: true });
-    }
     if (view === "epg") return createElement(LiveTvEpgPage, { onNavigate });
     if (view === "channel" || !view && params?.url) return createElement(LiveTvChannelPage, { params, onNavigate });
     return createElement(LiveTvHub, { onNavigate });

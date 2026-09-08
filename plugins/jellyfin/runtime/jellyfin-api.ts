@@ -27,6 +27,8 @@ export interface JellyfinItem {
   IndexNumber?: number
   SeriesId?: string
   UserData?: { PlaybackPositionTicks?: number; LastPlayedDate?: string; Played?: boolean; PlayCount?: number }
+  /** Trickplay-manifest: per mediakälla, per bredd. Finns när servern genererat scrubbningsbilder. */
+  Trickplay?: Record<string, Record<string, { Width: number; Height: number; TileWidth: number; TileHeight: number; ThumbnailCount: number; Interval: number; Bandwidth?: number }>>
   MediaSources?: Array<{
     Id: string
     Path?: string
@@ -88,7 +90,7 @@ export async function fetchViews(settings: JellyfinSettings): Promise<JellyfinLi
     .map((view) => ({ id: view.Id, name: view.Name, type: view.CollectionType as 'movies' | 'tvshows' }))
 }
 
-export const ITEM_FIELDS = 'ProviderIds,Genres,Overview,CommunityRating,RunTimeTicks,DateCreated,PremiereDate,MediaSources,Path,ProductionYear,BackdropImageTags'
+export const ITEM_FIELDS = 'ProviderIds,Genres,Overview,CommunityRating,RunTimeTicks,DateCreated,PremiereDate,MediaSources,Path,ProductionYear,BackdropImageTags,Trickplay'
 
 export async function fetchLibraryItems(
   settings: JellyfinSettings,
@@ -112,6 +114,47 @@ export async function fetchLibraryItems(
   return request<JellyfinItemsPage>(settings, `/Users/${settings.userId}/Items?${params.toString()}`, { timeoutMs: 40_000 })
 }
 
+/**
+ * Avsnitt som ändrats sedan `minDateLastSaved`, för deltaskanningen.
+ *
+ * Ett nytt avsnitt i en BEFINTLIG serie ändrar inte seriens DateLastSaved, så
+ * en delta som bara frågar efter serier såg det aldrig — serien stod kvar
+ * utan avsnittet tills dygnets fullskanning (Jerry 2026-09-06, Reacher S01E04
+ * indexerad som serie med noll avsnitt). Avsnittens SeriesId pekar ut vilka
+ * serier som måste läsas om.
+ */
+export async function fetchChangedEpisodes(
+  settings: JellyfinSettings,
+  library: JellyfinLibraryOption,
+  startIndex: number,
+  limit: number,
+  minDateLastSaved: string,
+): Promise<JellyfinItemsPage> {
+  const params = new URLSearchParams({
+    ParentId: library.id,
+    IncludeItemTypes: 'Episode',
+    Recursive: 'true',
+    Fields: 'SeriesId',
+    StartIndex: String(startIndex),
+    Limit: String(limit),
+    MinDateLastSaved: minDateLastSaved,
+  })
+  return request<JellyfinItemsPage>(settings, `/Users/${settings.userId}/Items?${params.toString()}`, { timeoutMs: 40_000 })
+}
+
+/** Serier per id, i samma form som bibliotekslistningen (för omläsning efter avsnittsändringar). */
+export async function fetchSeriesByIds(settings: JellyfinSettings, ids: string[]): Promise<JellyfinItem[]> {
+  if (ids.length === 0) return []
+  const params = new URLSearchParams({
+    Ids: ids.join(','),
+    IncludeItemTypes: 'Series',
+    Fields: ITEM_FIELDS,
+    EnableUserData: 'true',
+  })
+  const page = await request<JellyfinItemsPage>(settings, `/Users/${settings.userId}/Items?${params.toString()}`, { timeoutMs: 40_000 })
+  return page.Items ?? []
+}
+
 export async function fetchEpisodes(settings: JellyfinSettings, seriesId: string): Promise<JellyfinItem[]> {
   const params = new URLSearchParams({
     UserId: settings.userId ?? '',
@@ -126,6 +169,15 @@ export function imageUrl(settings: Pick<JellyfinSettings, 'serverUrl' | 'accessT
   if (!settings.serverUrl || !settings.accessToken) return null
   const path = kind === 'Backdrop' ? `/Items/${itemId}/Images/Backdrop/0` : `/Items/${itemId}/Images/Primary`
   return `${settings.serverUrl}${path}?maxHeight=${maxHeight}&quality=90&api_key=${encodeURIComponent(settings.accessToken)}`
+}
+
+/**
+ * Trickplay-rutnätsbild: `/Videos/{itemId}/Trickplay/{width}/{index}.jpg`.
+ * Returnerar en mall med `{index}` som kärnans spelare byter ut per bild.
+ */
+export function trickplayUrlTemplate(settings: Pick<JellyfinSettings, 'serverUrl' | 'accessToken'>, itemId: string, mediaSourceId: string, width: number): string | null {
+  if (!settings.serverUrl || !settings.accessToken) return null
+  return `${settings.serverUrl}/Videos/${itemId}/Trickplay/${width}/{index}.jpg?mediaSourceId=${encodeURIComponent(mediaSourceId)}&api_key=${encodeURIComponent(settings.accessToken)}`
 }
 
 export function streamUrl(settings: Pick<JellyfinSettings, 'serverUrl' | 'accessToken'>, itemId: string, mediaSourceId: string): string | null {

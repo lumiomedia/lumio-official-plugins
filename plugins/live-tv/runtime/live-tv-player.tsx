@@ -25,14 +25,17 @@ import {
   useNativePlayer,
   useLang,
   useTvMode,
+  capturePlayerFrame,
 } from '@/lib/plugin-sdk'
 import { LiveTvLogoImage } from './live-tv-logo-image'
 import { getLiveTvLogoSrc } from './live-tv-data'
 import { recordChannelWatch } from './channel-history'
+import { channelKey } from './live-tv-data'
 import { PlayerNowOverlay } from './player-now-overlay'
 import { PlayerScheduleOverlay } from './player-schedule-overlay'
 import { PlayerFavouritesRow, PlayerNextUpCard, PlayerProgrammeProgress } from './player-extras'
 import { useHtmlVideoPlayer } from './hooks/useHtmlVideoPlayer'
+import { HOST_PROXY_MIME, hostProxyUrl as buildHostProxyUrl, nativeFailureAction } from './live-tv-playback-fallback'
 
 interface M3uChannel {
   name: string
@@ -79,6 +82,8 @@ function formatClock(seconds: number): string {
 }
 
 const MPV_STARTUP_TIMEOUT_MS = 18_000
+/** Budget för kanalens egen URL innan värdens strömproxy får försöka. */
+const MPV_FIRST_ATTEMPT_TIMEOUT_MS = 9_000
 
 export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], onSwitchChannel }: LiveTvPlayerProps) {
   const { t } = useLang()
@@ -100,6 +105,18 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
   const controlsHideTimerRef = useRef<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  /**
+   * Nativa motorernas försökstrappa: 0 = kanalens egen URL, 1 = samma ström
+   * genom värdens strömproxy.
+   *
+   * Mätning på telefon 2026-09-08: av 70 nåbara kanaler i Free-TV-listan
+   * föll fem på IO_BAD_HTTP_STATUS eller nätverksfel när ExoPlayer hämtade
+   * dem själv, medan värdens proxy fick tillbaka en felfri spellista för
+   * exakt samma URL:er. Proxyn följer omdirigeringar, sätter sina egna
+   * huvuden och skriver om segmentlänkarna, så den är en riktigt annan väg
+   * till samma ström och inte bara ett omtag.
+   */
+  const [nativeAttempt, setNativeAttempt] = useState(0)
   const [controlsVisible, setControlsVisible] = useState(true)
   const [scheduleOpen, setScheduleOpen] = useState(false)
   // Guide-raden (favoriter med nu-titel) under kontrollerna — handoff §4.
@@ -153,17 +170,37 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
    */
   const IPTV_USER_AGENT =
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
+  /**
+   * Samma ström, men hämtad av värden i stället för av spelaren.
+   *
+   * Absolut URL: mpv och ExoPlayer lever utanför sidan och kan inte lösa en
+   * relativ sökväg. Samma origin som källcachen använder.
+   */
+  const hostProxyUrl = useCallback((url: string) => buildHostProxyUrl(window.location.origin, url), [])
   const engineOpen = useCallback(
     // Android-spelaren tar inga headers (np-bryggan saknar fältet) — den
-    // vägen är oförändrad tills bryggan stödjer det.
+    // vägen är oförändrad tills bryggan stödjer det. UA:n sätts i stället på
+    // ExoPlayers datakälla, se PlayerBridge.
     // Råa MPEG-TS-strömmar (Xtream /live/…ts) får INGET UA-huvud: på appar
     // före 0.1.58 lades det i mpv:s http-header-fields bredvid ffmpegs egen och
     // panelen svarade 400 (svart ruta, 2026-09-03). HLS/DASH behåller
     // webbläsarsträngen som 0.3.43 införde för paneler som 403:ar mpv:s egen.
-    (url: string) => (isDroidEngine
-      ? openNativePlayer({ url })
-      : openMpvPlayer({ url, requestHeaders: /\.ts(?:[?#]|$)/i.test(url) ? undefined : { 'User-Agent': IPTV_USER_AGENT } })),
-    [isDroidEngine],
+    //
+    // mimeType: proxy-URL:en har ingen filändelse, och media3 gissar
+    // container på just filändelsen. Utan ledtråden behandlades en felfri
+    // HLS-spellista som en progressiv fil och föll på
+    // PARSING_CONTAINER_UNSUPPORTED — bevisat på telefon med en kanal som
+    // spelar direkt men inte genom proxyn (Jerry 2026-09-08).
+    (url: string, viaProxy: boolean) => {
+      const target = viaProxy ? hostProxyUrl(url) : url
+      return isDroidEngine
+        ? openNativePlayer({ url: target, ...(viaProxy ? { mimeType: HOST_PROXY_MIME } : {}) })
+        : openMpvPlayer({
+          url: target,
+          requestHeaders: /\.ts(?:[?#]|$)/i.test(target) ? undefined : { 'User-Agent': IPTV_USER_AGENT },
+        })
+    },
+    [isDroidEngine, hostProxyUrl],
   )
   const engineClose = useCallback(
     (): Promise<void> => (isDroidEngine ? closeNativePlayer() : closeMpvPlayer()),
@@ -188,6 +225,8 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
   }, [isDroidEngine])
   const {
     fileLoaded: mpvFileLoaded,
+    loadFailed: mpvLoadFailed,
+    loadFailedToken: mpvLoadFailedToken,
     timePos: mpvTimePos,
     paused: mpvPaused,
     playbackRestarted: mpvPlaybackRestarted,
@@ -451,14 +490,19 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
         .then(() => {
           if (cancelled) return
           syncRepeatedly()
-          return engineOpen(channel.url)
+          return engineOpen(channel.url, nativeAttempt > 0)
         })
         .then(() => {
           if (cancelled) return
           syncRepeatedly()
-          window.setTimeout(() => {
-            if (!cancelled) setLoading(false)
-          }, 1200)
+          // Laddläget släcks INTE på en timer här.
+          //
+          // Den gamla raden satte loading=false 1200 ms efter att motorn
+          // öppnats, oavsett om strömmen kom igång. Det avväpnade samtidigt
+          // startvakten längre ned, som kräver att laddläget står kvar — så
+          // en kanal som aldrig laddade visade en svart ruta märkt "Spelar",
+          // utan felruta och utan omtag. Numera släcker bara en riktig
+          // bildruta (eller startvakten) laddläget.
           if (stageRef.current) {
             resizeObs = new ResizeObserver(sync)
             resizeObs.observe(stageRef.current)
@@ -649,6 +693,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
     }
   }, [
     channel.url,
+    nativeAttempt,
     portalEl,
     resetFileLoaded,
     resetFirstFrameRendered,
@@ -662,15 +707,64 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
     void mpv.setPlayPause(false)
   }, [mpvFileLoaded, hasNativeSurface])
 
+  // Nollställ trappan när kanalen byts: nästa kanal ska börja med sin egen
+  // URL, inte ärva föregående kanals reservväg.
+  useEffect(() => {
+    setNativeAttempt(0)
+  }, [channel.url])
+
+  /**
+   * Motorn sa ifrån: gå vidare i trappan, eller visa felet.
+   *
+   * Spelaren läste tidigare aldrig `loadFailed`, till skillnad från appens
+   * egen spelare. En kanal som svarade 404 gav därför varken omtag eller
+   * felruta — bara en svart bild med "Spelar" under (Jerry 2026-09-08).
+   *
+   * Token-jämförelsen: `loadFailed` står kvar som true efter ett fel, så
+   * utan den skulle effekten larma om vid varje omrendering.
+   */
+  const handledFailTokenRef = useRef<number>(0)
+  useEffect(() => {
+    if (!hasNativeSurface || !mpvLoadFailed) return
+    if (handledFailTokenRef.current === mpvLoadFailedToken) return
+    handledFailTokenRef.current = mpvLoadFailedToken
+    // Andra försöket går genom värdens strömproxy. Laddläget står kvar: för
+    // den som tittar är det fortfarande samma start.
+    if (nativeFailureAction('load-failed', nativeAttempt, mpvTimePos) === 'retry-proxy') {
+      setNativeAttempt(1)
+      return
+    }
+    setError(t('liveTvPlaybackFailed'))
+    setLoading(false)
+    void engineClose().catch(() => {})
+  }, [hasNativeSurface, mpvLoadFailed, mpvLoadFailedToken, nativeAttempt, mpvTimePos])
+
+  // Startvakten läser klockan genom en ref: en ren ljudkanal rapporterar
+  // aldrig en bildruta, men dess speltid rör sig — och då spelar den.
+  const timePosRef = useRef(0)
+  timePosRef.current = mpvTimePos
   useEffect(() => {
     if (!hasNativeSurface || !loading || error || mpvFileLoaded || mpvPlaybackRestarted || mpvFirstFrameRendered) return
+    // Första försöket får en kortare budget: en ström som inte kommit igång
+    // på nio sekunder är oftare fel väg än långsam, och proxyvägen ska hinnas
+    // med innan tittaren ger upp. Sista försöket får hela budgeten.
+    const budget = nativeAttempt === 0 ? MPV_FIRST_ATTEMPT_TIMEOUT_MS : MPV_STARTUP_TIMEOUT_MS
     const timeout = window.setTimeout(() => {
+      const action = nativeFailureAction('no-start', nativeAttempt, timePosRef.current)
+      if (action === 'settle') {
+        setLoading(false)
+        return
+      }
+      if (action === 'retry-proxy') {
+        setNativeAttempt(1)
+        return
+      }
       setError(t('liveTvMpvStartFailed'))
       setLoading(false)
       void engineClose().catch(() => {})
-    }, MPV_STARTUP_TIMEOUT_MS)
+    }, budget)
     return () => window.clearTimeout(timeout)
-  }, [error, loading, mpvFileLoaded, mpvFirstFrameRendered, mpvPlaybackRestarted, hasNativeSurface])
+  }, [error, loading, mpvFileLoaded, mpvFirstFrameRendered, mpvPlaybackRestarted, hasNativeSurface, nativeAttempt])
 
   useEffect(() => {
     if (!hasNativeSurface) return
@@ -682,6 +776,23 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
     const timeout = window.setTimeout(() => setLoading(false), 900)
     return () => window.clearTimeout(timeout)
   }, [mpvFileLoaded, mpvFirstFrameRendered, mpvPlaybackRestarted, hasNativeSurface])
+
+  /**
+   * Sparad bildruta som kortbakgrund (Jerry 2026-09-06): första gången sex
+   * sekunder in i uppspelningen, sedan var 90:e sekund så kortet visar något
+   * aktuellt. mpv tar bilden ur videon själv; <video> ritas via canvas.
+   */
+  const [htmlPlaying, setHtmlPlaying] = useState(false)
+  const frameReady = hasNativeSurface ? mpvFirstFrameRendered : htmlPlaying
+  useEffect(() => {
+    if (!frameReady) return
+    const key = channelKey(channel)
+    const capture = () => { void capturePlayerFrame(key, videoRef.current) }
+    const first = window.setTimeout(capture, 6000)
+    const repeat = window.setInterval(capture, 90_000)
+    return () => { window.clearTimeout(first); window.clearInterval(repeat) }
+  }, [frameReady, channel])
+  useEffect(() => { setHtmlPlaying(false) }, [channel.url])
 
   const handleClose = useCallback(() => {
     if (closingRef.current) return
@@ -747,7 +858,10 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
         void mpv.setPlayPause(false)
         return
       }
-      void engineClose().catch(() => {}).then(() => engineOpen(channel.url))
+      // Behåll vägen vi faktiskt spelar på: står vi på proxyvägen ska
+      // återupptagningen också gå den vägen, annars laddar den om till en
+      // URL som redan visat sig inte fungera.
+      void engineClose().catch(() => {}).then(() => engineOpen(channel.url, nativeAttempt > 0))
       return
     }
     void mpv.setPlayPause(true)
@@ -860,6 +974,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
             onLoadedMetadata={() => setLoading(false)}
             onPlaying={() => {
               setLoading(false)
+              setHtmlPlaying(true)
               // Bilder rullar = det finns inget fel längre. Ett fel från en
               // tidigare källa (kanalbyte, omstartad session) fick annars ligga
               // kvar och täcka en ström som spelade.

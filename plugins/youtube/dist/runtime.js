@@ -143,22 +143,230 @@
     }
   });
 
-  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/jsx-runtime-shim.ts
-  var jsx_runtime_shim_exports = {};
-  __export(jsx_runtime_shim_exports, {
-    Fragment: () => Fragment2,
-    jsx: () => jsx,
-    jsxDEV: () => jsxDEV,
-    jsxs: () => jsxs
+  // node_modules/@tauri-apps/api/external/tslib/tslib.es6.cjs
+  var require_tslib_es6 = __commonJS({
+    "node_modules/@tauri-apps/api/external/tslib/tslib.es6.cjs"(exports) {
+      "use strict";
+      function __classPrivateFieldGet2(receiver, state, kind, f) {
+        if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
+        if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+        return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
+      }
+      function __classPrivateFieldSet2(receiver, state, value, kind, f) {
+        if (kind === "m") throw new TypeError("Private method is not writable");
+        if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
+        if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
+        return kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value), value;
+      }
+      exports.__classPrivateFieldGet = __classPrivateFieldGet2;
+      exports.__classPrivateFieldSet = __classPrivateFieldSet2;
+    }
   });
-  var runtime, Fragment2, jsx, jsxs, jsxDEV;
-  var init_jsx_runtime_shim = __esm({
-    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/jsx-runtime-shim.ts"() {
-      runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
-      Fragment2 = runtime.Fragment;
-      jsx = runtime.jsx;
-      jsxs = runtime.jsxs;
-      jsxDEV = runtime.jsxDEV;
+
+  // node_modules/@tauri-apps/api/core.cjs
+  var require_core = __commonJS({
+    "node_modules/@tauri-apps/api/core.cjs"(exports) {
+      "use strict";
+      var tslib_es6 = require_tslib_es6();
+      var _Channel_onmessage;
+      var _Channel_nextMessageIndex;
+      var _Channel_pendingMessages;
+      var _Channel_messageEndIndex;
+      var _Resource_rid;
+      var SERIALIZE_TO_IPC_FN = "__TAURI_TO_IPC_KEY__";
+      function transformCallback(callback, once = false) {
+        return window.__TAURI_INTERNALS__.transformCallback(callback, once);
+      }
+      var Channel = class {
+        constructor(onmessage) {
+          _Channel_onmessage.set(this, void 0);
+          _Channel_nextMessageIndex.set(this, 0);
+          _Channel_pendingMessages.set(this, []);
+          _Channel_messageEndIndex.set(this, void 0);
+          tslib_es6.__classPrivateFieldSet(this, _Channel_onmessage, onmessage || (() => {
+          }), "f");
+          this.id = transformCallback((rawMessage) => {
+            const index3 = rawMessage.index;
+            if ("end" in rawMessage) {
+              if (index3 == tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")) {
+                this.cleanupCallback();
+              } else {
+                tslib_es6.__classPrivateFieldSet(this, _Channel_messageEndIndex, index3, "f");
+              }
+              return;
+            }
+            const message = rawMessage.message;
+            if (index3 == tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")) {
+              tslib_es6.__classPrivateFieldGet(this, _Channel_onmessage, "f").call(this, message);
+              tslib_es6.__classPrivateFieldSet(this, _Channel_nextMessageIndex, tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") + 1, "f");
+              while (tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") in tslib_es6.__classPrivateFieldGet(this, _Channel_pendingMessages, "f")) {
+                const message2 = tslib_es6.__classPrivateFieldGet(this, _Channel_pendingMessages, "f")[tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")];
+                tslib_es6.__classPrivateFieldGet(this, _Channel_onmessage, "f").call(this, message2);
+                delete tslib_es6.__classPrivateFieldGet(this, _Channel_pendingMessages, "f")[tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")];
+                tslib_es6.__classPrivateFieldSet(this, _Channel_nextMessageIndex, tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") + 1, "f");
+              }
+              if (tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") === tslib_es6.__classPrivateFieldGet(this, _Channel_messageEndIndex, "f")) {
+                this.cleanupCallback();
+              }
+            } else {
+              tslib_es6.__classPrivateFieldGet(this, _Channel_pendingMessages, "f")[index3] = message;
+            }
+          });
+        }
+        cleanupCallback() {
+          window.__TAURI_INTERNALS__.unregisterCallback(this.id);
+        }
+        set onmessage(handler) {
+          tslib_es6.__classPrivateFieldSet(this, _Channel_onmessage, handler, "f");
+        }
+        get onmessage() {
+          return tslib_es6.__classPrivateFieldGet(this, _Channel_onmessage, "f");
+        }
+        [(_Channel_onmessage = /* @__PURE__ */ new WeakMap(), _Channel_nextMessageIndex = /* @__PURE__ */ new WeakMap(), _Channel_pendingMessages = /* @__PURE__ */ new WeakMap(), _Channel_messageEndIndex = /* @__PURE__ */ new WeakMap(), SERIALIZE_TO_IPC_FN)]() {
+          return `__CHANNEL__:${this.id}`;
+        }
+        toJSON() {
+          return this[SERIALIZE_TO_IPC_FN]();
+        }
+      };
+      var PluginListener = class {
+        constructor(plugin2, event, channelId) {
+          this.plugin = plugin2;
+          this.event = event;
+          this.channelId = channelId;
+        }
+        async unregister() {
+          return invoke5(`plugin:${this.plugin}|remove_listener`, {
+            event: this.event,
+            channelId: this.channelId
+          });
+        }
+      };
+      async function addPluginListener(plugin2, event, cb) {
+        const handler = new Channel(cb);
+        try {
+          await invoke5(`plugin:${plugin2}|register_listener`, {
+            event,
+            handler
+          });
+          return new PluginListener(plugin2, event, handler.id);
+        } catch {
+          await invoke5(`plugin:${plugin2}|registerListener`, { event, handler });
+          return new PluginListener(plugin2, event, handler.id);
+        }
+      }
+      async function checkPermissions(plugin2) {
+        return invoke5(`plugin:${plugin2}|check_permissions`);
+      }
+      async function requestPermissions(plugin2) {
+        return invoke5(`plugin:${plugin2}|request_permissions`);
+      }
+      async function invoke5(cmd, args = {}, options) {
+        return window.__TAURI_INTERNALS__.invoke(cmd, args, options);
+      }
+      function convertFileSrc(filePath, protocol = "asset") {
+        return window.__TAURI_INTERNALS__.convertFileSrc(filePath, protocol);
+      }
+      var Resource = class {
+        get rid() {
+          return tslib_es6.__classPrivateFieldGet(this, _Resource_rid, "f");
+        }
+        constructor(rid) {
+          _Resource_rid.set(this, void 0);
+          tslib_es6.__classPrivateFieldSet(this, _Resource_rid, rid, "f");
+        }
+        /**
+         * Destroys and cleans up this resource from memory.
+         * **You should not call any method on this object anymore and should drop any reference to it.**
+         */
+        async close() {
+          return invoke5("plugin:resources|close", {
+            rid: this.rid
+          });
+        }
+      };
+      _Resource_rid = /* @__PURE__ */ new WeakMap();
+      function isTauri() {
+        return !!(globalThis || window).isTauri;
+      }
+      exports.Channel = Channel;
+      exports.PluginListener = PluginListener;
+      exports.Resource = Resource;
+      exports.SERIALIZE_TO_IPC_FN = SERIALIZE_TO_IPC_FN;
+      exports.addPluginListener = addPluginListener;
+      exports.checkPermissions = checkPermissions;
+      exports.convertFileSrc = convertFileSrc;
+      exports.invoke = invoke5;
+      exports.isTauri = isTauri;
+      exports.requestPermissions = requestPermissions;
+      exports.transformCallback = transformCallback;
+    }
+  });
+
+  // node_modules/@tauri-apps/api/event.cjs
+  var require_event = __commonJS({
+    "node_modules/@tauri-apps/api/event.cjs"(exports) {
+      "use strict";
+      var core = require_core();
+      exports.TauriEvent = void 0;
+      (function(TauriEvent) {
+        TauriEvent["WINDOW_RESIZED"] = "tauri://resize";
+        TauriEvent["WINDOW_MOVED"] = "tauri://move";
+        TauriEvent["WINDOW_CLOSE_REQUESTED"] = "tauri://close-requested";
+        TauriEvent["WINDOW_DESTROYED"] = "tauri://destroyed";
+        TauriEvent["WINDOW_FOCUS"] = "tauri://focus";
+        TauriEvent["WINDOW_BLUR"] = "tauri://blur";
+        TauriEvent["WINDOW_SCALE_FACTOR_CHANGED"] = "tauri://scale-change";
+        TauriEvent["WINDOW_THEME_CHANGED"] = "tauri://theme-changed";
+        TauriEvent["WINDOW_CREATED"] = "tauri://window-created";
+        TauriEvent["WEBVIEW_CREATED"] = "tauri://webview-created";
+        TauriEvent["DRAG_ENTER"] = "tauri://drag-enter";
+        TauriEvent["DRAG_OVER"] = "tauri://drag-over";
+        TauriEvent["DRAG_DROP"] = "tauri://drag-drop";
+        TauriEvent["DRAG_LEAVE"] = "tauri://drag-leave";
+      })(exports.TauriEvent || (exports.TauriEvent = {}));
+      async function _unlisten(event, eventId) {
+        window.__TAURI_EVENT_PLUGIN_INTERNALS__.unregisterListener(event, eventId);
+        await core.invoke("plugin:event|unlisten", {
+          event,
+          eventId
+        });
+      }
+      async function listen2(event, handler, options) {
+        var _a;
+        const target = typeof (options === null || options === void 0 ? void 0 : options.target) === "string" ? { kind: "AnyLabel", label: options.target } : (_a = options === null || options === void 0 ? void 0 : options.target) !== null && _a !== void 0 ? _a : { kind: "Any" };
+        return core.invoke("plugin:event|listen", {
+          event,
+          target,
+          handler: core.transformCallback(handler)
+        }).then((eventId) => {
+          return async () => _unlisten(event, eventId);
+        });
+      }
+      async function once(event, handler, options) {
+        return listen2(event, (eventData) => {
+          void _unlisten(event, eventData.id);
+          handler(eventData);
+        }, options);
+      }
+      async function emit(event, payload) {
+        await core.invoke("plugin:event|emit", {
+          event,
+          payload
+        });
+      }
+      async function emitTo(target, event, payload) {
+        const eventTarget = typeof target === "string" ? { kind: "AnyLabel", label: target } : target;
+        await core.invoke("plugin:event|emit_to", {
+          target: eventTarget,
+          event,
+          payload
+        });
+      }
+      exports.emit = emit;
+      exports.emitTo = emitTo;
+      exports.listen = listen2;
+      exports.once = once;
     }
   });
 
@@ -194,6 +402,7 @@
     hasStreamProviders: () => hasStreamProviders,
     notifyPluginRegistryChanged: () => notifyPluginRegistryChanged,
     registerPlugin: () => registerPlugin,
+    replaceMainMenuItems: () => replaceMainMenuItems,
     subscribePluginRegistry: () => subscribePluginRegistry
   });
   function notifyRegistryChanged() {
@@ -422,6 +631,17 @@
   function getMainMenuItems() {
     return mainMenuItems;
   }
+  function replaceMainMenuItems(owner, items) {
+    const previous = new Set(ownedMainMenuItemIds.get(owner) ?? []);
+    for (let index3 = mainMenuItems.length - 1; index3 >= 0; index3 -= 1) {
+      if (previous.has(mainMenuItems[index3].id)) mainMenuItems.splice(index3, 1);
+    }
+    for (const item of items) {
+      if (!mainMenuItems.find((entry) => entry.id === item.id)) mainMenuItems.push(item);
+    }
+    ownedMainMenuItemIds.set(owner, items.map((item) => item.id));
+    notifyRegistryChanged();
+  }
   function getTopbarItems() {
     return topbarItems;
   }
@@ -443,7 +663,7 @@
   function notifyPluginRegistryChanged() {
     notifyRegistryChanged();
   }
-  var streamProviders, libraryProviders, mediaStreamCatalogProviders, mediaStreamAvailabilityProviders, instantPlayProviders, resumeRefreshProviders, playableUrlRewriters, streamRequestConfigProviders, episodeSidebarProviders, playbackCapabilityProviders, syncIdentityProviders, authCapabilityProviders, overviewStatusProviders, settingsSections, mediaDownloadActions, mediaDetailsActions, homeRows, homeSources, bootstraps, heroes, homeOverrides, browsePages, mainMenuItems, topbarItems, managedAuthConsumers, registeredPluginIds, registryRevision, registryListeners, registryNotifyScheduled;
+  var streamProviders, libraryProviders, mediaStreamCatalogProviders, mediaStreamAvailabilityProviders, instantPlayProviders, resumeRefreshProviders, playableUrlRewriters, streamRequestConfigProviders, episodeSidebarProviders, playbackCapabilityProviders, syncIdentityProviders, authCapabilityProviders, overviewStatusProviders, settingsSections, mediaDownloadActions, mediaDetailsActions, homeRows, homeSources, bootstraps, heroes, homeOverrides, browsePages, mainMenuItems, topbarItems, managedAuthConsumers, registeredPluginIds, registryRevision, registryListeners, registryNotifyScheduled, ownedMainMenuItemIds;
   var init_plugin_registry = __esm({
     "lib/plugin-registry.ts"() {
       "use strict";
@@ -476,233 +696,26 @@
       registryRevision = 0;
       registryListeners = /* @__PURE__ */ new Set();
       registryNotifyScheduled = false;
+      ownedMainMenuItemIds = /* @__PURE__ */ new Map();
     }
   });
 
-  // node_modules/@tauri-apps/api/external/tslib/tslib.es6.cjs
-  var require_tslib_es6 = __commonJS({
-    "node_modules/@tauri-apps/api/external/tslib/tslib.es6.cjs"(exports) {
-      "use strict";
-      function __classPrivateFieldGet2(receiver, state, kind, f) {
-        if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
-        if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
-        return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
-      }
-      function __classPrivateFieldSet2(receiver, state, value, kind, f) {
-        if (kind === "m") throw new TypeError("Private method is not writable");
-        if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
-        if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
-        return kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value), value;
-      }
-      exports.__classPrivateFieldGet = __classPrivateFieldGet2;
-      exports.__classPrivateFieldSet = __classPrivateFieldSet2;
-    }
+  // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/jsx-runtime-shim.ts
+  var jsx_runtime_shim_exports = {};
+  __export(jsx_runtime_shim_exports, {
+    Fragment: () => Fragment2,
+    jsx: () => jsx,
+    jsxDEV: () => jsxDEV,
+    jsxs: () => jsxs
   });
-
-  // node_modules/@tauri-apps/api/core.cjs
-  var require_core = __commonJS({
-    "node_modules/@tauri-apps/api/core.cjs"(exports) {
-      "use strict";
-      var tslib_es6 = require_tslib_es6();
-      var _Channel_onmessage;
-      var _Channel_nextMessageIndex;
-      var _Channel_pendingMessages;
-      var _Channel_messageEndIndex;
-      var _Resource_rid;
-      var SERIALIZE_TO_IPC_FN = "__TAURI_TO_IPC_KEY__";
-      function transformCallback(callback, once = false) {
-        return window.__TAURI_INTERNALS__.transformCallback(callback, once);
-      }
-      var Channel = class {
-        constructor(onmessage) {
-          _Channel_onmessage.set(this, void 0);
-          _Channel_nextMessageIndex.set(this, 0);
-          _Channel_pendingMessages.set(this, []);
-          _Channel_messageEndIndex.set(this, void 0);
-          tslib_es6.__classPrivateFieldSet(this, _Channel_onmessage, onmessage || (() => {
-          }), "f");
-          this.id = transformCallback((rawMessage) => {
-            const index3 = rawMessage.index;
-            if ("end" in rawMessage) {
-              if (index3 == tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")) {
-                this.cleanupCallback();
-              } else {
-                tslib_es6.__classPrivateFieldSet(this, _Channel_messageEndIndex, index3, "f");
-              }
-              return;
-            }
-            const message = rawMessage.message;
-            if (index3 == tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")) {
-              tslib_es6.__classPrivateFieldGet(this, _Channel_onmessage, "f").call(this, message);
-              tslib_es6.__classPrivateFieldSet(this, _Channel_nextMessageIndex, tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") + 1, "f");
-              while (tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") in tslib_es6.__classPrivateFieldGet(this, _Channel_pendingMessages, "f")) {
-                const message2 = tslib_es6.__classPrivateFieldGet(this, _Channel_pendingMessages, "f")[tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")];
-                tslib_es6.__classPrivateFieldGet(this, _Channel_onmessage, "f").call(this, message2);
-                delete tslib_es6.__classPrivateFieldGet(this, _Channel_pendingMessages, "f")[tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f")];
-                tslib_es6.__classPrivateFieldSet(this, _Channel_nextMessageIndex, tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") + 1, "f");
-              }
-              if (tslib_es6.__classPrivateFieldGet(this, _Channel_nextMessageIndex, "f") === tslib_es6.__classPrivateFieldGet(this, _Channel_messageEndIndex, "f")) {
-                this.cleanupCallback();
-              }
-            } else {
-              tslib_es6.__classPrivateFieldGet(this, _Channel_pendingMessages, "f")[index3] = message;
-            }
-          });
-        }
-        cleanupCallback() {
-          window.__TAURI_INTERNALS__.unregisterCallback(this.id);
-        }
-        set onmessage(handler) {
-          tslib_es6.__classPrivateFieldSet(this, _Channel_onmessage, handler, "f");
-        }
-        get onmessage() {
-          return tslib_es6.__classPrivateFieldGet(this, _Channel_onmessage, "f");
-        }
-        [(_Channel_onmessage = /* @__PURE__ */ new WeakMap(), _Channel_nextMessageIndex = /* @__PURE__ */ new WeakMap(), _Channel_pendingMessages = /* @__PURE__ */ new WeakMap(), _Channel_messageEndIndex = /* @__PURE__ */ new WeakMap(), SERIALIZE_TO_IPC_FN)]() {
-          return `__CHANNEL__:${this.id}`;
-        }
-        toJSON() {
-          return this[SERIALIZE_TO_IPC_FN]();
-        }
-      };
-      var PluginListener = class {
-        constructor(plugin2, event, channelId) {
-          this.plugin = plugin2;
-          this.event = event;
-          this.channelId = channelId;
-        }
-        async unregister() {
-          return invoke5(`plugin:${this.plugin}|remove_listener`, {
-            event: this.event,
-            channelId: this.channelId
-          });
-        }
-      };
-      async function addPluginListener(plugin2, event, cb) {
-        const handler = new Channel(cb);
-        try {
-          await invoke5(`plugin:${plugin2}|register_listener`, {
-            event,
-            handler
-          });
-          return new PluginListener(plugin2, event, handler.id);
-        } catch {
-          await invoke5(`plugin:${plugin2}|registerListener`, { event, handler });
-          return new PluginListener(plugin2, event, handler.id);
-        }
-      }
-      async function checkPermissions(plugin2) {
-        return invoke5(`plugin:${plugin2}|check_permissions`);
-      }
-      async function requestPermissions(plugin2) {
-        return invoke5(`plugin:${plugin2}|request_permissions`);
-      }
-      async function invoke5(cmd, args = {}, options) {
-        return window.__TAURI_INTERNALS__.invoke(cmd, args, options);
-      }
-      function convertFileSrc(filePath, protocol = "asset") {
-        return window.__TAURI_INTERNALS__.convertFileSrc(filePath, protocol);
-      }
-      var Resource = class {
-        get rid() {
-          return tslib_es6.__classPrivateFieldGet(this, _Resource_rid, "f");
-        }
-        constructor(rid) {
-          _Resource_rid.set(this, void 0);
-          tslib_es6.__classPrivateFieldSet(this, _Resource_rid, rid, "f");
-        }
-        /**
-         * Destroys and cleans up this resource from memory.
-         * **You should not call any method on this object anymore and should drop any reference to it.**
-         */
-        async close() {
-          return invoke5("plugin:resources|close", {
-            rid: this.rid
-          });
-        }
-      };
-      _Resource_rid = /* @__PURE__ */ new WeakMap();
-      function isTauri() {
-        return !!(globalThis || window).isTauri;
-      }
-      exports.Channel = Channel;
-      exports.PluginListener = PluginListener;
-      exports.Resource = Resource;
-      exports.SERIALIZE_TO_IPC_FN = SERIALIZE_TO_IPC_FN;
-      exports.addPluginListener = addPluginListener;
-      exports.checkPermissions = checkPermissions;
-      exports.convertFileSrc = convertFileSrc;
-      exports.invoke = invoke5;
-      exports.isTauri = isTauri;
-      exports.requestPermissions = requestPermissions;
-      exports.transformCallback = transformCallback;
-    }
-  });
-
-  // node_modules/@tauri-apps/api/event.cjs
-  var require_event = __commonJS({
-    "node_modules/@tauri-apps/api/event.cjs"(exports) {
-      "use strict";
-      var core = require_core();
-      exports.TauriEvent = void 0;
-      (function(TauriEvent) {
-        TauriEvent["WINDOW_RESIZED"] = "tauri://resize";
-        TauriEvent["WINDOW_MOVED"] = "tauri://move";
-        TauriEvent["WINDOW_CLOSE_REQUESTED"] = "tauri://close-requested";
-        TauriEvent["WINDOW_DESTROYED"] = "tauri://destroyed";
-        TauriEvent["WINDOW_FOCUS"] = "tauri://focus";
-        TauriEvent["WINDOW_BLUR"] = "tauri://blur";
-        TauriEvent["WINDOW_SCALE_FACTOR_CHANGED"] = "tauri://scale-change";
-        TauriEvent["WINDOW_THEME_CHANGED"] = "tauri://theme-changed";
-        TauriEvent["WINDOW_CREATED"] = "tauri://window-created";
-        TauriEvent["WEBVIEW_CREATED"] = "tauri://webview-created";
-        TauriEvent["DRAG_ENTER"] = "tauri://drag-enter";
-        TauriEvent["DRAG_OVER"] = "tauri://drag-over";
-        TauriEvent["DRAG_DROP"] = "tauri://drag-drop";
-        TauriEvent["DRAG_LEAVE"] = "tauri://drag-leave";
-      })(exports.TauriEvent || (exports.TauriEvent = {}));
-      async function _unlisten(event, eventId) {
-        window.__TAURI_EVENT_PLUGIN_INTERNALS__.unregisterListener(event, eventId);
-        await core.invoke("plugin:event|unlisten", {
-          event,
-          eventId
-        });
-      }
-      async function listen2(event, handler, options) {
-        var _a;
-        const target = typeof (options === null || options === void 0 ? void 0 : options.target) === "string" ? { kind: "AnyLabel", label: options.target } : (_a = options === null || options === void 0 ? void 0 : options.target) !== null && _a !== void 0 ? _a : { kind: "Any" };
-        return core.invoke("plugin:event|listen", {
-          event,
-          target,
-          handler: core.transformCallback(handler)
-        }).then((eventId) => {
-          return async () => _unlisten(event, eventId);
-        });
-      }
-      async function once(event, handler, options) {
-        return listen2(event, (eventData) => {
-          void _unlisten(event, eventData.id);
-          handler(eventData);
-        }, options);
-      }
-      async function emit(event, payload) {
-        await core.invoke("plugin:event|emit", {
-          event,
-          payload
-        });
-      }
-      async function emitTo(target, event, payload) {
-        const eventTarget = typeof target === "string" ? { kind: "AnyLabel", label: target } : target;
-        await core.invoke("plugin:event|emit_to", {
-          target: eventTarget,
-          event,
-          payload
-        });
-      }
-      exports.emit = emit;
-      exports.emitTo = emitTo;
-      exports.listen = listen2;
-      exports.once = once;
+  var runtime, Fragment2, jsx, jsxs, jsxDEV;
+  var init_jsx_runtime_shim = __esm({
+    "../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/jsx-runtime-shim.ts"() {
+      runtime = globalThis.__lumioPluginRuntime?.jsxRuntime;
+      Fragment2 = runtime.Fragment;
+      jsx = runtime.jsx;
+      jsxs = runtime.jsxs;
+      jsxDEV = runtime.jsxDEV;
     }
   });
 
@@ -166201,6 +166214,43 @@
   // ../lumio-official-plugins/plugins/youtube/runtime/youtube-browser.tsx
   init_react_shim();
 
+  // lib/tauri-mpv.ts
+  var import_core = __toESM(require_core());
+  var import_event = __toESM(require_event());
+  init_react_shim();
+
+  // lib/session-host.ts
+  function normalizeHost(rawHost) {
+    return rawHost.trim().toLowerCase().replace(/\.+$/, "");
+  }
+  function isLocalAppHost(hostname) {
+    const host = normalizeHost(hostname);
+    if (!host) return false;
+    if (host === "localhost" || host === "127.0.0.1" || host === "::1") return true;
+    if (host === "tauri.localhost" || host.endsWith(".tauri.localhost")) return true;
+    return false;
+  }
+
+  // lib/tauri-mpv.ts
+  init_plugin_registry();
+  function detectTauriEnv() {
+    if (typeof window === "undefined") return false;
+    const maybeTauriWindow = window;
+    if (maybeTauriWindow.__TAURI_INTERNALS__ || maybeTauriWindow.__TAURI__) {
+      return true;
+    }
+    const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "";
+    if (userAgent.includes("Tauri")) return true;
+    const host = window.location.hostname;
+    const port = window.location.port;
+    return isLocalAppHost(host) && port === "3011";
+  }
+  var isTauriEnv = detectTauriEnv();
+  var hasTauriIpc = typeof window !== "undefined" && Boolean(
+    window.__TAURI_INTERNALS__ || window.__TAURI__
+  );
+  var isDesktopTauriEnv = isTauriEnv && hasTauriIpc && !(typeof navigator !== "undefined" && /android/i.test(navigator.userAgent));
+
   // ../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/profile-storage-shim.ts
   var sdk = globalThis.__lumioPluginRuntime?.sdk;
   var getScopedStorageItem = (baseKey) => sdk.getScopedStorageItem(baseKey);
@@ -166305,7 +166355,7 @@
       m3uFetchList: "Fetch list",
       m3uFetchListDone: "List fetched",
       m3uFetchListError: "Could not fetch list",
-      liveTvLists: "Channel lists",
+      liveTvLists: "Live TV",
       liveTvCreateList: "Create list",
       liveTvListName: "List name",
       liveTvNoLists: "No channel lists yet.",
@@ -166565,6 +166615,8 @@
       sideMenuTitle: "Side menu",
       sideMenuDesc: "A floating icon rail on the left instead of the horizontal menu. Search moves into the rail. Desktop only.",
       sideMenuOn: "Side menu",
+      menuChipTitle: "Menu pill (TV style)",
+      menuChipDesc: "The TV mode menu pill in the top-left corner, with search inside the menu. Replaces the side menu and the top bar on desktop, and the top bar on mobile.",
       sideMenuOff: "Horizontal menu",
       vlcToggleOn: "VLC on",
       vlcToggleOff: "VLC off",
@@ -166877,8 +166929,8 @@
       appTheme: "Theme",
       appThemeDesc: "Background tone across the whole app.",
       themeMidnight: "Midnight",
-      themeMidnightDesc: "Today's Lumio: deep blue background.",
-      themePitchDesc: "Near-black for OLED and dark rooms.",
+      themeMidnightDesc: "Deep blue background.",
+      themePitchDesc: "Default. Near-black for OLED and dark rooms.",
       themeSystemDesc: "Switches with the macOS appearance setting.",
       accentColor: "Accent color",
       profileSharedTab: "Shared settings",
@@ -167094,6 +167146,12 @@
       remoteSessionModeDesc: "Which UI browser sessions served by this app get. Auto inherits the TV mode choice above plus the device\u2019s own detection; Desktop and TV force one mode.",
       remoteSessionModeDesktop: "Desktop",
       remoteSessionModeTv: "TV",
+      tvMenuPlacementTitle: "Menu placement",
+      tvMenuChipHiddenTitle: "Hide the Menu pill",
+      tvMenuChipHiddenHint: "The menu stays and still opens with \u25C2 or \u25B4 from the content.",
+      tvMenuPlacementHint: "Where the menu sits. The content is the same either way.",
+      tvMenuPlacementTop: "Top",
+      tvMenuPlacementSide: "Side",
       tvSegmentsEyebrow: "Rows per segment",
       tvSegmentLabel: "Segment",
       tvSegmentDesc: "Each segment has its own rows in TV mode. It starts out mirroring your normal home screen, so nothing changes until you change it here.",
@@ -167585,6 +167643,33 @@
       homeSourceFrenchCinema: "French Cinema",
       homeSourceKdrama: "K-Drama",
       tvSegmentAnime: "Anime",
+      tvBackAgainToExit: "Press Back again to exit",
+      tvHeroFeatured: "Featured",
+      tvHeroMyList: "My list",
+      tvHeroPagerDot: "Featured title {n} of {total}",
+      tvHeroRuntimeHm: "{h} h {m} min",
+      tvHeroRuntimeM: "{m} min",
+      tvHeroStreamsN: "{n} streams",
+      // TV-skalets rader. Hintraden ("HÅLL ▸ snabbspola" m.fl.) togs bort:
+      // förklarande text i varje bild är inte information man behöver mer än
+      // en gång. Positionsräknaren behöver ingen nyckel.
+      tvGenreRowTitle: "Genres",
+      tvRowFailed: "Could not be loaded",
+      tvRowNoRenderer: "Not available in TV mode yet",
+      tvQuickPlay: "Play",
+      tvQuickMarkWatched: "Mark as watched",
+      tvQuickUnmarkWatched: "Mark as unwatched",
+      tvQuickMoreInfo: "More info",
+      tvQuickShowAllRow: "Show all in this row",
+      tvQuickUnfollow: "Unfollow",
+      tvMenuChip: "Menu",
+      tvMenuSearch: "Search",
+      tvSearchFilters: "Search & filters",
+      tvMenuSources: "Libraries and sources",
+      tvQuickRemoveContinue: "Remove from Continue watching",
+      tvCollectionHint: "Film collection \u2014 press OK to browse the movies in release order.",
+      tvProviderHint: "Streaming service \u2014 press OK to see the movies and series available on {name}, sorted by popularity.",
+      tvCollectionSummary: "{count} films ({years}): {titles}",
       homeSourceAnimeSeries: "Anime Series",
       homeSourceMoodComfort: "Comfort Watch",
       homeSourceMoodMind: "Mind Benders",
@@ -167611,7 +167696,7 @@
       homeSourcePrestigeDrama: "Prestige Drama",
       homeSourceAnimeMovies: "Anime Movies",
       homeSourceAnimeTopSeries: "Top Rated Anime",
-      homeSourceStreamingServices: "Streaming services",
+      homeSourceStreamingServices: "Streaming",
       homeSourceStudios: "Studios",
       liveTvList: "Live TV list",
       liveTvChooseList: "Choose a Live TV list",
@@ -167748,6 +167833,16 @@
       nextEpPopupAuto: "Auto",
       creditsRecommendations: "Recommendations during the credits",
       creditsRecommendationsDesc: "When the credits start, the picture shrinks to a corner window and the next title is shown. Applies to films and season finales \u2014 never mid-season.",
+      statsHudMenuLabel: "Statistics",
+      playbackSpeedMenuLabel: "Speed",
+      stripSdhTitle: "Hide hearing-impaired text",
+      stripSdhHint: "Removes [sounds], (sighs), \u266A lyrics and speaker names from subtitles.",
+      appUpdateChannel: "Update channel",
+      appUpdateChannelStable: "Stable",
+      appUpdateChannelBeta: "Beta",
+      appUpdateChannelHint: "Beta gets test builds before they are released to everyone.",
+      exitOnCloseTitle: "Quit fully on close",
+      exitOnCloseHint: "Android/TV: end the process when you leave the app instead of keeping it in the background. Frees memory on small boxes.",
       creditsFinishedSeason: "Season %s is over",
       creditsNextSeason: "Season %s",
       creditsFinishedTitle: "You finished",
@@ -167906,7 +168001,7 @@
       syncFailed: "Sync failed",
       genericError: "Error",
       dlDone: "Done",
-      introFound: "Intro found",
+      introFound: "Intro",
       /* Korta etiketter i telefonens kontrollrad — brickan är 62 px och pillret
          ska rymmas i en rullande rad, så namnen är avsiktligt kortare än de
          fullständiga (som ligger kvar som titel och i Mer-menyn). */
@@ -167918,8 +168013,8 @@
       plShortCast: "Cast",
       plShortFullscreen: "Fullscreen",
       plShortMore: "More",
-      recapFound: "Recap found",
-      outroFound: "Outro found",
+      recapFound: "Recap",
+      outroFound: "Outro",
       introDebugAutoOn: "Auto-skip on",
       introDebugAutoOff: "Auto-skip off",
       aspectAuto: "Auto",
@@ -168135,6 +168230,13 @@
       streamsLayoutDesc: "In the side panel, or as a section on the page above Recommendations. Series get streams under each episode.",
       streamsLayoutSidebar: "Side panel",
       streamsLayoutInline: "On the page",
+      tvStreamsLayoutCards: "Side-scrolling",
+      tvTypeWithRemote: "type",
+      tvTypeKeyHint: "Type the key with the remote. It is saved when you press Done and is never shown on screen.",
+      streamSizeSmall: "Small",
+      streamSizeMedium: "Medium",
+      streamSizeLarge: "Large",
+      tvStreamsLayoutHint: "Side-scrolling: streams sit on the page as a row of cards. Side panel: a Streams button next to Play opens the list.",
       castCountTitle: "Cast members shown",
       castCountDesc: "How many of the cast appear on the details page. Phones page them eight at a time; desktop scrolls.",
       gestTabLabel: "Gestures",
@@ -168270,14 +168372,13 @@
       kpProvidedCatalogs: "Provided catalogs",
       kpMetricActiveAddons: "Active addons",
       sourcesEmptyTitle: "No sources yet",
-      coreStreamsToggle: "Use Lumio's own stream list (beta)",
-      coreStreamsToggleDesc: "Streams are fetched and played by the app itself, straight from your sources. Takes effect after a restart.",
       coreStreamsHidden: "{count} streams hidden by quality filters",
       coreStreamsSelectEpisode: "Pick an episode to see its streams.",
       coreStreamsSource: "Source",
       coreStreamsCached: "Cached",
       coreStreamsLoading: "Checking sources\u2026",
       streamNotServingMedia: "The source did not deliver playable media. Try another stream.",
+      libraryServerUnreachable: "Could not get a playback address from {source}. Check that the server is running.",
       libraryRowSuffix: "in your library",
       libraryModeTab: "Library",
       libraryModeTitle: "Library mode",
@@ -168285,6 +168386,17 @@
       libraryUseAsHome: "Use as home page",
       libraryUseAsHomeHint: "Tick one or more libraries. Home page, details page, search and Zapp are then fed only from them, together. Stream sources stay hidden while it is on.",
       librarySourcesTitle: "Indexed libraries",
+      localLibraryTitle: "Local folders",
+      localLibraryHint: "Each folder becomes its own library with a menu entry, like Plex or Jellyfin. Files are matched against TMDB by name: \u201CTitle (Year).mkv\u201D for movies, \u201CSeries/Season 01/Series S01E04.mkv\u201D for episodes.",
+      localLibraryAdd: "Add folder",
+      localLibraryRemove: "Remove",
+      localLibraryUpdate: "Update",
+      localLibraryRebuild: "Rebuild",
+      localLibraryBuild: "Build index",
+      localLibraryEmpty: "No folders yet.",
+      localLibraryScanning: "Indexing\u2026 {done}",
+      localLibraryNotIndexed: "Not indexed yet",
+      libraryRowUnmatched: "Not identified",
       librarySourceNotIndexed: "Not indexed yet \u2014 build the index in the plugin's settings.",
       libraryModeOff: "No library is set as the home page. Turn it on under the library plugin's settings.",
       libraryRowIndexed: "{count} indexed",
@@ -168444,6 +168556,8 @@
       hpMoveDown: "Move down",
       hpSourceLabel: "Source",
       hpCardCountLabel: "Number of cards",
+      hpMobileRowsLabel: "Rows on phone",
+      hpMobileRowsAuto: "Auto",
       hpPopularStreaming: "Popular streaming",
       hpListLabel: "List",
       hpAllChannels: "All channels",
@@ -168768,7 +168882,7 @@
       m3uFetchList: "H\xE4mta lista",
       m3uFetchListDone: "Listan h\xE4mtad",
       m3uFetchListError: "Kunde inte h\xE4mta listan",
-      liveTvLists: "Kanallistor",
+      liveTvLists: "Live TV",
       liveTvCreateList: "Skapa lista",
       liveTvListName: "Listnamn",
       liveTvNoLists: "Inga kanallistor \xE4nnu.",
@@ -169028,6 +169142,8 @@
       sideMenuTitle: "Sidomeny",
       sideMenuDesc: "En flytande ikonrad till v\xE4nster i st\xE4llet f\xF6r den horisontella menyn. S\xF6ket flyttar in i raden. Endast skrivbord.",
       sideMenuOn: "Sidomeny",
+      menuChipTitle: "Menypill (TV-stil)",
+      menuChipDesc: "TV-l\xE4gets menypill uppe till v\xE4nster, med s\xF6k inne i menyn. Ers\xE4tter sidomenyn och toppraden p\xE5 skrivbord, och toppraden p\xE5 mobil.",
       sideMenuOff: "Horisontell meny",
       vlcToggleOn: "VLC p\xE5",
       vlcToggleOff: "VLC av",
@@ -169340,8 +169456,8 @@
       appTheme: "Tema",
       appThemeDesc: "Bakgrundston i hela appen.",
       themeMidnight: "Midnatt",
-      themeMidnightDesc: "Dagens Lumio: djupbl\xE5 bakgrund.",
-      themePitchDesc: "N\xE4stan svart f\xF6r OLED och m\xF6rka rum.",
+      themeMidnightDesc: "Djupbl\xE5 bakgrund.",
+      themePitchDesc: "Standard. N\xE4stan svart f\xF6r OLED och m\xF6rka rum.",
       themeSystemDesc: "Byter med macOS utseende-inst\xE4llning.",
       accentColor: "Accentf\xE4rg",
       profileSharedTab: "Delade inst\xE4llningar",
@@ -169557,6 +169673,12 @@
       remoteSessionModeDesc: "Vilket gr\xE4nssnitt webbl\xE4sarsessioner mot den h\xE4r appen f\xE5r. Auto \xE4rver TV-l\xE4gesvalet ovan plus enhetens egen detektering; Skrivbord och TV tvingar ett l\xE4ge.",
       remoteSessionModeDesktop: "Skrivbord",
       remoteSessionModeTv: "TV",
+      tvMenuPlacementTitle: "Menyns placering",
+      tvMenuChipHiddenTitle: "D\xF6lj menypillret",
+      tvMenuChipHiddenHint: "Menyn finns kvar och \xF6ppnas som vanligt med \u25C2 eller \u25B4 fr\xE5n inneh\xE5llet.",
+      tvMenuPlacementHint: "Var menyn sitter. Inneh\xE5llet \xE4r detsamma i b\xE5da l\xE4gena.",
+      tvMenuPlacementTop: "Topp",
+      tvMenuPlacementSide: "Sida",
       tvSegmentsEyebrow: "Rader per segment",
       tvSegmentLabel: "Segment",
       tvSegmentDesc: "Varje segment har egna rader i TV-l\xE4get. Utg\xE5ngsl\xE4get speglar din vanliga startsida, s\xE5 inget \xE4ndras f\xF6rr\xE4n du g\xF6r det h\xE4r.",
@@ -170046,6 +170168,30 @@
       homeSourceFrenchCinema: "Fransk film",
       homeSourceKdrama: "K-drama",
       tvSegmentAnime: "Anime",
+      tvBackAgainToExit: "Tryck Back igen f\xF6r att avsluta",
+      tvHeroFeatured: "Utvalt",
+      tvHeroMyList: "Min lista",
+      tvHeroPagerDot: "Utvald titel {n} av {total}",
+      tvHeroRuntimeHm: "{h} h {m} min",
+      tvHeroRuntimeM: "{m} min",
+      tvHeroStreamsN: "{n} str\xF6mmar",
+      tvGenreRowTitle: "Genrer",
+      tvRowFailed: "Kunde inte h\xE4mtas",
+      tvRowNoRenderer: "Finns inte i TV-l\xE4get \xE4nnu",
+      tvQuickPlay: "Spela",
+      tvQuickMarkWatched: "Markera som sedd",
+      tvQuickUnmarkWatched: "Markera som osedd",
+      tvQuickMoreInfo: "Mer info",
+      tvQuickShowAllRow: "Visa alla i raden",
+      tvQuickUnfollow: "Sluta f\xF6lja",
+      tvMenuChip: "Menu",
+      tvMenuSearch: "S\xF6k",
+      tvSearchFilters: "S\xF6k & filter",
+      tvMenuSources: "Bibliotek och k\xE4llor",
+      tvQuickRemoveContinue: "Ta bort fr\xE5n Forts\xE4tt titta",
+      tvCollectionHint: "Filmsamling \u2014 tryck OK f\xF6r att se filmerna i premi\xE4rordning.",
+      tvProviderHint: "Streamingtj\xE4nst \u2014 tryck OK f\xF6r att se filmer och serier som finns p\xE5 {name}, sorterade efter popularitet.",
+      tvCollectionSummary: "{count} filmer ({years}): {titles}",
       homeSourceAnimeSeries: "Animeserier",
       homeSourceMoodComfort: "Mysfilm",
       homeSourceMoodMind: "Tanken\xF6tter",
@@ -170205,6 +170351,16 @@
       nextEpPopupAuto: "Auto",
       creditsRecommendations: "Rekommendationer vid eftertexterna",
       creditsRecommendationsDesc: "N\xE4r eftertexterna b\xF6rjar krymper bilden till ett h\xF6rnf\xF6nster och n\xE4sta titel visas. G\xE4ller filmer och s\xE4songsavslut \u2014 aldrig mitt i en s\xE4song.",
+      statsHudMenuLabel: "Statistik",
+      playbackSpeedMenuLabel: "Hastighet",
+      stripSdhTitle: "D\xF6lj h\xF6rselskadetext",
+      stripSdhHint: "Tar bort [ljud], (suckar), \u266A s\xE5ngtext och talarnamn ur undertexterna.",
+      appUpdateChannel: "Uppdateringskanal",
+      appUpdateChannelStable: "Stabil",
+      appUpdateChannelBeta: "Beta",
+      appUpdateChannelHint: "Beta f\xE5r testbyggen innan de sl\xE4pps till alla.",
+      exitOnCloseTitle: "Avsluta helt vid st\xE4ngning",
+      exitOnCloseHint: "Android/TV: avsluta processen n\xE4r du l\xE4mnar appen i st\xE4llet f\xF6r att l\xE5ta den ligga i bakgrunden. Frig\xF6r minne p\xE5 sm\xE5 boxar.",
       creditsFinishedSeason: "S\xE4song %s \xE4r slut",
       creditsNextSeason: "S\xE4song %s",
       creditsFinishedTitle: "Du s\xE5g klart",
@@ -170360,7 +170516,7 @@
       syncFailed: "Fel vid synk",
       genericError: "Fel",
       dlDone: "Klar",
-      introFound: "Intro hittad",
+      introFound: "Intro",
       plShortEpisodes: "Avsnitt",
       plShortPicture: "Bild",
       plShortWiki: "Wiki",
@@ -170369,8 +170525,8 @@
       plShortCast: "Casta",
       plShortFullscreen: "Fullsk\xE4rm",
       plShortMore: "Mer",
-      recapFound: "Recap hittad",
-      outroFound: "Outro hittad",
+      recapFound: "Recap",
+      outroFound: "Outro",
       introDebugAutoOn: "Auto-skip p\xE5",
       introDebugAutoOff: "Auto-skip av",
       aspectAuto: "Auto",
@@ -170586,6 +170742,13 @@
       streamsLayoutDesc: "I sidopanelen, eller som en sektion p\xE5 sidan ovanf\xF6r Rekommendationer. Serier f\xE5r str\xF6mmarna under varje avsnitt.",
       streamsLayoutSidebar: "Sidopanel",
       streamsLayoutInline: "P\xE5 sidan",
+      tvStreamsLayoutCards: "Rullande",
+      tvTypeWithRemote: "skriv",
+      tvTypeKeyHint: "Skriv in nyckeln med fj\xE4rrkontrollen. Den sparas n\xE4r du trycker Klar och visas aldrig p\xE5 sk\xE4rmen.",
+      streamSizeSmall: "Liten",
+      streamSizeMedium: "Mellan",
+      streamSizeLarge: "Stor",
+      tvStreamsLayoutHint: "Rullande: str\xF6mmarna ligger p\xE5 sidan som en rad kort. Sidopanel: en Str\xF6mmar-knapp bredvid Spela \xF6ppnar listan.",
       castCountTitle: "Antal sk\xE5despelare",
       castCountDesc: "Hur m\xE5nga ur ensemblen som visas p\xE5 detaljsidan. Telefonen visar dem i sidor om \xE5tta; skrivbordet rullar.",
       gestTabLabel: "Gester",
@@ -170721,14 +170884,13 @@
       kpProvidedCatalogs: "Tillhandah\xE5llna kataloger",
       kpMetricActiveAddons: "Aktiva addons",
       sourcesEmptyTitle: "Inga k\xE4llor \xE4n",
-      coreStreamsToggle: "Anv\xE4nd Lumios egna str\xF6mlista (beta)",
-      coreStreamsToggleDesc: "Str\xF6mmar h\xE4mtas och spelas av appen sj\xE4lv, direkt fr\xE5n dina k\xE4llor. Sl\xE5r igenom efter omstart.",
       coreStreamsHidden: "{count} str\xF6mmar dolda av kvalitetsfilter",
       coreStreamsSelectEpisode: "V\xE4lj ett avsnitt f\xF6r att se dess str\xF6mmar.",
       coreStreamsSource: "K\xE4lla",
       coreStreamsCached: "Cachad",
       coreStreamsLoading: "Fr\xE5gar k\xE4llorna\u2026",
       streamNotServingMedia: "K\xE4llan levererade ingen spelbar media. Prova en annan str\xF6m.",
+      libraryServerUnreachable: "Fick ingen uppspelningsadress fr\xE5n {source}. Kontrollera att servern \xE4r ig\xE5ng.",
       libraryRowSuffix: "i ditt bibliotek",
       libraryModeTab: "Bibliotek",
       libraryModeTitle: "Biblioteksl\xE4ge",
@@ -170736,6 +170898,17 @@
       libraryUseAsHome: "Anv\xE4nd som startsida",
       libraryUseAsHomeHint: "Bocka i ett eller flera bibliotek. Startsida, detaljsida, s\xF6k och Zapp matas d\xE5 bara ur dem, tillsammans. Str\xF6mk\xE4llorna h\xE5lls dolda s\xE5 l\xE4nge det \xE4r p\xE5.",
       librarySourcesTitle: "Indexerade bibliotek",
+      localLibraryTitle: "Lokala mappar",
+      localLibraryHint: "Varje mapp blir ett eget bibliotek med egen menying\xE5ng, som Plex eller Jellyfin. Filerna matchas mot TMDB via namnet: \u201DTitel (\xC5r).mkv\u201D f\xF6r filmer, \u201DSerie/Season 01/Serie S01E04.mkv\u201D f\xF6r avsnitt.",
+      localLibraryAdd: "L\xE4gg till mapp",
+      localLibraryRemove: "Ta bort",
+      localLibraryUpdate: "Uppdatera",
+      localLibraryRebuild: "Bygg om",
+      localLibraryBuild: "Bygg index",
+      localLibraryEmpty: "Inga mappar \xE4nnu.",
+      localLibraryScanning: "Indexerar\u2026 {done}",
+      localLibraryNotIndexed: "Inte indexerad \xE4nnu",
+      libraryRowUnmatched: "Ej identifierade",
       librarySourceNotIndexed: "Inte indexerat \xE4nnu \u2014 bygg indexet i pluginets inst\xE4llningar.",
       libraryModeOff: "Inget bibliotek \xE4r startsida. Sl\xE5 p\xE5 det under bibliotekspluginets inst\xE4llningar.",
       libraryRowIndexed: "{count} indexerade",
@@ -170894,6 +171067,8 @@
       hpMoveDown: "Flytta ner",
       hpSourceLabel: "K\xE4lla",
       hpCardCountLabel: "Antal kort",
+      hpMobileRowsLabel: "Rader p\xE5 telefon",
+      hpMobileRowsAuto: "Auto",
       hpPopularStreaming: "Popul\xE4ra streaming",
       hpListLabel: "Lista",
       hpAllChannels: "Alla kanaler",
@@ -171221,8 +171396,7 @@
         offProfile();
       };
     }, [detached]);
-    if (!detached) return ctx;
-    return {
+    const detachedValue = useMemo(() => ({
       lang: detachedLang,
       setLang: (l) => {
         setScopedStorageItem(STORAGE_KEY, l);
@@ -171232,7 +171406,9 @@
         }
       },
       t: (key) => strings[detachedLang][key] ?? strings.en[key]
-    };
+    }), [detachedLang]);
+    if (!detached) return ctx;
+    return detachedValue;
   }
 
   // lib/plugin-sdk.ts
@@ -171298,48 +171474,17 @@
   // lib/trakt-device-login.tsx
   init_react_shim();
 
-  // lib/tauri-mpv.ts
-  var import_core = __toESM(require_core());
-  var import_event = __toESM(require_event());
-  init_react_shim();
-
-  // lib/session-host.ts
-  function normalizeHost(rawHost) {
-    return rawHost.trim().toLowerCase().replace(/\.+$/, "");
-  }
-  function isLocalAppHost(hostname) {
-    const host = normalizeHost(hostname);
-    if (!host) return false;
-    if (host === "localhost" || host === "127.0.0.1" || host === "::1") return true;
-    if (host === "tauri.localhost" || host.endsWith(".tauri.localhost")) return true;
-    return false;
-  }
-
-  // lib/tauri-mpv.ts
-  init_plugin_registry();
-  function detectTauriEnv() {
-    if (typeof window === "undefined") return false;
-    const maybeTauriWindow = window;
-    if (maybeTauriWindow.__TAURI_INTERNALS__ || maybeTauriWindow.__TAURI__) {
-      return true;
-    }
-    const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "";
-    if (userAgent.includes("Tauri")) return true;
-    const host = window.location.hostname;
-    const port = window.location.port;
-    return isLocalAppHost(host) && port === "3011";
-  }
-  var isTauriEnv = detectTauriEnv();
-  var hasTauriIpc = typeof window !== "undefined" && Boolean(
-    window.__TAURI_INTERNALS__ || window.__TAURI__
-  );
-  var isDesktopTauriEnv = isTauriEnv && hasTauriIpc && !(typeof navigator !== "undefined" && /android/i.test(navigator.userAgent));
-
   // lib/open-external.ts
   var isAndroidTauri = isTauriEnv && typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
 
   // lib/trakt-device-login.tsx
   init_jsx_runtime_shim();
+
+  // lib/series-watchlist-feed.ts
+  init_plugin_registry();
+
+  // lib/media-stream/availability-throttle.ts
+  var RATE_LIMIT_COOLDOWN_MS = 10 * 60 * 1e3;
 
   // lib/media-stream/config.ts
   var SCRAPER_PRESETS = [
@@ -171379,18 +171524,9 @@
   var DEFAULT_SCRAPER_URL = SCRAPER_PRESETS[0].url;
 
   // lib/series-watchlist-feed.ts
-  init_plugin_registry();
-
-  // lib/media-stream/availability-throttle.ts
-  var RATE_LIMIT_COOLDOWN_MS = 10 * 60 * 1e3;
-
-  // lib/series-watchlist-feed.ts
   var STREAM_CACHE_TTL_MS = 30 * 60 * 1e3;
   var SERIES_STATUS_CACHE_TTL_MS = 15 * 60 * 1e3;
   var FAILED_CHECK_RETRY_MS = 5 * 60 * 1e3;
-
-  // lib/media-stream/request-context.ts
-  init_plugin_registry();
 
   // lib/release-watchlist-feed.ts
   init_plugin_registry();
@@ -171438,9 +171574,6 @@
 
   // lib/library/progress.ts
   var TITLE_TTL_MS = 5 * 6e4;
-
-  // lib/playback-availability.ts
-  init_plugin_registry();
 
   // lib/video-progress.ts
   var EVENT2 = "lumio-stream-progress-changed";
@@ -171543,7 +171676,6 @@
 
   // components/player/next-episode-card.tsx
   init_react_shim();
-  // eslint-disable-next-line @next/next/no-img-element
   init_jsx_runtime_shim();
 
   // components/settings/redesigned/primitives.tsx
@@ -171894,10 +172026,11 @@
       "div",
       {
         style: {
-          background: TOKENS.surface1,
-          border: `1px solid ${TOKENS.border}`,
+          background: "rgba(255, 255, 255, 0.055)",
+          border: "1px solid rgba(255, 255, 255, 0.12)",
           borderRadius: 14,
           padding,
+          marginBottom: 10,
           ...style2
         },
         children

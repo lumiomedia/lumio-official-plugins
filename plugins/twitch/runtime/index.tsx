@@ -13,6 +13,10 @@ import {
   TwitchChannelsRow,
 } from './twitch-browser'
 
+/** Mobil: Twitch-sidorna visar ingen hero — Tillbaka-pillret bredvid Live är
+ *  vägen ut (Jerry 2026-09-07). Läses vid varje layoutpass av värden. */
+const twitchHidesHeroOnMobile = () => typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 639px)').matches
+
 export const TwitchPlugin: LumioPlugin = {
   id: 'com.lumio.twitch',
   name: { en: 'Twitch', sv: 'Twitch' },
@@ -44,9 +48,9 @@ export const TwitchPlugin: LumioPlugin = {
       label: { en: 'Twitch: Live now', sv: 'Twitch: Live nu' },
       rowId: 'twitch-live-row',
     })
-    ctx.registerBrowsePage({ id: 'twitch-live', label: { en: 'Live', sv: 'Live' }, Page: TwitchBrowsePage })
-    ctx.registerBrowsePage({ id: 'twitch-categories', label: { en: 'Categories', sv: 'Kategorier' }, Page: TwitchCategoriesPage })
-    ctx.registerBrowsePage({ id: 'twitch-search', label: { en: 'Search', sv: 'Sök' }, Page: TwitchSearchPage })
+    ctx.registerBrowsePage({ id: 'twitch-live', label: { en: 'Live', sv: 'Live' }, Page: TwitchBrowsePage, hideHero: twitchHidesHeroOnMobile })
+    ctx.registerBrowsePage({ id: 'twitch-categories', label: { en: 'Categories', sv: 'Kategorier' }, Page: TwitchCategoriesPage, hideHero: twitchHidesHeroOnMobile })
+    ctx.registerBrowsePage({ id: 'twitch-search', label: { en: 'Search', sv: 'Sök' }, Page: TwitchSearchPage, hideHero: twitchHidesHeroOnMobile })
 
     ctx.registerHomeRow({
       id: 'twitch-following-row',
@@ -59,7 +63,7 @@ export const TwitchPlugin: LumioPlugin = {
       label: { en: 'Twitch: Following', sv: 'Twitch: Följer' },
       rowId: 'twitch-following-row',
     })
-    ctx.registerBrowsePage({ id: 'twitch-following', label: { en: 'Following', sv: 'Följer' }, Page: TwitchFollowingPage })
+    ctx.registerBrowsePage({ id: 'twitch-following', label: { en: 'Following', sv: 'Följer' }, Page: TwitchFollowingPage, hideHero: twitchHidesHeroOnMobile })
 
     // Configurable rows: which category / channels they show is set under
     // Settings → Twitch (getTwitchHomeCategory / getTwitchHomeChannels).

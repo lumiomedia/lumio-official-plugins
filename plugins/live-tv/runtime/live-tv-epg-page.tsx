@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { BrowsePageProps } from '@/lib/plugin-sdk'
+import { useTvMode, type BrowsePageProps } from '@/lib/plugin-sdk'
 import { channelKey, type M3uChannel } from './live-tv-data'
 import { startOfLocalDay, useLiveTvModel } from './live-tv-model'
 import type { EpgProgramme } from './epg/types'
@@ -50,6 +50,10 @@ export function LiveTvEpgPage({ onNavigate }: Props) {
   const [reminderTick, setReminderTick] = useState(0)
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const isMobile = useIsMobileLayout()
+  // TV (Jerry 2026-09-06): sidan hade INGA fokusstationer, så varje tangent-
+  // tryck gick till sidomenyn — den öppnade sig så fort man kom hit.
+  const isTv = useTvMode()
+  const tvStation = isTv ? { 'data-f': '' } : undefined
   const channelCol = isMobile ? CHANNEL_COL_MOBILE : CHANNEL_COL
   const { nowMs } = model
 
@@ -102,19 +106,20 @@ export function LiveTvEpgPage({ onNavigate }: Props) {
         title={h('epgTitle')}
         onBack={() => go('hub')}
         backLabel={h('back')}
+        backTvStation={tvStation}
         right={
           <>
-            <RemindersMenu model={model} onOpenChannel={(channel) => go('channel', encodeChannelParams(channel))} />
+            <RemindersMenu model={model} onOpenChannel={(channel) => go('channel', encodeChannelParams(channel))} tvStation={tvStation} />
           </>
         }
       >
-        <Btn variant={dayOffset === 0 ? 'primary' : 'ghost'} small pressed={dayOffset === 0} onClick={() => { setDayOffset(0); setSelected(null) }}>
+        <Btn variant={dayOffset === 0 ? 'primary' : 'ghost'} small pressed={dayOffset === 0} onClick={() => { setDayOffset(0); setSelected(null) }} tvStation={isTv ? { 'data-f': '', 'data-init': '' } : undefined}>
           {h('guideToday')}
         </Btn>
-        <Btn variant={dayOffset === 1 ? 'primary' : 'ghost'} small pressed={dayOffset === 1} onClick={() => { setDayOffset(1); setSelected(null) }}>
+        <Btn variant={dayOffset === 1 ? 'primary' : 'ghost'} small pressed={dayOffset === 1} onClick={() => { setDayOffset(1); setSelected(null) }} tvStation={tvStation}>
           {h('guideTomorrow')}
         </Btn>
-        <Btn variant="secondary" small onClick={() => { setDayOffset(0); window.setTimeout(scrollToNow, 0) }} style={{ marginLeft: 8 }}>
+        <Btn variant="secondary" small onClick={() => { setDayOffset(0); window.setTimeout(scrollToNow, 0) }} style={{ marginLeft: 8 }} tvStation={tvStation}>
           {h('guideNow')} <span style={{ width: 8, height: 8, borderRadius: 999, border: `1.5px solid ${LT.accent}` }} />
         </Btn>
       </LiveTvHeader>
@@ -122,7 +127,7 @@ export function LiveTvEpgPage({ onNavigate }: Props) {
       {rows.length === 0 ? (
         <div style={{ ...surfaceCard, padding: 20, fontSize: 14, color: LT.muted }}>{h('epgEmpty')}</div>
       ) : (
-        <div ref={scrollRef} className="overflow-x-auto [scrollbar-width:thin]" style={{ position: 'relative' }}>
+        <div ref={scrollRef} {...(isTv ? { 'data-scroll': '' } : {})} className="overflow-x-auto [scrollbar-width:thin]" style={{ position: 'relative' }}>
           <div style={{ minWidth: channelCol + gridWidth, position: 'relative' }}>
             {/* Timlinje */}
             <div style={{ display: 'flex', paddingLeft: channelCol, height: 28, borderBottom: `1px solid ${LT.line}`, marginBottom: 6, position: 'sticky', top: 0, zIndex: 3, background: LT.bg }}>
@@ -140,6 +145,7 @@ export function LiveTvEpgPage({ onNavigate }: Props) {
                 <div key={channelKey(channel)} style={{ display: 'flex', alignItems: 'stretch', borderBottom: `1px solid ${LT.line}`, minHeight: ROW_MIN_H }}>
                   <button
                     type="button"
+                    {...(tvStation ?? {})}
                     onClick={() => go('channel', encodeChannelParams(channel))}
                     title={channel.name}
                     style={{ width: channelCol, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8, paddingRight: 8, background: LT.bg, zIndex: 1, border: 0, color: 'inherit', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit', ...(isMobile ? null : { position: 'sticky' as const, left: 0 }) }}
@@ -160,6 +166,7 @@ export function LiveTvEpgPage({ onNavigate }: Props) {
                         <button
                           key={programme.start}
                           type="button"
+                          {...(tvStation ?? {})}
                           onClick={() => setSelected({ channel, programme })}
                           // Dubbelklick = påminnelse av/på direkt i rutan (Jerry 2026-09-03):
                           // ett klick markerar, men ingenting hände förrän man hittade
@@ -237,7 +244,7 @@ export function LiveTvEpgPage({ onNavigate }: Props) {
               }}
             />
           ) : null}
-          <Btn variant="primary" onClick={() => play({ channel: selected.channel })}>
+          <Btn variant="primary" onClick={() => play({ channel: selected.channel })} tvStation={tvStation}>
             {h('guideWatch')} <Icon.Play size={12} />
           </Btn>
         </div>

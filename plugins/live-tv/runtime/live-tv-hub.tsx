@@ -1,12 +1,14 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { useTvMode, type BrowsePageProps } from '@/lib/plugin-sdk'
+import { getTvGlassMenu, getTvKeyboardPanel, requestBrowseBack, tvHoldHandlers, useTvMode, type BrowsePageProps, type TvGlassMenuTarget,
+  playerFrameUrl,
+} from '@/lib/plugin-sdk'
 import { channelKey, type M3uChannel } from './live-tv-data'
 import { useLiveTvModel } from './live-tv-model'
 import { useHubText } from './hub-strings'
 import { catchUpAcross, expiresLabel, type CatchUpItem } from './catch-up'
-import { topGroupsFromHistory } from './channel-history'
+import { topGroupsFromHistory, removeChannelHistoryEntry } from './channel-history'
 import {
   Btn,
   ChannelBadge,
@@ -44,10 +46,33 @@ interface Props {
   onNavigate: BrowsePageProps['onNavigate']
 }
 
+/**
+ * Sparad bildruta ur spelaren som kortbakgrund (Jerry 2026-09-06). Finns ingen
+ * (kanalen aldrig spelad, eller ingen brygga) svarar servern 404 och bilden
+ * döljs — kortet behåller sin gradient. Halv opacitet håller texten läsbar.
+ */
+function FrameBackdrop({ channel, version }: { channel: M3uChannel; version?: number | string | null }) {
+  return (
+    <img
+      src={playerFrameUrl(channelKey(channel), version ?? null)}
+      alt=""
+      aria-hidden="true"
+      draggable={false}
+      onError={(event) => { event.currentTarget.style.display = 'none' }}
+      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.55, borderRadius: 'inherit', pointerEvents: 'none' }}
+    />
+  )
+}
+
 /** Favoritkanaler: sidoscrollande rad på mobil, rutnät på skrivbord. */
-function FavoritesLayout({ mobile, children }: { mobile: boolean; children: ReactNode }) {
-  if (mobile) return <ScrollRow>{children}</ScrollRow>
+function FavoritesLayout({ mobile, tvRow = false, children }: { mobile: boolean; tvRow?: boolean; children: ReactNode }) {
+  if (mobile) return <ScrollRow tvRow={tvRow}>{children}</ScrollRow>
   return <div className="grid grid-cols-2 gap-3 md:grid-cols-4">{children}</div>
+}
+
+/** TV: två spotlightkort, tre på breda TV-apparater (≥ 1600 px). */
+function tvSpotlightCount(): number {
+  return typeof window !== 'undefined' && window.innerWidth >= 1600 ? 3 : 2
 }
 
 export function LiveTvHub({ onNavigate }: Props) {
@@ -60,6 +85,51 @@ export function LiveTvHub({ onNavigate }: Props) {
   const [groupMenuOpen, setGroupMenuOpen] = useState(false)
   const groupMenuRef = useRef<HTMLDivElement | null>(null)
   const isTv = useTvMode()
+  /** TV: allt som går att trycka på är en fokusstation (Jerry 2026-09-06). */
+  const tvStation = isTv ? { 'data-f': '' } : undefined
+  // TV: söket finns kvar (Jerry 2026-09-06, "saknar söken") — fältet är en
+  // station som öppnar värdens TV-tangentbord, texten filtrerar Alla kanaler.
+  const TvKeyboardPanel = isTv ? getTvKeyboardPanel() : null
+  const [searchKeyboardOpen, setSearchKeyboardOpen] = useState(false)
+  const searchChipRef = useRef<HTMLButtonElement | null>(null)
+  /**
+   * Efter Klar i söket: första kanalen i resultatet får fokus (Jerry
+   * 2026-09-06); efter Stäng: tillbaka till sökchippet. Utan det föll fokus
+   * till body och värdens vakt tog sidomenyn.
+   */
+  const focusFirstResultSoon = () => {
+    let tries = 0
+    const attempt = () => {
+      const first = document.querySelector<HTMLElement>('[data-live-tv-all-channels] [data-f]')
+      if (first) { first.focus({ preventScroll: true }); return }
+      if (++tries < 20) window.setTimeout(attempt, 100)
+      else searchChipRef.current?.focus({ preventScroll: true })
+    }
+    window.setTimeout(attempt, 80)
+  }
+  /**
+   * TV: OK på ett kanalkort SPELAR kanalen direkt (Jerry 2026-09-06); håll OK
+   * ger hållmenyn — favorit av/på, kanaldetalj, spela. Samma på alla rader.
+   */
+  const TvGlassMenu = isTv ? getTvGlassMenu() : null
+  const [tvMenu, setTvMenu] = useState<TvGlassMenuTarget | null>(null)
+  // TV: gruppmenyn är en fokusfälla medan den är öppen, och Back stänger den.
+  useEffect(() => {
+    if (!isTv || !groupMenuOpen) return
+    const onKey = (event: KeyboardEvent) => {
+      // Back OCH sidopil stänger (Jerry 2026-09-06: "sidoklick borde stänga
+      // den") — fokus tillbaka på väljarknappen.
+      if (!['Escape', 'Backspace', 'GoBack', 'ArrowLeft', 'ArrowRight'].includes(event.key)) return
+      event.preventDefault()
+      event.stopPropagation()
+      setGroupMenuOpen(false)
+      window.setTimeout(() => groupMenuRef.current?.querySelector<HTMLElement>('button')?.focus({ preventScroll: true }), 0)
+    }
+    window.addEventListener('keydown', onKey, true)
+    const first = groupMenuRef.current?.querySelector<HTMLElement>('[data-f][data-init]') ?? groupMenuRef.current?.querySelector<HTMLElement>('[role="menu"] [data-f]')
+    first?.focus({ preventScroll: true })
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [isTv, groupMenuOpen])
   useEffect(() => {
     if (!groupMenuOpen) return
     const onDown = (event: MouseEvent) => {
@@ -144,6 +214,21 @@ export function LiveTvHub({ onNavigate }: Props) {
   )
 
   const openChannel = (channel: M3uChannel) => go('channel', encodeChannelParams(channel))
+  // recentKey: kortet står i Fortsätt titta — hållmenyn får då även "Ta bort"
+  // (Jerry 2026-09-06).
+  const tvChannelHandlers = (channel: M3uChannel, recentKey?: string) => (isTv ? tvHoldHandlers(
+    () => play({ channel }),
+    (element) => setTvMenu({
+      title: channel.name,
+      element,
+      actions: [
+        { key: 'play', label: h('hubWatchNow'), run: () => play({ channel }) },
+        { key: 'pin', label: pinnedSet.has(channelKey(channel)) ? h('hubUnpin') : h('hubPin'), run: () => model.togglePin(channel) },
+        { key: 'info', label: h('channelTitle'), run: () => openChannel(channel) },
+        ...(recentKey ? [{ key: 'remove', label: h('hubRemoveRecent'), run: () => removeChannelHistoryEntry(recentKey) }] : []),
+      ],
+    }),
+  ) : {})
   const formatWatched = (ms: number) => {
     const sameDay = new Date(ms).toDateString() === new Date(nowMs).toDateString()
     const time = formatClock(ms, locale)
@@ -151,7 +236,7 @@ export function LiveTvHub({ onNavigate }: Props) {
   }
 
   const epgButton = (
-    <Btn variant="secondary" small onClick={() => go('epg')}>
+    <Btn variant="secondary" small onClick={() => go('epg')} tvStation={isTv ? { 'data-f': '', 'data-live-tv-epg': '', 'data-f-left': '[data-live-tv-group]', 'data-f-right': '[data-live-tv-bell]' } : undefined}>
       <Icon.Calendar size={14} /> {h('openEpg')}
     </Btn>
   )
@@ -162,8 +247,23 @@ export function LiveTvHub({ onNavigate }: Props) {
      man ens sett en kanal. Skrivbordet har plats och behåller dem uppe i
      rubriken. Bara EN av de två platserna renderas åt gången, så den delade
      `groupMenuRef` pekar alltid på den öppna väljaren. */
-  const searchField = !isTv ? (
-    // På TV finns inget tangentbord i fältet; där söker man i rutnätet.
+  const searchField = isTv ? (
+    TvKeyboardPanel ? (
+      <button
+        type="button"
+        ref={searchChipRef}
+        {...(tvStation ?? {})}
+        data-live-tv-search=""
+        data-f-right="[data-live-tv-group]"
+        onClick={() => setSearchKeyboardOpen(true)}
+        className="truncate"
+        style={{ display: 'flex', alignItems: 'center', gap: 8, borderRadius: 999, border: '1px solid transparent', background: LT.neutral, padding: '0 14px', height: 36, minWidth: 260, maxWidth: 360, color: query ? LT.text : LT.muted, fontSize: 13, fontFamily: 'inherit', cursor: 'pointer', textAlign: 'left' }}
+      >
+        <Icon.Search size={14} />
+        <span className="truncate">{query || h('searchPlaceholder')}</span>
+      </button>
+    ) : null
+  ) : (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, borderRadius: 999, border: `1px solid ${LT.line}`, background: 'rgba(255,255,255,0.04)', padding: '0 12px', height: 36, ...(isMobile ? { flex: 1, minWidth: 0 } : { minWidth: 220 }) }}>
       <Icon.Search size={14} />
       <input
@@ -175,11 +275,21 @@ export function LiveTvHub({ onNavigate }: Props) {
         style={{ flex: 1, minWidth: 0, background: 'transparent', border: 0, outline: 'none', color: LT.text, fontSize: 13, fontFamily: 'inherit' }}
       />
     </div>
-  ) : null
+  )
 
   const groupPicker = model.groups.length > 0 ? (
     <div ref={groupMenuRef} style={{ position: 'relative', flexShrink: 0 }}>
-      <Btn variant={effectiveGroup ? 'secondary' : 'ghost'} small pressed={groupMenuOpen} onClick={() => setGroupMenuOpen((open) => !open)}>
+      <Btn
+        variant={effectiveGroup || isTv ? 'secondary' : 'ghost'}
+        small
+        pressed={groupMenuOpen}
+        onClick={() => setGroupMenuOpen((open) => !open)}
+        // ▸ från gruppväljaren går till EPG-knappen i högerkanten, inte ner i
+        // korten (Jerry 2026-09-06). ◂ tillbaka till söket.
+        tvStation={isTv ? { 'data-f': '', 'data-live-tv-group': '', 'data-f-right': '[data-live-tv-epg]', 'data-f-left': '[data-live-tv-search]' } : undefined}
+        // TV: chipfärg (Jerry 2026-09-06) — samma glas som taggarna, ingen kantlinje.
+        style={isTv ? { background: LT.neutral, borderColor: 'transparent', color: LT.text } : undefined}
+      >
         <span className="truncate" style={{ maxWidth: isMobile ? 120 : 220, display: 'inline-block', verticalAlign: 'bottom' }}>{effectiveGroup ?? h('hubAllGroups')}</span>
         <Icon.ChevronDown size={14} />
       </Btn>
@@ -191,11 +301,13 @@ export function LiveTvHub({ onNavigate }: Props) {
            filterraden, alltså i innehållets högerkant, så `right: 0` plus
            skärmbredd minus sidmarginalerna (2 × 16 px) landar exakt innanför
            båda kanterna. */
-        <div style={{ position: 'absolute', top: 'calc(100% + 6px)', zIndex: 50, maxHeight: 360, overflowY: 'auto', background: '#0b1020', border: `1px solid ${LT.line}`, borderRadius: LT.radiusMd, padding: 6, boxShadow: '0 18px 40px rgba(0,0,0,0.45)', ...(isMobile ? { right: 0, width: 'calc(100vw - 32px)' } : { left: 0, minWidth: 240 }) }}>
+        <div role="menu" {...(isTv ? { 'data-panel-root': '', 'data-scroll': '' } : {})} style={{ position: 'absolute', top: 'calc(100% + 6px)', zIndex: 50, maxHeight: 360, overflowY: 'auto', background: '#0b1020', border: `1px solid ${LT.line}`, borderRadius: LT.radiusMd, padding: 6, boxShadow: '0 18px 40px rgba(0,0,0,0.45)', ...(isMobile ? { right: 0, width: 'calc(100vw - 32px)' } : { left: 0, minWidth: 240 }) }}>
           {[null, ...model.groups].map((group) => (
             <button
               key={group ?? '__all'}
               type="button"
+              {...(tvStation ?? {})}
+              {...(isTv && group === effectiveGroup ? { 'data-init': '' } : {})}
               onClick={() => { setActiveGroup(group); setGroupMenuOpen(false) }}
               className="truncate"
               style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', borderRadius: LT.radiusSm, border: 0, background: group === effectiveGroup ? 'rgba(255,255,255,0.10)' : 'transparent', color: group === effectiveGroup ? LT.text : LT.muted, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
@@ -227,8 +339,15 @@ export function LiveTvHub({ onNavigate }: Props) {
 
          Rutnätsikonen är borta: 'grid' fanns bara i LiveTvView-unionen,
          skalet hade ingen renderare för den, så knappen ledde ingenstans. */
-      right={isMobile ? undefined : <>{epgButton}<RemindersMenu model={model} onOpenChannel={openChannel} /></>}
-      bottom={isMobile ? <>{epgButton}<RemindersMenu model={model} onOpenChannel={openChannel} /></> : undefined}
+      /* Mobil (Jerry 2026-09-07): EPG-chipet och klockan till höger på SAMMA rad
+         som titeln och Tillbaka-pilen, inte på en egen rad under. */
+      right={<>{epgButton}<RemindersMenu model={model} onOpenChannel={openChannel} tvStation={isTv ? { 'data-f': '', 'data-live-tv-bell': '', 'data-f-left': '[data-live-tv-epg]' } : undefined} /></>}
+      // Tillbaka-pil bredvid rubriken på ALLA enheter (Jerry 2026-09-06/07,
+      // 2026-09-07 "Tillbaka knapp saknas före Live TV-titeln" på skrivbordet):
+      // värden stänger sidan. Menypillret är dolt på Live TV, så pilen är
+      // vägen ut även med mus.
+      onBack={() => requestBrowseBack()}
+      backTvStation={isTv ? { 'data-f': '', 'data-init': '' } : undefined}
     >
       {isMobile ? null : filterRow}
     </LiveTvHeader>
@@ -254,7 +373,69 @@ export function LiveTvHub({ onNavigate }: Props) {
       <style>{'@keyframes lumio-livetv-spin{to{transform:rotate(360deg)}}'}</style>
       {header}
 
-      {hero && !needle ? (
+      {hero && !needle && isTv ? (
+        /* TV (Jerry 2026-09-06): det stora kortet blev enormt på en TV. I
+           stället en rad kompakta spotlightkort — heron först, sedan
+           favoriter och senast sedda — två på bredden, tre på breda TV-apparater.
+           Varje kort är EN station: OK spelar kanalen. Programinfo och förlopp
+           när EPG:n finns, annars gruppen. */
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${tvSpotlightCount()}, minmax(0, 1fr))`, gap: 16 }} data-row="">
+          {(() => {
+            const seen = new Set<string>()
+            const picks: M3uChannel[] = []
+            for (const candidate of [hero, ...favorites, ...recent.map((r) => r.channel), ...channels.filter((c) => nowFor(c).now)]) {
+              const key = channelKey(candidate)
+              if (seen.has(key)) continue
+              seen.add(key)
+              picks.push(candidate)
+              if (picks.length >= tvSpotlightCount()) break
+            }
+            return picks.map((channel) => {
+              const info = nowFor(channel)
+              return (
+                <div
+                  key={channelKey(channel)}
+                  role="button"
+                  tabIndex={0}
+                  {...(tvStation ?? {})}
+                  onClick={() => play({ channel })}
+                  {...tvChannelHandlers(channel)}
+                  className="cursor-pointer transition hover:brightness-125"
+                  style={{ ...heroGradient, padding: 18, display: 'flex', flexDirection: 'column', gap: 8, minWidth: 0 }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                    <ChannelBadge channel={channel} size={56} radius={LT.radiusMd} />
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div className="truncate" style={{ fontSize: 18, fontWeight: 600 }}>{channel.name}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
+                        {info.now ? <LiveTag label={h('hubLive')} /> : null}
+                        {channel.group ? <Tag>{channel.group}</Tag> : null}
+                      </div>
+                    </div>
+                    <span style={{ color: LT.text, opacity: 0.9 }}><Icon.Play size={22} /></span>
+                  </div>
+                  <div className="truncate" style={{ fontSize: 15, color: LT.text }}>
+                    {info.now ? info.now.title : (epgStatus === 'loading' ? h('hubLoadingEpg') : h('hubNoProgramme'))}
+                  </div>
+                  {info.now ? (
+                    <>
+                      <div style={{ fontSize: 12, color: LT.muted }}>
+                        {`${formatClock(info.now.start, locale)}–${formatClock(info.now.stop, locale)} · ${h('minutesLeft', { min: Math.max(0, Math.round((info.now.stop - nowMs) / 60_000)) })}`}
+                      </div>
+                      <ProgressBar value={progressOf(info.now.start, info.now.stop, nowMs)} width="100%" />
+                    </>
+                  ) : null}
+                  {info.next ? (
+                    <div className="truncate" style={{ fontSize: 12, color: LT.dim }}>{h('nextAt', { title: info.next.title, time: formatClock(info.next.start, locale) })}</div>
+                  ) : null}
+                </div>
+              )
+            })
+          })()}
+        </div>
+      ) : null}
+
+      {hero && !needle && !isTv ? (
         <div className="grid gap-4">
           {/* minWidth 0 + brytbart namn: kortet är ENDA barnet i ett
               `grid`-spår, och ett auto-spår blir minst så brett som barnets
@@ -324,7 +505,7 @@ export function LiveTvHub({ onNavigate }: Props) {
              raden håller korten 200 px breda och låter nästa kort kika in i
              kanten, precis som Fortsätt titta strax nedanför. Samma
              kortinnehåll i båda lägena. */
-          <FavoritesLayout mobile={isMobile}>
+          <FavoritesLayout mobile={isMobile || isTv} tvRow={isTv}>
             {favorites.map((channel) => {
               const info = nowFor(channel)
               return (
@@ -332,29 +513,37 @@ export function LiveTvHub({ onNavigate }: Props) {
                   key={channelKey(channel)}
                   role="button"
                   tabIndex={0}
+                  {...(tvStation ?? {})}
                   onClick={() => openChannel(channel)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault()
-                      openChannel(channel)
-                    }
-                  }}
+                  {...(isTv ? tvChannelHandlers(channel) : {
+                    onKeyDown: (event: React.KeyboardEvent) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault()
+                        openChannel(channel)
+                      }
+                    },
+                  })}
                   className="cursor-pointer transition hover:brightness-125"
                   style={{
                     ...surfaceCard,
+                    position: 'relative',
+                    overflow: 'hidden',
                     padding: 12,
                     display: 'flex',
                     flexDirection: 'column',
                     gap: 6,
-                    ...(isMobile ? { width: 200, flexShrink: 0, scrollSnapAlign: 'start' as const } : null),
+                    ...(isMobile || isTv ? { width: isTv ? 260 : 200, flexShrink: 0, scrollSnapAlign: 'start' as const } : null),
                   }}
                 >
+                  <FrameBackdrop channel={channel} />
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <ChannelBadge channel={channel} size={40} />
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <div className="truncate" style={{ fontSize: 14, fontWeight: 500 }}>{channel.name}</div>
                       {info.now ? <div style={{ marginTop: 2 }}><LiveTag label={h('hubLive')} /></div> : null}
                     </div>
+                    {/* TV: hjärtat är ingen egen station — kortet är en. */}
+                    {!isTv ? (
                     <Btn
                       variant="ghost"
                       icon
@@ -365,6 +554,7 @@ export function LiveTvHub({ onNavigate }: Props) {
                     >
                       <Icon.Heart size={16} filled />
                     </Btn>
+                    ) : <span style={{ color: LT.accent, display: 'inline-flex' }}><Icon.Heart size={16} filled /></span>}
                   </div>
                   <div className="truncate" style={{ fontSize: 12, color: 'rgba(243,244,248,0.85)' }}>{info.now?.title ?? channel.group}</div>
                   <div className="truncate" style={{ fontSize: 11, color: LT.dim }}>
@@ -382,18 +572,20 @@ export function LiveTvHub({ onNavigate }: Props) {
         {catchUp.length === 0 && recent.length === 0 ? (
           <p style={{ margin: 0, fontSize: 14, color: LT.muted }}>{h('hubContinueEmpty')}</p>
         ) : (
-          <ScrollRow>
+          <ScrollRow tvRow={isTv}>
             {catchUp.map((item) => {
               const left = expiresLabel(item.expiresAt, nowMs)
               return (
                 <button
                   key={`${channelKey(item.channel)}-${item.programme.start}`}
                   type="button"
+                  {...(tvStation ?? {})}
+                  data-live-tv-tile-card=""
                   onClick={() => play({ channel: item.channel, url: item.url, label: `${item.channel.name} · ${item.programme.title}` })}
                   className="transition hover:brightness-110"
                   style={{ width: 220, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 6, background: 'transparent', border: 0, padding: 0, color: 'inherit', textAlign: 'left', cursor: 'pointer', scrollSnapAlign: 'start', fontFamily: 'inherit' }}
                 >
-                  <div style={{ width: '100%', height: 124, borderRadius: LT.radiusMd, background: 'linear-gradient(135deg, #1b2540, #2a3552)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div data-live-tv-tile="" style={{ width: '100%', height: 124, borderRadius: LT.radiusMd, background: 'linear-gradient(135deg, #1b2540, #2a3552)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <ChannelBadge channel={item.channel} size={44} radius={LT.radiusMd} />
                     <span style={{ position: 'absolute', right: 8, top: 8 }}><Tag variant="accent">{h('catchUp')}</Tag></span>
                     <span style={{ position: 'absolute', left: 8, bottom: 8, color: LT.text, opacity: 0.9 }}><Icon.Play size={22} /></span>
@@ -412,11 +604,15 @@ export function LiveTvHub({ onNavigate }: Props) {
                 <button
                   key={entry.key}
                   type="button"
+                  {...(tvStation ?? {})}
+                  data-live-tv-tile-card=""
                   onClick={() => play({ channel })}
+                  {...tvChannelHandlers(channel, entry.key)}
                   className="transition hover:brightness-110"
                   style={{ width: 220, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 6, background: 'transparent', border: 0, padding: 0, color: 'inherit', textAlign: 'left', cursor: 'pointer', scrollSnapAlign: 'start', fontFamily: 'inherit' }}
                 >
-                  <div style={{ width: '100%', height: 124, borderRadius: LT.radiusMd, background: 'linear-gradient(135deg, #1b2540, #2a3552)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div data-live-tv-tile="" style={{ width: '100%', height: 124, borderRadius: LT.radiusMd, background: 'linear-gradient(135deg, #1b2540, #2a3552)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <FrameBackdrop channel={channel} version={entry.watchedAt} />
                     <ChannelBadge channel={channel} size={44} radius={LT.radiusMd} />
                     <span style={{ position: 'absolute', left: 8, bottom: 8, color: LT.text, opacity: 0.9 }}><Icon.Play size={22} /></span>
                     {info.now ? (
@@ -441,14 +637,16 @@ export function LiveTvHub({ onNavigate }: Props) {
       {recommended.length > 0 ? (
         <section>
           <SectionTitle title={h('hubRecommended')} />
-          <ScrollRow>
+          <ScrollRow tvRow={isTv}>
             {recommended.map(({ channel, reason }) => {
               const info = nowFor(channel)
               return (
                 <button
                   key={channelKey(channel)}
                   type="button"
+                  {...(tvStation ?? {})}
                   onClick={() => openChannel(channel)}
+                  {...tvChannelHandlers(channel)}
                   className="transition hover:brightness-125"
                   style={{ ...surfaceCard, width: 240, flexShrink: 0, padding: 12, display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 4, color: 'inherit', textAlign: 'left', cursor: 'pointer', scrollSnapAlign: 'start', fontFamily: 'inherit' }}
                 >
@@ -476,7 +674,7 @@ export function LiveTvHub({ onNavigate }: Props) {
              rutnätet", och rutnätet finns bara på TV nu. Kanaler bortom taket
              nås via sökfältet och gruppväljaren högst upp. */
         />
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3" data-live-tv-all-channels="">
           {filteredChannels.slice(0, MAX_ALL_CHANNELS).map((channel) => {
             const info = nowFor(channel)
             const isPinned = pinnedSet.has(channelKey(channel))
@@ -485,13 +683,16 @@ export function LiveTvHub({ onNavigate }: Props) {
                 key={channelKey(channel)}
                 role="button"
                 tabIndex={0}
+                {...(tvStation ?? {})}
                 onClick={() => openChannel(channel)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault()
-                    openChannel(channel)
-                  }
-                }}
+                {...(isTv ? tvChannelHandlers(channel) : {
+                  onKeyDown: (event: React.KeyboardEvent) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault()
+                      openChannel(channel)
+                    }
+                  },
+                })}
                 className="cursor-pointer transition hover:brightness-125"
                 style={{ ...surfaceCard, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}
               >
@@ -533,6 +734,18 @@ export function LiveTvHub({ onNavigate }: Props) {
       </section>
 
       {chrome}
+      {TvGlassMenu && tvMenu ? <TvGlassMenu target={tvMenu} onClose={() => setTvMenu(null)} /> : null}
+      {TvKeyboardPanel && searchKeyboardOpen ? (
+        <div data-live-tv-host-ui="">
+        <TvKeyboardPanel
+          title={h('search')}
+          placeholder={h('searchPlaceholder')}
+          initial={query}
+          onDone={(value) => { setQuery(value); setSearchKeyboardOpen(false); if (value.trim()) focusFirstResultSoon(); else searchChipRef.current?.focus({ preventScroll: true }) }}
+          onClose={() => { setSearchKeyboardOpen(false); window.setTimeout(() => searchChipRef.current?.focus({ preventScroll: true }), 50) }}
+        />
+        </div>
+      ) : null}
     </div>
   )
 }

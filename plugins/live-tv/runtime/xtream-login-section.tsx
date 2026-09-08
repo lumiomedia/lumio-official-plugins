@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Card, Checkbox, PillBtn, TOKENS, inputStyle, useLang } from '@/lib/plugin-sdk'
+import { Card, Checkbox, PillBtn, TOKENS, inputStyle, useLang, useTvMode, getTvKeyboardPanel } from '@/lib/plugin-sdk'
 import {
   clearLiveTvMemoryCache,
   clearStoredLiveTvChannels,
@@ -45,6 +45,26 @@ export function XtreamLoginSection() {
   const [password, setPassword] = useState('')
   const [state, setState] = useState<'idle' | 'working' | 'done' | 'authError' | 'netError'>('idle')
   const [notice, setNotice] = useState<string | null>(null)
+  /**
+   * TV: fälten är knappar som öppnar värdens tangentbordspanel på OK. Ett
+   * vanligt <input> fick fokus av fjärrens navigering och drog upp systemets
+   * tangentbord bara av att man passerade fältet — och "Nästa" i det
+   * tangentbordet hoppade vidare till nästa fält (testarrapport 2026-09-06).
+   * Här skrivs ett fält i taget, och inget tangentbord öppnas förrän man valt.
+   */
+  const isTv = useTvMode()
+  const TvKeyboardPanel = isTv ? getTvKeyboardPanel() : null
+  const [tvField, setTvField] = useState<'server' | 'username' | 'password' | null>(null)
+  const tvFieldButton = (field: 'server' | 'username' | 'password', value: string, placeholder: string, secret = false) => (
+    <button
+      type="button"
+      data-f=""
+      onClick={() => setTvField(field)}
+      style={{ ...inputStyle, textAlign: 'left', cursor: 'pointer', color: value ? TOKENS.text : TOKENS.textMute, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+    >
+      {value ? (secret ? '•'.repeat(Math.min(value.length, 24)) : value) : placeholder}
+    </button>
+  )
 
   useEffect(() => {
     const sync = () => setLogins(getXtreamLogins())
@@ -124,36 +144,56 @@ export function XtreamLoginSection() {
           <div style={{ fontSize: 14.5, fontWeight: 600, color: TOKENS.text }}>{t('liveTvXtreamTitle')}</div>
           <p style={{ margin: '4px 0 0', fontSize: 12, lineHeight: 1.5, color: TOKENS.textMute }}>{t('liveTvXtreamDesc')}</p>
         </div>
-        <input
-          type="url"
-          value={server}
-          onChange={(event) => setServer(event.target.value)}
-          placeholder={`${t('liveTvXtreamServer')} — http://host:8080`}
-          autoCapitalize="none"
-          autoCorrect="off"
-          spellCheck={false}
-          style={inputStyle}
-        />
-        <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+        {TvKeyboardPanel ? tvFieldButton('server', server, `${t('liveTvXtreamServer')} — http://host:8080`) : (
           <input
-            type="text"
-            value={username}
-            onChange={(event) => setUsername(event.target.value)}
-            placeholder={t('liveTvXtreamUsername')}
+            type="url"
+            value={server}
+            onChange={(event) => setServer(event.target.value)}
+            placeholder={`${t('liveTvXtreamServer')} — http://host:8080`}
             autoCapitalize="none"
             autoCorrect="off"
             spellCheck={false}
             style={inputStyle}
           />
-          <input
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            placeholder={t('liveTvXtreamPassword')}
-            autoComplete="off"
-            style={inputStyle}
-          />
+        )}
+        <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+          {TvKeyboardPanel ? tvFieldButton('username', username, t('liveTvXtreamUsername')) : (
+            <input
+              type="text"
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
+              placeholder={t('liveTvXtreamUsername')}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              style={inputStyle}
+            />
+          )}
+          {TvKeyboardPanel ? tvFieldButton('password', password, t('liveTvXtreamPassword'), true) : (
+            <input
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder={t('liveTvXtreamPassword')}
+              autoComplete="off"
+              style={inputStyle}
+            />
+          )}
         </div>
+        {TvKeyboardPanel && tvField ? (
+          <TvKeyboardPanel
+            title={tvField === 'server' ? t('liveTvXtreamServer') : tvField === 'username' ? t('liveTvXtreamUsername') : t('liveTvXtreamPassword')}
+            placeholder={tvField === 'server' ? 'http://host:8080' : ''}
+            initial={tvField === 'server' ? server : tvField === 'username' ? username : password}
+            onDone={(value) => {
+              if (tvField === 'server') setServer(value)
+              else if (tvField === 'username') setUsername(value)
+              else setPassword(value)
+              setTvField(null)
+            }}
+            onClose={() => setTvField(null)}
+          />
+        ) : null}
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
           {state === 'authError' ? <span style={{ marginRight: 'auto', fontSize: 12, color: TOKENS.red }}>{t('liveTvXtreamAuthFailed')}</span> : null}
           {state === 'netError' ? <span style={{ marginRight: 'auto', fontSize: 12, color: TOKENS.red }}>{t('liveTvXtreamError')}</span> : null}

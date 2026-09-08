@@ -1,6 +1,8 @@
 'use client'
 
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { useTvMode } from '@/lib/plugin-sdk'
+
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { LiveTvLogoImage } from './live-tv-logo-image'
 import { getLiveTvLogoSrc, type M3uChannel } from './live-tv-data'
 
@@ -184,6 +186,21 @@ export function Btn({
     padding: icon ? 0 : small ? '6px 14px' : '8px 16px',
     width: icon ? 36 : block ? '100%' : undefined,
     height: icon ? 36 : undefined,
+    /*
+      IKONKNAPPEN ÄR RUND, oavsett vilket höjdgolv värden sätter.
+
+      36×36 plus `borderRadius: 999` är en cirkel i pluginets egen stil — men
+      appens TV-CSS lägger `min-height: calc(52 * var(--tv-u))` på TV-knappar,
+      vilket vid grundskalan 1,54 är 80 px. Höjden växte alltså till 80 medan
+      bredden stod kvar på 36, och Tillbaka-pilen blev en STÅENDE kapsel
+      (Jerry 2026-09-08: "gör pilen rund sen").
+
+      `aspect-ratio: 1` gör formen till en egenskap i stället för ett par tal
+      som måste hållas i takt: växer höjden av en regel utanför pluginet följer
+      bredden med, och knappen kan inte bli oval igen. Att i stället hårdkoda
+      80 px hade fungerat tills någon ändrade `--tv-base-scale`.
+    */
+    aspectRatio: icon ? '1 / 1' : undefined,
     borderRadius: 999,
     border: '1px solid transparent',
     background: 'transparent',
@@ -276,12 +293,15 @@ export function LiveTvHeader({
   children,
   right,
   bottom,
+  backTvStation,
 }: {
   title: string
   onBack?: () => void
   backLabel: string
   children?: ReactNode
   right?: ReactNode
+  /** TV: Tillbaka-knappen som fokusstation. */
+  backTvStation?: Record<string, string>
   /**
    * EGEN RAD under resten av rubriken, vänster- och högerställd innehåll i
    * samma linje (`space-between`).
@@ -294,37 +314,136 @@ export function LiveTvHeader({
    */
   bottom?: ReactNode
 }) {
+  // TV: rubrikraden ligger på SAMMA rad som värdens menychip uppe till vänster
+  // (Jerry 2026-09-06, "en lång rad"): knapparna i chipens höjd (chipen står
+  // 20 px från kanten, 42 px hög) och linjen under chipen. Raden börjar till
+  // höger om chipens fotavtryck (150 + 20 px luft). Läget MÄTS — sidans
+  // toppavstånd skiljer mellan värdar, så ett fast negativt avstånd hamnade
+  // fel (Jerry 2026-09-06, "raden måste ner").
+  const isTv = useTvMode()
+  // Värdens menypill även utanför TV (data-menu-chip på roten): rubriken
+  // lägger sig då på pillrets rad, titeln till höger om pillret och EPG/klockan
+  // längst till höger, i stället för att ta en egen rad (Jerry 2026-09-07).
+  const [menuChip, setMenuChip] = useState(() => typeof document !== 'undefined' && document.documentElement.getAttribute('data-menu-chip') === '1')
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    const root = document.documentElement
+    const read = () => setMenuChip(root.getAttribute('data-menu-chip') === '1')
+    read()
+    const observer = new MutationObserver(read)
+    observer.observe(root, { attributes: true, attributeFilter: ['data-menu-chip'] })
+    return () => observer.disconnect()
+  }, [])
+  const chipRow = isTv || menuChip
+  // Skrivbord (mus, inte TV): ingen Tillbaka-knapp — sidomenyn/Hem är vägen ut
+  // — och filterchipsen på egen rad under rubriken, i linje med högersidan
+  // (Jerry 2026-09-06). Mobil behåller knappen.
+  // Med värdens menypill-läge är sidomenyn borta: då behålls Tillbaka även på
+  // skrivbordet (Jerry 2026-09-07). Läget läses från roten (data-menu-chip-mode).
+  const chipMode = typeof document !== 'undefined' && document.documentElement.getAttribute('data-menu-chip-mode') === '1'
+  const desktopPointer = !isTv && !chipMode && typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(pointer: fine) and (min-width: 640px)').matches
+  const headerRef = useRef<HTMLDivElement | null>(null)
+  const [tvShift, setTvShift] = useState(0)
+  const [chipClear, setChipClear] = useState(0)
+  // Utanför TV utan pill på sidan (värden döljer det på Live TV): raden ligger
+  // på hörnlinjen och Tillbaka ska stå exakt där pillret annars står — 3 px ner
+  // (36 mot 42 px hög) och på mobilen 4 px in (sidans px-4 mot pillrets 20)
+  // (Jerry 2026-09-07, "fortfarande för lågt").
+  const [edgeFit, setEdgeFit] = useState(false)
+  const tvShiftRef = useRef(0)
+  useLayoutEffect(() => {
+    // Mäts alltid utanför TV (även utan pill: kantläget), på TV bara i chipraden.
+    if (isTv && !chipRow) return
+    const el = headerRef.current
+    if (!el) return
+    // Värdens chip flyttas ner på macOS (överlagrad titelrad): --tv-top-inset.
+    const ROW_PADDING = 8
+    const measure = () => {
+      // Pillrets faktiska läge när det finns i DOM (skrivbord/mobil har en
+      // annan hörnlinje än TV); annars TV:ns konstanter.
+      const chip = document.querySelector('.mc-chip')
+      const chipRect = chip ? chip.getBoundingClientRect() : null
+      const hasChip = Boolean(chipRect && chipRect.width > 0 && chipRect.height > 0)
+      // Utan chip på sidan (värden döljer det på Live TV): ingen flytt, ingen
+      // vänsterluft — Tillbaka står längst till vänster (Jerry 2026-09-07).
+      if (!hasChip) {
+        if (chipClear !== 0) setChipClear(0)
+        if (tvShiftRef.current !== 0) { tvShiftRef.current = 0; setTvShift(0) }
+        setEdgeFit(!isTv)
+        return
+      }
+      setEdgeFit(false)
+      const chipTop = chipRect!.top
+      const natural = el.getBoundingClientRect().top - tvShiftRef.current
+      const next = Math.round(chipTop - ROW_PADDING - natural)
+      const clear = Math.round(chipRect!.right + 12 - el.getBoundingClientRect().left)
+      if (Math.abs(clear - chipClear) >= 1) setChipClear(clear)
+      if (Math.abs(next - tvShiftRef.current) < 1) return
+      tvShiftRef.current = next
+      setTvShift(next)
+    }
+    measure()
+    const settle = window.setTimeout(measure, 300)
+    window.addEventListener('resize', measure)
+    return () => { window.clearTimeout(settle); window.removeEventListener('resize', measure) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chipRow, isTv])
+  const mobileEdge = edgeFit && typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 639px)').matches
   return (
     <div
+      ref={headerRef}
+      data-live-tv-header=""
       style={{
         display: 'flex',
         alignItems: 'center',
         gap: 12,
-        minHeight: 64,
-        padding: '8px 0',
+        minHeight: chipRow || edgeFit ? 42 : 64,
+        padding: edgeFit ? `3px 0 8px ${mobileEdge ? 4 : 0}px` : '8px 0',
         borderBottom: `1px solid ${LT.line}`,
         flexWrap: 'wrap',
+        ...(chipRow ? { marginTop: tvShift, paddingLeft: chipClear } : null),
       }}
     >
+      {/* Tillbaka på alla enheter, även skrivbord med mus: pillret är dolt på
+          Live TV, och i sidomenyläget saknades knappen helt (Jerry 2026-09-07,
+          "Tillbaka knapp saknas före Live TV-titeln"). */}
       {onBack ? (
-        <Btn variant="ghost" icon onClick={onBack} ariaLabel={backLabel} title={backLabel}>
+        <Btn
+          variant={backTvStation ? 'secondary' : 'ghost'}
+          icon
+          onClick={onBack}
+          ariaLabel={backLabel}
+          title={backLabel}
+          tvStation={backTvStation}
+          // TV: chipbakgrund på pilen (Jerry 2026-09-06), som gruppväljaren.
+          style={backTvStation ? { background: LT.neutral, borderColor: 'transparent', color: LT.text } : undefined}
+        >
           <Icon.Back />
         </Btn>
       ) : null}
       <div style={{ fontSize: 18, fontWeight: 600, color: LT.text }}>{title}</div>
-      {children ? <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginLeft: 12, alignItems: 'center' }}>{children}</div> : null}
+      {children && !desktopPointer ? <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginLeft: 12, alignItems: 'center' }}>{children}</div> : null}
       {right ? <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>{right}</div> : null}
+      {children && desktopPointer ? <div style={{ width: '100%', display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', paddingTop: 4 }}>{children}</div> : null}
       {bottom ? <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>{bottom}</div> : null}
     </div>
   )
 }
 
 /** Horisontell kortrad med snäpp; `peek` låter nästa kort kika in. */
-export function ScrollRow({ children, gap = 12 }: { children: ReactNode; gap?: number }) {
+export function ScrollRow({ children, gap = 12, tvRow = false }: { children: ReactNode; gap?: number; tvRow?: boolean }) {
   return (
     <div
       className="flex overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      style={{ gap, paddingBottom: 6, scrollSnapType: 'x proximity' }}
+      // TV: data-row + data-scroll så värdens fokusmotor rullar in det
+      // fokuserade kortet i raden (Jerry 2026-09-06).
+      {...(tvRow ? { 'data-row': '', 'data-scroll': '' } : {})}
+      // TV: luft runt raden så fokusramen (outline 2 px utanför kortet) inte
+      // klipps av rullbehållaren i kanterna (Jerry 2026-09-06).
+      // scroll-padding: snappningen (scroll-snap-align: start på korten) drog
+      // annars kortets kant till rullportens kant FÖRBI luften, och ringens
+      // vänstra sida klipptes (Jerry 2026-09-06, "syns inte hela borden").
+      style={tvRow ? { gap, padding: 6, margin: -6, scrollSnapType: 'x proximity', scrollPaddingInline: 6 } : { gap, paddingBottom: 6, scrollSnapType: 'x proximity' }}
     >
       {children}
     </div>

@@ -95,6 +95,54 @@ with the section id and the page where it belongs.
 | `registerMainMenuItem` / `registerTopbarItem` | Navigation entries. |
 | `registerBootstrap` | A background mount rendered once at startup (headless logic, syncing, listeners). |
 
+#### Main menu entries
+
+A plugin that should be reachable from the main menu (the side menu on TV, the
+menu chip on desktop and mobile) registers one entry per destination:
+
+```ts
+ctx.registerBrowsePage({ id: 'stremio-catalog', label: { en: 'Stremio', sv: 'Stremio' }, Page: StremioCatalogPage })
+ctx.registerMainMenuItem({
+  id: 'stremio',
+  label: { en: 'Stremio', sv: 'Stremio' },
+  defaultEnabled: true,
+  target: { pageId: 'stremio-catalog' },
+})
+```
+
+- `id` is the menu key. It must be stable across versions: the user's menu
+  order and on/off state are stored under it.
+- `target.pageId` is one of the plugin's own browse pages, or a core page id
+  exported by the SDK (see the library case below). `target.params` is passed
+  to the page.
+- `defaultEnabled` (default `true`) is the entry's state until the user
+  toggles it in the menu settings. Use `false` only for secondary entries the
+  user should opt into. A plugin whose whole point is the tab (Plex, Jellyfin,
+  a Stremio catalog) leaves it `true` — with `false` the entry never appears
+  for an active integration until the user finds the setting.
+- Several entries can be grouped: pass `{ id, label, items: [...] }` instead
+  of a single item.
+- Declare `"main-menu-item"` in `sdkCapabilities` in `plugin.json`.
+
+Library plugins do not need their own page. Point the entry at the core
+library view and name the provider:
+
+```ts
+import { LIBRARY_BROWSE_PAGE_ID } from '@/lib/plugin-sdk'
+
+ctx.registerMainMenuItem({
+  id: 'jellyfin',
+  label: { en: 'Jellyfin', sv: 'Jellyfin' },
+  defaultEnabled: true,
+  target: { pageId: LIBRARY_BROWSE_PAGE_ID, params: { provider: 'jellyfin', fallbackPageId: 'jellyfin-setup' } },
+})
+```
+
+The host opens Home, search, details and the hero in library mode scoped to
+that provider's indexed source. When no synced source exists yet it opens
+`fallbackPageId` instead (typically the plugin's sign-in page), so the entry is
+useful before the first sync as well.
+
 ### Media detail view
 
 | Method | What it contributes |

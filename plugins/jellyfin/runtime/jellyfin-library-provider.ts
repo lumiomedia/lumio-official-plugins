@@ -1,7 +1,7 @@
 'use client'
 
 import type { LibraryBatch, LibraryEpisode, LibraryMedia, LibraryProvider, LibraryScanProgress, LibrarySourceRef, LibraryTitle } from '@/lib/plugin-sdk'
-import { fetchEpisodes, fetchLibraryItems, imageUrl, markPlayed, reportPlaybackProgress, streamUrl, type JellyfinItem } from './jellyfin-api'
+import { fetchChangedEpisodes, fetchEpisodes, fetchLibraryItems, fetchSeriesByIds, imageUrl, markPlayed, reportPlaybackProgress, streamUrl, trickplayUrlTemplate, type JellyfinItem } from './jellyfin-api'
 import { getJellyfinSettings, isJellyfinConnected, jellyfinSourceId, type JellyfinSettings } from './jellyfin-storage'
 
 /**
@@ -38,10 +38,34 @@ function mediaLabel(source: NonNullable<JellyfinItem['MediaSources']>[number]): 
   return parts.join(' · ') || source.Container?.toUpperCase() || 'Video'
 }
 
-function mapMedia(item: JellyfinItem, titleKey: string, episodeKey: string | null): LibraryMedia[] {
+/**
+ * Scrubbningsbilder om servern genererat dem (Instrumentpanel → Trickplay).
+ * Största tillgängliga bredd väljs; kärnan skalar ner i bubblan.
+ */
+function trickplayFor(settings: JellyfinSettings, item: JellyfinItem, mediaSourceId: string) {
+  const byWidth = item.Trickplay?.[mediaSourceId]
+  if (!byWidth) return null
+  const widths = Object.keys(byWidth).map(Number).filter((w) => Number.isFinite(w) && w > 0).sort((a, b) => b - a)
+  const width = widths[0]
+  const info = width != null ? byWidth[String(width)] : undefined
+  const urlTemplate = info ? trickplayUrlTemplate(settings, item.Id, mediaSourceId, width) : null
+  if (!info || !urlTemplate || !info.Interval || !info.ThumbnailCount) return null
+  return {
+    urlTemplate,
+    width: info.Width,
+    height: info.Height,
+    tileWidth: info.TileWidth,
+    tileHeight: info.TileHeight,
+    thumbnailCount: info.ThumbnailCount,
+    intervalMs: info.Interval,
+  }
+}
+
+function mapMedia(settings: JellyfinSettings, item: JellyfinItem, titleKey: string, episodeKey: string | null): LibraryMedia[] {
   return (item.MediaSources ?? []).map((source, index) => {
     const video = source.MediaStreams?.find((stream) => stream.Type === 'Video')
     return {
+      trickplay: trickplayFor(settings, item, source.Id),
       key: `${titleKey}:m${episodeKey ? `${episodeKey.split(':e').pop()}-` : ''}${index}`,
       label: mediaLabel(source),
       resolution: video?.Height ?? null,
@@ -77,7 +101,7 @@ function mapTitle(settings: JellyfinSettings, sourceId: string, item: JellyfinIt
     viewOffsetMs: kind === 'movie' ? ticksToMs(item.UserData?.PlaybackPositionTicks) : null,
     lastViewedAt: kind === 'movie' ? isoToUnix(item.UserData?.LastPlayedDate) ?? null : null,
     watched: kind === 'movie' ? Boolean(item.UserData?.Played) : false,
-    media: kind === 'movie' ? mapMedia(item, key, null) : [],
+    media: kind === 'movie' ? mapMedia(settings, item, key, null) : [],
     episodes: [],
   } as LibraryTitle
 }
@@ -98,7 +122,7 @@ function mapEpisode(settings: JellyfinSettings, titleKey: string, item: Jellyfin
     lastViewedAt: isoToUnix(item.UserData?.LastPlayedDate) ?? null,
     watched: Boolean(item.UserData?.Played),
   }
-  return { episode, media: mapMedia(item, titleKey, key) }
+  return { episode, media: mapMedia(settings, item, titleKey, key) }
 }
 
 async function scan(
@@ -113,6 +137,8 @@ async function scan(
   const startedAt = new Date().toISOString()
   let done = 0
   for (const library of settings.libraries) {
+    // Serier som redan lästs i det här passet — deltans avsnittssvep hoppar över dem.
+    const seenSeries = new Set<string>()
     let startIndex = 0
     for (;;) {
       if (signal.aborted) return { cursor: minDateLastSaved ?? startedAt }
@@ -123,23 +149,8 @@ async function scan(
       const kind = library.type === 'movies' ? 'movie' : 'series'
       const titles = items.map((item) => mapTitle(settings, source.id, item, kind))
       if (kind === 'series') {
-        // Avsnitten hämtas per serie, några i taget — en stor serie är ett
-        // anrop, och tre parallella håller servern lagom upptagen.
-        for (let index = 0; index < titles.length; index += EPISODE_CONCURRENCY) {
-          if (signal.aborted) return { cursor: minDateLastSaved ?? startedAt }
-          await Promise.all(
-            titles.slice(index, index + EPISODE_CONCURRENCY).map(async (title) => {
-              const seriesId = title.key.split(':').pop() ?? ''
-              const episodes = await fetchEpisodes(settings, seriesId).catch(() => [])
-              for (const episodeItem of episodes) {
-                const mapped = mapEpisode(settings, title.key, episodeItem)
-                if (!mapped) continue
-                title.episodes = [...(title.episodes ?? []), mapped.episode]
-                title.media = [...(title.media ?? []), ...mapped.media]
-              }
-            }),
-          )
-        }
+        if (await attachEpisodes(settings, titles, signal)) return { cursor: minDateLastSaved ?? startedAt }
+        for (const title of titles) seenSeries.add(title.key.split(':').pop() ?? '')
       }
       await emit({ upsert: titles })
       done += titles.length
@@ -147,8 +158,66 @@ async function scan(
       startIndex += items.length
       if (startIndex >= (page.TotalRecordCount ?? startIndex)) break
     }
+
+    // Delta: serier vars AVSNITT ändrats men som själva inte gjort det (ett
+    // nytt avsnitt sparar inte om serien). Läses om i sin helhet så indexet
+    // får avsnittet — annars väntade det på dygnets fullskanning.
+    if (minDateLastSaved && library.type === 'tvshows') {
+      const changedSeriesIds = new Set<string>()
+      let episodeIndex = 0
+      for (;;) {
+        if (signal.aborted) return { cursor: minDateLastSaved }
+        const page = await fetchChangedEpisodes(settings, library, episodeIndex, PAGE_SIZE, minDateLastSaved)
+        const episodes = page.Items ?? []
+        if (episodes.length === 0) break
+        for (const episode of episodes) {
+          if (episode.SeriesId && !seenSeries.has(episode.SeriesId)) changedSeriesIds.add(episode.SeriesId)
+        }
+        episodeIndex += episodes.length
+        if (episodeIndex >= (page.TotalRecordCount ?? episodeIndex)) break
+      }
+      const ids = [...changedSeriesIds]
+      for (let index = 0; index < ids.length; index += PAGE_SIZE) {
+        if (signal.aborted) return { cursor: minDateLastSaved }
+        const seriesItems = await fetchSeriesByIds(settings, ids.slice(index, index + PAGE_SIZE))
+        const titles = seriesItems.map((item) => mapTitle(settings, source.id, item, 'series'))
+        if (await attachEpisodes(settings, titles, signal)) return { cursor: minDateLastSaved }
+        if (titles.length > 0) await emit({ upsert: titles })
+        done += titles.length
+        progress({ phase: 'titles', done, section: library.name })
+      }
+    }
   }
   return { cursor: startedAt }
+}
+
+/**
+ * Avsnitten hämtas per serie, några i taget — en stor serie är ett anrop, och
+ * tre parallella håller servern lagom upptagen. Returnerar true om skanningen
+ * avbröts under tiden.
+ *
+ * Ett misslyckat avsnittsanrop FÄLLER skanningen i stället för att tyst ge
+ * serien noll avsnitt: en tom serie i indexet ser ut som "avsnittet finns
+ * inte i biblioteket" på detaljsidan och rättas inte förrän serien själv
+ * ändras. Schemaläggaren försöker igen om fem minuter.
+ */
+async function attachEpisodes(settings: JellyfinSettings, titles: LibraryTitle[], signal: AbortSignal): Promise<boolean> {
+  for (let index = 0; index < titles.length; index += EPISODE_CONCURRENCY) {
+    if (signal.aborted) return true
+    await Promise.all(
+      titles.slice(index, index + EPISODE_CONCURRENCY).map(async (title) => {
+        const seriesId = title.key.split(':').pop() ?? ''
+        const episodes = await fetchEpisodes(settings, seriesId)
+        for (const episodeItem of episodes) {
+          const mapped = mapEpisode(settings, title.key, episodeItem)
+          if (!mapped) continue
+          title.episodes = [...(title.episodes ?? []), mapped.episode]
+          title.media = [...(title.media ?? []), ...mapped.media]
+        }
+      }),
+    )
+  }
+  return false
 }
 
 export const jellyfinLibraryProvider: LibraryProvider = {
