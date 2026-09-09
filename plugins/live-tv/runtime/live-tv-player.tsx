@@ -245,7 +245,6 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
     { aspectOverride: '2.35:1', panscan: 0, videoZoom: 0, label: '2.35:1', htmlFit: 'contain' },
   ]
   const [aspectIndex, setAspectIndex] = useState(0)
-  const [volumeOpen, setVolumeOpen] = useState(false)
   const [volumeLevel, setVolumeLevel] = useState(1)
   const [muted, setMutedState] = useState(false)
   const [desktopFullscreen, setDesktopFullscreen] = useState(false)
@@ -1075,7 +1074,30 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
         <div className="mb-2 px-1">
           <PlayerProgrammeProgress channel={channel} listId={listId} urls={epgUrls} />
         </div>
-        <div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-black/55 px-4 py-3 text-white shadow-2xl backdrop-blur-md">
+        {/*
+          RADEN SCROLLAR I SIDLED. Uppmätt minsta innehållsbredd: fem knappar
+          (spela, fullskärm, guide, volym, bildförhållande) á 44 px = 220,
+          fem gap á 16 = 80, volymreglaget 96 + 8, infoblockets golv 176 (se
+          kommentaren där), plus radens px-4 = 32. Alltså runt 590 px min mot
+          320 tillgängliga i
+          telefonens stående läge (360 − förälderns px-5) — raden gick utanför
+          viewporten och de sista knapparna gick inte att nå
+          (Jerry 2026-09-09: "player meny går utanför viewporten, den ska vara
+          scrollbar i det läget").
+
+          Scroll och inte radbrytning: knapparna ska stå i EN rad man drar i,
+          som en spelarkontroll gör, och höjden är dyr i stående läge där
+          videon redan är liten.
+
+          Regeln är villkorslös och inte breddvillkorad: utan överflöd är en
+          scrollcontainer helt inert, och ett `sm:`-villkor hade bara gett två
+          beteenden att hålla i huvudet. Rullisten göms — man drar i raden.
+
+          INGET ABSOLUT POSITIONERAT FÅR LIGGA HÄR INNE. En scrollcontainer
+          klipper i båda axlarna; det var därför volympopupen blev inline
+          ovan. Nästa popup i den här raden måste renderas utanför den.
+        */}
+        <div className="flex items-center gap-4 overflow-x-auto rounded-2xl border border-white/10 bg-black/55 px-4 py-3 text-white shadow-2xl backdrop-blur-md [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <button
             type="button"
             {...tvStation}
@@ -1138,16 +1160,29 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
             </svg>
           </button>
 
-          <div className="relative" onMouseLeave={() => setVolumeOpen(false)}>
+          {/*
+            VOLYMEN LIGGER INLINE, inte i en popup.
+
+            Popupen var `absolute bottom-full` INNE i kontrollraden, och raden
+            måste kunna scrolla i stående läge (se overflow nedan) — en
+            scrollcontainer klipper i båda axlarna, så popupen hade försvunnit
+            i just det läge fixen finns för. Inline är dessutom mindre kod:
+            ingen öppna/stäng-state och ingen hover-glapp-hack mellan knapp och
+            pop-up.
+
+            Reglaget ritas INTE på TV. Ett range-input som fokusstation
+            sväljer alla pilar, så mute-knappen är TV:ns hela volymkontroll —
+            samma regel som popupen bar förut.
+          */}
+          <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
               {...tvStation}
-              onClick={() => setVolumeOpen((open) => !open)}
-              onMouseEnter={() => setVolumeOpen(true)}
+              onClick={toggleMute}
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/35 hover:bg-white/15"
-              aria-label={t('liveTvVolume')}
-              title={t('liveTvVolume')}
-              aria-expanded={volumeOpen}
+              aria-label={muted ? t('liveTvUnmute') : t('liveTvMute')}
+              title={muted ? t('liveTvUnmute') : t('liveTvMute')}
+              aria-pressed={muted}
             >
               {muted || volumeLevel === 0 ? (
                 <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1163,52 +1198,17 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
                 </svg>
               )}
             </button>
-            {volumeOpen ? (
-              /* pb-2 on an outer wrapper instead of mb-2 on the pill: the
-                 spacing must be PART of the hoverable popup element — the
-                 pointer crossing an empty margin gap between button and
-                 popup fires the wrapper's mouseleave, so the slider
-                 vanished before it could be reached. */
-              <div
-                className="absolute bottom-full left-1/2 -translate-x-1/2 pb-2"
-                onMouseEnter={() => setVolumeOpen(true)}
-              >
-              <div className="flex items-center gap-2 rounded-full border border-white/15 bg-black/85 px-3 py-2 shadow-2xl backdrop-blur">
-                {/* Reglaget förblir musens: ett range-input som station
-                    skulle svälja alla pilar. Mute-knappen räcker på TV. */}
-                <button
-                  type="button"
-                  {...tvStation}
-                  onClick={toggleMute}
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/35 hover:bg-white/15"
-                  aria-label={muted ? t('liveTvUnmute') : t('liveTvMute')}
-                  title={muted ? t('liveTvUnmute') : t('liveTvMute')}
-                >
-                  {muted || volumeLevel === 0 ? (
-                    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M11 5 6 9H3v6h3l5 4V5Z" />
-                      <path d="m22 9-6 6" />
-                      <path d="m16 9 6 6" />
-                    </svg>
-                  ) : (
-                    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M11 5 6 9H3v6h3l5 4V5Z" />
-                      <path d="M15.5 8.5a5 5 0 0 1 0 7" />
-                    </svg>
-                  )}
-                </button>
-                <input
-                  type="range"
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  value={muted ? 0 : volumeLevel}
-                  onChange={(e) => updateVolume(parseFloat(e.target.value))}
-                  className="h-1 w-32 cursor-pointer appearance-none rounded-full bg-white/15 accent-white"
-                  aria-label={t('liveTvVolume')}
-                />
-              </div>
-              </div>
+            {!isTv ? (
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.01}
+                value={muted ? 0 : volumeLevel}
+                onChange={(e) => updateVolume(parseFloat(e.target.value))}
+                className="h-1 w-24 shrink-0 cursor-pointer appearance-none rounded-full bg-white/15 accent-white"
+                aria-label={t('liveTvVolume')}
+              />
             ) : null}
           </div>
 
@@ -1237,7 +1237,20 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
             </span>
           </button>
 
-          <div className="min-w-0 flex-1">
+          {/*
+            EN GOLVBREDD, annars försvinner kanalnamnet i den scrollande raden.
+            `flex-1` växer bara i LEDIGT utrymme, och när raden överflödar finns
+            inget — blocket krympte då till sitt min-content, vilket är
+            LIVE-brickan plus ett `truncate` som klipptes till noll tecken. Man
+            hade scrollat fram till en bricka utan namn.
+
+            Inline-stil och inte `min-w-[11rem]`: pluginet körs även på ÄLDRE
+            appar, vars CSS-bunt byggdes innan klassen fanns (Tailwind skannar
+            pluginens runtime, men bara vid VÄRDENS bygge). En layoutregel som
+            pluginet måste kunna lita på får därför inte ligga i en klass.
+            `flex-1` står kvar så skrivbordet fortfarande fyller ut raden.
+          */}
+          <div className="min-w-0 flex-1" style={{ minWidth: 176 }}>
             <div className="flex min-w-0 items-center gap-3">
               <span className="inline-flex h-6 shrink-0 items-center rounded-full border border-red-400/35 bg-red-500/15 px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-red-200">
                 {t('liveTvLiveBadge')}

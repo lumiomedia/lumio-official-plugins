@@ -168487,6 +168487,10 @@
       watchlistContinueHere: "Continue here",
       watchlistEmpty: "No starred titles yet.",
       watchlistEmptyHint: "Star titles in the release calendar to follow premieres.",
+      // Tomläget när BÅDA listorna är tomma: texten måste täcka båda vägarna in,
+      // för då finns inget chip kvar som förklarar skillnaden.
+      tvListsEmpty: "Nothing saved yet.",
+      tvListsEmptyHint: "Follow a series or star a title to find it here.",
       tvSegmentEmpty: "No rows here yet.",
       tvSegmentEmptyHint: "Add rows for this page in Settings \u2014 under Home page rows, or TV mode on a TV.",
       continueEmpty: "Nothing started yet.",
@@ -170999,6 +171003,8 @@
       watchlistContinueHere: "Forts\xE4tt d\xE4r",
       watchlistEmpty: "Inga stj\xE4rnm\xE4rkta titlar \xE4n.",
       watchlistEmptyHint: "Stj\xE4rnm\xE4rk titlar i releasekalendern f\xF6r att f\xF6lja premi\xE4rer.",
+      tvListsEmpty: "Inget sparat \xE4n.",
+      tvListsEmptyHint: "F\xF6lj en serie eller stj\xE4rnm\xE4rk en titel f\xF6r att hitta den h\xE4r.",
       tvSegmentEmpty: "Inga rader h\xE4r \xE4n.",
       tvSegmentEmptyHint: "L\xE4gg till rader f\xF6r den h\xE4r sidan i Inst\xE4llningar \u2014 under startsidans rader, eller TV-l\xE4ge p\xE5 en TV.",
       continueEmpty: "Inget p\xE5b\xF6rjat \xE4n.",
@@ -173145,7 +173151,13 @@
   }
   async function openNativePlayer(opts) {
     const wrapped = sourceCacheUrl(opts.url) ?? opts.url;
-    await np({ cmd: "open", url: wrapped, start: opts.start ?? 0, audioLang: opts.audioLang ?? "" });
+    await np({
+      cmd: "open",
+      url: wrapped,
+      start: opts.start ?? 0,
+      audioLang: opts.audioLang ?? "",
+      mimeType: opts.mimeType ?? ""
+    });
   }
   async function closeNativePlayer() {
     await np({ cmd: "close" });

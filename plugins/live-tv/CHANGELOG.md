@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.44
 
 - New Live TV hub as the start view of the Live TV page on desktop and phone:
   a "now playing" hero from the EPG cache, favourite channels, "Continue

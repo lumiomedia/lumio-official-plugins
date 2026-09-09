@@ -1,6 +1,6 @@
 {
   "name": "@lumio-plugins/live-tv",
-  "version": "0.3.29",
+  "version": "0.3.44",
   "private": true,
   "type": "module",
   "scripts": {

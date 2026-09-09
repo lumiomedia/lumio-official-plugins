@@ -3144,6 +3144,10 @@
           watchlistContinueHere: "Continue here",
           watchlistEmpty: "No starred titles yet.",
           watchlistEmptyHint: "Star titles in the release calendar to follow premieres.",
+          // Tomläget när BÅDA listorna är tomma: texten måste täcka båda vägarna in,
+          // för då finns inget chip kvar som förklarar skillnaden.
+          tvListsEmpty: "Nothing saved yet.",
+          tvListsEmptyHint: "Follow a series or star a title to find it here.",
           tvSegmentEmpty: "No rows here yet.",
           tvSegmentEmptyHint: "Add rows for this page in Settings \u2014 under Home page rows, or TV mode on a TV.",
           continueEmpty: "Nothing started yet.",
@@ -5656,6 +5660,8 @@
           watchlistContinueHere: "Forts\xE4tt d\xE4r",
           watchlistEmpty: "Inga stj\xE4rnm\xE4rkta titlar \xE4n.",
           watchlistEmptyHint: "Stj\xE4rnm\xE4rk titlar i releasekalendern f\xF6r att f\xF6lja premi\xE4rer.",
+          tvListsEmpty: "Inget sparat \xE4n.",
+          tvListsEmptyHint: "F\xF6lj en serie eller stj\xE4rnm\xE4rk en titel f\xF6r att hitta den h\xE4r.",
           tvSegmentEmpty: "Inga rader h\xE4r \xE4n.",
           tvSegmentEmptyHint: "L\xE4gg till rader f\xF6r den h\xE4r sidan i Inst\xE4llningar \u2014 under startsidans rader, eller TV-l\xE4ge p\xE5 en TV.",
           continueEmpty: "Inget p\xE5b\xF6rjat \xE4n.",
@@ -173332,7 +173338,13 @@
   }
   async function openNativePlayer(opts) {
     const wrapped = sourceCacheUrl(opts.url) ?? opts.url;
-    await np({ cmd: "open", url: wrapped, start: opts.start ?? 0, audioLang: opts.audioLang ?? "" });
+    await np({
+      cmd: "open",
+      url: wrapped,
+      start: opts.start ?? 0,
+      audioLang: opts.audioLang ?? "",
+      mimeType: opts.mimeType ?? ""
+    });
   }
   async function closeNativePlayer() {
     await np({ cmd: "close" });
@@ -189362,6 +189374,21 @@ ${cue.text}`).join("\n\n")}
       padding: icon ? 0 : small ? "6px 14px" : "8px 16px",
       width: icon ? 36 : block ? "100%" : void 0,
       height: icon ? 36 : void 0,
+      /*
+            IKONKNAPPEN ÄR RUND, oavsett vilket höjdgolv värden sätter.
+      
+            36×36 plus `borderRadius: 999` är en cirkel i pluginets egen stil — men
+            appens TV-CSS lägger `min-height: calc(52 * var(--tv-u))` på TV-knappar,
+            vilket vid grundskalan 1,54 är 80 px. Höjden växte alltså till 80 medan
+            bredden stod kvar på 36, och Tillbaka-pilen blev en STÅENDE kapsel
+            (Jerry 2026-09-08: "gör pilen rund sen").
+      
+            `aspect-ratio: 1` gör formen till en egenskap i stället för ett par tal
+            som måste hållas i takt: växer höjden av en regel utanför pluginet följer
+            bredden med, och knappen kan inte bli oval igen. Att i stället hårdkoda
+            80 px hade fungerat tills någon ändrade `--tv-base-scale`.
+          */
+      aspectRatio: icon ? "1 / 1" : void 0,
       borderRadius: 999,
       border: "1px solid transparent",
       background: "transparent",
@@ -190467,6 +190494,23 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
+  // ../lumio-official-plugins/plugins/live-tv/runtime/live-tv-playback-fallback.ts
+  function hostProxyUrl(origin, url) {
+    return `${origin}/api/m3u?stream=${encodeURIComponent(url)}`;
+  }
+  function nativeFailureAction(reason, attempt, timePos) {
+    if (reason === "no-start" && timePos > 0) return "settle";
+    if (attempt === 0) return "retry-proxy";
+    return "fail";
+  }
+  var HOST_PROXY_MIME;
+  var init_live_tv_playback_fallback = __esm({
+    "../lumio-official-plugins/plugins/live-tv/runtime/live-tv-playback-fallback.ts"() {
+      "use strict";
+      HOST_PROXY_MIME = "application/x-mpegURL";
+    }
+  });
+
   // ../lumio-official-plugins/plugins/live-tv/runtime/live-tv-player.tsx
   var live_tv_player_exports = {};
   __export(live_tv_player_exports, {
@@ -190507,6 +190551,7 @@ ${cue.text}`).join("\n\n")}
     const controlsHideTimerRef = useRef(null);
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [nativeAttempt, setNativeAttempt] = useState(0);
     const [controlsVisible, setControlsVisible] = useState(true);
     const [scheduleOpen, setScheduleOpen] = useState(false);
     const canSwitch = typeof onSwitchChannel === "function" && !isTv;
@@ -190531,15 +190576,29 @@ ${cue.text}`).join("\n\n")}
     const htmlVideo = useHtmlVideoPlayer(isHtmlEngine, videoRef);
     const mpv = isDroidEngine ? droid : isHtmlEngine ? htmlVideo : mpvDesktop;
     const IPTV_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
+    const hostProxyUrl2 = useCallback((url) => hostProxyUrl(window.location.origin, url), []);
     const engineOpen = useCallback(
       // Android-spelaren tar inga headers (np-bryggan saknar fältet) — den
-      // vägen är oförändrad tills bryggan stödjer det.
+      // vägen är oförändrad tills bryggan stödjer det. UA:n sätts i stället på
+      // ExoPlayers datakälla, se PlayerBridge.
       // Råa MPEG-TS-strömmar (Xtream /live/…ts) får INGET UA-huvud: på appar
       // före 0.1.58 lades det i mpv:s http-header-fields bredvid ffmpegs egen och
       // panelen svarade 400 (svart ruta, 2026-09-03). HLS/DASH behåller
       // webbläsarsträngen som 0.3.43 införde för paneler som 403:ar mpv:s egen.
-      (url) => isDroidEngine ? openNativePlayer({ url }) : openMpvPlayer({ url, requestHeaders: /\.ts(?:[?#]|$)/i.test(url) ? void 0 : { "User-Agent": IPTV_USER_AGENT } }),
-      [isDroidEngine]
+      //
+      // mimeType: proxy-URL:en har ingen filändelse, och media3 gissar
+      // container på just filändelsen. Utan ledtråden behandlades en felfri
+      // HLS-spellista som en progressiv fil och föll på
+      // PARSING_CONTAINER_UNSUPPORTED — bevisat på telefon med en kanal som
+      // spelar direkt men inte genom proxyn (Jerry 2026-09-08).
+      (url, viaProxy) => {
+        const target2 = viaProxy ? hostProxyUrl2(url) : url;
+        return isDroidEngine ? openNativePlayer({ url: target2, ...viaProxy ? { mimeType: HOST_PROXY_MIME } : {} }) : openMpvPlayer({
+          url: target2,
+          requestHeaders: /\.ts(?:[?#]|$)/i.test(target2) ? void 0 : { "User-Agent": IPTV_USER_AGENT }
+        });
+      },
+      [isDroidEngine, hostProxyUrl2]
     );
     const engineClose = useCallback(
       () => isDroidEngine ? closeNativePlayer() : closeMpvPlayer(),
@@ -190560,6 +190619,8 @@ ${cue.text}`).join("\n\n")}
     }, [isDroidEngine]);
     const {
       fileLoaded: mpvFileLoaded,
+      loadFailed: mpvLoadFailed,
+      loadFailedToken: mpvLoadFailedToken,
       timePos: mpvTimePos,
       paused: mpvPaused,
       playbackRestarted: mpvPlaybackRestarted,
@@ -190578,7 +190639,6 @@ ${cue.text}`).join("\n\n")}
       { aspectOverride: "2.35:1", panscan: 0, videoZoom: 0, label: "2.35:1", htmlFit: "contain" }
     ];
     const [aspectIndex, setAspectIndex] = useState(0);
-    const [volumeOpen, setVolumeOpen] = useState(false);
     const [volumeLevel, setVolumeLevel] = useState(1);
     const [muted, setMutedState] = useState(false);
     const [desktopFullscreen, setDesktopFullscreen] = useState(false);
@@ -190785,13 +190845,10 @@ ${cue.text}`).join("\n\n")}
         }).then(() => {
           if (cancelled2) return;
           syncRepeatedly();
-          return engineOpen(channel.url);
+          return engineOpen(channel.url, nativeAttempt > 0);
         }).then(() => {
           if (cancelled2) return;
           syncRepeatedly();
-          window.setTimeout(() => {
-            if (!cancelled2) setLoading(false);
-          }, 1200);
           if (stageRef.current) {
             resizeObs = new ResizeObserver(sync2);
             resizeObs.observe(stageRef.current);
@@ -190934,6 +190991,7 @@ ${cue.text}`).join("\n\n")}
       };
     }, [
       channel.url,
+      nativeAttempt,
       portalEl,
       resetFileLoaded,
       resetFirstFrameRendered,
@@ -190946,15 +191004,44 @@ ${cue.text}`).join("\n\n")}
       void mpv.setPlayPause(false);
     }, [mpvFileLoaded, hasNativeSurface]);
     useEffect(() => {
+      setNativeAttempt(0);
+    }, [channel.url]);
+    const handledFailTokenRef = useRef(0);
+    useEffect(() => {
+      if (!hasNativeSurface || !mpvLoadFailed) return;
+      if (handledFailTokenRef.current === mpvLoadFailedToken) return;
+      handledFailTokenRef.current = mpvLoadFailedToken;
+      if (nativeFailureAction("load-failed", nativeAttempt, mpvTimePos) === "retry-proxy") {
+        setNativeAttempt(1);
+        return;
+      }
+      setError(t("liveTvPlaybackFailed"));
+      setLoading(false);
+      void engineClose().catch(() => {
+      });
+    }, [hasNativeSurface, mpvLoadFailed, mpvLoadFailedToken, nativeAttempt, mpvTimePos]);
+    const timePosRef = useRef(0);
+    timePosRef.current = mpvTimePos;
+    useEffect(() => {
       if (!hasNativeSurface || !loading || error || mpvFileLoaded || mpvPlaybackRestarted || mpvFirstFrameRendered) return;
+      const budget = nativeAttempt === 0 ? MPV_FIRST_ATTEMPT_TIMEOUT_MS : MPV_STARTUP_TIMEOUT_MS;
       const timeout = window.setTimeout(() => {
+        const action = nativeFailureAction("no-start", nativeAttempt, timePosRef.current);
+        if (action === "settle") {
+          setLoading(false);
+          return;
+        }
+        if (action === "retry-proxy") {
+          setNativeAttempt(1);
+          return;
+        }
         setError(t("liveTvMpvStartFailed"));
         setLoading(false);
         void engineClose().catch(() => {
         });
-      }, MPV_STARTUP_TIMEOUT_MS);
+      }, budget);
       return () => window.clearTimeout(timeout);
-    }, [error, loading, mpvFileLoaded, mpvFirstFrameRendered, mpvPlaybackRestarted, hasNativeSurface]);
+    }, [error, loading, mpvFileLoaded, mpvFirstFrameRendered, mpvPlaybackRestarted, hasNativeSurface, nativeAttempt]);
     useEffect(() => {
       if (!hasNativeSurface) return;
       if (mpvFirstFrameRendered || mpvPlaybackRestarted) {
@@ -191024,7 +191111,7 @@ ${cue.text}`).join("\n\n")}
           return;
         }
         void engineClose().catch(() => {
-        }).then(() => engineOpen(channel.url));
+        }).then(() => engineOpen(channel.url, nativeAttempt > 0));
         return;
       }
       void mpv.setPlayPause(true);
@@ -191209,7 +191296,7 @@ ${cue.text}`).join("\n\n")}
               },
               children: [
                 /* @__PURE__ */ jsx("div", { className: "mb-2 px-1", children: /* @__PURE__ */ jsx(PlayerProgrammeProgress, { channel, listId, urls: epgUrls }) }),
-                /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-4 rounded-2xl border border-white/10 bg-black/55 px-4 py-3 text-white shadow-2xl backdrop-blur-md", children: [
+                /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-4 overflow-x-auto rounded-2xl border border-white/10 bg-black/55 px-4 py-3 text-white shadow-2xl backdrop-blur-md [scrollbar-width:none] [&::-webkit-scrollbar]:hidden", children: [
                   /* @__PURE__ */ jsx(
                     "button",
                     {
@@ -191260,18 +191347,17 @@ ${cue.text}`).join("\n\n")}
                       ] })
                     }
                   ),
-                  /* @__PURE__ */ jsxs("div", { className: "relative", onMouseLeave: () => setVolumeOpen(false), children: [
+                  /* @__PURE__ */ jsxs("div", { className: "flex shrink-0 items-center gap-2", children: [
                     /* @__PURE__ */ jsx(
                       "button",
                       {
                         type: "button",
                         ...tvStation,
-                        onClick: () => setVolumeOpen((open) => !open),
-                        onMouseEnter: () => setVolumeOpen(true),
+                        onClick: toggleMute,
                         className: "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/35 hover:bg-white/15",
-                        "aria-label": t("liveTvVolume"),
-                        title: t("liveTvVolume"),
-                        "aria-expanded": volumeOpen,
+                        "aria-label": muted ? t("liveTvUnmute") : t("liveTvMute"),
+                        title: muted ? t("liveTvUnmute") : t("liveTvMute"),
+                        "aria-pressed": muted,
                         children: muted || volumeLevel === 0 ? /* @__PURE__ */ jsxs("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
                           /* @__PURE__ */ jsx("path", { d: "M11 5 6 9H3v6h3l5 4V5Z" }),
                           /* @__PURE__ */ jsx("path", { d: "m22 9-6 6" }),
@@ -191283,53 +191369,18 @@ ${cue.text}`).join("\n\n")}
                         ] })
                       }
                     ),
-                    volumeOpen ? (
-                      /* pb-2 on an outer wrapper instead of mb-2 on the pill: the
-                         spacing must be PART of the hoverable popup element — the
-                         pointer crossing an empty margin gap between button and
-                         popup fires the wrapper's mouseleave, so the slider
-                         vanished before it could be reached. */
-                      /* @__PURE__ */ jsx(
-                        "div",
-                        {
-                          className: "absolute bottom-full left-1/2 -translate-x-1/2 pb-2",
-                          onMouseEnter: () => setVolumeOpen(true),
-                          children: /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 rounded-full border border-white/15 bg-black/85 px-3 py-2 shadow-2xl backdrop-blur", children: [
-                            /* @__PURE__ */ jsx(
-                              "button",
-                              {
-                                type: "button",
-                                ...tvStation,
-                                onClick: toggleMute,
-                                className: "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/35 hover:bg-white/15",
-                                "aria-label": muted ? t("liveTvUnmute") : t("liveTvMute"),
-                                title: muted ? t("liveTvUnmute") : t("liveTvMute"),
-                                children: muted || volumeLevel === 0 ? /* @__PURE__ */ jsxs("svg", { className: "h-3.5 w-3.5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
-                                  /* @__PURE__ */ jsx("path", { d: "M11 5 6 9H3v6h3l5 4V5Z" }),
-                                  /* @__PURE__ */ jsx("path", { d: "m22 9-6 6" }),
-                                  /* @__PURE__ */ jsx("path", { d: "m16 9 6 6" })
-                                ] }) : /* @__PURE__ */ jsxs("svg", { className: "h-3.5 w-3.5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
-                                  /* @__PURE__ */ jsx("path", { d: "M11 5 6 9H3v6h3l5 4V5Z" }),
-                                  /* @__PURE__ */ jsx("path", { d: "M15.5 8.5a5 5 0 0 1 0 7" })
-                                ] })
-                              }
-                            ),
-                            /* @__PURE__ */ jsx(
-                              "input",
-                              {
-                                type: "range",
-                                min: 0,
-                                max: 1,
-                                step: 0.01,
-                                value: muted ? 0 : volumeLevel,
-                                onChange: (e) => updateVolume(parseFloat(e.target.value)),
-                                className: "h-1 w-32 cursor-pointer appearance-none rounded-full bg-white/15 accent-white",
-                                "aria-label": t("liveTvVolume")
-                              }
-                            )
-                          ] })
-                        }
-                      )
+                    !isTv ? /* @__PURE__ */ jsx(
+                      "input",
+                      {
+                        type: "range",
+                        min: 0,
+                        max: 1,
+                        step: 0.01,
+                        value: muted ? 0 : volumeLevel,
+                        onChange: (e) => updateVolume(parseFloat(e.target.value)),
+                        className: "h-1 w-24 shrink-0 cursor-pointer appearance-none rounded-full bg-white/15 accent-white",
+                        "aria-label": t("liveTvVolume")
+                      }
                     ) : null
                   ] }),
                   /* @__PURE__ */ jsxs(
@@ -191350,7 +191401,7 @@ ${cue.text}`).join("\n\n")}
                       ]
                     }
                   ),
-                  /* @__PURE__ */ jsxs("div", { className: "min-w-0 flex-1", children: [
+                  /* @__PURE__ */ jsxs("div", { className: "min-w-0 flex-1", style: { minWidth: 176 }, children: [
                     /* @__PURE__ */ jsxs("div", { className: "flex min-w-0 items-center gap-3", children: [
                       /* @__PURE__ */ jsx("span", { className: "inline-flex h-6 shrink-0 items-center rounded-full border border-red-400/35 bg-red-500/15 px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-red-200", children: t("liveTvLiveBadge") }),
                       /* @__PURE__ */ jsx("p", { className: "min-w-0 truncate text-sm font-semibold text-white", children: channel.name })
@@ -191390,7 +191441,7 @@ ${cue.text}`).join("\n\n")}
     );
     return portalEl ? (0, import_react_dom3.createPortal)(content, portalEl) : content;
   }
-  var import_react_dom3, MPV_STARTUP_TIMEOUT_MS;
+  var import_react_dom3, MPV_STARTUP_TIMEOUT_MS, MPV_FIRST_ATTEMPT_TIMEOUT_MS;
   var init_live_tv_player = __esm({
     "../lumio-official-plugins/plugins/live-tv/runtime/live-tv-player.tsx"() {
       "use strict";
@@ -191406,8 +191457,10 @@ ${cue.text}`).join("\n\n")}
       init_player_schedule_overlay();
       init_player_extras();
       init_useHtmlVideoPlayer();
+      init_live_tv_playback_fallback();
       init_jsx_runtime_shim();
       MPV_STARTUP_TIMEOUT_MS = 18e3;
+      MPV_FIRST_ATTEMPT_TIMEOUT_MS = 9e3;
     }
   });
 
@@ -193421,45 +193474,60 @@ ${cue.text}`).join("\n\n")}
                     ]
                   }
                 ),
-                groupDropdownOpen ? /* @__PURE__ */ jsxs("div", { className: "absolute left-0 top-full z-50 mt-2 min-w-full overflow-hidden rounded-2xl border border-white/10 bg-[#080c1a] py-2 shadow-2xl", children: [
+                groupDropdownOpen ? (
+                  // Spellistor har fler grupper än en skärm rymmer — Free-TV har
+                  // 97. Utan höjdtak växte luckan rakt ut ur telefonen i stående
+                  // läge och de nedersta länderna gick inte att nå alls
+                  // (overflow-hidden klippte dem, och sidan bakom rullade inte
+                  // med luckan). Samma tak och egen rullning som hubbens meny.
+                  // data-scroll: TV-fokusmotorn rullar in raden man står på.
                   /* @__PURE__ */ jsxs(
-                    "button",
+                    "div",
                     {
-                      type: "button",
-                      ...tvStation,
-                      ...isTv ? { "data-entry": "" } : {},
-                      onClick: () => {
-                        setActiveGroup(null);
-                        setGroupDropdownOpen(false);
-                      },
-                      className: `flex w-full items-center justify-between gap-3 px-4 text-left transition-all hover:bg-white/6 ${isTv ? "min-h-[52px] text-[15px]" : "py-2.5 text-sm"} ${activeGroup === null ? "text-accent-300" : "text-slate-200"}`,
+                      ...isTv ? { "data-scroll": "" } : {},
+                      className: "absolute left-0 top-full z-50 mt-2 max-h-[min(60vh,360px)] min-w-full overflow-y-auto overscroll-contain rounded-2xl border border-white/10 bg-[#080c1a] py-2 shadow-2xl",
                       children: [
-                        /* @__PURE__ */ jsx("span", { children: t("allCategories") }),
-                        activeGroup === null ? /* @__PURE__ */ jsx("svg", { className: "h-3.5 w-3.5 flex-shrink-0 text-accent-400", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", children: /* @__PURE__ */ jsx("path", { d: "M5 13l4 4L19 7", strokeLinecap: "round", strokeLinejoin: "round" }) }) : null
+                        /* @__PURE__ */ jsxs(
+                          "button",
+                          {
+                            type: "button",
+                            ...tvStation,
+                            ...isTv ? { "data-entry": "" } : {},
+                            onClick: () => {
+                              setActiveGroup(null);
+                              setGroupDropdownOpen(false);
+                            },
+                            className: `flex w-full items-center justify-between gap-3 px-4 text-left transition-all hover:bg-white/6 ${isTv ? "min-h-[52px] text-[15px]" : "py-2.5 text-sm"} ${activeGroup === null ? "text-accent-300" : "text-slate-200"}`,
+                            children: [
+                              /* @__PURE__ */ jsx("span", { children: t("allCategories") }),
+                              activeGroup === null ? /* @__PURE__ */ jsx("svg", { className: "h-3.5 w-3.5 flex-shrink-0 text-accent-400", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", children: /* @__PURE__ */ jsx("path", { d: "M5 13l4 4L19 7", strokeLinecap: "round", strokeLinejoin: "round" }) }) : null
+                            ]
+                          }
+                        ),
+                        categories.map((cat) => {
+                          const isActive = activeGroup === cat;
+                          return /* @__PURE__ */ jsxs(
+                            "button",
+                            {
+                              type: "button",
+                              ...tvStation,
+                              onClick: () => {
+                                setActiveGroup(cat);
+                                setGroupDropdownOpen(false);
+                              },
+                              className: `flex w-full items-center justify-between gap-3 px-4 text-left transition-all hover:bg-white/6 ${isTv ? "min-h-[52px] text-[15px]" : "py-2.5 text-sm"} ${isActive ? "text-accent-300" : "text-slate-200"}`,
+                              children: [
+                                /* @__PURE__ */ jsx("span", { children: cat }),
+                                isActive ? /* @__PURE__ */ jsx("svg", { className: "h-3.5 w-3.5 flex-shrink-0 text-accent-400", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", children: /* @__PURE__ */ jsx("path", { d: "M5 13l4 4L19 7", strokeLinecap: "round", strokeLinejoin: "round" }) }) : null
+                              ]
+                            },
+                            cat
+                          );
+                        })
                       ]
                     }
-                  ),
-                  categories.map((cat) => {
-                    const isActive = activeGroup === cat;
-                    return /* @__PURE__ */ jsxs(
-                      "button",
-                      {
-                        type: "button",
-                        ...tvStation,
-                        onClick: () => {
-                          setActiveGroup(cat);
-                          setGroupDropdownOpen(false);
-                        },
-                        className: `flex w-full items-center justify-between gap-3 px-4 text-left transition-all hover:bg-white/6 ${isTv ? "min-h-[52px] text-[15px]" : "py-2.5 text-sm"} ${isActive ? "text-accent-300" : "text-slate-200"}`,
-                        children: [
-                          /* @__PURE__ */ jsx("span", { children: cat }),
-                          isActive ? /* @__PURE__ */ jsx("svg", { className: "h-3.5 w-3.5 flex-shrink-0 text-accent-400", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", children: /* @__PURE__ */ jsx("path", { d: "M5 13l4 4L19 7", strokeLinecap: "round", strokeLinejoin: "round" }) }) : null
-                        ]
-                      },
-                      cat
-                    );
-                  })
-                ] }) : null
+                  )
+                ) : null
               ] }),
               isTv ? null : /* @__PURE__ */ jsx(
                 "button",
