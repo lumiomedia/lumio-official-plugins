@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.3.45
+
+- Fetching an M3U list shows what it is doing. The only feedback used to be
+  the button's own label, reset by a timer after 1.8 s, and the state lived in
+  the settings component — leaving the page and coming back showed no trace of
+  a fetch that was still running, so it was easy to start a second one on top
+  of the first. The fetch now reports from outside React: a spinner with
+  "Fetching list 2 of 3", a line per finished list with its channel count, and
+  a note that you can leave the page. The result stays until the next fetch,
+  refuses to start while one is running, and each list keeps a "fetched HH:MM"
+  receipt of its own.
+- Swipe from the left edge to go back to the hub from the channel guide and a
+  channel page on phones. The gesture has to start at the edge — the guide
+  scrolls sideways, and a swipe anywhere would fight it — and it is off while
+  the player or the PIN dialog is open, and off on TV.
+- The plugin reported version 0.3.29 to the app; it now reports its real one.
+
 ## 0.3.44
 
 - New Live TV hub as the start view of the Live TV page on desktop and phone:

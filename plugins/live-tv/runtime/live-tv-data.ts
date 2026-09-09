@@ -71,6 +71,14 @@ export interface LiveTvList {
    * att radera den vore inte återställbart.
    */
   autoEpgDisabled: boolean
+  /**
+   * När listan senast hämtades. Kvittot i inställningarna läses härifrån och
+   * inte ur ett React-tillstånd: hämtningen kan vara flera minuter gammal när
+   * någon öppnar sektionen, och "42 kanaler · hämtad 09:41" är det som gör
+   * skillnad på "listan är tom" och "hämtningen är inte gjord".
+   * Null för listor som lagrades innan fältet fanns.
+   */
+  fetchedAt: string | null
 }
 
 function sanitizeChannels(channels: unknown[]): M3uChannel[] {
@@ -121,6 +129,7 @@ function readLists(): LiveTvList[] {
       urlTvg: typeof entry.urlTvg === 'string' && entry.urlTvg.trim().length > 0 ? entry.urlTvg.trim() : null,
       epgUrls: sanitizeEpgUrls(entry.epgUrls),
       autoEpgDisabled: entry.autoEpgDisabled === true,
+      fetchedAt: typeof entry.fetchedAt === 'string' && entry.fetchedAt.trim().length > 0 ? entry.fetchedAt : null,
     }))
     .filter((entry) => entry.id.length > 0 && entry.name.length > 0)
 }
@@ -310,6 +319,9 @@ export function createLiveTvList(name: string, options?: { urlTvg?: string | nul
     urlTvg: typeof options?.urlTvg === 'string' && options.urlTvg.trim().length > 0 ? options.urlTvg.trim() : null,
     epgUrls: sanitizeEpgUrls(options?.epgUrls ?? []),
     autoEpgDisabled: false,
+    // Skapad för hand, inte hämtad: kvittot ska vara tomt tills en hämtning
+    // faktiskt gjorts, annars ljuger det om att kanalerna kommer någonstans.
+    fetchedAt: null,
   }
   writeLists([...readLists(), next])
   return next
@@ -382,6 +394,7 @@ export function upsertLiveTvListFromFetch(
       ...existing,
       channels: cleanChannels,
       urlTvg: cleanUrlTvg ?? existing.urlTvg,
+      fetchedAt: new Date().toISOString(),
     }
     writeLists(readLists().map((list) => (list.id === existing.id ? updated : list)))
     return updated
@@ -394,6 +407,7 @@ export function upsertLiveTvListFromFetch(
     urlTvg: cleanUrlTvg,
     epgUrls: [],
     autoEpgDisabled: false,
+    fetchedAt: new Date().toISOString(),
   }
   writeLists([...readLists(), next])
   return next

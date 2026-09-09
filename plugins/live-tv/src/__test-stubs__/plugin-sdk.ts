@@ -1,6 +1,8 @@
 // Test-only stub of @/lib/plugin-sdk. Mirrors the surface the live-tv plugin
 // uses, with no real persistence. Spies should re-mock per test via vi.spyOn.
 
+import { createElement, type ReactNode } from 'react'
+
 type Listener = () => void
 
 const memory = new Map<string, unknown>()
@@ -33,6 +35,95 @@ export function onPluginStorageChanged(pluginId: string, k: string, cb: Listener
   }
   set.add(cb)
   return () => set!.delete(cb)
+}
+
+// Formprimitiverna som KOMPONENTER. Stubben är en .ts-fil, så de byggs med
+// createElement i stället för JSX. De ritar riktig semantik och inte bara
+// divar: testen letar efter roller ("button", "textbox") och etiketter, så en
+// PillBtn som inte är ett <button> hade gjort sviten oanvändbar för allt som
+// faktiskt klickas.
+export function PillBtn({ children, onClick, disabled, type, title, style }: {
+  children?: ReactNode
+  onClick?: () => void
+  variant?: string
+  size?: string
+  disabled?: boolean
+  icon?: string
+  type?: 'button' | 'submit'
+  title?: string
+  style?: Record<string, unknown>
+}) {
+  return createElement('button', { type: type ?? 'button', onClick, disabled, title, style }, children)
+}
+
+export function Card({ children, style }: { children?: ReactNode; padding?: number | string; style?: Record<string, unknown> }) {
+  return createElement('div', { style }, children)
+}
+
+export function Section({ eyebrow, title, hint, children, action }: {
+  eyebrow?: ReactNode
+  title?: ReactNode
+  hint?: ReactNode
+  children?: ReactNode
+  action?: ReactNode
+}) {
+  return createElement('section', null, eyebrow, title, hint, action, children)
+}
+
+export function Checkbox({ checked, onChange, disabled, label, hint, right }: {
+  checked: boolean
+  onChange?: (v: boolean) => void
+  disabled?: boolean
+  label?: ReactNode
+  hint?: ReactNode
+  right?: ReactNode
+}) {
+  return createElement(
+    'label',
+    null,
+    createElement('input', {
+      type: 'checkbox',
+      checked,
+      disabled,
+      onChange: (event: { target: { checked: boolean } }) => onChange?.(event.target.checked),
+    }),
+    label,
+    hint,
+    right,
+  )
+}
+
+// Formprimitiverna: sektionerna ritar med TOKENS/eyebrowStyle/inputStyle, och
+// utan dem föll varje render på "Cannot read properties of undefined". Värdena
+// speglar components/settings/redesigned/primitives.tsx i appen; testen bryr
+// sig om att nycklarna FINNS, inte om exakta färger.
+export const TOKENS = {
+  bg: 'var(--tk-bg)',
+  surface0: 'var(--tk-surface0)',
+  surface1: 'var(--tk-surface1)',
+  surface2: 'var(--tk-surface2)',
+  surface3: 'var(--tk-surface3)',
+  border: 'var(--tk-border)',
+  borderStrong: 'var(--tk-border-strong)',
+  text: '#EAEEF6',
+  textDim: '#9AA5BC',
+  textMute: '#6B7691',
+  accent: '#7C8CFF',
+  accentSoft: 'rgba(124,140,255,0.22)',
+  mint: '#3CD6A3',
+  orange: '#FF8B5A',
+  red: '#FF5A6A',
+  cyan: '#5FD3E8',
+  warn: '#F3C969',
+}
+
+export const eyebrowStyle = { fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: TOKENS.textMute } as const
+export const inputStyle = { width: '100%', minHeight: 44, borderRadius: 10, border: `1px solid ${TOKENS.border}` } as const
+export const monoFont = 'ui-monospace, monospace'
+
+export function playerFrameUrl(key: string, version?: number | string | null): string {
+  const v = version == null ? '' : `&v=${encodeURIComponent(String(version))}`
+  return `/api/player-frame?key=${encodeURIComponent(key)}${v}`
 }
 
 export function clearPluginMemoryCacheByPrefix(_pluginId: string, _prefix: string): void {}

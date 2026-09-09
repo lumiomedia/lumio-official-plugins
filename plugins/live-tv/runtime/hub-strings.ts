@@ -105,6 +105,12 @@ const EN = {
   watch: 'Watch',
   dismiss: 'Dismiss',
   catchUp: 'Replay',
+  // M3U-hämtning
+  m3uFetchProgress: 'Fetching list {current} of {total}…',
+  m3uFetchedAt: 'fetched {time}',
+  m3uNeverFetched: 'not fetched yet',
+  m3uFetchFailedOn: 'Could not fetch {host}: {error}',
+  m3uFetchKeepOpen: 'This can take a while for a large playlist. You can leave this page — the fetch keeps running.',
 } as const
 
 const SV: Record<keyof typeof EN, string> = {
@@ -198,6 +204,12 @@ const SV: Record<keyof typeof EN, string> = {
   watch: 'Titta',
   dismiss: 'Stäng',
   catchUp: 'Repris',
+  // M3U-hämtning
+  m3uFetchProgress: 'Hämtar lista {current} av {total}…',
+  m3uFetchedAt: 'hämtad {time}',
+  m3uNeverFetched: 'inte hämtad än',
+  m3uFetchFailedOn: 'Kunde inte hämta {host}: {error}',
+  m3uFetchKeepOpen: 'En stor spellista kan ta en stund. Du kan lämna sidan — hämtningen fortsätter.',
 }
 
 export type HubStringKey = keyof typeof EN

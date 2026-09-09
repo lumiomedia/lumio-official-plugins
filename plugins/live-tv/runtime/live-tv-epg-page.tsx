@@ -10,6 +10,7 @@ import { isReminded, toggleReminder } from './reminders'
 import { Btn, ChannelBadge, Icon, LT, LiveTvHeader, formatClock, surfaceCard } from './live-tv-ui'
 import { ReminderBell, RemindersMenu, encodeChannelParams, useLiveTvChrome, useLiveTvNav } from './live-tv-shell'
 import { useIsMobileLayout } from './hooks/useIsMobileLayout'
+import { useSwipeBack } from './hooks/useSwipeBack'
 
 /**
  * Fullskärms-EPG (handoff §2): kanal × tid med fast kanalkolumn, Nu-linje,
@@ -44,7 +45,9 @@ export function LiveTvEpgPage({ onNavigate }: Props) {
   const { h, locale } = useHubText()
   const model = useLiveTvModel()
   const go = useLiveTvNav(onNavigate)
-  const { play, chrome } = useLiveTvChrome(model)
+  const { play, chrome, overlayOpen } = useLiveTvChrome(model)
+  // Tillbaka till hubben med ett kantdrag på mobil; Tillbaka-pilen ligger kvar.
+  useSwipeBack(() => go('hub'), !overlayOpen)
   const [dayOffset, setDayOffset] = useState<0 | 1>(0)
   const [selected, setSelected] = useState<{ channel: M3uChannel; programme: EpgProgramme } | null>(null)
   const [reminderTick, setReminderTick] = useState(0)

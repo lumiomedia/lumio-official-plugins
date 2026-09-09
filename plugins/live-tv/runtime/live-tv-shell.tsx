@@ -57,7 +57,16 @@ export interface PlayRequest {
  * anropar `play(...)`; låsta kanaler stoppas i PIN-grinden först. `chrome`
  * ritas sist i sidan.
  */
-export function useLiveTvChrome(model: LiveTvModel): { play: (request: PlayRequest) => void; chrome: ReactNode } {
+export function useLiveTvChrome(model: LiveTvModel): {
+  play: (request: PlayRequest) => void
+  chrome: ReactNode
+  /**
+   * Sant när spelaren eller PIN-rutan ligger över sidan. De täcker skärmen
+   * men bor kvar i sidans DOM, så sidgester (t.ex. swipe tillbaka) måste
+   * kunna stängas av medan de är uppe.
+   */
+  overlayOpen: boolean
+} {
   const { h, locale } = useHubText()
   const [PlayerComponentState, setPlayerComponent] = useState<PlayerComponent | null>(null)
   const [active, setActive] = useState<PlayRequest | null>(null)
@@ -177,7 +186,7 @@ export function useLiveTvChrome(model: LiveTvModel): { play: (request: PlayReque
     </>
   )
 
-  return { play, chrome }
+  return { play, chrome, overlayOpen: activeChannel !== null || pending !== null }
 }
 
 /** Klock-ikonen i toppbaren med rullista över kommande påminnelser. */
