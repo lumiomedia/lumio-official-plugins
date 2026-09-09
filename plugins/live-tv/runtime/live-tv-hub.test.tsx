@@ -57,6 +57,34 @@ beforeEach(() => {
   vi.mocked(useLiveTvEpgCache).mockReturnValue(null)
 })
 
+describe('LiveTvHub alla kanaler', () => {
+  /*
+   * Rubriken skrev ut hela antalet ("1 100 kanaler") medan listan renderade
+   * de 60 första, och knappen till hela rutnätet hade tagits bort — kanal 61
+   * och uppåt gick inte att nå alls utom via sökfältet. En betatestare
+   * rapporterade det som "det står 1100 men det är samma 50 när jag
+   * scrollar".
+   */
+  it('säger hur många som visas och kan visa fler', () => {
+    const many = Array.from({ length: 200 }, (_, i) => channel(`Kanal ${String(i + 1).padStart(3, '0')}`, 'Allt'))
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ ...list, channels: many } as LiveTvList])
+
+    render(<LiveTvHub onNavigate={() => {}} />)
+
+    const rows = () => document.querySelectorAll('[data-live-tv-all-channels] > [role="button"]').length
+    expect(rows()).toBe(60)
+    expect(screen.getByText(/showing 60 of 200/i)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /show more/i }))
+    expect(rows()).toBeGreaterThan(60)
+  })
+
+  it('visar ingen "visa fler" när allt redan syns', () => {
+    render(<LiveTvHub onNavigate={() => {}} />)
+    expect(screen.queryByRole('button', { name: /show more/i })).toBeNull()
+  })
+})
+
 describe('LiveTvHub helpers', () => {
   it('flattens playable channels and drops separator rows', () => {
     const flat = flattenChannels([list])

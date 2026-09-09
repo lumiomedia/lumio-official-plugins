@@ -111,6 +111,10 @@ const EN = {
   m3uNeverFetched: 'not fetched yet',
   m3uFetchFailedOn: 'Could not fetch {host}: {error}',
   m3uFetchKeepOpen: 'This can take a while for a large playlist. You can leave this page — the fetch keeps running.',
+  hubShowingOf: 'Showing {shown} of {total} in {group}',
+  hubShowMore: 'Show more',
+  epgShowingRows: 'Showing {shown} channels with a guide',
+  epgAllWithGuide: 'All {shown} channels with a guide',
 } as const
 
 const SV: Record<keyof typeof EN, string> = {
@@ -210,6 +214,10 @@ const SV: Record<keyof typeof EN, string> = {
   m3uNeverFetched: 'inte hämtad än',
   m3uFetchFailedOn: 'Kunde inte hämta {host}: {error}',
   m3uFetchKeepOpen: 'En stor spellista kan ta en stund. Du kan lämna sidan — hämtningen fortsätter.',
+  hubShowingOf: 'Visar {shown} av {total} i {group}',
+  hubShowMore: 'Visa fler',
+  epgShowingRows: 'Visar {shown} kanaler med tablå',
+  epgAllWithGuide: 'Alla {shown} kanaler med tablå',
 }
 
 export type HubStringKey = keyof typeof EN

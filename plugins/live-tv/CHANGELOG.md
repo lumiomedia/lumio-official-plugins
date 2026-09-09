@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.3.46
+
+- "All channels" no longer stops silently at 60. The section heading printed
+  the full count while the list rendered the first 60, and the link on to the
+  full grid had been removed — channel 61 and up could not be reached at all
+  except through search. The heading now says "Showing 60 of 1100", and Show
+  more reveals the rest in steps. The cap itself stays: every row does a guide
+  lookup and draws a progress bar, and mounting a thousand of them costs the
+  performance this release is otherwise praised for.
+- The channel guide gets group filter chips. It had no category path at all,
+  so a panel with 1100 channels showed whichever early rows happened to have a
+  guide and offered no way to look further.
+- The guide also says which limit you are hitting: "Showing 80 channels with a
+  guide" (with Show more) versus "All 12 channels with a guide". Channels
+  without a matched guide are skipped, and that was indistinguishable from a
+  row cap — so a short list read as a bug when it was simply all the guide
+  data there was.
+
 ## 0.3.45
 
 - Fetching an M3U list shows what it is doing. The only feedback used to be

@@ -188872,7 +188872,11 @@ ${cue.text}`).join("\n\n")}
         m3uFetchedAt: "fetched {time}",
         m3uNeverFetched: "not fetched yet",
         m3uFetchFailedOn: "Could not fetch {host}: {error}",
-        m3uFetchKeepOpen: "This can take a while for a large playlist. You can leave this page \u2014 the fetch keeps running."
+        m3uFetchKeepOpen: "This can take a while for a large playlist. You can leave this page \u2014 the fetch keeps running.",
+        hubShowingOf: "Showing {shown} of {total} in {group}",
+        hubShowMore: "Show more",
+        epgShowingRows: "Showing {shown} channels with a guide",
+        epgAllWithGuide: "All {shown} channels with a guide"
       };
       SV = {
         hubTitle: "Live TV",
@@ -188970,7 +188974,11 @@ ${cue.text}`).join("\n\n")}
         m3uFetchedAt: "h\xE4mtad {time}",
         m3uNeverFetched: "inte h\xE4mtad \xE4n",
         m3uFetchFailedOn: "Kunde inte h\xE4mta {host}: {error}",
-        m3uFetchKeepOpen: "En stor spellista kan ta en stund. Du kan l\xE4mna sidan \u2014 h\xE4mtningen forts\xE4tter."
+        m3uFetchKeepOpen: "En stor spellista kan ta en stund. Du kan l\xE4mna sidan \u2014 h\xE4mtningen forts\xE4tter.",
+        hubShowingOf: "Visar {shown} av {total} i {group}",
+        hubShowMore: "Visa fler",
+        epgShowingRows: "Visar {shown} kanaler med tabl\xE5",
+        epgAllWithGuide: "Alla {shown} kanaler med tabl\xE5"
       };
     }
   });
@@ -194896,6 +194904,7 @@ ${cue.text}`).join("\n\n")}
   var MAX_FAVORITES = 12;
   var MAX_RECOMMENDED = 12;
   var MAX_ALL_CHANNELS = 60;
+  var ALL_CHANNELS_STEP = 120;
   function FrameBackdrop({ channel, version: version2 }) {
     return /* @__PURE__ */ jsx(
       "img",
@@ -195013,9 +195022,17 @@ ${cue.text}`).join("\n\n")}
       return out;
     }, [history, pinnedKeys, channels, byKey, nowFor, h]);
     const needle = query.trim().toLowerCase();
+    const [visibleChannelCount, setVisibleChannelCount] = useState(MAX_ALL_CHANNELS);
     const filteredChannels = useMemo(
       () => channels.filter((channel) => !effectiveGroup || channel.group === effectiveGroup).filter((channel) => !needle || channel.name.toLowerCase().includes(needle) || (channel.group ?? "").toLowerCase().includes(needle)),
       [channels, effectiveGroup, needle]
+    );
+    useEffect(() => {
+      setVisibleChannelCount(MAX_ALL_CHANNELS);
+    }, [effectiveGroup, needle]);
+    const shownChannels = useMemo(
+      () => filteredChannels.slice(0, visibleChannelCount),
+      [filteredChannels, visibleChannelCount]
     );
     const hero = useMemo(
       () => favorites.find((channel) => nowFor(channel).now) ?? favorites[0] ?? recent[0]?.channel ?? channels.find((channel) => nowFor(channel).now) ?? channels.find((channel) => Boolean(channel.tvgId)) ?? channels[0] ?? null,
@@ -195405,10 +195422,14 @@ ${cue.text}`).join("\n\n")}
           SectionTitle,
           {
             title: h("hubAllChannels"),
-            sub: h("channelsIn", { count: filteredChannels.length, group: effectiveGroup ?? h("hubAllGroups") })
+            sub: shownChannels.length < filteredChannels.length ? h("hubShowingOf", {
+              shown: shownChannels.length,
+              total: filteredChannels.length,
+              group: effectiveGroup ?? h("hubAllGroups")
+            }) : h("channelsIn", { count: filteredChannels.length, group: effectiveGroup ?? h("hubAllGroups") })
           }
         ),
-        /* @__PURE__ */ jsx("div", { className: "grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3", "data-live-tv-all-channels": "", children: filteredChannels.slice(0, MAX_ALL_CHANNELS).map((channel) => {
+        /* @__PURE__ */ jsx("div", { className: "grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3", "data-live-tv-all-channels": "", children: shownChannels.map((channel) => {
           const info = nowFor(channel);
           const isPinned = pinnedSet.has(channelKey(channel));
           return /* @__PURE__ */ jsxs(
@@ -195458,7 +195479,16 @@ ${cue.text}`).join("\n\n")}
             },
             channelKey(channel)
           );
-        }) })
+        }) }),
+        shownChannels.length < filteredChannels.length ? /* @__PURE__ */ jsx("div", { style: { marginTop: 14, display: "flex", justifyContent: "center" }, children: /* @__PURE__ */ jsx(
+          Btn,
+          {
+            variant: "secondary",
+            onClick: () => setVisibleChannelCount((count) => count + ALL_CHANNELS_STEP),
+            tvStation: isTv ? { "data-f": "" } : void 0,
+            children: h("hubShowMore")
+          }
+        ) }) : null
       ] }),
       chrome,
       TvGlassMenu && tvMenu ? /* @__PURE__ */ jsx(TvGlassMenu, { target: tvMenu, onClose: () => setTvMenu(null) }) : null,
@@ -195558,6 +195588,19 @@ ${cue.text}`).join("\n\n")}
   init_reminders();
   init_live_tv_ui();
 
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/epg-rows.ts
+  function selectEpgRows(ordered, scheduleFor, group, limit) {
+    const rows = [];
+    for (const channel of ordered) {
+      if (group && channel.group !== group) continue;
+      const programmes = scheduleFor(channel);
+      if (programmes.length === 0) continue;
+      if (rows.length >= limit) return { rows, hasMore: true };
+      rows.push({ channel, programmes });
+    }
+    return { rows, hasMore: false };
+  }
+
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useSwipeBack.ts
   init_react_shim();
   init_plugin_sdk();
@@ -195618,6 +195661,7 @@ ${cue.text}`).join("\n\n")}
   var CHANNEL_COL_MOBILE = 108;
   var ROW_MIN_H = 56;
   var MAX_ROWS = 80;
+  var EPG_ROWS_STEP = 80;
   function alignToHour(ms) {
     const d = new Date(ms);
     d.setMinutes(0, 0, 0);
@@ -195630,6 +195674,8 @@ ${cue.text}`).join("\n\n")}
     const { play, chrome, overlayOpen } = useLiveTvChrome(model);
     useSwipeBack(() => go("hub"), !overlayOpen);
     const [dayOffset, setDayOffset] = useState(0);
+    const [group, setGroup] = useState(null);
+    const [visibleRows, setVisibleRows] = useState(MAX_ROWS);
     const [selected, setSelected] = useState(null);
     const [reminderTick, setReminderTick] = useState(0);
     const scrollRef = useRef(null);
@@ -195648,20 +195694,29 @@ ${cue.text}`).join("\n\n")}
     const gridWidth = (windowEnd - windowStart) / 6e4 * PX_PER_MIN;
     const nowLeft = (nowMs - windowStart) / 6e4 * PX_PER_MIN;
     const nowVisible = nowMs >= windowStart && nowMs <= windowEnd;
-    const rows = useMemo(() => {
+    const groups = useMemo(() => {
+      const seen = /* @__PURE__ */ new Set();
+      for (const channel of model.channels) {
+        const name = (channel.group ?? "").trim();
+        if (name) seen.add(name);
+      }
+      return [...seen].sort((a, b) => a.localeCompare(b));
+    }, [model.channels]);
+    useEffect(() => {
+      setVisibleRows(MAX_ROWS);
+    }, [group, dayOffset]);
+    const { rows, hasMore } = useMemo(() => {
       const ordered = [
         ...model.pinnedKeys.map((key) => model.byKey.get(key)).filter((channel) => Boolean(channel)),
         ...model.channels.filter((channel) => !model.pinnedSet.has(channelKey(channel)))
       ];
-      const out = [];
-      for (const channel of ordered) {
-        const programmes = model.scheduleFor(channel, windowStart, windowEnd);
-        if (programmes.length === 0) continue;
-        out.push({ channel, programmes });
-        if (out.length >= MAX_ROWS) break;
-      }
-      return out;
-    }, [model, windowStart, windowEnd]);
+      return selectEpgRows(
+        ordered,
+        (channel) => model.scheduleFor(channel, windowStart, windowEnd),
+        group,
+        visibleRows
+      );
+    }, [model, windowStart, windowEnd, group, visibleRows]);
     const scrollToNow = () => {
       const el = scrollRef.current;
       if (!el) return;
@@ -195702,6 +195757,44 @@ ${cue.text}`).join("\n\n")}
           ]
         }
       ),
+      groups.length > 1 ? /* @__PURE__ */ jsxs(
+        "div",
+        {
+          style: { display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 },
+          className: "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+          children: [
+            /* @__PURE__ */ jsx(
+              Btn,
+              {
+                variant: group === null ? "primary" : "ghost",
+                small: true,
+                pressed: group === null,
+                onClick: () => {
+                  setGroup(null);
+                  setSelected(null);
+                },
+                tvStation,
+                children: h("hubAllGroups")
+              }
+            ),
+            groups.map((name) => /* @__PURE__ */ jsx(
+              Btn,
+              {
+                variant: group === name ? "primary" : "ghost",
+                small: true,
+                pressed: group === name,
+                onClick: () => {
+                  setGroup(name);
+                  setSelected(null);
+                },
+                tvStation,
+                children: name
+              },
+              name
+            ))
+          ]
+        }
+      ) : null,
       rows.length === 0 ? /* @__PURE__ */ jsx("div", { style: { ...surfaceCard, padding: 20, fontSize: 14, color: LT.muted }, children: h("epgEmpty") }) : /* @__PURE__ */ jsx("div", { ref: scrollRef, ...isTv ? { "data-scroll": "" } : {}, className: "overflow-x-auto [scrollbar-width:thin]", style: { position: "relative" }, children: /* @__PURE__ */ jsxs("div", { style: { minWidth: channelCol + gridWidth, position: "relative" }, children: [
         /* @__PURE__ */ jsx("div", { style: { display: "flex", paddingLeft: channelCol, height: 28, borderBottom: `1px solid ${LT.line}`, marginBottom: 6, position: "sticky", top: 0, zIndex: 3, background: LT.bg }, children: hourMarks.map((mark) => /* @__PURE__ */ jsx("div", { style: { width: HOUR_PX, flexShrink: 0, fontSize: 12, color: LT.dim }, children: formatClock(mark, locale) }, mark)) }),
         /* @__PURE__ */ jsxs("div", { style: { position: "relative" }, children: [
@@ -195782,6 +195875,10 @@ ${cue.text}`).join("\n\n")}
           ] }, channelKey(channel)))
         ] })
       ] }) }),
+      rows.length > 0 ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 12, flexWrap: "wrap" }, children: [
+        /* @__PURE__ */ jsx("span", { style: { fontSize: 12.5, color: LT.muted }, children: hasMore ? h("epgShowingRows", { shown: rows.length }) : h("epgAllWithGuide", { shown: rows.length }) }),
+        hasMore ? /* @__PURE__ */ jsx(Btn, { variant: "secondary", small: true, onClick: () => setVisibleRows((count) => count + EPG_ROWS_STEP), tvStation, children: h("hubShowMore") }) : null
+      ] }) : null,
       selected ? /* @__PURE__ */ jsxs("div", { style: { ...surfaceCard, padding: 12, display: "flex", alignItems: "center", gap: 12 }, children: [
         /* @__PURE__ */ jsx(ChannelBadge, { channel: selected.channel, size: 36 }),
         /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
@@ -196063,7 +196160,7 @@ ${cue.text}`).join("\n\n")}
       useEpgNowNextLater,
       useEpgLoadStatus,
       useChannelSchedule,
-      version: "0.3.45"
+      version: "0.3.46"
     };
     try {
       window.dispatchEvent(new CustomEvent("lumio-live-tv-bridge-ready"));
@@ -196080,7 +196177,7 @@ ${cue.text}`).join("\n\n")}
   var LiveTvPlugin = {
     id: "com.lumio.live-tv",
     name: { en: "Live TV", sv: "Live TV" },
-    version: "0.3.45",
+    version: "0.3.46",
     description: {
       en: "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",
       sv: "Hantera M3U-k\xE4llor, bl\xE4ddra bland live-TV-kanaler och se EPG (nu/h\xE4rn\xE4st) i Lumio."

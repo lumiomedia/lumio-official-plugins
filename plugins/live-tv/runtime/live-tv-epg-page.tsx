@@ -10,6 +10,7 @@ import { isReminded, toggleReminder } from './reminders'
 import { Btn, ChannelBadge, Icon, LT, LiveTvHeader, formatClock, surfaceCard } from './live-tv-ui'
 import { ReminderBell, RemindersMenu, encodeChannelParams, useLiveTvChrome, useLiveTvNav } from './live-tv-shell'
 import { useIsMobileLayout } from './hooks/useIsMobileLayout'
+import { selectEpgRows } from './epg-rows'
 import { useSwipeBack } from './hooks/useSwipeBack'
 
 /**
@@ -29,7 +30,13 @@ const CHANNEL_COL = 160
  */
 const CHANNEL_COL_MOBILE = 108
 const ROW_MIN_H = 56
+/**
+ * Startantal rader, och hur många varje "Visa fler" lägger till. Taket finns
+ * för att tablån slår upp per kanal; se selectEpgRows för varför
+ * genomsökningen är lat.
+ */
 const MAX_ROWS = 80
+const EPG_ROWS_STEP = 80
 
 interface Props {
   onNavigate: BrowsePageProps['onNavigate']
@@ -49,6 +56,10 @@ export function LiveTvEpgPage({ onNavigate }: Props) {
   // Tillbaka till hubben med ett kantdrag på mobil; Tillbaka-pilen ligger kvar.
   useSwipeBack(() => go('hub'), !overlayOpen)
   const [dayOffset, setDayOffset] = useState<0 | 1>(0)
+  // Tablån saknade gruppfilter helt: med 1 100 kanaler i en panel gick det
+  // inte att komma åt en enda kategori (Jerry/betatestare 2026-09-09).
+  const [group, setGroup] = useState<string | null>(null)
+  const [visibleRows, setVisibleRows] = useState(MAX_ROWS)
   const [selected, setSelected] = useState<{ channel: M3uChannel; programme: EpgProgramme } | null>(null)
   const [reminderTick, setReminderTick] = useState(0)
   const scrollRef = useRef<HTMLDivElement | null>(null)
@@ -72,22 +83,33 @@ export function LiveTvEpgPage({ onNavigate }: Props) {
   const nowLeft = ((nowMs - windowStart) / 60_000) * PX_PER_MIN
   const nowVisible = nowMs >= windowStart && nowMs <= windowEnd
 
-  const rows = useMemo(() => {
-    // Favoriter först, sedan övriga kanaler med tablå. Kanaler utan tablå
-    // utelämnas — en tom rad säger inget.
+  const groups = useMemo(() => {
+    const seen = new Set<string>()
+    for (const channel of model.channels) {
+      const name = (channel.group ?? '').trim()
+      if (name) seen.add(name)
+    }
+    return [...seen].sort((a, b) => a.localeCompare(b))
+  }, [model.channels])
+
+  useEffect(() => {
+    setVisibleRows(MAX_ROWS)
+  }, [group, dayOffset])
+
+  const { rows, hasMore } = useMemo(() => {
+    // Favoriter först, sedan övriga kanaler. Kanaler utan tablå utelämnas i
+    // selectEpgRows — en tom rad säger inget.
     const ordered = [
       ...model.pinnedKeys.map((key) => model.byKey.get(key)).filter((channel): channel is M3uChannel => Boolean(channel)),
       ...model.channels.filter((channel) => !model.pinnedSet.has(channelKey(channel))),
     ]
-    const out: Array<{ channel: M3uChannel; programmes: EpgProgramme[] }> = []
-    for (const channel of ordered) {
-      const programmes = model.scheduleFor(channel, windowStart, windowEnd)
-      if (programmes.length === 0) continue
-      out.push({ channel, programmes })
-      if (out.length >= MAX_ROWS) break
-    }
-    return out
-  }, [model, windowStart, windowEnd])
+    return selectEpgRows(
+      ordered,
+      (channel) => model.scheduleFor(channel, windowStart, windowEnd),
+      group,
+      visibleRows,
+    )
+  }, [model, windowStart, windowEnd, group, visibleRows])
 
   const scrollToNow = () => {
     const el = scrollRef.current
@@ -126,6 +148,41 @@ export function LiveTvEpgPage({ onNavigate }: Props) {
           {h('guideNow')} <span style={{ width: 8, height: 8, borderRadius: 999, border: `1.5px solid ${LT.accent}` }} />
         </Btn>
       </LiveTvHeader>
+
+      {/*
+        Gruppchips. Tablån hade ingen kategoriväg alls, så en panel med 1 100
+        kanaler visade bara de första raderna som råkade ha tablå och gav
+        ingen möjlighet att leta vidare. Raden scrollar i sidled och ligger
+        kvar över tablån, som själv scrollar i båda riktningarna.
+      */}
+      {groups.length > 1 ? (
+        <div
+          style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}
+          className="[scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          <Btn
+            variant={group === null ? 'primary' : 'ghost'}
+            small
+            pressed={group === null}
+            onClick={() => { setGroup(null); setSelected(null) }}
+            tvStation={tvStation}
+          >
+            {h('hubAllGroups')}
+          </Btn>
+          {groups.map((name) => (
+            <Btn
+              key={name}
+              variant={group === name ? 'primary' : 'ghost'}
+              small
+              pressed={group === name}
+              onClick={() => { setGroup(name); setSelected(null) }}
+              tvStation={tvStation}
+            >
+              {name}
+            </Btn>
+          ))}
+        </div>
+      ) : null}
 
       {rows.length === 0 ? (
         <div style={{ ...surfaceCard, padding: 20, fontSize: 14, color: LT.muted }}>{h('epgEmpty')}</div>
@@ -224,6 +281,27 @@ export function LiveTvEpgPage({ onNavigate }: Props) {
           </div>
         </div>
       )}
+
+      {rows.length > 0 ? (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
+          {/*
+            Skiljer "fler finns" från "det är allt med tablå". Utan den
+            skillnaden läses ett tomt slut som ett tak, och man letar efter en
+            gräns som inte finns — de flesta kanalerna i en stor panel har
+            ingen matchad tablå.
+          */}
+          <span style={{ fontSize: 12.5, color: LT.muted }}>
+            {hasMore
+              ? h('epgShowingRows', { shown: rows.length })
+              : h('epgAllWithGuide', { shown: rows.length })}
+          </span>
+          {hasMore ? (
+            <Btn variant="secondary" small onClick={() => setVisibleRows((count) => count + EPG_ROWS_STEP)} tvStation={tvStation}>
+              {h('hubShowMore')}
+            </Btn>
+          ) : null}
+        </div>
+      ) : null}
 
       {selected ? (
         <div style={{ ...surfaceCard, padding: 12, display: 'flex', alignItems: 'center', gap: 12 }}>

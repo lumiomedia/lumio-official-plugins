@@ -40,7 +40,19 @@ export { flattenChannels, topGroups } from './live-tv-model'
 
 const MAX_FAVORITES = 12
 const MAX_RECOMMENDED = 12
+/**
+ * Hur många kanaler "Alla kanaler" ritar från början, och hur många varje
+ * "Visa fler" lägger till. Taket finns för att korten är dyra: varje rad gör
+ * en EPG-uppslagning och ritar en progressbar, och 1 100 rader monterade
+ * samtidigt kostade det som betatestaren nu berömmer prestandan för.
+ *
+ * Men taket fick INTE synas som "det här är alla kanaler". Rubriken skrev ut
+ * hela antalet medan listan visade 60, och knappen vidare till rutnätet var
+ * borttagen — kanal 61 och uppåt gick inte att nå. Nu står det hur många som
+ * visas av hur många, och resten är en knapptryckning bort.
+ */
 const MAX_ALL_CHANNELS = 60
+const ALL_CHANNELS_STEP = 120
 
 interface Props {
   onNavigate: BrowsePageProps['onNavigate']
@@ -195,11 +207,19 @@ export function LiveTvHub({ onNavigate }: Props) {
     return out
   }, [history, pinnedKeys, channels, byKey, nowFor, h])
   const needle = query.trim().toLowerCase()
+  const [visibleChannelCount, setVisibleChannelCount] = useState(MAX_ALL_CHANNELS)
   const filteredChannels = useMemo(
     () => channels
       .filter((channel) => !effectiveGroup || channel.group === effectiveGroup)
       .filter((channel) => !needle || channel.name.toLowerCase().includes(needle) || (channel.group ?? '').toLowerCase().includes(needle)),
     [channels, effectiveGroup, needle],
+  )
+  useEffect(() => {
+    setVisibleChannelCount(MAX_ALL_CHANNELS)
+  }, [effectiveGroup, needle])
+  const shownChannels = useMemo(
+    () => filteredChannels.slice(0, visibleChannelCount),
+    [filteredChannels, visibleChannelCount],
   )
   const hero = useMemo(
     () =>
@@ -669,13 +689,18 @@ export function LiveTvHub({ onNavigate }: Props) {
         {isMobile ? <div style={{ marginBottom: 14 }}>{filterRow}</div> : null}
         <SectionTitle
           title={h('hubAllChannels')}
-          sub={h('channelsIn', { count: filteredChannels.length, group: effectiveGroup ?? h('hubAllGroups') })}
-          /* Ingen action längre: den enda knappen här var "visa alla i
-             rutnätet", och rutnätet finns bara på TV nu. Kanaler bortom taket
-             nås via sökfältet och gruppväljaren högst upp. */
+          /* Underrubriken måste skilja "1 100 kanaler finns" från "1 100
+             kanaler visas". Den skrev det förra och listan gjorde det senare. */
+          sub={shownChannels.length < filteredChannels.length
+            ? h('hubShowingOf', {
+                shown: shownChannels.length,
+                total: filteredChannels.length,
+                group: effectiveGroup ?? h('hubAllGroups'),
+              })
+            : h('channelsIn', { count: filteredChannels.length, group: effectiveGroup ?? h('hubAllGroups') })}
         />
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3" data-live-tv-all-channels="">
-          {filteredChannels.slice(0, MAX_ALL_CHANNELS).map((channel) => {
+          {shownChannels.map((channel) => {
             const info = nowFor(channel)
             const isPinned = pinnedSet.has(channelKey(channel))
             return (
@@ -731,6 +756,24 @@ export function LiveTvHub({ onNavigate }: Props) {
             )
           })}
         </div>
+        {/*
+          Vägen till kanal 61 och uppåt. En knapp och inte paginering: den är
+          TV-fokuserbar med en enda station, den behåller scrollpositionen, och
+          den ger EN modell på alla enheter i stället för sidor på mobil och
+          något annat med fjärren. Gruppväljaren och sökfältet är fortfarande
+          de snabba hoppen i en lista på tusen kanaler.
+        */}
+        {shownChannels.length < filteredChannels.length ? (
+          <div style={{ marginTop: 14, display: 'flex', justifyContent: 'center' }}>
+            <Btn
+              variant="secondary"
+              onClick={() => setVisibleChannelCount((count) => count + ALL_CHANNELS_STEP)}
+              tvStation={isTv ? { 'data-f': '' } : undefined}
+            >
+              {h('hubShowMore')}
+            </Btn>
+          </div>
+        ) : null}
       </section>
 
       {chrome}
