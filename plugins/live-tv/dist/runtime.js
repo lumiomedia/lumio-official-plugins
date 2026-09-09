@@ -1591,6 +1591,12 @@
           sideMenuOn: "Side menu",
           menuChipTitle: "Menu pill (TV style)",
           menuChipDesc: "The TV mode menu pill in the top-left corner, with search inside the menu. Replaces the side menu and the top bar on desktop, and the top bar on mobile.",
+          menuPillPlaceTitle: "Menu pill position",
+          menuPillPlaceDesc: "Pick a corner, or hold the pill until it wiggles and drag it anywhere. It snaps to the nearest edge and keeps the height you dropped it at.",
+          menuPillTopLeft: "Top left",
+          menuPillTopRight: "Top right",
+          menuPillBottomLeft: "Bottom left",
+          menuPillBottomRight: "Bottom right",
           sideMenuOff: "Horizontal menu",
           vlcToggleOn: "VLC on",
           vlcToggleOff: "VLC off",
@@ -2835,6 +2841,9 @@
           stayFullscreenOnCloseDesc: "The window keeps fullscreen instead of dropping back to windowed mode.",
           showTitleOnStart: "Show title when playback starts",
           showTitleOnStartDesc: "The title fades in for a few seconds and then disappears.",
+          controlsHideAfter: "Hide player controls after",
+          controlsHideAfterDesc: "How long the playback controls stay on screen after you touch or move. TV keeps a five-second floor.",
+          controlsHideNever: "Never",
           hideSkipButtonAfter: "Hide the Skip button after",
           hideSkipButtonAfterDesc: "The button hides itself so a false intro match does not sit on screen all episode.",
           hideUnreleasedHome: "Hide unreleased titles on Home",
@@ -3144,6 +3153,10 @@
           watchlistContinueHere: "Continue here",
           watchlistEmpty: "No starred titles yet.",
           watchlistEmptyHint: "Star titles in the release calendar to follow premieres.",
+          // Tomläget när BÅDA listorna är tomma: texten måste täcka båda vägarna in,
+          // för då finns inget chip kvar som förklarar skillnaden.
+          tvListsEmpty: "Nothing saved yet.",
+          tvListsEmptyHint: "Follow a series or star a title to find it here.",
           tvSegmentEmpty: "No rows here yet.",
           tvSegmentEmptyHint: "Add rows for this page in Settings \u2014 under Home page rows, or TV mode on a TV.",
           continueEmpty: "Nothing started yet.",
@@ -3445,6 +3458,9 @@
           ipTmdbTokenHint: "Used for the v4 API. Required for large lookups.",
           ipTmdbKeyLabel: "API key (v3)",
           ipTmdbKeyHint: "Backwards compatibility for older catalogs.",
+          ipSecretStored: "A key is saved. Type a new one to replace it, or remove it to fall back to the built-in key.",
+          ipSecretStoredPlaceholder: "Saved \u2014 type to replace",
+          ipSecretRemove: "Remove saved key",
           ipGroqKeyHint: "Get one from console.groq.com \u2014 the free tier is plenty for Lumio.",
           ipSaved: "Saved",
           ipSaveError: "Could not save",
@@ -4118,6 +4134,12 @@
           sideMenuOn: "Sidomeny",
           menuChipTitle: "Menypill (TV-stil)",
           menuChipDesc: "TV-l\xE4gets menypill uppe till v\xE4nster, med s\xF6k inne i menyn. Ers\xE4tter sidomenyn och toppraden p\xE5 skrivbord, och toppraden p\xE5 mobil.",
+          menuPillPlaceTitle: "Menypillrets placering",
+          menuPillPlaceDesc: "V\xE4lj ett h\xF6rn, eller h\xE5ll in pillret tills det skakar och dra det dit du vill. Det dras till n\xE4rmaste kant och beh\xE5ller h\xF6jden du sl\xE4ppte p\xE5.",
+          menuPillTopLeft: "Uppe till v\xE4nster",
+          menuPillTopRight: "Uppe till h\xF6ger",
+          menuPillBottomLeft: "Nere till v\xE4nster",
+          menuPillBottomRight: "Nere till h\xF6ger",
           sideMenuOff: "Horisontell meny",
           vlcToggleOn: "VLC p\xE5",
           vlcToggleOff: "VLC av",
@@ -5353,6 +5375,9 @@
           stayFullscreenOnCloseDesc: "F\xF6nstret beh\xE5ller helsk\xE4rm i st\xE4llet f\xF6r att falla tillbaka till f\xF6nsterl\xE4ge.",
           showTitleOnStart: "Visa titel n\xE4r uppspelningen startar",
           showTitleOnStartDesc: "Titeln tonar in n\xE5gra sekunder och f\xF6rsvinner sedan.",
+          controlsHideAfter: "G\xF6m spelarkontrollerna efter",
+          controlsHideAfterDesc: "Hur l\xE4nge kontrollerna ligger kvar efter att du r\xF6rt sk\xE4rmen. TV beh\xE5ller ett golv p\xE5 fem sekunder.",
+          controlsHideNever: "Aldrig",
           hideSkipButtonAfter: "D\xF6lj Skippa-knappen efter",
           hideSkipButtonAfterDesc: "Knappen f\xF6rsvinner av sig sj\xE4lv s\xE5 en felaktig introtr\xE4ff inte ligger kvar hela avsnittet.",
           hideUnreleasedHome: "D\xF6lj ej sl\xE4ppta titlar p\xE5 Hem",
@@ -5656,6 +5681,8 @@
           watchlistContinueHere: "Forts\xE4tt d\xE4r",
           watchlistEmpty: "Inga stj\xE4rnm\xE4rkta titlar \xE4n.",
           watchlistEmptyHint: "Stj\xE4rnm\xE4rk titlar i releasekalendern f\xF6r att f\xF6lja premi\xE4rer.",
+          tvListsEmpty: "Inget sparat \xE4n.",
+          tvListsEmptyHint: "F\xF6lj en serie eller stj\xE4rnm\xE4rk en titel f\xF6r att hitta den h\xE4r.",
           tvSegmentEmpty: "Inga rader h\xE4r \xE4n.",
           tvSegmentEmptyHint: "L\xE4gg till rader f\xF6r den h\xE4r sidan i Inst\xE4llningar \u2014 under startsidans rader, eller TV-l\xE4ge p\xE5 en TV.",
           continueEmpty: "Inget p\xE5b\xF6rjat \xE4n.",
@@ -5956,6 +5983,9 @@
           ipTmdbTokenHint: "Anv\xE4nds f\xF6r v4 API. Kr\xE4vs f\xF6r stora uppslag.",
           ipTmdbKeyLabel: "API-nyckel (v3)",
           ipTmdbKeyHint: "Bak\xE5tkompatibilitet f\xF6r \xE4ldre kataloger.",
+          ipSecretStored: "En nyckel \xE4r sparad. Skriv en ny f\xF6r att byta, eller ta bort den f\xF6r att falla tillbaka p\xE5 den inbyggda.",
+          ipSecretStoredPlaceholder: "Sparad \u2014 skriv f\xF6r att byta",
+          ipSecretRemove: "Ta bort sparad nyckel",
           ipGroqKeyHint: "H\xE4mta fr\xE5n console.groq.com \u2014 kostnadsfri tier r\xE4cker bra f\xF6r Lumio.",
           ipSaved: "Sparad",
           ipSaveError: "Kunde inte spara",
@@ -8547,6 +8577,13 @@
     const parsed = Number.parseInt(getScopedStorageItem(KEY_HIDE_SKIP_BUTTON_AFTER) ?? "", 10);
     return HIDE_SKIP_BUTTON_OPTIONS.includes(parsed) ? parsed : 0;
   }
+  function getControlsHideAfterSeconds() {
+    if (typeof window === "undefined") return CONTROLS_HIDE_DEFAULT_SECONDS;
+    const raw = getScopedStorageItem(KEY_CONTROLS_HIDE_AFTER);
+    if (raw === null) return CONTROLS_HIDE_DEFAULT_SECONDS;
+    const parsed = Number.parseInt(raw, 10);
+    return CONTROLS_HIDE_OPTIONS.includes(parsed) ? parsed : CONTROLS_HIDE_DEFAULT_SECONDS;
+  }
   function getSubtitlesOffByDefault() {
     if (typeof window === "undefined") return false;
     return getScopedStorageItem("playback_subtitlesOffByDefault") === "1";
@@ -8679,7 +8716,7 @@
     setScopedStorageItem(KEY_STRIP_SDH, value ? "1" : "0");
     emitPlaybackSettingsChanged();
   }
-  var KEY_DEFAULT_SUBTITLE_LANGUAGE, KEY_FALLBACK_SUBTITLE_LANGUAGE, KEY_DEFAULT_AUDIO_LANGUAGE, KEY_AUDIO_OUTPUT_MODE, KEY_DEFAULT_SUBTITLE_SIZE, KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION, KEY_DEFAULT_SUBTITLE_OPACITY, KEY_SUBTITLE_TEXT_COLOR, KEY_SUBTITLE_BACKGROUND_COLOR, KEY_SUBTITLE_OUTLINE_COLOR, KEY_DEFAULT_ASPECT_RATIO, KEY_REMEMBER_ASPECT_RATIO, KEY_AUTO_SKIP_INTRO, KEY_HIDE_WATCHED_MOVIES_HOME, KEY_STILL_WATCHING_ENABLED, KEY_STILL_WATCHING_MAX_MINUTES, KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, KEY_CREDITS_RECOMMENDATIONS, KEY_CREDITS_THRESHOLD_MINUTES, KEY_NIGHT_MODE, KEY_AUDIO_DELAY_MS, KEY_BT_AUTO_OFFSET, KEY_STAY_FULLSCREEN_ON_CLOSE, KEY_HIDE_SKIP_BUTTON_AFTER, KEY_SHOW_TITLE_ON_START, KEY_SERIES_NAME_FIRST, HIDE_SKIP_BUTTON_OPTIONS, PLAYBACK_SETTINGS_CHANGED_EVENT, LANG_NAMES, NIGHT_MODE_OPTIONS, ASPECT_RATIO_MODES, LANG3_TO_2, DEFAULT_SUBTITLE_SIZE, DEFAULT_AUDIO_OUTPUT_MODE, DEFAULT_SUBTITLE_VERTICAL_POSITION, DEFAULT_SUBTITLE_OPACITY, DEFAULT_SUBTITLE_TEXT_COLOR, DEFAULT_SUBTITLE_BACKGROUND_COLOR, DEFAULT_SUBTITLE_OUTLINE_COLOR, DEFAULT_ASPECT_RATIO, DEFAULT_REMEMBER_ASPECT_RATIO, DEFAULT_AUTO_SKIP_INTRO, DEFAULT_HIDE_WATCHED_MOVIES_HOME, DEFAULT_STILL_WATCHING_ENABLED, DEFAULT_STILL_WATCHING_MAX_MINUTES, DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, DEFAULT_CREDITS_RECOMMENDATIONS, DEFAULT_CREDITS_THRESHOLD_MINUTES, DEFAULT_NIGHT_MODE, KEY_UPGRADE_SUBTITLE_WHEN_BETTER, KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES, KEY_EXTRA_SUBTITLE_LANGUAGES, KEY_RAW_MPV_CONF, KEY_PREFER_EMBEDDED_SUBTITLES, KEY_EXTERNAL_PLAYER_APP, AUDIO_DELAY_STEP_MS, AUDIO_DELAY_LIMIT_MS, KEY_EXTERNAL_DISPLAY_VIDEO_ONLY, BLUETOOTH_AUDIO_OFFSET_MS, KEY_STATS_HUD, KEY_STRIP_SDH;
+  var KEY_DEFAULT_SUBTITLE_LANGUAGE, KEY_FALLBACK_SUBTITLE_LANGUAGE, KEY_DEFAULT_AUDIO_LANGUAGE, KEY_AUDIO_OUTPUT_MODE, KEY_DEFAULT_SUBTITLE_SIZE, KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION, KEY_DEFAULT_SUBTITLE_OPACITY, KEY_SUBTITLE_TEXT_COLOR, KEY_SUBTITLE_BACKGROUND_COLOR, KEY_SUBTITLE_OUTLINE_COLOR, KEY_DEFAULT_ASPECT_RATIO, KEY_REMEMBER_ASPECT_RATIO, KEY_AUTO_SKIP_INTRO, KEY_HIDE_WATCHED_MOVIES_HOME, KEY_STILL_WATCHING_ENABLED, KEY_STILL_WATCHING_MAX_MINUTES, KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, KEY_CREDITS_RECOMMENDATIONS, KEY_CREDITS_THRESHOLD_MINUTES, KEY_NIGHT_MODE, KEY_AUDIO_DELAY_MS, KEY_BT_AUTO_OFFSET, KEY_STAY_FULLSCREEN_ON_CLOSE, KEY_HIDE_SKIP_BUTTON_AFTER, KEY_CONTROLS_HIDE_AFTER, KEY_SHOW_TITLE_ON_START, KEY_SERIES_NAME_FIRST, HIDE_SKIP_BUTTON_OPTIONS, CONTROLS_HIDE_OPTIONS, CONTROLS_HIDE_DEFAULT_SECONDS, PLAYBACK_SETTINGS_CHANGED_EVENT, LANG_NAMES, NIGHT_MODE_OPTIONS, ASPECT_RATIO_MODES, LANG3_TO_2, DEFAULT_SUBTITLE_SIZE, DEFAULT_AUDIO_OUTPUT_MODE, DEFAULT_SUBTITLE_VERTICAL_POSITION, DEFAULT_SUBTITLE_OPACITY, DEFAULT_SUBTITLE_TEXT_COLOR, DEFAULT_SUBTITLE_BACKGROUND_COLOR, DEFAULT_SUBTITLE_OUTLINE_COLOR, DEFAULT_ASPECT_RATIO, DEFAULT_REMEMBER_ASPECT_RATIO, DEFAULT_AUTO_SKIP_INTRO, DEFAULT_HIDE_WATCHED_MOVIES_HOME, DEFAULT_STILL_WATCHING_ENABLED, DEFAULT_STILL_WATCHING_MAX_MINUTES, DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, DEFAULT_CREDITS_RECOMMENDATIONS, DEFAULT_CREDITS_THRESHOLD_MINUTES, DEFAULT_NIGHT_MODE, KEY_UPGRADE_SUBTITLE_WHEN_BETTER, KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES, KEY_EXTRA_SUBTITLE_LANGUAGES, KEY_RAW_MPV_CONF, KEY_PREFER_EMBEDDED_SUBTITLES, KEY_EXTERNAL_PLAYER_APP, AUDIO_DELAY_STEP_MS, AUDIO_DELAY_LIMIT_MS, KEY_EXTERNAL_DISPLAY_VIDEO_ONLY, BLUETOOTH_AUDIO_OFFSET_MS, KEY_STATS_HUD, KEY_STRIP_SDH;
   var init_playback_settings = __esm({
     "lib/playback-settings.ts"() {
       "use strict";
@@ -8709,9 +8746,12 @@
       KEY_BT_AUTO_OFFSET = "playback_btAudioAutoOffset";
       KEY_STAY_FULLSCREEN_ON_CLOSE = "playback_stayFullscreenOnClose";
       KEY_HIDE_SKIP_BUTTON_AFTER = "playback_hideSkipButtonAfterSeconds";
+      KEY_CONTROLS_HIDE_AFTER = "playback_controlsHideAfterSeconds";
       KEY_SHOW_TITLE_ON_START = "playback_showTitleOnStart";
       KEY_SERIES_NAME_FIRST = "playback_seriesNameFirst";
       HIDE_SKIP_BUTTON_OPTIONS = [0, 5, 10, 30];
+      CONTROLS_HIDE_OPTIONS = [0, 2, 3, 5, 10];
+      CONTROLS_HIDE_DEFAULT_SECONDS = 3;
       PLAYBACK_SETTINGS_CHANGED_EVENT = "lumio-playback-settings-changed";
       LANG_NAMES = {
         en: "English",
@@ -179911,10 +179951,13 @@ ${cue.text}`).join("\n\n")}
       registerPlaybackInteraction();
       setControlsVisible(true);
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+      const hideAfterSeconds = getControlsHideAfterSeconds();
+      if (hideAfterSeconds <= 0) return;
+      const delayMs = isTv ? Math.max(5e3, hideAfterSeconds * 1e3) : hideAfterSeconds * 1e3;
       hideTimerRef.current = setTimeout(() => {
         const paused = useMpv ? mpv.paused : videoRef.current?.paused ?? true;
         if (!paused && openSurfaceRef.current === null) setControlsVisible(false);
-      }, isTv ? 5e3 : 3e3);
+      }, delayMs);
     }
     const onMouseActivityRef = useRef(() => {
     });
@@ -187828,6 +187871,7 @@ ${cue.text}`).join("\n\n")}
     getActiveProfile: () => getActiveProfile,
     getActiveProfileId: () => getActiveProfileId,
     getAutoPlayNextEpisode: () => getAutoPlayNextEpisode,
+    getControlsHideAfterSeconds: () => getControlsHideAfterSeconds,
     getHideWatchedMoviesHome: () => getHideWatchedMoviesHome,
     getHls: () => getHls,
     getHomeOverridePluginId: () => getHomeOverridePluginId,
@@ -188285,6 +188329,7 @@ ${cue.text}`).join("\n\n")}
       init_video_player_modal_shim();
       init_next_episode_card_shim();
       init_primitives();
+      init_playback_settings();
       BROWSE_BACK_EVENT = "lumio-browse-back";
       PLUGIN_HOME_ROW_SLIDER_TRACK_CLASS = "thin-slider-scrollbar flex gap-3 overflow-x-auto pb-3";
       PLUGIN_HOME_ROW_GRID_TRACK_CLASS = "grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6";
@@ -190716,6 +190761,19 @@ ${cue.text}`).join("\n\n")}
       mobileFullscreenAttemptedRef.current = false;
       setScheduleOpen(false);
     }, [channel.url]);
+    const pausePlaybackRef = useRef(null);
+    pausePlaybackRef.current = () => {
+      void mpv.setPlayPause(true);
+    };
+    useEffect(() => {
+      if (typeof document === "undefined") return;
+      const onVisibilityChange = () => {
+        if (document.visibilityState !== "hidden") return;
+        pausePlaybackRef.current?.();
+      };
+      document.addEventListener("visibilitychange", onVisibilityChange);
+      return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+    }, []);
     const clearControlsHideTimer = useCallback(() => {
       if (controlsHideTimerRef.current !== null) {
         window.clearTimeout(controlsHideTimerRef.current);
@@ -190726,10 +190784,13 @@ ${cue.text}`).join("\n\n")}
       setControlsVisible(true);
       clearControlsHideTimer();
       if (!loading && !error && !scheduleOpen) {
-        controlsHideTimerRef.current = window.setTimeout(() => {
-          setControlsVisible(false);
-          controlsHideTimerRef.current = null;
-        }, 2400);
+        const seconds = getControlsHideAfterSeconds();
+        if (seconds > 0) {
+          controlsHideTimerRef.current = window.setTimeout(() => {
+            setControlsVisible(false);
+            controlsHideTimerRef.current = null;
+          }, seconds * 1e3);
+        }
       }
     }, [clearControlsHideTimer, error, loading, scheduleOpen]);
     const keepControlsVisible = useCallback(() => {
@@ -191417,7 +191478,7 @@ ${cue.text}`).join("\n\n")}
                           /* @__PURE__ */ jsx("rect", { x: "3", y: "5", width: "18", height: "14", rx: "2" }),
                           /* @__PURE__ */ jsx("path", { d: "M3 9h18M9 5v14" })
                         ] }),
-                        /* @__PURE__ */ jsx("span", { className: "hidden text-[11px] font-semibold uppercase tracking-[0.1em] sm:inline", children: ASPECT_OPTIONS[aspectIndex].label })
+                        /* @__PURE__ */ jsx("span", { className: "hidden text-[11px] font-semibold uppercase tracking-[0.1em] lg:inline", children: ASPECT_OPTIONS[aspectIndex].label })
                       ]
                     }
                   ),
@@ -191436,7 +191497,7 @@ ${cue.text}`).join("\n\n")}
                       ] }) : null
                     ] })
                   ] }),
-                  /* @__PURE__ */ jsxs("div", { className: "hidden shrink-0 items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-slate-400 sm:flex", children: [
+                  /* @__PURE__ */ jsxs("div", { className: "hidden shrink-0 items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-slate-400 lg:flex", children: [
                     /* @__PURE__ */ jsx("span", { children: engineKind === "mpv" ? "MPV" : engineKind === "droid" ? "ANDROID" : "HLS" }),
                     /* @__PURE__ */ jsx("span", { className: "h-1 w-1 rounded-full bg-slate-600" }),
                     /* @__PURE__ */ jsx("span", { children: "Live TV" })
@@ -195001,8 +195062,13 @@ ${cue.text}`).join("\n\n")}
       const out = [];
       const skip = /* @__PURE__ */ new Set([...pinnedKeys, ...history.map((entry) => entry.key)]);
       for (const group of topGroupsFromHistory(history)) {
-        for (const channel of channels) {
-          if (channel.group !== group || skip.has(channelKey(channel))) continue;
+        const candidates = channels.filter((channel) => channel.group === group && !skip.has(channelKey(channel))).sort((a, b) => {
+          const aLive = nowFor(a).now ? 0 : 1;
+          const bLive = nowFor(b).now ? 0 : 1;
+          return aLive - bLive || a.name.localeCompare(b.name);
+        });
+        for (const channel of candidates) {
+          if (skip.has(channelKey(channel))) continue;
           if (!nowFor(channel).now && out.length >= 4) continue;
           out.push({ channel, reason: h("hubRecommendedBecause", { group }) });
           skip.add(channelKey(channel));
@@ -196160,7 +196226,7 @@ ${cue.text}`).join("\n\n")}
       useEpgNowNextLater,
       useEpgLoadStatus,
       useChannelSchedule,
-      version: "0.3.46"
+      version: "0.3.47"
     };
     try {
       window.dispatchEvent(new CustomEvent("lumio-live-tv-bridge-ready"));
@@ -196177,7 +196243,7 @@ ${cue.text}`).join("\n\n")}
   var LiveTvPlugin = {
     id: "com.lumio.live-tv",
     name: { en: "Live TV", sv: "Live TV" },
-    version: "0.3.46",
+    version: "0.3.47",
     description: {
       en: "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",
       sv: "Hantera M3U-k\xE4llor, bl\xE4ddra bland live-TV-kanaler och se EPG (nu/h\xE4rn\xE4st) i Lumio."

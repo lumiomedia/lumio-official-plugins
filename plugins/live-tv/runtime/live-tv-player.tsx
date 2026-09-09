@@ -26,6 +26,7 @@ import {
   useLang,
   useTvMode,
   capturePlayerFrame,
+  getControlsHideAfterSeconds,
 } from '@/lib/plugin-sdk'
 import { LiveTvLogoImage } from './live-tv-logo-image'
 import { getLiveTvLogoSrc } from './live-tv-data'
@@ -307,6 +308,36 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
     setScheduleOpen(false)
   }, [channel.url])
 
+  /*
+    MINIMERAD APP = PAUSAD KANAL.
+    Uppspelningen fortsatte i bakgrunden när appen minimerades — ljudet
+    rullade vidare från en kanal ingen tittade på, och på mobil betyder det
+    både data och batteri (betatestare 2026-09-09: "it continues playing in
+    background when you minimize app").
+
+    Pausen går genom `mpv`, som är motorabstraktionen: samma anrop träffar
+    mpv, den nativa Android-spelaren och HTML-elementet, så beteendet är
+    detsamma på alla tre i stället för tre egna vägar.
+
+    Den återupptar INTE av sig själv. För en liveström är "fortsätt där du
+    var" inte en meningsfull position — man vill till sändningen nu, och det
+    är precis vad play-knappen gör.
+
+    Funktionen läses ur en ref: `mpv` är ett nytt objekt varje render, och en
+    beroendelista på det hade av- och påregistrerat lyssnaren i onödan.
+  */
+  const pausePlaybackRef = useRef<(() => void) | null>(null)
+  pausePlaybackRef.current = () => { void mpv.setPlayPause(true) }
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    const onVisibilityChange = () => {
+      if (document.visibilityState !== 'hidden') return
+      pausePlaybackRef.current?.()
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange)
+  }, [])
+
   const clearControlsHideTimer = useCallback(() => {
     if (controlsHideTimerRef.current !== null) {
       window.clearTimeout(controlsHideTimerRef.current)
@@ -318,10 +349,22 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
     setControlsVisible(true)
     clearControlsHideTimer()
     if (!loading && !error && !scheduleOpen) {
-      controlsHideTimerRef.current = window.setTimeout(() => {
-        setControlsVisible(false)
-        controlsHideTimerRef.current = null
-      }, 2400)
+      // Tiden är appens inställning, inte pluginets eget tal. Förut stod här
+      // 2400 medan appspelaren körde 3000 — två spelare i samma app gömde sin
+      // kontrollrad olika snabbt, och ingen av dem gick att ställa in. En
+      // betatestare frågade efter just det.
+      //
+      // Ingen fallback behövs: playback-settings bundlas IN i pluginet vid
+      // bygget (@/ löses mot appträdet), så funktionen finns alltid och läser
+      // samma profilskopade nyckel som appspelaren.
+      const seconds = getControlsHideAfterSeconds()
+      // 0 = göm aldrig: sätt då ingen timer alls.
+      if (seconds > 0) {
+        controlsHideTimerRef.current = window.setTimeout(() => {
+          setControlsVisible(false)
+          controlsHideTimerRef.current = null
+        }, seconds * 1000)
+      }
     }
   }, [clearControlsHideTimer, error, loading, scheduleOpen])
 
@@ -1085,6 +1128,12 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
           (Jerry 2026-09-09: "player meny går utanför viewporten, den ska vara
           scrollbar i det läget").
 
+          I LANDSKAP ska den däremot rymmas, och gjorde det inte: de två
+          extradelarna (bildförhållandets etikett, motorbrickan) tändes vid
+          sm=640, alltså strax under en telefons landskapsbredd, och lade på
+          runt 150 px. De ligger nu på lg — scrollen är kvar som skydd för
+          porträtt, inte som normalläge.
+
           Scroll och inte radbrytning: knapparna ska stå i EN rad man drar i,
           som en spelarkontroll gör, och höjden är dyr i stående läge där
           videon redan är liten.
@@ -1227,12 +1276,17 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
               <rect x="3" y="5" width="18" height="14" rx="2" />
               <path d="M3 9h18M9 5v14" />
             </svg>
-            {/* Bara ikon när bredden inte räcker. Telefonens porträttläge är
-                360 px och kontrollraden fick inte plats — i landskap (~800 px)
-                och på skrivbordet finns utrymmet. Breddvillkor och inte
+            {/* Bara ikon när bredden inte räcker. Breddvillkor och inte
                 `portrait:`/`landscape:`: det är utrymmet som är problemet, så
-                en smal fönsterruta på skrivbordet ska bete sig likadant. */}
-            <span className="hidden text-[11px] font-semibold uppercase tracking-[0.1em] sm:inline">
+                en smal fönsterruta på skrivbordet ska bete sig likadant.
+
+                lg och inte sm (Jerry/betatestare 2026-09-09, "in landscape it
+                should fit"): raden VÄXTE vid 640 px, för då tillkom både den
+                här etiketten och motorbrickan nedan. En telefon i landskap
+                ligger strax över den brytpunkten, så extradelarna tippade
+                raden över viewporten i exakt det läge man har mest plats i.
+                De hör till skrivbordets utrymme, inte till en 780 px skärm. */}
+            <span className="hidden text-[11px] font-semibold uppercase tracking-[0.1em] lg:inline">
               {ASPECT_OPTIONS[aspectIndex].label}
             </span>
           </button>
@@ -1270,7 +1324,8 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
             </div>
           </div>
 
-          <div className="hidden shrink-0 items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-slate-400 sm:flex">
+          {/* Motorbrickan: se etiketten ovan för varför lg och inte sm. */}
+          <div className="hidden shrink-0 items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-slate-400 lg:flex">
             <span>{engineKind === 'mpv' ? 'MPV' : engineKind === 'droid' ? 'ANDROID' : 'HLS'}</span>
             <span className="h-1 w-1 rounded-full bg-slate-600" />
             <span>Live TV</span>

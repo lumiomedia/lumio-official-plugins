@@ -184,9 +184,32 @@ export function LiveTvHub({ onNavigate }: Props) {
   const recommended = useMemo(() => {
     const out: Array<{ channel: M3uChannel; reason: string }> = []
     const skip = new Set([...pinnedKeys, ...history.map((entry) => entry.key)])
+    /*
+      Kandidaterna inom en grupp RANGORDNAS, de tas inte i spellistans
+      ordning.
+      Förut plockades de första matchande kanalerna rakt ur listan, och en
+      betatestare läste resultatet precis som det såg ut: "just seems to list
+      the first x channels for every category". Med en panel där grupperna
+      ligger i sändningsordning blev raden alltså listans början, inte ett
+      urval.
+      Det som finns att rangordna på utan att uppfinna en rekommendationsmotor
+      är om något SÄNDS just nu — en kanal med ett pågående program är något
+      man kan börja titta på, vilket är hela poängen med raden. Lika kanaler
+      sorteras på namn så ordningen är stabil mellan renderingar i stället för
+      att följa spellistan.
+    */
     for (const group of topGroupsFromHistory(history)) {
-      for (const channel of channels) {
-        if (channel.group !== group || skip.has(channelKey(channel))) continue
+      const candidates = channels
+        .filter((channel) => channel.group === group && !skip.has(channelKey(channel)))
+        .sort((a, b) => {
+          const aLive = nowFor(a).now ? 0 : 1
+          const bLive = nowFor(b).now ? 0 : 1
+          return aLive - bLive || a.name.localeCompare(b.name)
+        })
+      for (const channel of candidates) {
+        if (skip.has(channelKey(channel))) continue
+        // Utan pågående program: högst fyra sådana, så raden inte fylls med
+        // kanaler man inte kan börja titta på nu.
         if (!nowFor(channel).now && out.length >= 4) continue
         out.push({ channel, reason: h('hubRecommendedBecause', { group }) })
         skip.add(channelKey(channel))

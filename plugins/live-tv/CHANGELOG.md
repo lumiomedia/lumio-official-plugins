@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.3.47
+
+- The player control row fits in landscape again. Two extras — the aspect
+  label and the engine badge — appeared at 640 px, just below a phone's
+  landscape width, and added about 150 px. They now appear at 1024 px, so
+  landscape has room and the sideways scroll is back to being a safeguard for
+  portrait rather than the normal state.
+- How long the controls stay on screen is a setting instead of a number in the
+  code. It was 2.4 s here and 3 s in the app's own player; both now read the
+  same app setting (Playback → Hide player controls after, "Never" included).
+  TV keeps a five-second floor — a remote is slower than a thumb.
+- "Recommended for you" ranks the candidates inside a group instead of taking
+  them in playlist order, so the row stops looking like the first few channels
+  of every category. Channels with a programme on now come first; equal ones
+  sort by name so the order is stable between renders.
+- Minimising the app pauses the channel. Playback used to carry on in the
+  background — audio from a channel nobody was watching, costing data and
+  battery on a phone. It does not resume by itself: "carry on where you were"
+  is not a meaningful position on a live stream, and Play goes to the live
+  edge, which is what you actually want.
+
 ## 0.3.46
 
 - "All channels" no longer stops silently at 60. The section heading printed
