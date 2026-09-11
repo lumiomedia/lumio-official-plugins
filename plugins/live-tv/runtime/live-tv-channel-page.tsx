@@ -6,6 +6,7 @@ import { channelKey, type M3uChannel } from './live-tv-data'
 import { qualityFromName, startOfLocalDay, useLiveTvModel } from './live-tv-model'
 import { useHubText } from './hub-strings'
 import { useSwipeBack } from './hooks/useSwipeBack'
+import { useBackToHub } from './hooks/useBackToHub'
 import { catchUpForChannel, channelSupportsCatchUp, expiresLabel } from './catch-up'
 import { isReminded, toggleReminder } from './reminders'
 import { activeProfileHasPin, pinSupportAvailable, toggleChannelLock, verifyActiveProfilePin } from './channel-locks'
@@ -59,6 +60,10 @@ export function LiveTvChannelPage({ params, onNavigate }: Props) {
   const { play, chrome, overlayOpen } = useLiveTvChrome(model)
   // Tillbaka till hubben med ett kantdrag på mobil; Tillbaka-pilen ligger kvar.
   useSwipeBack(() => go('hub'), !overlayOpen)
+  // Samma väg ut med fjärren som med fingret: sidan hade bakåtpil och svep,
+  // men ingen tangenthantering — "pressing return does not exit epg"
+  // (testfeedback 2026-09-11). Avstår medan ett eget lager är öppet.
+  useBackToHub(() => go('hub'), !overlayOpen)
   const [reminderTick, setReminderTick] = useState(0)
   const [lockGate, setLockGate] = useState(false)
   const [lockNotice, setLockNotice] = useState<string | null>(null)

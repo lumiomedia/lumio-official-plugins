@@ -267,7 +267,10 @@ export function LiveTvHub({ onNavigate }: Props) {
       actions: [
         { key: 'play', label: h('hubWatchNow'), run: () => play({ channel }) },
         { key: 'pin', label: pinnedSet.has(channelKey(channel)) ? h('hubUnpin') : h('hubPin'), run: () => model.togglePin(channel) },
-        { key: 'info', label: h('channelTitle'), run: () => openChannel(channel) },
+        // Egen sträng, inte sidrubriken: raden hette "Channel", vilket inte är
+        // något man kan göra (testfeedback 2026-09-11: "there is an option that
+        // simply says 'channel'").
+        { key: 'info', label: h('hubChannelDetails'), run: () => openChannel(channel) },
         ...(recentKey ? [{ key: 'remove', label: h('hubRemoveRecent'), run: () => removeChannelHistoryEntry(recentKey) }] : []),
       ],
     }),
@@ -279,7 +282,7 @@ export function LiveTvHub({ onNavigate }: Props) {
   }
 
   const epgButton = (
-    <Btn variant="secondary" small onClick={() => go('epg')} tvStation={isTv ? { 'data-f': '', 'data-live-tv-epg': '', 'data-f-left': '[data-live-tv-group]', 'data-f-right': '[data-live-tv-bell]' } : undefined}>
+    <Btn variant="secondary" small onClick={() => go('epg')} tvStation={isTv ? { 'data-f': '', 'data-live-tv-epg': '', 'data-f-left': '[data-live-tv-group], [data-live-tv-search]', 'data-f-right': '[data-live-tv-bell]' } : undefined}>
       <Icon.Calendar size={14} /> {h('openEpg')}
     </Btn>
   )
@@ -297,7 +300,14 @@ export function LiveTvHub({ onNavigate }: Props) {
         ref={searchChipRef}
         {...(tvStation ?? {})}
         data-live-tv-search=""
-        data-f-right="[data-live-tv-group]"
+        /* Faller vidare till EPG när gruppväljaren inte finns: den renderas
+           bara när listan HAR grupper (`model.groups.length > 0`), och utan
+           den bröts kedjan sök → grupp → EPG mitt itu — EPG gick då bara att
+           nå via geometrin från innehållet, om ens det (testfeedback
+           2026-09-11: "open epg can not be accessed with remote").
+           Motorn tar första SYNLIGA träffen, så en kommaväljare degraderar av
+           sig själv (lib/tv-focus.tsx, explicitNext). */
+        data-f-right="[data-live-tv-group], [data-live-tv-epg]"
         onClick={() => setSearchKeyboardOpen(true)}
         className="truncate"
         style={{ display: 'flex', alignItems: 'center', gap: 8, borderRadius: 999, border: '1px solid transparent', background: LT.neutral, padding: '0 14px', height: 36, minWidth: 260, maxWidth: 360, color: query ? LT.text : LT.muted, fontSize: 13, fontFamily: 'inherit', cursor: 'pointer', textAlign: 'left' }}
@@ -722,7 +732,16 @@ export function LiveTvHub({ onNavigate }: Props) {
               })
             : h('channelsIn', { count: filteredChannels.length, group: effectiveGroup ?? h('hubAllGroups') })}
         />
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3" data-live-tv-all-channels="">
+        {/*
+          TRE KOLUMNER PÅ TV (Jerry 2026-09-11: "kanaler i TVen, kanske bra att
+          ha en 3 grid, istället för 2").
+
+          Brytpunkterna mäter fönstret, och en TV-webview rapporterar ~960 px —
+          alltså `sm:grid-cols-2` och två breda rader på en 55-tummare, trots
+          att ytan rymmer tre med råge. TV har därför ett eget tal i stället för
+          att hänga på en bredd som ljuger. Skrivbord och mobil är oförändrade.
+        */}
+        <div className={isTv ? 'grid grid-cols-3 gap-3' : 'grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3'} data-live-tv-all-channels="">
           {shownChannels.map((channel) => {
             const info = nowFor(channel)
             const isPinned = pinnedSet.has(channelKey(channel))
@@ -757,6 +776,23 @@ export function LiveTvHub({ onNavigate }: Props) {
                     </div>
                   ) : null}
                 </div>
+                {/*
+                  INGA KNAPPAR PÅ TV (testfeedback 2026-09-11: "there are
+                  favourite and info buttons on each item. But cannot be
+                  selected").
+
+                  Raden är EN fokusstation — knapparna inuti den har ingen egen,
+                  och tre stationer per rad gånger hundratals rader hade dessutom
+                  gjort listan omöjlig att pila igenom. Med fjärren låg de alltså
+                  där som knappar man inte kan trycka på, vilket läser som
+                  trasigt.
+
+                  Åtgärderna finns kvar och är inte svårare att nå: OK spelar,
+                  HÅLL OK ger hela menyn (spela, favorit, kanaldetalj). Samma
+                  regel som appens Fortsätt titta, där X:et också bara finns
+                  utanför TV.
+                */}
+                {isTv ? null : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }} onClick={(event) => event.stopPropagation()}>
                   <Btn
                     variant="ghost"
@@ -775,6 +811,7 @@ export function LiveTvHub({ onNavigate }: Props) {
                     <Icon.Play size={13} />
                   </Btn>
                 </div>
+                )}
               </div>
             )
           })}

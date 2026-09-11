@@ -166890,6 +166890,9 @@
       tvSearchBefore1990: "Before 1990",
       tvSearchEmpty: "Type or pick a letter to search.",
       tvSearchNoHits: "No matches. Try a shorter search.",
+      tvSearchHistory: "Search history",
+      tvSearchHistoryHint: "Or pick something from your search history.",
+      tvSearchHitsFor: "Hits for",
       pairUnknownDevice: "Unknown device",
       pairTooManyTries: "Too many attempts \u2014 wait a moment.",
       pairBadCode: "Wrong or expired code.",
@@ -166934,6 +166937,12 @@
       sideMenuOn: "Side menu",
       menuChipTitle: "Menu pill (TV style)",
       menuChipDesc: "The TV mode menu pill in the top-left corner, with search inside the menu. Replaces the side menu and the top bar on desktop, and the top bar on mobile.",
+      menuPillPlaceTitle: "Menu pill position",
+      menuPillPlaceDesc: "Pick a corner, or hold the pill until it wiggles and drag it anywhere. It snaps to the nearest edge and keeps the height you dropped it at.",
+      menuPillTopLeft: "Top left",
+      menuPillTopRight: "Top right",
+      menuPillBottomLeft: "Bottom left",
+      menuPillBottomRight: "Bottom right",
       sideMenuOff: "Horizontal menu",
       vlcToggleOn: "VLC on",
       vlcToggleOff: "VLC off",
@@ -167464,6 +167473,8 @@
       remoteSessionModeDesktop: "Desktop",
       remoteSessionModeTv: "TV",
       tvMenuPlacementTitle: "Menu placement",
+      tvClockHiddenTitle: "Hide the clock",
+      tvClockHiddenHint: "The greeting, time and date in the top right corner. Hidden here; nothing else changes.",
       tvMenuChipHiddenTitle: "Hide the Menu pill",
       tvMenuChipHiddenHint: "The menu stays and still opens with \u25C2 or \u25B4 from the content.",
       tvMenuPlacementHint: "Where the menu sits. The content is the same either way.",
@@ -167557,6 +167568,10 @@
       personSortedByPopularity: "Sorted by popularity",
       tvFontScale: "Text size",
       tvFontScaleDesc: "Scales all text in TV mode without changing the layout.",
+      tvMenuVariantTitle: "Menu style",
+      tvMenuVariantHint: "The pill opens the menu when you want it; the rail stays along the left edge.",
+      tvMenuVariantPill: "Pill",
+      tvMenuVariantRail: "Rail",
       tvMenuScale: "Menu size",
       tvMenuScaleDesc: "Scales the side menu \u2014 icons and labels \u2014 in TV mode.",
       menuScale: "Menu scale",
@@ -167982,6 +167997,10 @@
       tvMenuChip: "Menu",
       tvMenuSearch: "Search",
       tvSearchFilters: "Search & filters",
+      tvClockMorning: "Good morning",
+      tvClockDay: "Hello",
+      tvClockEvening: "Good evening",
+      tvClockNight: "Good night",
       tvMenuSources: "Libraries and sources",
       tvQuickRemoveContinue: "Remove from Continue watching",
       tvCollectionHint: "Film collection \u2014 press OK to browse the movies in release order.",
@@ -168178,6 +168197,9 @@
       stayFullscreenOnCloseDesc: "The window keeps fullscreen instead of dropping back to windowed mode.",
       showTitleOnStart: "Show title when playback starts",
       showTitleOnStartDesc: "The title fades in for a few seconds and then disappears.",
+      controlsHideAfter: "Hide player controls after",
+      controlsHideAfterDesc: "How long the playback controls stay on screen after you touch or move. TV keeps a five-second floor.",
+      controlsHideNever: "Never",
       hideSkipButtonAfter: "Hide the Skip button after",
       hideSkipButtonAfterDesc: "The button hides itself so a false intro match does not sit on screen all episode.",
       hideUnreleasedHome: "Hide unreleased titles on Home",
@@ -168792,6 +168814,9 @@
       ipTmdbTokenHint: "Used for the v4 API. Required for large lookups.",
       ipTmdbKeyLabel: "API key (v3)",
       ipTmdbKeyHint: "Backwards compatibility for older catalogs.",
+      ipSecretStored: "A key is saved. Type a new one to replace it, or remove it to fall back to the built-in key.",
+      ipSecretStoredPlaceholder: "Saved \u2014 type to replace",
+      ipSecretRemove: "Remove saved key",
       ipGroqKeyHint: "Get one from console.groq.com \u2014 the free tier is plenty for Lumio.",
       ipSaved: "Saved",
       ipSaveError: "Could not save",
@@ -169421,6 +169446,9 @@
       tvSearchBefore1990: "F\xF6re 1990",
       tvSearchEmpty: "Skriv eller v\xE4lj en bokstav f\xF6r att s\xF6ka.",
       tvSearchNoHits: "Inga tr\xE4ffar. Prova en kortare s\xF6kning.",
+      tvSearchHistory: "S\xF6khistorik",
+      tvSearchHistoryHint: "Eller ta n\xE5got ur din s\xF6khistorik.",
+      tvSearchHitsFor: "Tr\xE4ffar f\xF6r",
       pairUnknownDevice: "Ok\xE4nd enhet",
       pairTooManyTries: "F\xF6r m\xE5nga f\xF6rs\xF6k \u2014 v\xE4nta en stund.",
       pairBadCode: "Fel eller utg\xE5ngen kod.",
@@ -169465,6 +169493,12 @@
       sideMenuOn: "Sidomeny",
       menuChipTitle: "Menypill (TV-stil)",
       menuChipDesc: "TV-l\xE4gets menypill uppe till v\xE4nster, med s\xF6k inne i menyn. Ers\xE4tter sidomenyn och toppraden p\xE5 skrivbord, och toppraden p\xE5 mobil.",
+      menuPillPlaceTitle: "Menypillrets placering",
+      menuPillPlaceDesc: "V\xE4lj ett h\xF6rn, eller h\xE5ll in pillret tills det skakar och dra det dit du vill. Det dras till n\xE4rmaste kant och beh\xE5ller h\xF6jden du sl\xE4ppte p\xE5.",
+      menuPillTopLeft: "Uppe till v\xE4nster",
+      menuPillTopRight: "Uppe till h\xF6ger",
+      menuPillBottomLeft: "Nere till v\xE4nster",
+      menuPillBottomRight: "Nere till h\xF6ger",
       sideMenuOff: "Horisontell meny",
       vlcToggleOn: "VLC p\xE5",
       vlcToggleOff: "VLC av",
@@ -169995,6 +170029,8 @@
       remoteSessionModeDesktop: "Skrivbord",
       remoteSessionModeTv: "TV",
       tvMenuPlacementTitle: "Menyns placering",
+      tvClockHiddenTitle: "D\xF6lj klockan",
+      tvClockHiddenHint: "H\xE4lsningen, tiden och datumet i \xF6vre h\xF6gra h\xF6rnet. D\xF6ljs h\xE4r; inget annat p\xE5verkas.",
       tvMenuChipHiddenTitle: "D\xF6lj menypillret",
       tvMenuChipHiddenHint: "Menyn finns kvar och \xF6ppnas som vanligt med \u25C2 eller \u25B4 fr\xE5n inneh\xE5llet.",
       tvMenuPlacementHint: "Var menyn sitter. Inneh\xE5llet \xE4r detsamma i b\xE5da l\xE4gena.",
@@ -170088,6 +170124,10 @@
       personSortedByPopularity: "Sorterat p\xE5 popularitet",
       tvFontScale: "Textstorlek",
       tvFontScaleDesc: "Skalar all text i TV-l\xE4get utan att \xE4ndra layouten.",
+      tvMenuVariantTitle: "Menyform",
+      tvMenuVariantHint: "Pillret \xF6ppnar menyn n\xE4r du vill; listen st\xE5r kvar l\xE4ngs v\xE4nsterkanten.",
+      tvMenuVariantPill: "Pillret",
+      tvMenuVariantRail: "Ikonlist",
       tvMenuScale: "Menystorlek",
       tvMenuScaleDesc: "Skalar sidomenyn \u2014 ikoner och etiketter \u2014 i TV-l\xE4get.",
       menuScale: "Menyskalning",
@@ -170508,6 +170548,10 @@
       tvMenuChip: "Menu",
       tvMenuSearch: "S\xF6k",
       tvSearchFilters: "S\xF6k & filter",
+      tvClockMorning: "God morgon",
+      tvClockDay: "Hej",
+      tvClockEvening: "God kv\xE4ll",
+      tvClockNight: "God natt",
       tvMenuSources: "Bibliotek och k\xE4llor",
       tvQuickRemoveContinue: "Ta bort fr\xE5n Forts\xE4tt titta",
       tvCollectionHint: "Filmsamling \u2014 tryck OK f\xF6r att se filmerna i premi\xE4rordning.",
@@ -170539,7 +170583,7 @@
       homeSourcePrestigeDrama: "Prestigedrama",
       homeSourceAnimeMovies: "Animefilmer",
       homeSourceAnimeTopSeries: "H\xF6gst betygsatt anime",
-      homeSourceStreamingServices: "Streamingtj\xE4nster",
+      homeSourceStreamingServices: "Streaming",
       homeSourceStudios: "Studios",
       liveTvList: "Live TV-lista",
       liveTvChooseList: "V\xE4lj en Live TV-lista",
@@ -170700,6 +170744,9 @@
       stayFullscreenOnCloseDesc: "F\xF6nstret beh\xE5ller helsk\xE4rm i st\xE4llet f\xF6r att falla tillbaka till f\xF6nsterl\xE4ge.",
       showTitleOnStart: "Visa titel n\xE4r uppspelningen startar",
       showTitleOnStartDesc: "Titeln tonar in n\xE5gra sekunder och f\xF6rsvinner sedan.",
+      controlsHideAfter: "G\xF6m spelarkontrollerna efter",
+      controlsHideAfterDesc: "Hur l\xE4nge kontrollerna ligger kvar efter att du r\xF6rt sk\xE4rmen. TV beh\xE5ller ett golv p\xE5 fem sekunder.",
+      controlsHideNever: "Aldrig",
       hideSkipButtonAfter: "D\xF6lj Skippa-knappen efter",
       hideSkipButtonAfterDesc: "Knappen f\xF6rsvinner av sig sj\xE4lv s\xE5 en felaktig introtr\xE4ff inte ligger kvar hela avsnittet.",
       hideUnreleasedHome: "D\xF6lj ej sl\xE4ppta titlar p\xE5 Hem",
@@ -171305,6 +171352,9 @@
       ipTmdbTokenHint: "Anv\xE4nds f\xF6r v4 API. Kr\xE4vs f\xF6r stora uppslag.",
       ipTmdbKeyLabel: "API-nyckel (v3)",
       ipTmdbKeyHint: "Bak\xE5tkompatibilitet f\xF6r \xE4ldre kataloger.",
+      ipSecretStored: "En nyckel \xE4r sparad. Skriv en ny f\xF6r att byta, eller ta bort den f\xF6r att falla tillbaka p\xE5 den inbyggda.",
+      ipSecretStoredPlaceholder: "Sparad \u2014 skriv f\xF6r att byta",
+      ipSecretRemove: "Ta bort sparad nyckel",
       ipGroqKeyHint: "H\xE4mta fr\xE5n console.groq.com \u2014 kostnadsfri tier r\xE4cker bra f\xF6r Lumio.",
       ipSaved: "Sparad",
       ipSaveError: "Kunde inte spara",
@@ -172338,9 +172388,12 @@
   var KEY_BT_AUTO_OFFSET = "playback_btAudioAutoOffset";
   var KEY_STAY_FULLSCREEN_ON_CLOSE = "playback_stayFullscreenOnClose";
   var KEY_HIDE_SKIP_BUTTON_AFTER = "playback_hideSkipButtonAfterSeconds";
+  var KEY_CONTROLS_HIDE_AFTER = "playback_controlsHideAfterSeconds";
   var KEY_SHOW_TITLE_ON_START = "playback_showTitleOnStart";
   var KEY_SERIES_NAME_FIRST = "playback_seriesNameFirst";
   var HIDE_SKIP_BUTTON_OPTIONS = [0, 5, 10, 30];
+  var CONTROLS_HIDE_OPTIONS = [0, 2, 3, 5, 10];
+  var CONTROLS_HIDE_DEFAULT_SECONDS = 3;
   var PLAYBACK_SETTINGS_CHANGED_EVENT = "lumio-playback-settings-changed";
   var LANG_NAMES = {
     en: "English",
@@ -172529,6 +172582,13 @@
     if (typeof window === "undefined") return 0;
     const parsed = Number.parseInt(getScopedStorageItem(KEY_HIDE_SKIP_BUTTON_AFTER) ?? "", 10);
     return HIDE_SKIP_BUTTON_OPTIONS.includes(parsed) ? parsed : 0;
+  }
+  function getControlsHideAfterSeconds() {
+    if (typeof window === "undefined") return CONTROLS_HIDE_DEFAULT_SECONDS;
+    const raw = getScopedStorageItem(KEY_CONTROLS_HIDE_AFTER);
+    if (raw === null) return CONTROLS_HIDE_DEFAULT_SECONDS;
+    const parsed = Number.parseInt(raw, 10);
+    return CONTROLS_HIDE_OPTIONS.includes(parsed) ? parsed : CONTROLS_HIDE_DEFAULT_SECONDS;
   }
   function getSubtitlesOffByDefault() {
     if (typeof window === "undefined") return false;
@@ -177308,10 +177368,13 @@ ${cue.text}`).join("\n\n")}
       registerPlaybackInteraction();
       setControlsVisible(true);
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+      const hideAfterSeconds = getControlsHideAfterSeconds();
+      if (hideAfterSeconds <= 0) return;
+      const delayMs = isTv ? Math.max(5e3, hideAfterSeconds * 1e3) : hideAfterSeconds * 1e3;
       hideTimerRef.current = setTimeout(() => {
         const paused = useMpv ? mpv.paused : videoRef.current?.paused ?? true;
         if (!paused && openSurfaceRef.current === null) setControlsVisible(false);
-      }, isTv ? 5e3 : 3e3);
+      }, delayMs);
     }
     const onMouseActivityRef = useRef(() => {
     });

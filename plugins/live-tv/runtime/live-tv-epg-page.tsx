@@ -12,6 +12,7 @@ import { ReminderBell, RemindersMenu, encodeChannelParams, useLiveTvChrome, useL
 import { useIsMobileLayout } from './hooks/useIsMobileLayout'
 import { selectEpgRows } from './epg-rows'
 import { useSwipeBack } from './hooks/useSwipeBack'
+import { useBackToHub } from './hooks/useBackToHub'
 
 /**
  * Fullskärms-EPG (handoff §2): kanal × tid med fast kanalkolumn, Nu-linje,
@@ -55,6 +56,10 @@ export function LiveTvEpgPage({ onNavigate }: Props) {
   const { play, chrome, overlayOpen } = useLiveTvChrome(model)
   // Tillbaka till hubben med ett kantdrag på mobil; Tillbaka-pilen ligger kvar.
   useSwipeBack(() => go('hub'), !overlayOpen)
+  // Samma väg ut med fjärren som med fingret: sidan hade bakåtpil och svep,
+  // men ingen tangenthantering — "pressing return does not exit epg"
+  // (testfeedback 2026-09-11). Avstår medan ett eget lager är öppet.
+  useBackToHub(() => go('hub'), !overlayOpen)
   const [dayOffset, setDayOffset] = useState<0 | 1>(0)
   // Tablån saknade gruppfilter helt: med 1 100 kanaler i en panel gick det
   // inte att komma åt en enda kategori (Jerry/betatestare 2026-09-09).

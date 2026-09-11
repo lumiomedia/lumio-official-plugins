@@ -64,6 +64,7 @@ const EN = {
   epgEmpty: 'No programme guide for these channels yet. Add an EPG source under Settings → Live TV.',
   // Kanaldetalj
   channelTitle: 'Channel',
+  hubChannelDetails: 'Channel details',
   today: 'Today',
   replays: 'Available as replay',
   channelInfo: 'Channel information',
@@ -170,6 +171,7 @@ const SV: Record<keyof typeof EN, string> = {
   reminderOff: 'Påminn mig',
   epgEmpty: 'Ingen tablå för de här kanalerna ännu. Lägg till en EPG-källa under Inställningar → Live TV.',
   channelTitle: 'Kanaldetalj',
+  hubChannelDetails: 'Kanaldetaljer',
   today: 'Idag',
   replays: 'Tillgängligt för repris',
   channelInfo: 'Kanalinformation',

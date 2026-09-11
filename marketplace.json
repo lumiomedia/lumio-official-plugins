@@ -6,31 +6,6 @@
   "visibility": "private-for-now",
   "plugins": [
     {
-      "id": "com.lumio.youtube",
-      "slug": "youtube",
-      "name": {
-        "en": "YouTube",
-        "sv": "YouTube"
-      },
-      "version": "1.0.7",
-      "description": {
-        "en": "Browse subscriptions, watch later, playlists and channels from YouTube.",
-        "sv": "Bläddra bland prenumerationer, titta senare, spellistor och kanaler från YouTube."
-      },
-      "path": "plugins/youtube",
-      "runtimeBundlePath": "dist/runtime.js",
-      "readmePath": "plugins/youtube/README.md",
-      "changelogPath": "plugins/youtube/CHANGELOG.md",
-      "official": true,
-      "bundled": true,
-      "removable": true,
-      "auth": {
-        "managedProviderId": "google-youtube",
-        "supportsPersonalOverride": true
-      },
-      "repoPath": "plugins/youtube"
-    },
-    {
       "id": "com.lumio.plex",
       "slug": "plex",
       "name": {
