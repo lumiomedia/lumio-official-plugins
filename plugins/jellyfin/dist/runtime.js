@@ -20436,49 +20436,49 @@
       exports.isDateTimeSkeleton = isDateTimeSkeleton;
       exports.createLiteralElement = createLiteralElement;
       exports.createNumberElement = createNumberElement;
-      var TYPE;
-      (function(TYPE2) {
-        TYPE2[TYPE2["literal"] = 0] = "literal";
-        TYPE2[TYPE2["argument"] = 1] = "argument";
-        TYPE2[TYPE2["number"] = 2] = "number";
-        TYPE2[TYPE2["date"] = 3] = "date";
-        TYPE2[TYPE2["time"] = 4] = "time";
-        TYPE2[TYPE2["select"] = 5] = "select";
-        TYPE2[TYPE2["plural"] = 6] = "plural";
-        TYPE2[TYPE2["pound"] = 7] = "pound";
-        TYPE2[TYPE2["tag"] = 8] = "tag";
-      })(TYPE || (exports.TYPE = TYPE = {}));
+      var TYPE2;
+      (function(TYPE3) {
+        TYPE3[TYPE3["literal"] = 0] = "literal";
+        TYPE3[TYPE3["argument"] = 1] = "argument";
+        TYPE3[TYPE3["number"] = 2] = "number";
+        TYPE3[TYPE3["date"] = 3] = "date";
+        TYPE3[TYPE3["time"] = 4] = "time";
+        TYPE3[TYPE3["select"] = 5] = "select";
+        TYPE3[TYPE3["plural"] = 6] = "plural";
+        TYPE3[TYPE3["pound"] = 7] = "pound";
+        TYPE3[TYPE3["tag"] = 8] = "tag";
+      })(TYPE2 || (exports.TYPE = TYPE2 = {}));
       var SKELETON_TYPE;
       (function(SKELETON_TYPE2) {
         SKELETON_TYPE2[SKELETON_TYPE2["number"] = 0] = "number";
         SKELETON_TYPE2[SKELETON_TYPE2["dateTime"] = 1] = "dateTime";
       })(SKELETON_TYPE || (exports.SKELETON_TYPE = SKELETON_TYPE = {}));
       function isLiteralElement(el) {
-        return el.type === TYPE.literal;
+        return el.type === TYPE2.literal;
       }
       function isArgumentElement(el) {
-        return el.type === TYPE.argument;
+        return el.type === TYPE2.argument;
       }
       function isNumberElement(el) {
-        return el.type === TYPE.number;
+        return el.type === TYPE2.number;
       }
       function isDateElement(el) {
-        return el.type === TYPE.date;
+        return el.type === TYPE2.date;
       }
       function isTimeElement(el) {
-        return el.type === TYPE.time;
+        return el.type === TYPE2.time;
       }
       function isSelectElement(el) {
-        return el.type === TYPE.select;
+        return el.type === TYPE2.select;
       }
       function isPluralElement(el) {
-        return el.type === TYPE.plural;
+        return el.type === TYPE2.plural;
       }
       function isPoundElement(el) {
-        return el.type === TYPE.pound;
+        return el.type === TYPE2.pound;
       }
       function isTagElement(el) {
-        return el.type === TYPE.tag;
+        return el.type === TYPE2.tag;
       }
       function isNumberSkeleton(el) {
         return !!(el && typeof el === "object" && el.type === SKELETON_TYPE.number);
@@ -20488,13 +20488,13 @@
       }
       function createLiteralElement(value) {
         return {
-          type: TYPE.literal,
+          type: TYPE2.literal,
           value
         };
       }
       function createNumberElement(value, style2) {
         return {
-          type: TYPE.number,
+          type: TYPE2.number,
           value,
           style: style2
         };
@@ -166680,6 +166680,13 @@
       showResults: "Show results",
       refine: "Refine",
       reset: "Reset",
+      // Filterraden (design_handoff_filterrad, variant 5a).
+      filterClearGroup: "Clear",
+      filterDone: "Done",
+      filterCatalogsLine: "{n} active catalogs under {type}",
+      filterActiveLine: "{n} active filters",
+      filterActiveLineOne: "1 active filter",
+      filterKeywordPlaceholder: "Keyword",
       type: "Type",
       movieGenres: "Movie genres",
       seriesGenres: "TV genres",
@@ -166859,6 +166866,23 @@
       webhooksScheduleHint: "Rules run automatically shortly after launch and every 6 hours while the app is open.",
       settingsGroupSystem: "SYSTEM",
       settingsPageTvMode: "TV mode",
+      tvKeyboardModeLabel: "Keyboard on TV",
+      tvKeyboardModeDesc: "Automatic uses Lumio\u2019s own keys for search and filters, and the system keyboard for long or secret fields \u2014 where you can type from your phone, use voice or a password manager.",
+      tvKeyboardModeAuto: "Automatic",
+      tvKeyboardModeLumio: "Lumio\u2019s own",
+      tvKeyboardModeSystem: "System",
+      tvHintModeLabel: "Help text in settings",
+      tvHintModeDesc: "A switch, a segment and a slider already show where the row stands \u2014 a sentence below them that repeats it is a second line to read from ten feet away.",
+      tvHintModeNever: "Never",
+      tvHintModeValue: "Where it adds something",
+      tvHintModeAlways: "Always",
+      // Raden över klockan när den har något att säga (lib/tv-greeting.ts).
+      tvGreetingResume: "{minutes} min left of {title}",
+      tvGreetingResumeEpisode: "{minutes} min left of {title} {episode}",
+      tvGreetingReleaseToday: "{title} is out now",
+      tvGreetingReleaseTomorrow: "{title} arrives tomorrow",
+      tvGreetingReleaseSoon: "{title} arrives in {days} days",
+      tvGreetingNight: "Still up",
       settingsPageOverview: "Overview",
       settingsPageAccount: "Account & profiles",
       settingsPageLibrary: "Library & metadata",
@@ -167327,13 +167351,13 @@
       ovKickerAction: "ACTION",
       ovTraktTitle: "Trakt",
       ovTraktConnectedDesc: "Connected \u2014 playback and lists sync.",
-      ovTraktMissingDesc: "Not connected \u2014 connect to sync watch state across devices.",
+      ovTraktMissingDesc: "Not connected \u2014 watch state stays on this device.",
       ovFfmpegTitle: "Video tools missing on this device",
-      ovFfmpegMissingDesc: "The bundled ffmpeg is not available for this device's processor. Playback still works, but casting, the local proxy stream, chapters, Dolby Vision detection and subtitle sync are disabled.",
+      ovFfmpegMissingDesc: "No ffmpeg for this processor \u2014 casting, chapters and subtitle sync are off.",
       ovOpenTracking: "Open Tracking services",
       ovTmdbTitle: "TMDb key",
       ovTmdbOkDesc: "Saved \u2014 catalogs and title logos load.",
-      ovTmdbDefaultDesc: "Built-in default key in use \u2014 Home keeps its rows. Set your own key for a higher quota.",
+      ovTmdbDefaultDesc: "Built-in key in use \u2014 your own gives a higher quota.",
       ovTmdbMissingDesc: "Missing \u2014 Home loses its catalog rows.",
       ovOpenLibrary: "Open Library & metadata",
       appLanguageDesc: "Language of the app interface. Stored per profile.",
@@ -167739,13 +167763,13 @@
       traktMirrorLocalOnly: "On this device only",
       ovOpenSubsTitle: "Subtitles",
       ovOpenSubsOkDesc: "OpenSubtitles key saved \u2014 subtitle search is available.",
-      ovOpenSubsMissingDesc: "No OpenSubtitles key. Subtitle search is limited without one.",
+      ovOpenSubsMissingDesc: "No key \u2014 subtitle search is limited.",
       ovGroqTitle: "AI features",
       ovGroqOkDesc: "Groq key saved.",
-      ovGroqMissingDesc: "No Groq key. AI-assisted features stay off.",
+      ovGroqMissingDesc: "No Groq key \u2014 AI features are off.",
       ovSpotifyTitle: "Music",
       ovSpotifyOkDesc: "Spotify credentials saved.",
-      ovSpotifyMissingDesc: "No Spotify credentials. Soundtracks stay unavailable.",
+      ovSpotifyMissingDesc: "No credentials \u2014 soundtracks unavailable.",
       ovOpenSettings: "Open settings",
       traktAutoRemoveMovies: "Remove watched movies from the watchlist",
       traktAutoRemoveMoviesHint: "A film you have seen leaves the list automatically \u2014 and frees a slot on Trakt.",
@@ -168012,6 +168036,9 @@
       advTransferFailed: "Could not send",
       advTransferWrongCode: "Wrong code. Attempts left: {n}.",
       appStarting: "Starting Lumio",
+      // Splashens statusrad, tre steg i samma slot (se BootSpinner).
+      splashStatusLibrary: "Loading your library",
+      splashStatusAlmost: "Almost there",
       remoteConnecting: "Connecting to Lumio at home\u2026",
       clientStartFailed: "The client could not start",
       clientStartFailedHint: "This is the actual error from the app, not a generic fallback.",
@@ -168640,12 +168667,20 @@
       hpUseOwnImagesOffHint: "Random background from your library",
       hpBackgroundUrlsPlaceholder: "https://example.com/background-1.jpg\nhttps://example.com/background-2.jpg",
       hpOneUrlPerLine: "One URL per line. Images rotate randomly on every visit to the home page.",
+      hpBackgroundCopyTitle: "Heading",
+      hpBackgroundCopySubtitle: "Subtitle",
+      hpBackgroundCopyHint: "Shown over your own background images, in the same place and style as the hero text. Leave empty for no text.",
       hpUploadedAlt: "Uploaded {num}",
       hpUploadedImage: "Uploaded image {num}",
       hpStoredLocally: "Stored locally in your profile",
       hpUpload: "Upload",
       hpHomeEyebrow: "Home page",
       hpSearchFieldTitle: "Search field",
+      hpTopSlotTitle: "Top row",
+      hpTopSlotHint: "What sits at the top centre: the filter row or a search field. Filters always win on pages that have them, so the two can never share the spot.",
+      hpTopSlotFilterPages: "Filters where they apply",
+      hpTopSlotFilterAll: "Filters on every page",
+      hpTopSlotSearch: "Search field",
       hpSearchFieldHint: "Show or hide the large search field at the top of the home page.",
       hpSearchStaysHint: "Search remains available in the top menu",
       hpSearchMoviesSeries: "Search movies, series\u2026",
@@ -169236,6 +169271,13 @@
       showResults: "Visa resultat",
       refine: "F\xF6rfina",
       reset: "\xC5terst\xE4ll",
+      // Filterraden (design_handoff_filterrad, variant 5a).
+      filterClearGroup: "Rensa",
+      filterDone: "Klar",
+      filterCatalogsLine: "{n} aktiva kataloger under {type}",
+      filterActiveLine: "{n} aktiva filter",
+      filterActiveLineOne: "1 aktivt filter",
+      filterKeywordPlaceholder: "Nyckelord",
       type: "Typ",
       movieGenres: "Filmgenrer",
       seriesGenres: "TV-genrer",
@@ -169415,6 +169457,22 @@
       webhooksScheduleHint: "Reglerna k\xF6rs automatiskt strax efter start och var 6:e timme medan appen \xE4r ig\xE5ng.",
       settingsGroupSystem: "SYSTEM",
       settingsPageTvMode: "TV-l\xE4ge",
+      tvKeyboardModeLabel: "Tangentbord p\xE5 TV",
+      tvKeyboardModeDesc: "Automatiskt anv\xE4nder Lumios egna tangenter f\xF6r s\xF6k och filter, och systemets tangentbord f\xF6r l\xE5nga eller hemliga f\xE4lt \u2014 d\xE4r kan du skriva fr\xE5n telefonen, anv\xE4nda r\xF6sten eller en l\xF6senordshanterare.",
+      tvKeyboardModeAuto: "Automatiskt",
+      tvKeyboardModeLumio: "Lumios eget",
+      tvKeyboardModeSystem: "Systemets",
+      tvHintModeLabel: "Hj\xE4lptext i inst\xE4llningarna",
+      tvHintModeDesc: "En switch, ett segment och ett reglage visar redan var raden st\xE5r \u2014 en mening under dem som upprepar det \xE4r en andra rad att l\xE4sa p\xE5 tio fots avst\xE5nd.",
+      tvHintModeNever: "Aldrig",
+      tvHintModeValue: "D\xE4r den tillf\xF6r n\xE5got",
+      tvHintModeAlways: "Alltid",
+      tvGreetingResume: "{minutes} min kvar av {title}",
+      tvGreetingResumeEpisode: "{minutes} min kvar av {title} {episode}",
+      tvGreetingReleaseToday: "{title} finns nu",
+      tvGreetingReleaseTomorrow: "{title} sl\xE4pps imorgon",
+      tvGreetingReleaseSoon: "{title} sl\xE4pps om {days} dagar",
+      tvGreetingNight: "Fortfarande vaken",
       settingsPageOverview: "\xD6versikt",
       settingsPageAccount: "Konto & profiler",
       settingsPageLibrary: "Bibliotek & metadata",
@@ -169881,13 +169939,13 @@
       ovKickerAction: "\xC5TG\xC4RD",
       ovTraktTitle: "Trakt",
       ovTraktConnectedDesc: "Ansluten \u2014 visningar och listor synkas.",
-      ovTraktMissingDesc: "Inte ansluten \u2014 anslut f\xF6r att synka tittarstatus mellan enheter.",
+      ovTraktMissingDesc: "Inte ansluten \u2014 tittarstatus stannar p\xE5 den h\xE4r enheten.",
       ovFfmpegTitle: "Videoverktyg saknas p\xE5 den h\xE4r enheten",
-      ovFfmpegMissingDesc: "Den medskickade ffmpeg finns inte f\xF6r enhetens processor. Uppspelning fungerar, men casting, den lokala proxystr\xF6mmen, kapitel, Dolby Vision-detektering och undertextsynk \xE4r avst\xE4ngda.",
+      ovFfmpegMissingDesc: "Ingen ffmpeg f\xF6r processorn \u2014 casting, kapitel och undertextsynk \xE4r av.",
       ovOpenTracking: "\xD6ppna Sp\xE5rningstj\xE4nster",
       ovTmdbTitle: "TMDb-nyckel",
       ovTmdbOkDesc: "Sparad \u2014 kataloger och titellogotyper h\xE4mtas.",
-      ovTmdbDefaultDesc: "Inbyggd standardnyckel anv\xE4nds \u2014 Hem har sina rader. S\xE4tt en egen nyckel f\xF6r h\xF6gre kvot.",
+      ovTmdbDefaultDesc: "Standardnyckel anv\xE4nds \u2014 egen nyckel ger h\xF6gre kvot.",
       ovTmdbMissingDesc: "Saknas \u2014 Hem tappar sina katalograder.",
       ovOpenLibrary: "\xD6ppna Bibliotek & metadata",
       appLanguageDesc: "Spr\xE5k i appens gr\xE4nssnitt. Sparas per profil.",
@@ -170288,13 +170346,13 @@
       traktMirrorLocalOnly: "Bara p\xE5 den h\xE4r enheten",
       ovOpenSubsTitle: "Undertexter",
       ovOpenSubsOkDesc: "OpenSubtitles-nyckel sparad \u2014 undertexts\xF6kning fungerar.",
-      ovOpenSubsMissingDesc: "Ingen OpenSubtitles-nyckel. Undertexts\xF6kningen \xE4r begr\xE4nsad utan en.",
+      ovOpenSubsMissingDesc: "Ingen nyckel \u2014 undertexts\xF6kningen \xE4r begr\xE4nsad.",
       ovGroqTitle: "AI-funktioner",
       ovGroqOkDesc: "Groq-nyckel sparad.",
-      ovGroqMissingDesc: "Ingen Groq-nyckel. AI-funktioner \xE4r avst\xE4ngda.",
+      ovGroqMissingDesc: "Ingen Groq-nyckel \u2014 AI-funktioner \xE4r av.",
       ovSpotifyTitle: "Musik",
       ovSpotifyOkDesc: "Spotify-uppgifter sparade.",
-      ovSpotifyMissingDesc: "Inga Spotify-uppgifter. Soundtracks \xE4r inte tillg\xE4ngliga.",
+      ovSpotifyMissingDesc: "Inga uppgifter \u2014 soundtracks otillg\xE4ngliga.",
       ovOpenSettings: "\xD6ppna inst\xE4llningar",
       traktAutoRemoveMovies: "Ta bort sedda filmer fr\xE5n bevakningslistan",
       traktAutoRemoveMoviesHint: "En film du sett l\xE4mnar listan automatiskt \u2014 och frig\xF6r en plats hos Trakt.",
@@ -170556,6 +170614,8 @@
       advTransferFailed: "Kunde inte skicka",
       advTransferWrongCode: "Fel kod. F\xF6rs\xF6k kvar: {n}.",
       appStarting: "Startar Lumio",
+      splashStatusLibrary: "Laddar ditt bibliotek",
+      splashStatusAlmost: "N\xE4stan klart",
       remoteConnecting: "Ansluter till Lumio hemma\u2026",
       clientStartFailed: "Klienten kunde inte starta korrekt",
       clientStartFailedHint: "Det h\xE4r \xE4r det faktiska felmeddelandet fr\xE5n appen, inte en generisk reserv.",
@@ -171178,12 +171238,20 @@
       hpUseOwnImagesOffHint: "Slumpm\xE4ssig bakgrund fr\xE5n ditt bibliotek",
       hpBackgroundUrlsPlaceholder: "https://exempel.se/bakgrund-1.jpg\nhttps://exempel.se/bakgrund-2.jpg",
       hpOneUrlPerLine: "En URL per rad. Bilder roteras slumpvist vid varje bes\xF6k p\xE5 startsidan.",
+      hpBackgroundCopyTitle: "Rubrik",
+      hpBackgroundCopySubtitle: "Undertitel",
+      hpBackgroundCopyHint: "Visas \xF6ver dina egna bakgrundsbilder, p\xE5 samma plats och i samma stil som herons text. Tomt = ingen text.",
       hpUploadedAlt: "Uppladdad {num}",
       hpUploadedImage: "Uppladdad bild {num}",
       hpStoredLocally: "Sparas lokalt i din profil",
       hpUpload: "Ladda upp",
       hpHomeEyebrow: "Startsida",
       hpSearchFieldTitle: "S\xF6kf\xE4lt",
+      hpTopSlotTitle: "Toppraden",
+      hpTopSlotHint: "Vad som st\xE5r h\xF6gst upp i mitten: filterraden eller ett s\xF6kf\xE4lt. Filtret vinner alltid p\xE5 sidor som har filter, s\xE5 de tv\xE5 kan aldrig dela platsen.",
+      hpTopSlotFilterPages: "Filter d\xE4r de h\xF6r hemma",
+      hpTopSlotFilterAll: "Filter p\xE5 alla sidor",
+      hpTopSlotSearch: "S\xF6kf\xE4lt",
       hpSearchFieldHint: "Visa eller d\xF6lj det stora s\xF6kf\xE4ltet h\xF6gst upp p\xE5 startsidan.",
       hpSearchStaysHint: "S\xF6kfunktionen finns kvar i topp-menyn",
       hpSearchMoviesSeries: "S\xF6k filmer, serier\u2026",
@@ -171835,6 +171903,22 @@
     cyan: "#5FD3E8",
     warn: "#F3C969"
   };
+  var TYPE = {
+    /** Sifferbrickor och räknare. */
+    micro: "var(--st-micro)",
+    /** ÅTGÄRD/KLART, eyebrow, versala etiketter. */
+    label: "var(--st-label)",
+    /** Hjälptext under en rad. */
+    small: "var(--st-small)",
+    /** Radtitlar, länkar, fältvärden — skalans mittpunkt. */
+    body: "var(--st-body)",
+    /** Korttitel. */
+    h3: "var(--st-h3)",
+    /** Sektionsrubrik. */
+    h2: "var(--st-h2)",
+    /** Sidrubrik. */
+    h1: "var(--st-h1)"
+  };
   var inputStyle = {
     width: "100%",
     minHeight: 44,
@@ -171843,12 +171927,12 @@
     border: `1px solid ${TOKENS.border}`,
     background: TOKENS.surface0,
     color: TOKENS.text,
-    fontSize: 14,
+    fontSize: TYPE.body,
     outline: "none",
     boxSizing: "border-box"
   };
   var eyebrowStyle = {
-    fontSize: 11,
+    fontSize: TYPE.label,
     fontWeight: 600,
     letterSpacing: "0.14em",
     color: TOKENS.textMute,
@@ -172057,8 +172141,8 @@
             }
           ),
           label ? /* @__PURE__ */ jsxs("span", { style: { flex: 1, display: "flex", flexDirection: "column", gap: 2 }, children: [
-            /* @__PURE__ */ jsx("span", { style: { fontSize: 14.5, color: TOKENS.text, fontWeight: 500 }, children: label }),
-            hint ? /* @__PURE__ */ jsx("span", { style: { fontSize: 12.5, color: TOKENS.textMute, lineHeight: 1.4 }, children: hint }) : null
+            /* @__PURE__ */ jsx("span", { style: { fontSize: TYPE.body, color: TOKENS.text, fontWeight: 500 }, children: label }),
+            hint ? /* @__PURE__ */ jsx("span", { style: { fontSize: TYPE.small, color: TOKENS.textMute, lineHeight: 1.4 }, children: hint }) : null
           ] }) : null,
           right
         ]
@@ -172077,9 +172161,9 @@
     title
   }) {
     const sizes = {
-      sm: { padding: "6px 10px", fontSize: 12 },
-      md: { padding: "9px 14px", fontSize: 13 },
-      lg: { padding: "11px 18px", fontSize: 14 }
+      sm: { padding: "6px 10px", fontSize: TYPE.small },
+      md: { padding: "9px 14px", fontSize: TYPE.body },
+      lg: { padding: "11px 18px", fontSize: TYPE.body }
     };
     const variants = {
       ghost: {

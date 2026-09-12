@@ -310,7 +310,12 @@ export function LiveTvHub({ onNavigate }: Props) {
         data-f-right="[data-live-tv-group], [data-live-tv-epg]"
         onClick={() => setSearchKeyboardOpen(true)}
         className="truncate"
-        style={{ display: 'flex', alignItems: 'center', gap: 8, borderRadius: 999, border: '1px solid transparent', background: LT.neutral, padding: '0 14px', height: 36, minWidth: 260, maxWidth: 360, color: query ? LT.text : LT.muted, fontSize: 13, fontFamily: 'inherit', cursor: 'pointer', textAlign: 'left' }}
+        /* Bredare på TV (Jerry 2026-09-12: "söken, texten får ej plats hela
+           vägen och kapas lite"). 260–360 räckte till "Sök" men inte till
+           en skriven fråga eller den längre engelska platshållaren, och
+           `truncate` klippte då i stället för att visa. 320–520 ger plats
+           utan att tränga gruppväljaren och EPG-knappen i samma rad. */
+        style={{ display: 'flex', alignItems: 'center', gap: 10, borderRadius: 999, border: '1px solid transparent', background: LT.neutral, padding: '0 18px', height: 36, minWidth: 320, maxWidth: 520, color: query ? LT.text : LT.muted, fontSize: 13, fontFamily: 'inherit', cursor: 'pointer', textAlign: 'left' }}
       >
         <Icon.Search size={14} />
         <span className="truncate">{query || h('searchPlaceholder')}</span>

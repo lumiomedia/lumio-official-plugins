@@ -1657,6 +1657,13 @@
           showResults: "Show results",
           refine: "Refine",
           reset: "Reset",
+          // Filterraden (design_handoff_filterrad, variant 5a).
+          filterClearGroup: "Clear",
+          filterDone: "Done",
+          filterCatalogsLine: "{n} active catalogs under {type}",
+          filterActiveLine: "{n} active filters",
+          filterActiveLineOne: "1 active filter",
+          filterKeywordPlaceholder: "Keyword",
           type: "Type",
           movieGenres: "Movie genres",
           seriesGenres: "TV genres",
@@ -1836,6 +1843,23 @@
           webhooksScheduleHint: "Rules run automatically shortly after launch and every 6 hours while the app is open.",
           settingsGroupSystem: "SYSTEM",
           settingsPageTvMode: "TV mode",
+          tvKeyboardModeLabel: "Keyboard on TV",
+          tvKeyboardModeDesc: "Automatic uses Lumio\u2019s own keys for search and filters, and the system keyboard for long or secret fields \u2014 where you can type from your phone, use voice or a password manager.",
+          tvKeyboardModeAuto: "Automatic",
+          tvKeyboardModeLumio: "Lumio\u2019s own",
+          tvKeyboardModeSystem: "System",
+          tvHintModeLabel: "Help text in settings",
+          tvHintModeDesc: "A switch, a segment and a slider already show where the row stands \u2014 a sentence below them that repeats it is a second line to read from ten feet away.",
+          tvHintModeNever: "Never",
+          tvHintModeValue: "Where it adds something",
+          tvHintModeAlways: "Always",
+          // Raden över klockan när den har något att säga (lib/tv-greeting.ts).
+          tvGreetingResume: "{minutes} min left of {title}",
+          tvGreetingResumeEpisode: "{minutes} min left of {title} {episode}",
+          tvGreetingReleaseToday: "{title} is out now",
+          tvGreetingReleaseTomorrow: "{title} arrives tomorrow",
+          tvGreetingReleaseSoon: "{title} arrives in {days} days",
+          tvGreetingNight: "Still up",
           settingsPageOverview: "Overview",
           settingsPageAccount: "Account & profiles",
           settingsPageLibrary: "Library & metadata",
@@ -2304,13 +2328,13 @@
           ovKickerAction: "ACTION",
           ovTraktTitle: "Trakt",
           ovTraktConnectedDesc: "Connected \u2014 playback and lists sync.",
-          ovTraktMissingDesc: "Not connected \u2014 connect to sync watch state across devices.",
+          ovTraktMissingDesc: "Not connected \u2014 watch state stays on this device.",
           ovFfmpegTitle: "Video tools missing on this device",
-          ovFfmpegMissingDesc: "The bundled ffmpeg is not available for this device's processor. Playback still works, but casting, the local proxy stream, chapters, Dolby Vision detection and subtitle sync are disabled.",
+          ovFfmpegMissingDesc: "No ffmpeg for this processor \u2014 casting, chapters and subtitle sync are off.",
           ovOpenTracking: "Open Tracking services",
           ovTmdbTitle: "TMDb key",
           ovTmdbOkDesc: "Saved \u2014 catalogs and title logos load.",
-          ovTmdbDefaultDesc: "Built-in default key in use \u2014 Home keeps its rows. Set your own key for a higher quota.",
+          ovTmdbDefaultDesc: "Built-in key in use \u2014 your own gives a higher quota.",
           ovTmdbMissingDesc: "Missing \u2014 Home loses its catalog rows.",
           ovOpenLibrary: "Open Library & metadata",
           appLanguageDesc: "Language of the app interface. Stored per profile.",
@@ -2716,13 +2740,13 @@
           traktMirrorLocalOnly: "On this device only",
           ovOpenSubsTitle: "Subtitles",
           ovOpenSubsOkDesc: "OpenSubtitles key saved \u2014 subtitle search is available.",
-          ovOpenSubsMissingDesc: "No OpenSubtitles key. Subtitle search is limited without one.",
+          ovOpenSubsMissingDesc: "No key \u2014 subtitle search is limited.",
           ovGroqTitle: "AI features",
           ovGroqOkDesc: "Groq key saved.",
-          ovGroqMissingDesc: "No Groq key. AI-assisted features stay off.",
+          ovGroqMissingDesc: "No Groq key \u2014 AI features are off.",
           ovSpotifyTitle: "Music",
           ovSpotifyOkDesc: "Spotify credentials saved.",
-          ovSpotifyMissingDesc: "No Spotify credentials. Soundtracks stay unavailable.",
+          ovSpotifyMissingDesc: "No credentials \u2014 soundtracks unavailable.",
           ovOpenSettings: "Open settings",
           traktAutoRemoveMovies: "Remove watched movies from the watchlist",
           traktAutoRemoveMoviesHint: "A film you have seen leaves the list automatically \u2014 and frees a slot on Trakt.",
@@ -2989,6 +3013,9 @@
           advTransferFailed: "Could not send",
           advTransferWrongCode: "Wrong code. Attempts left: {n}.",
           appStarting: "Starting Lumio",
+          // Splashens statusrad, tre steg i samma slot (se BootSpinner).
+          splashStatusLibrary: "Loading your library",
+          splashStatusAlmost: "Almost there",
           remoteConnecting: "Connecting to Lumio at home\u2026",
           clientStartFailed: "The client could not start",
           clientStartFailedHint: "This is the actual error from the app, not a generic fallback.",
@@ -3617,12 +3644,20 @@
           hpUseOwnImagesOffHint: "Random background from your library",
           hpBackgroundUrlsPlaceholder: "https://example.com/background-1.jpg\nhttps://example.com/background-2.jpg",
           hpOneUrlPerLine: "One URL per line. Images rotate randomly on every visit to the home page.",
+          hpBackgroundCopyTitle: "Heading",
+          hpBackgroundCopySubtitle: "Subtitle",
+          hpBackgroundCopyHint: "Shown over your own background images, in the same place and style as the hero text. Leave empty for no text.",
           hpUploadedAlt: "Uploaded {num}",
           hpUploadedImage: "Uploaded image {num}",
           hpStoredLocally: "Stored locally in your profile",
           hpUpload: "Upload",
           hpHomeEyebrow: "Home page",
           hpSearchFieldTitle: "Search field",
+          hpTopSlotTitle: "Top row",
+          hpTopSlotHint: "What sits at the top centre: the filter row or a search field. Filters always win on pages that have them, so the two can never share the spot.",
+          hpTopSlotFilterPages: "Filters where they apply",
+          hpTopSlotFilterAll: "Filters on every page",
+          hpTopSlotSearch: "Search field",
           hpSearchFieldHint: "Show or hide the large search field at the top of the home page.",
           hpSearchStaysHint: "Search remains available in the top menu",
           hpSearchMoviesSeries: "Search movies, series\u2026",
@@ -4213,6 +4248,13 @@
           showResults: "Visa resultat",
           refine: "F\xF6rfina",
           reset: "\xC5terst\xE4ll",
+          // Filterraden (design_handoff_filterrad, variant 5a).
+          filterClearGroup: "Rensa",
+          filterDone: "Klar",
+          filterCatalogsLine: "{n} aktiva kataloger under {type}",
+          filterActiveLine: "{n} aktiva filter",
+          filterActiveLineOne: "1 aktivt filter",
+          filterKeywordPlaceholder: "Nyckelord",
           type: "Typ",
           movieGenres: "Filmgenrer",
           seriesGenres: "TV-genrer",
@@ -4392,6 +4434,22 @@
           webhooksScheduleHint: "Reglerna k\xF6rs automatiskt strax efter start och var 6:e timme medan appen \xE4r ig\xE5ng.",
           settingsGroupSystem: "SYSTEM",
           settingsPageTvMode: "TV-l\xE4ge",
+          tvKeyboardModeLabel: "Tangentbord p\xE5 TV",
+          tvKeyboardModeDesc: "Automatiskt anv\xE4nder Lumios egna tangenter f\xF6r s\xF6k och filter, och systemets tangentbord f\xF6r l\xE5nga eller hemliga f\xE4lt \u2014 d\xE4r kan du skriva fr\xE5n telefonen, anv\xE4nda r\xF6sten eller en l\xF6senordshanterare.",
+          tvKeyboardModeAuto: "Automatiskt",
+          tvKeyboardModeLumio: "Lumios eget",
+          tvKeyboardModeSystem: "Systemets",
+          tvHintModeLabel: "Hj\xE4lptext i inst\xE4llningarna",
+          tvHintModeDesc: "En switch, ett segment och ett reglage visar redan var raden st\xE5r \u2014 en mening under dem som upprepar det \xE4r en andra rad att l\xE4sa p\xE5 tio fots avst\xE5nd.",
+          tvHintModeNever: "Aldrig",
+          tvHintModeValue: "D\xE4r den tillf\xF6r n\xE5got",
+          tvHintModeAlways: "Alltid",
+          tvGreetingResume: "{minutes} min kvar av {title}",
+          tvGreetingResumeEpisode: "{minutes} min kvar av {title} {episode}",
+          tvGreetingReleaseToday: "{title} finns nu",
+          tvGreetingReleaseTomorrow: "{title} sl\xE4pps imorgon",
+          tvGreetingReleaseSoon: "{title} sl\xE4pps om {days} dagar",
+          tvGreetingNight: "Fortfarande vaken",
           settingsPageOverview: "\xD6versikt",
           settingsPageAccount: "Konto & profiler",
           settingsPageLibrary: "Bibliotek & metadata",
@@ -4858,13 +4916,13 @@
           ovKickerAction: "\xC5TG\xC4RD",
           ovTraktTitle: "Trakt",
           ovTraktConnectedDesc: "Ansluten \u2014 visningar och listor synkas.",
-          ovTraktMissingDesc: "Inte ansluten \u2014 anslut f\xF6r att synka tittarstatus mellan enheter.",
+          ovTraktMissingDesc: "Inte ansluten \u2014 tittarstatus stannar p\xE5 den h\xE4r enheten.",
           ovFfmpegTitle: "Videoverktyg saknas p\xE5 den h\xE4r enheten",
-          ovFfmpegMissingDesc: "Den medskickade ffmpeg finns inte f\xF6r enhetens processor. Uppspelning fungerar, men casting, den lokala proxystr\xF6mmen, kapitel, Dolby Vision-detektering och undertextsynk \xE4r avst\xE4ngda.",
+          ovFfmpegMissingDesc: "Ingen ffmpeg f\xF6r processorn \u2014 casting, kapitel och undertextsynk \xE4r av.",
           ovOpenTracking: "\xD6ppna Sp\xE5rningstj\xE4nster",
           ovTmdbTitle: "TMDb-nyckel",
           ovTmdbOkDesc: "Sparad \u2014 kataloger och titellogotyper h\xE4mtas.",
-          ovTmdbDefaultDesc: "Inbyggd standardnyckel anv\xE4nds \u2014 Hem har sina rader. S\xE4tt en egen nyckel f\xF6r h\xF6gre kvot.",
+          ovTmdbDefaultDesc: "Standardnyckel anv\xE4nds \u2014 egen nyckel ger h\xF6gre kvot.",
           ovTmdbMissingDesc: "Saknas \u2014 Hem tappar sina katalograder.",
           ovOpenLibrary: "\xD6ppna Bibliotek & metadata",
           appLanguageDesc: "Spr\xE5k i appens gr\xE4nssnitt. Sparas per profil.",
@@ -5265,13 +5323,13 @@
           traktMirrorLocalOnly: "Bara p\xE5 den h\xE4r enheten",
           ovOpenSubsTitle: "Undertexter",
           ovOpenSubsOkDesc: "OpenSubtitles-nyckel sparad \u2014 undertexts\xF6kning fungerar.",
-          ovOpenSubsMissingDesc: "Ingen OpenSubtitles-nyckel. Undertexts\xF6kningen \xE4r begr\xE4nsad utan en.",
+          ovOpenSubsMissingDesc: "Ingen nyckel \u2014 undertexts\xF6kningen \xE4r begr\xE4nsad.",
           ovGroqTitle: "AI-funktioner",
           ovGroqOkDesc: "Groq-nyckel sparad.",
-          ovGroqMissingDesc: "Ingen Groq-nyckel. AI-funktioner \xE4r avst\xE4ngda.",
+          ovGroqMissingDesc: "Ingen Groq-nyckel \u2014 AI-funktioner \xE4r av.",
           ovSpotifyTitle: "Musik",
           ovSpotifyOkDesc: "Spotify-uppgifter sparade.",
-          ovSpotifyMissingDesc: "Inga Spotify-uppgifter. Soundtracks \xE4r inte tillg\xE4ngliga.",
+          ovSpotifyMissingDesc: "Inga uppgifter \u2014 soundtracks otillg\xE4ngliga.",
           ovOpenSettings: "\xD6ppna inst\xE4llningar",
           traktAutoRemoveMovies: "Ta bort sedda filmer fr\xE5n bevakningslistan",
           traktAutoRemoveMoviesHint: "En film du sett l\xE4mnar listan automatiskt \u2014 och frig\xF6r en plats hos Trakt.",
@@ -5533,6 +5591,8 @@
           advTransferFailed: "Kunde inte skicka",
           advTransferWrongCode: "Fel kod. F\xF6rs\xF6k kvar: {n}.",
           appStarting: "Startar Lumio",
+          splashStatusLibrary: "Laddar ditt bibliotek",
+          splashStatusAlmost: "N\xE4stan klart",
           remoteConnecting: "Ansluter till Lumio hemma\u2026",
           clientStartFailed: "Klienten kunde inte starta korrekt",
           clientStartFailedHint: "Det h\xE4r \xE4r det faktiska felmeddelandet fr\xE5n appen, inte en generisk reserv.",
@@ -6155,12 +6215,20 @@
           hpUseOwnImagesOffHint: "Slumpm\xE4ssig bakgrund fr\xE5n ditt bibliotek",
           hpBackgroundUrlsPlaceholder: "https://exempel.se/bakgrund-1.jpg\nhttps://exempel.se/bakgrund-2.jpg",
           hpOneUrlPerLine: "En URL per rad. Bilder roteras slumpvist vid varje bes\xF6k p\xE5 startsidan.",
+          hpBackgroundCopyTitle: "Rubrik",
+          hpBackgroundCopySubtitle: "Undertitel",
+          hpBackgroundCopyHint: "Visas \xF6ver dina egna bakgrundsbilder, p\xE5 samma plats och i samma stil som herons text. Tomt = ingen text.",
           hpUploadedAlt: "Uppladdad {num}",
           hpUploadedImage: "Uppladdad bild {num}",
           hpStoredLocally: "Sparas lokalt i din profil",
           hpUpload: "Ladda upp",
           hpHomeEyebrow: "Startsida",
           hpSearchFieldTitle: "S\xF6kf\xE4lt",
+          hpTopSlotTitle: "Toppraden",
+          hpTopSlotHint: "Vad som st\xE5r h\xF6gst upp i mitten: filterraden eller ett s\xF6kf\xE4lt. Filtret vinner alltid p\xE5 sidor som har filter, s\xE5 de tv\xE5 kan aldrig dela platsen.",
+          hpTopSlotFilterPages: "Filter d\xE4r de h\xF6r hemma",
+          hpTopSlotFilterAll: "Filter p\xE5 alla sidor",
+          hpTopSlotSearch: "S\xF6kf\xE4lt",
           hpSearchFieldHint: "Visa eller d\xF6lj det stora s\xF6kf\xE4ltet h\xF6gst upp p\xE5 startsidan.",
           hpSearchStaysHint: "S\xF6kfunktionen finns kvar i topp-menyn",
           hpSearchMoviesSeries: "S\xF6k filmer, serier\u2026",
@@ -28361,9 +28429,9 @@
         toIterator: () => toIterator2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function forwardRef3(component) {
-        return (0, import_react102.forwardRef)(component);
+        return (0, import_react103.forwardRef)(component);
       }
       var toIterator2 = (obj) => {
         return {
@@ -29570,49 +29638,49 @@
       exports.isDateTimeSkeleton = isDateTimeSkeleton;
       exports.createLiteralElement = createLiteralElement;
       exports.createNumberElement = createNumberElement;
-      var TYPE;
-      (function(TYPE2) {
-        TYPE2[TYPE2["literal"] = 0] = "literal";
-        TYPE2[TYPE2["argument"] = 1] = "argument";
-        TYPE2[TYPE2["number"] = 2] = "number";
-        TYPE2[TYPE2["date"] = 3] = "date";
-        TYPE2[TYPE2["time"] = 4] = "time";
-        TYPE2[TYPE2["select"] = 5] = "select";
-        TYPE2[TYPE2["plural"] = 6] = "plural";
-        TYPE2[TYPE2["pound"] = 7] = "pound";
-        TYPE2[TYPE2["tag"] = 8] = "tag";
-      })(TYPE || (exports.TYPE = TYPE = {}));
+      var TYPE2;
+      (function(TYPE3) {
+        TYPE3[TYPE3["literal"] = 0] = "literal";
+        TYPE3[TYPE3["argument"] = 1] = "argument";
+        TYPE3[TYPE3["number"] = 2] = "number";
+        TYPE3[TYPE3["date"] = 3] = "date";
+        TYPE3[TYPE3["time"] = 4] = "time";
+        TYPE3[TYPE3["select"] = 5] = "select";
+        TYPE3[TYPE3["plural"] = 6] = "plural";
+        TYPE3[TYPE3["pound"] = 7] = "pound";
+        TYPE3[TYPE3["tag"] = 8] = "tag";
+      })(TYPE2 || (exports.TYPE = TYPE2 = {}));
       var SKELETON_TYPE;
       (function(SKELETON_TYPE2) {
         SKELETON_TYPE2[SKELETON_TYPE2["number"] = 0] = "number";
         SKELETON_TYPE2[SKELETON_TYPE2["dateTime"] = 1] = "dateTime";
       })(SKELETON_TYPE || (exports.SKELETON_TYPE = SKELETON_TYPE = {}));
       function isLiteralElement(el) {
-        return el.type === TYPE.literal;
+        return el.type === TYPE2.literal;
       }
       function isArgumentElement(el) {
-        return el.type === TYPE.argument;
+        return el.type === TYPE2.argument;
       }
       function isNumberElement(el) {
-        return el.type === TYPE.number;
+        return el.type === TYPE2.number;
       }
       function isDateElement(el) {
-        return el.type === TYPE.date;
+        return el.type === TYPE2.date;
       }
       function isTimeElement(el) {
-        return el.type === TYPE.time;
+        return el.type === TYPE2.time;
       }
       function isSelectElement(el) {
-        return el.type === TYPE.select;
+        return el.type === TYPE2.select;
       }
       function isPluralElement(el) {
-        return el.type === TYPE.plural;
+        return el.type === TYPE2.plural;
       }
       function isPoundElement(el) {
-        return el.type === TYPE.pound;
+        return el.type === TYPE2.pound;
       }
       function isTagElement(el) {
-        return el.type === TYPE.tag;
+        return el.type === TYPE2.tag;
       }
       function isNumberSkeleton(el) {
         return !!(el && typeof el === "object" && el.type === SKELETON_TYPE.number);
@@ -29622,13 +29690,13 @@
       }
       function createLiteralElement(value) {
         return {
-          type: TYPE.literal,
+          type: TYPE2.literal,
           value
         };
       }
       function createNumberElement(value, style2) {
         return {
-          type: TYPE.number,
+          type: TYPE2.number,
           value,
           style: style2
         };
@@ -57864,17 +57932,17 @@
         renderFn: () => renderFn2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function getValidChildren2(children) {
-        return import_react102.Children.toArray(children).filter(
-          (child) => (0, import_react102.isValidElement)(child)
+        return import_react103.Children.toArray(children).filter(
+          (child) => (0, import_react103.isValidElement)(child)
         );
       }
       var pickChildren2 = (children, targetChild) => {
         var _a;
         let target2 = [];
-        const withoutTargetChildren = (_a = import_react102.Children.map(children, (item) => {
-          if (!(0, import_react102.isValidElement)(item)) return item;
+        const withoutTargetChildren = (_a = import_react103.Children.map(children, (item) => {
+          if (!(0, import_react103.isValidElement)(item)) return item;
           if (item.type === targetChild) {
             target2.push(item);
             return null;
@@ -58216,7 +58284,7 @@
           refs.forEach((ref) => assignRef(ref, node));
         };
       }
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function canUseDOM() {
         return !!(typeof window !== "undefined" && window.document && window.document.createElement);
       }
@@ -58302,17 +58370,17 @@
         };
       }
       function useDOMRef(ref) {
-        const domRef = (0, import_react102.useRef)(null);
-        (0, import_react102.useImperativeHandle)(ref, () => domRef.current);
+        const domRef = (0, import_react103.useRef)(null);
+        (0, import_react103.useImperativeHandle)(ref, () => domRef.current);
         return domRef;
       }
       function useFocusableRef(ref, focusableRef) {
-        const domRef = (0, import_react102.useRef)(null);
-        (0, import_react102.useImperativeHandle)(ref, () => createFocusableRef(domRef, focusableRef));
+        const domRef = (0, import_react103.useRef)(null);
+        (0, import_react103.useImperativeHandle)(ref, () => createFocusableRef(domRef, focusableRef));
         return domRef;
       }
       function useSyncRef(context, ref) {
-        (0, import_react102.useLayoutEffect)(() => {
+        (0, import_react103.useLayoutEffect)(() => {
           if (context && context.ref && ref && ref.current) {
             context.ref.current = ref.current;
             return () => {
@@ -58394,7 +58462,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_system_rsc = require_dist4();
       var import_i18n12 = require_main5();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_motion2 = require_cjs4();
       var import_utils8 = require_main4();
       var import_overlays = require_main9();
@@ -58426,7 +58494,7 @@
         if (navigate) {
           contents = /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_utils8.RouterProvider, { navigate, useHref, children: contents });
         }
-        const context = (0, import_react102.useMemo)(() => {
+        const context = (0, import_react103.useMemo)(() => {
           if (disableAnimation && skipFramerMotionAnimations) {
             import_framer_motion2.MotionGlobalConfig.skipAnimations = true;
           }
@@ -71708,9 +71776,9 @@
         toIterator: () => toIterator2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function forwardRef3(component) {
-        return (0, import_react102.forwardRef)(component);
+        return (0, import_react103.forwardRef)(component);
       }
       var toIterator2 = (obj) => {
         return {
@@ -71922,7 +71990,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_rsc_utils = require_dist9();
       function useSeparator(props) {
         let domProps = (0, import_react_rsc_utils.filterDOMProps)(props, {
@@ -71953,14 +72021,14 @@
           elementType: typeof Component2 === "string" ? Component2 : "hr",
           orientation
         });
-        const styles = (0, import_react102.useMemo)(
+        const styles = (0, import_react103.useMemo)(
           () => (0, import_theme.divider)({
             orientation,
             className
           }),
           [orientation, className]
         );
-        const getDividerProps = (0, import_react102.useCallback)(
+        const getDividerProps = (0, import_react103.useCallback)(
           (props2 = {}) => ({
             className: styles,
             role: "separator",
@@ -74767,22 +74835,22 @@
         };
       }
       var import_focus2 = require_main14();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_button = require_main16();
       function useReactAriaAccordionItem(props, state, ref) {
         let { item, isDisabled: isDisabledProp } = props;
         let key = item.key;
         let manager = state.selectionManager;
-        let buttonId = (0, import_react102.useId)();
-        let regionId = (0, import_react102.useId)();
+        let buttonId = (0, import_react103.useId)();
+        let regionId = (0, import_react103.useId)();
         let isDisabled = state.disabledKeys.has(item.key) || isDisabledProp;
-        (0, import_react102.useEffect)(() => {
+        (0, import_react103.useEffect)(() => {
           let isFocused = key === state.focusedKey;
           if (isFocused && document.activeElement !== ref.current) {
             ref.current && (0, import_focus2.focusSafely)(ref.current);
           }
         }, [ref, key, state.focusedKey]);
-        let onSelect = (0, import_react102.useCallback)(
+        let onSelect = (0, import_react103.useCallback)(
           (e) => {
             if (!manager.canSelectItem(key)) {
               return;
@@ -74792,7 +74860,7 @@
           },
           [key, manager]
         );
-        const extendFocusSelection = (0, import_react102.useCallback)(
+        const extendFocusSelection = (0, import_react103.useCallback)(
           (toKey2) => {
             if (manager.selectionBehavior === "replace") {
               manager.extendSelection(toKey2);
@@ -74801,7 +74869,7 @@
           },
           [manager]
         );
-        const onKeyDown = (0, import_react102.useCallback)(
+        const onKeyDown = (0, import_react103.useCallback)(
           (event) => {
             const keyMap = {
               ArrowDown: () => {
@@ -78120,14 +78188,14 @@
         useMeasure: () => useMeasure
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useMeasure() {
-        const [dimensions, setDimensions] = (0, import_react102.useState)({
+        const [dimensions, setDimensions] = (0, import_react103.useState)({
           width: null,
           height: null
         });
-        const previousObserver = (0, import_react102.useRef)(null);
-        const customRef = (0, import_react102.useCallback)((node) => {
+        const previousObserver = (0, import_react103.useRef)(null);
+        const customRef = (0, import_react103.useCallback)((node) => {
           if (previousObserver.current) {
             previousObserver.current.disconnect();
             previousObserver.current = null;
@@ -78323,11 +78391,11 @@
           }
         }
       };
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_motion2 = require_cjs4();
       var import_use_measure = require_dist18();
       var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var ResizablePanel2 = (0, import_react102.forwardRef)(
+      var ResizablePanel2 = (0, import_react103.forwardRef)(
         (originalProps, ref) => {
           const { children, ...props } = originalProps;
           let [measureRef, bounds] = (0, import_use_measure.useMeasure)();
@@ -96994,7 +97062,7 @@
       var import_react510 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
-      var import_react102 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
+      var import_react103 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
       var import_tree = require_main12();
       var import_shared_utils = require_dist2();
       var import_theme = require_dist12();
@@ -97046,10 +97114,10 @@
         );
         const children = (0, import_react210.useMemo)(() => {
           let treeChildren = [];
-          import_react102.default.Children.map(childrenProp, (child) => {
+          import_react103.default.Children.map(childrenProp, (child) => {
             var _a2;
-            if (import_react102.default.isValidElement(child) && typeof ((_a2 = child.props) == null ? void 0 : _a2.children) !== "string") {
-              const clonedChild = import_react102.default.cloneElement(child, {
+            if (import_react103.default.isValidElement(child) && typeof ((_a2 = child.props) == null ? void 0 : _a2.children) !== "string") {
+              const clonedChild = import_react103.default.cloneElement(child, {
                 // @ts-ignore
                 hasChildItems: false
               });
@@ -97120,7 +97188,7 @@
             motionProps
           ]
         );
-        const getBaseProps = (0, import_react102.useCallback)((props2 = {}) => {
+        const getBaseProps = (0, import_react103.useCallback)((props2 = {}) => {
           return {
             ref: domRef,
             className: classNames,
@@ -97134,7 +97202,7 @@
             )
           };
         }, []);
-        const handleFocusChanged = (0, import_react102.useCallback)((isFocused, key) => {
+        const handleFocusChanged = (0, import_react103.useCallback)((isFocused, key) => {
           isFocused && setFocusedKey(key);
         }, []);
         return {
@@ -97546,8 +97614,8 @@
         useSafeLayoutEffect: () => useSafeLayoutEffect
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var useSafeLayoutEffect = Boolean(globalThis == null ? void 0 : globalThis.document) ? import_react102.useLayoutEffect : import_react102.useEffect;
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var useSafeLayoutEffect = Boolean(globalThis == null ? void 0 : globalThis.document) ? import_react103.useLayoutEffect : import_react103.useEffect;
     }
   });
 
@@ -97578,7 +97646,7 @@
         useImage: () => useImage
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_utils = require_dist10();
       var import_use_safe_layout_effect = require_dist21();
       function useImage(props = {}) {
@@ -97594,16 +97662,16 @@
           shouldBypassImageLoad = false
         } = props;
         const isHydrated = (0, import_react_utils.useIsHydrated)();
-        const imageRef = (0, import_react102.useRef)(null);
-        const [status, setStatus] = (0, import_react102.useState)("pending");
-        const flush = (0, import_react102.useCallback)(() => {
+        const imageRef = (0, import_react103.useRef)(null);
+        const [status, setStatus] = (0, import_react103.useState)("pending");
+        const flush = (0, import_react103.useCallback)(() => {
           if (imageRef.current) {
             imageRef.current.onload = null;
             imageRef.current.onerror = null;
             imageRef.current = null;
           }
         }, []);
-        const load = (0, import_react102.useCallback)(() => {
+        const load = (0, import_react103.useCallback)(() => {
           if (!src) return "pending";
           if (ignoreFallback || shouldBypassImageLoad) return "loaded";
           flush();
@@ -97722,7 +97790,7 @@
       var import_react_utils2 = require_dist10();
       var import_shared_utils = require_dist2();
       var import_focus2 = require_main18();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_image = require_dist22();
       var import_interactions = require_main17();
       var import_react_utils = require_dist10();
@@ -97777,7 +97845,7 @@
         const isImgLoaded = imageStatus === "loaded";
         const shouldFilterDOMProps = !isHeroImage;
         const showFallback = (!src || !isImgLoaded) && showFallbackProp;
-        const slots = (0, import_react102.useMemo)(
+        const slots = (0, import_react103.useMemo)(
           () => {
             var _a2;
             return (0, import_theme.avatar)({
@@ -97803,10 +97871,10 @@
           ]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const canBeFocused = (0, import_react102.useMemo)(() => {
+        const canBeFocused = (0, import_react103.useMemo)(() => {
           return isFocusable || as === "button";
         }, [isFocusable, as]);
-        const getAvatarProps = (0, import_react102.useCallback)(
+        const getAvatarProps = (0, import_react103.useCallback)(
           (props = {}) => ({
             ref: domRef,
             tabIndex: canBeFocused ? 0 : -1,
@@ -97820,7 +97888,7 @@
           }),
           [canBeFocused, slots, baseStyles, focusProps, otherProps]
         );
-        const getImageProps = (0, import_react102.useCallback)(
+        const getImageProps = (0, import_react103.useCallback)(
           (props = {}) => ({
             ref: imgRef,
             src,
@@ -98023,7 +98091,7 @@
       var import_theme = require_dist12();
       var import_system = require_dist11();
       var import_shared_utils = require_dist2();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useBadge(originalProps) {
         var _a, _b;
         const globalContext = (0, import_system.useProviderContext)();
@@ -98031,19 +98099,19 @@
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.badge.variantKeys);
         const { as, children, className, content, classNames, ...otherProps } = props;
         const Component2 = as || "span";
-        const isOneChar = (0, import_react102.useMemo)(
+        const isOneChar = (0, import_react103.useMemo)(
           () => {
             var _a2;
             return ((_a2 = String(content)) == null ? void 0 : _a2.length) === 1 || (originalProps == null ? void 0 : originalProps.isOneChar);
           },
           [content, originalProps == null ? void 0 : originalProps.isOneChar]
         );
-        const isDot = (0, import_react102.useMemo)(() => {
+        const isDot = (0, import_react103.useMemo)(() => {
           var _a2;
           return ((_a2 = String(content)) == null ? void 0 : _a2.length) === 0;
         }, [content]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.badge, className);
-        const slots = (0, import_react102.useMemo)(
+        const slots = (0, import_react103.useMemo)(
           () => (0, import_theme.badge)({
             ...variantProps2,
             showOutline: !!(originalProps == null ? void 0 : originalProps.disableOutline) ? !(originalProps == null ? void 0 : originalProps.disableOutline) : originalProps == null ? void 0 : originalProps.showOutline,
@@ -98117,7 +98185,7 @@
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       function useSpinner(originalProps) {
         var _a, _b;
@@ -98125,19 +98193,19 @@
         const globalContext = (0, import_system.useProviderContext)();
         const variant = (_b = (_a = originalProps == null ? void 0 : originalProps.variant) != null ? _a : globalContext == null ? void 0 : globalContext.spinnerVariant) != null ? _b : "default";
         const { children, className, classNames, label: labelProp, ...otherProps } = props;
-        const slots = (0, import_react102.useMemo)(
+        const slots = (0, import_react103.useMemo)(
           () => (0, import_theme.spinner)({ ...variantProps2, variant }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), variant]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
         const label = labelProp || children;
-        const ariaLabel = (0, import_react102.useMemo)(() => {
+        const ariaLabel = (0, import_react103.useMemo)(() => {
           if (label && typeof label === "string") {
             return label;
           }
           return !otherProps["aria-label"] ? "Loading" : "";
         }, [children, label, otherProps["aria-label"]]);
-        const getSpinnerProps = (0, import_react102.useCallback)(
+        const getSpinnerProps = (0, import_react103.useCallback)(
           () => ({
             "aria-label": ariaLabel,
             className: slots.base({
@@ -98304,10 +98372,10 @@
       Ripple.displayName = "HeroUI.Ripple";
       var ripple_default = Ripple;
       var import_shared_utils2 = require_dist2();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useRipple(props = {}) {
-        const [ripples, setRipples] = (0, import_react102.useState)([]);
-        const onPress = (0, import_react102.useCallback)((event) => {
+        const [ripples, setRipples] = (0, import_react103.useState)([]);
+        const onPress = (0, import_react103.useCallback)((event) => {
           const trigger = event.target;
           const size = Math.max(trigger.clientWidth, trigger.clientHeight);
           setRipples((prevRipples) => [
@@ -98320,7 +98388,7 @@
             }
           ]);
         }, []);
-        const onClear = (0, import_react102.useCallback)((key) => {
+        const onClear = (0, import_react103.useCallback)((key) => {
           setRipples((prevState) => prevState.filter((ripple) => ripple.key !== key));
         }, []);
         return { ripples, onClear, onPress, ...props };
@@ -101407,7 +101475,7 @@
       var import_system2 = require_dist11();
       var import_system = require_dist11();
       var import_shared_utils = require_dist2();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_react_utils2 = require_dist10();
       var import_theme = require_dist12();
@@ -101484,7 +101552,7 @@
           ]
         );
         const { onPress: onRipplePressHandler, onClear: onClearRipple, ripples } = (0, import_ripple.useRipple)();
-        const handlePress = (0, import_react102.useCallback)(
+        const handlePress = (0, import_react103.useCallback)(
           (e) => {
             if (disableRipple || isDisabled || disableAnimation) return;
             domRef.current && onRipplePressHandler(e);
@@ -101502,7 +101570,7 @@
           domRef
         );
         const { isHovered, hoverProps } = (0, import_interactions.useHover)({ isDisabled });
-        const getButtonProps = (0, import_react102.useCallback)(
+        const getButtonProps = (0, import_react103.useCallback)(
           (props2 = {}) => ({
             "data-disabled": (0, import_shared_utils.dataAttr)(isDisabled),
             "data-focus": (0, import_shared_utils.dataAttr)(isFocused),
@@ -101551,7 +101619,7 @@
           };
           return buttonSpinnerSizeMap[size];
         }, [size]);
-        const getRippleProps = (0, import_react102.useCallback)(
+        const getRippleProps = (0, import_react103.useCallback)(
           () => ({ ripples, onClear: onClearRipple }),
           [ripples, onClearRipple]
         );
@@ -101721,7 +101789,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_theme = require_dist12();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_interactions = require_main17();
       var import_use_aria_button = require_dist27();
@@ -101753,7 +101821,7 @@
         const disableRipple = (_d = (_c = originalProps.disableRipple) != null ? _c : globalContext == null ? void 0 : globalContext.disableRipple) != null ? _d : false;
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
         const { onClear: onClearRipple, onPress: onRipplePressHandler, ripples } = (0, import_ripple.useRipple)();
-        const handlePress = (0, import_react102.useCallback)(
+        const handlePress = (0, import_react103.useCallback)(
           (e) => {
             if (disableRipple || disableAnimation) return;
             domRef.current && onRipplePressHandler(e);
@@ -101778,14 +101846,14 @@
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)({
           autoFocus
         });
-        const slots = (0, import_react102.useMemo)(
+        const slots = (0, import_react103.useMemo)(
           () => (0, import_theme.card)({
             ...variantProps2,
             disableAnimation
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation]
         );
-        const context = (0, import_react102.useMemo)(
+        const context = (0, import_react103.useMemo)(
           () => ({
             slots,
             classNames,
@@ -101803,7 +101871,7 @@
             originalProps.fullWidth
           ]
         );
-        const getCardProps = (0, import_react102.useCallback)(
+        const getCardProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ref: domRef,
@@ -101841,7 +101909,7 @@
             otherProps
           ]
         );
-        const getRippleProps = (0, import_react102.useCallback)(
+        const getRippleProps = (0, import_react103.useCallback)(
           () => ({ ripples, onClear: onClearRipple }),
           [ripples, onClearRipple]
         );
@@ -101972,7 +102040,7 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useChip(originalProps) {
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.chip.variantKeys);
         const {
@@ -101993,13 +102061,13 @@
         const isCloseable = !!onClose;
         const isDotVariant = originalProps.variant === "dot";
         const { focusProps: closeFocusProps, isFocusVisible: isCloseButtonFocusVisible } = (0, import_focus2.useFocusRing)();
-        const isOneChar = (0, import_react102.useMemo)(
+        const isOneChar = (0, import_react103.useMemo)(
           () => typeof children === "string" && (children == null ? void 0 : children.length) === 1,
           [children]
         );
-        const hasStartContent = (0, import_react102.useMemo)(() => !!avatar || !!startContent, [avatar, startContent]);
-        const hasEndContent = (0, import_react102.useMemo)(() => !!endContent || isCloseable, [endContent, isCloseable]);
-        const slots = (0, import_react102.useMemo)(
+        const hasStartContent = (0, import_react103.useMemo)(() => !!avatar || !!startContent, [avatar, startContent]);
+        const hasEndContent = (0, import_react103.useMemo)(() => !!endContent || isCloseable, [endContent, isCloseable]);
+        const slots = (0, import_react103.useMemo)(
           () => (0, import_theme.chip)({
             ...variantProps2,
             hasStartContent,
@@ -102038,13 +102106,13 @@
           };
         };
         const getAvatarClone = (avatar2) => {
-          if (!(0, import_react102.isValidElement)(avatar2)) return null;
-          return (0, import_react102.cloneElement)(avatar2, {
+          if (!(0, import_react103.isValidElement)(avatar2)) return null;
+          return (0, import_react103.cloneElement)(avatar2, {
             // @ts-ignore
             className: slots.avatar({ class: classNames == null ? void 0 : classNames.avatar })
           });
         };
-        const getContentClone = (content) => (0, import_react102.isValidElement)(content) ? (0, import_react102.cloneElement)(content, {
+        const getContentClone = (content) => (0, import_react103.isValidElement)(content) ? (0, import_react103.cloneElement)(content, {
           // @ts-ignore
           className: (0, import_theme.cn)("max-h-[80%]", content.props.className)
         }) : null;
@@ -102213,14 +102281,14 @@
         useCallbackRef: () => useCallbackRef
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_safe_layout_effect = require_dist21();
       function useCallbackRef(fn, deps = []) {
-        const ref = (0, import_react102.useRef)(fn);
+        const ref = (0, import_react103.useRef)(fn);
         (0, import_use_safe_layout_effect.useSafeLayoutEffect)(() => {
           ref.current = fn;
         });
-        return (0, import_react102.useCallback)((...args) => {
+        return (0, import_react103.useCallback)((...args) => {
           var _a;
           return (_a = ref.current) == null ? void 0 : _a.call(ref, ...args);
         }, deps);
@@ -115657,13 +115725,13 @@
         useSlottedContext: () => useSlottedContext
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       var DEFAULT_SLOT = /* @__PURE__ */ Symbol("default");
       function useObjectRef(ref) {
-        const objRef = (0, import_react102.useRef)(null);
-        const cleanupRef = (0, import_react102.useRef)(void 0);
-        const refEffect = (0, import_react102.useCallback)(
+        const objRef = (0, import_react103.useRef)(null);
+        const cleanupRef = (0, import_react103.useRef)(void 0);
+        const refEffect = (0, import_react103.useCallback)(
           (instance) => {
             if (typeof ref === "function") {
               const refCallback = ref;
@@ -115684,7 +115752,7 @@
           },
           [ref]
         );
-        return (0, import_react102.useMemo)(
+        return (0, import_react103.useMemo)(
           () => ({
             get current() {
               return objRef.current;
@@ -115704,7 +115772,7 @@
         );
       }
       function useSlottedContext(context, slot) {
-        let ctx = (0, import_react102.useContext)(context);
+        let ctx = (0, import_react103.useContext)(context);
         if (slot === null) {
           return null;
         }
@@ -115724,7 +115792,7 @@
       function useContextProps(props, ref, context) {
         let ctx = useSlottedContext(context, props.slot) || {};
         let { ref: contextRef, ...contextProps } = ctx;
-        let mergedRef = useObjectRef((0, import_react102.useMemo)(() => (0, import_shared_utils.mergeRefs)(ref, contextRef), [ref, contextRef]));
+        let mergedRef = useObjectRef((0, import_react103.useMemo)(() => (0, import_shared_utils.mergeRefs)(ref, contextRef), [ref, contextRef]));
         let mergedProps = (0, import_shared_utils.mergeProps)(contextProps, props);
         if ("style" in contextProps && contextProps.style && "style" in props && props.style) {
           if (typeof contextProps.style === "function" || typeof props.style === "function") {
@@ -115876,7 +115944,7 @@
       var import_system2 = require_dist11();
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_toggle = require_main21();
       var import_theme = require_dist12();
@@ -115951,7 +116019,7 @@
           };
           onChange = (0, import_shared_utils.chain)(dispatch, onChange);
         }
-        const labelId = (0, import_react102.useId)();
+        const labelId = (0, import_react103.useId)();
         const ariaCheckboxProps = (0, import_react210.useMemo)(
           () => ({
             name,
@@ -116040,7 +116108,7 @@
           toggleState.setSelected(isInputRefChecked);
         }, [inputRef.current]);
         const onChangeProp = (0, import_use_callback_ref.useCallbackRef)(onChange);
-        const handleCheckboxChange = (0, import_react102.useCallback)(
+        const handleCheckboxChange = (0, import_react103.useCallback)(
           (event) => {
             if (isReadOnly || isDisabled) {
               event.preventDefault();
@@ -116051,7 +116119,7 @@
           [isReadOnly, isDisabled, onChangeProp]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getBaseProps = (0, import_react102.useCallback)(() => {
+        const getBaseProps = (0, import_react103.useCallback)(() => {
           return {
             ref: domRef,
             className: slots.base({ class: baseStyles }),
@@ -116081,7 +116149,7 @@
           hoverProps,
           otherProps
         ]);
-        const getWrapperProps = (0, import_react102.useCallback)(
+        const getWrapperProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -116091,7 +116159,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.wrapper]
         );
-        const getInputProps = (0, import_react102.useCallback)(() => {
+        const getInputProps = (0, import_react103.useCallback)(() => {
           return {
             ref: (0, import_react_utils2.mergeRefs)(inputRef, ref),
             ...(0, import_shared_utils.mergeProps)(inputProps, focusProps),
@@ -116099,14 +116167,14 @@
             onChange: (0, import_shared_utils.chain)(inputProps.onChange, handleCheckboxChange)
           };
         }, [inputProps, focusProps, handleCheckboxChange, classNames == null ? void 0 : classNames.hiddenInput]);
-        const getLabelProps = (0, import_react102.useCallback)(
+        const getLabelProps = (0, import_react103.useCallback)(
           () => ({
             id: labelId,
             className: slots.label({ class: classNames == null ? void 0 : classNames.label })
           }),
           [slots, classNames == null ? void 0 : classNames.label, isDisabled, isSelected, isInvalid]
         );
-        const getIconProps = (0, import_react102.useCallback)(
+        const getIconProps = (0, import_react103.useCallback)(
           () => ({
             isSelected,
             isIndeterminate,
@@ -116415,13 +116483,13 @@
       var import_system_rsc2 = require_dist14();
       var import_theme = require_dist12();
       var import_system_rsc = require_dist14();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       function useCode(originalProps) {
         const [props, variantProps2] = (0, import_system_rsc.mapPropsVariants)(originalProps, import_theme.code.variantKeys);
         const { as, children, className, ...otherProps } = props;
         const Component2 = as || "code";
-        const styles = (0, import_react102.useMemo)(
+        const styles = (0, import_react103.useMemo)(
           () => (0, import_theme.code)({
             ...variantProps2,
             className
@@ -119502,7 +119570,7 @@
       var import_react_utils = require_dist10();
       var import_focus2 = require_main18();
       var import_shared_utils = require_dist2();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useLink(originalProps) {
         var _a, _b, _c, _d;
         const globalContext = (0, import_system.useProviderContext)();
@@ -119545,7 +119613,7 @@
           otherProps.rel = (_c = otherProps.rel) != null ? _c : "noopener noreferrer";
           otherProps.target = (_d = otherProps.target) != null ? _d : "_blank";
         }
-        const styles = (0, import_react102.useMemo)(
+        const styles = (0, import_react103.useMemo)(
           () => (0, import_theme.link)({
             ...variantProps2,
             disableAnimation,
@@ -119553,7 +119621,7 @@
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation, className]
         );
-        const getLinkProps = (0, import_react102.useCallback)(() => {
+        const getLinkProps = (0, import_react103.useCallback)(() => {
           return {
             ref: domRef,
             className: styles,
@@ -119638,7 +119706,7 @@
         usePagination: () => usePagination
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_i18n12 = require_main5();
       var import_shared_utils = require_dist2();
       var PaginationItemType2 = /* @__PURE__ */ ((PaginationItemType22) => {
@@ -119657,19 +119725,19 @@
           showControls = false,
           onChange
         } = props;
-        const [activePage, setActivePage] = (0, import_react102.useState)(page || initialPage);
+        const [activePage, setActivePage] = (0, import_react103.useState)(page || initialPage);
         const { direction } = (0, import_i18n12.useLocale)();
         const isRTL = direction === "rtl";
         const onChangeActivePage = (newPage) => {
           setActivePage(newPage);
           onChange && onChange(newPage);
         };
-        (0, import_react102.useEffect)(() => {
+        (0, import_react103.useEffect)(() => {
           if (page && page !== activePage) {
             setActivePage(page);
           }
         }, [page]);
-        const setPage = (0, import_react102.useCallback)(
+        const setPage = (0, import_react103.useCallback)(
           (pageNumber) => {
             if (pageNumber <= 0) {
               onChangeActivePage(1);
@@ -119685,7 +119753,7 @@
         const previous = () => setPage(activePage - 1);
         const first = () => setPage(1);
         const last = () => setPage(total);
-        const formatRange = (0, import_react102.useCallback)(
+        const formatRange = (0, import_react103.useCallback)(
           (range2) => {
             if (showControls) {
               return [
@@ -119699,7 +119767,7 @@
           },
           [isRTL, showControls]
         );
-        const paginationRange = (0, import_react102.useMemo)(() => {
+        const paginationRange = (0, import_react103.useMemo)(() => {
           const totalPageNumbers = siblings * 2 + 3 + boundaries * 2;
           if (totalPageNumbers >= total) {
             return formatRange((0, import_shared_utils.range)(1, total));
@@ -119861,7 +119929,7 @@
         useIntersectionObserver: () => useIntersectionObserver
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useIntersectionObserver({
         threshold: threshold2 = 0,
         root = null,
@@ -119872,15 +119940,15 @@
         onChange
       } = {}) {
         var _a;
-        const [ref, setRef2] = (0, import_react102.useState)(null);
-        const [state, setState] = (0, import_react102.useState)(() => ({
+        const [ref, setRef2] = (0, import_react103.useState)(null);
+        const [state, setState] = (0, import_react103.useState)(() => ({
           isIntersecting: initialIsIntersecting,
           entry: void 0
         }));
-        const callbackRef = (0, import_react102.useRef)();
+        const callbackRef = (0, import_react103.useRef)();
         callbackRef.current = onChange;
         const frozen = ((_a = state.entry) == null ? void 0 : _a.isIntersecting) && freezeOnceVisible;
-        (0, import_react102.useEffect)(() => {
+        (0, import_react103.useEffect)(() => {
           if (!isEnabled) return;
           if (!ref) return;
           if (!("IntersectionObserver" in window)) return;
@@ -119908,8 +119976,8 @@
             observer2.disconnect();
           };
         }, [ref, isEnabled, JSON.stringify(threshold2), root, rootMargin, frozen, freezeOnceVisible]);
-        const prevRef = (0, import_react102.useRef)(null);
-        (0, import_react102.useEffect)(() => {
+        const prevRef = (0, import_react103.useRef)(null);
+        (0, import_react103.useEffect)(() => {
           var _a2;
           if (!ref && ((_a2 = state.entry) == null ? void 0 : _a2.target) && !freezeOnceVisible && !frozen && prevRef.current !== state.entry.target) {
             prevRef.current = state.entry.target;
@@ -119976,7 +120044,7 @@
       var import_theme3 = require_dist12();
       var import_shared_utils = require_dist2();
       var import_use_pagination = require_dist38();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_use_pagination2 = require_dist38();
       var import_scroll_into_view_if_needed = __toESM2(require_dist40());
@@ -120009,9 +120077,9 @@
         } = props;
         const Component2 = as || "nav";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const cursorRef = (0, import_react102.useRef)(null);
-        const itemsRef = (0, import_react102.useRef)();
-        const cursorTimer = (0, import_react102.useRef)();
+        const cursorRef = (0, import_react103.useRef)(null);
+        const itemsRef = (0, import_react103.useRef)();
+        const cursorTimer = (0, import_react103.useRef)();
         const disableAnimation = (_b = (_a = originalProps == null ? void 0 : originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
         const disableCursorAnimation = (_d = (_c = originalProps == null ? void 0 : originalProps.disableCursorAnimation) != null ? _c : disableAnimation) != null ? _d : false;
         function getItemsRefMap() {
@@ -120069,13 +120137,13 @@
           onChange
         });
         const [setRef2, isVisible] = (0, import_use_intersection_observer.useIntersectionObserver)();
-        (0, import_react102.useEffect)(() => {
+        (0, import_react103.useEffect)(() => {
           if (domRef.current) {
             setRef2(domRef.current);
           }
         }, [domRef.current]);
-        const activePageRef = (0, import_react102.useRef)(activePage);
-        (0, import_react102.useEffect)(() => {
+        const activePageRef = (0, import_react103.useRef)(activePage);
+        (0, import_react103.useEffect)(() => {
           if (activePage && !disableAnimation && isVisible) {
             scrollTo(activePage, activePage === activePageRef.current);
           }
@@ -120090,7 +120158,7 @@
           originalProps.isCompact,
           originalProps.showControls
         ]);
-        const slots = (0, import_react102.useMemo)(
+        const slots = (0, import_react103.useMemo)(
           () => (0, import_theme.pagination)({
             ...variantProps2,
             disableAnimation,
@@ -120820,7 +120888,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_system2 = require_dist11();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_interactions = require_main17();
@@ -120866,8 +120934,8 @@
         const Component2 = as || "label";
         const domRef = (0, import_react_utils2.useDOMRef)(ref);
         const inputRef = (0, import_react210.useRef)(null);
-        const labelId = (0, import_react102.useId)();
-        const descriptionId = (0, import_react102.useId)();
+        const labelId = (0, import_react103.useId)();
+        const descriptionId = (0, import_react103.useId)();
         const isRequired = (0, import_react210.useMemo)(() => {
           var _a2;
           return (_a2 = groupContext.isRequired) != null ? _a2 : false;
@@ -120921,7 +120989,7 @@
           [color2, size, isDisabled, isInvalid, disableAnimation]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getBaseProps = (0, import_react102.useCallback)(
+        const getBaseProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -120956,7 +121024,7 @@
             otherProps
           ]
         );
-        const getWrapperProps = (0, import_react102.useCallback)(
+        const getWrapperProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -120966,7 +121034,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.wrapper]
         );
-        const getInputProps = (0, import_react102.useCallback)(
+        const getInputProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ref: inputRef,
@@ -120977,7 +121045,7 @@
           },
           [inputProps, focusProps, onChange]
         );
-        const getLabelProps = (0, import_react102.useCallback)(
+        const getLabelProps = (0, import_react103.useCallback)(
           (props2 = {}) => ({
             ...props2,
             id: labelId,
@@ -120985,21 +121053,21 @@
           }),
           [slots, classNames == null ? void 0 : classNames.label, isDisabled, isSelected, isInvalid]
         );
-        const getLabelWrapperProps = (0, import_react102.useCallback)(
+        const getLabelWrapperProps = (0, import_react103.useCallback)(
           (props2 = {}) => ({
             ...props2,
             className: slots.labelWrapper({ class: classNames == null ? void 0 : classNames.labelWrapper })
           }),
           [slots, classNames == null ? void 0 : classNames.labelWrapper]
         );
-        const getControlProps = (0, import_react102.useCallback)(
+        const getControlProps = (0, import_react103.useCallback)(
           (props2 = {}) => ({
             ...props2,
             className: slots.control({ class: classNames == null ? void 0 : classNames.control })
           }),
           [slots, classNames == null ? void 0 : classNames.control]
         );
-        const getDescriptionProps = (0, import_react102.useCallback)(
+        const getDescriptionProps = (0, import_react103.useCallback)(
           (props2 = {}) => ({
             ...props2,
             id: descriptionId,
@@ -121272,20 +121340,20 @@
         useClipboard: () => useClipboard
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var transformValue2 = (text) => {
         return text.replace(/[\u00A0]/g, " ");
       };
       function useClipboard({ timeout = 2e3 } = {}) {
-        const [error, setError] = (0, import_react102.useState)(null);
-        const [copied, setCopied] = (0, import_react102.useState)(false);
-        const [copyTimeout, setCopyTimeout] = (0, import_react102.useState)(null);
-        const onClearTimeout = (0, import_react102.useCallback)(() => {
+        const [error, setError] = (0, import_react103.useState)(null);
+        const [copied, setCopied] = (0, import_react103.useState)(false);
+        const [copyTimeout, setCopyTimeout] = (0, import_react103.useState)(null);
+        const onClearTimeout = (0, import_react103.useCallback)(() => {
           if (copyTimeout) {
             clearTimeout(copyTimeout);
           }
         }, [copyTimeout]);
-        const handleCopyResult = (0, import_react102.useCallback)(
+        const handleCopyResult = (0, import_react103.useCallback)(
           (value) => {
             onClearTimeout();
             setCopyTimeout(setTimeout(() => setCopied(false), timeout));
@@ -121293,7 +121361,7 @@
           },
           [onClearTimeout, timeout]
         );
-        const copy = (0, import_react102.useCallback)(
+        const copy = (0, import_react103.useCallback)(
           (valueToCopy) => {
             if ("clipboard" in navigator) {
               const transformedValue = typeof valueToCopy === "string" ? transformValue2(valueToCopy) : valueToCopy;
@@ -121304,7 +121372,7 @@
           },
           [handleCopyResult]
         );
-        const reset = (0, import_react102.useCallback)(() => {
+        const reset = (0, import_react103.useCallback)(() => {
           setCopied(false);
           setError(null);
           onClearTimeout();
@@ -124602,7 +124670,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_focus2 = require_main36();
       var import_interactions = require_main35();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var visibleOverlays = [];
       function useAriaOverlay(props, ref) {
         const {
@@ -124614,7 +124682,7 @@
           shouldCloseOnBlur,
           shouldCloseOnInteractOutside
         } = props;
-        (0, import_react102.useEffect)(() => {
+        (0, import_react103.useEffect)(() => {
           if (isOpen && !visibleOverlays.includes(ref)) {
             visibleOverlays.push(ref);
             return () => {
@@ -124744,7 +124812,7 @@
       var import_shared_utils2 = require_dist2();
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_aria_utils2 = require_dist13();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_tooltip = require_main33();
       var import_tooltip2 = require_main34();
       var import_overlays = require_main9();
@@ -124808,9 +124876,9 @@
         });
         const triggerRef = (0, import_react210.useRef)(null);
         const overlayRef = (0, import_react210.useRef)(null);
-        const tooltipId = (0, import_react102.useId)();
+        const tooltipId = (0, import_react103.useId)();
         const isOpen = state.isOpen && !isDisabled;
-        (0, import_react102.useImperativeHandle)(
+        (0, import_react103.useImperativeHandle)(
           ref,
           () => (
             // @ts-ignore
@@ -125039,7 +125107,7 @@
       var import_shared_utils = require_dist2();
       var import_use_clipboard = require_dist44();
       var import_focus2 = require_main18();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useSnippet(originalProps) {
         var _a, _b, _c, _d;
         const globalContext = (0, import_system.useProviderContext)();
@@ -125077,26 +125145,26 @@
           ...userTooltipProps
         };
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const preRef = (0, import_react102.useRef)(null);
+        const preRef = (0, import_react103.useRef)(null);
         const { copy, copied } = (0, import_use_clipboard.useClipboard)({ timeout });
         const isMultiLine = children && Array.isArray(children);
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)({
           autoFocus
         });
-        const slots = (0, import_react102.useMemo)(
+        const slots = (0, import_react103.useMemo)(
           () => (0, import_theme.snippet)({
             ...variantProps2,
             disableAnimation
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation]
         );
-        const symbolBefore = (0, import_react102.useMemo)(() => {
+        const symbolBefore = (0, import_react103.useMemo)(() => {
           if (!symbol || typeof symbol !== "string") return symbol;
           const str = symbol.trim();
           return str ? `${str} ` : "";
         }, [symbol]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getSnippetProps = (0, import_react102.useCallback)(
+        const getSnippetProps = (0, import_react103.useCallback)(
           () => ({
             className: slots.base({
               class: baseStyles
@@ -125107,7 +125175,7 @@
           }),
           [slots, baseStyles, isMultiLine, otherProps]
         );
-        const onCopy = (0, import_react102.useCallback)(() => {
+        const onCopy = (0, import_react103.useCallback)(() => {
           var _a2;
           if (disableCopy) {
             return;
@@ -125137,7 +125205,7 @@
           isIconOnly: true,
           ...userButtonProps
         };
-        const getCopyButtonProps = (0, import_react102.useCallback)(
+        const getCopyButtonProps = (0, import_react103.useCallback)(
           () => ({
             ...copyButtonProps,
             "data-copied": (0, import_shared_utils.dataAttr)(copied),
@@ -125327,7 +125395,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist11();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
       var import_use_safe_layout_effect = require_dist21();
@@ -125362,10 +125430,10 @@
           ...otherProps
         } = props;
         const Component2 = as || "label";
-        const domRef = (0, import_react102.useRef)(null);
-        const inputRef = (0, import_react102.useRef)(null);
+        const domRef = (0, import_react103.useRef)(null);
+        const inputRef = (0, import_react103.useRef)(null);
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        const labelId = (0, import_react102.useId)();
+        const labelId = (0, import_react103.useId)();
         const ariaSwitchProps = (0, import_react210.useMemo)(() => {
           const ariaLabel = otherProps["aria-label"] || typeof children === "string" ? children : void 0;
           return {
@@ -125432,7 +125500,7 @@
             "data-pressed": (0, import_shared_utils.dataAttr)(pressed)
           };
         };
-        const getWrapperProps = (0, import_react102.useCallback)(
+        const getWrapperProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -125451,14 +125519,14 @@
             onChange: (0, import_shared_utils.chain)(onChange, inputProps.onChange)
           };
         };
-        const getThumbProps = (0, import_react102.useCallback)(
+        const getThumbProps = (0, import_react103.useCallback)(
           (props2 = {}) => ({
             ...props2,
             className: slots.thumb({ class: (0, import_theme.cn)(classNames == null ? void 0 : classNames.thumb, props2 == null ? void 0 : props2.className) })
           }),
           [slots, classNames == null ? void 0 : classNames.thumb]
         );
-        const getLabelProps = (0, import_react102.useCallback)(
+        const getLabelProps = (0, import_react103.useCallback)(
           (props2 = {}) => ({
             ...props2,
             id: labelId,
@@ -125466,7 +125534,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.label, isDisabled, isSelected]
         );
-        const getThumbIconProps = (0, import_react102.useCallback)(
+        const getThumbIconProps = (0, import_react103.useCallback)(
           (props2 = {
             includeStateProps: false
           }) => (0, import_shared_utils.mergeProps)(
@@ -125481,7 +125549,7 @@
           ),
           [slots, classNames == null ? void 0 : classNames.thumbIcon, isSelected]
         );
-        const getStartContentProps = (0, import_react102.useCallback)(
+        const getStartContentProps = (0, import_react103.useCallback)(
           (props2 = {}) => ({
             width: "1em",
             height: "1em",
@@ -125490,7 +125558,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.startContent, isSelected]
         );
-        const getEndContentProps = (0, import_react102.useCallback)(
+        const getEndContentProps = (0, import_react103.useCallback)(
           (props2 = {}) => ({
             width: "1em",
             height: "1em",
@@ -125587,7 +125655,7 @@
         useUser: () => useUser
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
@@ -125613,12 +125681,12 @@
         const shouldFilterDOMProps = typeof Component2 === "string";
         const domRef = (0, import_react_utils2.useDOMRef)(ref);
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)({});
-        const canBeFocused = (0, import_react102.useMemo)(() => {
+        const canBeFocused = (0, import_react103.useMemo)(() => {
           return isFocusable || as === "button";
         }, [isFocusable, as]);
-        const slots = (0, import_react102.useMemo)(() => (0, import_theme.user)(), []);
+        const slots = (0, import_react103.useMemo)(() => (0, import_theme.user)(), []);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getUserProps = (0, import_react102.useCallback)(
+        const getUserProps = (0, import_react103.useCallback)(
           () => ({
             ref: domRef,
             tabIndex: canBeFocused ? 0 : -1,
@@ -125695,12 +125763,12 @@
         useIsMounted: () => useIsMounted2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useIsMounted2(props = {}) {
         const { rerender = false, delay: delay2 = 0 } = props;
-        const isMountedRef = (0, import_react102.useRef)(false);
-        const [isMounted, setIsMounted] = (0, import_react102.useState)(false);
-        (0, import_react102.useEffect)(() => {
+        const isMountedRef = (0, import_react103.useRef)(false);
+        const [isMounted, setIsMounted] = (0, import_react103.useState)(false);
+        (0, import_react103.useEffect)(() => {
           isMountedRef.current = true;
           let timer = null;
           if (rerender) {
@@ -125722,7 +125790,7 @@
             }
           };
         }, [rerender]);
-        return [(0, import_react102.useCallback)(() => isMountedRef.current, []), isMounted];
+        return [(0, import_react103.useCallback)(() => isMountedRef.current, []), isMounted];
       }
     }
   });
@@ -125817,7 +125885,7 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_is_mounted2 = require_dist50();
       var import_progress3 = require_dist51();
       function useProgress(originalProps) {
@@ -125862,7 +125930,7 @@
           "aria-labelledby": originalProps["aria-labelledby"],
           "aria-label": originalProps["aria-label"]
         });
-        const slots = (0, import_react102.useMemo)(
+        const slots = (0, import_react103.useMemo)(
           () => (0, import_theme.progress)({
             ...variantProps2,
             disableAnimation
@@ -125870,11 +125938,11 @@
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation]
         );
         const selfMounted = disableAnimation ? true : isMounted;
-        const percentage = (0, import_react102.useMemo)(
+        const percentage = (0, import_react103.useMemo)(
           () => isIndeterminate || !selfMounted ? void 0 : (0, import_shared_utils.clampPercentage)((value - minValue) / (maxValue - minValue) * 100),
           [selfMounted, isIndeterminate, value, minValue, maxValue]
         );
-        const getProgressBarProps = (0, import_react102.useCallback)(
+        const getProgressBarProps = (0, import_react103.useCallback)(
           (props2 = {}) => ({
             ref: domRef,
             "data-indeterminate": (0, import_shared_utils.dataAttr)(isIndeterminate),
@@ -125892,7 +125960,7 @@
             otherProps
           ]
         );
-        const getLabelProps = (0, import_react102.useCallback)(
+        const getLabelProps = (0, import_react103.useCallback)(
           (props2 = {}) => ({
             className: slots.label({ class: classNames == null ? void 0 : classNames.label }),
             ...(0, import_shared_utils.mergeProps)(labelProps, props2)
@@ -126904,7 +126972,7 @@
       var import_interactions = require_main17();
       var import_shared_utils = require_dist2();
       var import_utils8 = require_main38();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_textfield = require_main40();
       var import_form = require_dist33();
       function useInput(originalProps) {
@@ -126934,13 +127002,13 @@
           },
           ...otherProps
         } = props;
-        const handleValueChange = (0, import_react102.useCallback)(
+        const handleValueChange = (0, import_react103.useCallback)(
           (value) => {
             onValueChange(value != null ? value : "");
           },
           [onValueChange]
         );
-        const [isFocusWithin, setFocusWithin] = (0, import_react102.useState)(false);
+        const [isFocusWithin, setFocusWithin] = (0, import_react103.useState)(false);
         const Component2 = as || "div";
         const disableAnimation = (_c = (_b = originalProps.disableAnimation) != null ? _b : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _c : false;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
@@ -126960,7 +127028,7 @@
         const isHiddenType = type === "hidden";
         const isMultiline = originalProps.isMultiline;
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className, isFilled ? "is-filled" : "");
-        const handleClear = (0, import_react102.useCallback)(() => {
+        const handleClear = (0, import_react103.useCallback)(() => {
           var _a2;
           if (isFileTypeInput) {
             domRef.current.value = "";
@@ -127037,7 +127105,7 @@
         const hasStartContent = !!startContent;
         const isLabelOutside = shouldLabelBeOutside ? isOutsideLeft || isOutsideTop || hasPlaceholder || labelPlacement === "outside" && hasStartContent : false;
         const isLabelOutsideAsPlaceholder = labelPlacement === "outside" && !hasPlaceholder && !hasStartContent;
-        const slots = (0, import_react102.useMemo)(
+        const slots = (0, import_react103.useMemo)(
           () => (0, import_theme.input)({
             ...variantProps2,
             isInvalid,
@@ -127054,7 +127122,7 @@
             disableAnimation
           ]
         );
-        const getBaseProps = (0, import_react102.useCallback)(
+        const getBaseProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ref: baseDomRef,
@@ -127107,7 +127175,7 @@
             originalProps.isDisabled
           ]
         );
-        const getLabelProps = (0, import_react102.useCallback)(
+        const getLabelProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "label",
@@ -127117,7 +127185,7 @@
           },
           [slots, isLabelHovered, labelProps, classNames == null ? void 0 : classNames.label]
         );
-        const handleKeyDown = (0, import_react102.useCallback)(
+        const handleKeyDown = (0, import_react103.useCallback)(
           (e) => {
             if (e.key === "Escape" && inputValue && (isClearable || onClear) && !originalProps.isReadOnly) {
               setInputValue("");
@@ -127126,7 +127194,7 @@
           },
           [inputValue, setInputValue, onClear, isClearable, originalProps.isReadOnly]
         );
-        const getInputProps = (0, import_react102.useCallback)(
+        const getInputProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "input",
@@ -127176,7 +127244,7 @@
             handleKeyDown
           ]
         );
-        const getInputWrapperProps = (0, import_react102.useCallback)(
+        const getInputWrapperProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ref: inputWrapperRef,
@@ -127209,7 +127277,7 @@
             classNames == null ? void 0 : classNames.inputWrapper
           ]
         );
-        const getInnerWrapperProps = (0, import_react102.useCallback)(
+        const getInnerWrapperProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -127227,7 +127295,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.innerWrapper]
         );
-        const getMainWrapperProps = (0, import_react102.useCallback)(
+        const getMainWrapperProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -127239,7 +127307,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.mainWrapper]
         );
-        const getHelperWrapperProps = (0, import_react102.useCallback)(
+        const getHelperWrapperProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -127251,7 +127319,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getDescriptionProps = (0, import_react102.useCallback)(
+        const getDescriptionProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -127262,7 +127330,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.description]
         );
-        const getErrorMessageProps = (0, import_react102.useCallback)(
+        const getErrorMessageProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -127273,7 +127341,7 @@
           },
           [slots, errorMessageProps, classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getClearButtonProps = (0, import_react102.useCallback)(
+        const getClearButtonProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -127689,7 +127757,7 @@
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_aria_utils = require_dist13();
       var import_overlays = require_main9();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       var import_use_safe_layout_effect = require_dist21();
       var import_use_aria_overlay = require_dist45();
@@ -127757,7 +127825,7 @@
           if (!updatePositionDeps.length) return;
           updatePosition();
         }, updatePositionDeps);
-        (0, import_react102.useEffect)(() => {
+        (0, import_react103.useEffect)(() => {
           var _a, _b;
           if (state.isOpen && popoverRef.current) {
             if (isNonModal) {
@@ -129507,7 +129575,7 @@
       var import_theme = require_dist12();
       var import_tree = require_main12();
       var import_react_utils = require_dist10();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme2 = require_dist12();
       function useMenu(props) {
         var _a;
@@ -129540,7 +129608,7 @@
         const innerState = (0, import_tree.useTreeState)({ ...otherProps, ...userMenuProps, children });
         const state = propState || innerState;
         const { menuProps } = (0, import_menu.useMenu)({ ...otherProps, ...userMenuProps, onAction }, state, domRef);
-        const slots = (0, import_react102.useMemo)(() => (0, import_theme.menu)({ className }), [className]);
+        const slots = (0, import_react103.useMemo)(() => (0, import_theme.menu)({ className }), [className]);
         const baseStyles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.base, className);
         const getBaseProps = (props2 = {}) => {
           return {
@@ -130198,7 +130266,7 @@
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
       var import_react_utils2 = require_dist10();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var getMenuItem = (props, key) => {
         if (props) {
           const mergedChildren = Array.isArray(props.children) ? props.children : [...(props == null ? void 0 : props.items) || []];
@@ -130242,10 +130310,10 @@
           ...otherProps
         } = props;
         const Component2 = as || "div";
-        const triggerRef = (0, import_react102.useRef)(null);
+        const triggerRef = (0, import_react103.useRef)(null);
         const menuTriggerRef = triggerRefProp || triggerRef;
-        const menuRef = (0, import_react102.useRef)(null);
-        const popoverRef = (0, import_react102.useRef)(null);
+        const menuRef = (0, import_react103.useRef)(null);
+        const popoverRef = (0, import_react103.useRef)(null);
         const state = (0, import_menu.useMenuTriggerState)({
           trigger,
           isOpen,
@@ -130262,7 +130330,7 @@
           state,
           menuTriggerRef
         );
-        const styles = (0, import_react102.useMemo)(
+        const styles = (0, import_react103.useMemo)(
           () => (0, import_theme.dropdown)({
             className
           }),
@@ -130389,7 +130457,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist11();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
@@ -130474,7 +130542,7 @@
             }
           };
         };
-        const getWrapperProps = (0, import_react102.useCallback)(() => {
+        const getWrapperProps = (0, import_react103.useCallback)(() => {
           const fallbackStyle = showFallback ? {
             backgroundImage: `url(${fallbackSrc})`
           } : {};
@@ -130486,7 +130554,7 @@
             }
           };
         }, [slots, showFallback, fallbackSrc, classNames == null ? void 0 : classNames.wrapper, w]);
-        const getBlurredImgProps = (0, import_react102.useCallback)(() => {
+        const getBlurredImgProps = (0, import_react103.useCallback)(() => {
           return {
             src,
             "aria-hidden": (0, import_shared_utils.dataAttr)(true),
@@ -130580,7 +130648,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_overlays = require_main9();
       var import_utils8 = require_main4();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_aria_overlay = require_dist45();
       function useAriaModalOverlay(props = {
         shouldBlockScroll: true
@@ -130597,7 +130665,7 @@
           isDisabled: !state.isOpen || !props.shouldBlockScroll
         });
         (0, import_overlays.useOverlayFocusContain)();
-        (0, import_react102.useEffect)(() => {
+        (0, import_react103.useEffect)(() => {
           if (state.isOpen && ref.current) {
             return (0, import_overlays.ariaHideOutside)([ref.current]);
           }
@@ -130647,9 +130715,9 @@
         useViewportSize: () => useViewportSize
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react102 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
+      var import_react103 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
       var visualViewport = typeof document !== "undefined" && window.visualViewport;
-      var IsSSRContext = import_react102.default.createContext(false);
+      var IsSSRContext = import_react103.default.createContext(false);
       function getSnapshot() {
         return false;
       }
@@ -130661,15 +130729,15 @@
         };
       }
       function useIsSSR() {
-        if (typeof import_react102.default["useSyncExternalStore"] === "function") {
-          return import_react102.default["useSyncExternalStore"](subscribe, getSnapshot, getServerSnapshot);
+        if (typeof import_react103.default["useSyncExternalStore"] === "function") {
+          return import_react103.default["useSyncExternalStore"](subscribe, getSnapshot, getServerSnapshot);
         }
-        return (0, import_react102.useContext)(IsSSRContext);
+        return (0, import_react103.useContext)(IsSSRContext);
       }
       function useViewportSize() {
         let isSSR = useIsSSR();
-        let [size, setSize] = (0, import_react102.useState)(() => isSSR ? { width: 0, height: 0 } : getViewportSize());
-        (0, import_react102.useEffect)(() => {
+        let [size, setSize] = (0, import_react103.useState)(() => isSSR ? { width: 0, height: 0 } : getViewportSize());
+        (0, import_react103.useEffect)(() => {
           let onResize = () => {
             setSize((size2) => {
               let newSize = getViewportSize();
@@ -130845,7 +130913,7 @@
       var import_utils8 = require_main4();
       var import_utils22 = require_main46();
       var import_use_callback_ref = require_dist31();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useDisclosure2(props = {}) {
         const {
           id: idProp,
@@ -130859,22 +130927,22 @@
         const onOpenPropCallbackRef = (0, import_use_callback_ref.useCallbackRef)(onOpenProp);
         const onClosePropCallbackRef = (0, import_use_callback_ref.useCallbackRef)(onCloseProp);
         const [isOpen, setIsOpen] = (0, import_utils22.useControlledState)(isOpenProp, defaultOpen || false, onChange);
-        const reactId = (0, import_react102.useId)();
+        const reactId = (0, import_react103.useId)();
         const id4 = idProp || reactId;
         const isControlled = isOpenProp !== void 0;
-        const onClose = (0, import_react102.useCallback)(() => {
+        const onClose = (0, import_react103.useCallback)(() => {
           if (!isControlled) {
             setIsOpen(false);
           }
           onClosePropCallbackRef == null ? void 0 : onClosePropCallbackRef();
         }, [isControlled, onClosePropCallbackRef]);
-        const onOpen = (0, import_react102.useCallback)(() => {
+        const onOpen = (0, import_react103.useCallback)(() => {
           if (!isControlled) {
             setIsOpen(true);
           }
           onOpenPropCallbackRef == null ? void 0 : onOpenPropCallbackRef();
         }, [isControlled, onOpenPropCallbackRef]);
-        const onOpenChange = (0, import_react102.useCallback)(() => {
+        const onOpenChange = (0, import_react103.useCallback)(() => {
           const action = isOpen ? onClose : onOpen;
           action();
         }, [isOpen, onOpen, onClose]);
@@ -132990,15 +133058,15 @@
         useDraggable: () => useDraggable2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_interactions = require_main47();
       function useDraggable2(props) {
         const { targetRef, isDisabled = false, canOverflow = false } = props;
-        const boundary = (0, import_react102.useRef)({ minLeft: 0, minTop: 0, maxLeft: 0, maxTop: 0 });
-        const isDragging2 = (0, import_react102.useRef)(false);
-        const transform2 = (0, import_react102.useRef)({ offsetX: 0, offsetY: 0 });
-        const prevTargetRef = (0, import_react102.useRef)(null);
-        (0, import_react102.useEffect)(() => {
+        const boundary = (0, import_react103.useRef)({ minLeft: 0, minTop: 0, maxLeft: 0, maxTop: 0 });
+        const isDragging2 = (0, import_react103.useRef)(false);
+        const transform2 = (0, import_react103.useRef)({ offsetX: 0, offsetY: 0 });
+        const prevTargetRef = (0, import_react103.useRef)(null);
+        (0, import_react103.useEffect)(() => {
           var _a;
           const currentTarget = (_a = targetRef == null ? void 0 : targetRef.current) != null ? _a : null;
           if (prevTargetRef.current !== currentTarget) {
@@ -133006,7 +133074,7 @@
             prevTargetRef.current = currentTarget;
           }
         }, [targetRef == null ? void 0 : targetRef.current]);
-        const onMoveStart = (0, import_react102.useCallback)(() => {
+        const onMoveStart = (0, import_react103.useCallback)(() => {
           var _a, _b, _c, _d, _e;
           isDragging2.current = true;
           const { offsetX, offsetY } = transform2.current;
@@ -133028,7 +133096,7 @@
             maxTop
           };
         }, [targetRef]);
-        const onMove = (0, import_react102.useCallback)(
+        const onMove = (0, import_react103.useCallback)(
           (e) => {
             if (isDisabled) {
               return;
@@ -133051,7 +133119,7 @@
           },
           [isDisabled, canOverflow, targetRef]
         );
-        const onMoveEnd = (0, import_react102.useCallback)(() => {
+        const onMoveEnd = (0, import_react103.useCallback)(() => {
           isDragging2.current = false;
         }, []);
         const { moveProps } = (0, import_interactions.useMove)({
@@ -133059,12 +133127,12 @@
           onMove,
           onMoveEnd
         });
-        const preventDefault = (0, import_react102.useCallback)((e) => {
+        const preventDefault = (0, import_react103.useCallback)((e) => {
           if (isDragging2.current) {
             e.preventDefault();
           }
         }, []);
-        (0, import_react102.useEffect)(() => {
+        (0, import_react103.useEffect)(() => {
           if (!isDisabled) {
             document.body.addEventListener("touchmove", preventDefault, { passive: false });
           }
@@ -133122,7 +133190,7 @@
       var import_overlays2 = require_main9();
       var import_system2 = require_dist11();
       var import_use_aria_modal_overlay = require_dist59();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist12();
       var import_system = require_dist11();
       var import_use_aria_button = require_dist27();
@@ -133154,13 +133222,13 @@
         } = props;
         const Component2 = as || "section";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const closeButtonRef = (0, import_react102.useRef)(null);
-        const [headerMounted, setHeaderMounted] = (0, import_react102.useState)(false);
-        const [bodyMounted, setBodyMounted] = (0, import_react102.useState)(false);
+        const closeButtonRef = (0, import_react103.useRef)(null);
+        const [headerMounted, setHeaderMounted] = (0, import_react103.useState)(false);
+        const [bodyMounted, setBodyMounted] = (0, import_react103.useState)(false);
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        const dialogId = (0, import_react102.useId)();
-        const headerId = (0, import_react102.useId)();
-        const bodyId = (0, import_react102.useId)();
+        const dialogId = (0, import_react103.useId)();
+        const headerId = (0, import_react103.useId)();
+        const bodyId = (0, import_react103.useId)();
         const state = (0, import_overlays.useOverlayTriggerState)({
           isOpen,
           defaultOpen,
@@ -133183,7 +133251,7 @@
         const { buttonProps: closeButtonProps } = (0, import_use_aria_button.useAriaButton)({ onPress: state.close }, closeButtonRef);
         const { isFocusVisible: isCloseButtonFocusVisible, focusProps: closeButtonFocusProps } = (0, import_focus2.useFocusRing)();
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react102.useMemo)(
+        const slots = (0, import_react103.useMemo)(
           () => (0, import_theme.modal)({
             ...variantProps2,
             disableAnimation
@@ -133205,7 +133273,7 @@
             "aria-describedby": bodyMounted ? bodyId : void 0
           };
         };
-        const getBackdropProps = (0, import_react102.useCallback)(
+        const getBackdropProps = (0, import_react103.useCallback)(
           (props2 = {}) => ({
             className: slots.backdrop({ class: classNames == null ? void 0 : classNames.backdrop }),
             ...underlayProps,
@@ -133500,7 +133568,7 @@
         useScrollPosition: () => useScrollPosition
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var isBrowser3 = typeof window !== "undefined";
       function getScrollPosition(element) {
         if (!isBrowser3) return { x: 0, y: 0 };
@@ -133511,11 +133579,11 @@
       }
       var useScrollPosition = (props) => {
         const { elementRef, delay: delay2 = 30, callback, isEnabled } = props;
-        const position = (0, import_react102.useRef)(
+        const position = (0, import_react103.useRef)(
           isEnabled ? getScrollPosition(elementRef == null ? void 0 : elementRef.current) : { x: 0, y: 0 }
         );
-        const throttleTimeout = (0, import_react102.useRef)(null);
-        const handler = (0, import_react102.useCallback)(() => {
+        const throttleTimeout = (0, import_react103.useRef)(null);
+        const handler = (0, import_react103.useCallback)(() => {
           const currPos = getScrollPosition(elementRef == null ? void 0 : elementRef.current);
           if (typeof callback === "function") {
             callback({ prevPos: position.current, currPos });
@@ -133523,7 +133591,7 @@
           position.current = currPos;
           throttleTimeout.current = null;
         }, [callback, elementRef]);
-        (0, import_react102.useEffect)(() => {
+        (0, import_react103.useEffect)(() => {
           if (!isEnabled) return;
           const handleScroll = () => {
             if (delay2) {
@@ -133577,9 +133645,9 @@
         useResizeObserver: () => useResizeObserver
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useResize(callback, immediatelyInvoke = true) {
-        (0, import_react102.useEffect)(() => {
+        (0, import_react103.useEffect)(() => {
           const fn = () => callback();
           if (immediatelyInvoke) {
             fn();
@@ -133593,7 +133661,7 @@
       }
       function useResizeObserver(options) {
         const { ref, box, onResize } = options;
-        (0, import_react102.useEffect)(() => {
+        (0, import_react103.useEffect)(() => {
           let element = ref == null ? void 0 : ref.current;
           if (!element) {
             return;
@@ -133817,7 +133885,7 @@
         useNavbarContext: () => useNavbarContext
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
@@ -133851,10 +133919,10 @@
         const Component2 = as || "nav";
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const prevWidth = (0, import_react102.useRef)(0);
-        const navHeight = (0, import_react102.useRef)(0);
-        const [isHidden, setIsHidden] = (0, import_react102.useState)(false);
-        const handleMenuOpenChange = (0, import_react102.useCallback)(
+        const prevWidth = (0, import_react103.useRef)(0);
+        const navHeight = (0, import_react103.useRef)(0);
+        const [isHidden, setIsHidden] = (0, import_react103.useState)(false);
+        const handleMenuOpenChange = (0, import_react103.useCallback)(
           (isOpen) => {
             onMenuOpenChange(isOpen || false);
           },
@@ -133891,12 +133959,12 @@
             }
           }
         });
-        (0, import_react102.useEffect)(() => {
+        (0, import_react103.useEffect)(() => {
           var _a2;
           updateWidth();
           navHeight.current = ((_a2 = domRef.current) == null ? void 0 : _a2.offsetHeight) || 0;
         }, []);
-        const slots = (0, import_react102.useMemo)(
+        const slots = (0, import_react103.useMemo)(
           () => (0, import_theme.navbar)({
             ...variantProps2,
             disableAnimation,
@@ -140913,7 +140981,7 @@
         useTable: () => useTable
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_table = require_main50();
       var import_table2 = require_main53();
       var import_system = require_dist11();
@@ -141015,7 +141083,7 @@
             onCellAction
           ]
         );
-        const getBaseProps = (0, import_react102.useCallback)(
+        const getBaseProps = (0, import_react103.useCallback)(
           (props2) => ({
             ...props2,
             ref: domBaseRef,
@@ -141023,7 +141091,7 @@
           }),
           [baseStyles, slots]
         );
-        const getWrapperProps = (0, import_react102.useCallback)(
+        const getWrapperProps = (0, import_react103.useCallback)(
           (props2) => ({
             ...props2,
             ref: domBaseRef,
@@ -141031,7 +141099,7 @@
           }),
           [classNames == null ? void 0 : classNames.wrapper, slots]
         );
-        const getTableProps = (0, import_react102.useCallback)(
+        const getTableProps = (0, import_react103.useCallback)(
           (props2) => ({
             ...(0, import_shared_utils.mergeProps)(
               gridProps,
@@ -141962,7 +142030,7 @@
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var spacing = {
         px: "1px",
         0: "0px",
@@ -142008,7 +142076,7 @@
         const [props, variantProps2] = (0, import_system_rsc.mapPropsVariants)(originalProps, import_theme.spacer.variantKeys);
         const { as, className, x = 1, y = 1, ...otherProps } = props;
         const Component2 = as || "span";
-        const styles = (0, import_react102.useMemo)(
+        const styles = (0, import_react103.useMemo)(
           () => (0, import_theme.spacer)({
             ...variantProps2,
             className
@@ -142073,12 +142141,12 @@
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useKbd(originalProps) {
         const [props, variantProps2] = (0, import_system_rsc.mapPropsVariants)(originalProps, import_theme.kbd.variantKeys);
         const { as, children, className, keys: keys3, title, classNames, ...otherProps } = props;
         const Component2 = as || "kbd";
-        const slots = (0, import_react102.useMemo)(
+        const slots = (0, import_react103.useMemo)(
           () => (0, import_theme.kbd)({
             ...variantProps2
           }),
@@ -143021,7 +143089,7 @@
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
       var import_react_utils2 = require_dist10();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_tabs = require_main55();
       var import_tabs2 = require_main56();
       function useTabs(originalProps) {
@@ -143055,7 +143123,7 @@
           state,
           domRef
         );
-        const slots = (0, import_react102.useMemo)(
+        const slots = (0, import_react103.useMemo)(
           () => (0, import_theme.tabs)({
             ...variantProps2,
             disableAnimation,
@@ -143064,7 +143132,7 @@
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation, isVertical]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const values = (0, import_react102.useMemo)(
+        const values = (0, import_react103.useMemo)(
           () => ({
             state,
             slots,
@@ -143086,7 +143154,7 @@
             classNames
           ]
         );
-        const getBaseProps = (0, import_react102.useCallback)(
+        const getBaseProps = (0, import_react103.useCallback)(
           (props2) => ({
             "data-slot": "base",
             className: slots.base({ class: (0, import_theme.cn)(baseStyles, props2 == null ? void 0 : props2.className) }),
@@ -143099,7 +143167,7 @@
           }),
           [baseStyles, otherProps, slots]
         );
-        const getWrapperProps = (0, import_react102.useCallback)(
+        const getWrapperProps = (0, import_react103.useCallback)(
           (props2) => ({
             "data-slot": "tabWrapper",
             className: slots.tabWrapper({ class: (0, import_theme.cn)(classNames == null ? void 0 : classNames.tabWrapper, props2 == null ? void 0 : props2.className) }),
@@ -143108,7 +143176,7 @@
           }),
           [classNames, slots, placement, isVertical]
         );
-        const getTabListProps = (0, import_react102.useCallback)(
+        const getTabListProps = (0, import_react103.useCallback)(
           (props2) => ({
             ref: domRef,
             "data-slot": "tabList",
@@ -143117,7 +143185,7 @@
           }),
           [domRef, tabListProps, classNames, slots]
         );
-        const getTabCursorProps = (0, import_react102.useCallback)(
+        const getTabCursorProps = (0, import_react103.useCallback)(
           (props2) => ({
             "data-slot": "cursor",
             className: slots.cursor({
@@ -143465,7 +143533,7 @@
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist11();
       function useSkeleton(originalProps) {
         var _a, _b;
@@ -143474,7 +143542,7 @@
         const { as, children, isLoaded = false, className, classNames, ...otherProps } = props;
         const Component2 = as || "div";
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        const slots = (0, import_react102.useMemo)(
+        const slots = (0, import_react103.useMemo)(
           () => (0, import_theme.skeleton)({
             ...variantProps2,
             disableAnimation
@@ -143533,7 +143601,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_shared_utils = require_dist2();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useDataScrollOverflow(props = {}) {
         const {
           domRef,
@@ -143544,8 +143612,8 @@
           onVisibilityChange,
           updateDeps = []
         } = props;
-        const visibleRef = (0, import_react102.useRef)(visibility);
-        (0, import_react102.useEffect)(() => {
+        const visibleRef = (0, import_react103.useRef)(visibility);
+        (0, import_react103.useEffect)(() => {
           const el = domRef == null ? void 0 : domRef.current;
           if (!el || !isEnabled) return;
           const setAttributes = (direction, hasBefore, hasAfter, prefix, suffix) => {
@@ -143647,7 +143715,7 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_use_data_scroll_overflow = require_dist72();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       function useScrollShadow(originalProps) {
         var _a;
@@ -143676,7 +143744,7 @@
           updateDeps: [children],
           overflowCheck: (_a = originalProps.orientation) != null ? _a : "vertical"
         });
-        const styles = (0, import_react102.useMemo)(
+        const styles = (0, import_react103.useMemo)(
           () => (0, import_theme.scrollShadow)({
             ...variantProps2,
             className
@@ -144231,7 +144299,7 @@
       var import_theme = require_dist12();
       var import_list = require_main58();
       var import_react_utils = require_dist10();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme2 = require_dist12();
       function useListbox(props) {
         var _a;
@@ -144263,7 +144331,7 @@
         const innerState = (0, import_list.useListState)({ ...props, children, onSelectionChange });
         const state = propState || innerState;
         const { listBoxProps } = (0, import_listbox.useListBox)({ ...props, onAction }, state, domRef);
-        const slots = (0, import_react102.useMemo)(() => (0, import_theme.listbox)(), []);
+        const slots = (0, import_react103.useMemo)(() => (0, import_theme.listbox)(), []);
         const baseStyles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.base, className);
         const getBaseProps = (props2 = {}) => {
           return {
@@ -145061,27 +145129,27 @@
         useLayoutEffect: () => useLayoutEffect2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react102 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
-      var useLayoutEffect2 = typeof document !== "undefined" ? import_react102.default.useLayoutEffect : () => {
+      var import_react103 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
+      var useLayoutEffect2 = typeof document !== "undefined" ? import_react103.default.useLayoutEffect : () => {
       };
       function useEffectEvent2(fn) {
-        const ref = (0, import_react102.useRef)(null);
+        const ref = (0, import_react103.useRef)(null);
         useLayoutEffect2(() => {
           ref.current = fn;
         }, [fn]);
-        return (0, import_react102.useCallback)((...args) => {
+        return (0, import_react103.useCallback)((...args) => {
           const f = ref.current;
           return f == null ? void 0 : f(...args);
         }, []);
       }
       function useFormReset(ref, initialValue, onReset) {
-        let resetValue = (0, import_react102.useRef)(initialValue);
+        let resetValue = (0, import_react103.useRef)(initialValue);
         let handleReset = useEffectEvent2(() => {
           if (onReset) {
             onReset(resetValue.current);
           }
         });
-        (0, import_react102.useEffect)(() => {
+        (0, import_react103.useEffect)(() => {
           var _a;
           let form = (_a = ref == null ? void 0 : ref.current) == null ? void 0 : _a.form;
           form == null ? void 0 : form.addEventListener("reset", handleReset);
@@ -148603,11 +148671,11 @@
       var import_menu = require_main61();
       var import_selection = require_main13();
       var import_utils8 = require_main4();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useMultiSelect(props, state, ref) {
         const { disallowEmptySelection, isDisabled } = props;
         const collator = (0, import_i18n12.useCollator)({ usage: "search", sensitivity: "base" });
-        const delegate = (0, import_react102.useMemo)(
+        const delegate = (0, import_react103.useMemo)(
           () => new import_selection.ListKeyboardDelegate(state.collection, state.disabledKeys, null, collator),
           [state.collection, state.disabledKeys, collator]
         );
@@ -148882,7 +148950,7 @@
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_aria_button = require_dist27();
       var import_focus2 = require_main18();
       var import_shared_utils = require_dist2();
@@ -148966,9 +149034,9 @@
         const Component2 = as || "button";
         const shouldFilterDOMProps = typeof Component2 === "string";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const triggerRef = (0, import_react102.useRef)(null);
-        const listBoxRef = (0, import_react102.useRef)(null);
-        const popoverRef = (0, import_react102.useRef)(null);
+        const triggerRef = (0, import_react103.useRef)(null);
+        const listBoxRef = (0, import_react103.useRef)(null);
+        const popoverRef = (0, import_react103.useRef)(null);
         let state = (0, import_use_aria_multiselect.useMultiSelectState)({
           ...props,
           isOpen,
@@ -149029,7 +149097,7 @@
           state,
           triggerRef
         );
-        const handleClear = (0, import_react102.useCallback)(() => {
+        const handleClear = (0, import_react103.useCallback)(() => {
           var _a2;
           state.setSelectedKeys(/* @__PURE__ */ new Set([]));
           onClear == null ? void 0 : onClear();
@@ -149058,7 +149126,7 @@
         const hasLabel = !!label;
         const hasLabelOutside = hasLabel && (isOutsideLeft || shouldLabelBeOutside && hasPlaceholder);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react102.useMemo)(
+        const slots = (0, import_react103.useMemo)(
           () => (0, import_theme.select)({
             ...variantProps2,
             isInvalid,
@@ -149074,14 +149142,14 @@
         const errorMessage = typeof props.errorMessage === "function" ? props.errorMessage({ isInvalid, validationErrors, validationDetails }) : props.errorMessage || (validationErrors == null ? void 0 : validationErrors.join(" "));
         const hasHelper = !!description || !!errorMessage;
         const hasEndContent = !!endContent;
-        (0, import_react102.useEffect)(() => {
+        (0, import_react103.useEffect)(() => {
           if (state.isOpen && popoverRef.current && triggerRef.current) {
             let selectRect = triggerRef.current.getBoundingClientRect();
             let popover = popoverRef.current;
             popover.style.width = selectRect.width + "px";
           }
         }, [state.isOpen]);
-        (0, import_react102.useEffect)(() => {
+        (0, import_react103.useEffect)(() => {
           if (state.isOpen && popoverRef.current && listBoxRef.current) {
             let selectedItem = listBoxRef.current.querySelector("[aria-selected=true] [data-label=true]");
             let scrollShadow = scrollShadowRef.current;
@@ -149092,7 +149160,7 @@
             }
           }
         }, [state.isOpen, disableAnimation]);
-        const getBaseProps = (0, import_react102.useCallback)(
+        const getBaseProps = (0, import_react103.useCallback)(
           (props2 = {}) => ({
             "data-slot": "base",
             "data-filled": (0, import_shared_utils.dataAttr)(isFilled),
@@ -149109,7 +149177,7 @@
           }),
           [slots, hasHelper, hasValue, hasLabel, hasLabelOutside, isFilled, baseStyles]
         );
-        const getTriggerProps = (0, import_react102.useCallback)(
+        const getTriggerProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ref: triggerRef,
@@ -149149,7 +149217,7 @@
             shouldFilterDOMProps
           ]
         );
-        const getHiddenSelectProps = (0, import_react102.useCallback)(
+        const getHiddenSelectProps = (0, import_react103.useCallback)(
           (props2 = {}) => ({
             state,
             triggerRef,
@@ -149174,7 +149242,7 @@
             triggerRef
           ]
         );
-        const getLabelProps = (0, import_react102.useCallback)(
+        const getLabelProps = (0, import_react103.useCallback)(
           (props2 = {}) => ({
             "data-slot": "label",
             className: slots.label({
@@ -149185,7 +149253,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.label, labelProps]
         );
-        const getValueProps = (0, import_react102.useCallback)(
+        const getValueProps = (0, import_react103.useCallback)(
           (props2 = {}) => ({
             "data-slot": "value",
             className: slots.value({
@@ -149196,7 +149264,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.value, valueProps]
         );
-        const getListboxWrapperProps = (0, import_react102.useCallback)(
+        const getListboxWrapperProps = (0, import_react103.useCallback)(
           (props2 = {}) => ({
             "data-slot": "listboxWrapper",
             className: slots.listboxWrapper({
@@ -149233,7 +149301,7 @@
             ...(0, import_shared_utils.mergeProps)(slotsProps.listboxProps, props2, menuProps)
           };
         };
-        const getPopoverProps = (0, import_react102.useCallback)(
+        const getPopoverProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             var _a2, _b2;
             const popoverProps2 = (0, import_shared_utils.mergeProps)(slotsProps.popoverProps, props2);
@@ -149265,7 +149333,7 @@
             state.selectedItems
           ]
         );
-        const getSelectorIconProps = (0, import_react102.useCallback)(
+        const getSelectorIconProps = (0, import_react103.useCallback)(
           () => ({
             "data-slot": "selectorIcon",
             "aria-hidden": (0, import_shared_utils.dataAttr)(true),
@@ -149274,7 +149342,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.selectorIcon, state.isOpen]
         );
-        const getInnerWrapperProps = (0, import_react102.useCallback)(
+        const getInnerWrapperProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -149286,7 +149354,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.innerWrapper]
         );
-        const getHelperWrapperProps = (0, import_react102.useCallback)(
+        const getHelperWrapperProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -149298,7 +149366,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getDescriptionProps = (0, import_react102.useCallback)(
+        const getDescriptionProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -149309,7 +149377,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.description]
         );
-        const getMainWrapperProps = (0, import_react102.useCallback)(
+        const getMainWrapperProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -149321,7 +149389,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.mainWrapper]
         );
-        const getEndWrapperProps = (0, import_react102.useCallback)(
+        const getEndWrapperProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -149333,7 +149401,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.endWrapper]
         );
-        const getEndContentProps = (0, import_react102.useCallback)(
+        const getEndContentProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -149345,7 +149413,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.endContent]
         );
-        const getErrorMessageProps = (0, import_react102.useCallback)(
+        const getErrorMessageProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -149356,7 +149424,7 @@
           },
           [slots, errorMessageProps, classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getSpinnerProps = (0, import_react102.useCallback)(
+        const getSpinnerProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               "aria-hidden": (0, import_shared_utils.dataAttr)(true),
@@ -149371,7 +149439,7 @@
           },
           [slots, spinnerRef, spinnerProps, classNames == null ? void 0 : classNames.spinner]
         );
-        const getClearButtonProps = (0, import_react102.useCallback)(
+        const getClearButtonProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -150211,7 +150279,7 @@
       var import_visually_hidden = require_main8();
       var import_slider = require_main63();
       var import_react_utils = require_dist10();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_interactions = require_main17();
       var import_focus2 = require_main18();
       var import_shared_utils = require_dist2();
@@ -150235,7 +150303,7 @@
         } = props;
         const Component2 = as || "div";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const inputRef = (0, import_react102.useRef)(null);
+        const inputRef = (0, import_react103.useRef)(null);
         const numberFormatter = (0, import_i18n12.useNumberFormatter)(formatOptions);
         const { thumbProps, inputProps, isDragging: isDragging2, isFocused } = (0, import_slider.useSliderThumb)(
           {
@@ -151262,7 +151330,7 @@
       var import_react_utils = require_dist10();
       var import_breadcrumbs = require_main66();
       var import_shared_utils = require_dist2();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useBreadcrumbItem(originalProps) {
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.breadcrumbItem.variantKeys);
         const {
@@ -151289,7 +151357,7 @@
           domRef
         );
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)();
-        const slots = (0, import_react102.useMemo)(
+        const slots = (0, import_react103.useMemo)(
           () => (0, import_theme.breadcrumbItem)({
             ...variantProps2,
             isCurrent,
@@ -155456,7 +155524,7 @@
       var import_input = require_dist53();
       var import_framer_motion2 = require_cjs4();
       var import_shared_utils = require_dist2();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_utils = require_dist10();
       var import_combobox = require_main67();
       var import_i18n12 = require_main5();
@@ -155550,10 +155618,10 @@
             disabledKeys: /* @__PURE__ */ new Set([...state.collection.getKeys()])
           }
         };
-        const buttonRef = (0, import_react102.useRef)(null);
-        const inputWrapperRef = (0, import_react102.useRef)(null);
-        const listBoxRef = (0, import_react102.useRef)(null);
-        const popoverRef = (0, import_react102.useRef)(null);
+        const buttonRef = (0, import_react103.useRef)(null);
+        const inputWrapperRef = (0, import_react103.useRef)(null);
+        const listBoxRef = (0, import_react103.useRef)(null);
+        const popoverRef = (0, import_react103.useRef)(null);
         const inputRef = (0, import_react_utils.useDOMRef)(ref);
         const scrollShadowRef = (0, import_react_utils.useDOMRef)(scrollRefProp);
         const {
@@ -155652,7 +155720,7 @@
             state.setInputValue(item.textValue);
           }
         }, [inputRef.current]);
-        (0, import_react102.useEffect)(() => {
+        (0, import_react103.useEffect)(() => {
           let keyToFocus;
           if (state.value && state.collection.getItem(state.value) && !state.disabledKeys.has(state.value)) {
             keyToFocus = state.value;
@@ -155665,7 +155733,7 @@
           }
           state.selectionManager.setFocusedKey(keyToFocus);
         }, [state.collection, state.disabledKeys, state.value, state.isOpen, state.inputValue]);
-        (0, import_react102.useEffect)(() => {
+        (0, import_react103.useEffect)(() => {
           if (state.isOpen && popoverRef.current && listBoxRef.current) {
             let selectedItem = listBoxRef.current.querySelector("[aria-selected=true] [data-label=true]");
             let scrollShadow = scrollShadowRef.current;
@@ -155677,7 +155745,7 @@
             }
           }
         }, [state.isOpen, disableAnimation]);
-        (0, import_react102.useEffect)(() => {
+        (0, import_react103.useEffect)(() => {
           if (isOpen) {
             if (popoverRef.current && inputWrapperRef.current) {
               let rect = inputWrapperRef.current.getBoundingClientRect();
@@ -155697,7 +155765,7 @@
           };
         }
         const Component2 = as || "div";
-        const slots = (0, import_react102.useMemo)(
+        const slots = (0, import_react103.useMemo)(
           () => (0, import_theme.autocomplete)({
             ...variantProps2,
             isClearable,
@@ -160521,7 +160589,7 @@
       var import_theme2 = require_dist12();
       var import_date = require_main74();
       var import_system = require_dist11();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist12();
       var import_utils8 = require_main38();
       var import_react_utils = require_dist10();
@@ -160567,7 +160635,7 @@
         const visibleMonths = (0, import_shared_utils.clamp)(visibleMonthsProp, 1, 3);
         const showMonthAndYearPickers = originalProps.showMonthAndYearPickers && visibleMonths === 1;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const handleHeaderExpandedChange = (0, import_react102.useCallback)(
+        const handleHeaderExpandedChange = (0, import_react103.useCallback)(
           (isExpanded) => {
             onHeaderExpandedChange(isExpanded || false);
           },
@@ -160578,10 +160646,10 @@
           isHeaderDefaultExpanded != null ? isHeaderDefaultExpanded : false,
           handleHeaderExpandedChange
         );
-        const visibleDuration = (0, import_react102.useMemo)(() => ({ months: visibleMonths }), [visibleMonths]);
+        const visibleDuration = (0, import_react103.useMemo)(() => ({ months: visibleMonths }), [visibleMonths]);
         const hasMultipleMonths = visibleMonths > 1;
         const shouldFilterDOMProps = typeof Component2 === "string";
-        const slots = (0, import_react102.useMemo)(
+        const slots = (0, import_react103.useMemo)(
           () => (0, import_theme.calendar)({
             ...variantProps2,
             showMonthAndYearPickers,
@@ -161639,7 +161707,7 @@
       });
       var calendar_default = Calendar;
       var import_system3 = require_dist11();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react104 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_utils5 = require_dist10();
       var import_calendar5 = require_main72();
       var import_calendar6 = require_main73();
@@ -161680,7 +161748,7 @@
           classNames,
           otherProps
         } = useCalendarBase({ ...originalProps, isRange: true });
-        const headerRef = (0, import_react103.useRef)(null);
+        const headerRef = (0, import_react104.useRef)(null);
         const state = (0, import_calendar6.useRangeCalendarState)({
           ...originalProps,
           locale,
@@ -161717,7 +161785,7 @@
             ...props
           };
         };
-        const context = (0, import_react103.useMemo)(
+        const context = (0, import_react104.useMemo)(
           () => ({
             state,
             slots,
@@ -166501,7 +166569,7 @@
       var import_datepicker2 = require_main77();
       var import_shared_utils = require_dist2();
       var import_theme = require_dist12();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_form = require_dist33();
       function useDateInput(originalProps) {
         var _a, _b, _c, _d, _e, _f, _g;
@@ -166568,7 +166636,7 @@
           label
         });
         const shouldLabelBeOutside = labelPlacement === "outside" || labelPlacement === "outside-left" || labelPlacement === "outside-top";
-        const slots = (0, import_react102.useMemo)(
+        const slots = (0, import_react103.useMemo)(
           () => (0, import_theme.dateInput)({
             ...variantProps2,
             disableAnimation,
@@ -167066,7 +167134,7 @@
       var import_form = require_dist33();
       var import_shared_utils = require_dist2();
       var import_theme = require_dist12();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
       var import_i18n12 = require_main5();
@@ -167281,7 +167349,7 @@
           onHeaderExpandedChange,
           ...restUserCalendarProps
         } = userCalendarProps;
-        const handleHeaderExpandedChange = (0, import_react102.useCallback)(
+        const handleHeaderExpandedChange = (0, import_react103.useCallback)(
           (isExpanded) => {
             onHeaderExpandedChange == null ? void 0 : onHeaderExpandedChange(isExpanded || false);
           },
@@ -168127,7 +168195,7 @@
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist12();
       var import_utils8 = require_main38();
       var import_shared_utils = require_dist2();
@@ -168162,16 +168230,16 @@
         const Component2 = as || "div";
         const shouldFilterDOMProps = typeof Component2 === "string";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const handleClose = (0, import_react102.useCallback)(() => {
+        const handleClose = (0, import_react103.useCallback)(() => {
           setIsVisible(false);
           onClose == null ? void 0 : onClose();
         }, [setIsVisible, onClose]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react102.useMemo)(
+        const slots = (0, import_react103.useMemo)(
           () => (0, import_theme.alert)({ hasContent: !(0, import_shared_utils.isEmpty)(description) || !(0, import_shared_utils.isEmpty)(children), ...variantProps2 }),
           [description, (0, import_shared_utils.objectToDeps)(variantProps2)]
         );
-        const getBaseProps = (0, import_react102.useCallback)(() => {
+        const getBaseProps = (0, import_react103.useCallback)(() => {
           return {
             "data-visible": (0, import_shared_utils.dataAttr)(isVisible),
             "data-closeable": (0, import_shared_utils.dataAttr)(isClosable),
@@ -168186,35 +168254,35 @@
             className: slots.base({ class: baseStyles })
           };
         }, [slots, baseStyles]);
-        const getMainWrapperProps = (0, import_react102.useCallback)(() => {
+        const getMainWrapperProps = (0, import_react103.useCallback)(() => {
           return {
             className: slots.mainWrapper({ class: classNames == null ? void 0 : classNames.mainWrapper })
           };
         }, [slots, classNames == null ? void 0 : classNames.mainWrapper]);
-        const getDescriptionProps = (0, import_react102.useCallback)(() => {
+        const getDescriptionProps = (0, import_react103.useCallback)(() => {
           return {
             className: slots.description({ class: classNames == null ? void 0 : classNames.description })
           };
         }, [slots, classNames == null ? void 0 : classNames.description]);
-        const getTitleProps = (0, import_react102.useCallback)(() => {
+        const getTitleProps = (0, import_react103.useCallback)(() => {
           return {
             className: slots.title({ class: classNames == null ? void 0 : classNames.title })
           };
         }, [slots, classNames == null ? void 0 : classNames.title]);
-        const getCloseButtonProps = (0, import_react102.useCallback)(
+        const getCloseButtonProps = (0, import_react103.useCallback)(
           () => ({
             ...closeButtonProps,
             className: slots.closeButton({ class: classNames == null ? void 0 : classNames.closeButton })
           }),
           [slots, classNames == null ? void 0 : classNames.closeButton]
         );
-        const getAlertIconProps = (0, import_react102.useCallback)(
+        const getAlertIconProps = (0, import_react103.useCallback)(
           () => ({
             className: slots.alertIcon({ class: classNames == null ? void 0 : classNames.alertIcon })
           }),
           [slots, classNames == null ? void 0 : classNames.alertIcon]
         );
-        const getIconWrapperProps = (0, import_react102.useCallback)(
+        const getIconWrapperProps = (0, import_react103.useCallback)(
           () => ({
             className: slots.iconWrapper({ class: classNames == null ? void 0 : classNames.iconWrapper })
           }),
@@ -168340,7 +168408,7 @@
       var import_modal = require_dist63();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_utils = require_dist19();
       var import_shared_utils = require_dist2();
       function useDrawer(originalProps) {
@@ -168355,7 +168423,7 @@
           ...otherProps
         } = originalProps;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const motionProps = (0, import_react102.useMemo)(() => {
+        const motionProps = (0, import_react103.useMemo)(() => {
           if (!(0, import_shared_utils.isEmpty)(drawerMotionProps)) return drawerMotionProps;
           const key = placement === "left" || placement === "right" ? "x" : "y";
           return {
@@ -168382,14 +168450,14 @@
           };
         }, [placement, drawerMotionProps]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react102.useMemo)(
+        const slots = (0, import_react103.useMemo)(
           () => (0, import_theme.drawer)({
             size,
             placement
           }),
           [size, placement]
         );
-        const getModalProps = (0, import_react102.useCallback)(() => {
+        const getModalProps = (0, import_react103.useCallback)(() => {
           return {
             classNames: {
               ...classNames,
@@ -168676,7 +168744,7 @@
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
       var import_use_form_reset = require_dist75();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_utils8 = require_main38();
       var import_form = require_main22();
       var import_form2 = require_main39();
@@ -168722,7 +168790,7 @@
           autoFocus,
           isTextInput: true
         });
-        const handleValueChange = (0, import_react102.useCallback)(
+        const handleValueChange = (0, import_react103.useCallback)(
           (value2) => {
             onValueChange(value2 != null ? value2 : "");
           },
@@ -168754,7 +168822,7 @@
         const errorMessage = typeof props.errorMessage === "function" ? props.errorMessage({ isInvalid, validationErrors, validationDetails }) : props.errorMessage || (validationErrors == null ? void 0 : validationErrors.join(" "));
         const description = props.description;
         const hasHelper = !!description || !!errorMessage;
-        const slots = (0, import_react102.useMemo)(
+        const slots = (0, import_react103.useMemo)(
           () => (0, import_theme.inputOtp)({
             ...variantProps2,
             disableAnimation,
@@ -168763,7 +168831,7 @@
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation, isInvalid, isReadOnly]
         );
-        const getBaseProps = (0, import_react102.useCallback)(
+        const getBaseProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ref: baseDomRef,
@@ -168798,7 +168866,7 @@
           },
           [baseDomRef, slots, baseStyles, isDisabled, isInvalid, isRequired, isReadOnly, value, length]
         );
-        const getInputOtpProps = (0, import_react102.useCallback)(
+        const getInputOtpProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             var _a2;
             const otpProps = {
@@ -168842,7 +168910,7 @@
             autoFocus
           ]
         );
-        const getSegmentWrapperProps = (0, import_react102.useCallback)(
+        const getSegmentWrapperProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.segmentWrapper({
@@ -168856,7 +168924,7 @@
           },
           [classNames == null ? void 0 : classNames.segmentWrapper, isDisabled]
         );
-        const getHelperWrapperProps = (0, import_react102.useCallback)(
+        const getHelperWrapperProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.helperWrapper({
@@ -168868,7 +168936,7 @@
           },
           [classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getErrorMessageProps = (0, import_react102.useCallback)(
+        const getErrorMessageProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.errorMessage({
@@ -168880,7 +168948,7 @@
           },
           [classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getDescriptionProps = (0, import_react102.useCallback)(
+        const getDescriptionProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.description({
@@ -169932,7 +170000,7 @@
       var import_shared_utils = require_dist2();
       var import_numberfield = require_main78();
       var import_numberfield2 = require_main79();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_form = require_dist33();
       function useNumberInput(originalProps) {
         var _a, _b, _c;
@@ -169960,7 +170028,7 @@
           hideStepper,
           ...otherProps
         } = props;
-        const [isFocusWithin, setFocusWithin] = (0, import_react102.useState)(false);
+        const [isFocusWithin, setFocusWithin] = (0, import_react103.useState)(false);
         const Component2 = as || "div";
         const disableAnimation = (_c = (_b = originalProps.disableAnimation) != null ? _b : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _c : false;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
@@ -169990,7 +170058,7 @@
         const isFilled = !(0, import_shared_utils.isEmpty)(state.inputValue) && !(0, import_shared_utils.isEmpty)(inputValue);
         const isFilledWithin = isFilled || isFocusWithin;
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className, isFilled ? "is-filled" : "");
-        const handleClear = (0, import_react102.useCallback)(() => {
+        const handleClear = (0, import_react103.useCallback)(() => {
           var _a2;
           state.setInputValue("");
           onClear == null ? void 0 : onClear();
@@ -170034,7 +170102,7 @@
         const hasStartContent = !!startContent;
         const isLabelOutside = shouldLabelBeOutside ? labelPlacement === "outside-left" || isOutsideTop || hasPlaceholder || labelPlacement === "outside" && hasStartContent : false;
         const isLabelOutsideAsPlaceholder = labelPlacement === "outside" && !hasPlaceholder && !hasStartContent;
-        const slots = (0, import_react102.useMemo)(
+        const slots = (0, import_react103.useMemo)(
           () => (0, import_theme.numberInput)({
             ...variantProps2,
             isInvalid,
@@ -170051,7 +170119,7 @@
             disableAnimation
           ]
         );
-        const handleKeyDown = (0, import_react102.useCallback)(
+        const handleKeyDown = (0, import_react103.useCallback)(
           (e) => {
             var _a2, _b2;
             const inputElement = e.currentTarget;
@@ -170081,7 +170149,7 @@
           },
           [inputValue, state, onClear, isClearable, originalProps.isReadOnly]
         );
-        const getBaseProps = (0, import_react102.useCallback)(
+        const getBaseProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ref: baseDomRef,
@@ -170131,7 +170199,7 @@
             originalProps.isDisabled
           ]
         );
-        const getLabelProps = (0, import_react102.useCallback)(
+        const getLabelProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "label",
@@ -170141,7 +170209,7 @@
           },
           [slots, isLabelHovered, labelProps, classNames == null ? void 0 : classNames.label]
         );
-        const getNumberInputProps = (0, import_react102.useCallback)(
+        const getNumberInputProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "input",
@@ -170183,7 +170251,7 @@
             handleKeyDown
           ]
         );
-        const getHiddenNumberInputProps = (0, import_react102.useCallback)(
+        const getHiddenNumberInputProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               name: originalProps.name,
@@ -170195,7 +170263,7 @@
           },
           [inputValue, originalProps.name]
         );
-        const getInputWrapperProps = (0, import_react102.useCallback)(
+        const getInputWrapperProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ref: inputWrapperRef,
@@ -170228,7 +170296,7 @@
             classNames == null ? void 0 : classNames.inputWrapper
           ]
         );
-        const getInnerWrapperProps = (0, import_react102.useCallback)(
+        const getInnerWrapperProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ref: innerWrapperRef,
@@ -170246,7 +170314,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.innerWrapper]
         );
-        const getMainWrapperProps = (0, import_react102.useCallback)(
+        const getMainWrapperProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -170258,7 +170326,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.mainWrapper]
         );
-        const getHelperWrapperProps = (0, import_react102.useCallback)(
+        const getHelperWrapperProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -170270,7 +170338,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getDescriptionProps = (0, import_react102.useCallback)(
+        const getDescriptionProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -170281,7 +170349,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.description]
         );
-        const getErrorMessageProps = (0, import_react102.useCallback)(
+        const getErrorMessageProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -170292,7 +170360,7 @@
           },
           [slots, errorMessageProps, classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getClearButtonProps = (0, import_react102.useCallback)(
+        const getClearButtonProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -170308,7 +170376,7 @@
           },
           [slots, isClearButtonFocusVisible, clearPressProps, clearFocusProps, classNames == null ? void 0 : classNames.clearButton]
         );
-        const getStepperWrapperProps = (0, import_react102.useCallback)(
+        const getStepperWrapperProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -170320,7 +170388,7 @@
           },
           [slots]
         );
-        const getStepperIncreaseButtonProps = (0, import_react102.useCallback)(
+        const getStepperIncreaseButtonProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -170335,7 +170403,7 @@
           },
           [slots, incrementButtonProps, classNames == null ? void 0 : classNames.stepperButton]
         );
-        const getStepperDecreaseButtonProps = (0, import_react102.useCallback)(
+        const getStepperDecreaseButtonProps = (0, import_react103.useCallback)(
           (props2 = {}) => {
             return {
               type: "button",
@@ -171990,10 +172058,10 @@
       Ripple.displayName = "HeroUI.Ripple";
       var ripple_default = Ripple;
       var import_shared_utils2 = require_dist2();
-      var import_react102 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useRipple(props = {}) {
-        const [ripples, setRipples] = (0, import_react102.useState)([]);
-        const onPress = (0, import_react102.useCallback)((event) => {
+        const [ripples, setRipples] = (0, import_react103.useState)([]);
+        const onPress = (0, import_react103.useCallback)((event) => {
           const trigger = event.target;
           const size = Math.max(trigger.clientWidth, trigger.clientHeight);
           setRipples((prevRipples) => [
@@ -172006,7 +172074,7 @@
             }
           ]);
         }, []);
-        const onClear = (0, import_react102.useCallback)((key) => {
+        const onClear = (0, import_react103.useCallback)((key) => {
           setRipples((prevState) => prevState.filter((ripple) => ripple.key !== key));
         }, []);
         return { ripples, onClear, onPress, ...props };
@@ -184726,6 +184794,7 @@ ${cue.text}`).join("\n\n")}
               "div",
               {
                 className: `vp-topbar absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-4 overflow-hidden px-[18px] transition-[height,opacity] duration-300 ${collapseMpvTopBar || cssFullscreen && !controlsVisible ? "h-0" : "h-[52px]"}`,
+                inert: !controlsVisible,
                 style: {
                   // Spegelbild av kontrollradens gradient nedtill, samma stopp.
                   // Solid platta + border-b gav en hård kant tvärs över bilden —
@@ -184791,6 +184860,7 @@ ${cue.text}`).join("\n\n")}
               "div",
               {
                 className: "absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-2.5 overflow-hidden border-b border-white/[0.07] px-3.5 transition-[height,opacity] duration-300",
+                inert: !controlsVisible,
                 style: {
                   backgroundColor: "#0a0b12",
                   opacity: controlsVisible ? 1 : 0,
@@ -184834,6 +184904,7 @@ ${cue.text}`).join("\n\n")}
           ) : /* @__PURE__ */ jsxs(
             "div",
             {
+              inert: !controlsVisible,
               className: `absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-4 overflow-hidden transition-[height,padding,opacity,background] duration-300 ${collapseMpvTopBar || cssFullscreen && !controlsVisible ? "h-0 px-4 py-0 opacity-0" : "min-h-[44px] px-4 pb-2.5 pt-[max(0.625rem,env(safe-area-inset-top),var(--android-inset-top,0px))]"}`,
               style: {
                 // Spegelbild av kontrollradens gradient nedtill: solid svart
@@ -185224,6 +185295,7 @@ ${cue.text}`).join("\n\n")}
                 landscapeChrome && /* @__PURE__ */ jsxs(
                   "div",
                   {
+                    inert: !controlsVisible,
                     className: "absolute inset-x-[26px] top-5 z-[26] flex items-center justify-between gap-6 transition-opacity duration-300",
                     style: {
                       opacity: controlsVisible ? 1 : 0,
@@ -185720,6 +185792,7 @@ ${cue.text}`).join("\n\n")}
                 shouldShowSkipIntroButton && activeIntro && /* @__PURE__ */ jsxs(
                   "div",
                   {
+                    inert: !controlsVisible,
                     className: `absolute z-[55] flex items-center gap-0.5 rounded-full border border-white/[0.14] bg-[rgba(13,14,22,0.82)] py-1 pl-4 pr-1 shadow-[0_12px_40px_rgba(0,0,0,0.5)] backdrop-blur-md transition-opacity duration-300 ${desktopChrome ? "bottom-32 right-6" : landscapeChrome ? "bottom-28 right-[26px]" : portraitChrome ? "bottom-[172px] right-3.5" : "bottom-24 right-4"}`,
                     style: newChrome ? { opacity: controlsVisible ? 1 : 0, pointerEvents: controlsVisible ? "auto" : "none" } : void 0,
                     onClick: (e) => e.stopPropagation(),
@@ -186947,8 +187020,8 @@ ${cue.text}`).join("\n\n")}
             }
           ),
           label ? /* @__PURE__ */ jsxs("span", { style: { flex: 1, display: "flex", flexDirection: "column", gap: 2 }, children: [
-            /* @__PURE__ */ jsx("span", { style: { fontSize: 14.5, color: TOKENS.text, fontWeight: 500 }, children: label }),
-            hint ? /* @__PURE__ */ jsx("span", { style: { fontSize: 12.5, color: TOKENS.textMute, lineHeight: 1.4 }, children: hint }) : null
+            /* @__PURE__ */ jsx("span", { style: { fontSize: TYPE.body, color: TOKENS.text, fontWeight: 500 }, children: label }),
+            hint ? /* @__PURE__ */ jsx("span", { style: { fontSize: TYPE.small, color: TOKENS.textMute, lineHeight: 1.4 }, children: hint }) : null
           ] }) : null,
           right
         ]
@@ -187124,7 +187197,7 @@ ${cue.text}`).join("\n\n")}
                     padding: "8px 10px",
                     borderRadius: 6,
                     cursor: "pointer",
-                    fontSize: 13.5,
+                    fontSize: TYPE.body,
                     color: active ? TOKENS.text : TOKENS.textDim,
                     background: active ? TOKENS.accentSoft : "transparent",
                     display: "flex",
@@ -187163,9 +187236,9 @@ ${cue.text}`).join("\n\n")}
     title
   }) {
     const sizes = {
-      sm: { padding: "6px 10px", fontSize: 12 },
-      md: { padding: "9px 14px", fontSize: 13 },
-      lg: { padding: "11px 18px", fontSize: 14 }
+      sm: { padding: "6px 10px", fontSize: TYPE.small },
+      md: { padding: "9px 14px", fontSize: TYPE.body },
+      lg: { padding: "11px 18px", fontSize: TYPE.body }
     };
     const variants = {
       ghost: {
@@ -187278,7 +187351,7 @@ ${cue.text}`).join("\n\n")}
                 {
                   style: {
                     margin: 0,
-                    fontSize: 17,
+                    fontSize: TYPE.h2,
                     fontWeight: 600,
                     letterSpacing: -0.2,
                     color: TOKENS.text
@@ -187286,7 +187359,7 @@ ${cue.text}`).join("\n\n")}
                   children: title
                 }
               ) : null,
-              hint ? /* @__PURE__ */ jsx("p", { style: { margin: "4px 0 0", fontSize: 13, color: TOKENS.textDim, maxWidth: 560 }, children: hint }) : null
+              hint ? /* @__PURE__ */ jsx("p", { style: { margin: "4px 0 0", fontSize: TYPE.body, color: TOKENS.textDim, maxWidth: 560 }, children: hint }) : null
             ] }),
             action
           ]
@@ -187307,7 +187380,7 @@ ${cue.text}`).join("\n\n")}
           "div",
           {
             style: {
-              fontSize: 28,
+              fontSize: TYPE.h1,
               fontWeight: 600,
               letterSpacing: -0.5,
               fontFamily: monoFont,
@@ -187316,7 +187389,7 @@ ${cue.text}`).join("\n\n")}
             children: value
           }
         ),
-        sub ? /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: TOKENS.textMute }, children: sub }) : null
+        sub ? /* @__PURE__ */ jsx("div", { style: { fontSize: TYPE.small, color: TOKENS.textMute }, children: sub }) : null
       ] })
     ] });
   }
@@ -187344,7 +187417,7 @@ ${cue.text}`).join("\n\n")}
       }
     );
   }
-  var import_react_dom2, TOKENS, inputStyle, monoFont, eyebrowStyle, ICON_PATHS;
+  var import_react_dom2, TOKENS, TYPE, inputStyle, monoFont, eyebrowStyle, ICON_PATHS;
   var init_primitives = __esm({
     "components/settings/redesigned/primitives.tsx"() {
       "use client";
@@ -187371,6 +187444,22 @@ ${cue.text}`).join("\n\n")}
         cyan: "#5FD3E8",
         warn: "#F3C969"
       };
+      TYPE = {
+        /** Sifferbrickor och räknare. */
+        micro: "var(--st-micro)",
+        /** ÅTGÄRD/KLART, eyebrow, versala etiketter. */
+        label: "var(--st-label)",
+        /** Hjälptext under en rad. */
+        small: "var(--st-small)",
+        /** Radtitlar, länkar, fältvärden — skalans mittpunkt. */
+        body: "var(--st-body)",
+        /** Korttitel. */
+        h3: "var(--st-h3)",
+        /** Sektionsrubrik. */
+        h2: "var(--st-h2)",
+        /** Sidrubrik. */
+        h1: "var(--st-h1)"
+      };
       inputStyle = {
         width: "100%",
         minHeight: 44,
@@ -187379,13 +187468,13 @@ ${cue.text}`).join("\n\n")}
         border: `1px solid ${TOKENS.border}`,
         background: TOKENS.surface0,
         color: TOKENS.text,
-        fontSize: 14,
+        fontSize: TYPE.body,
         outline: "none",
         boxSizing: "border-box"
       };
       monoFont = "JetBrains Mono, ui-monospace, SFMono-Regular, Menlo, monospace";
       eyebrowStyle = {
-        fontSize: 11,
+        fontSize: TYPE.label,
         fontWeight: 600,
         letterSpacing: "0.14em",
         color: TOKENS.textMute,
@@ -188897,6 +188986,7 @@ ${cue.text}`).join("\n\n")}
         epgEmpty: "No programme guide for these channels yet. Add an EPG source under Settings \u2192 Live TV.",
         // Kanaldetalj
         channelTitle: "Channel",
+        hubChannelDetails: "Channel details",
         today: "Today",
         replays: "Available as replay",
         channelInfo: "Channel information",
@@ -189002,6 +189092,7 @@ ${cue.text}`).join("\n\n")}
         reminderOff: "P\xE5minn mig",
         epgEmpty: "Ingen tabl\xE5 f\xF6r de h\xE4r kanalerna \xE4nnu. L\xE4gg till en EPG-k\xE4lla under Inst\xE4llningar \u2192 Live TV.",
         channelTitle: "Kanaldetalj",
+        hubChannelDetails: "Kanaldetaljer",
         today: "Idag",
         replays: "Tillg\xE4ngligt f\xF6r repris",
         channelInfo: "Kanalinformation",
@@ -194761,16 +194852,24 @@ ${cue.text}`).join("\n\n")}
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/hooks/useIsMobileLayout.ts
   init_react_shim();
+  function \u00E4rTv() {
+    return typeof document !== "undefined" && document.documentElement.dataset.tv === "1";
+  }
   function useIsMobileLayout() {
     const [mobile, setMobile] = useState(
-      () => typeof window !== "undefined" && !window.matchMedia("(min-width: 1024px)").matches
+      () => typeof window !== "undefined" && !\u00E4rTv() && !window.matchMedia("(min-width: 1024px)").matches
     );
     useEffect(() => {
       const mq = window.matchMedia("(min-width: 1024px)");
-      const sync2 = () => setMobile(!mq.matches);
+      const sync2 = () => setMobile(!\u00E4rTv() && !mq.matches);
       sync2();
       mq.addEventListener("change", sync2);
-      return () => mq.removeEventListener("change", sync2);
+      const observer2 = new MutationObserver(sync2);
+      observer2.observe(document.documentElement, { attributes: true, attributeFilter: ["data-tv"] });
+      return () => {
+        mq.removeEventListener("change", sync2);
+        observer2.disconnect();
+      };
     }, []);
     return mobile;
   }
@@ -195139,7 +195238,10 @@ ${cue.text}`).join("\n\n")}
         actions: [
           { key: "play", label: h("hubWatchNow"), run: () => play({ channel }) },
           { key: "pin", label: pinnedSet.has(channelKey(channel)) ? h("hubUnpin") : h("hubPin"), run: () => model.togglePin(channel) },
-          { key: "info", label: h("channelTitle"), run: () => openChannel(channel) },
+          // Egen sträng, inte sidrubriken: raden hette "Channel", vilket inte är
+          // något man kan göra (testfeedback 2026-09-11: "there is an option that
+          // simply says 'channel'").
+          { key: "info", label: h("hubChannelDetails"), run: () => openChannel(channel) },
           ...recentKey ? [{ key: "remove", label: h("hubRemoveRecent"), run: () => removeChannelHistoryEntry(recentKey) }] : []
         ]
       })
@@ -195149,7 +195251,7 @@ ${cue.text}`).join("\n\n")}
       const time2 = formatClock(ms, locale);
       return h("hubWatchedAt", { time: sameDay ? time2 : `${h("hubYesterday")} ${time2}` });
     };
-    const epgButton = /* @__PURE__ */ jsxs(Btn, { variant: "secondary", small: true, onClick: () => go("epg"), tvStation: isTv ? { "data-f": "", "data-live-tv-epg": "", "data-f-left": "[data-live-tv-group]", "data-f-right": "[data-live-tv-bell]" } : void 0, children: [
+    const epgButton = /* @__PURE__ */ jsxs(Btn, { variant: "secondary", small: true, onClick: () => go("epg"), tvStation: isTv ? { "data-f": "", "data-live-tv-epg": "", "data-f-left": "[data-live-tv-group], [data-live-tv-search]", "data-f-right": "[data-live-tv-bell]" } : void 0, children: [
       /* @__PURE__ */ jsx(Icon2.Calendar, { size: 14 }),
       " ",
       h("openEpg")
@@ -195161,10 +195263,10 @@ ${cue.text}`).join("\n\n")}
         ref: searchChipRef,
         ...tvStation ?? {},
         "data-live-tv-search": "",
-        "data-f-right": "[data-live-tv-group]",
+        "data-f-right": "[data-live-tv-group], [data-live-tv-epg]",
         onClick: () => setSearchKeyboardOpen(true),
         className: "truncate",
-        style: { display: "flex", alignItems: "center", gap: 8, borderRadius: 999, border: "1px solid transparent", background: LT.neutral, padding: "0 14px", height: 36, minWidth: 260, maxWidth: 360, color: query ? LT.text : LT.muted, fontSize: 13, fontFamily: "inherit", cursor: "pointer", textAlign: "left" },
+        style: { display: "flex", alignItems: "center", gap: 10, borderRadius: 999, border: "1px solid transparent", background: LT.neutral, padding: "0 18px", height: 36, minWidth: 320, maxWidth: 520, color: query ? LT.text : LT.muted, fontSize: 13, fontFamily: "inherit", cursor: "pointer", textAlign: "left" },
         children: [
           /* @__PURE__ */ jsx(Icon2.Search, { size: 14 }),
           /* @__PURE__ */ jsx("span", { className: "truncate", children: query || h("searchPlaceholder") })
@@ -195521,7 +195623,7 @@ ${cue.text}`).join("\n\n")}
             }) : h("channelsIn", { count: filteredChannels.length, group: effectiveGroup ?? h("hubAllGroups") })
           }
         ),
-        /* @__PURE__ */ jsx("div", { className: "grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3", "data-live-tv-all-channels": "", children: shownChannels.map((channel) => {
+        /* @__PURE__ */ jsx("div", { className: isTv ? "grid grid-cols-3 gap-3" : "grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3", "data-live-tv-all-channels": "", children: shownChannels.map((channel) => {
           const info = nowFor(channel);
           const isPinned = pinnedSet.has(channelKey(channel));
           return /* @__PURE__ */ jsxs(
@@ -195551,7 +195653,7 @@ ${cue.text}`).join("\n\n")}
                   /* @__PURE__ */ jsx("div", { className: "truncate", style: { fontSize: 12, color: LT.muted }, children: info.now?.title ?? channel.group }),
                   info.now ? /* @__PURE__ */ jsx("div", { style: { marginTop: 6, maxWidth: 220 }, children: /* @__PURE__ */ jsx(ProgressBar, { value: progressOf(info.now.start, info.now.stop, nowMs), height: 3 }) }) : null
                 ] }),
-                /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }, onClick: (event) => event.stopPropagation(), children: [
+                isTv ? null : /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }, onClick: (event) => event.stopPropagation(), children: [
                   /* @__PURE__ */ jsx(
                     Btn,
                     {
@@ -195745,6 +195847,27 @@ ${cue.text}`).join("\n\n")}
     }, [onBack, enabled, tvMode]);
   }
 
+  // ../lumio-official-plugins/plugins/live-tv/runtime/hooks/useBackToHub.ts
+  init_react_shim();
+  var BACK_KEYS = /* @__PURE__ */ new Set(["Escape", "Backspace", "GoBack"]);
+  var \u00C4GDA_LAGER = '[data-panel-root], [role="dialog"], [data-tv-keyboard-panel], [data-tv-glass-menu]';
+  function useBackToHub(onBack, enabled = true) {
+    useEffect(() => {
+      if (!enabled) return;
+      const onKey = (event) => {
+        if (!BACK_KEYS.has(event.key) || event.defaultPrevented) return;
+        if (document.querySelector('[data-lumio-player-open="1"]')) return;
+        const active = document.activeElement;
+        if (active instanceof HTMLElement && active.closest(\u00C4GDA_LAGER)) return;
+        event.preventDefault();
+        event.stopPropagation();
+        onBack();
+      };
+      window.addEventListener("keydown", onKey);
+      return () => window.removeEventListener("keydown", onKey);
+    }, [onBack, enabled]);
+  }
+
   // ../lumio-official-plugins/plugins/live-tv/runtime/live-tv-epg-page.tsx
   init_jsx_runtime_shim();
   var HOUR_PX = 240;
@@ -195765,6 +195888,7 @@ ${cue.text}`).join("\n\n")}
     const go = useLiveTvNav(onNavigate);
     const { play, chrome, overlayOpen } = useLiveTvChrome(model);
     useSwipeBack(() => go("hub"), !overlayOpen);
+    useBackToHub(() => go("hub"), !overlayOpen);
     const [dayOffset, setDayOffset] = useState(0);
     const [group, setGroup] = useState(null);
     const [visibleRows, setVisibleRows] = useState(MAX_ROWS);
@@ -196032,6 +196156,7 @@ ${cue.text}`).join("\n\n")}
     const tvStation = isTv ? { "data-f": "" } : void 0;
     const { play, chrome, overlayOpen } = useLiveTvChrome(model);
     useSwipeBack(() => go("hub"), !overlayOpen);
+    useBackToHub(() => go("hub"), !overlayOpen);
     const [reminderTick, setReminderTick] = useState(0);
     const [lockGate, setLockGate] = useState(false);
     const [lockNotice, setLockNotice] = useState(null);
