@@ -632,8 +632,8 @@ function TwitchPageNav({
           {/* Glas utan kant (Jerry 2026-09-12: "Twitch-sök ska också få glass
               utan border-designen") — samma platta som appens sökfält under
               heron, #fcfcff14, och ingen ram i något läge. */}
-          <label className="flex h-8 w-[min(40vw,16rem)] flex-none items-center gap-2 rounded-full border border-transparent bg-[#fcfcff14] px-3.5 text-[0.72rem] text-slate-200 backdrop-blur-md transition focus-within:bg-[#fcfcff22]">
-            <svg className="h-3.5 w-3.5 flex-none text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+          <label className="order-first flex h-8 w-[min(40vw,16rem)] flex-none items-center gap-2 rounded-full border border-transparent bg-[#fcfcff14] px-3.5 text-[0.72rem] text-white backdrop-blur-md transition focus-within:bg-[#fcfcff22]">
+            <svg className="h-3.5 w-3.5 flex-none text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
             <input
               type="search"
               value={navQuery}
@@ -644,7 +644,7 @@ function TwitchPageNav({
               }}
               onKeyDown={(event) => { if (event.key === 'Escape') setTwitchNavQuery('') }}
               placeholder={TEXT.searchPlaceholder[lang] ?? TEXT.searchPlaceholder.en}
-              className="w-full bg-transparent outline-none placeholder:text-slate-500"
+              className="w-full bg-transparent text-white outline-none placeholder:text-white/75"
             />
           </label>
         </div>
