@@ -47,6 +47,17 @@ describe('useEpgNowNextLater', () => {
     expect(vi.mocked(epgSchedule).mock.calls[0][1]).toEqual([KEY])
   })
 
+  it('ett RIKTIGT list-id frågar ändå den globala EPG-store:n', async () => {
+    // Startsideöverstyrningen och appens hemrad (bryggan window.__LumioLiveTvEpg)
+    // skickar listans egna id. Pluginet skriver bara EN store, så ett sådant id
+    // gav tom EPG tills det översattes här.
+    const now = Date.now()
+    vi.mocked(epgSchedule).mockResolvedValue({ [KEY]: [{ title: 'P0', start: now - 1000, stop: now + 1000 }] })
+    const { result } = renderHook(() => useEpgNowNextLater(channel('A'), 'list-1', ['u']))
+    await waitFor(() => expect(result.current.now?.title).toBe('P0'))
+    expect(vi.mocked(epgSchedule).mock.calls[0][0]).toBe('global')
+  })
+
   it('rullar vidare vid programgränsen', async () => {
     // Falsk klocka som ändå går framåt av sig själv: gränstimern ska kunna
     // spolas fram med advanceTimersByTime, medan waitFor får ticka som vanligt.

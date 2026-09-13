@@ -16,7 +16,7 @@ import {
   waitForJob,
   type IndexChannel,
 } from './index-client'
-import { getResolvedChannels, rememberChannels, resolveChannelKeys } from './channel-resolver'
+import { clearResolvedChannels, getResolvedChannels, resolveChannelKeys } from './channel-resolver'
 import { migrateStorageV2 } from './storage-v2-migration'
 import { getChannelHistory, onChannelHistoryChanged, type ChannelHistoryEntry } from './channel-history'
 import { useReminders, type Reminder } from './reminders'
@@ -162,13 +162,84 @@ function ensureBootstrap(): Promise<void> {
  */
 const epgRefreshRequested = new Set<string>()
 
+function channelsCacheKey(source: string | null): string {
+  return `${LIVE_TV_CHANNELS_PREFIX}${source ?? 'all'}`
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * EN hämtning per källa, delad av alla monterade modeller.
+ *
+ * Hubben, TV-skalet och startsideöverstyrningen kan ha var sin modell igång.
+ * Tidigare lyssnade de var för sig på `INDEX_CHANGED_EVENT` och körde var sin
+ * `clearPluginMemoryCacheByPrefix` + omladdning: tre parallella hämtningar av
+ * 17 000 kanaler, där var och en TÖMDE cachen de andra just fyllt, så en
+ * hämtning kunde skriva sitt resultat och genast få det bortrensat av nästa
+ * modells rensning.
+ *
+ * Nu finns EN modul-global laddare: en promise per källa som alla väntar på,
+ * och EN lyssnare på indexhändelsen som rensar, räknar upp generationen och
+ * väcker modellerna.
+ */
+const channelLoads = new Map<string, Promise<IndexChannel[]>>()
+const channelAborts = new Map<string, AbortController>()
+const generationListeners = new Set<() => void>()
+let indexSubscription: (() => void) | null = null
+
+function ensureIndexSubscription(): void {
+  if (indexSubscription || typeof window === 'undefined') return
+  indexSubscription = onIndexChanged(() => {
+    invalidateChannels()
+    for (const listener of [...generationListeners]) listener()
+  })
+}
+
+/** Kastar allt som härletts ur indexet: sidcachen, pågående hämtningar, nyckeluppslagen. */
+function invalidateChannels(): void {
+  for (const controller of channelAborts.values()) controller.abort()
+  channelAborts.clear()
+  channelLoads.clear()
+  clearPluginMemoryCacheByPrefix(LIVE_TV_PLUGIN_ID, LIVE_TV_CHANNELS_PREFIX)
+  clearResolvedChannels()
+}
+
+/**
+ * Kanalerna för en källa. Returnerar minnescachen direkt när den är varm,
+ * annars den pågående hämtningen (eller startar den).
+ */
+function loadChannelsShared(source: string | null): Promise<IndexChannel[]> {
+  const cacheKey = channelsCacheKey(source)
+  const cached = getPluginMemoryCache<IndexChannel[]>(LIVE_TV_PLUGIN_ID, cacheKey)
+  if (cached) return Promise.resolve(cached)
+
+  const existing = channelLoads.get(cacheKey)
+  if (existing) return existing
+
+  const controller = typeof AbortController === 'function' ? new AbortController() : null
+  if (controller) channelAborts.set(cacheKey, controller)
+  const request = (async () => {
+    await ensureBootstrap()
+    const items = await loadAllChannels(source, undefined, controller?.signal)
+    setPluginMemoryCache(LIVE_TV_PLUGIN_ID, cacheKey, items)
+    return items
+  })()
+    .finally(() => {
+      if (channelLoads.get(cacheKey) === request) channelLoads.delete(cacheKey)
+      if (channelAborts.get(cacheKey) === controller) channelAborts.delete(cacheKey)
+    })
+  channelLoads.set(cacheKey, request)
+  return request
+}
+
 export function __resetLiveTvModelForTests(): void {
   bootstrapPromise = null
   epgRefreshRequested.clear()
-}
-
-function channelsCacheKey(source: string | null): string {
-  return `${LIVE_TV_CHANNELS_PREFIX}${source ?? 'all'}`
+  for (const controller of channelAborts.values()) controller.abort()
+  channelAborts.clear()
+  channelLoads.clear()
+  indexSubscription?.()
+  indexSubscription = null
+  generationListeners.clear()
 }
 
 export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
@@ -220,39 +291,45 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
 
   useEffect(() => {
     let live = true
-    const cacheKey = channelsCacheKey(activeSource)
-    const cached = getPluginMemoryCache<IndexChannel[]>(LIVE_TV_PLUGIN_ID, cacheKey)
+    const cached = getPluginMemoryCache<IndexChannel[]>(LIVE_TV_PLUGIN_ID, channelsCacheKey(activeSource))
     if (cached) {
-      rememberChannels(cached)
       setLoaded(cached)
       setChannelsLoading(false)
     } else {
       setChannelsLoading(true)
     }
-    void (async () => {
-      try {
-        await ensureBootstrap()
-        const items = await loadAllChannels(activeSource)
+    loadChannelsShared(activeSource)
+      .then((items) => {
         if (!live) return
-        setPluginMemoryCache(LIVE_TV_PLUGIN_ID, cacheKey, items)
-        rememberChannels(items)
         setLoaded(items)
-      } finally {
+        setChannelsLoading(false)
+      })
+      .catch(() => {
+        // Avbruten (spellistbyte, indexändring) eller nätfel: lämna det som
+        // redan visas och släpp laddningsläget.
         if (live) setChannelsLoading(false)
-      }
-    })().catch(() => {})
+      })
     return () => {
       live = false
     }
   }, [activeSource, reloadToken])
 
+  /** Indexet ändrat eller manuell uppdatering: rensa delat och ladda om. */
   const refreshChannels = useCallback(() => {
-    clearPluginMemoryCacheByPrefix(LIVE_TV_PLUGIN_ID, LIVE_TV_CHANNELS_PREFIX)
+    invalidateChannels()
     setReloadToken((token) => token + 1)
   }, [])
 
   // Import klar, migrering körd, lista borttagen: indexet har bytt innehåll.
-  useEffect(() => onIndexChanged(() => refreshChannels()), [refreshChannels])
+  // EN modul-global lyssnare rensar; modellerna väcks via generationen.
+  useEffect(() => {
+    ensureIndexSubscription()
+    const listener = () => setReloadToken((token) => token + 1)
+    generationListeners.add(listener)
+    return () => {
+      generationListeners.delete(listener)
+    }
+  }, [])
 
   /**
    * Platshållarrader ("=== SPORT ===") är kvar i indexet — det speglar källan —
@@ -337,16 +414,34 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
   )
   const [epgLoading, setEpgLoading] = useState(false)
 
-  // Tickern äger både klockan och omhämtningen av snapshotet: en minut är
-  // precis den upplösning "Nu/Härnäst" har, så en egen EPG-timer vore en
-  // andra klocka som visar samma sak.
+  /**
+   * Tickern äger både klockan och omhämtningen av snapshotet: en minut är
+   * precis den upplösning "Nu/Härnäst" har, så en egen EPG-timer vore en andra
+   * klocka som visar samma sak.
+   *
+   * KLOCKAN går alltid (förloppsribbor och "slutar om 12 min" räknas på
+   * `nowMs`). EPG-tickern gör det inte: den står still medan fliken/appen är
+   * dold — en Live TV-sida som ligger i bakgrunden i timmar ska inte be appen
+   * om upp till 3 MB varje minut — och den går i gång igen direkt när sidan
+   * blir synlig, så det första man ser är färskt.
+   */
   const [epgTick, setEpgTick] = useState(0)
   useEffect(() => {
+    const visible = () => typeof document === 'undefined' || document.visibilityState === 'visible'
     const timer = window.setInterval(() => {
       setNowMs(Date.now())
-      setEpgTick((tick) => tick + 1)
+      if (visible()) setEpgTick((tick) => tick + 1)
     }, tickMs)
-    return () => window.clearInterval(timer)
+    const onVisibility = () => {
+      if (!visible()) return
+      setNowMs(Date.now())
+      setEpgTick((tick) => tick + 1)
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      window.clearInterval(timer)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
   }, [tickMs])
 
   /**
@@ -368,6 +463,17 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
     const listId = LIVE_TV_GLOBAL_EPG_ID
     const cached = getCachedNowSnapshot(listId, activeSource)
     if (cached) setSnapshot(cached)
+    /*
+     * Minuttickern hämtar bara om när det FINNS EPG-källor. Utan källor kan
+     * innehållet ändå finnas (appen härleder xmltv.php ur en Xtream-inloggning),
+     * så den FÖRSTA hämtningen görs alltid — men den kan inte bli färskare av
+     * att frågas om varje minut, och en spellista utan EPG ska inte generera
+     * ett anrop i minuten i all evighet.
+     */
+    if (cached && epgTick > 0 && epgUrls.length === 0) {
+      setEpgLoading(false)
+      return
+    }
     setEpgLoading(!cached)
     void (async () => {
       try {
@@ -448,7 +554,8 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
     nowMs,
     epgListId,
     epgUrls,
-    hasEpg: Boolean(snapshot && Object.keys(snapshot.items).length > 0),
+    // `count` räknas en gång när svaret kommer — inte per render över 17 000 nycklar.
+    hasEpg: (snapshot?.count ?? 0) > 0,
     channelsLoading,
     epgLoading,
     epgFetchedAt: snapshot?.fetchedAt ?? null,

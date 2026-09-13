@@ -208,11 +208,9 @@ export function isPluginImageLoaded(): boolean {
   return false
 }
 export async function preloadPluginImage(): Promise<void> {}
-export function clearPluginMemoryCache(pluginId?: string, key?: string): void {
-  if (!pluginId) {
-    pluginMemoryCache.clear()
-    return
-  }
+// Samma signatur som appens lib/plugin-storage.ts: pluginId är OBLIGATORISKT,
+// nyckeln valfri (utan nyckel töms hela pluginets del av cachen).
+export function clearPluginMemoryCache(pluginId: string, key?: string): void {
   if (!key) {
     clearPluginMemoryCacheByPrefix(pluginId, '')
     return

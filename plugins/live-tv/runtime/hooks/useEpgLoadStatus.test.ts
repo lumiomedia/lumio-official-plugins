@@ -8,9 +8,12 @@ vi.mock('../index-client', () => ({
 
 import { epgNow } from '../index-client'
 import { useEpgLoadStatus } from './useEpgLoadStatus'
-import { __resetNowSnapshotForTests } from '../epg/now-snapshot'
+import { __resetNowSnapshotForTests, fetchNowSnapshot } from '../epg/now-snapshot'
 
 const programme = { title: 'x', start: 0, stop: 1 }
+
+/** Modellen är den som hämtar; hooken läser bara det som publicerats. */
+const modelFetch = () => fetchNowSnapshot('global', null).catch(() => {})
 
 beforeEach(() => {
   __resetNowSnapshotForTests()
@@ -24,6 +27,11 @@ describe('useEpgLoadStatus', () => {
   it('"idle" utan lista', () => {
     const { result } = renderHook(() => useEpgLoadStatus(null, []))
     expect(result.current).toBe('idle')
+  })
+
+  it('hämtar ALDRIG själv — modellen äger snapshotet', async () => {
+    const { result } = renderHook(() => useEpgLoadStatus('global', ['u']))
+    await waitFor(() => expect(result.current).toBe('loading'))
     expect(epgNow).not.toHaveBeenCalled()
   })
 
@@ -34,6 +42,18 @@ describe('useEpgLoadStatus', () => {
       items: { 'A::http://x/A': { now: programme, next: null, later: null } },
     })
     const { result } = renderHook(() => useEpgLoadStatus('global', ['u']))
+    await modelFetch()
+    await waitFor(() => expect(result.current).toBe('ready'))
+  })
+
+  it('ett riktigt list-id duger — samma globala store', async () => {
+    vi.mocked(epgNow).mockResolvedValue({
+      at: Date.now(),
+      fetchedAt: Date.now(),
+      items: { 'A::http://x/A': { now: programme, next: null, later: null } },
+    })
+    const { result } = renderHook(() => useEpgLoadStatus('list-1', ['u']))
+    await modelFetch()
     await waitFor(() => expect(result.current).toBe('ready'))
   })
 
@@ -45,19 +65,21 @@ describe('useEpgLoadStatus', () => {
   it('"empty" när appen hämtat men inget matchade', async () => {
     vi.mocked(epgNow).mockResolvedValue({ at: Date.now(), fetchedAt: Date.now(), items: {} })
     const { result } = renderHook(() => useEpgLoadStatus('global', ['u']))
+    await modelFetch()
     await waitFor(() => expect(result.current).toBe('empty'))
   })
 
   it('"loading" tills appen hunnit hämta, "error" när anropet faller', async () => {
     const { result } = renderHook(() => useEpgLoadStatus('global', ['u']))
     // fetchedAt === null: appen har ännu inte hämtat något.
-    expect(result.current).toBe('loading')
+    await modelFetch()
     await waitFor(() => expect(result.current).toBe('loading'))
     cleanup()
 
     __resetNowSnapshotForTests()
     vi.mocked(epgNow).mockRejectedValue(new Error('boom'))
     const failed = renderHook(() => useEpgLoadStatus('global', ['u']))
+    await modelFetch()
     await waitFor(() => expect(failed.result.current).toBe('error'))
   })
 })

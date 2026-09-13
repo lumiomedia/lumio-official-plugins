@@ -18,9 +18,20 @@
  */
 
 import { epgSchedule } from '../index-client'
+import { epgStoreId } from './store-id'
 import type { EpgProgramme } from './types'
 
 const TTL_MS = 5 * 60 * 1000
+/**
+ * Tak för antal cachade (kanal, fönster)-poster.
+ *
+ * Cachen levde tidigare hela sidladdningen ut utan att någonsin krympa: en
+ * guide som bläddras genom 17 000 kanaler × flera dagsfönster hade lagt
+ * tiotusentals programlistor i minnet på en TV-box med några hundra MB. Posten
+ * som rörts senast får stanna (Map:en bevarar insättningsordning, och en träff
+ * sätts in på nytt sist), så de fönster användaren faktiskt tittar på överlever.
+ */
+const MAX_ENTRIES = 600
 
 interface Entry {
   programmes: EpgProgramme[]
@@ -31,7 +42,20 @@ const cache = new Map<string, Entry>()
 const inflight = new Map<string, Promise<Record<string, EpgProgramme[]>>>()
 
 function entryKey(listId: string, key: string, from: number, to: number): string {
-  return `${listId}|${key}|${from}|${to}`
+  // Alla list-id pekar på samma EPG-store, se epg/store-id.ts.
+  return `${epgStoreId(listId)}|${key}|${from}|${to}`
+}
+
+/** Kastar utgångna poster, och de äldsta om taket är nått. */
+function evict(now: number): void {
+  for (const [key, entry] of cache) {
+    if (now - entry.storedAt >= TTL_MS) cache.delete(key)
+  }
+  while (cache.size > MAX_ENTRIES) {
+    const oldest = cache.keys().next()
+    if (oldest.done) break
+    cache.delete(oldest.value)
+  }
 }
 
 /** Färska poster ur cachen; nycklar utan (eller med utgången) post lämnas kvar som `missing`. */
@@ -39,9 +63,16 @@ function split(listId: string, keys: string[], from: number, to: number, now: nu
   const hits: Record<string, EpgProgramme[]> = {}
   const missing: string[] = []
   for (const key of keys) {
-    const entry = cache.get(entryKey(listId, key, from, to))
-    if (entry && now - entry.storedAt < TTL_MS) hits[key] = entry.programmes
-    else missing.push(key)
+    const id = entryKey(listId, key, from, to)
+    const entry = cache.get(id)
+    if (entry && now - entry.storedAt < TTL_MS) {
+      hits[key] = entry.programmes
+      // Sätt in sist igen: posten är "nyligen använd" och ska överleva taket.
+      cache.delete(id)
+      cache.set(id, entry)
+    } else {
+      missing.push(key)
+    }
   }
   return { hits, missing }
 }
@@ -77,12 +108,13 @@ export async function fetchSchedules(
   const requestKey = entryKey(listId, missing.join(','), from, to)
   let request = inflight.get(requestKey)
   if (!request) {
-    request = epgSchedule(listId, missing, from, to)
+    request = epgSchedule(epgStoreId(listId), missing, from, to)
       .then((items) => {
         const storedAt = Date.now()
         for (const key of missing) {
           cache.set(entryKey(listId, key, from, to), { programmes: items[key] ?? [], storedAt })
         }
+        evict(storedAt)
         return items
       })
       .finally(() => {

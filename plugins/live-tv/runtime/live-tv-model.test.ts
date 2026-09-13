@@ -14,7 +14,12 @@ import type { NowNextLater } from './epg/types'
 vi.mock('./index-client', () => ({
   INDEX_CHANGED_EVENT: 'lumio-live-tv-index-changed',
   emitIndexChanged: vi.fn(),
-  onIndexChanged: vi.fn(() => () => {}),
+  // Riktig buss, så testet kan fyra av händelsen som importflödet gör.
+  onIndexChanged: vi.fn((cb: () => void) => {
+    const handler = () => cb()
+    window.addEventListener('lumio-live-tv-index-changed', handler)
+    return () => window.removeEventListener('lumio-live-tv-index-changed', handler)
+  }),
   loadAllChannels: vi.fn(async () => [] as IndexChannel[]),
   lookupChannels: vi.fn(async () => [] as IndexChannel[]),
   queryChannels: vi.fn(async () => ({ items: [], total: 0, known: true })),
@@ -48,6 +53,9 @@ const ch = (name: string, group: string, number: number): IndexChannel => ({
   number,
   tvgIdResolved: null,
 })
+
+/** Bara källan är intressant; `loadAllChannels` tar även onPage och en AbortSignal. */
+const loadedSources = () => vi.mocked(loadAllChannels).mock.calls.map((call) => call[0])
 
 const A = ch('A', 'Sport', 1)
 const B = ch('B', 'Sport', 2)
@@ -83,7 +91,7 @@ describe('useLiveTvModel: kanaler ur indexet', () => {
     expect(result.current.channelsLoading).toBe(true)
     await waitFor(() => expect(result.current.channelsLoading).toBe(false))
 
-    expect(loadAllChannels).toHaveBeenCalledWith(null)
+    expect(loadedSources()).toEqual([null])
     expect(result.current.channels.map((c) => c.name)).toEqual(['A', 'B', 'C'])
     expect(getPluginMemoryCache(LIVE_TV_PLUGIN_ID, 'channels:all')).toHaveLength(3)
   })
@@ -108,7 +116,7 @@ describe('useLiveTvModel: kanaler ur indexet', () => {
 
     await act(async () => result.current.setActivePlaylist('l2'))
     await waitFor(() => expect(result.current.channels.map((c) => c.name)).toEqual(['C']))
-    expect(loadAllChannels).toHaveBeenCalledWith('s2')
+    expect(loadedSources()).toContain('s2')
     expect(result.current.activePlaylistName).toBe('Nordic')
     // Med aktiv källa kommer numret ur indexet (C är nummer 1 i sin källa).
     expect(result.current.channelNumber(result.current.channels[0])).toBe(1)
@@ -123,6 +131,28 @@ describe('useLiveTvModel: kanaler ur indexet', () => {
     expect(lookupChannels).toHaveBeenCalledWith(['C::http://x/C'])
   })
 
+  it('INDEX_CHANGED_EVENT laddar om kanalerna, en gång för flera modeller', async () => {
+    const first = renderHook(() => useLiveTvModel())
+    const second = renderHook(() => useLiveTvModel())
+    await waitFor(() => expect(first.result.current.channelsLoading).toBe(false))
+    await waitFor(() => expect(second.result.current.channelsLoading).toBe(false))
+    // Andra modellen läste minnescachen: EN hämtning hittills.
+    expect(loadedSources()).toEqual([null])
+
+    vi.mocked(loadAllChannels).mockImplementation(async () => [A])
+    await act(async () => {
+      window.dispatchEvent(new CustomEvent('lumio-live-tv-index-changed'))
+    })
+
+    await waitFor(() => expect(first.result.current.channels.map((c) => c.name)).toEqual(['A']))
+    expect(second.result.current.channels.map((c) => c.name)).toEqual(['A'])
+    // Två monterade modeller ska INTE ge två hämtningar (och inte rensa
+    // varandras cache mitt i).
+    expect(loadedSources()).toEqual([null, null])
+    first.unmount()
+    second.unmount()
+  })
+
   it('utanför TV-läget ignoreras ett sparat spellistval helt', async () => {
     // Skrivbordet och mobilen har ingen ratt för aktiv spellista. Ett val som
     // blivit kvar i lagringen klippte ändå deras kanallista till en enda
@@ -135,7 +165,7 @@ describe('useLiveTvModel: kanaler ur indexet', () => {
     expect(result.current.byKey.size).toBe(3)
     expect(result.current.groups).toEqual(['Sport', 'News'])
     expect(result.current.activePlaylistId).toBeNull()
-    expect(loadAllChannels).toHaveBeenCalledWith(null)
+    expect(loadedSources()).toEqual([null])
   })
 })
 

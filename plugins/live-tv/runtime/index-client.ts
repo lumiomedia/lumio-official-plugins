@@ -106,6 +106,7 @@ export async function queryChannels(opts: {
   q?: string
   offset: number
   limit: number
+  signal?: AbortSignal
 }): Promise<{ items: IndexChannel[]; total: number; known: boolean }> {
   const qs = buildQuery({
     source: opts.source,
@@ -116,19 +117,29 @@ export async function queryChannels(opts: {
   })
   const data = await requestJson<{ items?: IndexChannel[]; total?: number; known?: boolean }>(
     `/api/live-tv/query${qs}`,
+    opts.signal ? { signal: opts.signal } : undefined,
   )
   return { items: data.items ?? [], total: data.total ?? 0, known: Boolean(data.known) }
 }
 
-/** Pages through the index in 5 000-item pages until a short page is seen. */
+/**
+ * Pages through the index in 5 000-item pages until a short page is seen.
+ *
+ * `signal` avbryter BÅDE den pågående sidan och resten av slingan: ett
+ * spellistbyte mitt i en 17 000-kanalers hämtning lämnade annars tre sidor kvar
+ * som laddades klart, skrevs till minnescachen och kunde skriva över den nya
+ * källans resultat.
+ */
 export async function loadAllChannels(
   source: string | null,
   onPage?: (loaded: number, total: number) => void,
+  signal?: AbortSignal,
 ): Promise<IndexChannel[]> {
   const items: IndexChannel[] = []
   let offset = 0
   for (;;) {
-    const page = await queryChannels({ source: source ?? undefined, offset, limit: QUERY_PAGE_LIMIT })
+    if (signal?.aborted) throw new DOMException('aborted', 'AbortError')
+    const page = await queryChannels({ source: source ?? undefined, offset, limit: QUERY_PAGE_LIMIT, signal })
     items.push(...page.items)
     onPage?.(items.length, page.total)
     if (page.items.length < QUERY_PAGE_LIMIT) break

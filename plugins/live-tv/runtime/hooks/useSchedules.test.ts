@@ -65,6 +65,12 @@ describe('useSchedules', () => {
     expect(epgSchedule).not.toHaveBeenCalled()
   })
 
+  it('ett riktigt list-id frågar den globala EPG-store:n', async () => {
+    const { result } = renderHook(() => useSchedules([ch('A')], FROM, TO, 'list-1'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(vi.mocked(epgSchedule).mock.calls[0][0]).toBe('global')
+  })
+
   it('ett svar som landar efter avmontering skriver inte till en död komponent', async () => {
     const pending: ((value: Record<string, EpgProgramme[]>) => void)[] = []
     vi.mocked(epgSchedule).mockImplementation(
