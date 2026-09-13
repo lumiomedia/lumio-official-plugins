@@ -116,7 +116,7 @@ Appen först (scenlåda + pekarhåll): 0.1.597. Pluginet därefter: **0.6.0**, `
 
 ## 8. Öppna frågor — alla avgjorda 2026-09-14
 
-1. ~~Ikonraden~~ **Beslutat (Jerry):** ikonraden ligger kvar på skrivbord men med mindre vänsterpadding (upplevs onödigt bred bredvid appens sidomeny; måttet sätts i `tv-shell.tsx:382` och verifieras i skärmdump). På mobil döljs raden; hur den ersätts avgörs i fas 2 (förslag: bottenrad).
+1. ~~Ikonraden~~ **Beslutat (Jerry):** ikonraden ligger kvar på skrivbord men med mindre vänsterpadding (upplevs onödigt bred bredvid appens sidomeny; måttet sätts i `tv-shell.tsx:382` och verifieras i skärmdump). På mobil komprimeras raden (ikoner utan etikett, 64 designpixlar) i fas 1 så navigeringen aldrig försvinner; fas 2 ersätter den med en bottenrad.
 2. **Beslutat (Jerry):** `TvGlassMenu` portaleras in i scenlådan (värden exponerar portalmålet) så menyn har samma skala som kortet. Jerrys följdkrav — "folk fattar inte long press på desktop med mus" — täcks av "…"-knappen på hovring och högerklick i 4.1; knappen ska vara tydlig (ikon + tooltip "Fler val"), inte diskret.
 3. **Beslutat (Jerry):** ja, pilnavigering behålls på skrivbord (tillgänglighet), men musen är ledande — se 3.2 (skopad motor, textfält undantagna, hovring flyttar fokus, ring bara vid tangentbord).
 4. **Beslutat (Jerry):** ja, nummerzapp på skrivbord utanför textfält; ingen skärmnumpad.
