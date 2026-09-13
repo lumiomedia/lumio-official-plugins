@@ -84,4 +84,20 @@ describe('useEpgStatus', () => {
     })
     await waitFor(() => expect(result.current.urls).toEqual(['http://panel/epg.xml', 'http://annan/epg.xml']))
   })
+
+  it('ett andra tryck startar ingen andra hämtning', async () => {
+    // Vakten sitter i en ref: `refresh` är memoiserad och läser annars ett
+    // inaktuellt `refreshing` ur sin stängning.
+    let release: (() => void) | null = null
+    vi.mocked(waitForJob).mockImplementationOnce(() => new Promise((resolve) => { release = () => resolve({ state: 'done', received: 0 } as never) }))
+    const { result } = renderHook(() => useEpgStatus())
+    await waitFor(() => expect(result.current.status).not.toBeNull())
+    let first: Promise<void> | null = null
+    act(() => { first = result.current.refresh() })
+    await waitFor(() => expect(result.current.refreshing).toBe(true))
+    await act(async () => { await result.current.refresh() })
+    expect(refreshEpg).toHaveBeenCalledTimes(1)
+    await act(async () => { release?.(); await first })
+    expect(result.current.refreshing).toBe(false)
+  })
 })

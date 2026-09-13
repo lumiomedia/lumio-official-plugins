@@ -121,7 +121,7 @@ function AppearanceTab({ settings, tt }: { settings: TvSettings; tt: TT }) {
         <Heading hint={tt('guideDefaultHint')}>{tt('guideDefault')}</Heading>
         <div style={{ display: 'flex', gap: dp(16), flexWrap: 'wrap' }}>
           {modes.map((m) => (
-            <div key={m.key} data-testid={`guide-default-${m.key}`} {...station(() => setGuideMode(m.key))} style={{ width: dp(240), borderRadius: dp(14), border: `1px solid ${guideMode === m.key ? TV.acc : TV.lineCard}`, background: TV.s06, padding: dp(16), display: 'flex', flexDirection: 'column', gap: dp(12), cursor: 'pointer' }}>
+            <div key={m.key} data-testid={`guide-default-${m.key}`} {...station(() => setGuideMode(m.key))} style={{ width: dp(300), borderRadius: dp(14), border: `1px solid ${guideMode === m.key ? TV.acc : TV.lineCard}`, background: TV.s06, padding: dp(16), display: 'flex', flexDirection: 'column', gap: dp(12), cursor: 'pointer' }}>
               <div style={{ height: dp(110), borderRadius: dp(10), background: TV.s05, display: 'grid', gridTemplateColumns: m.key === 'playlists' ? '1fr 2fr 1fr' : m.key === 'tl' ? '1fr 3fr' : m.key === 'grid' ? '1fr 1fr 1fr' : '1fr 1.2fr 1fr 1fr', gridTemplateRows: m.key === 'grid' ? '1fr 1fr' : undefined, gap: dp(6), padding: dp(10) }}>
                 {Array.from({ length: m.key === 'playlists' ? 3 : m.key === 'tl' ? 2 : m.key === 'grid' ? 6 : 4 }).map((_, i) => <div key={i} style={{ borderRadius: dp(4), background: i === 1 ? TV.accMix(35) : TV.s12 }} />)}
               </div>
@@ -182,12 +182,18 @@ function progressText(tt: TT, locale: string, progress: ImportProgress): string 
     : tt('importProgressUnknown')
 }
 
-function Action({ label, onOk, testId }: { label: string; onOk: () => void; testId?: string }) {
+/**
+ * `disabled` tar bort HANDLINGEN men inte stationen: fjärrkontrollen ska
+ * fortfarande kunna gå förbi knappen medan den arbetar (en `display: none`
+ * hade flyttat fokus till body mitt i en hämtning).
+ */
+function Action({ label, onOk, testId, disabled }: { label: string; onOk: () => void; testId?: string; disabled?: boolean }) {
   return (
     <div
       data-testid={testId}
-      {...station(onOk)}
-      style={{ height: dp(48), padding: `0 ${dp(20)}px`, borderRadius: 999, background: TV.s12, display: 'inline-flex', alignItems: 'center', fontSize: dp(17), whiteSpace: 'nowrap', cursor: 'pointer' }}
+      aria-disabled={disabled ? 'true' : undefined}
+      {...station(() => { if (!disabled) onOk() })}
+      style={{ height: dp(48), padding: `0 ${dp(20)}px`, borderRadius: 999, background: TV.s12, display: 'inline-flex', alignItems: 'center', fontSize: dp(17), whiteSpace: 'nowrap', cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.5 : 1 }}
     >
       {label}
     </div>
@@ -349,7 +355,8 @@ function PlaylistsTab({ model, nav, lists, tt, locale, toast }: { model: TvViewP
     if (!base) { toast(tt('xtreamLoginFailed')); return }
     let account: Awaited<ReturnType<typeof fetchXtreamAccount>>
     try {
-      account = await fetchXtreamAccount({ base, username, password })
+      // Inloggning = verifiering: alltid mot panelen, aldrig ur kontocachen.
+      account = await fetchXtreamAccount({ base, username, password }, { force: true })
     } catch {
       toast(tt('xtreamLoginFailed'))
       return
@@ -404,7 +411,10 @@ function PlaylistsTab({ model, nav, lists, tt, locale, toast }: { model: TvViewP
   const refetchRef = useRef<(list: LiveTvList) => void>(() => {})
   useEffect(() => {
     refetchRef.current = (list: LiveTvList) => {
-      if (progress?.listId === list.id) return
+      // Avstå vid VARJE pågående hämtning, inte bara den här listans: två
+      // samtidiga importjobb slogs om värdens skrivlås, och förloppsraden kan
+      // bara visa ett.
+      if (progress || refetchingAll) return
       if (xtreamLoginMissing(list)) {
         const parsed = parseXtreamSource(list.source)
         askXtream(parsed ? `http://${parsed.host}` : '', parsed?.loginId ?? null)
@@ -441,7 +451,10 @@ function PlaylistsTab({ model, nav, lists, tt, locale, toast }: { model: TvViewP
     // 500-taket sitter i lagringen: utan kvitto hade trycket sett ut att göra
     // ingenting alls.
     if (outcome === 'full') { toast(tt('listFull')); return }
-    if (outcome === 'added') setMembers((current) => new Set(current).add(key))
+    // `duplicate` = kanalen ligger redan i listan (samma nyckel via en annan
+    // källa). Bocken ska då visas, precis som för `added` — inte utebli och
+    // få trycket att se verkningslöst ut.
+    if (outcome === 'added' || outcome === 'duplicate') setMembers((current) => new Set(current).add(key))
   }
   const createList = () => keyboard.ask(tt('listName'), '', (value) => {
     const name = value.trim()
@@ -457,7 +470,9 @@ function PlaylistsTab({ model, nav, lists, tt, locale, toast }: { model: TvViewP
   const [refetchingAll, setRefetchingAll] = useState(false)
   const importable = lists.filter((list) => Boolean(list.source) && (list.kind === 'm3u' || list.kind === 'xtream') && !xtreamLoginMissing(list))
   async function refetchAll(): Promise<void> {
-    if (refetchingAll) return
+    // Samma vakt som per lista: en pågående hämtning (från en rad eller en
+    // tidigare "alla") ska inte kunna dubbleras av ett andra tryck.
+    if (progress || refetchingAll) return
     setRefetchingAll(true)
     try {
       for (const list of importable) await runImport(list, true)
@@ -470,7 +485,7 @@ function PlaylistsTab({ model, nav, lists, tt, locale, toast }: { model: TvViewP
     <section style={{ display: 'flex', flexDirection: 'column', gap: dp(10) }}>
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: dp(16) }}>
         <Heading>{tt('tabPlaylists')}</Heading>
-        {importable.length > 0 ? <Action testId="lists-refetch-all" label={refetchingAll ? tt('refetching') : tt('refetchAll')} onOk={() => { void refetchAll() }} /> : null}
+        {importable.length > 0 ? <Action testId="lists-refetch-all" label={refetchingAll ? tt('refetching') : tt('refetchAll')} disabled={refetchingAll || progress !== null} onOk={() => { void refetchAll() }} /> : null}
       </div>
       {ordered.map((list) => (
         <ListRow
@@ -541,15 +556,40 @@ function XtreamAccounts({ nav, tt, locale, onReimport }: { nav: TvNav; tt: TT; l
     setDirty(true)
   }
 
-  /** Urvalet ändrar VAD som importeras, så listan hämtas om när panelen stängs. */
+  /**
+   * Urvalet ändrar VAD som importeras, så listan hämtas om när panelen stängs.
+   * `xtreamPseudoUrl` beror bara på bas och login-id — kategorierna ingår inte,
+   * så listan slås upp på login-id med pseudo-URL:en som reserv.
+   */
+  const listForLogin = (login: XtreamLogin): LiveTvList | null =>
+    getLiveTvLists().find((entry) => entry.xtreamLoginId === login.id || entry.source === xtreamPseudoUrl(login)) ?? null
+
   function closeCategories(): void {
     const login = pickerLogin
     setPickerLoginId(null)
+    setDirty(false)
     if (!login || !dirty) return
-    const source = xtreamPseudoUrl({ ...login, categoryIds: [...selected] })
-    const list = getLiveTvLists().find((entry) => entry.source === source || entry.xtreamLoginId === login.id)
+    const list = listForLogin(login)
     if (list) onReimport(list)
   }
+
+  /**
+   * Samma omhämtning när panelen försvinner UTAN att stängas — man byter flik
+   * eller lämnar Live TV med Bakåt. Utan den här hade `categoryIds` legat
+   * sparade medan indexet fortfarande innehöll de gamla kategorierna, och
+   * ingenting i gränssnittet hade sagt att listan var osynkad. Importen körs
+   * i värden (inte via vyns förloppsrad, som är borta) och ett fel märker
+   * listan för omhämtning.
+   */
+  const pendingRef = useRef<{ login: XtreamLogin; dirty: boolean }>({ login: logins[0] ?? ({} as XtreamLogin), dirty: false })
+  useEffect(() => { if (pickerLogin) pendingRef.current = { login: pickerLogin, dirty } })
+  useEffect(() => () => {
+    const pending = pendingRef.current
+    if (!pending.dirty || !pending.login?.id) return
+    const list = getLiveTvLists().find((entry) => entry.xtreamLoginId === pending.login.id)
+    if (!list) return
+    void importList(list).catch((err) => recordListImportOutcome(list.id, err instanceof Error ? err.message : String(err)))
+  }, [])
 
   if (logins.length === 0) return null
   return (
@@ -645,7 +685,7 @@ function EpgTab({ lists, nav, tt, locale }: { lists: LiveTvList[]; nav: TvNav; t
         <section style={{ display: 'flex', flexDirection: 'column', gap: dp(10) }}>
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: dp(16) }}>
             <Heading>{tt('epgStatusTitle')}</Heading>
-            <Action testId="epg-refresh" label={refreshing ? tt('epgRefreshing') : tt('epgRefresh')} onOk={() => { void refresh() }} />
+            <Action testId="epg-refresh" label={refreshing ? tt('epgRefreshing') : tt('epgRefresh')} disabled={refreshing} onOk={() => { void refresh() }} />
           </div>
           {statusUrls.map((url) => {
             const stat = status?.urls.find((item) => item.url === url)

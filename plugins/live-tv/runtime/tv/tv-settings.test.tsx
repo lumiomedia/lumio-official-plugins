@@ -88,7 +88,8 @@ function stubEpgStatusFetch(payload: Record<string, unknown>): void {
 const xtreamLogin: XtreamLogin = { id: 'login-1', base: 'http://panel.test:8080', username: 'jerry', password: 'hemlig', format: 'ts', categoryIds: [] }
 
 /** Panelens `player_api.php`: konto på rotanropet, kategorier på get_live_categories. */
-function stubXtreamPanel(): void {
+function stubXtreamPanel(): string[] {
+  const imports: string[] = []
   const base = globalThis.fetch
   const json = (body: unknown) => Promise.resolve({ ok: true, status: 200, json: async () => body } as unknown as Response)
   vi.stubGlobal('fetch', ((input: RequestInfo | URL, init?: RequestInit) => {
@@ -99,10 +100,15 @@ function stubXtreamPanel(): void {
       }
       return json({ user_info: { auth: 1, status: 'Active', exp_date: '1800000000', max_connections: '2', allowed_output_formats: ['ts'] } })
     }
-    if (url.pathname === '/api/live-tv/import') return json({ job: 'job-1' })
+    if (url.pathname === '/api/live-tv/import') {
+      const body = JSON.parse(String(init?.body ?? '{}')) as { source?: string }
+      if (body.source) imports.push(body.source)
+      return json({ job: 'job-1' })
+    }
     if (url.pathname === '/api/live-tv/import/status') return json({ state: 'done', received: 1, total: 1, result: { total: 1, groups: [], urlTvg: null, truncated: false } })
     return base(input as RequestInfo, init)
   }) as typeof fetch)
+  return imports
 }
 
 const mount = (tab?: string) => render(<LiveTvTvShell pageId="live-tv-browse" params={{ view: 'settings', ...(tab ? { tab } : {}) }} onNavigate={() => {}} onOpenDetails={() => {}} />)
@@ -334,6 +340,18 @@ describe('TvSettingsView: snabbknapparna (spec 4.4)', () => {
     expect(card).toHaveTextContent('2')
   })
 
+  it('500-taket ger ett kvitto i stället för ett tyst avslag', async () => {
+    const full = Array.from({ length: 500 }, (_, i) => ({ name: `C${i}`, logo: null, group: 'Fyllnad', url: `http://x/C${i}`, tvgId: null }))
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list, { ...list, id: 'c1', name: 'Mina kanaler', kind: 'custom', source: 'custom:c1', channels: full, channelCount: 500 }])
+    seedLiveTvIndex()
+    mount('playlists')
+    fireEvent.click(screen.getByTestId('list-channels-c1'))
+    const picker = await screen.findByTestId('list-picker')
+    fireEvent.click(within(picker).getByTestId('picker-row-A'))
+    expect(await screen.findByText('The list is full')).toBeInTheDocument()
+    expect(isChannelInLiveTvList('c1', (list.channels ?? [])[0])).toBe(false)
+  })
+
   it('kategorival skrivs till login.categoryIds', async () => {
     writePluginJson(LIVE_TV_PLUGIN_ID, 'xtream_logins', [xtreamLogin])
     writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ ...list, id: 'x1', name: 'panel.test:8080', kind: 'xtream', source: 'xtream://panel.test:8080/login-1', xtreamLoginId: 'login-1' }])
@@ -344,6 +362,21 @@ describe('TvSettingsView: snabbknapparna (spec 4.4)', () => {
     const picker = await screen.findByTestId('list-picker')
     fireEvent.click(within(picker).getByTestId('picker-row-Sport'))
     await waitFor(() => expect(getXtreamLogins()[0].categoryIds).toEqual(['1']))
+  })
+
+  it('ett kategoribock startar ingen import – den sker när panelen stängs', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'xtream_logins', [xtreamLogin])
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ ...list, id: 'x1', name: 'panel.test:8080', kind: 'xtream', source: 'xtream://panel.test:8080/login-1', xtreamLoginId: 'login-1' }])
+    seedLiveTvIndex()
+    const imports = stubXtreamPanel()
+    mount('playlists')
+    fireEvent.click(await screen.findByTestId('xtream-categories-login-1'))
+    const picker = await screen.findByTestId('list-picker')
+    fireEvent.click(within(picker).getByTestId('picker-row-Sport'))
+    await waitFor(() => expect(getXtreamLogins()[0].categoryIds).toEqual(['1']))
+    // Varje bock får INTE starta ett importjobb — man bockar i fem kategorier
+    // i rad. Omhämtningen körs en gång, när väljaren stängs.
+    expect(imports).toEqual([])
   })
 
   it('Uppdatera per lista kör importList för just den listan', async () => {

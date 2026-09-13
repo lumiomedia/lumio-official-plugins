@@ -3,13 +3,17 @@ import { __resetForTests, writePluginJson } from '@/lib/plugin-sdk'
 import {
   LIVE_TV_PLUGIN_ID,
   MAX_CUSTOM_LIST_CHANNELS,
+  __resetXtreamAccountCacheForTests,
   addChannelToLiveTvList,
   deleteLiveTvList,
   getLiveTvLists,
   importList,
+  fetchXtreamAccount,
   importMissingSources,
   removeChannelFromLiveTvList,
+  saveXtreamLogin,
   type LiveTvList,
+  type XtreamLogin,
 } from './live-tv-data'
 
 function jsonResponse(body: unknown, ok = true, status = 200) {
@@ -323,5 +327,49 @@ describe('addChannelToLiveTvList: custom-listans gränser', () => {
 
     expect(addChannelToLiveTvList('c1', channel('En till'))).toBe('full')
     expect(getLiveTvLists()[0].channels).toHaveLength(MAX_CUSTOM_LIST_CHANNELS)
+  })
+})
+
+describe('fetchXtreamAccount: kontocachen', () => {
+  const login: XtreamLogin = { id: 'login-1', base: 'http://panel.test:8080', username: 'jerry', password: 'hemlig', format: 'ts', categoryIds: [] }
+  const account = { user_info: { auth: 1, status: 'Active', exp_date: '1800000000', max_connections: '2', allowed_output_formats: ['ts'] } }
+
+  function stubPanel(): { calls: () => number } {
+    let calls = 0
+    vi.stubGlobal('fetch', ((input: RequestInfo | URL) => {
+      const url = new URL(typeof input === 'string' ? input : String(input), 'http://localhost')
+      if (url.pathname === '/player_api.php') {
+        calls += 1
+        return Promise.resolve(jsonResponse(account))
+      }
+      return Promise.resolve(jsonResponse({}, false, 404))
+    }) as typeof fetch)
+    return { calls: () => calls }
+  }
+
+  beforeEach(() => { __resetXtreamAccountCacheForTests() })
+
+  it('frågar panelen en gång per bas och användare', async () => {
+    const panel = stubPanel()
+    const first = await fetchXtreamAccount(login)
+    const second = await fetchXtreamAccount(login)
+    expect(panel.calls()).toBe(1)
+    expect(second).toEqual(first)
+    expect(first.maxConnections).toBe(2)
+  })
+
+  it('force, nytt lösenord och saveXtreamLogin går förbi cachen', async () => {
+    const panel = stubPanel()
+    await fetchXtreamAccount(login)
+    // Inloggningsflödet verifierar alltid mot panelen.
+    await fetchXtreamAccount(login, { force: true })
+    expect(panel.calls()).toBe(2)
+    // Ett annat lösenord är en annan inloggning — en förnyad panel svarar annorlunda.
+    await fetchXtreamAccount({ ...login, password: 'nytt' })
+    expect(panel.calls()).toBe(3)
+    // …och en omskriven inloggning rensar posten.
+    saveXtreamLogin({ ...login, password: 'nytt' })
+    await fetchXtreamAccount({ ...login, password: 'nytt' })
+    expect(panel.calls()).toBe(4)
   })
 })

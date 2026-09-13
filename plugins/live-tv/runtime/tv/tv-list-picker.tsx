@@ -94,7 +94,10 @@ export function TvListPicker({ model, nav, title, selected, onToggle, onClose }:
       onClose={onClose}
       chips={(
         <div data-row="" style={{ display: 'flex', gap: dp(8), overflowX: 'auto' }}>
-          {groups.map((chip) => <Chip key={chip.id} active={group === chip.key} {...station(() => setGroup(chip.key))} style={{ height: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }}>{chip.label}</Chip>)}
+          {/* Tom kategori = inga rader att sätta `data-init` på. Då tar första
+              chipet det, annars öppnades panelen utan någon station att
+              landa på och fjärrkontrollen strandade på body. */}
+          {groups.map((chip, index) => <Chip key={chip.id} active={group === chip.key} {...station(() => setGroup(chip.key), undefined, rows.length === 0 && index === 0 ? { 'data-init': '' } : undefined)} style={{ height: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }}>{chip.label}</Chip>)}
         </div>
       )}
       rows={rows.map((channel, index) => {

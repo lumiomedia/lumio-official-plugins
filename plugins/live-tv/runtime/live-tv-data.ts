@@ -647,6 +647,9 @@ export function getXtreamLogins(): XtreamLogin[] {
 export function saveXtreamLogin(login: XtreamLogin): void {
   const rest = getXtreamLogins().filter((entry) => entry.id !== login.id)
   writePluginJson(LIVE_TV_PLUGIN_ID, XTREAM_LOGINS_KEY, [...rest, login])
+  // En omskriven inloggning (nytt lösenord, förnyat konto) ska inte kunna
+  // läsas ur kontocachen — se fetchXtreamAccount.
+  invalidateXtreamAccount(login)
 }
 
 export function deleteXtreamLogin(id: string): void {
@@ -881,7 +884,48 @@ export interface XtreamAccount {
   allowedFormats: string[]
 }
 
-export async function fetchXtreamAccount(login: Pick<XtreamLogin, 'base' | 'username' | 'password'>): Promise<XtreamAccount> {
+/**
+ * KONTOKORTETS CACHE. Kontot frågades tidigare ut vid varje montering av en
+ * inställningsyta — TV-fliken och skrivbordssektionen kunde göra det i samma
+ * sekund, en gång per sparad inloggning. Panelerna är långsamma och Jerrys
+ * regel är att aldrig öka uppslagsvolymen i onödan, så svaret lever 5 minuter
+ * per `base|username`.
+ *
+ * Cachen förbigås vid NY INLOGGNING på tre sätt: `force` (inloggningsflödet
+ * verifierar alltid mot panelen), ett annat lösenord än det cachade (en
+ * förnyad panel svarar annorlunda), och `saveXtreamLogin` som rensar posten
+ * när en inloggning skrivs om.
+ */
+const XTREAM_ACCOUNT_TTL_MS = 5 * 60 * 1000
+const xtreamAccountCache = new Map<string, { at: number; password: string; account: XtreamAccount }>()
+
+function xtreamAccountKey(login: Pick<XtreamLogin, 'base' | 'username'>): string {
+  return `${login.base}|${login.username}`
+}
+
+export function invalidateXtreamAccount(login: Pick<XtreamLogin, 'base' | 'username'>): void {
+  xtreamAccountCache.delete(xtreamAccountKey(login))
+}
+
+export function __resetXtreamAccountCacheForTests(): void {
+  xtreamAccountCache.clear()
+}
+
+export async function fetchXtreamAccount(
+  login: Pick<XtreamLogin, 'base' | 'username' | 'password'>,
+  opts?: { force?: boolean },
+): Promise<XtreamAccount> {
+  const key = xtreamAccountKey(login)
+  const cached = xtreamAccountCache.get(key)
+  if (!opts?.force && cached && cached.password === login.password && Date.now() - cached.at < XTREAM_ACCOUNT_TTL_MS) {
+    return cached.account
+  }
+  const account = await fetchXtreamAccountUncached(login)
+  xtreamAccountCache.set(key, { at: Date.now(), password: login.password, account })
+  return account
+}
+
+async function fetchXtreamAccountUncached(login: Pick<XtreamLogin, 'base' | 'username' | 'password'>): Promise<XtreamAccount> {
   const payload = (await fetchXtreamJson(xtreamApiUrl(login))) as {
     user_info?: { auth?: unknown; status?: unknown; exp_date?: unknown; max_connections?: unknown; allowed_output_formats?: unknown }
   } | null

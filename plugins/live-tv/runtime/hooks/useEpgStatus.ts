@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { LIVE_TV_GLOBAL_EPG_ID, getAllLiveTvEpgUrls, getLiveTvLists, onLiveTvListsChanged } from '../live-tv-data'
 import { epgStatus, refreshEpg, waitForJob, type EpgStatus } from '../index-client'
 
@@ -15,6 +15,11 @@ import { epgStatus, refreshEpg, waitForJob, type EpgStatus } from '../index-clie
  * samma sak och N "Hämta om EPG"-knappar som alla gjorde exakt samma globala
  * omhämtning — men med var sitt `refreshing`, så de andra knapparna såg
  * overksamma ut medan en av dem arbetade.
+ *
+ * VARNING till anroparen: `urls` är en NY array vid varje rendering (den
+ * härleds ur listorna). Lägg den aldrig i en beroendelista — använd
+ * `urls.join('|')` om något ska köras om när adresserna ändras, precis som
+ * hooken själv gör internt.
  *
  * Fram till v2 höll pluginet en EGEN XMLTV-cache (`epg/cache.ts`) bara för att
  * kunna skriva "3 kanaler · 812 program" under varje adress: så länge
@@ -31,6 +36,13 @@ export function useEpgStatus(): {
 } {
   const [status, setStatus] = useState<EpgStatus | null>(null)
   const [refreshing, setRefreshing] = useState(false)
+  /**
+   * In-flight-vakt i en ref, inte i `refreshing`: `refresh` är memoiserad och
+   * skulle läsa ett inaktuellt `refreshing` ur sin stängning. Utan vakten
+   * startade ett dubbeltryck (eller skrivbordskortet och TV-fliken samtidigt)
+   * en ANDRA global XMLTV-hämtning över samma adresser.
+   */
+  const refreshingRef = useRef(false)
   const [lists, setLists] = useState(() => getLiveTvLists())
   const urls = getAllLiveTvEpgUrls(lists)
   const urlsKey = urls.join('|')
@@ -63,6 +75,8 @@ export function useEpgStatus(): {
   }, [urlsKey, readStatus])
 
   const refresh = useCallback(async () => {
+    if (refreshingRef.current) return
+    refreshingRef.current = true
     setRefreshing(true)
     try {
       const current = getLiveTvLists()
@@ -75,6 +89,7 @@ export function useEpgStatus(): {
       // oavsett.
     } finally {
       setStatus(await readStatus())
+      refreshingRef.current = false
       setRefreshing(false)
     }
   }, [readStatus])
