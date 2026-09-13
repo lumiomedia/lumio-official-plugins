@@ -191279,6 +191279,33 @@ ${cue.text}`).join("\n\n")}
       const next2 = tv.neighbours[(index3 + delta + tv.neighbours.length) % tv.neighbours.length];
       if (next2) tv.onSwitchChannel(next2);
     }, [tv, index3]);
+    const layerRef = useRef({ menuOpen: false, miniOpen: false });
+    useEffect(() => {
+      layerRef.current = { menuOpen: menu !== null, miniOpen };
+    });
+    useEffect(() => {
+      const node = dotsRef.current;
+      if (!node) return;
+      let frame2 = 0;
+      let held = 0;
+      const deadline = Date.now() + 4e3;
+      const tick = () => {
+        if (!node.isConnected) return;
+        const active = document.activeElement;
+        const inLayer = layerRef.current.menuOpen || layerRef.current.miniOpen;
+        if (active === node) {
+          if (++held >= 5) return;
+        } else if (inLayer) {
+          held = 0;
+        } else {
+          held = 0;
+          node.focus({ preventScroll: true });
+        }
+        if (Date.now() < deadline) frame2 = window.requestAnimationFrame(tick);
+      };
+      frame2 = window.requestAnimationFrame(tick);
+      return () => window.cancelAnimationFrame(frame2);
+    }, [channel]);
     const closeMini = useCallback(() => {
       setMiniOpen(false);
       window.setTimeout(() => dotsRef.current?.focus({ preventScroll: true }), 0);
@@ -191336,7 +191363,8 @@ ${cue.text}`).join("\n\n")}
     }, [menu, miniOpen, step, reveal, onClose, closeMini]);
     useEffect(() => {
       if (!miniOpen) return;
-      const current2 = miniRef.current?.querySelector("[data-init]");
+      const mini = miniRef.current;
+      const current2 = mini?.querySelector("[data-init]") ?? mini?.querySelector('[data-testid="mini-card"]');
       current2?.focus({ preventScroll: true });
       current2?.scrollIntoView({ inline: "center", block: "nearest" });
     }, [miniOpen]);
@@ -191387,13 +191415,14 @@ ${cue.text}`).join("\n\n")}
           /* @__PURE__ */ jsx("div", { ref: dotsRef, ...station(() => dotsRef.current && openMenu(dotsRef.current), (el) => openMenu(el), { "data-init": "", "aria-label": tt("moreActions") }), style: { width: dp(52), height: dp(52), borderRadius: 999, background: "rgba(252,252,255,0.10)", border: `1px solid ${TV.lineCard}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }, children: /* @__PURE__ */ jsx(Icons.Dots, {}) })
         ] })
       ] }),
-      miniOpen ? /* @__PURE__ */ jsx("div", { ref: miniRef, "data-panel-root": "", "data-row": "", "data-live-tv-layer": "", style: { position: "absolute", left: 0, right: 0, bottom: dp(200), padding: `0 ${dp(48)}px`, display: "flex", gap: dp(14), overflowX: "auto", zIndex: 31 }, children: tv.neighbours.map((c) => {
+      miniOpen ? /* @__PURE__ */ jsx("div", { ref: miniRef, "data-panel-root": "", "data-row": "", "data-live-tv-layer": "", style: { position: "absolute", left: 0, right: 0, bottom: dp(200), padding: `0 ${dp(48)}px`, display: "flex", gap: dp(14), overflowX: "auto", zIndex: 31 }, children: tv.neighbours.map((c, cardIndex) => {
         const n = tv.nowFor(c);
         const current2 = channelKey(c) === channelKey(channel);
+        const cardInit = index3 < 0 ? cardIndex === 0 : current2;
         return /* @__PURE__ */ jsxs("div", { "data-testid": "mini-card", ...station(() => {
           closeMini();
           tv.onSwitchChannel(c);
-        }, (el) => setMenu({ title: c.name, element: el, actions: [{ key: "multi", label: tt("menuAddMultiview"), run: () => tv.onAddToMultiview(c) }] }), current2 ? { "data-init": "" } : void 0), style: { width: dp(330), height: dp(118), flexShrink: 0, borderRadius: dp(14), padding: `${dp(14)}px ${dp(16)}px`, background: current2 ? TV.s16 : "rgba(20,22,30,0.85)", display: "flex", flexDirection: "column", gap: dp(6), cursor: "pointer", boxSizing: "border-box" }, children: [
+        }, (el) => setMenu({ title: c.name, element: el, actions: [{ key: "multi", label: tt("menuAddMultiview"), run: () => tv.onAddToMultiview(c) }] }), cardInit ? { "data-init": "" } : void 0), style: { width: dp(330), height: dp(118), flexShrink: 0, borderRadius: dp(14), padding: `${dp(14)}px ${dp(16)}px`, background: current2 ? TV.s16 : "rgba(20,22,30,0.85)", display: "flex", flexDirection: "column", gap: dp(6), cursor: "pointer", boxSizing: "border-box" }, children: [
           /* @__PURE__ */ jsx("div", { style: { fontSize: dp(14), color: "rgba(243,244,248,0.55)" }, children: c.name }),
           /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: n.now?.title ?? tt("noProgramme") }),
           n.next ? /* @__PURE__ */ jsxs("div", { style: { fontSize: dp(15), color: "rgba(243,244,248,0.6)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: [
@@ -191442,6 +191471,10 @@ ${cue.text}`).join("\n\n")}
     });
     notifyWaiters();
   }
+  function anchorHost(el) {
+    if (!el || typeof window === "undefined") return null;
+    return POSITIONED.has(window.getComputedStyle(el).position) ? el : null;
+  }
   function measure2(el) {
     if (!el) return null;
     const r = el.getBoundingClientRect();
@@ -191461,7 +191494,6 @@ ${cue.text}`).join("\n\n")}
     video.addEventListener("error", onFail, { once: true });
     const anchored = hostEl !== null;
     if (hostEl) {
-      if (window.getComputedStyle(hostEl).position === "static") hostEl.style.position = "relative";
       video.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;pointer-events:none;z-index:0;border-radius:inherit";
       hostEl.insertBefore(video, hostEl.firstChild);
     } else {
@@ -191517,6 +191549,8 @@ ${cue.text}`).join("\n\n")}
         return;
       }
       const caps = videoSurfaceCapabilities();
+      const htmlHost = caps.engine === "html" ? anchorHost(rectRef.current) : null;
+      const anchored = htmlHost !== null;
       let cancelled = false;
       let setBounds = null;
       let closeSession = null;
@@ -191598,7 +191632,7 @@ ${cue.text}`).join("\n\n")}
           setBounds = (rect2) => nativeSetBounds(rect2);
           readyTimer = window.setTimeout(markReady, 800);
         } else {
-          const session = createHtmlSession(url, muted, markReady, markFailed, rectRef.current);
+          const session = createHtmlSession(url, muted, markReady, markFailed, htmlHost);
           closeSession = () => session.close();
           setBounds = (rect2) => session.setBounds(rect2);
         }
@@ -191611,10 +191645,12 @@ ${cue.text}`).join("\n\n")}
         const rect = measure2(rectRef.current);
         if (rect && setBounds) setBounds(rect);
       };
-      const observer2 = typeof ResizeObserver !== "undefined" && rectRef.current ? new ResizeObserver(sync2) : null;
+      const observer2 = !anchored && typeof ResizeObserver !== "undefined" && rectRef.current ? new ResizeObserver(sync2) : null;
       if (observer2 && rectRef.current) observer2.observe(rectRef.current);
-      window.addEventListener("resize", sync2);
-      document.addEventListener("scroll", sync2, true);
+      if (!anchored) {
+        window.addEventListener("resize", sync2);
+        document.addEventListener("scroll", sync2, true);
+      }
       const onReleased = () => {
         if (owner !== idRef.current) setLive(false);
       };
@@ -191623,8 +191659,10 @@ ${cue.text}`).join("\n\n")}
         cancelled = true;
         window.clearTimeout(readyTimer);
         observer2?.disconnect();
-        window.removeEventListener("resize", sync2);
-        document.removeEventListener("scroll", sync2, true);
+        if (!anchored) {
+          window.removeEventListener("resize", sync2);
+          document.removeEventListener("scroll", sync2, true);
+        }
         waiters.delete(onReleased);
         if (owner === idRef.current) {
           owner = null;
@@ -191638,7 +191676,7 @@ ${cue.text}`).join("\n\n")}
     }, [enabled, url, muted, audio, rectRef]);
     return { ready, failed, live, frameUrl };
   }
-  var host, owner, ownerClose, waiters;
+  var host, owner, ownerClose, waiters, POSITIONED;
   var init_video_surface = __esm({
     "../lumio-official-plugins/plugins/live-tv/runtime/tv/video-surface.ts"() {
       "use strict";
@@ -191652,6 +191690,7 @@ ${cue.text}`).join("\n\n")}
       owner = null;
       ownerClose = null;
       waiters = /* @__PURE__ */ new Set();
+      POSITIONED = /* @__PURE__ */ new Set(["relative", "absolute", "fixed", "sticky"]);
     }
   });
 
@@ -198015,6 +198054,8 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       setVisible(ROW_STEP);
     }, [group, mode]);
+    const visibleRows = useMemo(() => rows.slice(0, visible), [rows, visible]);
+    const selectedVisible = useMemo(() => selected ? visibleRows.some((c) => channelKey(c) === channelKey(selected)) : false, [selected, visibleRows]);
     const info = selected ? model.nowFor(selected) : { now: null, next: null, later: null };
     const previewOn = settings.previewEnabled;
     const headlineSize = previewOn ? dp(40) : dp(34);
@@ -198091,11 +198132,11 @@ ${cue.text}`).join("\n\n")}
             children: tt("guideEmpty")
           }
         ) : null,
-        rows.slice(0, visible).map((channel, index3) => {
+        visibleRows.map((channel, index3) => {
           const rowInfo = model.nowFor(channel);
           const key = channelKey(channel);
           const focused = selected ? channelKey(selected) === key : false;
-          const isInit = selected ? focused : index3 === 0;
+          const isInit = selectedVisible ? focused : index3 === 0;
           const rowStation = station(() => nav.play({ channel }), (el) => nav.channelMenu(channel, el), {
             ...isInit ? { "data-init": "" } : {}
           });
