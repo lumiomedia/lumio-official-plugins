@@ -30,7 +30,7 @@ beforeEach(() => {
   vi.mocked(useLiveTvEpgCache).mockReturnValue(cache)
 })
 
-const mount = () => render(<LiveTvTvShell pageId="live-tv-browse" params={{ view: 'guide' }} onNavigate={() => {}} onOpenDetails={() => {}} />)
+const mount = (params: Record<string, string> = { view: 'guide' }) => render(<LiveTvTvShell pageId="live-tv-browse" params={params} onNavigate={() => {}} onOpenDetails={() => {}} />)
 
 describe('TvGuide', () => {
   it('visar Nu/Sen/Senare för kanalen med tablå och tomtext för de utan', () => {
@@ -57,5 +57,10 @@ describe('TvGuide', () => {
     mount()
     fireEvent.click(screen.getAllByTestId('guide-row')[1])
     expect(await screen.findByTestId('player')).toHaveTextContent('B')
+  })
+  it('okänd group-parameter faller tillbaka till Alla i stället för en tom vy', () => {
+    mount({ view: 'guide', group: 'Nonexistent' })
+    expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
+    expect(screen.getAllByTestId('guide-row')).toHaveLength(3)
   })
 })

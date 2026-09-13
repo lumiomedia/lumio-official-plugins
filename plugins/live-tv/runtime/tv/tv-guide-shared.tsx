@@ -1,9 +1,8 @@
 'use client'
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { channelKey, type M3uChannel } from '../live-tv-data'
+import { useEffect, useMemo, useState } from 'react'
+import type { M3uChannel } from '../live-tv-data'
 import type { LiveTvModel } from '../live-tv-model'
-import type { NowNextLater } from '../epg/types'
 import { ChannelArt, Icons, TV, dp } from './tv-ui'
 import type { TvStringKey } from './tv-strings'
 
@@ -50,10 +49,3 @@ export function ChannelCell({ channel, number, pinned, locked, quality, focused,
   )
 }
 
-export function nowNextLabel(info: NowNextLater): ReactNode {
-  return info.now ? info.now.title : null
-}
-
-export function keyOf(channel: M3uChannel): string {
-  return channelKey(channel)
-}

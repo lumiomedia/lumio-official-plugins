@@ -9,7 +9,7 @@ import { Chip, Progress, Segment, Tag, TV, dp, station, useTvClockNode } from '.
 import { useTvText } from './tv-strings'
 import { setGuideMode, useGuideMode, type GuideMode } from './tv-settings-store'
 import { blockGeometry, nowLinePct, scheduleWindow, timeTicks } from './tv-schedule-window'
-import { ChannelCell, filterByGroup, useDebouncedChannel, useGuideGroups } from './tv-guide-shared'
+import { ChannelCell, FAVS_GROUP, filterByGroup, useDebouncedChannel, useGuideGroups } from './tv-guide-shared'
 import { TvPreview } from './tv-preview'
 import { TvGuidePlaylists } from './tv-guide-playlists'
 
@@ -35,7 +35,16 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
   const { tt, locale } = useTvText()
   const clock = useTvClockNode(locale)
   const groups = useGuideGroups(model, tt)
-  const [group, setGroup] = useState<string | null>(params.group === 'all' ? null : params.group ?? null)
+  // params.group kan vara en föråldrad eller manipulerad query-parameter
+  // (t.ex. ett borttaget spellistnamn) — validera mot de faktiska grupperna
+  // så att en okänd kategori faller tillbaka till "Alla" i stället för att
+  // rendera en tom vy utan data-init.
+  const [group, setGroup] = useState<string | null>(() => {
+    const raw = params.group
+    if (!raw || raw === 'all') return null
+    if (raw === FAVS_GROUP) return FAVS_GROUP
+    return model.groups.includes(raw) ? raw : null
+  })
   const rows = useMemo(() => filterByGroup(model, group), [model, group])
   const [visible, setVisible] = useState(ROW_STEP)
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
@@ -122,7 +131,14 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
 
       {/* Rader */}
       <div ref={listRef} data-scroll="" style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: `0 ${dp(48)}px ${dp(24)}px` }}>
-        {rows.length === 0 ? <div style={{ padding: dp(24), color: TV.dim, fontSize: dp(19) }}>{tt('guideEmpty')}</div> : null}
+        {rows.length === 0 ? (
+          <div
+            {...station(() => setGroup(null), undefined, { 'data-init': '' })}
+            style={{ padding: dp(24), color: TV.dim, fontSize: dp(19), cursor: 'pointer', borderRadius: dp(12) }}
+          >
+            {tt('guideEmpty')}
+          </div>
+        ) : null}
         {rows.slice(0, visible).map((channel, index) => {
           const rowInfo = model.nowFor(channel)
           const key = channelKey(channel)
