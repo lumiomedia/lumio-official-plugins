@@ -1,6 +1,6 @@
 import { createElement } from 'react'
 import * as sdk from '@/lib/plugin-sdk'
-import { type BrowsePageProps, type LumioPlugin } from '@/lib/plugin-sdk'
+import { type BrowsePageProps, type LumioPlugin, useTvMode } from '@/lib/plugin-sdk'
 import { getLiveTvHideHero, onLiveTvHideHeroChanged } from './live-tv-data'
 import { LiveTvSettingsSection } from './live-tv-settings-section'
 import { LiveTvHomeOverride } from './live-tv-home-override'
@@ -8,6 +8,7 @@ import { LiveTvHub } from './live-tv-hub'
 import { LiveTvRemindersMount } from './live-tv-reminders-mount'
 import { LiveTvEpgPage } from './live-tv-epg-page'
 import { LiveTvChannelPage } from './live-tv-channel-page'
+import { LiveTvTvShell } from './tv/tv-shell'
 import { useEpgNowNextLater } from './hooks/useEpgNowNextLater'
 import { useEpgLoadStatus } from './hooks/useEpgLoadStatus'
 import { useChannelSchedule } from './hooks/useChannelSchedule'
@@ -53,7 +54,13 @@ const LIVE_TV_BROWSE_PAGE_ID = 'live-tv-browse'
 // (live-tv-home-override.tsx), som är en annan funktion. En direktlänkad kanal
 // utan view öppnar kanalsidan, som klarar samma params (channelFromParams
 // faller tillbaka på params när kanalen inte finns i listorna).
-function LiveTvBrowsePage({ params, onNavigate }: BrowsePageProps) {
+//
+// TV: eget träd med ikonrad, vy-router och Back-stack (spec 2026-09-13) i
+// stället för hubb/epg/kanal-sidorna ovan. Hooken anropas alltid, före grenen.
+function LiveTvBrowsePage(props: BrowsePageProps) {
+  const isTv = useTvMode()
+  if (isTv) return createElement(LiveTvTvShell, props)
+  const { params, onNavigate } = props
   const view = params?.view
   if (view === 'epg') return createElement(LiveTvEpgPage, { onNavigate })
   if (view === 'channel' || (!view && params?.url)) return createElement(LiveTvChannelPage, { params, onNavigate })
