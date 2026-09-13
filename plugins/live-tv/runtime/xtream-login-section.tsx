@@ -17,6 +17,7 @@ import {
   onXtreamLoginsChanged,
   saveXtreamLogin,
   xtreamPseudoUrl,
+  type XtreamAccount,
   type XtreamCategory,
   type XtreamLogin,
 } from './live-tv-data'
@@ -29,6 +30,14 @@ const actionButtonClass =
   'rounded-full border border-white/10 px-4 py-2 text-xs uppercase tracking-[0.22em] text-slate-300 transition hover:border-white/30 hover:text-white disabled:opacity-50'
 const smallButtonClass =
   'rounded bg-white/10 px-3 py-1.5 text-xs text-slate-200 transition hover:bg-white/15 disabled:opacity-50'
+
+/** Utgångsdatumet ur Xtream-panelen (unix-sekunder). Samma format som TV:s kontokort. */
+function formatXtreamExpiry(expDate: number | null, locale: string): string | null {
+  if (!expDate) return null
+  const when = new Date(expDate * 1000)
+  if (Number.isNaN(when.getTime())) return null
+  return when.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })
+}
 
 /**
  * "Logga in på nytt"-bryggan från listkorten (`live-tv-settings-section.tsx`).
@@ -293,16 +302,42 @@ function XtreamLoginCard({
   onRemove: (login: XtreamLogin) => void
 }) {
   const { t } = useLang()
+  const { h, locale } = useHubText()
   const [open, setOpen] = useState(false)
   const [categories, setCategories] = useState<XtreamCategory[] | null>(null)
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<Set<string>>(() => new Set(login.categoryIds))
   const [busy, setBusy] = useState(false)
+  const [account, setAccount] = useState<XtreamAccount | null>(null)
+  const [accountFailed, setAccountFailed] = useState(false)
+
+  // Kontoinfo (status/utgång/max anslutningar) — spec 4.4 punkt 3, samma fält
+  // som TV:s XtreamAccountCard. `fetchXtreamAccount` cachar redan 5 minuter
+  // per bas+användare, så det här kör högst en riktig hämtning per montering.
+  useEffect(() => {
+    let cancelled = false
+    setAccountFailed(false)
+    void fetchXtreamAccount(login)
+      .then((next) => { if (!cancelled) setAccount(next) })
+      .catch(() => { if (!cancelled) setAccountFailed(true) })
+    return () => { cancelled = true }
+  }, [login.base, login.username, login.password])
 
   let host = login.base
   try {
     host = new URL(login.base).host
   } catch { /* behåll basen */ }
+
+  const expiry = account ? formatXtreamExpiry(account.expDate, locale) : null
+  const accountMeta = accountFailed
+    ? h('xtreamAccountUnavailable')
+    : account
+      ? [
+          account.status,
+          expiry ? h('xtreamExpires', { date: expiry }) : h('xtreamNoExpiry'),
+          account.maxConnections ? h('xtreamMaxConnections', { count: account.maxConnections }) : null,
+        ].filter((part): part is string => Boolean(part)).join(' · ')
+      : h('listRefetching')
 
   async function handleToggleOpen() {
     const next = !open
@@ -345,7 +380,10 @@ function XtreamLoginCard({
   return (
     <div style={{ padding: '12px 14px', borderRadius: 12, border: `1px solid ${TOKENS.border}`, background: TOKENS.surface0 }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-        <span style={{ minWidth: 0, flex: 1, fontSize: 14, fontWeight: 600, color: TOKENS.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{host}</span>
+        <div data-testid={`xtream-account-${login.id}`} style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: TOKENS.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{host}</span>
+          <span style={{ fontSize: 11.5, color: accountFailed ? TOKENS.red : TOKENS.textMute, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{accountMeta}</span>
+        </div>
         <PillBtn size="sm" onClick={() => void handleToggleOpen()}>
           {t('liveTvXtreamCategories')}{login.categoryIds.length > 0 ? ` (${login.categoryIds.length})` : ''}
         </PillBtn>

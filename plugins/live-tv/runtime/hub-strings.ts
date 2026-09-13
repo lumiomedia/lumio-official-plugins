@@ -140,6 +140,11 @@ const EN = {
   listFull: 'The list is full — 500 channels at most',
   xtreamNeedsLogin: 'Sign in again to fetch channels',
   xtreamRelogin: 'Sign in again',
+  // P8
+  xtreamAccountUnavailable: 'Could not read the account',
+  xtreamExpires: 'expires {date}',
+  xtreamNoExpiry: 'no expiry date',
+  xtreamMaxConnections: '{count} connections',
 } as const
 
 const SV: Record<keyof typeof EN, string> = {
@@ -266,6 +271,11 @@ const SV: Record<keyof typeof EN, string> = {
   listFull: 'Listan är full — högst 500 kanaler',
   xtreamNeedsLogin: 'Logga in på nytt för att hämta kanaler',
   xtreamRelogin: 'Logga in på nytt',
+  // P8
+  xtreamAccountUnavailable: 'Kunde inte läsa kontot',
+  xtreamExpires: 'giltigt till {date}',
+  xtreamNoExpiry: 'inget utgångsdatum',
+  xtreamMaxConnections: '{count} anslutningar',
 }
 
 export type HubStringKey = keyof typeof EN

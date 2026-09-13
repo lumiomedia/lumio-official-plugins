@@ -1189,6 +1189,7 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
                       onClick={() => void handleRefreshList(list)}
                       disabled={refreshing}
                       className="absolute right-8 top-1/2 z-10 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.04] text-slate-400 transition hover:border-accent-400/40 hover:bg-accent-400/10 hover:text-accent-300 disabled:cursor-default disabled:opacity-50"
+                      aria-label={h('listRefetch')}
                       title={h('listRefetch')}
                     >
                       <svg className={`h-3 w-3 ${refreshing ? 'animate-spin' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1204,6 +1205,7 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
                       deleteLiveTvList(list.id)
                     }}
                     className="absolute right-1.5 top-1/2 z-10 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.04] text-slate-400 transition hover:border-accent-400/40 hover:bg-accent-400/10 hover:text-accent-300"
+                    aria-label={t('liveTvDeleteList')}
                     title={t('liveTvDeleteList')}
                   >
                     <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

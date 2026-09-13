@@ -168,4 +168,12 @@ describe('LiveTvGrid: Uppdatera per lista och Uppdatera alla', () => {
     await waitFor(() => expect(importSpy).toHaveBeenCalledTimes(1))
     expect(importSpy.mock.calls[0][0]).toMatchObject({ id: 'l3' })
   })
+
+  it('per-lista-knappen och radera-knappen har varsin aria-label', async () => {
+    await mount()
+    // Två importerbara listor (l1, l3) — den manuella (l2) får ingen
+    // Uppdatera-knapp. Alla tre listor får en radera-knapp.
+    expect(screen.getAllByLabelText('Refetch')).toHaveLength(2)
+    expect(screen.getAllByLabelText('liveTvDeleteList')).toHaveLength(3)
+  })
 })
