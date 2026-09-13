@@ -57,12 +57,18 @@ export function isStorageV2Migrated(): boolean {
 /**
  * Kör migreringen en gång. Idempotent: en andra körning (samma enhet, samma
  * flagga) är ett no-op utan nätverksanrop.
+ *
+ * Kastar ALDRIG — ett nätverksfel på en enskild lista (eller på städningen i
+ * slutet) fångas och kommer tillbaka som `error` i utfallet. Anroparen (P3:s
+ * modell, vid start) ska kunna köra den utan ett eget try/catch runt varje
+ * uppstart.
  */
-export async function migrateStorageV2(): Promise<{ migrated: number }> {
+export async function migrateStorageV2(): Promise<{ migrated: number; error?: string }> {
   if (isStorageV2Migrated()) return { migrated: 0 }
 
   const lists = getLiveTvLists()
   let migrated = 0
+  let lastError: string | undefined
   const rewritten: LiveTvList[] = []
 
   for (const list of lists) {
@@ -75,26 +81,49 @@ export async function migrateStorageV2(): Promise<{ migrated: number }> {
       continue
     }
 
-    await batchChannels(list.source as string, withKeysAndNumbers(embedded), true)
-    const { channels: _channels, ...withoutChannels } = list
-    rewritten.push({
-      ...withoutChannels,
-      channelCount: embedded.length,
-      groups: computeGroups(embedded),
-    })
-    migrated += 1
+    try {
+      await batchChannels(list.source as string, withKeysAndNumbers(embedded), true)
+      const { channels: _channels, ...withoutChannels } = list
+      rewritten.push({
+        ...withoutChannels,
+        channelCount: embedded.length,
+        groups: computeGroups(embedded),
+      })
+      migrated += 1
+    } catch (err) {
+      // Lämnas OFÖRÄNDRAD (kanalerna kvar inbäddade) — flaggan sätts inte
+      // förrän en körning inte har några fel, så nästa körning (nästa
+      // apps-tart) försöker den här listan igen i stället för att tappa den.
+      // De listor som redan lyckades migreras ändå (se replaceLiveTvLists
+      // nedan): en omkörning ser dem som redan tomma på inbäddade kanaler
+      // och migrerar dem inte en andra gång.
+      lastError = err instanceof Error ? err.message : String(err)
+      rewritten.push(list)
+    }
   }
 
-  if (migrated > 0) {
-    replaceLiveTvLists(rewritten)
-    emitIndexChanged()
+  try {
+    if (migrated > 0) {
+      // Läs om just innan skrivningen och slå samman på id: en samtidig
+      // ändring (pin-toggle, en ny lista, en borttagen lista) medan
+      // `batchChannels`-anropen pågick ska inte tappas bort av att vi skriver
+      // tillbaka en ögonblicksbild från FÖRE den väntan.
+      const rewrittenById = new Map(rewritten.map((entry) => [entry.id, entry]))
+      const merged = getLiveTvLists().map((current) => rewrittenById.get(current.id) ?? current)
+      replaceLiveTvLists(merged)
+      emitIndexChanged()
+    }
+
+    // Alltid, oavsett `migrated`: rensa eventuella kvarvarande channels:-nycklar
+    // (den gamla webbläsarcachen) så en enhet som redan var utan inbäddade
+    // kanaler också blir fri från resterna.
+    removePluginStorageByPrefix(LIVE_TV_PLUGIN_ID, LIVE_TV_CHANNELS_PREFIX)
+    // Flaggan sätts bara när INGET fel inträffat — annars ser en enhet som
+    // inte fick alla listor migrerade ut som klar och försöker aldrig igen.
+    if (!lastError) writePluginJson(LIVE_TV_PLUGIN_ID, STORAGE_V2_MIGRATED_KEY, true)
+  } catch (err) {
+    lastError = err instanceof Error ? err.message : String(err)
   }
 
-  // Alltid, oavsett `migrated`: rensa eventuella kvarvarande channels:-nycklar
-  // (den gamla webbläsarcachen) så en enhet som redan var utan inbäddade
-  // kanaler också blir fri från resterna.
-  removePluginStorageByPrefix(LIVE_TV_PLUGIN_ID, LIVE_TV_CHANNELS_PREFIX)
-  writePluginJson(LIVE_TV_PLUGIN_ID, STORAGE_V2_MIGRATED_KEY, true)
-
-  return { migrated }
+  return lastError ? { migrated, error: lastError } : { migrated }
 }

@@ -112,6 +112,15 @@ export interface LiveTvList {
    * Null för listor som lagrades innan fältet fanns.
    */
   fetchedAt: string | null
+  /**
+   * Satt av `importMissingSources`/`importList` när en import misslyckades
+   * (t.ex. en Xtream-lista överförd till en ny enhet vars `xtream_logins` inte
+   * speglades ännu) — UI kan visa "behöver hämtas om" i stället för att tyst
+   * visa en tom/oförändrad lista. Rensas vid nästa lyckade import.
+   */
+  needsReimport?: boolean
+  /** Senaste felmeddelandet, för samma UI. Rensas tillsammans med `needsReimport`. */
+  lastImportError?: string
 }
 
 function sanitizeChannels(channels: unknown[]): M3uChannel[] {
@@ -188,21 +197,30 @@ function sanitizeGroups(values: unknown): { name: string; count: number }[] {
  * riktig import-URL att skriva om den mot) och behåller sina inbäddade
  * kanaler oförändrat.
  */
-function classifyLegacyList(id: string, name: string): Pick<LiveTvList, 'kind' | 'source' | 'url' | 'xtreamLoginId'> {
-  for (const login of getXtreamLogins()) {
-    let host = login.base
-    try {
-      host = new URL(login.base).host
-    } catch { /* behåll basen som fallback */ }
-    if (host === name) return { kind: 'xtream', source: xtreamPseudoUrl(login), xtreamLoginId: login.id }
+function classifyLegacyList(
+  id: string,
+  name: string,
+  xtreamLogins: XtreamLogin[],
+  m3uUrls: string[],
+): Pick<LiveTvList, 'kind' | 'source' | 'url' | 'xtreamLoginId'> {
+  for (const login of xtreamLogins) {
+    // Listans `name` kommer från `deriveListName(xtreamPseudoUrl(login))`
+    // (hostnamn, UTAN port — `new URL().hostname`) eftersom det är så den
+    // GAMLA `upsertLiveTvListFromFetch`-vägen döpte Xtream-listor. Att jämföra
+    // mot `new URL(login.base).host` (MED port) missade varje panel på en
+    // icke-standardport: listan klassades `custom` och migreringen hoppade
+    // över den, trots att den hade en fullt giltig Xtream-källa.
+    if (deriveListName(xtreamPseudoUrl(login)) === name) {
+      return { kind: 'xtream', source: xtreamPseudoUrl(login), xtreamLoginId: login.id }
+    }
   }
-  for (const url of getM3uUrls()) {
+  for (const url of m3uUrls) {
     if (deriveListName(url) === name) return { kind: 'm3u', source: getLiveTvUrlsKey([url]), url }
   }
   return { kind: 'custom', source: `custom:${id}` }
 }
 
-function sanitizeListEntry(entry: Record<string, unknown>): LiveTvList {
+function sanitizeListEntry(entry: Record<string, unknown>, xtreamLogins: XtreamLogin[], m3uUrls: string[]): LiveTvList {
   const id = String(entry.id ?? '')
   const name = String(entry.name ?? '').trim()
   const channels = sanitizeChannels(Array.isArray(entry.channels) ? entry.channels : [])
@@ -215,7 +233,7 @@ function sanitizeListEntry(entry: Record<string, unknown>): LiveTvList {
         url: typeof entry.url === 'string' && entry.url.length > 0 ? entry.url : undefined,
         xtreamLoginId: typeof entry.xtreamLoginId === 'string' && entry.xtreamLoginId.length > 0 ? entry.xtreamLoginId : undefined,
       }
-    : classifyLegacyList(id, name)
+    : classifyLegacyList(id, name, xtreamLogins, m3uUrls)
 
   const channelCount = typeof entry.channelCount === 'number' && Number.isFinite(entry.channelCount)
     ? entry.channelCount
@@ -234,15 +252,24 @@ function sanitizeListEntry(entry: Record<string, unknown>): LiveTvList {
     channelCount,
     groups,
     channels,
+    needsReimport: entry.needsReimport === true,
+    lastImportError: typeof entry.lastImportError === 'string' && entry.lastImportError.trim().length > 0
+      ? entry.lastImportError
+      : undefined,
   }
 }
 
 function readLists(): LiveTvList[] {
   const parsed = readPluginJson<unknown>(LIVE_TV_PLUGIN_ID, LIVE_TV_LISTS_KEY, [])
   if (!Array.isArray(parsed)) return []
+  // Hissade ut ur loopen: annars läser/JSON.parsar varje legacy-post (utan
+  // `kind`/`source`) om HELA `xtream_logins`/`m3u_urls` för sin egen skull —
+  // O(listor) parsningar av samma två oföränderliga blobbar i stället för en.
+  const xtreamLogins = getXtreamLogins()
+  const m3uUrls = getM3uUrls()
   return parsed
     .filter((entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === 'object')
-    .map((entry) => sanitizeListEntry(entry))
+    .map((entry) => sanitizeListEntry(entry, xtreamLogins, m3uUrls))
     .filter((entry) => entry.id.length > 0 && entry.name.length > 0)
 }
 
@@ -475,9 +502,17 @@ export function upsertLiveTvListFromFetch(
   return next
 }
 
+/**
+ * BARA manuellt skapade (`kind === 'custom'`) listor lagrar kanaler — m3u/
+ * xtream-listors kanaler bor i indexet, och `channelCount`/`groups` för dem är
+ * importjobbets kvitto (skrivs av `importList`). Ett anrop på en icke-custom
+ * lista är därför ett no-op i stället för att skriva en kanalpayload (som för
+ * Xtream kan bära `archive` med inloggningsuppgifter) till speglade `lists`
+ * och skeva kvittot till "1 kanal".
+ */
 export function addChannelToLiveTvList(listId: string, channel: M3uChannel): void {
   writeLists(readLists().map((list) => {
-    if (list.id !== listId) return list
+    if (list.id !== listId || list.kind !== 'custom') return list
     const channels = dedupeChannels([...(list.channels ?? []), channel])
     return { ...list, channels, channelCount: channels.length, groups: computeGroups(channels) }
   }))
@@ -486,7 +521,7 @@ export function addChannelToLiveTvList(listId: string, channel: M3uChannel): voi
 export function removeChannelFromLiveTvList(listId: string, channel: Pick<M3uChannel, 'name' | 'url'>): void {
   const key = channelKey(channel)
   writeLists(readLists().map((list) => {
-    if (list.id !== listId) return list
+    if (list.id !== listId || list.kind !== 'custom') return list
     const channels = (list.channels ?? []).filter((entry) => channelKey(entry) !== key)
     return { ...list, channels, channelCount: channels.length, groups: computeGroups(channels) }
   }))
@@ -757,14 +792,42 @@ export async function importList(list: LiveTvList, onProgress?: (status: ImportS
  * sekventiellt och ett fel på en lista hindrar inte de andra (samma
  * "behåll gammalt innehåll"-princip som `importList`/spec 5).
  */
+// Återinträdesskydd: modellen (P3) kan anropa `importMissingSources` på
+// mount, och ett spellistbyte eller en snabb remount kan trigga ett andra
+// anrop innan det första hunnit klart — utan skyddet startar det om samma
+// jobb en gång till för varje lista i stället för att vänta in det pågående.
+let importMissingSourcesInFlight: Promise<void> | null = null
+
 export async function importMissingSources(): Promise<void> {
-  const { sources } = await indexStatus()
-  const known = new Set(sources)
-  const missing = readLists().filter(
-    (list) => list.source && !known.has(list.source) && (list.kind === 'm3u' || list.kind === 'xtream'),
-  )
-  for (const list of missing) {
-    await importList(list).catch(() => {})
+  if (importMissingSourcesInFlight) return importMissingSourcesInFlight
+  importMissingSourcesInFlight = (async () => {
+    const { sources } = await indexStatus()
+    const known = new Set(sources)
+    const missing = readLists().filter(
+      (list) => list.source && !known.has(list.source) && (list.kind === 'm3u' || list.kind === 'xtream'),
+    )
+    for (const list of missing) {
+      // Ett fel (t.ex. en Xtream-lista överförd till en ny enhet vars
+      // `xtream_logins` inte speglades ännu, så `importList` kastar "xtream
+      // login missing") fick tidigare tyst svälja varje start om och om
+      // igen — listan såg ut att bara sakna kanaler, utan spår av varför.
+      // `needsReimport`/`lastImportError` gör felet synligt för UI i stället.
+      let errorMessage: string | undefined
+      try {
+        const status = await importList(list)
+        if (status.state === 'error') errorMessage = status.error ?? 'import failed'
+      } catch (err) {
+        errorMessage = err instanceof Error ? err.message : String(err)
+      }
+      writeLists(readLists().map((entry) => (entry.id === list.id
+        ? { ...entry, needsReimport: Boolean(errorMessage), lastImportError: errorMessage }
+        : entry)))
+    }
+  })()
+  try {
+    await importMissingSourcesInFlight
+  } finally {
+    importMissingSourcesInFlight = null
   }
 }
 

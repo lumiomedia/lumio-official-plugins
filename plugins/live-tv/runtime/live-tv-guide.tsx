@@ -163,7 +163,7 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
     const seen = new Set<string>()
     const sourceLists = activeList ? [activeList] : lists
     for (const list of sourceLists) {
-      for (const channel of list.channels) {
+      for (const channel of list.channels ?? []) {
         const key = `${channel.name}::${channel.url}`
         if (seen.has(key)) continue
         seen.add(key)
@@ -199,7 +199,7 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
     const sourceLists = activeList ? [activeList] : lists
     const sourceChannels = new Map<string, M3uChannel>()
     for (const list of sourceLists) {
-      for (const channel of list.channels) {
+      for (const channel of list.channels ?? []) {
         sourceChannels.set(`${channel.name}::${channel.url}`, channel)
       }
     }

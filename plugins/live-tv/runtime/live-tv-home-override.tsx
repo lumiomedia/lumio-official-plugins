@@ -34,7 +34,7 @@ function isPlayableChannel(channel: M3uChannel): boolean {
 
 function preferredChannels(lists: LiveTvList[]): Array<{ list: LiveTvList; channels: M3uChannel[] }> {
   return lists
-    .map((list) => ({ list, channels: list.channels.filter(isPlayableChannel) }))
+    .map((list) => ({ list, channels: (list.channels ?? []).filter(isPlayableChannel) }))
     .filter((entry) => entry.channels.length > 0)
 }
 

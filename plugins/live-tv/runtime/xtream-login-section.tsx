@@ -16,6 +16,7 @@ import {
   normalizeXtreamBase,
   onXtreamLoginsChanged,
   saveXtreamLogin,
+  xtreamPseudoUrl,
   type XtreamCategory,
   type XtreamLogin,
 } from './live-tv-data'
@@ -41,7 +42,9 @@ export function XtreamLoginSection() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [state, setState] = useState<'idle' | 'working' | 'done' | 'authError' | 'netError'>('idle')
-  const [notice, setNotice] = useState<string | null>(null)
+  // Jobbets `state.received/total` (importList) — synlig framstegsräknare för
+  // stora Xtream-utbud (tiotusentals kanaler kan ta en stund).
+  const [importProgress, setImportProgress] = useState<{ received: number; total: number | null } | null>(null)
   /**
    * TV: fälten är knappar som öppnar värdens tangentbordspanel på OK. Ett
    * vanligt <input> fick fokus av fjärrens navigering och drog upp systemets
@@ -70,15 +73,28 @@ export function XtreamLoginSection() {
   }, [])
 
   async function refreshChannels(login: XtreamLogin): Promise<void> {
+    const source = xtreamPseudoUrl(login)
+    // Om importen misslyckas för en HELT NY lista (den fanns inte innan det
+    // här anropet) ska den inte lämnas kvar som en tom, orimporterad post —
+    // spec §5. En redan befintlig lista (t.ex. "uppdatera kategorier" på en
+    // panel som redan importerats en gång) rörs inte vid ett fel.
+    const existedBefore = getLiveTvLists().some((entry) => entry.source === source)
     const list = ensureXtreamList(login)
-    const status = await importList(list)
-    // Rensar bara ev. kvarvarande rester av den GAMLA lagringsvägen (se
-    // dokumentationen på clearLiveTvMemoryCache/clearStoredLiveTvChannels) —
-    // indexet självt uppdateras av importList/emitIndexChanged.
-    clearLiveTvMemoryCache()
-    clearStoredLiveTvChannels()
-    if (status.state === 'error') throw new Error(status.error ?? 'xtream import failed')
-    setNotice(null)
+    setImportProgress({ received: 0, total: null })
+    try {
+      const status = await importList(list, (s) => setImportProgress({ received: s.received, total: s.total ?? null }))
+      // Rensar bara ev. kvarvarande rester av den GAMLA lagringsvägen (se
+      // dokumentationen på clearLiveTvMemoryCache/clearStoredLiveTvChannels) —
+      // indexet självt uppdateras av importList/emitIndexChanged.
+      clearLiveTvMemoryCache()
+      clearStoredLiveTvChannels()
+      if (status.state === 'error') {
+        if (!existedBefore) deleteLiveTvList(list.id)
+        throw new Error(status.error ?? 'xtream import failed')
+      }
+    } finally {
+      setImportProgress(null)
+    }
   }
 
   async function handleConnect() {
@@ -90,7 +106,6 @@ export function XtreamLoginSection() {
       return
     }
     setState('working')
-    setNotice(null)
     try {
       const account = await fetchXtreamAccount({ base, username: user, password: pass })
       if (!account.auth) {
@@ -119,15 +134,14 @@ export function XtreamLoginSection() {
 
   function handleRemove(login: XtreamLogin) {
     deleteXtreamLogin(login.id)
-    let host = login.base
-    try {
-      host = new URL(login.base).hostname
-    } catch { /* behåll basen */ }
-    const list = getLiveTvLists().find((entry) => entry.name === host)
+    // Källan (pseudo-URL:en), inte visningsnamnet — `ensureXtreamList` döper
+    // listan efter värdnamnet MED port, så en jämförelse mot hostname (utan
+    // port) missade panelen och lämnade listan kvar efter borttagning.
+    const source = xtreamPseudoUrl(login)
+    const list = getLiveTvLists().find((entry) => entry.source === source)
     if (list) deleteLiveTvList(list.id)
     clearLiveTvMemoryCache()
     clearStoredLiveTvChannels()
-    setNotice(null)
   }
 
   return (
@@ -194,7 +208,11 @@ export function XtreamLoginSection() {
             {state === 'working' ? t('liveTvXtreamConnecting') : state === 'done' ? t('liveTvXtreamDone') : t('liveTvXtreamConnect')}
           </PillBtn>
         </div>
-        {notice ? <p style={{ margin: 0, fontSize: 12, color: TOKENS.warn }}>{notice}</p> : null}
+        {importProgress ? (
+          <p style={{ margin: 0, fontSize: 12, color: TOKENS.textMute }}>
+            {importProgress.received}{importProgress.total ? ` / ${importProgress.total}` : ''}
+          </p>
+        ) : null}
         {logins.map((login) => (
           <XtreamLoginCard key={login.id} login={login} onRefresh={refreshChannels} onRemove={handleRemove} />
         ))}

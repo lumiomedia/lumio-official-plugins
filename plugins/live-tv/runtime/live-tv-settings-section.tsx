@@ -17,6 +17,7 @@ import {
   deleteLiveTvList,
   ensureM3uList,
   getLiveTvLists,
+  getLiveTvUrlsKey,
   getM3uUrls,
   importList,
   getM3uDraftUrls,
@@ -29,6 +30,7 @@ import {
 } from './live-tv-data'
 import {
   getM3uFetchProgress,
+  reportM3uFetchJobProgress,
   runM3uFetch,
   subscribeM3uFetch,
 } from './m3u-fetch-progress'
@@ -104,9 +106,18 @@ export function LiveTvSettingsSection() {
     // kommer tillbaka, och ett tillstånd som dog med komponenten var precis
     // det som fick en betatestare att starta hämtningen en andra gång.
     const ok = await runM3uFetch(urls, async (url) => {
+      // Fanns listan redan (samma källa importerad tidigare)? Om INTE, och
+      // importen misslyckas, ska den nyskapade, tomma listposten inte lämnas
+      // kvar som en orphan (spec §5) — bara knappens "hämta" ska kunna
+      // skapa en riktig, importerad lista.
+      const source = getLiveTvUrlsKey([url])
+      const existedBefore = getLiveTvLists().some((entry) => entry.source === source)
       const list = ensureM3uList(url)
-      const status = await importList(list)
-      if (status.state === 'error') throw new Error(status.error ?? 'm3u import failed')
+      const status = await importList(list, (s) => reportM3uFetchJobProgress(s.received, s.total))
+      if (status.state === 'error') {
+        if (!existedBefore) deleteLiveTvList(list.id)
+        throw new Error(status.error ?? 'm3u import failed')
+      }
       return status.result?.total ?? 0
     })
 
@@ -211,6 +222,11 @@ export function LiveTvSettingsSection() {
                     }}
                   />
                   <span>{h('m3uFetchProgress', { current: fetchProgress.current, total: fetchProgress.total })}</span>
+                  {fetchProgress.jobProgress ? (
+                    <span style={{ color: TOKENS.textMute }}>
+                      ({fetchProgress.jobProgress.received}{fetchProgress.jobProgress.total ? ` / ${fetchProgress.jobProgress.total}` : ''})
+                    </span>
+                  ) : null}
                 </div>
                 <div style={{ fontSize: 12, color: TOKENS.textMute, lineHeight: 1.45 }}>{h('m3uFetchKeepOpen')}</div>
               </>

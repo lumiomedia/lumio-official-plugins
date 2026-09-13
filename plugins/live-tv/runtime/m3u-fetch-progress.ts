@@ -38,6 +38,13 @@ export interface M3uFetchProgress {
   /** Klara adresser med kanalantal, i hämtningsordning. */
   results: M3uFetchResult[]
   error: string | null
+  /**
+   * Importjobbets EGET framsteg (`ImportStatus.received`/`total`) för adressen
+   * som hämtas just nu — en stor Xtream-panel eller M3U-lista kan ha tiotusen-
+   * tals kanaler och ta lång tid inom ETT steg i kön ovan. `null` när inget
+   * jobb rapporterat något än (eller mellan adresser).
+   */
+  jobProgress: { received: number; total: number | null } | null
 }
 
 const IDLE: M3uFetchProgress = {
@@ -47,6 +54,7 @@ const IDLE: M3uFetchProgress = {
   url: null,
   results: [],
   error: null,
+  jobProgress: null,
 }
 
 let progress: M3uFetchProgress = IDLE
@@ -73,6 +81,18 @@ export function resetM3uFetchProgressForTests(): void {
 }
 
 /**
+ * Rapporterar in ett pågående jobbs `received`/`total` (t.ex. `importList`s
+ * `onProgress`) för adressen som hämtas just nu. No-op utanför en pågående
+ * hämtning, så en försenad rapport från ett jobb som redan avslutats (eller
+ * som aldrig var en del av en `runM3uFetch`-kö, t.ex. Xtream-sektionens egen
+ * hämtning) inte skriver in sig i fel tillstånd.
+ */
+export function reportM3uFetchJobProgress(received: number, total?: number | null): void {
+  if (progress.status !== 'fetching') return
+  publish({ ...progress, jobProgress: { received, total: total ?? null } })
+}
+
+/**
  * Hämtar varje adress i ordning och stegar tillståndet. Svarar `true` när
  * alla gick igenom, `false` när något föll eller när det inte fanns något
  * att göra (tom kö, eller en hämtning som redan pågår).
@@ -86,15 +106,15 @@ export async function runM3uFetch(
   if (queue.length === 0) return false
 
   const results: M3uFetchResult[] = []
-  publish({ status: 'fetching', current: 1, total: queue.length, url: queue[0], results, error: null })
+  publish({ status: 'fetching', current: 1, total: queue.length, url: queue[0], results, error: null, jobProgress: null })
 
   for (let index = 0; index < queue.length; index += 1) {
     const url = queue[index]
-    publish({ ...progress, current: index + 1, url })
+    publish({ ...progress, current: index + 1, url, jobProgress: null })
     try {
       const channels = await fetchOne(url)
       results.push({ url, channels })
-      publish({ ...progress, results: [...results] })
+      publish({ ...progress, results: [...results], jobProgress: null })
     } catch (err) {
       publish({
         status: 'error',
@@ -103,6 +123,7 @@ export async function runM3uFetch(
         url,
         results: [...results],
         error: err instanceof Error ? err.message : String(err),
+        jobProgress: null,
       })
       return false
     }
@@ -115,6 +136,7 @@ export async function runM3uFetch(
     url: null,
     results: [...results],
     error: null,
+    jobProgress: null,
   })
   return true
 }

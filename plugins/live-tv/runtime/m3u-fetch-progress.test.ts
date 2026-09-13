@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   getM3uFetchProgress,
+  reportM3uFetchJobProgress,
   resetM3uFetchProgressForTests,
   runM3uFetch,
   subscribeM3uFetch,
@@ -88,6 +89,27 @@ describe('m3u fetch progress', () => {
     await expect(runM3uFetch([], fetchOne)).resolves.toBe(false)
     expect(fetchOne).not.toHaveBeenCalled()
     expect(getM3uFetchProgress().status).toBe('idle')
+  })
+
+  it('reportM3uFetchJobProgress synliggör jobbets received/total under en pågående hämtning', async () => {
+    const gate = deferred<number>()
+    const run = runM3uFetch(['http://a/1.m3u'], async () => {
+      reportM3uFetchJobProgress(120, 500)
+      return gate.promise
+    })
+
+    await vi.waitFor(() => expect(getM3uFetchProgress().jobProgress).toEqual({ received: 120, total: 500 }))
+
+    gate.resolve(500)
+    await run
+    // Nollställt igen när hämtningen av adressen är klar.
+    expect(getM3uFetchProgress().jobProgress).toBeNull()
+  })
+
+  it('reportM3uFetchJobProgress är ett no-op utanför en pågående hämtning', () => {
+    expect(getM3uFetchProgress().status).toBe('idle')
+    reportM3uFetchJobProgress(10, 20)
+    expect(getM3uFetchProgress().jobProgress).toBeNull()
   })
 
   it('meddelar prenumeranter vid varje steg', async () => {
