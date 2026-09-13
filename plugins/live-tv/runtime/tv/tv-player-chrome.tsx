@@ -39,20 +39,41 @@ export function TvPlayerChrome({ channel, tv, paused, onTogglePause, onClose }: 
     if (next) tv.onSwitchChannel(next)
   }, [tv, index])
 
-  // Tangenter: ▲ visar bannern, ▾ öppnar mini-guiden, ChannelUp/Down zappar.
+  // Tangenter: ▲ visar bannern, ▾ öppnar mini-guiden, ChannelUp/Down zappar,
+  // Back stänger mini-guiden eller (annars) spelaren.
+  //
+  // `stopImmediatePropagation` och inte bara `stopPropagation`: tre
+  // capture-lyssnare (skal, spelare, kromet) sitter på SAMMA mål (`window`),
+  // och `stopPropagation` stoppar bara vidare BUBBLING/CAPTURE till andra
+  // MÅL i trädet — inte syskonlyssnare på samma mål, som körs i
+  // registreringsordning. Spelarens lyssnare läggs om varje gång dess
+  // beroenden ändras (ny funktion, ny plats i listan), så "kromet monterades
+  // före spelaren"-ordningen går inte att lita på. `stopImmediatePropagation`
+  // hindrar DOM:en från att kalla några fler lyssnare alls för just den här
+  // händelsen, oavsett ordning.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (menu) return
-      if (event.key === 'ChannelUp' || event.key === 'PageUp') { event.preventDefault(); event.stopPropagation(); step(1); return }
-      if (event.key === 'ChannelDown' || event.key === 'PageDown') { event.preventDefault(); event.stopPropagation(); step(-1); return }
-      if (event.key === 'ArrowDown' && !miniOpen) { event.preventDefault(); event.stopPropagation(); setMiniOpen(true); reveal(); return }
-      if (event.key === 'ArrowUp' && !miniOpen) { event.preventDefault(); event.stopPropagation(); reveal(); return }
-      if ((event.key === 'Escape' || event.key === 'Backspace') && miniOpen) { event.preventDefault(); event.stopPropagation(); setMiniOpen(false); window.setTimeout(() => dotsRef.current?.focus({ preventScroll: true }), 0); return }
+      if (menu) return // glasmenyn stänger sig själv på Back (host TvGlassMenu)
+      if (event.key === 'ChannelUp' || event.key === 'PageUp') { event.preventDefault(); event.stopImmediatePropagation(); step(1); return }
+      if (event.key === 'ChannelDown' || event.key === 'PageDown') { event.preventDefault(); event.stopImmediatePropagation(); step(-1); return }
+      if (event.key === 'ArrowDown' && !miniOpen) { event.preventDefault(); event.stopImmediatePropagation(); setMiniOpen(true); reveal(); return }
+      if (event.key === 'ArrowUp' && !miniOpen) { event.preventDefault(); event.stopImmediatePropagation(); reveal(); return }
+      if (event.key === 'Escape' || event.key === 'Backspace') {
+        event.preventDefault()
+        event.stopImmediatePropagation()
+        if (miniOpen) {
+          setMiniOpen(false)
+          window.setTimeout(() => dotsRef.current?.focus({ preventScroll: true }), 0)
+          return
+        }
+        onClose()
+        return
+      }
       if (event.key.startsWith('Arrow') || event.key === 'Enter') reveal()
     }
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
-  }, [menu, miniOpen, step, reveal])
+  }, [menu, miniOpen, step, reveal, onClose])
 
   useEffect(() => {
     if (!miniOpen) return

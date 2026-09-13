@@ -1,10 +1,27 @@
+import { useEffect } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { __resetForTests, __setTvModeForTests, BROWSE_BACK_EVENT, writePluginJson } from '@/lib/plugin-sdk'
 import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
 
 vi.mock('../hooks/useLiveTvEpgCache', () => ({ useLiveTvEpgCache: vi.fn(() => null) }))
-vi.mock('../live-tv-player', () => ({ LiveTvPlayer: ({ channel, onClose }: { channel: { name: string }; onClose: () => void }) => <div data-testid="player" data-panel-root="">{channel.name}<button type="button" onClick={onClose}>close</button></div> }))
+// Fix round 1 (Task 16-review): spelaren äger Back helt medan den är öppen —
+// skalet står numera tillbaka (se tv-shell.tsx: `if (active) return` i dess
+// Back-lyssnare). Mocken måste därför själv stänga sig på Back, precis som
+// den riktiga spelaren gör, annars bevisar "Back stänger spelaren"-testet
+// nedan bara att ingenting händer.
+vi.mock('../live-tv-player', () => ({
+  LiveTvPlayer: ({ channel, onClose }: { channel: { name: string }; onClose: () => void }) => {
+    useEffect(() => {
+      const onKey = (event: KeyboardEvent) => {
+        if (event.key === 'Backspace' || event.key === 'Escape') onClose()
+      }
+      window.addEventListener('keydown', onKey, true)
+      return () => window.removeEventListener('keydown', onKey, true)
+    }, [onClose])
+    return <div data-testid="player" data-panel-root="">{channel.name}<button type="button" onClick={onClose}>close</button></div>
+  },
+}))
 
 import { LiveTvTvShell } from './tv-shell'
 

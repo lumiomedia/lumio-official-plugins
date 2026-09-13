@@ -59,4 +59,33 @@ describe('TvPlayerChrome', () => {
     expect(menu).toHaveTextContent('Pause')
     expect(menu).not.toHaveTextContent(/Record|Spela in/)
   })
+  // Fix round 1 (Task 16-review): Back ska ägas explicit av kromet, inte av
+  // lyssnarregistreringsordning mellan skal/spelare/krom på samma `window`.
+  it('Backspace med öppen mini-guide stänger INTE spelaren, bara mini-guiden', () => {
+    const onClose = vi.fn()
+    render(<TvPlayerChrome channel={channels[1]} tv={tv()} paused={false} onTogglePause={() => {}} onClose={onClose} />)
+    fireEvent.keyDown(window, { key: 'ArrowDown' })
+    expect(screen.getAllByTestId('mini-card')).toHaveLength(3)
+    fireEvent.keyDown(window, { key: 'Backspace' })
+    expect(onClose).not.toHaveBeenCalled()
+    expect(screen.queryAllByTestId('mini-card')).toHaveLength(0)
+  })
+  it('Backspace utan öppen mini-guide stänger spelaren', () => {
+    const onClose = vi.fn()
+    render(<TvPlayerChrome channel={channels[1]} tv={tv()} paused={false} onTogglePause={() => {}} onClose={onClose} />)
+    fireEvent.keyDown(window, { key: 'Backspace' })
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+  it('stopImmediatePropagation hindrar en senare registrerad lyssnare från att också se Back', () => {
+    render(<TvPlayerChrome channel={channels[1]} tv={tv()} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
+    // Registreras EFTER kromets montering — simulerar spelarens lyssnare, som
+    // kan läggas om senare än kromets (t.ex. när dess beroenden ändras).
+    // Om kromet bara kallade stopPropagation (som stannar vid MÅL-byten, inte
+    // syskon på samma mål) skulle den här ändå triggas.
+    const later = vi.fn()
+    window.addEventListener('keydown', later, true)
+    fireEvent.keyDown(window, { key: 'Backspace' })
+    expect(later).not.toHaveBeenCalled()
+    window.removeEventListener('keydown', later, true)
+  })
 })

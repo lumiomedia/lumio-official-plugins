@@ -400,6 +400,12 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
       if (isTv) revealControls()
       const target = event.target as HTMLElement | null
       if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA') return
+      // TV-kromet (Task 16) äger Back helt medan det är aktivt: det stänger
+      // mini-guiden/menyn själv eller anropar onClose (se tv-player-chrome.tsx).
+      // Spelarens egen Back-gren nedan (helskärm, schemaark) gäller bara den
+      // äldre TV-kromen (utan `tv`-prop) — utan den här spärren kunde BÅDA
+      // stänga spelaren på samma tryck, beroende på lyssnarordning.
+      if (tvChrome && (event.key === 'Escape' || event.key === 'Backspace')) return
       // Backspace är TV-fjärrens bakåtknapp — samma väg som Escape.
       if (event.key === 'Escape' || (isTv && event.key === 'Backspace')) {
         event.preventDefault()
@@ -451,7 +457,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
       unlockBodyScroll()
       window.removeEventListener('keydown', onKey, isTv)
     }
-  }, [isTv, mpvPaused, revealControls, scheduleOpen, hasNativeSurface])
+  }, [isTv, mpvPaused, revealControls, scheduleOpen, hasNativeSurface, tvChrome])
 
   // Vänster vid en vänsterkant i spelaren: anspråka trycket så värdens
   // reservlyssnare inte öppnar huvudmenyn ovanpå strömmen. Trycket väcker

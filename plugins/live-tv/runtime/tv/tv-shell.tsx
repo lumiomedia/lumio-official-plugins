@@ -145,10 +145,21 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
 
   // Back i capture-fas. Glasmenyn sköter sin egen Back, därför avstår skalet
   // medan den är öppen.
+  //
+  // Spelaren äger Back helt medan den är öppen (Fix round 1, Task 16-review):
+  // med `active !== null` renderas `<Player>`, som har sin egen capture-fas-
+  // lyssnare (och, i TV-läge, TV-kromets — se tv-player-chrome.tsx). Tre
+  // capture-lyssnare på SAMMA `window`-mål kan inte lita på registrerings-
+  // ordning (spelarens lyssnare läggs om varje gång dess beroenden ändras),
+  // så skalet stannar helt utanför i stället för att kapplöpa om trycket.
+  // `back()` självt rörs inte — det kan fortfarande kallas programmatiskt
+  // (t.ex. från en vy) och har redan en `if (active) { setActive(null); … }`
+  // -gren för den vägen.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (!BACK_KEYS.has(event.key)) return
       if (menu) return
+      if (active) return
       const target = event.target as HTMLElement | null
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return
       // Värdens egna paneler (TV-tangentbordet) stänger sig själva.
@@ -159,7 +170,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     }
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
-  }, [back, menu])
+  }, [back, menu, active])
 
   // Nummertangenter: favoriter 1–N först, sedan listnummer.
   const favourites = model.favouriteChannels
