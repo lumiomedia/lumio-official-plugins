@@ -196,6 +196,7 @@ export function __resetForTests(): void {
   listeners.clear()
   pluginMemoryCache.clear()
   pinForTests = null
+  sceneBoxPortalTargetForTests = null
 }
 
 // ---- Profil-PIN (föräldrakontroll) ----
@@ -248,6 +249,58 @@ export function requestBrowseBack(): void {
 }
 export function onTvFocusEdge(_handler: (dir: string, meta?: { claimed: boolean; claim(): void }) => void): () => void {
   return () => {}
+}
+
+// ---- Scenlådan (app 0.1.597, A5) ----
+/**
+ * SCENLÅDANS DOM-KONTRAKT — kopia av appens `lib/tv-scene.ts`.
+ *
+ * Pluginet lindar sig INTE själv: bläddringssidan anmäler `tvSceneBox: true`
+ * och VÄRDEN lägger lådan runt sidan. Det enda pluginet gör är att LÄSA
+ * lådan, och det är de här tre attributen/talen som är kontraktet.
+ */
+export const TV_SCENE_BOX_ATTR = 'data-tv-scene-box'
+export const TV_SCENE_NARROW_ATTR = 'data-tv-scene-narrow'
+/**
+ * Gränsen i FYSISKA css-px. Scenens designbredd går aldrig under 1280
+ * (`TV_SCENE_MIN_WIDTH_PX`), så "är jag liten?" kan bara besvaras av lådans
+ * mätning — aldrig av scenens egen bredd.
+ */
+export const TV_SCENE_NARROW_PX = 1024
+
+/** Attributet lådans inre lager (= portalmålet) bär. */
+const TV_SCENE_PORTAL_ATTR = 'data-tv-scene-portal'
+
+let sceneBoxPortalTargetForTests: HTMLElement | null = null
+/** Låter ett test peka ut portalmålet utan att bygga hela lådan. */
+export function __setTvSceneBoxPortalTargetForTests(element: HTMLElement | null): void {
+  sceneBoxPortalTargetForTests = element
+}
+/**
+ * Lagret inne i lådan, eller `null`. `null` betyder två normala saker: ingen
+ * låda alls (TV-läget), ELLER lådan har ännu inte mätts — attributet sätts
+ * först efter första mätningen. Anropare ska falla tillbaka på
+ * `document.body`, inte vänta.
+ */
+export function tvSceneBoxPortalTarget(): HTMLElement | null {
+  if (sceneBoxPortalTargetForTests) return sceneBoxPortalTargetForTests
+  if (typeof document === 'undefined') return null
+  return document.querySelector<HTMLElement>(`[${TV_SCENE_BOX_ATTR}="1"] [${TV_SCENE_PORTAL_ATTR}]`)
+}
+
+/**
+ * Lådans skala: designpixel → skärmpixel. Svaret är 1 och aldrig 0 för ett
+ * element utan låda, så en division aldrig ger Infinity.
+ */
+export function tvSceneBoxScale(element: HTMLElement): number {
+  const read = (raw: string): number | null => {
+    const value = parseFloat(raw)
+    return Number.isFinite(value) && value > 0 ? value : null
+  }
+  const inline = read(element.style.getPropertyValue('--tv-scene-box-scale'))
+  if (inline !== null) return inline
+  if (typeof getComputedStyle === 'undefined') return 1
+  return read(getComputedStyle(element).getPropertyValue('--tv-scene-box-scale')) ?? 1
 }
 
 export const TV_HOLD_MS = 650
@@ -307,8 +360,8 @@ export interface TvPointerEvent {
  * `station()` bygger nya handlare vid varje rendering, och `onHold` öppnar en
  * meny — alltså kommer en omrendering MELLAN `pointerup` och `click`, och en
  * closure-flagga hade varit borta när `onClickCapture` läste den. Då hade både
- * menyn och OK körts. Appens `lib/tv-hold.ts` (6def2de) har flaggan i en
- * closure och behöver rättas på samma sätt.
+ * menyn och OK körts. Appens `lib/tv-hold.ts` har samma lösning sedan A4
+ * (5e67423) — den här kopian speglar appen vid 53725a1.
  */
 const pointerHoldSuppressed = new WeakMap<EventTarget, number>()
 /**
@@ -333,7 +386,7 @@ function releaseClickSuppression(element: EventTarget): void {
 function isTextEntryTarget(node: EventTarget | null | undefined): boolean {
   let el: Element | null = node instanceof Element ? node : null
   while (el) {
-    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') return true
+    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT') return true
     const editable = el.getAttribute('contenteditable')
     if (editable !== null && editable !== 'false') return true
     el = el.parentElement
@@ -372,6 +425,11 @@ export function tvPointerHoldHandlers(
       if (event.button !== undefined && event.button !== 0) return
       const previous = holds.get(target)
       if (previous) window.clearTimeout(previous.timer)
+      // Ett nytt tryck på samma station är ett tydligare "klart"-tecken än
+      // 16 ms-självutgången — släpp en kvarvarande spärr direkt i stället för
+      // att vänta ut den. Självutgången finns kvar som säkerhetsnät för ett
+      // håll vars click aldrig kommer.
+      releaseClickSuppression(target)
       const hold = { timer: 0, fired: false }
       const element = target as HTMLElement
       hold.timer = window.setTimeout(() => {

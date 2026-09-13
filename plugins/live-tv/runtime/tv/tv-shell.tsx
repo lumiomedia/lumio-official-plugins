@@ -1,12 +1,13 @@
 'use client'
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentType, type CSSProperties, type ReactNode } from 'react'
-import { getTvGlassMenu, requestBrowseBack, type BrowsePageProps, type TvGlassMenuAction, type TvGlassMenuTarget } from '@/lib/plugin-sdk'
+import { getTvGlassMenu, requestBrowseBack, useTvMode, type BrowsePageProps, type TvGlassMenuAction, type TvGlassMenuTarget } from '@/lib/plugin-sdk'
 import { channelKey, type M3uChannel } from '../live-tv-data'
 import { qualityFromName, useLiveTvModel, type LiveTvModel } from '../live-tv-model'
 import { LIVE_TV_BROWSE_PAGE_ID, encodeChannelParams, type PlayRequest } from '../live-tv-shell'
 import { PinGate } from '../live-tv-ui'
 import { activeProfileHasPin, isUnlockedThisSession, markUnlockedThisSession, pinSupportAvailable, toggleChannelLock, verifyActiveProfilePin } from '../channel-locks'
+import { useNarrowSurface } from '../hooks/useNarrowSurface'
 import { useTvText } from './tv-strings'
 import { TV, TvFocusStyle, dp, station, Icons } from './tv-ui'
 import { useTvSettings, type TvSettings } from './tv-settings-store'
@@ -111,6 +112,31 @@ type PlayerComponent = ComponentType<{
 const BACK_KEYS = new Set(['Escape', 'Backspace', 'GoBack', 'BrowserBack'])
 const ZAP_TIMEOUT_MS = 1500
 
+/**
+ * IKONRADENS MÅTT — allt på ETT ställe, i designpixlar.
+ *
+ * TV är godkänd och rörs inte: 104 px bred rad med 60×60-poster, precis som
+ * i design_handoff_live_tv_tv_mode. Utanför TV-läget sitter raden BREDVID
+ * appens sidomeny i stället för i stället för den, och 104 px blev en tom
+ * marginal mellan två menyer — därför 84 (Jerry 2026-09-14).
+ *
+ * FAS 2: här ersätts den komprimerade ikonraden av en bottenrad (spec §2).
+ * Villkoret (`useNarrowSurface`) och måttet (`RAIL_W_NARROW`) samlas här så
+ * fas 2 har ett ställe att ändra på.
+ *
+ * Raden DÖLJS inte på en smal yta i fas 1 (koordinatorbeslut 2026-09-14): en
+ * telefon utan rad har ingen navigering alls. Den komprimeras i stället.
+ */
+const RAIL_W_TV = 104
+const RAIL_W_DESKTOP = 84
+const RAIL_W_NARROW = 64
+/** Postens sida på TV och skrivbord. */
+const RAIL_ITEM_WIDE = 60
+/** Postens sida på en smal yta — fortfarande över 44 px träffyta. */
+const RAIL_ITEM_NARROW = 48
+
+export { RAIL_ITEM_NARROW, RAIL_ITEM_WIDE, RAIL_W_DESKTOP, RAIL_W_NARROW, RAIL_W_TV }
+
 function viewFromParams(params?: Record<string, string>): TvView {
   const raw = params?.view
   if (raw && (VIEWS as string[]).includes(raw)) return raw as TvView
@@ -137,7 +163,24 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
   const [toastText, setToastText] = useState<string | null>(null)
   const layersRef = useRef<Array<() => void>>([])
   const mainRef = useRef<HTMLElement | null>(null)
+  const rootRef = useRef<HTMLDivElement | null>(null)
   const TvGlassMenu = getTvGlassMenu()
+  /**
+   * TV-läget lever kvar HÄR och bara här, för de tre affordanser som inte
+   * ska finnas på en TV: skärmtangentbord mot riktigt textfält (P4/P7),
+   * "…"-knappen vid hovring (P3) och Bakåt-posten i ikonraden (P3).
+   * Vyerna, vad de heter och hur de navigeras är identiska på alla ytor.
+   */
+  const isTv = useTvMode()
+  /**
+   * Smal yta = värdens MÄTNING av scenlådan, aldrig ett eget fönstertal:
+   * designbredden går aldrig under 1280 (se useNarrowSurface). I TV-läge
+   * finns ingen låda, så flaggan är falsk där av sig själv — `isTv`-gardet
+   * är ändå med så en kvarglömd låda aldrig kan krympa TV-raden.
+   */
+  const narrow = useNarrowSurface(rootRef) && !isTv
+  const railWidth = isTv ? RAIL_W_TV : narrow ? RAIL_W_NARROW : RAIL_W_DESKTOP
+  const railItemSize = narrow ? RAIL_ITEM_NARROW : RAIL_ITEM_WIDE
 
   /**
    * Fokus på vyns startstation vid varje vybyte.
@@ -394,7 +437,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
       <div
         key={item.key}
         {...station(() => go(item.key), undefined, { 'data-testid': `rail-${item.key}`, 'aria-label': item.label, title: item.label })}
-        style={{ width: dp(60), height: dp(60), borderRadius: dp(16), display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: activeItem ? TV.s14 : 'transparent', color: activeItem ? TV.text : 'rgba(243,244,248,0.55)', ...extraStyle }}
+        style={{ width: dp(railItemSize), height: dp(railItemSize), borderRadius: dp(16), display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: activeItem ? TV.s14 : 'transparent', color: activeItem ? TV.text : 'rgba(243,244,248,0.55)', ...extraStyle }}
       >
         {item.icon}
       </div>
@@ -430,6 +473,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
 
   return (
     <div
+      ref={rootRef}
       data-live-tv-tv-root=""
       // `position: relative; zIndex: 0` bara när hål finns: det gör roten till
       // en stackningskontext så att bakgrundens `zIndex: -1` hamnar under
@@ -441,8 +485,14 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
       <TvFocusStyle />
       {/* Ikonrad: pluginets egen navigation inne i Live TV. Inte data-col="side" —
           värdens Back-regel hade då flyttat fokus hit i stället för att gå bakåt. */}
-      <nav aria-label={tt('liveTv')} style={{ width: dp(104), flexShrink: 0, borderRight: `1px solid ${TV.line}`, background: 'linear-gradient(180deg, rgba(252,252,255,0.05), rgba(252,252,255,0.02))', padding: `${dp(36)}px 0 ${dp(32)}px`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(14) }}>
-        <div aria-hidden="true" style={{ width: dp(44), height: dp(44), borderRadius: dp(12), background: TV.acc, color: TV.onAcc, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: dp(22), marginBottom: dp(24) }}>L</div>
+      <nav aria-label={tt('liveTv')} style={{ width: dp(railWidth), flexShrink: 0, borderRight: `1px solid ${TV.line}`, background: 'linear-gradient(180deg, rgba(252,252,255,0.05), rgba(252,252,255,0.02))', padding: `${dp(narrow ? 16 : 36)}px 0 ${dp(narrow ? 16 : 32)}px`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(narrow ? 8 : 14) }}>
+        {/* Märket är ren dekor och det enda "etiketten" raden har. På en smal
+            yta går den bort tillsammans med luften ovanför — posterna ska nå
+            ner i skärmen, inte trängas under en logotyp. */}
+        {narrow ? null : (
+          <div data-live-tv-rail-badge="" aria-hidden="true" style={{ width: dp(44), height: dp(44), borderRadius: dp(12), background: TV.acc, color: TV.onAcc, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: dp(22), marginBottom: dp(24) }}>L</div>
+        )}
+        {/* P3 lägger Bakåt-posten överst här, utanför TV-läget. */}
         {rail.map((item) => railItem(item))}
         {railItem({ key: 'settings', label: tt('railSettings'), icon: <Icons.Gear /> }, { marginTop: 'auto' })}
       </nav>

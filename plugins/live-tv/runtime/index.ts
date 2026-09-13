@@ -1,13 +1,10 @@
 import { createElement } from 'react'
 import * as sdk from '@/lib/plugin-sdk'
-import { type BrowsePageProps, type LumioPlugin, useTvMode } from '@/lib/plugin-sdk'
+import { type BrowsePageProps, type LumioPlugin } from '@/lib/plugin-sdk'
 import { getLiveTvHideHero, onLiveTvHideHeroChanged } from './live-tv-data'
 import { LiveTvSettingsSection } from './live-tv-settings-section'
 import { LiveTvHomeOverride } from './live-tv-home-override'
-import { LiveTvHub } from './live-tv-hub'
 import { LiveTvRemindersMount } from './live-tv-reminders-mount'
-import { LiveTvEpgPage } from './live-tv-epg-page'
-import { LiveTvChannelPage } from './live-tv-channel-page'
 import { LiveTvTvShell } from './tv/tv-shell'
 import { useEpgNowNextLater } from './hooks/useEpgNowNextLater'
 import { useEpgLoadStatus } from './hooks/useEpgLoadStatus'
@@ -43,28 +40,31 @@ if (typeof window !== 'undefined') {
 
 const LIVE_TV_BROWSE_PAGE_ID = 'live-tv-browse'
 
-// Sidans vyer (params.view): hub (standard), epg, channel. Sökvyn togs bort
-// 2026-09-03 (Jerry): kanalsök sker i hubbens egna fält.
+// EN YTA, TRE INMATNINGSVÄGAR (0.6.0).
 //
-// Hubben är vyn på ALLA ytor, TV också (Jerry 2026-09-06, "vill ha samma
-// Live TV-plugin som på desktop"). Rutnätet var en äldre parallell yta med
-// egen sökning och eget urval; på TV levde det kvar ett tag för att det ägde
-// fjärrnavigeringen, men hubben, kanalsidan och EPG-sidan bär numera sina
-// egna stationer. Rutnätet finns bara kvar för startsideöverstyrningen
-// (live-tv-home-override.tsx), som är en annan funktion. En direktlänkad kanal
-// utan view öppnar kanalsidan, som klarar samma params (channelFromParams
-// faller tillbaka på params när kanalen inte finns i listorna).
+// Här grenade sidan förut på `useTvMode()`: TV fick `tv/`-trädet, skrivbordet
+// och telefonen fick hubben, EPG-sidan och kanalsidan. Två parallella
+// implementationer av samma sju vyer — varje funktion byggd, testad och
+// felsökt två gånger. Grenen är borta: `LiveTvTvShell` renderas överallt,
+// och det som faktiskt skiljer ytorna åt är bara INMATNINGEN (fjärr,
+// mus, finger) och SKALAN.
 //
-// TV: eget träd med ikonrad, vy-router och Back-stack (spec 2026-09-13) i
-// stället för hubb/epg/kanal-sidorna ovan. Hooken anropas alltid, före grenen.
-function LiveTvBrowsePage(props: BrowsePageProps) {
-  const isTv = useTvMode()
-  if (isTv) return createElement(LiveTvTvShell, props)
-  const { params, onNavigate } = props
-  const view = params?.view
-  if (view === 'epg') return createElement(LiveTvEpgPage, { onNavigate })
-  if (view === 'channel' || (!view && params?.url)) return createElement(LiveTvChannelPage, { params, onNavigate })
-  return createElement(LiveTvHub, { onNavigate })
+// `useTvMode()` finns kvar INNE i skalet, för exakt tre skillnader som är
+// affordanser och inte vyer: skärmtangentbordet mot ett riktigt textfält,
+// "…"-knappen vid hovring, och Bakåt-posten i ikonraden. Ingen av dem ritas
+// i TV-läge — TV-designen är godkänd och ska inte ändras.
+//
+// SKALAN äger värden. `tvSceneBox: true` på sidbidraget nedan ber om TV:ns
+// designrymd: appen lindar sidan i en scenlåda (`components/tv/tv-scene-box`)
+// som skalar 1080-designpixlar till innehållsytan, medan appens sidomeny och
+// rubrik ligger kvar utanför i skärmpixlar. I TV-läge finns ingen låda —
+// body-scenen äger skalan där, och två scener hade skalat två gånger.
+//
+// Sidans params är oförändrade: `view` (hub, guide, favs, channel, search,
+// multi, settings) och en direktlänkad kanal via `url`; skalet tolkar dem i
+// `viewFromParams`.
+export function LiveTvBrowsePage(props: BrowsePageProps) {
+  return createElement(LiveTvTvShell, props)
 }
 
 export const LiveTvPlugin: LumioPlugin = {
@@ -98,6 +98,10 @@ export const LiveTvPlugin: LumioPlugin = {
       label: { en: 'Live TV', sv: 'Live TV' },
       Page: LiveTvBrowsePage,
       hideHero: () => getLiveTvHideHero(),
+      // Värdens scenlåda runt sidan (app 0.1.597). Äldre appar känner inte
+      // fältet, hoppar över det och ritar sidan oskalad — därför är
+      // minAppVersion höjd i plugin.json i stället för att gissa här.
+      tvSceneBox: true,
     } as Parameters<typeof ctx.registerBrowsePage>[0])
     if (typeof window !== 'undefined') {
       onLiveTvHideHeroChanged(() => {

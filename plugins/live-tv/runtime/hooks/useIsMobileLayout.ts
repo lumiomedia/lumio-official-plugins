@@ -4,8 +4,16 @@ import { useEffect, useState } from 'react'
  * Mobil-/smal layout: under appens skrivbordsbrytpunkt (1024 px, samma gräns
  * som media-explorer.tsx använder för sidomenyn).
  *
- * Finns för att mobilomgången 2026-09-03 bara får ändra mobilen — skrivbordets
- * Live TV är godkänt som det är och ska se ut precis som förut.
+ * VAD HOOKEN STYR SEDAN 0.6.0: bara **fas 2:s portträttgren i TV-trädet** —
+ * aldrig OM TV-trädet renderas. Grenen i `index.ts` är borta, och `tv/`-trädet
+ * ritas på alla ytor. Läs alltså aldrig regeln som "TV-trädet = skrivbord":
+ * ett sant svar här betyder "rita den lilla varianten", inte "rita något
+ * annat träd".
+ *
+ * "Är jag liten?" inne i scenlådan besvaras däremot av `useNarrowSurface()`,
+ * inte av den här hooken: scenens designbredd går aldrig under 1280, så en
+ * mediefråga mot fönstret och en mätning av lådan svarar på två olika frågor.
+ * Den här hooken mäter FÖNSTRET och gäller ytorna utanför lådan.
  *
  * EN TV ÄR ALDRIG MOBIL (testfeedback 2026-09-11: "cat menu is offscreen").
  *
