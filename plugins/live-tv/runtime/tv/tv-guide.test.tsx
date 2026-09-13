@@ -69,6 +69,24 @@ describe('TvGuide', () => {
     expect(screen.getAllByTestId('guide-row')).toHaveLength(2)
     expect(screen.getByTestId('guide-headline')).toHaveTextContent('Now A')
   })
+  it('vald rad utanför de synliga raderna ger ändå exakt en data-init', () => {
+    // 60 kanaler: listan visar 40 åt gången. Efter "Visa fler" + fokus på rad
+    // 45 nollställer ett lägesbyte `visible` till 40 — den valda raden ritas
+    // då inte längre, och `selected ? focused : index === 0` gav NOLL
+    // data-init i hela vyn, alltså ingen startstation för fokusmotorn.
+    const many = Array.from({ length: 60 }, (_, i) => ch(`K${i + 1}`, 'Sport'))
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ ...list, channels: many }])
+    mount()
+    fireEvent.click(screen.getByText('Show more'))
+    const rows = screen.getAllByTestId('guide-row')
+    expect(rows.length).toBeGreaterThan(45)
+    fireEvent.focus(rows[45])
+    fireEvent.click(screen.getByText('Timeline'))
+    const after = screen.getAllByTestId('guide-row')
+    expect(after).toHaveLength(40)
+    expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
+    expect(after[0]).toHaveAttribute('data-init')
+  })
   it('okänd group-parameter faller tillbaka till Alla i stället för en tom vy', () => {
     mount({ view: 'guide', group: 'Nonexistent' })
     expect(document.querySelectorAll('[data-init]')).toHaveLength(1)

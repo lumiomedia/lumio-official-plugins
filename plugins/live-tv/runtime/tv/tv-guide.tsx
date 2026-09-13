@@ -83,6 +83,9 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
 
   useEffect(() => { setVisible(ROW_STEP) }, [group, mode])
 
+  const visibleRows = useMemo(() => rows.slice(0, visible), [rows, visible])
+  const selectedVisible = useMemo(() => (selected ? visibleRows.some((c) => channelKey(c) === channelKey(selected)) : false), [selected, visibleRows])
+
   const info = selected ? model.nowFor(selected) : { now: null, next: null, later: null }
   const previewOn = settings.previewEnabled
   const headlineSize = previewOn ? dp(40) : dp(34)
@@ -177,11 +180,16 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
             {tt('guideEmpty')}
           </div>
         ) : null}
-        {rows.slice(0, visible).map((channel, index) => {
+        {visibleRows.map((channel, index) => {
           const rowInfo = model.nowFor(channel)
           const key = channelKey(channel)
           const focused = selected ? channelKey(selected) === key : false
-          const isInit = selected ? focused : index === 0
+          // `data-init` följer den valda raden — men bara om den FAKTISKT
+          // renderas. Listan visar `visible` rader åt gången, och efter ett
+          // läges- eller kategoribyte kan den valda kanalen ligga bortom den
+          // gränsen; då gav `selected ? focused : …` noll data-init i hela vyn
+          // och värdens fokusmotor hade ingen startstation att gå till.
+          const isInit = selectedVisible ? focused : index === 0
           const rowStation = station(() => nav.play({ channel }), (el) => nav.channelMenu(channel, el), {
             ...(isInit ? { 'data-init': '' } : {}),
           })
