@@ -9,7 +9,6 @@ import {
   isAndroidTauriEnv,
   isDesktopTauriEnv,
   mpvSetBounds,
-  mpvSetPropertyStrings,
   nativeSetBounds,
   openMpvPlayer,
   openNativePlayer,
@@ -35,6 +34,9 @@ interface HostSurface {
 type HostApi = {
   createVideoSurface?: () => HostSurface | null
   getVideoSurfaceCapabilities?: () => { maxSurfaces: number }
+  // Finns bara i nyare appversioner; läses defensivt så att bunten bygger mot
+  // appträd som saknar den.
+  mpvSetPropertyStrings?: (props: Array<{ name: string; value: string }>) => Promise<void>
 }
 const host = sdk as unknown as HostApi
 
@@ -182,7 +184,7 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
         closeSession = () => closeMpvPlayer()
         await openMpvPlayer({ url }).catch(markFailed)
         if (cancelled || owner !== idRef.current) { await closeOnce(); return }
-        await mpvSetPropertyStrings([{ name: 'mute', value: muted ? 'yes' : 'no' }]).catch(() => {})
+        await host.mpvSetPropertyStrings?.([{ name: 'mute', value: muted ? 'yes' : 'no' }])?.catch(() => {})
         if (cancelled || owner !== idRef.current) { await closeOnce(); return }
         setBounds = (rect) => mpvSetBounds(rect)
         readyTimer = window.setTimeout(markReady, 800)
