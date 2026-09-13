@@ -58,6 +58,17 @@ describe('TvGuide', () => {
     fireEvent.click(screen.getAllByTestId('guide-row')[1])
     expect(await screen.findByTestId('player')).toHaveTextContent('B')
   })
+  it('▸ på en rad byter kategori och tar med sig valet till nya första raden', () => {
+    mount()
+    const rows = screen.getAllByTestId('guide-row')
+    fireEvent.focus(rows[2])
+    expect(screen.getByTestId('guide-headline')).toHaveTextContent('C')
+    // Alla → Sport. Toppbandet ska visa Sports första kanal direkt, utan att
+    // användaren först måste pila upp/ner för att avfyra en ny onFocus.
+    fireEvent.keyDown(rows[2], { key: 'ArrowRight' })
+    expect(screen.getAllByTestId('guide-row')).toHaveLength(2)
+    expect(screen.getByTestId('guide-headline')).toHaveTextContent('Now A')
+  })
   it('okänd group-parameter faller tillbaka till Alla i stället för en tom vy', () => {
     mount({ view: 'guide', group: 'Nonexistent' })
     expect(document.querySelectorAll('[data-init]')).toHaveLength(1)

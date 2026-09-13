@@ -78,7 +78,22 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
     const next = groups[nextIdx]
     if (!next) return
     setGroup(next.key)
-    setSelectedKey(null)
+    // Vald kanal följer med till den nya kategorins första rad.
+    //
+    // Här stod `setSelectedKey(null)` och inget mer. Fokus står kvar på SAMMA
+    // rad-DOM-nod när kategorin byts — onFocus avfyras därför aldrig igen,
+    // och hela toppbandet tomdes ut ("Ingen programinformation") tills
+    // användaren pilade upp eller ner. Uppmätt i tv-sim: ▸ från rad 1 gav ett
+    // tomt toppband med fokus kvar på rad 1.
+    //
+    // Fokus flyttas också till första raden för det fall pilen kom från något
+    // annat än en rad; står fokus redan där är focus() en nullhandling, och
+    // därför räcker det inte med enbart den.
+    const nextRows = filterByGroup(model, next.key)
+    setSelectedKey(nextRows[0] ? channelKey(nextRows[0]) : null)
+    window.requestAnimationFrame(() => {
+      listRef.current?.querySelector<HTMLElement>('[data-testid="guide-row"]')?.focus({ preventScroll: true })
+    })
   }
 
   return (
