@@ -198,7 +198,7 @@ Flikar: Utseende, Spellistor, EPG-källor, Föräldrakontroll. Handoffens flikar
 - Topp: Back (52 designpx) + `nr · kanal`; höger LIVE-tagg · kvalitet · klocka.
 - Infobanner nederst: titel, `tid · N min kvar · Sen <titel>`, förlopp, hjälptext och ⋯-knapp (`data-init`). Döljs efter `bannerHideMs`; ▲, ▾ eller fokusrörelse visar den igen.
 - ▾ eller menyvalet Guide öppnar mini-guiden: sidoscrollande kort i guidens ordning med aktuell kanal centrerad. OK byter kanal via `onSwitchChannel`. Back stänger.
-- Glasmeny (⋯ eller håll OK): Guide · Multivy · Ljud & undertext · Lägg till i/Ta bort från favoriter · Kanaldetaljer. Ljud & undertext öppnar dagens spårval som lager.
+- Glasmeny (⋯ eller håll OK): Guide · Multivy · Lägg till i/Ta bort från favoriter · Kanaldetaljer · Paus/Spela. "Ljud & undertext" ur handoffen skjuts upp: dagens spelare har inget spårval och SDK:t exponerar inte mpv:s spårlistor; posten läggs till när `getMpvAudioTracks`/`setMpvAudioTrack` finns i SDK:t.
 - ChannelUp/Down byter kanal i guidens ordning. Nummertangenter zappar.
 - Starta på senaste kanalen: när inställningen är på och `hub` öppnas utan params och historiken har en kanal, öppnas spelaren direkt. Back från spelaren går då till hubben.
 
@@ -234,7 +234,7 @@ När `sdk.createVideoSurface` finns (app-specen) skapar hooken en yta per anrop.
 När API:t saknas:
 
 - `maxLive = 1`. Endast en `useVideoSurface` med `audio: true` (eller den enda aktiva) får den nativa ytan, via dagens `openMpvPlayer` / `openNativePlayer` + `setBounds`, muted när `muted`. På HTML-motorn används ett `<video muted>` positionerat över rektangeln i en fixed portal.
-- Övriga anrop får `live = false` och `frameUrl`. En rundgång var 10 s låter den nativa ytan i tur och ordning öppna varje icke-levande kanal i 2 s, ta bildruta (`mpvCaptureFrame` / motsvarande) och gå tillbaka till ljudrutan. Rundgången körs bara i multivyn och bara när fler än en ruta är tilldelad. Om rundgången gör ljudrutan hackig (mätning i testfasen) stängs den av och fallback-rutorna visar senast sparade bildruta utan uppdatering.
+- Övriga anrop får `live = false` och `frameUrl` = senast sparade bildruta för kanalen (`playerFrameUrl`). Ingen rundgång: att låta den enda ytan byta kanal för att ta bildrutor hade brutit ljudrutan i flera sekunder per cykel. Rutan visar bildrutan (eller logotyp) med etiketten "bildruta". Riktiga ytor kommer med app-specen.
 
 Spelaren själv använder inte gränssnittet; den äger den nativa ytan när den är öppen. Guidens förhandsvisning stängs alltid innan spelaren öppnas.
 
