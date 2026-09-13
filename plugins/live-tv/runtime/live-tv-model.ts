@@ -20,6 +20,7 @@ import {
   type LiveTvList,
   type M3uChannel,
 } from './live-tv-data'
+import { getActivePlaylistId, onActivePlaylistChanged, setActivePlaylistId } from './tv/tv-settings-store'
 
 /**
  * Delad datamodell för Live TV-sidorna. Allt underlag är lokalt: kanallistor,
@@ -69,6 +70,8 @@ export function topGroups(channels: M3uChannel[], limit = MAX_GROUP_CHIPS): stri
 
 export interface LiveTvModel {
   lists: LiveTvList[]
+  /** Alla kanaler oavsett aktiv spellista. */
+  allChannels: M3uChannel[]
   channels: M3uChannel[]
   byKey: Map<string, M3uChannel>
   byUrl: Map<string, M3uChannel>
@@ -76,6 +79,14 @@ export interface LiveTvModel {
   pinnedKeys: string[]
   pinnedSet: Set<string>
   togglePin: (channel: M3uChannel) => void
+  playlists: { id: string; name: string; count: number }[]
+  activePlaylistId: string | null
+  activePlaylistName: string | null
+  setActivePlaylist: (id: string | null) => void
+  /** 1-baserat nummer i den filtrerade listan, null om kanalen inte ingår. */
+  channelNumber: (channel: M3uChannel) => number | null
+  /** Favoriter i sparad ordning, ur allChannels. */
+  favouriteChannels: M3uChannel[]
   history: ChannelHistoryEntry[]
   nowMs: number
   epgListId: string | null
@@ -93,6 +104,8 @@ export interface LiveTvModel {
 
 export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
   const [lists, setLists] = useState<LiveTvList[]>(() => getLiveTvLists())
+  const [activePlaylistId, setActivePlaylistIdState] = useState<string | null>(() => getActivePlaylistId())
+  useEffect(() => onActivePlaylistChanged(() => setActivePlaylistIdState(getActivePlaylistId())), [])
   const [pinnedKeys, setPinnedKeys] = useState<string[]>(() => getPinnedLiveTvKeys())
   const [history, setHistory] = useState<ChannelHistoryEntry[]>(() => getChannelHistory())
   const [nowMs, setNowMs] = useState(() => Date.now())
@@ -111,9 +124,15 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
     return () => window.clearInterval(timer)
   }, [tickMs])
 
-  const channels = useMemo(() => flattenChannels(lists), [lists])
+  const allChannels = useMemo(() => flattenChannels(lists), [lists])
+  const activeList = useMemo(() => lists.find((list) => list.id === activePlaylistId) ?? null, [lists, activePlaylistId])
+  // Vald spellista som inte längre finns → tillbaka till alla.
+  const channels = useMemo(() => (activeList ? flattenChannels([activeList]) : allChannels), [activeList, allChannels])
+  const playlists = useMemo(() => lists.map((list) => ({ id: list.id, name: list.name, count: flattenChannels([list]).length })), [lists])
+  const numberByKey = useMemo(() => new Map(channels.map((channel, index) => [channelKey(channel), index + 1])), [channels])
+  const allByKey = useMemo(() => new Map(allChannels.map((channel) => [channelKey(channel), channel])), [allChannels])
   const byKey = useMemo(() => new Map(channels.map((channel) => [channelKey(channel), channel])), [channels])
-  const byUrl = useMemo(() => new Map(channels.map((channel) => [channel.url, channel])), [channels])
+  const byUrl = useMemo(() => new Map(allChannels.map((channel) => [channel.url, channel])), [allChannels])
   const groups = useMemo(() => topGroups(channels), [channels])
   const listByUrl = useMemo(() => {
     const map = new Map<string, LiveTvList>()
@@ -168,9 +187,14 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
       cache ? getChannelSchedule(cache, tvgIdFor(channel), fromMs, toMs) : [],
     [cache, tvgIdFor],
   )
+  const favouriteChannels = useMemo(
+    () => pinnedKeys.map((key) => allByKey.get(key)).filter((c): c is M3uChannel => Boolean(c)),
+    [pinnedKeys, allByKey],
+  )
 
   return {
     lists,
+    allChannels,
     channels,
     byKey,
     byUrl,
@@ -178,6 +202,15 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
     pinnedKeys,
     pinnedSet: useMemo(() => new Set(pinnedKeys), [pinnedKeys]),
     togglePin: (channel) => setPinnedKeys(togglePinnedLiveTvChannel(channel)),
+    playlists,
+    activePlaylistId: activeList ? activeList.id : null,
+    activePlaylistName: activeList ? activeList.name : null,
+    setActivePlaylist: (id) => {
+      setActivePlaylistId(id)
+      setActivePlaylistIdState(id)
+    },
+    channelNumber: (channel) => numberByKey.get(channelKey(channel)) ?? null,
+    favouriteChannels,
     history,
     nowMs,
     epgListId,

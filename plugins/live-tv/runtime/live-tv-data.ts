@@ -459,6 +459,20 @@ export function togglePinnedLiveTvChannel(channel: Pick<M3uChannel, 'name' | 'ur
   return next
 }
 
+/** Favoritordning styr snabbzapp-numren på TV: flytta en post ett steg. */
+export function movePinnedLiveTvChannel(key: string, delta: -1 | 1): string[] {
+  const current = getPinnedLiveTvKeys()
+  const index = current.indexOf(key)
+  if (index === -1) return current
+  const target = index + delta
+  if (target < 0 || target >= current.length) return current
+  const next = [...current]
+  next.splice(index, 1)
+  next.splice(target, 0, key)
+  setPinnedLiveTvKeys(next)
+  return next
+}
+
 export function sortChannelsWithPins(channels: M3uChannel[]): M3uChannel[] {
   const pinned = getPinnedLiveTvKeys()
   if (pinned.length === 0) return channels
