@@ -7,21 +7,18 @@ import {
   clearStoredLiveTvChannels,
   deleteLiveTvList,
   deleteXtreamLogin,
+  ensureXtreamList,
   fetchXtreamAccount,
   fetchXtreamCategories,
-  fetchXtreamChannels,
   getLiveTvLists,
   getXtreamLogins,
+  importList,
   normalizeXtreamBase,
   onXtreamLoginsChanged,
   saveXtreamLogin,
-  upsertLiveTvListFromFetch,
-  xtreamPseudoUrl,
   type XtreamCategory,
   type XtreamLogin,
 } from './live-tv-data'
-
-const MAX_CHANNELS = 2000
 
 const inputClass =
   'w-full rounded-[1.1rem] border border-white/10 bg-white/8 px-3.5 py-2 text-sm text-slate-50 outline-none transition placeholder:text-slate-500 focus:bg-white/10'
@@ -73,19 +70,15 @@ export function XtreamLoginSection() {
   }, [])
 
   async function refreshChannels(login: XtreamLogin): Promise<void> {
-    const result = await fetchXtreamChannels(login, MAX_CHANNELS)
-    upsertLiveTvListFromFetch(xtreamPseudoUrl(login), result.urlTvg, result.channels)
-    // Gridens cache är nycklad på HELA url-uppsättningen — rensa så nästa
-    // besök läser om. Samma grepp som M3U-hämtaknappen tar.
+    const list = ensureXtreamList(login)
+    const status = await importList(list)
+    // Rensar bara ev. kvarvarande rester av den GAMLA lagringsvägen (se
+    // dokumentationen på clearLiveTvMemoryCache/clearStoredLiveTvChannels) —
+    // indexet självt uppdateras av importList/emitIndexChanged.
     clearLiveTvMemoryCache()
     clearStoredLiveTvChannels()
-    setNotice(
-      result.total > result.channels.length
-        ? t('liveTvXtreamCapped')
-            .replace('{max}', String(result.channels.length))
-            .replace('{total}', String(result.total))
-        : null,
-    )
+    if (status.state === 'error') throw new Error(status.error ?? 'xtream import failed')
+    setNotice(null)
   }
 
   async function handleConnect() {

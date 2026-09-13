@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, type ComponentType } from 'react'
+import { useEffect, useMemo, useRef, useState, type ComponentType } from 'react'
 import {
   closeMpvPlayer,
   getTvKeyboardPanel,
@@ -24,15 +24,11 @@ import {
   getAllLiveTvEpgUrls,
   getLiveTvLists,
   getLiveTvLogoSrc,
-  getLiveTvMemoryCache,
   getLiveTvUrlsKey,
   getM3uUrls,
   getXtreamLogins,
-  findXtreamLoginByPseudoUrl,
-  fetchXtreamChannels,
   onXtreamLoginsChanged,
   xtreamPseudoUrl,
-  XTREAM_URL_PREFIX,
   LIVE_TV_GLOBAL_EPG_ID,
   isChannelInLiveTvList,
   isLiveTvLogoLoaded,
@@ -40,21 +36,16 @@ import {
   onLiveTvListsChanged,
   onM3uUrlsChanged,
   preloadLiveTvLogo,
-  readStoredLiveTvChannels,
   removeChannelFromLiveTvList,
-  setLiveTvMemoryCache,
   sortChannelsWithPins,
-  storeLiveTvChannels,
   togglePinnedLiveTvChannel,
   type LiveTvList,
-  readLiveTvChannelsFromIndex,
-  pushLiveTvChannelsToIndex,
-  liveTvIndexAvailable,
 } from './live-tv-data'
+import { loadAllChannels, onIndexChanged } from './index-client'
 
 interface M3uChannel {
   name: string
-  logo: string | null
+  logo?: string | null
   group: string
   url: string
   tvgId: string | null
@@ -74,10 +65,6 @@ const neutralPillClass = 'rounded-full border border-transparent bg-[#fcfcff14] 
 const tvControlClass = 'h-[52px] rounded-2xl border border-transparent bg-[#fcfcff14] px-6 text-[15px] text-slate-200 backdrop-blur-md transition hover:bg-[#fcfcff22] hover:text-white'
 // Runda ikonknappar för TV: samma visuella språk som tvControlClass men
 // cirkulära — kortens EPG/nåla/spela-rad och menyknappen uppe till höger.
-/** Hela serverutbudet per Xtream-inloggning, hämtat EN gång per session för
-    SÖKNINGEN. Det är lagringen som cappas till 2000 — namnlistan i minnet är
-    billig, och sökningen ska kunna hitta kanaler utanför de lagrade. */
-const xtreamFullSearchCache = new Map<string, M3uChannel[]>()
 
 const tvRoundControlClass = 'flex h-12 w-12 items-center justify-center rounded-full border border-transparent bg-[#fcfcff14] text-slate-300 backdrop-blur-md transition hover:bg-[#fcfcff22] hover:text-white'
 // Sidomenyns rader: fullbreddsvarianten av tvControlClass.
@@ -101,19 +88,6 @@ function logLiveTvStage(message: string, details?: Record<string, unknown>) {
   }).catch(() => {})
 }
 
-function sanitizeChannels(channels: unknown[]): M3uChannel[] {
-  return channels
-    .filter((channel): channel is Record<string, unknown> => Boolean(channel) && typeof channel === 'object')
-    .map((channel) => ({
-      name: String(channel.name ?? 'Unknown').trim() || 'Unknown',
-      logo: typeof channel.logo === 'string' && channel.logo.trim().length > 0 ? channel.logo.trim() : null,
-      group: String(channel.group ?? 'Other').trim() || 'Other',
-      url: String(channel.url ?? '').trim(),
-      tvgId: typeof channel.tvgId === 'string' && channel.tvgId.trim().length > 0 ? channel.tvgId.trim() : null,
-    }))
-    .filter((channel) => channel.url.length > 0)
-}
-
 export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
   initialChannel?: M3uChannel | null
   /**
@@ -124,15 +98,6 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
    */
   tvCompactTop?: boolean
 }) {
-  /**
-   * Taket på 2000 gällde webbläsarlagringen. Med värdens kanalindex
-   * (/api/live-tv, Rust) lagras hela utbudet på disk och taket släpps —
-   * 11 000 kanaler i minnet är billigt, det var lagringen som inte rymde dem.
-   * Mot en äldre värd utan indexet gäller taket som förut.
-   */
-  const [indexAvailable, setIndexAvailable] = useState<boolean | null>(null)
-  useEffect(() => { void liveTvIndexAvailable().then(setIndexAvailable) }, [])
-  const MAX_TOTAL_CHANNELS = indexAvailable ? Number.MAX_SAFE_INTEGER : 2000
   const { t, lang } = useLang()
   /**
    * TV-läget behöver fokusstationer. Sidan hade sex kontroller — sök,
@@ -163,50 +128,16 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
   // TV-kortens EPG-hämtning styrs utifrån (den runda knappen), nycklad på
   // kanal-url så knappen kan stå kvar som station efter aktivering.
   const [tvEpgRequested, setTvEpgRequested] = useState<Record<string, boolean>>({})
-  const [channels, setChannels] = useState<M3uChannel[]>([])
+  // Nycklat på källa (samma sträng som `list.source`/varje post i `urls`) så
+  // att en specifik listflik kan visa BARA sina egna kanaler i stället för
+  // hela unionen — index-svaret ger ingen annan koppling mellan kanal och
+  // källa än det anropet skickades med.
+  const [channelsBySource, setChannelsBySource] = useState<Record<string, M3uChannel[]>>({})
+  const channels = useMemo(() => Object.values(channelsBySource).flat(), [channelsBySource])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [urls, setUrls] = useState<string[]>([])
   const [search, setSearch] = useState('')
-  // Serversök: träffar ur HELA Xtream-utbudet, inte bara de 2000 lagrade.
-  const [serverHits, setServerHits] = useState<M3uChannel[]>([])
-  const [serverSearchState, setServerSearchState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
-  useEffect(() => {
-    const query = search.trim().toLowerCase()
-    const logins = getXtreamLogins()
-    if (query.length < 2 || logins.length === 0) {
-      setServerHits([])
-      setServerSearchState('idle')
-      return
-    }
-    let cancelled = false
-    const timer = window.setTimeout(async () => {
-      setServerSearchState('loading')
-      try {
-        const hits: M3uChannel[] = []
-        for (const login of logins) {
-          let full = xtreamFullSearchCache.get(login.id)
-          if (!full) {
-            // categoryIds: [] = hela utbudet, oberoende av kategorivalet som
-            // styr vad som LAGRAS. Generöst tak — listan bor bara i minnet.
-            const result = await fetchXtreamChannels({ ...login, categoryIds: [] }, 100000)
-            full = result.channels
-            xtreamFullSearchCache.set(login.id, full)
-          }
-          if (cancelled) return
-          for (const channel of full) {
-            if (channel.name.toLowerCase().includes(query)) hits.push(channel)
-            if (hits.length >= 200) break
-          }
-          if (hits.length >= 200) break
-        }
-        if (!cancelled) { setServerHits(hits); setServerSearchState('done') }
-      } catch {
-        if (!cancelled) { setServerHits([]); setServerSearchState('error') }
-      }
-    }, 350)
-    return () => { cancelled = true; window.clearTimeout(timer) }
-  }, [search])
   const [activeChannel, setActiveChannel] = useState<M3uChannel | null>(null)
   // Högerkolumnen (60/40): dagens tablå för kanalen under pekaren/fokus.
   const [previewChannel, setPreviewChannel] = useState<M3uChannel | null>(null)
@@ -497,122 +428,52 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
     setListPickerChannelKey((current) => current === key ? null : key)
   }
 
+  /**
+   * Kanalerna bor i värdens index (Rust) — den här vyn bara LÄSER det via
+   * `loadAllChannels` per käll-URL (varje post i `urls` ÄR redan en `source`,
+   * se `getLiveTvUrlsKey`/`xtreamPseudoUrl`). Ingen hämtning/synt sker här
+   * längre: import sker via inställningarnas jobbflöde (`importList`,
+   * spec 4.1) och landar i indexet innan den här läsningen ser den. Inget
+   * tak — indexet rymmer hela utbudet.
+   */
   useEffect(() => {
-    // Vänta in svaret om värdens index finns: taket och lagringsvägen hänger på det.
-    if (indexAvailable === null) return
     let cancelled = false
     logLiveTvStage('loaded m3u urls', { count: urls.length })
     if (urls.length === 0) {
-      setChannels([])
+      setChannelsBySource({})
       setLoading(false)
       logLiveTvStage('no m3u urls configured')
       return
     }
 
-    void (async () => {
-    // Indexet i värden först (hela utbudet), plugin-lagringen som reserv.
-    const indexed = indexAvailable ? await readLiveTvChannelsFromIndex(urlsKey) : null
-    if (cancelled) return
-    const storedChannels = indexed && indexed.length > 0 ? indexed : readStoredLiveTvChannels(urlsKey)
-    const cached = getLiveTvMemoryCache(urlsKey)
-    const initialChannels = storedChannels.length > 0 ? storedChannels : (cached?.channels ?? [])
+    // En bakgrundsuppdatering (reloadToken, ett indexändringsevent) ska inte
+    // ersätta rutnätet med en tom skeleton — bara första laddningen gör det.
+    setLoading(channels.length === 0)
+    setRefreshing(channels.length > 0)
 
-    if (initialChannels.length > 0) {
-      setChannels(initialChannels)
-      setError(null)
-      setLoading(false)
-      logLiveTvStage('channels restored from persistent cache', { total: initialChannels.length })
-    }
-
-    if (cached) {
-      setChannels(cached.channels)
-      setError(null)
-      setLoading(false)
-      setRefreshing(false)
-      logLiveTvStage('channels restored from memory cache', { total: cached.channels.length })
-      return
-    }
-
-    if (initialChannels.length > 0 && reloadToken === 0) {
-      setRefreshing(false)
-      return
-    }
-
-    setLoading(initialChannels.length === 0)
-    setRefreshing(initialChannels.length > 0)
     void (async () => {
       try {
-        const nextChannels: M3uChannel[] = []
-
-        for (const url of urls) {
-          if (cancelled || nextChannels.length >= MAX_TOTAL_CHANNELS) break
-          logLiveTvStage('fetching playlist', { url })
-
-          const result = url.startsWith(XTREAM_URL_PREFIX)
-            ? await (async () => {
-                const login = findXtreamLoginByPseudoUrl(url)
-                if (!login) return [] as M3uChannel[]
-                const fetched = await fetchXtreamChannels(login, MAX_TOTAL_CHANNELS - nextChannels.length)
-                return fetched.channels
-              })().catch(() => [] as M3uChannel[])
-            : await fetch('/api/m3u', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url }),
-              })
-                .then((r) => r.json())
-                .then((data: { channels?: unknown[]; urlTvg?: unknown }) => sanitizeChannels(data.channels ?? []))
-                .catch(() => [] as M3uChannel[])
-
+        const nextBySource: Record<string, M3uChannel[]> = {}
+        let total = 0
+        for (const source of urls) {
           if (cancelled) break
-          nextChannels.push(...result)
-          logLiveTvStage('playlist fetched', { url, fetched: result.length, accumulated: nextChannels.length })
-
-          // Keep the UI and WebView responsive by yielding between large playlist loads.
+          logLiveTvStage('loading channels from index', { source })
+          const loaded = await loadAllChannels(source).catch(() => [])
+          if (cancelled) break
+          nextBySource[source] = loaded
+          total += loaded.length
+          logLiveTvStage('channels loaded from index', { source, loaded: loaded.length, accumulated: total })
+          // Keep the UI and WebView responsive between large sources.
           await new Promise((resolve) => setTimeout(resolve, 0))
         }
 
         if (!cancelled) {
-          // En tom hämtning får INTE skriva över en fylld cache. Xtream-panelen
-          // svarar ibland långsamt eller inte alls (tiotusentals kanaler bakom
-          // ett anrop), och varje fel ovan blir en tom lista — som sedan
-          // sparades som "kanalerna" och fick källan att se försvunnen ut
-          // efter ett TV-lägesbyte (Jerry 2026-09-03). Har vi något sedan
-          // förut behåller vi det och visar det.
-          if (nextChannels.length === 0 && initialChannels.length > 0) {
-            setChannels(initialChannels)
-            setError(null)
-            logLiveTvStage('fetch returned nothing — keeping cached channels', { total: initialChannels.length })
-          } else {
-          const committedChannels = nextChannels.slice(0, MAX_TOTAL_CHANNELS)
-          setLiveTvMemoryCache(urlsKey, committedChannels)
-          if (indexAvailable) {
-            // Hela utbudet till värdens index; plugin-lagringen får bara de
-            // första 2000 som reserv för en äldre värd.
-            void pushLiveTvChannelsToIndex(urlsKey, committedChannels)
-            storeLiveTvChannels(urlsKey, committedChannels.slice(0, 2000))
-          } else {
-            storeLiveTvChannels(urlsKey, committedChannels)
-          }
-          setChannels(committedChannels)
+          setChannelsBySource(nextBySource)
           setError(null)
-          logLiveTvStage('channels committed to state', {
-            total: nextChannels.length,
-            committed: Math.min(nextChannels.length, MAX_TOTAL_CHANNELS),
-          })
-          }
+          logLiveTvStage('channels committed to state', { total })
         }
       } catch {
-        if (!cancelled) {
-          const fallbackChannels = initialChannels
-          if (fallbackChannels.length > 0) {
-            setChannels(fallbackChannels)
-            setError(null)
-            logLiveTvStage('using cached channels after fetch failure', { total: fallbackChannels.length })
-          } else {
-            setError(t('m3uError'))
-          }
-        }
+        if (!cancelled) setError(t('m3uError'))
         logLiveTvStage('live tv load failed')
       } finally {
         if (!cancelled) {
@@ -622,11 +483,16 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
       }
     })()
 
-    })()
     return () => {
       cancelled = true
     }
-  }, [urlsKey, m3uErrorText, reloadToken, indexAvailable])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlsKey, m3uErrorText, reloadToken])
+
+  // En import (inställningarna) eller migreringen skriver till indexet från
+  // en annan del av trädet — bump:a reloadToken så den här vyn läser om utan
+  // att användaren behöver klicka Uppdatera.
+  useEffect(() => onIndexChanged(() => setReloadToken((value) => value + 1)), [])
 
   useEffect(() => {
     setCurrentPage(1)
@@ -636,33 +502,42 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
     ? (lists.find((list) => list.id === activeListId) ?? null)
     : null
 
-  // For the "ALL" tab fall back to the union of channels stored in every
-  // list when the in-memory `channels` state is empty (e.g. immediately
-  // after a settings-driven re-fetch cleared the cache but before the
-  // grid's own /api/m3u fetch has completed). Without this fallback the
-  // ALL tab would render empty while the per-list tab still shows data.
-  const allListChannels = (() => {
-    if (lists.length === 0) return [] as M3uChannel[]
+  /**
+   * Kanaler för en enskild listflik: manuellt skapade (`custom`) listor bär
+   * sina kanaler inbäddade precis som förut (`addChannelToLiveTvList` m.fl.
+   * skriver dit dem) — m3u/xtream-listor har bara ett `source` och deras
+   * kanaler hämtas ur `channelsBySource` (samma karta som "ALL"-fliken).
+   */
+  function channelsForList(list: LiveTvList): M3uChannel[] {
+    if (list.kind === 'custom') return list.channels ?? []
+    return list.source ? (channelsBySource[list.source] ?? []) : []
+  }
+
+  // "ALL"-fliken: unionen av allt som lästs ur indexet PLUS de manuellt
+  // skapade listornas inbäddade kanaler (de har ingen källa i indexet).
+  const allSourceChannels = (() => {
     const seen = new Set<string>()
     const out: M3uChannel[] = []
-    for (const list of lists) {
-      for (const c of list.channels) {
+    const add = (list: M3uChannel[]) => {
+      for (const c of list) {
         const key = `${c.name}::${c.url}`
         if (seen.has(key)) continue
         seen.add(key)
         out.push(c)
       }
     }
+    add(channels)
+    for (const list of lists) {
+      if (list.kind === 'custom') add(list.channels ?? [])
+    }
     return out
   })()
-
-  const allSourceChannels = channels.length > 0 ? channels : allListChannels
   const pinnedChannels = sortChannelsWithPins(allSourceChannels.filter((channel) => isPinnedLiveTvChannel(channel)))
   const globalEpgUrls = getAllLiveTvEpgUrls(lists)
   const globalEpgListId = globalEpgUrls.length > 0 ? LIVE_TV_GLOBAL_EPG_ID : null
   const visibleChannels = activeListId === FAVORITES_LIST_ID
     ? pinnedChannels
-    : activeList?.channels ?? allSourceChannels
+    : activeList ? channelsForList(activeList) : allSourceChannels
 
   useEffect(() => {
     // Standardfliken (öppna på Favoriter när man HAR nålar) avgörs EN gång,
@@ -703,16 +578,10 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
       return matchSearch && matchGroup
     }),
   )
-  // Serverträffarna EFTER de lokala, utan dubbletter — de spelas/nålas som
-  // vanliga kanaler men lagras inte.
-  const localChannelKeys = new Set(filtered.map((c) => `${c.name}::${c.url}`))
-  const withServerHits = search.trim().length >= 2 && serverHits.length > 0
-    ? [...filtered, ...serverHits.filter((c) => !localChannelKeys.has(`${c.name}::${c.url}`))]
-    : filtered
-  const totalPages = Math.max(1, Math.ceil(withServerHits.length / CHANNELS_PER_PAGE))
+  const totalPages = Math.max(1, Math.ceil(filtered.length / CHANNELS_PER_PAGE))
   const safeCurrentPage = Math.min(currentPage, totalPages)
   const pageStart = (safeCurrentPage - 1) * CHANNELS_PER_PAGE
-  const pagedChannels = withServerHits.slice(pageStart, pageStart + CHANNELS_PER_PAGE)
+  const pagedChannels = filtered.slice(pageStart, pageStart + CHANNELS_PER_PAGE)
   const visibleChannelKey = pagedChannels.map((channel) => channel.url).join('|')
 
   useEffect(() => {
@@ -1013,9 +882,6 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12" /></svg>
             </button>
           ) : null}
-          {serverSearchState === 'loading' ? (
-            <span className="text-[11px] uppercase tracking-[0.14em] text-white/50">Xtream…</span>
-          ) : null}
           <div ref={groupDropdownRef} className={isTv ? 'relative w-[280px]' : 'relative w-56'}>
             <button
               type="button"
@@ -1210,7 +1076,7 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
                         ? 'bg-accent-400/15 text-accent-200'
                         : 'bg-white/5 text-slate-400'
                     }`}>
-                      {list.channels.length}
+                      {list.kind === 'custom' ? (list.channels ?? []).length : list.channelCount ?? 0}
                     </span>
                   </button>
                   <button
@@ -1656,7 +1522,7 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
                           className={`${tvMenuItemClass} ${activeListId === list.id ? '!border-accent-400/50 !bg-accent-400/10 !text-accent-300' : ''}`}
                         >
                           <span className="truncate">{list.name}</span>
-                          <span className="rounded-full bg-white/5 px-2.5 py-0.5 text-[12px] text-slate-400">{list.channels.length}</span>
+                          <span className="rounded-full bg-white/5 px-2.5 py-0.5 text-[12px] text-slate-400">{list.kind === 'custom' ? (list.channels ?? []).length : list.channelCount ?? 0}</span>
                         </button>
                       ))}
                     </>

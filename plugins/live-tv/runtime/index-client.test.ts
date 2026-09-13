@@ -12,11 +12,14 @@ import {
   epgNow,
   epgSchedule,
   epgSearch,
+  indexStatus,
+  batchChannels,
   INDEX_CHANGED_EVENT,
   emitIndexChanged,
   onIndexChanged,
   type IndexChannel,
   type ImportStatus,
+  type BatchChannel,
 } from './index-client'
 
 function channel(key: string, overrides: Partial<IndexChannel> = {}): IndexChannel {
@@ -288,6 +291,66 @@ describe('epgSearch', () => {
 
     expect(String(fetchMock.mock.calls[0][0])).toBe('/api/live-tv/epg/search?listId=list1&q=bbc&from=0&to=100&limit=5')
     expect(hits).toEqual([{ key: 'k1', programme: { title: 'A', start: 0, stop: 10 } }])
+  })
+})
+
+describe('indexStatus', () => {
+  it('reads known sources from /api/live-tv/status', async () => {
+    const fetchMock = mockFetch()
+    fetchMock.mockResolvedValueOnce(jsonResponse({ sources: ['src1', 'src2'] }))
+    const result = await indexStatus()
+    expect(String(fetchMock.mock.calls[0][0])).toBe('/api/live-tv/status')
+    expect(result).toEqual({ sources: ['src1', 'src2'] })
+  })
+
+  it('defaults to an empty source list', async () => {
+    const fetchMock = mockFetch()
+    fetchMock.mockResolvedValueOnce(jsonResponse({}))
+    const result = await indexStatus()
+    expect(result).toEqual({ sources: [] })
+  })
+})
+
+describe('batchChannels', () => {
+  function batchChannel(key: string): BatchChannel {
+    return { key, number: 1, name: key, group: 'Group', url: `https://example.test/${key}`, tvgId: null }
+  }
+
+  it('sends a single request with replace=true for a list under the chunk size', async () => {
+    const fetchMock = mockFetch()
+    fetchMock.mockResolvedValueOnce(jsonResponse({}))
+    await batchChannels('src1', [batchChannel('a')], true)
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    const [url, init] = fetchMock.mock.calls[0]
+    expect(url).toBe('/api/live-tv/batch')
+    expect(JSON.parse(String(init?.body))).toEqual({ source: 'src1', replace: true, channels: [batchChannel('a')] })
+  })
+
+  it('chunks into batches of 1000 and only replaces on the first chunk', async () => {
+    const fetchMock = mockFetch()
+    fetchMock.mockResolvedValueOnce(jsonResponse({})).mockResolvedValueOnce(jsonResponse({}))
+    const channels = Array.from({ length: 1500 }, (_, i) => batchChannel(`c${i}`))
+
+    await batchChannels('src1', channels, true)
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    const firstBody = JSON.parse(String(fetchMock.mock.calls[0][1]?.body))
+    const secondBody = JSON.parse(String(fetchMock.mock.calls[1][1]?.body))
+    expect(firstBody.replace).toBe(true)
+    expect(firstBody.channels).toHaveLength(1000)
+    expect(secondBody.replace).toBe(false)
+    expect(secondBody.channels).toHaveLength(500)
+  })
+
+  it('still sends one (empty) request for an empty channel list, so replace clears the source', async () => {
+    const fetchMock = mockFetch()
+    fetchMock.mockResolvedValueOnce(jsonResponse({}))
+    await batchChannels('src1', [], true)
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body))
+    expect(body).toEqual({ source: 'src1', replace: true, channels: [] })
   })
 })
 

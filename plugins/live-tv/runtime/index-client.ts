@@ -40,6 +40,12 @@ export interface XtreamImportSource {
   categoryIds?: string[]
 }
 
+/** En kanal redo att batchas till indexet — samma nyckel/nummer som appen härleder vid en jobbimport. */
+export interface BatchChannel extends M3uChannel {
+  key: string
+  number: number
+}
+
 /** Bus for "the on-disk index changed" (import finished, migration ran, …). */
 export const INDEX_CHANGED_EVENT = 'lumio-live-tv-index-changed'
 
@@ -56,6 +62,7 @@ export function onIndexChanged(cb: () => void): () => void {
 const QUERY_PAGE_LIMIT = 5000
 const LOOKUP_CHUNK_SIZE = 200
 const EPG_SCHEDULE_CHUNK_SIZE = 200
+const BATCH_CHUNK_SIZE = 1000
 
 function chunk<T>(items: T[], size: number): T[][] {
   const out: T[][] = []
@@ -150,6 +157,25 @@ export async function listGroups(source: string | null): Promise<{ name: string;
   const qs = buildQuery({ source: source ?? undefined })
   const data = await requestJson<{ groups?: { name: string; count: number }[] }>(`/api/live-tv/groups${qs}`)
   return data.groups ?? []
+}
+
+/** Vilka källor indexet redan känner till (enhetsöverföring: `importMissingSources`). */
+export async function indexStatus(): Promise<{ sources: string[] }> {
+  const data = await requestJson<{ sources?: string[] }>('/api/live-tv/status', { cache: 'no-store' })
+  return { sources: data.sources ?? [] }
+}
+
+/**
+ * Skriver kanaler direkt till en källa i indexet (befintlig `/batch`-endpoint,
+ * inte importjobbet) — bara migreringen av gamla, inbäddade listor använder
+ * den här. `replace` gäller bara den FÖRSTA chunken; resten läggs till, annars
+ * hade chunk 2+ nollat det chunk 1 just skrev.
+ */
+export async function batchChannels(source: string, channels: BatchChannel[], replace: boolean): Promise<void> {
+  const batches = channels.length > 0 ? chunk(channels, BATCH_CHUNK_SIZE) : [[]]
+  for (let i = 0; i < batches.length; i += 1) {
+    await postJson('/api/live-tv/batch', { source, replace: replace && i === 0, channels: batches[i] })
+  }
 }
 
 export async function startImport(body: {

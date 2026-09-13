@@ -4,15 +4,21 @@ import {
   clearPluginMemoryCache,
   clearPluginMemoryCacheByPrefix,
   getPluginHttpAssetUrl,
-  getPluginMemoryCache,
   isPluginImageLoaded,
   onPluginStorageChanged,
   preloadPluginImage,
   readPluginJson,
   removePluginStorageByPrefix,
-  setPluginMemoryCache,
   writePluginJson,
 } from '@/lib/plugin-sdk'
+import {
+  emitIndexChanged,
+  indexStatus,
+  startImport,
+  waitForJob,
+  type ImportStatus,
+  type XtreamImportSource,
+} from './index-client'
 
 export interface M3uChannel {
   name: string
@@ -52,16 +58,43 @@ const M3U_URLS_KEY = 'm3u_urls'
 const M3U_DRAFT_URLS_KEY = 'm3u_urls_draft'
 const LIVE_TV_LISTS_KEY = 'lists'
 const LIVE_TV_PINS_KEY = 'pins'
-const LIVE_TV_CHANNELS_PREFIX = 'channels:'
+export const LIVE_TV_CHANNELS_PREFIX = 'channels:'
 const LIVE_TV_LOGO_BUCKET = 'com.lumio.live-tv:logo'
 
 export interface LiveTvList {
   id: string
   name: string
-  channels: M3uChannel[]
   createdAt: string
   urlTvg: string | null
   epgUrls: string[]
+  /**
+   * Källnyckel i appens kanalindex (Rust, `/api/live-tv/*`): M3U-listor
+   * använder `getLiveTvUrlsKey([url])` (== `url`), Xtream-listor
+   * `xtreamPseudoUrl(login)`, manuellt skapade listor en synthetisk
+   * `custom:<id>` som aldrig pekar mot en importbar källa.
+   *
+   * Valfri i TYPEN (inte i det data `readLists` faktiskt lämnar ifrån sig)
+   * bara för att gamla testfixturer och `live-tv-model.ts` (byts i P3) som
+   * konstruerar `LiveTvList`-objekt för hand utan de här fälten inte ska
+   * sluta typchecka.
+   */
+  source?: string
+  kind?: 'm3u' | 'xtream' | 'custom'
+  /** M3U-käll-URL:en. Bara satt för `kind === 'm3u'`. */
+  url?: string
+  /** Id in i `getXtreamLogins()`. Bara satt för `kind === 'xtream'`. */
+  xtreamLoginId?: string
+  /** Antal kanaler i indexet för den här listan — kvittots källa efter v2. */
+  channelCount?: number
+  /** Grupper (kategorier) i listan, för filterkedjan utan att ladda kanalerna. */
+  groups?: { name: string; count: number }[]
+  /**
+   * Inbäddade kanaler ur den GAMLA lagringen (innan v2). Läses för sanering
+   * och av äldre kod (`flattenChannels` m.fl., bytta i P3) — v2-koden här
+   * (`importList`, `migrateStorageV2`, `ensureM3uList`/`ensureXtreamList`)
+   * skriver ALDRIG till det här fältet; kanalerna bor i indexet.
+   */
+  channels?: M3uChannel[]
   /**
    * Stänger av den AUTO-härledda EPG-källan (url-tvg ur spellistan, eller
    * xmltv.php som servern härleder ur en Xtream-inloggning). Egen flagga och
@@ -116,21 +149,100 @@ function writeLists(lists: LiveTvList[]): void {
   writePluginJson(LIVE_TV_PLUGIN_ID, LIVE_TV_LISTS_KEY, lists)
 }
 
+/**
+ * Bara migreringen (`storage-v2-migration.ts`) skriver om HELA listuppsätt-
+ * ningen utifrån värden `readLists`/`getLiveTvLists` redan lämnat ut — den
+ * bor i en egen fil (spec 4.1), så `writeLists` måste exporteras dit i
+ * stället för att dupliceras.
+ */
+export function replaceLiveTvLists(lists: LiveTvList[]): void {
+  writeLists(lists)
+}
+
+export function computeGroups(channels: M3uChannel[]): { name: string; count: number }[] {
+  const counts = new Map<string, number>()
+  for (const channel of channels) {
+    const group = channel.group?.trim() || 'Other'
+    counts.set(group, (counts.get(group) ?? 0) + 1)
+  }
+  return [...counts.entries()]
+    .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
+    .map(([name, count]) => ({ name, count }))
+}
+
+function sanitizeGroups(values: unknown): { name: string; count: number }[] {
+  if (!Array.isArray(values)) return []
+  return values
+    .filter((value): value is Record<string, unknown> => Boolean(value) && typeof value === 'object')
+    .map((value) => ({ name: String(value.name ?? '').trim(), count: Number(value.count ?? 0) }))
+    .filter((value) => value.name.length > 0 && Number.isFinite(value.count) && value.count >= 0)
+}
+
+/**
+ * Listor lagrade FÖRE v2 saknar `kind`/`source` helt. De klassas mot den
+ * NUVARANDE Xtream-/M3U-konfigurationen via samma namnhärledning som skapade
+ * dem ursprungligen (`xtreamPseudoUrl`/`deriveListName` — listans `name` ÄR
+ * käll-URL:ens värdnamn). Ingen träff (manuellt skapad lista via
+ * `createLiveTvList`, eller en källa som tagits bort ur inställningarna) blir
+ * `kind: 'custom'` med en synthetisk källa — den migreras aldrig (ingen
+ * riktig import-URL att skriva om den mot) och behåller sina inbäddade
+ * kanaler oförändrat.
+ */
+function classifyLegacyList(id: string, name: string): Pick<LiveTvList, 'kind' | 'source' | 'url' | 'xtreamLoginId'> {
+  for (const login of getXtreamLogins()) {
+    let host = login.base
+    try {
+      host = new URL(login.base).host
+    } catch { /* behåll basen som fallback */ }
+    if (host === name) return { kind: 'xtream', source: xtreamPseudoUrl(login), xtreamLoginId: login.id }
+  }
+  for (const url of getM3uUrls()) {
+    if (deriveListName(url) === name) return { kind: 'm3u', source: getLiveTvUrlsKey([url]), url }
+  }
+  return { kind: 'custom', source: `custom:${id}` }
+}
+
+function sanitizeListEntry(entry: Record<string, unknown>): LiveTvList {
+  const id = String(entry.id ?? '')
+  const name = String(entry.name ?? '').trim()
+  const channels = sanitizeChannels(Array.isArray(entry.channels) ? entry.channels : [])
+
+  const hasV2Shape = typeof entry.kind === 'string' && typeof entry.source === 'string' && entry.source.length > 0
+  const classified = hasV2Shape
+    ? {
+        kind: (entry.kind === 'xtream' || entry.kind === 'm3u' ? entry.kind : 'custom') as LiveTvList['kind'],
+        source: String(entry.source),
+        url: typeof entry.url === 'string' && entry.url.length > 0 ? entry.url : undefined,
+        xtreamLoginId: typeof entry.xtreamLoginId === 'string' && entry.xtreamLoginId.length > 0 ? entry.xtreamLoginId : undefined,
+      }
+    : classifyLegacyList(id, name)
+
+  const channelCount = typeof entry.channelCount === 'number' && Number.isFinite(entry.channelCount)
+    ? entry.channelCount
+    : channels.length
+  const groups = Array.isArray(entry.groups) ? sanitizeGroups(entry.groups) : computeGroups(channels)
+
+  return {
+    id,
+    name,
+    ...classified,
+    createdAt: String(entry.createdAt ?? ''),
+    urlTvg: typeof entry.urlTvg === 'string' && entry.urlTvg.trim().length > 0 ? entry.urlTvg.trim() : null,
+    epgUrls: sanitizeEpgUrls(entry.epgUrls),
+    autoEpgDisabled: entry.autoEpgDisabled === true,
+    fetchedAt: typeof entry.fetchedAt === 'string' && entry.fetchedAt.trim().length > 0 ? entry.fetchedAt : null,
+    channelCount,
+    groups,
+    channels,
+  }
+}
+
 function readLists(): LiveTvList[] {
   const parsed = readPluginJson<unknown>(LIVE_TV_PLUGIN_ID, LIVE_TV_LISTS_KEY, [])
   if (!Array.isArray(parsed)) return []
   return parsed
     .filter((entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === 'object')
-    .map((entry) => ({
-      id: String(entry.id ?? ''),
-      name: String(entry.name ?? '').trim(),
-      createdAt: String(entry.createdAt ?? ''),
-      channels: sanitizeChannels(Array.isArray(entry.channels) ? entry.channels : []),
-      urlTvg: typeof entry.urlTvg === 'string' && entry.urlTvg.trim().length > 0 ? entry.urlTvg.trim() : null,
-      epgUrls: sanitizeEpgUrls(entry.epgUrls),
-      autoEpgDisabled: entry.autoEpgDisabled === true,
-      fetchedAt: typeof entry.fetchedAt === 'string' && entry.fetchedAt.trim().length > 0 ? entry.fetchedAt : null,
-    }))
+    .map((entry) => sanitizeListEntry(entry))
     .filter((entry) => entry.id.length > 0 && entry.name.length > 0)
 }
 
@@ -190,91 +302,13 @@ function getLiveTvChannelsStorageKey(urlsKey: string): string {
   return `${LIVE_TV_CHANNELS_PREFIX}${urlsKey}`
 }
 
-export function getLiveTvMemoryCache(urlsKey: string): { channels: M3uChannel[]; ts: number } | undefined {
-  return getPluginMemoryCache<{ channels: M3uChannel[]; ts: number }>(
-    LIVE_TV_PLUGIN_ID,
-    getLiveTvChannelsStorageKey(urlsKey),
-  )
-}
-
-export function setLiveTvMemoryCache(urlsKey: string, channels: M3uChannel[]): void {
-  setPluginMemoryCache(LIVE_TV_PLUGIN_ID, getLiveTvChannelsStorageKey(urlsKey), {
-    channels,
-    ts: Date.now(),
-  })
-}
-
-export function readStoredLiveTvChannels(urlsKey: string): M3uChannel[] {
-  if (!urlsKey) return []
-  const parsed = readPluginJson<{ channels?: unknown[] } | unknown>(
-    LIVE_TV_PLUGIN_ID,
-    getLiveTvChannelsStorageKey(urlsKey),
-    { channels: [] },
-  )
-  return sanitizeChannels((parsed as { channels?: unknown[] })?.channels ?? [])
-}
-
-export function storeLiveTvChannels(urlsKey: string, channels: M3uChannel[]): void {
-  if (!urlsKey) return
-  writePluginJson(LIVE_TV_PLUGIN_ID, getLiveTvChannelsStorageKey(urlsKey), { channels })
-}
-
 /**
- * Kanalindexet i värden (Rust, `/api/live-tv/*`): hela källutbudet på disk i
- * stället för 2000 kanaler i webbläsarlagringen (Jerry 2026-09-06). Saknar
- * värden endpointen (äldre app) faller allt tillbaka på plugin-lagringen med
- * dess cap, så det här är alltid säkert att anropa.
+ * Rensning av den GAMLA per-käll-cachen (`channels:<urlsKey>`, både i minnet
+ * och på disk). Skriver ingen kod hit längre sedan v2 (kanalerna bor i
+ * värdens index, se `index-client.ts`/`storage-v2-migration.ts`) — kvar bara
+ * så inställningarnas "uppdatera"-knapp och migreringen kan städa bort rester
+ * av den på enheter som haft dem.
  */
-let liveTvIndexProbe: Promise<boolean> | null = null
-export function liveTvIndexAvailable(): Promise<boolean> {
-  if (!liveTvIndexProbe) {
-    liveTvIndexProbe = fetch('/api/live-tv/status', { cache: 'no-store' })
-      .then((response) => response.ok)
-      .catch(() => false)
-  }
-  return liveTvIndexProbe
-}
-
-const INDEX_BATCH = 1000
-const INDEX_PAGE = 5000
-
-export async function pushLiveTvChannelsToIndex(urlsKey: string, channels: M3uChannel[]): Promise<boolean> {
-  if (!urlsKey || !(await liveTvIndexAvailable())) return false
-  for (let offset = 0; offset < Math.max(channels.length, 1); offset += INDEX_BATCH) {
-    const response = await fetch('/api/live-tv/batch', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ source: urlsKey, replace: offset === 0, channels: channels.slice(offset, offset + INDEX_BATCH) }),
-    })
-    if (!response.ok) return false
-    if (channels.length === 0) break
-  }
-  return true
-}
-
-/** Alla kanaler för källuppsättningen ur värdens index; null = indexet saknar källan (eller värden saknar indexet). */
-export async function readLiveTvChannelsFromIndex(urlsKey: string): Promise<M3uChannel[] | null> {
-  if (!urlsKey || !(await liveTvIndexAvailable())) return null
-  const out: M3uChannel[] = []
-  let offset = 0
-  for (;;) {
-    const response = await fetch(`/api/live-tv/query?${new URLSearchParams({ source: urlsKey, offset: String(offset), limit: String(INDEX_PAGE) })}`, { cache: 'no-store' })
-    if (!response.ok) return null
-    const data = (await response.json()) as { items?: unknown[]; total?: number; known?: boolean }
-    if (data.known === false) return null
-    const page = sanitizeChannels(data.items ?? [])
-    out.push(...page)
-    offset += page.length
-    if (page.length === 0 || offset >= (data.total ?? offset)) break
-  }
-  return out
-}
-
-export async function clearLiveTvIndex(urlsKey?: string): Promise<void> {
-  if (!(await liveTvIndexAvailable())) return
-  await fetch('/api/live-tv/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ source: urlsKey ?? null }) }).catch(() => {})
-}
-
 export function clearLiveTvMemoryCache(urlsKey?: string): void {
   if (!urlsKey) {
     clearPluginMemoryCacheByPrefix(LIVE_TV_PLUGIN_ID, LIVE_TV_CHANNELS_PREFIX)
@@ -311,9 +345,15 @@ export function onLiveTvListsChanged(listener: () => void): () => void {
 export function createLiveTvList(name: string, options?: { urlTvg?: string | null; epgUrls?: string[] }): LiveTvList {
   const trimmed = name.trim()
   if (!trimmed) throw new Error('List name is required')
+  const id = crypto.randomUUID()
   const next: LiveTvList = {
-    id: crypto.randomUUID(),
+    id,
     name: trimmed,
+    // Manuellt skapad, inte en M3U/Xtream-källa — `custom:<id>` pekar aldrig
+    // mot något importbart och listan migreras därför aldrig av
+    // `migrateStorageV2` (se `classifyLegacyList`).
+    kind: 'custom',
+    source: `custom:${id}`,
     channels: [],
     createdAt: new Date().toISOString(),
     urlTvg: typeof options?.urlTvg === 'string' && options.urlTvg.trim().length > 0 ? options.urlTvg.trim() : null,
@@ -322,6 +362,8 @@ export function createLiveTvList(name: string, options?: { urlTvg?: string | nul
     // Skapad för hand, inte hämtad: kvittot ska vara tomt tills en hämtning
     // faktiskt gjorts, annars ljuger det om att kanalerna kommer någonstans.
     fetchedAt: null,
+    channelCount: 0,
+    groups: [],
   }
   writeLists([...readLists(), next])
   return next
@@ -363,6 +405,14 @@ function deriveListName(sourceUrl: string): string {
   }
 }
 
+/**
+ * Kvarvarande äldre hämtningsväg: pluginlagringen bär kanalerna direkt, ingen
+ * import-jobb-körning i värden. Bara `runtime/tv/tv-settings.tsx` (Task P5)
+ * anropar den här längre — skrivbordets `live-tv-settings-section.tsx` och
+ * `xtream-login-section.tsx` går via `importList` (spec 4.1). Skriver v2-fält
+ * (kind/source/channelCount/groups) så listan är sanerbar och konsistent även
+ * innan `migrateStorageV2`/P5 hinner byta TV-flödet till jobbet.
+ */
 export function upsertLiveTvListFromFetch(
   sourceUrl: string,
   urlTvg: string | null,
@@ -371,9 +421,11 @@ export function upsertLiveTvListFromFetch(
   const trimmedSource = sourceUrl.trim()
   if (!trimmedSource) throw new Error('sourceUrl is required')
   const name = deriveListName(trimmedSource)
-  const existing = readLists().find((list) => list.name === name)
+  const source = getLiveTvUrlsKey([trimmedSource])
+  const existing = readLists().find((list) => list.source === source || list.name === name)
   const cleanChannels = sanitizeChannels(channels)
   const cleanUrlTvg = typeof urlTvg === 'string' && urlTvg.trim().length > 0 ? urlTvg.trim() : null
+  const groups = computeGroups(cleanChannels)
 
   if (existing) {
     /*
@@ -392,7 +444,12 @@ export function upsertLiveTvListFromFetch(
      */
     const updated: LiveTvList = {
       ...existing,
+      kind: 'm3u',
+      source,
+      url: trimmedSource,
       channels: cleanChannels,
+      channelCount: cleanChannels.length,
+      groups,
       urlTvg: cleanUrlTvg ?? existing.urlTvg,
       fetchedAt: new Date().toISOString(),
     }
@@ -402,39 +459,44 @@ export function upsertLiveTvListFromFetch(
   const next: LiveTvList = {
     id: crypto.randomUUID(),
     name,
+    kind: 'm3u',
+    source,
+    url: trimmedSource,
     channels: cleanChannels,
     createdAt: new Date().toISOString(),
     urlTvg: cleanUrlTvg,
     epgUrls: [],
     autoEpgDisabled: false,
     fetchedAt: new Date().toISOString(),
+    channelCount: cleanChannels.length,
+    groups,
   }
   writeLists([...readLists(), next])
   return next
 }
 
 export function addChannelToLiveTvList(listId: string, channel: M3uChannel): void {
-  writeLists(readLists().map((list) => (
-    list.id !== listId
-      ? list
-      : { ...list, channels: dedupeChannels([...list.channels, channel]) }
-  )))
+  writeLists(readLists().map((list) => {
+    if (list.id !== listId) return list
+    const channels = dedupeChannels([...(list.channels ?? []), channel])
+    return { ...list, channels, channelCount: channels.length, groups: computeGroups(channels) }
+  }))
 }
 
 export function removeChannelFromLiveTvList(listId: string, channel: Pick<M3uChannel, 'name' | 'url'>): void {
   const key = channelKey(channel)
-  writeLists(readLists().map((list) => (
-    list.id !== listId
-      ? list
-      : { ...list, channels: list.channels.filter((entry) => channelKey(entry) !== key) }
-  )))
+  writeLists(readLists().map((list) => {
+    if (list.id !== listId) return list
+    const channels = (list.channels ?? []).filter((entry) => channelKey(entry) !== key)
+    return { ...list, channels, channelCount: channels.length, groups: computeGroups(channels) }
+  }))
 }
 
 export function isChannelInLiveTvList(listId: string, channel: Pick<M3uChannel, 'name' | 'url'>): boolean {
   const list = readLists().find((entry) => entry.id === listId)
   if (!list) return false
   const key = channelKey(channel)
-  return list.channels.some((entry) => channelKey(entry) === key)
+  return (list.channels ?? []).some((entry) => channelKey(entry) === key)
 }
 
 export function getPinnedLiveTvKeys(): string[] {
@@ -576,6 +638,136 @@ export function findXtreamLoginByPseudoUrl(url: string): XtreamLogin | null {
   return getXtreamLogins().find((entry) => entry.id === id) ?? null
 }
 
+function findListBySource(source: string): LiveTvList | undefined {
+  return readLists().find((list) => list.source === source)
+}
+
+/**
+ * Hittar eller skapar listposten för en M3U-URL UTAN att hämta något —
+ * `importList` gör den delen (jobbet i värden). Källan är samma
+ * `getLiveTvUrlsKey([url])` som `upsertLiveTvListFromFetch` skriver, så en
+ * lista som redan finns (skapad via den äldre TV-vägen) hittas och
+ * återanvänds i stället för att dubbleras.
+ */
+export function ensureM3uList(url: string): LiveTvList {
+  const trimmed = url.trim()
+  const source = getLiveTvUrlsKey([trimmed])
+  const existing = findListBySource(source)
+  if (existing) return existing
+  const next: LiveTvList = {
+    id: crypto.randomUUID(),
+    name: deriveListName(trimmed),
+    kind: 'm3u',
+    source,
+    url: trimmed,
+    channels: [],
+    createdAt: new Date().toISOString(),
+    urlTvg: null,
+    epgUrls: [],
+    autoEpgDisabled: false,
+    fetchedAt: null,
+    channelCount: 0,
+    groups: [],
+  }
+  writeLists([...readLists(), next])
+  return next
+}
+
+/** Hittar eller skapar listposten för en Xtream-inloggning UTAN att hämta något. */
+export function ensureXtreamList(login: XtreamLogin): LiveTvList {
+  const source = xtreamPseudoUrl(login)
+  const existing = findListBySource(source)
+  if (existing) return existing
+  let host = login.base
+  try {
+    host = new URL(login.base).host
+  } catch { /* behåll basen som fallback */ }
+  const next: LiveTvList = {
+    id: crypto.randomUUID(),
+    name: host,
+    kind: 'xtream',
+    source,
+    xtreamLoginId: login.id,
+    channels: [],
+    createdAt: new Date().toISOString(),
+    urlTvg: null,
+    epgUrls: [],
+    autoEpgDisabled: false,
+    fetchedAt: null,
+    channelCount: 0,
+    groups: [],
+  }
+  writeLists([...readLists(), next])
+  return next
+}
+
+/**
+ * Hämtar en lista via värdens importjobb (Rust) i stället för att synto-
+ * tisera/parsa i webviewn — ersätter `upsertLiveTvListFromFetch` +
+ * `fetchXtreamChannels`-vägen för de skrivbordsinställningar som anropar den
+ * här (spec 4.1). Uppdaterar listans kvitto (`channelCount/groups/urlTvg/
+ * fetchedAt`) bara vid `done`; ett fel lämnar listan orörd (Rust-jobbets
+ * `error` bär texten, `waitForJob` löser aldrig ut på annat än done/error).
+ */
+export async function importList(list: LiveTvList, onProgress?: (status: ImportStatus) => void): Promise<ImportStatus> {
+  if (!list.source) throw new Error(`live tv list "${list.name}" has no source to import`)
+  const body: { source: string; m3u?: { url: string }; xtream?: XtreamImportSource } = { source: list.source }
+
+  if (list.kind === 'xtream') {
+    const login = getXtreamLogins().find((entry) => entry.id === list.xtreamLoginId)
+    if (!login) throw new Error(`xtream login missing for list "${list.name}"`)
+    body.xtream = {
+      base: login.base,
+      username: login.username,
+      password: login.password,
+      format: login.format,
+      ...(login.categoryIds.length > 0 ? { categoryIds: login.categoryIds } : {}),
+    }
+  } else if (list.kind === 'm3u') {
+    if (!list.url) throw new Error(`m3u url missing for list "${list.name}"`)
+    body.m3u = { url: list.url }
+  } else {
+    throw new Error(`cannot import a "${list.kind ?? 'unknown'}" list`)
+  }
+
+  const job = await startImport(body)
+  const status = await waitForJob(job, onProgress)
+
+  if (status.state === 'done') {
+    const result = status.result
+    writeLists(readLists().map((entry) => (entry.id === list.id
+      ? {
+          ...entry,
+          channelCount: result?.total ?? entry.channelCount ?? 0,
+          groups: result?.groups ?? entry.groups ?? [],
+          urlTvg: result?.urlTvg ?? entry.urlTvg,
+          fetchedAt: new Date().toISOString(),
+        }
+      : entry)))
+    emitIndexChanged()
+  }
+  return status
+}
+
+/**
+ * Mottagarsidan av enhetsöverföringen (spec 3.4): `lists`/`pins`/`m3u_urls*`
+ * speglas mellan enheter, men `channels:`-nycklarna gör det inte längre — en
+ * lista som dyker upp på en ny enhet har ingen källa i DESS index förrän
+ * något importerar den. Anropas av modellen vid start (P3); körs
+ * sekventiellt och ett fel på en lista hindrar inte de andra (samma
+ * "behåll gammalt innehåll"-princip som `importList`/spec 5).
+ */
+export async function importMissingSources(): Promise<void> {
+  const { sources } = await indexStatus()
+  const known = new Set(sources)
+  const missing = readLists().filter(
+    (list) => list.source && !known.has(list.source) && (list.kind === 'm3u' || list.kind === 'xtream'),
+  )
+  for (const list of missing) {
+    await importList(list).catch(() => {})
+  }
+}
+
 function xtreamApiUrl(login: Pick<XtreamLogin, 'base' | 'username' | 'password'>, params?: Record<string, string>): string {
   const search = new URLSearchParams({ username: login.username, password: login.password, ...(params ?? {}) })
   return `${login.base}/player_api.php?${search.toString()}`
@@ -630,88 +822,6 @@ export async function fetchXtreamCategories(login: XtreamLogin): Promise<XtreamC
     .filter((entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === 'object')
     .map((entry) => ({ id: String(entry.category_id ?? ''), name: String(entry.category_name ?? '').trim() }))
     .filter((entry) => entry.id && entry.name)
-}
-
-interface XtreamRawStream {
-  name?: unknown
-  stream_id?: unknown
-  stream_icon?: unknown
-  category_id?: unknown
-  epg_channel_id?: unknown
-  tv_archive?: unknown
-  tv_archive_duration?: unknown
-}
-
-function xtreamStreamToChannel(
-  login: XtreamLogin,
-  stream: XtreamRawStream,
-  categoryNames: Map<string, string>,
-): M3uChannel | null {
-  const streamId = Number.parseInt(String(stream.stream_id ?? ''), 10)
-  if (!Number.isFinite(streamId)) return null
-  const icon = typeof stream.stream_icon === 'string' && stream.stream_icon.trim() ? stream.stream_icon.trim() : null
-  const epgId = typeof stream.epg_channel_id === 'string' && stream.epg_channel_id.trim() ? stream.epg_channel_id.trim() : null
-  const archiveOn = String(stream.tv_archive ?? '0') === '1'
-  const archiveDays = Number.parseInt(String(stream.tv_archive_duration ?? '0'), 10)
-  const archive: XtreamArchive | undefined =
-    archiveOn && Number.isFinite(archiveDays) && archiveDays > 0
-      ? { days: archiveDays, streamId, base: login.base, username: login.username, password: login.password }
-      : undefined
-  return {
-    name: String(stream.name ?? 'Unknown').trim() || 'Unknown',
-    logo: icon,
-    group: categoryNames.get(String(stream.category_id ?? '')) ?? 'Other',
-    url: `${login.base}/live/${encodeURIComponent(login.username)}/${encodeURIComponent(login.password)}/${streamId}.${login.format}`,
-    tvgId: epgId,
-    ...(archive ? { archive } : {}),
-  }
-}
-
-export interface XtreamChannelsResult {
-  channels: M3uChannel[]
-  /// Panelens EPG — samma xmltv.php som en get.php-inloggning hade härlett.
-  urlTvg: string
-  /// Totalt antal strömmar hos panelen (för "visar X av Y"-raden).
-  total: number
-}
-
-/// Kanallistan syntetiserad ur API:t. Med valda kategorier hämtas de en och en
-/// (små svar, avbryts vid taket); utan val hämtas hela listan i ett svep och
-/// kapas — paneler med tiotusentals kanaler kräver kategoriurvalet för att bli
-/// användbara, och det säger UI:t när kapningen slår till.
-export async function fetchXtreamChannels(login: XtreamLogin, maxChannels: number): Promise<XtreamChannelsResult> {
-  const categories = await fetchXtreamCategories(login)
-  const categoryNames = new Map(categories.map((category) => [category.id, category.name]))
-  const urlTvg = `${login.base}/xmltv.php?${new URLSearchParams({ username: login.username, password: login.password })}`
-  const channels: M3uChannel[] = []
-  let total = 0
-
-  if (login.categoryIds.length > 0) {
-    for (const categoryId of login.categoryIds) {
-      const payload = await fetchXtreamJson(xtreamApiUrl(login, { action: 'get_live_streams', category_id: categoryId }))
-      if (!Array.isArray(payload)) continue
-      total += payload.length
-      for (const raw of payload) {
-        if (channels.length >= maxChannels) continue
-        const channel = xtreamStreamToChannel(login, raw as XtreamRawStream, categoryNames)
-        if (channel) channels.push(channel)
-      }
-      // Ge webviewn andrum mellan kategorier — samma skäl som gridens yield.
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    }
-    return { channels, urlTvg, total }
-  }
-
-  const payload = await fetchXtreamJson(xtreamApiUrl(login, { action: 'get_live_streams' }))
-  if (Array.isArray(payload)) {
-    total = payload.length
-    for (const raw of payload) {
-      if (channels.length >= maxChannels) break
-      const channel = xtreamStreamToChannel(login, raw as XtreamRawStream, categoryNames)
-      if (channel) channels.push(channel)
-    }
-  }
-  return { channels, urlTvg, total }
 }
 
 export function onPinnedLiveTvKeysChanged(listener: () => void): () => void {

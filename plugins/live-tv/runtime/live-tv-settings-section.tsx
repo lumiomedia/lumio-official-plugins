@@ -15,9 +15,10 @@ import {
   clearLiveTvMemoryCache,
   clearStoredLiveTvChannels,
   deleteLiveTvList,
+  ensureM3uList,
   getLiveTvLists,
   getM3uUrls,
-  upsertLiveTvListFromFetch,
+  importList,
   getM3uDraftUrls,
   onLiveTvListsChanged,
   setM3uDraftUrls,
@@ -39,31 +40,6 @@ import { XtreamLoginSection } from './xtream-login-section'
 const settingsActionButtonClass =
   'rounded-full border border-white/10 px-4 py-2 text-xs uppercase tracking-[0.22em] text-slate-300 transition hover:border-white/30 hover:text-white disabled:opacity-50'
 const HOME_OVERRIDE_PLUGIN_ID = 'com.lumio.live-tv'
-
-async function fetchParsedM3u(url: string): Promise<{ channels?: unknown[]; urlTvg?: string | null }> {
-  const response = await fetch('/api/m3u', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url }),
-  })
-  if (!response.ok) throw new Error('m3u fetch failed')
-  return (await response.json().catch(() => ({}))) as { channels?: unknown[]; urlTvg?: string | null }
-}
-
-/// Xtream-länken utan output-parametern, eller null när länken inte är en
-/// Xtream get.php-länk (då finns inget vettigt att prova om med).
-function xtreamUrlWithoutOutput(raw: string): string | null {
-  try {
-    const parsed = new URL(raw)
-    if (!parsed.pathname.endsWith('/get.php')) return null
-    if (!parsed.searchParams.get('username') || !parsed.searchParams.get('password')) return null
-    if (!parsed.searchParams.has('output')) return null
-    parsed.searchParams.delete('output')
-    return parsed.toString()
-  } catch {
-    return null
-  }
-}
 
 function hostOf(url: string): string {
   try { return new URL(url).hostname || url } catch { return url }
@@ -128,31 +104,10 @@ export function LiveTvSettingsSection() {
     // kommer tillbaka, och ett tillstånd som dog med komponenten var precis
     // det som fick en betatestare att starta hämtningen en andra gång.
     const ok = await runM3uFetch(urls, async (url) => {
-      let parsed = await fetchParsedM3u(url)
-      // Xtream-paneler utan m3u8-stöd: värden skriver om output= till m3u8
-      // för webbspelbara länkar, men paneler som inte stödjer det svarar
-      // tomt — HTTP 200 med noll kanaler, inget fel. Prova då utan
-      // output-parametern: panelen faller tillbaka till sitt standardformat
-      // och svarar korrekt. (Nyare appar gör samma fallback på serversidan;
-      // den här raden räddar länkarna även på appar utan den fixen.)
-      if (!Array.isArray(parsed.channels) || parsed.channels.length === 0) {
-        const retryUrl = xtreamUrlWithoutOutput(url)
-        if (retryUrl) {
-          const retried = await fetchParsedM3u(retryUrl).catch(() => null)
-          if (retried && Array.isArray(retried.channels) && retried.channels.length > 0) parsed = retried
-        }
-      }
-      const channels = Array.isArray(parsed.channels)
-        ? (parsed.channels as Array<{ name?: unknown; logo?: unknown; group?: unknown; url?: unknown; tvgId?: unknown }>).map((c) => ({
-            name: String(c.name ?? 'Unknown'),
-            logo: typeof c.logo === 'string' ? c.logo : null,
-            group: String(c.group ?? 'Other'),
-            url: String(c.url ?? ''),
-            tvgId: typeof c.tvgId === 'string' ? c.tvgId : null,
-          }))
-        : []
-      const list = upsertLiveTvListFromFetch(url, parsed.urlTvg ?? null, channels)
-      return list.channels.length
+      const list = ensureM3uList(url)
+      const status = await importList(list)
+      if (status.state === 'error') throw new Error(status.error ?? 'm3u import failed')
+      return status.result?.total ?? 0
     })
 
     // Bara en hel omgång får skriva om de aktiva adresserna. Föll en av dem
@@ -284,7 +239,7 @@ export function LiveTvSettingsSection() {
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 14.5, fontWeight: 600, color: TOKENS.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{list.name}</div>
               <div style={{ fontSize: 12, color: TOKENS.textMute, marginTop: 2 }}>
-                {list.channels.length} {t('m3uChannels')}
+                {list.channelCount ?? 0} {t('m3uChannels')}
                 {' · '}
                 {list.fetchedAt
                   ? h('m3uFetchedAt', { time: formatFetchedAt(list.fetchedAt, locale) })
