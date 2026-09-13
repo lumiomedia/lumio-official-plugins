@@ -281,6 +281,138 @@ export function tvHoldHandlers(
   }
 }
 
+/**
+ * HÅLL OK MED PEKARE — en RIKTIG kopia av appens `lib/tv-hold.ts`
+ * (`tvPointerHoldHandlers`, A4), inte en attrapp: pluginets tester ska testa
+ * BETEENDET. Ändras appens variant ska den här följa med, annars testar vi
+ * något som inte finns i produkten.
+ *
+ * Samma `TV_HOLD_MS` och samma modul-`WeakMap` som `tvHoldHandlers` ovan:
+ * en station kan aldrig hållas med tangent och pekare samtidigt, och en delad
+ * karta gör att ett avbrott i den ena vägen städar den andra.
+ */
+export interface TvPointerEvent {
+  pointerType?: string
+  button?: number
+  target?: EventTarget | null
+  currentTarget: EventTarget | null
+  preventDefault(): void
+  stopPropagation?(): void
+}
+
+/**
+ * Ett fyrat håll ska svälja det click som pekaruppsläppet skickar.
+ *
+ * Flaggan ligger PER ELEMENT på modulnivå, inte i handlarobjektets closure.
+ * `station()` bygger nya handlare vid varje rendering, och `onHold` öppnar en
+ * meny — alltså kommer en omrendering MELLAN `pointerup` och `click`, och en
+ * closure-flagga hade varit borta när `onClickCapture` läste den. Då hade både
+ * menyn och OK körts. Appens `lib/tv-hold.ts` (6def2de) har flaggan i en
+ * closure och behöver rättas på samma sätt.
+ */
+const pointerHoldSuppressed = new WeakMap<EventTarget, number>()
+/**
+ * Undertryckningen släpper efter en bildruta. Utan den hade ett håll som
+ * ALDRIG följs av ett klick (fingret lyfts utanför elementet) spärrat nästa
+ * klick på samma station för alltid.
+ */
+const CLICK_SUPPRESS_MS = 16
+
+function suppressNextClick(element: EventTarget): void {
+  const running = pointerHoldSuppressed.get(element)
+  if (running !== undefined) window.clearTimeout(running)
+  pointerHoldSuppressed.set(element, window.setTimeout(() => pointerHoldSuppressed.delete(element), CLICK_SUPPRESS_MS))
+}
+
+function releaseClickSuppression(element: EventTarget): void {
+  const running = pointerHoldSuppressed.get(element)
+  if (running !== undefined) window.clearTimeout(running)
+  pointerHoldSuppressed.delete(element)
+}
+
+function isTextEntryTarget(node: EventTarget | null | undefined): boolean {
+  let el: Element | null = node instanceof Element ? node : null
+  while (el) {
+    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') return true
+    const editable = el.getAttribute('contenteditable')
+    if (editable !== null && editable !== 'false') return true
+    el = el.parentElement
+  }
+  return false
+}
+
+export function tvPointerHoldHandlers(
+  onShort: () => void,
+  onHold: (element: HTMLElement) => void,
+): {
+  onPointerDown: (event: TvPointerEvent) => void
+  onPointerUp: (event: TvPointerEvent) => void
+  onPointerCancel: (event: TvPointerEvent) => void
+  onPointerLeave: (event: TvPointerEvent) => void
+  onContextMenu: (event: TvPointerEvent) => void
+  onClickCapture: (event: TvPointerEvent) => void
+} {
+  // onShort ingår i signaturen för symmetri med tvHoldHandlers, men anropas
+  // ALDRIG härifrån: det korta trycket når onOk via elementets vanliga
+  // onClick. Ropa inte på den här — då fyras OK två gånger.
+  void onShort
+  const abort = (event: TvPointerEvent) => {
+    const target = event.currentTarget
+    if (!target) return
+    const hold = holds.get(target)
+    if (!hold) return
+    window.clearTimeout(hold.timer)
+    holds.delete(target)
+  }
+  return {
+    onPointerDown: (event) => {
+      const target = event.currentTarget
+      if (!target) return
+      // Bara vänsterknapp. Högerklicket har sin egen väg (onContextMenu).
+      if (event.button !== undefined && event.button !== 0) return
+      const previous = holds.get(target)
+      if (previous) window.clearTimeout(previous.timer)
+      const hold = { timer: 0, fired: false }
+      const element = target as HTMLElement
+      hold.timer = window.setTimeout(() => {
+        hold.fired = true
+        // Spärras redan här, inte bara vid uppsläppet: lyfts fingret utanför
+        // elementet kommer inget pointerup, men webbläsaren kan ändå skicka
+        // ett click. Fönstret startas om vid uppsläppet nedan, så ett LÅNGT
+        // håll (två sekunder) inte hinner släppa spärren före klicket.
+        suppressNextClick(element)
+        onHold(element)
+      }, TV_HOLD_MS)
+      holds.set(target, hold)
+    },
+    onPointerUp: (event) => {
+      const target = event.currentTarget
+      const fired = target ? holds.get(target)?.fired === true : false
+      abort(event)
+      // Starta om spärrfönstret precis före det click som följer.
+      if (target && fired) suppressNextClick(target)
+    },
+    onPointerCancel: abort,
+    onPointerLeave: abort,
+    onContextMenu: (event) => {
+      // Undantag: i ett textfält ska systemmenyn (klistra in, stavning) fram.
+      if (isTextEntryTarget(event.target)) return
+      event.preventDefault()
+      const target = event.currentTarget
+      if (!target) return
+      abort(event)
+      onHold(target as HTMLElement)
+    },
+    onClickCapture: (event) => {
+      const target = event.currentTarget
+      if (!target || !pointerHoldSuppressed.has(target)) return
+      releaseClickSuppression(target)
+      event.preventDefault()
+      event.stopPropagation?.()
+    },
+  }
+}
+
 export interface TvGlassMenuAction { key: string; label: string; run: () => void }
 export interface TvGlassMenuTarget { title: string; element: HTMLElement; actions: TvGlassMenuAction[] }
 function TvGlassMenuStub({ target, onClose }: { target: TvGlassMenuTarget; onClose: () => void }) {

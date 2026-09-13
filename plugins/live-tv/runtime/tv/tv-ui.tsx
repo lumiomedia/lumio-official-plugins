@@ -2,7 +2,7 @@
 
 import { createElement, useEffect, useState, type ComponentType, type CSSProperties, type ReactNode } from 'react'
 import * as sdk from '@/lib/plugin-sdk'
-import { tvHoldHandlers } from '@/lib/plugin-sdk'
+import { tvHoldHandlers, tvPointerHoldHandlers } from '@/lib/plugin-sdk'
 import { channelKey, getLiveTvLogoSrc, type M3uChannel } from '../live-tv-data'
 import { LiveTvLogoImage } from '../live-tv-logo-image'
 import { initialsOf } from '../live-tv-ui'
@@ -77,17 +77,45 @@ export const cardStyle: CSSProperties = {
  * Ligger också till för `.lumio-tv-logo-img`: LiveTvLogoImage (delad med
  * skrivbordsvyerna) tar bara `className`, ingen `style`-prop, så
  * logotypens storlek sätts här i stället för inline på ChannelArt.
+ *
+ * RINGEN OCH MUSEN: värden sätter `data-focus-source="key" | "pointer"` på
+ * `:root` (appens fokusmotor, spec 3.2) och ringen ritas bara för `key`, så
+ * musanvändaren inte ser ringar hoppa runt. TV-läget står alltid på `key` och
+ * ser därför exakt dagens ring — och en äldre värd utan attributet gör det
+ * också, eftersom `:not([data-focus-source="pointer"])` matchar då.
+ *
+ * HOVRING: `:hover` kan inte uttryckas inline, så stationernas hovringsläge
+ * bor här. `@media (hover: hover) and (pointer: fine)` gör att regeln aldrig
+ * gäller en TV med fjärr eller en pekskärm (där `:hover` annars fastnar efter
+ * ett tryck). Hovringen ritas som ett `background-image`-lager och inte som
+ * `background-color`: nästan varje station sätter sin bakgrund INLINE, och en
+ * inline-deklaration slår alltid en regel i stilmallen. Lagret behöver
+ * `!important` av samma skäl — men eftersom det bara ersätter bildlagret
+ * lägger det sig OVANPÅ kortets egen färg i stället för att byta ut den
+ * (en aktiv chip blir ljusare, inte plattare).
+ *
+ * MARKERINGSFRI TEXT: stationer är kort man klickar på, inte text man drar i
+ * — `user-select: none` på `[data-f]`. Undantaget `[data-selectable-text]`
+ * står EFTER (lika specificitet, sista vinner) och sätts där texterna bor:
+ * program- och kanalbeskrivningar i `tv-channel.tsx`, `tv-guide-shared.tsx`
+ * och rutnätets detaljremsa (P6/P9). Spec 4.5.
  */
 export function TvFocusStyle() {
   return (
     <style>{`
-[data-live-tv-tv-root] [data-f]:focus,
-[data-live-tv-tv-root] [data-f][data-fcur="1"] {
+:root:not([data-focus-source="pointer"]) [data-live-tv-tv-root] [data-f]:focus,
+:root:not([data-focus-source="pointer"]) [data-live-tv-tv-root] [data-f][data-fcur="1"] {
   outline: 2px solid rgb(var(--accent-500)) !important;
   outline-offset: 3px;
   box-shadow: 0 0 28px color-mix(in srgb, rgb(var(--accent-500)) 45%, transparent) !important;
 }
 [data-live-tv-tv-root] [data-f] { outline: none; }
+[data-live-tv-tv-root] [data-f] { user-select: none; -webkit-user-select: none; }
+[data-live-tv-tv-root] [data-selectable-text] { user-select: text; -webkit-user-select: text; }
+@media (hover: hover) and (pointer: fine) {
+  [data-live-tv-tv-root] [data-f]:hover { background-image: linear-gradient(rgba(252,252,255,0.06), rgba(252,252,255,0.06)) !important; }
+  [data-live-tv-tv-root] [data-live-tv-chip][data-f]:hover { border-color: rgba(255,255,255,0.22) !important; }
+}
 [data-live-tv-tv-root] [data-live-tv-menu-item][data-f]:focus,
 [data-live-tv-tv-root] [data-live-tv-menu-item][data-f][data-fcur="1"] { outline-offset: -4px; border-radius: ${dp(12)}px; }
 [data-live-tv-tv-root] [data-scroll]::-webkit-scrollbar, [data-live-tv-tv-root] [data-row]::-webkit-scrollbar { display: none; }
@@ -100,14 +128,48 @@ export function TvFocusStyle() {
 
 export type StationProps = Record<string, unknown>
 
-/** EN station: OK = onOk, håll OK = onHold (glasmeny). Klick med mus = onOk. */
+/**
+ * EN station: OK = onOk, håll OK = onHold (glasmeny). En implementation per
+ * handling, tre inmatningsvägar (spec 4.1):
+ *
+ * - fjärr/tangentbord: Enter/Space, håll 650 ms → `tvHoldHandlers`
+ * - mus: klick, högerklick och håll 650 ms → `tvPointerHoldHandlers`
+ * - finger: tryck, långtryck 650 ms → samma pekarhandlare
+ *
+ * De två uppsättningarna ligger SIDA VID SIDA och delar SDK:ts WeakMap, så ett
+ * avbrott i den ena vägen städar den andra. Inget anropsställe behöver ändras.
+ *
+ * `data-hold=""` sätts så fort `onHold` finns — det är den enda kroken skalets
+ * "…"-knapp (P3) behöver för att hitta en station med hållhandling. Attributet
+ * är inert på TV, så det sätts oavsett läge.
+ */
 export function station(onOk: () => void, onHold?: (element: HTMLElement) => void, extra?: Record<string, string>): StationProps {
   const hold = onHold ? tvHoldHandlers(onOk, onHold) : null
+  const pointer = onHold ? tvPointerHoldHandlers(onOk, onHold) : null
   return {
     'data-f': '',
     tabIndex: 0,
     role: 'button',
-    onClick: onOk,
+    ...(pointer
+      ? {
+          'data-hold': '',
+          // Ett fyrat håll undertrycker klicket i `onClickCapture`. Två bälten,
+          // för att SDK:t kan vara äldre än den här filen: capture-handlaren
+          // stoppar spridningen OCH markerar eventet som `defaultPrevented`,
+          // och onClick nedan vägrar köra onOk på ett sådant event. Utan det
+          // skulle både glasmenyn och uppspelningen starta på samma håll.
+          onClick: (event?: { defaultPrevented?: boolean }) => {
+            if (event?.defaultPrevented) return
+            onOk()
+          },
+          onPointerDown: pointer.onPointerDown,
+          onPointerUp: pointer.onPointerUp,
+          onPointerCancel: pointer.onPointerCancel,
+          onPointerLeave: pointer.onPointerLeave,
+          onContextMenu: pointer.onContextMenu,
+          onClickCapture: pointer.onClickCapture,
+        }
+      : { onClick: onOk }),
     ...(hold
       ? { onKeyDown: hold.onKeyDown, onKeyUp: hold.onKeyUp }
       : {
@@ -122,7 +184,8 @@ export function station(onOk: () => void, onHold?: (element: HTMLElement) => voi
   }
 }
 
-export function Tag({ variant, children, style }: { variant: 'live' | 'neutral' | 'replay' | 'reason' | 'audio' | 'quality'; children: ReactNode; style?: CSSProperties }) {
+/** `title` finns för verktygstips på trunkerade texter (spec 4.5). */
+export function Tag({ variant, children, style, title }: { variant: 'live' | 'neutral' | 'replay' | 'reason' | 'audio' | 'quality'; children: ReactNode; style?: CSSProperties; title?: string }) {
   const base: CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: dp(8), whiteSpace: 'nowrap', lineHeight: 1.2 }
   const look: Record<typeof variant, CSSProperties> = {
     live: { fontSize: dp(13), fontWeight: 600, letterSpacing: '0.14em', padding: `${dp(5)}px ${dp(12)}px`, borderRadius: dp(8), background: TV.liveSoft, color: TV.liveText, textTransform: 'uppercase' },
@@ -133,7 +196,7 @@ export function Tag({ variant, children, style }: { variant: 'live' | 'neutral' 
     audio: { fontSize: dp(13), fontWeight: 600, letterSpacing: '0.12em', padding: `${dp(4)}px ${dp(10)}px`, borderRadius: dp(6), background: TV.acc, color: TV.onAcc, textTransform: 'uppercase' },
   }
   return (
-    <span style={{ ...base, ...look[variant], ...style }}>
+    <span title={title} style={{ ...base, ...look[variant], ...style }}>
       {variant === 'live' ? <span style={{ width: dp(8), height: dp(8), borderRadius: 999, background: TV.live }} /> : null}
       {children}
     </span>
@@ -182,9 +245,15 @@ export function ChannelArt({ channel, frameVersion, height, aspect, radius, chil
   )
 }
 
-export function Chip({ active, children, style, ...rest }: { active: boolean; children: ReactNode; style?: CSSProperties } & StationProps) {
+/**
+ * `data-live-tv-chip` är hovringsregelns krok i TvFocusStyle — chipet byter
+ * kantfärg i stället för att lysa upp hela ytan. `title` är genomsläppet för
+ * verktygstips på trunkerade kategorinamn (spec 4.5); det går via `rest`.
+ */
+export function Chip({ active, children, style, ...rest }: { active: boolean; children: ReactNode; style?: CSSProperties; title?: string } & StationProps) {
   return (
     <div
+      data-live-tv-chip=""
       {...rest}
       style={{ height: dp(46), padding: `0 ${dp(22)}px`, borderRadius: 999, display: 'inline-flex', alignItems: 'center', fontSize: dp(19), whiteSpace: 'nowrap', cursor: 'pointer', flexShrink: 0, background: active ? TV.s16 : TV.s05, color: active ? TV.text : TV.muted, fontWeight: active ? 600 : 400, border: `1px solid ${active ? TV.lineStrong : 'transparent'}`, ...style }}
     >
