@@ -129,6 +129,15 @@ export function PlayerFavouritesRow({ current, listId, urls, onSwitch }: { curre
   const [resolved, setResolved] = useState<Record<string, M3uChannel>>(() => getResolvedChannels(pinned))
   useEffect(() => {
     let live = true
+    // Avnålade kanaler rensas ur kartan: utan det växte den med varje favorit
+    // som någonsin visats, och en kanal som tagits bort ur indexet (listan
+    // ersatt av en import) låg kvar som en spökrad i raden.
+    setResolved((prev) => {
+      const keep = new Set(pinned)
+      const next: Record<string, M3uChannel> = {}
+      for (const [key, channel] of Object.entries(prev)) if (keep.has(key)) next[key] = channel
+      return next
+    })
     if (pinned.length === 0) return
     resolveChannelKeys(pinned)
       .then((items) => {
@@ -147,7 +156,13 @@ export function PlayerFavouritesRow({ current, listId, urls, onSwitch }: { curre
   }, [pinnedId])
   const channels = useMemo(() => {
     const byKey = new Map<string, M3uChannel>(Object.entries(resolved))
-    for (const list of getLiveTvLists()) for (const channel of list.channels ?? []) byKey.set(channelKey(channel), channel)
+    // Bara MANUELLA listor bär kanaler i lagringen efter v2. Att läsa alla
+    // listors `channels` hade plockat upp rester ur en halvmigrerad lagring
+    // och ritat kanaler som indexet redan ersatt.
+    for (const list of getLiveTvLists()) {
+      if (list.kind !== 'custom') continue
+      for (const channel of list.channels ?? []) byKey.set(channelKey(channel), channel)
+    }
     const favourites = pinned.map((key) => byKey.get(key)).filter((channel): channel is M3uChannel => Boolean(channel))
     // Aktuell kanal först om den inte redan är favorit, så raden alltid har en startpunkt.
     const currentKey = channelKey(current)

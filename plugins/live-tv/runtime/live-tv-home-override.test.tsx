@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { __resetForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { flushLiveTvIndex, seedLiveTvIndex } from '../src/__test-stubs__/live-tv-index'
-import { __resetViewHelpersForTests } from './view-helpers'
 
 // Rutnätet och tablåraden har egna tester; här gäller HJÄLTEKORTET, som är det
 // enda i vyn som behöver kanalerna.
@@ -44,7 +43,6 @@ const CHANNELS = [ch('Ett'), ch('Tva', 'tva.tv'), ch('Tre')]
 afterEach(cleanup)
 beforeEach(() => {
   __resetForTests()
-  __resetViewHelpersForTests()
   // Seedas MED kanaler så indexet får sitt innehåll …
   writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list(CHANNELS)])
   seedLiveTvIndex()

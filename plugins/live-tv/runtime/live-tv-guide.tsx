@@ -5,7 +5,7 @@ import { onTvFocusEdge, useLang, useTvMode } from '@/lib/plugin-sdk'
 import { LiveTvLogoImage } from './live-tv-logo-image'
 import { useSchedules } from './hooks/useSchedules'
 import { useHubText } from './hub-strings'
-import { useListChannels } from './view-helpers'
+import { useChannelsPage } from './view-helpers'
 import {
   channelKey,
   getAllLiveTvEpgUrls,
@@ -31,14 +31,22 @@ const CHANNEL_COL_WIDTH = 220
 const WINDOW_HOURS_BEFORE = 1
 const WINDOW_HOURS_TOTAL = 12
 /**
- * Hur många kanaler guiden frågar appen om tablå för.
+ * Guiden hämtar kanaler SIDVIS och slutar när den har rader nog.
  *
- * Tablån bor i appen sedan lagring v2 och hämtas per FÖNSTER: en panel med
- * 17 000 kanaler hade blivit 85 anrop för en vy som visar ett par dussin
- * rader åt gången. Kanaler utan tablå faller ändå bort, så överskottet räcker
- * långt — och listväljaren uppe till vänster är vägen till resten.
+ * Både kanalerna och tablån bor i appen sedan lagring v2, och båda kostar per
+ * kanal: att ladda varje listas fulla innehåll (17 000 kanaler per panel) för
+ * att sedan fråga om tablå för de första 400 var dubbelt fel — vyn visar ett
+ * par dussin rader. Ett fast tak var dessutom fel ordning: taket låg FÖRE
+ * tablåuppslaget, så en panel där de första 400 kanalerna saknar tablå gav en
+ * tom guide fast listan var full av kanaler med program.
+ *
+ * Därför: en sida åt gången, och nästa sida bara om raderna med tablå ännu
+ * inte räcker. `MAX_GUIDE_CHANNELS` är ett tak mot en panel där INGET har
+ * tablå — inte ett urvalskriterium.
  */
-const MAX_GUIDE_CHANNELS = 400
+const GUIDE_CHANNEL_PAGE = 200
+const MAX_GUIDE_CHANNELS = 1000
+const MIN_GUIDE_ROWS = 40
 // Imorgon-fliken visar hela dygnet från midnatt (lokal tid).
 const TOMORROW_WINDOW_HOURS = 24
 
@@ -170,7 +178,10 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
    * bakgrunden. Nu kommer både kanaler och tablå från appen.
    */
   const sourceLists = useMemo(() => (activeList ? [activeList] : lists), [activeList, lists])
-  const { byListId, loading: channelsLoading } = useListChannels(sourceLists)
+  const [channelLimit, setChannelLimit] = useState(GUIDE_CHANNEL_PAGE)
+  // Ny lista vald: börja om från första sidan.
+  useEffect(() => { setChannelLimit(GUIDE_CHANNEL_PAGE) }, [activeListId])
+  const { byListId, totalByListId, loading: channelsLoading } = useChannelsPage(sourceLists, channelLimit)
 
   const sourceRows = useMemo(() => {
     const out: Array<{ channel: M3uChannel; list: LiveTvList }> = []
@@ -181,11 +192,16 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
         if (seen.has(key)) continue
         seen.add(key)
         out.push({ channel, list })
-        if (out.length >= MAX_GUIDE_CHANNELS) return out
       }
     }
     return out
   }, [sourceLists, byListId])
+
+  /** Finns det fler kanaler bakom sidan vi hämtat? (`total` ur indexsvaret.) */
+  const channelsBehindPage = useMemo(
+    () => sourceLists.reduce((sum, list) => sum + (totalByListId[list.id] ?? 0), 0) > sourceRows.length,
+    [sourceLists, totalByListId, sourceRows.length],
+  )
 
   const guideChannels = useMemo(() => sourceRows.map((entry) => entry.channel), [sourceRows])
   const { schedules, loading: schedulesLoading } = useSchedules(guideChannels, windowStart, windowEnd)
@@ -200,6 +216,19 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
     }
     return out
   }, [sourceRows, schedules, windowStart, windowEnd])
+
+  /**
+   * Nästa sida hämtas först när den FÖRRA är genomgången och raderna ändå inte
+   * räcker — alltså efter tablåuppslaget, inte före det. En panel där de
+   * första 200 kanalerna saknar tablå fyller på tills raderna finns, eller
+   * tills taket nås.
+   */
+  useEffect(() => {
+    if (channelsLoading || schedulesLoading) return
+    if (allRows.length >= MIN_GUIDE_ROWS) return
+    if (!channelsBehindPage || channelLimit >= MAX_GUIDE_CHANNELS) return
+    setChannelLimit((limit) => Math.min(limit + GUIDE_CHANNEL_PAGE, MAX_GUIDE_CHANNELS))
+  }, [channelsLoading, schedulesLoading, allRows.length, channelsBehindPage, channelLimit])
 
   const rows = useMemo<ChannelRow[]>(() => {
     if (!channelFilter) return allRows

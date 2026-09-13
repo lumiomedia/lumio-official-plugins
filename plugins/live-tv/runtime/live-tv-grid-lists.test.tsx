@@ -2,8 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { __resetForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { flushLiveTvIndex, seedLiveTvIndex } from '../src/__test-stubs__/live-tv-index'
-import { resetM3uFetchProgressForTests } from './m3u-fetch-progress'
-import { __resetViewHelpersForTests } from './view-helpers'
+import { getM3uFetchProgress, resetM3uFetchProgressForTests, subscribeM3uFetch } from './m3u-fetch-progress'
 
 vi.mock('./live-tv-player', () => ({ LiveTvPlayer: () => <div data-testid="player" /> }))
 // Pagineringen kommer från värdens @heroui/react, som inte finns i testträdet.
@@ -54,7 +53,6 @@ const custom = rawList({
 afterEach(cleanup)
 beforeEach(() => {
   __resetForTests()
-  __resetViewHelpersForTests()
   resetM3uFetchProgressForTests()
   writePluginJson(LIVE_TV_PLUGIN_ID, 'm3u_urls', [PLAYLIST_URL])
   writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [imported, custom])
@@ -84,14 +82,35 @@ describe('LiveTvGrid: listor', () => {
   })
 
   it('Uppdatera kör importjobbet för de importerade listorna, inte för de manuella', async () => {
-    const importSpy = vi
-      .spyOn(liveTvData, 'importList')
-      .mockResolvedValue({ state: 'done', received: 2, total: 2, result: { total: 2, groups: [], urlTvg: null, truncated: false } })
+    // Jobbets förlopp ska nå den delade raden: en 17 000-kanalspanel tar
+    // tiotals sekunder inom ETT steg i kön, och utan `received/total` står
+    // knappen bara och snurrar.
+    const reported: Array<{ received: number; total: number | null } | null> = []
+    const off = subscribeM3uFetch(() => reported.push(getM3uFetchProgress().jobProgress))
+    const importSpy = vi.spyOn(liveTvData, 'importList').mockImplementation(async (_list, onProgress) => {
+      onProgress?.({ state: 'fetching', received: 12_000, total: 17_000 })
+      return { state: 'done', received: 17_000, total: 17_000, result: { total: 17_000, groups: [], urlTvg: null, truncated: false } }
+    })
 
     await mount()
     fireEvent.click(screen.getByLabelText('refreshStatus'))
 
     await waitFor(() => expect(importSpy).toHaveBeenCalledTimes(1))
     expect(importSpy.mock.calls[0][0]).toMatchObject({ id: 'l1', kind: 'm3u', source: PLAYLIST_URL })
+    expect(reported).toContainEqual({ received: 12_000, total: 17_000 })
+    off()
+  })
+
+  it('ett importfel visar jobbets EGEN text, inte den generiska m3u-strängen', async () => {
+    vi.spyOn(liveTvData, 'importList').mockResolvedValue({
+      state: 'error',
+      received: 0,
+      error: 'could not resolve host a.tld',
+    })
+
+    await mount()
+    fireEvent.click(screen.getByLabelText('refreshStatus'))
+
+    expect(await screen.findByText(/could not resolve host a.tld/)).toBeInTheDocument()
   })
 })

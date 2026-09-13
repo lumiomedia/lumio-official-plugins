@@ -40,10 +40,9 @@ import {
   channelKey,
   type LiveTvList,
 } from './live-tv-data'
-import { onIndexChanged } from './index-client'
 import { useSchedules } from './hooks/useSchedules'
-import { loadChannelsForSource } from './view-helpers'
-import { reportM3uFetchJobProgress, runM3uFetch } from './m3u-fetch-progress'
+import { useChannelsBySource } from './view-helpers'
+import { getM3uFetchProgress, reportM3uFetchJobProgress, runM3uFetch } from './m3u-fetch-progress'
 
 interface M3uChannel {
   name: string
@@ -134,11 +133,30 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
   // att en specifik listflik kan visa BARA sina egna kanaler i stället för
   // hela unionen — index-svaret ger ingen annan koppling mellan kanal och
   // källa än det anropet skickades med.
-  const [channelsBySource, setChannelsBySource] = useState<Record<string, M3uChannel[]>>({})
-  const channels = useMemo(() => Object.values(channelsBySource).flat(), [channelsBySource])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [urls, setUrls] = useState<string[]>([])
+  /**
+   * Kanalerna kommer ur MODELLENS delade laddare (`view-helpers` →
+   * `loadChannelsShared`), inte ur en egen slinga.
+   *
+   * Vyn hade en egen: den körde parallellt med modellen som ändå är monterad
+   * här (`useLiveTvModel` nedan), så en 17 000-kanalskälla hämtades två gånger
+   * per sidladdning. Den hade också en egen `onIndexChanged`-lyssnare som
+   * kunde läsa om FÖRE invalideringen och skriva tillbaka kanalerna importen
+   * just ersatte.
+   */
+  const { bySource: channelsBySource, loading: channelsLoading, error: channelsError } = useChannelsBySource(urls)
+  const channels = useMemo(() => Object.values(channelsBySource).flat(), [channelsBySource])
+  // Skelettvyn bara vid KALL start: en bakgrundsuppdatering ska inte tömma rutnätet.
+  const loading = channelsLoading && channels.length === 0
+  /**
+   * Importfel ritas som en NOTIS, inte i stället för rutnätet.
+   *
+   * `error` nedan tar över hela vyn — rätt när kanalerna inte gick att läsa
+   * (det finns inget att visa), fel när en omhämtning föll: kanalerna som
+   * redan ligger i indexet är kvar och fullt spelbara.
+   */
+  const [importError, setImportError] = useState<string | null>(null)
+  const error = channelsError
   /**
    * Sökfältet har två tillstånd: det man SKRIVER (`searchInput`, ritas direkt)
    * och det som FILTRERAR (`search`, 150 ms senare).
@@ -175,7 +193,6 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
   const [pinVersion, setPinVersion] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
   const [refreshing, setRefreshing] = useState(false)
-  const [reloadToken, setReloadToken] = useState(0)
   const [loadedLogoUrls, setLoadedLogoUrls] = useState<Record<string, string>>({})
   const [lists, setLists] = useState<LiveTvList[]>([])
   const [activeListId, setActiveListId] = useState<string | null>(null)
@@ -414,28 +431,40 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
   async function handleRefreshChannels() {
     const scope = activeList ? [activeList] : lists
     const targets = scope.filter((list) => Boolean(list.source) && (list.kind === 'm3u' || list.kind === 'xtream'))
-    setError(null)
+    if (targets.length === 0) return
+    setImportError(null)
     setRefreshing(true)
     try {
-      if (targets.length > 0) {
-        const bySource = new Map(targets.map((list) => [list.source as string, list]))
-        const ok = await runM3uFetch([...bySource.keys()], async (source) => {
-          const list = bySource.get(source)
-          if (!list) return 0
-          const status = await importList(list, (job) => reportM3uFetchJobProgress(job.received, job.total))
-          if (status.state === 'error') throw new Error(status.error ?? m3uErrorText)
-          return status.result?.total ?? 0
-        })
-        if (!ok) setError(m3uErrorText)
+      const bySource = new Map(targets.map((list) => [list.source as string, list]))
+      const ok = await runM3uFetch([...bySource.keys()], async (source) => {
+        const list = bySource.get(source)
+        if (!list) return 0
+        const status = await importList(list, (job) => reportM3uFetchJobProgress(job.received, job.total))
+        if (status.state === 'error') throw new Error(status.error ?? m3uErrorText)
+        return status.result?.total ?? 0
+      })
+      /*
+       * `runM3uFetch` svarar false av TVÅ skäl: något föll, eller en hämtning
+       * pågår redan (inställningarna kan ha startat en). Bara det första är
+       * ett fel att visa — förut larmade knappen "kunde inte hämta" när den i
+       * själva verket bara avstod från att starta en andra omgång.
+       *
+       * Texten kommer ur jobbets eget `error` ("could not resolve host …"),
+       * som köraren redan lagt i förloppet; den generiska m3u-strängen säger
+       * ingenting om vad som hände.
+       */
+      if (!ok) {
+        const progress = getM3uFetchProgress()
+        if (progress.status === 'error') setImportError(progress.error ?? m3uErrorText)
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : m3uErrorText)
+      setImportError(err instanceof Error ? err.message : m3uErrorText)
     } finally {
       setRefreshing(false)
-      // Alltid: även en misslyckad omgång ska läsa om indexet (de listor som
-      // hann gå igenom har nytt innehåll).
-      setReloadToken((value) => value + 1)
     }
+    // Ingen omladdning här: varje lyckad `importList` emitterar
+    // INDEX_CHANGED_EVENT, som invaliderar cachen och väcker både modellen och
+    // den här vyn. En egen bump hade gett N+1 omläsningar av hela utbudet.
   }
 
   function handleCreateList(name: string): LiveTvList | null {
@@ -463,15 +492,6 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
     setPendingChannelForNewList(null)
   }
 
-  function handleToggleChannelInActiveList(channel: M3uChannel) {
-    if (!activeListId) return
-    if (isChannelInLiveTvList(activeListId, channel)) {
-      removeChannelFromLiveTvList(activeListId, channel)
-      return
-    }
-    addChannelToLiveTvList(activeListId, channel)
-  }
-
   function handleOpenListPicker(channel: M3uChannel) {
     const key = `${channel.name}::${channel.url}`
     if (customLists.length === 0) {
@@ -483,71 +503,9 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
     setListPickerChannelKey((current) => current === key ? null : key)
   }
 
-  /**
-   * Kanalerna bor i värdens index (Rust) — den här vyn bara LÄSER det via
-   * `loadAllChannels` per käll-URL (varje post i `urls` ÄR redan en `source`,
-   * se `getLiveTvUrlsKey`/`xtreamPseudoUrl`). Ingen hämtning/synt sker här
-   * längre: import sker via inställningarnas jobbflöde (`importList`,
-   * spec 4.1) och landar i indexet innan den här läsningen ser den. Inget
-   * tak — indexet rymmer hela utbudet.
-   */
   useEffect(() => {
-    let cancelled = false
-    logLiveTvStage('loaded m3u urls', { count: urls.length })
-    if (urls.length === 0) {
-      setChannelsBySource({})
-      setLoading(false)
-      logLiveTvStage('no m3u urls configured')
-      return
-    }
-
-    // En bakgrundsuppdatering (reloadToken, ett indexändringsevent) ska inte
-    // ersätta rutnätet med en tom skeleton — bara första laddningen gör det.
-    setLoading(channels.length === 0)
-    setRefreshing(channels.length > 0)
-
-    void (async () => {
-      try {
-        const nextBySource: Record<string, M3uChannel[]> = {}
-        let total = 0
-        for (const source of urls) {
-          if (cancelled) break
-          logLiveTvStage('loading channels from index', { source })
-          const loaded = await loadChannelsForSource(source, reloadToken > 0).catch(() => [])
-          if (cancelled) break
-          nextBySource[source] = loaded
-          total += loaded.length
-          logLiveTvStage('channels loaded from index', { source, loaded: loaded.length, accumulated: total })
-          // Keep the UI and WebView responsive between large sources.
-          await new Promise((resolve) => setTimeout(resolve, 0))
-        }
-
-        if (!cancelled) {
-          setChannelsBySource(nextBySource)
-          setError(null)
-          logLiveTvStage('channels committed to state', { total })
-        }
-      } catch {
-        if (!cancelled) setError(t('m3uError'))
-        logLiveTvStage('live tv load failed')
-      } finally {
-        if (!cancelled) {
-          setLoading(false)
-          setRefreshing(false)
-        }
-      }
-    })()
-
-    return () => {
-      cancelled = true
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlsKey, m3uErrorText, reloadToken])
-
-  // En import (inställningarna) eller migreringen skriver till indexet från
-  // en annan del av trädet — bump:a reloadToken så den här vyn läser om utan
-  // att användaren behöver klicka Uppdatera.
-  useEffect(() => onIndexChanged(() => setReloadToken((value) => value + 1)), [])
+    logLiveTvStage('live tv sources', { count: urls.length, loaded: channels.length })
+  }, [urlsKey, channels.length])
 
   useEffect(() => {
     setCurrentPage(1)
@@ -1080,6 +1038,7 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
           <div className="ml-auto flex items-center gap-3">
             {isTv ? null : <span className="text-xs text-white">{filtered.length} / {visibleChannels.length} {t('m3uChannels')}</span>}
             {refreshing && visibleChannels.length > 0 ? <span className="text-xs text-slate-500">{t('liveTvRefreshing')}</span> : null}
+            {importError ? <span className="max-w-[18rem] truncate text-xs text-red-400" title={importError}>{importError}</span> : null}
             <button
               type="button"
               {...tvStation}

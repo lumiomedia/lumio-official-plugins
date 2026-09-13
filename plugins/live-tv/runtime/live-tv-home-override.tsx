@@ -12,7 +12,7 @@ import {
   type LiveTvList,
   type M3uChannel,
 } from './live-tv-data'
-import { useListChannels } from './view-helpers'
+import { useChannelsPage } from './view-helpers'
 
 interface FocusedTarget {
   list: LiveTvList
@@ -22,6 +22,17 @@ interface FocusedTarget {
 }
 
 const PLACEHOLDER_NAME_RE = /^[\s=\-_*•·]+|=+/
+
+/**
+ * Hjältekortet visar EN kanal och ett löpnummer — och laddade ändå varje
+ * listas hela innehåll för att kunna räkna dem.
+ *
+ * Antalet står i indexsvarets `total`, och kanalen som ska ritas ligger i ett
+ * fönster på femtio runt det aktuella numret. Prev/next kliver inom fönstret;
+ * kliver man ut ur det hämtas nästa. En 17 000-kanalspanel kostar alltså femtio
+ * poster, inte sjutton tusen.
+ */
+const HERO_WINDOW = 50
 
 function isPlayableChannel(channel: M3uChannel): boolean {
   if (!channel.url) return false
@@ -36,7 +47,8 @@ function isPlayableChannel(channel: M3uChannel): boolean {
 export function LiveTvHomeOverride(_props: HomeOverrideProps) {
   const { t } = useLang()
   const [lists, setLists] = useState<LiveTvList[]>([])
-  const [focusedKey, setFocusedKey] = useState<string | null>(null)
+  /** Löpnummer i den sammanslagna kanalföljden över alla listor. */
+  const [focusedIndex, setFocusedIndex] = useState<number | null>(null)
   const [LiveTvPlayerComponent, setLiveTvPlayerComponent] = useState<
     ComponentType<{
       channel: M3uChannel
@@ -55,7 +67,7 @@ export function LiveTvHomeOverride(_props: HomeOverrideProps) {
   }, [])
 
   /**
-   * Kanalerna kommer ur appens index, per lista (lagring v2).
+   * Kanalerna kommer ur appens index, per lista och SIDVIS (lagring v2).
    *
    * Här stod `preferredChannels(lists)`, som läste listornas INBÄDDADE
    * `channels`. Migreringen tömmer det fältet, så hjältekortet hade blivit
@@ -63,29 +75,54 @@ export function LiveTvHomeOverride(_props: HomeOverrideProps) {
    * indexet var fullt. Kopplingen kanal → lista är exakt: varje kanal kommer
    * ur uppslaget för SIN listas källa, inte ur en gissning i modellen.
    */
-  const { byListId } = useListChannels(lists)
-  const flat = useMemo(() => {
-    const out: Array<{ list: LiveTvList; channel: M3uChannel }> = []
-    for (const list of lists) {
-      for (const channel of byListId[list.id] ?? []) {
-        if (isPlayableChannel(channel)) out.push({ list, channel })
-      }
+  const { byListId: firstPages, totalByListId } = useChannelsPage(lists, HERO_WINDOW, 0)
+
+  /** Listornas plats i den sammanslagna följden: [startnummer, antal]. */
+  const spans = useMemo(() => {
+    let start = 0
+    return lists.map((list) => {
+      const count = totalByListId[list.id] ?? 0
+      const span = { list, start, count }
+      start += count
+      return span
+    })
+  }, [lists, totalByListId])
+  const total = spans.reduce((sum, span) => sum + span.count, 0)
+
+  /**
+   * Förvalet är första kanalen MED tvg-id (den har tablå att visa) bland de
+   * första sidorna — resten av utbudet laddas inte för att leta efter en
+   * bättre kandidat.
+   */
+  const defaultIndex = useMemo(() => {
+    for (const span of spans) {
+      const page = firstPages[span.list.id] ?? []
+      const hit = page.findIndex((channel) => isPlayableChannel(channel) && Boolean(channel.tvgId))
+      if (hit >= 0) return span.start + hit
     }
-    return out
-  }, [lists, byListId])
+    return 0
+  }, [spans, firstPages])
+  const index = focusedIndex ?? defaultIndex
+
+  /** Vilken lista och vilket fönster numret hamnar i. */
+  const placement = useMemo(() => {
+    const span = spans.find((entry) => index >= entry.start && index < entry.start + entry.count) ?? spans[0] ?? null
+    if (!span || span.count === 0) return null
+    const offsetInList = index - span.start
+    return { span, offsetInList, windowStart: Math.floor(offsetInList / HERO_WINDOW) * HERO_WINDOW }
+  }, [spans, index])
+
+  const windowLists = useMemo(() => (placement ? [placement.span.list] : []), [placement])
+  const { byListId: windowPages } = useChannelsPage(windowLists, HERO_WINDOW, placement?.windowStart ?? 0)
 
   const focused: FocusedTarget | null = useMemo(() => {
-    if (flat.length === 0) return null
-    let idx = flat.findIndex((entry) => `${entry.list.id}::${entry.channel.url}` === focusedKey)
-    if (idx < 0) {
-      // Default to first channel with tvgId across all lists, falling back
-      // to the first playable channel.
-      idx = flat.findIndex((entry) => Boolean(entry.channel.tvgId))
-      if (idx < 0) idx = 0
-    }
-    const hit = flat[idx]
-    return { list: hit.list, channel: hit.channel, index: idx, total: flat.length }
-  }, [flat, focusedKey])
+    if (!placement || total === 0) return null
+    const listId = placement.span.list.id
+    const page = (placement.windowStart === 0 ? firstPages[listId] : windowPages[listId]) ?? windowPages[listId] ?? []
+    const channel = page[placement.offsetInList - placement.windowStart]
+    if (!channel) return null
+    return { list: placement.span.list, channel, index, total }
+  }, [placement, firstPages, windowPages, index, total])
 
   useEffect(() => {
     if (!activeChannel || LiveTvPlayerComponent) return
@@ -103,10 +140,8 @@ export function LiveTvHomeOverride(_props: HomeOverrideProps) {
   }, [activeChannel, LiveTvPlayerComponent])
 
   function moveFocus(delta: number) {
-    if (!focused || flat.length === 0) return
-    const next = (focused.index + delta + flat.length) % flat.length
-    const target = flat[next]
-    setFocusedKey(`${target.list.id}::${target.channel.url}`)
+    if (total === 0) return
+    setFocusedIndex(((index + delta) % total + total) % total)
   }
 
   function playFocused() {

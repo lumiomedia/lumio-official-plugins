@@ -4,17 +4,22 @@
  * Kanaler för en LISTA, till vyer som inte ritar modellens aktiva uppsättning.
  *
  * Modellen (`useLiveTvModel`) laddar EN uppsättning: hela indexet, eller den
- * aktiva spellistans källa. Två vyer behöver något annat — spellisteguiden
- * (`tv/tv-guide-playlists.tsx`) ritar vilken lista som helst i vänsterkolumnen,
- * och startsideöverstyrningen (`live-tv-home-override.tsx`) bläddrar tvärs över
- * alla listor. Före lagring v2 läste båda listornas INBÄDDADE `channels`; efter
- * migreringen är det fältet tomt, så båda vyerna hade blivit tomma i skarp
- * drift (testerna seedade inbäddade kanaler och dolde det).
+ * aktiva spellistans källa. Några vyer behöver något annat — spellisteguiden
+ * (`tv/tv-guide-playlists.tsx`) ritar vilken lista som helst, skrivbordsguiden
+ * och rutnätet ritar flera listor sida vid sida, och startsideöverstyrningen
+ * bläddrar tvärs över dem. Före lagring v2 läste de listornas INBÄDDADE
+ * `channels`; efter migreringen är det fältet tomt, så de hade blivit tomma i
+ * skarp drift (testerna seedade inbäddade kanaler och dolde det).
  *
- * Här är källan i stället indexet, per `list.source`, med samma
- * minnescachenycklar (`channels:<source>`) som modellen använder — en lista som
- * redan är laddad av modellen kostar ingen extra hämtning, och modellens
- * `refreshChannels()` (som rensar hela prefixet) invaliderar båda på en gång.
+ * HÄMTNINGEN ÄGS AV MODELLEN. Den här modulen har ingen egen in-flight-karta,
+ * ingen egen cache och ingen egen lyssnare på indexhändelsen — allt går genom
+ * `loadChannelsShared`/`getCachedChannels`/`subscribeChannelGeneration` i
+ * `live-tv-model.ts`. En egen laddare betydde fyra fel på en gång: två
+ * parallella hämtningar av 17 000 kanaler (modell + vy), en vy som hann fråga
+ * FÖRE migreringen och cachade `[]` som modellen sedan läste som sanning, en
+ * hämtning som `invalidateChannels()` inte kunde avbryta, och en `force` som
+ * hoppade över cachen men återanvände den gamla promisen — och därför skrev
+ * tillbaka för-import-kanalerna i cachen efter en import.
  *
  * Manuellt skapade listor (`kind: 'custom'`) har ingen källa i indexet: deras
  * kanaler läggs dit en och en av `addChannelToLiveTvList`, och bor kvar
@@ -26,111 +31,102 @@
  */
 
 import { useEffect, useMemo, useState } from 'react'
-import { getPluginMemoryCache, setPluginMemoryCache } from '@/lib/plugin-sdk'
-import {
-  LIVE_TV_CHANNELS_PREFIX,
-  LIVE_TV_PLUGIN_ID,
-  channelKey,
-  type LiveTvList,
-  type M3uChannel,
-} from './live-tv-data'
+import { channelKey, type LiveTvList, type M3uChannel } from './live-tv-data'
 import { channelSupportsCatchUp } from './catch-up'
-import { loadAllChannels, onIndexChanged, type IndexChannel } from './index-client'
+import { queryChannels, type IndexChannel } from './index-client'
+import {
+  channelsCacheKey,
+  ensureLiveTvBootstrap,
+  getCachedChannels,
+  loadChannelsShared,
+  subscribeChannelGeneration,
+} from './live-tv-model'
 
-export function channelsCacheKey(source: string | null): string {
-  return `${LIVE_TV_CHANNELS_PREFIX}${source ?? 'all'}`
-}
-
-/** Delad in-flight-begäran: tre vyer som frågar om samma källa ger ETT anrop. */
-const inFlight = new Map<string, Promise<IndexChannel[]>>()
-
-export function getCachedChannelsForSource(source: string | null): IndexChannel[] | null {
-  return getPluginMemoryCache<IndexChannel[]>(LIVE_TV_PLUGIN_ID, channelsCacheKey(source)) ?? null
-}
+export { channelsCacheKey, getCachedChannels }
 
 /**
- * Kanaler för en källa ur minnescachen, annars ur indexet.
+ * Räknare som stegas när indexet bytt innehåll.
  *
- * `force` hoppar över cachen (men skriver till den): används när indexet
- * ändrats under vyns livstid, där en cache-läsning skulle ge kanalerna som
- * importen just ersatte.
+ * Effekterna nedan har den i sin beroendelista i stället för ett eget
+ * `force`-flagga-läge. Skillnaden är inte kosmetisk: ett `force` som en gång
+ * blivit sant blev KLIBBIGT — varje listbyte därefter gick förbi den varma
+ * cachen och hämtade om allt. Generationen är i stället ett tillstånd som
+ * gäller lika för alla: efter `invalidateChannels()` är cachen redan tom, så
+ * en vanlig cacheläsning ger rätt svar utan någon förbikoppling alls.
  */
-export function loadChannelsForSource(source: string | null, force = false): Promise<IndexChannel[]> {
-  const cacheKey = channelsCacheKey(source)
-  if (!force) {
-    const cached = getPluginMemoryCache<IndexChannel[]>(LIVE_TV_PLUGIN_ID, cacheKey)
-    if (cached) return Promise.resolve(cached)
-  }
-  const pending = inFlight.get(cacheKey)
-  if (pending) return pending
-  const started = loadAllChannels(source)
-    .then((items) => {
-      setPluginMemoryCache(LIVE_TV_PLUGIN_ID, cacheKey, items)
-      return items
-    })
-    .finally(() => {
-      inFlight.delete(cacheKey)
-    })
-  inFlight.set(cacheKey, started)
-  return started
-}
-
-/** Bara för tester: nollar den delade in-flight-kartan mellan fall. */
-export function __resetViewHelpersForTests(): void {
-  inFlight.clear()
+function useChannelGeneration(): number {
+  const [generation, setGeneration] = useState(0)
+  useEffect(() => subscribeChannelGeneration(() => setGeneration((value) => value + 1)), [])
+  return generation
 }
 
 export interface SourceChannelsResult {
   bySource: Record<string, IndexChannel[]>
+  /** Sant tills ALLA efterfrågade källor svarat — inte bara den första. */
   loading: boolean
+  /** Senaste hämtningsfelet, för vyer som vill visa något annat än tomt. */
+  error: string | null
 }
 
 const EMPTY_BY_SOURCE: Record<string, IndexChannel[]> = {}
 
 /**
- * Kanaler för en uppsättning källor. Cachade källor syns SYNKRONT vid första
- * rendret (ingen blink när en annan vy redan laddat dem); resten fylls på
- * efterhand, en källa i taget, så en stor panel inte blockerar de andra.
+ * Hela kanaluppsättningen för en uppsättning källor.
+ *
+ * Cachade källor syns SYNKRONT i första rendret (ingen blink när modellen
+ * redan laddat dem); resten ritas en källa i taget medan de landar, men
+ * `loading` står kvar tills den sista är inne.
+ *
+ * Använd bara där vyn verkligen behöver ALLA kanaler (rutnätets union, en
+ * enskild vald lista). Behöver vyn en handfull rader — skrivbordsguiden,
+ * hjältekortet — är `useChannelsPage` rätt: den hämtar en sida i taget.
  */
 export function useChannelsBySource(sources: readonly (string | null | undefined)[]): SourceChannelsResult {
+  const wantedId = sources.filter(Boolean).join('|')
   const wanted = useMemo(
     () => [...new Set(sources.filter((source): source is string => Boolean(source)))],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [sources.filter(Boolean).join('|')],
+    [wantedId],
   )
-  const wantedId = wanted.join('|')
-  const [reloadToken, setReloadToken] = useState(0)
-  const [state, setState] = useState<SourceChannelsResult>(() => ({ bySource: EMPTY_BY_SOURCE, loading: false }))
-
-  useEffect(() => onIndexChanged(() => setReloadToken((token) => token + 1)), [])
+  const generation = useChannelGeneration()
+  const [state, setState] = useState<SourceChannelsResult>(() => ({ bySource: EMPTY_BY_SOURCE, loading: false, error: null }))
 
   useEffect(() => {
     if (wanted.length === 0) {
-      setState({ bySource: EMPTY_BY_SOURCE, loading: false })
+      setState({ bySource: EMPTY_BY_SOURCE, loading: false, error: null })
       return
     }
     let live = true
-    const force = reloadToken > 0
     const seeded: Record<string, IndexChannel[]> = {}
-    if (!force) {
-      for (const source of wanted) {
-        const cached = getCachedChannelsForSource(source)
-        if (cached) seeded[source] = cached
-      }
+    for (const source of wanted) {
+      const cached = getCachedChannels(source)
+      if (cached) seeded[source] = cached
     }
     const missing = wanted.filter((source) => !seeded[source])
-    setState({ bySource: seeded, loading: missing.length > 0 })
+    setState({ bySource: seeded, loading: missing.length > 0, error: null })
     if (missing.length === 0) return
 
     void (async () => {
       const next = { ...seeded }
+      let failure: string | null = null
+      let done = 0
       for (const source of missing) {
-        const items = await loadChannelsForSource(source, force).catch(() => [] as IndexChannel[])
+        try {
+          next[source] = await loadChannelsShared(source)
+        } catch (err) {
+          // Avbruten laddning (indexändring, spellistbyte) är inget fel att
+          // visa: generationen har redan schemalagt en ny runda.
+          if (!live) return
+          if (isAbort(err)) return
+          next[source] = []
+          failure = err instanceof Error ? err.message : String(err)
+        }
         if (!live) return
-        next[source] = items
+        done += 1
         // Varje källa ritas så fort den landat i stället för att hela
-        // uppsättningen väntar in den långsammaste.
-        setState({ bySource: { ...next }, loading: false })
+        // uppsättningen väntar in den långsammaste — men `loading` släpps
+        // först när alla är inne.
+        setState({ bySource: { ...next }, loading: done < missing.length, error: failure })
       }
     })().catch(() => {})
 
@@ -138,9 +134,13 @@ export function useChannelsBySource(sources: readonly (string | null | undefined
       live = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wantedId, reloadToken])
+  }, [wantedId, generation])
 
   return state
+}
+
+function isAbort(err: unknown): boolean {
+  return err instanceof Error && err.name === 'AbortError'
 }
 
 export interface ListChannelsResult {
@@ -170,6 +170,96 @@ export function useListChannels(lists: readonly LiveTvList[]): ListChannelsResul
     return out
   }, [lists, bySource])
   return { byListId, loading }
+}
+
+export interface ChannelPageResult {
+  /** De `limit` första kanalerna per listid. */
+  byListId: Record<string, IndexChannel[]>
+  /** Hela antalet i indexet per listid — `limit` säger inget om hur mycket som finns. */
+  totalByListId: Record<string, number>
+  loading: boolean
+}
+
+/**
+ * En SIDA kanaler per lista, inte hela utbudet.
+ *
+ * Skrivbordsguiden visar ett par dussin rader och hjältekortet ett enda kort.
+ * Att ladda varje listas fulla innehåll för det — en 17 000-kanalspanel per
+ * lista, i minnet, vid varje montering — är den dyraste sak en vy kan göra i
+ * pluginet. `queryChannels` hämtar i stället precis så många som ritas, och
+ * `total` ur samma svar säger hur mycket som finns kvar bakom.
+ *
+ * `custom`-listor har inget i indexet och svarar med sina inbäddade kanaler.
+ */
+export function useChannelsPage(
+  lists: readonly LiveTvList[],
+  limit: number,
+  offset = 0,
+): ChannelPageResult {
+  const generation = useChannelGeneration()
+  const listsId = lists.map((list) => `${list.id}:${list.kind ?? ''}:${list.source ?? ''}`).join('|')
+  const [state, setState] = useState<ChannelPageResult>(() => ({ byListId: {}, totalByListId: {}, loading: false }))
+
+  useEffect(() => {
+    const indexed = lists.filter((list) => list.kind !== 'custom' && list.source)
+    const embedded: Record<string, IndexChannel[]> = {}
+    const totals: Record<string, number> = {}
+    for (const list of lists) {
+      if (list.kind !== 'custom') continue
+      const channels = (list.channels ?? []) as IndexChannel[]
+      embedded[list.id] = channels.slice(offset, offset + limit)
+      totals[list.id] = channels.length
+    }
+    if (indexed.length === 0) {
+      setState({ byListId: embedded, totalByListId: totals, loading: false })
+      return
+    }
+
+    let live = true
+    const controller = typeof AbortController === 'function' ? new AbortController() : null
+    setState((prev) => ({ ...prev, loading: true }))
+
+    void (async () => {
+      const byListId: Record<string, IndexChannel[]> = { ...embedded }
+      const totalByListId: Record<string, number> = { ...totals }
+      for (const list of indexed) {
+        try {
+          // Hela källan ligger ofta redan varm (modellen laddade den): då är
+          // sidan en skivning, inte ett anrop.
+          const cached = getCachedChannels(list.source as string)
+          if (cached) {
+            byListId[list.id] = cached.slice(offset, offset + limit)
+            totalByListId[list.id] = cached.length
+          } else {
+            await ensureLiveTvBootstrap()
+            if (!live) return
+            const page = await queryChannels({
+              source: list.source as string,
+              offset,
+              limit,
+              signal: controller?.signal,
+            })
+            byListId[list.id] = page.items
+            totalByListId[list.id] = page.total
+          }
+        } catch (err) {
+          if (!live || isAbort(err)) return
+          byListId[list.id] = []
+          totalByListId[list.id] = 0
+        }
+        if (!live) return
+        setState({ byListId: { ...byListId }, totalByListId: { ...totalByListId }, loading: false })
+      }
+    })().catch(() => {})
+
+    return () => {
+      live = false
+      controller?.abort()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listsId, limit, offset, generation])
+
+  return state
 }
 
 /**

@@ -145,6 +145,16 @@ export interface LiveTvModel {
  */
 let bootstrapPromise: Promise<void> | null = null
 
+/**
+ * Migreringen + mottagarsidan, för ANDRA laddare än modellens egen.
+ *
+ * Vyer som frågar indexet sidvis (`queryChannels`) måste gå genom samma grind:
+ * en fråga före migreringen svarar tomt, och den tomheten cachas som sanning.
+ */
+export function ensureLiveTvBootstrap(): Promise<void> {
+  return ensureBootstrap()
+}
+
 function ensureBootstrap(): Promise<void> {
   if (!bootstrapPromise) {
     bootstrapPromise = (async () => {
@@ -162,8 +172,14 @@ function ensureBootstrap(): Promise<void> {
  */
 const epgRefreshRequested = new Set<string>()
 
-function channelsCacheKey(source: string | null): string {
+/** Minnescachens nyckel för en källa. Delas med vy-lokala laddare (`view-helpers.ts`). */
+export function channelsCacheKey(source: string | null): string {
   return `${LIVE_TV_CHANNELS_PREFIX}${source ?? 'all'}`
+}
+
+/** Kanalerna för en källa om de redan ligger varma i minnescachen. */
+export function getCachedChannels(source: string | null): IndexChannel[] | null {
+  return getPluginMemoryCache<IndexChannel[]>(LIVE_TV_PLUGIN_ID, channelsCacheKey(source)) ?? null
 }
 
 /*
@@ -195,7 +211,7 @@ function ensureIndexSubscription(): void {
 }
 
 /** Kastar allt som härletts ur indexet: sidcachen, pågående hämtningar, nyckeluppslagen. */
-function invalidateChannels(): void {
+export function invalidateChannels(): void {
   for (const controller of channelAborts.values()) controller.abort()
   channelAborts.clear()
   channelLoads.clear()
@@ -207,7 +223,7 @@ function invalidateChannels(): void {
  * Kanalerna för en källa. Returnerar minnescachen direkt när den är varm,
  * annars den pågående hämtningen (eller startar den).
  */
-function loadChannelsShared(source: string | null): Promise<IndexChannel[]> {
+export function loadChannelsShared(source: string | null): Promise<IndexChannel[]> {
   const cacheKey = channelsCacheKey(source)
   const cached = getPluginMemoryCache<IndexChannel[]>(LIVE_TV_PLUGIN_ID, cacheKey)
   if (cached) return Promise.resolve(cached)
@@ -229,6 +245,23 @@ function loadChannelsShared(source: string | null): Promise<IndexChannel[]> {
     })
   channelLoads.set(cacheKey, request)
   return request
+}
+
+/**
+ * Väcks när indexet bytt innehåll och `invalidateChannels()` redan kört.
+ *
+ * Vyer med egna laddare (spellisteguiden, skrivbordsguiden, rutnätet) ska INTE
+ * lyssna på `INDEX_CHANGED_EVENT` själva: då kunde de läsa om innan
+ * invalideringen hunnit rensa, och få tillbaka kanalerna importen just ersatt.
+ * Den här prenumerationen ligger efter rensningen, i samma ordning som
+ * modellernas egen.
+ */
+export function subscribeChannelGeneration(listener: () => void): () => void {
+  ensureIndexSubscription()
+  generationListeners.add(listener)
+  return () => {
+    generationListeners.delete(listener)
+  }
 }
 
 export function __resetLiveTvModelForTests(): void {
