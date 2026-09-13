@@ -66,6 +66,11 @@ describe('epgBlockBox', () => {
     expect(epgBlockBox({ start: windowEnd + H, stop: windowEnd + 2 * H }, windowStart, windowEnd)).toBeNull()
     expect(epgBlockBox({ start: -2 * H, stop: -H }, windowStart, windowEnd)).toBeNull()
   })
+
+  it('noll eller negativ varaktighet ger null (dras bort, ritas aldrig)', () => {
+    expect(epgBlockBox({ start: H, stop: H }, windowStart, windowEnd)).toBeNull()
+    expect(epgBlockBox({ start: H, stop: H - M }, windowStart, windowEnd)).toBeNull()
+  })
 })
 
 describe('epgRowBoxes', () => {
@@ -87,6 +92,41 @@ describe('epgRowBoxes', () => {
     const boxes = epgRowBoxes(programmes, windowStart, windowEnd)
     expect(boxes[0].left).toBeLessThan(boxes[1].left)
   })
+
+  it('två program som överlappar 10 min ger inga överlappande boxar (klipper föregåendes högerkant)', () => {
+    const programmes = [
+      { start: H, stop: H + 30 * M }, // 0–30
+      { start: H + 20 * M, stop: H + 50 * M }, // 20–50, 10 min överlapp
+    ]
+    const boxes = epgRowBoxes(programmes, windowStart, windowEnd)
+    expect(boxes).toHaveLength(2)
+    // Första klipps till H–(H+20min) (20 min = 80 px), andra behåller sin fulla (H+20)–(H+50).
+    expect(boxes[0].width).toBeCloseTo(80)
+    expect(boxes[1].left).toBeCloseTo(boxes[0].left + 80)
+    expect(boxes[1].width).toBeCloseTo(120)
+    expect(boxes[1].left).toBeGreaterThanOrEqual(boxes[0].left + boxes[0].width)
+  })
+
+  it('ett program helt inuti ett annat tas bort (inget eget utrymme att rita det i)', () => {
+    const programmes = [
+      { start: H, stop: H + 60 * M }, // 0–60, "ytterprogrammet"
+      { start: H + 10 * M, stop: H + 20 * M }, // 10–20, helt täckt av det förra
+    ]
+    const boxes = epgRowBoxes(programmes, windowStart, windowEnd)
+    expect(boxes).toHaveLength(1)
+    expect(boxes[0].width).toBeCloseTo(240) // hela 60-minutersprogrammet, orört
+  })
+
+  it('noll/negativ varaktighet i en rad tas bort, grannarna påverkas inte', () => {
+    const programmes = [
+      { start: H, stop: H + 30 * M },
+      { start: H + 30 * M, stop: H + 30 * M }, // nollvaraktighet
+      { start: H + 40 * M, stop: H + 20 * M }, // negativ varaktighet
+      { start: H + 50 * M, stop: H + 80 * M },
+    ]
+    const boxes = epgRowBoxes(programmes, windowStart, windowEnd)
+    expect(boxes).toHaveLength(2)
+  })
 })
 
 describe('nowLinePx och hourMarks', () => {
@@ -98,6 +138,13 @@ describe('nowLinePx och hourMarks', () => {
   it('ger en markering per hel timme i fönstret', () => {
     const marks = hourMarks(windowStart, windowStart + 3 * H)
     expect(marks).toEqual([windowStart, windowStart + H, windowStart + 2 * H])
+  })
+
+  it('kontrakt: hourMarks är INTE klockjusterat — ett fönster som inte börjar på hel timme ger markeringar på samma minut som windowStart', () => {
+    const offsetStart = H + 15 * M // t.ex. xx:15
+    const marks = hourMarks(offsetStart, offsetStart + 3 * H)
+    expect(marks).toEqual([offsetStart, offsetStart + H, offsetStart + 2 * H])
+    expect(marks.every((mark) => (mark - offsetStart) % H === 0)).toBe(true)
   })
 })
 

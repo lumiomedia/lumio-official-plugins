@@ -69,19 +69,48 @@ export function epgBlockBox(
 }
 
 /**
- * Geometrin för en hel rad. Garanterar att intervallen aldrig överlappar:
- * nästa blocks `left` är alltid ≥ föregående `left + width` — blocken klipps
- * mot fönstret och programlistan är sorterad (funktionen sorterar
- * defensivt), så det räcker för att stänga skärmdumpens regression.
+ * Slår ihop en programlista med EVENTUELLT ÖVERLAPPANDE tider (riktiga
+ * XMLTV-källor har det) till en icke-överlappande lista, sorterad på start.
+ * Reglerna, i ordning:
+ *  - Noll/negativ varaktighet kastas (samma regel som `epgBlockBox`).
+ *  - Ett program helt täckt av föregående (start ≥ föregåendes start OCH
+ *    slut ≤ föregåendes slut, vilket sorteringen garanterar) kastas — det
+ *    finns inget eget utrymme att rita det i.
+ *  - Ett program som delvis överlappar föregående klipper föregåendes
+ *    HÖGERKANT till sin egen start; det nya programmet behåller sin fulla
+ *    starttid. Klippningen kan i sin tur äta upp föregående helt (två
+ *    program med samma start), så listan filtreras igen på slutet.
+ */
+function resolveOverlaps(
+  programmes: readonly { start: number; stop: number }[],
+): { start: number; stop: number }[] {
+  const sorted = [...programmes].sort((a, b) => a.start - b.start)
+  const kept: { start: number; stop: number }[] = []
+  for (const p of sorted) {
+    if (p.stop <= p.start) continue
+    const prev = kept[kept.length - 1]
+    if (prev) {
+      if (p.stop <= prev.stop) continue // helt täckt av föregående
+      if (p.start < prev.stop) prev.stop = p.start // klipp föregåendes högerkant
+    }
+    kept.push({ start: p.start, stop: p.stop })
+  }
+  return kept.filter((b) => b.stop > b.start)
+}
+
+/**
+ * Geometrin för en hel rad. Garanterar att intervallen aldrig överlappar,
+ * ÄVEN när källdatan gör det: `resolveOverlaps` klipper och kastar innan
+ * blocken klipps mot fönstret, så nästa blocks `left` är alltid
+ * ≥ föregående `left + width` oavsett hur programmen såg ut i källan.
  */
 export function epgRowBoxes(
   programmes: readonly { start: number; stop: number }[],
   windowStart: number,
   windowEnd: number,
 ): EpgBlockBox[] {
-  const sorted = [...programmes].sort((a, b) => a.start - b.start)
   const boxes: EpgBlockBox[] = []
-  for (const programme of sorted) {
+  for (const programme of resolveOverlaps(programmes)) {
     const box = epgBlockBox(programme, windowStart, windowEnd)
     if (box) boxes.push(box)
   }
@@ -93,7 +122,13 @@ export function nowLinePx(nowMs: number, windowStart: number): number {
   return ((nowMs - windowStart) / 60_000) * PX_PER_MIN
 }
 
-/** En timmarkering per hel timme i fönstret. */
+/**
+ * En markering per timme i fönstret: `windowStart`, `windowStart + 1h`, …
+ * så länge de är `< windowEnd`. Kontrakt: detta är INTE klockjusterat — om
+ * `windowStart` inte redan ligger på en hel timme (anroparens ansvar, se
+ * `alignToHour` i `live-tv-epg-page.tsx`) hamnar markeringarna på samma
+ * minut/sekund som `windowStart`, inte på klockslag.
+ */
 export function hourMarks(windowStart: number, windowEnd: number): number[] {
   const marks: number[] = []
   for (let t = windowStart; t < windowEnd; t += 3_600_000) marks.push(t)
