@@ -4,6 +4,7 @@ import type { ComponentType } from 'react'
 import type { TvView, TvViewProps } from './tv-shell'
 import { dp, station, TV } from './tv-ui'
 import { useTvText } from './tv-strings'
+import { TvHub } from './tv-hub'
 
 /** Tillfällig vy tills den riktiga landar (Task 8–15 byter ut en post var). */
 export function TvViewStub({ nav }: TvViewProps) {
@@ -19,7 +20,7 @@ export function TvViewStub({ nav }: TvViewProps) {
 }
 
 export const TV_VIEWS: Record<TvView, ComponentType<TvViewProps>> = {
-  hub: TvViewStub,
+  hub: TvHub,
   guide: TvViewStub,
   favs: TvViewStub,
   channel: TvViewStub,
