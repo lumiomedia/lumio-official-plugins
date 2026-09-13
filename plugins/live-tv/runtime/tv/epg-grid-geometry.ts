@@ -68,10 +68,33 @@ export function epgBlockBox(
   }
 }
 
+/** Det minsta ett program behöver vara för att geometrin ska kunna räkna på det. */
+export interface EpgSpan {
+  start: number
+  stop: number
+}
+
+/**
+ * En box OCH programmet den hör till.
+ *
+ * Paret byggs HÄR och inte hos anroparen. `epgRowBoxes` sorterar, kastar och
+ * klipper, så listan den lämnar ifrån sig är varken lika lång som eller i
+ * samma ordning som den den fick — och två program kan dessutom ha IDENTISK
+ * starttid (riktiga XMLTV-källor har det). En anropare som försöker härleda
+ * "vilket program är det här?" ur `left` eller ur ett index kan alltså sätta
+ * fel titel, fel tid, fel OK-mål och fel påminnelse på ett block. Därför bär
+ * varje box sitt eget program, som samma objektreferens som kom in.
+ */
+export interface EpgRowEntry<P extends EpgSpan = EpgSpan> {
+  box: EpgBlockBox
+  programme: P
+}
+
 /**
  * Slår ihop en programlista med EVENTUELLT ÖVERLAPPANDE tider (riktiga
  * XMLTV-källor har det) till en icke-överlappande lista, sorterad på start.
- * Reglerna, i ordning:
+ * Varje post behåller en referens till SITT program, så parningen aldrig
+ * behöver härledas i efterhand. Reglerna, i ordning:
  *  - Noll/negativ varaktighet kastas (samma regel som `epgBlockBox`).
  *  - Ett program helt täckt av föregående (start ≥ föregåendes start OCH
  *    slut ≤ föregåendes slut, vilket sorteringen garanterar) kastas — det
@@ -81,40 +104,41 @@ export function epgBlockBox(
  *    starttid. Klippningen kan i sin tur äta upp föregående helt (två
  *    program med samma start), så listan filtreras igen på slutet.
  */
-function resolveOverlaps(
-  programmes: readonly { start: number; stop: number }[],
-): { start: number; stop: number }[] {
+function resolveOverlaps<P extends EpgSpan>(
+  programmes: readonly P[],
+): { start: number; stop: number; programme: P }[] {
   const sorted = [...programmes].sort((a, b) => a.start - b.start)
-  const kept: { start: number; stop: number }[] = []
-  for (const p of sorted) {
-    if (p.stop <= p.start) continue
+  const kept: { start: number; stop: number; programme: P }[] = []
+  for (const programme of sorted) {
+    if (programme.stop <= programme.start) continue
     const prev = kept[kept.length - 1]
     if (prev) {
-      if (p.stop <= prev.stop) continue // helt täckt av föregående
-      if (p.start < prev.stop) prev.stop = p.start // klipp föregåendes högerkant
+      if (programme.stop <= prev.stop) continue // helt täckt av föregående
+      if (programme.start < prev.stop) prev.stop = programme.start // klipp föregåendes högerkant
     }
-    kept.push({ start: p.start, stop: p.stop })
+    kept.push({ start: programme.start, stop: programme.stop, programme })
   }
-  return kept.filter((b) => b.stop > b.start)
+  return kept.filter((span) => span.stop > span.start)
 }
 
 /**
- * Geometrin för en hel rad. Garanterar att intervallen aldrig överlappar,
- * ÄVEN när källdatan gör det: `resolveOverlaps` klipper och kastar innan
- * blocken klipps mot fönstret, så nästa blocks `left` är alltid
- * ≥ föregående `left + width` oavsett hur programmen såg ut i källan.
+ * Geometrin för en hel rad, som par av box och program. Garanterar att
+ * intervallen aldrig överlappar, ÄVEN när källdatan gör det:
+ * `resolveOverlaps` klipper och kastar innan blocken klipps mot fönstret, så
+ * nästa boxs `left` är alltid ≥ föregående `left + width` oavsett hur
+ * programmen såg ut i källan.
  */
-export function epgRowBoxes(
-  programmes: readonly { start: number; stop: number }[],
+export function epgRowBoxes<P extends EpgSpan>(
+  programmes: readonly P[],
   windowStart: number,
   windowEnd: number,
-): EpgBlockBox[] {
-  const boxes: EpgBlockBox[] = []
-  for (const programme of resolveOverlaps(programmes)) {
-    const box = epgBlockBox(programme, windowStart, windowEnd)
-    if (box) boxes.push(box)
+): EpgRowEntry<P>[] {
+  const entries: EpgRowEntry<P>[] = []
+  for (const span of resolveOverlaps(programmes)) {
+    const box = epgBlockBox(span, windowStart, windowEnd)
+    if (box) entries.push({ box, programme: span.programme })
   }
-  return boxes
+  return entries
 }
 
 /** Nu-linjens position i px, räknat från fönstrets vänsterkant. */

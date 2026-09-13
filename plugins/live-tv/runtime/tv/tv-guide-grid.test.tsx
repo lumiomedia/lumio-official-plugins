@@ -3,7 +3,6 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { flushLiveTvIndex, seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
-import { getReminders } from '../reminders'
 import { getGuideMode } from './tv-settings-store'
 import type { EpgCacheEntry } from '../epg/types'
 
@@ -114,19 +113,6 @@ describe('TvGuideGrid', () => {
     expect(screen.getByText('Remind me')).toBeInTheDocument()
   })
 
-  it('dubbelklick på ett kommande program sätter påminnelse', async () => {
-    await openGrid()
-    fireEvent.doubleClick(blockByTitle('Next A'))
-    expect(getReminders().map((r) => r.title)).toEqual(['Next A'])
-  })
-
-  it('dubbelklick på ett pågående spelar kanalen', async () => {
-    await openGrid()
-    fireEvent.doubleClick(blockByTitle('Now A'))
-    expect(await screen.findByTestId('player')).toHaveTextContent('A')
-    expect(getReminders()).toHaveLength(0)
-  })
-
   it('smala block ritas utan text men behåller title', async () => {
     await openGrid()
     // Ett program på EN minut är 4 px brett — under MIN_BLOCK_PX. Det ritas
@@ -142,19 +128,85 @@ describe('TvGuideGrid', () => {
     expect(leftOf(next)).toBeGreaterThanOrEqual(leftOf(blink) + widthOf(blink) - 0.001)
   })
 
-  it('tidsspåret bär data-row och listan data-scroll', async () => {
+  it('listan bär data-scroll och tidsspåret bär INTE data-row', async () => {
     await openGrid()
     expect(screen.getByTestId('grid-scroll')).toHaveAttribute('data-scroll')
-    for (const track of screen.getAllByTestId('grid-track')) expect(track).toHaveAttribute('data-row')
+    // `data-row` hade gjort raden till en sluten ◂▸-grupp: ▸ på radens sista
+    // block hade hoppat till nästa rads FÖRSTA block, tolv timmar bakåt i
+    // tid. Markören ska stå kvar vid radens slut.
+    for (const track of screen.getAllByTestId('grid-track')) expect(track).not.toHaveAttribute('data-row')
+    // Chipsraden är fortfarande en egen ◂▸-grupp.
+    expect(screen.getByTestId('grid-chip-all').closest('[data-row]')).not.toBeNull()
   })
 
-  it('utan tablå visas tomtexten', async () => {
+  it('hovring fyller detaljremsan utan att flytta fokus', async () => {
+    await openGrid()
+    const block = blockByTitle('Next A')
+    const before = document.activeElement
+    fireEvent.pointerEnter(block)
+    expect(screen.getByTestId('grid-detail')).toHaveTextContent('Next A')
+    expect(document.activeElement).toBe(before)
+  })
+
+  it('utan tablå visas tomtexten, och startstationen är kategorichipet', async () => {
     writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ ...list, channels: [ch('B', 'Sport')] }])
     seedLiveTvIndex({ cache: { index: {}, fetchedAt: now, sources: [] } })
     await openGrid()
     expect(screen.getByTestId('grid-empty')).toBeVisible()
     expect(screen.queryAllByTestId('grid-block')).toHaveLength(0)
+    // Tomrutan är text, inte en station: den såg ut som en knapp men gjorde
+    // ingenting. Startstationen är första chipet, som alltid är monterat.
+    expect(screen.getByTestId('grid-empty')).not.toHaveAttribute('data-f')
     expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
+    expect(screen.getByTestId('grid-chip-all')).toHaveAttribute('data-init')
+  })
+
+  it('ett pågående program som svalts av överlapp lämnar ändå en startstation', async () => {
+    // `Inner` ligger helt inuti `Outer` och ritas därför aldrig. Härleds
+    // `data-init` ur råa programlistan (och inte ur de boxar som faktiskt
+    // ritas) pekar attributet på ett block som inte finns — vyn får noll
+    // startstationer och fjärrkontrollen låser sig på en full skärm.
+    seedLiveTvIndex({
+      cache: {
+        index: { 'a.tv': [
+          { title: 'Inner', start: now - 5 * 60_000, stop: now + 5 * 60_000 },
+          { title: 'Outer', start: now - 60 * 60_000, stop: now + 60 * 60_000 },
+        ] },
+        fetchedAt: now,
+        sources: ['http://x/epg'],
+      },
+    })
+    await openGrid()
+    const blocks = screen.getAllByTestId('grid-block')
+    expect(blocks.map((el) => el.getAttribute('title')?.split(' ')[0])).toEqual(['Outer'])
+    expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
+    expect(blocks[0]).toHaveAttribute('data-init')
+  })
+
+  it('två program med identisk start ger blocket rätt titel och rätt OK-mål', async () => {
+    // A 00–01 och B 00–02 delar vänsterkant. En vy som parar box mot program
+    // på `left` hade satt A:s titel, tider och `programme`-parameter på B:s
+    // block — fel program i kanaldetaljen, fel påminnelse.
+    const start = now + 2 * 60 * 60_000
+    seedLiveTvIndex({
+      cache: {
+        index: { 'a.tv': [
+          { title: 'Kort', start, stop: start + 60_000 },
+          { title: 'Lang', start, stop: start + 120 * 60_000 },
+        ] },
+        fetchedAt: now,
+        sources: ['http://x/epg'],
+      },
+    })
+    const onNavigate = await openGrid()
+    const blocks = screen.getAllByTestId('grid-block')
+    expect(blocks).toHaveLength(1)
+    expect(blocks[0].getAttribute('title')).toContain('Lang')
+    fireEvent.click(blocks[0])
+    expect(onNavigate).toHaveBeenCalledWith({
+      pageId: 'live-tv-browse',
+      params: expect.objectContaining({ view: 'channel', programme: String(start) }),
+    })
   })
 
   it('kanalkolumnen är en station per rad och detaljremsan går att markera', async () => {

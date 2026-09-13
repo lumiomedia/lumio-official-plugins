@@ -19,11 +19,11 @@ import {
   HOUR_PX,
   PX_PER_MIN,
   ROW_MIN_H_PX,
-  epgBlockBox,
   epgRowBoxes,
   hourMarks,
   nowLinePx,
   type EpgBlockBox,
+  type EpgRowEntry,
 } from './epg-grid-geometry'
 
 /**
@@ -70,41 +70,24 @@ function alignToHour(ms: number): number {
 type Selection = { channel: M3uChannel; programme: EpgProgramme }
 
 /**
- * Parar ihop geometrins boxar med sina program.
- *
- * `epgRowBoxes` tar hand om överlapp — den sorterar, kastar program utan eget
- * utrymme och klipper föregående blocks högerkant — och returnerar DÄRFÖR
- * färre boxar än det kom program in. `programmes[i]` hör alltså inte till
- * `boxes[i]`, och en naiv indexparning hade satt fel titel på fel block så
- * fort en källa har överlappande tider (vilket är precis den datan buggen
- * kom ifrån).
- *
- * Paret hittas på vänsterkanten: `resolveOverlaps` rör aldrig ett programs
- * `start`, bara föregåendes `stop`, så en box `left` är alltid den vänsterkant
- * programmet självt skulle fått. Båda listorna är sorterade på start, så en
- * enda markör genom programlistan räcker.
+ * Hovring med mus fyller detaljremsan, precis som fokus gör med fjärren — men
+ * BARA på en riktig pekare. `@media (hover: hover) and (pointer: fine)` är
+ * samma grind som P2:s hovringsregler i `TvFocusStyle()`; en pekskärm
+ * syntetiserar `pointerenter` vid tryck, och på en TV med fjärr finns ingen
+ * pekare alls. Hovringen flyttar aldrig FOKUS — den skriver bara `selected`,
+ * så fjärrens markör står kvar där användaren lämnade den.
  */
-function rowEntries(
-  programmes: readonly EpgProgramme[],
-  windowStart: number,
-  windowEnd: number,
-): { box: EpgBlockBox; programme: EpgProgramme }[] {
-  const sorted = [...programmes].sort((a, b) => a.start - b.start)
-  const boxes = epgRowBoxes(sorted, windowStart, windowEnd)
-  const entries: { box: EpgBlockBox; programme: EpgProgramme }[] = []
-  let cursor = 0
-  for (const box of boxes) {
-    while (cursor < sorted.length) {
-      const programme = sorted[cursor]
-      cursor += 1
-      const own = epgBlockBox(programme, windowStart, windowEnd)
-      if (own && Math.abs(own.left - box.left) < 0.001) {
-        entries.push({ box, programme })
-        break
-      }
-    }
-  }
-  return entries
+function useFinePointer(): boolean {
+  const [fine, setFine] = useState(false)
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return
+    const query = window.matchMedia('(hover: hover) and (pointer: fine)')
+    setFine(query.matches)
+    const onChange = () => setFine(query.matches)
+    query.addEventListener?.('change', onChange)
+    return () => query.removeEventListener?.('change', onChange)
+  }, [])
+  return fine
 }
 
 export function TvGuideGrid({ model, nav, mode, onModeChange }: TvViewProps & { mode: GuideMode; onModeChange: (mode: GuideMode) => void }) {
@@ -119,12 +102,14 @@ export function TvGuideGrid({ model, nav, mode, onModeChange }: TvViewProps & { 
   const [reminderTick, setReminderTick] = useState(0)
   const scrollRef = useRef<HTMLDivElement | null>(null)
   /**
-   * Fast kanalkolumn utanför en smal yta. `useIsMobileLayout()` är dagens
-   * mått; när P1:s `useNarrowSurface()` finns är DEN villkoret (den läser
-   * värdens `data-tv-scene-narrow` på scenlådan, alltså den MÄTTA bredden).
-   * Villkoret står på EN plats just för att bytet ska bli en rad.
+   * TODO(P1): useNarrowSurface — byt raden nedan mot `useNarrowSurface()` när
+   * P1 landat. Hooken läser värdens `data-tv-scene-narrow` på scenlådan,
+   * alltså den MÄTTA bredden; `useIsMobileLayout()` är dagens mått och samma
+   * villkor skrivbordssidan använde. Villkoret står på EN plats just för att
+   * bytet ska bli en rad.
    */
   const narrow = useIsMobileLayout()
+  const finePointer = useFinePointer()
   const { nowMs } = model
 
   // Idag: från en timme före nu och tolv timmar fram. Imorgon: 06–24.
@@ -192,16 +177,38 @@ export function TvGuideGrid({ model, nav, mode, onModeChange }: TvViewProps & { 
   void reminderTick
 
   /**
+   * Geometrin räknas EN gång per rad och fönster, inte en gång per rendering.
+   *
+   * `epgRowBoxes` sorterar, löser överlapp och klipper varje program mot
+   * fönstret. Anropad inne i `rows.map` hade den körts om vid varje minuttick,
+   * varje fokusflytt och varje påminnelseväxling — för alla rader, inte bara
+   * den som ändrades. Kartan byggs om bara när raderna eller fönstret byts.
+   *
+   * UPPFÖLJNING: raderna är inte fönstrade (80 åt gången, hela fönstrets
+   * bredd ritas). Det är nästa steg om stora paneler känns tröga.
+   */
+  const entriesByChannel = useMemo(() => {
+    const map = new Map<string, EpgRowEntry<EpgProgramme>[]>()
+    for (const row of rows) map.set(channelKey(row.channel), epgRowBoxes(row.programmes, windowStart, windowEnd))
+    return map
+  }, [rows, windowStart, windowEnd])
+
+  /**
    * Precis EN `data-init` i vyn: det pågående programmet i första raden, annars
-   * första kanalkolumnen. Utan rader bär tomläget den (se nedan).
+   * den radens kanalcell. Utan rader bär kategoriraden den (se nedan).
+   *
+   * Kandidaterna hämtas ur radens ENTRIES och inte ur `row.programmes`: ett
+   * pågående program kan ha svalts av överlappslösningen (helt inneslutet i
+   * ett annat), och då pekade `data-init` på ett block som inte ritas — vyn
+   * hade ingen startstation alls och fjärrkontrollen låste sig.
    */
   const initKey = useMemo(() => {
     const first = rows[0]
     if (!first) return null
-    const live = first.programmes.find((programme) => isLive(programme))
-    return { channel: channelKey(first.channel), start: live ? live.start : null }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows, nowMs])
+    const key = channelKey(first.channel)
+    const live = (entriesByChannel.get(key) ?? []).find((entry) => entry.programme.start <= nowMs && entry.programme.stop > nowMs)
+    return { channel: key, start: live ? live.programme.start : null }
+  }, [rows, entriesByChannel, nowMs])
 
   const modeOptions: { key: GuideMode; label: string }[] = [
     { key: 'now', label: tt('modeNow') },
@@ -230,23 +237,34 @@ export function TvGuideGrid({ model, nav, mode, onModeChange }: TvViewProps & { 
       </div>
 
       {/* Kategorichips — samma rad som i standardguiden, `data-row` så motorns
-          ◂▸ stannar i den i stället för att hoppa ner i rutnätet. */}
+          ◂▸ stannar i den i stället för att hoppa ner i rutnätet.
+
+          Utan rader bär FÖRSTA chipet `data-init`. Tomrutan under är ren text
+          och inte en station: den såg ut som en knapp (ram, `cursor:
+          pointer`) men var bara ett fokusmål, och en knapp som inte ser ut att
+          göra något är värre än ingen knapp. Chipsraden är alltid monterad, så
+          startstationen finns i varje läge — det är den invarianten
+          `tv-guide.tsx`:s "montera alltid tomnoden" egentligen skyddar. */}
       <div data-row="" style={{ padding: `0 ${dp(48)}px ${dp(16)}px`, display: 'flex', gap: dp(10), overflowX: 'auto', flexShrink: 0 }}>
-        {groups.map((chip) => (
-          <Chip key={chip.id} active={group === chip.key} title={chip.label} {...station(() => setGroup(chip.key), undefined, { 'data-testid': `grid-chip-${chip.id}` })}>{chip.label}</Chip>
+        {groups.map((chip, index) => (
+          <Chip
+            key={chip.id}
+            active={group === chip.key}
+            title={chip.label}
+            {...station(() => setGroup(chip.key), undefined, {
+              'data-testid': `grid-chip-${chip.id}`,
+              ...(rows.length === 0 && index === 0 ? { 'data-init': '' } : {}),
+            })}
+          >
+            {chip.label}
+          </Chip>
         ))}
       </div>
 
-      {/* Tomläget MONTERAS ALLTID (samma skäl som i `tv-guide.tsx`): under
-          laddningen är det vyns enda station och bär `data-init`; när raderna
-          kommit döljs noden i stället för att avmonteras, så fokusmotorn
-          aldrig står utan startstation en bildruta. */}
       <div
         data-testid="grid-empty"
-        {...(rows.length === 0
-          ? station(() => setGroup(null), undefined, { 'data-init': '' })
-          : { 'aria-hidden': true })}
-        style={{ margin: `0 ${dp(48)}px`, padding: dp(24), color: TV.dim, fontSize: dp(19), borderRadius: dp(12), background: TV.s05, cursor: 'pointer', display: rows.length === 0 ? 'block' : 'none' }}
+        aria-hidden={rows.length > 0 ? true : undefined}
+        style={{ margin: `0 ${dp(48)}px`, padding: dp(24), color: TV.dim, fontSize: dp(19), borderRadius: dp(12), background: TV.s05, display: rows.length === 0 ? 'block' : 'none' }}
       >
         {model.channelsLoading ? tt('loadingChannels') : schedulesLoading ? tt('loadingGuide') : tt('gridEmpty')}
       </div>
@@ -271,9 +289,9 @@ export function TvGuideGrid({ model, nav, mode, onModeChange }: TvViewProps & { 
                   <div style={{ position: 'absolute', top: dp(-22), left: dp(-16), fontSize: dp(13), color: TV.accText, whiteSpace: 'nowrap' }}>{tt('gridNowAt', { time: formatClock(nowMs, locale) })}</div>
                 </div>
               ) : null}
-              {rows.map(({ channel, programmes }) => {
+              {rows.map(({ channel }) => {
                 const key = channelKey(channel)
-                const entries = rowEntries(programmes, windowStart, windowEnd)
+                const entries = entriesByChannel.get(key) ?? []
                 return (
                   <div key={key} style={{ display: 'flex', alignItems: 'stretch', borderBottom: `1px solid ${TV.line}`, minHeight: dp(ROW_MIN_H_PX) }}>
                     <div
@@ -289,9 +307,14 @@ export function TvGuideGrid({ model, nav, mode, onModeChange }: TvViewProps & { 
                       <ChannelArt channel={channel} style={{ width: dp(48), height: dp(30), flexShrink: 0 }} radius={dp(6)} />
                       <div style={{ minWidth: 0, fontSize: dp(15), fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{channel.name}</div>
                     </div>
-                    {/* Tidsspåret: `data-row` håller ◂▸ i raden, blocken är
-                        absolut positionerade så motorns geometri räcker. */}
-                    <div data-row="" data-testid="grid-track" style={{ display: 'flex', position: 'relative', width: gridWidth }}>
+                    {/* Tidsspåret bär MEDVETET inget `data-row`.
+                        `data-row` gör raden till en sluten ◂▸-grupp, och ▸ på
+                        radens SISTA block hade då hoppat vidare till nästa
+                        rads första block — tolv timmar bakåt i tid, en rad ner.
+                        Utan attributet stannar markören vid radens slut, vilket
+                        är vad en tablå ska göra. Listan behåller `data-scroll`
+                        så motorn scrollar fokus i sikte. */}
+                    <div data-testid="grid-track" style={{ display: 'flex', position: 'relative', width: gridWidth }}>
                       {entries.map(({ box, programme }) => (
                           <GridBlock
                             key={programme.start}
@@ -312,13 +335,7 @@ export function TvGuideGrid({ model, nav, mode, onModeChange }: TvViewProps & { 
                             onHold={(element) => nav.channelMenu(channel, element, [
                               { key: 'remind', label: isReminded(channel, programme) ? tt('removeReminder') : tt('remindMe'), run: () => toggle(channel, programme) },
                             ])}
-                            onDoubleAct={() => {
-                              setSelected({ channel, programme })
-                              // Skrivbordets musgenväg (`live-tv-epg-page.tsx:270-283`):
-                              // pågående program spelas, annars växlas påminnelsen.
-                              if (isLive(programme)) nav.play({ channel })
-                              else toggle(channel, programme)
-                            }}
+                            hover={finePointer}
                           />
                       ))}
                     </div>
@@ -392,7 +409,7 @@ export function TvGuideGrid({ model, nav, mode, onModeChange }: TvViewProps & { 
  * Klippta kanter (`clippedStart`/`clippedEnd`) skrivs som "…" i stället för en
  * falsk start- eller sluttid: programmet fortsätter utanför fönstret.
  */
-function GridBlock({ box, programme, locale, live, init, selected, reminded, remindLabel, onSelect, onOk, onHold, onDoubleAct }: {
+function GridBlock({ box, programme, locale, live, init, selected, reminded, remindLabel, hover, onSelect, onOk, onHold }: {
   box: EpgBlockBox
   programme: EpgProgramme
   locale: string
@@ -401,10 +418,11 @@ function GridBlock({ box, programme, locale, live, init, selected, reminded, rem
   selected: boolean
   reminded: boolean
   remindLabel: string
+  /** Sant bara på en riktig pekare — se `useFinePointer`. */
+  hover: boolean
   onSelect: () => void
   onOk: () => void
   onHold: (element: HTMLElement) => void
-  onDoubleAct: () => void
 }) {
   const times = `${box.clippedStart ? '…' : formatClock(programme.start, locale)}–${box.clippedEnd ? '…' : formatClock(programme.stop, locale)}`
   const tip = `${programme.title} ${times}${reminded ? ` · ${remindLabel}` : ''}`
@@ -415,7 +433,10 @@ function GridBlock({ box, programme, locale, live, init, selected, reminded, rem
       title={tip}
       {...station(onOk, onHold, { ...(init ? { 'data-init': '' } : {}) })}
       onFocus={onSelect}
-      onDoubleClick={onDoubleAct}
+      // Musen ska fylla detaljremsan utan att klicka, precis som fjärrens
+      // fokus gör. FOKUS flyttas inte — markören står kvar där fjärren
+      // lämnade den. Grinden sitter i `useFinePointer`, inte här.
+      onPointerEnter={hover ? onSelect : undefined}
       style={{
         position: 'absolute',
         left: box.left,
