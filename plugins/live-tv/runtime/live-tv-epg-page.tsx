@@ -39,6 +39,16 @@ const ROW_MIN_H = 56
  */
 const MAX_ROWS = 80
 const EPG_ROWS_STEP = 80
+/**
+ * Hur många kanaler som frågas efter per synlig rad.
+ *
+ * Tablån bor i appen sedan lagring v2, så raderna kostar ett fönsteranrop och
+ * inte en cachesökning: hela spellistan (17 000 nycklar) hade blivit 85 anrop
+ * för 80 rader. Överskottet finns för att kanaler UTAN tablå faller bort i
+ * `selectEpgRows` — tre kandidater per rad räcker i praktiken, och "Visa fler"
+ * hämtar nästa svep när det inte gör det.
+ */
+const CANDIDATE_FACTOR = 3
 
 interface Props {
   onNavigate: BrowsePageProps['onNavigate']
@@ -117,15 +127,23 @@ export function LiveTvEpgPage({ onNavigate }: Props) {
    * bort i selectEpgRows), men inte om hela spellistan — 17 000 nycklar vore
    * 85 anrop för 80 synliga rader.
    */
-  const candidates = useMemo(
-    () => ordered.filter((channel) => !group || channel.group === group).slice(0, visibleRows * 3),
-    [ordered, group, visibleRows],
+  const eligible = useMemo(
+    () => ordered.filter((channel) => !group || channel.group === group),
+    [ordered, group],
   )
-  const { schedules } = useSchedules(candidates, windowStart, windowEnd)
-  const { rows, hasMore } = useMemo(
+  const candidates = useMemo(() => eligible.slice(0, visibleRows * CANDIDATE_FACTOR), [eligible, visibleRows])
+  const { schedules, loading: schedulesLoading } = useSchedules(candidates, windowStart, windowEnd)
+  const { rows, hasMore: moreAmongCandidates } = useMemo(
     () => selectEpgRows(candidates, (channel) => schedules[channelKey(channel)] ?? [], group, visibleRows),
     [candidates, schedules, group, visibleRows],
   )
+  /**
+   * "Visa fler" måste finnas kvar även när KANDIDATERNA tog slut men
+   * spellistan inte gjorde det: `selectEpgRows` vet bara om det urval den
+   * fick, och skulle annars påstå "alla kanaler med tablå visas" fast
+   * överskottsfönstret kapade listan långt före spellistans slut.
+   */
+  const hasMore = moreAmongCandidates || candidates.length < eligible.length
 
   const scrollToNow = () => {
     const el = scrollRef.current
@@ -201,7 +219,11 @@ export function LiveTvEpgPage({ onNavigate }: Props) {
       ) : null}
 
       {rows.length === 0 ? (
-        <div style={{ ...surfaceCard, padding: 20, fontSize: 14, color: LT.muted }}>{h('epgEmpty')}</div>
+        <div style={{ ...surfaceCard, padding: 20, fontSize: 14, color: LT.muted }}>
+          {/* Tablån hämtas från appen: tomt betyder "hämtar" tills svaret
+              kommit, och först därefter "ingen tablå för de här kanalerna". */}
+          {model.channelsLoading ? h('hubLoadingChannels') : schedulesLoading ? h('hubLoadingEpg') : h('epgEmpty')}
+        </div>
       ) : (
         <div ref={scrollRef} {...(isTv ? { 'data-scroll': '' } : {})} className="overflow-x-auto [scrollbar-width:thin]" style={{ position: 'relative' }}>
           <div style={{ minWidth: channelCol + gridWidth, position: 'relative' }}>

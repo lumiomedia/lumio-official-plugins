@@ -86,7 +86,7 @@ describe('TvSettingsView', () => {
     expect(screen.getByText('No locked channels')).toBeInTheDocument()
   })
   it('Föräldrakontroll: Unlock går via PinGate när PIN finns, kanalen förblir låst tills grinden godkänns', () => {
-    const key = channelKey(list.channels[0])
+    const key = channelKey((list.channels ?? [])[0])
     writePluginJson(LIVE_TV_PLUGIN_ID, 'locked_channels_v1', [key])
     mount('parental')
     fireEvent.click(screen.getByText('A'))

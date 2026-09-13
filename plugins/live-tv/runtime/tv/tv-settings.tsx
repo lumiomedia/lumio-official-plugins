@@ -226,7 +226,7 @@ function PlaylistsTab({ lists, tt, locale, toast }: { lists: LiveTvList[]; tt: T
       {lists.map((list) => (
         <Row
           key={list.id}
-          label={<><strong>{list.name}</strong> <span style={{ color: 'rgba(243,244,248,0.5)', fontSize: dp(16) }}>· {tt('channelsCount', { count: list.channels.length })}{list.fetchedAt ? ` · ${tt('fetchedAt', { time: new Date(list.fetchedAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) })}` : ''}</span></>}
+          label={<><strong>{list.name}</strong> <span style={{ color: 'rgba(243,244,248,0.5)', fontSize: dp(16) }}>· {tt('channelsCount', { count: list.channelCount ?? list.channels?.length ?? 0 })}{list.fetchedAt ? ` · ${tt('fetchedAt', { time: new Date(list.fetchedAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) })}` : ''}</span></>}
           right={tt('remove')}
           onOk={() => removeListAndSourceUrl(list)}
         />

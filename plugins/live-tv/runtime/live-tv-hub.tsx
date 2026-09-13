@@ -7,7 +7,8 @@ import { getTvGlassMenu, getTvKeyboardPanel, requestBrowseBack, tvHoldHandlers, 
 import { channelKey, type M3uChannel } from './live-tv-data'
 import { startOfLocalDay, useLiveTvModel } from './live-tv-model'
 import { useHubText } from './hub-strings'
-import { catchUpAcross, channelSupportsCatchUp, expiresLabel, type CatchUpItem } from './catch-up'
+import { catchUpAcross, expiresLabel, type CatchUpItem } from './catch-up'
+import { pickReplayChannels } from './view-helpers'
 import { topGroupsFromHistory, removeChannelHistoryEntry } from './channel-history'
 import {
   Btn,
@@ -42,7 +43,6 @@ export { flattenChannels, topGroups } from './live-tv-model'
 const MAX_FAVORITES = 12
 /** Repriser: hur långt bakåt tablån hämtas, och hur många arkivkanaler som frågas åt gången. */
 const REPLAY_DAYS = 3
-const MAX_REPLAY_CHANNELS = 200
 const MAX_RECOMMENDED = 12
 /**
  * Hur många kanaler "Alla kanaler" ritar från början, och hur många varje
@@ -172,12 +172,19 @@ export function LiveTvHub({ onNavigate }: Props) {
     [pinnedKeys, byKey, effectiveGroup],
   )
   /**
-   * Repriser: tablån bor i appen sedan lagring v2, så bara de kanaler som
-   * FAKTISKT har ett arkiv (Xtream tv_archive) hämtas — och bara bakåt i
-   * arkivfönstret. Utan filtret hade hela spellistan frågats efter tre dygns
-   * tablå för att hitta en handfull repriser.
+   * Repriser: favoriter och nyss sedda kanaler med arkiv (Xtream tv_archive),
+   * inte hela spellistan. Tablån bor i appen sedan lagring v2, så varje kanal
+   * i urvalet blir en nyckel i ett fönsteranrop — 200 kanaler × 3 dygn vid
+   * varje montering, för ett band med tolv kort, var den dyraste frågan här.
    */
-  const replayChannels = useMemo(() => channels.filter(channelSupportsCatchUp).slice(0, MAX_REPLAY_CHANNELS), [channels])
+  const historyChannels = useMemo(
+    () =>
+      history
+        .map((entry) => byKey.get(entry.key))
+        .filter((channel): channel is M3uChannel => Boolean(channel)),
+    [history, byKey],
+  )
+  const replayChannels = useMemo(() => pickReplayChannels(favorites, historyChannels), [favorites, historyChannels])
   const replayWindow = useMemo(() => {
     const to = startOfLocalDay(nowMs, 1)
     return { from: to - REPLAY_DAYS * 86_400_000, to }

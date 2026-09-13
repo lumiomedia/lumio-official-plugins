@@ -93,7 +93,7 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
    * modellens nu-snapshot och frågar inte efter något.
    */
   const timelineChannels = useMemo(() => (mode === 'tl' ? visibleRows : []), [mode, visibleRows])
-  const { schedules: timelineSchedules } = useSchedules(timelineChannels, win.start, win.end)
+  const { schedules: timelineSchedules, loading: timelineLoading } = useSchedules(timelineChannels, win.start, win.end)
 
   const info = selected ? model.nowFor(selected) : { now: null, next: null, later: null }
   const previewOn = settings.previewEnabled
@@ -186,7 +186,7 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
             {...station(() => setGroup(null), undefined, { 'data-init': '' })}
             style={{ padding: dp(24), color: TV.dim, fontSize: dp(19), cursor: 'pointer', borderRadius: dp(12) }}
           >
-            {tt('guideEmpty')}
+            {model.channelsLoading ? tt('loadingChannels') : tt('guideEmpty')}
           </div>
         ) : null}
         {visibleRows.map((channel, index) => {
@@ -216,7 +216,11 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
           // synliga listan i ett anrop (`useSchedules`). Tidigare filtrerades
           // kanalens hela tablå mot fönstret vid varje anrop, två gånger per
           // rad — med 40 rader blev det 80 genomsökningar vid varje minuttick.
-          const timeline = mode === 'tl' ? timelineSchedules[key] ?? [] : null
+          // `undefined` = raden har inte fått svar ännu (visa "Hämtar tablå…"),
+          // tom lista = appen svarade att kanalen saknar program i fönstret.
+          // Utan den skillnaden blinkade varje rad förbi "Ingen
+          // programinformation" innan tablån landade.
+          const timeline = mode === 'tl' ? timelineSchedules[key] ?? null : null
           return (
             <div key={key} style={{ height: dp(86), borderBottom: `1px solid rgba(255,255,255,0.07)`, display: 'flex', alignItems: 'center', gap: dp(16) }}>
               <div
@@ -254,7 +258,7 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
                       </div>
                     )
                   })}
-                  {timeline !== null && timeline.length === 0 ? <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', paddingLeft: dp(16), color: TV.dim, fontSize: dp(18) }}>{tt('noProgramme')}</div> : null}
+                  {(timeline?.length ?? 0) === 0 ? <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', paddingLeft: dp(16), color: TV.dim, fontSize: dp(18) }}>{timeline === null && timelineLoading ? tt('loadingGuide') : tt('noProgramme')}</div> : null}
                   <div style={{ position: 'absolute', top: 0, bottom: 0, left: `${nowLeftPct}%`, width: 2, background: TV.acc, boxShadow: `0 0 12px ${TV.accMix(60)}`, pointerEvents: 'none' }} />
                 </div>
               )}

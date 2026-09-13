@@ -12,6 +12,7 @@ import {
   type LiveTvList,
   type M3uChannel,
 } from './live-tv-data'
+import { useListChannels } from './view-helpers'
 
 interface FocusedTarget {
   list: LiveTvList
@@ -30,12 +31,6 @@ function isPlayableChannel(channel: M3uChannel): boolean {
   // and have no real stream. Filter them out so the hero focuses something useful.
   if (PLACEHOLDER_NAME_RE.test(trimmedName) && !channel.tvgId) return false
   return true
-}
-
-function preferredChannels(lists: LiveTvList[]): Array<{ list: LiveTvList; channels: M3uChannel[] }> {
-  return lists
-    .map((list) => ({ list, channels: (list.channels ?? []).filter(isPlayableChannel) }))
-    .filter((entry) => entry.channels.length > 0)
 }
 
 export function LiveTvHomeOverride(_props: HomeOverrideProps) {
@@ -59,11 +54,25 @@ export function LiveTvHomeOverride(_props: HomeOverrideProps) {
     return onLiveTvListsChanged(sync)
   }, [])
 
+  /**
+   * Kanalerna kommer ur appens index, per lista (lagring v2).
+   *
+   * Här stod `preferredChannels(lists)`, som läste listornas INBÄDDADE
+   * `channels`. Migreringen tömmer det fältet, så hjältekortet hade blivit
+   * osynligt på varje enhet som kört v2 — vyn såg ut att sakna kanaler fast
+   * indexet var fullt. Kopplingen kanal → lista är exakt: varje kanal kommer
+   * ur uppslaget för SIN listas källa, inte ur en gissning i modellen.
+   */
+  const { byListId } = useListChannels(lists)
   const flat = useMemo(() => {
-    const entries = preferredChannels(lists)
-    if (entries.length === 0) return [] as Array<{ list: LiveTvList; channel: M3uChannel }>
-    return entries.flatMap((entry) => entry.channels.map((channel) => ({ list: entry.list, channel })))
-  }, [lists])
+    const out: Array<{ list: LiveTvList; channel: M3uChannel }> = []
+    for (const list of lists) {
+      for (const channel of byListId[list.id] ?? []) {
+        if (isPlayableChannel(channel)) out.push({ list, channel })
+      }
+    }
+    return out
+  }, [lists, byListId])
 
   const focused: FocusedTarget | null = useMemo(() => {
     if (flat.length === 0) return null

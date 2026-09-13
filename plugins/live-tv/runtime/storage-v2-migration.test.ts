@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as sdk from '@/lib/plugin-sdk'
-import { __resetForTests, writePluginJson } from '@/lib/plugin-sdk'
-import { LIVE_TV_PLUGIN_ID, getLiveTvLists, type LiveTvList } from './live-tv-data'
+import { __resetForTests, readPluginJson, writePluginJson } from '@/lib/plugin-sdk'
+import { LIVE_TV_CHANNELS_PREFIX, LIVE_TV_PLUGIN_ID, getLiveTvLists, type LiveTvList } from './live-tv-data'
 import { migrateStorageV2, isStorageV2Migrated } from './storage-v2-migration'
 import * as indexClient from './index-client'
 
@@ -37,6 +37,11 @@ describe('migrateStorageV2', () => {
     const listA = rawList({ id: 'a', name: 'A', kind: 'm3u', source: 'http://a.tld/list.m3u', url: 'http://a.tld/list.m3u', channels: [ch('One', 'Sport'), ch('Two', 'Sport')] })
     const listB = rawList({ id: 'b', name: 'B', kind: 'xtream', source: 'xtream://b.tld/login1', xtreamLoginId: 'login1', channels: [ch('Three', 'News')] })
     writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [listA, listB])
+    // Den gamla kanalcachen i pluginlagringen — det är DEN migreringen ska
+    // lämna tom. Att bara kontrollera att funktionen anropades hade missat en
+    // rensning som inte rensar.
+    writePluginJson(LIVE_TV_PLUGIN_ID, `${LIVE_TV_CHANNELS_PREFIX}http://a.tld/list.m3u`, [ch('One', 'Sport')])
+    writePluginJson(LIVE_TV_PLUGIN_ID, `${LIVE_TV_CHANNELS_PREFIX}xtream://b.tld/login1`, [ch('Three', 'News')])
 
     const result = await migrateStorageV2()
 
@@ -67,6 +72,11 @@ describe('migrateStorageV2', () => {
     expect(b?.channelCount).toBe(1)
 
     expect(removeSpy).toHaveBeenCalledWith(LIVE_TV_PLUGIN_ID, 'channels:')
+    // …och nycklarna är FAKTISKT borta ur lagringen.
+    expect(readPluginJson(LIVE_TV_PLUGIN_ID, `${LIVE_TV_CHANNELS_PREFIX}http://a.tld/list.m3u`, null)).toBeNull()
+    expect(readPluginJson(LIVE_TV_PLUGIN_ID, `${LIVE_TV_CHANNELS_PREFIX}xtream://b.tld/login1`, null)).toBeNull()
+    // Annat i lagringen rörs inte.
+    expect(getLiveTvLists()).toHaveLength(2)
     expect(isStorageV2Migrated()).toBe(true)
   })
 

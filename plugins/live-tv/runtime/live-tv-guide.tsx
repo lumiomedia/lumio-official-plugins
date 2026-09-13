@@ -3,14 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { onTvFocusEdge, useLang, useTvMode } from '@/lib/plugin-sdk'
 import { LiveTvLogoImage } from './live-tv-logo-image'
-import { useLiveTvEpgCache } from './hooks/useLiveTvEpgCache'
+import { useSchedules } from './hooks/useSchedules'
 import { useHubText } from './hub-strings'
-import { buildNameToTvgIdIndex, resolveTvgId } from './epg/name-match'
+import { useListChannels } from './view-helpers'
 import {
+  channelKey,
   getAllLiveTvEpgUrls,
   getLiveTvLists,
   getLiveTvLogoSrc,
-  LIVE_TV_GLOBAL_EPG_ID,
   onLiveTvListsChanged,
   type LiveTvList,
   type M3uChannel,
@@ -30,6 +30,15 @@ const HEAD_HEIGHT = 32
 const CHANNEL_COL_WIDTH = 220
 const WINDOW_HOURS_BEFORE = 1
 const WINDOW_HOURS_TOTAL = 12
+/**
+ * Hur många kanaler guiden frågar appen om tablå för.
+ *
+ * Tablån bor i appen sedan lagring v2 och hämtas per FÖNSTER: en panel med
+ * 17 000 kanaler hade blivit 85 anrop för en vy som visar ett par dussin
+ * rader åt gången. Kanaler utan tablå faller ändå bort, så överskottet räcker
+ * långt — och listväljaren uppe till vänster är vägen till resten.
+ */
+const MAX_GUIDE_CHANNELS = 400
 // Imorgon-fliken visar hela dygnet från midnatt (lokal tid).
 const TOMORROW_WINDOW_HOURS = 24
 
@@ -136,8 +145,6 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
 
   const epgUrls = useMemo(() => getAllLiveTvEpgUrls(lists), [lists])
 
-  const cache = useLiveTvEpgCache(epgUrls.length > 0 ? LIVE_TV_GLOBAL_EPG_ID : null, epgUrls)
-
   const windowStart = useMemo(
     () =>
       dayOffset === 1
@@ -153,35 +160,46 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
     return slots
   }, [windowStart, windowEnd])
 
-  const nameIndex = useMemo(
-    () => (cache ? buildNameToTvgIdIndex(cache) : new Map<string, string>()),
-    [cache],
-  )
+  /**
+   * Kanalerna kommer ur appens index, per lista (lagring v2).
+   *
+   * Guiden läste tidigare listornas INBÄDDADE `channels` och hämtade dessutom
+   * XMLTV:t själv (`useLiveTvEpgCache`) — den sista vyn i pluginet som laddade
+   * ner en tablå till webviewn. Efter migreringen är `channels` tomt, så
+   * guiden hade visat noll rader medan den fortsatte ladda ner megabyte XML i
+   * bakgrunden. Nu kommer både kanaler och tablå från appen.
+   */
+  const sourceLists = useMemo(() => (activeList ? [activeList] : lists), [activeList, lists])
+  const { byListId, loading: channelsLoading } = useListChannels(sourceLists)
 
-  const allRows = useMemo<ChannelRow[]>(() => {
-    const sourceRows: Array<{ channel: M3uChannel; list: LiveTvList }> = []
+  const sourceRows = useMemo(() => {
+    const out: Array<{ channel: M3uChannel; list: LiveTvList }> = []
     const seen = new Set<string>()
-    const sourceLists = activeList ? [activeList] : lists
     for (const list of sourceLists) {
-      for (const channel of list.channels ?? []) {
-        const key = `${channel.name}::${channel.url}`
+      for (const channel of byListId[list.id] ?? []) {
+        const key = channelKey(channel)
         if (seen.has(key)) continue
         seen.add(key)
-        sourceRows.push({ channel, list })
+        out.push({ channel, list })
+        if (out.length >= MAX_GUIDE_CHANNELS) return out
       }
     }
+    return out
+  }, [sourceLists, byListId])
 
+  const guideChannels = useMemo(() => sourceRows.map((entry) => entry.channel), [sourceRows])
+  const { schedules, loading: schedulesLoading } = useSchedules(guideChannels, windowStart, windowEnd)
+
+  const allRows = useMemo<ChannelRow[]>(() => {
     const out: ChannelRow[] = []
     for (const { channel, list } of sourceRows) {
-      const tvgId = resolveTvgId(channel.tvgId, channel.name, nameIndex)
-      if (!tvgId) continue
-      const programmes = cache?.index[tvgId] ?? []
+      const programmes = schedules[channelKey(channel)] ?? []
       const sliced = programmes.filter((p) => p.stop > windowStart && p.start < windowEnd)
       if (sliced.length === 0) continue
       out.push({ channel, list, programmes: sliced })
     }
     return out
-  }, [activeList, lists, cache, nameIndex, windowStart, windowEnd])
+  }, [sourceRows, schedules, windowStart, windowEnd])
 
   const rows = useMemo<ChannelRow[]>(() => {
     if (!channelFilter) return allRows
@@ -195,28 +213,15 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
     }
   }, [allRows, channelFilter])
 
-  const guideStats = useMemo(() => {
-    const sourceLists = activeList ? [activeList] : lists
-    const sourceChannels = new Map<string, M3uChannel>()
-    for (const list of sourceLists) {
-      for (const channel of list.channels ?? []) {
-        sourceChannels.set(`${channel.name}::${channel.url}`, channel)
-      }
-    }
-    let matched = 0
-    let totalProgrammes = 0
-    for (const channel of sourceChannels.values()) {
-      const tvgId = resolveTvgId(channel.tvgId, channel.name, nameIndex)
-      if (!tvgId) continue
-      matched += 1
-      totalProgrammes += cache?.index[tvgId]?.length ?? 0
-    }
-    return {
-      matched,
-      totalProgrammes,
-      sourceChannels: Object.keys(cache?.index ?? {}).length,
-    }
-  }, [activeList, lists, cache, nameIndex])
+  /**
+   * Räknarna bakom tomtexten: hur många kanaler guiden FRÅGADE om, och hur
+   * många appen hade en tablå för. Skillnaden är svaret på "varför är den
+   * tom?" — och den enda som den som tittar kan göra något åt.
+   */
+  const guideStats = useMemo(() => ({
+    asked: sourceRows.length,
+    matched: allRows.length,
+  }), [sourceRows.length, allRows.length])
 
   // Scroll timeline so "now" sits ~15% from the left when (re)opened.
   useEffect(() => {
@@ -272,26 +277,25 @@ export function LiveTvGuide({ open, onClose, onPlayChannel }: Props) {
 
   const nowLineLeft = (Date.now() - windowStart) * PIXELS_PER_MS
   const timelineWidth = (windowEnd - windowStart) * PIXELS_PER_MS
-  const hasSources = epgUrls.length > 0
-  const failures = cache?.failures ?? []
+  /*
+   * Tomtexten i ordning: inga listor → inget hämtat än → inga kanaler i
+   * indexet → ingen EPG-källa → kanaler utan tablå → tablå men inget i
+   * fönstret. "Hämtar" ligger FÖRE alla "tomt"-varianter: annars läste man
+   * en normal laddning som ett fel.
+   */
   const emptyMessage = lists.length === 0
     ? t('liveTvGuideNoLists')
-    : !hasSources
-      ? t('liveTvGuideNoEpgSource')
-      : !cache
-        ? t('liveTvGuideLoading')
-        : failures.length > 0 && guideStats.sourceChannels === 0
-          ? t('liveTvGuideFetchFailed').replace(
-              '{errors}',
-              failures.map((failure) => failure.error).join(', '),
-            )
-          : guideStats.sourceChannels === 0
-            ? t('liveTvGuideNoProgrammes')
-            : guideStats.matched === 0
-              ? t('liveTvGuideNoMatches').replace('{channels}', String(guideStats.sourceChannels))
-              : t('liveTvGuideNoProgrammesInWindow')
-                  .replace('{channels}', String(guideStats.sourceChannels))
-                  .replace('{matched}', String(guideStats.matched))
+    : channelsLoading || schedulesLoading
+      ? t('liveTvGuideLoading')
+      : guideStats.asked === 0
+        ? h('hubEmptyBody')
+        : guideStats.matched === 0
+          ? (epgUrls.length === 0
+              ? t('liveTvGuideNoEpgSource')
+              : t('liveTvGuideNoMatches').replace('{channels}', String(guideStats.asked)))
+          : t('liveTvGuideNoProgrammesInWindow')
+              .replace('{channels}', String(guideStats.asked))
+              .replace('{matched}', String(guideStats.matched))
 
   return (
     <div

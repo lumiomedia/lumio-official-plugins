@@ -83,7 +83,7 @@ export function LiveTvChannelPage({ params, onNavigate }: Props) {
   const scheduleFrom = archiveDays > 0 ? startOfLocalDay(nowMs) - archiveDays * 86_400_000 : startOfLocalDay(nowMs)
   const scheduleTo = startOfLocalDay(nowMs, 1)
   const scheduleChannels = useMemo(() => (channel ? [channel] : []), [channel])
-  const { schedules } = useSchedules(scheduleChannels, scheduleFrom, scheduleTo)
+  const { schedules, loading: scheduleLoading } = useSchedules(scheduleChannels, scheduleFrom, scheduleTo)
   const schedule = channel ? schedules[channelKey(channel)] ?? [] : []
   const today = useMemo(
     () => sliceSchedule(schedule, startOfLocalDay(nowMs), startOfLocalDay(nowMs, 1)),
@@ -169,7 +169,7 @@ export function LiveTvChannelPage({ params, onNavigate }: Props) {
                 <Icon.Heart filled={pinned} />
               </Btn>
             </div>
-            <div style={{ fontSize: 17, fontWeight: 500 }}>{info.now?.title ?? h('hubNoProgramme')}</div>
+            <div style={{ fontSize: 17, fontWeight: 500 }}>{info.now?.title ?? (model.epgLoading ? h('hubLoadingEpg') : h('hubNoProgramme'))}</div>
             {info.now?.description ? (
               <p style={{ margin: 0, fontSize: 13, color: LT.muted, maxWidth: '60ch' }}>{info.now.description}</p>
             ) : null}
@@ -232,7 +232,7 @@ export function LiveTvChannelPage({ params, onNavigate }: Props) {
           <section>
             <h3 style={{ fontSize: 16, margin: '0 0 10px', fontWeight: 600 }}>{h('today')}</h3>
             {today.length === 0 ? (
-              <div style={{ ...surfaceCard, padding: 14, fontSize: 13, color: LT.muted }}>{h('hubNoProgramme')}</div>
+              <div style={{ ...surfaceCard, padding: 14, fontSize: 13, color: LT.muted }}>{scheduleLoading ? h('hubLoadingEpg') : h('hubNoProgramme')}</div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 1, background: LT.line, borderRadius: LT.radiusMd, overflow: 'hidden' }}>
                 {today.map((programme) => {
@@ -270,7 +270,7 @@ export function LiveTvChannelPage({ params, onNavigate }: Props) {
             <section>
               <h3 style={{ fontSize: 16, margin: '0 0 10px', fontWeight: 600 }}>{h('replays')}</h3>
               {replays.length === 0 ? (
-                <div style={{ ...surfaceCard, padding: 14, fontSize: 13, color: LT.muted }}>{h('hubNoProgramme')}</div>
+                <div style={{ ...surfaceCard, padding: 14, fontSize: 13, color: LT.muted }}>{scheduleLoading ? h('hubLoadingEpg') : h('hubNoProgramme')}</div>
               ) : (
                 <ScrollRow>
                   {replays.map((item) => {

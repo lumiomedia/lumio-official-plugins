@@ -79,14 +79,14 @@ export const INDEX_CHANGED_EVENT = 'lumio-live-tv-index-changed'; export functio
 - `catch-up.ts`: `catchUpForChannel(channel, schedules: EpgProgramme[], nowMs)` och `catchUpAcross(channels, schedulesByKey, nowMs)` tar färdiga scheman; hubben hämtar dem med `useSchedules(favourites + recent, now−3d, now)`.
 - Reminders-schemaläggaren (`live-tv-reminders-mount.tsx`) oförändrad (den håller egna tider).
 
-- [ ] Tester: modellen med mockad klient — laddar sidor till cache, `channelsLoading` växlar, `nowFor` läser snapshot, spellistbyte laddar om, `favouriteChannels` löser nycklar utanför aktiv källa via `lookup`, `useSchedules` chunkar och cachar, `useProgrammeSearch` debouncar. Befintliga tester som mockar `useLiveTvEpgCache` skrivs om till att mocka `index-client`.
-- [ ] Implementera; hela sviten grön; commit `live-tv: modellen läser kanaler ur indexet och EPG ur Rust`.
+- [x] Tester: modellen med mockad klient — laddar sidor till cache, `channelsLoading` växlar, `nowFor` läser snapshot, spellistbyte laddar om, `favouriteChannels` löser nycklar utanför aktiv källa via `lookup`, `useSchedules` chunkar och cachar, `useProgrammeSearch` debouncar. Befintliga tester som mockar `useLiveTvEpgCache` skrivs om till att mocka `index-client`.
+- [x] Implementera; hela sviten grön; commit `live-tv: modellen läser kanaler ur indexet och EPG ur Rust`.
 
 ### Task P4: Vyer på hooks
 
 **Files:** Modify `runtime/tv/tv-guide.tsx` (tablå: `useSchedules(visibleRows, win.start, win.end)`), `tv-guide-playlists.tsx` (Sen/Senare via `nowFor` – oförändrat; tablåkort ej), `tv-channel.tsx` (`useSchedules([channel], dayStart−1d, dayStart+1d)`), `tv-search.tsx` (`useProgrammeSearch`), `tv-hub.tsx` (repriser via `useSchedules`), desktop `live-tv-epg-page.tsx`, `live-tv-channel-page.tsx`, `live-tv-guide.tsx` (samma byte), `tv-search-logic.ts` (`searchProgrammes` tar färdiga scheman eller tas bort). Tests uppdateras.
 
-- [ ] Kör hela sviten efter varje fil; commit `live-tv: vyerna hämtar tablåer per fönster i stället för att räkna på hela EPG:t`.
+- [x] Kör hela sviten efter varje fil; commit `live-tv: vyerna hämtar tablåer per fönster och kanaler ur indexet`.
 
 ### Task P5: Inställningar och import-UX
 

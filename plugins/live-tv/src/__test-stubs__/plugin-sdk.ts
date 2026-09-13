@@ -149,7 +149,21 @@ export function setPluginMemoryCache<T>(pluginId: string, key: string, value: T)
 export function getPluginMemoryCache<T>(pluginId: string, key: string): T | undefined {
   return pluginMemoryCache.get(pluginMemoryCacheKey(pluginId, key)) as T | undefined
 }
-export function removePluginStorageByPrefix(_pluginId: string, _prefix: string, _opts?: { emitChange?: boolean }): void {}
+/**
+ * Raderar på riktigt, precis som värden gör.
+ *
+ * Var en no-op, vilket gjorde `storage-v2-migration`-testet blint: det kunde
+ * bara kontrollera ATT funktionen anropades, inte att `channels:`-nycklarna
+ * faktiskt försvann — själva poängen med migreringen.
+ */
+export function removePluginStorageByPrefix(pluginId: string, prefix: string, opts?: { emitChange?: boolean }): void {
+  const full = key(pluginId, prefix)
+  for (const stored of [...memory.keys()]) {
+    if (!stored.startsWith(full)) continue
+    memory.delete(stored)
+    if (opts?.emitChange !== false) emitPluginStorageChanged(pluginId, stored.slice(`${pluginId}::`.length))
+  }
+}
 
 // The host resolves t() against its own strings.en/strings.sv catalogue. Tests
 // only need stable, readable output, so keys that assertions look for carry

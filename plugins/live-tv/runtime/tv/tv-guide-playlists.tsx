@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { channelKey, type M3uChannel } from '../live-tv-data'
-import { flattenChannels, qualityFromName, topGroups } from '../live-tv-model'
+import { channelKey, computeGroups, type LiveTvList, type M3uChannel } from '../live-tv-data'
+import { isPlayableChannel, qualityFromName } from '../live-tv-model'
+import { useListChannels } from '../view-helpers'
 import { formatClock, progressOf } from '../live-tv-ui'
 import { isReminded, toggleReminder } from '../reminders'
 import type { EpgProgramme } from '../epg/types'
@@ -31,17 +32,40 @@ export function TvGuidePlaylists({ model, nav, settings }: TvViewProps) {
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const [, bump] = useState(0)
 
-  const tree = useMemo(() => model.lists.map((list) => {
-    const channels = flattenChannels([list])
-    return { id: list.id, name: list.name, count: channels.length, channels, groups: topGroups(channels, 12).map((g) => ({ name: g, count: channels.filter((c) => c.group === g).length })) }
-  }), [model.lists])
+  /**
+   * Vänsterkolumnen ritas ur listornas METADATA, inte ur deras kanaler.
+   *
+   * Efter lagring v2 bär listorna inga inbäddade kanaler — `flattenChannels`
+   * gav tomma listor i skarp drift. Antal och grupper står numera i listans
+   * kvitto (`channelCount`/`groups`, skrivna av importjobbet), så hela trädet
+   * kan ritas utan att en enda kanal laddas. Manuellt skapade listor
+   * (`custom`) har fortfarande sina kanaler hos sig och räknas direkt.
+   */
+  const tree = useMemo(() => model.lists.map((list) => ({
+    id: list.id,
+    name: list.name,
+    count: list.kind === 'custom' ? (list.channels ?? []).length : list.channelCount ?? (list.channels?.length ?? 0),
+    groups: (list.kind === 'custom' ? computeGroups(list.channels ?? []) : list.groups ?? []).slice(0, 12),
+  })), [model.lists])
+
+  /**
+   * Kanalerna laddas bara för den VALDA listan (ur indexet, eller ur
+   * minnescachen när modellen redan har källan laddad). Att ladda alla listor
+   * på en gång hade betytt en hämtning per lista vid varje montering, för
+   * rader som ändå bara syns en lista i taget.
+   */
+  const selectedLists = useMemo<LiveTvList[]>(() => {
+    const list = model.lists.find((entry) => entry.id === sel.listId)
+    return list ? [list] : []
+  }, [model.lists, sel.listId])
+  const { byListId, loading: channelsLoading } = useListChannels(selectedLists)
 
   const rows: M3uChannel[] = useMemo(() => {
     if (sel.listId === FAVS_GROUP) return model.favouriteChannels
-    const list = tree.find((l) => l.id === sel.listId)
-    if (!list) return []
-    return sel.group ? list.channels.filter((c) => c.group === sel.group) : list.channels
-  }, [sel, tree, model.favouriteChannels])
+    if (!sel.listId) return []
+    const channels = (byListId[sel.listId] ?? []).filter(isPlayableChannel)
+    return sel.group ? channels.filter((c) => c.group === sel.group) : channels
+  }, [sel, byListId, model.favouriteChannels])
 
   const [visible, setVisible] = useState(ROW_STEP)
   useEffect(() => { setVisible(ROW_STEP) }, [sel])
@@ -130,7 +154,7 @@ export function TvGuidePlaylists({ model, nav, settings }: TvViewProps) {
         {rows.length > visible ? (
           <div {...station(() => setVisible((v) => v + ROW_STEP))} style={{ margin: `${dp(20)}px auto ${dp(20)}px`, width: 'fit-content', height: dp(48), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.s10, display: 'flex', alignItems: 'center', fontSize: dp(18), cursor: 'pointer' }}>{tt('showMore')}</div>
         ) : null}
-        {rows.length === 0 ? <div style={{ padding: dp(24), color: TV.dim, fontSize: dp(19) }}>{tt('guideEmpty')}</div> : null}
+        {rows.length === 0 ? <div data-testid="pl-empty" style={{ padding: dp(24), color: TV.dim, fontSize: dp(19) }}>{channelsLoading ? tt('loadingChannels') : tt('guideEmpty')}</div> : null}
       </div>
 
       {/* Höger: förhandsvisning + Nu/Sen/Senare */}

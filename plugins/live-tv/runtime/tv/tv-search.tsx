@@ -28,7 +28,7 @@ export function TvSearch({ model, nav }: TvViewProps) {
   const channels = useMemo(() => searchChannels(query, model.channels), [query, model.channels])
   // Den globala EPG-listan, inte `model.epgListId`: appen kan ha en tablå även
   // när pluginet inte har någon EPG-URL i lagringen (Xtream-härledd källa).
-  const { hits: programmes } = useProgrammeSearch(query, day.start, day.end)
+  const { hits: programmes, loading: programmesLoading } = useProgrammeSearch(query, day.start, day.end)
   const hints = useMemo(() => suggestions(query, model.channels, programmes.map((p) => p.programme.title)), [query, model.channels, programmes])
   const focusFirstResult = () => {
     const first = document.querySelector<HTMLElement>('[data-live-tv-search-results] [data-f]')
@@ -52,7 +52,7 @@ export function TvSearch({ model, nav }: TvViewProps) {
       <div data-live-tv-search-results="" data-scroll="" style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: `${dp(34)}px ${dp(48)}px 0 ${dp(40)}px`, display: 'flex', flexDirection: 'column', gap: dp(28) }}>
         <section data-testid="search-channels" style={{ display: 'flex', flexDirection: 'column', gap: dp(8) }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(12) }}><span style={{ fontSize: dp(24), fontWeight: 600 }}>{tt('searchChannels')}</span><span style={{ fontSize: dp(16), color: 'rgba(243,244,248,0.5)' }}>{tt('hits', { count: channels.length })}</span></div>
-          {query && channels.length === 0 ? <div style={{ color: TV.dim, fontSize: dp(18) }}>{tt('noResults')}</div> : null}
+          {query && channels.length === 0 ? <div style={{ color: TV.dim, fontSize: dp(18) }}>{model.channelsLoading ? tt('loadingChannels') : tt('noResults')}</div> : null}
           {channels.map((channel) => {
             const info = model.nowFor(channel)
             return (
@@ -70,6 +70,9 @@ export function TvSearch({ model, nav }: TvViewProps) {
         </section>
         <section data-testid="search-programmes" style={{ display: 'flex', flexDirection: 'column', gap: dp(6) }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(12) }}><span style={{ fontSize: dp(24), fontWeight: 600 }}>{tt('searchProgrammes')}</span><span style={{ fontSize: dp(16), color: 'rgba(243,244,248,0.5)' }}>{tt('hits', { count: programmes.length })}</span></div>
+          {/* Sökningen går till appen: en tom lista betyder "hämtar" tills
+              svaret kommit, inte "inga träffar". */}
+          {query && programmes.length === 0 ? <div data-testid="search-programmes-empty" style={{ color: TV.dim, fontSize: dp(18) }}>{programmesLoading ? tt('loadingGuide') : tt('noResults')}</div> : null}
           {programmes.map((hit) => (
             <div key={`${channelKey(hit.channel)}:${hit.programme.start}`} {...station(() => nav.openChannel(hit.channel, hit.programme.start))} style={{ height: dp(64), borderRadius: dp(12), display: 'flex', alignItems: 'center', gap: dp(16), padding: `0 ${dp(12)}px`, cursor: 'pointer' }}>
               <span style={{ width: dp(80), fontSize: dp(18), color: 'rgba(243,244,248,0.6)', fontVariantNumeric: 'tabular-nums' }}>{formatClock(hit.programme.start, locale)}</span>

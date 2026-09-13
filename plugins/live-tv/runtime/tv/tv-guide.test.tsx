@@ -52,6 +52,19 @@ describe('TvGuide', () => {
     fireEvent.focus(rows[2])
     expect(screen.getByTestId('guide-headline')).toHaveTextContent('C')
   })
+  it('tablåläget visar "Hämtar tablå…" tills fönstret landat, sedan raderna', async () => {
+    // Tablån bor i appen sedan lagring v2: raden har ingen tablå att visa
+    // förrän fönstret svarat, och "Ingen programinformation" dessförinnan
+    // hade varit en lögn om data som är på väg.
+    await mount()
+    fireEvent.click(screen.getByText('Timeline'))
+    expect(screen.getAllByText('Fetching guide…').length).toBeGreaterThan(0)
+    await flushLiveTvIndex()
+    expect(screen.queryByText('Fetching guide…')).not.toBeInTheDocument()
+    expect(screen.getAllByText('Now A').length).toBeGreaterThan(0)
+    // Kanalerna utan tablå får tomtexten — först NU, när svaret är läst.
+    expect(screen.getAllByText('No programme information').length).toBeGreaterThan(0)
+  })
   it('segmentväxeln byter till tablåläge med nu-linje', async () => {
     await mount()
     fireEvent.click(screen.getByText('Timeline'))

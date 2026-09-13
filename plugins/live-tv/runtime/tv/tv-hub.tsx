@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { channelKey, type M3uChannel } from '../live-tv-data'
-import { catchUpAcross, channelSupportsCatchUp, type CatchUpItem } from '../catch-up'
+import { catchUpAcross, type CatchUpItem } from '../catch-up'
+import { pickReplayChannels } from '../view-helpers'
 import { formatClock, progressOf } from '../live-tv-ui'
 import { qualityFromName, startOfLocalDay } from '../live-tv-model'
 import { useEpgLoadStatus } from '../hooks/useEpgLoadStatus'
@@ -15,9 +16,8 @@ import { pickSpotlight, type SpotlightReason } from './tv-spotlight'
 const SPOTLIGHT_COUNT = 3
 const ALL_STEP = 36
 const MAX_CHIPS = 12
-/** Repriser: hur långt bakåt tablån hämtas, och hur många arkivkanaler som frågas åt gången. */
+/** Repriser: hur långt bakåt tablån hämtas (urvalet av kanaler görs i view-helpers). */
 const REPLAY_DAYS = 3
-const MAX_REPLAY_CHANNELS = 200
 
 export function TvHub({ model, nav }: TvViewProps) {
   const { tt, locale } = useTvText()
@@ -33,11 +33,12 @@ export function TvHub({ model, nav }: TvViewProps) {
   const recent = useMemo(() => model.history.map((h) => model.byUrl.get(h.url)).filter((c): c is M3uChannel => Boolean(c)), [model.history, model.byUrl])
   const spotlight = useMemo(() => pickSpotlight({ favourites, recent, channels: model.channels, nowFor: model.nowFor, count: SPOTLIGHT_COUNT }), [favourites, recent, model.channels, model.nowFor])
   /**
-   * Repriser: bara arkivkanaler (Xtream tv_archive) frågas, och bara bakåt i
-   * reprisfönstret — tablån bor i appen sedan lagring v2 och en fråga om hela
-   * spellistan hade blivit tiotals anrop för en handfull kort.
+   * Repriser: favoriter och nyss sedda kanaler med arkiv (Xtream tv_archive),
+   * inte hela spellistan. Tablån bor i appen sedan lagring v2, så varje kanal
+   * i urvalet är en nyckel i ett fönsteranrop — 200 kanaler × 3 dygn vid varje
+   * montering för ett band med åtta kort var den dyraste frågan i hela vyn.
    */
-  const replayChannels = useMemo(() => model.channels.filter(channelSupportsCatchUp).slice(0, MAX_REPLAY_CHANNELS), [model.channels])
+  const replayChannels = useMemo(() => pickReplayChannels(favourites, recent), [favourites, recent])
   const replayWindow = useMemo(() => {
     const to = startOfLocalDay(model.nowMs, 1)
     return { from: to - REPLAY_DAYS * 86_400_000, to }
@@ -77,8 +78,11 @@ export function TvHub({ model, nav }: TvViewProps) {
   if (model.allChannels.length === 0) {
     return (
       <div style={{ padding: dp(48), display: 'flex', flexDirection: 'column', gap: dp(16) }}>
-        <div style={{ fontSize: dp(34), fontWeight: 600 }}>{tt('emptyTitle')}</div>
-        <div style={{ fontSize: dp(20), color: TV.muted }}>{tt('emptyBody')}</div>
+        {/* Kanalerna kommer ur appens index: tomt betyder "hämtar" tills
+            sidhämtningen är klar, annars "lägg till en spellista". Utan
+            skillnaden möttes varje kallstart av tomsidan i en halv sekund. */}
+        <div style={{ fontSize: dp(34), fontWeight: 600 }}>{model.channelsLoading ? tt('loadingChannels') : tt('emptyTitle')}</div>
+        <div style={{ fontSize: dp(20), color: TV.muted }}>{model.channelsLoading ? '' : tt('emptyBody')}</div>
         <div {...station(() => nav.go('settings'), undefined, { 'data-init': '' })} style={{ alignSelf: 'flex-start', height: dp(52), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.acc, color: TV.onAcc, display: 'inline-flex', alignItems: 'center', fontSize: dp(19), fontWeight: 600 }}>{tt('openSettings')}</div>
       </div>
     )

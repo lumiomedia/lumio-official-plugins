@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useEpgNowNextLater } from './hooks/useEpgNowNextLater'
 import { channelKey, getLiveTvLists, getPinnedLiveTvKeys, onPinnedLiveTvKeysChanged, type M3uChannel } from './live-tv-data'
+import { getResolvedChannels, resolveChannelKeys } from './channel-resolver'
 import { isReminded, toggleReminder } from './reminders'
 import { useHubText } from './hub-strings'
 import { Btn, ChannelBadge, Icon, LT, formatClock, progressOf } from './live-tv-ui'
@@ -115,14 +116,43 @@ function FavouriteCard({ channel, listId, urls, current, onSwitch }: EpgProps & 
 export function PlayerFavouritesRow({ current, listId, urls, onSwitch }: { current: M3uChannel; listId: string | null; urls: string[]; onSwitch: (channel: M3uChannel) => void }) {
   const [pinned, setPinned] = useState<string[]>(() => getPinnedLiveTvKeys())
   useEffect(() => onPinnedLiveTvKeysChanged(() => setPinned(getPinnedLiveTvKeys())), [])
+  /**
+   * Favoritnycklarna slås upp mot appens index (lagring v2).
+   *
+   * Raden byggde tidigare en nyckelkarta ur listornas INBÄDDADE `channels`.
+   * Efter migreringen är det fältet tomt för m3u/xtream-listor, så raden hade
+   * krympt till bara den kanal som spelas. Uppslaget är cachat per nyckel i
+   * `channel-resolver`, så en favorit kostar ett anrop en gång per sidladdning.
+   * Manuella (`custom`) listor bär fortfarande sina kanaler och läses direkt.
+   */
+  const pinnedId = pinned.join(',')
+  const [resolved, setResolved] = useState<Record<string, M3uChannel>>(() => getResolvedChannels(pinned))
+  useEffect(() => {
+    let live = true
+    if (pinned.length === 0) return
+    resolveChannelKeys(pinned)
+      .then((items) => {
+        if (!live || items.length === 0) return
+        setResolved((prev) => {
+          const next = { ...prev }
+          for (const item of items) next[item.key] = item as M3uChannel
+          return next
+        })
+      })
+      .catch(() => {})
+    return () => {
+      live = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pinnedId])
   const channels = useMemo(() => {
-    const byKey = new Map<string, M3uChannel>()
-    for (const list of getLiveTvLists()) for (const channel of list.channels) byKey.set(channelKey(channel), channel)
+    const byKey = new Map<string, M3uChannel>(Object.entries(resolved))
+    for (const list of getLiveTvLists()) for (const channel of list.channels ?? []) byKey.set(channelKey(channel), channel)
     const favourites = pinned.map((key) => byKey.get(key)).filter((channel): channel is M3uChannel => Boolean(channel))
     // Aktuell kanal först om den inte redan är favorit, så raden alltid har en startpunkt.
     const currentKey = channelKey(current)
     return favourites.some((channel) => channelKey(channel) === currentKey) ? favourites : [current, ...favourites]
-  }, [pinned, current])
+  }, [pinned, current, resolved])
   return (
     <div
       className="flex overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"

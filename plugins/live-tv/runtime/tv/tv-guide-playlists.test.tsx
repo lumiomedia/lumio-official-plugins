@@ -2,7 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { flushLiveTvIndex, seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
-import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
+import { LIVE_TV_PLUGIN_ID, computeGroups, type LiveTvList } from '../live-tv-data'
+import { __resetViewHelpersForTests } from '../view-helpers'
 import type { EpgCacheEntry } from '../epg/types'
 
 vi.mock('../live-tv-player', () => ({ LiveTvPlayer: () => <div data-testid="player" /> }))
@@ -20,6 +21,7 @@ const cache: EpgCacheEntry = { index: { 'a.tv': [{ title: 'Now A', start: now - 
 afterEach(cleanup)
 beforeEach(() => {
   __resetForTests()
+  __resetViewHelpersForTests()
   __setTvModeForTests(true)
   writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', lists)
   writePluginJson(LIVE_TV_PLUGIN_ID, 'pins', [])
@@ -35,6 +37,36 @@ const mount = async () => {
 }
 
 describe('TvGuidePlaylists', () => {
+  it('ritar en icke-aktiv listas kanaler ur INDEXET, inte ur inbäddade channels', async () => {
+    // Efter v2-migreringen bär listorna bara metadata. Vyn byggde tidigare
+    // sina rader med `flattenChannels([list])` och hade därför stått tom i
+    // skarp drift — testerna seedade inbäddade kanaler och dolde det.
+    const withSources: LiveTvList[] = [
+      { ...lists[0], kind: 'm3u', source: 'http://a.tld/list.m3u', url: 'http://a.tld/list.m3u' } as LiveTvList,
+      { ...lists[1], kind: 'm3u', source: 'http://b.tld/list.m3u', url: 'http://b.tld/list.m3u' } as LiveTvList,
+    ]
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', withSources)
+    seedLiveTvIndex({ cache })
+    // Kanalerna finns nu BARA i indexet; lagringen har listmetadata.
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', withSources.map((list) => ({
+      ...list,
+      channels: [],
+      channelCount: (list.channels ?? []).length,
+      groups: computeGroups(list.channels ?? []),
+    })))
+
+    await mount()
+    // Vänsterkolumnen ritas ur metadata: namn, antal och grupper.
+    const left = screen.getByTestId('playlists-column')
+    expect(left).toHaveTextContent('Nordic')
+    expect(left).toHaveTextContent('Kids')
+
+    fireEvent.click(screen.getByTestId('pl-list-l2'))
+    await flushLiveTvIndex()
+    const rows = screen.getAllByTestId('pl-row')
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toHaveTextContent('C')
+  })
   it('listar spellistor med grupper och Favoriter sist', async () => {
     await mount()
     const left = screen.getByTestId('playlists-column')
