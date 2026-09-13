@@ -1,14 +1,11 @@
 'use client'
 
-import type { ComponentType } from 'react'
-import type { TvView, TvViewProps } from './tv-shell'
+import type { TvViewProps } from './tv-shell'
 import { dp, station, TV } from './tv-ui'
 import { useTvText } from './tv-strings'
-import { TvHub } from './tv-hub'
-import { TvGuide } from './tv-guide'
 
-/** Tillfällig vy tills den riktiga landar (Task 8–15 byter ut en post var). */
-export function TvViewStub({ nav }: TvViewProps) {
+/** Tillfällig vy tills den riktiga landar (Task 10 byter ut den). */
+export function TvGuidePlaylists({ nav }: TvViewProps) {
   const { tt } = useTvText()
   return (
     <div style={{ padding: dp(48), color: TV.text, display: 'flex', flexDirection: 'column', gap: dp(20) }}>
@@ -18,14 +15,4 @@ export function TvViewStub({ nav }: TvViewProps) {
       </div>
     </div>
   )
-}
-
-export const TV_VIEWS: Record<TvView, ComponentType<TvViewProps>> = {
-  hub: TvHub,
-  guide: TvGuide,
-  favs: TvViewStub,
-  channel: TvViewStub,
-  search: TvViewStub,
-  multi: TvViewStub,
-  settings: TvViewStub,
 }
