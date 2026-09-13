@@ -17,8 +17,9 @@ export function readPluginJson<T>(pluginId: string, k: string, fallback: T): T {
   return (value as T) ?? fallback
 }
 
-export function writePluginJson<T>(pluginId: string, k: string, value: T): void {
+export function writePluginJson<T>(pluginId: string, k: string, value: T, options?: { emitChange?: boolean }): void {
   memory.set(key(pluginId, k), value)
+  if (options?.emitChange !== false) emitPluginStorageChanged(pluginId, k)
 }
 
 export function emitPluginStorageChanged(pluginId: string, k: string): void {
