@@ -7,6 +7,23 @@ import { useTvText } from './tv-strings'
 import { TvKeyboard } from './tv-keyboard'
 
 /**
+ * Fälttypen styr BARA det riktiga fältet utanför TV-läget: värdens
+ * tangentbordspanel har en egen inmatning och tar inget typargument, så
+ * TV-grenen ignorerar `kind` medvetet.
+ */
+export type TextPromptKind = 'text' | 'password' | 'url' | 'username'
+
+/**
+ * Enter mitt i en IME-komposition (japanska, kinesiska, koreanska) bekräftar
+ * kandidatlistan — inte formuläret. `isComposing` finns på den nativa
+ * händelsen; `keyCode === 229` är samma sak från äldre webviews som inte
+ * sätter flaggan.
+ */
+function isComposing(event: { nativeEvent: KeyboardEvent; keyCode: number }): boolean {
+  return event.nativeEvent.isComposing === true || event.keyCode === 229
+}
+
+/**
  * EN textinmatning, tre inmatningsvägar.
  * TV-läge: värdens TvKeyboardPanel (som useKeyboardPrompt gjorde tidigare i
  *   tv-settings.tsx, flyttad hit ordagrant — se kommentarerna nedan om
@@ -15,9 +32,20 @@ import { TvKeyboard } from './tv-keyboard'
  * Utanför TV: en rad med ett riktigt <input> i en liten dialog — inget
  *   skärmtangentbord på skrivbord.
  */
-export function useTextPrompt(): {
+export function useTextPrompt(options?: {
+  /**
+   * Skalets lagerstack (`nav.pushLayer`). Bara icke-TV-dialogen registreras:
+   * den äger INTE Back själv, så utan lagret stängde skalets Bakåt (Esc eller
+   * Bakåt-posten i ikonraden) vyn BAKOM den öppna dialogen.
+   *
+   * Värdens TV-panel registreras aldrig — den är VÄRDENS UI
+   * (`data-live-tv-host-ui`), äger Back själv och stänger sig själv. Två
+   * stängare på samma Back hade stängt både panelen och vyn bakom.
+   */
+  pushLayer?: (close: () => void) => () => void
+}): {
   available: boolean
-  ask: (title: string, initial: string, onDone: (value: string) => void) => void
+  ask: (title: string, initial: string, onDone: (value: string) => void, kind?: TextPromptKind) => void
   node: ReactNode
 } {
   const tvMode = useTvMode()
@@ -29,7 +57,7 @@ export function useTextPrompt(): {
    * öppnades då med serveradressen redan i fältet och användarnamnet blev
    * "http://panel:8080jerry". Ett nytt id per öppning tvingar en ommontering.
    */
-  const [prompt, setPrompt] = useState<{ id: number; title: string; initial: string; onDone: (value: string) => void } | null>(null)
+  const [prompt, setPrompt] = useState<{ id: number; title: string; initial: string; kind: TextPromptKind; onDone: (value: string) => void } | null>(null)
   const promptId = useRef(0)
   /**
    * Öppnaren fångas EN gång per öppning — samma regel som de andra lagren
@@ -50,9 +78,9 @@ export function useTextPrompt(): {
     return () => { const opener = openerRef.current; window.setTimeout(() => opener?.focus({ preventScroll: true }), 0) }
   }, [open])
 
-  const ask = (title: string, initial: string, onDone: (value: string) => void) => {
+  const ask = (title: string, initial: string, onDone: (value: string) => void, kind: TextPromptKind = 'text') => {
     promptId.current += 1
-    setPrompt({ id: promptId.current, title, initial, onDone })
+    setPrompt({ id: promptId.current, title, initial, kind, onDone })
   }
 
   let node: ReactNode = null
@@ -89,6 +117,8 @@ export function useTextPrompt(): {
         key={prompt.id}
         title={prompt.title}
         initial={prompt.initial}
+        kind={prompt.kind}
+        pushLayer={options?.pushLayer}
         onDone={(value) => { setPrompt(null); prompt.onDone(value) }}
         onCancel={() => setPrompt((current) => (current === prompt ? null : current))}
       />
@@ -100,16 +130,38 @@ export function useTextPrompt(): {
 
 /**
  * Icke-TV-grenen: en liten dialog i scenlådan. Till skillnad från värdens
- * panel äger den INTE Back själv — den stänger sig bara på Escape/Avbryt.
- * `data-panel-root` gör att motorns pilar (om de är aktiva utanför TV också)
- * stannar i den, samma mönster som `tv-channel-picker.tsx`.
+ * panel äger den INTE Back själv — den registreras därför som ett lager
+ * (`pushLayer`) så att skalets Bakåt stänger dialogen FÖRST och vyn bakom
+ * står kvar. `data-panel-root` gör att motorns pilar (om de är aktiva utanför
+ * TV också) stannar i den, samma mönster som `tv-channel-picker.tsx`.
  */
-function TextPromptDialog({ title, initial, onDone, onCancel }: { title: string; initial: string; onDone: (value: string) => void; onCancel: () => void }) {
+function TextPromptDialog({ title, initial, kind, pushLayer, onDone, onCancel }: {
+  title: string
+  initial: string
+  kind: TextPromptKind
+  pushLayer?: (close: () => void) => () => void
+  onDone: (value: string) => void
+  onCancel: () => void
+}) {
   const { tt } = useTvText()
   const [value, setValue] = useState(initial)
   const inputRef = useRef<HTMLInputElement | null>(null)
   useEffect(() => { inputRef.current?.focus() }, [])
+  // Lagret registreras EN gång per dialog (den får ny `key` per prompt, så
+  // monteringen ÄR öppningen) och avregistreras när den stängs — annars hade
+  // nästa Bakåt ätits av en stängare för en dialog som inte finns kvar.
+  const cancelRef = useRef(onCancel)
+  useEffect(() => { cancelRef.current = onCancel })
+  useEffect(() => pushLayer?.(() => cancelRef.current()), [pushLayer])
   const submit = () => onDone(value)
+  // `type="password"` maskerar, `url`/`username` stänger av rättstavning och
+  // versalisering — ett Xtream-användarnamn som mobilen inledde med versal
+  // gav "Could not sign in to the panel" utan något synligt fel i fältet.
+  const field: { type: string; inputMode?: 'url' | 'text'; autoCapitalize?: string; autoCorrect?: string; spellCheck?: boolean } =
+    kind === 'password' ? { type: 'password', autoCapitalize: 'none', autoCorrect: 'off', spellCheck: false }
+      : kind === 'url' ? { type: 'url', inputMode: 'url', autoCapitalize: 'none', autoCorrect: 'off', spellCheck: false }
+        : kind === 'username' ? { type: 'text', autoCapitalize: 'none', autoCorrect: 'off', spellCheck: false }
+          : { type: 'text' }
   return (
     <div
       data-testid="text-prompt-dialog"
@@ -120,10 +172,12 @@ function TextPromptDialog({ title, initial, onDone, onCancel }: { title: string;
         <div style={{ fontSize: dp(20), fontWeight: 600 }}>{title}</div>
         <input
           ref={inputRef}
+          data-testid="text-prompt-input"
+          {...field}
           value={value}
           onChange={(event) => setValue(event.target.value)}
           onKeyDown={(event) => {
-            if (event.key === 'Enter') { event.preventDefault(); submit() }
+            if (event.key === 'Enter') { if (isComposing(event)) return; event.preventDefault(); submit() }
             else if (event.key === 'Escape') { event.preventDefault(); onCancel() }
           }}
           style={{ height: dp(44), borderRadius: dp(8), border: `1px solid ${TV.lineCard}`, background: TV.s08, color: TV.text, padding: `0 ${dp(12)}px`, fontSize: dp(16) }}
@@ -168,7 +222,7 @@ export function TvTextField({ value, onChange, onSubmit, placeholder, autoFocus 
       placeholder={placeholder}
       onChange={(event) => onChange(event.target.value)}
       onKeyDown={(event) => {
-        if (event.key === 'Enter') { event.preventDefault(); onSubmit?.() }
+        if (event.key === 'Enter') { if (isComposing(event)) return; event.preventDefault(); onSubmit?.() }
       }}
       style={{ height: dp(64), borderRadius: dp(14), background: TV.s10, border: `1px solid ${TV.line}`, color: TV.text, padding: `0 ${dp(20)}px`, fontSize: dp(20) }}
     />

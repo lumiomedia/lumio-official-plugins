@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { __setTvModeForTests } from '@/lib/plugin-sdk'
 import { useTextPrompt, TvTextField } from './tv-text-entry'
 
@@ -110,5 +110,78 @@ describe('TvTextField', () => {
     render(<TvTextField value="" onChange={() => {}} autoFocus />)
     expect(document.querySelector('[data-live-tv-keyboard]')).toBeInTheDocument()
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+  })
+})
+
+describe('useTextPrompt: fälttyp, lager och IME', () => {
+  /** Som Harness ovan, men med fälttyp och en lagerstack att registrera sig i. */
+  function TypedHarness({ kind, pushLayer, onDone }: { kind?: 'text' | 'password' | 'url' | 'username'; pushLayer?: (close: () => void) => () => void; onDone?: (value: string) => void }) {
+    const { ask, node } = useTextPrompt(pushLayer ? { pushLayer } : undefined)
+    return (
+      <>
+        <button type="button" onClick={() => ask('Fält', '', onDone ?? (() => {}), kind)}>open</button>
+        {node}
+      </>
+    )
+  }
+
+  it('lösenordssteget får ett maskerat fält', () => {
+    render(<TypedHarness kind="password" />)
+    fireEvent.click(screen.getByText('open'))
+    const input = screen.getByTestId('text-prompt-input') as HTMLInputElement
+    expect(input.type).toBe('password')
+  })
+
+  it('URL- och användarnamnssteget stänger av autokorrigering', () => {
+    render(<TypedHarness kind="url" />)
+    fireEvent.click(screen.getByText('open'))
+    const input = screen.getByTestId('text-prompt-input') as HTMLInputElement
+    expect(input.type).toBe('url')
+    expect(input.getAttribute('inputmode')).toBe('url')
+    expect(input.getAttribute('autocapitalize')).toBe('none')
+    expect(input.getAttribute('autocorrect')).toBe('off')
+    expect(input.getAttribute('spellcheck')).toBe('false')
+  })
+
+  it('dialogen registreras som lager så skalets Bakåt stänger den först', () => {
+    const layers: (() => void)[] = []
+    const pushLayer = (close: () => void) => {
+      layers.push(close)
+      return () => { layers.splice(layers.indexOf(close), 1) }
+    }
+    const onDone = vi.fn()
+    render(<TypedHarness pushLayer={pushLayer} onDone={onDone} />)
+    fireEvent.click(screen.getByText('open'))
+    expect(layers).toHaveLength(1)
+    // Skalets back() kör det översta lagret: dialogen ska stängas, inget onDone.
+    act(() => { layers[layers.length - 1]() })
+    expect(screen.queryByTestId('text-prompt-dialog')).not.toBeInTheDocument()
+    expect(onDone).not.toHaveBeenCalled()
+    // …och lagret avregistreras när dialogen försvinner, annars hade nästa
+    // Bakåt ätits av en stängare för en dialog som inte finns.
+    expect(layers).toHaveLength(0)
+  })
+
+  it('Enter mitt i en IME-komposition skickar inte', () => {
+    const onDone = vi.fn()
+    render(<TypedHarness onDone={onDone} />)
+    fireEvent.click(screen.getByText('open'))
+    const input = screen.getByTestId('text-prompt-input')
+    fireEvent.change(input, { target: { value: 'にほん' } })
+    fireEvent.keyDown(input, { key: 'Enter', isComposing: true, keyCode: 229 })
+    expect(onDone).not.toHaveBeenCalled()
+    expect(screen.getByTestId('text-prompt-dialog')).toBeInTheDocument()
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(onDone).toHaveBeenCalledWith('にほん')
+  })
+
+  it('TvTextField skickar inte heller mitt i en komposition', () => {
+    const onSubmit = vi.fn()
+    render(<TvTextField value="にほん" onChange={() => {}} onSubmit={onSubmit} />)
+    const input = screen.getByRole('textbox')
+    fireEvent.keyDown(input, { key: 'Enter', isComposing: true, keyCode: 229 })
+    expect(onSubmit).not.toHaveBeenCalled()
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(onSubmit).toHaveBeenCalled()
   })
 })
