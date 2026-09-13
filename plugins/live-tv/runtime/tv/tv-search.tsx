@@ -1,18 +1,20 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useTvMode } from '@/lib/plugin-sdk'
 import { channelKey } from '../live-tv-data'
 import { startOfLocalDay } from '../live-tv-model'
 import { formatClock } from '../live-tv-ui'
 import type { TvViewProps } from './tv-shell'
 import { ChannelArt, TV, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
-import { TvKeyboard } from './tv-keyboard'
+import { TvTextField } from './tv-text-entry'
 import { searchChannels, suggestions } from './tv-search-logic'
 import { useProgrammeSearch } from '../hooks/useProgrammeSearch'
 
 export function TvSearch({ model, nav }: TvViewProps) {
   const { tt, locale } = useTvText()
+  const tvMode = useTvMode()
   const [query, setQuery] = useState('')
   /**
    * Programsökningen är fördröjd, kanalsökningen inte.
@@ -38,16 +40,21 @@ export function TvSearch({ model, nav }: TvViewProps) {
   return (
     <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
       <div style={{ width: dp(760), flexShrink: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(34)}px ${dp(40)}px 0 ${dp(48)}px`, display: 'flex', flexDirection: 'column', gap: dp(18) }}>
-        <div style={{ height: dp(64), borderRadius: dp(14), background: TV.s10, display: 'flex', alignItems: 'center', padding: `0 ${dp(20)}px`, fontSize: dp(28), color: query ? TV.text : 'rgba(243,244,248,0.5)' }}>
-          {query || <span style={{ fontSize: dp(18) }}>{tt('searchPlaceholder')}</span>}
-          <span aria-hidden="true" style={{ width: 2, height: dp(32), background: TV.acc, marginLeft: dp(4) }} />
-        </div>
+        {tvMode ? (
+          // TvKeyboard visar ingen text själv — den här raden är fältets enda
+          // display i TV-läge. Utanför TV visar `TvTextField`s riktiga
+          // <input> texten själv, så raden hade bara dublett:at den.
+          <div style={{ height: dp(64), borderRadius: dp(14), background: TV.s10, display: 'flex', alignItems: 'center', padding: `0 ${dp(20)}px`, fontSize: dp(28), color: query ? TV.text : 'rgba(243,244,248,0.5)' }}>
+            {query || <span style={{ fontSize: dp(18) }}>{tt('searchPlaceholder')}</span>}
+            <span aria-hidden="true" style={{ width: 2, height: dp(32), background: TV.acc, marginLeft: dp(4) }} />
+          </div>
+        ) : null}
         <div data-row="" style={{ display: 'flex', gap: dp(8), overflowX: 'auto', minHeight: dp(44) }}>
           {hints.map((hint) => (
             <div key={hint} data-testid="search-suggestion" {...station(() => setQuery(hint))} style={{ height: dp(44), padding: `0 ${dp(18)}px`, borderRadius: 999, background: TV.s08, display: 'inline-flex', alignItems: 'center', fontSize: dp(18), whiteSpace: 'nowrap', cursor: 'pointer' }}>{hint}</div>
           ))}
         </div>
-        <TvKeyboard value={query} onChange={setQuery} onDone={focusFirstResult} initFocus />
+        <TvTextField value={query} onChange={setQuery} onSubmit={focusFirstResult} placeholder={tt('searchPlaceholder')} autoFocus />
       </div>
       <div data-live-tv-search-results="" data-scroll="" style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: `${dp(34)}px ${dp(48)}px 0 ${dp(40)}px`, display: 'flex', flexDirection: 'column', gap: dp(28) }}>
         <section data-testid="search-channels" style={{ display: 'flex', flexDirection: 'column', gap: dp(8) }}>
