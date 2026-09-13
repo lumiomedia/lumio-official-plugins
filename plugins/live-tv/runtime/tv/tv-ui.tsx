@@ -7,9 +7,26 @@ import { channelKey, getLiveTvLogoSrc, type M3uChannel } from '../live-tv-data'
 import { LiveTvLogoImage } from '../live-tv-logo-image'
 import { initialsOf } from '../live-tv-ui'
 
-/** Designpx (1920-scen) → pluginpx. Pluginet skalas redan med --tv-base-scale 1.54. */
+/**
+ * Designpx (1920-scenen) → pluginpx. Identitet, och det är mätt.
+ *
+ * Här stod `Math.round(n / 1.54)`, efter handoffens genväg "dela med 1,54 och
+ * skriv som vanliga px (pluginet skalas redan med --tv-base-scale: 1.54)". Den
+ * genvägen gäller bara mått uttryckta i `rem` eller i `var(--tv-u)` — appens
+ * grundskala bakas in i rotens teckenstorlek och i --tv-u, ALDRIG i råa px.
+ * Resultatet blev att hela TV-läget ritades 1,54 gånger för litet: ikonraden
+ * 68 px i stället för 104, hubbtiteln 22 px i stället för 34 — mindre än
+ * appens egen branchtäxt (rot 24,64 px).
+ *
+ * lib/tv-scene.ts lägger alltid ut scenen i 1080 designpixlars höjd och
+ * skalar den med en transform till den riktiga viewporten (en box som anmäler
+ * 540 px får skala 0,5). Råa px inne i scenen ÄR alltså handoffens
+ * designpixlar, på varje skärm. Funktionen behålls som dokumentation av att
+ * talen är designpixlar — och som en enda plats att skruva på om skalan
+ * någonsin ska ändras.
+ */
 export function dp(n: number): number {
-  return Math.round(n / 1.54)
+  return n
 }
 
 export const TV = {

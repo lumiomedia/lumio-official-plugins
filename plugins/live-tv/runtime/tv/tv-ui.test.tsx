@@ -5,10 +5,10 @@ import { ChannelArt, Progress, Tag, dp, station } from './tv-ui'
 afterEach(cleanup)
 
 describe('tv-ui', () => {
-  it('dp delar med 1,54 och rundar', () => {
-    expect(dp(22)).toBe(14)
-    expect(dp(52)).toBe(34)
-    expect(dp(104)).toBe(68)
+  it('dp är designpixlar rakt av — scenen är redan 1920×1080', () => {
+    expect(dp(22)).toBe(22)
+    expect(dp(52)).toBe(52)
+    expect(dp(104)).toBe(104)
   })
   it('station ger en fokusstation som kör onOk på klick', () => {
     const ok = vi.fn()
