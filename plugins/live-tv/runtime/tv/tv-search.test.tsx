@@ -1,12 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
+import { flushLiveTvIndex, seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
 import type { EpgCacheEntry } from '../epg/types'
 
-vi.mock('../hooks/useLiveTvEpgCache', () => ({ useLiveTvEpgCache: vi.fn(() => null) }))
 vi.mock('../live-tv-player', () => ({ LiveTvPlayer: () => <div data-testid="player" /> }))
-import { useLiveTvEpgCache } from '../hooks/useLiveTvEpgCache'
 import { LiveTvTvShell } from './tv-shell'
 
 const now = Date.now()
@@ -20,7 +19,7 @@ beforeEach(() => {
   __setTvModeForTests(true)
   writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list])
   writePluginJson(LIVE_TV_PLUGIN_ID, 'pins', [])
-  vi.mocked(useLiveTvEpgCache).mockReturnValue(cache)
+  seedLiveTvIndex({ cache: cache })
 })
 
 /** Programsökningen är fördröjd 150 ms; kanalsökningen är det inte. */
@@ -42,21 +41,22 @@ describe('TvSearch', () => {
     fireEvent.click(within(screen.getByTestId('search-programmes')).getByText('Golf Tonight').closest('[data-f]')!)
     expect(onNavigate).toHaveBeenCalledWith(expect.objectContaining({ params: expect.objectContaining({ view: 'channel', name: 'Sky Sports', programme: String(now + 60_000) }) }))
   })
-  it('kanalträffarna kommer direkt, programträffarna först efter fördröjningen', () => {
+  it('kanalträffarna kommer direkt, programträffarna först efter fördröjningen', async () => {
     // Varje bokstav körde tidigare om HELA programgenomsökningen (dagens tablå
     // per kanal) synkront — på TV skrivs frågan med fjärrkontrollen och
     // tangentbordet hakade upp sig mellan trycken. Kanallistan är billig och
     // ska fortsätta svara direkt.
-    vi.useFakeTimers()
+    vi.useFakeTimers({ shouldAdvanceTime: true })
     try {
       render(<LiveTvTvShell pageId="live-tv-browse" params={{ view: 'search' }} onNavigate={() => {}} onOpenDetails={() => {}} />)
       // 'o' matchar både kanalen "Sky Sports" och programmet "Golf Tonight".
       fireEvent.click(screen.getByText('o'))
       // Kanalen syns omedelbart …
       expect(screen.getByTestId('search-channels')).toHaveTextContent('Sky Sports')
-      // … men programsektionen har ännu inte körts om för den nya frågan.
+      // … men programsektionen har ännu inte frågat appen för den nya frågan.
       expect(screen.getByTestId('search-programmes')).not.toHaveTextContent('Golf Tonight')
-      act(() => { vi.advanceTimersByTime(150) })
+      await act(async () => { vi.advanceTimersByTime(150) })
+      await flushLiveTvIndex()
       expect(within(screen.getByTestId('search-programmes')).getByText('Golf Tonight')).toBeInTheDocument()
     } finally {
       vi.useRealTimers()

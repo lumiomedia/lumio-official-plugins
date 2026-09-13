@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
+import { seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, channelKey, getPinnedLiveTvKeys, type LiveTvList } from '../live-tv-data'
 
-vi.mock('../hooks/useLiveTvEpgCache', () => ({ useLiveTvEpgCache: vi.fn(() => null) }))
 vi.mock('../live-tv-player', () => ({ LiveTvPlayer: () => <div data-testid="player" /> }))
 import { LiveTvTvShell } from './tv-shell'
 
@@ -16,6 +16,7 @@ beforeEach(() => {
   __setTvModeForTests(true)
   writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list])
   writePluginJson(LIVE_TV_PLUGIN_ID, 'pins', [channelKey(ch('A')), channelKey(ch('B'))])
+  seedLiveTvIndex()
 })
 
 const mount = (onNavigate = vi.fn()) => { render(<LiveTvTvShell pageId="live-tv-browse" params={{ view: 'favs' }} onNavigate={onNavigate} onOpenDetails={() => {}} />); return onNavigate }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computeNowNextLater } from './lookup'
+import { computeNowNextLater, nowNextLaterFrom, sliceSchedule } from './lookup'
 import type { EpgCacheEntry, EpgProgramme } from './types'
 
 const programmes = (n: number): EpgProgramme[] =>
@@ -67,5 +67,22 @@ describe('computeNowNextLater', () => {
     const result = computeNowNextLater(c, 'A', 3000)
     expect(result.now).toBeNull()
     expect(result.next?.title).toBe('B')
+  })
+})
+
+describe('nowNextLaterFrom och sliceSchedule', () => {
+  const list = [
+    { title: 'P0', start: 0, stop: 60_000 },
+    { title: 'P1', start: 60_000, stop: 120_000 },
+    { title: 'P2', start: 120_000, stop: 180_000 },
+  ]
+  it('läser nu/härnäst/senare ur en färdig lista', () => {
+    expect(nowNextLaterFrom(list, 30_000)).toEqual({ now: list[0], next: list[1], later: list[2] })
+  })
+  it('tom lista ger tomt', () => {
+    expect(nowNextLaterFrom([], 0)).toEqual({ now: null, next: null, later: null })
+  })
+  it('skivar mot ett halvöppet fönster', () => {
+    expect(sliceSchedule(list, 60_000, 120_000).map((p) => p.title)).toEqual(['P1'])
   })
 })

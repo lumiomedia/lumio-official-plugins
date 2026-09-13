@@ -8,6 +8,8 @@ import { buildTimeshiftUrl, catchUpForChannel } from '../catch-up'
 import { isReminded, toggleReminder } from '../reminders'
 import { activeProfileHasPin, pinSupportAvailable, toggleChannelLock, verifyActiveProfilePin } from '../channel-locks'
 import type { EpgProgramme } from '../epg/types'
+import { sliceSchedule } from '../epg/lookup'
+import { useSchedules } from '../hooks/useSchedules'
 import type { TvViewProps } from './tv-shell'
 import { ChannelArt, Icons, RoundBtn, Tag, TV, Toggle, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
@@ -44,11 +46,30 @@ export function TvChannel({ model, nav, params, settings }: TvViewProps) {
   const [lockGate, setLockGate] = useState(false)
 
   const dayStart = startOfLocalDay(model.nowMs, dayOffset)
-  const programmes = useMemo(() => (channel ? model.scheduleFor(channel, dayStart, dayStart + DAY_MS) : []), [channel, model, dayStart])
+  /**
+   * Tablån hämtas från appen per fönster (spec 4.2). Ett fönster täcker både
+   * dagen, gårdagens sista rader och — för arkivkanaler — hela reprisfönstret,
+   * så kanalsidan gör EN hämtning i stället för tre.
+   */
+  const archiveDays = channel?.archive?.days ?? 0
+  const windowFrom = dayStart - Math.max(1, archiveDays) * DAY_MS
+  const windowTo = dayStart + DAY_MS
+  const scheduleChannels = useMemo(() => (channel ? [channel] : []), [channel])
+  const { schedules, loading: scheduleLoading } = useSchedules(scheduleChannels, windowFrom, windowTo)
+  const schedule = channel ? schedules[channelKey(channel)] ?? [] : []
+  const programmes = useMemo(
+    () => sliceSchedule(schedule, dayStart, dayStart + DAY_MS),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [schedule, dayStart],
+  )
   // Igårs sista rader syns bara på "Idag" (samma fönster som guidens tablå) —
   // ingen egen "Igår"-rubrik behövs för andra dagar eftersom dagväljaren redan
   // bytt hela tablån till den dagen.
-  const yesterday = useMemo(() => (channel && dayOffset === 0 ? model.scheduleFor(channel, dayStart - DAY_MS, dayStart).slice(-2) : []), [channel, model, dayStart, dayOffset])
+  const yesterday = useMemo(
+    () => (dayOffset === 0 ? sliceSchedule(schedule, dayStart - DAY_MS, dayStart).slice(-2) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [schedule, dayStart, dayOffset],
+  )
   const rows = useMemo(() => [...yesterday.map((p) => ({ p, day: 'yesterday' as const })), ...programmes.map((p) => ({ p, day: 'today' as const }))], [yesterday, programmes])
 
   // Repriser är begränsade till arkivfönstret (channel.archive.days), inte
@@ -56,9 +77,10 @@ export function TvChannel({ model, nav, params, settings }: TvViewProps) {
   // giltig timeshift-URL hos panelen även om kanalen i övrigt stöder catch-up.
   const catchUpByStart = useMemo(() => {
     if (!channel) return new Map<number, true>()
-    const items = catchUpForChannel(channel, model.cache, model.nameIndex, model.nowMs, 500)
+    const items = catchUpForChannel(channel, schedule, model.nowMs, 500)
     return new Map(items.map((item) => [item.programme.start, true as const]))
-  }, [channel, model.cache, model.nameIndex, model.nowMs])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [channel, schedule, model.nowMs])
 
   const selected = useMemo(() => rows.find((r) => r.p.start === selectedStart)?.p ?? rows.find((r) => kindOf(r.p, model.nowMs) === 'now')?.p ?? rows[0]?.p ?? null, [rows, selectedStart, model.nowMs])
   const kind = selected ? kindOf(selected, model.nowMs) : null
@@ -139,7 +161,7 @@ export function TvChannel({ model, nav, params, settings }: TvViewProps) {
           <RoundBtn {...station(() => model.togglePin(channel))} background={pinned ? TV.accMix(22) : TV.s12} style={{ marginLeft: 'auto' }}><span style={{ color: pinned ? TV.acc : TV.text }}><Icons.Heart size={dp(24)} filled={pinned} /></span></RoundBtn>
         </div>
         <div data-scroll="" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-          {rows.length === 0 ? <div style={{ padding: dp(24), color: TV.dim, fontSize: dp(19) }}>{model.cache ? tt('noProgramme') : tt('loadingGuide')}</div> : null}
+          {rows.length === 0 ? <div style={{ padding: dp(24), color: TV.dim, fontSize: dp(19) }}>{scheduleLoading ? tt('loadingGuide') : tt('noProgramme')}</div> : null}
           {rows.map((row, index) => {
             const k = kindOf(row.p, model.nowMs)
             const isSelected = selected?.start === row.p.start

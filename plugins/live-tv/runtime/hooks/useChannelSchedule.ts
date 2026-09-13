@@ -1,22 +1,21 @@
 import { useEffect, useState } from 'react'
-import { onPluginStorageChanged } from '@/lib/plugin-sdk'
-import { ensureFresh, readCache } from '../epg/cache'
-import { getChannelSchedule } from '../epg/lookup'
-import { buildNameToTvgIdIndex, resolveTvgId } from '../epg/name-match'
+import { fetchSchedules, hourWindow } from '../epg/schedule-cache'
+import { sliceSchedule } from '../epg/lookup'
+import { channelKey } from '../live-tv-data'
 import type { EpgProgramme } from '../epg/types'
-
-const PLUGIN_ID = 'com.lumio.live-tv'
 
 interface ChannelLike {
   tvgId: string | null
   name?: string
+  url?: string
 }
 
 /**
- * Returns programmes for `channel` whose airing window overlaps
- * [now − `hoursBack`h, now + `hoursAhead`h]. Re-renders on the next
- * minute boundary, on EPG cache writes, and once a background fetch
- * completes.
+ * Programmen för `channel` som överlappar [nu − `hoursBack` h, nu + `hoursAhead` h].
+ *
+ * Tablån hämtas från appen (`/api/live-tv/epg/schedule`) via modulcachen;
+ * fönstret rundas till hel timme så minuttickern nedan bara räknar om vilka av
+ * de redan hämtade programmen som ligger i fönstret — den hämtar inte om.
  */
 export function useChannelSchedule(
   channel: ChannelLike,
@@ -26,45 +25,43 @@ export function useChannelSchedule(
   hoursBack: number = 1,
 ): EpgProgramme[] {
   const [programmes, setProgrammes] = useState<EpgProgramme[]>([])
+  const key = channel.url ? channelKey({ name: channel.name ?? '', url: channel.url }) : ''
 
   useEffect(() => {
-    if (!listId) {
+    if (!listId || !key) {
       setProgrammes([])
       return
     }
     let cancelled = false
+    let fetched: EpgProgramme[] = []
     const recompute = () => {
       if (cancelled) return
-      const cache = readCache(listId)
-      const nameIndex = cache ? buildNameToTvgIdIndex(cache) : new Map<string, string>()
-      const resolvedTvgId = resolveTvgId(channel.tvgId, channel.name ?? '', nameIndex)
-      if (!resolvedTvgId) {
-        setProgrammes([])
-        return
-      }
       const now = Date.now()
-      const from = now - hoursBack * 3_600_000
-      const to = now + hoursAhead * 3_600_000
-      setProgrammes(getChannelSchedule(cache, resolvedTvgId, from, to))
+      setProgrammes(sliceSchedule(fetched, now - hoursBack * 3_600_000, now + hoursAhead * 3_600_000))
     }
-    recompute()
-    ensureFresh(listId, urls).then(recompute).catch(recompute)
-    const off = onPluginStorageChanged(PLUGIN_ID, `epg_cache:${listId}`, recompute)
+    const { from, to } = hourWindow(Date.now(), hoursBack + 1, hoursAhead + 1)
+    fetchSchedules(listId, [key], from, to)
+      .then((schedules) => {
+        fetched = schedules[key] ?? []
+        recompute()
+      })
+      .catch(() => {
+        if (!cancelled) setProgrammes([])
+      })
 
     const msToNextMinute = 60_000 - (Date.now() % 60_000)
-    const tickId = window.setTimeout(function tick() {
+    const timers: number[] = []
+    const tick = () => {
       recompute()
-      const next = window.setTimeout(tick, 60_000)
-      cleanup.push(() => window.clearTimeout(next))
-    }, msToNextMinute)
-    const cleanup: Array<() => void> = [() => window.clearTimeout(tickId)]
+      timers.push(window.setTimeout(tick, 60_000))
+    }
+    timers.push(window.setTimeout(tick, msToNextMinute))
 
     return () => {
       cancelled = true
-      off()
-      for (const fn of cleanup) fn()
+      for (const timer of timers) window.clearTimeout(timer)
     }
-  }, [channel.tvgId, channel.name, listId, urls.join('|'), hoursAhead, hoursBack])
+  }, [key, listId, urls.join('|'), hoursAhead, hoursBack])
 
   return programmes
 }

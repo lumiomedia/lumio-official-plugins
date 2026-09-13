@@ -1,12 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
+import { flushLiveTvIndex, seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
 import type { EpgCacheEntry } from '../epg/types'
 
-vi.mock('../hooks/useLiveTvEpgCache', () => ({ useLiveTvEpgCache: vi.fn(() => null) }))
 vi.mock('../live-tv-player', () => ({ LiveTvPlayer: ({ channel }: { channel: { name: string } }) => <div data-testid="player">{channel.name}</div> }))
-import { useLiveTvEpgCache } from '../hooks/useLiveTvEpgCache'
 import { LiveTvTvShell } from './tv-shell'
 
 const now = Date.now()
@@ -27,39 +26,46 @@ beforeEach(() => {
   __setTvModeForTests(true)
   writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list])
   writePluginJson(LIVE_TV_PLUGIN_ID, 'pins', [])
-  vi.mocked(useLiveTvEpgCache).mockReturnValue(cache)
+  seedLiveTvIndex({ cache: cache })
 })
 
-const mount = (params: Record<string, string> = { view: 'guide' }) => render(<LiveTvTvShell pageId="live-tv-browse" params={params} onNavigate={() => {}} onOpenDetails={() => {}} />)
+/** Tablån kommer från appen: modellen och vyn får landa innan något läses av. */
+const mount = async (params: Record<string, string> = { view: 'guide' }) => {
+  const rendered = render(<LiveTvTvShell pageId="live-tv-browse" params={params} onNavigate={() => {}} onOpenDetails={() => {}} />)
+  await flushLiveTvIndex()
+  return rendered
+}
 
 describe('TvGuide', () => {
-  it('visar Nu/Sen/Senare för kanalen med tablå och tomtext för de utan', () => {
-    mount()
-    expect(screen.getByText('Now A')).toBeInTheDocument()
-    expect(screen.getByText('Next A')).toBeInTheDocument()
+  it('visar Nu/Sen/Senare för kanalen med tablå och tomtext för de utan', async () => {
+    await mount()
+    // "Nu" står både på raden och i toppbandet för den valda kanalen.
+    expect(screen.getAllByText('Now A').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Next A').length).toBeGreaterThan(0)
     expect(screen.getByText('Later A')).toBeInTheDocument()
     expect(screen.getAllByText('No programme information').length).toBeGreaterThan(0)
     expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
   })
-  it('fokus på en rad uppdaterar toppbandet', () => {
-    mount()
+  it('fokus på en rad uppdaterar toppbandet', async () => {
+    await mount()
     const rows = screen.getAllByTestId('guide-row')
     fireEvent.focus(rows[2])
     expect(screen.getByTestId('guide-headline')).toHaveTextContent('C')
   })
-  it('segmentväxeln byter till tablåläge med nu-linje', () => {
-    mount()
+  it('segmentväxeln byter till tablåläge med nu-linje', async () => {
+    await mount()
     fireEvent.click(screen.getByText('Timeline'))
+    await flushLiveTvIndex()
     expect(screen.getByTestId('now-line')).toBeInTheDocument()
-    expect(screen.getByText('Now A')).toBeInTheDocument()
+    expect(screen.getAllByText('Now A').length).toBeGreaterThan(0)
   })
   it('OK på raden spelar kanalen', async () => {
     mount()
     fireEvent.click(screen.getAllByTestId('guide-row')[1])
     expect(await screen.findByTestId('player')).toHaveTextContent('B')
   })
-  it('▸ på en rad byter kategori och tar med sig valet till nya första raden', () => {
-    mount()
+  it('▸ på en rad byter kategori och tar med sig valet till nya första raden', async () => {
+    await mount()
     const rows = screen.getAllByTestId('guide-row')
     fireEvent.focus(rows[2])
     expect(screen.getByTestId('guide-headline')).toHaveTextContent('C')
@@ -69,14 +75,15 @@ describe('TvGuide', () => {
     expect(screen.getAllByTestId('guide-row')).toHaveLength(2)
     expect(screen.getByTestId('guide-headline')).toHaveTextContent('Now A')
   })
-  it('vald rad utanför de synliga raderna ger ändå exakt en data-init', () => {
+  it('vald rad utanför de synliga raderna ger ändå exakt en data-init', async () => {
     // 60 kanaler: listan visar 40 åt gången. Efter "Visa fler" + fokus på rad
     // 45 nollställer ett lägesbyte `visible` till 40 — den valda raden ritas
     // då inte längre, och `selected ? focused : index === 0` gav NOLL
     // data-init i hela vyn, alltså ingen startstation för fokusmotorn.
     const many = Array.from({ length: 60 }, (_, i) => ch(`K${i + 1}`, 'Sport'))
     writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ ...list, channels: many }])
-    mount()
+    seedLiveTvIndex({ cache })
+    await mount()
     fireEvent.click(screen.getByText('Show more'))
     const rows = screen.getAllByTestId('guide-row')
     expect(rows.length).toBeGreaterThan(45)
@@ -87,8 +94,8 @@ describe('TvGuide', () => {
     expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
     expect(after[0]).toHaveAttribute('data-init')
   })
-  it('okänd group-parameter faller tillbaka till Alla i stället för en tom vy', () => {
-    mount({ view: 'guide', group: 'Nonexistent' })
+  it('okänd group-parameter faller tillbaka till Alla i stället för en tom vy', async () => {
+    await mount({ view: 'guide', group: 'Nonexistent' })
     expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
     expect(screen.getAllByTestId('guide-row')).toHaveLength(3)
   })

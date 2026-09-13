@@ -2,9 +2,9 @@ import { useEffect } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { __resetForTests, __setTvModeForTests, BROWSE_BACK_EVENT, writePluginJson } from '@/lib/plugin-sdk'
+import { seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
 
-vi.mock('../hooks/useLiveTvEpgCache', () => ({ useLiveTvEpgCache: vi.fn(() => null) }))
 // Fix round 1 (Task 16-review): spelaren äger Back helt medan den är öppen —
 // skalet står numera tillbaka (se tv-shell.tsx: `if (active) return` i dess
 // Back-lyssnare). Mocken måste därför själv stänga sig på Back, precis som
@@ -34,6 +34,7 @@ beforeEach(() => {
   __setTvModeForTests(true)
   writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list])
   writePluginJson(LIVE_TV_PLUGIN_ID, 'pins', [])
+  seedLiveTvIndex()
 })
 
 function mount(params: Record<string, string> = {}) {

@@ -39,9 +39,11 @@ import {
   removeChannelFromLiveTvList,
   sortChannelsWithPins,
   togglePinnedLiveTvChannel,
+  channelKey,
   type LiveTvList,
 } from './live-tv-data'
 import { loadAllChannels, onIndexChanged } from './index-client'
+import { useSchedules } from './hooks/useSchedules'
 
 interface M3uChannel {
   name: string
@@ -1673,7 +1675,11 @@ function ChannelSidePanel({
   const locale = lang === 'sv' ? 'sv-SE' : 'en-GB'
   const nowRef = useRef<HTMLDivElement | null>(null)
   const { nowMs } = model
-  const schedule = channel ? model.scheduleFor(channel, startOfLocalDay(nowMs), startOfLocalDay(nowMs, 1)) : []
+  // Tablån hämtas per fönster från appen (spec 4.2) i stället för ur en
+  // EPG-cache i webviewn.
+  const scheduleChannels = useMemo(() => (channel ? [channel] : []), [channel])
+  const { schedules } = useSchedules(scheduleChannels, startOfLocalDay(nowMs), startOfLocalDay(nowMs, 1))
+  const schedule = channel ? schedules[channelKey(channel)] ?? [] : []
   const info = channel ? model.nowFor(channel) : { now: null, next: null, later: null }
   useEffect(() => {
     nowRef.current?.scrollIntoView({ block: 'center' })

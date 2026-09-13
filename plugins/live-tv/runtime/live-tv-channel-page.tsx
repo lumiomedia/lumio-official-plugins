@@ -7,6 +7,8 @@ import { qualityFromName, startOfLocalDay, useLiveTvModel } from './live-tv-mode
 import { useHubText } from './hub-strings'
 import { useSwipeBack } from './hooks/useSwipeBack'
 import { useBackToHub } from './hooks/useBackToHub'
+import { useSchedules } from './hooks/useSchedules'
+import { sliceSchedule } from './epg/lookup'
 import { catchUpForChannel, channelSupportsCatchUp, expiresLabel } from './catch-up'
 import { isReminded, toggleReminder } from './reminders'
 import { activeProfileHasPin, pinSupportAvailable, toggleChannelLock, verifyActiveProfilePin } from './channel-locks'
@@ -74,13 +76,24 @@ export function LiveTvChannelPage({ params, onNavigate }: Props) {
   const { nowMs } = model
 
   const info = channel ? model.nowFor(channel) : { now: null, next: null, later: null }
+  // Tablån kommer från appen per fönster (spec 4.2). Repriserna behöver
+  // arkivfönstret bakåt, dagens rader dygnet — ett fönster som täcker båda
+  // hämtas en gång och skivas här.
+  const archiveDays = channel?.archive?.days ?? 0
+  const scheduleFrom = archiveDays > 0 ? startOfLocalDay(nowMs) - archiveDays * 86_400_000 : startOfLocalDay(nowMs)
+  const scheduleTo = startOfLocalDay(nowMs, 1)
+  const scheduleChannels = useMemo(() => (channel ? [channel] : []), [channel])
+  const { schedules } = useSchedules(scheduleChannels, scheduleFrom, scheduleTo)
+  const schedule = channel ? schedules[channelKey(channel)] ?? [] : []
   const today = useMemo(
-    () => (channel ? model.scheduleFor(channel, startOfLocalDay(nowMs), startOfLocalDay(nowMs, 1)) : []),
-    [channel, model, nowMs],
+    () => sliceSchedule(schedule, startOfLocalDay(nowMs), startOfLocalDay(nowMs, 1)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [schedule, nowMs],
   )
   const replays = useMemo(
-    () => (channel ? catchUpForChannel(channel, model.cache, model.nameIndex, nowMs, 8) : []),
-    [channel, model.cache, model.nameIndex, nowMs],
+    () => (channel ? catchUpForChannel(channel, schedule, nowMs, 8) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [channel, schedule, nowMs],
   )
   // Öppnad från påminnelsens Se nu: starta strömmen direkt i stället för att
   // landa på detaljsidan. En gång per öppning.
@@ -102,6 +115,12 @@ export function LiveTvChannelPage({ params, onNavigate }: Props) {
   }
 
   const key = channelKey(channel)
+  /**
+   * "Har kanalen tablå?" avgörs numera av indexet: appen sätter
+   * `tvgIdResolved` vid import/EPG-hämtning (namnmatchningen bor i Rust), och
+   * pluginets gamla `tvgIdFor` finns inte kvar.
+   */
+  const hasEpgSource = Boolean((channel as { tvgIdResolved?: string | null }).tvgIdResolved ?? channel.tvgId)
   const pinned = model.pinnedSet.has(key)
   const locked = model.locked.has(key)
   const list = model.listFor(channel)
@@ -182,7 +201,7 @@ export function LiveTvChannelPage({ params, onNavigate }: Props) {
               <Row label={h('quality')} value={quality ?? h('unknown')} />
               <Row label={h('group')} value={channel.group || h('unknown')} />
               <Row label={h('sourceList')} value={list?.name ?? h('unknown')} />
-              <Row label={h('epgSource')} value={model.tvgIdFor(channel) ? h('yes') : h('no')} />
+              <Row label={h('epgSource')} value={hasEpgSource ? h('yes') : h('no')} />
               <Row label={h('catchUp')} value={channel.archive ? h('availableDays', { days: channel.archive.days }) : h('no')} />
             </div>
           </div>

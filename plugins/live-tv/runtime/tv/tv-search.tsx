@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { channelKey } from '../live-tv-data'
 import { startOfLocalDay } from '../live-tv-model'
 import { formatClock } from '../live-tv-ui'
@@ -8,7 +8,8 @@ import type { TvViewProps } from './tv-shell'
 import { ChannelArt, TV, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
 import { TvKeyboard } from './tv-keyboard'
-import { searchChannels, searchProgrammes, suggestions } from './tv-search-logic'
+import { searchChannels, suggestions } from './tv-search-logic'
+import { useProgrammeSearch } from '../hooks/useProgrammeSearch'
 
 export function TvSearch({ model, nav }: TvViewProps) {
   const { tt, locale } = useTvText()
@@ -16,23 +17,18 @@ export function TvSearch({ model, nav }: TvViewProps) {
   /**
    * Programsökningen är fördröjd, kanalsökningen inte.
    *
-   * `searchChannels` går igenom kanalnamnen en gång. `searchProgrammes` slår i
-   * stället upp HELA dagens tablå för VARJE kanal (`model.scheduleFor` per
-   * kanal) — i en stor spellista tiotusentals uppslag. På TV skrivs frågan en
-   * bokstav i taget med fjärrkontrollen, och varje bokstav körde om hela den
-   * genomsökningen synkront: tangentbordet hakade upp sig mellan trycken.
-   * 150 ms är kortare än ett bekvämt tryckintervall på fjärrkontrollen, så en
-   * användare som slutat skriva ser resultatet som omedelbart, medan en snabb
-   * serie tryck bara ger EN genomsökning.
+   * `searchChannels` går igenom de laddade kanalnamnen en gång, i minnet.
+   * Programsökningen går till appen (`/epg/search`) — den kostar ett anrop, och
+   * på TV skrivs frågan en bokstav i taget med fjärrkontrollen. Fördröjningen
+   * (150 ms i `useProgrammeSearch`) är kortare än ett bekvämt tryckintervall,
+   * så den som slutat skriva ser svaret som omedelbart medan en snabb serie
+   * tryck bara ger EN sökning.
    */
-  const [deferredQuery, setDeferredQuery] = useState('')
-  useEffect(() => {
-    const timer = window.setTimeout(() => setDeferredQuery(query), 150)
-    return () => window.clearTimeout(timer)
-  }, [query])
   const day = useMemo(() => { const start = startOfLocalDay(model.nowMs); return { start, end: start + 86_400_000 } }, [model.nowMs])
   const channels = useMemo(() => searchChannels(query, model.channels), [query, model.channels])
-  const programmes = useMemo(() => searchProgrammes(deferredQuery, model.channels, model.scheduleFor, day), [deferredQuery, model.channels, model.scheduleFor, day])
+  // Den globala EPG-listan, inte `model.epgListId`: appen kan ha en tablå även
+  // när pluginet inte har någon EPG-URL i lagringen (Xtream-härledd källa).
+  const { hits: programmes } = useProgrammeSearch(query, day.start, day.end)
   const hints = useMemo(() => suggestions(query, model.channels, programmes.map((p) => p.programme.title)), [query, model.channels, programmes])
   const focusFirstResult = () => {
     const first = document.querySelector<HTMLElement>('[data-live-tv-search-results] [data-f]')

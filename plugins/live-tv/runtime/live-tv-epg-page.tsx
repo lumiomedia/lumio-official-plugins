@@ -11,6 +11,7 @@ import { Btn, ChannelBadge, Icon, LT, LiveTvHeader, formatClock, surfaceCard } f
 import { ReminderBell, RemindersMenu, encodeChannelParams, useLiveTvChrome, useLiveTvNav } from './live-tv-shell'
 import { useIsMobileLayout } from './hooks/useIsMobileLayout'
 import { selectEpgRows } from './epg-rows'
+import { useSchedules } from './hooks/useSchedules'
 import { useSwipeBack } from './hooks/useSwipeBack'
 import { useBackToHub } from './hooks/useBackToHub'
 
@@ -101,20 +102,30 @@ export function LiveTvEpgPage({ onNavigate }: Props) {
     setVisibleRows(MAX_ROWS)
   }, [group, dayOffset])
 
-  const { rows, hasMore } = useMemo(() => {
-    // Favoriter först, sedan övriga kanaler. Kanaler utan tablå utelämnas i
-    // selectEpgRows — en tom rad säger inget.
-    const ordered = [
+  // Favoriter först, sedan övriga kanaler. Kanaler utan tablå utelämnas i
+  // selectEpgRows — en tom rad säger inget.
+  const ordered = useMemo(
+    () => [
       ...model.pinnedKeys.map((key) => model.byKey.get(key)).filter((channel): channel is M3uChannel => Boolean(channel)),
       ...model.channels.filter((channel) => !model.pinnedSet.has(channelKey(channel))),
-    ]
-    return selectEpgRows(
-      ordered,
-      (channel) => model.scheduleFor(channel, windowStart, windowEnd),
-      group,
-      visibleRows,
-    )
-  }, [model, windowStart, windowEnd, group, visibleRows])
+    ],
+    [model.pinnedKeys, model.byKey, model.channels, model.pinnedSet],
+  )
+  /**
+   * Tablån hämtas numera från appen per fönster, inte ur en EPG-cache i
+   * webviewn. Vi frågar om ett ÖVERSKOTT av kanaler (kanaler utan tablå faller
+   * bort i selectEpgRows), men inte om hela spellistan — 17 000 nycklar vore
+   * 85 anrop för 80 synliga rader.
+   */
+  const candidates = useMemo(
+    () => ordered.filter((channel) => !group || channel.group === group).slice(0, visibleRows * 3),
+    [ordered, group, visibleRows],
+  )
+  const { schedules } = useSchedules(candidates, windowStart, windowEnd)
+  const { rows, hasMore } = useMemo(
+    () => selectEpgRows(candidates, (channel) => schedules[channelKey(channel)] ?? [], group, visibleRows),
+    [candidates, schedules, group, visibleRows],
+  )
 
   const scrollToNow = () => {
     const el = scrollRef.current

@@ -1,5 +1,4 @@
 import type { M3uChannel } from '../live-tv-data'
-import type { EpgProgramme } from '../epg/types'
 
 function norm(s: string): string {
   return s.trim().toLowerCase()
@@ -19,26 +18,12 @@ export function searchChannels(query: string, channels: M3uChannel[], limit = 30
   return [...prefix, ...contains].slice(0, limit)
 }
 
-export interface ProgrammeHit { channel: M3uChannel; programme: EpgProgramme }
-
-export function searchProgrammes(
-  query: string,
-  channels: M3uChannel[],
-  scheduleFor: (channel: M3uChannel, fromMs: number, toMs: number) => EpgProgramme[],
-  day: { start: number; end: number },
-  limit = 30,
-): ProgrammeHit[] {
-  const q = norm(query)
-  if (!q) return []
-  const out: ProgrammeHit[] = []
-  for (const channel of channels) {
-    for (const programme of scheduleFor(channel, day.start, day.end)) {
-      if (norm(programme.title).includes(q)) out.push({ channel, programme })
-      if (out.length >= limit) return out.sort((a, b) => a.programme.start - b.programme.start)
-    }
-  }
-  return out.sort((a, b) => a.programme.start - b.programme.start)
-}
+/**
+ * Programsökningen gjordes tidigare här, genom att slå upp hela dagens tablå
+ * för varje kanal i minnet. Sedan lagring v2 söker APPEN i tablån
+ * (`/api/live-tv/epg/search`) och `hooks/useProgrammeSearch.ts` äger frågan —
+ * en genomsökning av 17 000 kanaler per tangenttryck finns inte längre.
+ */
 
 export function suggestions(query: string, channels: M3uChannel[], programmeTitles: string[], limit = 6): string[] {
   const q = norm(query)

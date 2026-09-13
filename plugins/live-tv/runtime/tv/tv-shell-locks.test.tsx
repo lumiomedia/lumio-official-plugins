@@ -16,7 +16,6 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
  * PIN-bron finns bara i appar från 0.1.57 och läses dynamiskt ur SDK:n;
  * teststubben bär den och `__setProfilePinForTests` sätter profilens PIN.
  */
-vi.mock('../hooks/useLiveTvEpgCache', () => ({ useLiveTvEpgCache: vi.fn(() => null) }))
 vi.mock('../live-tv-player', () => ({
   LiveTvPlayer: ({ channel, tv }: { channel: { name: string }; tv?: { neighbours: Array<{ name: string }>; onSwitchChannel: (c: { name: string }) => void } }) => (
     <div data-testid="player">
@@ -27,6 +26,7 @@ vi.mock('../live-tv-player', () => ({
 }))
 
 import { __resetForTests, __setProfilePinForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
+import { seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, channelKey, type LiveTvList } from '../live-tv-data'
 import { LOCKED_CHANNELS_KEY, getLockedChannelKeys } from '../channel-locks'
 import { LiveTvTvShell } from './tv-shell'
@@ -41,6 +41,7 @@ beforeEach(() => {
   __setProfilePinForTests('1234')
   writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list])
   writePluginJson(LIVE_TV_PLUGIN_ID, 'pins', [channelKey(ch('A'))])
+  seedLiveTvIndex()
 })
 
 const mount = (params: Record<string, string>) => render(<LiveTvTvShell pageId="live-tv-browse" params={params} onNavigate={() => {}} onOpenDetails={() => {}} />)

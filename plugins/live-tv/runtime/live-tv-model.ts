@@ -1,20 +1,35 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import { useTvMode } from '@/lib/plugin-sdk'
-import { useLiveTvEpgCache } from './hooks/useLiveTvEpgCache'
-import { computeNowNextLater, getChannelSchedule } from './epg/lookup'
-import { buildNameToTvgIdIndex, resolveTvgId } from './epg/name-match'
-import type { EpgCacheEntry, EpgProgramme, NowNextLater } from './epg/types'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  clearPluginMemoryCacheByPrefix,
+  getPluginMemoryCache,
+  setPluginMemoryCache,
+  useTvMode,
+} from '@/lib/plugin-sdk'
+import type { NowNextLater } from './epg/types'
+import { fetchNowSnapshot, getCachedNowSnapshot, type NowSnapshot } from './epg/now-snapshot'
+import {
+  loadAllChannels,
+  onIndexChanged,
+  refreshEpg,
+  waitForJob,
+  type IndexChannel,
+} from './index-client'
+import { getResolvedChannels, rememberChannels, resolveChannelKeys } from './channel-resolver'
+import { migrateStorageV2 } from './storage-v2-migration'
 import { getChannelHistory, onChannelHistoryChanged, type ChannelHistoryEntry } from './channel-history'
 import { useReminders, type Reminder } from './reminders'
 import { useLockedChannelKeys } from './channel-locks'
 import {
+  LIVE_TV_CHANNELS_PREFIX,
   LIVE_TV_GLOBAL_EPG_ID,
+  LIVE_TV_PLUGIN_ID,
   channelKey,
   getAllLiveTvEpgUrls,
   getLiveTvLists,
   getPinnedLiveTvKeys,
+  importMissingSources,
   onLiveTvListsChanged,
   onPinnedLiveTvKeysChanged,
   togglePinnedLiveTvChannel,
@@ -24,14 +39,22 @@ import {
 import { getActivePlaylistId, onActivePlaylistChanged, setActivePlaylistId } from './tv/tv-settings-store'
 
 /**
- * Delad datamodell för Live TV-sidorna. Allt underlag är lokalt: kanallistor,
- * favoriter, historik, påminnelser, lås och den EPG-cache som redan hämtas.
- * Ett namnindex byggs för hela vyn i stället för ett per kort.
+ * Delad datamodell för Live TV-sidorna (lagring v2, spec 4.2).
+ *
+ * KANALERNA bor i appens index på disk och laddas hit i 5 000-sidor till en
+ * minnescache — aldrig till pluginlagringen. TABLÅN bor också i appen:
+ * `nowFor` läser ett minnessnapshot från `/epg/now` (uppdaterat varje minut),
+ * och hela fönster hämtas av `useSchedules`/`useProgrammeSearch` i stället för
+ * den gamla `scheduleFor` som räknade på en EPG-cache i webviewn.
+ *
+ * Kvar i pluginlagringen: listmetadata, favoriter, historik, påminnelser, lås.
  */
 
 const EMPTY: NowNextLater = { now: null, next: null, later: null }
 const PLACEHOLDER_NAME_RE = /^[\s=\-_*•·]+|=+/
 export const MAX_GROUP_CHIPS = 8
+/** Samma fönster som appen håller sin EPG-fil färsk i (spec 3.3). */
+const EPG_TTL_MS = 6 * 60 * 60 * 1000
 
 export function isPlayableChannel(channel: M3uChannel): boolean {
   if (!channel.url) return false
@@ -41,11 +64,17 @@ export function isPlayableChannel(channel: M3uChannel): boolean {
   return true
 }
 
+/**
+ * Kanaler ur listornas INBÄDDADE `channels` — bara den gamla lagringen och de
+ * manuellt skapade listorna (`kind: 'custom'`) har sådana kvar efter v2.
+ * Modellen använder den INTE längre; den finns för vyer som fortfarande läser
+ * en enskild lista (spellisteguiden) tills de går via indexet.
+ */
 export function flattenChannels(lists: LiveTvList[]): M3uChannel[] {
   const seen = new Set<string>()
   const out: M3uChannel[] = []
   for (const list of lists) {
-    for (const channel of list.channels) {
+    for (const channel of list.channels ?? []) {
       if (!isPlayableChannel(channel)) continue
       const key = channelKey(channel)
       if (seen.has(key)) continue
@@ -56,7 +85,7 @@ export function flattenChannels(lists: LiveTvList[]): M3uChannel[] {
   return out
 }
 
-export function topGroups(channels: M3uChannel[], limit = MAX_GROUP_CHIPS): string[] {
+export function topGroups(channels: readonly M3uChannel[], limit = MAX_GROUP_CHIPS): string[] {
   const counts = new Map<string, number>()
   for (const channel of channels) {
     const group = channel.group?.trim()
@@ -71,7 +100,7 @@ export function topGroups(channels: M3uChannel[], limit = MAX_GROUP_CHIPS): stri
 
 export interface LiveTvModel {
   lists: LiveTvList[]
-  /** Alla kanaler oavsett aktiv spellista. */
+  /** Alla laddade kanaler (aktiv källa när en spellista är vald, annars hela indexet). */
   allChannels: M3uChannel[]
   channels: M3uChannel[]
   byKey: Map<string, M3uChannel>
@@ -84,23 +113,62 @@ export interface LiveTvModel {
   activePlaylistId: string | null
   activePlaylistName: string | null
   setActivePlaylist: (id: string | null) => void
-  /** 1-baserat nummer i den filtrerade listan, null om kanalen inte ingår. */
+  /** Kanalens nummer ur indexet (aktiv källa), annars dess plats i den laddade listan. */
   channelNumber: (channel: M3uChannel) => number | null
-  /** Favoriter i sparad ordning, ur allChannels. */
+  /** Favoriter i sparad ordning; nycklar utanför den laddade listan slås upp mot indexet. */
   favouriteChannels: M3uChannel[]
   history: ChannelHistoryEntry[]
   nowMs: number
   epgListId: string | null
   epgUrls: string[]
-  cache: EpgCacheEntry | null
   hasEpg: boolean
-  nameIndex: Map<string, string>
-  tvgIdFor: (channel: M3uChannel) => string | null
+  /** Sant tills den första sidhämtningen ur indexet är klar. */
+  channelsLoading: boolean
+  /** Sant medan nu-snapshotet (eller appens EPG-hämtning) är på väg. */
+  epgLoading: boolean
+  /** När appen senast HÄMTADE EPG:t från källorna; null = aldrig. */
+  epgFetchedAt: number | null
+  /** Slår upp kanaler på nyckel mot indexet (favoriter, historik, sökträffar). */
+  resolveKeys: (keys: string[]) => Promise<M3uChannel[]>
+  /** Tvinga en ny sidhämtning ur indexet (efter import, eller manuell uppdatering). */
+  refreshChannels: () => void
   nowFor: (channel: M3uChannel) => NowNextLater
-  scheduleFor: (channel: M3uChannel, fromMs: number, toMs: number) => EpgProgramme[]
   reminders: Reminder[]
   locked: Set<string>
   listFor: (channel: M3uChannel) => LiveTvList | null
+}
+
+/**
+ * Migrering + mottagarsidan av enhetsöverföringen körs EN gång per sidladdning,
+ * inte en gång per modell: hubben, TV-skalet och startsideöverstyrningen kan
+ * alla ha en modell monterad samtidigt, och migreringen skriver om lagringen.
+ */
+let bootstrapPromise: Promise<void> | null = null
+
+function ensureBootstrap(): Promise<void> {
+  if (!bootstrapPromise) {
+    bootstrapPromise = (async () => {
+      await migrateStorageV2().catch(() => {})
+      await importMissingSources().catch(() => {})
+    })()
+  }
+  return bootstrapPromise
+}
+
+/**
+ * EPG-omhämtningen (`/epg/refresh`) begärs en gång per lista och sidladdning.
+ * Rust avgör själv om den faktiskt hämtar (TTL 6 h), men jobbet ska inte
+ * startas om av varje monterad modell.
+ */
+const epgRefreshRequested = new Set<string>()
+
+export function __resetLiveTvModelForTests(): void {
+  bootstrapPromise = null
+  epgRefreshRequested.clear()
+}
+
+function channelsCacheKey(source: string | null): string {
+  return `${LIVE_TV_CHANNELS_PREFIX}${source ?? 'all'}`
 }
 
 export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
@@ -120,10 +188,6 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
   }, [])
   useEffect(() => onPinnedLiveTvKeysChanged(() => setPinnedKeys(getPinnedLiveTvKeys())), [])
   useEffect(() => onChannelHistoryChanged(() => setHistory(getChannelHistory())), [])
-  useEffect(() => {
-    const timer = window.setInterval(() => setNowMs(Date.now()), tickMs)
-    return () => window.clearInterval(timer)
-  }, [tickMs])
 
   /**
    * Den aktiva spellistan är ett TV-BEGREPP.
@@ -139,77 +203,227 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
    * som grindar filtret.
    */
   const tvMode = useTvMode()
-  const allChannels = useMemo(() => flattenChannels(lists), [lists])
   // Vald spellista som inte längre finns → tillbaka till alla.
-  const activeList = useMemo(() => (tvMode ? lists.find((list) => list.id === activePlaylistId) ?? null : null), [tvMode, lists, activePlaylistId])
-  const channels = useMemo(() => (activeList ? flattenChannels([activeList]) : allChannels), [activeList, allChannels])
-  const playlists = useMemo(() => lists.map((list) => ({ id: list.id, name: list.name, count: flattenChannels([list]).length })), [lists])
-  const numberByKey = useMemo(() => new Map(channels.map((channel, index) => [channelKey(channel), index + 1])), [channels])
-  const allByKey = useMemo(() => new Map(allChannels.map((channel) => [channelKey(channel), channel])), [allChannels])
-  const byKey = useMemo(() => new Map(channels.map((channel) => [channelKey(channel), channel])), [channels])
-  const byUrl = useMemo(() => new Map(allChannels.map((channel) => [channel.url, channel])), [allChannels])
+  const activeList = useMemo(
+    () => (tvMode ? lists.find((list) => list.id === activePlaylistId) ?? null : null),
+    [tvMode, lists, activePlaylistId],
+  )
+  const activeSource = activeList?.source ?? null
+
+  // ---- Kanaler ur indexet -------------------------------------------------
+
+  const [loaded, setLoaded] = useState<IndexChannel[]>([])
+  const [channelsLoading, setChannelsLoading] = useState(true)
+  const [reloadToken, setReloadToken] = useState(0)
+  /** Kanaler utanför den laddade uppsättningen (favoriter/historik i andra källor). */
+  const [extras, setExtras] = useState<Record<string, IndexChannel>>({})
+
+  useEffect(() => {
+    let live = true
+    const cacheKey = channelsCacheKey(activeSource)
+    const cached = getPluginMemoryCache<IndexChannel[]>(LIVE_TV_PLUGIN_ID, cacheKey)
+    if (cached) {
+      rememberChannels(cached)
+      setLoaded(cached)
+      setChannelsLoading(false)
+    } else {
+      setChannelsLoading(true)
+    }
+    void (async () => {
+      try {
+        await ensureBootstrap()
+        const items = await loadAllChannels(activeSource)
+        if (!live) return
+        setPluginMemoryCache(LIVE_TV_PLUGIN_ID, cacheKey, items)
+        rememberChannels(items)
+        setLoaded(items)
+      } finally {
+        if (live) setChannelsLoading(false)
+      }
+    })().catch(() => {})
+    return () => {
+      live = false
+    }
+  }, [activeSource, reloadToken])
+
+  const refreshChannels = useCallback(() => {
+    clearPluginMemoryCacheByPrefix(LIVE_TV_PLUGIN_ID, LIVE_TV_CHANNELS_PREFIX)
+    setReloadToken((token) => token + 1)
+  }, [])
+
+  // Import klar, migrering körd, lista borttagen: indexet har bytt innehåll.
+  useEffect(() => onIndexChanged(() => refreshChannels()), [refreshChannels])
+
+  /**
+   * Platshållarrader ("=== SPORT ===") är kvar i indexet — det speglar källan —
+   * men de är inga kanaler att spela, så de filtreras här precis som
+   * `flattenChannels` gjorde före v2. Numret kommer ur indexet och påverkas
+   * inte av filtret; positionen (utan aktiv källa) räknas på det som visas.
+   */
+  const channels = useMemo(() => loaded.filter(isPlayableChannel), [loaded])
+  const numberByKey = useMemo(() => new Map(loaded.map((channel) => [channel.key, channel.number])), [loaded])
+  const positionByKey = useMemo(
+    () => new Map(channels.map((channel, index) => [channelKey(channel), index + 1])),
+    [channels],
+  )
+  const byKey = useMemo(() => {
+    const map = new Map<string, M3uChannel>()
+    for (const channel of Object.values(extras)) map.set(channel.key, channel)
+    for (const channel of channels) map.set(channelKey(channel), channel)
+    return map
+  }, [channels, extras])
+  const byUrl = useMemo(() => {
+    const map = new Map<string, M3uChannel>()
+    for (const channel of byKey.values()) if (!map.has(channel.url)) map.set(channel.url, channel)
+    return map
+  }, [byKey])
   const groups = useMemo(() => topGroups(channels), [channels])
+  const playlists = useMemo(
+    () => lists.map((list) => ({ id: list.id, name: list.name, count: list.channelCount ?? list.channels?.length ?? 0 })),
+    [lists],
+  )
+  /**
+   * Listan en kanal kom från. Efter v2 bär listorna inga kanaler, så kopplingen
+   * går via den aktiva källan (TV) eller — när det bara finns en lista — den.
+   * Kvarvarande inbäddade kanaler (manuella listor) matchas fortfarande direkt.
+   */
   const listByUrl = useMemo(() => {
     const map = new Map<string, LiveTvList>()
-    for (const list of lists) for (const channel of list.channels) if (!map.has(channel.url)) map.set(channel.url, list)
+    for (const list of lists) for (const channel of list.channels ?? []) if (!map.has(channel.url)) map.set(channel.url, list)
     return map
   }, [lists])
 
+  /** Favoriter och historik kan peka på kanaler utanför den laddade uppsättningen. */
+  const loadedKeys = useMemo(() => new Set(channels.map((channel) => channelKey(channel))), [channels])
+  const pinnedId = pinnedKeys.join(',')
+  const historyId = history.map((entry) => entry.key).join(',')
+  useEffect(() => {
+    // Vänta in sidhämtningen: annars slås favoriter upp en gång i onödan
+    // (de ligger oftast i den laddade uppsättningen) innan den hunnit svara.
+    if (channelsLoading) return
+    const wanted = [...pinnedKeys, ...history.map((entry) => entry.key)].filter((key) => !loadedKeys.has(key))
+    if (wanted.length === 0) return
+    let live = true
+    const known = getResolvedChannels(wanted)
+    if (Object.keys(known).length > 0) setExtras((prev) => ({ ...prev, ...known }))
+    resolveChannelKeys(wanted)
+      .then((items) => {
+        if (!live || items.length === 0) return
+        setExtras((prev) => {
+          const next = { ...prev }
+          for (const item of items) next[item.key] = item
+          return next
+        })
+      })
+      .catch(() => {})
+    return () => {
+      live = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pinnedId, historyId, loadedKeys, channelsLoading])
+
+  // ---- EPG ur appen -------------------------------------------------------
+
   const epgUrls = useMemo(() => getAllLiveTvEpgUrls(lists), [lists])
+  const epgUrlsId = epgUrls.join('|')
   const epgListId = epgUrls.length > 0 ? LIVE_TV_GLOBAL_EPG_ID : null
+  const sources = useMemo(
+    () => lists.map((list) => list.source).filter((source): source is string => Boolean(source)),
+    [lists],
+  )
+  const sourcesId = sources.join('|')
+  const [snapshot, setSnapshot] = useState<NowSnapshot | null>(() =>
+    getCachedNowSnapshot(LIVE_TV_GLOBAL_EPG_ID, null),
+  )
+  const [epgLoading, setEpgLoading] = useState(false)
+
+  // Tickern äger både klockan och omhämtningen av snapshotet: en minut är
+  // precis den upplösning "Nu/Härnäst" har, så en egen EPG-timer vore en
+  // andra klocka som visar samma sak.
+  const [epgTick, setEpgTick] = useState(0)
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setNowMs(Date.now())
+      setEpgTick((tick) => tick + 1)
+    }, tickMs)
+    return () => window.clearInterval(timer)
+  }, [tickMs])
+
   /**
-   * Cachen LÄSES under den konstanta nyckeln, inte under epgListId
+   * Snapshotet läses under den KONSTANTA lista-nyckeln, inte under epgListId
    * (Jerry 2026-09-03).
    *
-   * epgListId är null tills kanallistorna hunnit laddas, och med null läste
-   * hooken ingenting. En VARM cache på disk låg därför oanvänd i flera
-   * sekunder vid varje omladdning — live-status och förloppsraden dök upp
-   * långt efter att sidan ritats, fast datan fanns hela tiden.
+   * `epgListId` är null tills kanallistorna hunnit laddas — och förblir null
+   * när ingen EPG-URL är konfigurerad, fast appen mycket väl kan ha en tablå
+   * (den härleder xmltv.php ur en Xtream-inloggning på egen hand). Med null
+   * som villkor låg en FÄRDIG tablå oanvänd: live-status dök upp långt efter
+   * att sidan ritats, eller aldrig.
    *
-   * Hämtningen är fortfarande grindad: ensureFresh avstår när urls är tom,
-   * så ingenting hämtas innan listorna vet vilka EPG-källor som gäller.
-   * epgListId lämnas orörd — live-tv-shell.tsx använder dess null-läge för
-   * att veta att EPG saknas.
+   * Hämtningen är fortfarande grindad: omhämtningsjobbet begärs bara när det
+   * FINNS URL:er. `epgListId` lämnas orörd — live-tv-shell.tsx använder dess
+   * null-läge för att veta att EPG saknas.
    */
-  const cache = useLiveTvEpgCache(LIVE_TV_GLOBAL_EPG_ID, epgUrls)
-  const nameIndex = useMemo(() => (cache ? buildNameToTvgIdIndex(cache) : new Map<string, string>()), [cache])
-  const tvgIdFor = useMemo(() => {
-    const memo = new Map<string, string | null>()
-    return (channel: M3uChannel): string | null => {
-      if (!cache) return null
-      const key = channelKey(channel)
-      if (memo.has(key)) return memo.get(key) ?? null
-      const resolved = resolveTvgId(channel.tvgId, channel.name, nameIndex)
-      memo.set(key, resolved)
-      return resolved
+  useEffect(() => {
+    let live = true
+    const listId = LIVE_TV_GLOBAL_EPG_ID
+    const cached = getCachedNowSnapshot(listId, activeSource)
+    if (cached) setSnapshot(cached)
+    setEpgLoading(!cached)
+    void (async () => {
+      try {
+        const first = await fetchNowSnapshot(listId, activeSource)
+        if (!live) return
+        setSnapshot(first)
+        const stale = first.fetchedAt === null || Date.now() - first.fetchedAt > EPG_TTL_MS
+        if (!stale || epgUrls.length === 0 || epgRefreshRequested.has(listId)) return
+        /*
+         * Appen avgör själv om den verkligen hämtar (TTL 6 h); jobbet begärs
+         * en gång per sidladdning.
+         *
+         * Jobbets `result` har samma FORM som importens (`ImportResult`), men
+         * betyder något annat: `total` är antalet PROGRAM och kanalantalet
+         * ligger i `groups[0]`. Vi väntar därför bara ut jobbet — ingen
+         * progress kopplas vidare till importens UI, som skulle läsa
+         * programantalet som "hämtar 480 000 av 17 000 kanaler".
+         */
+        epgRefreshRequested.add(listId)
+        const job = await refreshEpg(listId, epgUrls, sources)
+        await waitForJob(job)
+        if (!live) return
+        const next = await fetchNowSnapshot(listId, activeSource, { force: true })
+        if (!live) return
+        setSnapshot(next)
+      } finally {
+        if (live) setEpgLoading(false)
+      }
+    })().catch(() => {})
+    return () => {
+      live = false
     }
-  }, [cache, nameIndex])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSource, epgUrlsId, sourcesId, reloadToken, epgTick])
+
   const nowFor = useMemo(() => {
-    const memo = new Map<string, NowNextLater>()
+    const items = snapshot?.items ?? null
     return (channel: M3uChannel): NowNextLater => {
-      if (!cache) return EMPTY
-      const key = channelKey(channel)
-      const hit = memo.get(key)
-      if (hit) return hit
-      const tvgId = tvgIdFor(channel)
-      const value = tvgId ? computeNowNextLater(cache, tvgId, nowMs) : EMPTY
-      memo.set(key, value)
-      return value
+      if (!items) return EMPTY
+      return items[channelKey(channel)] ?? EMPTY
     }
-  }, [cache, tvgIdFor, nowMs])
-  const scheduleFor = useMemo(
-    () => (channel: M3uChannel, fromMs: number, toMs: number): EpgProgramme[] =>
-      cache ? getChannelSchedule(cache, tvgIdFor(channel), fromMs, toMs) : [],
-    [cache, tvgIdFor],
-  )
+  }, [snapshot])
+
   const favouriteChannels = useMemo(
-    () => pinnedKeys.map((key) => allByKey.get(key)).filter((c): c is M3uChannel => Boolean(c)),
-    [pinnedKeys, allByKey],
+    () => pinnedKeys.map((key) => byKey.get(key)).filter((channel): channel is M3uChannel => Boolean(channel)),
+    [pinnedKeys, byKey],
+  )
+
+  const resolveKeys = useCallback(
+    (keys: string[]): Promise<M3uChannel[]> => resolveChannelKeys(keys).then((items) => items as M3uChannel[]),
+    [],
   )
 
   return {
     lists,
-    allChannels,
+    allChannels: channels,
     channels,
     byKey,
     byUrl,
@@ -224,21 +438,27 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
       setActivePlaylistId(id)
       setActivePlaylistIdState(id)
     },
-    channelNumber: (channel) => numberByKey.get(channelKey(channel)) ?? null,
+    channelNumber: (channel) => {
+      const key = channelKey(channel)
+      if (activeSource) return numberByKey.get(key) ?? null
+      return positionByKey.get(key) ?? null
+    },
     favouriteChannels,
     history,
     nowMs,
     epgListId,
     epgUrls,
-    cache,
-    hasEpg: Boolean(cache && Object.keys(cache.index).length > 0),
-    nameIndex,
-    tvgIdFor,
+    hasEpg: Boolean(snapshot && Object.keys(snapshot.items).length > 0),
+    channelsLoading,
+    epgLoading,
+    epgFetchedAt: snapshot?.fetchedAt ?? null,
+    resolveKeys,
+    refreshChannels,
     nowFor,
-    scheduleFor,
     reminders,
     locked,
-    listFor: (channel) => listByUrl.get(channel.url) ?? null,
+    listFor: (channel) =>
+      listByUrl.get(channel.url) ?? activeList ?? (lists.length === 1 ? lists[0] : null),
   }
 }
 

@@ -5,9 +5,9 @@ import { getTvGlassMenu, getTvKeyboardPanel, requestBrowseBack, tvHoldHandlers, 
   playerFrameUrl,
 } from '@/lib/plugin-sdk'
 import { channelKey, type M3uChannel } from './live-tv-data'
-import { useLiveTvModel } from './live-tv-model'
+import { startOfLocalDay, useLiveTvModel } from './live-tv-model'
 import { useHubText } from './hub-strings'
-import { catchUpAcross, expiresLabel, type CatchUpItem } from './catch-up'
+import { catchUpAcross, channelSupportsCatchUp, expiresLabel, type CatchUpItem } from './catch-up'
 import { topGroupsFromHistory, removeChannelHistoryEntry } from './channel-history'
 import {
   Btn,
@@ -27,6 +27,7 @@ import {
   surfaceCard,
 } from './live-tv-ui'
 import { useEpgLoadStatus } from './hooks/useEpgLoadStatus'
+import { useSchedules } from './hooks/useSchedules'
 import { useIsMobileLayout } from './hooks/useIsMobileLayout'
 import { RemindersMenu, encodeChannelParams, useLiveTvChrome, useLiveTvNav } from './live-tv-shell'
 
@@ -39,6 +40,9 @@ import { RemindersMenu, encodeChannelParams, useLiveTvChrome, useLiveTvNav } fro
 export { flattenChannels, topGroups } from './live-tv-model'
 
 const MAX_FAVORITES = 12
+/** Repriser: hur långt bakåt tablån hämtas, och hur många arkivkanaler som frågas åt gången. */
+const REPLAY_DAYS = 3
+const MAX_REPLAY_CHANNELS = 200
 const MAX_RECOMMENDED = 12
 /**
  * Hur många kanaler "Alla kanaler" ritar från början, och hur många varje
@@ -167,9 +171,21 @@ export function LiveTvHub({ onNavigate }: Props) {
         .slice(0, MAX_FAVORITES),
     [pinnedKeys, byKey, effectiveGroup],
   )
+  /**
+   * Repriser: tablån bor i appen sedan lagring v2, så bara de kanaler som
+   * FAKTISKT har ett arkiv (Xtream tv_archive) hämtas — och bara bakåt i
+   * arkivfönstret. Utan filtret hade hela spellistan frågats efter tre dygns
+   * tablå för att hitta en handfull repriser.
+   */
+  const replayChannels = useMemo(() => channels.filter(channelSupportsCatchUp).slice(0, MAX_REPLAY_CHANNELS), [channels])
+  const replayWindow = useMemo(() => {
+    const to = startOfLocalDay(nowMs, 1)
+    return { from: to - REPLAY_DAYS * 86_400_000, to }
+  }, [nowMs])
+  const { schedules: replaySchedules } = useSchedules(replayChannels, replayWindow.from, replayWindow.to)
   const catchUp = useMemo<CatchUpItem[]>(
-    () => catchUpAcross(channels, model.cache, model.nameIndex, nowMs, 12),
-    [channels, model.cache, model.nameIndex, nowMs],
+    () => catchUpAcross(replayChannels, replaySchedules, nowMs, 12),
+    [replayChannels, replaySchedules, nowMs],
   )
   const recent = useMemo(
     () =>

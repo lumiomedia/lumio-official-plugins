@@ -19,13 +19,13 @@ const loading = vi.hoisted(() => {
   return { pending, release: () => release() }
 })
 
-vi.mock('../hooks/useLiveTvEpgCache', () => ({ useLiveTvEpgCache: vi.fn(() => null) }))
 vi.mock('../live-tv-player', async () => {
   await loading.pending
   return { LiveTvPlayer: ({ channel }: { channel: { name: string } }) => <div data-testid="player">{channel.name}</div> }
 })
 
 import { __resetForTests, __setTvModeForTests, BROWSE_BACK_EVENT, writePluginJson } from '@/lib/plugin-sdk'
+import { seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
 import { LiveTvTvShell } from './tv-shell'
 
@@ -38,6 +38,7 @@ beforeEach(() => {
   __setTvModeForTests(true)
   writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list])
   writePluginJson(LIVE_TV_PLUGIN_ID, 'pins', [])
+  seedLiveTvIndex()
 })
 
 describe('LiveTvTvShell: Back medan spelaren laddas', () => {

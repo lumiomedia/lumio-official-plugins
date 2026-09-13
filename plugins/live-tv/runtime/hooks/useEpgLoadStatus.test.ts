@@ -1,63 +1,63 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
+import { renderHook, waitFor, cleanup } from '@testing-library/react'
+import type { NowNextLater } from '../epg/types'
+
+vi.mock('../index-client', () => ({
+  epgNow: vi.fn(async () => ({ at: Date.now(), fetchedAt: null, items: {} as Record<string, NowNextLater> })),
+}))
+
+import { epgNow } from '../index-client'
 import { useEpgLoadStatus } from './useEpgLoadStatus'
-import * as cacheModule from '../epg/cache'
+import { __resetNowSnapshotForTests } from '../epg/now-snapshot'
+
+const programme = { title: 'x', start: 0, stop: 1 }
 
 beforeEach(() => {
-  vi.useFakeTimers()
-  vi.setSystemTime(new Date('2026-05-13T12:00:00Z'))
+  __resetNowSnapshotForTests()
+  vi.mocked(epgNow).mockReset()
+  vi.mocked(epgNow).mockResolvedValue({ at: Date.now(), fetchedAt: null, items: {} })
 })
 
-afterEach(() => {
-  vi.useRealTimers()
-  vi.restoreAllMocks()
-})
+afterEach(cleanup)
 
 describe('useEpgLoadStatus', () => {
-  it('returns "idle" when listId is null', () => {
+  it('"idle" utan lista', () => {
     const { result } = renderHook(() => useEpgLoadStatus(null, []))
     expect(result.current).toBe('idle')
+    expect(epgNow).not.toHaveBeenCalled()
   })
 
-  it('returns "ready" when cache exists with entries', () => {
-    vi.spyOn(cacheModule, 'readCache').mockReturnValue({
-      index: { A: [{ title: 'x', start: 0, stop: 1 }] },
+  it('"ready" när appen har program att visa', async () => {
+    vi.mocked(epgNow).mockResolvedValue({
+      at: Date.now(),
       fetchedAt: Date.now(),
-      sources: ['u'],
+      items: { 'A::http://x/A': { now: programme, next: null, later: null } },
     })
-    vi.spyOn(cacheModule, 'ensureFresh').mockResolvedValue(null)
-    const { result } = renderHook(() => useEpgLoadStatus('list-1', ['u']))
-    expect(result.current).toBe('ready')
+    const { result } = renderHook(() => useEpgLoadStatus('global', ['u']))
+    await waitFor(() => expect(result.current).toBe('ready'))
   })
 
-  it('returns "empty" when no cache and no urls', async () => {
-    vi.spyOn(cacheModule, 'readCache').mockReturnValue(null)
-    vi.spyOn(cacheModule, 'ensureFresh').mockResolvedValue(null)
-    const { result } = renderHook(() => useEpgLoadStatus('list-1', []))
+  it('"empty" utan EPG-källor', async () => {
+    const { result } = renderHook(() => useEpgLoadStatus('global', []))
     await waitFor(() => expect(result.current).toBe('empty'))
   })
 
-  it('returns "error" when cache only contains source failures', () => {
-    vi.spyOn(cacheModule, 'readCache').mockReturnValue({
-      index: {},
-      fetchedAt: Date.now(),
-      sources: [],
-      requestedSources: ['https://bad.example/epg.xml'],
-      failures: [{ url: 'https://bad.example/epg.xml', error: 'HTTP 404' }],
-    })
-    vi.spyOn(cacheModule, 'ensureFresh').mockResolvedValue(null)
-    const { result } = renderHook(() => useEpgLoadStatus('list-1', ['https://bad.example/epg.xml']))
-    expect(result.current).toBe('error')
+  it('"empty" när appen hämtat men inget matchade', async () => {
+    vi.mocked(epgNow).mockResolvedValue({ at: Date.now(), fetchedAt: Date.now(), items: {} })
+    const { result } = renderHook(() => useEpgLoadStatus('global', ['u']))
+    await waitFor(() => expect(result.current).toBe('empty'))
   })
 
-  it('returns "loading" briefly then transitions when cache lands', async () => {
-    let cacheValue: ReturnType<typeof cacheModule.readCache> = null
-    vi.spyOn(cacheModule, 'readCache').mockImplementation(() => cacheValue)
-    vi.spyOn(cacheModule, 'ensureFresh').mockResolvedValue(null)
-    const { result, rerender } = renderHook(() => useEpgLoadStatus('list-1', ['u']))
+  it('"loading" tills appen hunnit hämta, "error" när anropet faller', async () => {
+    const { result } = renderHook(() => useEpgLoadStatus('global', ['u']))
+    // fetchedAt === null: appen har ännu inte hämtat något.
     expect(result.current).toBe('loading')
-    cacheValue = { index: { A: [{ title: 'p', start: 0, stop: 1 }] }, fetchedAt: Date.now(), sources: ['u'] }
-    rerender()
-    expect(result.current).toBe('ready')
+    await waitFor(() => expect(result.current).toBe('loading'))
+    cleanup()
+
+    __resetNowSnapshotForTests()
+    vi.mocked(epgNow).mockRejectedValue(new Error('boom'))
+    const failed = renderHook(() => useEpgLoadStatus('global', ['u']))
+    await waitFor(() => expect(failed.result.current).toBe('error'))
   })
 })

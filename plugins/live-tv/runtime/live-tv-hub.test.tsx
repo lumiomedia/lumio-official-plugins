@@ -1,12 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { writePluginJson } from '@/lib/plugin-sdk'
+import { flushLiveTvIndex, seedLiveTvIndex } from '../src/__test-stubs__/live-tv-index'
 import type { EpgCacheEntry } from './epg/types'
 
-vi.mock('./hooks/useLiveTvEpgCache', () => ({ useLiveTvEpgCache: vi.fn(() => null) }))
 vi.mock('./live-tv-player', () => ({ LiveTvPlayer: () => <div data-testid="player" /> }))
 
-import { useLiveTvEpgCache } from './hooks/useLiveTvEpgCache'
 import { LiveTvHub, flattenChannels, topGroups } from './live-tv-hub'
 import { LIVE_TV_PLUGIN_ID, type LiveTvList } from './live-tv-data'
 import { recordChannelWatch, clearChannelHistory } from './channel-history'
@@ -54,7 +53,7 @@ beforeEach(() => {
   clearChannelHistory()
   writePluginJson(LIVE_TV_PLUGIN_ID, 'pins', [])
   writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list])
-  vi.mocked(useLiveTvEpgCache).mockReturnValue(null)
+  seedLiveTvIndex()
 })
 
 describe('LiveTvHub alla kanaler', () => {
@@ -68,6 +67,8 @@ describe('LiveTvHub alla kanaler', () => {
   it('säger hur många som visas och kan visa fler', () => {
     const many = Array.from({ length: 200 }, (_, i) => channel(`Kanal ${String(i + 1).padStart(3, '0')}`, 'Allt'))
     writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ ...list, channels: many } as LiveTvList])
+    // Kanalerna kommer ur indexet: listan i lagringen måste speglas dit igen.
+    seedLiveTvIndex()
 
     render(<LiveTvHub onNavigate={() => {}} />)
 
@@ -96,16 +97,19 @@ describe('LiveTvHub helpers', () => {
 describe('LiveTvHub', () => {
   it('shows the empty state when no lists exist', () => {
     writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [])
+    seedLiveTvIndex()
     render(<LiveTvHub onNavigate={() => {}} />)
     expect(screen.getByText('No channels yet')).toBeInTheDocument()
   })
 
-  it('renders the hero from the EPG cache, favourites and history', () => {
+  it('renders the hero from the EPG cache, favourites and history', async () => {
     const now = Date.now()
-    vi.mocked(useLiveTvEpgCache).mockReturnValue(seedCache(now))
+    seedLiveTvIndex({ cache: seedCache(now) })
     writePluginJson(LIVE_TV_PLUGIN_ID, 'pins', ['SVT1::http://example.test/svt1'])
     recordChannelWatch(channel('Eurosport', 'Sport'), 'global', now - 60_000)
     render(<LiveTvHub onNavigate={() => {}} />)
+    // Tablån kommer från appen: nu-snapshotet får landa först.
+    await flushLiveTvIndex()
 
     // Hero: favourite with a running programme wins.
     expect(screen.getAllByText('Rapport').length).toBeGreaterThan(0)

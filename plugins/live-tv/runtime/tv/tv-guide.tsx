@@ -12,6 +12,7 @@ import { blockGeometry, nowLinePct, scheduleWindow, timeTicks } from './tv-sched
 import { ChannelCell, FAVS_GROUP, filterByGroup, useDebouncedChannel, useGuideGroups } from './tv-guide-shared'
 import { TvPreview } from './tv-preview'
 import { TvGuidePlaylists } from './tv-guide-playlists'
+import { useSchedules } from '../hooks/useSchedules'
 
 const ROW_STEP = 40
 
@@ -86,6 +87,14 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
   const visibleRows = useMemo(() => rows.slice(0, visible), [rows, visible])
   const selectedVisible = useMemo(() => (selected ? visibleRows.some((c) => channelKey(c) === channelKey(selected)) : false), [selected, visibleRows])
 
+  /**
+   * Tablåläget ('tl') ritar block per rad. Tablån hämtas från appen för de
+   * rader som FAKTISKT syns, i ett anrop per fönster — NU-läget klarar sig med
+   * modellens nu-snapshot och frågar inte efter något.
+   */
+  const timelineChannels = useMemo(() => (mode === 'tl' ? visibleRows : []), [mode, visibleRows])
+  const { schedules: timelineSchedules } = useSchedules(timelineChannels, win.start, win.end)
+
   const info = selected ? model.nowFor(selected) : { now: null, next: null, later: null }
   const previewOn = settings.previewEnabled
   const headlineSize = previewOn ? dp(40) : dp(34)
@@ -132,7 +141,7 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
             {selected ? <><span style={{ color: TV.accText, fontWeight: 600 }}>{model.channelNumber(selected) ?? ''}</span><span>{selected.name}</span>{selected.group ? <Tag variant="neutral">{selected.group}</Tag> : null}</> : null}
             <span style={{ marginLeft: 'auto' }}>{clock}</span>
           </div>
-          <div style={{ fontSize: headlineSize, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{info.now ? info.now.title : model.cache ? tt('noProgramme') : tt('loadingGuide')}</div>
+          <div style={{ fontSize: headlineSize, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{info.now ? info.now.title : model.epgLoading ? tt('loadingGuide') : tt('noProgramme')}</div>
           {info.now ? (
             <>
               <div style={{ fontSize: dp(19), color: 'rgba(243,244,248,0.65)' }}>{`${formatClock(info.now.start, locale)}–${formatClock(info.now.stop, locale)} · ${minutesLeft(info.now.stop)}`}</div>
@@ -203,12 +212,11 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
             }
             baseOnKeyDown?.(event)
           }
-          // EN uppslagning per rad. `model.scheduleFor` filtrerar hela
-          // kanalens tablå mot fönstret vid varje anrop (ingen memo per
-          // kanal), och tablån anropades två gånger per rad: en för blocken
-          // och en till bara för att fråga om listan var tom. Med 40 rader
-          // blev det 40 genomsökningar i onödan vid varje minuttick.
-          const timeline = mode === 'tl' ? model.scheduleFor(channel, win.start, win.end) : null
+          // EN uppslagning per rad, ur den tablå som hämtats för HELA den
+          // synliga listan i ett anrop (`useSchedules`). Tidigare filtrerades
+          // kanalens hela tablå mot fönstret vid varje anrop, två gånger per
+          // rad — med 40 rader blev det 80 genomsökningar vid varje minuttick.
+          const timeline = mode === 'tl' ? timelineSchedules[key] ?? [] : null
           return (
             <div key={key} style={{ height: dp(86), borderBottom: `1px solid rgba(255,255,255,0.07)`, display: 'flex', alignItems: 'center', gap: dp(16) }}>
               <div

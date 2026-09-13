@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { channelKey, type M3uChannel } from '../live-tv-data'
-import { catchUpAcross, type CatchUpItem } from '../catch-up'
+import { catchUpAcross, channelSupportsCatchUp, type CatchUpItem } from '../catch-up'
 import { formatClock, progressOf } from '../live-tv-ui'
-import { qualityFromName } from '../live-tv-model'
+import { qualityFromName, startOfLocalDay } from '../live-tv-model'
 import { useEpgLoadStatus } from '../hooks/useEpgLoadStatus'
+import { useSchedules } from '../hooks/useSchedules'
 import type { TvViewProps } from './tv-shell'
 import { ChannelArt, Chip, Icons, Progress, Tag, TV, cardStyle, dp, station, useTvClockNode } from './tv-ui'
 import { useTvText } from './tv-strings'
@@ -14,6 +15,9 @@ import { pickSpotlight, type SpotlightReason } from './tv-spotlight'
 const SPOTLIGHT_COUNT = 3
 const ALL_STEP = 36
 const MAX_CHIPS = 12
+/** Repriser: hur långt bakåt tablån hämtas, och hur många arkivkanaler som frågas åt gången. */
+const REPLAY_DAYS = 3
+const MAX_REPLAY_CHANNELS = 200
 
 export function TvHub({ model, nav }: TvViewProps) {
   const { tt, locale } = useTvText()
@@ -28,7 +32,18 @@ export function TvHub({ model, nav }: TvViewProps) {
   const favourites = model.favouriteChannels
   const recent = useMemo(() => model.history.map((h) => model.byUrl.get(h.url)).filter((c): c is M3uChannel => Boolean(c)), [model.history, model.byUrl])
   const spotlight = useMemo(() => pickSpotlight({ favourites, recent, channels: model.channels, nowFor: model.nowFor, count: SPOTLIGHT_COUNT }), [favourites, recent, model.channels, model.nowFor])
-  const replays = useMemo(() => catchUpAcross(model.channels, model.cache, model.nameIndex, model.nowMs, 8), [model.channels, model.cache, model.nameIndex, model.nowMs])
+  /**
+   * Repriser: bara arkivkanaler (Xtream tv_archive) frågas, och bara bakåt i
+   * reprisfönstret — tablån bor i appen sedan lagring v2 och en fråga om hela
+   * spellistan hade blivit tiotals anrop för en handfull kort.
+   */
+  const replayChannels = useMemo(() => model.channels.filter(channelSupportsCatchUp).slice(0, MAX_REPLAY_CHANNELS), [model.channels])
+  const replayWindow = useMemo(() => {
+    const to = startOfLocalDay(model.nowMs, 1)
+    return { from: to - REPLAY_DAYS * 86_400_000, to }
+  }, [model.nowMs])
+  const { schedules: replaySchedules } = useSchedules(replayChannels, replayWindow.from, replayWindow.to)
+  const replays = useMemo(() => catchUpAcross(replayChannels, replaySchedules, model.nowMs, 8), [replayChannels, replaySchedules, model.nowMs])
   const chips = useMemo(() => model.groups.slice(0, MAX_CHIPS), [model.groups])
   const filtered = useMemo(() => {
     if (group === '__favs') return favourites

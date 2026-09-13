@@ -273,10 +273,25 @@ describe('epgSchedule', () => {
     const result = await epgSchedule('list1', keys, 0, 100)
 
     expect(fetchMock).toHaveBeenCalledTimes(2)
-    const [firstUrl] = fetchMock.mock.calls[0]
-    expect(String(firstUrl)).toContain('keys=k0%2Ck1')
+    const [firstUrl, firstInit] = fetchMock.mock.calls[0]
+    expect(String(firstUrl)).toBe('/api/live-tv/epg/schedule')
+    expect(firstInit?.method).toBe('POST')
+    expect(JSON.parse(String(firstInit?.body)).keys).toHaveLength(200)
     expect(result.k0).toEqual([{ title: 'A', start: 0, stop: 10 }])
     expect(result.k200).toEqual([{ title: 'B', start: 20, stop: 30 }])
+  })
+
+  it('skickar nycklarna i kroppen, så komman i kanalnamn överlever', async () => {
+    // `channelKey` är `namn::url`; ett namn som "Sport, Live" hade delats mitt
+    // itu av en kommaseparerad querysträng och tappat kanalens tablå.
+    const fetchMock = mockFetch()
+    fetchMock.mockResolvedValueOnce(jsonResponse({ items: {} }))
+    const key = 'Sport, Live::https://example.test/a,b'
+
+    await epgSchedule('list1', [key], 0, 100)
+
+    const [, init] = fetchMock.mock.calls[0]
+    expect(JSON.parse(String(init?.body))).toEqual({ listId: 'list1', keys: [key], from: 0, to: 100 })
   })
 })
 

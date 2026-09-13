@@ -206,6 +206,13 @@ export async function waitForJob(
   }
 }
 
+/**
+ * Ber appen hämta om EPG:t. Svaret är ett JOBB av samma modell som importen,
+ * och dess `result` återanvänder `ImportResult`-formen: `total` är antalet
+ * PROGRAM (inte kanaler) och kanalantalet ligger i `groups[0]`. Koppla därför
+ * ALDRIG importens framstegs-UI ("Hämtar 12 000 av 17 000 kanaler…") till ett
+ * EPG-jobb — samma fält betyder olika saker.
+ */
 export async function refreshEpg(
   listId: string,
   urls: string[],
@@ -234,7 +241,12 @@ export async function epgNow(opts: {
   return { at: data.at, fetchedAt: data.fetchedAt ?? null, items }
 }
 
-/** Chunks into batches of 200 keys per request and merges the results. */
+/**
+ * Tablåer per kanalnyckel. POST med JSON-kropp, inte querysträng: nyckeln är
+ * `namn::url` och BÅDA delarna kan innehålla komma — en kommaseparerad
+ * `keys`-parameter hade delat mitt i ett kanalnamn och tyst tappat tablån för
+ * just de kanalerna. Chunkas 200 nycklar per anrop och slås ihop.
+ */
 export async function epgSchedule(
   listId: string,
   keys: string[],
@@ -243,8 +255,12 @@ export async function epgSchedule(
 ): Promise<Record<string, EpgProgramme[]>> {
   const merged: Record<string, EpgProgramme[]> = {}
   for (const group of chunk(keys, EPG_SCHEDULE_CHUNK_SIZE)) {
-    const qs = buildQuery({ listId, keys: group.join(','), from, to })
-    const data = await requestJson<{ items?: Record<string, EpgProgramme[]> }>(`/api/live-tv/epg/schedule${qs}`)
+    const data = await postJson<{ items?: Record<string, EpgProgramme[]> }>('/api/live-tv/epg/schedule', {
+      listId,
+      keys: group,
+      from,
+      to,
+    })
     Object.assign(merged, data.items ?? {})
   }
   return merged

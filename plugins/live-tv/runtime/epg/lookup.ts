@@ -14,38 +14,43 @@ function findCurrentIndex(programmes: EpgProgramme[], now: number): number {
 
 const EMPTY: NowNextLater = { now: null, next: null, later: null }
 
+/**
+ * Nu/Härnäst/Senare ur en FÄRDIG programlista (stigande starttid).
+ *
+ * Sedan lagring v2 kommer tablån från appens `/api/live-tv/epg/*` som en ren
+ * lista per kanalnyckel — det finns ingen `EpgCacheEntry` att slå i. Räknandet
+ * är detsamma, så det bor här och `computeNowNextLater` (kvar för den äldre
+ * cachevägen i `live-tv-guide.tsx`/`epg-sources-section.tsx`) anropar det.
+ */
+export function nowNextLaterFrom(
+  programmes: readonly EpgProgramme[] | null | undefined,
+  now: number = Date.now(),
+): NowNextLater {
+  if (!programmes || programmes.length === 0) return EMPTY
+  const idx = findCurrentIndex(programmes as EpgProgramme[], now)
+  const candidate = idx >= 0 ? programmes[idx] : null
+  const isCurrent = candidate != null && candidate.stop > now
+  const nowProgramme = isCurrent ? candidate : null
+  const nextIdx = nowProgramme ? idx + 1 : Math.max(0, idx + 1)
+  return { now: nowProgramme, next: programmes[nextIdx] ?? null, later: programmes[nextIdx + 1] ?? null }
+}
+
+/** Programmen som överlappar det halvöppna fönstret [fromMs, toMs). */
+export function sliceSchedule(
+  programmes: readonly EpgProgramme[] | null | undefined,
+  fromMs: number,
+  toMs: number,
+): EpgProgramme[] {
+  if (!programmes || programmes.length === 0) return []
+  return programmes.filter((p) => p.stop > fromMs && p.start < toMs)
+}
+
 export function computeNowNextLater(
   cache: EpgCacheEntry | null,
   tvgId: string | null,
   now: number = Date.now(),
 ): NowNextLater {
   if (!cache || !tvgId) return EMPTY
-  const list = cache.index[tvgId]
-  if (!list || list.length === 0) return EMPTY
-
-  const idx = findCurrentIndex(list, now)
-  const candidate = idx >= 0 ? list[idx] : null
-  const isCurrent = candidate !== null && candidate.stop > now
-  const nowProgramme = isCurrent ? candidate : null
-  const nextIdx = nowProgramme ? idx + 1 : Math.max(0, idx + 1)
-  const next = list[nextIdx] ?? null
-  const later = list[nextIdx + 1] ?? null
-  return { now: nowProgramme, next, later }
+  return nowNextLaterFrom(cache.index[tvgId], now)
 }
 
-/**
- * Return all programmes for a channel overlapping the half-open window
- * [fromMs, toMs). Sorted ascending by start time. Empty array when no
- * cache / tvgId / programmes are available.
- */
-export function getChannelSchedule(
-  cache: EpgCacheEntry | null,
-  tvgId: string | null,
-  fromMs: number,
-  toMs: number,
-): EpgProgramme[] {
-  if (!cache || !tvgId) return []
-  const list = cache.index[tvgId]
-  if (!list || list.length === 0) return []
-  return list.filter((p) => p.stop > fromMs && p.start < toMs)
-}

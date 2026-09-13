@@ -1,62 +1,68 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { renderHook, waitFor, act } from '@testing-library/react'
+import { renderHook, waitFor, act, cleanup } from '@testing-library/react'
+import type { EpgProgramme } from '../epg/types'
+
+vi.mock('../index-client', () => ({
+  epgSchedule: vi.fn(async () => ({}) as Record<string, EpgProgramme[]>),
+}))
+
+import { epgSchedule } from '../index-client'
 import { useEpgNowNextLater } from './useEpgNowNextLater'
-import * as cacheModule from '../epg/cache'
+import { __resetScheduleCacheForTests } from '../epg/schedule-cache'
+
+const channel = (tvgId: string | null = null) => ({ tvgId, name: 'Sky', url: 'http://x/sky' })
+const KEY = 'Sky::http://x/sky'
 
 beforeEach(() => {
-  vi.useFakeTimers()
-  vi.setSystemTime(new Date('2026-05-13T12:00:00Z'))
+  __resetScheduleCacheForTests()
+  vi.mocked(epgSchedule).mockReset()
+  vi.mocked(epgSchedule).mockResolvedValue({})
 })
 
 afterEach(() => {
+  cleanup()
   vi.useRealTimers()
-  vi.restoreAllMocks()
 })
 
 describe('useEpgNowNextLater', () => {
-  it('returns all-null when channel.tvgId is null', () => {
-    vi.spyOn(cacheModule, 'readCache').mockReturnValue(null)
-    vi.spyOn(cacheModule, 'ensureFresh').mockResolvedValue(null)
-    const { result } = renderHook(() => useEpgNowNextLater({ tvgId: null }, 'list-1', ['u']))
+  it('ger tomt utan lista att fråga', async () => {
+    const { result } = renderHook(() => useEpgNowNextLater(channel(), null, ['u']))
     expect(result.current).toEqual({ now: null, next: null, later: null })
+    expect(epgSchedule).not.toHaveBeenCalled()
   })
 
-  it('returns now/next/later when cache has data', async () => {
+  it('läser nu/härnäst/senare ur appens tablå, på kanalnyckeln', async () => {
     const now = Date.now()
-    vi.spyOn(cacheModule, 'readCache').mockReturnValue({
-      index: {
-        A: [
-          { title: 'P0', start: now - 60_000, stop: now + 60_000 },
-          { title: 'P1', start: now + 60_000, stop: now + 120_000 },
-          { title: 'P2', start: now + 120_000, stop: now + 180_000 },
-        ],
-      },
-      fetchedAt: now,
-      sources: ['u'],
+    vi.mocked(epgSchedule).mockResolvedValue({
+      [KEY]: [
+        { title: 'P0', start: now - 60_000, stop: now + 60_000 },
+        { title: 'P1', start: now + 60_000, stop: now + 120_000 },
+        { title: 'P2', start: now + 120_000, stop: now + 180_000 },
+      ],
     })
-    vi.spyOn(cacheModule, 'ensureFresh').mockResolvedValue(null)
-    const { result } = renderHook(() => useEpgNowNextLater({ tvgId: 'A' }, 'list-1', ['u']))
+    const { result } = renderHook(() => useEpgNowNextLater(channel('A'), 'global', ['u']))
     await waitFor(() => expect(result.current.now?.title).toBe('P0'))
     expect(result.current.next?.title).toBe('P1')
     expect(result.current.later?.title).toBe('P2')
+    expect(vi.mocked(epgSchedule).mock.calls[0][1]).toEqual([KEY])
   })
 
-  it('re-derives at programme boundary', async () => {
+  it('rullar vidare vid programgränsen', async () => {
+    // Falsk klocka som ändå går framåt av sig själv: gränstimern ska kunna
+    // spolas fram med advanceTimersByTime, medan waitFor får ticka som vanligt.
+    vi.useFakeTimers({ shouldAdvanceTime: true })
     const start = Date.now()
-    vi.spyOn(cacheModule, 'readCache').mockReturnValue({
-      index: {
-        A: [
-          { title: 'P0', start, stop: start + 5000 },
-          { title: 'P1', start: start + 5000, stop: start + 10_000 },
-        ],
-      },
-      fetchedAt: start,
-      sources: ['u'],
+    vi.mocked(epgSchedule).mockResolvedValue({
+      [KEY]: [
+        { title: 'P0', start, stop: start + 5000 },
+        { title: 'P1', start: start + 5000, stop: start + 10_000 },
+      ],
     })
-    vi.spyOn(cacheModule, 'ensureFresh').mockResolvedValue(null)
-    const { result } = renderHook(() => useEpgNowNextLater({ tvgId: 'A' }, 'list-1', ['u']))
+    const { result } = renderHook(() => useEpgNowNextLater(channel('A'), 'global', ['u']))
     await waitFor(() => expect(result.current.now?.title).toBe('P0'))
-    await act(async () => { vi.advanceTimersByTime(5001) })
+    await act(async () => {
+      vi.advanceTimersByTime(5001)
+    })
     await waitFor(() => expect(result.current.now?.title).toBe('P1'))
   })
 })

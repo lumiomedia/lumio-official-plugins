@@ -1,13 +1,14 @@
-import type { M3uChannel } from './live-tv-data'
-import type { EpgCacheEntry, EpgProgramme } from './epg/types'
-import { getChannelSchedule } from './epg/lookup'
-import { resolveTvgId } from './epg/name-match'
+import { channelKey, type M3uChannel } from './live-tv-data'
+import type { EpgProgramme } from './epg/types'
 
 /**
  * Catch-up (repris) — bara Xtream-kanaler med tv_archive. Panelen serverar
  * en avslutad sändning via timeshift-URL:en; M3U-listor har ingen motsvarighet
- * och får därför inga repriskort. Inga egna uppslag: programmen kommer ur den
- * EPG-cache som redan hämtats.
+ * och får därför inga repriskort.
+ *
+ * Inga egna uppslag: sedan lagring v2 tar funktionerna FÄRDIGA tablåer
+ * (`useSchedules(kanaler, nu−arkivfönstret, nu)`) i stället för en EPG-cache
+ * att slå i — tablån bor i appen och namnmatchningen görs där.
  */
 export interface CatchUpItem {
   channel: M3uChannel
@@ -44,17 +45,14 @@ export function buildTimeshiftUrl(channel: M3uChannel, startMs: number, duration
  */
 export function catchUpForChannel(
   channel: M3uChannel,
-  cache: EpgCacheEntry | null,
-  nameIndex: Map<string, string>,
+  schedule: readonly EpgProgramme[] | null | undefined,
   nowMs: number,
   limit = 12,
 ): CatchUpItem[] {
-  if (!cache || !channelSupportsCatchUp(channel)) return []
-  const tvgId = resolveTvgId(channel.tvgId, channel.name, nameIndex)
-  if (!tvgId) return []
+  if (!schedule || schedule.length === 0 || !channelSupportsCatchUp(channel)) return []
   const days = channel.archive!.days
   const windowStart = nowMs - days * 86_400_000
-  const programmes = getChannelSchedule(cache, tvgId, windowStart, nowMs)
+  const programmes = schedule.filter((p) => p.stop > windowStart && p.start < nowMs)
   const out: CatchUpItem[] = []
   for (const programme of programmes) {
     if (programme.stop > nowMs || programme.start < windowStart) continue
@@ -65,18 +63,17 @@ export function catchUpForChannel(
   return out.sort((left, right) => right.programme.start - left.programme.start).slice(0, limit)
 }
 
-/** Repriser över flera kanaler, senast först, max `limit`. */
+/** Repriser över flera kanaler, senast först, max `limit`. `schedulesByKey` är nycklat på `channelKey`. */
 export function catchUpAcross(
-  channels: M3uChannel[],
-  cache: EpgCacheEntry | null,
-  nameIndex: Map<string, string>,
+  channels: readonly M3uChannel[],
+  schedulesByKey: Record<string, EpgProgramme[]>,
   nowMs: number,
   limit = 12,
 ): CatchUpItem[] {
   const all: CatchUpItem[] = []
   for (const channel of channels) {
     if (!channelSupportsCatchUp(channel)) continue
-    all.push(...catchUpForChannel(channel, cache, nameIndex, nowMs, 4))
+    all.push(...catchUpForChannel(channel, schedulesByKey[channelKey(channel)], nowMs, 4))
   }
   return all.sort((left, right) => right.programme.start - left.programme.start).slice(0, limit)
 }

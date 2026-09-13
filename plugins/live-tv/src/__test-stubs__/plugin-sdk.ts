@@ -127,9 +127,28 @@ export function playerFrameUrl(key: string, version?: number | string | null): s
   return `/api/player-frame?key=${encodeURIComponent(key)}${v}`
 }
 
-export function clearPluginMemoryCacheByPrefix(_pluginId: string, _prefix: string): void {}
-export function setPluginMemoryCache<T>(_pluginId: string, _k: string, _v: T): void {}
-export function getPluginMemoryCache<T>(_pluginId: string, _k: string): T | undefined { return undefined }
+// Minnescachen speglar appens lib/plugin-storage.ts: en processglobal Map med
+// nyckeln `${pluginId}:${key}`. Den var tidigare en no-op här, vilket dolde
+// skillnaden mellan "cachen svarade" och "cachen är tom" — modellen (P3)
+// lagrar kanallistan i den, så stubben måste minnas som värden gör.
+const pluginMemoryCache = new Map<string, unknown>()
+
+function pluginMemoryCacheKey(pluginId: string, key: string): string {
+  return `${pluginId}:${key}`
+}
+
+export function clearPluginMemoryCacheByPrefix(pluginId: string, prefix: string): void {
+  const full = `${pluginId}:${prefix}`
+  for (const key of [...pluginMemoryCache.keys()]) {
+    if (key.startsWith(full)) pluginMemoryCache.delete(key)
+  }
+}
+export function setPluginMemoryCache<T>(pluginId: string, key: string, value: T): void {
+  pluginMemoryCache.set(pluginMemoryCacheKey(pluginId, key), value)
+}
+export function getPluginMemoryCache<T>(pluginId: string, key: string): T | undefined {
+  return pluginMemoryCache.get(pluginMemoryCacheKey(pluginId, key)) as T | undefined
+}
 export function removePluginStorageByPrefix(_pluginId: string, _prefix: string, _opts?: { emitChange?: boolean }): void {}
 
 // The host resolves t() against its own strings.en/strings.sv catalogue. Tests
@@ -161,6 +180,7 @@ export function useLang() {
 export function __resetForTests(): void {
   memory.clear()
   listeners.clear()
+  pluginMemoryCache.clear()
   pinForTests = null
 }
 
@@ -188,7 +208,17 @@ export function isPluginImageLoaded(): boolean {
   return false
 }
 export async function preloadPluginImage(): Promise<void> {}
-export function clearPluginMemoryCache(): void {}
+export function clearPluginMemoryCache(pluginId?: string, key?: string): void {
+  if (!pluginId) {
+    pluginMemoryCache.clear()
+    return
+  }
+  if (!key) {
+    clearPluginMemoryCacheByPrefix(pluginId, '')
+    return
+  }
+  pluginMemoryCache.delete(pluginMemoryCacheKey(pluginId, key))
+}
 // ---- TV-läge ----
 let tvModeForTests = false
 export function __setTvModeForTests(on: boolean): void {
