@@ -832,7 +832,8 @@
     return { ok: true };
   }
   async function openNativePlayer(opts) {
-    await closeAllAuxSurfaces("primary-open");
+    const { closeAllAuxSurfaces: closeAllAuxSurfaces3 } = await Promise.resolve().then(() => (init_video_surfaces(), video_surfaces_exports));
+    await closeAllAuxSurfaces3("primary-open");
     const wrapped = sourceCacheUrl(opts.url) ?? opts.url;
     await np({
       cmd: "open",
@@ -1060,10 +1061,37 @@
       "use strict";
       init_react_shim();
       init_tauri_mpv();
-      init_video_surfaces();
       isAndroidTauriEnv = isTauriEnv && typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
       deviceCapsCache = null;
       deviceCapsPromise = null;
+    }
+  });
+
+  // lib/plugin-hls.ts
+  function getHls() {
+    if (typeof window === "undefined") return null;
+    return window.__lumioPluginRuntime?.Hls ?? null;
+  }
+  var init_plugin_hls = __esm({
+    "lib/plugin-hls.ts"() {
+      "use strict";
+    }
+  });
+
+  // lib/player-frame-id.ts
+  function playerFrameId(key) {
+    let h1 = 5381;
+    let h2 = 52711;
+    for (let i = 0; i < key.length; i++) {
+      const c = key.charCodeAt(i);
+      h1 = (h1 * 33 ^ c) >>> 0;
+      h2 = (h2 * 31 ^ c) >>> 0;
+    }
+    return `f${h1.toString(16)}${h2.toString(16)}`;
+  }
+  var init_player_frame_id = __esm({
+    "lib/player-frame-id.ts"() {
+      "use strict";
     }
   });
 
@@ -1190,7 +1218,8 @@
   var init_video_surfaces_html = __esm({
     "lib/video-surfaces-html.ts"() {
       "use strict";
-      init_plugin_sdk();
+      init_plugin_hls();
+      init_player_frame_id();
       init_tauri_mpv();
       MAX_HTML = 4;
     }
@@ -1552,6 +1581,18 @@
   });
 
   // lib/video-surfaces.ts
+  var video_surfaces_exports = {};
+  __export(video_surfaces_exports, {
+    __setSurfaceEngineForTests: () => __setSurfaceEngineForTests,
+    closeAllAuxSurfaces: () => closeAllAuxSurfaces,
+    createVideoSurface: () => createVideoSurface,
+    getVideoSurfaceCapabilities: () => getVideoSurfaceCapabilities
+  });
+  function __setSurfaceEngineForTests(engine) {
+    engineOverride = engine;
+    engineCache = null;
+    live.clear();
+  }
   function resolveEngine() {
     if (engineOverride) return { kind: "html", engine: engineOverride };
     if (engineCache) return engineCache;
@@ -1663,7 +1704,8 @@
   }
   async function openMpvPlayer(args) {
     const { shouldAbort: _ignored, ...rest } = args;
-    await closeAllAuxSurfaces("primary-open");
+    const { closeAllAuxSurfaces: closeAllAuxSurfaces3 } = await Promise.resolve().then(() => (init_video_surfaces(), video_surfaces_exports));
+    await closeAllAuxSurfaces3("primary-open");
     const cached = sourceCacheUrl(args.url, args.requestHeaders);
     if (cached) {
       if (args.shouldAbort?.()) return;
@@ -1926,7 +1968,6 @@
       init_react_shim();
       init_session_host();
       init_plugin_registry();
-      init_video_surfaces();
       isTauriEnv = detectTauriEnv();
       hasTauriIpc = typeof window !== "undefined" && Boolean(
         window.__TAURI_INTERNALS__ || window.__TAURI__
@@ -189009,10 +189050,6 @@ ${cue.text}`).join("\n\n")}
     if (typeof window === "undefined") return null;
     return window.__lumioPluginRuntime?.components?.TvClock ?? null;
   }
-  function getHls() {
-    if (typeof window === "undefined") return null;
-    return window.__lumioPluginRuntime?.Hls ?? null;
-  }
   function resolvePluginText(text, lang) {
     if (typeof text === "string") return text;
     return text[lang] ?? text.en ?? text.sv ?? "";
@@ -189245,16 +189282,6 @@ ${cue.text}`).join("\n\n")}
     if (layout2 === "slider") return PLUGIN_HOME_ROW_SLIDER_TRACK_CLASS;
     return options?.gridClassName?.trim() || PLUGIN_HOME_ROW_GRID_TRACK_CLASS;
   }
-  function playerFrameId(key) {
-    let h1 = 5381;
-    let h2 = 52711;
-    for (let i = 0; i < key.length; i++) {
-      const c = key.charCodeAt(i);
-      h1 = (h1 * 33 ^ c) >>> 0;
-      h2 = (h2 * 31 ^ c) >>> 0;
-    }
-    return `f${h1.toString(16)}${h2.toString(16)}`;
-  }
   function playerFrameUrl(key, version2) {
     const v = version2 == null ? "" : `&v=${encodeURIComponent(String(version2))}`;
     return `/api/player-frame?key=${playerFrameId(key)}${v}`;
@@ -189327,7 +189354,9 @@ ${cue.text}`).join("\n\n")}
       init_open_item_runtime();
       init_video_player_modal_shim();
       init_next_episode_card_shim();
+      init_plugin_hls();
       init_primitives();
+      init_player_frame_id();
       init_playback_settings();
       BROWSE_BACK_EVENT = "lumio-browse-back";
       PLUGIN_HOME_ROW_SLIDER_TRACK_CLASS = "thin-slider-scrollbar flex gap-3 overflow-x-auto pb-3";
