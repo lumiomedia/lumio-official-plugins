@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { cleanup, render, waitFor } from '@testing-library/react'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import { useRef } from 'react'
 import { surfaceCalls } from '@/lib/plugin-sdk'
 import { useVideoSurface, videoSurfaceCapabilities, type VideoSurfaceHandle } from './video-surface'
@@ -10,7 +10,11 @@ function Probe({ audio, onHandle }: { audio: boolean; onHandle: (h: VideoSurface
   const ref = useRef<HTMLDivElement | null>(null)
   const handle = useVideoSurface(ref, { channel: ch, url: ch.url }, { muted: !audio, audio })
   onHandle(handle)
-  return <div ref={ref} style={{ width: 100, height: 56 }} />
+  return (
+    <div ref={ref} data-testid="rect" style={{ width: 100, height: 56, position: 'relative', overflow: 'hidden' }}>
+      <span style={{ position: 'absolute', inset: 0 }}>etikett</span>
+    </div>
+  )
 }
 
 afterEach(cleanup)
@@ -29,11 +33,18 @@ describe('useVideoSurface v1 (HTML-motor i test)', () => {
       expect(second?.live).toBe(false)
       expect(second?.frameUrl).toContain('/api/player-frame')
     })
-    expect(document.querySelector('video')).not.toBeNull()
+    // Videon ritas INNE i rutan, inte i en portal på body: portalen låg under
+    // appens TV-sida (z-index 10) och skalades dubbelt när scenens skala ≠ 1.
+    const rects = screen.getAllByTestId('rect')
+    expect(rects[0].querySelector('video')).not.toBeNull()
+    expect(document.body.querySelector(':scope > video')).toBeNull()
+    expect(document.querySelectorAll('video')).toHaveLength(1)
+    // Etiketten ligger efter videon i DOM:en och målas därför ovanpå den.
+    expect(rects[0].firstElementChild?.tagName).toBe('VIDEO')
   })
   it('städar videon vid unmount', async () => {
     const view = render(<Probe audio onHandle={() => {}} />)
-    await waitFor(() => expect(document.querySelector('video')).not.toBeNull())
+    await waitFor(() => expect(screen.getByTestId('rect').querySelector('video')).not.toBeNull())
     view.unmount()
     expect(document.querySelector('video')).toBeNull()
   })

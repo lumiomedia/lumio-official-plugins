@@ -76,17 +76,59 @@ function isHls(url: string): boolean {
   return /\.m3u8(\?|$)/i.test(url) || !/\.[a-z0-9]{2,4}(\?|$)/i.test(url)
 }
 
-/** HTML-motor: ett <video> i en fixed portal, positionerat efter rektangeln. */
-function createHtmlSession(url: string, muted: boolean, onReady: () => void, onFail: () => void) {
+/**
+ * HTML-motor: ett <video> INNE i rutan, inte en fixed portal på body.
+ *
+ * Portalen på `body` med `position: fixed; z-index: 5` var två mätta fel:
+ *
+ * 1. OSYNLIG. Appens TV-sida ligger i `div.relative z-10` — z-index 10 — så
+ *    sidan målades ÖVER videon. Uppmätt i tv-sim: strömmen spelade
+ *    (`readyState` 4, `currentTime` växte) på exakt rätt plats
+ *    (201,108,480×270) och rutan var ändå svart; satte man `z-index: 9999`
+ *    syntes bilden direkt.
+ * 2. FEL STORLEK när scenens skala ≠ 1. `:root[data-tv-scene="1"] body` har en
+ *    `transform`, och en `position: fixed`-nod inuti en transformerad förälder
+ *    positioneras i den TRANSFORMERADE rymden. Rektangeln mäts med
+ *    `getBoundingClientRect()` (skärmpixlar) och skalades därför en gång till.
+ *    Uppmätt på 1280×720 (skala 0,667): en ruta mätt till 1280 px ritades
+ *    853 px bred. På 1920×1080 sammanfaller talen, vilket är varför det inte
+ *    syntes i simulatorn.
+ *
+ * Som barn till rutan försvinner båda: videon ärver rutans stackningskontext
+ * (samma lager som resten av pluginets yta, inga z-krig med värdsidan) och
+ * följer rutans storlek utan en enda koordinat. `setBounds` blir därmed en
+ * nullhandling för den här motorn — mpv/droid behåller sin väg, för en NATIV
+ * yta ligger utanför DOM:en och behöver just skärmkoordinater.
+ *
+ * Videon läggs FÖRST i rutan. Etiketterna ("LIVE STREAM, MUTED", LIVE-taggen,
+ * multivyns kanalnamn) är absolut positionerade syskon utan z-index, och bland
+ * positionerade element på samma nivå vinner den som kommer sist i DOM:en — de
+ * målas alltså ovanpå videon, som i handoffen.
+ *
+ * Saknas rutan (ingen ref ännu) faller vi tillbaka på den gamla portalen: en
+ * felplacerad förhandsvisning är bättre än ingen alls, och `setBounds` gör då
+ * fortfarande sitt jobb.
+ */
+function createHtmlSession(url: string, muted: boolean, onReady: () => void, onFail: () => void, hostEl: HTMLElement | null) {
   const video = document.createElement('video')
   video.muted = muted
   video.autoplay = true
   video.playsInline = true
-  video.style.cssText = 'position:fixed;object-fit:cover;background:#000;pointer-events:none;z-index:5;border-radius:inherit'
   video.dataset.liveTvSurface = ''
   video.addEventListener('canplay', onReady, { once: true })
   video.addEventListener('error', onFail, { once: true })
-  document.body.appendChild(video)
+  const anchored = hostEl !== null
+  if (hostEl) {
+    // Rutan måste vara ett positionerat block för att `inset: 0` ska gälla den.
+    // TvPreview och multivyns ruta har redan `position: relative`; det här är
+    // för framtida anropare.
+    if (window.getComputedStyle(hostEl).position === 'static') hostEl.style.position = 'relative'
+    video.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;pointer-events:none;z-index:0;border-radius:inherit'
+    hostEl.insertBefore(video, hostEl.firstChild)
+  } else {
+    video.style.cssText = 'position:fixed;object-fit:cover;background:#000;pointer-events:none;z-index:5;border-radius:inherit'
+    document.body.appendChild(video)
+  }
   const src = hostProxyUrl(window.location.origin, url)
   const Hls = getHls()
   let hls: { destroy(): void } | null = null
@@ -101,6 +143,8 @@ function createHtmlSession(url: string, muted: boolean, onReady: () => void, onF
   void video.play().catch(() => {})
   return {
     setBounds(rect: Rect) {
+      // Ett barn följer sin förälder: inget att räkna, och inget att räkna fel.
+      if (anchored) return
       video.style.left = `${rect.left}px`
       video.style.top = `${rect.top}px`
       video.style.width = `${rect.width}px`
@@ -195,7 +239,7 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
         setBounds = (rect) => nativeSetBounds(rect)
         readyTimer = window.setTimeout(markReady, 800)
       } else {
-        const session = createHtmlSession(url, muted, markReady, markFailed)
+        const session = createHtmlSession(url, muted, markReady, markFailed, rectRef.current)
         closeSession = () => session.close()
         setBounds = (rect) => session.setBounds(rect)
       }

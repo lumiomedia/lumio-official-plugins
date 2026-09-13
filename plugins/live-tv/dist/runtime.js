@@ -191451,16 +191451,23 @@ ${cue.text}`).join("\n\n")}
   function isHls(url) {
     return /\.m3u8(\?|$)/i.test(url) || !/\.[a-z0-9]{2,4}(\?|$)/i.test(url);
   }
-  function createHtmlSession(url, muted, onReady, onFail) {
+  function createHtmlSession(url, muted, onReady, onFail, hostEl) {
     const video = document.createElement("video");
     video.muted = muted;
     video.autoplay = true;
     video.playsInline = true;
-    video.style.cssText = "position:fixed;object-fit:cover;background:#000;pointer-events:none;z-index:5;border-radius:inherit";
     video.dataset.liveTvSurface = "";
     video.addEventListener("canplay", onReady, { once: true });
     video.addEventListener("error", onFail, { once: true });
-    document.body.appendChild(video);
+    const anchored = hostEl !== null;
+    if (hostEl) {
+      if (window.getComputedStyle(hostEl).position === "static") hostEl.style.position = "relative";
+      video.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;pointer-events:none;z-index:0;border-radius:inherit";
+      hostEl.insertBefore(video, hostEl.firstChild);
+    } else {
+      video.style.cssText = "position:fixed;object-fit:cover;background:#000;pointer-events:none;z-index:5;border-radius:inherit";
+      document.body.appendChild(video);
+    }
     const src = hostProxyUrl(window.location.origin, url);
     const Hls = getHls();
     let hls = null;
@@ -191476,6 +191483,7 @@ ${cue.text}`).join("\n\n")}
     });
     return {
       setBounds(rect) {
+        if (anchored) return;
         video.style.left = `${rect.left}px`;
         video.style.top = `${rect.top}px`;
         video.style.width = `${rect.width}px`;
@@ -191590,7 +191598,7 @@ ${cue.text}`).join("\n\n")}
           setBounds = (rect2) => nativeSetBounds(rect2);
           readyTimer = window.setTimeout(markReady, 800);
         } else {
-          const session = createHtmlSession(url, muted, markReady, markFailed);
+          const session = createHtmlSession(url, muted, markReady, markFailed, rectRef.current);
           closeSession = () => session.close();
           setBounds = (rect2) => session.setBounds(rect2);
         }
