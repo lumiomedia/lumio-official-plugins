@@ -1,0 +1,40 @@
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { cleanup, render, waitFor } from '@testing-library/react'
+import { useRef } from 'react'
+import { surfaceCalls } from '@/lib/plugin-sdk'
+import { useVideoSurface, videoSurfaceCapabilities, type VideoSurfaceHandle } from './video-surface'
+
+const ch = { name: 'A', group: '', url: 'http://x/a.m3u8', tvgId: null, logo: null }
+
+function Probe({ audio, onHandle }: { audio: boolean; onHandle: (h: VideoSurfaceHandle) => void }) {
+  const ref = useRef<HTMLDivElement | null>(null)
+  const handle = useVideoSurface(ref, { channel: ch, url: ch.url }, { muted: !audio, audio })
+  onHandle(handle)
+  return <div ref={ref} style={{ width: 100, height: 56 }} />
+}
+
+afterEach(cleanup)
+beforeEach(() => { surfaceCalls.length = 0 })
+
+describe('useVideoSurface v1 (HTML-motor i test)', () => {
+  it('rapporterar en levande yta', () => {
+    expect(videoSurfaceCapabilities()).toEqual({ maxLive: 1, engine: 'html' })
+  })
+  it('första instansen blir levande, andra får bildruta', async () => {
+    let first: VideoSurfaceHandle | null = null
+    let second: VideoSurfaceHandle | null = null
+    render(<><Probe audio onHandle={(h) => { first = h }} /><Probe audio={false} onHandle={(h) => { second = h }} /></>)
+    await waitFor(() => expect(first?.live).toBe(true))
+    await waitFor(() => {
+      expect(second?.live).toBe(false)
+      expect(second?.frameUrl).toContain('/api/player-frame')
+    })
+    expect(document.querySelector('video')).not.toBeNull()
+  })
+  it('städar videon vid unmount', async () => {
+    const view = render(<Probe audio onHandle={() => {}} />)
+    await waitFor(() => expect(document.querySelector('video')).not.toBeNull())
+    view.unmount()
+    expect(document.querySelector('video')).toBeNull()
+  })
+})
