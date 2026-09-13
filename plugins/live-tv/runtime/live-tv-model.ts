@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useTvMode } from '@/lib/plugin-sdk'
 import { useLiveTvEpgCache } from './hooks/useLiveTvEpgCache'
 import { computeNowNextLater, getChannelSchedule } from './epg/lookup'
 import { buildNameToTvgIdIndex, resolveTvgId } from './epg/name-match'
@@ -124,9 +125,23 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
     return () => window.clearInterval(timer)
   }, [tickMs])
 
+  /**
+   * Den aktiva spellistan är ett TV-BEGREPP.
+   *
+   * Filtret sätts bara från TV-hubbens spellistmeny, men modellen är delad med
+   * skrivbordet och mobilen — de har ingen ratt som visar eller ändrar det. Ett
+   * val som blev kvar i lagringen (någon provade TV-läget, eller läget byttes
+   * på samma enhet) klippte därför skrivbordets kanallista till en enda
+   * spellista UTAN att något i gränssnittet förklarade varför, och utan någon
+   * väg tillbaka. Utanför TV-läget gäller alltid alla listor.
+   *
+   * Hooken kallas ovillkorligt (hooks-reglerna) — det är bara dess RESULTAT
+   * som grindar filtret.
+   */
+  const tvMode = useTvMode()
   const allChannels = useMemo(() => flattenChannels(lists), [lists])
-  const activeList = useMemo(() => lists.find((list) => list.id === activePlaylistId) ?? null, [lists, activePlaylistId])
   // Vald spellista som inte längre finns → tillbaka till alla.
+  const activeList = useMemo(() => (tvMode ? lists.find((list) => list.id === activePlaylistId) ?? null : null), [tvMode, lists, activePlaylistId])
   const channels = useMemo(() => (activeList ? flattenChannels([activeList]) : allChannels), [activeList, allChannels])
   const playlists = useMemo(() => lists.map((list) => ({ id: list.id, name: list.name, count: flattenChannels([list]).length })), [lists])
   const numberByKey = useMemo(() => new Map(channels.map((channel, index) => [channelKey(channel), index + 1])), [channels])

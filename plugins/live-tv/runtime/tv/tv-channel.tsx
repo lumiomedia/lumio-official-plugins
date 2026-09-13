@@ -78,7 +78,24 @@ export function TvChannel({ model, nav, params, settings }: TvViewProps) {
     setSelectedStart(null)
   }, [dayOffset])
 
-  if (!channel) return <div style={{ padding: dp(48), color: TV.dim }}>{tt('noProgramme')}</div>
+  // Oupplösbar kanal (tom `url` i parametrarna): vyn har inget att visa, och
+  // utan en enda station fanns heller ingen `data-init` — värdens fokusmotor
+  // hittade ingen startpunkt, fjärrkontrollen låste sig på en tom skärm och
+  // Back var det enda som fungerade av ren tur. Stationen ger både ett
+  // fokusmål och den enda meningsfulla handlingen: tillbaka.
+  if (!channel) {
+    return (
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: dp(48) }}>
+        <div
+          data-testid="channel-unresolved"
+          {...station(() => nav.back(), undefined, { 'data-init': '' })}
+          style={{ height: dp(52), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.s10, display: 'inline-flex', alignItems: 'center', gap: dp(10), fontSize: dp(19), color: TV.dim, cursor: 'pointer' }}
+        >
+          <Icons.ChevronLeft />{tt('noProgramme')}
+        </div>
+      </div>
+    )
+  }
 
   const primary = () => {
     if (!selected) { nav.play({ channel }); return }
@@ -102,10 +119,10 @@ export function TvChannel({ model, nav, params, settings }: TvViewProps) {
   const requestLockToggle = () => {
     // Låsning och upplåsning kräver profilens PIN i båda riktningarna —
     // samma regel som live-tv-channel-page.tsx:s requestLockToggle (rad
-    // ~111–118). Raden ritas bara när lockAvailable ändå är sant, så det
-    // "PIN saknas"-läget som skrivbordet visar en notis för uppstår aldrig
-    // här (jfr det fallet med tv-shell.tsx:s channelMenu, som i stället
-    // låser/låser upp direkt utan grind).
+    // ~111–118), tv-settings.tsx:s requestUnlock och tv-shell.tsx:s
+    // requestLockToggle. Raden ritas bara när lockAvailable ändå är sant, så
+    // det "PIN saknas"-läget som skrivbordet visar en notis för uppstår
+    // aldrig här.
     if (!lockAvailable) return
     setLockGate(true)
   }

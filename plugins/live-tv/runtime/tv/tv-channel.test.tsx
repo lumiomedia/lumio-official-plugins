@@ -57,6 +57,18 @@ describe('TvChannel', () => {
     mount({ programme: String(now + H) })
     expect(document.querySelector('[data-init]')).toHaveTextContent('Football')
   })
+  it('oupplösbar kanal ger en fokuserbar station som går tillbaka', () => {
+    // Utan `url` finns ingen kanal att visa. Den gamla grenen ritade bara en
+    // textrad: noll stationer, alltså ingen `data-init` — värdens fokusmotor
+    // hade ingen startpunkt och fjärrkontrollen låste sig på en tom skärm.
+    const onNavigate = vi.fn()
+    render(<LiveTvTvShell pageId="live-tv-browse" params={{ view: 'channel' }} onNavigate={onNavigate} onOpenDetails={() => {}} />)
+    const station = screen.getByTestId('channel-unresolved')
+    expect(station).toHaveAttribute('data-init')
+    expect(station).toHaveTextContent('No programme information')
+    fireEvent.click(station)
+    expect(onNavigate).toHaveBeenCalledWith({ pageId: 'live-tv-browse', params: { view: 'guide' } })
+  })
   it('dagväljaren har fem dagar och Idag är vald', () => {
     mount()
     expect(screen.getAllByTestId('day-btn')).toHaveLength(5)
