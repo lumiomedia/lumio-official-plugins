@@ -17,6 +17,13 @@ function Probe({ audio, onHandle }: { audio: boolean; onHandle: (h: VideoSurface
   )
 }
 
+function StaticProbe() {
+  const ref = useRef<HTMLDivElement | null>(null)
+  useVideoSurface(ref, { channel: ch, url: ch.url }, { muted: false, audio: true })
+  // Medvetet UTAN position: relative.
+  return <div ref={ref} data-testid="static-rect" style={{ width: 100, height: 56 }} />
+}
+
 afterEach(cleanup)
 beforeEach(() => { surfaceCalls.length = 0 })
 
@@ -37,7 +44,7 @@ describe('useVideoSurface v1 (HTML-motor i test)', () => {
     // appens TV-sida (z-index 10) och skalades dubbelt när scenens skala ≠ 1.
     const rects = screen.getAllByTestId('rect')
     expect(rects[0].querySelector('video')).not.toBeNull()
-    expect(document.body.querySelector(':scope > video')).toBeNull()
+    expect(document.querySelector('video')?.parentElement).not.toBe(document.body)
     expect(document.querySelectorAll('video')).toHaveLength(1)
     // Etiketten ligger efter videon i DOM:en och målas därför ovanpå den.
     expect(rects[0].firstElementChild?.tagName).toBe('VIDEO')
@@ -63,5 +70,13 @@ describe('useVideoSurface v1 (HTML-motor i test)', () => {
       expect(b?.live).toBe(true)
       expect(document.querySelectorAll('video').length).toBe(1)
     })
+  })
+  it('en statisk ruta får portalen i stället — hooken skriver aldrig i anroparens stil', async () => {
+    render(<StaticProbe />)
+    await waitFor(() => expect(document.querySelector('video')).not.toBeNull())
+    const rect = screen.getByTestId('static-rect')
+    expect(rect.querySelector('video')).toBeNull()
+    expect(document.querySelector('video')?.parentElement).toBe(document.body)
+    expect(rect.style.position).toBe('')
   })
 })

@@ -65,6 +65,26 @@ export async function releaseAllSurfaces(): Promise<void> {
   notifyWaiters()
 }
 
+/**
+ * Rutan som kan bära en ankrad <video>, eller null.
+ *
+ * Kravet är ett positionerat block: `position: absolute; inset: 0` gäller
+ * närmaste positionerade förfader, så en statisk ruta hade låtit videon fylla
+ * något helt annat. `TvPreview` och multivyns ruta sätter redan
+ * `position: relative` + `overflow: hidden`. Rutan ändras INTE härifrån —
+ * en yta som skriver i anroparens stil är en osynlig bieffekt som ingen hittar
+ * — i stället faller vi tillbaka på den gamla fixed-portalen, som fungerar
+ * överallt men målas under appens TV-sida.
+ */
+const POSITIONED = new Set(['relative', 'absolute', 'fixed', 'sticky'])
+
+function anchorHost(el: HTMLElement | null): HTMLElement | null {
+  if (!el || typeof window === 'undefined') return null
+  // Vitlista i stället för `!== 'static'`: jsdom svarar tomma strängen för ett
+  // element utan egen position, och det hade räknats som positionerat.
+  return POSITIONED.has(window.getComputedStyle(el).position) ? el : null
+}
+
 function measure(el: HTMLElement | null): Rect | null {
   if (!el) return null
   const r = el.getBoundingClientRect()
@@ -105,9 +125,10 @@ function isHls(url: string): boolean {
  * positionerade element på samma nivå vinner den som kommer sist i DOM:en — de
  * målas alltså ovanpå videon, som i handoffen.
  *
- * Saknas rutan (ingen ref ännu) faller vi tillbaka på den gamla portalen: en
- * felplacerad förhandsvisning är bättre än ingen alls, och `setBounds` gör då
- * fortfarande sitt jobb.
+ * Saknas en positionerad ruta (ingen ref ännu, eller en statisk ruta — se
+ * `anchorHost`) faller vi tillbaka på den gamla portalen: en felplacerad
+ * förhandsvisning är bättre än ingen alls, och `setBounds` gör då fortfarande
+ * sitt jobb.
  */
 function createHtmlSession(url: string, muted: boolean, onReady: () => void, onFail: () => void, hostEl: HTMLElement | null) {
   const video = document.createElement('video')
@@ -119,10 +140,6 @@ function createHtmlSession(url: string, muted: boolean, onReady: () => void, onF
   video.addEventListener('error', onFail, { once: true })
   const anchored = hostEl !== null
   if (hostEl) {
-    // Rutan måste vara ett positionerat block för att `inset: 0` ska gälla den.
-    // TvPreview och multivyns ruta har redan `position: relative`; det här är
-    // för framtida anropare.
-    if (window.getComputedStyle(hostEl).position === 'static') hostEl.style.position = 'relative'
     video.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;pointer-events:none;z-index:0;border-radius:inherit'
     hostEl.insertBefore(video, hostEl.firstChild)
   } else {
@@ -160,6 +177,21 @@ function createHtmlSession(url: string, muted: boolean, onReady: () => void, onF
   }
 }
 
+/**
+ * En videoyta som fyller `rectRef`.
+ *
+ * KRAV PÅ RUTAN: den ska vara ett positionerat block, i praktiken
+ * `position: relative` + `overflow: hidden` (så som `TvPreview` och multivyns
+ * ruta gör). HTML-motorn lägger sitt `<video>` som ett absolut positionerat
+ * barn i rutan, och `inset: 0` gäller närmaste POSITIONERADE förfader — en
+ * statisk ruta hade låtit videon fylla något helt annat. Hooken ändrar aldrig
+ * rutans stil; är rutan statisk faller den tillbaka på den gamla
+ * fixed-portalen (se `anchorHost`), som hamnar under appens TV-sida.
+ *
+ * Nativemotorerna (mpv, droid, värdens yta) ligger utanför DOM:en och får i
+ * stället rutans skärmkoordinater, uppdaterade av ResizeObserver + resize +
+ * scroll. De lyssnarna registreras bara för de motorerna.
+ */
 export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: SurfaceSource | null, options: VideoSurfaceOptions): VideoSurfaceHandle {
   const [ready, setReady] = useState(false)
   const [failed, setFailed] = useState(false)
@@ -178,6 +210,11 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
       return
     }
     const caps = videoSurfaceCapabilities()
+    // Ankrad HTML-yta = videon är ett barn till rutan och följer den av sig
+    // själv. Då finns inga koordinater att hålla i takt, och ResizeObserver,
+    // resize och scroll nedan skulle bara kalla en nullhandling.
+    const htmlHost = caps.engine === 'html' ? anchorHost(rectRef.current) : null
+    const anchored = htmlHost !== null
     let cancelled = false
     let setBounds: ((rect: Rect) => void) | null = null
     let closeSession: (() => Promise<void>) | null = null
@@ -239,7 +276,7 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
         setBounds = (rect) => nativeSetBounds(rect)
         readyTimer = window.setTimeout(markReady, 800)
       } else {
-        const session = createHtmlSession(url, muted, markReady, markFailed, rectRef.current)
+        const session = createHtmlSession(url, muted, markReady, markFailed, htmlHost)
         closeSession = () => session.close()
         setBounds = (rect) => session.setBounds(rect)
       }
@@ -253,10 +290,12 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
       const rect = measure(rectRef.current)
       if (rect && setBounds) setBounds(rect)
     }
-    const observer = typeof ResizeObserver !== 'undefined' && rectRef.current ? new ResizeObserver(sync) : null
+    const observer = !anchored && typeof ResizeObserver !== 'undefined' && rectRef.current ? new ResizeObserver(sync) : null
     if (observer && rectRef.current) observer.observe(rectRef.current)
-    window.addEventListener('resize', sync)
-    document.addEventListener('scroll', sync, true)
+    if (!anchored) {
+      window.addEventListener('resize', sync)
+      document.addEventListener('scroll', sync, true)
+    }
     const onReleased = () => { if (owner !== idRef.current) setLive(false) }
     waiters.add(onReleased)
 
@@ -264,8 +303,10 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
       cancelled = true
       window.clearTimeout(readyTimer)
       observer?.disconnect()
-      window.removeEventListener('resize', sync)
-      document.removeEventListener('scroll', sync, true)
+      if (!anchored) {
+        window.removeEventListener('resize', sync)
+        document.removeEventListener('scroll', sync, true)
+      }
       waiters.delete(onReleased)
       if (owner === idRef.current) {
         owner = null
