@@ -38,6 +38,7 @@ vi.mock('@/lib/plugin-sdk', async () => {
 
 import { surfaceCalls } from '@/lib/plugin-sdk'
 import { releaseAllSurfaces, useVideoSurface, videoSurfaceCapabilities, type VideoSurfaceHandle } from './video-surface'
+import { __resetSurfaceCutouts, getSurfaceCutouts } from './surface-cutouts'
 
 const ch = { name: 'A', group: '', url: 'http://x/a.m3u8', tvgId: null, logo: null }
 
@@ -48,11 +49,34 @@ function Probe({ muted, audio, onHandle }: { muted: boolean; audio: boolean; onH
 }
 
 afterEach(async () => { cleanup(); await releaseAllSurfaces() })
-beforeEach(() => { surfaceCalls.length = 0 })
+beforeEach(() => { surfaceCalls.length = 0; __resetSurfaceCutouts() })
+
+/**
+ * happy-dom ger varje element nollrektangel, och `measure()` kastar allt under
+ * 2 px. Rutans mått stubbas därför — det är koordinaterna hålet ska bära.
+ * Stubben måste stå kvar över hela `start()` (den mäter först efter sina
+ * await:ar), så den rivs av anroparen och inte av en try/finally runt render.
+ */
+const TILE_BOX = { left: 120, top: 80, width: 400, height: 225, right: 520, bottom: 305, x: 120, y: 80, toJSON: () => ({}) } as DOMRect
+function measureTile() {
+  return vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue(TILE_BOX)
+}
 
 describe('useVideoSurface på mpv', () => {
   it('rapporterar mpv-motorn', () => {
-    expect(videoSurfaceCapabilities()).toEqual({ maxLive: 1, engine: 'mpv' })
+    expect(videoSurfaceCapabilities()).toEqual({ maxLive: 1, engine: 'mpv', nativeBehindDom: true })
+  })
+
+  it('en levande nativ yta klipper ett hål i gränssnittet och stänger det vid avmontering', async () => {
+    // mpv ritar UNDER webbvyn: utan hålet spelar rutan med ljud och utan bild.
+    bridge.available = true
+    const measured = measureTile()
+    const view = render(<Probe muted audio={false} onHandle={() => {}} />)
+    await waitFor(() => expect(getSurfaceCutouts()).toHaveLength(1))
+    expect(getSurfaceCutouts()[0]).toMatchObject({ left: 120, top: 80, width: 400, height: 225 })
+    view.unmount()
+    expect(getSurfaceCutouts()).toHaveLength(0)
+    measured.mockRestore()
   })
 
   it('utan mpvSetPropertyStrings öppnas ingen tyst förhandsvisning alls', async () => {

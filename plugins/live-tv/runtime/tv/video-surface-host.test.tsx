@@ -52,7 +52,7 @@ beforeEach(() => { opened.length = 0; closeAllAux.mockClear() })
 
 describe('useVideoSurface på värdens fleryte-API', () => {
   it('rapporterar värdmotorn med maxSurfaces − 1 levande', () => {
-    expect(videoSurfaceCapabilities()).toEqual({ maxLive: 2, engine: 'host' })
+    expect(videoSurfaceCapabilities()).toEqual({ maxLive: 2, engine: 'host', nativeBehindDom: false })
   })
 
   it('releaseAllSurfaces river ALLA värdytor, inte bara den sista', async () => {

@@ -15,6 +15,7 @@ import {
   playerFrameUrl,
 } from '@/lib/plugin-sdk'
 import { channelKey, type M3uChannel } from '../live-tv-data'
+import { registerSurfaceCutout, unregisterSurfaceCutout } from './surface-cutouts'
 import { HOST_PROXY_MIME, hostProxyUrl } from '../live-tv-playback-fallback'
 
 export interface SurfaceSource { channel: M3uChannel; url: string }
@@ -33,7 +34,9 @@ interface HostSurface {
 }
 type HostApi = {
   createVideoSurface?: () => HostSurface | null
-  getVideoSurfaceCapabilities?: () => { maxSurfaces: number }
+  // `nativeBehindDom` finns bara i nyare appar (lib/video-surfaces.ts) — läses
+  // defensivt och tolkas som "inte nativ bakom DOM:en" när den saknas.
+  getVideoSurfaceCapabilities?: () => { maxSurfaces: number; nativeBehindDom?: boolean }
   // Finns bara i nyare appversioner; läses defensivt så att bunten bygger mot
   // appträd som saknar den.
   mpvSetPropertyStrings?: (props: Array<{ name: string; value: string }>) => Promise<void>
@@ -43,11 +46,19 @@ type HostApi = {
 }
 const host = sdk as unknown as HostApi
 
-export function videoSurfaceCapabilities(): { maxLive: number; engine: 'mpv' | 'droid' | 'html' | 'host' } {
+/**
+ * `nativeBehindDom` = ytan ritas UTANFÖR DOM:en, i en vy under webbvyn. Då
+ * syns bilden bara där gränssnittet är genomskinligt över rektangeln, och
+ * skalet måste klippa hål i sin bakgrund (`surface-cutouts.ts`). HTML-motorn
+ * lägger i stället ett `<video>` i rutan och behöver inget hål.
+ */
+export function videoSurfaceCapabilities(): { maxLive: number; engine: 'mpv' | 'droid' | 'html' | 'host'; nativeBehindDom: boolean } {
   if (typeof host.createVideoSurface === 'function' && typeof host.getVideoSurfaceCapabilities === 'function') {
-    return { maxLive: Math.max(0, host.getVideoSurfaceCapabilities().maxSurfaces - 1), engine: 'host' }
+    const caps = host.getVideoSurfaceCapabilities()
+    return { maxLive: Math.max(0, caps.maxSurfaces - 1), engine: 'host', nativeBehindDom: caps.nativeBehindDom === true }
   }
-  return { maxLive: 1, engine: isDesktopTauriEnv ? 'mpv' : isAndroidTauriEnv ? 'droid' : 'html' }
+  const engine = isDesktopTauriEnv ? 'mpv' : isAndroidTauriEnv ? 'droid' : 'html'
+  return { maxLive: 1, engine, nativeBehindDom: engine !== 'html' }
 }
 
 /* ---------- v1: en enda nativ yta ---------- */
@@ -115,6 +126,25 @@ function measure(el: HTMLElement | null): Rect | null {
   const r = el.getBoundingClientRect()
   if (r.width < 2 || r.height < 2) return null
   return { left: r.left, top: r.top, width: r.width, height: r.height }
+}
+
+/**
+ * Rutans hörnradie i SKÄRMPIXLAR.
+ *
+ * `getComputedStyle` svarar i layoutpixlar, men TV-scenen skalar hela sidan
+ * med en `transform` — rektangeln vi registrerar är mätt med
+ * `getBoundingClientRect()` (skärmpixlar) och radien måste ligga i samma rymd.
+ * Skalan läses ur elementet självt (mätt bredd / layoutbredd) i stället för ur
+ * en scenvariabel: då stämmer den även utanför TV-scenen och i tester.
+ */
+function cornerRadius(el: HTMLElement | null): number {
+  if (!el || typeof window === 'undefined') return 0
+  const raw = Number.parseFloat(window.getComputedStyle(el).borderTopLeftRadius)
+  if (!Number.isFinite(raw) || raw <= 0) return 0
+  const layoutWidth = el.offsetWidth
+  const screenWidth = el.getBoundingClientRect().width
+  const scale = layoutWidth > 0 && screenWidth > 0 ? screenWidth / layoutWidth : 1
+  return raw * scale
 }
 
 function isHls(url: string): boolean {
@@ -241,11 +271,22 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
 
   useEffect(() => {
     if (!enabled || !url) {
+      unregisterSurfaceCutout(idRef.current)
       setLive(false)
       setReady(false)
       return
     }
     const caps = videoSurfaceCapabilities()
+    // Nativ yta = bilden ligger BAKOM webbvyn. Rutans skärmrektangel skrivs in
+    // i `surface-cutouts` medan ytan lever, och skalet klipper hål i sin
+    // bakgrund där. Utan hålet spelar rutan med ljud och utan bild.
+    const cutoutKey = idRef.current
+    const needsCutout = caps.nativeBehindDom
+    let cutoutLive = false
+    const dropCutout = () => {
+      cutoutLive = false
+      unregisterSurfaceCutout(cutoutKey)
+    }
     // Ankrad HTML-yta = videon är ett barn till rutan och följer den av sig
     // själv. Då finns inga koordinater att hålla i takt, och ResizeObserver,
     // resize och scroll nedan skulle bara kalla en nullhandling.
@@ -257,7 +298,12 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
     let readyTimer = 0
     let spent = false
     const markReady = () => { if (!cancelled) setReady(true) }
-    const markFailed = () => { if (!cancelled) { setFailed(true); setReady(false) } }
+    const markFailed = () => {
+      // Rutan faller tillbaka till kanalbilden och målas ogenomskinlig igen —
+      // hålet måste stängas i samma veva, annars lyser skrivbordet igenom.
+      dropCutout()
+      if (!cancelled) { setFailed(true); setReady(false) }
+    }
     // Enkelavtryck: en gång stängd, alltid stängd. En evicerad instans (se
     // nedan) kan annars stänga NÄSTA ägares ström när dess egen effekt-städning
     // körs, eftersom mpv/droid-stängning är parameterlös (den stänger vad som
@@ -266,6 +312,13 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
       if (spent) return
       spent = true
       await closeSession?.().catch(() => {})
+    }
+
+    const sync = () => {
+      const rect = measure(rectRef.current)
+      if (!rect) return
+      if (setBounds) setBounds(rect)
+      if (cutoutLive) registerSurfaceCutout(cutoutKey, { ...rect, radius: cornerRadius(rectRef.current) })
     }
 
     const start = async () => {
@@ -279,8 +332,11 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
         closeSession = async () => { off(); await surface.destroy() }
         // Spåras så att releaseAllSurfaces() river ÄVEN värdens ytor.
         hostSurfaces.add(closeOnce)
+        cutoutLive = needsCutout
         setLive(true)
+        sync()
         await surface.open({ url, muted }).catch(markFailed)
+        sync()
         return
       }
       // mpv utan mute-brygga: exakt samma regel som droid nedan. `openMpvPlayer`
@@ -307,6 +363,7 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
       }
       if (cancelled) return
       owner = idRef.current
+      cutoutLive = needsCutout
       setLive(true)
       if (caps.engine === 'mpv') {
         closeSession = () => closeMpvPlayer()
@@ -328,15 +385,10 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
         setBounds = (rect) => session.setBounds(rect)
       }
       ownerClose = closeOnce
-      const rect = measure(rectRef.current)
-      if (rect) setBounds(rect)
+      sync()
     }
     void start()
 
-    const sync = () => {
-      const rect = measure(rectRef.current)
-      if (rect && setBounds) setBounds(rect)
-    }
     const observer = !anchored && typeof ResizeObserver !== 'undefined' && rectRef.current ? new ResizeObserver(sync) : null
     if (observer && rectRef.current) observer.observe(rectRef.current)
     if (!anchored) {
@@ -348,11 +400,13 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
         // Värdytor äger inget `owner`-lås: de är släppta exakt när
         // releaseAllSurfaces() plockat bort deras stängare ur mängden.
         if (hostSurfaces.has(closeOnce)) return
+        dropCutout()
         setLive(false)
         if (reacquire) setAttempt((n) => n + 1)
         return
       }
       if (owner === idRef.current) return
+      dropCutout()
       setLive(false)
       // Ägarskapet är ledigt igen (ägaren avmonterades): försök ta ytan.
       if (reacquire && owner === null) setAttempt((n) => n + 1)
@@ -361,6 +415,7 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
 
     return () => {
       cancelled = true
+      dropCutout()
       window.clearTimeout(readyTimer)
       observer?.disconnect()
       if (!anchored) {

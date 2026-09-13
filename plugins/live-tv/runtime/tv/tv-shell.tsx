@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, type CSSProperties, type ReactNode } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentType, type CSSProperties, type ReactNode } from 'react'
 import { getTvGlassMenu, requestBrowseBack, type BrowsePageProps, type TvGlassMenuAction, type TvGlassMenuTarget } from '@/lib/plugin-sdk'
 import { channelKey, type M3uChannel } from '../live-tv-data'
 import { qualityFromName, useLiveTvModel, type LiveTvModel } from '../live-tv-model'
@@ -13,8 +13,58 @@ import { useTvSettings, type TvSettings } from './tv-settings-store'
 import { addToFirstFree, getMultiviewState, setMultiviewState } from './tv-multiview-store'
 import { createZapBuffer, resolveZap } from './tv-zap'
 import { releaseAllSurfaces } from './video-surface'
+import { cutoutClipPath, useSurfaceCutouts, type SurfaceCutout } from './surface-cutouts'
 import type { LiveTvPlayerTvProps } from './tv-player-types'
 import { TV_VIEWS } from './tv-views'
+
+/**
+ * TV-SKALETS BAKGRUND MED HÅL.
+ *
+ * Normalt målas `TV.bg` direkt på skalets rot. Men mpv/media3 ritar sina
+ * extraytor i en vy UNDER webbvyn, så en heltäckande bakgrund gör multivyns
+ * rutor svarta (ljud utan bild — uppmätt på riktig maskin). Medan minst en
+ * nativ yta lever blir roten därför genomskinlig och bakgrunden ritas här i
+ * stället, med ett `clip-path`-hål per ytrektangel.
+ *
+ * KOORDINATRYMD: hålen kommer in i SKÄRMpixlar
+ * (`getBoundingClientRect`), men `clip-path` räknas i elementets EGNA
+ * layoutpixlar — och TV-scenen skalar hela sidan med en `transform`
+ * (`lib/tv-scene.ts` i appen). Elementet mäter sig därför självt och räknar om
+ * hålen: skalan är mätt bredd / layoutbredd, vilket ger 1 utanför scenen och
+ * rätt tal inuti den. Samma fälla som en gång gjorde HTML-ytans fixed-portal
+ * dubbelskalad, se `video-surface.ts`.
+ */
+function SurfaceBackdrop({ cutouts }: { cutouts: SurfaceCutout[] }) {
+  const ref = useRef<HTMLDivElement | null>(null)
+  const [clip, setClip] = useState<string>(() => cutoutClipPath([]))
+  useLayoutEffect(() => {
+    const measure = () => {
+      const el = ref.current
+      if (!el) return
+      const box = el.getBoundingClientRect()
+      const scale = el.offsetWidth > 0 && box.width > 0 ? box.width / el.offsetWidth : 1
+      setClip(cutoutClipPath(cutouts.map((cutout) => ({
+        left: (cutout.left - box.left) / scale,
+        top: (cutout.top - box.top) / scale,
+        width: cutout.width / scale,
+        height: cutout.height / scale,
+        radius: cutout.radius / scale,
+      }))))
+    }
+    measure()
+    if (typeof window === 'undefined') return
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [cutouts])
+  return (
+    <div
+      ref={ref}
+      data-live-tv-backdrop=""
+      aria-hidden="true"
+      style={{ position: 'fixed', inset: 0, background: TV.bg, pointerEvents: 'none', zIndex: -1, clipPath: clip, WebkitClipPath: clip }}
+    />
+  )
+}
 
 export type TvView = 'hub' | 'guide' | 'favs' | 'channel' | 'search' | 'multi' | 'settings'
 const VIEWS: TvView[] = ['hub', 'guide', 'favs', 'channel', 'search', 'multi', 'settings']
@@ -72,6 +122,10 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
   const { tt, locale } = useTvText()
   const model = useLiveTvModel()
   const settings = useTvSettings()
+  // Hål i skalets bakgrund åt nativa videoytor (multivy, förhandsvisningar).
+  // Tom lista = ingen nativ yta lever, och skalet målas precis som förut.
+  const cutouts = useSurfaceCutouts()
+  const hasCutouts = cutouts.length > 0
   const view = viewFromParams(params)
   const viewParams = useMemo(() => params ?? {}, [params])
 
@@ -375,7 +429,15 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     : undefined
 
   return (
-    <div data-live-tv-tv-root="" style={{ display: 'flex', height: '100%', minHeight: 0, background: TV.bg, color: TV.text, fontFamily: TV.font, fontSize: dp(22), lineHeight: 1.3 }}>
+    <div
+      data-live-tv-tv-root=""
+      // `position: relative; zIndex: 0` bara när hål finns: det gör roten till
+      // en stackningskontext så att bakgrundens `zIndex: -1` hamnar under
+      // skalets innehåll men inte rymmer ut ur pluginet. Utan hål är stilen
+      // exakt som förut.
+      style={{ display: 'flex', height: '100%', minHeight: 0, background: hasCutouts ? 'transparent' : TV.bg, color: TV.text, fontFamily: TV.font, fontSize: dp(22), lineHeight: 1.3, ...(hasCutouts ? { position: 'relative' as const, zIndex: 0 } : null) }}
+    >
+      {hasCutouts ? <SurfaceBackdrop cutouts={cutouts} /> : null}
       <TvFocusStyle />
       {/* Ikonrad: pluginets egen navigation inne i Live TV. Inte data-col="side" —
           värdens Back-regel hade då flyttat fokus hit i stället för att gå bakåt. */}

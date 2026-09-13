@@ -21,7 +21,11 @@ export function TvPreview({ channel, enabled, live, width, height, label, onOk, 
   const surface = useVideoSurface(ref, channel && enabled ? { channel, url: channel.url } : null, { muted: true, audio: false, enabled })
   const showsVideo = enabled && surface.live && !surface.failed
   return (
-    <div ref={ref} {...station(onOk, undefined, extra)} style={{ width, height, borderRadius: dp(14), border: `1px solid ${TV.lineCard}`, position: 'relative', overflow: 'hidden', background: '#05070d', flexShrink: 0, cursor: 'pointer' }}>
+    // Samma regel som multivyns ruta: en NATIV yta ritas UNDER webbvyn, så
+    // plattan måste bort medan bilden spelar (skalet klipper hålet i sin
+    // bakgrund). Etiketten och LIVE-taggen är överlager inne i rutan.
+    <div ref={ref} {...station(onOk, undefined, extra)}
+      style={{ width, height, borderRadius: dp(14), border: `1px solid ${TV.lineCard}`, position: 'relative', overflow: 'hidden', background: showsVideo ? 'transparent' : '#05070d', flexShrink: 0, cursor: 'pointer' }}>
       {channel && !showsVideo ? <ChannelArt channel={channel} style={{ position: 'absolute', inset: 0, borderRadius: 0 }} /> : null}
       <span style={{ position: 'absolute', top: dp(12), left: dp(14), fontFamily: TV.mono, fontSize: dp(12), letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(243,244,248,0.55)' }}>{label}</span>
       {live ? <span style={{ position: 'absolute', left: dp(14), bottom: dp(12) }}><Tag variant="live">LIVE</Tag></span> : null}

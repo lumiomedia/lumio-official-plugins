@@ -3,6 +3,7 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import { useRef } from 'react'
 import { surfaceCalls } from '@/lib/plugin-sdk'
 import { useVideoSurface, videoSurfaceCapabilities, type VideoSurfaceHandle } from './video-surface'
+import { __resetSurfaceCutouts, getSurfaceCutouts } from './surface-cutouts'
 
 const ch = { name: 'A', group: '', url: 'http://x/a.m3u8', tvgId: null, logo: null }
 
@@ -29,7 +30,14 @@ beforeEach(() => { surfaceCalls.length = 0 })
 
 describe('useVideoSurface v1 (HTML-motor i test)', () => {
   it('rapporterar en levande yta', () => {
-    expect(videoSurfaceCapabilities()).toEqual({ maxLive: 1, engine: 'html' })
+    expect(videoSurfaceCapabilities()).toEqual({ maxLive: 1, engine: 'html', nativeBehindDom: false })
+  })
+  it('HTML-motorn klipper INGET hål — videon är ett vanligt DOM-element i rutan', async () => {
+    __resetSurfaceCutouts()
+    let handle: VideoSurfaceHandle | null = null
+    render(<Probe audio onHandle={(h) => { handle = h }} />)
+    await waitFor(() => expect(handle?.live).toBe(true))
+    expect(getSurfaceCutouts()).toHaveLength(0)
   })
   it('första instansen blir levande, andra får bildruta', async () => {
     let first: VideoSurfaceHandle | null = null

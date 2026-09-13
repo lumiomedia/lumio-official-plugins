@@ -110,9 +110,15 @@ function Tile({ index, channel, hasAudio, live, isInit, span, nowTitle, number, 
   const { tt } = useTvText()
   const ref = useRef<HTMLDivElement | null>(null)
   const surface = useVideoSurface(ref, channel && live ? { channel, url: channel.url } : null, { muted: !hasAudio, audio: hasAudio, enabled: live })
+  const showsVideo = live && surface.live && !surface.failed
   return (
-    <div ref={ref} data-testid="mv-tile" {...station(onOk, onHold, isInit ? { 'data-init': '' } : undefined)} style={{ position: 'relative', borderRadius: dp(14), border: `1px solid ${TV.lineCard}`, overflow: 'hidden', background: '#05070d', gridRow: span ? 'span 2' : undefined, cursor: 'pointer', minHeight: 0 }}>
-      {channel && !(live && surface.live && !surface.failed) ? <ChannelArt channel={channel} style={{ position: 'absolute', inset: 0, borderRadius: 0 }} /> : null}
+    // GENOMSKINLIG MEDAN YTAN LEVER. På mpv/media3 ligger videon i en vy UNDER
+    // webbvyn — `#05070d` här målade alltså över bilden och gav ljud utan bild.
+    // Skalet klipper samtidigt ett hål i sin egen bakgrund (`surface-cutouts`).
+    // Tom eller laddande ruta behåller plattan; ramen, etikettgradienten och
+    // fokusringen är överlager inne i rutan och påverkas inte.
+    <div ref={ref} data-testid="mv-tile" {...station(onOk, onHold, isInit ? { 'data-init': '' } : undefined)} style={{ position: 'relative', borderRadius: dp(14), border: `1px solid ${TV.lineCard}`, overflow: 'hidden', background: showsVideo ? 'transparent' : '#05070d', gridRow: span ? 'span 2' : undefined, cursor: 'pointer', minHeight: 0 }}>
+      {channel && !showsVideo ? <ChannelArt channel={channel} style={{ position: 'absolute', inset: 0, borderRadius: 0 }} /> : null}
       {channel ? (
         <>
           <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: `${dp(40)}px ${dp(18)}px ${dp(14)}px`, background: 'linear-gradient(180deg, transparent, rgba(0,0,0,0.8))', display: 'flex', alignItems: 'baseline', gap: dp(10), whiteSpace: 'nowrap', overflow: 'hidden' }}>
