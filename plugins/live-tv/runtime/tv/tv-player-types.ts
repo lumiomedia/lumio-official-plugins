@@ -12,6 +12,8 @@ export interface LiveTvPlayerTvProps {
   nowFor: (channel: M3uChannel) => NowNextLater
   nowMs: number
   locale: string
+  /** PIN-grinden (kanalbyte till en låst kanal) är öppen ovanpå spelaren. */
+  gateOpen: boolean
   onToggleFavourite(): void
   onOpenChannelDetails(): void
   onOpenMultiview(): void

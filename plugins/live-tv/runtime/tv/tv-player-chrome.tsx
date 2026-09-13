@@ -66,8 +66,8 @@ export function TvPlayerChrome({ channel, tv, paused, onTogglePause, onClose }: 
    * bara ska starta om när KANALEN byts, annars börjar den om varje gång ett
    * lager öppnas och stjäl då fokus från just det lagret.
    */
-  const layerRef = useRef({ menuOpen: false, miniOpen: false })
-  useEffect(() => { layerRef.current = { menuOpen: menu !== null, miniOpen } })
+  const layerRef = useRef({ menuOpen: false, miniOpen: false, gateOpen: false })
+  useEffect(() => { layerRef.current = { menuOpen: menu !== null, miniOpen, gateOpen: tv.gateOpen } })
 
   /**
    * ⋯ tar fokus när spelaren öppnas — annars finns ingen station alls.
@@ -84,8 +84,9 @@ export function TvPlayerChrome({ channel, tv, paused, onTogglePause, onClose }: 
    * bildrutor, för spelarens egen uppstart (yta, hls, värdens motor) flyttar
    * fokus sent och en enda `focus()` vid montering försvinner.
    *
-   * Slingan avstår medan glasmenyn eller mini-guiden är öppen — de äger fokus
-   * då — och ger upp efter fyra sekunder så att den aldrig slåss i evighet.
+   * Slingan avstår medan glasmenyn, mini-guiden eller PIN-grinden är öppen —
+   * de äger fokus då — och ger upp efter fyra sekunder så att den aldrig
+   * slåss i evighet.
    */
   useEffect(() => {
     const node = dotsRef.current
@@ -96,7 +97,7 @@ export function TvPlayerChrome({ channel, tv, paused, onTogglePause, onClose }: 
     const tick = () => {
       if (!node.isConnected) return
       const active = document.activeElement
-      const inLayer = layerRef.current.menuOpen || layerRef.current.miniOpen
+      const inLayer = layerRef.current.menuOpen || layerRef.current.miniOpen || layerRef.current.gateOpen
       if (active === node) {
         if (++held >= 5) return
       } else if (inLayer) {
@@ -143,6 +144,7 @@ export function TvPlayerChrome({ channel, tv, paused, onTogglePause, onClose }: 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (menu) return // glasmenyn stänger sig själv på Back (host TvGlassMenu)
+      if (tv.gateOpen) return // PIN-grinden äger Enter/Back medan den är uppe (tv-shell.tsx)
       if (event.key === 'ChannelUp' || event.key === 'PageUp') { event.preventDefault(); event.stopImmediatePropagation(); step(1); return }
       if (event.key === 'ChannelDown' || event.key === 'PageDown') { event.preventDefault(); event.stopImmediatePropagation(); step(-1); return }
       if (event.key === 'ArrowDown' && !miniOpen) { event.preventDefault(); event.stopImmediatePropagation(); setMiniOpen(true); reveal(); return }
@@ -186,7 +188,7 @@ export function TvPlayerChrome({ channel, tv, paused, onTogglePause, onClose }: 
     }
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
-  }, [menu, miniOpen, step, reveal, onClose, closeMini])
+  }, [menu, miniOpen, step, reveal, onClose, closeMini, tv.gateOpen])
 
   useEffect(() => {
     if (!miniOpen) return

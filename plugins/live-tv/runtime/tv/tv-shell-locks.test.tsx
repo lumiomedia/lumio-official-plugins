@@ -88,4 +88,27 @@ describe('PIN-grinden i TV-skalet', () => {
     // har inte börjat spela.
     expect(screen.getByTestId('player')).toHaveTextContent('A')
   })
+
+  // Grinden öppnas ovanpå spelaren utan att röra `active` — Back måste ändå
+  // kunna avbryta den. Skalets gamla Back-lyssnare stod helt tillbaka så
+  // fort spelaren var monterad (`active && Player`), så Backspace föll
+  // igenom till kromet och stängde SPELAREN i stället för att avbryta
+  // grinden.
+  it('Backspace avbryter grinden medan spelaren är monterad, och spelaren stängs inte', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, LOCKED_CHANNELS_KEY, [channelKey(ch('B'))])
+    vi.useFakeTimers()
+    mount({})
+    fireEvent.keyDown(window, { key: '1' })
+    act(() => { vi.advanceTimersByTime(1500) })
+    vi.useRealTimers()
+    expect(await screen.findByTestId('player')).toHaveTextContent('A')
+
+    fireEvent.click(screen.getByTestId('switch-to-locked'))
+    expect(await screen.findByRole('dialog')).toBeInTheDocument()
+
+    fireEvent.keyDown(window, { key: 'Backspace' })
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    // Spelaren lever kvar (fortfarande på A) — bara grinden stängdes.
+    expect(screen.getByTestId('player')).toHaveTextContent('A')
+  })
 })

@@ -229,10 +229,25 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
   // millisekunderna (långsam disk, kall runtime) fanns ingen Back-lyssnare
   // alls, och trycket föll igenom till värdsidan bakom. Därför `active &&
   // Player`: medan importen pågår tar skalet Back och stänger `active`.
+  //
+  // UNDANTAG: PIN-grinden. Kanalbyte till en LÅST kanal öppnar grinden UTAN
+  // att röra `active` (spelaren blir kvar bakom den, se `play` ovan) — då
+  // måste skalet ta Back SJÄLVT trots att spelaren är monterad, annars finns
+  // ingen väg att avbryta grinden (kromet står tillbaka helt när
+  // `tv.gateOpen`, se tv-player-chrome.tsx, och `PinGate` hanterar bara
+  // Escape på sitt eget fält — inte Backspace). Kollas FÖRE `active &&
+  // Player`-grenen, och före INPUT/TEXTAREA-undantaget: PIN-fältet ÄR ett
+  // input, men Back ska ändå avbryta grinden oavsett fokus.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (!BACK_KEYS.has(event.key)) return
       if (menu) return
+      if (pending) {
+        event.preventDefault()
+        event.stopPropagation()
+        back()
+        return
+      }
       if (active && Player) return
       const target = event.target as HTMLElement | null
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return
@@ -244,7 +259,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     }
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
-  }, [back, menu, active, Player])
+  }, [back, menu, active, Player, pending])
 
   // Nummertangenter: favoriter 1–N först, sedan listnummer.
   const favourites = model.favouriteChannels
@@ -342,6 +357,10 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
         nowFor: model.nowFor,
         nowMs: model.nowMs,
         locale,
+        // Kanalbyte till en LÅST kanal lämnar `active` orörd och öppnar
+        // grinden ovanpå spelaren (se `play` ovan) — kromet måste då stå
+        // tillbaka helt (Enter/Back) så att PIN-grinden äger dem.
+        gateOpen: pending !== null,
         onToggleFavourite: () => model.togglePin(activeChannel),
         onOpenChannelDetails: () => { setActive(null); openChannel(activeChannel) },
         onOpenMultiview: () => { setActive(null); go('multi') },

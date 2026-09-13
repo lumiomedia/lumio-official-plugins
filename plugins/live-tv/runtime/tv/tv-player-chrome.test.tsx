@@ -9,7 +9,7 @@ const channels = [ch('A'), ch('B'), ch('C')]
 const nowFor = (c: { name: string }) => (c.name === 'B' ? { now: { title: 'GameDay', start: now - 60_000, stop: now + 60_000 }, next: { title: 'Football', start: now + 60_000, stop: now + 120_000 }, later: null } : { now: null, next: null, later: null })
 
 function tv(overrides: Partial<LiveTvPlayerTvProps> = {}): LiveTvPlayerTvProps {
-  return { channelNumber: 2, quality: '4K', favourite: false, bannerHideMs: 4000, neighbours: channels, nowFor, nowMs: now, locale: 'en-GB', onToggleFavourite: vi.fn(), onOpenChannelDetails: vi.fn(), onOpenMultiview: vi.fn(), onOpenGuide: vi.fn(), onAddToMultiview: vi.fn(), onSwitchChannel: vi.fn(), ...overrides }
+  return { channelNumber: 2, quality: '4K', favourite: false, bannerHideMs: 4000, neighbours: channels, nowFor, nowMs: now, locale: 'en-GB', gateOpen: false, onToggleFavourite: vi.fn(), onOpenChannelDetails: vi.fn(), onOpenMultiview: vi.fn(), onOpenGuide: vi.fn(), onAddToMultiview: vi.fn(), onSwitchChannel: vi.fn(), ...overrides }
 }
 
 afterEach(cleanup)
@@ -154,6 +154,22 @@ describe('TvPlayerChrome', () => {
     fireEvent.keyDown(screen.getByLabelText('More'), { key: 'Enter' })
     expect(behind).toHaveBeenCalledTimes(1)
     window.removeEventListener('keydown', behind, true)
+  })
+  // Kanalbyte till en LÅST kanal öppnar PIN-grinden UTAN att stänga spelaren
+  // (tv-shell.tsx: `play` lämnar `active` orörd). Kromet måste då stå
+  // tillbaka helt — annars svalde Enter/Backspace grinden: Enter kunde inte
+  // skicka in PIN:en (den bubblar aldrig fram till fältet) och Backspace
+  // stängde SPELAREN i stället för att avbryta grinden.
+  it('gateOpen: kromet står tillbaka och släpper fram Enter/Backspace till en senare lyssnare', () => {
+    const onClose = vi.fn()
+    render(<TvPlayerChrome channel={channels[1]} tv={tv({ gateOpen: true })} paused={false} onTogglePause={() => {}} onClose={onClose} />)
+    const later = vi.fn()
+    window.addEventListener('keydown', later, true)
+    fireEvent.keyDown(window, { key: 'Enter' })
+    fireEvent.keyDown(window, { key: 'Backspace' })
+    expect(onClose).not.toHaveBeenCalled()
+    expect(later).toHaveBeenCalledTimes(2)
+    window.removeEventListener('keydown', later, true)
   })
   it('stopImmediatePropagation hindrar en senare registrerad lyssnare från att också se Back', () => {
     render(<TvPlayerChrome channel={channels[1]} tv={tv()} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
