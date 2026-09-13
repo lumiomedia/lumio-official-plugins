@@ -427,10 +427,10 @@
     return rawHost.trim().toLowerCase().replace(/\.+$/, "");
   }
   function isLocalAppHost(hostname) {
-    const host = normalizeHost(hostname);
-    if (!host) return false;
-    if (host === "localhost" || host === "127.0.0.1" || host === "::1") return true;
-    if (host === "tauri.localhost" || host.endsWith(".tauri.localhost")) return true;
+    const host2 = normalizeHost(hostname);
+    if (!host2) return false;
+    if (host2 === "localhost" || host2 === "127.0.0.1" || host2 === "::1") return true;
+    if (host2 === "tauri.localhost" || host2.endsWith(".tauri.localhost")) return true;
     return false;
   }
   function isLanClientHost(hostname) {
@@ -709,15 +709,15 @@
   function getMainMenuItems() {
     return mainMenuItems;
   }
-  function replaceMainMenuItems(owner, items) {
-    const previous = new Set(ownedMainMenuItemIds.get(owner) ?? []);
+  function replaceMainMenuItems(owner2, items) {
+    const previous = new Set(ownedMainMenuItemIds.get(owner2) ?? []);
     for (let index3 = mainMenuItems.length - 1; index3 >= 0; index3 -= 1) {
       if (previous.has(mainMenuItems[index3].id)) mainMenuItems.splice(index3, 1);
     }
     for (const item of items) {
       if (!mainMenuItems.find((entry) => entry.id === item.id)) mainMenuItems.push(item);
     }
-    ownedMainMenuItemIds.set(owner, items.map((item) => item.id));
+    ownedMainMenuItemIds.set(owner2, items.map((item) => item.id));
     notifyRegistryChanged();
   }
   function getTopbarItems() {
@@ -787,9 +787,9 @@
     }
     const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "";
     if (userAgent.includes("Tauri")) return true;
-    const host = window.location.hostname;
+    const host2 = window.location.hostname;
     const port = window.location.port;
-    return isLocalAppHost(host) && port === "3011";
+    return isLocalAppHost(host2) && port === "3011";
   }
   function isLiveStreamUrl(url) {
     const lower = url.toLowerCase();
@@ -3430,6 +3430,7 @@
           libraryRowIndexed: "{count} indexed",
           libraryMetricTitles: "Titles",
           librarySearchPlaceholder: "Search your library",
+          librarySearchMinChars: "Type at least two characters to search your library.",
           libraryBackToHome: "Back to Home",
           continueLayoutRows: "Rows",
           continueLayoutGrid: "Grid",
@@ -6005,6 +6006,7 @@
           libraryRowIndexed: "{count} indexerade",
           libraryMetricTitles: "Titlar",
           librarySearchPlaceholder: "S\xF6k i ditt bibliotek",
+          librarySearchMinChars: "Skriv minst tv\xE5 tecken f\xF6r att s\xF6ka i biblioteket.",
           libraryBackToHome: "Tillbaka till Hem",
           continueLayoutRows: "Rader",
           continueLayoutGrid: "Rutn\xE4t",
@@ -9887,7 +9889,7 @@
   function ResultsState({
     title,
     description,
-    suggestions,
+    suggestions: suggestions2,
     actionLabel,
     onAction
   }) {
@@ -9900,9 +9902,9 @@
         /* @__PURE__ */ jsx("p", { className: "text-xs uppercase tracking-[0.32em] text-accent-400", children: t("results") }),
         /* @__PURE__ */ jsx("h3", { className: "mt-4 font-display text-4xl text-white", children: title }),
         /* @__PURE__ */ jsx("p", { className: "mt-3 max-w-xl text-sm leading-7 text-slate-300", children: description }),
-        suggestions && suggestions.length > 0 ? /* @__PURE__ */ jsxs("div", { className: "mt-6 w-full max-w-2xl rounded-[1.5rem] border border-white/10 bg-slate-950/60 px-5 py-5 text-left", children: [
+        suggestions2 && suggestions2.length > 0 ? /* @__PURE__ */ jsxs("div", { className: "mt-6 w-full max-w-2xl rounded-[1.5rem] border border-white/10 bg-slate-950/60 px-5 py-5 text-left", children: [
           /* @__PURE__ */ jsx("p", { className: "text-xs uppercase tracking-[0.24em] text-slate-400", children: t("resultsTryThis") }),
-          /* @__PURE__ */ jsx("ul", { className: "mt-3 space-y-3 text-sm leading-7 text-slate-200", children: suggestions.map((suggestion) => /* @__PURE__ */ jsxs("li", { className: "flex gap-3", children: [
+          /* @__PURE__ */ jsx("ul", { className: "mt-3 space-y-3 text-sm leading-7 text-slate-200", children: suggestions2.map((suggestion) => /* @__PURE__ */ jsxs("li", { className: "flex gap-3", children: [
             /* @__PURE__ */ jsx("span", { className: "mt-2 h-2 w-2 rounded-full bg-accent-400", "aria-hidden": "true" }),
             /* @__PURE__ */ jsx("span", { children: suggestion })
           ] }, suggestion)) })
@@ -13637,12 +13639,12 @@
         return `rgba(${guard(0, 255, red).toFixed()}, ${guard(0, 255, green).toFixed()}, ${guard(0, 255, blue).toFixed()}, ${parseFloat(guard(0, 1, alpha2).toFixed(3))})`;
       }
       function mix2(color1, color2, weight) {
-        const normalize2 = (n, index3) => (
+        const normalize3 = (n, index3) => (
           // 3rd index is alpha channel which is already normalized
           index3 === 3 ? n : n / 255
         );
-        const [r1, g1, b1, a1] = parseToRgba(color1).map(normalize2);
-        const [r2, g2, b2, a2] = parseToRgba(color2).map(normalize2);
+        const [r1, g1, b1, a1] = parseToRgba(color1).map(normalize3);
+        const [r2, g2, b2, a2] = parseToRgba(color2).map(normalize3);
         const alphaDelta = a2 - a1;
         const normalizedWeight = weight * 2 - 1;
         const combinedWeight = normalizedWeight * alphaDelta === -1 ? normalizedWeight : normalizedWeight + alphaDelta / (1 + normalizedWeight * alphaDelta);
@@ -28435,9 +28437,9 @@
         toIterator: () => toIterator2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function forwardRef3(component) {
-        return (0, import_react103.forwardRef)(component);
+        return (0, import_react121.forwardRef)(component);
       }
       var toIterator2 = (obj) => {
         return {
@@ -39914,7 +39916,7 @@
         ...number2,
         default: 1
       };
-      var sanitize5 = (v) => Math.round(v * 1e5) / 1e5;
+      var sanitize7 = (v) => Math.round(v * 1e5) / 1e5;
       var floatRegex2 = /-?(?:\d+(?:\.\d+)?|\.\d+)/gu;
       function isNullish2(v) {
         return v == null;
@@ -39942,7 +39944,7 @@
       var rgba2 = {
         test: /* @__PURE__ */ isColorString2("rgb", "red"),
         parse: /* @__PURE__ */ splitColor2("red", "green", "blue"),
-        transform: ({ red, green, blue, alpha: alpha$1 = 1 }) => "rgba(" + rgbUnit2.transform(red) + ", " + rgbUnit2.transform(green) + ", " + rgbUnit2.transform(blue) + ", " + sanitize5(alpha2.transform(alpha$1)) + ")"
+        transform: ({ red, green, blue, alpha: alpha$1 = 1 }) => "rgba(" + rgbUnit2.transform(red) + ", " + rgbUnit2.transform(green) + ", " + rgbUnit2.transform(blue) + ", " + sanitize7(alpha2.transform(alpha$1)) + ")"
       };
       function parseHex2(v) {
         let r = "";
@@ -39995,7 +39997,7 @@
         test: /* @__PURE__ */ isColorString2("hsl", "hue"),
         parse: /* @__PURE__ */ splitColor2("hue", "saturation", "lightness"),
         transform: ({ hue, saturation, lightness, alpha: alpha$1 = 1 }) => {
-          return "hsla(" + Math.round(hue) + ", " + percent2.transform(sanitize5(saturation)) + ", " + percent2.transform(sanitize5(lightness)) + ", " + sanitize5(alpha2.transform(alpha$1)) + ")";
+          return "hsla(" + Math.round(hue) + ", " + percent2.transform(sanitize7(saturation)) + ", " + percent2.transform(sanitize7(lightness)) + ", " + sanitize7(alpha2.transform(alpha$1)) + ")";
         }
       };
       var color2 = {
@@ -40070,7 +40072,7 @@
             if (v[i] !== void 0) {
               const type = types[i];
               if (type === NUMBER_TOKEN2) {
-                output += sanitize5(v[i]);
+                output += sanitize7(v[i]);
               } else if (type === COLOR_TOKEN2) {
                 output += color2.transform(v[i]);
               } else {
@@ -50049,15 +50051,15 @@
             const { x, y } = current2.getBBox();
             inset.x += x;
             inset.y += y;
-            let svg = null;
+            let svg2 = null;
             let parent = current2.parentNode;
-            while (!svg) {
+            while (!svg2) {
               if (parent.tagName === "svg") {
-                svg = parent;
+                svg2 = parent;
               }
               parent = current2.parentNode;
             }
-            current2 = svg;
+            current2 = svg2;
           } else {
             break;
           }
@@ -50160,7 +50162,7 @@
         }
         info[axis].progress = motionUtils.clamp(0, 1, info[axis].interpolate(info[axis].current));
       }
-      function measure2(container, target2 = container, info) {
+      function measure3(container, target2 = container, info) {
         info.x.targetOffset = 0;
         info.y.targetOffset = 0;
         if (target2 !== container) {
@@ -50184,7 +50186,7 @@
       function createOnScrollHandler2(element, onScroll, info, options = {}) {
         return {
           measure: (time2) => {
-            measure2(element, options.target, info);
+            measure3(element, options.target, info);
             updateScrollInfo2(element, info, time2);
             if (options.offset || options.target) {
               resolveOffsets2(element, info, options);
@@ -50937,15 +50939,15 @@
       }
       function transformViewBoxPoint2(svgRef) {
         return (point3) => {
-          const svg = svgRef.current;
-          if (!svg) {
+          const svg2 = svgRef.current;
+          if (!svg2) {
             return point3;
           }
-          const viewBox = svg.viewBox?.baseVal;
+          const viewBox = svg2.viewBox?.baseVal;
           if (!viewBox || viewBox.width === 0 && viewBox.height === 0) {
             return point3;
           }
-          const bbox = svg.getBoundingClientRect();
+          const bbox = svg2.getBoundingClientRect();
           if (bbox.width === 0 || bbox.height === 0) {
             return point3;
           }
@@ -57938,17 +57940,17 @@
         renderFn: () => renderFn2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function getValidChildren2(children) {
-        return import_react103.Children.toArray(children).filter(
-          (child) => (0, import_react103.isValidElement)(child)
+        return import_react121.Children.toArray(children).filter(
+          (child) => (0, import_react121.isValidElement)(child)
         );
       }
       var pickChildren2 = (children, targetChild) => {
         var _a;
         let target2 = [];
-        const withoutTargetChildren = (_a = import_react103.Children.map(children, (item) => {
-          if (!(0, import_react103.isValidElement)(item)) return item;
+        const withoutTargetChildren = (_a = import_react121.Children.map(children, (item) => {
+          if (!(0, import_react121.isValidElement)(item)) return item;
           if (item.type === targetChild) {
             target2.push(item);
             return null;
@@ -58290,7 +58292,7 @@
           refs.forEach((ref) => assignRef(ref, node));
         };
       }
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function canUseDOM() {
         return !!(typeof window !== "undefined" && window.document && window.document.createElement);
       }
@@ -58376,17 +58378,17 @@
         };
       }
       function useDOMRef(ref) {
-        const domRef = (0, import_react103.useRef)(null);
-        (0, import_react103.useImperativeHandle)(ref, () => domRef.current);
+        const domRef = (0, import_react121.useRef)(null);
+        (0, import_react121.useImperativeHandle)(ref, () => domRef.current);
         return domRef;
       }
       function useFocusableRef(ref, focusableRef) {
-        const domRef = (0, import_react103.useRef)(null);
-        (0, import_react103.useImperativeHandle)(ref, () => createFocusableRef(domRef, focusableRef));
+        const domRef = (0, import_react121.useRef)(null);
+        (0, import_react121.useImperativeHandle)(ref, () => createFocusableRef(domRef, focusableRef));
         return domRef;
       }
       function useSyncRef(context, ref) {
-        (0, import_react103.useLayoutEffect)(() => {
+        (0, import_react121.useLayoutEffect)(() => {
           if (context && context.ref && ref && ref.current) {
             context.ref.current = ref.current;
             return () => {
@@ -58468,7 +58470,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_system_rsc = require_dist4();
       var import_i18n12 = require_main5();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_motion2 = require_cjs4();
       var import_utils8 = require_main4();
       var import_overlays = require_main9();
@@ -58477,7 +58479,7 @@
         name: "ProviderContext",
         strict: false
       });
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var HeroUIProvider = ({
         children,
         navigate,
@@ -58498,9 +58500,9 @@
       }) => {
         let contents = children;
         if (navigate) {
-          contents = /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_utils8.RouterProvider, { navigate, useHref, children: contents });
+          contents = /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_utils8.RouterProvider, { navigate, useHref, children: contents });
         }
-        const context = (0, import_react103.useMemo)(() => {
+        const context = (0, import_react121.useMemo)(() => {
           if (disableAnimation && skipFramerMotionAnimations) {
             import_framer_motion2.MotionGlobalConfig.skipAnimations = true;
           }
@@ -58523,7 +58525,7 @@
           labelPlacement,
           spinnerVariant
         ]);
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(ProviderContext, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_i18n12.I18nProvider, { locale, children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_framer_motion2.MotionConfig, { reducedMotion, children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_overlays.OverlayProvider, { ...otherProps, children: contents }) }) }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(ProviderContext, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_i18n12.I18nProvider, { locale, children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_framer_motion2.MotionConfig, { reducedMotion, children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_overlays.OverlayProvider, { ...otherProps, children: contents }) }) }) });
       };
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useLabelPlacement(props) {
@@ -71782,9 +71784,9 @@
         toIterator: () => toIterator2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function forwardRef3(component) {
-        return (0, import_react103.forwardRef)(component);
+        return (0, import_react121.forwardRef)(component);
       }
       var toIterator2 = (obj) => {
         return {
@@ -71996,7 +71998,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_rsc_utils = require_dist9();
       function useSeparator(props) {
         let domProps = (0, import_react_rsc_utils.filterDOMProps)(props, {
@@ -72027,14 +72029,14 @@
           elementType: typeof Component2 === "string" ? Component2 : "hr",
           orientation
         });
-        const styles = (0, import_react103.useMemo)(
+        const styles = (0, import_react121.useMemo)(
           () => (0, import_theme.divider)({
             orientation,
             className
           }),
           [orientation, className]
         );
-        const getDividerProps = (0, import_react103.useCallback)(
+        const getDividerProps = (0, import_react121.useCallback)(
           (props2 = {}) => ({
             className: styles,
             role: "separator",
@@ -72047,10 +72049,10 @@
         );
         return { Component: Component2, getDividerProps };
       }
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Divider = (0, import_system_rsc.forwardRef)((props, ref) => {
         const { Component: Component2, getDividerProps } = useDivider({ ...props });
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(Component2, { ref, ...getDividerProps() });
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(Component2, { ref, ...getDividerProps() });
       });
       Divider.displayName = "HeroUI.Divider";
       var divider_default = Divider;
@@ -74841,22 +74843,22 @@
         };
       }
       var import_focus2 = require_main14();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_button = require_main16();
       function useReactAriaAccordionItem(props, state, ref) {
         let { item, isDisabled: isDisabledProp } = props;
         let key = item.key;
         let manager = state.selectionManager;
-        let buttonId = (0, import_react103.useId)();
-        let regionId = (0, import_react103.useId)();
+        let buttonId = (0, import_react121.useId)();
+        let regionId = (0, import_react121.useId)();
         let isDisabled = state.disabledKeys.has(item.key) || isDisabledProp;
-        (0, import_react103.useEffect)(() => {
+        (0, import_react121.useEffect)(() => {
           let isFocused = key === state.focusedKey;
           if (isFocused && document.activeElement !== ref.current) {
             ref.current && (0, import_focus2.focusSafely)(ref.current);
           }
         }, [ref, key, state.focusedKey]);
-        let onSelect = (0, import_react103.useCallback)(
+        let onSelect = (0, import_react121.useCallback)(
           (e) => {
             if (!manager.canSelectItem(key)) {
               return;
@@ -74866,7 +74868,7 @@
           },
           [key, manager]
         );
-        const extendFocusSelection = (0, import_react103.useCallback)(
+        const extendFocusSelection = (0, import_react121.useCallback)(
           (toKey2) => {
             if (manager.selectionBehavior === "replace") {
               manager.extendSelection(toKey2);
@@ -74875,7 +74877,7 @@
           },
           [manager]
         );
-        const onKeyDown = (0, import_react103.useCallback)(
+        const onKeyDown = (0, import_react121.useCallback)(
           (event) => {
             const keyMap = {
               ArrowDown: () => {
@@ -75061,17 +75063,17 @@
         WarningIcon: () => WarningIcon
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Sun = ({ fill, filled, size, height, width, ...props }) => {
         if (filled) {
-          return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
             "svg",
             {
               height: size || height || 24,
               viewBox: "0 0 512 512",
               width: size || width || 24,
               ...props,
-              children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M256 118a22 22 0 01-22-22V48a22 22 0 0144 0v48a22 22 0 01-22 22zM256 486a22 22 0 01-22-22v-48a22 22 0 0144 0v48a22 22 0 01-22 22zM369.14 164.86a22 22 0 01-15.56-37.55l33.94-33.94a22 22 0 0131.11 31.11l-33.94 33.94a21.93 21.93 0 01-15.55 6.44zM108.92 425.08a22 22 0 01-15.55-37.56l33.94-33.94a22 22 0 1131.11 31.11l-33.94 33.94a21.94 21.94 0 01-15.56 6.45zM464 278h-48a22 22 0 010-44h48a22 22 0 010 44zM96 278H48a22 22 0 010-44h48a22 22 0 010 44zM403.08 425.08a21.94 21.94 0 01-15.56-6.45l-33.94-33.94a22 22 0 0131.11-31.11l33.94 33.94a22 22 0 01-15.55 37.56zM142.86 164.86a21.89 21.89 0 01-15.55-6.44l-33.94-33.94a22 22 0 0131.11-31.11l33.94 33.94a22 22 0 01-15.56 37.55zM256 358a102 102 0 11102-102 102.12 102.12 0 01-102 102z",
@@ -75081,8 +75083,8 @@
             }
           );
         }
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("svg", { height: size || height || 24, viewBox: "0 0 512 512", width: size || width || 24, ...props, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)("svg", { height: size || height || 24, viewBox: "0 0 512 512", width: size || width || 24, ...props, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
             "path",
             {
               d: "M256 48v48M256 416v48M403.08 108.92l-33.94 33.94M142.86 369.14l-33.94 33.94M464 256h-48M96 256H48M403.08 403.08l-33.94-33.94M142.86 142.86l-33.94-33.94",
@@ -75093,7 +75095,7 @@
               strokeWidth: 32
             }
           ),
-          /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
             "circle",
             {
               cx: 256,
@@ -75109,21 +75111,21 @@
         ] });
       };
       var Mail = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("svg", { height: size || height || 24, viewBox: "0 0 24 24", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("g", { fill: "none", stroke: fill, strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 1.5, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("path", { d: "M12 20.5H7c-3 0-5-1.5-5-5v-7c0-3.5 2-5 5-5h10c3 0 5 1.5 5 5v3" }),
-          /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("path", { d: "M17 9l-3.13 2.5a3.166 3.166 0 01-3.75 0L7 9M19.21 14.77l-3.539 3.54a1.232 1.232 0 00-.3.59l-.19 1.35a.635.635 0 00.76.76l1.35-.19a1.189 1.189 0 00.59-.3l3.54-3.54a1.365 1.365 0 000-2.22 1.361 1.361 0 00-2.211.01zM18.7 15.28a3.185 3.185 0 002.22 2.22" })
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("svg", { height: size || height || 24, viewBox: "0 0 24 24", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)("g", { fill: "none", stroke: fill, strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 1.5, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("path", { d: "M12 20.5H7c-3 0-5-1.5-5-5v-7c0-3.5 2-5 5-5h10c3 0 5 1.5 5 5v3" }),
+          /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("path", { d: "M17 9l-3.13 2.5a3.166 3.166 0 01-3.75 0L7 9M19.21 14.77l-3.539 3.54a1.232 1.232 0 00-.3.59l-.19 1.35a.635.635 0 00.76.76l1.35-.19a1.189 1.189 0 00.59-.3l3.54-3.54a1.365 1.365 0 000-2.22 1.361 1.361 0 00-2.211.01zM18.7 15.28a3.185 3.185 0 002.22 2.22" })
         ] }) });
       };
       var Moon = ({ fill, filled, size, height, width, ...props }) => {
         if (filled) {
-          return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
             "svg",
             {
               height: size || height || 24,
               viewBox: "0 0 512 512",
               width: size || width || 24,
               ...props,
-              children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M152.62 126.77c0-33 4.85-66.35 17.23-94.77C87.54 67.83 32 151.89 32 247.38 32 375.85 136.15 480 264.62 480c95.49 0 179.55-55.54 215.38-137.85-28.42 12.38-61.8 17.23-94.77 17.23-128.47 0-232.61-104.14-232.61-232.61z",
@@ -75133,7 +75135,7 @@
             }
           );
         }
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("svg", { height: size || height || 24, viewBox: "0 0 512 512", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("svg", { height: size || height || 24, viewBox: "0 0 512 512", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
           "path",
           {
             d: "M160 136c0-30.62 4.51-61.61 16-88C99.57 81.27 48 159.32 48 248c0 119.29 96.71 216 216 216 88.68 0 166.73-51.57 200-128-26.39 11.49-57.38 16-88 16-119.29 0-216-96.71-216-216z",
@@ -75147,7 +75149,7 @@
       };
       var Lock = ({ fill, size, height, width, ...props }) => {
         const color2 = fill;
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
           "svg",
           {
             "data-name": "Iconly/Curved/Lock",
@@ -75156,8 +75158,8 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("g", { transform: "translate(3.5 2)", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)("g", { transform: "translate(3.5 2)", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M9.121,6.653V4.5A4.561,4.561,0,0,0,0,4.484V6.653",
@@ -75170,7 +75172,7 @@
                   transform: "translate(3.85 0.75)"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M.5,0V2.221",
@@ -75183,7 +75185,7 @@
                   transform: "translate(7.91 12.156)"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M7.66,0C1.915,0,0,1.568,0,6.271s1.915,6.272,7.66,6.272,7.661-1.568,7.661-6.272S13.4,0,7.66,0Z",
@@ -75202,7 +75204,7 @@
       };
       var Unlock = ({ fill, size, height, width, ...props }) => {
         const color2 = fill;
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
           "svg",
           {
             "data-name": "Iconly/Curved/Lock",
@@ -75211,8 +75213,8 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("g", { transform: "translate(3.5 2)", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)("g", { transform: "translate(3.5 2)", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M8.927,3.237A4.562,4.562,0,0,0,0,4.484V6.653",
@@ -75225,7 +75227,7 @@
                   transform: "translate(3.849 0.75)"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M.5,0V2.221",
@@ -75238,7 +75240,7 @@
                   transform: "translate(7.91 12.156)"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M7.66,0C1.915,0,0,1.568,0,6.271s1.915,6.272,7.66,6.272,7.661-1.568,7.661-6.272S13.406,0,7.66,0Z",
@@ -75256,13 +75258,13 @@
         );
       };
       var Password = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("svg", { height: size || height || 24, viewBox: "0 0 24 24", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("g", { fill, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("path", { d: "M18.75 8v2.1a12.984 12.984 0 00-1.5-.1V8c0-3.15-.89-5.25-5.25-5.25S6.75 4.85 6.75 8v2a12.984 12.984 0 00-1.5.1V8c0-2.9.7-6.75 6.75-6.75S18.75 5.1 18.75 8z" }),
-          /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("path", { d: "M18.75 10.1a12.984 12.984 0 00-1.5-.1H6.75a12.984 12.984 0 00-1.5.1C2.7 10.41 2 11.66 2 15v2c0 4 1 5 5 5h10c4 0 5-1 5-5v-2c0-3.34-.7-4.59-3.25-4.9zM8.71 16.71A1.052 1.052 0 018 17a1 1 0 01-.38-.08 1.032 1.032 0 01-.33-.21A1.052 1.052 0 017 16a1 1 0 01.08-.38 1.155 1.155 0 01.21-.33 1.032 1.032 0 01.33-.21 1 1 0 011.09.21 1.155 1.155 0 01.21.33A1 1 0 019 16a1.052 1.052 0 01-.29.71zm4.21-.33a1.155 1.155 0 01-.21.33A1.052 1.052 0 0112 17a1.033 1.033 0 01-.71-.29 1.155 1.155 0 01-.21-.33A1 1 0 0111 16a1.033 1.033 0 01.29-.71 1.047 1.047 0 011.42 0A1.033 1.033 0 0113 16a1 1 0 01-.08.38zm3.79.33a1.014 1.014 0 01-1.42 0 1.014 1.014 0 010-1.42 1.047 1.047 0 011.42 0c.04.05.08.1.12.16a.556.556 0 01.09.17.636.636 0 01.06.18 1.5 1.5 0 01.02.2 1.052 1.052 0 01-.29.71z" })
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("svg", { height: size || height || 24, viewBox: "0 0 24 24", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)("g", { fill, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("path", { d: "M18.75 8v2.1a12.984 12.984 0 00-1.5-.1V8c0-3.15-.89-5.25-5.25-5.25S6.75 4.85 6.75 8v2a12.984 12.984 0 00-1.5.1V8c0-2.9.7-6.75 6.75-6.75S18.75 5.1 18.75 8z" }),
+          /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("path", { d: "M18.75 10.1a12.984 12.984 0 00-1.5-.1H6.75a12.984 12.984 0 00-1.5.1C2.7 10.41 2 11.66 2 15v2c0 4 1 5 5 5h10c4 0 5-1 5-5v-2c0-3.34-.7-4.59-3.25-4.9zM8.71 16.71A1.052 1.052 0 018 17a1 1 0 01-.38-.08 1.032 1.032 0 01-.33-.21A1.052 1.052 0 017 16a1 1 0 01.08-.38 1.155 1.155 0 01.21-.33 1.032 1.032 0 01.33-.21 1 1 0 011.09.21 1.155 1.155 0 01.21.33A1 1 0 019 16a1.052 1.052 0 01-.29.71zm4.21-.33a1.155 1.155 0 01-.21.33A1.052 1.052 0 0112 17a1.033 1.033 0 01-.71-.29 1.155 1.155 0 01-.21-.33A1 1 0 0111 16a1.033 1.033 0 01.29-.71 1.047 1.047 0 011.42 0A1.033 1.033 0 0113 16a1 1 0 01-.08.38zm3.79.33a1.014 1.014 0 01-1.42 0 1.014 1.014 0 010-1.42 1.047 1.047 0 011.42 0c.04.05.08.1.12.16a.556.556 0 01.09.17.636.636 0 01.06.18 1.5 1.5 0 01.02.2 1.052 1.052 0 01-.29.71z" })
         ] }) });
       };
       var Notification2 = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
           "svg",
           {
             fill: "none",
@@ -75271,7 +75273,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
               "path",
               {
                 clipRule: "evenodd",
@@ -75284,7 +75286,7 @@
         );
       };
       var User = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
           "svg",
           {
             height: size || height || 24,
@@ -75292,7 +75294,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(
               "g",
               {
                 fill: "none",
@@ -75302,14 +75304,14 @@
                 strokeMiterlimit: 10,
                 strokeWidth: 1.5,
                 children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+                  /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                     "path",
                     {
                       d: "M11.845 21.662C8.153 21.662 5 21.088 5 18.787s3.133-4.425 6.845-4.425c3.692 0 6.845 2.1 6.845 4.4s-3.134 2.9-6.845 2.9z",
                       "data-name": "Stroke 1"
                     }
                   ),
-                  /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("path", { d: "M11.837 11.174a4.372 4.372 0 10-.031 0z", "data-name": "Stroke 3" })
+                  /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("path", { d: "M11.837 11.174a4.372 4.372 0 10-.031 0z", "data-name": "Stroke 3" })
                 ]
               }
             )
@@ -75317,7 +75319,7 @@
         );
       };
       var VolumeUp = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
           "svg",
           {
             fill: "none",
@@ -75326,7 +75328,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
               "path",
               {
                 clipRule: "evenodd",
@@ -75339,7 +75341,7 @@
         );
       };
       var Camera = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
           "svg",
           {
             fill: "none",
@@ -75348,7 +75350,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
               "path",
               {
                 clipRule: "evenodd",
@@ -75361,7 +75363,7 @@
         );
       };
       var Activity2 = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
           "svg",
           {
             "data-name": "Iconly/Curved/Activity",
@@ -75370,7 +75372,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(
               "g",
               {
                 fill: "none",
@@ -75380,9 +75382,9 @@
                 strokeMiterlimit: 10,
                 strokeWidth: 1.5,
                 children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("path", { d: "M6.918 14.854l2.993-3.889 3.414 2.68 2.929-3.78" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("path", { d: "M19.668 2.35a1.922 1.922 0 11-1.922 1.922 1.921 1.921 0 011.922-1.922z" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("path", { d: "M20.756 9.269a20.809 20.809 0 01.194 3.034c0 6.938-2.312 9.25-9.25 9.25s-9.25-2.312-9.25-9.25 2.313-9.25 9.25-9.25a20.931 20.931 0 012.983.187" })
+                  /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("path", { d: "M6.918 14.854l2.993-3.889 3.414 2.68 2.929-3.78" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("path", { d: "M19.668 2.35a1.922 1.922 0 11-1.922 1.922 1.921 1.921 0 011.922-1.922z" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("path", { d: "M20.756 9.269a20.809 20.809 0 01.194 3.034c0 6.938-2.312 9.25-9.25 9.25s-9.25-2.312-9.25-9.25 2.313-9.25 9.25-9.25a20.931 20.931 0 012.983.187" })
                 ]
               }
             )
@@ -75390,7 +75392,7 @@
         );
       };
       var Plus = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
           "svg",
           {
             height: size || height || 24,
@@ -75398,15 +75400,15 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("g", { fill: "none", stroke: fill, strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 1.5, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("path", { d: "M6 12h12" }),
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("path", { d: "M12 18V6" })
+            children: /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)("g", { fill: "none", stroke: fill, strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 1.5, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("path", { d: "M6 12h12" }),
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("path", { d: "M12 18V6" })
             ] })
           }
         );
       };
       var Minus = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
           "svg",
           {
             height: size || height || 24,
@@ -75414,7 +75416,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
               "path",
               {
                 d: "M6 12h12",
@@ -75429,7 +75431,7 @@
         );
       };
       var Eye = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(
           "svg",
           {
             fill: "none",
@@ -75439,7 +75441,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M12.9833 10C12.9833 11.65 11.65 12.9833 10 12.9833C8.35 12.9833 7.01666 11.65 7.01666 10C7.01666 8.35 8.35 7.01666 10 7.01666C11.65 7.01666 12.9833 8.35 12.9833 10Z",
@@ -75449,7 +75451,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M9.99999 16.8916C12.9417 16.8916 15.6833 15.1583 17.5917 12.1583C18.3417 10.9833 18.3417 9.00831 17.5917 7.83331C15.6833 4.83331 12.9417 3.09998 9.99999 3.09998C7.05833 3.09998 4.31666 4.83331 2.40833 7.83331C1.65833 9.00831 1.65833 10.9833 2.40833 12.1583C4.31666 15.1583 7.05833 16.8916 9.99999 16.8916Z",
@@ -75464,7 +75466,7 @@
         );
       };
       var Edit = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(
           "svg",
           {
             fill: "none",
@@ -75474,7 +75476,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M11.05 3.00002L4.20835 10.2417C3.95002 10.5167 3.70002 11.0584 3.65002 11.4334L3.34169 14.1334C3.23335 15.1084 3.93335 15.775 4.90002 15.6084L7.58335 15.15C7.95835 15.0834 8.48335 14.8084 8.74168 14.525L15.5834 7.28335C16.7667 6.03335 17.3 4.60835 15.4583 2.86668C13.625 1.14168 12.2334 1.75002 11.05 3.00002Z",
@@ -75485,7 +75487,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M9.90833 4.20831C10.2667 6.50831 12.1333 8.26665 14.45 8.49998",
@@ -75496,7 +75498,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M2.5 18.3333H17.5",
@@ -75512,7 +75514,7 @@
         );
       };
       var Delete = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(
           "svg",
           {
             fill: "none",
@@ -75522,7 +75524,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M17.5 4.98332C14.725 4.70832 11.9333 4.56665 9.15 4.56665C7.5 4.56665 5.85 4.64998 4.2 4.81665L2.5 4.98332",
@@ -75532,7 +75534,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M7.08331 4.14169L7.26665 3.05002C7.39998 2.25835 7.49998 1.66669 8.90831 1.66669H11.0916C12.5 1.66669 12.6083 2.29169 12.7333 3.05835L12.9166 4.14169",
@@ -75542,7 +75544,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M15.7084 7.61664L15.1667 16.0083C15.075 17.3166 15 18.3333 12.675 18.3333H7.32502C5.00002 18.3333 4.92502 17.3166 4.83335 16.0083L4.29169 7.61664",
@@ -75552,7 +75554,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M8.60834 13.75H11.3833",
@@ -75562,7 +75564,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M7.91669 10.4167H12.0834",
@@ -75577,7 +75579,7 @@
         );
       };
       var ChevronDown = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
           "svg",
           {
             fill: "none",
@@ -75586,7 +75588,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
               "path",
               {
                 d: "m19.92 8.95-6.52 6.52c-.77.77-2.03.77-2.8 0L4.08 8.95",
@@ -75601,7 +75603,7 @@
         );
       };
       var ChevronDownBold = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
           "svg",
           {
             fill: "none",
@@ -75610,7 +75612,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
               "path",
               {
                 d: "M17.9188 8.17969H11.6888H6.07877C5.11877 8.17969 4.63877 9.33969 5.31877 10.0197L10.4988 15.1997C11.3288 16.0297 12.6788 16.0297 13.5088 15.1997L15.4788 13.2297L18.6888 10.0197C19.3588 9.33969 18.8788 8.17969 17.9188 8.17969Z",
@@ -75621,7 +75623,7 @@
         );
       };
       var NewFile = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(
           "svg",
           {
             fill: "none",
@@ -75631,7 +75633,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M8 2V5",
@@ -75642,7 +75644,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M16 2V5",
@@ -75653,7 +75655,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M21 8.5V13.63C20.11 12.92 18.98 12.5 17.75 12.5C16.52 12.5 15.37 12.93 14.47 13.66C13.26 14.61 12.5 16.1 12.5 17.75C12.5 18.73 12.78 19.67 13.26 20.45C13.63 21.06 14.11 21.59 14.68 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z",
@@ -75664,7 +75666,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M7 11H13",
@@ -75675,7 +75677,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M7 16H9.62",
@@ -75686,7 +75688,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M23 17.75C23 18.73 22.72 19.67 22.24 20.45C21.96 20.93 21.61 21.35 21.2 21.69C20.28 22.51 19.08 23 17.75 23C16.6 23 15.54 22.63 14.68 22C14.11 21.59 13.63 21.06 13.26 20.45C12.78 19.67 12.5 18.73 12.5 17.75C12.5 16.1 13.26 14.61 14.47 13.66C15.37 12.93 16.52 12.5 17.75 12.5C18.98 12.5 20.11 12.92 21 13.63C22.22 14.59 23 16.08 23 17.75Z",
@@ -75697,7 +75699,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M17.75 20.25C17.75 18.87 18.87 17.75 20.25 17.75C18.87 17.75 17.75 16.63 17.75 15.25C17.75 16.63 16.63 17.75 15.25 17.75C16.63 17.75 17.75 18.87 17.75 20.25Z",
@@ -75712,7 +75714,7 @@
         );
       };
       var AddNoteBulk = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(
           "svg",
           {
             fill: "none",
@@ -75722,7 +75724,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M7.37 22h9.25a4.87 4.87 0 0 0 4.87-4.87V8.37a4.87 4.87 0 0 0-4.87-4.87H7.37A4.87 4.87 0 0 0 2.5 8.37v8.75c0 2.7 2.18 4.88 4.87 4.88Z",
@@ -75730,7 +75732,7 @@
                   opacity: 0.4
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M8.29 6.29c-.42 0-.75-.34-.75-.75V2.75a.749.749 0 1 1 1.5 0v2.78c0 .42-.33.76-.75.76ZM15.71 6.29c-.42 0-.75-.34-.75-.75V2.75a.749.749 0 1 1 1.5 0v2.78c0 .42-.33.76-.75.76ZM12 14.75h-1.69V13c0-.41-.34-.75-.75-.75s-.75.34-.75.75v1.75H7c-.41 0-.75.34-.75.75s.34.75.75.75h1.81V18c0 .41.34.75.75.75s.75-.34.75-.75v-1.75H12c.41 0 .75-.34.75-.75s-.34-.75-.75-.75Z",
@@ -75742,7 +75744,7 @@
         );
       };
       var CopyDocumentBulk = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(
           "svg",
           {
             fill: "none",
@@ -75752,7 +75754,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M15.5 13.15h-2.17c-1.78 0-3.23-1.44-3.23-3.23V7.75c0-.41-.33-.75-.75-.75H6.18C3.87 7 2 8.5 2 11.18v6.64C2 20.5 3.87 22 6.18 22h5.89c2.31 0 4.18-1.5 4.18-4.18V13.9c0-.42-.34-.75-.75-.75Z",
@@ -75760,14 +75762,14 @@
                   opacity: 0.4
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M17.82 2H11.93C9.67 2 7.84 3.44 7.76 6.01c.06 0 .11-.01.17-.01h5.89C16.13 6 18 7.5 18 10.18V16.83c0 .06-.01.11-.01.16 2.23-.07 4.01-1.55 4.01-4.16V6.18C22 3.5 20.13 2 17.82 2Z",
                   fill
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M11.98 7.15c-.31-.31-.84-.1-.84.33v2.62c0 1.1.93 2 2.07 2 .71.01 1.7.01 2.55.01.43 0 .65-.5.35-.8-1.09-1.09-3.03-3.04-4.13-4.16Z",
@@ -75779,7 +75781,7 @@
         );
       };
       var EditDocumentBulk = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(
           "svg",
           {
             fill: "none",
@@ -75789,7 +75791,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M15.48 3H7.52C4.07 3 2 5.06 2 8.52v7.95C2 19.94 4.07 22 7.52 22h7.95c3.46 0 5.52-2.06 5.52-5.52V8.52C21 5.06 18.93 3 15.48 3Z",
@@ -75797,7 +75799,7 @@
                   opacity: 0.4
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M21.02 2.98c-1.79-1.8-3.54-1.84-5.38 0L14.51 4.1c-.1.1-.13.24-.09.37.7 2.45 2.66 4.41 5.11 5.11.03.01.08.01.11.01.1 0 .2-.04.27-.11l1.11-1.12c.91-.91 1.36-1.78 1.36-2.67 0-.9-.45-1.79-1.36-2.71ZM17.86 10.42c-.27-.13-.53-.26-.77-.41-.2-.12-.4-.25-.59-.39-.16-.1-.34-.25-.52-.4-.02-.01-.08-.06-.16-.14-.31-.25-.64-.59-.95-.96-.02-.02-.08-.08-.13-.17-.1-.11-.25-.3-.38-.51-.11-.14-.24-.34-.36-.55-.15-.25-.28-.5-.4-.76-.13-.28-.23-.54-.32-.79L7.9 10.72c-.35.35-.69 1.01-.76 1.5l-.43 2.98c-.09.63.08 1.22.47 1.61.33.33.78.5 1.28.5.11 0 .22-.01.33-.02l2.97-.42c.49-.07 1.15-.4 1.5-.76l5.38-5.38c-.25-.08-.5-.19-.78-.31Z",
@@ -75809,7 +75811,7 @@
         );
       };
       var DeleteDocumentBulk = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(
           "svg",
           {
             fill: "none",
@@ -75819,14 +75821,14 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M21.07 5.23c-1.61-.16-3.22-.28-4.84-.37v-.01l-.22-1.3c-.15-.92-.37-2.3-2.71-2.3h-2.62c-2.33 0-2.55 1.32-2.71 2.29l-.21 1.28c-.93.06-1.86.12-2.79.21l-2.04.2c-.42.04-.72.41-.68.82.04.41.4.71.82.67l2.04-.2c5.24-.52 10.52-.32 15.82.21h.08c.38 0 .71-.29.75-.68a.766.766 0 0 0-.69-.82Z",
                   fill
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M19.23 8.14c-.24-.25-.57-.39-.91-.39H5.68c-.34 0-.68.14-.91.39-.23.25-.36.59-.34.94l.62 10.26c.11 1.52.25 3.42 3.74 3.42h6.42c3.49 0 3.63-1.89 3.74-3.42l.62-10.25c.02-.36-.11-.7-.34-.95Z",
@@ -75834,7 +75836,7 @@
                   opacity: 0.399
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   clipRule: "evenodd",
@@ -75854,7 +75856,7 @@
         width,
         ...props
       }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(
           "svg",
           {
             fill: "none",
@@ -75864,28 +75866,28 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M16.25 22.5C17.2165 22.5 18 21.7165 18 20.75C18 19.7835 17.2165 19 16.25 19C15.2835 19 14.5 19.7835 14.5 20.75C14.5 21.7165 15.2835 22.5 16.25 22.5Z",
                   fill
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M8.25 22.5C9.2165 22.5 10 21.7165 10 20.75C10 19.7835 9.2165 19 8.25 19C7.2835 19 6.5 19.7835 6.5 20.75C6.5 21.7165 7.2835 22.5 8.25 22.5Z",
                   fill
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M4.84 3.94L4.64 6.39C4.6 6.86 4.97 7.25 5.44 7.25H20.75C21.17 7.25 21.52 6.93 21.55 6.51C21.68 4.74 20.33 3.3 18.56 3.3H6.27C6.17 2.86 5.97 2.44 5.66 2.09C5.16 1.56 4.46 1.25 3.74 1.25H2C1.59 1.25 1.25 1.59 1.25 2C1.25 2.41 1.59 2.75 2 2.75H3.74C4.05 2.75 4.34 2.88 4.55 3.1C4.76 3.33 4.86 3.63 4.84 3.94Z",
                   fill
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M20.5101 8.75H5.17005C4.75005 8.75 4.41005 9.07 4.37005 9.48L4.01005 13.83C3.87005 15.54 5.21005 17 6.92005 17H18.0401C19.5401 17 20.8601 15.77 20.9701 14.27L21.3001 9.6C21.3401 9.14 20.9801 8.75 20.5101 8.75Z",
@@ -75903,7 +75905,7 @@
         width,
         ...props
       }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
           "svg",
           {
             fill: "none",
@@ -75912,7 +75914,7 @@
             width: size || width,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
               "path",
               {
                 d: "M6.09 13.28h3.09v7.2c0 1.68.91 2.02 2.02.76l7.57-8.6c.93-1.05.54-1.92-.87-1.92h-3.09v-7.2c0-1.68-.91-2.02-2.02-.76l-7.57 8.6c-.92 1.06-.53 1.92.87 1.92Z",
@@ -75933,7 +75935,7 @@
         width,
         ...props
       }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
           "svg",
           {
             fill: "none",
@@ -75942,7 +75944,7 @@
             width: size || width,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
               "path",
               {
                 d: "M19.32 10H4.69c-1.48 0-2.68-1.21-2.68-2.68V4.69c0-1.48 1.21-2.68 2.68-2.68h14.63C20.8 2.01 22 3.22 22 4.69v2.63C22 8.79 20.79 10 19.32 10ZM19.32 22H4.69c-1.48 0-2.68-1.21-2.68-2.68v-2.63c0-1.48 1.21-2.68 2.68-2.68h14.63c1.48 0 2.68 1.21 2.68 2.68v2.63c0 1.47-1.21 2.68-2.68 2.68ZM6 5v2M10 5v2M6 17v2M10 17v2M14 6h4M14 18h4",
@@ -75962,7 +75964,7 @@
         width,
         ...props
       }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(
           "svg",
           {
             fill: "none",
@@ -75972,7 +75974,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M18 18.86h-.76c-.8 0-1.56.31-2.12.87l-1.71 1.69c-.78.77-2.05.77-2.83 0l-1.71-1.69c-.56-.56-1.33-.87-2.12-.87H6c-1.66 0-3-1.33-3-2.97V4.98c0-1.64 1.34-2.97 3-2.97h12c1.66 0 3 1.33 3 2.97v10.91c0 1.63-1.34 2.97-3 2.97Z",
@@ -75983,7 +75985,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M12 10a2.33 2.33 0 1 0 0-4.66A2.33 2.33 0 0 0 12 10ZM16 15.66c0-1.8-1.79-3.26-4-3.26s-4 1.46-4 3.26",
@@ -76004,7 +76006,7 @@
         width,
         ...props
       }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(
           "svg",
           {
             fill: "none",
@@ -76014,7 +76016,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M9 22h6c5 0 7-2 7-7V9c0-5-2-7-7-7H9C4 2 2 4 2 9v6c0 5 2 7 7 7ZM18 6 6 18",
@@ -76024,7 +76026,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                 "path",
                 {
                   d: "M18 10V6h-4M6 14v4h4",
@@ -76039,7 +76041,7 @@
         );
       };
       var Search = ({ size, fill, width = 24, height = 24, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("svg", { fill: "none", height: size || height, viewBox: "0 0 24 24", width: size || width, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("svg", { fill: "none", height: size || height, viewBox: "0 0 24 24", width: size || width, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
           "path",
           {
             d: "M11.5 21a9.5 9.5 0 1 0 0-19 9.5 9.5 0 0 0 0 19ZM22 22l-2-2",
@@ -76136,10 +76138,10 @@
           ]
         }
       );
-      var import_jsx_runtime52 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime510 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var CloseIcon = (props) => {
         const { isSelected, isIndeterminate, disableAnimation, ...otherProps } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime52.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime510.jsx)(
           "svg",
           {
             "aria-hidden": "true",
@@ -76155,12 +76157,12 @@
             viewBox: "0 0 24 24",
             width: "1em",
             ...otherProps,
-            children: /* @__PURE__ */ (0, import_jsx_runtime52.jsx)("path", { d: "M18 6L6 18M6 6l12 12" })
+            children: /* @__PURE__ */ (0, import_jsx_runtime510.jsx)("path", { d: "M18 6L6 18M6 6l12 12" })
           }
         );
       };
-      var import_jsx_runtime62 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var CloseFilledIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime62.jsx)(
+      var import_jsx_runtime65 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var CloseFilledIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime65.jsx)(
         "svg",
         {
           "aria-hidden": "true",
@@ -76170,7 +76172,7 @@
           viewBox: "0 0 24 24",
           width: "1em",
           ...props,
-          children: /* @__PURE__ */ (0, import_jsx_runtime62.jsx)(
+          children: /* @__PURE__ */ (0, import_jsx_runtime65.jsx)(
             "path",
             {
               d: "M12 2a10 10 0 1010 10A10.016 10.016 0 0012 2zm3.36 12.3a.754.754 0 010 1.06.748.748 0 01-1.06 0l-2.3-2.3-2.3 2.3a.748.748 0 01-1.06 0 .754.754 0 010-1.06l2.3-2.3-2.3-2.3A.75.75 0 019.7 8.64l2.3 2.3 2.3-2.3a.75.75 0 011.06 1.06l-2.3 2.3z",
@@ -77596,8 +77598,8 @@
           ]
         }
       );
-      var import_jsx_runtime50 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var AlignLeftBoldIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime50.jsxs)(
+      var import_jsx_runtime502 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var AlignLeftBoldIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime502.jsxs)(
         "svg",
         {
           "aria-hidden": "true",
@@ -77609,21 +77611,21 @@
           width: "1em",
           ...props,
           children: [
-            /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime502.jsx)(
               "path",
               {
                 d: "M19.3809 15.98V17.02C19.3809 18.61 18.7809 19.25 17.2609 19.25H5.38086V13.75H17.2609C18.7809 13.75 19.3809 14.39 19.3809 15.98Z",
                 fill: "currentColor"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime502.jsx)(
               "path",
               {
                 d: "M14.3809 7.48V8.52C14.3809 10.11 13.7709 10.75 12.2609 10.75H5.38086V5.25H12.2609C13.7709 5.25 14.3809 5.89 14.3809 7.48Z",
                 fill: "currentColor"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime50.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime502.jsx)(
               "path",
               {
                 d: "M5.37912 22C4.96912 22 4.62912 21.66 4.62912 21.25V2.75C4.61912 2.33 4.95912 2 5.37912 2C5.79912 2 6.12912 2.34 6.12912 2.75V21.25C6.11912 21.66 5.78912 22 5.37912 22Z",
@@ -77633,8 +77635,8 @@
           ]
         }
       );
-      var import_jsx_runtime51 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var AlignRightBoldIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime51.jsxs)(
+      var import_jsx_runtime512 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var AlignRightBoldIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime512.jsxs)(
         "svg",
         {
           "aria-hidden": "true",
@@ -77646,21 +77648,21 @@
           width: "1em",
           ...props,
           children: [
-            /* @__PURE__ */ (0, import_jsx_runtime51.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime512.jsx)(
               "path",
               {
                 d: "M4.61914 15.98V17.02C4.61914 18.61 5.21914 19.25 6.73914 19.25H18.6191V13.75H6.73914C5.21914 13.75 4.61914 14.39 4.61914 15.98Z",
                 fill: "currentColor"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime51.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime512.jsx)(
               "path",
               {
                 d: "M9.61914 7.48V8.52C9.61914 10.11 10.2291 10.75 11.7391 10.75H18.6191V5.25H11.7391C10.2291 5.25 9.61914 5.89 9.61914 7.48Z",
                 fill: "currentColor"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime51.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime512.jsx)(
               "path",
               {
                 d: "M18.6191 22C18.2091 22 17.8691 21.66 17.8691 21.25V2.75C17.8691 2.34 18.2091 2 18.6191 2C19.0291 2 19.3691 2.34 19.3691 2.75V21.25C19.3791 21.66 19.0391 22 18.6191 22Z",
@@ -77715,8 +77717,8 @@
           ]
         }
       );
-      var import_jsx_runtime53 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var AlignHorizontallyBoldIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime53.jsxs)(
+      var import_jsx_runtime532 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var AlignHorizontallyBoldIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime532.jsxs)(
         "svg",
         {
           "aria-hidden": "true",
@@ -77728,29 +77730,29 @@
           width: "1em",
           ...props,
           children: [
-            /* @__PURE__ */ (0, import_jsx_runtime53.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime532.jsx)(
               "path",
               {
                 d: "M4.75 17.4V6.6C4.75 5.1 5.39 4.5 6.98 4.5H8.02C9.61 4.5 10.25 5.1 10.25 6.6V17.4C10.25 18.9 9.61 19.5 8.02 19.5H6.98C5.39 19.5 4.75 18.9 4.75 17.4Z",
                 fill: "currentColor"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime53.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime532.jsx)(
               "path",
               {
                 d: "M4.75 12.75H2.75C2.34 12.75 2 12.41 2 12C2 11.59 2.34 11.25 2.75 11.25H4.75V12.75Z",
                 fill: "currentColor"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime53.jsx)("path", { d: "M13.25 11.25H10.25V12.75H13.25V11.25Z", fill: "currentColor" }),
-            /* @__PURE__ */ (0, import_jsx_runtime53.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime532.jsx)("path", { d: "M13.25 11.25H10.25V12.75H13.25V11.25Z", fill: "currentColor" }),
+            /* @__PURE__ */ (0, import_jsx_runtime532.jsx)(
               "path",
               {
                 d: "M21.25 12.75H18.75V11.25H21.25C21.66 11.25 22 11.59 22 12C22 12.41 21.66 12.75 21.25 12.75Z",
                 fill: "currentColor"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime53.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime532.jsx)(
               "path",
               {
                 d: "M13.25 15.4V8.6C13.25 7.1 13.89 6.5 15.48 6.5H16.52C18.11 6.5 18.75 7.1 18.75 8.6V15.4C18.75 16.9 18.11 17.5 16.52 17.5H15.48C13.89 17.5 13.25 16.9 13.25 15.4Z",
@@ -77760,8 +77762,8 @@
           ]
         }
       );
-      var import_jsx_runtime54 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var PetBoldIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime54.jsxs)(
+      var import_jsx_runtime542 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var PetBoldIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime542.jsxs)(
         "svg",
         {
           "aria-hidden": "true",
@@ -77773,35 +77775,35 @@
           width: "1em",
           ...props,
           children: [
-            /* @__PURE__ */ (0, import_jsx_runtime54.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime542.jsx)(
               "path",
               {
                 d: "M19.0803 15.7203C18.4903 12.1903 15.1003 9.32031 11.5203 9.32031C7.63028 9.32031 4.21028 12.4703 3.88028 16.3503C3.75028 17.8503 4.23028 19.2703 5.22028 20.3403C6.20028 21.4103 7.58028 22.0003 9.08028 22.0003H13.7603C15.4503 22.0003 16.9303 21.3403 17.9403 20.1503C18.9503 18.9603 19.3503 17.3803 19.0803 15.7203Z",
                 fill: "currentColor"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime54.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime542.jsx)(
               "path",
               {
                 d: "M10.2796 7.86C11.8978 7.86 13.2096 6.54819 13.2096 4.93C13.2096 3.31181 11.8978 2 10.2796 2C8.66141 2 7.34961 3.31181 7.34961 4.93C7.34961 6.54819 8.66141 7.86 10.2796 7.86Z",
                 fill: "currentColor"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime54.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime542.jsx)(
               "path",
               {
                 d: "M16.94 9.02844C18.2876 9.02844 19.38 7.93601 19.38 6.58844C19.38 5.24086 18.2876 4.14844 16.94 4.14844C15.5924 4.14844 14.5 5.24086 14.5 6.58844C14.5 7.93601 15.5924 9.02844 16.94 9.02844Z",
                 fill: "currentColor"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime54.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime542.jsx)(
               "path",
               {
                 d: "M20.5496 12.9313C21.6266 12.9313 22.4996 12.0582 22.4996 10.9812C22.4996 9.90429 21.6266 9.03125 20.5496 9.03125C19.4727 9.03125 18.5996 9.90429 18.5996 10.9812C18.5996 12.0582 19.4727 12.9313 20.5496 12.9313Z",
                 fill: "currentColor"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime54.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime542.jsx)(
               "path",
               {
                 d: "M3.94 10.9816C5.28757 10.9816 6.38 9.88914 6.38 8.54156C6.38 7.19399 5.28757 6.10156 3.94 6.10156C2.59243 6.10156 1.5 7.19399 1.5 8.54156C1.5 9.88914 2.59243 10.9816 3.94 10.9816Z",
@@ -77811,8 +77813,8 @@
           ]
         }
       );
-      var import_jsx_runtime55 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var VolumeHighBoldIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime55.jsxs)(
+      var import_jsx_runtime552 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var VolumeHighBoldIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime552.jsxs)(
         "svg",
         {
           "aria-hidden": "true",
@@ -77824,21 +77826,21 @@
           width: "1em",
           ...props,
           children: [
-            /* @__PURE__ */ (0, import_jsx_runtime55.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime552.jsx)(
               "path",
               {
                 d: "M18.0003 16.7503C17.8403 16.7503 17.6903 16.7003 17.5503 16.6003C17.2203 16.3503 17.1503 15.8803 17.4003 15.5503C18.9703 13.4603 18.9703 10.5403 17.4003 8.45027C17.1503 8.12027 17.2203 7.65027 17.5503 7.40027C17.8803 7.15027 18.3503 7.22027 18.6003 7.55027C20.5603 10.1703 20.5603 13.8303 18.6003 16.4503C18.4503 16.6503 18.2303 16.7503 18.0003 16.7503Z",
                 fill: "currentColor"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime55.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime552.jsx)(
               "path",
               {
                 d: "M19.8284 19.2503C19.6684 19.2503 19.5184 19.2003 19.3784 19.1003C19.0484 18.8503 18.9784 18.3803 19.2284 18.0503C21.8984 14.4903 21.8984 9.51027 19.2284 5.95027C18.9784 5.62027 19.0484 5.15027 19.3784 4.90027C19.7084 4.65027 20.1784 4.72027 20.4284 5.05027C23.4984 9.14027 23.4984 14.8603 20.4284 18.9503C20.2884 19.1503 20.0584 19.2503 19.8284 19.2503Z",
                 fill: "currentColor"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime55.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime552.jsx)(
               "path",
               {
                 d: "M14.02 3.78168C12.9 3.16168 11.47 3.32168 10.01 4.23168L7.09 6.06168C6.89 6.18168 6.66 6.25168 6.43 6.25168H5.5H5C2.58 6.25168 1.25 7.58168 1.25 10.0017V14.0017C1.25 16.4217 2.58 17.7517 5 17.7517H5.5H6.43C6.66 17.7517 6.89 17.8217 7.09 17.9417L10.01 19.7717C10.89 20.3217 11.75 20.5917 12.55 20.5917C13.07 20.5917 13.57 20.4717 14.02 20.2217C15.13 19.6017 15.75 18.3117 15.75 16.5917V7.41168C15.75 5.69168 15.13 4.40168 14.02 3.78168Z",
@@ -77848,8 +77850,8 @@
           ]
         }
       );
-      var import_jsx_runtime56 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var VolumeLowBoldIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime56.jsxs)(
+      var import_jsx_runtime562 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var VolumeLowBoldIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime562.jsxs)(
         "svg",
         {
           "aria-hidden": "true",
@@ -77861,14 +77863,14 @@
           width: "1em",
           ...props,
           children: [
-            /* @__PURE__ */ (0, import_jsx_runtime56.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime562.jsx)(
               "path",
               {
                 d: "M19.3284 16.7503C19.1684 16.7503 19.0184 16.7003 18.8784 16.6003C18.5484 16.3503 18.4784 15.8803 18.7284 15.5503C20.2984 13.4603 20.2984 10.5403 18.7284 8.45027C18.4784 8.12027 18.5484 7.65027 18.8784 7.40027C19.2084 7.15027 19.6784 7.22027 19.9284 7.55027C21.8984 10.1703 21.8984 13.8303 19.9284 16.4503C19.7884 16.6503 19.5584 16.7503 19.3284 16.7503Z",
                 fill: "currentColor"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime56.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime562.jsx)(
               "path",
               {
                 d: "M15.3481 3.78168C14.2281 3.16168 12.7981 3.32168 11.3381 4.23168L8.41813 6.06168C8.21813 6.18168 7.98813 6.25168 7.75813 6.25168H6.82812H6.32812C3.90812 6.25168 2.57812 7.58168 2.57812 10.0017V14.0017C2.57812 16.4217 3.90812 17.7517 6.32812 17.7517H6.82812H7.75813C7.98813 17.7517 8.21813 17.8217 8.41813 17.9417L11.3381 19.7717C12.2181 20.3217 13.0781 20.5917 13.8781 20.5917C14.3981 20.5917 14.8981 20.4717 15.3481 20.2217C16.4581 19.6017 17.0781 18.3117 17.0781 16.5917V7.41168C17.0781 5.69168 16.4581 4.40168 15.3481 3.78168Z",
@@ -77878,8 +77880,8 @@
           ]
         }
       );
-      var import_jsx_runtime57 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var ShoppingCartBoldIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime57.jsxs)(
+      var import_jsx_runtime572 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var ShoppingCartBoldIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime572.jsxs)(
         "svg",
         {
           "aria-hidden": "true",
@@ -77891,28 +77893,28 @@
           width: "1em",
           ...props,
           children: [
-            /* @__PURE__ */ (0, import_jsx_runtime57.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime572.jsx)(
               "path",
               {
                 d: "M16.25 22.5C17.2165 22.5 18 21.7165 18 20.75C18 19.7835 17.2165 19 16.25 19C15.2835 19 14.5 19.7835 14.5 20.75C14.5 21.7165 15.2835 22.5 16.25 22.5Z",
                 fill: "currentColor"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime57.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime572.jsx)(
               "path",
               {
                 d: "M8.25 22.5C9.2165 22.5 10 21.7165 10 20.75C10 19.7835 9.2165 19 8.25 19C7.2835 19 6.5 19.7835 6.5 20.75C6.5 21.7165 7.2835 22.5 8.25 22.5Z",
                 fill: "currentColor"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime57.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime572.jsx)(
               "path",
               {
                 d: "M4.84 3.94L4.64 6.39C4.6 6.86 4.97 7.25 5.44 7.25H20.75C21.17 7.25 21.52 6.93 21.55 6.51C21.68 4.74 20.33 3.3 18.56 3.3H6.27C6.17 2.86 5.97 2.44 5.66 2.09C5.16 1.56 4.46 1.25 3.74 1.25H2C1.59 1.25 1.25 1.59 1.25 2C1.25 2.41 1.59 2.75 2 2.75H3.74C4.05 2.75 4.34 2.88 4.55 3.1C4.76 3.33 4.86 3.63 4.84 3.94Z",
                 fill: "currentColor"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime57.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime572.jsx)(
               "path",
               {
                 d: "M20.5101 8.75H5.17005C4.75005 8.75 4.41005 9.07 4.37005 9.48L4.01005 13.83C3.87005 15.54 5.21005 17 6.92005 17H18.0401C19.5401 17 20.8601 15.77 20.9701 14.27L21.3001 9.6C21.3401 9.14 20.9801 8.75 20.5101 8.75Z",
@@ -77922,8 +77924,8 @@
           ]
         }
       );
-      var import_jsx_runtime58 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var SendFilledIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime58.jsxs)(
+      var import_jsx_runtime582 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var SendFilledIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime582.jsxs)(
         "svg",
         {
           "aria-hidden": "true",
@@ -77935,7 +77937,7 @@
           width: "1em",
           ...props,
           children: [
-            /* @__PURE__ */ (0, import_jsx_runtime58.jsx)("g", { clipPath: "url(#clip0_2703_16)", children: /* @__PURE__ */ (0, import_jsx_runtime58.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime582.jsx)("g", { clipPath: "url(#clip0_2703_16)", children: /* @__PURE__ */ (0, import_jsx_runtime582.jsx)(
               "path",
               {
                 clipRule: "evenodd",
@@ -77944,12 +77946,12 @@
                 fillRule: "evenodd"
               }
             ) }),
-            /* @__PURE__ */ (0, import_jsx_runtime58.jsx)("defs", { children: /* @__PURE__ */ (0, import_jsx_runtime58.jsx)("clipPath", { id: "clip0_2703_16", children: /* @__PURE__ */ (0, import_jsx_runtime58.jsx)("rect", { fill: "white", height: "24", width: "24" }) }) })
+            /* @__PURE__ */ (0, import_jsx_runtime582.jsx)("defs", { children: /* @__PURE__ */ (0, import_jsx_runtime582.jsx)("clipPath", { id: "clip0_2703_16", children: /* @__PURE__ */ (0, import_jsx_runtime582.jsx)("rect", { fill: "white", height: "24", width: "24" }) }) })
           ]
         }
       );
-      var import_jsx_runtime59 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var PlusFilledIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime59.jsx)(
+      var import_jsx_runtime592 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var PlusFilledIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime592.jsx)(
         "svg",
         {
           "aria-hidden": "true",
@@ -77960,7 +77962,7 @@
           viewBox: "0 0 24 24",
           width: "1em",
           ...props,
-          children: /* @__PURE__ */ (0, import_jsx_runtime59.jsx)(
+          children: /* @__PURE__ */ (0, import_jsx_runtime592.jsx)(
             "path",
             {
               clipRule: "evenodd",
@@ -77971,8 +77973,8 @@
           )
         }
       );
-      var import_jsx_runtime60 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var CalendarBoldIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime60.jsxs)(
+      var import_jsx_runtime602 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var CalendarBoldIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime602.jsxs)(
         "svg",
         {
           "aria-hidden": "true",
@@ -77984,14 +77986,14 @@
           width: "1em",
           ...props,
           children: [
-            /* @__PURE__ */ (0, import_jsx_runtime60.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime602.jsx)(
               "path",
               {
                 d: "M7.75 2.5a.75.75 0 0 0-1.5 0v1.58c-1.44.115-2.384.397-3.078 1.092c-.695.694-.977 1.639-1.093 3.078h19.842c-.116-1.44-.398-2.384-1.093-3.078c-.694-.695-1.639-.977-3.078-1.093V2.5a.75.75 0 0 0-1.5 0v1.513C15.585 4 14.839 4 14 4h-4c-.839 0-1.585 0-2.25.013z",
                 fill: "currentColor"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime60.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime602.jsx)(
               "path",
               {
                 clipRule: "evenodd",
@@ -78003,8 +78005,8 @@
           ]
         }
       );
-      var import_jsx_runtime61 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var ClockSquareBoldIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime61.jsxs)(
+      var import_jsx_runtime612 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var ClockSquareBoldIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime612.jsxs)(
         "svg",
         {
           "aria-hidden": "true",
@@ -78016,15 +78018,15 @@
           width: "1em",
           ...props,
           children: [
-            /* @__PURE__ */ (0, import_jsx_runtime61.jsx)("defs", { children: /* @__PURE__ */ (0, import_jsx_runtime61.jsx)("mask", { id: "solarClockSquareBold0", children: /* @__PURE__ */ (0, import_jsx_runtime61.jsxs)("g", { fill: "none", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime61.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime612.jsx)("defs", { children: /* @__PURE__ */ (0, import_jsx_runtime612.jsx)("mask", { id: "solarClockSquareBold0", children: /* @__PURE__ */ (0, import_jsx_runtime612.jsxs)("g", { fill: "none", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime612.jsx)(
                 "path",
                 {
                   d: "M2 12c0-4.714 0-7.071 1.464-8.536C4.93 2 7.286 2 12 2c4.714 0 7.071 0 8.535 1.464C22 4.93 22 7.286 22 12c0 4.714 0 7.071-1.465 8.535C19.072 22 16.714 22 12 22s-7.071 0-8.536-1.465C2 19.072 2 16.714 2 12",
                   fill: "#fff"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime61.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime612.jsx)(
                 "path",
                 {
                   clipRule: "evenodd",
@@ -78034,7 +78036,7 @@
                 }
               )
             ] }) }) }),
-            /* @__PURE__ */ (0, import_jsx_runtime61.jsx)("path", { d: "M0 0h24v24H0z", fill: "currentColor", mask: "url(#solarClockSquareBold0)" })
+            /* @__PURE__ */ (0, import_jsx_runtime612.jsx)("path", { d: "M0 0h24v24H0z", fill: "currentColor", mask: "url(#solarClockSquareBold0)" })
           ]
         }
       );
@@ -78057,8 +78059,8 @@
           children: /* @__PURE__ */ (0, import_jsx_runtime622.jsx)("polyline", { points: "20 6 9 17 4 12" })
         }
       );
-      var import_jsx_runtime63 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var CopyLinearIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime63.jsxs)(
+      var import_jsx_runtime632 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var CopyLinearIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime632.jsxs)(
         "svg",
         {
           "aria-hidden": "true",
@@ -78074,14 +78076,14 @@
           width: "1em",
           ...props,
           children: [
-            /* @__PURE__ */ (0, import_jsx_runtime63.jsx)("path", { d: "M16 17.1c0 3.5-1.4 4.9-4.9 4.9H6.9C3.4 22 2 20.6 2 17.1v-4.2C2 9.4 3.4 8 6.9 8h4.2c3.5 0 4.9 1.4 4.9 4.9Z" }),
-            /* @__PURE__ */ (0, import_jsx_runtime63.jsx)("path", { d: "M8 8V6.9C8 3.4 9.4 2 12.9 2h4.2C20.6 2 22 3.4 22 6.9v4.2c0 3.5-1.4 4.9-4.9 4.9H16" }),
-            /* @__PURE__ */ (0, import_jsx_runtime63.jsx)("path", { d: "M16 12.9C16 9.4 14.6 8 11.1 8" })
+            /* @__PURE__ */ (0, import_jsx_runtime632.jsx)("path", { d: "M16 17.1c0 3.5-1.4 4.9-4.9 4.9H6.9C3.4 22 2 20.6 2 17.1v-4.2C2 9.4 3.4 8 6.9 8h4.2c3.5 0 4.9 1.4 4.9 4.9Z" }),
+            /* @__PURE__ */ (0, import_jsx_runtime632.jsx)("path", { d: "M8 8V6.9C8 3.4 9.4 2 12.9 2h4.2C20.6 2 22 3.4 22 6.9v4.2c0 3.5-1.4 4.9-4.9 4.9H16" }),
+            /* @__PURE__ */ (0, import_jsx_runtime632.jsx)("path", { d: "M16 12.9C16 9.4 14.6 8 11.1 8" })
           ]
         }
       );
-      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var ChevronCircleTopLinearIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(
+      var import_jsx_runtime642 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var ChevronCircleTopLinearIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime642.jsxs)(
         "svg",
         {
           "aria-hidden": "true",
@@ -78093,7 +78095,7 @@
           width: "1em",
           ...props,
           children: [
-            /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime642.jsx)(
               "path",
               {
                 d: "M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z",
@@ -78104,7 +78106,7 @@
                 strokeWidth: "1.5"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime642.jsx)(
               "path",
               {
                 d: "M8.46997 13.26L12 9.73999L15.53 13.26",
@@ -78117,8 +78119,8 @@
           ]
         }
       );
-      var import_jsx_runtime65 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var SearchLinearIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime65.jsxs)(
+      var import_jsx_runtime652 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var SearchLinearIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime652.jsxs)(
         "svg",
         {
           "aria-hidden": "true",
@@ -78134,7 +78136,7 @@
           width: "1em",
           ...props,
           children: [
-            /* @__PURE__ */ (0, import_jsx_runtime65.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime652.jsx)(
               "path",
               {
                 d: "M11.5 21C16.7467 21 21 16.7467 21 11.5C21 6.25329 16.7467 2 11.5 2C6.25329 2 2 6.25329 2 11.5C2 16.7467 6.25329 21 11.5 21Z",
@@ -78143,7 +78145,7 @@
                 strokeLinejoin: "round"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime65.jsx)("path", { d: "M22 22L20 20", stroke: "currentColor", strokeLinecap: "round", strokeLinejoin: "round" })
+            /* @__PURE__ */ (0, import_jsx_runtime652.jsx)("path", { d: "M22 22L20 20", stroke: "currentColor", strokeLinecap: "round", strokeLinejoin: "round" })
           ]
         }
       );
@@ -78194,14 +78196,14 @@
         useMeasure: () => useMeasure
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useMeasure() {
-        const [dimensions, setDimensions] = (0, import_react103.useState)({
+        const [dimensions, setDimensions] = (0, import_react121.useState)({
           width: null,
           height: null
         });
-        const previousObserver = (0, import_react103.useRef)(null);
-        const customRef = (0, import_react103.useCallback)((node) => {
+        const previousObserver = (0, import_react121.useRef)(null);
+        const customRef = (0, import_react121.useCallback)((node) => {
           if (previousObserver.current) {
             previousObserver.current.disconnect();
             previousObserver.current = null;
@@ -78397,15 +78399,15 @@
           }
         }
       };
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_motion2 = require_cjs4();
       var import_use_measure = require_dist18();
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var ResizablePanel2 = (0, import_react103.forwardRef)(
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var ResizablePanel2 = (0, import_react121.forwardRef)(
         (originalProps, ref) => {
           const { children, ...props } = originalProps;
           let [measureRef, bounds] = (0, import_use_measure.useMeasure)();
-          return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_framer_motion2.LazyMotion, { features: import_framer_motion2.domAnimation, children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_framer_motion2.LazyMotion, { features: import_framer_motion2.domAnimation, children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
             import_framer_motion2.m.div,
             {
               ref,
@@ -78413,7 +78415,7 @@
                 width: bounds.width && (bounds == null ? void 0 : bounds.width) > 0 ? bounds.width : "auto",
                 height: bounds.height && bounds.height > 0 ? bounds.height : "auto"
               },
-              children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { ref: measureRef, ...props, children })
+              children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("div", { ref: measureRef, ...props, children })
             }
           ) });
         }
@@ -94013,15 +94015,15 @@
         const { x, y } = current2.getBBox();
         inset.x += x;
         inset.y += y;
-        let svg = null;
+        let svg2 = null;
         let parent = current2.parentNode;
-        while (!svg) {
+        while (!svg2) {
           if (parent.tagName === "svg") {
-            svg = parent;
+            svg2 = parent;
           }
           parent = current2.parentNode;
         }
-        current2 = svg;
+        current2 = svg2;
       } else {
         break;
       }
@@ -95902,15 +95904,15 @@
   // node_modules/framer-motion/dist/es/utils/transform-viewbox-point.mjs
   function transformViewBoxPoint(svgRef) {
     return (point2) => {
-      const svg = svgRef.current;
-      if (!svg) {
+      const svg2 = svgRef.current;
+      if (!svg2) {
         return point2;
       }
-      const viewBox = svg.viewBox?.baseVal;
+      const viewBox = svg2.viewBox?.baseVal;
       if (!viewBox || viewBox.width === 0 && viewBox.height === 0) {
         return point2;
       }
-      const bbox = svg.getBoundingClientRect();
+      const bbox = svg2.getBoundingClientRect();
       if (bbox.width === 0 || bbox.height === 0) {
         return point2;
       }
@@ -97068,7 +97070,7 @@
       var import_react510 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
-      var import_react103 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
+      var import_react121 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
       var import_tree = require_main12();
       var import_shared_utils = require_dist2();
       var import_theme = require_dist12();
@@ -97120,10 +97122,10 @@
         );
         const children = (0, import_react210.useMemo)(() => {
           let treeChildren = [];
-          import_react103.default.Children.map(childrenProp, (child) => {
+          import_react121.default.Children.map(childrenProp, (child) => {
             var _a2;
-            if (import_react103.default.isValidElement(child) && typeof ((_a2 = child.props) == null ? void 0 : _a2.children) !== "string") {
-              const clonedChild = import_react103.default.cloneElement(child, {
+            if (import_react121.default.isValidElement(child) && typeof ((_a2 = child.props) == null ? void 0 : _a2.children) !== "string") {
+              const clonedChild = import_react121.default.cloneElement(child, {
                 // @ts-ignore
                 hasChildItems: false
               });
@@ -97194,7 +97196,7 @@
             motionProps
           ]
         );
-        const getBaseProps = (0, import_react103.useCallback)((props2 = {}) => {
+        const getBaseProps = (0, import_react121.useCallback)((props2 = {}) => {
           return {
             ref: domRef,
             className: classNames,
@@ -97208,7 +97210,7 @@
             )
           };
         }, []);
-        const handleFocusChanged = (0, import_react103.useCallback)((isFocused, key) => {
+        const handleFocusChanged = (0, import_react121.useCallback)((isFocused, key) => {
           isFocused && setFocusedKey(key);
         }, []);
         return {
@@ -97454,7 +97456,7 @@
           getSubtitleProps
         };
       }
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var domAnimation2 = () => Promise.resolve().then(() => (init_dist(), dist_exports)).then((res) => res.default);
       var AccordionItem = (0, import_system3.forwardRef)((props, ref) => {
         const {
@@ -97484,24 +97486,24 @@
         const willChange = (0, import_framer_motion3.useWillChange)();
         const indicatorContent = (0, import_react410.useMemo)(() => {
           if (typeof indicator === "function") {
-            return indicator({ indicator: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_shared_icons.ChevronIcon, {}), isOpen, isDisabled });
+            return indicator({ indicator: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_shared_icons.ChevronIcon, {}), isOpen, isDisabled });
           }
           if (indicator) return indicator;
           return null;
         }, [indicator, isOpen, isDisabled]);
-        const indicatorComponent = indicatorContent || /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_shared_icons.ChevronIcon, {});
+        const indicatorComponent = indicatorContent || /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_shared_icons.ChevronIcon, {});
         const content = (0, import_react410.useMemo)(() => {
           if (disableAnimation) {
             if (keepContentMounted) {
-              return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { ...getContentProps(), children });
+              return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("div", { ...getContentProps(), children });
             }
-            return isOpen && /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { ...getContentProps(), children });
+            return isOpen && /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("div", { ...getContentProps(), children });
           }
           const transitionVariants = {
             exit: { ...import_framer_utils.TRANSITION_VARIANTS.collapse.exit, overflowY: "hidden" },
             enter: { ...import_framer_utils.TRANSITION_VARIANTS.collapse.enter, overflowY: "unset" }
           };
-          return keepContentMounted ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+          return keepContentMounted ? /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
             import_framer_motion3.m.section,
             {
               animate: isOpen ? "enter" : "exit",
@@ -97513,10 +97515,10 @@
                 e.stopPropagation();
               },
               ...motionProps,
-              children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { ...getContentProps(), children })
+              children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("div", { ...getContentProps(), children })
             },
             "accordion-content"
-          ) }) : /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_framer_motion3.AnimatePresence, { initial: false, children: isOpen && /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+          ) }) : /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_framer_motion3.AnimatePresence, { initial: false, children: isOpen && /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
             import_framer_motion3.m.section,
             {
               animate: "enter",
@@ -97528,19 +97530,19 @@
                 e.stopPropagation();
               },
               ...motionProps,
-              children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { ...getContentProps(), children })
+              children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("div", { ...getContentProps(), children })
             },
             "accordion-content"
           ) }) });
         }, [isOpen, disableAnimation, keepContentMounted, children, motionProps]);
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(Component2, { ...getBaseProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(HeadingComponent, { ...getHeadingProps(), children: /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("button", { ...getButtonProps(), children: [
-            startContent && /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { className: slots.startContent({ class: classNames == null ? void 0 : classNames.startContent }), children: startContent }),
-            /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { className: slots.titleWrapper({ class: classNames == null ? void 0 : classNames.titleWrapper }), children: [
-              title && /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { ...getTitleProps(), children: title }),
-              subtitle && /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { ...getSubtitleProps(), children: subtitle })
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(Component2, { ...getBaseProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(HeadingComponent, { ...getHeadingProps(), children: /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)("button", { ...getButtonProps(), children: [
+            startContent && /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("div", { className: slots.startContent({ class: classNames == null ? void 0 : classNames.startContent }), children: startContent }),
+            /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)("div", { className: slots.titleWrapper({ class: classNames == null ? void 0 : classNames.titleWrapper }), children: [
+              title && /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("span", { ...getTitleProps(), children: title }),
+              subtitle && /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("span", { ...getSubtitleProps(), children: subtitle })
             ] }),
-            !hideIndicator && indicatorComponent && /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { ...getIndicatorProps(), children: indicatorComponent })
+            !hideIndicator && indicatorComponent && /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("span", { ...getIndicatorProps(), children: indicatorComponent })
           ] }) }),
           content
         ] });
@@ -97620,8 +97622,8 @@
         useSafeLayoutEffect: () => useSafeLayoutEffect
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var useSafeLayoutEffect = Boolean(globalThis == null ? void 0 : globalThis.document) ? import_react103.useLayoutEffect : import_react103.useEffect;
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var useSafeLayoutEffect = Boolean(globalThis == null ? void 0 : globalThis.document) ? import_react121.useLayoutEffect : import_react121.useEffect;
     }
   });
 
@@ -97652,7 +97654,7 @@
         useImage: () => useImage
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_utils = require_dist10();
       var import_use_safe_layout_effect = require_dist21();
       function useImage(props = {}) {
@@ -97668,16 +97670,16 @@
           shouldBypassImageLoad = false
         } = props;
         const isHydrated = (0, import_react_utils.useIsHydrated)();
-        const imageRef = (0, import_react103.useRef)(null);
-        const [status, setStatus] = (0, import_react103.useState)("pending");
-        const flush = (0, import_react103.useCallback)(() => {
+        const imageRef = (0, import_react121.useRef)(null);
+        const [status, setStatus] = (0, import_react121.useState)("pending");
+        const flush = (0, import_react121.useCallback)(() => {
           if (imageRef.current) {
             imageRef.current.onload = null;
             imageRef.current.onerror = null;
             imageRef.current = null;
           }
         }, []);
-        const load = (0, import_react103.useCallback)(() => {
+        const load = (0, import_react121.useCallback)(() => {
           if (!src) return "pending";
           if (ignoreFallback || shouldBypassImageLoad) return "loaded";
           flush();
@@ -97763,8 +97765,8 @@
       module.exports = __toCommonJS2(index_exports);
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist11();
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var AvatarIcon = () => /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var AvatarIcon = () => /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(
         "svg",
         {
           "aria-hidden": "true",
@@ -97774,14 +97776,14 @@
           viewBox: "0 0 24 24",
           width: "80%",
           children: [
-            /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
               "path",
               {
                 d: "M12 2C9.38 2 7.25 4.13 7.25 6.75C7.25 9.32 9.26 11.4 11.88 11.49C11.96 11.48 12.04 11.48 12.1 11.49C12.12 11.49 12.13 11.49 12.15 11.49C12.16 11.49 12.16 11.49 12.17 11.49C14.73 11.4 16.74 9.32 16.75 6.75C16.75 4.13 14.62 2 12 2Z",
                 fill: "currentColor"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
               "path",
               {
                 d: "M17.0809 14.1489C14.2909 12.2889 9.74094 12.2889 6.93094 14.1489C5.66094 14.9989 4.96094 16.1489 4.96094 17.3789C4.96094 18.6089 5.66094 19.7489 6.92094 20.5889C8.32094 21.5289 10.1609 21.9989 12.0009 21.9989C13.8409 21.9989 15.6809 21.5289 17.0809 20.5889C18.3409 19.7389 19.0409 18.5989 19.0409 17.3589C19.0309 16.1289 18.3409 14.9889 17.0809 14.1489Z",
@@ -97796,7 +97798,7 @@
       var import_react_utils2 = require_dist10();
       var import_shared_utils = require_dist2();
       var import_focus2 = require_main18();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_image = require_dist22();
       var import_interactions = require_main17();
       var import_react_utils = require_dist10();
@@ -97851,7 +97853,7 @@
         const isImgLoaded = imageStatus === "loaded";
         const shouldFilterDOMProps = !isHeroImage;
         const showFallback = (!src || !isImgLoaded) && showFallbackProp;
-        const slots = (0, import_react103.useMemo)(
+        const slots = (0, import_react121.useMemo)(
           () => {
             var _a2;
             return (0, import_theme.avatar)({
@@ -97877,10 +97879,10 @@
           ]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const canBeFocused = (0, import_react103.useMemo)(() => {
+        const canBeFocused = (0, import_react121.useMemo)(() => {
           return isFocusable || as === "button";
         }, [isFocusable, as]);
-        const getAvatarProps = (0, import_react103.useCallback)(
+        const getAvatarProps = (0, import_react121.useCallback)(
           (props = {}) => ({
             ref: domRef,
             tabIndex: canBeFocused ? 0 : -1,
@@ -97894,7 +97896,7 @@
           }),
           [canBeFocused, slots, baseStyles, focusProps, otherProps]
         );
-        const getImageProps = (0, import_react103.useCallback)(
+        const getImageProps = (0, import_react121.useCallback)(
           (props = {}) => ({
             ref: imgRef,
             src,
@@ -98097,7 +98099,7 @@
       var import_theme = require_dist12();
       var import_system = require_dist11();
       var import_shared_utils = require_dist2();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useBadge(originalProps) {
         var _a, _b;
         const globalContext = (0, import_system.useProviderContext)();
@@ -98105,19 +98107,19 @@
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.badge.variantKeys);
         const { as, children, className, content, classNames, ...otherProps } = props;
         const Component2 = as || "span";
-        const isOneChar = (0, import_react103.useMemo)(
+        const isOneChar = (0, import_react121.useMemo)(
           () => {
             var _a2;
             return ((_a2 = String(content)) == null ? void 0 : _a2.length) === 1 || (originalProps == null ? void 0 : originalProps.isOneChar);
           },
           [content, originalProps == null ? void 0 : originalProps.isOneChar]
         );
-        const isDot = (0, import_react103.useMemo)(() => {
+        const isDot = (0, import_react121.useMemo)(() => {
           var _a2;
           return ((_a2 = String(content)) == null ? void 0 : _a2.length) === 0;
         }, [content]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.badge, className);
-        const slots = (0, import_react103.useMemo)(
+        const slots = (0, import_react121.useMemo)(
           () => (0, import_theme.badge)({
             ...variantProps2,
             showOutline: !!(originalProps == null ? void 0 : originalProps.disableOutline) ? !(originalProps == null ? void 0 : originalProps.disableOutline) : originalProps == null ? void 0 : originalProps.showOutline,
@@ -98145,14 +98147,14 @@
         };
       }
       var import_system2 = require_dist11();
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Badge = (0, import_system2.forwardRef)((props, ref) => {
         const { Component: Component2, children, content, slots, classNames, getBadgeProps } = useBadge({
           ...props
         });
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { className: slots.base({ class: classNames == null ? void 0 : classNames.base }), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)("div", { className: slots.base({ class: classNames == null ? void 0 : classNames.base }), children: [
           children,
-          /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(Component2, { ref, ...getBadgeProps(), children: content })
+          /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(Component2, { ref, ...getBadgeProps(), children: content })
         ] });
       });
       Badge.displayName = "HeroUI.Badge";
@@ -98191,7 +98193,7 @@
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       function useSpinner(originalProps) {
         var _a, _b;
@@ -98199,19 +98201,19 @@
         const globalContext = (0, import_system.useProviderContext)();
         const variant = (_b = (_a = originalProps == null ? void 0 : originalProps.variant) != null ? _a : globalContext == null ? void 0 : globalContext.spinnerVariant) != null ? _b : "default";
         const { children, className, classNames, label: labelProp, ...otherProps } = props;
-        const slots = (0, import_react103.useMemo)(
+        const slots = (0, import_react121.useMemo)(
           () => (0, import_theme.spinner)({ ...variantProps2, variant }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), variant]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
         const label = labelProp || children;
-        const ariaLabel = (0, import_react103.useMemo)(() => {
+        const ariaLabel = (0, import_react121.useMemo)(() => {
           if (label && typeof label === "string") {
             return label;
           }
           return !otherProps["aria-label"] ? "Loading" : "";
         }, [children, label, otherProps["aria-label"]]);
-        const getSpinnerProps = (0, import_react103.useCallback)(
+        const getSpinnerProps = (0, import_react121.useCallback)(
           () => ({
             "aria-label": ariaLabel,
             className: slots.base({
@@ -98224,12 +98226,12 @@
         return { label, slots, classNames, variant, getSpinnerProps };
       }
       var import_system_rsc2 = require_dist14();
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Spinner = (0, import_system_rsc2.forwardRef)((props, ref) => {
         const { slots, classNames, label, variant, getSpinnerProps } = useSpinner({ ...props });
         if (variant === "wave" || variant === "dots") {
-          return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { ref, ...getSpinnerProps(), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [...new Array(3)].map((_, index3) => /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)("div", { ref, ...getSpinnerProps(), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [...new Array(3)].map((_, index3) => /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
               "i",
               {
                 className: slots.dots({ class: classNames == null ? void 0 : classNames.dots }),
@@ -98239,19 +98241,19 @@
               },
               `dot-${index3}`
             )) }),
-            label && /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
+            label && /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
           ] });
         }
         if (variant === "simple") {
-          return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { ref, ...getSpinnerProps(), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(
+          return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)("div", { ref, ...getSpinnerProps(), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(
               "svg",
               {
                 className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }),
                 fill: "none",
                 viewBox: "0 0 24 24",
                 children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+                  /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                     "circle",
                     {
                       className: slots.circle1({ class: classNames == null ? void 0 : classNames.circle1 }),
@@ -98262,7 +98264,7 @@
                       strokeWidth: "4"
                     }
                   ),
-                  /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+                  /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
                     "path",
                     {
                       className: slots.circle2({ class: classNames == null ? void 0 : classNames.circle2 }),
@@ -98273,12 +98275,12 @@
                 ]
               }
             ),
-            label && /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
+            label && /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
           ] });
         }
         if (variant === "spinner") {
-          return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { ref, ...getSpinnerProps(), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [...new Array(12)].map((_, index3) => /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)("div", { ref, ...getSpinnerProps(), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [...new Array(12)].map((_, index3) => /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
               "i",
               {
                 className: slots.spinnerBars({ class: classNames == null ? void 0 : classNames.spinnerBars }),
@@ -98288,15 +98290,15 @@
               },
               `star-${index3}`
             )) }),
-            label && /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
+            label && /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
           ] });
         }
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { ref, ...getSpinnerProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("i", { className: slots.circle1({ class: classNames == null ? void 0 : classNames.circle1 }) }),
-            /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("i", { className: slots.circle2({ class: classNames == null ? void 0 : classNames.circle2 }) })
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)("div", { ref, ...getSpinnerProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("i", { className: slots.circle1({ class: classNames == null ? void 0 : classNames.circle1 }) }),
+            /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("i", { className: slots.circle2({ class: classNames == null ? void 0 : classNames.circle2 }) })
           ] }),
-          label && /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
+          label && /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
         ] });
       });
       Spinner.displayName = "HeroUI.Spinner";
@@ -98334,13 +98336,13 @@
       module.exports = __toCommonJS2(index_exports);
       var import_framer_motion2 = require_cjs4();
       var import_shared_utils = require_dist2();
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var domAnimation2 = () => Promise.resolve().then(() => (init_dist(), dist_exports)).then((res) => res.default);
       var Ripple = (props) => {
         const { ripples = [], motionProps, color: color2 = "currentColor", style: style2, onClear } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_jsx_runtime49.Fragment, { children: ripples.map((ripple) => {
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_jsx_runtime64.Fragment, { children: ripples.map((ripple) => {
           const duration = (0, import_shared_utils.clamp)(0.01 * ripple.size, 0.2, ripple.size > 100 ? 0.75 : 0.5);
-          return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_framer_motion2.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_framer_motion2.AnimatePresence, { mode: "popLayout", children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_framer_motion2.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_framer_motion2.AnimatePresence, { mode: "popLayout", children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
             import_framer_motion2.m.span,
             {
               animate: {
@@ -98378,10 +98380,10 @@
       Ripple.displayName = "HeroUI.Ripple";
       var ripple_default = Ripple;
       var import_shared_utils2 = require_dist2();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useRipple(props = {}) {
-        const [ripples, setRipples] = (0, import_react103.useState)([]);
-        const onPress = (0, import_react103.useCallback)((event) => {
+        const [ripples, setRipples] = (0, import_react121.useState)([]);
+        const onPress = (0, import_react121.useCallback)((event) => {
           const trigger = event.target;
           const size = Math.max(trigger.clientWidth, trigger.clientHeight);
           setRipples((prevRipples) => [
@@ -98394,7 +98396,7 @@
             }
           ]);
         }, []);
-        const onClear = (0, import_react103.useCallback)((key) => {
+        const onClear = (0, import_react121.useCallback)((key) => {
           setRipples((prevState) => prevState.filter((ripple) => ripple.key !== key));
         }, []);
         return { ripples, onClear, onPress, ...props };
@@ -101481,7 +101483,7 @@
       var import_system2 = require_dist11();
       var import_system = require_dist11();
       var import_shared_utils = require_dist2();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_react_utils2 = require_dist10();
       var import_theme = require_dist12();
@@ -101558,7 +101560,7 @@
           ]
         );
         const { onPress: onRipplePressHandler, onClear: onClearRipple, ripples } = (0, import_ripple.useRipple)();
-        const handlePress = (0, import_react103.useCallback)(
+        const handlePress = (0, import_react121.useCallback)(
           (e) => {
             if (disableRipple || isDisabled || disableAnimation) return;
             domRef.current && onRipplePressHandler(e);
@@ -101576,7 +101578,7 @@
           domRef
         );
         const { isHovered, hoverProps } = (0, import_interactions.useHover)({ isDisabled });
-        const getButtonProps = (0, import_react103.useCallback)(
+        const getButtonProps = (0, import_react121.useCallback)(
           (props2 = {}) => ({
             "data-disabled": (0, import_shared_utils.dataAttr)(isDisabled),
             "data-focus": (0, import_shared_utils.dataAttr)(isFocused),
@@ -101625,7 +101627,7 @@
           };
           return buttonSpinnerSizeMap[size];
         }, [size]);
-        const getRippleProps = (0, import_react103.useCallback)(
+        const getRippleProps = (0, import_react121.useCallback)(
           () => ({ ripples, onClear: onClearRipple }),
           [ripples, onClearRipple]
         );
@@ -101646,14 +101648,14 @@
           isIconOnly
         };
       }
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Button = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
           domRef,
           children,
           spinnerSize,
-          spinner = /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_spinner.Spinner, { color: "current", size: spinnerSize }),
+          spinner = /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_spinner.Spinner, { color: "current", size: spinnerSize }),
           spinnerPlacement,
           startContent,
           endContent,
@@ -101663,13 +101665,13 @@
           getRippleProps,
           isIconOnly
         } = useButton({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(Component2, { ref: domRef, ...getButtonProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(Component2, { ref: domRef, ...getButtonProps(), children: [
           startContent,
           isLoading && spinnerPlacement === "start" && spinner,
           isLoading && isIconOnly ? null : children,
           isLoading && spinnerPlacement === "end" && spinner,
           endContent,
-          !disableRipple && /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_ripple2.Ripple, { ...getRippleProps() })
+          !disableRipple && /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_ripple2.Ripple, { ...getRippleProps() })
         ] });
       });
       Button.displayName = "HeroUI.Button";
@@ -101795,7 +101797,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_theme = require_dist12();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_interactions = require_main17();
       var import_use_aria_button = require_dist27();
@@ -101827,7 +101829,7 @@
         const disableRipple = (_d = (_c = originalProps.disableRipple) != null ? _c : globalContext == null ? void 0 : globalContext.disableRipple) != null ? _d : false;
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
         const { onClear: onClearRipple, onPress: onRipplePressHandler, ripples } = (0, import_ripple.useRipple)();
-        const handlePress = (0, import_react103.useCallback)(
+        const handlePress = (0, import_react121.useCallback)(
           (e) => {
             if (disableRipple || disableAnimation) return;
             domRef.current && onRipplePressHandler(e);
@@ -101852,14 +101854,14 @@
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)({
           autoFocus
         });
-        const slots = (0, import_react103.useMemo)(
+        const slots = (0, import_react121.useMemo)(
           () => (0, import_theme.card)({
             ...variantProps2,
             disableAnimation
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation]
         );
-        const context = (0, import_react103.useMemo)(
+        const context = (0, import_react121.useMemo)(
           () => ({
             slots,
             classNames,
@@ -101877,7 +101879,7 @@
             originalProps.fullWidth
           ]
         );
-        const getCardProps = (0, import_react103.useCallback)(
+        const getCardProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ref: domRef,
@@ -101915,7 +101917,7 @@
             otherProps
           ]
         );
-        const getRippleProps = (0, import_react103.useCallback)(
+        const getRippleProps = (0, import_react121.useCallback)(
           () => ({ ripples, onClear: onClearRipple }),
           [ripples, onClearRipple]
         );
@@ -101945,7 +101947,7 @@
       });
       var import_system2 = require_dist11();
       var import_ripple2 = require_dist26();
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Card3 = (0, import_system2.forwardRef)((props, ref) => {
         const {
           children,
@@ -101957,9 +101959,9 @@
           getCardProps,
           getRippleProps
         } = useCard({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(Component2, { ...getCardProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(CardProvider, { value: context, children }),
-          isPressable && !disableAnimation && !disableRipple && /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_ripple2.Ripple, { ...getRippleProps() })
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(Component2, { ...getCardProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(CardProvider, { value: context, children }),
+          isPressable && !disableAnimation && !disableRipple && /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_ripple2.Ripple, { ...getRippleProps() })
         ] });
       });
       Card3.displayName = "HeroUI.Card";
@@ -102046,7 +102048,7 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useChip(originalProps) {
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.chip.variantKeys);
         const {
@@ -102067,13 +102069,13 @@
         const isCloseable = !!onClose;
         const isDotVariant = originalProps.variant === "dot";
         const { focusProps: closeFocusProps, isFocusVisible: isCloseButtonFocusVisible } = (0, import_focus2.useFocusRing)();
-        const isOneChar = (0, import_react103.useMemo)(
+        const isOneChar = (0, import_react121.useMemo)(
           () => typeof children === "string" && (children == null ? void 0 : children.length) === 1,
           [children]
         );
-        const hasStartContent = (0, import_react103.useMemo)(() => !!avatar || !!startContent, [avatar, startContent]);
-        const hasEndContent = (0, import_react103.useMemo)(() => !!endContent || isCloseable, [endContent, isCloseable]);
-        const slots = (0, import_react103.useMemo)(
+        const hasStartContent = (0, import_react121.useMemo)(() => !!avatar || !!startContent, [avatar, startContent]);
+        const hasEndContent = (0, import_react121.useMemo)(() => !!endContent || isCloseable, [endContent, isCloseable]);
+        const slots = (0, import_react121.useMemo)(
           () => (0, import_theme.chip)({
             ...variantProps2,
             hasStartContent,
@@ -102112,13 +102114,13 @@
           };
         };
         const getAvatarClone = (avatar2) => {
-          if (!(0, import_react103.isValidElement)(avatar2)) return null;
-          return (0, import_react103.cloneElement)(avatar2, {
+          if (!(0, import_react121.isValidElement)(avatar2)) return null;
+          return (0, import_react121.cloneElement)(avatar2, {
             // @ts-ignore
             className: slots.avatar({ class: classNames == null ? void 0 : classNames.avatar })
           });
         };
-        const getContentClone = (content) => (0, import_react103.isValidElement)(content) ? (0, import_react103.cloneElement)(content, {
+        const getContentClone = (content) => (0, import_react121.isValidElement)(content) ? (0, import_react121.cloneElement)(content, {
           // @ts-ignore
           className: (0, import_theme.cn)("max-h-[80%]", content.props.className)
         }) : null;
@@ -102138,8 +102140,8 @@
       var import_shared_icons = require_dist17();
       var import_system2 = require_dist11();
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var Chip = (0, import_system2.forwardRef)((props, ref) => {
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var Chip2 = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
           children,
@@ -102157,24 +102159,24 @@
         });
         const start3 = (0, import_react210.useMemo)(() => {
           if (isDot && !startContent) {
-            return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { className: slots.dot({ class: classNames == null ? void 0 : classNames.dot }) });
+            return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("span", { className: slots.dot({ class: classNames == null ? void 0 : classNames.dot }) });
           }
           return startContent;
         }, [slots, startContent, isDot]);
         const end = (0, import_react210.useMemo)(() => {
           if (isCloseable) {
-            return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { ...getCloseButtonProps(), children: endContent || /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_shared_icons.CloseFilledIcon, {}) });
+            return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("span", { ...getCloseButtonProps(), children: endContent || /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_shared_icons.CloseFilledIcon, {}) });
           }
           return endContent;
         }, [endContent, isCloseable, getCloseButtonProps]);
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(Component2, { ...getChipProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(Component2, { ...getChipProps(), children: [
           start3,
-          /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children }),
+          /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("span", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children }),
           end
         ] });
       });
-      Chip.displayName = "HeroUI.Chip";
-      var chip_default = Chip;
+      Chip2.displayName = "HeroUI.Chip";
+      var chip_default = Chip2;
     }
   });
 
@@ -102287,14 +102289,14 @@
         useCallbackRef: () => useCallbackRef
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_safe_layout_effect = require_dist21();
       function useCallbackRef(fn, deps = []) {
-        const ref = (0, import_react103.useRef)(fn);
+        const ref = (0, import_react121.useRef)(fn);
         (0, import_use_safe_layout_effect.useSafeLayoutEffect)(() => {
           ref.current = fn;
         });
-        return (0, import_react103.useCallback)((...args) => {
+        return (0, import_react121.useCallback)((...args) => {
           var _a;
           return (_a = ref.current) == null ? void 0 : _a.call(ref, ...args);
         }, deps);
@@ -115731,13 +115733,13 @@
         useSlottedContext: () => useSlottedContext
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       var DEFAULT_SLOT = /* @__PURE__ */ Symbol("default");
       function useObjectRef(ref) {
-        const objRef = (0, import_react103.useRef)(null);
-        const cleanupRef = (0, import_react103.useRef)(void 0);
-        const refEffect = (0, import_react103.useCallback)(
+        const objRef = (0, import_react121.useRef)(null);
+        const cleanupRef = (0, import_react121.useRef)(void 0);
+        const refEffect = (0, import_react121.useCallback)(
           (instance) => {
             if (typeof ref === "function") {
               const refCallback = ref;
@@ -115758,7 +115760,7 @@
           },
           [ref]
         );
-        return (0, import_react103.useMemo)(
+        return (0, import_react121.useMemo)(
           () => ({
             get current() {
               return objRef.current;
@@ -115778,7 +115780,7 @@
         );
       }
       function useSlottedContext(context, slot) {
-        let ctx = (0, import_react103.useContext)(context);
+        let ctx = (0, import_react121.useContext)(context);
         if (slot === null) {
           return null;
         }
@@ -115798,7 +115800,7 @@
       function useContextProps(props, ref, context) {
         let ctx = useSlottedContext(context, props.slot) || {};
         let { ref: contextRef, ...contextProps } = ctx;
-        let mergedRef = useObjectRef((0, import_react103.useMemo)(() => (0, import_shared_utils.mergeRefs)(ref, contextRef), [ref, contextRef]));
+        let mergedRef = useObjectRef((0, import_react121.useMemo)(() => (0, import_shared_utils.mergeRefs)(ref, contextRef), [ref, contextRef]));
         let mergedProps = (0, import_shared_utils.mergeProps)(contextProps, props);
         if ("style" in contextProps && contextProps.style && "style" in props && props.style) {
           if (typeof contextProps.style === "function" || typeof props.style === "function") {
@@ -115817,13 +115819,13 @@
       var import_form = require_main22();
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist32();
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var FormContext = (0, import_react210.createContext)(null);
       var Form = (0, import_react210.forwardRef)(function Form2(props, ref) {
         [props, ref] = useContextProps(props, ref, FormContext);
         let { validationErrors, validationBehavior = "native", children, className, ...domProps } = props;
         const styles = (0, import_react210.useMemo)(() => (0, import_theme.form)({ className }), [className]);
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("form", { noValidate: validationBehavior !== "native", ...domProps, ref, className: styles, children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(FormContext.Provider, { value: { ...props, validationBehavior }, children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_form.FormValidationContext.Provider, { value: validationErrors != null ? validationErrors : {}, children }) }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("form", { noValidate: validationBehavior !== "native", ...domProps, ref, className: styles, children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(FormContext.Provider, { value: { ...props, validationBehavior }, children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_form.FormValidationContext.Provider, { value: validationErrors != null ? validationErrors : {}, children }) }) });
       });
       var import_system = require_dist11();
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
@@ -115950,7 +115952,7 @@
       var import_system2 = require_dist11();
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_toggle = require_main21();
       var import_theme = require_dist12();
@@ -116025,7 +116027,7 @@
           };
           onChange = (0, import_shared_utils.chain)(dispatch, onChange);
         }
-        const labelId = (0, import_react103.useId)();
+        const labelId = (0, import_react121.useId)();
         const ariaCheckboxProps = (0, import_react210.useMemo)(
           () => ({
             name,
@@ -116114,7 +116116,7 @@
           toggleState.setSelected(isInputRefChecked);
         }, [inputRef.current]);
         const onChangeProp = (0, import_use_callback_ref.useCallbackRef)(onChange);
-        const handleCheckboxChange = (0, import_react103.useCallback)(
+        const handleCheckboxChange = (0, import_react121.useCallback)(
           (event) => {
             if (isReadOnly || isDisabled) {
               event.preventDefault();
@@ -116125,7 +116127,7 @@
           [isReadOnly, isDisabled, onChangeProp]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getBaseProps = (0, import_react103.useCallback)(() => {
+        const getBaseProps = (0, import_react121.useCallback)(() => {
           return {
             ref: domRef,
             className: slots.base({ class: baseStyles }),
@@ -116155,7 +116157,7 @@
           hoverProps,
           otherProps
         ]);
-        const getWrapperProps = (0, import_react103.useCallback)(
+        const getWrapperProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -116165,7 +116167,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.wrapper]
         );
-        const getInputProps = (0, import_react103.useCallback)(() => {
+        const getInputProps = (0, import_react121.useCallback)(() => {
           return {
             ref: (0, import_react_utils2.mergeRefs)(inputRef, ref),
             ...(0, import_shared_utils.mergeProps)(inputProps, focusProps),
@@ -116173,14 +116175,14 @@
             onChange: (0, import_shared_utils.chain)(inputProps.onChange, handleCheckboxChange)
           };
         }, [inputProps, focusProps, handleCheckboxChange, classNames == null ? void 0 : classNames.hiddenInput]);
-        const getLabelProps = (0, import_react103.useCallback)(
+        const getLabelProps = (0, import_react121.useCallback)(
           () => ({
             id: labelId,
             className: slots.label({ class: classNames == null ? void 0 : classNames.label })
           }),
           [slots, classNames == null ? void 0 : classNames.label, isDisabled, isSelected, isInvalid]
         );
-        const getIconProps = (0, import_react103.useCallback)(
+        const getIconProps = (0, import_react121.useCallback)(
           () => ({
             isSelected,
             isIndeterminate,
@@ -116206,10 +116208,10 @@
           getIconProps
         };
       }
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       function CheckIcon(props) {
         const { isSelected, disableAnimation, ...otherProps } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
           "svg",
           {
             "aria-hidden": "true",
@@ -116226,18 +116228,18 @@
             } : {},
             viewBox: "0 0 17 18",
             ...otherProps,
-            children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("polyline", { points: "1 9 7 14 15 4" })
+            children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("polyline", { points: "1 9 7 14 15 4" })
           }
         );
       }
       function IndeterminateIcon(props) {
         const { isSelected, disableAnimation, ...otherProps } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("svg", { stroke: "currentColor", strokeWidth: 3, viewBox: "0 0 24 24", ...otherProps, children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("line", { x1: "21", x2: "3", y1: "12", y2: "12" }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("svg", { stroke: "currentColor", strokeWidth: 3, viewBox: "0 0 24 24", ...otherProps, children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("line", { x1: "21", x2: "3", y1: "12", y2: "12" }) });
       }
       function CheckboxIcon(props) {
         const { isIndeterminate, ...otherProps } = props;
         const BaseIcon = isIndeterminate ? IndeterminateIcon : CheckIcon;
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(BaseIcon, { ...otherProps });
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(BaseIcon, { ...otherProps });
       }
       var import_jsx_runtime210 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Checkbox2 = (0, import_system2.forwardRef)((props, ref) => {
@@ -116489,13 +116491,13 @@
       var import_system_rsc2 = require_dist14();
       var import_theme = require_dist12();
       var import_system_rsc = require_dist14();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       function useCode(originalProps) {
         const [props, variantProps2] = (0, import_system_rsc.mapPropsVariants)(originalProps, import_theme.code.variantKeys);
         const { as, children, className, ...otherProps } = props;
         const Component2 = as || "code";
-        const styles = (0, import_react103.useMemo)(
+        const styles = (0, import_react121.useMemo)(
           () => (0, import_theme.code)({
             ...variantProps2,
             className
@@ -116510,10 +116512,10 @@
         };
         return { Component: Component2, children, getCodeProps };
       }
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Code = (0, import_system_rsc2.forwardRef)((props, ref) => {
         const { Component: Component2, children, getCodeProps } = useCode({ ...props });
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(Component2, { ref, ...getCodeProps(), children });
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(Component2, { ref, ...getCodeProps(), children });
       });
       Code.displayName = "HeroUI.Code";
       var code_default = Code;
@@ -119576,7 +119578,7 @@
       var import_react_utils = require_dist10();
       var import_focus2 = require_main18();
       var import_shared_utils = require_dist2();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useLink(originalProps) {
         var _a, _b, _c, _d;
         const globalContext = (0, import_system.useProviderContext)();
@@ -119619,7 +119621,7 @@
           otherProps.rel = (_c = otherProps.rel) != null ? _c : "noopener noreferrer";
           otherProps.target = (_d = otherProps.target) != null ? _d : "_blank";
         }
-        const styles = (0, import_react103.useMemo)(
+        const styles = (0, import_react121.useMemo)(
           () => (0, import_theme.link)({
             ...variantProps2,
             disableAnimation,
@@ -119627,7 +119629,7 @@
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation, className]
         );
-        const getLinkProps = (0, import_react103.useCallback)(() => {
+        const getLinkProps = (0, import_react121.useCallback)(() => {
           return {
             ref: domRef,
             className: styles,
@@ -119641,19 +119643,19 @@
         }, [styles, isFocused, isFocusVisible, focusProps, linkProps, otherProps]);
         return { Component: Component2, children, anchorIcon, showAnchorIcon, getLinkProps };
       }
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Link = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
           children,
           showAnchorIcon,
-          anchorIcon = /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_shared_icons.LinkIcon, { className: import_theme2.linkAnchorClasses }),
+          anchorIcon = /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_shared_icons.LinkIcon, { className: import_theme2.linkAnchorClasses }),
           getLinkProps
         } = useLink({
           ref,
           ...props
         });
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(Component2, { ...getLinkProps(), children: /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(import_jsx_runtime49.Fragment, { children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(Component2, { ...getLinkProps(), children: /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(import_jsx_runtime64.Fragment, { children: [
           children,
           showAnchorIcon && anchorIcon
         ] }) });
@@ -119712,7 +119714,7 @@
         usePagination: () => usePagination
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_i18n12 = require_main5();
       var import_shared_utils = require_dist2();
       var PaginationItemType2 = /* @__PURE__ */ ((PaginationItemType22) => {
@@ -119731,19 +119733,19 @@
           showControls = false,
           onChange
         } = props;
-        const [activePage, setActivePage] = (0, import_react103.useState)(page || initialPage);
+        const [activePage, setActivePage] = (0, import_react121.useState)(page || initialPage);
         const { direction } = (0, import_i18n12.useLocale)();
         const isRTL = direction === "rtl";
         const onChangeActivePage = (newPage) => {
           setActivePage(newPage);
           onChange && onChange(newPage);
         };
-        (0, import_react103.useEffect)(() => {
+        (0, import_react121.useEffect)(() => {
           if (page && page !== activePage) {
             setActivePage(page);
           }
         }, [page]);
-        const setPage = (0, import_react103.useCallback)(
+        const setPage = (0, import_react121.useCallback)(
           (pageNumber) => {
             if (pageNumber <= 0) {
               onChangeActivePage(1);
@@ -119759,7 +119761,7 @@
         const previous = () => setPage(activePage - 1);
         const first = () => setPage(1);
         const last = () => setPage(total);
-        const formatRange = (0, import_react103.useCallback)(
+        const formatRange = (0, import_react121.useCallback)(
           (range2) => {
             if (showControls) {
               return [
@@ -119773,7 +119775,7 @@
           },
           [isRTL, showControls]
         );
-        const paginationRange = (0, import_react103.useMemo)(() => {
+        const paginationRange = (0, import_react121.useMemo)(() => {
           const totalPageNumbers = siblings * 2 + 3 + boundaries * 2;
           if (totalPageNumbers >= total) {
             return formatRange((0, import_shared_utils.range)(1, total));
@@ -119935,7 +119937,7 @@
         useIntersectionObserver: () => useIntersectionObserver
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useIntersectionObserver({
         threshold: threshold2 = 0,
         root = null,
@@ -119946,15 +119948,15 @@
         onChange
       } = {}) {
         var _a;
-        const [ref, setRef2] = (0, import_react103.useState)(null);
-        const [state, setState] = (0, import_react103.useState)(() => ({
+        const [ref, setRef2] = (0, import_react121.useState)(null);
+        const [state, setState] = (0, import_react121.useState)(() => ({
           isIntersecting: initialIsIntersecting,
           entry: void 0
         }));
-        const callbackRef = (0, import_react103.useRef)();
+        const callbackRef = (0, import_react121.useRef)();
         callbackRef.current = onChange;
         const frozen = ((_a = state.entry) == null ? void 0 : _a.isIntersecting) && freezeOnceVisible;
-        (0, import_react103.useEffect)(() => {
+        (0, import_react121.useEffect)(() => {
           if (!isEnabled) return;
           if (!ref) return;
           if (!("IntersectionObserver" in window)) return;
@@ -119982,8 +119984,8 @@
             observer2.disconnect();
           };
         }, [ref, isEnabled, JSON.stringify(threshold2), root, rootMargin, frozen, freezeOnceVisible]);
-        const prevRef = (0, import_react103.useRef)(null);
-        (0, import_react103.useEffect)(() => {
+        const prevRef = (0, import_react121.useRef)(null);
+        (0, import_react121.useEffect)(() => {
           var _a2;
           if (!ref && ((_a2 = state.entry) == null ? void 0 : _a2.target) && !freezeOnceVisible && !frozen && prevRef.current !== state.entry.target) {
             prevRef.current = state.entry.target;
@@ -120050,7 +120052,7 @@
       var import_theme3 = require_dist12();
       var import_shared_utils = require_dist2();
       var import_use_pagination = require_dist38();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_use_pagination2 = require_dist38();
       var import_scroll_into_view_if_needed = __toESM2(require_dist40());
@@ -120083,9 +120085,9 @@
         } = props;
         const Component2 = as || "nav";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const cursorRef = (0, import_react103.useRef)(null);
-        const itemsRef = (0, import_react103.useRef)();
-        const cursorTimer = (0, import_react103.useRef)();
+        const cursorRef = (0, import_react121.useRef)(null);
+        const itemsRef = (0, import_react121.useRef)();
+        const cursorTimer = (0, import_react121.useRef)();
         const disableAnimation = (_b = (_a = originalProps == null ? void 0 : originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
         const disableCursorAnimation = (_d = (_c = originalProps == null ? void 0 : originalProps.disableCursorAnimation) != null ? _c : disableAnimation) != null ? _d : false;
         function getItemsRefMap() {
@@ -120143,13 +120145,13 @@
           onChange
         });
         const [setRef2, isVisible] = (0, import_use_intersection_observer.useIntersectionObserver)();
-        (0, import_react103.useEffect)(() => {
+        (0, import_react121.useEffect)(() => {
           if (domRef.current) {
             setRef2(domRef.current);
           }
         }, [domRef.current]);
-        const activePageRef = (0, import_react103.useRef)(activePage);
-        (0, import_react103.useEffect)(() => {
+        const activePageRef = (0, import_react121.useRef)(activePage);
+        (0, import_react121.useEffect)(() => {
           if (activePage && !disableAnimation && isVisible) {
             scrollTo(activePage, activePage === activePageRef.current);
           }
@@ -120164,7 +120166,7 @@
           originalProps.isCompact,
           originalProps.showControls
         ]);
-        const slots = (0, import_react103.useMemo)(
+        const slots = (0, import_react121.useMemo)(
           () => (0, import_theme.pagination)({
             ...variantProps2,
             disableAnimation,
@@ -120351,10 +120353,10 @@
           getItemProps
         };
       }
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var PaginationItem = (0, import_system2.forwardRef)((props, ref) => {
         const { Component: Component2, children, getItemProps } = usePaginationItem({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(Component2, { ...getItemProps(), children });
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(Component2, { ...getItemProps(), children });
       });
       PaginationItem.displayName = "HeroUI.PaginationItem";
       var pagination_item_default = PaginationItem;
@@ -120894,7 +120896,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_system2 = require_dist11();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_interactions = require_main17();
@@ -120940,8 +120942,8 @@
         const Component2 = as || "label";
         const domRef = (0, import_react_utils2.useDOMRef)(ref);
         const inputRef = (0, import_react210.useRef)(null);
-        const labelId = (0, import_react103.useId)();
-        const descriptionId = (0, import_react103.useId)();
+        const labelId = (0, import_react121.useId)();
+        const descriptionId = (0, import_react121.useId)();
         const isRequired = (0, import_react210.useMemo)(() => {
           var _a2;
           return (_a2 = groupContext.isRequired) != null ? _a2 : false;
@@ -120995,7 +120997,7 @@
           [color2, size, isDisabled, isInvalid, disableAnimation]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getBaseProps = (0, import_react103.useCallback)(
+        const getBaseProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -121030,7 +121032,7 @@
             otherProps
           ]
         );
-        const getWrapperProps = (0, import_react103.useCallback)(
+        const getWrapperProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -121040,7 +121042,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.wrapper]
         );
-        const getInputProps = (0, import_react103.useCallback)(
+        const getInputProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ref: inputRef,
@@ -121051,7 +121053,7 @@
           },
           [inputProps, focusProps, onChange]
         );
-        const getLabelProps = (0, import_react103.useCallback)(
+        const getLabelProps = (0, import_react121.useCallback)(
           (props2 = {}) => ({
             ...props2,
             id: labelId,
@@ -121059,21 +121061,21 @@
           }),
           [slots, classNames == null ? void 0 : classNames.label, isDisabled, isSelected, isInvalid]
         );
-        const getLabelWrapperProps = (0, import_react103.useCallback)(
+        const getLabelWrapperProps = (0, import_react121.useCallback)(
           (props2 = {}) => ({
             ...props2,
             className: slots.labelWrapper({ class: classNames == null ? void 0 : classNames.labelWrapper })
           }),
           [slots, classNames == null ? void 0 : classNames.labelWrapper]
         );
-        const getControlProps = (0, import_react103.useCallback)(
+        const getControlProps = (0, import_react121.useCallback)(
           (props2 = {}) => ({
             ...props2,
             className: slots.control({ class: classNames == null ? void 0 : classNames.control })
           }),
           [slots, classNames == null ? void 0 : classNames.control]
         );
-        const getDescriptionProps = (0, import_react103.useCallback)(
+        const getDescriptionProps = (0, import_react121.useCallback)(
           (props2 = {}) => ({
             ...props2,
             id: descriptionId,
@@ -121098,7 +121100,7 @@
           getDescriptionProps
         };
       }
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Radio = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -121112,12 +121114,12 @@
           getControlProps,
           getDescriptionProps
         } = useRadio({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(Component2, { ...getBaseProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("input", { ...getInputProps() }),
-          /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { ...getWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { ...getControlProps() }) }),
-          /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { ...getLabelWrapperProps(), children: [
-            children && /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { ...getLabelProps(), children }),
-            description && /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { ...getDescriptionProps(), children: description })
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(Component2, { ...getBaseProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("input", { ...getInputProps() }),
+          /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("span", { ...getWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("span", { ...getControlProps() }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)("div", { ...getLabelWrapperProps(), children: [
+            children && /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("span", { ...getLabelProps(), children }),
+            description && /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("span", { ...getDescriptionProps(), children: description })
           ] })
         ] });
       });
@@ -121346,20 +121348,20 @@
         useClipboard: () => useClipboard
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var transformValue2 = (text) => {
         return text.replace(/[\u00A0]/g, " ");
       };
       function useClipboard({ timeout = 2e3 } = {}) {
-        const [error, setError] = (0, import_react103.useState)(null);
-        const [copied, setCopied] = (0, import_react103.useState)(false);
-        const [copyTimeout, setCopyTimeout] = (0, import_react103.useState)(null);
-        const onClearTimeout = (0, import_react103.useCallback)(() => {
+        const [error, setError] = (0, import_react121.useState)(null);
+        const [copied, setCopied] = (0, import_react121.useState)(false);
+        const [copyTimeout, setCopyTimeout] = (0, import_react121.useState)(null);
+        const onClearTimeout = (0, import_react121.useCallback)(() => {
           if (copyTimeout) {
             clearTimeout(copyTimeout);
           }
         }, [copyTimeout]);
-        const handleCopyResult = (0, import_react103.useCallback)(
+        const handleCopyResult = (0, import_react121.useCallback)(
           (value) => {
             onClearTimeout();
             setCopyTimeout(setTimeout(() => setCopied(false), timeout));
@@ -121367,7 +121369,7 @@
           },
           [onClearTimeout, timeout]
         );
-        const copy = (0, import_react103.useCallback)(
+        const copy = (0, import_react121.useCallback)(
           (valueToCopy) => {
             if ("clipboard" in navigator) {
               const transformedValue = typeof valueToCopy === "string" ? transformValue2(valueToCopy) : valueToCopy;
@@ -121378,7 +121380,7 @@
           },
           [handleCopyResult]
         );
-        const reset = (0, import_react103.useCallback)(() => {
+        const reset = (0, import_react121.useCallback)(() => {
           setCopied(false);
           setError(null);
           onClearTimeout();
@@ -124676,7 +124678,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_focus2 = require_main36();
       var import_interactions = require_main35();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var visibleOverlays = [];
       function useAriaOverlay(props, ref) {
         const {
@@ -124688,7 +124690,7 @@
           shouldCloseOnBlur,
           shouldCloseOnInteractOutside
         } = props;
-        (0, import_react103.useEffect)(() => {
+        (0, import_react121.useEffect)(() => {
           if (isOpen && !visibleOverlays.includes(ref)) {
             visibleOverlays.push(ref);
             return () => {
@@ -124818,7 +124820,7 @@
       var import_shared_utils2 = require_dist2();
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_aria_utils2 = require_dist13();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_tooltip = require_main33();
       var import_tooltip2 = require_main34();
       var import_overlays = require_main9();
@@ -124882,9 +124884,9 @@
         });
         const triggerRef = (0, import_react210.useRef)(null);
         const overlayRef = (0, import_react210.useRef)(null);
-        const tooltipId = (0, import_react103.useId)();
+        const tooltipId = (0, import_react121.useId)();
         const isOpen = state.isOpen && !isDisabled;
-        (0, import_react103.useImperativeHandle)(
+        (0, import_react121.useImperativeHandle)(
           ref,
           () => (
             // @ts-ignore
@@ -125018,7 +125020,7 @@
           getTooltipProps
         };
       }
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var domAnimation2 = () => Promise.resolve().then(() => (init_dist(), dist_exports)).then((res) => res.default);
       var Tooltip = (0, import_system2.forwardRef)((props, ref) => {
         var _a;
@@ -125043,18 +125045,18 @@
           const childrenNum = import_react310.Children.count(children);
           if (childrenNum !== 1) throw new Error();
           if (!(0, import_react310.isValidElement)(children)) {
-            trigger = /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("p", { ...getTriggerProps(), children });
+            trigger = /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("p", { ...getTriggerProps(), children });
           } else {
             const child = children;
             const childRef = (_a = child.props.ref) != null ? _a : child.ref;
             trigger = (0, import_react310.cloneElement)(child, getTriggerProps(child.props, childRef));
           }
         } catch {
-          trigger = /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", {});
+          trigger = /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("span", {});
           (0, import_shared_utils2.warn)("Tooltip must have only one child node. Please, check your code.");
         }
         const { ref: tooltipRef, id: id4, style: style2, ...otherTooltipProps } = getTooltipProps();
-        const animatedContent = /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { ref: tooltipRef, id: id4, style: style2, children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+        const animatedContent = /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("div", { ref: tooltipRef, id: id4, style: style2, children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
           import_framer_motion2.m.div,
           {
             animate: "enter",
@@ -125065,13 +125067,13 @@
             style: {
               ...(0, import_aria_utils2.getTransformOrigins)(placement)
             },
-            children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(Component2, { ...getTooltipContentProps(), children: content })
+            children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(Component2, { ...getTooltipContentProps(), children: content })
           },
           `${id4}-tooltip-inner`
         ) }, `${id4}-tooltip-content`);
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(import_jsx_runtime49.Fragment, { children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(import_jsx_runtime64.Fragment, { children: [
           trigger,
-          disableAnimation ? isOpen && /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_overlays2.OverlayContainer, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { ref: tooltipRef, id: id4, style: style2, ...otherTooltipProps, children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(Component2, { ...getTooltipContentProps(), children: content }) }) }) : /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_framer_motion2.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_framer_motion2.AnimatePresence, { children: isOpen && /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_overlays2.OverlayContainer, { portalContainer, children: animatedContent }) }) })
+          disableAnimation ? isOpen && /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_overlays2.OverlayContainer, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("div", { ref: tooltipRef, id: id4, style: style2, ...otherTooltipProps, children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(Component2, { ...getTooltipContentProps(), children: content }) }) }) : /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_framer_motion2.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_framer_motion2.AnimatePresence, { children: isOpen && /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_overlays2.OverlayContainer, { portalContainer, children: animatedContent }) }) })
         ] });
       });
       Tooltip.displayName = "HeroUI.Tooltip";
@@ -125113,7 +125115,7 @@
       var import_shared_utils = require_dist2();
       var import_use_clipboard = require_dist44();
       var import_focus2 = require_main18();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useSnippet(originalProps) {
         var _a, _b, _c, _d;
         const globalContext = (0, import_system.useProviderContext)();
@@ -125151,26 +125153,26 @@
           ...userTooltipProps
         };
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const preRef = (0, import_react103.useRef)(null);
+        const preRef = (0, import_react121.useRef)(null);
         const { copy, copied } = (0, import_use_clipboard.useClipboard)({ timeout });
         const isMultiLine = children && Array.isArray(children);
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)({
           autoFocus
         });
-        const slots = (0, import_react103.useMemo)(
+        const slots = (0, import_react121.useMemo)(
           () => (0, import_theme.snippet)({
             ...variantProps2,
             disableAnimation
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation]
         );
-        const symbolBefore = (0, import_react103.useMemo)(() => {
+        const symbolBefore = (0, import_react121.useMemo)(() => {
           if (!symbol || typeof symbol !== "string") return symbol;
           const str = symbol.trim();
           return str ? `${str} ` : "";
         }, [symbol]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getSnippetProps = (0, import_react103.useCallback)(
+        const getSnippetProps = (0, import_react121.useCallback)(
           () => ({
             className: slots.base({
               class: baseStyles
@@ -125181,7 +125183,7 @@
           }),
           [slots, baseStyles, isMultiLine, otherProps]
         );
-        const onCopy = (0, import_react103.useCallback)(() => {
+        const onCopy = (0, import_react121.useCallback)(() => {
           var _a2;
           if (disableCopy) {
             return;
@@ -125211,7 +125213,7 @@
           isIconOnly: true,
           ...userButtonProps
         };
-        const getCopyButtonProps = (0, import_react103.useCallback)(
+        const getCopyButtonProps = (0, import_react121.useCallback)(
           () => ({
             ...copyButtonProps,
             "data-copied": (0, import_shared_utils.dataAttr)(copied),
@@ -125259,7 +125261,7 @@
       var import_shared_icons = require_dist17();
       var import_button = require_dist28();
       var import_shared_utils2 = require_dist2();
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Snippet = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -125269,8 +125271,8 @@
           slots,
           classNames,
           copied,
-          copyIcon = /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_shared_icons.CopyLinearIcon, {}),
-          checkIcon = /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_shared_icons.CheckLinearIcon, {}),
+          copyIcon = /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_shared_icons.CopyLinearIcon, {}),
+          checkIcon = /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_shared_icons.CheckLinearIcon, {}),
           symbolBefore,
           disableCopy,
           disableTooltip,
@@ -125283,7 +125285,7 @@
           getCopyButtonProps
         } = useSnippet({ ...props, ref });
         const TooltipContent = (0, import_react210.useCallback)(
-          ({ children: children2 }) => /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_tooltip.Tooltip, { ...tooltipProps, isDisabled: copied || tooltipProps.isDisabled, children: children2 }),
+          ({ children: children2 }) => /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_tooltip.Tooltip, { ...tooltipProps, isDisabled: copied || tooltipProps.isDisabled, children: children2 }),
           [(0, import_shared_utils2.objectToDeps)(tooltipProps)]
         );
         const contents = (0, import_react210.useMemo)(() => {
@@ -125292,14 +125294,14 @@
           }
           const clonedCheckIcon = checkIcon && (0, import_react210.cloneElement)(checkIcon, { className: slots.checkIcon() });
           const clonedCopyIcon = copyIcon && (0, import_react210.cloneElement)(copyIcon, { className: slots.copyIcon() });
-          const copyButton = /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(import_button.Button, { ...getCopyButtonProps(), children: [
+          const copyButton = /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(import_button.Button, { ...getCopyButtonProps(), children: [
             clonedCheckIcon,
             clonedCopyIcon
           ] });
           if (disableTooltip) {
             return copyButton;
           }
-          return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(TooltipContent, { children: copyButton });
+          return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(TooltipContent, { children: copyButton });
         }, [
           slots,
           classNames == null ? void 0 : classNames.copyButton,
@@ -125314,17 +125316,17 @@
         ]);
         const preContent = (0, import_react210.useMemo)(() => {
           if (isMultiLine && children && Array.isArray(children)) {
-            return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children: children.map((t, index3) => /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("pre", { className: slots.pre({ class: classNames == null ? void 0 : classNames.pre }), children: [
-              !hideSymbol && /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { className: slots.symbol({ class: classNames == null ? void 0 : classNames.symbol }), children: symbolBefore }),
+            return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("div", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children: children.map((t, index3) => /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)("pre", { className: slots.pre({ class: classNames == null ? void 0 : classNames.pre }), children: [
+              !hideSymbol && /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("span", { className: slots.symbol({ class: classNames == null ? void 0 : classNames.symbol }), children: symbolBefore }),
               t
             ] }, `${index3}-${t}`)) });
           }
-          return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("pre", { ref: preRef, className: slots.pre({ class: classNames == null ? void 0 : classNames.pre }), children: [
-            !hideSymbol && /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { className: slots.symbol({ class: classNames == null ? void 0 : classNames.symbol }), children: symbolBefore }),
+          return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)("pre", { ref: preRef, className: slots.pre({ class: classNames == null ? void 0 : classNames.pre }), children: [
+            !hideSymbol && /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("span", { className: slots.symbol({ class: classNames == null ? void 0 : classNames.symbol }), children: symbolBefore }),
             children
           ] });
         }, [children, hideSymbol, isMultiLine, symbolBefore, classNames == null ? void 0 : classNames.pre, slots]);
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(Component2, { ref: domRef, ...getSnippetProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(Component2, { ref: domRef, ...getSnippetProps(), children: [
           preContent,
           contents
         ] });
@@ -125401,7 +125403,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist11();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
       var import_use_safe_layout_effect = require_dist21();
@@ -125436,10 +125438,10 @@
           ...otherProps
         } = props;
         const Component2 = as || "label";
-        const domRef = (0, import_react103.useRef)(null);
-        const inputRef = (0, import_react103.useRef)(null);
+        const domRef = (0, import_react121.useRef)(null);
+        const inputRef = (0, import_react121.useRef)(null);
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        const labelId = (0, import_react103.useId)();
+        const labelId = (0, import_react121.useId)();
         const ariaSwitchProps = (0, import_react210.useMemo)(() => {
           const ariaLabel = otherProps["aria-label"] || typeof children === "string" ? children : void 0;
           return {
@@ -125506,7 +125508,7 @@
             "data-pressed": (0, import_shared_utils.dataAttr)(pressed)
           };
         };
-        const getWrapperProps = (0, import_react103.useCallback)(
+        const getWrapperProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -125525,14 +125527,14 @@
             onChange: (0, import_shared_utils.chain)(onChange, inputProps.onChange)
           };
         };
-        const getThumbProps = (0, import_react103.useCallback)(
+        const getThumbProps = (0, import_react121.useCallback)(
           (props2 = {}) => ({
             ...props2,
             className: slots.thumb({ class: (0, import_theme.cn)(classNames == null ? void 0 : classNames.thumb, props2 == null ? void 0 : props2.className) })
           }),
           [slots, classNames == null ? void 0 : classNames.thumb]
         );
-        const getLabelProps = (0, import_react103.useCallback)(
+        const getLabelProps = (0, import_react121.useCallback)(
           (props2 = {}) => ({
             ...props2,
             id: labelId,
@@ -125540,7 +125542,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.label, isDisabled, isSelected]
         );
-        const getThumbIconProps = (0, import_react103.useCallback)(
+        const getThumbIconProps = (0, import_react121.useCallback)(
           (props2 = {
             includeStateProps: false
           }) => (0, import_shared_utils.mergeProps)(
@@ -125555,7 +125557,7 @@
           ),
           [slots, classNames == null ? void 0 : classNames.thumbIcon, isSelected]
         );
-        const getStartContentProps = (0, import_react103.useCallback)(
+        const getStartContentProps = (0, import_react121.useCallback)(
           (props2 = {}) => ({
             width: "1em",
             height: "1em",
@@ -125564,7 +125566,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.startContent, isSelected]
         );
-        const getEndContentProps = (0, import_react103.useCallback)(
+        const getEndContentProps = (0, import_react121.useCallback)(
           (props2 = {}) => ({
             width: "1em",
             height: "1em",
@@ -125598,7 +125600,7 @@
           getEndContentProps
         };
       }
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Switch2 = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -125618,14 +125620,14 @@
         const clonedThumbIcon = typeof thumbIcon === "function" ? thumbIcon(getThumbIconProps({ includeStateProps: true })) : thumbIcon && (0, import_react310.cloneElement)(thumbIcon, getThumbIconProps());
         const clonedStartContent = startContent && (0, import_react310.cloneElement)(startContent, getStartContentProps());
         const clonedEndContent = endContent && (0, import_react310.cloneElement)(endContent, getEndContentProps());
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(Component2, { ...getBaseProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("input", { ...getInputProps() }),
-          /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("span", { ...getWrapperProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(Component2, { ...getBaseProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("input", { ...getInputProps() }),
+          /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)("span", { ...getWrapperProps(), children: [
             startContent && clonedStartContent,
-            /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { ...getThumbProps(), children: thumbIcon && clonedThumbIcon }),
+            /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("span", { ...getThumbProps(), children: thumbIcon && clonedThumbIcon }),
             endContent && clonedEndContent
           ] }),
-          children && /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { ...getLabelProps(), children })
+          children && /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("span", { ...getLabelProps(), children })
         ] });
       });
       Switch2.displayName = "HeroUI.Switch";
@@ -125661,7 +125663,7 @@
         useUser: () => useUser
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
@@ -125687,12 +125689,12 @@
         const shouldFilterDOMProps = typeof Component2 === "string";
         const domRef = (0, import_react_utils2.useDOMRef)(ref);
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)({});
-        const canBeFocused = (0, import_react103.useMemo)(() => {
+        const canBeFocused = (0, import_react121.useMemo)(() => {
           return isFocusable || as === "button";
         }, [isFocusable, as]);
-        const slots = (0, import_react103.useMemo)(() => (0, import_theme.user)(), []);
+        const slots = (0, import_react121.useMemo)(() => (0, import_theme.user)(), []);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getUserProps = (0, import_react103.useCallback)(
+        const getUserProps = (0, import_react121.useCallback)(
           () => ({
             ref: domRef,
             tabIndex: canBeFocused ? 0 : -1,
@@ -125724,17 +125726,17 @@
       }
       var import_system = require_dist11();
       var import_avatar = require_dist23();
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var User = (0, import_system.forwardRef)((props, ref) => {
         const { Component: Component2, name, slots, classNames, description, avatarProps, getUserProps } = useUser({
           ...props,
           ref
         });
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(Component2, { ...getUserProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_avatar.Avatar, { ...avatarProps }),
-          /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { className: slots.name({ class: classNames == null ? void 0 : classNames.name }), children: name }),
-            /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { className: slots.description({ class: classNames == null ? void 0 : classNames.description }), children: description })
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(Component2, { ...getUserProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_avatar.Avatar, { ...avatarProps }),
+          /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("span", { className: slots.name({ class: classNames == null ? void 0 : classNames.name }), children: name }),
+            /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("span", { className: slots.description({ class: classNames == null ? void 0 : classNames.description }), children: description })
           ] })
         ] });
       });
@@ -125769,12 +125771,12 @@
         useIsMounted: () => useIsMounted2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useIsMounted2(props = {}) {
         const { rerender = false, delay: delay2 = 0 } = props;
-        const isMountedRef = (0, import_react103.useRef)(false);
-        const [isMounted, setIsMounted] = (0, import_react103.useState)(false);
-        (0, import_react103.useEffect)(() => {
+        const isMountedRef = (0, import_react121.useRef)(false);
+        const [isMounted, setIsMounted] = (0, import_react121.useState)(false);
+        (0, import_react121.useEffect)(() => {
           isMountedRef.current = true;
           let timer = null;
           if (rerender) {
@@ -125796,7 +125798,7 @@
             }
           };
         }, [rerender]);
-        return [(0, import_react103.useCallback)(() => isMountedRef.current, []), isMounted];
+        return [(0, import_react121.useCallback)(() => isMountedRef.current, []), isMounted];
       }
     }
   });
@@ -125891,7 +125893,7 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_is_mounted2 = require_dist50();
       var import_progress3 = require_dist51();
       function useProgress(originalProps) {
@@ -125936,7 +125938,7 @@
           "aria-labelledby": originalProps["aria-labelledby"],
           "aria-label": originalProps["aria-label"]
         });
-        const slots = (0, import_react103.useMemo)(
+        const slots = (0, import_react121.useMemo)(
           () => (0, import_theme.progress)({
             ...variantProps2,
             disableAnimation
@@ -125944,11 +125946,11 @@
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation]
         );
         const selfMounted = disableAnimation ? true : isMounted;
-        const percentage = (0, import_react103.useMemo)(
+        const percentage = (0, import_react121.useMemo)(
           () => isIndeterminate || !selfMounted ? void 0 : (0, import_shared_utils.clampPercentage)((value - minValue) / (maxValue - minValue) * 100),
           [selfMounted, isIndeterminate, value, minValue, maxValue]
         );
-        const getProgressBarProps = (0, import_react103.useCallback)(
+        const getProgressBarProps = (0, import_react121.useCallback)(
           (props2 = {}) => ({
             ref: domRef,
             "data-indeterminate": (0, import_shared_utils.dataAttr)(isIndeterminate),
@@ -125966,7 +125968,7 @@
             otherProps
           ]
         );
-        const getLabelProps = (0, import_react103.useCallback)(
+        const getLabelProps = (0, import_react121.useCallback)(
           (props2 = {}) => ({
             className: slots.label({ class: classNames == null ? void 0 : classNames.label }),
             ...(0, import_shared_utils.mergeProps)(labelProps, props2)
@@ -125985,8 +125987,8 @@
           getLabelProps
         };
       }
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var Progress = (0, import_system2.forwardRef)((props, ref) => {
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var Progress2 = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
           slots,
@@ -125999,12 +126001,12 @@
         } = useProgress({ ...props, ref });
         const progressBarProps = getProgressBarProps();
         const shouldShowLabelWrapper = label || showValueLabel;
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(Component2, { ...progressBarProps, children: [
-          shouldShowLabelWrapper ? /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { className: slots.labelWrapper({ class: classNames == null ? void 0 : classNames.labelWrapper }), children: [
-            label && /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { ...getLabelProps(), children: label }),
-            showValueLabel && /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { className: slots.value({ class: classNames == null ? void 0 : classNames.value }), children: progressBarProps["aria-valuetext"] })
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(Component2, { ...progressBarProps, children: [
+          shouldShowLabelWrapper ? /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)("div", { className: slots.labelWrapper({ class: classNames == null ? void 0 : classNames.labelWrapper }), children: [
+            label && /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("span", { ...getLabelProps(), children: label }),
+            showValueLabel && /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("span", { className: slots.value({ class: classNames == null ? void 0 : classNames.value }), children: progressBarProps["aria-valuetext"] })
           ] }) : null,
-          /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { className: slots.track({ class: classNames == null ? void 0 : classNames.track }), children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("div", { className: slots.track({ class: classNames == null ? void 0 : classNames.track }), children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
             "div",
             {
               className: slots.indicator({ class: classNames == null ? void 0 : classNames.indicator }),
@@ -126015,8 +126017,8 @@
           ) })
         ] });
       });
-      Progress.displayName = "HeroUI.Progress";
-      var progress_default = Progress;
+      Progress2.displayName = "HeroUI.Progress";
+      var progress_default = Progress2;
       var import_system4 = require_dist11();
       var import_system3 = require_dist11();
       var import_theme2 = require_dist12();
@@ -126978,7 +126980,7 @@
       var import_interactions = require_main17();
       var import_shared_utils = require_dist2();
       var import_utils8 = require_main38();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_textfield = require_main40();
       var import_form = require_dist33();
       function useInput(originalProps) {
@@ -127008,13 +127010,13 @@
           },
           ...otherProps
         } = props;
-        const handleValueChange = (0, import_react103.useCallback)(
+        const handleValueChange = (0, import_react121.useCallback)(
           (value) => {
             onValueChange(value != null ? value : "");
           },
           [onValueChange]
         );
-        const [isFocusWithin, setFocusWithin] = (0, import_react103.useState)(false);
+        const [isFocusWithin, setFocusWithin] = (0, import_react121.useState)(false);
         const Component2 = as || "div";
         const disableAnimation = (_c = (_b = originalProps.disableAnimation) != null ? _b : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _c : false;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
@@ -127034,7 +127036,7 @@
         const isHiddenType = type === "hidden";
         const isMultiline = originalProps.isMultiline;
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className, isFilled ? "is-filled" : "");
-        const handleClear = (0, import_react103.useCallback)(() => {
+        const handleClear = (0, import_react121.useCallback)(() => {
           var _a2;
           if (isFileTypeInput) {
             domRef.current.value = "";
@@ -127111,7 +127113,7 @@
         const hasStartContent = !!startContent;
         const isLabelOutside = shouldLabelBeOutside ? isOutsideLeft || isOutsideTop || hasPlaceholder || labelPlacement === "outside" && hasStartContent : false;
         const isLabelOutsideAsPlaceholder = labelPlacement === "outside" && !hasPlaceholder && !hasStartContent;
-        const slots = (0, import_react103.useMemo)(
+        const slots = (0, import_react121.useMemo)(
           () => (0, import_theme.input)({
             ...variantProps2,
             isInvalid,
@@ -127128,7 +127130,7 @@
             disableAnimation
           ]
         );
-        const getBaseProps = (0, import_react103.useCallback)(
+        const getBaseProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ref: baseDomRef,
@@ -127181,7 +127183,7 @@
             originalProps.isDisabled
           ]
         );
-        const getLabelProps = (0, import_react103.useCallback)(
+        const getLabelProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "label",
@@ -127191,7 +127193,7 @@
           },
           [slots, isLabelHovered, labelProps, classNames == null ? void 0 : classNames.label]
         );
-        const handleKeyDown = (0, import_react103.useCallback)(
+        const handleKeyDown = (0, import_react121.useCallback)(
           (e) => {
             if (e.key === "Escape" && inputValue && (isClearable || onClear) && !originalProps.isReadOnly) {
               setInputValue("");
@@ -127200,7 +127202,7 @@
           },
           [inputValue, setInputValue, onClear, isClearable, originalProps.isReadOnly]
         );
-        const getInputProps = (0, import_react103.useCallback)(
+        const getInputProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "input",
@@ -127250,7 +127252,7 @@
             handleKeyDown
           ]
         );
-        const getInputWrapperProps = (0, import_react103.useCallback)(
+        const getInputWrapperProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ref: inputWrapperRef,
@@ -127283,7 +127285,7 @@
             classNames == null ? void 0 : classNames.inputWrapper
           ]
         );
-        const getInnerWrapperProps = (0, import_react103.useCallback)(
+        const getInnerWrapperProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -127301,7 +127303,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.innerWrapper]
         );
-        const getMainWrapperProps = (0, import_react103.useCallback)(
+        const getMainWrapperProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -127313,7 +127315,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.mainWrapper]
         );
-        const getHelperWrapperProps = (0, import_react103.useCallback)(
+        const getHelperWrapperProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -127325,7 +127327,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getDescriptionProps = (0, import_react103.useCallback)(
+        const getDescriptionProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -127336,7 +127338,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.description]
         );
-        const getErrorMessageProps = (0, import_react103.useCallback)(
+        const getErrorMessageProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -127347,7 +127349,7 @@
           },
           [slots, errorMessageProps, classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getClearButtonProps = (0, import_react103.useCallback)(
+        const getClearButtonProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -127398,7 +127400,7 @@
           getClearButtonProps
         };
       }
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Input = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -127425,10 +127427,10 @@
           getErrorMessageProps,
           getClearButtonProps
         } = useInput({ ...props, ref });
-        const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("label", { ...getLabelProps(), children: label }) : null;
+        const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("label", { ...getLabelProps(), children: label }) : null;
         const end = (0, import_react210.useMemo)(() => {
           if (isClearable) {
-            return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("button", { ...getClearButtonProps(), children: endContent || /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_shared_icons.CloseFilledIcon, {}) });
+            return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("button", { ...getClearButtonProps(), children: endContent || /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_shared_icons.CloseFilledIcon, {}) });
           }
           return endContent;
         }, [isClearable, getClearButtonProps]);
@@ -127436,7 +127438,7 @@
           const shouldShowError = isInvalid && errorMessage;
           const hasContent = shouldShowError || description;
           if (!hasHelper || !hasContent) return null;
-          return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { ...getHelperWrapperProps(), children: shouldShowError ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { ...getErrorMessageProps(), children: errorMessage }) : /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { ...getDescriptionProps(), children: description }) });
+          return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("div", { ...getHelperWrapperProps(), children: shouldShowError ? /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("div", { ...getErrorMessageProps(), children: errorMessage }) : /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("div", { ...getDescriptionProps(), children: description }) });
         }, [
           hasHelper,
           isInvalid,
@@ -127447,24 +127449,24 @@
           getDescriptionProps
         ]);
         const innerWrapper = (0, import_react210.useMemo)(() => {
-          return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { ...getInnerWrapperProps(), children: [
+          return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)("div", { ...getInnerWrapperProps(), children: [
             startContent,
-            /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("input", { ...getInputProps() }),
+            /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("input", { ...getInputProps() }),
             end
           ] });
         }, [startContent, end, getInputProps, getInnerWrapperProps]);
         const mainWrapper = (0, import_react210.useMemo)(() => {
           if (shouldLabelBeOutside) {
-            return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { ...getMainWrapperProps(), children: [
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { ...getInputWrapperProps(), children: [
+            return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)("div", { ...getMainWrapperProps(), children: [
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)("div", { ...getInputWrapperProps(), children: [
                 !isOutsideLeft && !isOutsideTop ? labelContent : null,
                 innerWrapper
               ] }),
               helperWrapper
             ] });
           }
-          return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(import_jsx_runtime49.Fragment, { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { ...getInputWrapperProps(), children: [
+          return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(import_jsx_runtime64.Fragment, { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)("div", { ...getInputWrapperProps(), children: [
               labelContent,
               innerWrapper
             ] }),
@@ -127483,7 +127485,7 @@
           getErrorMessageProps,
           getDescriptionProps
         ]);
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(Component2, { ...getBaseProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(Component2, { ...getBaseProps(), children: [
           isOutsideLeft || isOutsideTop ? labelContent : null,
           mainWrapper
         ] });
@@ -127763,7 +127765,7 @@
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_aria_utils = require_dist13();
       var import_overlays = require_main9();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       var import_use_safe_layout_effect = require_dist21();
       var import_use_aria_overlay = require_dist45();
@@ -127831,7 +127833,7 @@
           if (!updatePositionDeps.length) return;
           updatePosition();
         }, updatePositionDeps);
-        (0, import_react103.useEffect)(() => {
+        (0, import_react121.useEffect)(() => {
           var _a, _b;
           if (state.isOpen && popoverRef.current) {
             if (isNonModal) {
@@ -128068,15 +128070,15 @@
         name: "PopoverContext",
         errorMessage: "usePopoverContext: `context` is undefined. Seems you forgot to wrap all popover components within `<Popover />`"
       });
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Popover = (0, import_system2.forwardRef)((props, ref) => {
         const { children, ...otherProps } = props;
         const context = usePopover({ ...otherProps, ref });
         const [trigger, content] = import_react310.Children.toArray(children);
-        const overlay = /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_overlays4.Overlay, { portalContainer: context.portalContainer, children: content });
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(PopoverProvider, { value: context, children: [
+        const overlay = /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_overlays4.Overlay, { portalContainer: context.portalContainer, children: content });
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(PopoverProvider, { value: context, children: [
           trigger,
-          context.disableAnimation && context.isOpen ? overlay : /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_framer_motion2.AnimatePresence, { children: context.isOpen ? overlay : null })
+          context.disableAnimation && context.isOpen ? overlay : /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_framer_motion2.AnimatePresence, { children: context.isOpen ? overlay : null })
         ] });
       });
       Popover.displayName = "HeroUI.Popover";
@@ -129581,7 +129583,7 @@
       var import_theme = require_dist12();
       var import_tree = require_main12();
       var import_react_utils = require_dist10();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme2 = require_dist12();
       function useMenu(props) {
         var _a;
@@ -129614,7 +129616,7 @@
         const innerState = (0, import_tree.useTreeState)({ ...otherProps, ...userMenuProps, children });
         const state = propState || innerState;
         const { menuProps } = (0, import_menu.useMenu)({ ...otherProps, ...userMenuProps, onAction }, state, domRef);
-        const slots = (0, import_react103.useMemo)(() => (0, import_theme.menu)({ className }), [className]);
+        const slots = (0, import_react121.useMemo)(() => (0, import_theme.menu)({ className }), [className]);
         const baseStyles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.base, className);
         const getBaseProps = (props2 = {}) => {
           return {
@@ -129848,10 +129850,10 @@
           getSelectedIconProps
         };
       }
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       function MenuSelectedIcon(props) {
         const { isSelected, disableAnimation, ...otherProps } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
           "svg",
           {
             "aria-hidden": "true",
@@ -129859,7 +129861,7 @@
             role: "presentation",
             viewBox: "0 0 17 18",
             ...otherProps,
-            children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
               "polyline",
               {
                 fill: "none",
@@ -130272,7 +130274,7 @@
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
       var import_react_utils2 = require_dist10();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var getMenuItem = (props, key) => {
         if (props) {
           const mergedChildren = Array.isArray(props.children) ? props.children : [...(props == null ? void 0 : props.items) || []];
@@ -130316,10 +130318,10 @@
           ...otherProps
         } = props;
         const Component2 = as || "div";
-        const triggerRef = (0, import_react103.useRef)(null);
+        const triggerRef = (0, import_react121.useRef)(null);
         const menuTriggerRef = triggerRefProp || triggerRef;
-        const menuRef = (0, import_react103.useRef)(null);
-        const popoverRef = (0, import_react103.useRef)(null);
+        const menuRef = (0, import_react121.useRef)(null);
+        const popoverRef = (0, import_react121.useRef)(null);
         const state = (0, import_menu.useMenuTriggerState)({
           trigger,
           isOpen,
@@ -130336,7 +130338,7 @@
           state,
           menuTriggerRef
         );
-        const styles = (0, import_react103.useMemo)(
+        const styles = (0, import_react121.useMemo)(
           () => (0, import_theme.dropdown)({
             className
           }),
@@ -130399,12 +130401,12 @@
           getMenuTriggerProps
         };
       }
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Dropdown = (props) => {
         const { children, ...otherProps } = props;
         const context = useDropdown(otherProps);
         const [menuTrigger, menu] = import_react210.default.Children.toArray(children);
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(DropdownProvider, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(import_popover.Popover, { ...context.getPopoverProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(DropdownProvider, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(import_popover.Popover, { ...context.getPopoverProps(), children: [
           menuTrigger,
           menu
         ] }) });
@@ -130463,7 +130465,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist11();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
@@ -130548,7 +130550,7 @@
             }
           };
         };
-        const getWrapperProps = (0, import_react103.useCallback)(() => {
+        const getWrapperProps = (0, import_react121.useCallback)(() => {
           const fallbackStyle = showFallback ? {
             backgroundImage: `url(${fallbackSrc})`
           } : {};
@@ -130560,7 +130562,7 @@
             }
           };
         }, [slots, showFallback, fallbackSrc, classNames == null ? void 0 : classNames.wrapper, w]);
-        const getBlurredImgProps = (0, import_react103.useCallback)(() => {
+        const getBlurredImgProps = (0, import_react121.useCallback)(() => {
           return {
             src,
             "aria-hidden": (0, import_shared_utils.dataAttr)(true),
@@ -130583,7 +130585,7 @@
           getBlurredImgProps
         };
       }
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Image2 = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -130602,19 +130604,19 @@
           ...props,
           ref
         });
-        const img = /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(Component2, { ref: domRef, ...getImgProps() });
+        const img = /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(Component2, { ref: domRef, ...getImgProps() });
         if (removeWrapper) {
           return img;
         }
-        const zoomed = /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { className: slots.zoomedWrapper({ class: classNames == null ? void 0 : classNames.zoomedWrapper }), children: img });
+        const zoomed = /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("div", { className: slots.zoomedWrapper({ class: classNames == null ? void 0 : classNames.zoomedWrapper }), children: img });
         if (isBlurred) {
-          return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { ...getWrapperProps(), children: [
+          return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)("div", { ...getWrapperProps(), children: [
             isZoomed ? zoomed : img,
             (0, import_react310.cloneElement)(img, getBlurredImgProps())
           ] });
         }
         if (isZoomed || !disableSkeleton || fallbackSrc) {
-          return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { ...getWrapperProps(), children: [
+          return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)("div", { ...getWrapperProps(), children: [
             " ",
             isZoomed ? zoomed : img
           ] });
@@ -130654,7 +130656,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_overlays = require_main9();
       var import_utils8 = require_main4();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_aria_overlay = require_dist45();
       function useAriaModalOverlay(props = {
         shouldBlockScroll: true
@@ -130671,7 +130673,7 @@
           isDisabled: !state.isOpen || !props.shouldBlockScroll
         });
         (0, import_overlays.useOverlayFocusContain)();
-        (0, import_react103.useEffect)(() => {
+        (0, import_react121.useEffect)(() => {
           if (state.isOpen && ref.current) {
             return (0, import_overlays.ariaHideOutside)([ref.current]);
           }
@@ -130721,9 +130723,9 @@
         useViewportSize: () => useViewportSize
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react103 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
+      var import_react121 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
       var visualViewport = typeof document !== "undefined" && window.visualViewport;
-      var IsSSRContext = import_react103.default.createContext(false);
+      var IsSSRContext = import_react121.default.createContext(false);
       function getSnapshot() {
         return false;
       }
@@ -130735,15 +130737,15 @@
         };
       }
       function useIsSSR() {
-        if (typeof import_react103.default["useSyncExternalStore"] === "function") {
-          return import_react103.default["useSyncExternalStore"](subscribe, getSnapshot, getServerSnapshot);
+        if (typeof import_react121.default["useSyncExternalStore"] === "function") {
+          return import_react121.default["useSyncExternalStore"](subscribe, getSnapshot, getServerSnapshot);
         }
-        return (0, import_react103.useContext)(IsSSRContext);
+        return (0, import_react121.useContext)(IsSSRContext);
       }
       function useViewportSize() {
         let isSSR = useIsSSR();
-        let [size, setSize] = (0, import_react103.useState)(() => isSSR ? { width: 0, height: 0 } : getViewportSize());
-        (0, import_react103.useEffect)(() => {
+        let [size, setSize] = (0, import_react121.useState)(() => isSSR ? { width: 0, height: 0 } : getViewportSize());
+        (0, import_react121.useEffect)(() => {
           let onResize = () => {
             setSize((size2) => {
               let newSize = getViewportSize();
@@ -130919,7 +130921,7 @@
       var import_utils8 = require_main4();
       var import_utils22 = require_main46();
       var import_use_callback_ref = require_dist31();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useDisclosure2(props = {}) {
         const {
           id: idProp,
@@ -130933,22 +130935,22 @@
         const onOpenPropCallbackRef = (0, import_use_callback_ref.useCallbackRef)(onOpenProp);
         const onClosePropCallbackRef = (0, import_use_callback_ref.useCallbackRef)(onCloseProp);
         const [isOpen, setIsOpen] = (0, import_utils22.useControlledState)(isOpenProp, defaultOpen || false, onChange);
-        const reactId = (0, import_react103.useId)();
+        const reactId = (0, import_react121.useId)();
         const id4 = idProp || reactId;
         const isControlled = isOpenProp !== void 0;
-        const onClose = (0, import_react103.useCallback)(() => {
+        const onClose = (0, import_react121.useCallback)(() => {
           if (!isControlled) {
             setIsOpen(false);
           }
           onClosePropCallbackRef == null ? void 0 : onClosePropCallbackRef();
         }, [isControlled, onClosePropCallbackRef]);
-        const onOpen = (0, import_react103.useCallback)(() => {
+        const onOpen = (0, import_react121.useCallback)(() => {
           if (!isControlled) {
             setIsOpen(true);
           }
           onOpenPropCallbackRef == null ? void 0 : onOpenPropCallbackRef();
         }, [isControlled, onOpenPropCallbackRef]);
-        const onOpenChange = (0, import_react103.useCallback)(() => {
+        const onOpenChange = (0, import_react121.useCallback)(() => {
           const action = isOpen ? onClose : onOpen;
           action();
         }, [isOpen, onOpen, onClose]);
@@ -133064,15 +133066,15 @@
         useDraggable: () => useDraggable2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_interactions = require_main47();
       function useDraggable2(props) {
         const { targetRef, isDisabled = false, canOverflow = false } = props;
-        const boundary = (0, import_react103.useRef)({ minLeft: 0, minTop: 0, maxLeft: 0, maxTop: 0 });
-        const isDragging2 = (0, import_react103.useRef)(false);
-        const transform2 = (0, import_react103.useRef)({ offsetX: 0, offsetY: 0 });
-        const prevTargetRef = (0, import_react103.useRef)(null);
-        (0, import_react103.useEffect)(() => {
+        const boundary = (0, import_react121.useRef)({ minLeft: 0, minTop: 0, maxLeft: 0, maxTop: 0 });
+        const isDragging2 = (0, import_react121.useRef)(false);
+        const transform2 = (0, import_react121.useRef)({ offsetX: 0, offsetY: 0 });
+        const prevTargetRef = (0, import_react121.useRef)(null);
+        (0, import_react121.useEffect)(() => {
           var _a;
           const currentTarget = (_a = targetRef == null ? void 0 : targetRef.current) != null ? _a : null;
           if (prevTargetRef.current !== currentTarget) {
@@ -133080,7 +133082,7 @@
             prevTargetRef.current = currentTarget;
           }
         }, [targetRef == null ? void 0 : targetRef.current]);
-        const onMoveStart = (0, import_react103.useCallback)(() => {
+        const onMoveStart = (0, import_react121.useCallback)(() => {
           var _a, _b, _c, _d, _e;
           isDragging2.current = true;
           const { offsetX, offsetY } = transform2.current;
@@ -133102,7 +133104,7 @@
             maxTop
           };
         }, [targetRef]);
-        const onMove = (0, import_react103.useCallback)(
+        const onMove = (0, import_react121.useCallback)(
           (e) => {
             if (isDisabled) {
               return;
@@ -133125,7 +133127,7 @@
           },
           [isDisabled, canOverflow, targetRef]
         );
-        const onMoveEnd = (0, import_react103.useCallback)(() => {
+        const onMoveEnd = (0, import_react121.useCallback)(() => {
           isDragging2.current = false;
         }, []);
         const { moveProps } = (0, import_interactions.useMove)({
@@ -133133,12 +133135,12 @@
           onMove,
           onMoveEnd
         });
-        const preventDefault = (0, import_react103.useCallback)((e) => {
+        const preventDefault = (0, import_react121.useCallback)((e) => {
           if (isDragging2.current) {
             e.preventDefault();
           }
         }, []);
-        (0, import_react103.useEffect)(() => {
+        (0, import_react121.useEffect)(() => {
           if (!isDisabled) {
             document.body.addEventListener("touchmove", preventDefault, { passive: false });
           }
@@ -133196,7 +133198,7 @@
       var import_overlays2 = require_main9();
       var import_system2 = require_dist11();
       var import_use_aria_modal_overlay = require_dist59();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist12();
       var import_system = require_dist11();
       var import_use_aria_button = require_dist27();
@@ -133228,13 +133230,13 @@
         } = props;
         const Component2 = as || "section";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const closeButtonRef = (0, import_react103.useRef)(null);
-        const [headerMounted, setHeaderMounted] = (0, import_react103.useState)(false);
-        const [bodyMounted, setBodyMounted] = (0, import_react103.useState)(false);
+        const closeButtonRef = (0, import_react121.useRef)(null);
+        const [headerMounted, setHeaderMounted] = (0, import_react121.useState)(false);
+        const [bodyMounted, setBodyMounted] = (0, import_react121.useState)(false);
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        const dialogId = (0, import_react103.useId)();
-        const headerId = (0, import_react103.useId)();
-        const bodyId = (0, import_react103.useId)();
+        const dialogId = (0, import_react121.useId)();
+        const headerId = (0, import_react121.useId)();
+        const bodyId = (0, import_react121.useId)();
         const state = (0, import_overlays.useOverlayTriggerState)({
           isOpen,
           defaultOpen,
@@ -133257,7 +133259,7 @@
         const { buttonProps: closeButtonProps } = (0, import_use_aria_button.useAriaButton)({ onPress: state.close }, closeButtonRef);
         const { isFocusVisible: isCloseButtonFocusVisible, focusProps: closeButtonFocusProps } = (0, import_focus2.useFocusRing)();
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react103.useMemo)(
+        const slots = (0, import_react121.useMemo)(
           () => (0, import_theme.modal)({
             ...variantProps2,
             disableAnimation
@@ -133279,7 +133281,7 @@
             "aria-describedby": bodyMounted ? bodyId : void 0
           };
         };
-        const getBackdropProps = (0, import_react103.useCallback)(
+        const getBackdropProps = (0, import_react121.useCallback)(
           (props2 = {}) => ({
             className: slots.backdrop({ class: classNames == null ? void 0 : classNames.backdrop }),
             ...underlayProps,
@@ -133326,12 +133328,12 @@
         name: "ModalContext",
         errorMessage: "useModalContext: `context` is undefined. Seems you forgot to wrap all popover components within `<Modal />`"
       });
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Modal = (0, import_system2.forwardRef)((props, ref) => {
         const { children, ...otherProps } = props;
         const context = useModal({ ...otherProps, ref });
-        const overlay = /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_overlays2.Overlay, { portalContainer: context.portalContainer, children });
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(ModalProvider, { value: context, children: context.disableAnimation && context.isOpen ? overlay : /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_framer_motion2.AnimatePresence, { children: context.isOpen ? overlay : null }) });
+        const overlay = /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_overlays2.Overlay, { portalContainer: context.portalContainer, children });
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(ModalProvider, { value: context, children: context.disableAnimation && context.isOpen ? overlay : /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_framer_motion2.AnimatePresence, { children: context.isOpen ? overlay : null }) });
       });
       Modal.displayName = "HeroUI.Modal";
       var modal_default = Modal;
@@ -133525,13 +133527,13 @@
       var import_system5 = require_dist11();
       var import_react_utils5 = require_dist10();
       var import_theme4 = require_dist12();
-      var import_jsx_runtime52 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime510 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var ModalFooter = (0, import_system5.forwardRef)((props, ref) => {
         const { as, children, className, ...otherProps } = props;
         const { slots, classNames } = useModalContext();
         const domRef = (0, import_react_utils5.useDOMRef)(ref);
         const Component2 = as || "footer";
-        return /* @__PURE__ */ (0, import_jsx_runtime52.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime510.jsx)(
           Component2,
           {
             ref: domRef,
@@ -133574,7 +133576,7 @@
         useScrollPosition: () => useScrollPosition
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var isBrowser3 = typeof window !== "undefined";
       function getScrollPosition(element) {
         if (!isBrowser3) return { x: 0, y: 0 };
@@ -133585,11 +133587,11 @@
       }
       var useScrollPosition = (props) => {
         const { elementRef, delay: delay2 = 30, callback, isEnabled } = props;
-        const position = (0, import_react103.useRef)(
+        const position = (0, import_react121.useRef)(
           isEnabled ? getScrollPosition(elementRef == null ? void 0 : elementRef.current) : { x: 0, y: 0 }
         );
-        const throttleTimeout = (0, import_react103.useRef)(null);
-        const handler = (0, import_react103.useCallback)(() => {
+        const throttleTimeout = (0, import_react121.useRef)(null);
+        const handler = (0, import_react121.useCallback)(() => {
           const currPos = getScrollPosition(elementRef == null ? void 0 : elementRef.current);
           if (typeof callback === "function") {
             callback({ prevPos: position.current, currPos });
@@ -133597,7 +133599,7 @@
           position.current = currPos;
           throttleTimeout.current = null;
         }, [callback, elementRef]);
-        (0, import_react103.useEffect)(() => {
+        (0, import_react121.useEffect)(() => {
           if (!isEnabled) return;
           const handleScroll = () => {
             if (delay2) {
@@ -133651,9 +133653,9 @@
         useResizeObserver: () => useResizeObserver
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useResize(callback, immediatelyInvoke = true) {
-        (0, import_react103.useEffect)(() => {
+        (0, import_react121.useEffect)(() => {
           const fn = () => callback();
           if (immediatelyInvoke) {
             fn();
@@ -133667,7 +133669,7 @@
       }
       function useResizeObserver(options) {
         const { ref, box, onResize } = options;
-        (0, import_react103.useEffect)(() => {
+        (0, import_react121.useEffect)(() => {
           let element = ref == null ? void 0 : ref.current;
           if (!element) {
             return;
@@ -133891,7 +133893,7 @@
         useNavbarContext: () => useNavbarContext
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
@@ -133925,10 +133927,10 @@
         const Component2 = as || "nav";
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const prevWidth = (0, import_react103.useRef)(0);
-        const navHeight = (0, import_react103.useRef)(0);
-        const [isHidden, setIsHidden] = (0, import_react103.useState)(false);
-        const handleMenuOpenChange = (0, import_react103.useCallback)(
+        const prevWidth = (0, import_react121.useRef)(0);
+        const navHeight = (0, import_react121.useRef)(0);
+        const [isHidden, setIsHidden] = (0, import_react121.useState)(false);
+        const handleMenuOpenChange = (0, import_react121.useCallback)(
           (isOpen) => {
             onMenuOpenChange(isOpen || false);
           },
@@ -133965,12 +133967,12 @@
             }
           }
         });
-        (0, import_react103.useEffect)(() => {
+        (0, import_react121.useEffect)(() => {
           var _a2;
           updateWidth();
           navHeight.current = ((_a2 = domRef.current) == null ? void 0 : _a2.offsetHeight) || 0;
         }, []);
-        const slots = (0, import_react103.useMemo)(
+        const slots = (0, import_react121.useMemo)(
           () => (0, import_theme.navbar)({
             ...variantProps2,
             disableAnimation,
@@ -134072,7 +134074,7 @@
           }
         }
       };
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var domAnimation2 = () => Promise.resolve().then(() => (init_dist(), dist_exports)).then((res) => res.default);
       var NavbarMenu = (0, import_system2.forwardRef)((props, ref) => {
         var _a, _b;
@@ -134082,7 +134084,7 @@
         const styles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.menu, className);
         if (disableAnimation) {
           if (!isMenuOpen) return null;
-          return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_overlays2.Overlay, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_overlays2.Overlay, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
             "ul",
             {
               ref: domRef,
@@ -134097,7 +134099,7 @@
             }
           ) });
         }
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_framer_motion3.AnimatePresence, { mode: "wait", children: isMenuOpen ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_overlays2.Overlay, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_framer_motion3.AnimatePresence, { mode: "wait", children: isMenuOpen ? /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_overlays2.Overlay, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
           import_framer_motion3.m.ul,
           {
             ref: domRef,
@@ -134187,7 +134189,7 @@
       var import_react_utils7 = require_dist10();
       var import_shared_utils4 = require_dist2();
       var import_theme5 = require_dist12();
-      var import_jsx_runtime52 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime510 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var NavbarItem = (0, import_system6.forwardRef)((props, ref) => {
         var _a;
         const { as, className, children, isActive, ...otherProps } = props;
@@ -134195,7 +134197,7 @@
         const domRef = (0, import_react_utils7.useDOMRef)(ref);
         const { slots, classNames } = useNavbarContext();
         const styles = (0, import_theme5.cn)(classNames == null ? void 0 : classNames.item, className);
-        return /* @__PURE__ */ (0, import_jsx_runtime52.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime510.jsx)(
           Component2,
           {
             ref: domRef,
@@ -134217,7 +134219,7 @@
       var import_interactions = require_main17();
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme6 = require_dist12();
-      var import_jsx_runtime62 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime65 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var NavbarMenuToggle = (0, import_system7.forwardRef)((props, ref) => {
         var _a;
         const {
@@ -134245,7 +134247,7 @@
           if (typeof icon === "function") {
             return icon(isMenuOpen != null ? isMenuOpen : false);
           }
-          return icon || /* @__PURE__ */ (0, import_jsx_runtime62.jsx)("span", { className: slots.toggleIcon({ class: classNames == null ? void 0 : classNames.toggleIcon }) });
+          return icon || /* @__PURE__ */ (0, import_jsx_runtime65.jsx)("span", { className: slots.toggleIcon({ class: classNames == null ? void 0 : classNames.toggleIcon }) });
         }, [icon, isMenuOpen, slots.toggleIcon, classNames == null ? void 0 : classNames.toggleIcon]);
         const srOnlyText = (0, import_react210.useMemo)(() => {
           if (srOnlyTextProp) {
@@ -134253,7 +134255,7 @@
           }
           return state.isSelected ? "close navigation menu" : "open navigation menu";
         }, [srOnlyTextProp, isMenuOpen]);
-        return /* @__PURE__ */ (0, import_jsx_runtime62.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime65.jsxs)(
           Component2,
           {
             ref: domRef,
@@ -134264,7 +134266,7 @@
             "data-pressed": (0, import_shared_utils5.dataAttr)(isPressed),
             ...(0, import_shared_utils5.mergeProps)(buttonProps, focusProps, hoverProps, otherProps),
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime62.jsx)("span", { className: slots.srOnly(), children: srOnlyText }),
+              /* @__PURE__ */ (0, import_jsx_runtime65.jsx)("span", { className: slots.srOnly(), children: srOnlyText }),
               child
             ]
           }
@@ -140987,7 +140989,7 @@
         useTable: () => useTable
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_table = require_main50();
       var import_table2 = require_main53();
       var import_system = require_dist11();
@@ -141089,7 +141091,7 @@
             onCellAction
           ]
         );
-        const getBaseProps = (0, import_react103.useCallback)(
+        const getBaseProps = (0, import_react121.useCallback)(
           (props2) => ({
             ...props2,
             ref: domBaseRef,
@@ -141097,7 +141099,7 @@
           }),
           [baseStyles, slots]
         );
-        const getWrapperProps = (0, import_react103.useCallback)(
+        const getWrapperProps = (0, import_react121.useCallback)(
           (props2) => ({
             ...props2,
             ref: domBaseRef,
@@ -141105,7 +141107,7 @@
           }),
           [classNames == null ? void 0 : classNames.wrapper, slots]
         );
-        const getTableProps = (0, import_react103.useCallback)(
+        const getTableProps = (0, import_react121.useCallback)(
           (props2) => ({
             ...(0, import_shared_utils.mergeProps)(
               gridProps,
@@ -141151,7 +141153,7 @@
       var import_shared_utils2 = require_dist2();
       var import_table3 = require_main53();
       var import_theme2 = require_dist12();
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var TableRowGroup = (0, import_react310.forwardRef)((props, ref) => {
         var _a;
         const { as, className, children, slots, classNames, ...otherProps } = props;
@@ -141159,7 +141161,7 @@
         const domRef = (0, import_react_utils2.useDOMRef)(ref);
         const { rowGroupProps } = (0, import_table3.useTableRowGroup)();
         const theadStyles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.thead, className);
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
           Component2,
           {
             ref: domRef,
@@ -141345,7 +141347,7 @@
       var import_interactions2 = require_main17();
       var import_react510 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme6 = require_dist12();
-      var import_jsx_runtime52 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime510 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var TableRow = (0, import_system5.forwardRef)((props, ref) => {
         var _a, _b;
         const { as, className, children, node, slots, state, isSelectable, classNames, ...otherProps } = props;
@@ -141370,7 +141372,7 @@
             isOdd: isOdd2
           };
         }, [node, state.collection]);
-        return /* @__PURE__ */ (0, import_jsx_runtime52.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime510.jsx)(
           Component2,
           {
             ref: domRef,
@@ -141405,7 +141407,7 @@
       var import_table8 = require_main53();
       var import_focus4 = require_main18();
       var import_theme7 = require_dist12();
-      var import_jsx_runtime62 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime65 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var TableCell = (0, import_system6.forwardRef)((props, ref) => {
         var _a, _b, _c;
         const { as, className, node, rowKey, slots, state, classNames, ...otherProps } = props;
@@ -141418,10 +141420,10 @@
         const isRowSelected = state.selectionManager.isSelected(rowKey);
         const cell = (0, import_react610.useMemo)(() => {
           const cellType = typeof node.rendered;
-          return cellType !== "object" && cellType !== "function" ? /* @__PURE__ */ (0, import_jsx_runtime62.jsx)("span", { children: node.rendered }) : node.rendered;
+          return cellType !== "object" && cellType !== "function" ? /* @__PURE__ */ (0, import_jsx_runtime65.jsx)("span", { children: node.rendered }) : node.rendered;
         }, [node.rendered]);
         const columnProps = ((_b = node.column) == null ? void 0 : _b.props) || {};
-        return /* @__PURE__ */ (0, import_jsx_runtime62.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime65.jsx)(
           Component2,
           {
             ref: domRef,
@@ -142036,7 +142038,7 @@
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var spacing = {
         px: "1px",
         0: "0px",
@@ -142082,7 +142084,7 @@
         const [props, variantProps2] = (0, import_system_rsc.mapPropsVariants)(originalProps, import_theme.spacer.variantKeys);
         const { as, className, x = 1, y = 1, ...otherProps } = props;
         const Component2 = as || "span";
-        const styles = (0, import_react103.useMemo)(
+        const styles = (0, import_react121.useMemo)(
           () => (0, import_theme.spacer)({
             ...variantProps2,
             className
@@ -142105,10 +142107,10 @@
         });
         return { Component: Component2, getSpacerProps };
       }
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Spacer = (0, import_system_rsc2.forwardRef)((props, ref) => {
         const { Component: Component2, getSpacerProps } = useSpacer({ ...props });
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(Component2, { ref, ...getSpacerProps() });
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(Component2, { ref, ...getSpacerProps() });
       });
       Spacer.displayName = "HeroUI.Spacer";
       var spacer_default = Spacer;
@@ -142147,12 +142149,12 @@
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useKbd(originalProps) {
         const [props, variantProps2] = (0, import_system_rsc.mapPropsVariants)(originalProps, import_theme.kbd.variantKeys);
         const { as, children, className, keys: keys3, title, classNames, ...otherProps } = props;
         const Component2 = as || "kbd";
-        const slots = (0, import_react103.useMemo)(
+        const slots = (0, import_react121.useMemo)(
           () => (0, import_theme.kbd)({
             ...variantProps2
           }),
@@ -142215,13 +142217,13 @@
         win: "Win",
         alt: "Alt"
       };
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Kbd = (0, import_system_rsc2.forwardRef)((props, ref) => {
         const { Component: Component2, children, slots, classNames, keysToRender, getKbdProps } = useKbd({
           ...props
         });
         const keysContent = (0, import_react210.useMemo)(() => {
-          return keysToRender.map((key) => /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+          return keysToRender.map((key) => /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
             "abbr",
             {
               className: slots.abbr({ class: classNames == null ? void 0 : classNames.abbr }),
@@ -142231,9 +142233,9 @@
             key
           ));
         }, [keysToRender]);
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(Component2, { ref, ...getKbdProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(Component2, { ref, ...getKbdProps(), children: [
           keysContent,
-          children && /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children })
+          children && /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("span", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children })
         ] });
       });
       Kbd.displayName = "HeroUI.Kbd";
@@ -143095,7 +143097,7 @@
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
       var import_react_utils2 = require_dist10();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_tabs = require_main55();
       var import_tabs2 = require_main56();
       function useTabs(originalProps) {
@@ -143129,7 +143131,7 @@
           state,
           domRef
         );
-        const slots = (0, import_react103.useMemo)(
+        const slots = (0, import_react121.useMemo)(
           () => (0, import_theme.tabs)({
             ...variantProps2,
             disableAnimation,
@@ -143138,7 +143140,7 @@
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation, isVertical]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const values = (0, import_react103.useMemo)(
+        const values = (0, import_react121.useMemo)(
           () => ({
             state,
             slots,
@@ -143160,7 +143162,7 @@
             classNames
           ]
         );
-        const getBaseProps = (0, import_react103.useCallback)(
+        const getBaseProps = (0, import_react121.useCallback)(
           (props2) => ({
             "data-slot": "base",
             className: slots.base({ class: (0, import_theme.cn)(baseStyles, props2 == null ? void 0 : props2.className) }),
@@ -143173,7 +143175,7 @@
           }),
           [baseStyles, otherProps, slots]
         );
-        const getWrapperProps = (0, import_react103.useCallback)(
+        const getWrapperProps = (0, import_react121.useCallback)(
           (props2) => ({
             "data-slot": "tabWrapper",
             className: slots.tabWrapper({ class: (0, import_theme.cn)(classNames == null ? void 0 : classNames.tabWrapper, props2 == null ? void 0 : props2.className) }),
@@ -143182,7 +143184,7 @@
           }),
           [classNames, slots, placement, isVertical]
         );
-        const getTabListProps = (0, import_react103.useCallback)(
+        const getTabListProps = (0, import_react121.useCallback)(
           (props2) => ({
             ref: domRef,
             "data-slot": "tabList",
@@ -143191,7 +143193,7 @@
           }),
           [domRef, tabListProps, classNames, slots]
         );
-        const getTabCursorProps = (0, import_react103.useCallback)(
+        const getTabCursorProps = (0, import_react121.useCallback)(
           (props2) => ({
             "data-slot": "cursor",
             className: slots.cursor({
@@ -143220,7 +143222,7 @@
       var import_tabs3 = require_main56();
       var import_interactions = require_main17();
       var import_theme2 = require_dist12();
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Tab = (0, import_system2.forwardRef)((props, ref) => {
         var _a;
         const {
@@ -143265,7 +143267,7 @@
             boundary: listRef == null ? void 0 : listRef.current
           });
         };
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
           Component2,
           {
             ref: (0, import_react_utils3.mergeRefs)(domRef, tabRef),
@@ -143296,7 +143298,7 @@
             className: (_a = slots.tab) == null ? void 0 : _a.call(slots, { class: tabStyles }),
             title: otherProps == null ? void 0 : otherProps.titleValue,
             type: Component2 === "button" ? "button" : void 0,
-            children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
               "div",
               {
                 className: slots.tabContent({
@@ -143539,7 +143541,7 @@
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist11();
       function useSkeleton(originalProps) {
         var _a, _b;
@@ -143548,7 +143550,7 @@
         const { as, children, isLoaded = false, className, classNames, ...otherProps } = props;
         const Component2 = as || "div";
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        const slots = (0, import_react103.useMemo)(
+        const slots = (0, import_react121.useMemo)(
           () => (0, import_theme.skeleton)({
             ...variantProps2,
             disableAnimation
@@ -143570,10 +143572,10 @@
         };
         return { Component: Component2, children, slots, classNames, getSkeletonProps, getContentProps };
       }
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Skeleton = (0, import_system3.forwardRef)((props, ref) => {
         const { Component: Component2, children, getSkeletonProps, getContentProps } = useSkeleton({ ...props });
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(Component2, { ref, ...getSkeletonProps(), children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { ...getContentProps(), children }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(Component2, { ref, ...getSkeletonProps(), children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("div", { ...getContentProps(), children }) });
       });
       Skeleton.displayName = "HeroUI.Skeleton";
       var skeleton_default = Skeleton;
@@ -143607,7 +143609,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_shared_utils = require_dist2();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useDataScrollOverflow(props = {}) {
         const {
           domRef,
@@ -143618,8 +143620,8 @@
           onVisibilityChange,
           updateDeps = []
         } = props;
-        const visibleRef = (0, import_react103.useRef)(visibility);
-        (0, import_react103.useEffect)(() => {
+        const visibleRef = (0, import_react121.useRef)(visibility);
+        (0, import_react121.useEffect)(() => {
           const el = domRef == null ? void 0 : domRef.current;
           if (!el || !isEnabled) return;
           const setAttributes = (direction, hasBefore, hasAfter, prefix, suffix) => {
@@ -143721,7 +143723,7 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_use_data_scroll_overflow = require_dist72();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       function useScrollShadow(originalProps) {
         var _a;
@@ -143750,7 +143752,7 @@
           updateDeps: [children],
           overflowCheck: (_a = originalProps.orientation) != null ? _a : "vertical"
         });
-        const styles = (0, import_react103.useMemo)(
+        const styles = (0, import_react121.useMemo)(
           () => (0, import_theme.scrollShadow)({
             ...variantProps2,
             className
@@ -143774,10 +143776,10 @@
         };
         return { Component: Component2, styles, domRef, children, getBaseProps };
       }
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var ScrollShadow = (0, import_system2.forwardRef)((props, ref) => {
         const { Component: Component2, children, getBaseProps } = useScrollShadow({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(Component2, { ...getBaseProps(), children });
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(Component2, { ...getBaseProps(), children });
       });
       ScrollShadow.displayName = "HeroUI.ScrollShadow";
       var scroll_shadow_default = ScrollShadow;
@@ -144305,7 +144307,7 @@
       var import_theme = require_dist12();
       var import_list = require_main58();
       var import_react_utils = require_dist10();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme2 = require_dist12();
       function useListbox(props) {
         var _a;
@@ -144337,7 +144339,7 @@
         const innerState = (0, import_list.useListState)({ ...props, children, onSelectionChange });
         const state = propState || innerState;
         const { listBoxProps } = (0, import_listbox.useListBox)({ ...props, onAction }, state, domRef);
-        const slots = (0, import_react103.useMemo)(() => (0, import_theme.listbox)(), []);
+        const slots = (0, import_react121.useMemo)(() => (0, import_theme.listbox)(), []);
         const baseStyles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.base, className);
         const getBaseProps = (props2 = {}) => {
           return {
@@ -144554,10 +144556,10 @@
           getSelectedIconProps
         };
       }
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       function ListboxSelectedIcon(props) {
         const { isSelected, disableAnimation, ...otherProps } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
           "svg",
           {
             "aria-hidden": "true",
@@ -144565,7 +144567,7 @@
             role: "presentation",
             viewBox: "0 0 17 18",
             ...otherProps,
-            children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
               "polyline",
               {
                 fill: "none",
@@ -145027,7 +145029,7 @@
         ] });
       };
       var virtualized_listbox_default = VirtualizedListbox;
-      var import_jsx_runtime52 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime510 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Listbox = (0, import_system5.forwardRef)(function Listbox2(props, ref) {
         const { isVirtualized, ...restProps } = props;
         const useListboxProps = useListbox({ ...restProps, ref });
@@ -145048,10 +145050,10 @@
           getListProps
         } = useListboxProps;
         if (isVirtualized) {
-          return /* @__PURE__ */ (0, import_jsx_runtime52.jsx)(virtualized_listbox_default, { ...props, ...useListboxProps });
+          return /* @__PURE__ */ (0, import_jsx_runtime510.jsx)(virtualized_listbox_default, { ...props, ...useListboxProps });
         }
-        const content = /* @__PURE__ */ (0, import_jsx_runtime52.jsxs)(Component2, { ...getListProps(), children: [
-          !state.collection.size && !hideEmptyContent && /* @__PURE__ */ (0, import_jsx_runtime52.jsx)("li", { children: /* @__PURE__ */ (0, import_jsx_runtime52.jsx)("div", { ...getEmptyContentProps() }) }),
+        const content = /* @__PURE__ */ (0, import_jsx_runtime510.jsxs)(Component2, { ...getListProps(), children: [
+          !state.collection.size && !hideEmptyContent && /* @__PURE__ */ (0, import_jsx_runtime510.jsx)("li", { children: /* @__PURE__ */ (0, import_jsx_runtime510.jsx)("div", { ...getEmptyContentProps() }) }),
           [...state.collection].map((item) => {
             var _a;
             const itemProps = {
@@ -145064,9 +145066,9 @@
               ...item.props
             };
             if (item.type === "section") {
-              return /* @__PURE__ */ (0, import_jsx_runtime52.jsx)(listbox_section_default, { ...itemProps, itemClasses }, item.key);
+              return /* @__PURE__ */ (0, import_jsx_runtime510.jsx)(listbox_section_default, { ...itemProps, itemClasses }, item.key);
             }
-            let listboxItem2 = /* @__PURE__ */ (0, import_jsx_runtime52.jsx)(
+            let listboxItem2 = /* @__PURE__ */ (0, import_jsx_runtime510.jsx)(
               listbox_item_default,
               {
                 ...itemProps,
@@ -145081,7 +145083,7 @@
             return listboxItem2;
           })
         ] });
-        return /* @__PURE__ */ (0, import_jsx_runtime52.jsxs)("div", { ...getBaseProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime510.jsxs)("div", { ...getBaseProps(), children: [
           topContent,
           content,
           bottomContent
@@ -145135,27 +145137,27 @@
         useLayoutEffect: () => useLayoutEffect2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react103 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
-      var useLayoutEffect2 = typeof document !== "undefined" ? import_react103.default.useLayoutEffect : () => {
+      var import_react121 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
+      var useLayoutEffect2 = typeof document !== "undefined" ? import_react121.default.useLayoutEffect : () => {
       };
       function useEffectEvent2(fn) {
-        const ref = (0, import_react103.useRef)(null);
+        const ref = (0, import_react121.useRef)(null);
         useLayoutEffect2(() => {
           ref.current = fn;
         }, [fn]);
-        return (0, import_react103.useCallback)((...args) => {
+        return (0, import_react121.useCallback)((...args) => {
           const f = ref.current;
           return f == null ? void 0 : f(...args);
         }, []);
       }
       function useFormReset(ref, initialValue, onReset) {
-        let resetValue = (0, import_react103.useRef)(initialValue);
+        let resetValue = (0, import_react121.useRef)(initialValue);
         let handleReset = useEffectEvent2(() => {
           if (onReset) {
             onReset(resetValue.current);
           }
         });
-        (0, import_react103.useEffect)(() => {
+        (0, import_react121.useEffect)(() => {
           var _a;
           let form = (_a = ref == null ? void 0 : ref.current) == null ? void 0 : _a.form;
           form == null ? void 0 : form.addEventListener("reset", handleReset);
@@ -148677,11 +148679,11 @@
       var import_menu = require_main61();
       var import_selection = require_main13();
       var import_utils8 = require_main4();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useMultiSelect(props, state, ref) {
         const { disallowEmptySelection, isDisabled } = props;
         const collator = (0, import_i18n12.useCollator)({ usage: "search", sensitivity: "base" });
-        const delegate = (0, import_react103.useMemo)(
+        const delegate = (0, import_react121.useMemo)(
           () => new import_selection.ListKeyboardDelegate(state.collection, state.disabledKeys, null, collator),
           [state.collection, state.disabledKeys, collator]
         );
@@ -148956,7 +148958,7 @@
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_aria_button = require_dist27();
       var import_focus2 = require_main18();
       var import_shared_utils = require_dist2();
@@ -149040,9 +149042,9 @@
         const Component2 = as || "button";
         const shouldFilterDOMProps = typeof Component2 === "string";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const triggerRef = (0, import_react103.useRef)(null);
-        const listBoxRef = (0, import_react103.useRef)(null);
-        const popoverRef = (0, import_react103.useRef)(null);
+        const triggerRef = (0, import_react121.useRef)(null);
+        const listBoxRef = (0, import_react121.useRef)(null);
+        const popoverRef = (0, import_react121.useRef)(null);
         let state = (0, import_use_aria_multiselect.useMultiSelectState)({
           ...props,
           isOpen,
@@ -149103,7 +149105,7 @@
           state,
           triggerRef
         );
-        const handleClear = (0, import_react103.useCallback)(() => {
+        const handleClear = (0, import_react121.useCallback)(() => {
           var _a2;
           state.setSelectedKeys(/* @__PURE__ */ new Set([]));
           onClear == null ? void 0 : onClear();
@@ -149132,7 +149134,7 @@
         const hasLabel = !!label;
         const hasLabelOutside = hasLabel && (isOutsideLeft || shouldLabelBeOutside && hasPlaceholder);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react103.useMemo)(
+        const slots = (0, import_react121.useMemo)(
           () => (0, import_theme.select)({
             ...variantProps2,
             isInvalid,
@@ -149148,14 +149150,14 @@
         const errorMessage = typeof props.errorMessage === "function" ? props.errorMessage({ isInvalid, validationErrors, validationDetails }) : props.errorMessage || (validationErrors == null ? void 0 : validationErrors.join(" "));
         const hasHelper = !!description || !!errorMessage;
         const hasEndContent = !!endContent;
-        (0, import_react103.useEffect)(() => {
+        (0, import_react121.useEffect)(() => {
           if (state.isOpen && popoverRef.current && triggerRef.current) {
             let selectRect = triggerRef.current.getBoundingClientRect();
             let popover = popoverRef.current;
             popover.style.width = selectRect.width + "px";
           }
         }, [state.isOpen]);
-        (0, import_react103.useEffect)(() => {
+        (0, import_react121.useEffect)(() => {
           if (state.isOpen && popoverRef.current && listBoxRef.current) {
             let selectedItem = listBoxRef.current.querySelector("[aria-selected=true] [data-label=true]");
             let scrollShadow = scrollShadowRef.current;
@@ -149166,7 +149168,7 @@
             }
           }
         }, [state.isOpen, disableAnimation]);
-        const getBaseProps = (0, import_react103.useCallback)(
+        const getBaseProps = (0, import_react121.useCallback)(
           (props2 = {}) => ({
             "data-slot": "base",
             "data-filled": (0, import_shared_utils.dataAttr)(isFilled),
@@ -149183,7 +149185,7 @@
           }),
           [slots, hasHelper, hasValue, hasLabel, hasLabelOutside, isFilled, baseStyles]
         );
-        const getTriggerProps = (0, import_react103.useCallback)(
+        const getTriggerProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ref: triggerRef,
@@ -149223,7 +149225,7 @@
             shouldFilterDOMProps
           ]
         );
-        const getHiddenSelectProps = (0, import_react103.useCallback)(
+        const getHiddenSelectProps = (0, import_react121.useCallback)(
           (props2 = {}) => ({
             state,
             triggerRef,
@@ -149248,7 +149250,7 @@
             triggerRef
           ]
         );
-        const getLabelProps = (0, import_react103.useCallback)(
+        const getLabelProps = (0, import_react121.useCallback)(
           (props2 = {}) => ({
             "data-slot": "label",
             className: slots.label({
@@ -149259,7 +149261,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.label, labelProps]
         );
-        const getValueProps = (0, import_react103.useCallback)(
+        const getValueProps = (0, import_react121.useCallback)(
           (props2 = {}) => ({
             "data-slot": "value",
             className: slots.value({
@@ -149270,7 +149272,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.value, valueProps]
         );
-        const getListboxWrapperProps = (0, import_react103.useCallback)(
+        const getListboxWrapperProps = (0, import_react121.useCallback)(
           (props2 = {}) => ({
             "data-slot": "listboxWrapper",
             className: slots.listboxWrapper({
@@ -149307,7 +149309,7 @@
             ...(0, import_shared_utils.mergeProps)(slotsProps.listboxProps, props2, menuProps)
           };
         };
-        const getPopoverProps = (0, import_react103.useCallback)(
+        const getPopoverProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             var _a2, _b2;
             const popoverProps2 = (0, import_shared_utils.mergeProps)(slotsProps.popoverProps, props2);
@@ -149339,7 +149341,7 @@
             state.selectedItems
           ]
         );
-        const getSelectorIconProps = (0, import_react103.useCallback)(
+        const getSelectorIconProps = (0, import_react121.useCallback)(
           () => ({
             "data-slot": "selectorIcon",
             "aria-hidden": (0, import_shared_utils.dataAttr)(true),
@@ -149348,7 +149350,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.selectorIcon, state.isOpen]
         );
-        const getInnerWrapperProps = (0, import_react103.useCallback)(
+        const getInnerWrapperProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -149360,7 +149362,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.innerWrapper]
         );
-        const getHelperWrapperProps = (0, import_react103.useCallback)(
+        const getHelperWrapperProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -149372,7 +149374,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getDescriptionProps = (0, import_react103.useCallback)(
+        const getDescriptionProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -149383,7 +149385,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.description]
         );
-        const getMainWrapperProps = (0, import_react103.useCallback)(
+        const getMainWrapperProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -149395,7 +149397,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.mainWrapper]
         );
-        const getEndWrapperProps = (0, import_react103.useCallback)(
+        const getEndWrapperProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -149407,7 +149409,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.endWrapper]
         );
-        const getEndContentProps = (0, import_react103.useCallback)(
+        const getEndContentProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -149419,7 +149421,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.endContent]
         );
-        const getErrorMessageProps = (0, import_react103.useCallback)(
+        const getErrorMessageProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -149430,7 +149432,7 @@
           },
           [slots, errorMessageProps, classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getSpinnerProps = (0, import_react103.useCallback)(
+        const getSpinnerProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               "aria-hidden": (0, import_shared_utils.dataAttr)(true),
@@ -149445,7 +149447,7 @@
           },
           [slots, spinnerRef, spinnerProps, classNames == null ? void 0 : classNames.spinner]
         );
-        const getClearButtonProps = (0, import_react103.useCallback)(
+        const getClearButtonProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -149512,7 +149514,7 @@
           getEndContentProps
         };
       }
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       function useHiddenSelect(props, state, triggerRef) {
         var _a;
         let data = selectData.get(state) || {};
@@ -149570,20 +149572,20 @@
         let { state, triggerRef, selectRef, label, name, isDisabled, form } = props;
         let { containerProps, selectProps } = useHiddenSelect({ ...props, selectRef }, state, triggerRef);
         if (state.collection.size <= 300) {
-          return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { ...containerProps, "data-testid": "hidden-select-container", children: /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("label", { children: [
+          return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("div", { ...containerProps, "data-testid": "hidden-select-container", children: /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)("label", { children: [
             label,
-            /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("select", { ...selectProps, ref: selectRef, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("option", {}),
+            /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)("select", { ...selectProps, ref: selectRef, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("option", {}),
               [...state.collection.getKeys()].map((key) => {
                 let item = state.collection.getItem(key);
                 if ((item == null ? void 0 : item.type) === "item") {
-                  return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("option", { value: item.key, children: item.textValue }, item.key);
+                  return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("option", { value: item.key, children: item.textValue }, item.key);
                 }
               })
             ] })
           ] }) });
         } else if (name) {
-          return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
             "input",
             {
               autoComplete: selectProps.autoComplete,
@@ -150285,7 +150287,7 @@
       var import_visually_hidden = require_main8();
       var import_slider = require_main63();
       var import_react_utils = require_dist10();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_interactions = require_main17();
       var import_focus2 = require_main18();
       var import_shared_utils = require_dist2();
@@ -150309,7 +150311,7 @@
         } = props;
         const Component2 = as || "div";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const inputRef = (0, import_react103.useRef)(null);
+        const inputRef = (0, import_react121.useRef)(null);
         const numberFormatter = (0, import_i18n12.useNumberFormatter)(formatOptions);
         const { thumbProps, inputProps, isDragging: isDragging2, isFocused } = (0, import_slider.useSliderThumb)(
           {
@@ -150373,7 +150375,7 @@
           getInputProps
         };
       }
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var SliderThumb = (0, import_system.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -150390,14 +150392,14 @@
         const thumbProps = {
           ...getThumbProps(),
           index: index3,
-          children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_visually_hidden.VisuallyHidden, { children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("input", { ...getInputProps() }) })
+          children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_visually_hidden.VisuallyHidden, { children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("input", { ...getInputProps() }) })
         };
         const content = (0, import_react_utils2.renderFn)({
           Component: Component2,
           props: thumbProps,
           renderCustom: renderThumb
         });
-        return showTooltip ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_tooltip.Tooltip, { ...getTooltipProps(), children: content }) : content;
+        return showTooltip ? /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_tooltip.Tooltip, { ...getTooltipProps(), children: content }) : content;
       });
       SliderThumb.displayName = "HeroUI.SliderThumb";
       var slider_thumb_default = SliderThumb;
@@ -151336,7 +151338,7 @@
       var import_react_utils = require_dist10();
       var import_breadcrumbs = require_main66();
       var import_shared_utils = require_dist2();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useBreadcrumbItem(originalProps) {
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.breadcrumbItem.variantKeys);
         const {
@@ -151363,7 +151365,7 @@
           domRef
         );
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)();
-        const slots = (0, import_react103.useMemo)(
+        const slots = (0, import_react121.useMemo)(
           () => (0, import_theme.breadcrumbItem)({
             ...variantProps2,
             isCurrent,
@@ -151412,7 +151414,7 @@
           getSeparatorProps
         };
       }
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Breadcrumbs = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -151430,13 +151432,13 @@
           ...props,
           ref
         });
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(WrapperComponent, { ...getBaseProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(Component2, { ...getItemProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(WrapperComponent, { ...getBaseProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(Component2, { ...getItemProps(), children: [
             startContent,
             children,
             endContent
           ] }),
-          !isLast && !hideSeparator && /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { ...getSeparatorProps(), children: separator })
+          !isLast && !hideSeparator && /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("span", { ...getSeparatorProps(), children: separator })
         ] });
       });
       Breadcrumbs.displayName = "HeroUI.Breadcrumbs";
@@ -155530,7 +155532,7 @@
       var import_input = require_dist53();
       var import_framer_motion2 = require_cjs4();
       var import_shared_utils = require_dist2();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_utils = require_dist10();
       var import_combobox = require_main67();
       var import_i18n12 = require_main5();
@@ -155624,10 +155626,10 @@
             disabledKeys: /* @__PURE__ */ new Set([...state.collection.getKeys()])
           }
         };
-        const buttonRef = (0, import_react103.useRef)(null);
-        const inputWrapperRef = (0, import_react103.useRef)(null);
-        const listBoxRef = (0, import_react103.useRef)(null);
-        const popoverRef = (0, import_react103.useRef)(null);
+        const buttonRef = (0, import_react121.useRef)(null);
+        const inputWrapperRef = (0, import_react121.useRef)(null);
+        const listBoxRef = (0, import_react121.useRef)(null);
+        const popoverRef = (0, import_react121.useRef)(null);
         const inputRef = (0, import_react_utils.useDOMRef)(ref);
         const scrollShadowRef = (0, import_react_utils.useDOMRef)(scrollRefProp);
         const {
@@ -155726,7 +155728,7 @@
             state.setInputValue(item.textValue);
           }
         }, [inputRef.current]);
-        (0, import_react103.useEffect)(() => {
+        (0, import_react121.useEffect)(() => {
           let keyToFocus;
           if (state.value && state.collection.getItem(state.value) && !state.disabledKeys.has(state.value)) {
             keyToFocus = state.value;
@@ -155739,7 +155741,7 @@
           }
           state.selectionManager.setFocusedKey(keyToFocus);
         }, [state.collection, state.disabledKeys, state.value, state.isOpen, state.inputValue]);
-        (0, import_react103.useEffect)(() => {
+        (0, import_react121.useEffect)(() => {
           if (state.isOpen && popoverRef.current && listBoxRef.current) {
             let selectedItem = listBoxRef.current.querySelector("[aria-selected=true] [data-label=true]");
             let scrollShadow = scrollShadowRef.current;
@@ -155751,7 +155753,7 @@
             }
           }
         }, [state.isOpen, disableAnimation]);
-        (0, import_react103.useEffect)(() => {
+        (0, import_react121.useEffect)(() => {
           if (isOpen) {
             if (popoverRef.current && inputWrapperRef.current) {
               let rect = inputWrapperRef.current.getBoundingClientRect();
@@ -155771,7 +155773,7 @@
           };
         }
         const Component2 = as || "div";
-        const slots = (0, import_react103.useMemo)(
+        const slots = (0, import_react121.useMemo)(
           () => (0, import_theme.autocomplete)({
             ...variantProps2,
             isClearable,
@@ -155937,15 +155939,15 @@
           getEndContentWrapperProps
         };
       }
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Autocomplete = (0, import_system2.forwardRef)(function Autocomplete2(props, ref) {
         var _a;
         const {
           Component: Component2,
           isOpen,
           disableAnimation,
-          selectorIcon = /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_shared_icons.ChevronDownIcon, {}),
-          clearIcon = /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_shared_icons.CloseIcon, {}),
+          selectorIcon = /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_shared_icons.ChevronDownIcon, {}),
+          clearIcon = /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_shared_icons.CloseIcon, {}),
           endContent,
           getBaseProps,
           getSelectorButtonProps,
@@ -155958,19 +155960,19 @@
           getEndContentWrapperProps
         } = useAutocomplete({ ...props, ref });
         const listboxProps = getListBoxProps();
-        const popoverContent = isOpen ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_popover.FreeSoloPopover, { ...getPopoverProps(), children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_scroll_shadow.ScrollShadow, { ...getListBoxWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_listbox.Listbox, { ...listboxProps }) }) }) : ((_a = listboxProps.state) == null ? void 0 : _a.collection.size) === 0 ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { ...getEmptyPopoverProps() }) : null;
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(Component2, { ...getBaseProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+        const popoverContent = isOpen ? /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_popover.FreeSoloPopover, { ...getPopoverProps(), children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_scroll_shadow.ScrollShadow, { ...getListBoxWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_listbox.Listbox, { ...listboxProps }) }) }) : ((_a = listboxProps.state) == null ? void 0 : _a.collection.size) === 0 ? /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("div", { ...getEmptyPopoverProps() }) : null;
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(Component2, { ...getBaseProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
             import_input.Input,
             {
               ...getInputProps(),
-              endContent: /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { ...getEndContentWrapperProps(), children: [
-                endContent || /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_button.Button, { ...getClearButtonProps(), children: clearIcon }),
-                selectorIcon && /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: selectorIcon })
+              endContent: /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)("div", { ...getEndContentWrapperProps(), children: [
+                endContent || /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_button.Button, { ...getClearButtonProps(), children: clearIcon }),
+                selectorIcon && /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: selectorIcon })
               ] })
             }
           ),
-          disableAnimation ? popoverContent : /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_framer_motion2.AnimatePresence, { children: popoverContent })
+          disableAnimation ? popoverContent : /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_framer_motion2.AnimatePresence, { children: popoverContent })
         ] });
       });
       var autocomplete_default = Autocomplete;
@@ -160595,7 +160597,7 @@
       var import_theme2 = require_dist12();
       var import_date = require_main74();
       var import_system = require_dist11();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist12();
       var import_utils8 = require_main38();
       var import_react_utils = require_dist10();
@@ -160641,7 +160643,7 @@
         const visibleMonths = (0, import_shared_utils.clamp)(visibleMonthsProp, 1, 3);
         const showMonthAndYearPickers = originalProps.showMonthAndYearPickers && visibleMonths === 1;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const handleHeaderExpandedChange = (0, import_react103.useCallback)(
+        const handleHeaderExpandedChange = (0, import_react121.useCallback)(
           (isExpanded) => {
             onHeaderExpandedChange(isExpanded || false);
           },
@@ -160652,10 +160654,10 @@
           isHeaderDefaultExpanded != null ? isHeaderDefaultExpanded : false,
           handleHeaderExpandedChange
         );
-        const visibleDuration = (0, import_react103.useMemo)(() => ({ months: visibleMonths }), [visibleMonths]);
+        const visibleDuration = (0, import_react121.useMemo)(() => ({ months: visibleMonths }), [visibleMonths]);
         const hasMultipleMonths = visibleMonths > 1;
         const shouldFilterDOMProps = typeof Component2 === "string";
-        const slots = (0, import_react103.useMemo)(
+        const slots = (0, import_react121.useMemo)(
           () => (0, import_theme.calendar)({
             ...variantProps2,
             showMonthAndYearPickers,
@@ -160858,8 +160860,8 @@
       var import_framer_motion3 = require_cjs4();
       var import_i18n62 = require_main5();
       var import_framer_utils = require_dist19();
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var ChevronLeftIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var ChevronLeftIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
         "svg",
         {
           "aria-hidden": "true",
@@ -160870,7 +160872,7 @@
           viewBox: "0 0 16 16",
           width: "1em",
           ...props,
-          children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+          children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
             "path",
             {
               d: "M10 3.33334L6 8.00001L10 12.6667",
@@ -161097,8 +161099,8 @@
       var import_framer_motion22 = require_cjs4();
       var import_button = require_dist28();
       var import_react410 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var import_jsx_runtime52 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var ChevronDownIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime52.jsx)(
+      var import_jsx_runtime510 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var ChevronDownIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime510.jsx)(
         "svg",
         {
           "aria-hidden": "true",
@@ -161109,7 +161111,7 @@
           viewBox: "0 0 24 24",
           width: "1em",
           ...props,
-          children: /* @__PURE__ */ (0, import_jsx_runtime52.jsx)(
+          children: /* @__PURE__ */ (0, import_jsx_runtime510.jsx)(
             "path",
             {
               d: "M19 9L12 15L5 9",
@@ -161121,7 +161123,7 @@
           )
         }
       );
-      var import_jsx_runtime62 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime65 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       function CalendarHeader(props) {
         const { direction, date, currentMonth, buttonPickerProps } = props;
         const {
@@ -161142,7 +161144,7 @@
           year: "numeric"
         });
         const monthDateContent = monthAndYearDateFormatter.format(date.toDate(state.timeZone));
-        const headerTitle = /* @__PURE__ */ (0, import_jsx_runtime62.jsx)(import_jsx_runtime62.Fragment, { children: disableAnimation ? /* @__PURE__ */ (0, import_jsx_runtime62.jsx)(
+        const headerTitle = /* @__PURE__ */ (0, import_jsx_runtime65.jsx)(import_jsx_runtime65.Fragment, { children: disableAnimation ? /* @__PURE__ */ (0, import_jsx_runtime65.jsx)(
           "span",
           {
             "aria-hidden": true,
@@ -161151,7 +161153,7 @@
             children: monthDateContent
           },
           currentMonth.month
-        ) : /* @__PURE__ */ (0, import_jsx_runtime62.jsx)(
+        ) : /* @__PURE__ */ (0, import_jsx_runtime65.jsx)(
           import_framer_motion22.m.span,
           {
             animate: "center",
@@ -161181,18 +161183,18 @@
           },
           [setIsHeaderExpanded]
         );
-        return showMonthAndYearPickers ? /* @__PURE__ */ (0, import_jsx_runtime62.jsx)(
+        return showMonthAndYearPickers ? /* @__PURE__ */ (0, import_jsx_runtime65.jsx)(
           import_button.Button,
           {
             ...headerProps,
             "aria-label": "switch to year and month view",
             disableAnimation,
-            endContent: /* @__PURE__ */ (0, import_jsx_runtime62.jsx)(ChevronDownIcon, { className: "chevron-icon" }),
+            endContent: /* @__PURE__ */ (0, import_jsx_runtime65.jsx)(ChevronDownIcon, { className: "chevron-icon" }),
             onKeyDown: handleKeyDown,
             ...buttonPickerProps,
             children: headerTitle
           }
-        ) : /* @__PURE__ */ (0, import_jsx_runtime62.jsx)("header", { ...headerProps, children: headerTitle });
+        ) : /* @__PURE__ */ (0, import_jsx_runtime65.jsx)("header", { ...headerProps, children: headerTitle });
       }
       var import_react710 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils7 = require_dist2();
@@ -161713,7 +161715,7 @@
       });
       var calendar_default = Calendar;
       var import_system3 = require_dist11();
-      var import_react104 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react1010 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_utils5 = require_dist10();
       var import_calendar5 = require_main72();
       var import_calendar6 = require_main73();
@@ -161754,7 +161756,7 @@
           classNames,
           otherProps
         } = useCalendarBase({ ...originalProps, isRange: true });
-        const headerRef = (0, import_react104.useRef)(null);
+        const headerRef = (0, import_react1010.useRef)(null);
         const state = (0, import_calendar6.useRangeCalendarState)({
           ...originalProps,
           locale,
@@ -161791,7 +161793,7 @@
             ...props
           };
         };
-        const context = (0, import_react104.useMemo)(
+        const context = (0, import_react1010.useMemo)(
           () => ({
             state,
             slots,
@@ -166575,7 +166577,7 @@
       var import_datepicker2 = require_main77();
       var import_shared_utils = require_dist2();
       var import_theme = require_dist12();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_form = require_dist33();
       function useDateInput(originalProps) {
         var _a, _b, _c, _d, _e, _f, _g;
@@ -166642,7 +166644,7 @@
           label
         });
         const shouldLabelBeOutside = labelPlacement === "outside" || labelPlacement === "outside-left" || labelPlacement === "outside-top";
-        const slots = (0, import_react103.useMemo)(
+        const slots = (0, import_react121.useMemo)(
           () => (0, import_theme.dateInput)({
             ...variantProps2,
             disableAnimation,
@@ -166762,7 +166764,7 @@
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system3 = require_dist11();
       var import_shared_utils2 = require_dist2();
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var DateInputGroup = (0, import_system3.forwardRef)((props, ref) => {
         const {
           as,
@@ -166785,7 +166787,7 @@
           ...otherProps
         } = props;
         const Component2 = as || "div";
-        const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("span", { ...labelProps, children: label }) : null;
+        const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("span", { ...labelProps, children: label }) : null;
         const errorMessage = typeof errorMessageProp === "function" ? errorMessageProp({
           isInvalid,
           validationErrors,
@@ -166794,7 +166796,7 @@
         const hasHelper = !!description || !!errorMessage;
         const helperWrapper = (0, import_react210.useMemo)(() => {
           if (!hasHelper) return null;
-          return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { ...helperWrapperProps, children: isInvalid && errorMessage ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { ...errorMessageProps, children: errorMessage }) : description ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { ...descriptionProps, children: description }) : null });
+          return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("div", { ...helperWrapperProps, children: isInvalid && errorMessage ? /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("div", { ...errorMessageProps, children: errorMessage }) : description ? /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("div", { ...descriptionProps, children: description }) : null });
         }, [
           hasHelper,
           errorMessage,
@@ -166803,11 +166805,11 @@
           errorMessageProps,
           descriptionProps
         ]);
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(Component2, { ...otherProps, ref, "data-has-helper": (0, import_shared_utils2.dataAttr)(hasHelper), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(Component2, { ...otherProps, ref, "data-has-helper": (0, import_shared_utils2.dataAttr)(hasHelper), children: [
           shouldLabelBeOutside ? labelContent : null,
-          /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { ...groupProps, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)("div", { ...groupProps, children: [
             !shouldLabelBeOutside ? labelContent : null,
-            /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { ...wrapperProps, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)("div", { ...wrapperProps, children: [
               startContent,
               children,
               endContent
@@ -167070,13 +167072,13 @@
           getInputProps
         };
       }
-      var import_jsx_runtime52 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime510 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var TimeInput = (0, import_system7.forwardRef)(function TimeInput2(props, ref) {
         const { state, slots, classNames, getBaseGroupProps, getInputProps, getFieldProps } = useTimeInput({
           ...props,
           ref
         });
-        return /* @__PURE__ */ (0, import_jsx_runtime52.jsx)(DateInputGroup, { ...getBaseGroupProps(), children: /* @__PURE__ */ (0, import_jsx_runtime52.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime510.jsx)(DateInputGroup, { ...getBaseGroupProps(), children: /* @__PURE__ */ (0, import_jsx_runtime510.jsx)(
           DateInputField,
           {
             classNames,
@@ -167140,7 +167142,7 @@
       var import_form = require_dist33();
       var import_shared_utils = require_dist2();
       var import_theme = require_dist12();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
       var import_i18n12 = require_main5();
@@ -167355,7 +167357,7 @@
           onHeaderExpandedChange,
           ...restUserCalendarProps
         } = userCalendarProps;
-        const handleHeaderExpandedChange = (0, import_react103.useCallback)(
+        const handleHeaderExpandedChange = (0, import_react121.useCallback)(
           (isExpanded) => {
             onHeaderExpandedChange == null ? void 0 : onHeaderExpandedChange(isExpanded || false);
           },
@@ -167658,7 +167660,7 @@
           getSelectorIconProps
         };
       }
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var DatePicker = (0, import_system3.forwardRef)(function DatePicker2(props, ref) {
         const { selectorButtonPlacement = "end", ...otherProps } = props;
         const {
@@ -167678,11 +167680,11 @@
           CalendarTopContent,
           CalendarBottomContent
         } = useDatePicker({ ...otherProps, ref });
-        const selectorContent = (0, import_react410.isValidElement)(selectorIcon) ? (0, import_react410.cloneElement)(selectorIcon, getSelectorIconProps()) : /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_shared_icons.CalendarBoldIcon, { ...getSelectorIconProps() });
+        const selectorContent = (0, import_react410.isValidElement)(selectorIcon) ? (0, import_react410.cloneElement)(selectorIcon, getSelectorIconProps()) : /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_shared_icons.CalendarBoldIcon, { ...getSelectorIconProps() });
         const calendarBottomContent = (0, import_react310.useMemo)(() => {
           if (isCalendarHeaderExpanded) return null;
-          return showTimeField ? /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(import_jsx_runtime49.Fragment, { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_date_input.TimeInput, { ...getTimeInputProps() }),
+          return showTimeField ? /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(import_jsx_runtime64.Fragment, { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_date_input.TimeInput, { ...getTimeInputProps() }),
             CalendarBottomContent
           ] }) : CalendarBottomContent;
         }, [state, showTimeField, CalendarBottomContent, isCalendarHeaderExpanded]);
@@ -167690,7 +167692,7 @@
           if (isCalendarHeaderExpanded) return null;
           return CalendarTopContent;
         }, [showTimeField, CalendarTopContent, isCalendarHeaderExpanded]);
-        const popoverContent = state.isOpen ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_popover.FreeSoloPopover, { ...getPopoverProps(), children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+        const popoverContent = state.isOpen ? /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_popover.FreeSoloPopover, { ...getPopoverProps(), children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
           import_calendar.Calendar,
           {
             ...getCalendarProps(),
@@ -167700,12 +167702,12 @@
         ) }) : null;
         const dateInputProps = {
           ...getDateInputProps(),
-          endContent: selectorButtonPlacement === "end" ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: endContent || selectorContent }) : endContent,
-          startContent: selectorButtonPlacement === "start" ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: startContent || selectorContent }) : startContent
+          endContent: selectorButtonPlacement === "end" ? /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: endContent || selectorContent }) : endContent,
+          startContent: selectorButtonPlacement === "start" ? /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: startContent || selectorContent }) : startContent
         };
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(import_jsx_runtime49.Fragment, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_date_input.DateInput, { ...dateInputProps }),
-          disableAnimation ? popoverContent : /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_framer_motion2.AnimatePresence, { children: popoverContent })
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)(import_jsx_runtime64.Fragment, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_date_input.DateInput, { ...dateInputProps }),
+          disableAnimation ? popoverContent : /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_framer_motion2.AnimatePresence, { children: popoverContent })
         ] });
       });
       var date_picker_default = DatePicker;
@@ -168201,7 +168203,7 @@
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist12();
       var import_utils8 = require_main38();
       var import_shared_utils = require_dist2();
@@ -168236,16 +168238,16 @@
         const Component2 = as || "div";
         const shouldFilterDOMProps = typeof Component2 === "string";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const handleClose = (0, import_react103.useCallback)(() => {
+        const handleClose = (0, import_react121.useCallback)(() => {
           setIsVisible(false);
           onClose == null ? void 0 : onClose();
         }, [setIsVisible, onClose]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react103.useMemo)(
+        const slots = (0, import_react121.useMemo)(
           () => (0, import_theme.alert)({ hasContent: !(0, import_shared_utils.isEmpty)(description) || !(0, import_shared_utils.isEmpty)(children), ...variantProps2 }),
           [description, (0, import_shared_utils.objectToDeps)(variantProps2)]
         );
-        const getBaseProps = (0, import_react103.useCallback)(() => {
+        const getBaseProps = (0, import_react121.useCallback)(() => {
           return {
             "data-visible": (0, import_shared_utils.dataAttr)(isVisible),
             "data-closeable": (0, import_shared_utils.dataAttr)(isClosable),
@@ -168260,35 +168262,35 @@
             className: slots.base({ class: baseStyles })
           };
         }, [slots, baseStyles]);
-        const getMainWrapperProps = (0, import_react103.useCallback)(() => {
+        const getMainWrapperProps = (0, import_react121.useCallback)(() => {
           return {
             className: slots.mainWrapper({ class: classNames == null ? void 0 : classNames.mainWrapper })
           };
         }, [slots, classNames == null ? void 0 : classNames.mainWrapper]);
-        const getDescriptionProps = (0, import_react103.useCallback)(() => {
+        const getDescriptionProps = (0, import_react121.useCallback)(() => {
           return {
             className: slots.description({ class: classNames == null ? void 0 : classNames.description })
           };
         }, [slots, classNames == null ? void 0 : classNames.description]);
-        const getTitleProps = (0, import_react103.useCallback)(() => {
+        const getTitleProps = (0, import_react121.useCallback)(() => {
           return {
             className: slots.title({ class: classNames == null ? void 0 : classNames.title })
           };
         }, [slots, classNames == null ? void 0 : classNames.title]);
-        const getCloseButtonProps = (0, import_react103.useCallback)(
+        const getCloseButtonProps = (0, import_react121.useCallback)(
           () => ({
             ...closeButtonProps,
             className: slots.closeButton({ class: classNames == null ? void 0 : classNames.closeButton })
           }),
           [slots, classNames == null ? void 0 : classNames.closeButton]
         );
-        const getAlertIconProps = (0, import_react103.useCallback)(
+        const getAlertIconProps = (0, import_react121.useCallback)(
           () => ({
             className: slots.alertIcon({ class: classNames == null ? void 0 : classNames.alertIcon })
           }),
           [slots, classNames == null ? void 0 : classNames.alertIcon]
         );
-        const getIconWrapperProps = (0, import_react103.useCallback)(
+        const getIconWrapperProps = (0, import_react121.useCallback)(
           () => ({
             className: slots.iconWrapper({ class: classNames == null ? void 0 : classNames.iconWrapper })
           }),
@@ -168316,7 +168318,7 @@
           getIconWrapperProps
         };
       }
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var iconMap = {
         primary: import_shared_icons.InfoCircleIcon,
         secondary: import_shared_icons.InfoCircleIcon,
@@ -168349,16 +168351,16 @@
         if (!isVisible) return null;
         const customIcon = icon && (0, import_react210.isValidElement)(icon) ? (0, import_react210.cloneElement)(icon, getAlertIconProps()) : null;
         const IconComponent = iconMap[color2] || iconMap.primary;
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { ref: domRef, role: "alert", ...getBaseProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)("div", { ref: domRef, role: "alert", ...getBaseProps(), children: [
           startContent,
-          /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { ...getIconWrapperProps(), children: customIcon || /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(IconComponent, { ...getAlertIconProps() }) }),
-          /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)("div", { ...getMainWrapperProps(), children: [
-            !(0, import_shared_utils2.isEmpty)(title) && /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { ...getTitleProps(), children: title }),
-            !(0, import_shared_utils2.isEmpty)(description) && /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { ...getDescriptionProps(), children: description }),
+          /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("div", { ...getIconWrapperProps(), children: customIcon || /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(IconComponent, { ...getAlertIconProps() }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime64.jsxs)("div", { ...getMainWrapperProps(), children: [
+            !(0, import_shared_utils2.isEmpty)(title) && /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("div", { ...getTitleProps(), children: title }),
+            !(0, import_shared_utils2.isEmpty)(description) && /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("div", { ...getDescriptionProps(), children: description }),
             children
           ] }),
           endContent,
-          (isClosable || onClose) && /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+          (isClosable || onClose) && /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
             import_button.Button,
             {
               isIconOnly: true,
@@ -168367,7 +168369,7 @@
               variant: "light",
               onPress: handleClose,
               ...getCloseButtonProps(),
-              children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_shared_icons.CloseIcon, { height: 20, width: 20 })
+              children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_shared_icons.CloseIcon, { height: 20, width: 20 })
             }
           )
         ] });
@@ -168414,7 +168416,7 @@
       var import_modal = require_dist63();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_utils = require_dist19();
       var import_shared_utils = require_dist2();
       function useDrawer(originalProps) {
@@ -168429,7 +168431,7 @@
           ...otherProps
         } = originalProps;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const motionProps = (0, import_react103.useMemo)(() => {
+        const motionProps = (0, import_react121.useMemo)(() => {
           if (!(0, import_shared_utils.isEmpty)(drawerMotionProps)) return drawerMotionProps;
           const key = placement === "left" || placement === "right" ? "x" : "y";
           return {
@@ -168456,14 +168458,14 @@
           };
         }, [placement, drawerMotionProps]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react103.useMemo)(
+        const slots = (0, import_react121.useMemo)(
           () => (0, import_theme.drawer)({
             size,
             placement
           }),
           [size, placement]
         );
-        const getModalProps = (0, import_react103.useCallback)(() => {
+        const getModalProps = (0, import_react121.useCallback)(() => {
           return {
             classNames: {
               ...classNames,
@@ -168477,10 +168479,10 @@
         }, [baseStyles, classNames, motionProps, scrollBehavior, size, otherProps]);
         return { domRef, getModalProps };
       }
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Drawer = (0, import_system.forwardRef)(({ children, ...props }, ref) => {
         const { domRef, getModalProps } = useDrawer({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_modal.Modal, { ref: domRef, ...getModalProps(), children });
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_modal.Modal, { ref: domRef, ...getModalProps(), children });
       });
       Drawer.displayName = "HeroUI.Drawer";
       var drawer_default = Drawer;
@@ -168750,7 +168752,7 @@
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
       var import_use_form_reset = require_dist75();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_utils8 = require_main38();
       var import_form = require_main22();
       var import_form2 = require_main39();
@@ -168796,7 +168798,7 @@
           autoFocus,
           isTextInput: true
         });
-        const handleValueChange = (0, import_react103.useCallback)(
+        const handleValueChange = (0, import_react121.useCallback)(
           (value2) => {
             onValueChange(value2 != null ? value2 : "");
           },
@@ -168828,7 +168830,7 @@
         const errorMessage = typeof props.errorMessage === "function" ? props.errorMessage({ isInvalid, validationErrors, validationDetails }) : props.errorMessage || (validationErrors == null ? void 0 : validationErrors.join(" "));
         const description = props.description;
         const hasHelper = !!description || !!errorMessage;
-        const slots = (0, import_react103.useMemo)(
+        const slots = (0, import_react121.useMemo)(
           () => (0, import_theme.inputOtp)({
             ...variantProps2,
             disableAnimation,
@@ -168837,7 +168839,7 @@
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation, isInvalid, isReadOnly]
         );
-        const getBaseProps = (0, import_react103.useCallback)(
+        const getBaseProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ref: baseDomRef,
@@ -168872,7 +168874,7 @@
           },
           [baseDomRef, slots, baseStyles, isDisabled, isInvalid, isRequired, isReadOnly, value, length]
         );
-        const getInputOtpProps = (0, import_react103.useCallback)(
+        const getInputOtpProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             var _a2;
             const otpProps = {
@@ -168916,7 +168918,7 @@
             autoFocus
           ]
         );
-        const getSegmentWrapperProps = (0, import_react103.useCallback)(
+        const getSegmentWrapperProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.segmentWrapper({
@@ -168930,7 +168932,7 @@
           },
           [classNames == null ? void 0 : classNames.segmentWrapper, isDisabled]
         );
-        const getHelperWrapperProps = (0, import_react103.useCallback)(
+        const getHelperWrapperProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.helperWrapper({
@@ -168942,7 +168944,7 @@
           },
           [classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getErrorMessageProps = (0, import_react103.useCallback)(
+        const getErrorMessageProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.errorMessage({
@@ -168954,7 +168956,7 @@
           },
           [classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getDescriptionProps = (0, import_react103.useCallback)(
+        const getDescriptionProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.description({
@@ -168996,7 +168998,7 @@
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils2 = require_dist2();
       var import_theme2 = require_dist12();
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var InputOtpSegment = ({
         ...props
       }) => {
@@ -169008,14 +169010,14 @@
         const displayValue = (0, import_react210.useMemo)(() => {
           var _a2, _b;
           if (props.isActive && !props.char) {
-            return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { className: (0, import_theme2.cn)((_a2 = slots.caret) == null ? void 0 : _a2.call(slots, { class: caretStyles })) });
+            return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("div", { className: (0, import_theme2.cn)((_a2 = slots.caret) == null ? void 0 : _a2.call(slots, { class: caretStyles })) });
           }
           if (props.char) {
-            return type === "password" ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { className: (0, import_theme2.cn)((_b = slots.passwordChar) == null ? void 0 : _b.call(slots, { class: passwordCharStyles })) }) : /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { children: props.char });
+            return type === "password" ? /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("div", { className: (0, import_theme2.cn)((_b = slots.passwordChar) == null ? void 0 : _b.call(slots, { class: passwordCharStyles })) }) : /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("div", { children: props.char });
           }
-          return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)("div", { children: props.placeholderChar });
+          return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)("div", { children: props.placeholderChar });
         }, [props.char, props.isActive, props.placeholderChar, type]);
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
           "div",
           {
             className: (0, import_theme2.cn)((_a = slots.segment) == null ? void 0 : _a.call(slots, { class: segmentStyles })),
@@ -170006,7 +170008,7 @@
       var import_shared_utils = require_dist2();
       var import_numberfield = require_main78();
       var import_numberfield2 = require_main79();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_form = require_dist33();
       function useNumberInput(originalProps) {
         var _a, _b, _c;
@@ -170034,7 +170036,7 @@
           hideStepper,
           ...otherProps
         } = props;
-        const [isFocusWithin, setFocusWithin] = (0, import_react103.useState)(false);
+        const [isFocusWithin, setFocusWithin] = (0, import_react121.useState)(false);
         const Component2 = as || "div";
         const disableAnimation = (_c = (_b = originalProps.disableAnimation) != null ? _b : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _c : false;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
@@ -170064,7 +170066,7 @@
         const isFilled = !(0, import_shared_utils.isEmpty)(state.inputValue) && !(0, import_shared_utils.isEmpty)(inputValue);
         const isFilledWithin = isFilled || isFocusWithin;
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className, isFilled ? "is-filled" : "");
-        const handleClear = (0, import_react103.useCallback)(() => {
+        const handleClear = (0, import_react121.useCallback)(() => {
           var _a2;
           state.setInputValue("");
           onClear == null ? void 0 : onClear();
@@ -170108,7 +170110,7 @@
         const hasStartContent = !!startContent;
         const isLabelOutside = shouldLabelBeOutside ? labelPlacement === "outside-left" || isOutsideTop || hasPlaceholder || labelPlacement === "outside" && hasStartContent : false;
         const isLabelOutsideAsPlaceholder = labelPlacement === "outside" && !hasPlaceholder && !hasStartContent;
-        const slots = (0, import_react103.useMemo)(
+        const slots = (0, import_react121.useMemo)(
           () => (0, import_theme.numberInput)({
             ...variantProps2,
             isInvalid,
@@ -170125,7 +170127,7 @@
             disableAnimation
           ]
         );
-        const handleKeyDown = (0, import_react103.useCallback)(
+        const handleKeyDown = (0, import_react121.useCallback)(
           (e) => {
             var _a2, _b2;
             const inputElement = e.currentTarget;
@@ -170155,7 +170157,7 @@
           },
           [inputValue, state, onClear, isClearable, originalProps.isReadOnly]
         );
-        const getBaseProps = (0, import_react103.useCallback)(
+        const getBaseProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ref: baseDomRef,
@@ -170205,7 +170207,7 @@
             originalProps.isDisabled
           ]
         );
-        const getLabelProps = (0, import_react103.useCallback)(
+        const getLabelProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "label",
@@ -170215,7 +170217,7 @@
           },
           [slots, isLabelHovered, labelProps, classNames == null ? void 0 : classNames.label]
         );
-        const getNumberInputProps = (0, import_react103.useCallback)(
+        const getNumberInputProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "input",
@@ -170257,7 +170259,7 @@
             handleKeyDown
           ]
         );
-        const getHiddenNumberInputProps = (0, import_react103.useCallback)(
+        const getHiddenNumberInputProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               name: originalProps.name,
@@ -170269,7 +170271,7 @@
           },
           [inputValue, originalProps.name]
         );
-        const getInputWrapperProps = (0, import_react103.useCallback)(
+        const getInputWrapperProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ref: inputWrapperRef,
@@ -170302,7 +170304,7 @@
             classNames == null ? void 0 : classNames.inputWrapper
           ]
         );
-        const getInnerWrapperProps = (0, import_react103.useCallback)(
+        const getInnerWrapperProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ref: innerWrapperRef,
@@ -170320,7 +170322,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.innerWrapper]
         );
-        const getMainWrapperProps = (0, import_react103.useCallback)(
+        const getMainWrapperProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -170332,7 +170334,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.mainWrapper]
         );
-        const getHelperWrapperProps = (0, import_react103.useCallback)(
+        const getHelperWrapperProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -170344,7 +170346,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getDescriptionProps = (0, import_react103.useCallback)(
+        const getDescriptionProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -170355,7 +170357,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.description]
         );
-        const getErrorMessageProps = (0, import_react103.useCallback)(
+        const getErrorMessageProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -170366,7 +170368,7 @@
           },
           [slots, errorMessageProps, classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getClearButtonProps = (0, import_react103.useCallback)(
+        const getClearButtonProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -170382,7 +170384,7 @@
           },
           [slots, isClearButtonFocusVisible, clearPressProps, clearFocusProps, classNames == null ? void 0 : classNames.clearButton]
         );
-        const getStepperWrapperProps = (0, import_react103.useCallback)(
+        const getStepperWrapperProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -170394,7 +170396,7 @@
           },
           [slots]
         );
-        const getStepperIncreaseButtonProps = (0, import_react103.useCallback)(
+        const getStepperIncreaseButtonProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -170409,7 +170411,7 @@
           },
           [slots, incrementButtonProps, classNames == null ? void 0 : classNames.stepperButton]
         );
-        const getStepperDecreaseButtonProps = (0, import_react103.useCallback)(
+        const getStepperDecreaseButtonProps = (0, import_react121.useCallback)(
           (props2 = {}) => {
             return {
               type: "button",
@@ -170466,9 +170468,9 @@
       }
       var import_button = require_dist28();
       var import_shared_icons = require_dist17();
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var NumberInputStepper = ({ direction, ...otherProps }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_button.Button, { disableRipple: true, isIconOnly: true, ...otherProps, children: direction == "up" ? /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_shared_icons.ChevronUpIcon, {}) : /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_shared_icons.ChevronDownIcon, {}) });
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_button.Button, { disableRipple: true, isIconOnly: true, ...otherProps, children: direction == "up" ? /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_shared_icons.ChevronUpIcon, {}) : /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_shared_icons.ChevronDownIcon, {}) });
       };
       NumberInputStepper.displayName = "HeroUI.NumberInputStepper";
       var number_input_stepper_default = NumberInputStepper;
@@ -172020,13 +172022,13 @@
       var import_spinner = require_dist25();
       var import_framer_motion22 = require_cjs4();
       var import_shared_utils = require_dist2();
-      var import_jsx_runtime49 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var domAnimation2 = () => Promise.resolve().then(() => (init_src(), src_exports)).then((res) => res.default);
       var Ripple = (props) => {
         const { ripples = [], motionProps, color: color2 = "currentColor", style: style2, onClear } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_jsx_runtime49.Fragment, { children: ripples.map((ripple) => {
+        return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_jsx_runtime64.Fragment, { children: ripples.map((ripple) => {
           const duration = (0, import_shared_utils.clamp)(0.01 * ripple.size, 0.2, ripple.size > 100 ? 0.75 : 0.5);
-          return /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_framer_motion22.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(import_framer_motion22.AnimatePresence, { mode: "popLayout", children: /* @__PURE__ */ (0, import_jsx_runtime49.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_framer_motion22.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_framer_motion22.AnimatePresence, { mode: "popLayout", children: /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(
             import_framer_motion22.m.span,
             {
               animate: {
@@ -172064,10 +172066,10 @@
       Ripple.displayName = "HeroUI.Ripple";
       var ripple_default = Ripple;
       var import_shared_utils2 = require_dist2();
-      var import_react103 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useRipple(props = {}) {
-        const [ripples, setRipples] = (0, import_react103.useState)([]);
-        const onPress = (0, import_react103.useCallback)((event) => {
+        const [ripples, setRipples] = (0, import_react121.useState)([]);
+        const onPress = (0, import_react121.useCallback)((event) => {
           const trigger = event.target;
           const size = Math.max(trigger.clientWidth, trigger.clientHeight);
           setRipples((prevRipples) => [
@@ -172080,7 +172082,7 @@
             }
           ]);
         }, []);
-        const onClear = (0, import_react103.useCallback)((key) => {
+        const onClear = (0, import_react121.useCallback)((key) => {
           setRipples((prevState) => prevState.filter((ripple) => ripple.key !== key));
         }, []);
         return { ripples, onClear, onPress, ...props };
@@ -173196,7 +173198,7 @@
           }
         );
       }
-      var import_jsx_runtime52 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime510 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var loadFeatures2 = () => Promise.resolve().then(() => (init_es3(), es_exports)).then((res) => res.domMax);
       var globalToastQueue = null;
       var getToastQueue = () => {
@@ -173219,7 +173221,7 @@
         const toastQueue = (0, import_toast4.useToastQueue)(getToastQueue());
         const globalContext = (0, import_system5.useProviderContext)();
         const disableAnimation = (_a = disableAnimationProp != null ? disableAnimationProp : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _a : false;
-        return /* @__PURE__ */ (0, import_jsx_runtime52.jsx)(import_framer_motion5.LazyMotion, { features: loadFeatures2, children: toastQueue.visibleToasts.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime52.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime510.jsx)(import_framer_motion5.LazyMotion, { features: loadFeatures2, children: toastQueue.visibleToasts.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime510.jsx)(
           ToastRegion,
           {
             disableAnimation,
@@ -188738,6 +188740,18 @@ ${cue.text}`).join("\n\n")}
     setPinnedLiveTvKeys(next2);
     return next2;
   }
+  function movePinnedLiveTvChannel(key, delta) {
+    const current2 = getPinnedLiveTvKeys();
+    const index3 = current2.indexOf(key);
+    if (index3 === -1) return current2;
+    const target2 = index3 + delta;
+    if (target2 < 0 || target2 >= current2.length) return current2;
+    const next2 = [...current2];
+    next2.splice(index3, 1);
+    next2.splice(target2, 0, key);
+    setPinnedLiveTvKeys(next2);
+    return next2;
+  }
   function sortChannelsWithPins(channels) {
     const pinned = getPinnedLiveTvKeys();
     if (pinned.length === 0) return channels;
@@ -188786,12 +188800,12 @@ ${cue.text}`).join("\n\n")}
     return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, XTREAM_LOGINS_KEY, listener);
   }
   function xtreamPseudoUrl(login) {
-    let host = login.base;
+    let host2 = login.base;
     try {
-      host = new URL(login.base).host;
+      host2 = new URL(login.base).host;
     } catch {
     }
-    return `${XTREAM_URL_PREFIX}${host}/${login.id}`;
+    return `${XTREAM_URL_PREFIX}${host2}/${login.id}`;
   }
   function findXtreamLoginByPseudoUrl(url) {
     if (!url.startsWith(XTREAM_URL_PREFIX)) return null;
@@ -189884,7 +189898,7 @@ ${cue.text}`).join("\n\n")}
       const el = headerRef.current;
       if (!el) return;
       const ROW_PADDING = 8;
-      const measure2 = () => {
+      const measure3 = () => {
         const chip = document.querySelector(".mc-chip");
         const chipRect = chip ? chip.getBoundingClientRect() : null;
         const hasChip = Boolean(chipRect && chipRect.width > 0 && chipRect.height > 0);
@@ -189907,12 +189921,12 @@ ${cue.text}`).join("\n\n")}
         tvShiftRef.current = next2;
         setTvShift(next2);
       };
-      measure2();
-      const settle = window.setTimeout(measure2, 300);
-      window.addEventListener("resize", measure2);
+      measure3();
+      const settle = window.setTimeout(measure3, 300);
+      window.addEventListener("resize", measure3);
       return () => {
         window.clearTimeout(settle);
-        window.removeEventListener("resize", measure2);
+        window.removeEventListener("resize", measure3);
       };
     }, [chipRow, isTv]);
     const mobileEdge = edgeFit && typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(max-width: 639px)").matches;
@@ -190699,6 +190713,940 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-ui.tsx
+  function dp(n) {
+    return n;
+  }
+  function TvFocusStyle() {
+    return /* @__PURE__ */ jsx("style", { children: `
+[data-live-tv-tv-root] [data-f]:focus,
+[data-live-tv-tv-root] [data-f][data-fcur="1"] {
+  outline: 2px solid rgb(var(--accent-500)) !important;
+  outline-offset: 3px;
+  box-shadow: 0 0 28px color-mix(in srgb, rgb(var(--accent-500)) 45%, transparent) !important;
+}
+[data-live-tv-tv-root] [data-f] { outline: none; }
+[data-live-tv-tv-root] [data-live-tv-menu-item][data-f]:focus,
+[data-live-tv-tv-root] [data-live-tv-menu-item][data-f][data-fcur="1"] { outline-offset: -4px; border-radius: ${dp(12)}px; }
+[data-live-tv-tv-root] [data-scroll]::-webkit-scrollbar, [data-live-tv-tv-root] [data-row]::-webkit-scrollbar { display: none; }
+[data-live-tv-tv-root] .lumio-tv-logo-img { max-width: 60%; max-height: 60%; object-fit: contain; }
+@keyframes lumio-livetv-fade { from { opacity: 0; transform: translateY(${dp(6)}px); } to { opacity: 1; transform: none; } }
+[data-live-tv-tv-root] [data-live-tv-layer] { animation: lumio-livetv-fade 160ms ease-out; }
+` });
+  }
+  function station(onOk, onHold, extra) {
+    const hold = onHold ? tvHoldHandlers(onOk, onHold) : null;
+    return {
+      "data-f": "",
+      tabIndex: 0,
+      role: "button",
+      onClick: onOk,
+      ...hold ? { onKeyDown: hold.onKeyDown, onKeyUp: hold.onKeyUp } : {
+        onKeyDown: (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onOk();
+          }
+        }
+      },
+      ...extra ?? {}
+    };
+  }
+  function Tag2({ variant, children, style: style2 }) {
+    const base = { display: "inline-flex", alignItems: "center", gap: dp(8), whiteSpace: "nowrap", lineHeight: 1.2 };
+    const look = {
+      live: { fontSize: dp(13), fontWeight: 600, letterSpacing: "0.14em", padding: `${dp(5)}px ${dp(12)}px`, borderRadius: dp(8), background: TV.liveSoft, color: TV.liveText, textTransform: "uppercase" },
+      neutral: { fontSize: dp(15), padding: `${dp(3)}px ${dp(12)}px`, borderRadius: dp(8), background: TV.s12, color: TV.text },
+      quality: { fontSize: dp(15), padding: `${dp(3)}px ${dp(12)}px`, borderRadius: dp(8), background: "rgba(0,0,0,0.45)", color: TV.text },
+      replay: { fontSize: dp(13), letterSpacing: "0.08em", padding: `${dp(4)}px ${dp(10)}px`, borderRadius: dp(6), background: TV.accMix(22), color: TV.accText },
+      reason: { fontSize: dp(13), letterSpacing: "0.08em", padding: `${dp(4)}px ${dp(10)}px`, borderRadius: dp(6), background: "rgba(0,0,0,0.45)", color: TV.text },
+      audio: { fontSize: dp(13), fontWeight: 600, letterSpacing: "0.12em", padding: `${dp(4)}px ${dp(10)}px`, borderRadius: dp(6), background: TV.acc, color: TV.onAcc, textTransform: "uppercase" }
+    };
+    return /* @__PURE__ */ jsxs("span", { style: { ...base, ...look[variant], ...style2 }, children: [
+      variant === "live" ? /* @__PURE__ */ jsx("span", { style: { width: dp(8), height: dp(8), borderRadius: 999, background: TV.live } }) : null,
+      children
+    ] });
+  }
+  function Progress({ value, height = dp(5), track = TV.s14, style: style2 }) {
+    const pct = Math.round(Math.min(1, Math.max(0, value)) * 100);
+    return /* @__PURE__ */ jsx("div", { style: { height, borderRadius: height, background: track, overflow: "hidden", ...style2 }, children: /* @__PURE__ */ jsx("div", { "data-fill": "", style: { width: `${pct}%`, height: "100%", background: TV.acc } }) });
+  }
+  function ChannelArt({ channel, frameVersion, height, aspect, radius, children, style: style2 }) {
+    const [frameFailed, setFrameFailed] = useState(false);
+    const frameSrc = !frameFailed && "url" in channel ? playerFrameUrl(channelKey(channel), frameVersion ?? null) : null;
+    const logo = getLiveTvLogoSrc(channel.logo);
+    return /* @__PURE__ */ jsxs("div", { style: { position: "relative", height, aspectRatio: aspect, background: "rgba(252,252,255,0.06)", borderRadius: radius, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", ...style2 }, children: [
+      frameSrc ? /* @__PURE__ */ jsx("img", { src: frameSrc, alt: "", onError: () => setFrameFailed(true), style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" } }) : logo ? /* @__PURE__ */ jsx(LiveTvLogoImage, { src: logo, alt: "", className: "lumio-tv-logo-img" }) : /* @__PURE__ */ jsx("span", { style: { fontSize: dp(22), fontWeight: 600, color: TV.dim, letterSpacing: "0.04em" }, children: initialsOf(channel.name) }),
+      children
+    ] });
+  }
+  function Chip({ active, children, style: style2, ...rest }) {
+    return /* @__PURE__ */ jsx(
+      "div",
+      {
+        ...rest,
+        style: { height: dp(46), padding: `0 ${dp(22)}px`, borderRadius: 999, display: "inline-flex", alignItems: "center", fontSize: dp(19), whiteSpace: "nowrap", cursor: "pointer", flexShrink: 0, background: active ? TV.s16 : TV.s05, color: active ? TV.text : TV.muted, fontWeight: active ? 600 : 400, border: `1px solid ${active ? TV.lineStrong : "transparent"}`, ...style2 },
+        children
+      }
+    );
+  }
+  function Segment({ options, value, onChange, style: style2 }) {
+    return /* @__PURE__ */ jsx("div", { style: { display: "inline-flex", padding: dp(4), borderRadius: 999, background: TV.s08, gap: dp(2), ...style2 }, children: options.map((option) => /* @__PURE__ */ jsx(
+      "div",
+      {
+        ...station(() => onChange(option.key)),
+        style: { height: dp(38), padding: `0 ${dp(18)}px`, borderRadius: 999, display: "inline-flex", alignItems: "center", fontSize: dp(16), cursor: "pointer", background: option.key === value ? TV.s16 : "transparent", color: option.key === value ? TV.text : TV.muted },
+        children: option.label
+      },
+      option.key
+    )) });
+  }
+  function RoundBtn({ size = dp(52), children, background = TV.s12, style: style2, ...rest }) {
+    return /* @__PURE__ */ jsx("div", { ...rest, style: { width: size, height: size, borderRadius: 999, background, border: `1px solid ${TV.lineCard}`, display: "inline-flex", alignItems: "center", justifyContent: "center", color: TV.text, cursor: "pointer", flexShrink: 0, ...style2 }, children });
+  }
+  function Toggle({ on }) {
+    return /* @__PURE__ */ jsx("span", { style: { width: dp(52), height: dp(30), borderRadius: 999, background: on ? TV.acc : TV.s18, position: "relative", display: "inline-block", flexShrink: 0 }, children: /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: dp(3), left: on ? dp(25) : dp(3), width: dp(24), height: dp(24), borderRadius: 999, background: "#fff", transition: "left 120ms" } }) });
+  }
+  function useTvClockNode(locale) {
+    const HostClock = (void 0)?.() ?? null;
+    const [now3, setNow] = useState(() => /* @__PURE__ */ new Date());
+    useEffect(() => {
+      if (HostClock) return;
+      let timer = 0;
+      const tick = () => {
+        const next2 = /* @__PURE__ */ new Date();
+        setNow(next2);
+        timer = window.setTimeout(tick, 6e4 - (next2.getSeconds() * 1e3 + next2.getMilliseconds()));
+      };
+      tick();
+      return () => window.clearTimeout(timer);
+    }, [HostClock]);
+    if (HostClock) return /* @__PURE__ */ jsx(HostClock, { variant: "desktop" });
+    const time2 = now3.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
+    const date = now3.toLocaleDateString(locale, { day: "numeric", month: "short" }).replace(".", "").toUpperCase();
+    const day = now3.toLocaleDateString(locale, { weekday: "short" }).replace(".", "").toUpperCase();
+    return /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), letterSpacing: "0.1em", color: "rgba(243,244,248,0.65)", whiteSpace: "nowrap" }, children: `${time2} | ${date} | ${day}` });
+  }
+  var TV, cardStyle, sw, svg, Icons;
+  var init_tv_ui = __esm({
+    "../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-ui.tsx"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_plugin_sdk();
+      init_plugin_sdk();
+      init_live_tv_data();
+      init_live_tv_logo_image();
+      init_live_tv_ui();
+      init_jsx_runtime_shim();
+      TV = {
+        bg: "#000",
+        text: "#f3f4f8",
+        muted: "rgba(243,244,248,0.7)",
+        dim: "rgba(243,244,248,0.55)",
+        faint: "rgba(243,244,248,0.4)",
+        s05: "rgba(252,252,255,0.05)",
+        s06: "rgba(252,252,255,0.06)",
+        s07: "rgba(252,252,255,0.07)",
+        s08: "rgba(252,252,255,0.08)",
+        s10: "rgba(252,252,255,0.10)",
+        s12: "rgba(252,252,255,0.12)",
+        s14: "rgba(252,252,255,0.14)",
+        s16: "rgba(252,252,255,0.16)",
+        s18: "rgba(252,252,255,0.18)",
+        line: "rgba(255,255,255,0.08)",
+        lineCard: "rgba(255,255,255,0.10)",
+        lineStrong: "rgba(255,255,255,0.22)",
+        acc: "rgb(var(--accent-500))",
+        accMix: (pct) => `color-mix(in srgb, rgb(var(--accent-500)) ${pct}%, transparent)`,
+        accText: "#ffd9c9",
+        onAcc: "#fff",
+        live: "#fb7185",
+        liveSoft: "rgba(251,113,133,0.22)",
+        liveText: "#fecdd3",
+        glass: "rgba(58,59,66,0.96)",
+        panel: "rgba(20,22,30,0.98)",
+        scrim: "rgba(0,0,0,0.6)",
+        font: "'Avenir Next', 'Trebuchet MS', sans-serif",
+        mono: "ui-monospace, SFMono-Regular, Menlo, monospace"
+      };
+      cardStyle = {
+        background: TV.s07,
+        border: `1px solid ${TV.lineCard}`,
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
+        borderRadius: dp(14),
+        overflow: "hidden"
+      };
+      sw = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" };
+      svg = (size, children, fill) => createElement("svg", { width: size, height: size, viewBox: "0 0 24 24", ...sw, fill: fill ? "currentColor" : "none" }, children);
+      Icons = {
+        Search: ({ size = dp(26) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("circle", { cx: "11", cy: "11", r: "7" }),
+          /* @__PURE__ */ jsx("path", { d: "m20 20-3.5-3.5" })
+        ] })),
+        Home: ({ size = dp(26) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("path", { d: "M3 11.5 12 4l9 7.5" }),
+          /* @__PURE__ */ jsx("path", { d: "M5 10v10h14V10" })
+        ] })),
+        Tv: ({ size = dp(26) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("rect", { x: "3", y: "5", width: "18", height: "13", rx: "2" }),
+          /* @__PURE__ */ jsx("path", { d: "M8 21h8" })
+        ] })),
+        SquaresFour: ({ size = dp(26) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("rect", { x: "4", y: "4", width: "7", height: "7", rx: "1.5" }),
+          /* @__PURE__ */ jsx("rect", { x: "13", y: "4", width: "7", height: "7", rx: "1.5" }),
+          /* @__PURE__ */ jsx("rect", { x: "4", y: "13", width: "7", height: "7", rx: "1.5" }),
+          /* @__PURE__ */ jsx("rect", { x: "13", y: "13", width: "7", height: "7", rx: "1.5" })
+        ] })),
+        Heart: ({ size = dp(26), filled = false }) => svg(size, /* @__PURE__ */ jsx("path", { d: "M12 21s-7-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 12C19 16.4 12 21 12 21z" }), filled),
+        Gear: ({ size = dp(26) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "3" }),
+          /* @__PURE__ */ jsx("path", { d: "M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" })
+        ] })),
+        ChevronLeft: ({ size = dp(24) }) => svg(size, /* @__PURE__ */ jsx("path", { d: "M15 18l-6-6 6-6" })),
+        ChevronDown: ({ size = dp(20) }) => svg(size, /* @__PURE__ */ jsx("path", { d: "m6 9 6 6 6-6" })),
+        Play: ({ size = dp(24) }) => svg(size, /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }), true),
+        Pause: ({ size = dp(24) }) => svg(size, /* @__PURE__ */ jsx("path", { d: "M7 5h4v14H7zM13 5h4v14h-4z" }), true),
+        Bell: ({ size = dp(20), filled = false }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("path", { d: "M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z" }),
+          /* @__PURE__ */ jsx("path", { d: "M10 20a2 2 0 0 0 4 0" })
+        ] }), filled),
+        Lock: ({ size = dp(18) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("rect", { x: "5", y: "11", width: "14", height: "10", rx: "2" }),
+          /* @__PURE__ */ jsx("path", { d: "M8 11V7a4 4 0 0 1 8 0v4" })
+        ] })),
+        Plus: ({ size = dp(40) }) => svg(size, /* @__PURE__ */ jsx("path", { d: "M12 5v14M5 12h14" })),
+        Dots: ({ size = dp(24) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("circle", { cx: "6", cy: "12", r: "1.6" }),
+          /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "1.6" }),
+          /* @__PURE__ */ jsx("circle", { cx: "18", cy: "12", r: "1.6" })
+        ] }), true),
+        Calendar: ({ size = dp(20) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("rect", { x: "3", y: "5", width: "18", height: "16", rx: "2" }),
+          /* @__PURE__ */ jsx("path", { d: "M8 3v4M16 3v4M3 10h18" })
+        ] }))
+      };
+    }
+  });
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-strings.ts
+  function tvText(lang, key, vars) {
+    const table = lang === "sv" ? SV2 : EN2;
+    let out = table[key] ?? EN2[key];
+    if (vars) {
+      for (const [name, value] of Object.entries(vars)) out = out.split(`{${name}}`).join(String(value));
+    }
+    return out;
+  }
+  function useTvText() {
+    const lang = useLang().lang;
+    const locale = lang === "sv" ? "sv-SE" : "en-GB";
+    return {
+      lang,
+      locale,
+      tt: (key, vars) => tvText(lang, key, vars)
+    };
+  }
+  var EN2, SV2;
+  var init_tv_strings = __esm({
+    "../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-strings.ts"() {
+      "use strict";
+      "use client";
+      init_plugin_sdk();
+      EN2 = {
+        // Ikonrad
+        railSearch: "Search",
+        railHome: "Home",
+        railGuide: "Channel guide",
+        railMultiview: "Multiview",
+        railFavourites: "Favourites",
+        railSettings: "Settings",
+        // Gemensamt
+        liveTv: "Live TV",
+        live: "LIVE",
+        replay: "Replay",
+        remind: "Remind",
+        watchNow: "Watch now",
+        back: "Back",
+        showMore: "Show more",
+        minutesLeft: "{min} min left",
+        channelsCount: "{count} channels",
+        allPlaylists: "All playlists",
+        addPlaylist: "+ Add playlist\u2026",
+        allGroups: "All",
+        favourites: "Favourites",
+        noProgramme: "No programme information",
+        loadingGuide: "Fetching guide\u2026",
+        okWatch: "OK = watch",
+        okRemind: "OK = remind me",
+        reminderSet: "Reminder set",
+        helpHub: "OK = watch \xB7 hold OK = menu",
+        helpGuide: "OK watch \xB7 hold OK menu \xB7 \u25C2\u25B8 category",
+        helpPlaylists: "\u25C2 \u25B8 switch column \xB7 Back closes",
+        helpFavourites: "OK = watch \xB7 hold OK = move up/down, remove, channel details \xB7 favourites come first in the guide and zap with 1\u2013N on the remote",
+        // Menyer
+        menuAddFavourite: "Add to favourites",
+        menuRemoveFavourite: "Remove from favourites",
+        menuChannelDetails: "Channel details",
+        menuAddMultiview: "Add to multiview",
+        menuLock: "Lock with PIN",
+        menuUnlock: "Unlock",
+        menuMoveUp: "Move up",
+        menuMoveDown: "Move down",
+        menuGuide: "Guide (now / next)",
+        menuMultiview: "Multiview",
+        menuPause: "Pause",
+        menuResume: "Resume",
+        menuAudioHere: "Audio here",
+        menuSwitchChannel: "Switch channel",
+        menuEnlarge: "Enlarge",
+        menuFullscreen: "Fullscreen",
+        menuRemoveTile: "Remove tile",
+        addedToMultiview: "Added to multiview",
+        // Hubb
+        spotlightFavouriteLive: "Favourite \xB7 live",
+        spotlightFavourite: "Favourite",
+        spotlightRecent: "Last watched",
+        spotlightOnNow: "On now",
+        continueWatching: "Continue watching",
+        continueSub: "Replays & last watched",
+        allChannels: "All channels",
+        allChannelsSub: "{playlist} \xB7 {count} channels \xB7 OK = watch \xB7 hold OK = menu",
+        emptyTitle: "No channels yet",
+        emptyBody: "Add an M3U playlist or an Xtream login under Settings.",
+        openSettings: "Open settings",
+        searchPlaceholder: "Search channels and programmes",
+        // Guide
+        colChannel: "CHANNEL",
+        colNow: "NOW",
+        colNext: "NEXT",
+        colLater: "LATER",
+        modeNow: "Now / Next",
+        modeTimeline: "Timeline",
+        modePlaylists: "Playlists",
+        next: "Next",
+        later: "Later",
+        previewLabel: "live stream, muted \xB7 OK = fullscreen",
+        previewFrame: "saved frame \xB7 OK = fullscreen",
+        // Favoriter
+        favouritesSub: "{count} channels \xB7 order sets channel numbers 1\u2013{count}",
+        addFromGuide: "+ Add from the guide",
+        favouritesEmpty: "No favourites yet. Hold OK on a channel and choose Add to favourites.",
+        // Kanaldetalj
+        yesterday: "Yesterday",
+        today: "Today",
+        tomorrow: "Tomorrow",
+        playReplay: "Play replay",
+        remindMe: "Remind me",
+        removeReminder: "Remove reminder",
+        airedAt: "Aired {time} \xB7 {channel}",
+        startsAt: "starts {time}",
+        onNow: "on now",
+        replayAvailable: "replay \xB7 available {days} days",
+        channelInfo: "CHANNEL INFORMATION",
+        quality: "Quality",
+        source: "Source",
+        replayDays: "Replay",
+        daysCount: "{days} days",
+        lockWithPin: "Lock with profile PIN",
+        noArchive: "None",
+        // Sök
+        searchChannels: "Channels",
+        searchProgrammes: "Programmes today",
+        hits: "{count} hits",
+        keyDone: "Done",
+        keySymbols: "123?",
+        keyLetters: "ABC",
+        noResults: "No results",
+        // Multivy
+        multiview: "Multiview",
+        layout2: "2 tiles",
+        layout3: "1 + 2",
+        layout4: "4 tiles",
+        audioLabel: "Audio",
+        multiviewHelp: "OK on a tile = audio here \xB7 hold OK = switch channel / remove",
+        pickChannel: "Pick channel",
+        pickChannelFor: "Pick channel for tile {n}",
+        frameLabel: "frame",
+        tileFailed: "Could not play",
+        // Inställningar
+        tabAppearance: "Appearance",
+        tabPlaylists: "Playlists",
+        tabEpg: "EPG sources",
+        tabParental: "Parental control",
+        accentColour: "Accent colour",
+        guideDefault: "Channel guide default view",
+        guideDefaultHint: "Can also be switched inside the guide",
+        behaviour: "Behaviour",
+        settingPreview: "Preview in the channel guide (plays the stream muted)",
+        settingStartLast: "Start on the last channel",
+        settingNumericZap: "Number keys zap directly",
+        settingBannerHide: "Hide the info banner after",
+        never: "Never",
+        seconds: "{s} s",
+        addM3u: "Add M3U URL",
+        addXtream: "Add Xtream login",
+        refetch: "Refetch",
+        remove: "Remove",
+        fetchedAt: "fetched {time}",
+        addEpgUrl: "Add EPG URL",
+        lockedChannels: "Locked channels",
+        noLocked: "No locked channels",
+        unlock: "Unlock",
+        enterPin: "Enter PIN",
+        pinWrong: "Wrong PIN",
+        cancel: "Cancel",
+        // Spelare
+        playerHelp: "\u25BE guide \xB7 hold OK = menu",
+        moreActions: "More",
+        nextLabel: "Next",
+        zapMiss: "No channel {n}",
+        // Tomma
+        guideEmpty: "No channels in this category"
+      };
+      SV2 = {
+        railSearch: "S\xF6k",
+        railHome: "Hem",
+        railGuide: "Kanalguide",
+        railMultiview: "Multivy",
+        railFavourites: "Favoriter",
+        railSettings: "Inst\xE4llningar",
+        liveTv: "Live TV",
+        live: "LIVE",
+        replay: "Repris",
+        remind: "P\xE5minn",
+        watchNow: "Titta nu",
+        back: "Tillbaka",
+        showMore: "Visa fler",
+        minutesLeft: "{min} min kvar",
+        channelsCount: "{count} kanaler",
+        allPlaylists: "Alla spellistor",
+        addPlaylist: "+ L\xE4gg till spellista \u2026",
+        allGroups: "Alla",
+        favourites: "Favoriter",
+        noProgramme: "Ingen programinformation",
+        loadingGuide: "H\xE4mtar tabl\xE5\u2026",
+        okWatch: "OK = titta",
+        okRemind: "OK = p\xE5minn mig",
+        reminderSet: "P\xE5minnelse satt",
+        helpHub: "OK = titta \xB7 h\xE5ll OK = meny",
+        helpGuide: "OK titta \xB7 h\xE5ll OK meny \xB7 \u25C2\u25B8 kategori",
+        helpPlaylists: "\u25C2 \u25B8 byter kolumn \xB7 Back st\xE4nger",
+        helpFavourites: "OK = titta \xB7 h\xE5ll OK = flytta upp/ner, ta bort, kanaldetaljer \xB7 favoriter ligger f\xF6rst i guiden och zappas med 1\u2013N p\xE5 fj\xE4rren",
+        menuAddFavourite: "L\xE4gg till i favoriter",
+        menuRemoveFavourite: "Ta bort fr\xE5n favoriter",
+        menuChannelDetails: "Kanaldetaljer",
+        menuAddMultiview: "L\xE4gg till i multivy",
+        menuLock: "L\xE5s med PIN",
+        menuUnlock: "L\xE5s upp",
+        menuMoveUp: "Flytta upp",
+        menuMoveDown: "Flytta ner",
+        menuGuide: "Guide (nu / sen)",
+        menuMultiview: "Multivy",
+        menuPause: "Pausa",
+        menuResume: "Forts\xE4tt",
+        menuAudioHere: "Ljud hit",
+        menuSwitchChannel: "Byt kanal",
+        menuEnlarge: "F\xF6rstora",
+        menuFullscreen: "Helsk\xE4rm",
+        menuRemoveTile: "Ta bort ruta",
+        addedToMultiview: "Tillagd i multivyn",
+        spotlightFavouriteLive: "Favorit \xB7 live",
+        spotlightFavourite: "Favorit",
+        spotlightRecent: "Senast sedd",
+        spotlightOnNow: "S\xE4nds nu",
+        continueWatching: "Forts\xE4tt titta",
+        continueSub: "Repriser & senast sedda",
+        allChannels: "Alla kanaler",
+        allChannelsSub: "{playlist} \xB7 {count} kanaler \xB7 OK = titta \xB7 h\xE5ll OK = meny",
+        emptyTitle: "Inga kanaler \xE4n",
+        emptyBody: "L\xE4gg till en M3U-spellista eller en Xtream-inloggning under Inst\xE4llningar.",
+        openSettings: "\xD6ppna inst\xE4llningar",
+        searchPlaceholder: "S\xF6k kanaler och program",
+        colChannel: "KANAL",
+        colNow: "NU",
+        colNext: "SEN",
+        colLater: "SENARE",
+        modeNow: "Nu / Sen",
+        modeTimeline: "Tabl\xE5",
+        modePlaylists: "Spellistor",
+        next: "Sen",
+        later: "Senare",
+        previewLabel: "livestr\xF6m, tyst \xB7 OK = helsk\xE4rm",
+        previewFrame: "sparad bildruta \xB7 OK = helsk\xE4rm",
+        favouritesSub: "{count} kanaler \xB7 ordningen styr kanalnummer 1\u2013{count}",
+        addFromGuide: "+ L\xE4gg till fr\xE5n guiden",
+        favouritesEmpty: "Inga favoriter \xE4n. H\xE5ll OK p\xE5 en kanal och v\xE4lj L\xE4gg till i favoriter.",
+        yesterday: "Ig\xE5r",
+        today: "Idag",
+        tomorrow: "Imorgon",
+        playReplay: "Spela repris",
+        remindMe: "P\xE5minn mig",
+        removeReminder: "Ta bort p\xE5minnelse",
+        airedAt: "S\xE4ndes {time} \xB7 {channel}",
+        startsAt: "b\xF6rjar {time}",
+        onNow: "p\xE5g\xE5r nu",
+        replayAvailable: "repris \xB7 tillg\xE4nglig {days} dagar",
+        channelInfo: "KANALINFORMATION",
+        quality: "Kvalitet",
+        source: "K\xE4lla",
+        replayDays: "Repris",
+        daysCount: "{days} dagar",
+        lockWithPin: "L\xE5s med profilens PIN",
+        noArchive: "Ingen",
+        searchChannels: "Kanaler",
+        searchProgrammes: "Program idag",
+        hits: "{count} tr\xE4ffar",
+        keyDone: "Klar",
+        keySymbols: "123?",
+        keyLetters: "ABC",
+        noResults: "Inga tr\xE4ffar",
+        multiview: "Multivy",
+        layout2: "2 rutor",
+        layout3: "1 + 2",
+        layout4: "4 rutor",
+        audioLabel: "Ljud",
+        multiviewHelp: "OK p\xE5 ruta = ljud hit \xB7 h\xE5ll OK = byt kanal / ta bort",
+        pickChannel: "V\xE4lj kanal",
+        pickChannelFor: "V\xE4lj kanal f\xF6r ruta {n}",
+        frameLabel: "bildruta",
+        tileFailed: "Kunde inte spela",
+        tabAppearance: "Utseende",
+        tabPlaylists: "Spellistor",
+        tabEpg: "EPG-k\xE4llor",
+        tabParental: "F\xF6r\xE4ldrakontroll",
+        accentColour: "Accentf\xE4rg",
+        guideDefault: "Kanalguidens standardvy",
+        guideDefaultHint: "G\xE5r \xE4ven att v\xE4xla direkt i guiden",
+        behaviour: "Beteende",
+        settingPreview: "F\xF6rhandsvisning i kanalguiden (spelar str\xF6mmen tyst)",
+        settingStartLast: "Starta p\xE5 senaste kanalen",
+        settingNumericZap: "Nummertangenter zappar direkt",
+        settingBannerHide: "D\xF6lj infobannern efter",
+        never: "Aldrig",
+        seconds: "{s} s",
+        addM3u: "L\xE4gg till M3U-URL",
+        addXtream: "L\xE4gg till Xtream-inloggning",
+        refetch: "H\xE4mta om",
+        remove: "Ta bort",
+        fetchedAt: "h\xE4mtad {time}",
+        addEpgUrl: "L\xE4gg till EPG-URL",
+        lockedChannels: "L\xE5sta kanaler",
+        noLocked: "Inga l\xE5sta kanaler",
+        unlock: "L\xE5s upp",
+        enterPin: "Ange PIN",
+        pinWrong: "Fel PIN",
+        cancel: "Avbryt",
+        playerHelp: "\u25BE guide \xB7 h\xE5ll OK = meny",
+        moreActions: "Mer",
+        nextLabel: "Sen",
+        zapMiss: "Ingen kanal {n}",
+        guideEmpty: "Inga kanaler i kategorin"
+      };
+    }
+  });
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-player-chrome.tsx
+  function TvPlayerChrome({ channel, tv, paused, onTogglePause, onClose }) {
+    const { tt } = useTvText();
+    const clock = useTvClockNode(tv.locale);
+    const [visible, setVisible] = useState(true);
+    const [miniOpen, setMiniOpen] = useState(false);
+    const [menu, setMenu] = useState(null);
+    const timerRef = useRef(null);
+    const dotsRef = useRef(null);
+    const miniRef = useRef(null);
+    const topRef = useRef(null);
+    const bannerRef = useRef(null);
+    const TvGlassMenu = getTvGlassMenu();
+    const info = tv.nowFor(channel);
+    const hideMs = tv.bannerHideMs;
+    const reveal = useCallback(() => {
+      setVisible(true);
+      if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+      if (hideMs > 0 && !miniOpen && !menu) timerRef.current = window.setTimeout(() => setVisible(false), hideMs);
+    }, [hideMs, miniOpen, menu]);
+    useEffect(() => {
+      reveal();
+      return () => {
+        if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+      };
+    }, [reveal, channel]);
+    const index3 = tv.neighbours.findIndex((c) => channelKey(c) === channelKey(channel));
+    const step = useCallback((delta) => {
+      if (tv.neighbours.length === 0) return;
+      const next2 = tv.neighbours[(index3 + delta + tv.neighbours.length) % tv.neighbours.length];
+      if (next2) tv.onSwitchChannel(next2);
+    }, [tv, index3]);
+    const closeMini = useCallback(() => {
+      setMiniOpen(false);
+      window.setTimeout(() => dotsRef.current?.focus({ preventScroll: true }), 0);
+    }, []);
+    useEffect(() => {
+      const onKey = (event) => {
+        if (menu) return;
+        if (event.key === "ChannelUp" || event.key === "PageUp") {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          step(1);
+          return;
+        }
+        if (event.key === "ChannelDown" || event.key === "PageDown") {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          step(-1);
+          return;
+        }
+        if (event.key === "ArrowDown" && !miniOpen) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          setMiniOpen(true);
+          reveal();
+          return;
+        }
+        if (event.key === "ArrowUp" && !miniOpen) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          reveal();
+          return;
+        }
+        if (event.key === "Escape" || event.key === "Backspace") {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          if (miniOpen) {
+            closeMini();
+            return;
+          }
+          onClose();
+          return;
+        }
+        const target2 = event.target;
+        const insideChrome = target2 instanceof Node && (topRef.current?.contains(target2) === true || bannerRef.current?.contains(target2) === true || miniRef.current?.contains(target2) === true);
+        if (!insideChrome && (event.key === "ArrowLeft" || event.key === "ArrowRight" || event.key === "Enter" || event.key === " ")) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          reveal();
+          return;
+        }
+        if (event.key.startsWith("Arrow") || event.key === "Enter") reveal();
+      };
+      window.addEventListener("keydown", onKey, true);
+      return () => window.removeEventListener("keydown", onKey, true);
+    }, [menu, miniOpen, step, reveal, onClose, closeMini]);
+    useEffect(() => {
+      if (!miniOpen) return;
+      const current2 = miniRef.current?.querySelector("[data-init]");
+      current2?.focus({ preventScroll: true });
+      current2?.scrollIntoView({ inline: "center", block: "nearest" });
+    }, [miniOpen]);
+    const openMenu = (element) => {
+      setMenu({
+        title: `${channel.name}${info.now ? ` \xB7 ${info.now.title}` : ""}`,
+        element,
+        actions: [
+          { key: "guide", label: tt("menuGuide"), run: () => setMiniOpen(true) },
+          { key: "multi", label: tt("menuMultiview"), run: tv.onOpenMultiview },
+          { key: "pause", label: paused ? tt("menuResume") : tt("menuPause"), run: onTogglePause },
+          { key: "fav", label: tv.favourite ? tt("menuRemoveFavourite") : tt("menuAddFavourite"), run: tv.onToggleFavourite },
+          { key: "info", label: tt("menuChannelDetails"), run: tv.onOpenChannelDetails }
+        ]
+      });
+    };
+    return /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsxs("div", { ref: topRef, style: { position: "absolute", top: 0, left: 0, right: 0, padding: `${dp(36)}px ${dp(48)}px`, display: "flex", alignItems: "center", gap: dp(16), opacity: visible ? 1 : 0, transition: "opacity 200ms", pointerEvents: visible ? "auto" : "none", zIndex: 30 }, children: [
+        /* @__PURE__ */ jsx(RoundBtn, { ...station(onClose), background: "rgba(252,252,255,0.12)", children: /* @__PURE__ */ jsx(Icons.ChevronLeft, {}) }),
+        /* @__PURE__ */ jsxs("span", { style: { fontSize: dp(20), color: "rgba(243,244,248,0.75)" }, children: [
+          tv.channelNumber ? `${tv.channelNumber} \xB7 ` : "",
+          channel.name
+        ] }),
+        /* @__PURE__ */ jsxs("span", { style: { marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: dp(14), fontSize: dp(17) }, children: [
+          info.now ? /* @__PURE__ */ jsx(Tag2, { variant: "live", children: tt("live") }) : null,
+          tv.quality ? /* @__PURE__ */ jsx("span", { style: { color: "rgba(243,244,248,0.75)" }, children: tv.quality }) : null,
+          clock
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { ref: bannerRef, "data-testid": "banner", style: { position: "absolute", left: 0, right: 0, bottom: 0, padding: dp(48), paddingTop: dp(120), background: "linear-gradient(180deg, transparent, rgba(0,0,0,0.92) 55%)", display: "flex", alignItems: "flex-end", gap: dp(24), opacity: visible ? 1 : 0, transition: "opacity 200ms", pointerEvents: visible ? "auto" : "none", zIndex: 30 }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: dp(10) }, children: [
+          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(44), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: info.now?.title ?? channel.name }),
+          info.now ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+            /* @__PURE__ */ jsxs("div", { style: { fontSize: dp(20), color: "rgba(243,244,248,0.7)" }, children: [
+              `${formatClock(info.now.start, tv.locale)}\u2013${formatClock(info.now.stop, tv.locale)} \xB7 ${tt("minutesLeft", { min: Math.max(0, Math.round((info.now.stop - tv.nowMs) / 6e4)) })}`,
+              info.next ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+                " \xB7 ",
+                /* @__PURE__ */ jsx("span", { style: { color: TV.accText }, children: tt("nextLabel") }),
+                " ",
+                info.next.title
+              ] }) : null
+            ] }),
+            /* @__PURE__ */ jsx(Progress, { value: progressOf(info.now.start, info.now.stop, tv.nowMs), height: dp(6), style: { maxWidth: dp(900) } })
+          ] }) : null
+        ] }),
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(16), flexShrink: 0 }, children: [
+          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: "rgba(243,244,248,0.45)" }, children: tt("playerHelp") }),
+          /* @__PURE__ */ jsx("div", { ref: dotsRef, ...station(() => dotsRef.current && openMenu(dotsRef.current), (el) => openMenu(el), { "data-init": "", "aria-label": tt("moreActions") }), style: { width: dp(52), height: dp(52), borderRadius: 999, background: "rgba(252,252,255,0.10)", border: `1px solid ${TV.lineCard}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }, children: /* @__PURE__ */ jsx(Icons.Dots, {}) })
+        ] })
+      ] }),
+      miniOpen ? /* @__PURE__ */ jsx("div", { ref: miniRef, "data-panel-root": "", "data-row": "", "data-live-tv-layer": "", style: { position: "absolute", left: 0, right: 0, bottom: dp(200), padding: `0 ${dp(48)}px`, display: "flex", gap: dp(14), overflowX: "auto", zIndex: 31 }, children: tv.neighbours.map((c) => {
+        const n = tv.nowFor(c);
+        const current2 = channelKey(c) === channelKey(channel);
+        return /* @__PURE__ */ jsxs("div", { "data-testid": "mini-card", ...station(() => {
+          closeMini();
+          tv.onSwitchChannel(c);
+        }, (el) => setMenu({ title: c.name, element: el, actions: [{ key: "multi", label: tt("menuAddMultiview"), run: () => tv.onAddToMultiview(c) }] }), current2 ? { "data-init": "" } : void 0), style: { width: dp(330), height: dp(118), flexShrink: 0, borderRadius: dp(14), padding: `${dp(14)}px ${dp(16)}px`, background: current2 ? TV.s16 : "rgba(20,22,30,0.85)", display: "flex", flexDirection: "column", gap: dp(6), cursor: "pointer", boxSizing: "border-box" }, children: [
+          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(14), color: "rgba(243,244,248,0.55)" }, children: c.name }),
+          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: n.now?.title ?? tt("noProgramme") }),
+          n.next ? /* @__PURE__ */ jsxs("div", { style: { fontSize: dp(15), color: "rgba(243,244,248,0.6)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: [
+            tt("nextLabel"),
+            ": ",
+            n.next.title
+          ] }) : null,
+          n.now ? /* @__PURE__ */ jsx(Progress, { value: progressOf(n.now.start, n.now.stop, tv.nowMs), height: dp(4) }) : null
+        ] }, channelKey(c));
+      }) }) : null,
+      TvGlassMenu && menu ? /* @__PURE__ */ jsx(TvGlassMenu, { target: menu, onClose: () => {
+        setMenu(null);
+        reveal();
+      } }) : null
+    ] });
+  }
+  var init_tv_player_chrome = __esm({
+    "../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-player-chrome.tsx"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_plugin_sdk();
+      init_live_tv_data();
+      init_live_tv_ui();
+      init_tv_ui();
+      init_tv_strings();
+      init_jsx_runtime_shim();
+    }
+  });
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/video-surface.ts
+  function videoSurfaceCapabilities() {
+    if (typeof host.createVideoSurface === "function" && typeof host.getVideoSurfaceCapabilities === "function") {
+      return { maxLive: Math.max(0, host.getVideoSurfaceCapabilities().maxSurfaces - 1), engine: "host" };
+    }
+    return { maxLive: 1, engine: isDesktopTauriEnv ? "mpv" : isAndroidTauriEnv ? "droid" : "html" };
+  }
+  function notifyWaiters() {
+    for (const w of waiters) w();
+  }
+  async function releaseAllSurfaces() {
+    const close = ownerClose;
+    owner = null;
+    ownerClose = null;
+    if (close) await close().catch(() => {
+    });
+    notifyWaiters();
+  }
+  function measure2(el) {
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    if (r.width < 2 || r.height < 2) return null;
+    return { left: r.left, top: r.top, width: r.width, height: r.height };
+  }
+  function isHls(url) {
+    return /\.m3u8(\?|$)/i.test(url) || !/\.[a-z0-9]{2,4}(\?|$)/i.test(url);
+  }
+  function createHtmlSession(url, muted, onReady, onFail) {
+    const video = document.createElement("video");
+    video.muted = muted;
+    video.autoplay = true;
+    video.playsInline = true;
+    video.style.cssText = "position:fixed;object-fit:cover;background:#000;pointer-events:none;z-index:5;border-radius:inherit";
+    video.dataset.liveTvSurface = "";
+    video.addEventListener("canplay", onReady, { once: true });
+    video.addEventListener("error", onFail, { once: true });
+    document.body.appendChild(video);
+    const src = hostProxyUrl(window.location.origin, url);
+    const Hls = getHls();
+    let hls = null;
+    if (isHls(url) && Hls && Hls.isSupported()) {
+      const instance = new Hls();
+      instance.loadSource(src);
+      instance.attachMedia(video);
+      hls = instance;
+    } else {
+      video.src = src;
+    }
+    void video.play().catch(() => {
+    });
+    return {
+      setBounds(rect) {
+        video.style.left = `${rect.left}px`;
+        video.style.top = `${rect.top}px`;
+        video.style.width = `${rect.width}px`;
+        video.style.height = `${rect.height}px`;
+      },
+      setMuted(m2) {
+        video.muted = m2;
+      },
+      async close() {
+        hls?.destroy();
+        video.pause();
+        video.removeAttribute("src");
+        video.remove();
+      }
+    };
+  }
+  function useVideoSurface(rectRef, source, options) {
+    const [ready, setReady] = useState(false);
+    const [failed, setFailed] = useState(false);
+    const [live, setLive] = useState(false);
+    const idRef = useRef(/* @__PURE__ */ Symbol("surface"));
+    const enabled = options.enabled !== false && source !== null;
+    const url = source?.url ?? null;
+    const muted = options.muted;
+    const audio = options.audio === true;
+    const frameUrl = source ? playerFrameUrl(channelKey(source.channel)) : null;
+    useEffect(() => {
+      if (!enabled || !url) {
+        setLive(false);
+        setReady(false);
+        return;
+      }
+      const caps = videoSurfaceCapabilities();
+      let cancelled = false;
+      let setBounds = null;
+      let closeSession = null;
+      let readyTimer = 0;
+      let spent = false;
+      const markReady = () => {
+        if (!cancelled) setReady(true);
+      };
+      const markFailed = () => {
+        if (!cancelled) {
+          setFailed(true);
+          setReady(false);
+        }
+      };
+      const closeOnce = async () => {
+        if (spent) return;
+        spent = true;
+        await closeSession?.().catch(() => {
+        });
+      };
+      const start3 = async () => {
+        setFailed(false);
+        setReady(false);
+        if (caps.engine === "host" && host.createVideoSurface) {
+          const surface = host.createVideoSurface();
+          if (!surface) {
+            setLive(false);
+            return;
+          }
+          const off = surface.onState((s) => {
+            if (s.firstFrameRendered) markReady();
+            if (s.loadFailed) markFailed();
+          });
+          setBounds = (rect2) => surface.setBounds(rect2);
+          closeSession = async () => {
+            off();
+            await surface.destroy();
+          };
+          setLive(true);
+          await surface.open({ url, muted }).catch(markFailed);
+          return;
+        }
+        if (caps.engine === "droid" && muted) {
+          setLive(false);
+          return;
+        }
+        if (owner !== null && owner !== idRef.current) {
+          if (!audio) {
+            setLive(false);
+            return;
+          }
+          await releaseAllSurfaces();
+        }
+        if (cancelled) return;
+        owner = idRef.current;
+        setLive(true);
+        if (caps.engine === "mpv") {
+          closeSession = () => closeMpvPlayer();
+          await openMpvPlayer({ url }).catch(markFailed);
+          if (cancelled || owner !== idRef.current) {
+            await closeOnce();
+            return;
+          }
+          await host.mpvSetPropertyStrings?.([{ name: "mute", value: muted ? "yes" : "no" }])?.catch(() => {
+          });
+          if (cancelled || owner !== idRef.current) {
+            await closeOnce();
+            return;
+          }
+          setBounds = (rect2) => mpvSetBounds(rect2);
+          readyTimer = window.setTimeout(markReady, 800);
+        } else if (caps.engine === "droid") {
+          closeSession = () => closeNativePlayer();
+          await openNativePlayer({ url, mimeType: isHls(url) ? HOST_PROXY_MIME : void 0 }).catch(markFailed);
+          if (cancelled || owner !== idRef.current) {
+            await closeOnce();
+            return;
+          }
+          setBounds = (rect2) => nativeSetBounds(rect2);
+          readyTimer = window.setTimeout(markReady, 800);
+        } else {
+          const session = createHtmlSession(url, muted, markReady, markFailed);
+          closeSession = () => session.close();
+          setBounds = (rect2) => session.setBounds(rect2);
+        }
+        ownerClose = closeOnce;
+        const rect = measure2(rectRef.current);
+        if (rect) setBounds(rect);
+      };
+      void start3();
+      const sync2 = () => {
+        const rect = measure2(rectRef.current);
+        if (rect && setBounds) setBounds(rect);
+      };
+      const observer2 = typeof ResizeObserver !== "undefined" && rectRef.current ? new ResizeObserver(sync2) : null;
+      if (observer2 && rectRef.current) observer2.observe(rectRef.current);
+      window.addEventListener("resize", sync2);
+      document.addEventListener("scroll", sync2, true);
+      const onReleased = () => {
+        if (owner !== idRef.current) setLive(false);
+      };
+      waiters.add(onReleased);
+      return () => {
+        cancelled = true;
+        window.clearTimeout(readyTimer);
+        observer2?.disconnect();
+        window.removeEventListener("resize", sync2);
+        document.removeEventListener("scroll", sync2, true);
+        waiters.delete(onReleased);
+        if (owner === idRef.current) {
+          owner = null;
+          ownerClose = null;
+          void closeOnce();
+          notifyWaiters();
+        } else {
+          void closeOnce();
+        }
+      };
+    }, [enabled, url, muted, audio, rectRef]);
+    return { ready, failed, live, frameUrl };
+  }
+  var host, owner, ownerClose, waiters;
+  var init_video_surface = __esm({
+    "../lumio-official-plugins/plugins/live-tv/runtime/tv/video-surface.ts"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_plugin_sdk();
+      init_plugin_sdk();
+      init_live_tv_data();
+      init_live_tv_playback_fallback();
+      host = plugin_sdk_exports;
+      owner = null;
+      ownerClose = null;
+      waiters = /* @__PURE__ */ new Set();
+    }
+  });
+
   // ../lumio-official-plugins/plugins/live-tv/runtime/live-tv-player.tsx
   var live_tv_player_exports = {};
   __export(live_tv_player_exports, {
@@ -190727,10 +191675,11 @@ ${cue.text}`).join("\n\n")}
     if (h > 0) return `${h}:${String(m2).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
     return `${m2}:${String(s).padStart(2, "0")}`;
   }
-  function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], onSwitchChannel }) {
+  function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], onSwitchChannel, tv }) {
     const { t } = useLang();
     const isTv = useTvMode();
     const tvStation = isTv ? { "data-f": "" } : {};
+    const tvChrome = isTv && tv ? tv : null;
     useEffect(() => {
       recordChannelWatch(channel, listId);
     }, [channel.url, channel.name, listId]);
@@ -190934,6 +191883,7 @@ ${cue.text}`).join("\n\n")}
         if (isTv) revealControls();
         const target2 = event.target;
         if (target2?.tagName === "INPUT" || target2?.tagName === "TEXTAREA") return;
+        if (tvChrome && (event.key === "Escape" || event.key === "Backspace")) return;
         if (event.key === "Escape" || isTv && event.key === "Backspace") {
           event.preventDefault();
           event.stopPropagation();
@@ -190973,7 +191923,7 @@ ${cue.text}`).join("\n\n")}
         unlockBodyScroll();
         window.removeEventListener("keydown", onKey, isTv);
       };
-    }, [isTv, mpvPaused, revealControls, scheduleOpen, hasNativeSurface]);
+    }, [isTv, mpvPaused, revealControls, scheduleOpen, hasNativeSurface, tvChrome]);
     useEffect(() => {
       if (!isTv) return;
       return onTvFocusEdge((dir, meta) => {
@@ -191049,7 +191999,8 @@ ${cue.text}`).join("\n\n")}
         }).then(() => {
           if (cancelled2) return;
           syncRepeatedly();
-          return engineOpen(channel.url, nativeAttempt > 0);
+          return releaseAllSurfaces().catch(() => {
+          }).then(() => engineOpen(channel.url, nativeAttempt > 0));
         }).then(() => {
           if (cancelled2) return;
           syncRepeatedly();
@@ -191429,217 +192380,219 @@ ${cue.text}`).join("\n\n")}
             /* @__PURE__ */ jsx("p", { className: "text-sm text-red-400", children: error }),
             /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500", children: t("liveTvStreamErrorHelp") })
           ] }),
-          /* @__PURE__ */ jsxs(
-            "div",
-            {
-              className: "absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-4 bg-gradient-to-b from-black/75 via-black/45 to-transparent px-5 pb-4 pt-[max(1rem,env(safe-area-inset-top),var(--android-inset-top,0px))] transition-opacity duration-200",
-              onMouseEnter: keepControlsVisible,
-              onMouseLeave: revealControls,
-              style: {
-                opacity: controlsVisible ? 1 : 0,
-                pointerEvents: controlsVisible ? "auto" : "none"
-              },
-              children: [
-                /* @__PURE__ */ jsxs("div", { className: "min-w-0 flex items-center gap-3", children: [
-                  logoSrc && /* @__PURE__ */ jsx(
-                    LiveTvLogoImage,
+          tvChrome ? /* @__PURE__ */ jsx(TvPlayerChrome, { channel, tv: tvChrome, paused: mpvPaused, onTogglePause: toggleMpvPause, onClose: handleClose }) : /* @__PURE__ */ jsxs(Fragment2, { children: [
+            /* @__PURE__ */ jsxs(
+              "div",
+              {
+                className: "absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-4 bg-gradient-to-b from-black/75 via-black/45 to-transparent px-5 pb-4 pt-[max(1rem,env(safe-area-inset-top),var(--android-inset-top,0px))] transition-opacity duration-200",
+                onMouseEnter: keepControlsVisible,
+                onMouseLeave: revealControls,
+                style: {
+                  opacity: controlsVisible ? 1 : 0,
+                  pointerEvents: controlsVisible ? "auto" : "none"
+                },
+                children: [
+                  /* @__PURE__ */ jsxs("div", { className: "min-w-0 flex items-center gap-3", children: [
+                    logoSrc && /* @__PURE__ */ jsx(
+                      LiveTvLogoImage,
+                      {
+                        src: logoSrc,
+                        alt: "",
+                        className: "h-8 w-8 rounded object-contain bg-slate-800/90 p-0.5"
+                      }
+                    ),
+                    /* @__PURE__ */ jsxs("div", { className: "min-w-0", children: [
+                      /* @__PURE__ */ jsx("p", { className: "truncate font-semibold text-white", children: channel.name }),
+                      /* @__PURE__ */ jsx("div", { className: "min-w-0", children: /* @__PURE__ */ jsx(PlayerNowOverlay, { channel, listId, urls: epgUrls }) })
+                    ] })
+                  ] }),
+                  !isTv ? /* @__PURE__ */ jsx("div", { className: "hidden min-w-0 flex-1 justify-center sm:flex", children: /* @__PURE__ */ jsx(PlayerNextUpCard, { channel, listId, urls: epgUrls }) }) : null,
+                  /* @__PURE__ */ jsx(
+                    "button",
                     {
-                      src: logoSrc,
-                      alt: "",
-                      className: "h-8 w-8 rounded object-contain bg-slate-800/90 p-0.5"
-                    }
-                  ),
-                  /* @__PURE__ */ jsxs("div", { className: "min-w-0", children: [
-                    /* @__PURE__ */ jsx("p", { className: "truncate font-semibold text-white", children: channel.name }),
-                    /* @__PURE__ */ jsx("div", { className: "min-w-0", children: /* @__PURE__ */ jsx(PlayerNowOverlay, { channel, listId, urls: epgUrls }) })
-                  ] })
-                ] }),
-                !isTv ? /* @__PURE__ */ jsx("div", { className: "hidden min-w-0 flex-1 justify-center sm:flex", children: /* @__PURE__ */ jsx(PlayerNextUpCard, { channel, listId, urls: epgUrls }) }) : null,
-                /* @__PURE__ */ jsx(
-                  "button",
-                  {
-                    type: "button",
-                    ...tvStation,
-                    ...isTv ? { "data-init": "" } : {},
-                    ref: (node) => {
-                      if (!isTv || !node || node.dataset.focusAsserted === "1") return;
-                      node.dataset.focusAsserted = "1";
-                      let held = 0;
-                      const deadline = Date.now() + 4e3;
-                      const tick = () => {
-                        if (!node.isConnected) return;
-                        if (node.offsetParent !== null) {
-                          if (document.activeElement === node) {
-                            if (++held >= 5) return;
-                          } else {
-                            held = 0;
-                            node.focus();
+                      type: "button",
+                      ...tvStation,
+                      ...isTv ? { "data-init": "" } : {},
+                      ref: (node) => {
+                        if (!isTv || !node || node.dataset.focusAsserted === "1") return;
+                        node.dataset.focusAsserted = "1";
+                        let held = 0;
+                        const deadline = Date.now() + 4e3;
+                        const tick = () => {
+                          if (!node.isConnected) return;
+                          if (node.offsetParent !== null) {
+                            if (document.activeElement === node) {
+                              if (++held >= 5) return;
+                            } else {
+                              held = 0;
+                              node.focus();
+                            }
                           }
-                        }
-                        if (Date.now() < deadline) requestAnimationFrame(tick);
-                      };
-                      requestAnimationFrame(tick);
-                    },
-                    onClick: handleClose,
-                    className: "rounded-full border border-white/15 bg-black/45 px-3 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-200 transition hover:border-white/35 hover:text-white",
-                    children: t("close")
-                  }
-                )
-              ]
-            }
-          ),
-          /* @__PURE__ */ jsxs(
-            "div",
-            {
-              className: "absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-5 pb-[max(1.25rem,env(safe-area-inset-bottom),var(--android-inset-bottom,0px))] pt-12 transition-opacity duration-200",
-              onMouseEnter: keepControlsVisible,
-              onMouseLeave: revealControls,
-              style: {
-                opacity: controlsVisible ? 1 : 0,
-                pointerEvents: controlsVisible ? "auto" : "none"
-              },
-              children: [
-                /* @__PURE__ */ jsx("div", { className: "mb-2 px-1", children: /* @__PURE__ */ jsx(PlayerProgrammeProgress, { channel, listId, urls: epgUrls }) }),
-                /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-4 overflow-x-auto rounded-2xl border border-white/10 bg-black/55 px-4 py-3 text-white shadow-2xl backdrop-blur-md [scrollbar-width:none] [&::-webkit-scrollbar]:hidden", children: [
-                  /* @__PURE__ */ jsx(
-                    "button",
-                    {
-                      type: "button",
-                      ...tvStation,
-                      onClick: toggleMpvPause,
-                      className: "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/35 hover:bg-white/15",
-                      "aria-label": mpvPaused ? t("play") : t("liveTvPause"),
-                      title: mpvPaused ? t("play") : t("liveTvPause"),
-                      children: mpvPaused ? /* @__PURE__ */ jsx("svg", { className: "h-5 w-5 translate-x-0.5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M7 5h4v14H7zM13 5h4v14h-4z" }) })
+                          if (Date.now() < deadline) requestAnimationFrame(tick);
+                        };
+                        requestAnimationFrame(tick);
+                      },
+                      onClick: handleClose,
+                      className: "rounded-full border border-white/15 bg-black/45 px-3 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-200 transition hover:border-white/35 hover:text-white",
+                      children: t("close")
                     }
-                  ),
-                  /* @__PURE__ */ jsx(
-                    "button",
-                    {
-                      type: "button",
-                      ...tvStation,
-                      onClick: toggleFullscreen,
-                      className: `flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-white transition ${desktopFullscreen ? "border-white/45 bg-white/20 hover:border-white/60" : "border-white/15 bg-white/10 hover:border-white/35 hover:bg-white/15"}`,
-                      "aria-label": desktopFullscreen ? t("liveTvExitFullscreen") : t("liveTvFullscreen"),
-                      title: desktopFullscreen ? t("liveTvExitFullscreen") : t("liveTvFullscreen"),
-                      "aria-pressed": desktopFullscreen,
-                      children: /* @__PURE__ */ jsxs("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
-                        /* @__PURE__ */ jsx("path", { d: "M8 3H3v5" }),
-                        /* @__PURE__ */ jsx("path", { d: "M16 3h5v5" }),
-                        /* @__PURE__ */ jsx("path", { d: "M21 16v5h-5" }),
-                        /* @__PURE__ */ jsx("path", { d: "M3 16v5h5" })
-                      ] })
-                    }
-                  ),
-                  /* @__PURE__ */ jsx(
-                    "button",
-                    {
-                      type: "button",
-                      ...tvStation,
-                      onClick: () => setScheduleOpen((open) => !open),
-                      className: `flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-white transition ${scheduleOpen ? "border-emerald-300/60 bg-emerald-400/20 hover:border-emerald-200/80" : "border-white/15 bg-white/10 hover:border-white/35 hover:bg-white/15"}`,
-                      "aria-label": t("liveTvGuide"),
-                      title: t("liveTvGuide"),
-                      "aria-pressed": scheduleOpen,
-                      children: /* @__PURE__ */ jsxs("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
-                        /* @__PURE__ */ jsx("rect", { x: "3", y: "4", width: "18", height: "16", rx: "2" }),
-                        /* @__PURE__ */ jsx("path", { d: "M8 2v4" }),
-                        /* @__PURE__ */ jsx("path", { d: "M16 2v4" }),
-                        /* @__PURE__ */ jsx("path", { d: "M3 10h18" }),
-                        /* @__PURE__ */ jsx("path", { d: "M7 14h4" }),
-                        /* @__PURE__ */ jsx("path", { d: "M7 18h10" })
-                      ] })
-                    }
-                  ),
-                  /* @__PURE__ */ jsxs("div", { className: "flex shrink-0 items-center gap-2", children: [
+                  )
+                ]
+              }
+            ),
+            /* @__PURE__ */ jsxs(
+              "div",
+              {
+                className: "absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-5 pb-[max(1.25rem,env(safe-area-inset-bottom),var(--android-inset-bottom,0px))] pt-12 transition-opacity duration-200",
+                onMouseEnter: keepControlsVisible,
+                onMouseLeave: revealControls,
+                style: {
+                  opacity: controlsVisible ? 1 : 0,
+                  pointerEvents: controlsVisible ? "auto" : "none"
+                },
+                children: [
+                  /* @__PURE__ */ jsx("div", { className: "mb-2 px-1", children: /* @__PURE__ */ jsx(PlayerProgrammeProgress, { channel, listId, urls: epgUrls }) }),
+                  /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-4 overflow-x-auto rounded-2xl border border-white/10 bg-black/55 px-4 py-3 text-white shadow-2xl backdrop-blur-md [scrollbar-width:none] [&::-webkit-scrollbar]:hidden", children: [
                     /* @__PURE__ */ jsx(
                       "button",
                       {
                         type: "button",
                         ...tvStation,
-                        onClick: toggleMute,
+                        onClick: toggleMpvPause,
                         className: "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/35 hover:bg-white/15",
-                        "aria-label": muted ? t("liveTvUnmute") : t("liveTvMute"),
-                        title: muted ? t("liveTvUnmute") : t("liveTvMute"),
-                        "aria-pressed": muted,
-                        children: muted || volumeLevel === 0 ? /* @__PURE__ */ jsxs("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
-                          /* @__PURE__ */ jsx("path", { d: "M11 5 6 9H3v6h3l5 4V5Z" }),
-                          /* @__PURE__ */ jsx("path", { d: "m22 9-6 6" }),
-                          /* @__PURE__ */ jsx("path", { d: "m16 9 6 6" })
-                        ] }) : /* @__PURE__ */ jsxs("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
-                          /* @__PURE__ */ jsx("path", { d: "M11 5 6 9H3v6h3l5 4V5Z" }),
-                          volumeLevel > 0.33 ? /* @__PURE__ */ jsx("path", { d: "M15.5 8.5a5 5 0 0 1 0 7" }) : null,
-                          volumeLevel > 0.66 ? /* @__PURE__ */ jsx("path", { d: "M19 4.5a10 10 0 0 1 0 15" }) : null
+                        "aria-label": mpvPaused ? t("play") : t("liveTvPause"),
+                        title: mpvPaused ? t("play") : t("liveTvPause"),
+                        children: mpvPaused ? /* @__PURE__ */ jsx("svg", { className: "h-5 w-5 translate-x-0.5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M7 5h4v14H7zM13 5h4v14h-4z" }) })
+                      }
+                    ),
+                    /* @__PURE__ */ jsx(
+                      "button",
+                      {
+                        type: "button",
+                        ...tvStation,
+                        onClick: toggleFullscreen,
+                        className: `flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-white transition ${desktopFullscreen ? "border-white/45 bg-white/20 hover:border-white/60" : "border-white/15 bg-white/10 hover:border-white/35 hover:bg-white/15"}`,
+                        "aria-label": desktopFullscreen ? t("liveTvExitFullscreen") : t("liveTvFullscreen"),
+                        title: desktopFullscreen ? t("liveTvExitFullscreen") : t("liveTvFullscreen"),
+                        "aria-pressed": desktopFullscreen,
+                        children: /* @__PURE__ */ jsxs("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
+                          /* @__PURE__ */ jsx("path", { d: "M8 3H3v5" }),
+                          /* @__PURE__ */ jsx("path", { d: "M16 3h5v5" }),
+                          /* @__PURE__ */ jsx("path", { d: "M21 16v5h-5" }),
+                          /* @__PURE__ */ jsx("path", { d: "M3 16v5h5" })
                         ] })
                       }
                     ),
-                    !isTv ? /* @__PURE__ */ jsx(
-                      "input",
+                    /* @__PURE__ */ jsx(
+                      "button",
                       {
-                        type: "range",
-                        min: 0,
-                        max: 1,
-                        step: 0.01,
-                        value: muted ? 0 : volumeLevel,
-                        onChange: (e) => updateVolume(parseFloat(e.target.value)),
-                        className: "h-1 w-24 shrink-0 cursor-pointer appearance-none rounded-full bg-white/15 accent-white",
-                        "aria-label": t("liveTvVolume")
+                        type: "button",
+                        ...tvStation,
+                        onClick: () => setScheduleOpen((open) => !open),
+                        className: `flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-white transition ${scheduleOpen ? "border-emerald-300/60 bg-emerald-400/20 hover:border-emerald-200/80" : "border-white/15 bg-white/10 hover:border-white/35 hover:bg-white/15"}`,
+                        "aria-label": t("liveTvGuide"),
+                        title: t("liveTvGuide"),
+                        "aria-pressed": scheduleOpen,
+                        children: /* @__PURE__ */ jsxs("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
+                          /* @__PURE__ */ jsx("rect", { x: "3", y: "4", width: "18", height: "16", rx: "2" }),
+                          /* @__PURE__ */ jsx("path", { d: "M8 2v4" }),
+                          /* @__PURE__ */ jsx("path", { d: "M16 2v4" }),
+                          /* @__PURE__ */ jsx("path", { d: "M3 10h18" }),
+                          /* @__PURE__ */ jsx("path", { d: "M7 14h4" }),
+                          /* @__PURE__ */ jsx("path", { d: "M7 18h10" })
+                        ] })
                       }
-                    ) : null
-                  ] }),
-                  /* @__PURE__ */ jsxs(
-                    "button",
-                    {
-                      type: "button",
-                      ...tvStation,
-                      onClick: cycleAspect,
-                      className: "flex h-11 shrink-0 items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 text-white transition hover:border-white/35 hover:bg-white/15",
-                      "aria-label": `${t("aspectRatio")}: ${ASPECT_OPTIONS[aspectIndex].label}`,
-                      title: `${t("aspectRatio")}: ${ASPECT_OPTIONS[aspectIndex].label}`,
-                      children: [
-                        /* @__PURE__ */ jsxs("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
-                          /* @__PURE__ */ jsx("rect", { x: "3", y: "5", width: "18", height: "14", rx: "2" }),
-                          /* @__PURE__ */ jsx("path", { d: "M3 9h18M9 5v14" })
-                        ] }),
-                        /* @__PURE__ */ jsx("span", { className: "hidden text-[11px] font-semibold uppercase tracking-[0.1em] lg:inline", children: ASPECT_OPTIONS[aspectIndex].label })
-                      ]
-                    }
-                  ),
-                  /* @__PURE__ */ jsxs("div", { className: "min-w-0 flex-1", style: { minWidth: 176 }, children: [
-                    /* @__PURE__ */ jsxs("div", { className: "flex min-w-0 items-center gap-3", children: [
-                      /* @__PURE__ */ jsx("span", { className: "inline-flex h-6 shrink-0 items-center rounded-full border border-red-400/35 bg-red-500/15 px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-red-200", children: t("liveTvLiveBadge") }),
-                      /* @__PURE__ */ jsx("p", { className: "min-w-0 truncate text-sm font-semibold text-white", children: channel.name })
+                    ),
+                    /* @__PURE__ */ jsxs("div", { className: "flex shrink-0 items-center gap-2", children: [
+                      /* @__PURE__ */ jsx(
+                        "button",
+                        {
+                          type: "button",
+                          ...tvStation,
+                          onClick: toggleMute,
+                          className: "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/35 hover:bg-white/15",
+                          "aria-label": muted ? t("liveTvUnmute") : t("liveTvMute"),
+                          title: muted ? t("liveTvUnmute") : t("liveTvMute"),
+                          "aria-pressed": muted,
+                          children: muted || volumeLevel === 0 ? /* @__PURE__ */ jsxs("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
+                            /* @__PURE__ */ jsx("path", { d: "M11 5 6 9H3v6h3l5 4V5Z" }),
+                            /* @__PURE__ */ jsx("path", { d: "m22 9-6 6" }),
+                            /* @__PURE__ */ jsx("path", { d: "m16 9 6 6" })
+                          ] }) : /* @__PURE__ */ jsxs("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
+                            /* @__PURE__ */ jsx("path", { d: "M11 5 6 9H3v6h3l5 4V5Z" }),
+                            volumeLevel > 0.33 ? /* @__PURE__ */ jsx("path", { d: "M15.5 8.5a5 5 0 0 1 0 7" }) : null,
+                            volumeLevel > 0.66 ? /* @__PURE__ */ jsx("path", { d: "M19 4.5a10 10 0 0 1 0 15" }) : null
+                          ] })
+                        }
+                      ),
+                      !isTv ? /* @__PURE__ */ jsx(
+                        "input",
+                        {
+                          type: "range",
+                          min: 0,
+                          max: 1,
+                          step: 0.01,
+                          value: muted ? 0 : volumeLevel,
+                          onChange: (e) => updateVolume(parseFloat(e.target.value)),
+                          className: "h-1 w-24 shrink-0 cursor-pointer appearance-none rounded-full bg-white/15 accent-white",
+                          "aria-label": t("liveTvVolume")
+                        }
+                      ) : null
                     ] }),
-                    /* @__PURE__ */ jsxs("div", { className: "mt-1 flex min-w-0 items-center gap-3 text-xs text-slate-300", children: [
-                      /* @__PURE__ */ jsx("span", { children: mpvPaused ? t("liveTvPaused") : t("liveTvPlaying") }),
-                      /* @__PURE__ */ jsx("span", { className: "text-slate-600", children: "/" }),
-                      /* @__PURE__ */ jsx("span", { children: formatClock2(mpvTimePos) }),
-                      channel.group ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+                    /* @__PURE__ */ jsxs(
+                      "button",
+                      {
+                        type: "button",
+                        ...tvStation,
+                        onClick: cycleAspect,
+                        className: "flex h-11 shrink-0 items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 text-white transition hover:border-white/35 hover:bg-white/15",
+                        "aria-label": `${t("aspectRatio")}: ${ASPECT_OPTIONS[aspectIndex].label}`,
+                        title: `${t("aspectRatio")}: ${ASPECT_OPTIONS[aspectIndex].label}`,
+                        children: [
+                          /* @__PURE__ */ jsxs("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
+                            /* @__PURE__ */ jsx("rect", { x: "3", y: "5", width: "18", height: "14", rx: "2" }),
+                            /* @__PURE__ */ jsx("path", { d: "M3 9h18M9 5v14" })
+                          ] }),
+                          /* @__PURE__ */ jsx("span", { className: "hidden text-[11px] font-semibold uppercase tracking-[0.1em] lg:inline", children: ASPECT_OPTIONS[aspectIndex].label })
+                        ]
+                      }
+                    ),
+                    /* @__PURE__ */ jsxs("div", { className: "min-w-0 flex-1", style: { minWidth: 176 }, children: [
+                      /* @__PURE__ */ jsxs("div", { className: "flex min-w-0 items-center gap-3", children: [
+                        /* @__PURE__ */ jsx("span", { className: "inline-flex h-6 shrink-0 items-center rounded-full border border-red-400/35 bg-red-500/15 px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-red-200", children: t("liveTvLiveBadge") }),
+                        /* @__PURE__ */ jsx("p", { className: "min-w-0 truncate text-sm font-semibold text-white", children: channel.name })
+                      ] }),
+                      /* @__PURE__ */ jsxs("div", { className: "mt-1 flex min-w-0 items-center gap-3 text-xs text-slate-300", children: [
+                        /* @__PURE__ */ jsx("span", { children: mpvPaused ? t("liveTvPaused") : t("liveTvPlaying") }),
                         /* @__PURE__ */ jsx("span", { className: "text-slate-600", children: "/" }),
-                        /* @__PURE__ */ jsx("span", { className: "truncate", children: channel.group })
-                      ] }) : null
+                        /* @__PURE__ */ jsx("span", { children: formatClock2(mpvTimePos) }),
+                        channel.group ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+                          /* @__PURE__ */ jsx("span", { className: "text-slate-600", children: "/" }),
+                          /* @__PURE__ */ jsx("span", { className: "truncate", children: channel.group })
+                        ] }) : null
+                      ] })
+                    ] }),
+                    /* @__PURE__ */ jsxs("div", { className: "hidden shrink-0 items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-slate-400 lg:flex", children: [
+                      /* @__PURE__ */ jsx("span", { children: engineKind === "mpv" ? "MPV" : engineKind === "droid" ? "ANDROID" : "HLS" }),
+                      /* @__PURE__ */ jsx("span", { className: "h-1 w-1 rounded-full bg-slate-600" }),
+                      /* @__PURE__ */ jsx("span", { children: "Live TV" })
                     ] })
                   ] }),
-                  /* @__PURE__ */ jsxs("div", { className: "hidden shrink-0 items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-slate-400 lg:flex", children: [
-                    /* @__PURE__ */ jsx("span", { children: engineKind === "mpv" ? "MPV" : engineKind === "droid" ? "ANDROID" : "HLS" }),
-                    /* @__PURE__ */ jsx("span", { className: "h-1 w-1 rounded-full bg-slate-600" }),
-                    /* @__PURE__ */ jsx("span", { children: "Live TV" })
-                  ] })
-                ] }),
-                canSwitch && onSwitchChannel ? /* @__PURE__ */ jsx(PlayerFavouritesRow, { current: channel, listId, urls: epgUrls, onSwitch: onSwitchChannel }) : null
-              ]
-            }
-          ),
-          /* @__PURE__ */ jsx(
-            PlayerScheduleOverlay,
-            {
-              channel,
-              listId,
-              urls: epgUrls,
-              open: scheduleOpen,
-              onClose: () => setScheduleOpen(false)
-            }
-          )
+                  canSwitch && onSwitchChannel ? /* @__PURE__ */ jsx(PlayerFavouritesRow, { current: channel, listId, urls: epgUrls, onSwitch: onSwitchChannel }) : null
+                ]
+              }
+            ),
+            /* @__PURE__ */ jsx(
+              PlayerScheduleOverlay,
+              {
+                channel,
+                listId,
+                urls: epgUrls,
+                open: scheduleOpen,
+                onClose: () => setScheduleOpen(false)
+              }
+            )
+          ] })
         ]
       }
     );
@@ -191662,6 +192615,8 @@ ${cue.text}`).join("\n\n")}
       init_player_extras();
       init_useHtmlVideoPlayer();
       init_live_tv_playback_fallback();
+      init_tv_player_chrome();
+      init_video_surface();
       init_jsx_runtime_shim();
       MPV_STARTUP_TIMEOUT_MS = 18e3;
       MPV_FIRST_ATTEMPT_TIMEOUT_MS = 9e3;
@@ -192166,6 +193121,7 @@ ${cue.text}`).join("\n\n")}
   });
   init_react_shim();
   init_plugin_sdk();
+  init_plugin_sdk();
   init_live_tv_data();
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/live-tv-settings-section.tsx
@@ -192391,12 +193347,12 @@ ${cue.text}`).join("\n\n")}
     }
     function handleRemove(login) {
       deleteXtreamLogin(login.id);
-      let host = login.base;
+      let host2 = login.base;
       try {
-        host = new URL(login.base).hostname;
+        host2 = new URL(login.base).hostname;
       } catch {
       }
-      const list = getLiveTvLists().find((entry) => entry.name === host);
+      const list = getLiveTvLists().find((entry) => entry.name === host2);
       if (list) deleteLiveTvList(list.id);
       clearLiveTvMemoryCache();
       clearStoredLiveTvChannels();
@@ -192481,9 +193437,9 @@ ${cue.text}`).join("\n\n")}
     const [query, setQuery] = useState("");
     const [selected, setSelected] = useState(() => new Set(login.categoryIds));
     const [busy, setBusy] = useState(false);
-    let host = login.base;
+    let host2 = login.base;
     try {
-      host = new URL(login.base).host;
+      host2 = new URL(login.base).host;
     } catch {
     }
     async function handleToggleOpen() {
@@ -192517,7 +193473,7 @@ ${cue.text}`).join("\n\n")}
     const row = (checked, onChange, label) => /* @__PURE__ */ jsx("div", { style: { padding: "6px 0" }, children: /* @__PURE__ */ jsx(Checkbox, { checked, onChange, label: /* @__PURE__ */ jsx("span", { style: { fontSize: 13 }, children: label }) }) });
     return /* @__PURE__ */ jsxs("div", { style: { padding: "12px 14px", borderRadius: 12, border: `1px solid ${TOKENS.border}`, background: TOKENS.surface0 }, children: [
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8 }, children: [
-        /* @__PURE__ */ jsx("span", { style: { minWidth: 0, flex: 1, fontSize: 14, fontWeight: 600, color: TOKENS.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: host }),
+        /* @__PURE__ */ jsx("span", { style: { minWidth: 0, flex: 1, fontSize: 14, fontWeight: 600, color: TOKENS.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: host2 }),
         /* @__PURE__ */ jsxs(PillBtn, { size: "sm", onClick: () => void handleToggleOpen(), children: [
           t("liveTvXtreamCategories"),
           login.categoryIds.length > 0 ? ` (${login.categoryIds.length})` : ""
@@ -192826,6 +193782,64 @@ ${cue.text}`).join("\n\n")}
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/live-tv-model.ts
   init_live_tv_data();
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-settings-store.ts
+  init_react_shim();
+  init_plugin_sdk();
+  init_live_tv_data();
+  var TV_SETTINGS_KEY = "live_tv_tv_settings_v1";
+  var GUIDE_MODE_KEY = "live_tv_guide_mode_v1";
+  var ACTIVE_PLAYLIST_KEY = "live_tv_active_playlist_v1";
+  var BANNER_HIDE_OPTIONS = [2e3, 4e3, 6e3, 0];
+  var DEFAULTS2 = { previewEnabled: true, startOnLastChannel: false, numericZap: true, bannerHideMs: 4e3 };
+  function sanitize5(raw) {
+    const r = raw && typeof raw === "object" ? raw : {};
+    const banner = BANNER_HIDE_OPTIONS.includes(r.bannerHideMs) ? r.bannerHideMs : DEFAULTS2.bannerHideMs;
+    return {
+      previewEnabled: typeof r.previewEnabled === "boolean" ? r.previewEnabled : DEFAULTS2.previewEnabled,
+      startOnLastChannel: typeof r.startOnLastChannel === "boolean" ? r.startOnLastChannel : DEFAULTS2.startOnLastChannel,
+      numericZap: typeof r.numericZap === "boolean" ? r.numericZap : DEFAULTS2.numericZap,
+      bannerHideMs: banner
+    };
+  }
+  function getTvSettings() {
+    return sanitize5(readPluginJson(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, DEFAULTS2));
+  }
+  function setTvSettings(patch) {
+    const next2 = sanitize5({ ...getTvSettings(), ...patch });
+    writePluginJson(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, next2);
+    return next2;
+  }
+  function useTvSettings() {
+    const [value, setValue] = useState(getTvSettings);
+    useEffect(() => onPluginStorageChanged(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, () => setValue(getTvSettings())), []);
+    return value;
+  }
+  var GUIDE_MODES = ["now", "tl", "playlists"];
+  function getGuideMode() {
+    const raw = readPluginJson(LIVE_TV_PLUGIN_ID, GUIDE_MODE_KEY, "now");
+    return GUIDE_MODES.includes(raw) ? raw : "now";
+  }
+  function setGuideMode(mode) {
+    writePluginJson(LIVE_TV_PLUGIN_ID, GUIDE_MODE_KEY, mode);
+  }
+  function useGuideMode() {
+    const [value, setValue] = useState(getGuideMode);
+    useEffect(() => onPluginStorageChanged(LIVE_TV_PLUGIN_ID, GUIDE_MODE_KEY, () => setValue(getGuideMode())), []);
+    return value;
+  }
+  function getActivePlaylistId() {
+    const raw = readPluginJson(LIVE_TV_PLUGIN_ID, ACTIVE_PLAYLIST_KEY, null);
+    return typeof raw === "string" && raw ? raw : null;
+  }
+  function setActivePlaylistId(id4) {
+    writePluginJson(LIVE_TV_PLUGIN_ID, ACTIVE_PLAYLIST_KEY, id4);
+  }
+  function onActivePlaylistChanged(listener) {
+    return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, ACTIVE_PLAYLIST_KEY, listener);
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/live-tv-model.ts
   var EMPTY3 = { now: null, next: null, later: null };
   var PLACEHOLDER_NAME_RE = /^[\s=\-_*•·]+|=+/;
   var MAX_GROUP_CHIPS = 8;
@@ -192861,6 +193875,8 @@ ${cue.text}`).join("\n\n")}
   }
   function useLiveTvModel(tickMs = 6e4) {
     const [lists, setLists] = useState(() => getLiveTvLists());
+    const [activePlaylistId, setActivePlaylistIdState] = useState(() => getActivePlaylistId());
+    useEffect(() => onActivePlaylistChanged(() => setActivePlaylistIdState(getActivePlaylistId())), []);
     const [pinnedKeys, setPinnedKeys] = useState(() => getPinnedLiveTvKeys());
     const [history, setHistory] = useState(() => getChannelHistory());
     const [nowMs, setNowMs] = useState(() => Date.now());
@@ -192877,9 +193893,14 @@ ${cue.text}`).join("\n\n")}
       const timer = window.setInterval(() => setNowMs(Date.now()), tickMs);
       return () => window.clearInterval(timer);
     }, [tickMs]);
-    const channels = useMemo(() => flattenChannels(lists), [lists]);
+    const allChannels = useMemo(() => flattenChannels(lists), [lists]);
+    const activeList = useMemo(() => lists.find((list) => list.id === activePlaylistId) ?? null, [lists, activePlaylistId]);
+    const channels = useMemo(() => activeList ? flattenChannels([activeList]) : allChannels, [activeList, allChannels]);
+    const playlists = useMemo(() => lists.map((list) => ({ id: list.id, name: list.name, count: flattenChannels([list]).length })), [lists]);
+    const numberByKey = useMemo(() => new Map(channels.map((channel, index3) => [channelKey(channel), index3 + 1])), [channels]);
+    const allByKey = useMemo(() => new Map(allChannels.map((channel) => [channelKey(channel), channel])), [allChannels]);
     const byKey = useMemo(() => new Map(channels.map((channel) => [channelKey(channel), channel])), [channels]);
-    const byUrl = useMemo(() => new Map(channels.map((channel) => [channel.url, channel])), [channels]);
+    const byUrl = useMemo(() => new Map(allChannels.map((channel) => [channel.url, channel])), [allChannels]);
     const groups = useMemo(() => topGroups(channels), [channels]);
     const listByUrl = useMemo(() => {
       const map = /* @__PURE__ */ new Map();
@@ -192918,8 +193939,13 @@ ${cue.text}`).join("\n\n")}
       () => (channel, fromMs, toMs) => cache6 ? getChannelSchedule(cache6, tvgIdFor(channel), fromMs, toMs) : [],
       [cache6, tvgIdFor]
     );
+    const favouriteChannels = useMemo(
+      () => pinnedKeys.map((key) => allByKey.get(key)).filter((c) => Boolean(c)),
+      [pinnedKeys, allByKey]
+    );
     return {
       lists,
+      allChannels,
       channels,
       byKey,
       byUrl,
@@ -192927,6 +193953,15 @@ ${cue.text}`).join("\n\n")}
       pinnedKeys,
       pinnedSet: useMemo(() => new Set(pinnedKeys), [pinnedKeys]),
       togglePin: (channel) => setPinnedKeys(togglePinnedLiveTvChannel(channel)),
+      playlists,
+      activePlaylistId: activeList ? activeList.id : null,
+      activePlaylistName: activeList ? activeList.name : null,
+      setActivePlaylist: (id4) => {
+        setActivePlaylistId(id4);
+        setActivePlaylistIdState(id4);
+      },
+      channelNumber: (channel) => numberByKey.get(channelKey(channel)) ?? null,
+      favouriteChannels,
       history,
       nowMs,
       epgListId,
@@ -192997,12 +194032,12 @@ ${cue.text}`).join("\n\n")}
   }
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/results-pagination.tsx
-  var import_react84 = __toESM(require_dist89(), 1);
+  var import_react85 = __toESM(require_dist89(), 1);
   init_jsx_runtime_shim();
   function ResultsPagination2({ currentPage, totalPages, onPageChange }) {
     if (totalPages <= 1) return null;
     return /* @__PURE__ */ jsx("div", { className: "flex items-center justify-center rounded-[1.75rem] border border-white/10 bg-slate-950/60 px-4 py-4", children: /* @__PURE__ */ jsx(
-      import_react84.Pagination,
+      import_react85.Pagination,
       {
         total: totalPages,
         page: currentPage,
@@ -196375,6 +197410,1810 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-shell.tsx
+  init_react_shim();
+  init_plugin_sdk();
+  init_live_tv_data();
+  init_live_tv_ui();
+  init_tv_strings();
+  init_tv_ui();
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-multiview-store.ts
+  init_react_shim();
+  init_plugin_sdk();
+  init_live_tv_data();
+  var MULTIVIEW_KEY = "live_tv_multiview_v1";
+  function tileCount(layout2) {
+    return layout2;
+  }
+  var DEFAULT_STATE = { layout: 4, tiles: [null, null, null, null], audioIndex: 0 };
+  function normalize2(state) {
+    const count = tileCount(state.layout);
+    const tiles = Array.from({ length: count }, (_, i) => state.tiles[i] ?? null);
+    let audioIndex = state.audioIndex;
+    if (audioIndex < 0 || audioIndex >= count || tiles[audioIndex] === null) {
+      const first = tiles.findIndex((t) => t !== null);
+      audioIndex = first === -1 ? 0 : first;
+    }
+    return { layout: state.layout, tiles, audioIndex };
+  }
+  function sanitize6(raw) {
+    const r = raw && typeof raw === "object" ? raw : {};
+    const layout2 = r.layout === 2 || r.layout === 3 || r.layout === 4 ? r.layout : 4;
+    const tiles = Array.isArray(r.tiles) ? r.tiles.map((t) => typeof t === "string" && t ? t : null) : [];
+    return normalize2({ layout: layout2, tiles, audioIndex: typeof r.audioIndex === "number" ? r.audioIndex : 0 });
+  }
+  function getMultiviewState() {
+    return sanitize6(readPluginJson(LIVE_TV_PLUGIN_ID, MULTIVIEW_KEY, DEFAULT_STATE));
+  }
+  function setMultiviewState(next2) {
+    writePluginJson(LIVE_TV_PLUGIN_ID, MULTIVIEW_KEY, normalize2(next2));
+  }
+  function useMultiviewState() {
+    const [value, setValue] = useState(getMultiviewState);
+    useEffect(() => onPluginStorageChanged(LIVE_TV_PLUGIN_ID, MULTIVIEW_KEY, () => setValue(getMultiviewState())), []);
+    return value;
+  }
+  function assignTile(state, index3, key) {
+    const tiles = [...state.tiles];
+    tiles[index3] = key;
+    const hadAny = state.tiles.some((t) => t !== null);
+    return normalize2({ ...state, tiles, audioIndex: hadAny ? state.audioIndex : index3 });
+  }
+  function removeTile(state, index3) {
+    const tiles = [...state.tiles];
+    tiles[index3] = null;
+    return normalize2({ ...state, tiles });
+  }
+  function setLayout(state, layout2) {
+    const filled = state.tiles.filter((t) => t !== null);
+    const audioKey = state.tiles[state.audioIndex];
+    const tiles = filled.slice(0, tileCount(layout2));
+    const audioIndex = audioKey ? Math.max(0, tiles.indexOf(audioKey)) : 0;
+    return normalize2({ layout: layout2, tiles, audioIndex });
+  }
+  function enlargeTile(state, index3) {
+    const key = state.tiles[index3];
+    const rest = state.tiles.filter((t, i) => t !== null && i !== index3);
+    const tiles = key ? [key, ...rest] : rest;
+    return normalize2({ layout: 3, tiles, audioIndex: key ? 0 : state.audioIndex });
+  }
+  function addToFirstFree(state, key) {
+    const free = state.tiles.findIndex((t) => t === null);
+    return assignTile(state, free === -1 ? state.tiles.length - 1 : free, key);
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-zap.ts
+  function resolveZap(digits, favourites, channels) {
+    const n = Number.parseInt(digits, 10);
+    if (!Number.isFinite(n) || n <= 0) return null;
+    if (n <= favourites.length) return favourites[n - 1] ?? null;
+    return channels[n - 1] ?? null;
+  }
+  var ZAP_MAX_DIGITS = 4;
+  function createZapBuffer(opts) {
+    let digits = "";
+    let timer = null;
+    const clearTimer = () => {
+      if (timer !== null) window.clearTimeout(timer);
+      timer = null;
+    };
+    const commit = () => {
+      clearTimer();
+      if (!digits) return;
+      const value = digits;
+      digits = "";
+      opts.onChange("");
+      opts.onCommit(value);
+    };
+    return {
+      push(digit) {
+        if (!/^[0-9]$/.test(digit)) return;
+        if (digits.length >= ZAP_MAX_DIGITS) return;
+        digits += digit;
+        opts.onChange(digits);
+        clearTimer();
+        timer = window.setTimeout(commit, opts.timeoutMs);
+      },
+      commit,
+      clear() {
+        clearTimer();
+        digits = "";
+        opts.onChange("");
+      },
+      dispose() {
+        clearTimer();
+      }
+    };
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-shell.tsx
+  init_video_surface();
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-hub.tsx
+  init_react_shim();
+  init_live_tv_data();
+  init_live_tv_ui();
+  init_tv_ui();
+  init_tv_strings();
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-spotlight.ts
+  init_live_tv_data();
+  function pickSpotlight(input) {
+    const seen = /* @__PURE__ */ new Set();
+    const out = [];
+    const add = (channel, reason) => {
+      const key = channelKey(channel);
+      if (seen.has(key) || out.length >= input.count) return;
+      seen.add(key);
+      out.push({ channel, reason });
+    };
+    for (const c of input.favourites) if (input.nowFor(c).now) add(c, "favouriteLive");
+    for (const c of input.favourites) add(c, "favourite");
+    for (const c of input.recent) add(c, "recent");
+    for (const c of input.channels) if (input.nowFor(c).now) add(c, "onNow");
+    return out;
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-hub.tsx
+  init_jsx_runtime_shim();
+  var SPOTLIGHT_COUNT = 3;
+  var ALL_STEP = 36;
+  var MAX_CHIPS = 12;
+  function TvHub({ model, nav }) {
+    const { tt, locale } = useTvText();
+    const clock = useTvClockNode(locale);
+    const [group, setGroup] = useState(null);
+    const [visible, setVisible] = useState(ALL_STEP);
+    const [playlistOpen, setPlaylistOpen] = useState(false);
+    const pillRef = useRef(null);
+    const menuRef = useRef(null);
+    const epgStatus = useEpgLoadStatus(model.epgListId, model.epgUrls);
+    const favourites = model.favouriteChannels;
+    const recent = useMemo(() => model.history.map((h) => model.byUrl.get(h.url)).filter((c) => Boolean(c)), [model.history, model.byUrl]);
+    const spotlight = useMemo(() => pickSpotlight({ favourites, recent, channels: model.channels, nowFor: model.nowFor, count: SPOTLIGHT_COUNT }), [favourites, recent, model.channels, model.nowFor]);
+    const replays = useMemo(() => catchUpAcross(model.channels, model.cache, model.nameIndex, model.nowMs, 8), [model.channels, model.cache, model.nameIndex, model.nowMs]);
+    const chips = useMemo(() => model.groups.slice(0, MAX_CHIPS), [model.groups]);
+    const filtered = useMemo(() => {
+      if (group === "__favs") return favourites;
+      if (group) return model.channels.filter((c) => c.group === group);
+      return model.channels;
+    }, [group, favourites, model.channels]);
+    const shown = filtered.slice(0, visible);
+    const noProgrammeLabel = epgStatus === "loading" ? tt("loadingGuide") : tt("noProgramme");
+    useEffect(() => {
+      if (!playlistOpen) return;
+      const close = () => {
+        setPlaylistOpen(false);
+        window.setTimeout(() => pillRef.current?.focus({ preventScroll: true }), 0);
+      };
+      const off = nav.pushLayer(close);
+      window.setTimeout(() => menuRef.current?.querySelector("[data-init]")?.focus({ preventScroll: true }), 0);
+      return off;
+    }, [playlistOpen, nav]);
+    const reasonLabel = (reason) => reason === "favouriteLive" ? tt("spotlightFavouriteLive") : reason === "favourite" ? tt("spotlightFavourite") : reason === "recent" ? tt("spotlightRecent") : tt("spotlightOnNow");
+    const minutesLeft = (stop) => tt("minutesLeft", { min: Math.max(0, Math.round((stop - model.nowMs) / 6e4)) });
+    const cardStation = (channel, extra) => station(() => nav.play({ channel }), (el) => nav.channelMenu(channel, el), extra);
+    if (model.allChannels.length === 0) {
+      return /* @__PURE__ */ jsxs("div", { style: { padding: dp(48), display: "flex", flexDirection: "column", gap: dp(16) }, children: [
+        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(34), fontWeight: 600 }, children: tt("emptyTitle") }),
+        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(20), color: TV.muted }, children: tt("emptyBody") }),
+        /* @__PURE__ */ jsx("div", { ...station(() => nav.go("settings"), void 0, { "data-init": "" }), style: { alignSelf: "flex-start", height: dp(52), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.acc, color: TV.onAcc, display: "inline-flex", alignItems: "center", fontSize: dp(19), fontWeight: 600 }, children: tt("openSettings") })
+      ] });
+    }
+    return /* @__PURE__ */ jsxs("div", { "data-scroll": "", style: { flex: 1, overflowY: "auto", padding: `${dp(30)}px ${dp(48)}px ${dp(48)}px`, display: "flex", flexDirection: "column", gap: dp(22), scrollPaddingTop: dp(120) }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(20) }, children: [
+        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(34), fontWeight: 600 }, children: tt("liveTv") }),
+        /* @__PURE__ */ jsxs("div", { style: { position: "relative" }, children: [
+          /* @__PURE__ */ jsxs("div", { ref: pillRef, "data-testid": "playlist-pill", ...station(() => setPlaylistOpen(true), void 0, spotlight.length === 0 && shown.length === 0 ? { "data-init": "" } : void 0), style: { height: dp(52), padding: `0 ${dp(22)}px`, borderRadius: 999, background: TV.s12, display: "inline-flex", alignItems: "center", gap: dp(10), fontSize: dp(20), fontWeight: 600, cursor: "pointer" }, children: [
+            model.activePlaylistName ?? tt("allPlaylists"),
+            " ",
+            /* @__PURE__ */ jsx(Icons.ChevronDown, {})
+          ] }),
+          playlistOpen ? /* @__PURE__ */ jsxs("div", { ref: menuRef, role: "menu", "data-panel-root": "", "data-scroll": "", "data-live-tv-layer": "", style: { position: "absolute", top: `calc(100% + ${dp(8)}px)`, left: 0, zIndex: 60, width: dp(380), padding: dp(8), borderRadius: dp(16), background: "rgba(58,59,66,0.98)", boxShadow: "0 24px 64px rgba(0,0,0,0.55)", maxHeight: dp(560), overflowY: "auto" }, children: [
+            [{ id: null, name: tt("allPlaylists"), count: model.allChannels.length }, ...model.playlists].map((p) => {
+              const active = (model.activePlaylistId ?? null) === p.id;
+              return /* @__PURE__ */ jsxs("div", { "data-testid": `playlist-${p.id ?? "all"}`, "data-live-tv-menu-item": "", ...station(() => {
+                model.setActivePlaylist(p.id);
+                setPlaylistOpen(false);
+                setGroup(null);
+                setVisible(ALL_STEP);
+                window.setTimeout(() => pillRef.current?.focus({ preventScroll: true }), 0);
+              }, void 0, active ? { "data-init": "" } : {}), style: { height: dp(56), padding: `0 ${dp(16)}px`, borderRadius: dp(12), display: "flex", alignItems: "center", justifyContent: "space-between", background: active ? TV.s12 : "transparent", cursor: "pointer" }, children: [
+                /* @__PURE__ */ jsx("span", { style: { fontSize: dp(19), fontWeight: 600 }, children: p.name }),
+                /* @__PURE__ */ jsx("span", { style: { fontSize: dp(14), color: "rgba(243,244,248,0.5)" }, children: tt("channelsCount", { count: p.count }) })
+              ] }, p.id ?? "__all");
+            }),
+            /* @__PURE__ */ jsx("div", { "data-live-tv-menu-item": "", ...station(() => {
+              setPlaylistOpen(false);
+              nav.go("settings", { tab: "playlists" });
+            }), style: { height: dp(56), padding: `0 ${dp(16)}px`, display: "flex", alignItems: "center", fontSize: dp(17), color: "rgba(243,244,248,0.65)", borderTop: `1px solid ${TV.line}`, marginTop: dp(4), cursor: "pointer" }, children: tt("addPlaylist") })
+          ] }) : null
+        ] }),
+        /* @__PURE__ */ jsxs("div", { ...station(() => nav.go("search")), style: { height: dp(52), minWidth: dp(420), padding: `0 ${dp(22)}px`, borderRadius: 999, background: TV.s10, display: "inline-flex", alignItems: "center", gap: dp(12), color: "rgba(243,244,248,0.7)", fontSize: dp(20), cursor: "pointer" }, children: [
+          /* @__PURE__ */ jsx(Icons.Search, { size: dp(20) }),
+          " ",
+          tt("searchPlaceholder")
+        ] }),
+        /* @__PURE__ */ jsxs("div", { ...station(() => nav.go("guide")), style: { height: dp(52), padding: `0 ${dp(22)}px`, borderRadius: 999, border: `1px solid ${TV.lineStrong}`, background: TV.s06, display: "inline-flex", alignItems: "center", gap: dp(10), fontSize: dp(20), cursor: "pointer" }, children: [
+          /* @__PURE__ */ jsx(Icons.Calendar, {}),
+          " ",
+          tt("railGuide")
+        ] }),
+        /* @__PURE__ */ jsx("div", { style: { marginLeft: "auto", textAlign: "right" }, children: clock })
+      ] }),
+      spotlight.length > 0 ? /* @__PURE__ */ jsx("div", { "data-row": "", style: { display: "grid", gridTemplateColumns: `repeat(${SPOTLIGHT_COUNT}, minmax(0, 1fr))`, gap: dp(20) }, children: spotlight.map((pick3, index3) => {
+        const info = model.nowFor(pick3.channel);
+        const number2 = model.channelNumber(pick3.channel);
+        return /* @__PURE__ */ jsxs("div", { ...cardStation(pick3.channel, index3 === 0 ? { "data-init": "" } : void 0), style: { ...cardStyle, borderRadius: dp(18), cursor: "pointer" }, children: [
+          /* @__PURE__ */ jsxs(ChannelArt, { channel: pick3.channel, height: dp(150), children: [
+            /* @__PURE__ */ jsx("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.75))" } }),
+            /* @__PURE__ */ jsx("div", { style: { position: "absolute", top: dp(12), right: dp(12) }, children: /* @__PURE__ */ jsx(Tag2, { variant: "reason", children: reasonLabel(pick3.reason) }) }),
+            /* @__PURE__ */ jsxs("div", { style: { position: "absolute", left: dp(16), bottom: dp(12), display: "flex", alignItems: "center", gap: dp(10), fontSize: dp(16), color: "rgba(243,244,248,0.75)" }, children: [
+              info.now ? /* @__PURE__ */ jsx(Tag2, { variant: "live", children: tt("live") }) : null,
+              /* @__PURE__ */ jsxs("span", { children: [
+                number2 ? `${number2} \xB7 ` : "",
+                pick3.channel.name
+              ] })
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { style: { padding: `${dp(16)}px ${dp(18)}px`, display: "flex", flexDirection: "column", gap: dp(8) }, children: [
+            /* @__PURE__ */ jsx("div", { style: { fontSize: dp(24), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: info.now ? info.now.title : noProgrammeLabel }),
+            info.now ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+              /* @__PURE__ */ jsx("div", { style: { fontSize: dp(17), color: "rgba(243,244,248,0.6)" }, children: `${formatClock(info.now.start, locale)}\u2013${formatClock(info.now.stop, locale)} \xB7 ${minutesLeft(info.now.stop)}` }),
+              /* @__PURE__ */ jsx(Progress, { value: progressOf(info.now.start, info.now.stop, model.nowMs) })
+            ] }) : null
+          ] })
+        ] }, channelKey(pick3.channel));
+      }) }) : null,
+      favourites.length > 0 ? /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: dp(14) }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: dp(14) }, children: [
+          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(26), fontWeight: 600 }, children: tt("favourites") }),
+          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), color: "rgba(243,244,248,0.5)" }, children: tt("channelsCount", { count: favourites.length }) })
+        ] }),
+        /* @__PURE__ */ jsx("div", { "data-row": "", style: { display: "flex", gap: dp(14), overflowX: "auto", paddingBottom: dp(4) }, children: favourites.map((channel) => {
+          const info = model.nowFor(channel);
+          return /* @__PURE__ */ jsxs("div", { ...station(() => nav.openChannel(channel), (el) => nav.channelMenu(channel, el)), style: { ...cardStyle, background: TV.s08, width: dp(300), height: dp(88), flexShrink: 0, display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(14)}px`, cursor: "pointer" }, children: [
+            /* @__PURE__ */ jsx(ChannelArt, { channel, style: { width: dp(76), height: dp(50), flexShrink: 0 }, radius: dp(8) }),
+            /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
+              /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: channel.name }),
+              /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: "rgba(243,244,248,0.6)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: info.now?.title ?? noProgrammeLabel })
+            ] })
+          ] }, channelKey(channel));
+        }) })
+      ] }) : null,
+      replays.length > 0 || recent.length > 0 ? /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: dp(14) }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: dp(14) }, children: [
+          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(26), fontWeight: 600 }, children: tt("continueWatching") }),
+          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), color: "rgba(243,244,248,0.5)" }, children: tt("continueSub") })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { "data-row": "", style: { display: "flex", gap: dp(14), overflowX: "auto", paddingBottom: dp(4) }, children: [
+          replays.map((item) => /* @__PURE__ */ jsxs("div", { ...station(() => nav.play({ channel: item.channel, url: item.url, label: item.programme.title }), (el) => nav.channelMenu(item.channel, el)), style: { ...cardStyle, width: dp(300), flexShrink: 0, cursor: "pointer" }, children: [
+            /* @__PURE__ */ jsxs(ChannelArt, { channel: item.channel, height: dp(120), children: [
+              /* @__PURE__ */ jsx("div", { style: { position: "absolute", top: dp(10), right: dp(10) }, children: /* @__PURE__ */ jsx(Tag2, { variant: "replay", children: tt("replay") }) }),
+              /* @__PURE__ */ jsx("div", { style: { position: "absolute", left: dp(12), bottom: dp(10), color: TV.text }, children: /* @__PURE__ */ jsx(Icons.Play, { size: dp(28) }) })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { style: { padding: `${dp(12)}px ${dp(14)}px` }, children: [
+              /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: item.programme.title }),
+              /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: "rgba(243,244,248,0.55)" }, children: `${item.channel.name} \xB7 ${formatClock(item.programme.start, locale)} \xB7 ${Math.round((item.programme.stop - item.programme.start) / 6e4)} min` })
+            ] })
+          ] }, `${channelKey(item.channel)}:${item.programme.start}`)),
+          recent.filter((c) => !replays.some((r) => channelKey(r.channel) === channelKey(c))).slice(0, 8).map((channel) => {
+            const info = model.nowFor(channel);
+            return /* @__PURE__ */ jsxs("div", { ...cardStation(channel), style: { ...cardStyle, width: dp(300), flexShrink: 0, cursor: "pointer" }, children: [
+              /* @__PURE__ */ jsxs(ChannelArt, { channel, height: dp(120), children: [
+                /* @__PURE__ */ jsx("div", { style: { position: "absolute", top: dp(10), right: dp(10) }, children: /* @__PURE__ */ jsx(Tag2, { variant: "reason", children: tt("spotlightRecent") }) }),
+                /* @__PURE__ */ jsx("div", { style: { position: "absolute", left: dp(12), bottom: dp(10), color: TV.text }, children: /* @__PURE__ */ jsx(Icons.Play, { size: dp(28) }) })
+              ] }),
+              /* @__PURE__ */ jsxs("div", { style: { padding: `${dp(12)}px ${dp(14)}px` }, children: [
+                /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: info.now?.title ?? channel.name }),
+                /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: "rgba(243,244,248,0.55)" }, children: channel.name })
+              ] })
+            ] }, `recent:${channelKey(channel)}`);
+          })
+        ] })
+      ] }) : null,
+      /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: dp(14) }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(14) }, children: [
+          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(26), fontWeight: 600 }, children: tt("allChannels") }),
+          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), color: "rgba(243,244,248,0.5)" }, children: tt("allChannelsSub", { playlist: model.activePlaylistName ?? tt("allPlaylists"), count: filtered.length }) }),
+          /* @__PURE__ */ jsx("div", { "data-row": "", style: { marginLeft: "auto", display: "flex", gap: dp(10), overflowX: "auto", maxWidth: "55%" }, children: [{ key: null, label: tt("allGroups"), id: "all" }, ...favourites.length ? [{ key: "__favs", label: tt("favourites"), id: "favs" }] : [], ...chips.map((g) => ({ key: g, label: g, id: g }))].map((chip) => /* @__PURE__ */ jsx(Chip, { active: group === chip.key, ...station(() => {
+            setGroup(chip.key);
+            setVisible(ALL_STEP);
+          }, void 0, { "data-testid": `chip-${chip.id}` }), style: { height: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }, children: chip.label }, chip.id)) })
+        ] }),
+        /* @__PURE__ */ jsx("div", { "data-testid": "all-channels", style: { display: "grid", gridTemplateColumns: "repeat(6, minmax(0, 1fr))", gap: dp(14) }, children: shown.map((channel, index3) => {
+          const info = model.nowFor(channel);
+          const number2 = model.channelNumber(channel);
+          const pinned = model.pinnedSet.has(channelKey(channel));
+          return /* @__PURE__ */ jsxs("div", { ...cardStation(channel, spotlight.length === 0 && index3 === 0 ? { "data-init": "" } : void 0), style: { ...cardStyle, cursor: "pointer" }, children: [
+            /* @__PURE__ */ jsxs(ChannelArt, { channel, aspect: "16 / 10", children: [
+              /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: dp(8), left: dp(10), fontSize: dp(13), color: "rgba(243,244,248,0.55)" }, children: number2 ?? "" }),
+              pinned ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: dp(8), right: dp(10), color: TV.acc }, children: /* @__PURE__ */ jsx(Icons.Heart, { size: dp(16), filled: true }) }) : null,
+              model.locked.has(channelKey(channel)) ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", bottom: dp(10), right: dp(10), color: "rgba(243,244,248,0.55)" }, children: /* @__PURE__ */ jsx(Icons.Lock, { size: dp(16) }) }) : null,
+              info.now ? /* @__PURE__ */ jsx("div", { style: { position: "absolute", left: 0, right: 0, bottom: 0 }, children: /* @__PURE__ */ jsx(Progress, { value: progressOf(info.now.start, info.now.stop, model.nowMs), height: dp(3), track: "rgba(0,0,0,0.4)", style: { borderRadius: 0 } }) }) : null
+            ] }),
+            /* @__PURE__ */ jsxs("div", { style: { padding: `${dp(10)}px ${dp(12)}px` }, children: [
+              /* @__PURE__ */ jsx("div", { style: { fontSize: dp(17), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: channel.name }),
+              /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: "rgba(243,244,248,0.6)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: info.now?.title ?? (qualityFromName(channel.name) ?? channel.group) })
+            ] })
+          ] }, channelKey(channel));
+        }) }),
+        filtered.length > visible ? /* @__PURE__ */ jsx("div", { ...station(() => setVisible((v) => v + ALL_STEP)), style: { alignSelf: "center", height: dp(48), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.s10, display: "inline-flex", alignItems: "center", fontSize: dp(18), cursor: "pointer" }, children: tt("showMore") }) : null,
+        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: TV.faint }, children: tt("helpHub") })
+      ] })
+    ] });
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide.tsx
+  init_react_shim();
+  init_live_tv_data();
+  init_live_tv_ui();
+  init_tv_ui();
+  init_tv_strings();
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-schedule-window.ts
+  var MINUTE = 6e4;
+  var WINDOW_MS = 2 * 60 * MINUTE;
+  function scheduleWindow(nowMs) {
+    const d = new Date(nowMs);
+    d.setSeconds(0, 0);
+    d.setMinutes(d.getMinutes() < 30 ? 0 : 30);
+    const start3 = d.getTime() - 30 * MINUTE;
+    return { start: start3, end: start3 + WINDOW_MS };
+  }
+  function timeTicks(win) {
+    return [0, 1, 2, 3].map((i) => win.start + i * 30 * MINUTE);
+  }
+  function blockGeometry(p, win) {
+    const start3 = Math.max(p.start, win.start);
+    const stop = Math.min(p.stop, win.end);
+    if (stop <= start3) return null;
+    const leftPct = (start3 - win.start) / WINDOW_MS * 100;
+    const widthPct = (stop - start3) / WINDOW_MS * 100;
+    return { leftPct, widthPct };
+  }
+  function nowLinePct(nowMs, win) {
+    return Math.min(100, Math.max(0, (nowMs - win.start) / WINDOW_MS * 100));
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
+  init_react_shim();
+  init_tv_ui();
+  init_jsx_runtime_shim();
+  function useDebouncedChannel(channel, ms = 300) {
+    const [value, setValue] = useState(channel);
+    useEffect(() => {
+      const timer = window.setTimeout(() => setValue(channel), ms);
+      return () => window.clearTimeout(timer);
+    }, [channel, ms]);
+    return value;
+  }
+  var FAVS_GROUP = "__favs";
+  var MAX_GROUPS = 12;
+  function useGuideGroups(model, tt) {
+    return useMemo(() => [
+      { key: null, label: tt("allGroups"), id: "all" },
+      ...model.favouriteChannels.length ? [{ key: FAVS_GROUP, label: tt("favourites"), id: "favs" }] : [],
+      ...model.groups.slice(0, MAX_GROUPS).map((g) => ({ key: g, label: g, id: g }))
+    ], [model.favouriteChannels.length, model.groups, tt]);
+  }
+  function filterByGroup(model, group) {
+    if (group === FAVS_GROUP) return model.favouriteChannels;
+    if (group) return model.channels.filter((c) => c.group === group);
+    return model.channels;
+  }
+  function ChannelCell({ channel, number: number2, pinned, locked, quality, focused, width = dp(520) }) {
+    return /* @__PURE__ */ jsxs("div", { style: { width, height: dp(72), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(12)}px`, background: focused ? TV.s10 : "transparent", flexShrink: 0 }, children: [
+      /* @__PURE__ */ jsx("span", { style: { width: dp(44), fontSize: dp(18), color: "rgba(243,244,248,0.5)", fontVariantNumeric: "tabular-nums", textAlign: "right" }, children: number2 ?? "" }),
+      /* @__PURE__ */ jsx(ChannelArt, { channel, style: { width: dp(88), height: dp(56), flexShrink: 0 }, radius: dp(8) }),
+      /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: 1 }, children: [
+        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(21), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: channel.name }),
+        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: "rgba(243,244,248,0.5)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: [channel.group, quality].filter(Boolean).join(" \xB7 ") })
+      ] }),
+      pinned ? /* @__PURE__ */ jsx("span", { style: { color: TV.acc }, children: /* @__PURE__ */ jsx(Icons.Heart, { size: dp(18), filled: true }) }) : null,
+      locked ? /* @__PURE__ */ jsx("span", { style: { color: "rgba(243,244,248,0.5)" }, children: /* @__PURE__ */ jsx(Icons.Lock, { size: dp(18) }) }) : null
+    ] });
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-preview.tsx
+  init_react_shim();
+  init_tv_ui();
+  init_video_surface();
+  init_jsx_runtime_shim();
+  function TvPreview({ channel, enabled, live, width, height, label, onOk, extra }) {
+    const ref = useRef(null);
+    const surface = useVideoSurface(ref, channel && enabled ? { channel, url: channel.url } : null, { muted: true, audio: false, enabled });
+    const showsVideo = enabled && surface.live && !surface.failed;
+    return /* @__PURE__ */ jsxs("div", { ref, ...station(onOk, void 0, extra), style: { width, height, borderRadius: dp(14), border: `1px solid ${TV.lineCard}`, position: "relative", overflow: "hidden", background: "#05070d", flexShrink: 0, cursor: "pointer" }, children: [
+      channel && !showsVideo ? /* @__PURE__ */ jsx(ChannelArt, { channel, style: { position: "absolute", inset: 0, borderRadius: 0 } }) : null,
+      /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: dp(12), left: dp(14), fontFamily: TV.mono, fontSize: dp(12), letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(243,244,248,0.55)" }, children: label }),
+      live ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", left: dp(14), bottom: dp(12) }, children: /* @__PURE__ */ jsx(Tag2, { variant: "live", children: "LIVE" }) }) : null
+    ] });
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
+  init_react_shim();
+  init_live_tv_data();
+  init_live_tv_ui();
+  init_reminders();
+  init_tv_ui();
+  init_tv_strings();
+  init_jsx_runtime_shim();
+  function TvGuidePlaylists({ model, nav, settings }) {
+    const { tt, locale } = useTvText();
+    const clock = useTvClockNode(locale);
+    const [sel, setSel] = useState({ listId: model.lists[0]?.id ?? null, group: null });
+    const [selectedKey, setSelectedKey] = useState(null);
+    const [, bump] = useState(0);
+    const tree = useMemo(() => model.lists.map((list) => {
+      const channels = flattenChannels([list]);
+      return { id: list.id, name: list.name, count: channels.length, channels, groups: topGroups(channels, 12).map((g) => ({ name: g, count: channels.filter((c) => c.group === g).length })) };
+    }), [model.lists]);
+    const rows = useMemo(() => {
+      if (sel.listId === FAVS_GROUP) return model.favouriteChannels;
+      const list = tree.find((l) => l.id === sel.listId);
+      if (!list) return [];
+      return sel.group ? list.channels.filter((c) => c.group === sel.group) : list.channels;
+    }, [sel, tree, model.favouriteChannels]);
+    const selected = useMemo(() => (selectedKey ? rows.find((c) => channelKey(c) === selectedKey) ?? null : null) ?? rows[0] ?? null, [selectedKey, rows]);
+    const previewChannel = useDebouncedChannel(selected, 300);
+    const info = selected ? model.nowFor(selected) : { now: null, next: null, later: null };
+    const title = sel.listId === FAVS_GROUP ? tt("favourites") : sel.group ?? tree.find((l) => l.id === sel.listId)?.name ?? "";
+    const remind = (programme) => {
+      if (!selected) return;
+      toggleReminder(selected, programme, model.nowMs);
+      bump((n) => n + 1);
+    };
+    const card = (label, programme, kind) => {
+      if (!programme) return null;
+      const isNow2 = kind === "now";
+      const reminded = !isNow2 && selected ? isReminded(selected, programme) : false;
+      return /* @__PURE__ */ jsxs(
+        "div",
+        {
+          "data-testid": `pl-${kind}-card`,
+          ...station(() => isNow2 ? selected && nav.play({ channel: selected }) : remind(programme)),
+          style: { padding: `${dp(14)}px ${dp(18)}px`, borderRadius: dp(14), background: isNow2 ? TV.accMix(14) : TV.s06, border: `1px solid ${isNow2 ? TV.accMix(45) : TV.line}`, display: "flex", flexDirection: "column", gap: dp(6), cursor: "pointer" },
+          children: [
+            /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "space-between", fontSize: dp(14), letterSpacing: "0.1em", textTransform: "uppercase", color: isNow2 ? TV.accText : "rgba(243,244,248,0.5)" }, children: [
+              /* @__PURE__ */ jsx("span", { children: label }),
+              /* @__PURE__ */ jsx("span", { style: { fontSize: dp(15), letterSpacing: 0, textTransform: "none" }, children: isNow2 ? `${formatClock(programme.start, locale)}\u2013${formatClock(programme.stop, locale)}` : formatClock(programme.start, locale) })
+            ] }),
+            /* @__PURE__ */ jsx("div", { style: { fontSize: isNow2 ? dp(24) : dp(20), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: programme.title }),
+            isNow2 ? /* @__PURE__ */ jsx(Progress, { value: progressOf(programme.start, programme.stop, model.nowMs), height: dp(4) }) : null,
+            /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: "rgba(243,244,248,0.55)" }, children: isNow2 ? tt("okWatch") : reminded ? tt("reminderSet") : tt("okRemind") })
+          ]
+        }
+      );
+    };
+    const noRows = rows.length === 0;
+    const colItem = (key, active, label, count, indent, onOk, testId, extra) => /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onOk, void 0, { "data-live-tv-col": "left", ...extra ?? {} }), style: { height: indent ? dp(48) : dp(56), marginLeft: indent ? dp(28) : 0, padding: `0 ${dp(16)}px`, borderRadius: dp(12), display: "flex", alignItems: "center", justifyContent: "space-between", background: active ? indent ? TV.accMix(18) : TV.s12 : "transparent", color: active ? TV.text : indent ? "rgba(243,244,248,0.6)" : TV.text, fontSize: indent ? dp(18) : dp(19), fontWeight: indent ? 400 : 600, cursor: "pointer" }, children: [
+      /* @__PURE__ */ jsx("span", { style: { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: label }),
+      /* @__PURE__ */ jsx("span", { style: { fontSize: dp(14), color: "rgba(243,244,248,0.45)" }, children: count })
+    ] }, key);
+    return /* @__PURE__ */ jsxs("div", { style: { flex: 1, minHeight: 0, display: "flex" }, children: [
+      /* @__PURE__ */ jsxs("div", { "data-testid": "playlists-column", "data-scroll": "", style: { width: dp(330), flexShrink: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(30)}px ${dp(16)}px 0 ${dp(20)}px`, overflowY: "auto", display: "flex", flexDirection: "column", gap: dp(2) }, children: [
+        tree.map((list, listIndex) => [
+          colItem(list.id, sel.listId === list.id && !sel.group, list.name, list.count, false, () => {
+            setSel({ listId: list.id, group: null });
+            setSelectedKey(null);
+          }, `pl-list-${list.id}`, noRows && listIndex === 0 ? { "data-init": "" } : void 0),
+          ...list.groups.map((g) => colItem(`${list.id}:${g.name}`, sel.listId === list.id && sel.group === g.name, g.name, g.count, true, () => {
+            setSel({ listId: list.id, group: g.name });
+            setSelectedKey(null);
+          }, `pl-group-${list.id}-${g.name}`))
+        ]),
+        colItem("__favs", sel.listId === FAVS_GROUP, tt("favourites"), model.favouriteChannels.length, false, () => {
+          setSel({ listId: FAVS_GROUP, group: null });
+          setSelectedKey(null);
+        }, "pl-list-favs", noRows && tree.length === 0 ? { "data-init": "" } : void 0),
+        /* @__PURE__ */ jsx("div", { style: { marginTop: "auto", padding: `${dp(20)}px 0`, fontSize: dp(15), color: TV.faint }, children: tt("helpPlaylists") })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { "data-scroll": "", style: { flex: 1, minWidth: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(30)}px 0 0 ${dp(24)}px`, overflowY: "auto" }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: dp(12), marginBottom: dp(16) }, children: [
+          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(26), fontWeight: 600 }, children: title }),
+          /* @__PURE__ */ jsxs("span", { style: { fontSize: dp(16), color: "rgba(243,244,248,0.5)" }, children: [
+            tt("channelsCount", { count: rows.length }),
+            " \xB7 ",
+            clock
+          ] })
+        ] }),
+        rows.map((channel, index3) => {
+          const key = channelKey(channel);
+          const rowInfo = model.nowFor(channel);
+          const focused = selected ? channelKey(selected) === key : false;
+          return /* @__PURE__ */ jsxs(
+            "div",
+            {
+              "data-testid": "pl-row",
+              ...station(() => nav.play({ channel }), (el) => nav.channelMenu(channel, el), { ...index3 === 0 ? { "data-init": "" } : {}, "data-f-left": '[data-live-tv-col="left"]', "data-f-right": '[data-testid="pl-now-card"], [data-testid="pl-preview"]' }),
+              onFocus: () => setSelectedKey(key),
+              style: { height: dp(82), marginRight: dp(24), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(14)}px`, background: focused ? TV.s10 : "transparent", cursor: "pointer" },
+              children: [
+                /* @__PURE__ */ jsx(ChannelCell, { channel, number: model.channelNumber(channel), pinned: model.pinnedSet.has(key), locked: model.locked.has(key), quality: null, focused: false, width: dp(560) }),
+                /* @__PURE__ */ jsx("div", { style: { minWidth: 0, flex: 1, fontSize: dp(17), color: "rgba(243,244,248,0.65)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: rowInfo.now?.title ?? tt("noProgramme") }),
+                /* @__PURE__ */ jsx("div", { style: { width: dp(110), flexShrink: 0 }, children: rowInfo.now ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+                  /* @__PURE__ */ jsx("div", { style: { fontSize: dp(14), color: "rgba(243,244,248,0.5)", textAlign: "right" }, children: tt("minutesLeft", { min: Math.max(0, Math.round((rowInfo.now.stop - model.nowMs) / 6e4)) }) }),
+                  /* @__PURE__ */ jsx(Progress, { value: progressOf(rowInfo.now.start, rowInfo.now.stop, model.nowMs), height: dp(4) })
+                ] }) : null })
+              ]
+            },
+            key
+          );
+        }),
+        rows.length === 0 ? /* @__PURE__ */ jsx("div", { style: { padding: dp(24), color: TV.dim, fontSize: dp(19) }, children: tt("guideEmpty") }) : null
+      ] }),
+      /* @__PURE__ */ jsxs("div", { "data-testid": "pl-detail", style: { width: dp(560), flexShrink: 0, padding: `${dp(30)}px ${dp(48)}px 0 ${dp(28)}px`, display: "flex", flexDirection: "column", gap: dp(14) }, children: [
+        /* @__PURE__ */ jsx(TvPreview, { channel: previewChannel, enabled: settings.previewEnabled, live: Boolean(info.now), width: "100%", height: dp(272), label: settings.previewEnabled ? tt("previewLabel") : tt("previewFrame"), onOk: () => selected && nav.play({ channel: selected }), extra: { "data-testid": "pl-preview" } }),
+        selected ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(10), fontSize: dp(16), color: "rgba(243,244,248,0.55)" }, children: [
+          /* @__PURE__ */ jsx("span", { style: { color: TV.accText, fontWeight: 600 }, children: model.channelNumber(selected) ?? "" }),
+          /* @__PURE__ */ jsx("span", { children: selected.name }),
+          qualityFromName(selected.name) ? /* @__PURE__ */ jsx(Tag2, { variant: "quality", children: qualityFromName(selected.name) }) : null
+        ] }) : null,
+        card(tt("colNow"), info.now, "now"),
+        card(tt("colNext"), info.next, "next"),
+        card(tt("colLater"), info.later, "later")
+      ] })
+    ] });
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide.tsx
+  init_jsx_runtime_shim();
+  var ROW_STEP = 40;
+  function TvGuide(props) {
+    const storedMode = useGuideMode();
+    const [mode, setMode] = useState(storedMode);
+    useEffect(() => {
+      setMode(storedMode);
+    }, [storedMode]);
+    const changeMode = (next2) => {
+      setGuideMode(next2);
+      setMode(next2);
+    };
+    useEffect(() => {
+      let frame2 = 0;
+      const focusInit = () => {
+        if (document.activeElement && document.activeElement !== document.body) return;
+        const main = document.querySelector("[data-live-tv-tv-root] main");
+        main?.querySelector("[data-init]")?.focus({ preventScroll: true });
+      };
+      frame2 = window.requestAnimationFrame(() => {
+        frame2 = window.requestAnimationFrame(focusInit);
+      });
+      return () => window.cancelAnimationFrame(frame2);
+    }, [mode]);
+    if (mode === "playlists") return /* @__PURE__ */ jsx(TvGuidePlaylists, { ...props });
+    return /* @__PURE__ */ jsx(TvGuideStandard, { ...props, mode, onModeChange: changeMode });
+  }
+  function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }) {
+    const { tt, locale } = useTvText();
+    const clock = useTvClockNode(locale);
+    const groups = useGuideGroups(model, tt);
+    const [group, setGroup] = useState(() => {
+      const raw = params.group;
+      if (!raw || raw === "all") return null;
+      if (raw === FAVS_GROUP) return FAVS_GROUP;
+      return model.groups.includes(raw) ? raw : null;
+    });
+    const rows = useMemo(() => filterByGroup(model, group), [model, group]);
+    const [visible, setVisible] = useState(ROW_STEP);
+    const [selectedKey, setSelectedKey] = useState(null);
+    const selected = useMemo(() => selectedKey ? model.byKey.get(selectedKey) ?? null : null, [selectedKey, model.byKey]);
+    const previewChannel = useDebouncedChannel(selected, 300);
+    const listRef = useRef(null);
+    const win = useMemo(() => scheduleWindow(model.nowMs), [model.nowMs]);
+    const nowLeftPct = useMemo(() => nowLinePct(model.nowMs, win), [model.nowMs, win]);
+    useEffect(() => {
+      setVisible(ROW_STEP);
+    }, [group, mode]);
+    const info = selected ? model.nowFor(selected) : { now: null, next: null, later: null };
+    const previewOn = settings.previewEnabled;
+    const headlineSize = previewOn ? dp(40) : dp(34);
+    const minutesLeft = (stop) => tt("minutesLeft", { min: Math.max(0, Math.round((stop - model.nowMs) / 6e4)) });
+    const modeOptions = [{ key: "now", label: tt("modeNow") }, { key: "tl", label: tt("modeTimeline") }, { key: "playlists", label: tt("modePlaylists") }];
+    const stepCategory = (delta) => {
+      if (groups.length === 0) return;
+      const idx = groups.findIndex((g) => g.key === group);
+      const nextIdx = ((idx < 0 ? 0 : idx) + delta + groups.length) % groups.length;
+      const next2 = groups[nextIdx];
+      if (!next2) return;
+      setGroup(next2.key);
+      const nextRows = filterByGroup(model, next2.key);
+      setSelectedKey(nextRows[0] ? channelKey(nextRows[0]) : null);
+      window.requestAnimationFrame(() => {
+        listRef.current?.querySelector('[data-testid="guide-row"]')?.focus({ preventScroll: true });
+      });
+    };
+    return /* @__PURE__ */ jsxs("div", { style: { flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { height: previewOn ? dp(340) : dp(230), padding: `${dp(34)}px ${dp(48)}px 0`, display: "flex", gap: dp(32), flexShrink: 0 }, children: [
+        /* @__PURE__ */ jsx(TvPreview, { channel: previewChannel, enabled: previewOn, live: Boolean(info.now), width: dp(480), height: dp(270), label: previewOn ? tt("previewLabel") : tt("previewFrame"), onOk: () => selected && nav.play({ channel: selected }) }),
+        /* @__PURE__ */ jsxs("div", { "data-testid": "guide-headline", style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: dp(10) }, children: [
+          /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(12), fontSize: dp(18), color: "rgba(243,244,248,0.65)" }, children: [
+            selected ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+              /* @__PURE__ */ jsx("span", { style: { color: TV.accText, fontWeight: 600 }, children: model.channelNumber(selected) ?? "" }),
+              /* @__PURE__ */ jsx("span", { children: selected.name }),
+              selected.group ? /* @__PURE__ */ jsx(Tag2, { variant: "neutral", children: selected.group }) : null
+            ] }) : null,
+            /* @__PURE__ */ jsx("span", { style: { marginLeft: "auto" }, children: clock })
+          ] }),
+          /* @__PURE__ */ jsx("div", { style: { fontSize: headlineSize, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: info.now ? info.now.title : model.cache ? tt("noProgramme") : tt("loadingGuide") }),
+          info.now ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+            /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), color: "rgba(243,244,248,0.65)" }, children: `${formatClock(info.now.start, locale)}\u2013${formatClock(info.now.stop, locale)} \xB7 ${minutesLeft(info.now.stop)}` }),
+            /* @__PURE__ */ jsx(Progress, { value: progressOf(info.now.start, info.now.stop, model.nowMs), height: dp(6), style: { maxWidth: dp(720) } }),
+            previewOn && info.now.description ? /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), color: "rgba(243,244,248,0.75)", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }, children: info.now.description }) : null
+          ] }) : null,
+          /* @__PURE__ */ jsxs("div", { style: { marginTop: "auto", display: "flex", alignItems: "baseline", gap: dp(12), fontSize: dp(18), color: "rgba(243,244,248,0.55)" }, children: [
+            info.next ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+              /* @__PURE__ */ jsx("span", { style: { color: TV.accText, fontWeight: 600 }, children: tt("next") }),
+              /* @__PURE__ */ jsxs("span", { children: [
+                info.next.title,
+                " \xB7 ",
+                formatClock(info.next.start, locale)
+              ] })
+            ] }) : null,
+            /* @__PURE__ */ jsx("span", { style: { marginLeft: "auto", fontSize: dp(16), color: TV.faint }, children: tt("helpGuide") })
+          ] })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { style: { padding: `0 ${dp(48)}px ${dp(18)}px`, display: "flex", alignItems: "center", gap: dp(16), flexShrink: 0 }, children: [
+        /* @__PURE__ */ jsx("div", { "data-row": "", style: { display: "flex", gap: dp(10), overflowX: "auto", flex: 1, minWidth: 0 }, children: groups.map((chip) => /* @__PURE__ */ jsx(Chip, { active: group === chip.key, ...station(() => {
+          setGroup(chip.key);
+          setSelectedKey(null);
+        }, void 0, { "data-live-tv-chip": chip.id, "data-testid": `chip-${chip.id}` }), children: chip.label }, chip.id)) }),
+        /* @__PURE__ */ jsx(Segment, { options: modeOptions, value: mode, onChange: onModeChange })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { style: { padding: `0 ${dp(48)}px`, display: "flex", gap: dp(16), fontSize: dp(15), letterSpacing: "0.1em", textTransform: "uppercase", color: TV.faint, flexShrink: 0 }, children: [
+        /* @__PURE__ */ jsx("div", { style: { width: dp(520), flexShrink: 0, padding: `0 ${dp(12)}px` }, children: tt("colChannel") }),
+        mode === "now" ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("div", { style: { flex: 1.2 }, children: tt("colNow") }),
+          /* @__PURE__ */ jsx("div", { style: { flex: 1 }, children: tt("colNext") }),
+          /* @__PURE__ */ jsx("div", { style: { flex: 1 }, children: tt("colLater") })
+        ] }) : /* @__PURE__ */ jsxs("div", { style: { flex: 1, position: "relative", height: dp(20) }, children: [
+          timeTicks(win).map((tick, i) => /* @__PURE__ */ jsx("span", { style: { position: "absolute", left: `${i * 25}%` }, children: formatClock(tick, locale) }, tick)),
+          /* @__PURE__ */ jsx("div", { "data-testid": "now-line", style: { position: "absolute", top: 0, bottom: 0, left: `${nowLeftPct}%`, width: 2, background: TV.acc, boxShadow: `0 0 12px ${TV.accMix(60)}`, pointerEvents: "none" } })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { ref: listRef, "data-scroll": "", style: { flex: 1, minHeight: 0, overflowY: "auto", padding: `0 ${dp(48)}px ${dp(24)}px` }, children: [
+        rows.length === 0 ? /* @__PURE__ */ jsx(
+          "div",
+          {
+            ...station(() => setGroup(null), void 0, { "data-init": "" }),
+            style: { padding: dp(24), color: TV.dim, fontSize: dp(19), cursor: "pointer", borderRadius: dp(12) },
+            children: tt("guideEmpty")
+          }
+        ) : null,
+        rows.slice(0, visible).map((channel, index3) => {
+          const rowInfo = model.nowFor(channel);
+          const key = channelKey(channel);
+          const focused = selected ? channelKey(selected) === key : false;
+          const isInit = selected ? focused : index3 === 0;
+          const rowStation = station(() => nav.play({ channel }), (el) => nav.channelMenu(channel, el), {
+            ...isInit ? { "data-init": "" } : {}
+          });
+          const baseOnKeyDown = rowStation.onKeyDown;
+          const onKeyDown = (event) => {
+            if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+              event.preventDefault();
+              event.stopPropagation();
+              stepCategory(event.key === "ArrowLeft" ? -1 : 1);
+              return;
+            }
+            baseOnKeyDown?.(event);
+          };
+          return /* @__PURE__ */ jsxs("div", { style: { height: dp(86), borderBottom: `1px solid rgba(255,255,255,0.07)`, display: "flex", alignItems: "center", gap: dp(16) }, children: [
+            /* @__PURE__ */ jsx(
+              "div",
+              {
+                "data-testid": "guide-row",
+                ...rowStation,
+                onKeyDown,
+                onFocus: () => setSelectedKey(key),
+                style: { cursor: "pointer", borderRadius: dp(12) },
+                children: /* @__PURE__ */ jsx(ChannelCell, { channel, number: model.channelNumber(channel), pinned: model.pinnedSet.has(key), locked: model.locked.has(key), quality: qualityFromName(channel.name), focused })
+              }
+            ),
+            mode === "now" ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+              /* @__PURE__ */ jsxs("div", { style: { flex: 1.2, minWidth: 0 }, children: [
+                /* @__PURE__ */ jsx("div", { style: { fontSize: dp(20), fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: rowInfo.now ? TV.text : TV.dim }, children: rowInfo.now?.title ?? tt("noProgramme") }),
+                rowInfo.now ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(12), marginTop: dp(8) }, children: [
+                  /* @__PURE__ */ jsx(Progress, { value: progressOf(rowInfo.now.start, rowInfo.now.stop, model.nowMs), height: dp(4), style: { flex: 1 } }),
+                  /* @__PURE__ */ jsxs("span", { style: { fontSize: dp(14), color: "rgba(243,244,248,0.5)", whiteSpace: "nowrap" }, children: [
+                    Math.max(0, Math.round((rowInfo.now.stop - model.nowMs) / 6e4)),
+                    " min"
+                  ] })
+                ] }) : null
+              ] }),
+              /* @__PURE__ */ jsx("div", { style: { flex: 1, minWidth: 0 }, children: rowInfo.next ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+                /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), color: "rgba(243,244,248,0.8)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: rowInfo.next.title }),
+                /* @__PURE__ */ jsx("div", { style: { fontSize: dp(14), color: "rgba(243,244,248,0.5)" }, children: formatClock(rowInfo.next.start, locale) })
+              ] }) : null }),
+              /* @__PURE__ */ jsx("div", { style: { flex: 1, minWidth: 0 }, children: rowInfo.later ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+                /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), color: "rgba(243,244,248,0.6)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: rowInfo.later.title }),
+                /* @__PURE__ */ jsx("div", { style: { fontSize: dp(14), color: "rgba(243,244,248,0.4)" }, children: formatClock(rowInfo.later.start, locale) })
+              ] }) : null })
+            ] }) : /* @__PURE__ */ jsxs("div", { style: { flex: 1, position: "relative", height: dp(72), minWidth: 0 }, children: [
+              model.scheduleFor(channel, win.start, win.end).map((p) => {
+                const g = blockGeometry(p, win);
+                if (!g) return null;
+                const onNow = p.start <= model.nowMs && p.stop > model.nowMs;
+                return /* @__PURE__ */ jsxs("div", { style: { position: "absolute", top: 0, bottom: 0, left: `${g.leftPct}%`, width: `calc(${g.widthPct}% - ${dp(6)}px)`, borderRadius: dp(10), padding: `${dp(14)}px ${dp(16)}px`, background: onNow ? TV.accMix(16) : TV.s05, color: onNow ? TV.text : "rgba(243,244,248,0.7)", overflow: "hidden" }, children: [
+                  /* @__PURE__ */ jsx("div", { style: { fontSize: dp(18), whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: p.title }),
+                  /* @__PURE__ */ jsxs("div", { style: { fontSize: dp(14), color: "rgba(243,244,248,0.45)" }, children: [
+                    formatClock(p.start, locale),
+                    "\u2013",
+                    formatClock(p.stop, locale)
+                  ] })
+                ] }, p.start);
+              }),
+              model.scheduleFor(channel, win.start, win.end).length === 0 ? /* @__PURE__ */ jsx("div", { style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", paddingLeft: dp(16), color: TV.dim, fontSize: dp(18) }, children: tt("noProgramme") }) : null,
+              /* @__PURE__ */ jsx("div", { style: { position: "absolute", top: 0, bottom: 0, left: `${nowLeftPct}%`, width: 2, background: TV.acc, boxShadow: `0 0 12px ${TV.accMix(60)}`, pointerEvents: "none" } })
+            ] })
+          ] }, key);
+        }),
+        rows.length > visible ? /* @__PURE__ */ jsx("div", { ...station(() => setVisible((v) => v + ROW_STEP)), style: { margin: `${dp(20)}px auto 0`, width: "fit-content", height: dp(48), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.s10, display: "flex", alignItems: "center", fontSize: dp(18), cursor: "pointer" }, children: tt("showMore") }) : null
+      ] })
+    ] });
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-favourites.tsx
+  init_react_shim();
+  init_live_tv_data();
+  init_live_tv_ui();
+  init_tv_ui();
+  init_tv_strings();
+  init_jsx_runtime_shim();
+  function escapeKey(key) {
+    return typeof CSS !== "undefined" && CSS.escape ? CSS.escape(key) : key.replace(/"/g, '\\"');
+  }
+  function TvFavourites({ model, nav }) {
+    const { tt, locale } = useTvText();
+    const favourites = model.favouriteChannels;
+    const gridRef = useRef(null);
+    const refocusKey = useRef(null);
+    useEffect(() => {
+      const key = refocusKey.current;
+      if (!key) return;
+      refocusKey.current = null;
+      gridRef.current?.querySelector(`[data-fav-key="${escapeKey(key)}"]`)?.focus({ preventScroll: true });
+    }, [favourites]);
+    const move = (key, delta) => {
+      movePinnedLiveTvChannel(key, delta);
+      refocusKey.current = key;
+    };
+    return /* @__PURE__ */ jsxs("div", { "data-scroll": "", style: { flex: 1, overflowY: "auto", padding: `${dp(34)}px ${dp(48)}px 0`, display: "flex", flexDirection: "column", gap: dp(22) }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(16) }, children: [
+        /* @__PURE__ */ jsx("span", { style: { fontSize: dp(34), fontWeight: 600 }, children: tt("favourites") }),
+        /* @__PURE__ */ jsx("span", { style: { fontSize: dp(18), color: "rgba(243,244,248,0.5)" }, children: tt("favouritesSub", { count: favourites.length }) }),
+        /* @__PURE__ */ jsx("div", { ...station(() => nav.go("guide", { group: "all" }), void 0, favourites.length === 0 ? { "data-init": "" } : {}), style: { marginLeft: "auto", height: dp(48), padding: `0 ${dp(22)}px`, borderRadius: 999, border: `1px solid ${TV.lineStrong}`, background: TV.s06, display: "inline-flex", alignItems: "center", fontSize: dp(18), cursor: "pointer" }, children: tt("addFromGuide") })
+      ] }),
+      favourites.length === 0 ? /* @__PURE__ */ jsx("div", { style: { fontSize: dp(20), color: TV.muted }, children: tt("favouritesEmpty") }) : null,
+      /* @__PURE__ */ jsx("div", { ref: gridRef, style: { display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: dp(16) }, children: favourites.map((channel, index3) => {
+        const key = channelKey(channel);
+        const info = model.nowFor(channel);
+        const quality = qualityFromName(channel.name);
+        return /* @__PURE__ */ jsxs(
+          "div",
+          {
+            "data-testid": "fav-card",
+            "data-fav-key": key,
+            ...station(
+              () => nav.play({ channel }),
+              (el) => nav.channelMenu(channel, el, [
+                ...index3 > 0 ? [{ key: "up", label: tt("menuMoveUp"), run: () => move(key, -1) }] : [],
+                ...index3 < favourites.length - 1 ? [{ key: "down", label: tt("menuMoveDown"), run: () => move(key, 1) }] : []
+              ]),
+              index3 === 0 ? { "data-init": "" } : void 0
+            ),
+            style: { ...cardStyle, borderRadius: dp(16), cursor: "pointer" },
+            children: [
+              /* @__PURE__ */ jsxs(ChannelArt, { channel, height: dp(130), children: [
+                /* @__PURE__ */ jsx("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.75))" } }),
+                quality ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: dp(10), right: dp(12) }, children: /* @__PURE__ */ jsx(Tag2, { variant: "quality", children: quality }) }) : null,
+                /* @__PURE__ */ jsx("span", { style: { position: "absolute", left: dp(14), bottom: dp(10), fontSize: dp(15), color: "rgba(243,244,248,0.7)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "70%" }, children: `${index3 + 1} \xB7 ${channel.name}` })
+              ] }),
+              /* @__PURE__ */ jsxs("div", { style: { padding: `${dp(14)}px ${dp(16)}px`, boxSizing: "border-box", display: "flex", flexDirection: "column", gap: dp(8) }, children: [
+                /* @__PURE__ */ jsx("div", { style: { fontSize: dp(21), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: info.now?.title ?? tt("noProgramme") }),
+                info.now ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(10) }, children: [
+                  /* @__PURE__ */ jsx(Progress, { value: progressOf(info.now.start, info.now.stop, model.nowMs), height: dp(4), style: { flex: 1 } }),
+                  /* @__PURE__ */ jsxs("span", { style: { fontSize: dp(14), color: "rgba(243,244,248,0.5)" }, children: [
+                    Math.max(0, Math.round((info.now.stop - model.nowMs) / 6e4)),
+                    " min"
+                  ] })
+                ] }) : null,
+                info.next ? /* @__PURE__ */ jsxs("div", { style: { fontSize: dp(16), color: "rgba(243,244,248,0.55)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: [
+                  tt("next"),
+                  " ",
+                  info.next.title,
+                  " \xB7 ",
+                  formatClock(info.next.start, locale)
+                ] }) : null
+              ] })
+            ]
+          },
+          key
+        );
+      }) }),
+      /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: TV.faint, paddingBottom: dp(32) }, children: tt("helpFavourites") })
+    ] });
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-channel.tsx
+  init_react_shim();
+  init_live_tv_data();
+  init_live_tv_ui();
+  init_reminders();
+  init_tv_ui();
+  init_tv_strings();
+  init_jsx_runtime_shim();
+  var DAY_OFFSETS = [-2, -1, 0, 1, 2];
+  var DAY_MS = 864e5;
+  function channelFromParams2(params, byUrl) {
+    const url = params.url?.trim();
+    if (!url) return null;
+    return byUrl.get(url) ?? {
+      name: params.name?.trim() || "Unknown",
+      logo: params.logo?.trim() || null,
+      group: params.group?.trim() || "Other",
+      url,
+      tvgId: params.tvgId?.trim() || null
+    };
+  }
+  function kindOf(p, nowMs) {
+    if (p.stop <= nowMs) return "past";
+    if (p.start > nowMs) return "future";
+    return "now";
+  }
+  function TvChannel({ model, nav, params, settings }) {
+    const { tt, locale } = useTvText();
+    const channel = useMemo(() => channelFromParams2(params, model.byUrl), [params, model.byUrl]);
+    const [dayOffset, setDayOffset] = useState(0);
+    const [selectedStart, setSelectedStart] = useState(params.programme ? Number(params.programme) : null);
+    const [lockGate, setLockGate] = useState(false);
+    const dayStart = startOfLocalDay(model.nowMs, dayOffset);
+    const programmes = useMemo(() => channel ? model.scheduleFor(channel, dayStart, dayStart + DAY_MS) : [], [channel, model, dayStart]);
+    const yesterday = useMemo(() => channel && dayOffset === 0 ? model.scheduleFor(channel, dayStart - DAY_MS, dayStart).slice(-2) : [], [channel, model, dayStart, dayOffset]);
+    const rows = useMemo(() => [...yesterday.map((p) => ({ p, day: "yesterday" })), ...programmes.map((p) => ({ p, day: "today" }))], [yesterday, programmes]);
+    const catchUpByStart = useMemo(() => {
+      if (!channel) return /* @__PURE__ */ new Map();
+      const items = catchUpForChannel(channel, model.cache, model.nameIndex, model.nowMs, 500);
+      return new Map(items.map((item) => [item.programme.start, true]));
+    }, [channel, model.cache, model.nameIndex, model.nowMs]);
+    const selected = useMemo(() => rows.find((r) => r.p.start === selectedStart)?.p ?? rows.find((r) => kindOf(r.p, model.nowMs) === "now")?.p ?? rows[0]?.p ?? null, [rows, selectedStart, model.nowMs]);
+    const kind = selected ? kindOf(selected, model.nowMs) : null;
+    const canReplaySelected = selected ? catchUpByStart.has(selected.start) : false;
+    const reminded = channel && selected && kind === "future" ? isReminded(channel, selected) : false;
+    const key = channel ? channelKey(channel) : "";
+    const pinned = model.pinnedSet.has(key);
+    const locked = model.locked.has(key);
+    const lockAvailable = pinSupportAvailable() && activeProfileHasPin2();
+    const mountedRef = useRef(false);
+    useEffect(() => {
+      if (!mountedRef.current) {
+        mountedRef.current = true;
+        return;
+      }
+      setSelectedStart(null);
+    }, [dayOffset]);
+    if (!channel) return /* @__PURE__ */ jsx("div", { style: { padding: dp(48), color: TV.dim }, children: tt("noProgramme") });
+    const primary = () => {
+      if (!selected) {
+        nav.play({ channel });
+        return;
+      }
+      if (kind === "now") {
+        nav.play({ channel });
+        return;
+      }
+      if (kind === "past") {
+        const url = canReplaySelected ? buildTimeshiftUrl(channel, selected.start, selected.stop - selected.start) : null;
+        if (url) nav.play({ channel, url, label: selected.title });
+        else nav.play({ channel });
+        return;
+      }
+      toggleReminder(channel, selected, model.nowMs);
+    };
+    const primaryLabel = kind === "past" ? canReplaySelected ? tt("playReplay") : tt("watchNow") : kind === "future" ? reminded ? tt("removeReminder") : tt("remindMe") : tt("watchNow");
+    const previewLabel = kind === "past" ? tt("replayAvailable", { days: channel.archive?.days ?? 0 }) : kind === "future" && selected ? tt("startsAt", { time: formatClock(selected.start, locale) }) : tt("onNow");
+    const dayLabel = (offset) => {
+      const d = new Date(model.nowMs + offset * DAY_MS);
+      return { top: offset === 0 ? tt("today") : offset === -1 ? tt("yesterday") : offset === 1 ? tt("tomorrow") : d.toLocaleDateString(locale, { weekday: "short" }), bottom: d.toLocaleDateString(locale, { day: "numeric", month: "short" }) };
+    };
+    const requestLockToggle = () => {
+      if (!lockAvailable) return;
+      setLockGate(true);
+    };
+    return /* @__PURE__ */ jsxs("div", { style: { flex: 1, minHeight: 0, display: "flex" }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(34)}px ${dp(40)}px 0 ${dp(48)}px`, display: "flex", flexDirection: "column" }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(16), marginBottom: dp(16) }, children: [
+          /* @__PURE__ */ jsx(RoundBtn, { ...station(() => nav.back()), children: /* @__PURE__ */ jsx(Icons.ChevronLeft, {}) }),
+          /* @__PURE__ */ jsx(ChannelArt, { channel, style: { width: dp(88), height: dp(56) }, radius: dp(8) }),
+          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(30), fontWeight: 600 }, children: channel.name }),
+          channel.group ? /* @__PURE__ */ jsx(Tag2, { variant: "neutral", children: channel.group }) : null,
+          /* @__PURE__ */ jsx(RoundBtn, { ...station(() => model.togglePin(channel)), background: pinned ? TV.accMix(22) : TV.s12, style: { marginLeft: "auto" }, children: /* @__PURE__ */ jsx("span", { style: { color: pinned ? TV.acc : TV.text }, children: /* @__PURE__ */ jsx(Icons.Heart, { size: dp(24), filled: pinned }) }) })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { "data-scroll": "", style: { flex: 1, minHeight: 0, overflowY: "auto" }, children: [
+          rows.length === 0 ? /* @__PURE__ */ jsx("div", { style: { padding: dp(24), color: TV.dim, fontSize: dp(19) }, children: model.cache ? tt("noProgramme") : tt("loadingGuide") }) : null,
+          rows.map((row, index3) => {
+            const k = kindOf(row.p, model.nowMs);
+            const isSelected = selected?.start === row.p.start;
+            const showHeader = index3 === 0 || rows[index3 - 1].day !== row.day;
+            const rowCanReplay = catchUpByStart.has(row.p.start);
+            const tag = k === "now" ? /* @__PURE__ */ jsx(Tag2, { variant: "live", children: tt("live") }) : k === "past" ? rowCanReplay ? /* @__PURE__ */ jsx("span", { style: { fontSize: dp(15), letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(243,244,248,0.45)" }, children: tt("replay") }) : null : /* @__PURE__ */ jsx("span", { style: { fontSize: dp(15), letterSpacing: "0.08em", textTransform: "uppercase", color: isReminded(channel, row.p) ? TV.accText : "rgba(243,244,248,0.45)" }, children: tt("remind") });
+            return /* @__PURE__ */ jsxs("div", { children: [
+              showHeader ? /* @__PURE__ */ jsx("div", { style: { height: dp(44), display: "flex", alignItems: "center", paddingLeft: dp(96), fontSize: dp(15), fontWeight: 600, color: TV.accText }, children: row.day === "yesterday" ? tt("yesterday") : dayLabel(dayOffset).top }) : null,
+              /* @__PURE__ */ jsxs(
+                "div",
+                {
+                  ...station(primary, void 0, isSelected ? { "data-init": "" } : void 0),
+                  onFocus: () => setSelectedStart(row.p.start),
+                  style: { height: dp(66), borderRadius: dp(12), padding: `0 ${dp(16)}px`, display: "flex", alignItems: "center", gap: dp(16), background: isSelected ? TV.s10 : "transparent", color: k === "past" ? "rgba(243,244,248,0.55)" : TV.text, cursor: "pointer" },
+                  children: [
+                    /* @__PURE__ */ jsx("span", { style: { width: dp(80), fontSize: dp(21), fontVariantNumeric: "tabular-nums" }, children: formatClock(row.p.start, locale) }),
+                    /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, fontSize: dp(21), fontWeight: k === "now" ? 600 : 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: row.p.title }),
+                    tag
+                  ]
+                }
+              )
+            ] }, row.p.start);
+          })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsx("div", { style: { width: dp(150), flexShrink: 0, padding: `${dp(120)}px ${dp(14)}px 0`, display: "flex", flexDirection: "column", gap: dp(10) }, children: DAY_OFFSETS.map((offset) => {
+        const active = offset === dayOffset;
+        const label = dayLabel(offset);
+        return /* @__PURE__ */ jsx("div", { "data-testid": offset === 0 ? "day-btn-0" : void 0, children: /* @__PURE__ */ jsxs("div", { ...station(() => setDayOffset(offset), void 0, { "data-testid": "day-btn" }), style: { height: dp(74), borderRadius: dp(12), display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: active ? "#f3f4f8" : "transparent", color: active ? "#111" : offset > 0 ? TV.accText : "rgba(243,244,248,0.6)", cursor: "pointer" }, children: [
+          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), fontWeight: 600 }, children: label.top }),
+          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(15), opacity: 0.75 }, children: label.bottom })
+        ] }) }, offset);
+      }) }),
+      /* @__PURE__ */ jsxs("div", { "data-testid": "detail", style: { width: dp(560), flexShrink: 0, padding: `${dp(34)}px ${dp(48)}px ${dp(32)}px ${dp(36)}px`, display: "flex", flexDirection: "column", gap: dp(16) }, children: [
+        /* @__PURE__ */ jsx(TvPreview, { channel, enabled: settings.previewEnabled && kind === "now", live: kind === "now", width: "100%", height: dp(268), label: previewLabel, onOk: primary }),
+        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(28), fontWeight: 600 }, children: selected?.title ?? channel.name }),
+        selected ? /* @__PURE__ */ jsx("div", { style: { fontSize: dp(18), color: "rgba(243,244,248,0.6)" }, children: tt("airedAt", { time: formatClock(selected.start, locale), channel: channel.name }) }) : null,
+        selected?.description ? /* @__PURE__ */ jsx("div", { style: { fontSize: dp(18), color: "rgba(243,244,248,0.75)", lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 5, WebkitBoxOrient: "vertical" }, children: selected.description }) : null,
+        /* @__PURE__ */ jsx("div", { style: { display: "flex", gap: dp(12) }, children: /* @__PURE__ */ jsxs(
+          "div",
+          {
+            "data-testid": "primary-action",
+            ...station(primary, void 0, rows.length === 0 ? { "data-init": "" } : void 0),
+            style: { height: dp(52), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.acc, color: TV.onAcc, display: "inline-flex", alignItems: "center", gap: dp(10), fontSize: dp(19), fontWeight: 600, cursor: "pointer" },
+            children: [
+              kind === "future" ? /* @__PURE__ */ jsx(Icons.Bell, { filled: reminded }) : /* @__PURE__ */ jsx(Icons.Play, { size: dp(20) }),
+              primaryLabel
+            ]
+          }
+        ) }),
+        /* @__PURE__ */ jsxs("div", { style: { marginTop: "auto", padding: `${dp(18)}px ${dp(20)}px`, borderRadius: dp(14), background: TV.s07, border: `1px solid ${TV.lineCard}`, display: "flex", flexDirection: "column", gap: dp(10) }, children: [
+          /* @__PURE__ */ jsx("div", { style: { fontFamily: TV.mono, fontSize: dp(12), letterSpacing: "0.14em", color: TV.accText }, children: tt("channelInfo") }),
+          [
+            [tt("quality"), qualityFromName(channel.name) ?? "\u2013"],
+            [tt("source"), model.listFor(channel)?.name ?? "\u2013"],
+            [tt("replayDays"), channel.archive ? tt("daysCount", { days: channel.archive.days }) : tt("noArchive")]
+          ].map(([label, value]) => /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "space-between", fontSize: dp(17) }, children: [
+            /* @__PURE__ */ jsx("span", { style: { color: TV.muted }, children: label }),
+            /* @__PURE__ */ jsx("span", { children: value })
+          ] }, label)),
+          lockAvailable ? /* @__PURE__ */ jsxs("div", { ...station(requestLockToggle), style: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: dp(17), paddingTop: dp(10), borderTop: `1px solid ${TV.line}`, cursor: "pointer" }, children: [
+            /* @__PURE__ */ jsx("span", { children: tt("lockWithPin") }),
+            /* @__PURE__ */ jsx(Toggle, { on: locked })
+          ] }) : null
+        ] })
+      ] }),
+      /* @__PURE__ */ jsx(
+        PinGate,
+        {
+          open: lockGate,
+          title: tt("enterPin"),
+          wrongText: tt("pinWrong"),
+          unlockLabel: tt("unlock"),
+          cancelLabel: tt("cancel"),
+          onVerify: verifyActiveProfilePin2,
+          onClose: () => setLockGate(false),
+          onUnlocked: () => {
+            setLockGate(false);
+            toggleChannelLock(channel);
+          }
+        }
+      )
+    ] });
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-search.tsx
+  init_react_shim();
+  init_live_tv_data();
+  init_live_tv_ui();
+  init_tv_ui();
+  init_tv_strings();
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-keyboard.tsx
+  init_react_shim();
+  init_tv_ui();
+  init_tv_strings();
+  init_jsx_runtime_shim();
+  var LETTERS = ["1234567890", "qwertyuiop\xE5", "asdfghjkl\xF6\xE4", "zxcvbnm,.-"];
+  var SYMBOLS = ["1234567890", "!?@#%&/()=", `+-*_:;"'<>`, "[]{}~^|\\\u20AC\xA3"];
+  function TvKeyboard({ value, onChange, onDone, initFocus }) {
+    const { tt } = useTvText();
+    const [symbols, setSymbols] = useState(false);
+    const rows = symbols ? SYMBOLS : LETTERS;
+    const key = (label, onOk, opts) => /* @__PURE__ */ jsx(
+      "div",
+      {
+        ...station(onOk, void 0, { ...opts?.init ? { "data-init": "" } : {}, ...opts?.aria ? { "aria-label": opts.aria } : {} }),
+        style: { height: dp(58), borderRadius: dp(10), background: opts?.accent ? TV.acc : TV.s10, color: opts?.accent ? TV.onAcc : TV.text, fontWeight: opts?.accent ? 600 : 400, fontSize: dp(24), display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", width: opts?.width, flex: opts?.flex ? 1 : void 0 },
+        children: label
+      },
+      label
+    );
+    return /* @__PURE__ */ jsxs("div", { "data-live-tv-keyboard": "", style: { display: "flex", flexDirection: "column", gap: dp(8) }, children: [
+      rows.map((row, rowIndex) => /* @__PURE__ */ jsx("div", { style: { display: "grid", gridTemplateColumns: `repeat(${row.length}, minmax(0, 1fr))`, gap: dp(8) }, children: row.split("").map((c, i) => key(c, () => onChange(value + c), { init: initFocus && rowIndex === 0 && i === 0 })) }, row)),
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: dp(8) }, children: [
+        key("\u2423", () => onChange(value + " "), { flex: true, aria: "Space" }),
+        key("\u232B", () => onChange(value.slice(0, -1)), { width: dp(120), aria: "Backspace" }),
+        key(symbols ? tt("keyLetters") : tt("keySymbols"), () => setSymbols((s) => !s), { width: dp(120) }),
+        key(tt("keyDone"), onDone, { width: dp(140), accent: true })
+      ] })
+    ] });
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-search-logic.ts
+  function norm(s) {
+    return s.trim().toLowerCase();
+  }
+  function searchChannels(query, channels, limit = 30) {
+    const q = norm(query);
+    if (!q) return [];
+    const prefix = [];
+    const contains = [];
+    for (const channel of channels) {
+      const name = norm(channel.name);
+      if (name.startsWith(q)) prefix.push(channel);
+      else if (name.includes(q)) contains.push(channel);
+      if (prefix.length >= limit) break;
+    }
+    return [...prefix, ...contains].slice(0, limit);
+  }
+  function searchProgrammes(query, channels, scheduleFor, day, limit = 30) {
+    const q = norm(query);
+    if (!q) return [];
+    const out = [];
+    for (const channel of channels) {
+      for (const programme of scheduleFor(channel, day.start, day.end)) {
+        if (norm(programme.title).includes(q)) out.push({ channel, programme });
+        if (out.length >= limit) return out.sort((a, b) => a.programme.start - b.programme.start);
+      }
+    }
+    return out.sort((a, b) => a.programme.start - b.programme.start);
+  }
+  function suggestions(query, channels, programmeTitles, limit = 6) {
+    const q = norm(query);
+    if (!q) return [];
+    const seen = /* @__PURE__ */ new Set();
+    const out = [];
+    for (const text of [...channels.map((c) => c.name), ...programmeTitles]) {
+      const key = norm(text);
+      if (!key.startsWith(q) || seen.has(key)) continue;
+      seen.add(key);
+      out.push(text);
+      if (out.length >= limit) break;
+    }
+    return out;
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-search.tsx
+  init_jsx_runtime_shim();
+  function TvSearch({ model, nav }) {
+    const { tt, locale } = useTvText();
+    const [query, setQuery] = useState("");
+    const day = useMemo(() => {
+      const start3 = startOfLocalDay(model.nowMs);
+      return { start: start3, end: start3 + 864e5 };
+    }, [model.nowMs]);
+    const channels = useMemo(() => searchChannels(query, model.channels), [query, model.channels]);
+    const programmes = useMemo(() => searchProgrammes(query, model.channels, model.scheduleFor, day), [query, model.channels, model.scheduleFor, day]);
+    const hints = useMemo(() => suggestions(query, model.channels, programmes.map((p) => p.programme.title)), [query, model.channels, programmes]);
+    const focusFirstResult = () => {
+      const first = document.querySelector("[data-live-tv-search-results] [data-f]");
+      first?.focus({ preventScroll: true });
+    };
+    return /* @__PURE__ */ jsxs("div", { style: { flex: 1, minHeight: 0, display: "flex" }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { width: dp(760), flexShrink: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(34)}px ${dp(40)}px 0 ${dp(48)}px`, display: "flex", flexDirection: "column", gap: dp(18) }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { height: dp(64), borderRadius: dp(14), background: TV.s10, display: "flex", alignItems: "center", padding: `0 ${dp(20)}px`, fontSize: dp(28), color: query ? TV.text : "rgba(243,244,248,0.5)" }, children: [
+          query || /* @__PURE__ */ jsx("span", { style: { fontSize: dp(18) }, children: tt("searchPlaceholder") }),
+          /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { width: 2, height: dp(32), background: TV.acc, marginLeft: dp(4) } })
+        ] }),
+        /* @__PURE__ */ jsx("div", { "data-row": "", style: { display: "flex", gap: dp(8), overflowX: "auto", minHeight: dp(44) }, children: hints.map((hint) => /* @__PURE__ */ jsx("div", { "data-testid": "search-suggestion", ...station(() => setQuery(hint)), style: { height: dp(44), padding: `0 ${dp(18)}px`, borderRadius: 999, background: TV.s08, display: "inline-flex", alignItems: "center", fontSize: dp(18), whiteSpace: "nowrap", cursor: "pointer" }, children: hint }, hint)) }),
+        /* @__PURE__ */ jsx(TvKeyboard, { value: query, onChange: setQuery, onDone: focusFirstResult, initFocus: true })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { "data-live-tv-search-results": "", "data-scroll": "", style: { flex: 1, minWidth: 0, overflowY: "auto", padding: `${dp(34)}px ${dp(48)}px 0 ${dp(40)}px`, display: "flex", flexDirection: "column", gap: dp(28) }, children: [
+        /* @__PURE__ */ jsxs("section", { "data-testid": "search-channels", style: { display: "flex", flexDirection: "column", gap: dp(8) }, children: [
+          /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: dp(12) }, children: [
+            /* @__PURE__ */ jsx("span", { style: { fontSize: dp(24), fontWeight: 600 }, children: tt("searchChannels") }),
+            /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: "rgba(243,244,248,0.5)" }, children: tt("hits", { count: channels.length }) })
+          ] }),
+          query && channels.length === 0 ? /* @__PURE__ */ jsx("div", { style: { color: TV.dim, fontSize: dp(18) }, children: tt("noResults") }) : null,
+          channels.map((channel) => {
+            const info = model.nowFor(channel);
+            return /* @__PURE__ */ jsxs("div", { ...station(() => nav.openChannel(channel), (el) => nav.channelMenu(channel, el)), style: { height: dp(80), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(12)}px`, cursor: "pointer" }, children: [
+              /* @__PURE__ */ jsx("span", { style: { width: dp(44), fontSize: dp(16), color: "rgba(243,244,248,0.5)", textAlign: "right" }, children: model.channelNumber(channel) ?? "" }),
+              /* @__PURE__ */ jsx(ChannelArt, { channel, style: { width: dp(76), height: dp(50), flexShrink: 0 }, radius: dp(8) }),
+              /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: 1 }, children: [
+                /* @__PURE__ */ jsx("div", { style: { fontSize: dp(20), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: channel.name }),
+                /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: "rgba(243,244,248,0.6)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: info.now ? `${tt("colNow")}: ${info.now.title}` : tt("noProgramme") })
+              ] }),
+              /* @__PURE__ */ jsx("span", { style: { fontSize: dp(15), color: "rgba(243,244,248,0.5)" }, children: channel.group })
+            ] }, channelKey(channel));
+          })
+        ] }),
+        /* @__PURE__ */ jsxs("section", { "data-testid": "search-programmes", style: { display: "flex", flexDirection: "column", gap: dp(6) }, children: [
+          /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: dp(12) }, children: [
+            /* @__PURE__ */ jsx("span", { style: { fontSize: dp(24), fontWeight: 600 }, children: tt("searchProgrammes") }),
+            /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: "rgba(243,244,248,0.5)" }, children: tt("hits", { count: programmes.length }) })
+          ] }),
+          programmes.map((hit) => /* @__PURE__ */ jsxs("div", { ...station(() => nav.openChannel(hit.channel, hit.programme.start)), style: { height: dp(64), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(16), padding: `0 ${dp(12)}px`, cursor: "pointer" }, children: [
+            /* @__PURE__ */ jsx("span", { style: { width: dp(80), fontSize: dp(18), color: "rgba(243,244,248,0.6)", fontVariantNumeric: "tabular-nums" }, children: formatClock(hit.programme.start, locale) }),
+            /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, fontSize: dp(20), whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: hit.programme.title }),
+            /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: "rgba(243,244,248,0.5)" }, children: hit.channel.name })
+          ] }, `${channelKey(hit.channel)}:${hit.programme.start}`))
+        ] })
+      ] })
+    ] });
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  init_react_shim();
+  init_live_tv_data();
+  init_tv_ui();
+  init_tv_strings();
+  init_video_surface();
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-channel-picker.tsx
+  init_react_shim();
+  init_live_tv_data();
+  init_tv_ui();
+  init_tv_strings();
+  init_jsx_runtime_shim();
+  function TvChannelPicker({ model, nav, title, onPick, onClose }) {
+    const { tt } = useTvText();
+    const groups = useGuideGroups(model, tt);
+    const [group, setGroup] = useState(null);
+    const rows = useMemo(() => filterByGroup(model, group).slice(0, 200), [model, group]);
+    const rootRef = useRef(null);
+    const openerRef = useRef(null);
+    useEffect(() => {
+      openerRef.current = document.activeElement;
+      const close = () => {
+        onClose();
+        window.setTimeout(() => openerRef.current?.focus({ preventScroll: true }), 0);
+      };
+      const off = nav.pushLayer(close);
+      window.setTimeout(() => rootRef.current?.querySelector("[data-init]")?.focus({ preventScroll: true }), 0);
+      return off;
+    }, [nav, onClose]);
+    return /* @__PURE__ */ jsxs("div", { ref: rootRef, "data-testid": "channel-picker", "data-panel-root": "", "data-live-tv-layer": "", style: { position: "fixed", top: 0, right: 0, bottom: 0, width: dp(640), zIndex: 60, background: TV.panel, borderLeft: `1px solid ${TV.line}`, padding: `${dp(34)}px ${dp(32)}px`, display: "flex", flexDirection: "column", gap: dp(18) }, children: [
+      /* @__PURE__ */ jsx("div", { style: { fontSize: dp(28), fontWeight: 600 }, children: title }),
+      /* @__PURE__ */ jsx("div", { "data-row": "", style: { display: "flex", gap: dp(8), overflowX: "auto" }, children: groups.map((chip) => /* @__PURE__ */ jsx(Chip, { active: group === chip.key, ...station(() => setGroup(chip.key)), style: { height: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }, children: chip.label }, chip.id)) }),
+      /* @__PURE__ */ jsx("div", { "data-scroll": "", style: { flex: 1, minHeight: 0, overflowY: "auto" }, children: rows.map((channel, index3) => {
+        const info = model.nowFor(channel);
+        return /* @__PURE__ */ jsxs("div", { "data-testid": `picker-row-${channel.name}`, ...station(() => {
+          onPick(channel);
+          onClose();
+          window.setTimeout(() => openerRef.current?.focus({ preventScroll: true }), 0);
+        }, void 0, index3 === 0 ? { "data-init": "" } : void 0), style: { height: dp(74), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(12)}px`, cursor: "pointer" }, children: [
+          /* @__PURE__ */ jsx("span", { style: { width: dp(40), fontSize: dp(16), color: "rgba(243,244,248,0.5)", textAlign: "right" }, children: model.channelNumber(channel) ?? "" }),
+          /* @__PURE__ */ jsx(ChannelArt, { channel, style: { width: dp(70), height: dp(46), flexShrink: 0 }, radius: dp(8) }),
+          /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
+            /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: channel.name }),
+            /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: "rgba(243,244,248,0.6)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: info.now?.title ?? channel.group })
+          ] })
+        ] }, channelKey(channel));
+      }) })
+    ] });
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  init_jsx_runtime_shim();
+  var GRID = {
+    2: { columns: "1fr 1fr", rows: "1fr" },
+    3: { columns: "2fr 1fr", rows: "1fr 1fr" },
+    4: { columns: "1fr 1fr", rows: "1fr 1fr" }
+  };
+  function TvMultiview({ model, nav }) {
+    const { tt } = useTvText();
+    const state = useMultiviewState();
+    const [pickerTile, setPickerTile] = useState(null);
+    const caps = videoSurfaceCapabilities();
+    const update = (next2) => setMultiviewState(next2);
+    const audioChannel = state.tiles[state.audioIndex] ? model.byKey.get(state.tiles[state.audioIndex]) ?? model.allChannels.find((c) => channelKey(c) === state.tiles[state.audioIndex]) ?? null : null;
+    const liveBudget = Math.max(0, caps.maxLive - 1);
+    let liveLeft = liveBudget;
+    return /* @__PURE__ */ jsxs("div", { style: { flex: 1, minHeight: 0, display: "flex", flexDirection: "column", padding: `${dp(34)}px ${dp(48)}px ${dp(32)}px`, gap: dp(18) }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(20) }, children: [
+        /* @__PURE__ */ jsx("span", { style: { fontSize: dp(34), fontWeight: 600 }, children: tt("multiview") }),
+        /* @__PURE__ */ jsx(
+          Segment,
+          {
+            options: [{ key: "2", label: tt("layout2") }, { key: "3", label: tt("layout3") }, { key: "4", label: tt("layout4") }],
+            value: String(state.layout),
+            onChange: (key) => update(setLayout(state, Number(key)))
+          }
+        ),
+        /* @__PURE__ */ jsxs("span", { style: { marginLeft: "auto", fontSize: dp(18), color: "rgba(243,244,248,0.6)", textAlign: "right" }, children: [
+          audioChannel ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+            /* @__PURE__ */ jsxs("span", { children: [
+              tt("audioLabel"),
+              ": "
+            ] }),
+            /* @__PURE__ */ jsx("strong", { style: { color: TV.text }, children: audioChannel.name }),
+            " \xB7 "
+          ] }) : null,
+          tt("multiviewHelp")
+        ] })
+      ] }),
+      /* @__PURE__ */ jsx("div", { style: { flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: GRID[state.layout].columns, gridTemplateRows: GRID[state.layout].rows, gap: dp(16) }, children: state.tiles.map((key, index3) => {
+        const channel = key ? model.byKey.get(key) ?? model.allChannels.find((c) => channelKey(c) === key) ?? null : null;
+        const hasAudio = index3 === state.audioIndex && channel !== null;
+        const live = hasAudio || channel !== null && liveLeft-- > 0;
+        return /* @__PURE__ */ jsx(
+          Tile,
+          {
+            index: index3,
+            channel,
+            hasAudio,
+            live,
+            isInit: index3 === state.audioIndex,
+            span: state.layout === 3 && index3 === 0,
+            nowTitle: channel ? model.nowFor(channel).now?.title ?? null : null,
+            number: channel ? model.channelNumber(channel) : null,
+            onOk: () => {
+              if (!channel) {
+                setPickerTile(index3);
+                return;
+              }
+              update({ ...state, audioIndex: index3 });
+            },
+            onHold: (el) => {
+              if (!channel) {
+                setPickerTile(index3);
+                return;
+              }
+              nav.openMenu({
+                title: channel.name,
+                element: el,
+                actions: [
+                  { key: "audio", label: tt("menuAudioHere"), run: () => update({ ...state, audioIndex: index3 }) },
+                  { key: "switch", label: tt("menuSwitchChannel"), run: () => setPickerTile(index3) },
+                  { key: "enlarge", label: tt("menuEnlarge"), run: () => update(enlargeTile(state, index3)) },
+                  { key: "full", label: tt("menuFullscreen"), run: () => nav.play({ channel }) },
+                  { key: "remove", label: tt("menuRemoveTile"), run: () => update(removeTile(state, index3)) }
+                ]
+              });
+            }
+          },
+          `${index3}:${key ?? "empty"}`
+        );
+      }) }),
+      pickerTile !== null ? /* @__PURE__ */ jsx(TvChannelPicker, { model, nav, title: tt("pickChannelFor", { n: pickerTile + 1 }), onPick: (channel) => update(assignTile(state, pickerTile, channelKey(channel))), onClose: () => setPickerTile(null) }) : null
+    ] });
+  }
+  function Tile({ index: index3, channel, hasAudio, live, isInit, span, nowTitle, number: number2, onOk, onHold }) {
+    const { tt } = useTvText();
+    const ref = useRef(null);
+    const surface = useVideoSurface(ref, channel && live ? { channel, url: channel.url } : null, { muted: !hasAudio, audio: hasAudio, enabled: live });
+    return /* @__PURE__ */ jsxs("div", { ref, "data-testid": "mv-tile", ...station(onOk, onHold, isInit ? { "data-init": "" } : void 0), style: { position: "relative", borderRadius: dp(14), border: `1px solid ${TV.lineCard}`, overflow: "hidden", background: "#05070d", gridRow: span ? "span 2" : void 0, cursor: "pointer", minHeight: 0 }, children: [
+      channel && !(live && surface.live && !surface.failed) ? /* @__PURE__ */ jsx(ChannelArt, { channel, style: { position: "absolute", inset: 0, borderRadius: 0 } }) : null,
+      channel ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+        /* @__PURE__ */ jsxs("div", { style: { position: "absolute", left: 0, right: 0, bottom: 0, padding: `${dp(40)}px ${dp(18)}px ${dp(14)}px`, background: "linear-gradient(180deg, transparent, rgba(0,0,0,0.8))", display: "flex", alignItems: "baseline", gap: dp(10), whiteSpace: "nowrap", overflow: "hidden" }, children: [
+          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(15), color: "rgba(243,244,248,0.6)" }, children: number2 ?? "" }),
+          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(19), fontWeight: 600 }, children: channel.name }),
+          nowTitle ? /* @__PURE__ */ jsxs("span", { style: { fontSize: dp(17), color: "rgba(243,244,248,0.7)", overflow: "hidden", textOverflow: "ellipsis" }, children: [
+            "\xB7 ",
+            nowTitle
+          ] }) : null
+        ] }),
+        hasAudio ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: dp(12), right: dp(14) }, children: /* @__PURE__ */ jsx(Tag2, { variant: "audio", children: tt("audioLabel").toUpperCase() }) }) : null,
+        !live || !surface.live ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: dp(12), left: dp(14), fontFamily: TV.mono, fontSize: dp(12), letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(243,244,248,0.55)" }, children: surface.failed ? tt("tileFailed") : tt("frameLabel") }) : null
+      ] }) : /* @__PURE__ */ jsxs("div", { style: { position: "absolute", inset: 0, background: "rgba(0,0,0,0.55)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: dp(8), color: "rgba(243,244,248,0.7)" }, children: [
+        /* @__PURE__ */ jsx(Icons.Plus, {}),
+        /* @__PURE__ */ jsx("span", { style: { fontSize: dp(20) }, children: tt("pickChannel") })
+      ] })
+    ] });
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-settings.tsx
+  init_react_shim();
+  init_plugin_sdk();
+  init_plugin_sdk();
+  init_live_tv_data();
+  init_live_tv_ui();
+  init_tv_ui();
+  init_tv_strings();
+  init_jsx_runtime_shim();
+  var TABS = ["appearance", "playlists", "epg", "parental"];
+  var accentApi = plugin_sdk_exports;
+  var hasAccent = typeof accentApi.getAccent === "function" && typeof accentApi.setAccent === "function" && !!accentApi.ACCENT_PRESETS;
+  function Row2({ label, right, onOk, testId }) {
+    return /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onOk), style: { height: dp(64), borderRadius: dp(12), background: TV.s06, padding: `0 ${dp(18)}px`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: dp(16), fontSize: dp(19), cursor: "pointer" }, children: [
+      /* @__PURE__ */ jsx("span", { style: { minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: label }),
+      /* @__PURE__ */ jsx("span", { style: { flexShrink: 0, color: "rgba(243,244,248,0.6)", display: "inline-flex", alignItems: "center", gap: dp(10) }, children: right })
+    ] });
+  }
+  function Heading({ children, hint }) {
+    return /* @__PURE__ */ jsxs("div", { children: [
+      /* @__PURE__ */ jsx("div", { style: { fontSize: dp(26), fontWeight: 600 }, children }),
+      hint ? /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: "rgba(243,244,248,0.5)" }, children: hint }) : null
+    ] });
+  }
+  function TvSettingsView({ model, params, settings }) {
+    const { tt, locale } = useTvText();
+    const initial = TABS.includes(params.tab ?? "") ? params.tab : "appearance";
+    const [tab, setTab] = useState(initial);
+    const labels = { appearance: tt("tabAppearance"), playlists: tt("tabPlaylists"), epg: tt("tabEpg"), parental: tt("tabParental") };
+    return /* @__PURE__ */ jsxs("div", { style: { flex: 1, minHeight: 0, display: "flex" }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { width: dp(340), flexShrink: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(34)}px ${dp(20)}px 0 ${dp(48)}px`, display: "flex", flexDirection: "column", gap: dp(6) }, children: [
+        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(30), fontWeight: 600, marginBottom: dp(16) }, children: tt("liveTv") }),
+        TABS.map((t) => /* @__PURE__ */ jsx("div", { "data-testid": `tab-${t}`, ...station(() => setTab(t), void 0, { ...t === tab ? { "data-init": "" } : {}, "data-f-right": "[data-live-tv-settings-content] [data-f]" }), style: { height: dp(60), borderRadius: dp(12), padding: `0 ${dp(18)}px`, display: "flex", alignItems: "center", fontSize: dp(20), background: t === tab ? TV.s12 : "transparent", color: t === tab ? TV.text : TV.muted, cursor: "pointer" }, children: labels[t] }, t))
+      ] }),
+      /* @__PURE__ */ jsxs("div", { "data-live-tv-settings-content": "", "data-scroll": "", style: { flex: 1, minWidth: 0, overflowY: "auto", padding: `${dp(40)}px ${dp(48)}px`, display: "flex", flexDirection: "column", gap: dp(36) }, children: [
+        tab === "appearance" ? /* @__PURE__ */ jsx(AppearanceTab, { settings, tt }) : null,
+        tab === "playlists" ? /* @__PURE__ */ jsx(PlaylistsTab, { lists: model.lists, tt, locale }) : null,
+        tab === "epg" ? /* @__PURE__ */ jsx(EpgTab, { lists: model.lists, tt }) : null,
+        tab === "parental" ? /* @__PURE__ */ jsx(ParentalTab, { model, tt }) : null
+      ] })
+    ] });
+  }
+  function AppearanceTab({ settings, tt }) {
+    const guideMode = useGuideMode();
+    const [accent, setAccentState] = useState(() => hasAccent ? accentApi.getAccent() : "");
+    const modes = [{ key: "now", label: tt("modeNow") }, { key: "tl", label: tt("modeTimeline") }, { key: "playlists", label: tt("modePlaylists") }];
+    const nextBanner = (current2) => BANNER_HIDE_OPTIONS[(BANNER_HIDE_OPTIONS.indexOf(current2) + 1) % BANNER_HIDE_OPTIONS.length];
+    return /* @__PURE__ */ jsxs(Fragment2, { children: [
+      hasAccent ? /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: dp(14) }, children: [
+        /* @__PURE__ */ jsx(Heading, { children: tt("accentColour") }),
+        /* @__PURE__ */ jsx("div", { style: { display: "flex", gap: dp(12), flexWrap: "wrap" }, children: Object.entries(accentApi.ACCENT_PRESETS).map(([id4, preset]) => {
+          const color2 = `rgb(${preset.shades[1]})`;
+          return /* @__PURE__ */ jsxs("div", { ...station(() => {
+            accentApi.setAccent(id4);
+            setAccentState(id4);
+          }), style: { height: dp(60), padding: `0 ${dp(22)}px 0 ${dp(14)}px`, borderRadius: 999, border: `1px solid ${accent === id4 ? color2 : TV.lineCard}`, background: TV.s06, display: "inline-flex", alignItems: "center", gap: dp(12), fontSize: dp(19), cursor: "pointer" }, children: [
+            /* @__PURE__ */ jsx("span", { style: { width: dp(28), height: dp(28), borderRadius: 999, background: color2 } }),
+            preset.label
+          ] }, id4);
+        }) })
+      ] }) : null,
+      /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: dp(14) }, children: [
+        /* @__PURE__ */ jsx(Heading, { hint: tt("guideDefaultHint"), children: tt("guideDefault") }),
+        /* @__PURE__ */ jsx("div", { style: { display: "flex", gap: dp(16) }, children: modes.map((m2) => /* @__PURE__ */ jsxs("div", { "data-testid": `guide-default-${m2.key}`, ...station(() => setGuideMode(m2.key)), style: { width: dp(300), borderRadius: dp(14), border: `1px solid ${guideMode === m2.key ? TV.acc : TV.lineCard}`, background: TV.s06, padding: dp(16), display: "flex", flexDirection: "column", gap: dp(12), cursor: "pointer" }, children: [
+          /* @__PURE__ */ jsx("div", { style: { height: dp(110), borderRadius: dp(10), background: TV.s05, display: "grid", gridTemplateColumns: m2.key === "playlists" ? "1fr 2fr 1fr" : m2.key === "tl" ? "1fr 3fr" : "1fr 1.2fr 1fr 1fr", gap: dp(6), padding: dp(10) }, children: Array.from({ length: m2.key === "playlists" ? 3 : m2.key === "tl" ? 2 : 4 }).map((_, i) => /* @__PURE__ */ jsx("div", { style: { borderRadius: dp(4), background: i === 1 ? TV.accMix(35) : TV.s12 } }, i)) }),
+          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), fontWeight: 600 }, children: m2.label })
+        ] }, m2.key)) })
+      ] }),
+      /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: dp(10) }, children: [
+        /* @__PURE__ */ jsx(Heading, { children: tt("behaviour") }),
+        /* @__PURE__ */ jsx(Row2, { testId: "setting-previewEnabled", label: tt("settingPreview"), right: /* @__PURE__ */ jsx(Toggle, { on: settings.previewEnabled }), onOk: () => setTvSettings({ previewEnabled: !settings.previewEnabled }) }),
+        /* @__PURE__ */ jsx(Row2, { testId: "setting-startOnLastChannel", label: tt("settingStartLast"), right: /* @__PURE__ */ jsx(Toggle, { on: settings.startOnLastChannel }), onOk: () => setTvSettings({ startOnLastChannel: !settings.startOnLastChannel }) }),
+        /* @__PURE__ */ jsx(Row2, { testId: "setting-numericZap", label: tt("settingNumericZap"), right: /* @__PURE__ */ jsx(Toggle, { on: settings.numericZap }), onOk: () => setTvSettings({ numericZap: !settings.numericZap }) }),
+        /* @__PURE__ */ jsx(Row2, { testId: "setting-bannerHideMs", label: tt("settingBannerHide"), right: settings.bannerHideMs === 0 ? tt("never") : tt("seconds", { s: settings.bannerHideMs / 1e3 }), onOk: () => setTvSettings({ bannerHideMs: nextBanner(settings.bannerHideMs) }) })
+      ] })
+    ] });
+  }
+  function useKeyboardPrompt() {
+    const Panel = getTvKeyboardPanel();
+    const [prompt, setPrompt] = useState(null);
+    const node = Panel && prompt ? /* @__PURE__ */ jsx("div", { "data-live-tv-host-ui": "", style: { position: "fixed", inset: 0, zIndex: 70 }, children: /* @__PURE__ */ jsx(Panel, { title: prompt.title, initial: prompt.initial, onDone: (value) => {
+      setPrompt(null);
+      prompt.onDone(value);
+    }, onClose: () => setPrompt(null) }) }) : null;
+    return { available: Panel !== null, ask: (title, initial, onDone) => setPrompt({ title, initial, onDone }), node };
+  }
+  async function fetchAndAddM3uList(url) {
+    try {
+      const response = await fetch("/api/m3u", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url }) });
+      if (!response.ok) return;
+      const parsed = await response.json().catch(() => ({}));
+      const channels = Array.isArray(parsed.channels) ? parsed.channels.map((c) => ({
+        name: String(c.name ?? "Unknown"),
+        logo: typeof c.logo === "string" ? c.logo : null,
+        group: String(c.group ?? "Other"),
+        url: String(c.url ?? ""),
+        tvgId: typeof c.tvgId === "string" ? c.tvgId : null
+      })) : [];
+      upsertLiveTvListFromFetch(url, parsed.urlTvg ?? null, channels);
+      applyM3uUrls([...getM3uUrls(), url]);
+    } catch {
+    }
+  }
+  function hostOf2(url) {
+    try {
+      return new URL(url).hostname || url;
+    } catch {
+      return url;
+    }
+  }
+  function removeListAndSourceUrl(list) {
+    const urls = getM3uUrls();
+    const remaining = urls.filter((url) => !url.startsWith("xtream://") && hostOf2(url) !== list.name);
+    if (remaining.length !== urls.length) applyM3uUrls(remaining);
+    deleteLiveTvList(list.id);
+  }
+  function PlaylistsTab({ lists, tt, locale }) {
+    const keyboard = useKeyboardPrompt();
+    const addUrl = () => keyboard.ask(tt("addM3u"), "", (value) => {
+      const url = value.trim();
+      if (url) void fetchAndAddM3uList(url);
+    });
+    return /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: dp(10) }, children: [
+      /* @__PURE__ */ jsx(Heading, { children: tt("tabPlaylists") }),
+      lists.map((list) => /* @__PURE__ */ jsx(
+        Row2,
+        {
+          label: /* @__PURE__ */ jsxs(Fragment2, { children: [
+            /* @__PURE__ */ jsx("strong", { children: list.name }),
+            " ",
+            /* @__PURE__ */ jsxs("span", { style: { color: "rgba(243,244,248,0.5)", fontSize: dp(16) }, children: [
+              "\xB7 ",
+              tt("channelsCount", { count: list.channels.length }),
+              list.fetchedAt ? ` \xB7 ${tt("fetchedAt", { time: new Date(list.fetchedAt).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }) })}` : ""
+            ] })
+          ] }),
+          right: tt("remove"),
+          onOk: () => removeListAndSourceUrl(list)
+        },
+        list.id
+      )),
+      keyboard.available ? /* @__PURE__ */ jsx(Row2, { label: tt("addM3u"), right: "+", onOk: addUrl }) : null,
+      keyboard.node
+    ] });
+  }
+  function EpgTab({ lists, tt }) {
+    const keyboard = useKeyboardPrompt();
+    const urls = useMemo(() => lists.flatMap((list) => list.epgUrls.map((url) => ({ listId: list.id, url }))), [lists]);
+    return /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: dp(10) }, children: [
+      /* @__PURE__ */ jsx(Heading, { children: tt("tabEpg") }),
+      urls.map(({ listId, url }) => {
+        const list = lists.find((l) => l.id === listId);
+        return /* @__PURE__ */ jsx(Row2, { label: url, right: tt("remove"), onOk: () => updateLiveTvListEpg(listId, { epgUrls: list.epgUrls.filter((u) => u !== url) }) }, `${listId}:${url}`);
+      }),
+      keyboard.available && lists[0] ? /* @__PURE__ */ jsx(Row2, { label: tt("addEpgUrl"), right: "+", onOk: () => keyboard.ask(tt("addEpgUrl"), "", (value) => {
+        const url = value.trim();
+        if (url) updateLiveTvListEpg(lists[0].id, { epgUrls: [...lists[0].epgUrls, url] });
+      }) }) : null,
+      keyboard.node
+    ] });
+  }
+  function ParentalTab({ model, tt }) {
+    const [keys3, setKeys] = useState(getLockedChannelKeys);
+    useEffect(() => onChannelLocksChanged(() => setKeys(getLockedChannelKeys())), []);
+    const channels = keys3.map((key) => model.allChannels.find((c) => channelKey(c) === key)).filter((c) => Boolean(c));
+    const lockAvailable = pinSupportAvailable() && activeProfileHasPin2();
+    const [pinTarget, setPinTarget] = useState(null);
+    const requestUnlock = (channel) => {
+      if (!lockAvailable) {
+        toggleChannelLock(channel);
+        return;
+      }
+      setPinTarget(channel);
+    };
+    return /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: dp(10) }, children: [
+      /* @__PURE__ */ jsx(Heading, { children: tt("lockedChannels") }),
+      channels.length === 0 ? /* @__PURE__ */ jsx("div", { style: { fontSize: dp(18), color: TV.dim }, children: tt("noLocked") }) : null,
+      channels.map((channel) => /* @__PURE__ */ jsx(Row2, { label: channel.name, right: tt("unlock"), onOk: () => requestUnlock(channel) }, channelKey(channel))),
+      /* @__PURE__ */ jsx(
+        PinGate,
+        {
+          open: pinTarget !== null,
+          title: tt("enterPin"),
+          wrongText: tt("pinWrong"),
+          unlockLabel: tt("unlock"),
+          cancelLabel: tt("cancel"),
+          onVerify: verifyActiveProfilePin2,
+          onClose: () => setPinTarget(null),
+          onUnlocked: () => {
+            const channel = pinTarget;
+            setPinTarget(null);
+            if (channel) toggleChannelLock(channel);
+          }
+        }
+      )
+    ] });
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-views.tsx
+  var TV_VIEWS = {
+    hub: TvHub,
+    guide: TvGuide,
+    favs: TvFavourites,
+    channel: TvChannel,
+    search: TvSearch,
+    multi: TvMultiview,
+    settings: TvSettingsView
+  };
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-shell.tsx
+  init_jsx_runtime_shim();
+  var VIEWS = ["hub", "guide", "favs", "channel", "search", "multi", "settings"];
+  var BACK_KEYS2 = /* @__PURE__ */ new Set(["Escape", "Backspace", "GoBack", "BrowserBack"]);
+  var ZAP_TIMEOUT_MS = 1500;
+  function viewFromParams(params) {
+    const raw = params?.view;
+    if (raw && VIEWS.includes(raw)) return raw;
+    if (!raw && params?.url) return "channel";
+    return "hub";
+  }
+  function LiveTvTvShell({ params, onNavigate }) {
+    const { tt, locale } = useTvText();
+    const model = useLiveTvModel();
+    const settings = useTvSettings();
+    const view = viewFromParams(params);
+    const viewParams = params ?? {};
+    const [Player, setPlayer] = useState(null);
+    const [active, setActive] = useState(null);
+    const [pending2, setPending] = useState(null);
+    const [menu, setMenu] = useState(null);
+    const [zapDigits, setZapDigits] = useState("");
+    const [toastText, setToastText] = useState(null);
+    const layersRef = useRef([]);
+    const mainRef = useRef(null);
+    const TvGlassMenu = getTvGlassMenu();
+    useEffect(() => {
+      if (active) return;
+      let frame2 = 0;
+      const focusInit = () => {
+        const main = mainRef.current;
+        if (!main) return;
+        if (document.activeElement && main.contains(document.activeElement)) return;
+        main.querySelector("[data-init]")?.focus({ preventScroll: true });
+      };
+      frame2 = window.requestAnimationFrame(() => {
+        frame2 = window.requestAnimationFrame(focusInit);
+      });
+      return () => window.cancelAnimationFrame(frame2);
+    }, [view, active]);
+    useEffect(() => {
+      if (!active || Player) return;
+      let cancelled = false;
+      void Promise.resolve().then(() => (init_live_tv_player(), live_tv_player_exports)).then((mod) => {
+        if (!cancelled) setPlayer(() => mod.LiveTvPlayer);
+      }).catch(() => {
+        if (!cancelled) setActive(null);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }, [active, Player]);
+    const go = useCallback((next2, extra = {}) => {
+      onNavigate({ pageId: LIVE_TV_BROWSE_PAGE_ID, params: { view: next2, ...extra } });
+    }, [onNavigate]);
+    const toast = useCallback((text) => {
+      setToastText(text);
+      window.setTimeout(() => setToastText((current2) => current2 === text ? null : current2), 1800);
+    }, []);
+    const play = useCallback((request) => {
+      const locked = model.locked.has(channelKey(request.channel));
+      if (locked && !isUnlockedThisSession() && pinSupportAvailable() && activeProfileHasPin2()) {
+        setPending(request);
+        return;
+      }
+      void releaseAllSurfaces().finally(() => setActive(request));
+    }, [model.locked]);
+    const openChannel = useCallback((channel, programmeStart) => {
+      go("channel", { ...encodeChannelParams(channel), ...programmeStart ? { programme: String(programmeStart) } : {} });
+    }, [go]);
+    const addToMultiview = useCallback((channel) => {
+      setMultiviewState(addToFirstFree(getMultiviewState(), channelKey(channel)));
+      toast(tt("addedToMultiview"));
+    }, [toast, tt]);
+    const channelMenu = useCallback((channel, element, extra = []) => {
+      const key = channelKey(channel);
+      const pinned = model.pinnedSet.has(key);
+      const locked = model.locked.has(key);
+      setMenu({
+        title: channel.name,
+        element,
+        actions: [
+          { key: "play", label: tt("watchNow"), run: () => play({ channel }) },
+          { key: "pin", label: pinned ? tt("menuRemoveFavourite") : tt("menuAddFavourite"), run: () => model.togglePin(channel) },
+          { key: "info", label: tt("menuChannelDetails"), run: () => openChannel(channel) },
+          { key: "multi", label: tt("menuAddMultiview"), run: () => addToMultiview(channel) },
+          ...extra,
+          ...pinSupportAvailable() && activeProfileHasPin2() ? [{ key: "lock", label: locked ? tt("menuUnlock") : tt("menuLock"), run: () => {
+            toggleChannelLock(channel);
+          } }] : []
+        ]
+      });
+    }, [model, tt, play, openChannel, addToMultiview]);
+    const pushLayer = useCallback((close) => {
+      layersRef.current.push(close);
+      return () => {
+        layersRef.current = layersRef.current.filter((c) => c !== close);
+      };
+    }, []);
+    const back = useCallback(() => {
+      const top = layersRef.current[layersRef.current.length - 1];
+      if (top) {
+        top();
+        return;
+      }
+      if (pending2) {
+        setPending(null);
+        return;
+      }
+      if (active) {
+        setActive(null);
+        return;
+      }
+      if (view === "channel") {
+        go("guide");
+        return;
+      }
+      if (view !== "hub") {
+        go("hub");
+        return;
+      }
+      requestBrowseBack();
+    }, [pending2, active, view, go]);
+    useEffect(() => {
+      const onKey = (event) => {
+        if (!BACK_KEYS2.has(event.key)) return;
+        if (menu) return;
+        if (active) return;
+        const target2 = event.target;
+        if (target2 && (target2.tagName === "INPUT" || target2.tagName === "TEXTAREA")) return;
+        if (target2?.closest?.("[data-live-tv-host-ui]")) return;
+        event.preventDefault();
+        event.stopPropagation();
+        back();
+      };
+      window.addEventListener("keydown", onKey, true);
+      return () => window.removeEventListener("keydown", onKey, true);
+    }, [back, menu, active]);
+    const favourites = model.favouriteChannels;
+    const channels = model.channels;
+    const zapDepsRef = useRef({ favourites, channels, play, toast, tt });
+    useEffect(() => {
+      zapDepsRef.current = { favourites, channels, play, toast, tt };
+    });
+    const zapRef = useRef(null);
+    useEffect(() => {
+      const buffer = createZapBuffer({
+        timeoutMs: ZAP_TIMEOUT_MS,
+        onChange: setZapDigits,
+        onCommit: (digits) => {
+          const { favourites: favourites2, channels: channels2, play: play2, toast: toast2, tt: tt2 } = zapDepsRef.current;
+          const hit = resolveZap(digits, favourites2, channels2);
+          if (hit) play2({ channel: hit });
+          else toast2(tt2("zapMiss", { n: digits }));
+        }
+      });
+      zapRef.current = buffer;
+      return () => {
+        buffer.dispose();
+        zapRef.current = null;
+      };
+    }, []);
+    useEffect(() => {
+      if (!settings.numericZap) return;
+      const onKey = (event) => {
+        if (menu || layersRef.current.length > 0) return;
+        const target2 = event.target;
+        if (target2 && (target2.tagName === "INPUT" || target2.tagName === "TEXTAREA")) return;
+        if (target2?.closest?.("[data-live-tv-keyboard]")) return;
+        if (/^[0-9]$/.test(event.key)) {
+          event.preventDefault();
+          event.stopPropagation();
+          zapRef.current?.push(event.key);
+        } else if (event.key === "Enter" && zapDigits) {
+          event.preventDefault();
+          event.stopPropagation();
+          zapRef.current?.commit();
+        }
+      };
+      window.addEventListener("keydown", onKey, true);
+      return () => window.removeEventListener("keydown", onKey, true);
+    }, [settings.numericZap, menu, zapDigits]);
+    const startedRef = useRef(false);
+    useEffect(() => {
+      if (startedRef.current || !settings.startOnLastChannel || view !== "hub" || params?.url) return;
+      const last = model.history[0];
+      const channel = last ? model.byUrl.get(last.url) : null;
+      if (!channel) return;
+      startedRef.current = true;
+      play({ channel });
+    }, [settings.startOnLastChannel, view, params, model.history, model.byUrl, play]);
+    const nav = useMemo(() => ({
+      view,
+      params: viewParams,
+      go,
+      back,
+      play,
+      openChannel,
+      openMenu: setMenu,
+      channelMenu,
+      addToMultiview,
+      pushLayer,
+      toast,
+      playerOpen: active !== null
+    }), [view, viewParams, go, back, play, openChannel, channelMenu, addToMultiview, pushLayer, toast, active]);
+    const View = TV_VIEWS[view];
+    const activeChannel = active ? active.url ? { ...active.channel, url: active.url, name: active.label ?? active.channel.name } : active.channel : null;
+    const rail = [
+      { key: "search", label: tt("railSearch"), icon: /* @__PURE__ */ jsx(Icons.Search, {}) },
+      { key: "hub", label: tt("railHome"), icon: /* @__PURE__ */ jsx(Icons.Home, {}) },
+      { key: "guide", label: tt("railGuide"), icon: /* @__PURE__ */ jsx(Icons.Tv, {}) },
+      { key: "multi", label: tt("railMultiview"), icon: /* @__PURE__ */ jsx(Icons.SquaresFour, {}) },
+      { key: "favs", label: tt("railFavourites"), icon: /* @__PURE__ */ jsx(Icons.Heart, {}) }
+    ];
+    const railItem = (item, extraStyle) => {
+      const activeItem = item.key === view || item.key === "guide" && view === "channel";
+      return /* @__PURE__ */ jsx(
+        "div",
+        {
+          ...station(() => go(item.key), void 0, { "data-testid": `rail-${item.key}`, "aria-label": item.label, title: item.label }),
+          style: { width: dp(60), height: dp(60), borderRadius: dp(16), display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: activeItem ? TV.s14 : "transparent", color: activeItem ? TV.text : "rgba(243,244,248,0.55)", ...extraStyle },
+          children: item.icon
+        },
+        item.key
+      );
+    };
+    const tvPlayerProps = activeChannel ? {
+      channelNumber: model.channelNumber(activeChannel),
+      quality: qualityFromName(activeChannel.name),
+      favourite: model.pinnedSet.has(channelKey(activeChannel)),
+      bannerHideMs: settings.bannerHideMs,
+      neighbours: model.channels,
+      nowFor: model.nowFor,
+      nowMs: model.nowMs,
+      locale,
+      onToggleFavourite: () => model.togglePin(activeChannel),
+      onOpenChannelDetails: () => {
+        setActive(null);
+        openChannel(activeChannel);
+      },
+      onOpenMultiview: () => {
+        setActive(null);
+        go("multi");
+      },
+      onOpenGuide: () => {
+        setActive(null);
+        go("guide");
+      },
+      onAddToMultiview: addToMultiview,
+      onSwitchChannel: (channel) => setActive({ channel })
+    } : void 0;
+    return /* @__PURE__ */ jsxs("div", { "data-live-tv-tv-root": "", style: { display: "flex", height: "100%", minHeight: 0, background: TV.bg, color: TV.text, fontFamily: TV.font, fontSize: dp(22), lineHeight: 1.3 }, children: [
+      /* @__PURE__ */ jsx(TvFocusStyle, {}),
+      /* @__PURE__ */ jsxs("nav", { "aria-label": tt("liveTv"), style: { width: dp(104), flexShrink: 0, borderRight: `1px solid ${TV.line}`, background: "linear-gradient(180deg, rgba(252,252,255,0.05), rgba(252,252,255,0.02))", padding: `${dp(36)}px 0 ${dp(32)}px`, display: "flex", flexDirection: "column", alignItems: "center", gap: dp(14) }, children: [
+        /* @__PURE__ */ jsx("div", { "aria-hidden": "true", style: { width: dp(44), height: dp(44), borderRadius: dp(12), background: TV.acc, color: TV.onAcc, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: dp(22), marginBottom: dp(24) }, children: "L" }),
+        rail.map((item) => railItem(item)),
+        railItem({ key: "settings", label: tt("railSettings"), icon: /* @__PURE__ */ jsx(Icons.Gear, {}) }, { marginTop: "auto" })
+      ] }),
+      /* @__PURE__ */ jsx("main", { ref: mainRef, style: { flex: 1, minWidth: 0, minHeight: 0, position: "relative", display: "flex", flexDirection: "column" }, children: /* @__PURE__ */ jsx(View, { model, nav, params: viewParams, settings }, view) }),
+      activeChannel && Player ? /* @__PURE__ */ jsx(Player, { channel: activeChannel, onClose: () => setActive(null), listId: model.epgListId, epgUrls: model.epgUrls, onSwitchChannel: (channel) => setActive({ channel }), tv: tvPlayerProps }) : null,
+      /* @__PURE__ */ jsx(
+        PinGate,
+        {
+          open: pending2 !== null,
+          title: tt("enterPin"),
+          wrongText: tt("pinWrong"),
+          unlockLabel: tt("unlock"),
+          cancelLabel: tt("cancel"),
+          onVerify: verifyActiveProfilePin2,
+          onClose: () => setPending(null),
+          onUnlocked: () => {
+            markUnlockedThisSession();
+            const request = pending2;
+            setPending(null);
+            if (request) void releaseAllSurfaces().finally(() => setActive(request));
+          }
+        }
+      ),
+      TvGlassMenu && menu ? /* @__PURE__ */ jsx(TvGlassMenu, { target: menu, onClose: () => setMenu(null) }) : null,
+      zapDigits ? /* @__PURE__ */ jsx("div", { style: { position: "fixed", top: dp(36), right: dp(48), zIndex: 80, padding: `${dp(10)}px ${dp(22)}px`, borderRadius: dp(12), background: TV.glass, fontSize: dp(34), fontWeight: 600, letterSpacing: "0.1em" }, children: zapDigits }) : null,
+      toastText ? /* @__PURE__ */ jsx("div", { role: "status", "data-live-tv-layer": "", style: { position: "fixed", bottom: dp(40), left: "50%", transform: "translateX(-50%)", zIndex: 80, padding: `${dp(12)}px ${dp(24)}px`, borderRadius: 999, background: TV.glass, fontSize: dp(19) }, children: toastText }) : null
+    ] });
+  }
+
   // ../lumio-official-plugins/plugins/live-tv/runtime/index.ts
   init_useEpgNowNextLater();
   init_useChannelSchedule();
@@ -196383,7 +199222,7 @@ ${cue.text}`).join("\n\n")}
       useEpgNowNextLater,
       useEpgLoadStatus,
       useChannelSchedule,
-      version: "0.3.47"
+      version: "0.4.0"
     };
     try {
       window.dispatchEvent(new CustomEvent("lumio-live-tv-bridge-ready"));
@@ -196391,7 +199230,10 @@ ${cue.text}`).join("\n\n")}
     }
   }
   var LIVE_TV_BROWSE_PAGE_ID2 = "live-tv-browse";
-  function LiveTvBrowsePage({ params, onNavigate }) {
+  function LiveTvBrowsePage(props) {
+    const isTv = useTvMode();
+    if (isTv) return createElement(LiveTvTvShell, props);
+    const { params, onNavigate } = props;
     const view = params?.view;
     if (view === "epg") return createElement(LiveTvEpgPage, { onNavigate });
     if (view === "channel" || !view && params?.url) return createElement(LiveTvChannelPage, { params, onNavigate });
@@ -196400,7 +199242,7 @@ ${cue.text}`).join("\n\n")}
   var LiveTvPlugin = {
     id: "com.lumio.live-tv",
     name: { en: "Live TV", sv: "Live TV" },
-    version: "0.3.47",
+    version: "0.4.0",
     description: {
       en: "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",
       sv: "Hantera M3U-k\xE4llor, bl\xE4ddra bland live-TV-kanaler och se EPG (nu/h\xE4rn\xE4st) i Lumio."

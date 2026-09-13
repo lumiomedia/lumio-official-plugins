@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.4.0
+
+- TV mode is rebuilt for the remote. A left icon rail (Search, Home, Channel
+  guide, Multiview, Favourites, Settings) replaces the header buttons, and
+  every card is one focus station: OK plays, hold OK opens the menu.
+- The channel guide has three modes — Now/Next, Timeline and Playlists — with
+  a muted live preview of the focused channel. Left/right on a row switches
+  category.
+- Playlists can be picked from the hub; the choice filters the hub and the
+  guide. Favourites keep their order and zap with the number keys 1–N.
+- New pages inside Live TV: Favourites, Search with an on-screen keyboard,
+  Multiview (2, 1+2 or 4 tiles; one live tile until the app can drive more
+  surfaces) and Settings (appearance, playlists, EPG sources, parental
+  control).
+- Channel details show the schedule for five days with replays backwards and
+  reminders forwards.
+- The player keeps only an info banner and a ⋯ button; the down arrow opens a
+  mini guide, ChannelUp/Down step through the guide.
+- Desktop and phone are unchanged.
+
 ## 0.3.47
 
 - The player control row fits in landscape again. Two extras — the aspect
