@@ -69,7 +69,35 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
   const [zapDigits, setZapDigits] = useState('')
   const [toastText, setToastText] = useState<string | null>(null)
   const layersRef = useRef<Array<() => void>>([])
+  const mainRef = useRef<HTMLElement | null>(null)
   const TvGlassMenu = getTvGlassMenu()
+
+  /**
+   * Fokus på vyns startstation vid varje vybyte.
+   *
+   * Värdens fokusmotor flyttar fokus till [data-init] när en SIDA monteras,
+   * men ikonraden byter bara pluginets egen vy — värdsidan monteras aldrig om.
+   * Utan det här blev fokus kvar på ikonradens knapp: uppmätt i tv-sim gav
+   * "Kanalguide" från raden en guide där ingen rad var vald, så toppbandet
+   * stod kvar på "Ingen programinformation" tills användaren pilade in i
+   * listan själv.
+   *
+   * Två rAF: raden renderas först efter att vyn monterat, och [data-init]
+   * finns inte i första passet. Står fokus redan inne i vyn (värden hann
+   * före, eller vyn flyttade fokus själv) rör vi ingenting.
+   */
+  useEffect(() => {
+    if (active) return
+    let frame = 0
+    const focusInit = () => {
+      const main = mainRef.current
+      if (!main) return
+      if (document.activeElement && main.contains(document.activeElement)) return
+      main.querySelector<HTMLElement>('[data-init]')?.focus({ preventScroll: true })
+    }
+    frame = window.requestAnimationFrame(() => { frame = window.requestAnimationFrame(focusInit) })
+    return () => window.cancelAnimationFrame(frame)
+  }, [view, active])
 
   useEffect(() => {
     if (!active || Player) return
@@ -287,7 +315,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
         {rail.map((item) => railItem(item))}
         {railItem({ key: 'settings', label: tt('railSettings'), icon: <Icons.Gear /> }, { marginTop: 'auto' })}
       </nav>
-      <main style={{ flex: 1, minWidth: 0, minHeight: 0, position: 'relative', display: 'flex', flexDirection: 'column' }}>
+      <main ref={mainRef} style={{ flex: 1, minWidth: 0, minHeight: 0, position: 'relative', display: 'flex', flexDirection: 'column' }}>
         <View key={view} model={model} nav={nav} params={viewParams} settings={settings} />
       </main>
 
