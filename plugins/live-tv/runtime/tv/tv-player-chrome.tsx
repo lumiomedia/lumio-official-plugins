@@ -17,6 +17,8 @@ export function TvPlayerChrome({ channel, tv, paused, onTogglePause, onClose }: 
   const timerRef = useRef<number | null>(null)
   const dotsRef = useRef<HTMLDivElement | null>(null)
   const miniRef = useRef<HTMLDivElement | null>(null)
+  const topRef = useRef<HTMLDivElement | null>(null)
+  const bannerRef = useRef<HTMLDivElement | null>(null)
   const TvGlassMenu = getTvGlassMenu()
   const info = tv.nowFor(channel)
   // 0 = dölj aldrig (LiveTvPlayerTvProps-kommentaren). Ingen egen tröskel
@@ -38,6 +40,23 @@ export function TvPlayerChrome({ channel, tv, paused, onTogglePause, onClose }: 
     const next = tv.neighbours[(index + delta + tv.neighbours.length) % tv.neighbours.length]
     if (next) tv.onSwitchChannel(next)
   }, [tv, index])
+
+  /**
+   * Stäng mini-guiden och lämna ALDRIG fokus på `body`.
+   *
+   * Korten är mini-guidens enda stationer: försvinner de medan ett av dem har
+   * fokus faller fokus till `document.body`, och då har fjärrkontrollen ingen
+   * station att gå vidare från (uppmätt i tv-sim efter OK på ett kort:
+   * `document.activeElement === document.body`). ⋯-knappen är kromets
+   * data-init-station och den rätta platsen att landa på.
+   *
+   * setTimeout 0: fokus måste sättas EFTER att React tagit bort korten, annars
+   * flyttar borttagningen fokus tillbaka till body igen.
+   */
+  const closeMini = useCallback(() => {
+    setMiniOpen(false)
+    window.setTimeout(() => dotsRef.current?.focus({ preventScroll: true }), 0)
+  }, [])
 
   // Tangenter: ▲ visar bannern, ▾ öppnar mini-guiden, ChannelUp/Down zappar,
   // Back stänger mini-guiden eller (annars) spelaren.
@@ -62,18 +81,42 @@ export function TvPlayerChrome({ channel, tv, paused, onTogglePause, onClose }: 
         event.preventDefault()
         event.stopImmediatePropagation()
         if (miniOpen) {
-          setMiniOpen(false)
-          window.setTimeout(() => dotsRef.current?.focus({ preventScroll: true }), 0)
+          closeMini()
           return
         }
         onClose()
+        return
+      }
+      // ◂ ▸ och OK ÄGS av spelaren när fokus står utanför kromet.
+      //
+      // Spelaren täcker skärmen men tar inte fokus: `document.activeElement`
+      // står kvar på stationen i vyn BAKOM (uppmätt i tv-sim: `guide-row`).
+      // ▲/▾ och Back fångades redan här, men ◂/▸ och OK gjorde det inte —
+      // de bubblade ned till den dolda raden. Uppmätt: med spelaren öppen
+      // bytte ▸ kategori i guiden bakom (toppbandet tappade sin kanal), och
+      // OK startade om samma kanal. Användaren ser ingenting av det förrän
+      // Back tar hen tillbaka till en vy som har flyttat sig.
+      //
+      // Står fokus INNE i kromet (⋯-stationen, mini-guidens kort) släpps de
+      // igenom: där ska OK öppna menyn/byta kanal och sidopilarna flytta
+      // fokus mellan korten.
+      const target = event.target
+      const insideChrome = target instanceof Node && (
+        topRef.current?.contains(target) === true
+        || bannerRef.current?.contains(target) === true
+        || miniRef.current?.contains(target) === true
+      )
+      if (!insideChrome && (event.key === 'ArrowLeft' || event.key === 'ArrowRight' || event.key === 'Enter' || event.key === ' ')) {
+        event.preventDefault()
+        event.stopImmediatePropagation()
+        reveal()
         return
       }
       if (event.key.startsWith('Arrow') || event.key === 'Enter') reveal()
     }
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
-  }, [menu, miniOpen, step, reveal, onClose])
+  }, [menu, miniOpen, step, reveal, onClose, closeMini])
 
   useEffect(() => {
     if (!miniOpen) return
@@ -98,7 +141,7 @@ export function TvPlayerChrome({ channel, tv, paused, onTogglePause, onClose }: 
 
   return (
     <>
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, padding: `${dp(36)}px ${dp(48)}px`, display: 'flex', alignItems: 'center', gap: dp(16), opacity: visible ? 1 : 0, transition: 'opacity 200ms', pointerEvents: visible ? 'auto' : 'none', zIndex: 30 }}>
+      <div ref={topRef} style={{ position: 'absolute', top: 0, left: 0, right: 0, padding: `${dp(36)}px ${dp(48)}px`, display: 'flex', alignItems: 'center', gap: dp(16), opacity: visible ? 1 : 0, transition: 'opacity 200ms', pointerEvents: visible ? 'auto' : 'none', zIndex: 30 }}>
         <RoundBtn {...station(onClose)} background="rgba(252,252,255,0.12)"><Icons.ChevronLeft /></RoundBtn>
         <span style={{ fontSize: dp(20), color: 'rgba(243,244,248,0.75)' }}>{tv.channelNumber ? `${tv.channelNumber} · ` : ''}{channel.name}</span>
         <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: dp(14), fontSize: dp(17) }}>
@@ -107,7 +150,7 @@ export function TvPlayerChrome({ channel, tv, paused, onTogglePause, onClose }: 
           {clock}
         </span>
       </div>
-      <div data-testid="banner" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: dp(48), paddingTop: dp(120), background: 'linear-gradient(180deg, transparent, rgba(0,0,0,0.92) 55%)', display: 'flex', alignItems: 'flex-end', gap: dp(24), opacity: visible ? 1 : 0, transition: 'opacity 200ms', pointerEvents: visible ? 'auto' : 'none', zIndex: 30 }}>
+      <div ref={bannerRef} data-testid="banner" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: dp(48), paddingTop: dp(120), background: 'linear-gradient(180deg, transparent, rgba(0,0,0,0.92) 55%)', display: 'flex', alignItems: 'flex-end', gap: dp(24), opacity: visible ? 1 : 0, transition: 'opacity 200ms', pointerEvents: visible ? 'auto' : 'none', zIndex: 30 }}>
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: dp(10) }}>
           <div style={{ fontSize: dp(44), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{info.now?.title ?? channel.name}</div>
           {info.now ? (
@@ -131,7 +174,7 @@ export function TvPlayerChrome({ channel, tv, paused, onTogglePause, onClose }: 
             const n = tv.nowFor(c)
             const current = channelKey(c) === channelKey(channel)
             return (
-              <div key={channelKey(c)} data-testid="mini-card" {...station(() => { setMiniOpen(false); tv.onSwitchChannel(c) }, (el) => setMenu({ title: c.name, element: el, actions: [{ key: 'multi', label: tt('menuAddMultiview'), run: () => tv.onAddToMultiview(c) }] }), current ? { 'data-init': '' } : undefined)} style={{ width: dp(330), height: dp(118), flexShrink: 0, borderRadius: dp(14), padding: `${dp(14)}px ${dp(16)}px`, background: current ? TV.s16 : 'rgba(20,22,30,0.85)', display: 'flex', flexDirection: 'column', gap: dp(6), cursor: 'pointer', boxSizing: 'border-box' }}>
+              <div key={channelKey(c)} data-testid="mini-card" {...station(() => { closeMini(); tv.onSwitchChannel(c) }, (el) => setMenu({ title: c.name, element: el, actions: [{ key: 'multi', label: tt('menuAddMultiview'), run: () => tv.onAddToMultiview(c) }] }), current ? { 'data-init': '' } : undefined)} style={{ width: dp(330), height: dp(118), flexShrink: 0, borderRadius: dp(14), padding: `${dp(14)}px ${dp(16)}px`, background: current ? TV.s16 : 'rgba(20,22,30,0.85)', display: 'flex', flexDirection: 'column', gap: dp(6), cursor: 'pointer', boxSizing: 'border-box' }}>
                 <div style={{ fontSize: dp(14), color: 'rgba(243,244,248,0.55)' }}>{c.name}</div>
                 <div style={{ fontSize: dp(19), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{n.now?.title ?? tt('noProgramme')}</div>
                 {n.next ? <div style={{ fontSize: dp(15), color: 'rgba(243,244,248,0.6)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tt('nextLabel')}: {n.next.title}</div> : null}

@@ -76,6 +76,34 @@ describe('TvPlayerChrome', () => {
     fireEvent.keyDown(window, { key: 'Backspace' })
     expect(onClose).toHaveBeenCalledTimes(1)
   })
+  it('OK på ett mini-guidekort lämnar fokus på ⋯ och inte på body', async () => {
+    const props = tv()
+    render(<TvPlayerChrome channel={channels[1]} tv={props} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
+    fireEvent.keyDown(window, { key: 'ArrowDown' })
+    const cards = screen.getAllByTestId('mini-card')
+    cards[2].focus()
+    fireEvent.click(cards[2])
+    expect(props.onSwitchChannel).toHaveBeenCalledWith(channels[2])
+    // setTimeout 0 i closeMini: fokus sätts efter att korten tagits bort.
+    await act(async () => { await new Promise((r) => setTimeout(r, 10)) })
+    expect(document.activeElement).toBe(screen.getByLabelText('More'))
+  })
+  it('◂ ▸ och OK når inte vyn bakom spelaren, men släpps igenom inne i kromet', () => {
+    render(<TvPlayerChrome channel={channels[1]} tv={tv()} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
+    // Vyn bakom spelaren: en lyssnare registrerad efter kromet ser inget av
+    // sidopilarna eller OK så länge fokus står utanför kromet. Utan det här
+    // bytte ▸ kategori i guiden bakom spelaren (uppmätt i tv-sim).
+    const behind = vi.fn()
+    window.addEventListener('keydown', behind, true)
+    fireEvent.keyDown(window, { key: 'ArrowRight' })
+    fireEvent.keyDown(window, { key: 'ArrowLeft' })
+    fireEvent.keyDown(window, { key: 'Enter' })
+    expect(behind).not.toHaveBeenCalled()
+    // Inne i kromet ska de fortfarande gå fram: ⋯-stationen behöver OK.
+    fireEvent.keyDown(screen.getByLabelText('More'), { key: 'Enter' })
+    expect(behind).toHaveBeenCalledTimes(1)
+    window.removeEventListener('keydown', behind, true)
+  })
   it('stopImmediatePropagation hindrar en senare registrerad lyssnare från att också se Back', () => {
     render(<TvPlayerChrome channel={channels[1]} tv={tv()} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
     // Registreras EFTER kromets montering — simulerar spelarens lyssnare, som
