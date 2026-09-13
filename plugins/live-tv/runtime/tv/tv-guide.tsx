@@ -27,6 +27,29 @@ export function TvGuide(props: TvViewProps) {
     setGuideMode(next)
     setMode(next)
   }
+  /**
+   * Lägesbytet får inte lämna fokus på `body`.
+   *
+   * Nu/Sen och Tablå delar komponent, så segmentet står kvar och behåller
+   * fokus. Spellistläget är en EGEN komponent: segmentet som just fick OK
+   * avmonteras, och fokus faller till `document.body` (uppmätt i tv-sim:
+   * `document.activeElement === document.body` direkt efter bytet). Värdens
+   * fokusmotor hjälper inte — den flyttar bara fokus när en SIDA monteras,
+   * och skalets motsvarande effekt lyssnar på `view`, inte på guidens läge.
+   *
+   * Två rAF av samma skäl som i skalet: den nya vyns [data-init] finns inte
+   * i första passet. Ligger fokus redan någonstans vettigt rörs ingenting.
+   */
+  useEffect(() => {
+    let frame = 0
+    const focusInit = () => {
+      if (document.activeElement && document.activeElement !== document.body) return
+      const main = document.querySelector<HTMLElement>('[data-live-tv-tv-root] main')
+      main?.querySelector<HTMLElement>('[data-init]')?.focus({ preventScroll: true })
+    }
+    frame = window.requestAnimationFrame(() => { frame = window.requestAnimationFrame(focusInit) })
+    return () => window.cancelAnimationFrame(frame)
+  }, [mode])
   if (mode === 'playlists') return <TvGuidePlaylists {...props} />
   return <TvGuideStandard {...props} mode={mode} onModeChange={changeMode} />
 }
