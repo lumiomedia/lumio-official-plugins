@@ -39,13 +39,20 @@ export function TvHub({ model, nav }: TvViewProps) {
   const noProgrammeLabel = epgStatus === 'loading' ? tt('loadingGuide') : tt('noProgramme')
 
   // Spellistmenyn är ett lager: Back stänger, fokus tillbaka till pillen.
+  //
+  // Effekten beror BARA på `playlistOpen` — en gång per öppning. Med `nav` i
+  // listan kördes den om vid varje omrender av skalet (minuttick,
+  // lagringsändring) och flyttade då fokus tillbaka till [data-init] mitt i
+  // att användaren pilade i menyn. `nav` läses i stället ur en ref.
+  const navRef = useRef(nav)
+  useEffect(() => { navRef.current = nav })
   useEffect(() => {
     if (!playlistOpen) return
     const close = () => { setPlaylistOpen(false); window.setTimeout(() => pillRef.current?.focus({ preventScroll: true }), 0) }
-    const off = nav.pushLayer(close)
+    const off = navRef.current.pushLayer(close)
     window.setTimeout(() => menuRef.current?.querySelector<HTMLElement>('[data-init]')?.focus({ preventScroll: true }), 0)
     return off
-  }, [playlistOpen, nav])
+  }, [playlistOpen])
 
   const reasonLabel = (reason: SpotlightReason) =>
     reason === 'favouriteLive' ? tt('spotlightFavouriteLive') : reason === 'favourite' ? tt('spotlightFavourite') : reason === 'recent' ? tt('spotlightRecent') : tt('spotlightOnNow')

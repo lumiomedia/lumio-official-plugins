@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import * as sdk from '@/lib/plugin-sdk'
 import { getTvKeyboardPanel } from '@/lib/plugin-sdk'
 import {
@@ -46,7 +46,7 @@ function Heading({ children, hint }: { children: ReactNode; hint?: string }) {
   return <div><div style={{ fontSize: dp(26), fontWeight: 600 }}>{children}</div>{hint ? <div style={{ fontSize: dp(16), color: 'rgba(243,244,248,0.5)' }}>{hint}</div> : null}</div>
 }
 
-export function TvSettingsView({ model, params, settings }: TvViewProps) {
+export function TvSettingsView({ model, nav, params, settings }: TvViewProps) {
   const { tt, locale } = useTvText()
   const initial = (TABS as string[]).includes(params.tab ?? '') ? (params.tab as Tab) : 'appearance'
   const [tab, setTab] = useState<Tab>(initial)
@@ -61,7 +61,7 @@ export function TvSettingsView({ model, params, settings }: TvViewProps) {
       </div>
       <div data-live-tv-settings-content="" data-scroll="" style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: `${dp(40)}px ${dp(48)}px`, display: 'flex', flexDirection: 'column', gap: dp(36) }}>
         {tab === 'appearance' ? <AppearanceTab settings={settings} tt={tt} /> : null}
-        {tab === 'playlists' ? <PlaylistsTab lists={model.lists} tt={tt} locale={locale} /> : null}
+        {tab === 'playlists' ? <PlaylistsTab lists={model.lists} tt={tt} locale={locale} toast={nav.toast} /> : null}
         {tab === 'epg' ? <EpgTab lists={model.lists} tt={tt} /> : null}
         {tab === 'parental' ? <ParentalTab model={model} tt={tt} /> : null}
       </div>
@@ -120,6 +120,27 @@ function AppearanceTab({ settings, tt }: { settings: TvSettings; tt: TT }) {
 function useKeyboardPrompt() {
   const Panel = getTvKeyboardPanel()
   const [prompt, setPrompt] = useState<{ title: string; initial: string; onDone: (value: string) => void } | null>(null)
+  /**
+   * Öppnaren fångas EN gång per öppning — samma regel som de andra lagren
+   * (tv-channel-picker.tsx, hubbens spellistmeny).
+   *
+   * Effekten beror bara på om panelen är öppen. Läste den i stället
+   * `document.activeElement` vid varje omrender (minuttick, lagringsändring)
+   * hade den skrivit över öppnaren med panelens egen knapp, och fokus efter
+   * stängning landat på en nod som just tagits bort — i praktiken på `body`,
+   * där fjärrkontrollen inte har någon station att gå vidare från.
+   *
+   * Panelen är VÄRDENS UI (`data-live-tv-host-ui`): den äger Back själv och
+   * stänger sig själv, så den registreras medvetet INTE som ett `pushLayer`.
+   * Två stängare på samma Back hade stängt både panelen och vyn bakom.
+   */
+  const open = prompt !== null
+  const openerRef = useRef<HTMLElement | null>(null)
+  useEffect(() => {
+    if (!open) return
+    openerRef.current = document.activeElement as HTMLElement | null
+    return () => { const opener = openerRef.current; window.setTimeout(() => opener?.focus({ preventScroll: true }), 0) }
+  }, [open])
   // TvKeyboardPanel positionerar sig `inset: 0` mot närmaste positionerade
   // förälder, därför omslutningen här. `data-live-tv-host-ui` gör att
   // skalets Back-hantering (tv-shell.tsx) står tillbaka medan panelen är
@@ -142,10 +163,10 @@ function useKeyboardPrompt() {
  * Xtream-utan-output-reprövning eller stegningsvisning — TV-tillägget är för
  * en enstaka M3U-URL i taget.
  */
-async function fetchAndAddM3uList(url: string): Promise<void> {
+async function fetchAndAddM3uList(url: string): Promise<boolean> {
   try {
     const response = await fetch('/api/m3u', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) })
-    if (!response.ok) return
+    if (!response.ok) return false
     const parsed = (await response.json().catch(() => ({}))) as { channels?: unknown[]; urlTvg?: string | null }
     const channels: M3uChannel[] = Array.isArray(parsed.channels)
       ? (parsed.channels as Array<{ name?: unknown; logo?: unknown; group?: unknown; url?: unknown; tvgId?: unknown }>).map((c) => ({
@@ -158,9 +179,11 @@ async function fetchAndAddM3uList(url: string): Promise<void> {
       : []
     upsertLiveTvListFromFetch(url, parsed.urlTvg ?? null, channels)
     applyM3uUrls([...getM3uUrls(), url])
+    return true
   } catch {
     // Nätverksfel: adressen läggs inte till om hämtningen misslyckas helt —
     // annars stod en URL kvar som aldrig gav några kanaler.
+    return false
   }
 }
 
@@ -186,9 +209,17 @@ function removeListAndSourceUrl(list: LiveTvList): void {
   deleteLiveTvList(list.id)
 }
 
-function PlaylistsTab({ lists, tt, locale }: { lists: LiveTvList[]; tt: TT; locale: string }) {
+function PlaylistsTab({ lists, tt, locale, toast }: { lists: LiveTvList[]; tt: TT; locale: string; toast: (text: string) => void }) {
   const keyboard = useKeyboardPrompt()
-  const addUrl = () => keyboard.ask(tt('addM3u'), '', (value) => { const url = value.trim(); if (url) void fetchAndAddM3uList(url) })
+  // En misslyckad hämtning var HELT tyst: raden lades inte till (rätt), men
+  // skärmen såg likadan ut som innan och användaren hade ingen aning om ifall
+  // adressen var fel, servern nere eller tangentbordet slarvigt. Notisen är
+  // skalets egen (nav.toast), samma som resten av TV-läget använder.
+  const addUrl = () => keyboard.ask(tt('addM3u'), '', (value) => {
+    const url = value.trim()
+    if (!url) return
+    void fetchAndAddM3uList(url).then((ok) => { if (!ok) toast(tt('addM3uFailed')) })
+  })
   return (
     <section style={{ display: 'flex', flexDirection: 'column', gap: dp(10) }}>
       <Heading>{tt('tabPlaylists')}</Heading>

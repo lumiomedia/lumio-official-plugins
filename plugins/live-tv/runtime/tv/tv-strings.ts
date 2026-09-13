@@ -1,5 +1,6 @@
 'use client'
 
+import { useCallback, useMemo } from 'react'
 import { useLang } from '@/lib/plugin-sdk'
 
 /**
@@ -139,6 +140,7 @@ const EN = {
   never: 'Never',
   seconds: '{s} s',
   addM3u: 'Add M3U URL',
+  addM3uFailed: 'Could not fetch the playlist',
   addXtream: 'Add Xtream login',
   refetch: 'Refetch',
   remove: 'Remove',
@@ -281,6 +283,7 @@ const SV: Record<keyof typeof EN, string> = {
   never: 'Aldrig',
   seconds: '{s} s',
   addM3u: 'Lägg till M3U-URL',
+  addM3uFailed: 'Kunde inte hämta spellistan',
   addXtream: 'Lägg till Xtream-inloggning',
   refetch: 'Hämta om',
   remove: 'Ta bort',
@@ -310,12 +313,16 @@ export function tvText(lang: string | undefined, key: TvStringKey, vars?: Record
   return out
 }
 
+/**
+ * `tt` och objektet är memoiserade per språk.
+ *
+ * En ny `tt`-funktion per rendering gjorde varje `useCallback`/`useMemo` som
+ * beror på den instabil — i skalet räckte det för att hela `nav` skulle byta
+ * identitet vid varje minuttick, och lagren (kanalväljaren, spellistmenyn)
+ * körde då om sina öppningseffekter och slet fokus ur användarens händer.
+ */
 export function useTvText() {
   const lang: string = useLang().lang
-  const locale = lang === 'sv' ? 'sv-SE' : 'en-GB'
-  return {
-    lang,
-    locale,
-    tt: (key: TvStringKey, vars?: Record<string, string | number>) => tvText(lang, key, vars),
-  }
+  const tt = useCallback((key: TvStringKey, vars?: Record<string, string | number>) => tvText(lang, key, vars), [lang])
+  return useMemo(() => ({ lang, locale: lang === 'sv' ? 'sv-SE' : 'en-GB', tt }), [lang, tt])
 }

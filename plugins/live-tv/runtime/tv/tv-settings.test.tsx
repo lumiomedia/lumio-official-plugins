@@ -59,6 +59,23 @@ describe('TvSettingsView', () => {
     fireEvent.click(screen.getByText('Remove'))
     expect(getM3uUrls()).not.toContain('http://iptv.example.com/list.m3u8')
   })
+  it('Spellistor: en misslyckad hämtning säger till i stället för att vara tyst', async () => {
+    // Adressen ska INTE läggas till när hämtningen misslyckas — men tystnaden
+    // var värre än felet: skärmen såg exakt likadan ut som innan, och inget
+    // sa om adressen var fel, servern nere eller tangentbordet slarvigt.
+    const fetchMock = vi.fn(async () => ({ ok: false, json: async () => ({}) }))
+    vi.stubGlobal('fetch', fetchMock)
+    try {
+      mount('playlists')
+      fireEvent.click(screen.getByText('Add M3U URL'))
+      fireEvent.change(screen.getByTestId('tv-keyboard-input'), { target: { value: 'http://trasig.example/list.m3u' } })
+      fireEvent.click(screen.getByText('Done'))
+      expect(await screen.findByText('Could not fetch the playlist')).toBeInTheDocument()
+      expect(getM3uUrls()).not.toContain('http://trasig.example/list.m3u')
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
   it('EPG-källor: listar URL:er', () => {
     mount('epg')
     expect(screen.getByText('http://x/epg.xml')).toBeInTheDocument()
