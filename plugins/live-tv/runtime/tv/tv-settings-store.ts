@@ -45,8 +45,15 @@ export function useTvSettings(): TvSettings {
   return value
 }
 
-export type GuideMode = 'now' | 'tl' | 'playlists'
-const GUIDE_MODES: GuideMode[] = ['now', 'tl', 'playlists']
+/**
+ * Guidens lägen. `'grid'` är skrivbordets tablå porterad till TV-trädet
+ * (`tv-guide-grid.tsx`, spec 4.3) och ligger SIST i listan: ordningen här styr
+ * inget i gränssnittet, men en sparad nyckel som inte finns i listan faller
+ * tillbaka till `'now'` — därför måste varje nytt läge läggas till här, inte
+ * bara i segmentväxeln.
+ */
+export type GuideMode = 'now' | 'tl' | 'playlists' | 'grid'
+const GUIDE_MODES: GuideMode[] = ['now', 'tl', 'playlists', 'grid']
 export function getGuideMode(): GuideMode {
   const raw = readPluginJson<unknown>(LIVE_TV_PLUGIN_ID, GUIDE_MODE_KEY, 'now')
   return GUIDE_MODES.includes(raw as GuideMode) ? (raw as GuideMode) : 'now'

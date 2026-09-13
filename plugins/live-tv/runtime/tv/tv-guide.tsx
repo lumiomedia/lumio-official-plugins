@@ -12,6 +12,7 @@ import { blockGeometry, nowLinePct, scheduleWindow, timeTicks } from './tv-sched
 import { ChannelCell, FAVS_GROUP, filterByGroup, useDebouncedChannel, useGuideGroups } from './tv-guide-shared'
 import { TvPreview } from './tv-preview'
 import { TvGuidePlaylists } from './tv-guide-playlists'
+import { TvGuideGrid } from './tv-guide-grid'
 import { useSchedules } from '../hooks/useSchedules'
 
 const ROW_STEP = 40
@@ -92,6 +93,10 @@ export function TvGuide(props: TvViewProps) {
     return () => window.cancelAnimationFrame(frame)
   }, [mode])
   if (mode === 'playlists') return <TvGuidePlaylists {...props} mode={mode} onModeChange={changeMode} />
+  // Rutnätet är skrivbordets tablå i TV-trädet (spec 4.3). Den delar inte
+  // komponent med Nu/Sen och Tablå, så lägesbytet hit går genom samma
+  // fokusräddning som spellistevyn — se effekten på `mode` ovan.
+  if (mode === 'grid') return <TvGuideGrid {...props} mode={mode} onModeChange={changeMode} />
   return <TvGuideStandard {...props} mode={mode} onModeChange={changeMode} />
 }
 
@@ -139,7 +144,7 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
   const previewOn = settings.previewEnabled
   const headlineSize = previewOn ? dp(40) : dp(34)
   const minutesLeft = (stop: number) => tt('minutesLeft', { min: Math.max(0, Math.round((stop - model.nowMs) / 60_000)) })
-  const modeOptions: { key: GuideMode; label: string }[] = [{ key: 'now', label: tt('modeNow') }, { key: 'tl', label: tt('modeTimeline') }, { key: 'playlists', label: tt('modePlaylists') }]
+  const modeOptions: { key: GuideMode; label: string }[] = [{ key: 'now', label: tt('modeNow') }, { key: 'tl', label: tt('modeTimeline') }, { key: 'grid', label: tt('modeGrid') }, { key: 'playlists', label: tt('modePlaylists') }]
 
   // ◂▸ på en kanalrad byter kategori (handoffen). Värdens fokusmotor tar
   // första synliga [data-live-tv-chip]-träffen om vi förlitar oss på

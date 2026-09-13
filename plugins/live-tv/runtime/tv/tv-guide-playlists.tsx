@@ -84,7 +84,7 @@ export function TvGuidePlaylists({ model, nav, settings, mode, onModeChange }: T
    * öppnades guiden i spellistevyn även nästa gång. Enda vägen ut var
    * Inställningar → Kanalguidens standardvy.
    */
-  const modeOptions: { key: GuideMode; label: string }[] = [{ key: 'now', label: tt('modeNow') }, { key: 'tl', label: tt('modeTimeline') }, { key: 'playlists', label: tt('modePlaylists') }]
+  const modeOptions: { key: GuideMode; label: string }[] = [{ key: 'now', label: tt('modeNow') }, { key: 'tl', label: tt('modeTimeline') }, { key: 'grid', label: tt('modeGrid') }, { key: 'playlists', label: tt('modePlaylists') }]
 
   const remind = (programme: EpgProgramme) => {
     if (!selected) return
