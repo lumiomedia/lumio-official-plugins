@@ -28437,9 +28437,9 @@
         toIterator: () => toIterator2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function forwardRef3(component) {
-        return (0, import_react121.forwardRef)(component);
+        return (0, import_react122.forwardRef)(component);
       }
       var toIterator2 = (obj) => {
         return {
@@ -57940,17 +57940,17 @@
         renderFn: () => renderFn2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function getValidChildren2(children) {
-        return import_react121.Children.toArray(children).filter(
-          (child) => (0, import_react121.isValidElement)(child)
+        return import_react122.Children.toArray(children).filter(
+          (child) => (0, import_react122.isValidElement)(child)
         );
       }
       var pickChildren2 = (children, targetChild) => {
         var _a;
         let target2 = [];
-        const withoutTargetChildren = (_a = import_react121.Children.map(children, (item) => {
-          if (!(0, import_react121.isValidElement)(item)) return item;
+        const withoutTargetChildren = (_a = import_react122.Children.map(children, (item) => {
+          if (!(0, import_react122.isValidElement)(item)) return item;
           if (item.type === targetChild) {
             target2.push(item);
             return null;
@@ -58292,7 +58292,7 @@
           refs.forEach((ref) => assignRef(ref, node));
         };
       }
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function canUseDOM() {
         return !!(typeof window !== "undefined" && window.document && window.document.createElement);
       }
@@ -58378,17 +58378,17 @@
         };
       }
       function useDOMRef(ref) {
-        const domRef = (0, import_react121.useRef)(null);
-        (0, import_react121.useImperativeHandle)(ref, () => domRef.current);
+        const domRef = (0, import_react122.useRef)(null);
+        (0, import_react122.useImperativeHandle)(ref, () => domRef.current);
         return domRef;
       }
       function useFocusableRef(ref, focusableRef) {
-        const domRef = (0, import_react121.useRef)(null);
-        (0, import_react121.useImperativeHandle)(ref, () => createFocusableRef(domRef, focusableRef));
+        const domRef = (0, import_react122.useRef)(null);
+        (0, import_react122.useImperativeHandle)(ref, () => createFocusableRef(domRef, focusableRef));
         return domRef;
       }
       function useSyncRef(context, ref) {
-        (0, import_react121.useLayoutEffect)(() => {
+        (0, import_react122.useLayoutEffect)(() => {
           if (context && context.ref && ref && ref.current) {
             context.ref.current = ref.current;
             return () => {
@@ -58470,7 +58470,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_system_rsc = require_dist4();
       var import_i18n12 = require_main5();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_motion2 = require_cjs4();
       var import_utils8 = require_main4();
       var import_overlays = require_main9();
@@ -58502,7 +58502,7 @@
         if (navigate) {
           contents = /* @__PURE__ */ (0, import_jsx_runtime64.jsx)(import_utils8.RouterProvider, { navigate, useHref, children: contents });
         }
-        const context = (0, import_react121.useMemo)(() => {
+        const context = (0, import_react122.useMemo)(() => {
           if (disableAnimation && skipFramerMotionAnimations) {
             import_framer_motion2.MotionGlobalConfig.skipAnimations = true;
           }
@@ -71784,9 +71784,9 @@
         toIterator: () => toIterator2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function forwardRef3(component) {
-        return (0, import_react121.forwardRef)(component);
+        return (0, import_react122.forwardRef)(component);
       }
       var toIterator2 = (obj) => {
         return {
@@ -71998,7 +71998,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_rsc_utils = require_dist9();
       function useSeparator(props) {
         let domProps = (0, import_react_rsc_utils.filterDOMProps)(props, {
@@ -72029,14 +72029,14 @@
           elementType: typeof Component2 === "string" ? Component2 : "hr",
           orientation
         });
-        const styles = (0, import_react121.useMemo)(
+        const styles = (0, import_react122.useMemo)(
           () => (0, import_theme.divider)({
             orientation,
             className
           }),
           [orientation, className]
         );
-        const getDividerProps = (0, import_react121.useCallback)(
+        const getDividerProps = (0, import_react122.useCallback)(
           (props2 = {}) => ({
             className: styles,
             role: "separator",
@@ -74843,22 +74843,22 @@
         };
       }
       var import_focus2 = require_main14();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_button = require_main16();
       function useReactAriaAccordionItem(props, state, ref) {
         let { item, isDisabled: isDisabledProp } = props;
         let key = item.key;
         let manager = state.selectionManager;
-        let buttonId = (0, import_react121.useId)();
-        let regionId = (0, import_react121.useId)();
+        let buttonId = (0, import_react122.useId)();
+        let regionId = (0, import_react122.useId)();
         let isDisabled = state.disabledKeys.has(item.key) || isDisabledProp;
-        (0, import_react121.useEffect)(() => {
+        (0, import_react122.useEffect)(() => {
           let isFocused = key === state.focusedKey;
           if (isFocused && document.activeElement !== ref.current) {
             ref.current && (0, import_focus2.focusSafely)(ref.current);
           }
         }, [ref, key, state.focusedKey]);
-        let onSelect = (0, import_react121.useCallback)(
+        let onSelect = (0, import_react122.useCallback)(
           (e) => {
             if (!manager.canSelectItem(key)) {
               return;
@@ -74868,7 +74868,7 @@
           },
           [key, manager]
         );
-        const extendFocusSelection = (0, import_react121.useCallback)(
+        const extendFocusSelection = (0, import_react122.useCallback)(
           (toKey2) => {
             if (manager.selectionBehavior === "replace") {
               manager.extendSelection(toKey2);
@@ -74877,7 +74877,7 @@
           },
           [manager]
         );
-        const onKeyDown = (0, import_react121.useCallback)(
+        const onKeyDown = (0, import_react122.useCallback)(
           (event) => {
             const keyMap = {
               ArrowDown: () => {
@@ -78196,14 +78196,14 @@
         useMeasure: () => useMeasure
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useMeasure() {
-        const [dimensions, setDimensions] = (0, import_react121.useState)({
+        const [dimensions, setDimensions] = (0, import_react122.useState)({
           width: null,
           height: null
         });
-        const previousObserver = (0, import_react121.useRef)(null);
-        const customRef = (0, import_react121.useCallback)((node) => {
+        const previousObserver = (0, import_react122.useRef)(null);
+        const customRef = (0, import_react122.useCallback)((node) => {
           if (previousObserver.current) {
             previousObserver.current.disconnect();
             previousObserver.current = null;
@@ -78399,11 +78399,11 @@
           }
         }
       };
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_motion2 = require_cjs4();
       var import_use_measure = require_dist18();
       var import_jsx_runtime64 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var ResizablePanel2 = (0, import_react121.forwardRef)(
+      var ResizablePanel2 = (0, import_react122.forwardRef)(
         (originalProps, ref) => {
           const { children, ...props } = originalProps;
           let [measureRef, bounds] = (0, import_use_measure.useMeasure)();
@@ -97070,7 +97070,7 @@
       var import_react510 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
-      var import_react121 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
+      var import_react122 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
       var import_tree = require_main12();
       var import_shared_utils = require_dist2();
       var import_theme = require_dist12();
@@ -97122,10 +97122,10 @@
         );
         const children = (0, import_react210.useMemo)(() => {
           let treeChildren = [];
-          import_react121.default.Children.map(childrenProp, (child) => {
+          import_react122.default.Children.map(childrenProp, (child) => {
             var _a2;
-            if (import_react121.default.isValidElement(child) && typeof ((_a2 = child.props) == null ? void 0 : _a2.children) !== "string") {
-              const clonedChild = import_react121.default.cloneElement(child, {
+            if (import_react122.default.isValidElement(child) && typeof ((_a2 = child.props) == null ? void 0 : _a2.children) !== "string") {
+              const clonedChild = import_react122.default.cloneElement(child, {
                 // @ts-ignore
                 hasChildItems: false
               });
@@ -97196,7 +97196,7 @@
             motionProps
           ]
         );
-        const getBaseProps = (0, import_react121.useCallback)((props2 = {}) => {
+        const getBaseProps = (0, import_react122.useCallback)((props2 = {}) => {
           return {
             ref: domRef,
             className: classNames,
@@ -97210,7 +97210,7 @@
             )
           };
         }, []);
-        const handleFocusChanged = (0, import_react121.useCallback)((isFocused, key) => {
+        const handleFocusChanged = (0, import_react122.useCallback)((isFocused, key) => {
           isFocused && setFocusedKey(key);
         }, []);
         return {
@@ -97622,8 +97622,8 @@
         useSafeLayoutEffect: () => useSafeLayoutEffect
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var useSafeLayoutEffect = Boolean(globalThis == null ? void 0 : globalThis.document) ? import_react121.useLayoutEffect : import_react121.useEffect;
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var useSafeLayoutEffect = Boolean(globalThis == null ? void 0 : globalThis.document) ? import_react122.useLayoutEffect : import_react122.useEffect;
     }
   });
 
@@ -97654,7 +97654,7 @@
         useImage: () => useImage
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_utils = require_dist10();
       var import_use_safe_layout_effect = require_dist21();
       function useImage(props = {}) {
@@ -97670,16 +97670,16 @@
           shouldBypassImageLoad = false
         } = props;
         const isHydrated = (0, import_react_utils.useIsHydrated)();
-        const imageRef = (0, import_react121.useRef)(null);
-        const [status, setStatus] = (0, import_react121.useState)("pending");
-        const flush = (0, import_react121.useCallback)(() => {
+        const imageRef = (0, import_react122.useRef)(null);
+        const [status, setStatus] = (0, import_react122.useState)("pending");
+        const flush = (0, import_react122.useCallback)(() => {
           if (imageRef.current) {
             imageRef.current.onload = null;
             imageRef.current.onerror = null;
             imageRef.current = null;
           }
         }, []);
-        const load = (0, import_react121.useCallback)(() => {
+        const load = (0, import_react122.useCallback)(() => {
           if (!src) return "pending";
           if (ignoreFallback || shouldBypassImageLoad) return "loaded";
           flush();
@@ -97798,7 +97798,7 @@
       var import_react_utils2 = require_dist10();
       var import_shared_utils = require_dist2();
       var import_focus2 = require_main18();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_image = require_dist22();
       var import_interactions = require_main17();
       var import_react_utils = require_dist10();
@@ -97853,7 +97853,7 @@
         const isImgLoaded = imageStatus === "loaded";
         const shouldFilterDOMProps = !isHeroImage;
         const showFallback = (!src || !isImgLoaded) && showFallbackProp;
-        const slots = (0, import_react121.useMemo)(
+        const slots = (0, import_react122.useMemo)(
           () => {
             var _a2;
             return (0, import_theme.avatar)({
@@ -97879,10 +97879,10 @@
           ]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const canBeFocused = (0, import_react121.useMemo)(() => {
+        const canBeFocused = (0, import_react122.useMemo)(() => {
           return isFocusable || as === "button";
         }, [isFocusable, as]);
-        const getAvatarProps = (0, import_react121.useCallback)(
+        const getAvatarProps = (0, import_react122.useCallback)(
           (props = {}) => ({
             ref: domRef,
             tabIndex: canBeFocused ? 0 : -1,
@@ -97896,7 +97896,7 @@
           }),
           [canBeFocused, slots, baseStyles, focusProps, otherProps]
         );
-        const getImageProps = (0, import_react121.useCallback)(
+        const getImageProps = (0, import_react122.useCallback)(
           (props = {}) => ({
             ref: imgRef,
             src,
@@ -98099,7 +98099,7 @@
       var import_theme = require_dist12();
       var import_system = require_dist11();
       var import_shared_utils = require_dist2();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useBadge(originalProps) {
         var _a, _b;
         const globalContext = (0, import_system.useProviderContext)();
@@ -98107,19 +98107,19 @@
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.badge.variantKeys);
         const { as, children, className, content, classNames, ...otherProps } = props;
         const Component2 = as || "span";
-        const isOneChar = (0, import_react121.useMemo)(
+        const isOneChar = (0, import_react122.useMemo)(
           () => {
             var _a2;
             return ((_a2 = String(content)) == null ? void 0 : _a2.length) === 1 || (originalProps == null ? void 0 : originalProps.isOneChar);
           },
           [content, originalProps == null ? void 0 : originalProps.isOneChar]
         );
-        const isDot = (0, import_react121.useMemo)(() => {
+        const isDot = (0, import_react122.useMemo)(() => {
           var _a2;
           return ((_a2 = String(content)) == null ? void 0 : _a2.length) === 0;
         }, [content]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.badge, className);
-        const slots = (0, import_react121.useMemo)(
+        const slots = (0, import_react122.useMemo)(
           () => (0, import_theme.badge)({
             ...variantProps2,
             showOutline: !!(originalProps == null ? void 0 : originalProps.disableOutline) ? !(originalProps == null ? void 0 : originalProps.disableOutline) : originalProps == null ? void 0 : originalProps.showOutline,
@@ -98193,7 +98193,7 @@
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       function useSpinner(originalProps) {
         var _a, _b;
@@ -98201,19 +98201,19 @@
         const globalContext = (0, import_system.useProviderContext)();
         const variant = (_b = (_a = originalProps == null ? void 0 : originalProps.variant) != null ? _a : globalContext == null ? void 0 : globalContext.spinnerVariant) != null ? _b : "default";
         const { children, className, classNames, label: labelProp, ...otherProps } = props;
-        const slots = (0, import_react121.useMemo)(
+        const slots = (0, import_react122.useMemo)(
           () => (0, import_theme.spinner)({ ...variantProps2, variant }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), variant]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
         const label = labelProp || children;
-        const ariaLabel = (0, import_react121.useMemo)(() => {
+        const ariaLabel = (0, import_react122.useMemo)(() => {
           if (label && typeof label === "string") {
             return label;
           }
           return !otherProps["aria-label"] ? "Loading" : "";
         }, [children, label, otherProps["aria-label"]]);
-        const getSpinnerProps = (0, import_react121.useCallback)(
+        const getSpinnerProps = (0, import_react122.useCallback)(
           () => ({
             "aria-label": ariaLabel,
             className: slots.base({
@@ -98380,10 +98380,10 @@
       Ripple.displayName = "HeroUI.Ripple";
       var ripple_default = Ripple;
       var import_shared_utils2 = require_dist2();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useRipple(props = {}) {
-        const [ripples, setRipples] = (0, import_react121.useState)([]);
-        const onPress = (0, import_react121.useCallback)((event) => {
+        const [ripples, setRipples] = (0, import_react122.useState)([]);
+        const onPress = (0, import_react122.useCallback)((event) => {
           const trigger = event.target;
           const size = Math.max(trigger.clientWidth, trigger.clientHeight);
           setRipples((prevRipples) => [
@@ -98396,7 +98396,7 @@
             }
           ]);
         }, []);
-        const onClear = (0, import_react121.useCallback)((key) => {
+        const onClear = (0, import_react122.useCallback)((key) => {
           setRipples((prevState) => prevState.filter((ripple) => ripple.key !== key));
         }, []);
         return { ripples, onClear, onPress, ...props };
@@ -101483,7 +101483,7 @@
       var import_system2 = require_dist11();
       var import_system = require_dist11();
       var import_shared_utils = require_dist2();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_react_utils2 = require_dist10();
       var import_theme = require_dist12();
@@ -101560,7 +101560,7 @@
           ]
         );
         const { onPress: onRipplePressHandler, onClear: onClearRipple, ripples } = (0, import_ripple.useRipple)();
-        const handlePress = (0, import_react121.useCallback)(
+        const handlePress = (0, import_react122.useCallback)(
           (e) => {
             if (disableRipple || isDisabled || disableAnimation) return;
             domRef.current && onRipplePressHandler(e);
@@ -101578,7 +101578,7 @@
           domRef
         );
         const { isHovered, hoverProps } = (0, import_interactions.useHover)({ isDisabled });
-        const getButtonProps = (0, import_react121.useCallback)(
+        const getButtonProps = (0, import_react122.useCallback)(
           (props2 = {}) => ({
             "data-disabled": (0, import_shared_utils.dataAttr)(isDisabled),
             "data-focus": (0, import_shared_utils.dataAttr)(isFocused),
@@ -101627,7 +101627,7 @@
           };
           return buttonSpinnerSizeMap[size];
         }, [size]);
-        const getRippleProps = (0, import_react121.useCallback)(
+        const getRippleProps = (0, import_react122.useCallback)(
           () => ({ ripples, onClear: onClearRipple }),
           [ripples, onClearRipple]
         );
@@ -101797,7 +101797,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_theme = require_dist12();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_interactions = require_main17();
       var import_use_aria_button = require_dist27();
@@ -101829,7 +101829,7 @@
         const disableRipple = (_d = (_c = originalProps.disableRipple) != null ? _c : globalContext == null ? void 0 : globalContext.disableRipple) != null ? _d : false;
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
         const { onClear: onClearRipple, onPress: onRipplePressHandler, ripples } = (0, import_ripple.useRipple)();
-        const handlePress = (0, import_react121.useCallback)(
+        const handlePress = (0, import_react122.useCallback)(
           (e) => {
             if (disableRipple || disableAnimation) return;
             domRef.current && onRipplePressHandler(e);
@@ -101854,14 +101854,14 @@
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)({
           autoFocus
         });
-        const slots = (0, import_react121.useMemo)(
+        const slots = (0, import_react122.useMemo)(
           () => (0, import_theme.card)({
             ...variantProps2,
             disableAnimation
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation]
         );
-        const context = (0, import_react121.useMemo)(
+        const context = (0, import_react122.useMemo)(
           () => ({
             slots,
             classNames,
@@ -101879,7 +101879,7 @@
             originalProps.fullWidth
           ]
         );
-        const getCardProps = (0, import_react121.useCallback)(
+        const getCardProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ref: domRef,
@@ -101917,7 +101917,7 @@
             otherProps
           ]
         );
-        const getRippleProps = (0, import_react121.useCallback)(
+        const getRippleProps = (0, import_react122.useCallback)(
           () => ({ ripples, onClear: onClearRipple }),
           [ripples, onClearRipple]
         );
@@ -102048,7 +102048,7 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useChip(originalProps) {
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.chip.variantKeys);
         const {
@@ -102069,13 +102069,13 @@
         const isCloseable = !!onClose;
         const isDotVariant = originalProps.variant === "dot";
         const { focusProps: closeFocusProps, isFocusVisible: isCloseButtonFocusVisible } = (0, import_focus2.useFocusRing)();
-        const isOneChar = (0, import_react121.useMemo)(
+        const isOneChar = (0, import_react122.useMemo)(
           () => typeof children === "string" && (children == null ? void 0 : children.length) === 1,
           [children]
         );
-        const hasStartContent = (0, import_react121.useMemo)(() => !!avatar || !!startContent, [avatar, startContent]);
-        const hasEndContent = (0, import_react121.useMemo)(() => !!endContent || isCloseable, [endContent, isCloseable]);
-        const slots = (0, import_react121.useMemo)(
+        const hasStartContent = (0, import_react122.useMemo)(() => !!avatar || !!startContent, [avatar, startContent]);
+        const hasEndContent = (0, import_react122.useMemo)(() => !!endContent || isCloseable, [endContent, isCloseable]);
+        const slots = (0, import_react122.useMemo)(
           () => (0, import_theme.chip)({
             ...variantProps2,
             hasStartContent,
@@ -102114,13 +102114,13 @@
           };
         };
         const getAvatarClone = (avatar2) => {
-          if (!(0, import_react121.isValidElement)(avatar2)) return null;
-          return (0, import_react121.cloneElement)(avatar2, {
+          if (!(0, import_react122.isValidElement)(avatar2)) return null;
+          return (0, import_react122.cloneElement)(avatar2, {
             // @ts-ignore
             className: slots.avatar({ class: classNames == null ? void 0 : classNames.avatar })
           });
         };
-        const getContentClone = (content) => (0, import_react121.isValidElement)(content) ? (0, import_react121.cloneElement)(content, {
+        const getContentClone = (content) => (0, import_react122.isValidElement)(content) ? (0, import_react122.cloneElement)(content, {
           // @ts-ignore
           className: (0, import_theme.cn)("max-h-[80%]", content.props.className)
         }) : null;
@@ -102289,14 +102289,14 @@
         useCallbackRef: () => useCallbackRef
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_safe_layout_effect = require_dist21();
       function useCallbackRef(fn, deps = []) {
-        const ref = (0, import_react121.useRef)(fn);
+        const ref = (0, import_react122.useRef)(fn);
         (0, import_use_safe_layout_effect.useSafeLayoutEffect)(() => {
           ref.current = fn;
         });
-        return (0, import_react121.useCallback)((...args) => {
+        return (0, import_react122.useCallback)((...args) => {
           var _a;
           return (_a = ref.current) == null ? void 0 : _a.call(ref, ...args);
         }, deps);
@@ -115733,13 +115733,13 @@
         useSlottedContext: () => useSlottedContext
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       var DEFAULT_SLOT = /* @__PURE__ */ Symbol("default");
       function useObjectRef(ref) {
-        const objRef = (0, import_react121.useRef)(null);
-        const cleanupRef = (0, import_react121.useRef)(void 0);
-        const refEffect = (0, import_react121.useCallback)(
+        const objRef = (0, import_react122.useRef)(null);
+        const cleanupRef = (0, import_react122.useRef)(void 0);
+        const refEffect = (0, import_react122.useCallback)(
           (instance) => {
             if (typeof ref === "function") {
               const refCallback = ref;
@@ -115760,7 +115760,7 @@
           },
           [ref]
         );
-        return (0, import_react121.useMemo)(
+        return (0, import_react122.useMemo)(
           () => ({
             get current() {
               return objRef.current;
@@ -115780,7 +115780,7 @@
         );
       }
       function useSlottedContext(context, slot) {
-        let ctx = (0, import_react121.useContext)(context);
+        let ctx = (0, import_react122.useContext)(context);
         if (slot === null) {
           return null;
         }
@@ -115800,7 +115800,7 @@
       function useContextProps(props, ref, context) {
         let ctx = useSlottedContext(context, props.slot) || {};
         let { ref: contextRef, ...contextProps } = ctx;
-        let mergedRef = useObjectRef((0, import_react121.useMemo)(() => (0, import_shared_utils.mergeRefs)(ref, contextRef), [ref, contextRef]));
+        let mergedRef = useObjectRef((0, import_react122.useMemo)(() => (0, import_shared_utils.mergeRefs)(ref, contextRef), [ref, contextRef]));
         let mergedProps = (0, import_shared_utils.mergeProps)(contextProps, props);
         if ("style" in contextProps && contextProps.style && "style" in props && props.style) {
           if (typeof contextProps.style === "function" || typeof props.style === "function") {
@@ -115952,7 +115952,7 @@
       var import_system2 = require_dist11();
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_toggle = require_main21();
       var import_theme = require_dist12();
@@ -116027,7 +116027,7 @@
           };
           onChange = (0, import_shared_utils.chain)(dispatch, onChange);
         }
-        const labelId = (0, import_react121.useId)();
+        const labelId = (0, import_react122.useId)();
         const ariaCheckboxProps = (0, import_react210.useMemo)(
           () => ({
             name,
@@ -116116,7 +116116,7 @@
           toggleState.setSelected(isInputRefChecked);
         }, [inputRef.current]);
         const onChangeProp = (0, import_use_callback_ref.useCallbackRef)(onChange);
-        const handleCheckboxChange = (0, import_react121.useCallback)(
+        const handleCheckboxChange = (0, import_react122.useCallback)(
           (event) => {
             if (isReadOnly || isDisabled) {
               event.preventDefault();
@@ -116127,7 +116127,7 @@
           [isReadOnly, isDisabled, onChangeProp]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getBaseProps = (0, import_react121.useCallback)(() => {
+        const getBaseProps = (0, import_react122.useCallback)(() => {
           return {
             ref: domRef,
             className: slots.base({ class: baseStyles }),
@@ -116157,7 +116157,7 @@
           hoverProps,
           otherProps
         ]);
-        const getWrapperProps = (0, import_react121.useCallback)(
+        const getWrapperProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -116167,7 +116167,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.wrapper]
         );
-        const getInputProps = (0, import_react121.useCallback)(() => {
+        const getInputProps = (0, import_react122.useCallback)(() => {
           return {
             ref: (0, import_react_utils2.mergeRefs)(inputRef, ref),
             ...(0, import_shared_utils.mergeProps)(inputProps, focusProps),
@@ -116175,14 +116175,14 @@
             onChange: (0, import_shared_utils.chain)(inputProps.onChange, handleCheckboxChange)
           };
         }, [inputProps, focusProps, handleCheckboxChange, classNames == null ? void 0 : classNames.hiddenInput]);
-        const getLabelProps = (0, import_react121.useCallback)(
+        const getLabelProps = (0, import_react122.useCallback)(
           () => ({
             id: labelId,
             className: slots.label({ class: classNames == null ? void 0 : classNames.label })
           }),
           [slots, classNames == null ? void 0 : classNames.label, isDisabled, isSelected, isInvalid]
         );
-        const getIconProps = (0, import_react121.useCallback)(
+        const getIconProps = (0, import_react122.useCallback)(
           () => ({
             isSelected,
             isIndeterminate,
@@ -116491,13 +116491,13 @@
       var import_system_rsc2 = require_dist14();
       var import_theme = require_dist12();
       var import_system_rsc = require_dist14();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       function useCode(originalProps) {
         const [props, variantProps2] = (0, import_system_rsc.mapPropsVariants)(originalProps, import_theme.code.variantKeys);
         const { as, children, className, ...otherProps } = props;
         const Component2 = as || "code";
-        const styles = (0, import_react121.useMemo)(
+        const styles = (0, import_react122.useMemo)(
           () => (0, import_theme.code)({
             ...variantProps2,
             className
@@ -119578,7 +119578,7 @@
       var import_react_utils = require_dist10();
       var import_focus2 = require_main18();
       var import_shared_utils = require_dist2();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useLink(originalProps) {
         var _a, _b, _c, _d;
         const globalContext = (0, import_system.useProviderContext)();
@@ -119621,7 +119621,7 @@
           otherProps.rel = (_c = otherProps.rel) != null ? _c : "noopener noreferrer";
           otherProps.target = (_d = otherProps.target) != null ? _d : "_blank";
         }
-        const styles = (0, import_react121.useMemo)(
+        const styles = (0, import_react122.useMemo)(
           () => (0, import_theme.link)({
             ...variantProps2,
             disableAnimation,
@@ -119629,7 +119629,7 @@
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation, className]
         );
-        const getLinkProps = (0, import_react121.useCallback)(() => {
+        const getLinkProps = (0, import_react122.useCallback)(() => {
           return {
             ref: domRef,
             className: styles,
@@ -119714,7 +119714,7 @@
         usePagination: () => usePagination
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_i18n12 = require_main5();
       var import_shared_utils = require_dist2();
       var PaginationItemType2 = /* @__PURE__ */ ((PaginationItemType22) => {
@@ -119733,19 +119733,19 @@
           showControls = false,
           onChange
         } = props;
-        const [activePage, setActivePage] = (0, import_react121.useState)(page || initialPage);
+        const [activePage, setActivePage] = (0, import_react122.useState)(page || initialPage);
         const { direction } = (0, import_i18n12.useLocale)();
         const isRTL = direction === "rtl";
         const onChangeActivePage = (newPage) => {
           setActivePage(newPage);
           onChange && onChange(newPage);
         };
-        (0, import_react121.useEffect)(() => {
+        (0, import_react122.useEffect)(() => {
           if (page && page !== activePage) {
             setActivePage(page);
           }
         }, [page]);
-        const setPage = (0, import_react121.useCallback)(
+        const setPage = (0, import_react122.useCallback)(
           (pageNumber) => {
             if (pageNumber <= 0) {
               onChangeActivePage(1);
@@ -119761,7 +119761,7 @@
         const previous = () => setPage(activePage - 1);
         const first = () => setPage(1);
         const last = () => setPage(total);
-        const formatRange = (0, import_react121.useCallback)(
+        const formatRange = (0, import_react122.useCallback)(
           (range2) => {
             if (showControls) {
               return [
@@ -119775,7 +119775,7 @@
           },
           [isRTL, showControls]
         );
-        const paginationRange = (0, import_react121.useMemo)(() => {
+        const paginationRange = (0, import_react122.useMemo)(() => {
           const totalPageNumbers = siblings * 2 + 3 + boundaries * 2;
           if (totalPageNumbers >= total) {
             return formatRange((0, import_shared_utils.range)(1, total));
@@ -119937,7 +119937,7 @@
         useIntersectionObserver: () => useIntersectionObserver
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useIntersectionObserver({
         threshold: threshold2 = 0,
         root = null,
@@ -119948,15 +119948,15 @@
         onChange
       } = {}) {
         var _a;
-        const [ref, setRef2] = (0, import_react121.useState)(null);
-        const [state, setState] = (0, import_react121.useState)(() => ({
+        const [ref, setRef2] = (0, import_react122.useState)(null);
+        const [state, setState] = (0, import_react122.useState)(() => ({
           isIntersecting: initialIsIntersecting,
           entry: void 0
         }));
-        const callbackRef = (0, import_react121.useRef)();
+        const callbackRef = (0, import_react122.useRef)();
         callbackRef.current = onChange;
         const frozen = ((_a = state.entry) == null ? void 0 : _a.isIntersecting) && freezeOnceVisible;
-        (0, import_react121.useEffect)(() => {
+        (0, import_react122.useEffect)(() => {
           if (!isEnabled) return;
           if (!ref) return;
           if (!("IntersectionObserver" in window)) return;
@@ -119984,8 +119984,8 @@
             observer2.disconnect();
           };
         }, [ref, isEnabled, JSON.stringify(threshold2), root, rootMargin, frozen, freezeOnceVisible]);
-        const prevRef = (0, import_react121.useRef)(null);
-        (0, import_react121.useEffect)(() => {
+        const prevRef = (0, import_react122.useRef)(null);
+        (0, import_react122.useEffect)(() => {
           var _a2;
           if (!ref && ((_a2 = state.entry) == null ? void 0 : _a2.target) && !freezeOnceVisible && !frozen && prevRef.current !== state.entry.target) {
             prevRef.current = state.entry.target;
@@ -120052,7 +120052,7 @@
       var import_theme3 = require_dist12();
       var import_shared_utils = require_dist2();
       var import_use_pagination = require_dist38();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_use_pagination2 = require_dist38();
       var import_scroll_into_view_if_needed = __toESM2(require_dist40());
@@ -120085,9 +120085,9 @@
         } = props;
         const Component2 = as || "nav";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const cursorRef = (0, import_react121.useRef)(null);
-        const itemsRef = (0, import_react121.useRef)();
-        const cursorTimer = (0, import_react121.useRef)();
+        const cursorRef = (0, import_react122.useRef)(null);
+        const itemsRef = (0, import_react122.useRef)();
+        const cursorTimer = (0, import_react122.useRef)();
         const disableAnimation = (_b = (_a = originalProps == null ? void 0 : originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
         const disableCursorAnimation = (_d = (_c = originalProps == null ? void 0 : originalProps.disableCursorAnimation) != null ? _c : disableAnimation) != null ? _d : false;
         function getItemsRefMap() {
@@ -120145,13 +120145,13 @@
           onChange
         });
         const [setRef2, isVisible] = (0, import_use_intersection_observer.useIntersectionObserver)();
-        (0, import_react121.useEffect)(() => {
+        (0, import_react122.useEffect)(() => {
           if (domRef.current) {
             setRef2(domRef.current);
           }
         }, [domRef.current]);
-        const activePageRef = (0, import_react121.useRef)(activePage);
-        (0, import_react121.useEffect)(() => {
+        const activePageRef = (0, import_react122.useRef)(activePage);
+        (0, import_react122.useEffect)(() => {
           if (activePage && !disableAnimation && isVisible) {
             scrollTo(activePage, activePage === activePageRef.current);
           }
@@ -120166,7 +120166,7 @@
           originalProps.isCompact,
           originalProps.showControls
         ]);
-        const slots = (0, import_react121.useMemo)(
+        const slots = (0, import_react122.useMemo)(
           () => (0, import_theme.pagination)({
             ...variantProps2,
             disableAnimation,
@@ -120896,7 +120896,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_system2 = require_dist11();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_interactions = require_main17();
@@ -120942,8 +120942,8 @@
         const Component2 = as || "label";
         const domRef = (0, import_react_utils2.useDOMRef)(ref);
         const inputRef = (0, import_react210.useRef)(null);
-        const labelId = (0, import_react121.useId)();
-        const descriptionId = (0, import_react121.useId)();
+        const labelId = (0, import_react122.useId)();
+        const descriptionId = (0, import_react122.useId)();
         const isRequired = (0, import_react210.useMemo)(() => {
           var _a2;
           return (_a2 = groupContext.isRequired) != null ? _a2 : false;
@@ -120997,7 +120997,7 @@
           [color2, size, isDisabled, isInvalid, disableAnimation]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getBaseProps = (0, import_react121.useCallback)(
+        const getBaseProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -121032,7 +121032,7 @@
             otherProps
           ]
         );
-        const getWrapperProps = (0, import_react121.useCallback)(
+        const getWrapperProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -121042,7 +121042,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.wrapper]
         );
-        const getInputProps = (0, import_react121.useCallback)(
+        const getInputProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ref: inputRef,
@@ -121053,7 +121053,7 @@
           },
           [inputProps, focusProps, onChange]
         );
-        const getLabelProps = (0, import_react121.useCallback)(
+        const getLabelProps = (0, import_react122.useCallback)(
           (props2 = {}) => ({
             ...props2,
             id: labelId,
@@ -121061,21 +121061,21 @@
           }),
           [slots, classNames == null ? void 0 : classNames.label, isDisabled, isSelected, isInvalid]
         );
-        const getLabelWrapperProps = (0, import_react121.useCallback)(
+        const getLabelWrapperProps = (0, import_react122.useCallback)(
           (props2 = {}) => ({
             ...props2,
             className: slots.labelWrapper({ class: classNames == null ? void 0 : classNames.labelWrapper })
           }),
           [slots, classNames == null ? void 0 : classNames.labelWrapper]
         );
-        const getControlProps = (0, import_react121.useCallback)(
+        const getControlProps = (0, import_react122.useCallback)(
           (props2 = {}) => ({
             ...props2,
             className: slots.control({ class: classNames == null ? void 0 : classNames.control })
           }),
           [slots, classNames == null ? void 0 : classNames.control]
         );
-        const getDescriptionProps = (0, import_react121.useCallback)(
+        const getDescriptionProps = (0, import_react122.useCallback)(
           (props2 = {}) => ({
             ...props2,
             id: descriptionId,
@@ -121348,20 +121348,20 @@
         useClipboard: () => useClipboard
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var transformValue2 = (text) => {
         return text.replace(/[\u00A0]/g, " ");
       };
       function useClipboard({ timeout = 2e3 } = {}) {
-        const [error, setError] = (0, import_react121.useState)(null);
-        const [copied, setCopied] = (0, import_react121.useState)(false);
-        const [copyTimeout, setCopyTimeout] = (0, import_react121.useState)(null);
-        const onClearTimeout = (0, import_react121.useCallback)(() => {
+        const [error, setError] = (0, import_react122.useState)(null);
+        const [copied, setCopied] = (0, import_react122.useState)(false);
+        const [copyTimeout, setCopyTimeout] = (0, import_react122.useState)(null);
+        const onClearTimeout = (0, import_react122.useCallback)(() => {
           if (copyTimeout) {
             clearTimeout(copyTimeout);
           }
         }, [copyTimeout]);
-        const handleCopyResult = (0, import_react121.useCallback)(
+        const handleCopyResult = (0, import_react122.useCallback)(
           (value) => {
             onClearTimeout();
             setCopyTimeout(setTimeout(() => setCopied(false), timeout));
@@ -121369,7 +121369,7 @@
           },
           [onClearTimeout, timeout]
         );
-        const copy = (0, import_react121.useCallback)(
+        const copy = (0, import_react122.useCallback)(
           (valueToCopy) => {
             if ("clipboard" in navigator) {
               const transformedValue = typeof valueToCopy === "string" ? transformValue2(valueToCopy) : valueToCopy;
@@ -121380,7 +121380,7 @@
           },
           [handleCopyResult]
         );
-        const reset = (0, import_react121.useCallback)(() => {
+        const reset = (0, import_react122.useCallback)(() => {
           setCopied(false);
           setError(null);
           onClearTimeout();
@@ -124678,7 +124678,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_focus2 = require_main36();
       var import_interactions = require_main35();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var visibleOverlays = [];
       function useAriaOverlay(props, ref) {
         const {
@@ -124690,7 +124690,7 @@
           shouldCloseOnBlur,
           shouldCloseOnInteractOutside
         } = props;
-        (0, import_react121.useEffect)(() => {
+        (0, import_react122.useEffect)(() => {
           if (isOpen && !visibleOverlays.includes(ref)) {
             visibleOverlays.push(ref);
             return () => {
@@ -124820,7 +124820,7 @@
       var import_shared_utils2 = require_dist2();
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_aria_utils2 = require_dist13();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_tooltip = require_main33();
       var import_tooltip2 = require_main34();
       var import_overlays = require_main9();
@@ -124884,9 +124884,9 @@
         });
         const triggerRef = (0, import_react210.useRef)(null);
         const overlayRef = (0, import_react210.useRef)(null);
-        const tooltipId = (0, import_react121.useId)();
+        const tooltipId = (0, import_react122.useId)();
         const isOpen = state.isOpen && !isDisabled;
-        (0, import_react121.useImperativeHandle)(
+        (0, import_react122.useImperativeHandle)(
           ref,
           () => (
             // @ts-ignore
@@ -125115,7 +125115,7 @@
       var import_shared_utils = require_dist2();
       var import_use_clipboard = require_dist44();
       var import_focus2 = require_main18();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useSnippet(originalProps) {
         var _a, _b, _c, _d;
         const globalContext = (0, import_system.useProviderContext)();
@@ -125153,26 +125153,26 @@
           ...userTooltipProps
         };
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const preRef = (0, import_react121.useRef)(null);
+        const preRef = (0, import_react122.useRef)(null);
         const { copy, copied } = (0, import_use_clipboard.useClipboard)({ timeout });
         const isMultiLine = children && Array.isArray(children);
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)({
           autoFocus
         });
-        const slots = (0, import_react121.useMemo)(
+        const slots = (0, import_react122.useMemo)(
           () => (0, import_theme.snippet)({
             ...variantProps2,
             disableAnimation
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation]
         );
-        const symbolBefore = (0, import_react121.useMemo)(() => {
+        const symbolBefore = (0, import_react122.useMemo)(() => {
           if (!symbol || typeof symbol !== "string") return symbol;
           const str = symbol.trim();
           return str ? `${str} ` : "";
         }, [symbol]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getSnippetProps = (0, import_react121.useCallback)(
+        const getSnippetProps = (0, import_react122.useCallback)(
           () => ({
             className: slots.base({
               class: baseStyles
@@ -125183,7 +125183,7 @@
           }),
           [slots, baseStyles, isMultiLine, otherProps]
         );
-        const onCopy = (0, import_react121.useCallback)(() => {
+        const onCopy = (0, import_react122.useCallback)(() => {
           var _a2;
           if (disableCopy) {
             return;
@@ -125213,7 +125213,7 @@
           isIconOnly: true,
           ...userButtonProps
         };
-        const getCopyButtonProps = (0, import_react121.useCallback)(
+        const getCopyButtonProps = (0, import_react122.useCallback)(
           () => ({
             ...copyButtonProps,
             "data-copied": (0, import_shared_utils.dataAttr)(copied),
@@ -125403,7 +125403,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist11();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
       var import_use_safe_layout_effect = require_dist21();
@@ -125438,10 +125438,10 @@
           ...otherProps
         } = props;
         const Component2 = as || "label";
-        const domRef = (0, import_react121.useRef)(null);
-        const inputRef = (0, import_react121.useRef)(null);
+        const domRef = (0, import_react122.useRef)(null);
+        const inputRef = (0, import_react122.useRef)(null);
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        const labelId = (0, import_react121.useId)();
+        const labelId = (0, import_react122.useId)();
         const ariaSwitchProps = (0, import_react210.useMemo)(() => {
           const ariaLabel = otherProps["aria-label"] || typeof children === "string" ? children : void 0;
           return {
@@ -125508,7 +125508,7 @@
             "data-pressed": (0, import_shared_utils.dataAttr)(pressed)
           };
         };
-        const getWrapperProps = (0, import_react121.useCallback)(
+        const getWrapperProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -125527,14 +125527,14 @@
             onChange: (0, import_shared_utils.chain)(onChange, inputProps.onChange)
           };
         };
-        const getThumbProps = (0, import_react121.useCallback)(
+        const getThumbProps = (0, import_react122.useCallback)(
           (props2 = {}) => ({
             ...props2,
             className: slots.thumb({ class: (0, import_theme.cn)(classNames == null ? void 0 : classNames.thumb, props2 == null ? void 0 : props2.className) })
           }),
           [slots, classNames == null ? void 0 : classNames.thumb]
         );
-        const getLabelProps = (0, import_react121.useCallback)(
+        const getLabelProps = (0, import_react122.useCallback)(
           (props2 = {}) => ({
             ...props2,
             id: labelId,
@@ -125542,7 +125542,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.label, isDisabled, isSelected]
         );
-        const getThumbIconProps = (0, import_react121.useCallback)(
+        const getThumbIconProps = (0, import_react122.useCallback)(
           (props2 = {
             includeStateProps: false
           }) => (0, import_shared_utils.mergeProps)(
@@ -125557,7 +125557,7 @@
           ),
           [slots, classNames == null ? void 0 : classNames.thumbIcon, isSelected]
         );
-        const getStartContentProps = (0, import_react121.useCallback)(
+        const getStartContentProps = (0, import_react122.useCallback)(
           (props2 = {}) => ({
             width: "1em",
             height: "1em",
@@ -125566,7 +125566,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.startContent, isSelected]
         );
-        const getEndContentProps = (0, import_react121.useCallback)(
+        const getEndContentProps = (0, import_react122.useCallback)(
           (props2 = {}) => ({
             width: "1em",
             height: "1em",
@@ -125663,7 +125663,7 @@
         useUser: () => useUser
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
@@ -125689,12 +125689,12 @@
         const shouldFilterDOMProps = typeof Component2 === "string";
         const domRef = (0, import_react_utils2.useDOMRef)(ref);
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)({});
-        const canBeFocused = (0, import_react121.useMemo)(() => {
+        const canBeFocused = (0, import_react122.useMemo)(() => {
           return isFocusable || as === "button";
         }, [isFocusable, as]);
-        const slots = (0, import_react121.useMemo)(() => (0, import_theme.user)(), []);
+        const slots = (0, import_react122.useMemo)(() => (0, import_theme.user)(), []);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getUserProps = (0, import_react121.useCallback)(
+        const getUserProps = (0, import_react122.useCallback)(
           () => ({
             ref: domRef,
             tabIndex: canBeFocused ? 0 : -1,
@@ -125771,12 +125771,12 @@
         useIsMounted: () => useIsMounted2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useIsMounted2(props = {}) {
         const { rerender = false, delay: delay2 = 0 } = props;
-        const isMountedRef = (0, import_react121.useRef)(false);
-        const [isMounted, setIsMounted] = (0, import_react121.useState)(false);
-        (0, import_react121.useEffect)(() => {
+        const isMountedRef = (0, import_react122.useRef)(false);
+        const [isMounted, setIsMounted] = (0, import_react122.useState)(false);
+        (0, import_react122.useEffect)(() => {
           isMountedRef.current = true;
           let timer = null;
           if (rerender) {
@@ -125798,7 +125798,7 @@
             }
           };
         }, [rerender]);
-        return [(0, import_react121.useCallback)(() => isMountedRef.current, []), isMounted];
+        return [(0, import_react122.useCallback)(() => isMountedRef.current, []), isMounted];
       }
     }
   });
@@ -125893,7 +125893,7 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_is_mounted2 = require_dist50();
       var import_progress3 = require_dist51();
       function useProgress(originalProps) {
@@ -125938,7 +125938,7 @@
           "aria-labelledby": originalProps["aria-labelledby"],
           "aria-label": originalProps["aria-label"]
         });
-        const slots = (0, import_react121.useMemo)(
+        const slots = (0, import_react122.useMemo)(
           () => (0, import_theme.progress)({
             ...variantProps2,
             disableAnimation
@@ -125946,11 +125946,11 @@
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation]
         );
         const selfMounted = disableAnimation ? true : isMounted;
-        const percentage = (0, import_react121.useMemo)(
+        const percentage = (0, import_react122.useMemo)(
           () => isIndeterminate || !selfMounted ? void 0 : (0, import_shared_utils.clampPercentage)((value - minValue) / (maxValue - minValue) * 100),
           [selfMounted, isIndeterminate, value, minValue, maxValue]
         );
-        const getProgressBarProps = (0, import_react121.useCallback)(
+        const getProgressBarProps = (0, import_react122.useCallback)(
           (props2 = {}) => ({
             ref: domRef,
             "data-indeterminate": (0, import_shared_utils.dataAttr)(isIndeterminate),
@@ -125968,7 +125968,7 @@
             otherProps
           ]
         );
-        const getLabelProps = (0, import_react121.useCallback)(
+        const getLabelProps = (0, import_react122.useCallback)(
           (props2 = {}) => ({
             className: slots.label({ class: classNames == null ? void 0 : classNames.label }),
             ...(0, import_shared_utils.mergeProps)(labelProps, props2)
@@ -126980,7 +126980,7 @@
       var import_interactions = require_main17();
       var import_shared_utils = require_dist2();
       var import_utils8 = require_main38();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_textfield = require_main40();
       var import_form = require_dist33();
       function useInput(originalProps) {
@@ -127010,13 +127010,13 @@
           },
           ...otherProps
         } = props;
-        const handleValueChange = (0, import_react121.useCallback)(
+        const handleValueChange = (0, import_react122.useCallback)(
           (value) => {
             onValueChange(value != null ? value : "");
           },
           [onValueChange]
         );
-        const [isFocusWithin, setFocusWithin] = (0, import_react121.useState)(false);
+        const [isFocusWithin, setFocusWithin] = (0, import_react122.useState)(false);
         const Component2 = as || "div";
         const disableAnimation = (_c = (_b = originalProps.disableAnimation) != null ? _b : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _c : false;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
@@ -127036,7 +127036,7 @@
         const isHiddenType = type === "hidden";
         const isMultiline = originalProps.isMultiline;
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className, isFilled ? "is-filled" : "");
-        const handleClear = (0, import_react121.useCallback)(() => {
+        const handleClear = (0, import_react122.useCallback)(() => {
           var _a2;
           if (isFileTypeInput) {
             domRef.current.value = "";
@@ -127113,7 +127113,7 @@
         const hasStartContent = !!startContent;
         const isLabelOutside = shouldLabelBeOutside ? isOutsideLeft || isOutsideTop || hasPlaceholder || labelPlacement === "outside" && hasStartContent : false;
         const isLabelOutsideAsPlaceholder = labelPlacement === "outside" && !hasPlaceholder && !hasStartContent;
-        const slots = (0, import_react121.useMemo)(
+        const slots = (0, import_react122.useMemo)(
           () => (0, import_theme.input)({
             ...variantProps2,
             isInvalid,
@@ -127130,7 +127130,7 @@
             disableAnimation
           ]
         );
-        const getBaseProps = (0, import_react121.useCallback)(
+        const getBaseProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ref: baseDomRef,
@@ -127183,7 +127183,7 @@
             originalProps.isDisabled
           ]
         );
-        const getLabelProps = (0, import_react121.useCallback)(
+        const getLabelProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "label",
@@ -127193,7 +127193,7 @@
           },
           [slots, isLabelHovered, labelProps, classNames == null ? void 0 : classNames.label]
         );
-        const handleKeyDown = (0, import_react121.useCallback)(
+        const handleKeyDown = (0, import_react122.useCallback)(
           (e) => {
             if (e.key === "Escape" && inputValue && (isClearable || onClear) && !originalProps.isReadOnly) {
               setInputValue("");
@@ -127202,7 +127202,7 @@
           },
           [inputValue, setInputValue, onClear, isClearable, originalProps.isReadOnly]
         );
-        const getInputProps = (0, import_react121.useCallback)(
+        const getInputProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "input",
@@ -127252,7 +127252,7 @@
             handleKeyDown
           ]
         );
-        const getInputWrapperProps = (0, import_react121.useCallback)(
+        const getInputWrapperProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ref: inputWrapperRef,
@@ -127285,7 +127285,7 @@
             classNames == null ? void 0 : classNames.inputWrapper
           ]
         );
-        const getInnerWrapperProps = (0, import_react121.useCallback)(
+        const getInnerWrapperProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -127303,7 +127303,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.innerWrapper]
         );
-        const getMainWrapperProps = (0, import_react121.useCallback)(
+        const getMainWrapperProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -127315,7 +127315,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.mainWrapper]
         );
-        const getHelperWrapperProps = (0, import_react121.useCallback)(
+        const getHelperWrapperProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -127327,7 +127327,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getDescriptionProps = (0, import_react121.useCallback)(
+        const getDescriptionProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -127338,7 +127338,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.description]
         );
-        const getErrorMessageProps = (0, import_react121.useCallback)(
+        const getErrorMessageProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -127349,7 +127349,7 @@
           },
           [slots, errorMessageProps, classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getClearButtonProps = (0, import_react121.useCallback)(
+        const getClearButtonProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -127765,7 +127765,7 @@
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_aria_utils = require_dist13();
       var import_overlays = require_main9();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       var import_use_safe_layout_effect = require_dist21();
       var import_use_aria_overlay = require_dist45();
@@ -127833,7 +127833,7 @@
           if (!updatePositionDeps.length) return;
           updatePosition();
         }, updatePositionDeps);
-        (0, import_react121.useEffect)(() => {
+        (0, import_react122.useEffect)(() => {
           var _a, _b;
           if (state.isOpen && popoverRef.current) {
             if (isNonModal) {
@@ -129583,7 +129583,7 @@
       var import_theme = require_dist12();
       var import_tree = require_main12();
       var import_react_utils = require_dist10();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme2 = require_dist12();
       function useMenu(props) {
         var _a;
@@ -129616,7 +129616,7 @@
         const innerState = (0, import_tree.useTreeState)({ ...otherProps, ...userMenuProps, children });
         const state = propState || innerState;
         const { menuProps } = (0, import_menu.useMenu)({ ...otherProps, ...userMenuProps, onAction }, state, domRef);
-        const slots = (0, import_react121.useMemo)(() => (0, import_theme.menu)({ className }), [className]);
+        const slots = (0, import_react122.useMemo)(() => (0, import_theme.menu)({ className }), [className]);
         const baseStyles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.base, className);
         const getBaseProps = (props2 = {}) => {
           return {
@@ -130274,7 +130274,7 @@
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
       var import_react_utils2 = require_dist10();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var getMenuItem = (props, key) => {
         if (props) {
           const mergedChildren = Array.isArray(props.children) ? props.children : [...(props == null ? void 0 : props.items) || []];
@@ -130318,10 +130318,10 @@
           ...otherProps
         } = props;
         const Component2 = as || "div";
-        const triggerRef = (0, import_react121.useRef)(null);
+        const triggerRef = (0, import_react122.useRef)(null);
         const menuTriggerRef = triggerRefProp || triggerRef;
-        const menuRef = (0, import_react121.useRef)(null);
-        const popoverRef = (0, import_react121.useRef)(null);
+        const menuRef = (0, import_react122.useRef)(null);
+        const popoverRef = (0, import_react122.useRef)(null);
         const state = (0, import_menu.useMenuTriggerState)({
           trigger,
           isOpen,
@@ -130338,7 +130338,7 @@
           state,
           menuTriggerRef
         );
-        const styles = (0, import_react121.useMemo)(
+        const styles = (0, import_react122.useMemo)(
           () => (0, import_theme.dropdown)({
             className
           }),
@@ -130465,7 +130465,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist11();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
@@ -130550,7 +130550,7 @@
             }
           };
         };
-        const getWrapperProps = (0, import_react121.useCallback)(() => {
+        const getWrapperProps = (0, import_react122.useCallback)(() => {
           const fallbackStyle = showFallback ? {
             backgroundImage: `url(${fallbackSrc})`
           } : {};
@@ -130562,7 +130562,7 @@
             }
           };
         }, [slots, showFallback, fallbackSrc, classNames == null ? void 0 : classNames.wrapper, w]);
-        const getBlurredImgProps = (0, import_react121.useCallback)(() => {
+        const getBlurredImgProps = (0, import_react122.useCallback)(() => {
           return {
             src,
             "aria-hidden": (0, import_shared_utils.dataAttr)(true),
@@ -130656,7 +130656,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_overlays = require_main9();
       var import_utils8 = require_main4();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_aria_overlay = require_dist45();
       function useAriaModalOverlay(props = {
         shouldBlockScroll: true
@@ -130673,7 +130673,7 @@
           isDisabled: !state.isOpen || !props.shouldBlockScroll
         });
         (0, import_overlays.useOverlayFocusContain)();
-        (0, import_react121.useEffect)(() => {
+        (0, import_react122.useEffect)(() => {
           if (state.isOpen && ref.current) {
             return (0, import_overlays.ariaHideOutside)([ref.current]);
           }
@@ -130723,9 +130723,9 @@
         useViewportSize: () => useViewportSize
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react121 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
+      var import_react122 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
       var visualViewport = typeof document !== "undefined" && window.visualViewport;
-      var IsSSRContext = import_react121.default.createContext(false);
+      var IsSSRContext = import_react122.default.createContext(false);
       function getSnapshot() {
         return false;
       }
@@ -130737,15 +130737,15 @@
         };
       }
       function useIsSSR() {
-        if (typeof import_react121.default["useSyncExternalStore"] === "function") {
-          return import_react121.default["useSyncExternalStore"](subscribe, getSnapshot, getServerSnapshot);
+        if (typeof import_react122.default["useSyncExternalStore"] === "function") {
+          return import_react122.default["useSyncExternalStore"](subscribe, getSnapshot, getServerSnapshot);
         }
-        return (0, import_react121.useContext)(IsSSRContext);
+        return (0, import_react122.useContext)(IsSSRContext);
       }
       function useViewportSize() {
         let isSSR = useIsSSR();
-        let [size, setSize] = (0, import_react121.useState)(() => isSSR ? { width: 0, height: 0 } : getViewportSize());
-        (0, import_react121.useEffect)(() => {
+        let [size, setSize] = (0, import_react122.useState)(() => isSSR ? { width: 0, height: 0 } : getViewportSize());
+        (0, import_react122.useEffect)(() => {
           let onResize = () => {
             setSize((size2) => {
               let newSize = getViewportSize();
@@ -130921,7 +130921,7 @@
       var import_utils8 = require_main4();
       var import_utils22 = require_main46();
       var import_use_callback_ref = require_dist31();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useDisclosure2(props = {}) {
         const {
           id: idProp,
@@ -130935,22 +130935,22 @@
         const onOpenPropCallbackRef = (0, import_use_callback_ref.useCallbackRef)(onOpenProp);
         const onClosePropCallbackRef = (0, import_use_callback_ref.useCallbackRef)(onCloseProp);
         const [isOpen, setIsOpen] = (0, import_utils22.useControlledState)(isOpenProp, defaultOpen || false, onChange);
-        const reactId = (0, import_react121.useId)();
+        const reactId = (0, import_react122.useId)();
         const id4 = idProp || reactId;
         const isControlled = isOpenProp !== void 0;
-        const onClose = (0, import_react121.useCallback)(() => {
+        const onClose = (0, import_react122.useCallback)(() => {
           if (!isControlled) {
             setIsOpen(false);
           }
           onClosePropCallbackRef == null ? void 0 : onClosePropCallbackRef();
         }, [isControlled, onClosePropCallbackRef]);
-        const onOpen = (0, import_react121.useCallback)(() => {
+        const onOpen = (0, import_react122.useCallback)(() => {
           if (!isControlled) {
             setIsOpen(true);
           }
           onOpenPropCallbackRef == null ? void 0 : onOpenPropCallbackRef();
         }, [isControlled, onOpenPropCallbackRef]);
-        const onOpenChange = (0, import_react121.useCallback)(() => {
+        const onOpenChange = (0, import_react122.useCallback)(() => {
           const action = isOpen ? onClose : onOpen;
           action();
         }, [isOpen, onOpen, onClose]);
@@ -133066,15 +133066,15 @@
         useDraggable: () => useDraggable2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_interactions = require_main47();
       function useDraggable2(props) {
         const { targetRef, isDisabled = false, canOverflow = false } = props;
-        const boundary = (0, import_react121.useRef)({ minLeft: 0, minTop: 0, maxLeft: 0, maxTop: 0 });
-        const isDragging2 = (0, import_react121.useRef)(false);
-        const transform2 = (0, import_react121.useRef)({ offsetX: 0, offsetY: 0 });
-        const prevTargetRef = (0, import_react121.useRef)(null);
-        (0, import_react121.useEffect)(() => {
+        const boundary = (0, import_react122.useRef)({ minLeft: 0, minTop: 0, maxLeft: 0, maxTop: 0 });
+        const isDragging2 = (0, import_react122.useRef)(false);
+        const transform2 = (0, import_react122.useRef)({ offsetX: 0, offsetY: 0 });
+        const prevTargetRef = (0, import_react122.useRef)(null);
+        (0, import_react122.useEffect)(() => {
           var _a;
           const currentTarget = (_a = targetRef == null ? void 0 : targetRef.current) != null ? _a : null;
           if (prevTargetRef.current !== currentTarget) {
@@ -133082,7 +133082,7 @@
             prevTargetRef.current = currentTarget;
           }
         }, [targetRef == null ? void 0 : targetRef.current]);
-        const onMoveStart = (0, import_react121.useCallback)(() => {
+        const onMoveStart = (0, import_react122.useCallback)(() => {
           var _a, _b, _c, _d, _e;
           isDragging2.current = true;
           const { offsetX, offsetY } = transform2.current;
@@ -133104,7 +133104,7 @@
             maxTop
           };
         }, [targetRef]);
-        const onMove = (0, import_react121.useCallback)(
+        const onMove = (0, import_react122.useCallback)(
           (e) => {
             if (isDisabled) {
               return;
@@ -133127,7 +133127,7 @@
           },
           [isDisabled, canOverflow, targetRef]
         );
-        const onMoveEnd = (0, import_react121.useCallback)(() => {
+        const onMoveEnd = (0, import_react122.useCallback)(() => {
           isDragging2.current = false;
         }, []);
         const { moveProps } = (0, import_interactions.useMove)({
@@ -133135,12 +133135,12 @@
           onMove,
           onMoveEnd
         });
-        const preventDefault = (0, import_react121.useCallback)((e) => {
+        const preventDefault = (0, import_react122.useCallback)((e) => {
           if (isDragging2.current) {
             e.preventDefault();
           }
         }, []);
-        (0, import_react121.useEffect)(() => {
+        (0, import_react122.useEffect)(() => {
           if (!isDisabled) {
             document.body.addEventListener("touchmove", preventDefault, { passive: false });
           }
@@ -133198,7 +133198,7 @@
       var import_overlays2 = require_main9();
       var import_system2 = require_dist11();
       var import_use_aria_modal_overlay = require_dist59();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist12();
       var import_system = require_dist11();
       var import_use_aria_button = require_dist27();
@@ -133230,13 +133230,13 @@
         } = props;
         const Component2 = as || "section";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const closeButtonRef = (0, import_react121.useRef)(null);
-        const [headerMounted, setHeaderMounted] = (0, import_react121.useState)(false);
-        const [bodyMounted, setBodyMounted] = (0, import_react121.useState)(false);
+        const closeButtonRef = (0, import_react122.useRef)(null);
+        const [headerMounted, setHeaderMounted] = (0, import_react122.useState)(false);
+        const [bodyMounted, setBodyMounted] = (0, import_react122.useState)(false);
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        const dialogId = (0, import_react121.useId)();
-        const headerId = (0, import_react121.useId)();
-        const bodyId = (0, import_react121.useId)();
+        const dialogId = (0, import_react122.useId)();
+        const headerId = (0, import_react122.useId)();
+        const bodyId = (0, import_react122.useId)();
         const state = (0, import_overlays.useOverlayTriggerState)({
           isOpen,
           defaultOpen,
@@ -133259,7 +133259,7 @@
         const { buttonProps: closeButtonProps } = (0, import_use_aria_button.useAriaButton)({ onPress: state.close }, closeButtonRef);
         const { isFocusVisible: isCloseButtonFocusVisible, focusProps: closeButtonFocusProps } = (0, import_focus2.useFocusRing)();
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react121.useMemo)(
+        const slots = (0, import_react122.useMemo)(
           () => (0, import_theme.modal)({
             ...variantProps2,
             disableAnimation
@@ -133281,7 +133281,7 @@
             "aria-describedby": bodyMounted ? bodyId : void 0
           };
         };
-        const getBackdropProps = (0, import_react121.useCallback)(
+        const getBackdropProps = (0, import_react122.useCallback)(
           (props2 = {}) => ({
             className: slots.backdrop({ class: classNames == null ? void 0 : classNames.backdrop }),
             ...underlayProps,
@@ -133576,7 +133576,7 @@
         useScrollPosition: () => useScrollPosition
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var isBrowser3 = typeof window !== "undefined";
       function getScrollPosition(element) {
         if (!isBrowser3) return { x: 0, y: 0 };
@@ -133587,11 +133587,11 @@
       }
       var useScrollPosition = (props) => {
         const { elementRef, delay: delay2 = 30, callback, isEnabled } = props;
-        const position = (0, import_react121.useRef)(
+        const position = (0, import_react122.useRef)(
           isEnabled ? getScrollPosition(elementRef == null ? void 0 : elementRef.current) : { x: 0, y: 0 }
         );
-        const throttleTimeout = (0, import_react121.useRef)(null);
-        const handler = (0, import_react121.useCallback)(() => {
+        const throttleTimeout = (0, import_react122.useRef)(null);
+        const handler = (0, import_react122.useCallback)(() => {
           const currPos = getScrollPosition(elementRef == null ? void 0 : elementRef.current);
           if (typeof callback === "function") {
             callback({ prevPos: position.current, currPos });
@@ -133599,7 +133599,7 @@
           position.current = currPos;
           throttleTimeout.current = null;
         }, [callback, elementRef]);
-        (0, import_react121.useEffect)(() => {
+        (0, import_react122.useEffect)(() => {
           if (!isEnabled) return;
           const handleScroll = () => {
             if (delay2) {
@@ -133653,9 +133653,9 @@
         useResizeObserver: () => useResizeObserver
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useResize(callback, immediatelyInvoke = true) {
-        (0, import_react121.useEffect)(() => {
+        (0, import_react122.useEffect)(() => {
           const fn = () => callback();
           if (immediatelyInvoke) {
             fn();
@@ -133669,7 +133669,7 @@
       }
       function useResizeObserver(options) {
         const { ref, box, onResize } = options;
-        (0, import_react121.useEffect)(() => {
+        (0, import_react122.useEffect)(() => {
           let element = ref == null ? void 0 : ref.current;
           if (!element) {
             return;
@@ -133893,7 +133893,7 @@
         useNavbarContext: () => useNavbarContext
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
@@ -133927,10 +133927,10 @@
         const Component2 = as || "nav";
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const prevWidth = (0, import_react121.useRef)(0);
-        const navHeight = (0, import_react121.useRef)(0);
-        const [isHidden, setIsHidden] = (0, import_react121.useState)(false);
-        const handleMenuOpenChange = (0, import_react121.useCallback)(
+        const prevWidth = (0, import_react122.useRef)(0);
+        const navHeight = (0, import_react122.useRef)(0);
+        const [isHidden, setIsHidden] = (0, import_react122.useState)(false);
+        const handleMenuOpenChange = (0, import_react122.useCallback)(
           (isOpen) => {
             onMenuOpenChange(isOpen || false);
           },
@@ -133967,12 +133967,12 @@
             }
           }
         });
-        (0, import_react121.useEffect)(() => {
+        (0, import_react122.useEffect)(() => {
           var _a2;
           updateWidth();
           navHeight.current = ((_a2 = domRef.current) == null ? void 0 : _a2.offsetHeight) || 0;
         }, []);
-        const slots = (0, import_react121.useMemo)(
+        const slots = (0, import_react122.useMemo)(
           () => (0, import_theme.navbar)({
             ...variantProps2,
             disableAnimation,
@@ -140989,7 +140989,7 @@
         useTable: () => useTable
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_table = require_main50();
       var import_table2 = require_main53();
       var import_system = require_dist11();
@@ -141091,7 +141091,7 @@
             onCellAction
           ]
         );
-        const getBaseProps = (0, import_react121.useCallback)(
+        const getBaseProps = (0, import_react122.useCallback)(
           (props2) => ({
             ...props2,
             ref: domBaseRef,
@@ -141099,7 +141099,7 @@
           }),
           [baseStyles, slots]
         );
-        const getWrapperProps = (0, import_react121.useCallback)(
+        const getWrapperProps = (0, import_react122.useCallback)(
           (props2) => ({
             ...props2,
             ref: domBaseRef,
@@ -141107,7 +141107,7 @@
           }),
           [classNames == null ? void 0 : classNames.wrapper, slots]
         );
-        const getTableProps = (0, import_react121.useCallback)(
+        const getTableProps = (0, import_react122.useCallback)(
           (props2) => ({
             ...(0, import_shared_utils.mergeProps)(
               gridProps,
@@ -142038,7 +142038,7 @@
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var spacing = {
         px: "1px",
         0: "0px",
@@ -142084,7 +142084,7 @@
         const [props, variantProps2] = (0, import_system_rsc.mapPropsVariants)(originalProps, import_theme.spacer.variantKeys);
         const { as, className, x = 1, y = 1, ...otherProps } = props;
         const Component2 = as || "span";
-        const styles = (0, import_react121.useMemo)(
+        const styles = (0, import_react122.useMemo)(
           () => (0, import_theme.spacer)({
             ...variantProps2,
             className
@@ -142149,12 +142149,12 @@
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useKbd(originalProps) {
         const [props, variantProps2] = (0, import_system_rsc.mapPropsVariants)(originalProps, import_theme.kbd.variantKeys);
         const { as, children, className, keys: keys3, title, classNames, ...otherProps } = props;
         const Component2 = as || "kbd";
-        const slots = (0, import_react121.useMemo)(
+        const slots = (0, import_react122.useMemo)(
           () => (0, import_theme.kbd)({
             ...variantProps2
           }),
@@ -143097,7 +143097,7 @@
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
       var import_react_utils2 = require_dist10();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_tabs = require_main55();
       var import_tabs2 = require_main56();
       function useTabs(originalProps) {
@@ -143131,7 +143131,7 @@
           state,
           domRef
         );
-        const slots = (0, import_react121.useMemo)(
+        const slots = (0, import_react122.useMemo)(
           () => (0, import_theme.tabs)({
             ...variantProps2,
             disableAnimation,
@@ -143140,7 +143140,7 @@
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation, isVertical]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const values = (0, import_react121.useMemo)(
+        const values = (0, import_react122.useMemo)(
           () => ({
             state,
             slots,
@@ -143162,7 +143162,7 @@
             classNames
           ]
         );
-        const getBaseProps = (0, import_react121.useCallback)(
+        const getBaseProps = (0, import_react122.useCallback)(
           (props2) => ({
             "data-slot": "base",
             className: slots.base({ class: (0, import_theme.cn)(baseStyles, props2 == null ? void 0 : props2.className) }),
@@ -143175,7 +143175,7 @@
           }),
           [baseStyles, otherProps, slots]
         );
-        const getWrapperProps = (0, import_react121.useCallback)(
+        const getWrapperProps = (0, import_react122.useCallback)(
           (props2) => ({
             "data-slot": "tabWrapper",
             className: slots.tabWrapper({ class: (0, import_theme.cn)(classNames == null ? void 0 : classNames.tabWrapper, props2 == null ? void 0 : props2.className) }),
@@ -143184,7 +143184,7 @@
           }),
           [classNames, slots, placement, isVertical]
         );
-        const getTabListProps = (0, import_react121.useCallback)(
+        const getTabListProps = (0, import_react122.useCallback)(
           (props2) => ({
             ref: domRef,
             "data-slot": "tabList",
@@ -143193,7 +143193,7 @@
           }),
           [domRef, tabListProps, classNames, slots]
         );
-        const getTabCursorProps = (0, import_react121.useCallback)(
+        const getTabCursorProps = (0, import_react122.useCallback)(
           (props2) => ({
             "data-slot": "cursor",
             className: slots.cursor({
@@ -143541,7 +143541,7 @@
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist11();
       function useSkeleton(originalProps) {
         var _a, _b;
@@ -143550,7 +143550,7 @@
         const { as, children, isLoaded = false, className, classNames, ...otherProps } = props;
         const Component2 = as || "div";
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        const slots = (0, import_react121.useMemo)(
+        const slots = (0, import_react122.useMemo)(
           () => (0, import_theme.skeleton)({
             ...variantProps2,
             disableAnimation
@@ -143609,7 +143609,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_shared_utils = require_dist2();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useDataScrollOverflow(props = {}) {
         const {
           domRef,
@@ -143620,8 +143620,8 @@
           onVisibilityChange,
           updateDeps = []
         } = props;
-        const visibleRef = (0, import_react121.useRef)(visibility);
-        (0, import_react121.useEffect)(() => {
+        const visibleRef = (0, import_react122.useRef)(visibility);
+        (0, import_react122.useEffect)(() => {
           const el = domRef == null ? void 0 : domRef.current;
           if (!el || !isEnabled) return;
           const setAttributes = (direction, hasBefore, hasAfter, prefix, suffix) => {
@@ -143723,7 +143723,7 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_use_data_scroll_overflow = require_dist72();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       function useScrollShadow(originalProps) {
         var _a;
@@ -143752,7 +143752,7 @@
           updateDeps: [children],
           overflowCheck: (_a = originalProps.orientation) != null ? _a : "vertical"
         });
-        const styles = (0, import_react121.useMemo)(
+        const styles = (0, import_react122.useMemo)(
           () => (0, import_theme.scrollShadow)({
             ...variantProps2,
             className
@@ -144307,7 +144307,7 @@
       var import_theme = require_dist12();
       var import_list = require_main58();
       var import_react_utils = require_dist10();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme2 = require_dist12();
       function useListbox(props) {
         var _a;
@@ -144339,7 +144339,7 @@
         const innerState = (0, import_list.useListState)({ ...props, children, onSelectionChange });
         const state = propState || innerState;
         const { listBoxProps } = (0, import_listbox.useListBox)({ ...props, onAction }, state, domRef);
-        const slots = (0, import_react121.useMemo)(() => (0, import_theme.listbox)(), []);
+        const slots = (0, import_react122.useMemo)(() => (0, import_theme.listbox)(), []);
         const baseStyles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.base, className);
         const getBaseProps = (props2 = {}) => {
           return {
@@ -145137,27 +145137,27 @@
         useLayoutEffect: () => useLayoutEffect2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react121 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
-      var useLayoutEffect2 = typeof document !== "undefined" ? import_react121.default.useLayoutEffect : () => {
+      var import_react122 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
+      var useLayoutEffect2 = typeof document !== "undefined" ? import_react122.default.useLayoutEffect : () => {
       };
       function useEffectEvent2(fn) {
-        const ref = (0, import_react121.useRef)(null);
+        const ref = (0, import_react122.useRef)(null);
         useLayoutEffect2(() => {
           ref.current = fn;
         }, [fn]);
-        return (0, import_react121.useCallback)((...args) => {
+        return (0, import_react122.useCallback)((...args) => {
           const f = ref.current;
           return f == null ? void 0 : f(...args);
         }, []);
       }
       function useFormReset(ref, initialValue, onReset) {
-        let resetValue = (0, import_react121.useRef)(initialValue);
+        let resetValue = (0, import_react122.useRef)(initialValue);
         let handleReset = useEffectEvent2(() => {
           if (onReset) {
             onReset(resetValue.current);
           }
         });
-        (0, import_react121.useEffect)(() => {
+        (0, import_react122.useEffect)(() => {
           var _a;
           let form = (_a = ref == null ? void 0 : ref.current) == null ? void 0 : _a.form;
           form == null ? void 0 : form.addEventListener("reset", handleReset);
@@ -148679,11 +148679,11 @@
       var import_menu = require_main61();
       var import_selection = require_main13();
       var import_utils8 = require_main4();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useMultiSelect(props, state, ref) {
         const { disallowEmptySelection, isDisabled } = props;
         const collator = (0, import_i18n12.useCollator)({ usage: "search", sensitivity: "base" });
-        const delegate = (0, import_react121.useMemo)(
+        const delegate = (0, import_react122.useMemo)(
           () => new import_selection.ListKeyboardDelegate(state.collection, state.disabledKeys, null, collator),
           [state.collection, state.disabledKeys, collator]
         );
@@ -148958,7 +148958,7 @@
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_aria_button = require_dist27();
       var import_focus2 = require_main18();
       var import_shared_utils = require_dist2();
@@ -149042,9 +149042,9 @@
         const Component2 = as || "button";
         const shouldFilterDOMProps = typeof Component2 === "string";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const triggerRef = (0, import_react121.useRef)(null);
-        const listBoxRef = (0, import_react121.useRef)(null);
-        const popoverRef = (0, import_react121.useRef)(null);
+        const triggerRef = (0, import_react122.useRef)(null);
+        const listBoxRef = (0, import_react122.useRef)(null);
+        const popoverRef = (0, import_react122.useRef)(null);
         let state = (0, import_use_aria_multiselect.useMultiSelectState)({
           ...props,
           isOpen,
@@ -149105,7 +149105,7 @@
           state,
           triggerRef
         );
-        const handleClear = (0, import_react121.useCallback)(() => {
+        const handleClear = (0, import_react122.useCallback)(() => {
           var _a2;
           state.setSelectedKeys(/* @__PURE__ */ new Set([]));
           onClear == null ? void 0 : onClear();
@@ -149134,7 +149134,7 @@
         const hasLabel = !!label;
         const hasLabelOutside = hasLabel && (isOutsideLeft || shouldLabelBeOutside && hasPlaceholder);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react121.useMemo)(
+        const slots = (0, import_react122.useMemo)(
           () => (0, import_theme.select)({
             ...variantProps2,
             isInvalid,
@@ -149150,14 +149150,14 @@
         const errorMessage = typeof props.errorMessage === "function" ? props.errorMessage({ isInvalid, validationErrors, validationDetails }) : props.errorMessage || (validationErrors == null ? void 0 : validationErrors.join(" "));
         const hasHelper = !!description || !!errorMessage;
         const hasEndContent = !!endContent;
-        (0, import_react121.useEffect)(() => {
+        (0, import_react122.useEffect)(() => {
           if (state.isOpen && popoverRef.current && triggerRef.current) {
             let selectRect = triggerRef.current.getBoundingClientRect();
             let popover = popoverRef.current;
             popover.style.width = selectRect.width + "px";
           }
         }, [state.isOpen]);
-        (0, import_react121.useEffect)(() => {
+        (0, import_react122.useEffect)(() => {
           if (state.isOpen && popoverRef.current && listBoxRef.current) {
             let selectedItem = listBoxRef.current.querySelector("[aria-selected=true] [data-label=true]");
             let scrollShadow = scrollShadowRef.current;
@@ -149168,7 +149168,7 @@
             }
           }
         }, [state.isOpen, disableAnimation]);
-        const getBaseProps = (0, import_react121.useCallback)(
+        const getBaseProps = (0, import_react122.useCallback)(
           (props2 = {}) => ({
             "data-slot": "base",
             "data-filled": (0, import_shared_utils.dataAttr)(isFilled),
@@ -149185,7 +149185,7 @@
           }),
           [slots, hasHelper, hasValue, hasLabel, hasLabelOutside, isFilled, baseStyles]
         );
-        const getTriggerProps = (0, import_react121.useCallback)(
+        const getTriggerProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ref: triggerRef,
@@ -149225,7 +149225,7 @@
             shouldFilterDOMProps
           ]
         );
-        const getHiddenSelectProps = (0, import_react121.useCallback)(
+        const getHiddenSelectProps = (0, import_react122.useCallback)(
           (props2 = {}) => ({
             state,
             triggerRef,
@@ -149250,7 +149250,7 @@
             triggerRef
           ]
         );
-        const getLabelProps = (0, import_react121.useCallback)(
+        const getLabelProps = (0, import_react122.useCallback)(
           (props2 = {}) => ({
             "data-slot": "label",
             className: slots.label({
@@ -149261,7 +149261,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.label, labelProps]
         );
-        const getValueProps = (0, import_react121.useCallback)(
+        const getValueProps = (0, import_react122.useCallback)(
           (props2 = {}) => ({
             "data-slot": "value",
             className: slots.value({
@@ -149272,7 +149272,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.value, valueProps]
         );
-        const getListboxWrapperProps = (0, import_react121.useCallback)(
+        const getListboxWrapperProps = (0, import_react122.useCallback)(
           (props2 = {}) => ({
             "data-slot": "listboxWrapper",
             className: slots.listboxWrapper({
@@ -149309,7 +149309,7 @@
             ...(0, import_shared_utils.mergeProps)(slotsProps.listboxProps, props2, menuProps)
           };
         };
-        const getPopoverProps = (0, import_react121.useCallback)(
+        const getPopoverProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             var _a2, _b2;
             const popoverProps2 = (0, import_shared_utils.mergeProps)(slotsProps.popoverProps, props2);
@@ -149341,7 +149341,7 @@
             state.selectedItems
           ]
         );
-        const getSelectorIconProps = (0, import_react121.useCallback)(
+        const getSelectorIconProps = (0, import_react122.useCallback)(
           () => ({
             "data-slot": "selectorIcon",
             "aria-hidden": (0, import_shared_utils.dataAttr)(true),
@@ -149350,7 +149350,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.selectorIcon, state.isOpen]
         );
-        const getInnerWrapperProps = (0, import_react121.useCallback)(
+        const getInnerWrapperProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -149362,7 +149362,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.innerWrapper]
         );
-        const getHelperWrapperProps = (0, import_react121.useCallback)(
+        const getHelperWrapperProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -149374,7 +149374,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getDescriptionProps = (0, import_react121.useCallback)(
+        const getDescriptionProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -149385,7 +149385,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.description]
         );
-        const getMainWrapperProps = (0, import_react121.useCallback)(
+        const getMainWrapperProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -149397,7 +149397,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.mainWrapper]
         );
-        const getEndWrapperProps = (0, import_react121.useCallback)(
+        const getEndWrapperProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -149409,7 +149409,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.endWrapper]
         );
-        const getEndContentProps = (0, import_react121.useCallback)(
+        const getEndContentProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -149421,7 +149421,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.endContent]
         );
-        const getErrorMessageProps = (0, import_react121.useCallback)(
+        const getErrorMessageProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -149432,7 +149432,7 @@
           },
           [slots, errorMessageProps, classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getSpinnerProps = (0, import_react121.useCallback)(
+        const getSpinnerProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               "aria-hidden": (0, import_shared_utils.dataAttr)(true),
@@ -149447,7 +149447,7 @@
           },
           [slots, spinnerRef, spinnerProps, classNames == null ? void 0 : classNames.spinner]
         );
-        const getClearButtonProps = (0, import_react121.useCallback)(
+        const getClearButtonProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -150287,7 +150287,7 @@
       var import_visually_hidden = require_main8();
       var import_slider = require_main63();
       var import_react_utils = require_dist10();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_interactions = require_main17();
       var import_focus2 = require_main18();
       var import_shared_utils = require_dist2();
@@ -150311,7 +150311,7 @@
         } = props;
         const Component2 = as || "div";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const inputRef = (0, import_react121.useRef)(null);
+        const inputRef = (0, import_react122.useRef)(null);
         const numberFormatter = (0, import_i18n12.useNumberFormatter)(formatOptions);
         const { thumbProps, inputProps, isDragging: isDragging2, isFocused } = (0, import_slider.useSliderThumb)(
           {
@@ -151338,7 +151338,7 @@
       var import_react_utils = require_dist10();
       var import_breadcrumbs = require_main66();
       var import_shared_utils = require_dist2();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useBreadcrumbItem(originalProps) {
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.breadcrumbItem.variantKeys);
         const {
@@ -151365,7 +151365,7 @@
           domRef
         );
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)();
-        const slots = (0, import_react121.useMemo)(
+        const slots = (0, import_react122.useMemo)(
           () => (0, import_theme.breadcrumbItem)({
             ...variantProps2,
             isCurrent,
@@ -155532,7 +155532,7 @@
       var import_input = require_dist53();
       var import_framer_motion2 = require_cjs4();
       var import_shared_utils = require_dist2();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_utils = require_dist10();
       var import_combobox = require_main67();
       var import_i18n12 = require_main5();
@@ -155626,10 +155626,10 @@
             disabledKeys: /* @__PURE__ */ new Set([...state.collection.getKeys()])
           }
         };
-        const buttonRef = (0, import_react121.useRef)(null);
-        const inputWrapperRef = (0, import_react121.useRef)(null);
-        const listBoxRef = (0, import_react121.useRef)(null);
-        const popoverRef = (0, import_react121.useRef)(null);
+        const buttonRef = (0, import_react122.useRef)(null);
+        const inputWrapperRef = (0, import_react122.useRef)(null);
+        const listBoxRef = (0, import_react122.useRef)(null);
+        const popoverRef = (0, import_react122.useRef)(null);
         const inputRef = (0, import_react_utils.useDOMRef)(ref);
         const scrollShadowRef = (0, import_react_utils.useDOMRef)(scrollRefProp);
         const {
@@ -155728,7 +155728,7 @@
             state.setInputValue(item.textValue);
           }
         }, [inputRef.current]);
-        (0, import_react121.useEffect)(() => {
+        (0, import_react122.useEffect)(() => {
           let keyToFocus;
           if (state.value && state.collection.getItem(state.value) && !state.disabledKeys.has(state.value)) {
             keyToFocus = state.value;
@@ -155741,7 +155741,7 @@
           }
           state.selectionManager.setFocusedKey(keyToFocus);
         }, [state.collection, state.disabledKeys, state.value, state.isOpen, state.inputValue]);
-        (0, import_react121.useEffect)(() => {
+        (0, import_react122.useEffect)(() => {
           if (state.isOpen && popoverRef.current && listBoxRef.current) {
             let selectedItem = listBoxRef.current.querySelector("[aria-selected=true] [data-label=true]");
             let scrollShadow = scrollShadowRef.current;
@@ -155753,7 +155753,7 @@
             }
           }
         }, [state.isOpen, disableAnimation]);
-        (0, import_react121.useEffect)(() => {
+        (0, import_react122.useEffect)(() => {
           if (isOpen) {
             if (popoverRef.current && inputWrapperRef.current) {
               let rect = inputWrapperRef.current.getBoundingClientRect();
@@ -155773,7 +155773,7 @@
           };
         }
         const Component2 = as || "div";
-        const slots = (0, import_react121.useMemo)(
+        const slots = (0, import_react122.useMemo)(
           () => (0, import_theme.autocomplete)({
             ...variantProps2,
             isClearable,
@@ -160597,7 +160597,7 @@
       var import_theme2 = require_dist12();
       var import_date = require_main74();
       var import_system = require_dist11();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist12();
       var import_utils8 = require_main38();
       var import_react_utils = require_dist10();
@@ -160643,7 +160643,7 @@
         const visibleMonths = (0, import_shared_utils.clamp)(visibleMonthsProp, 1, 3);
         const showMonthAndYearPickers = originalProps.showMonthAndYearPickers && visibleMonths === 1;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const handleHeaderExpandedChange = (0, import_react121.useCallback)(
+        const handleHeaderExpandedChange = (0, import_react122.useCallback)(
           (isExpanded) => {
             onHeaderExpandedChange(isExpanded || false);
           },
@@ -160654,10 +160654,10 @@
           isHeaderDefaultExpanded != null ? isHeaderDefaultExpanded : false,
           handleHeaderExpandedChange
         );
-        const visibleDuration = (0, import_react121.useMemo)(() => ({ months: visibleMonths }), [visibleMonths]);
+        const visibleDuration = (0, import_react122.useMemo)(() => ({ months: visibleMonths }), [visibleMonths]);
         const hasMultipleMonths = visibleMonths > 1;
         const shouldFilterDOMProps = typeof Component2 === "string";
-        const slots = (0, import_react121.useMemo)(
+        const slots = (0, import_react122.useMemo)(
           () => (0, import_theme.calendar)({
             ...variantProps2,
             showMonthAndYearPickers,
@@ -166577,7 +166577,7 @@
       var import_datepicker2 = require_main77();
       var import_shared_utils = require_dist2();
       var import_theme = require_dist12();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_form = require_dist33();
       function useDateInput(originalProps) {
         var _a, _b, _c, _d, _e, _f, _g;
@@ -166644,7 +166644,7 @@
           label
         });
         const shouldLabelBeOutside = labelPlacement === "outside" || labelPlacement === "outside-left" || labelPlacement === "outside-top";
-        const slots = (0, import_react121.useMemo)(
+        const slots = (0, import_react122.useMemo)(
           () => (0, import_theme.dateInput)({
             ...variantProps2,
             disableAnimation,
@@ -167142,7 +167142,7 @@
       var import_form = require_dist33();
       var import_shared_utils = require_dist2();
       var import_theme = require_dist12();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
       var import_i18n12 = require_main5();
@@ -167357,7 +167357,7 @@
           onHeaderExpandedChange,
           ...restUserCalendarProps
         } = userCalendarProps;
-        const handleHeaderExpandedChange = (0, import_react121.useCallback)(
+        const handleHeaderExpandedChange = (0, import_react122.useCallback)(
           (isExpanded) => {
             onHeaderExpandedChange == null ? void 0 : onHeaderExpandedChange(isExpanded || false);
           },
@@ -168203,7 +168203,7 @@
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist12();
       var import_utils8 = require_main38();
       var import_shared_utils = require_dist2();
@@ -168238,16 +168238,16 @@
         const Component2 = as || "div";
         const shouldFilterDOMProps = typeof Component2 === "string";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const handleClose = (0, import_react121.useCallback)(() => {
+        const handleClose = (0, import_react122.useCallback)(() => {
           setIsVisible(false);
           onClose == null ? void 0 : onClose();
         }, [setIsVisible, onClose]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react121.useMemo)(
+        const slots = (0, import_react122.useMemo)(
           () => (0, import_theme.alert)({ hasContent: !(0, import_shared_utils.isEmpty)(description) || !(0, import_shared_utils.isEmpty)(children), ...variantProps2 }),
           [description, (0, import_shared_utils.objectToDeps)(variantProps2)]
         );
-        const getBaseProps = (0, import_react121.useCallback)(() => {
+        const getBaseProps = (0, import_react122.useCallback)(() => {
           return {
             "data-visible": (0, import_shared_utils.dataAttr)(isVisible),
             "data-closeable": (0, import_shared_utils.dataAttr)(isClosable),
@@ -168262,35 +168262,35 @@
             className: slots.base({ class: baseStyles })
           };
         }, [slots, baseStyles]);
-        const getMainWrapperProps = (0, import_react121.useCallback)(() => {
+        const getMainWrapperProps = (0, import_react122.useCallback)(() => {
           return {
             className: slots.mainWrapper({ class: classNames == null ? void 0 : classNames.mainWrapper })
           };
         }, [slots, classNames == null ? void 0 : classNames.mainWrapper]);
-        const getDescriptionProps = (0, import_react121.useCallback)(() => {
+        const getDescriptionProps = (0, import_react122.useCallback)(() => {
           return {
             className: slots.description({ class: classNames == null ? void 0 : classNames.description })
           };
         }, [slots, classNames == null ? void 0 : classNames.description]);
-        const getTitleProps = (0, import_react121.useCallback)(() => {
+        const getTitleProps = (0, import_react122.useCallback)(() => {
           return {
             className: slots.title({ class: classNames == null ? void 0 : classNames.title })
           };
         }, [slots, classNames == null ? void 0 : classNames.title]);
-        const getCloseButtonProps = (0, import_react121.useCallback)(
+        const getCloseButtonProps = (0, import_react122.useCallback)(
           () => ({
             ...closeButtonProps,
             className: slots.closeButton({ class: classNames == null ? void 0 : classNames.closeButton })
           }),
           [slots, classNames == null ? void 0 : classNames.closeButton]
         );
-        const getAlertIconProps = (0, import_react121.useCallback)(
+        const getAlertIconProps = (0, import_react122.useCallback)(
           () => ({
             className: slots.alertIcon({ class: classNames == null ? void 0 : classNames.alertIcon })
           }),
           [slots, classNames == null ? void 0 : classNames.alertIcon]
         );
-        const getIconWrapperProps = (0, import_react121.useCallback)(
+        const getIconWrapperProps = (0, import_react122.useCallback)(
           () => ({
             className: slots.iconWrapper({ class: classNames == null ? void 0 : classNames.iconWrapper })
           }),
@@ -168416,7 +168416,7 @@
       var import_modal = require_dist63();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_utils = require_dist19();
       var import_shared_utils = require_dist2();
       function useDrawer(originalProps) {
@@ -168431,7 +168431,7 @@
           ...otherProps
         } = originalProps;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const motionProps = (0, import_react121.useMemo)(() => {
+        const motionProps = (0, import_react122.useMemo)(() => {
           if (!(0, import_shared_utils.isEmpty)(drawerMotionProps)) return drawerMotionProps;
           const key = placement === "left" || placement === "right" ? "x" : "y";
           return {
@@ -168458,14 +168458,14 @@
           };
         }, [placement, drawerMotionProps]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react121.useMemo)(
+        const slots = (0, import_react122.useMemo)(
           () => (0, import_theme.drawer)({
             size,
             placement
           }),
           [size, placement]
         );
-        const getModalProps = (0, import_react121.useCallback)(() => {
+        const getModalProps = (0, import_react122.useCallback)(() => {
           return {
             classNames: {
               ...classNames,
@@ -168752,7 +168752,7 @@
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
       var import_use_form_reset = require_dist75();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_utils8 = require_main38();
       var import_form = require_main22();
       var import_form2 = require_main39();
@@ -168798,7 +168798,7 @@
           autoFocus,
           isTextInput: true
         });
-        const handleValueChange = (0, import_react121.useCallback)(
+        const handleValueChange = (0, import_react122.useCallback)(
           (value2) => {
             onValueChange(value2 != null ? value2 : "");
           },
@@ -168830,7 +168830,7 @@
         const errorMessage = typeof props.errorMessage === "function" ? props.errorMessage({ isInvalid, validationErrors, validationDetails }) : props.errorMessage || (validationErrors == null ? void 0 : validationErrors.join(" "));
         const description = props.description;
         const hasHelper = !!description || !!errorMessage;
-        const slots = (0, import_react121.useMemo)(
+        const slots = (0, import_react122.useMemo)(
           () => (0, import_theme.inputOtp)({
             ...variantProps2,
             disableAnimation,
@@ -168839,7 +168839,7 @@
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation, isInvalid, isReadOnly]
         );
-        const getBaseProps = (0, import_react121.useCallback)(
+        const getBaseProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ref: baseDomRef,
@@ -168874,7 +168874,7 @@
           },
           [baseDomRef, slots, baseStyles, isDisabled, isInvalid, isRequired, isReadOnly, value, length]
         );
-        const getInputOtpProps = (0, import_react121.useCallback)(
+        const getInputOtpProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             var _a2;
             const otpProps = {
@@ -168918,7 +168918,7 @@
             autoFocus
           ]
         );
-        const getSegmentWrapperProps = (0, import_react121.useCallback)(
+        const getSegmentWrapperProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.segmentWrapper({
@@ -168932,7 +168932,7 @@
           },
           [classNames == null ? void 0 : classNames.segmentWrapper, isDisabled]
         );
-        const getHelperWrapperProps = (0, import_react121.useCallback)(
+        const getHelperWrapperProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.helperWrapper({
@@ -168944,7 +168944,7 @@
           },
           [classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getErrorMessageProps = (0, import_react121.useCallback)(
+        const getErrorMessageProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.errorMessage({
@@ -168956,7 +168956,7 @@
           },
           [classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getDescriptionProps = (0, import_react121.useCallback)(
+        const getDescriptionProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.description({
@@ -170008,7 +170008,7 @@
       var import_shared_utils = require_dist2();
       var import_numberfield = require_main78();
       var import_numberfield2 = require_main79();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_form = require_dist33();
       function useNumberInput(originalProps) {
         var _a, _b, _c;
@@ -170036,7 +170036,7 @@
           hideStepper,
           ...otherProps
         } = props;
-        const [isFocusWithin, setFocusWithin] = (0, import_react121.useState)(false);
+        const [isFocusWithin, setFocusWithin] = (0, import_react122.useState)(false);
         const Component2 = as || "div";
         const disableAnimation = (_c = (_b = originalProps.disableAnimation) != null ? _b : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _c : false;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
@@ -170066,7 +170066,7 @@
         const isFilled = !(0, import_shared_utils.isEmpty)(state.inputValue) && !(0, import_shared_utils.isEmpty)(inputValue);
         const isFilledWithin = isFilled || isFocusWithin;
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className, isFilled ? "is-filled" : "");
-        const handleClear = (0, import_react121.useCallback)(() => {
+        const handleClear = (0, import_react122.useCallback)(() => {
           var _a2;
           state.setInputValue("");
           onClear == null ? void 0 : onClear();
@@ -170110,7 +170110,7 @@
         const hasStartContent = !!startContent;
         const isLabelOutside = shouldLabelBeOutside ? labelPlacement === "outside-left" || isOutsideTop || hasPlaceholder || labelPlacement === "outside" && hasStartContent : false;
         const isLabelOutsideAsPlaceholder = labelPlacement === "outside" && !hasPlaceholder && !hasStartContent;
-        const slots = (0, import_react121.useMemo)(
+        const slots = (0, import_react122.useMemo)(
           () => (0, import_theme.numberInput)({
             ...variantProps2,
             isInvalid,
@@ -170127,7 +170127,7 @@
             disableAnimation
           ]
         );
-        const handleKeyDown = (0, import_react121.useCallback)(
+        const handleKeyDown = (0, import_react122.useCallback)(
           (e) => {
             var _a2, _b2;
             const inputElement = e.currentTarget;
@@ -170157,7 +170157,7 @@
           },
           [inputValue, state, onClear, isClearable, originalProps.isReadOnly]
         );
-        const getBaseProps = (0, import_react121.useCallback)(
+        const getBaseProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ref: baseDomRef,
@@ -170207,7 +170207,7 @@
             originalProps.isDisabled
           ]
         );
-        const getLabelProps = (0, import_react121.useCallback)(
+        const getLabelProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "label",
@@ -170217,7 +170217,7 @@
           },
           [slots, isLabelHovered, labelProps, classNames == null ? void 0 : classNames.label]
         );
-        const getNumberInputProps = (0, import_react121.useCallback)(
+        const getNumberInputProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "input",
@@ -170259,7 +170259,7 @@
             handleKeyDown
           ]
         );
-        const getHiddenNumberInputProps = (0, import_react121.useCallback)(
+        const getHiddenNumberInputProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               name: originalProps.name,
@@ -170271,7 +170271,7 @@
           },
           [inputValue, originalProps.name]
         );
-        const getInputWrapperProps = (0, import_react121.useCallback)(
+        const getInputWrapperProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ref: inputWrapperRef,
@@ -170304,7 +170304,7 @@
             classNames == null ? void 0 : classNames.inputWrapper
           ]
         );
-        const getInnerWrapperProps = (0, import_react121.useCallback)(
+        const getInnerWrapperProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ref: innerWrapperRef,
@@ -170322,7 +170322,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.innerWrapper]
         );
-        const getMainWrapperProps = (0, import_react121.useCallback)(
+        const getMainWrapperProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -170334,7 +170334,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.mainWrapper]
         );
-        const getHelperWrapperProps = (0, import_react121.useCallback)(
+        const getHelperWrapperProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -170346,7 +170346,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getDescriptionProps = (0, import_react121.useCallback)(
+        const getDescriptionProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -170357,7 +170357,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.description]
         );
-        const getErrorMessageProps = (0, import_react121.useCallback)(
+        const getErrorMessageProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -170368,7 +170368,7 @@
           },
           [slots, errorMessageProps, classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getClearButtonProps = (0, import_react121.useCallback)(
+        const getClearButtonProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -170384,7 +170384,7 @@
           },
           [slots, isClearButtonFocusVisible, clearPressProps, clearFocusProps, classNames == null ? void 0 : classNames.clearButton]
         );
-        const getStepperWrapperProps = (0, import_react121.useCallback)(
+        const getStepperWrapperProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -170396,7 +170396,7 @@
           },
           [slots]
         );
-        const getStepperIncreaseButtonProps = (0, import_react121.useCallback)(
+        const getStepperIncreaseButtonProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -170411,7 +170411,7 @@
           },
           [slots, incrementButtonProps, classNames == null ? void 0 : classNames.stepperButton]
         );
-        const getStepperDecreaseButtonProps = (0, import_react121.useCallback)(
+        const getStepperDecreaseButtonProps = (0, import_react122.useCallback)(
           (props2 = {}) => {
             return {
               type: "button",
@@ -172066,10 +172066,10 @@
       Ripple.displayName = "HeroUI.Ripple";
       var ripple_default = Ripple;
       var import_shared_utils2 = require_dist2();
-      var import_react121 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react122 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useRipple(props = {}) {
-        const [ripples, setRipples] = (0, import_react121.useState)([]);
-        const onPress = (0, import_react121.useCallback)((event) => {
+        const [ripples, setRipples] = (0, import_react122.useState)([]);
+        const onPress = (0, import_react122.useCallback)((event) => {
           const trigger = event.target;
           const size = Math.max(trigger.clientWidth, trigger.clientHeight);
           setRipples((prevRipples) => [
@@ -172082,7 +172082,7 @@
             }
           ]);
         }, []);
-        const onClear = (0, import_react121.useCallback)((key) => {
+        const onClear = (0, import_react122.useCallback)((key) => {
           setRipples((prevState) => prevState.filter((ripple) => ripple.key !== key));
         }, []);
         return { ripples, onClear, onPress, ...props };
@@ -190940,18 +190940,15 @@ ${cue.text}`).join("\n\n")}
   }
   function useTvText() {
     const lang = useLang().lang;
-    const locale = lang === "sv" ? "sv-SE" : "en-GB";
-    return {
-      lang,
-      locale,
-      tt: (key, vars) => tvText(lang, key, vars)
-    };
+    const tt = useCallback((key, vars) => tvText(lang, key, vars), [lang]);
+    return useMemo(() => ({ lang, locale: lang === "sv" ? "sv-SE" : "en-GB", tt }), [lang, tt]);
   }
   var EN2, SV2;
   var init_tv_strings = __esm({
     "../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-strings.ts"() {
       "use strict";
       "use client";
+      init_react_shim();
       init_plugin_sdk();
       EN2 = {
         // Ikonrad
@@ -191085,6 +191082,7 @@ ${cue.text}`).join("\n\n")}
         never: "Never",
         seconds: "{s} s",
         addM3u: "Add M3U URL",
+        addM3uFailed: "Could not fetch the playlist",
         addXtream: "Add Xtream login",
         refetch: "Refetch",
         remove: "Remove",
@@ -191226,6 +191224,7 @@ ${cue.text}`).join("\n\n")}
         never: "Aldrig",
         seconds: "{s} s",
         addM3u: "L\xE4gg till M3U-URL",
+        addM3uFailed: "Kunde inte h\xE4mta spellistan",
         addXtream: "L\xE4gg till Xtream-inloggning",
         refetch: "H\xE4mta om",
         remove: "Ta bort",
@@ -191274,6 +191273,10 @@ ${cue.text}`).join("\n\n")}
       };
     }, [reveal, channel]);
     const index3 = tv.neighbours.findIndex((c) => channelKey(c) === channelKey(channel));
+    const miniCards = useMemo(() => {
+      if (index3 < 0) return tv.neighbours.slice(0, MINI_WINDOW * 2);
+      return tv.neighbours.slice(Math.max(0, index3 - MINI_WINDOW), index3 + MINI_WINDOW + 1);
+    }, [tv, index3]);
     const step = useCallback((delta) => {
       if (tv.neighbours.length === 0) return;
       const next2 = tv.neighbours[(index3 + delta + tv.neighbours.length) % tv.neighbours.length];
@@ -191415,7 +191418,7 @@ ${cue.text}`).join("\n\n")}
           /* @__PURE__ */ jsx("div", { ref: dotsRef, ...station(() => dotsRef.current && openMenu(dotsRef.current), (el) => openMenu(el), { "data-init": "", "aria-label": tt("moreActions") }), style: { width: dp(52), height: dp(52), borderRadius: 999, background: "rgba(252,252,255,0.10)", border: `1px solid ${TV.lineCard}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }, children: /* @__PURE__ */ jsx(Icons.Dots, {}) })
         ] })
       ] }),
-      miniOpen ? /* @__PURE__ */ jsx("div", { ref: miniRef, "data-panel-root": "", "data-row": "", "data-live-tv-layer": "", style: { position: "absolute", left: 0, right: 0, bottom: dp(200), padding: `0 ${dp(48)}px`, display: "flex", gap: dp(14), overflowX: "auto", zIndex: 31 }, children: tv.neighbours.map((c, cardIndex) => {
+      miniOpen ? /* @__PURE__ */ jsx("div", { ref: miniRef, "data-panel-root": "", "data-row": "", "data-live-tv-layer": "", style: { position: "absolute", left: 0, right: 0, bottom: dp(200), padding: `0 ${dp(48)}px`, display: "flex", gap: dp(14), overflowX: "auto", zIndex: 31 }, children: miniCards.map((c, cardIndex) => {
         const n = tv.nowFor(c);
         const current2 = channelKey(c) === channelKey(channel);
         const cardInit = index3 < 0 ? cardIndex === 0 : current2;
@@ -191439,6 +191442,7 @@ ${cue.text}`).join("\n\n")}
       } }) : null
     ] });
   }
+  var MINI_WINDOW;
   var init_tv_player_chrome = __esm({
     "../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-player-chrome.tsx"() {
       "use strict";
@@ -191450,6 +191454,7 @@ ${cue.text}`).join("\n\n")}
       init_tv_ui();
       init_tv_strings();
       init_jsx_runtime_shim();
+      MINI_WINDOW = 25;
     }
   });
 
@@ -191460,16 +191465,27 @@ ${cue.text}`).join("\n\n")}
     }
     return { maxLive: 1, engine: isDesktopTauriEnv ? "mpv" : isAndroidTauriEnv ? "droid" : "html" };
   }
-  function notifyWaiters() {
-    for (const w of waiters) w();
+  function notifyWaiters(reacquire) {
+    for (const w of waiters) w(reacquire);
   }
   async function releaseAllSurfaces() {
     const close = ownerClose;
     owner = null;
     ownerClose = null;
+    const hosts = [...hostSurfaces];
+    hostSurfaces.clear();
     if (close) await close().catch(() => {
     });
-    notifyWaiters();
+    for (const closeHost of hosts) await closeHost().catch(() => {
+    });
+    const closeAux = host.closeAllAuxSurfaces;
+    if (typeof closeAux === "function") {
+      try {
+        await closeAux();
+      } catch {
+      }
+    }
+    notifyWaiters(false);
   }
   function anchorHost(el) {
     if (!el || typeof window === "undefined") return null;
@@ -191536,6 +191552,7 @@ ${cue.text}`).join("\n\n")}
     const [ready, setReady] = useState(false);
     const [failed, setFailed] = useState(false);
     const [live, setLive] = useState(false);
+    const [attempt, setAttempt] = useState(0);
     const idRef = useRef(/* @__PURE__ */ Symbol("surface"));
     const enabled = options.enabled !== false && source !== null;
     const url = source?.url ?? null;
@@ -191589,8 +191606,13 @@ ${cue.text}`).join("\n\n")}
             off();
             await surface.destroy();
           };
+          hostSurfaces.add(closeOnce);
           setLive(true);
           await surface.open({ url, muted }).catch(markFailed);
+          return;
+        }
+        if (caps.engine === "mpv" && muted && typeof host.mpvSetPropertyStrings !== "function") {
+          setLive(false);
           return;
         }
         if (caps.engine === "droid" && muted) {
@@ -191651,8 +191673,16 @@ ${cue.text}`).join("\n\n")}
         window.addEventListener("resize", sync2);
         document.addEventListener("scroll", sync2, true);
       }
-      const onReleased = () => {
-        if (owner !== idRef.current) setLive(false);
+      const onReleased = (reacquire) => {
+        if (caps.engine === "host") {
+          if (hostSurfaces.has(closeOnce)) return;
+          setLive(false);
+          if (reacquire) setAttempt((n) => n + 1);
+          return;
+        }
+        if (owner === idRef.current) return;
+        setLive(false);
+        if (reacquire && owner === null) setAttempt((n) => n + 1);
       };
       waiters.add(onReleased);
       return () => {
@@ -191664,19 +191694,20 @@ ${cue.text}`).join("\n\n")}
           document.removeEventListener("scroll", sync2, true);
         }
         waiters.delete(onReleased);
+        hostSurfaces.delete(closeOnce);
         if (owner === idRef.current) {
           owner = null;
           ownerClose = null;
           void closeOnce();
-          notifyWaiters();
+          notifyWaiters(true);
         } else {
           void closeOnce();
         }
       };
-    }, [enabled, url, muted, audio, rectRef]);
+    }, [enabled, url, muted, audio, rectRef, attempt]);
     return { ready, failed, live, frameUrl };
   }
-  var host, owner, ownerClose, waiters, POSITIONED;
+  var host, owner, ownerClose, hostSurfaces, waiters, POSITIONED;
   var init_video_surface = __esm({
     "../lumio-official-plugins/plugins/live-tv/runtime/tv/video-surface.ts"() {
       "use strict";
@@ -191689,6 +191720,7 @@ ${cue.text}`).join("\n\n")}
       host = plugin_sdk_exports;
       owner = null;
       ownerClose = null;
+      hostSurfaces = /* @__PURE__ */ new Set();
       waiters = /* @__PURE__ */ new Set();
       POSITIONED = /* @__PURE__ */ new Set(["relative", "absolute", "fixed", "sticky"]);
     }
@@ -193762,6 +193794,7 @@ ${cue.text}`).join("\n\n")}
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/live-tv-model.ts
   init_react_shim();
+  init_plugin_sdk();
   init_useLiveTvEpgCache();
   init_lookup();
   init_name_match();
@@ -193940,8 +193973,9 @@ ${cue.text}`).join("\n\n")}
       const timer = window.setInterval(() => setNowMs(Date.now()), tickMs);
       return () => window.clearInterval(timer);
     }, [tickMs]);
+    const tvMode = useTvMode();
     const allChannels = useMemo(() => flattenChannels(lists), [lists]);
-    const activeList = useMemo(() => lists.find((list) => list.id === activePlaylistId) ?? null, [lists, activePlaylistId]);
+    const activeList = useMemo(() => tvMode ? lists.find((list) => list.id === activePlaylistId) ?? null : null, [tvMode, lists, activePlaylistId]);
     const channels = useMemo(() => activeList ? flattenChannels([activeList]) : allChannels, [activeList, allChannels]);
     const playlists = useMemo(() => lists.map((list) => ({ id: list.id, name: list.name, count: flattenChannels([list]).length })), [lists]);
     const numberByKey = useMemo(() => new Map(channels.map((channel, index3) => [channelKey(channel), index3 + 1])), [channels]);
@@ -197595,10 +197629,23 @@ ${cue.text}`).join("\n\n")}
       seen.add(key);
       out.push({ channel, reason });
     };
-    for (const c of input.favourites) if (input.nowFor(c).now) add(c, "favouriteLive");
-    for (const c of input.favourites) add(c, "favourite");
-    for (const c of input.recent) add(c, "recent");
-    for (const c of input.channels) if (input.nowFor(c).now) add(c, "onNow");
+    const full = () => out.length >= input.count;
+    for (const c of input.favourites) {
+      if (full()) return out;
+      if (input.nowFor(c).now) add(c, "favouriteLive");
+    }
+    for (const c of input.favourites) {
+      if (full()) return out;
+      add(c, "favourite");
+    }
+    for (const c of input.recent) {
+      if (full()) return out;
+      add(c, "recent");
+    }
+    for (const c of input.channels) {
+      if (full()) return out;
+      if (input.nowFor(c).now) add(c, "onNow");
+    }
     return out;
   }
 
@@ -197628,16 +197675,20 @@ ${cue.text}`).join("\n\n")}
     }, [group, favourites, model.channels]);
     const shown = filtered.slice(0, visible);
     const noProgrammeLabel = epgStatus === "loading" ? tt("loadingGuide") : tt("noProgramme");
+    const navRef = useRef(nav);
+    useEffect(() => {
+      navRef.current = nav;
+    });
     useEffect(() => {
       if (!playlistOpen) return;
       const close = () => {
         setPlaylistOpen(false);
         window.setTimeout(() => pillRef.current?.focus({ preventScroll: true }), 0);
       };
-      const off = nav.pushLayer(close);
+      const off = navRef.current.pushLayer(close);
       window.setTimeout(() => menuRef.current?.querySelector("[data-init]")?.focus({ preventScroll: true }), 0);
       return off;
-    }, [playlistOpen, nav]);
+    }, [playlistOpen]);
     const reasonLabel = (reason) => reason === "favouriteLive" ? tt("spotlightFavouriteLive") : reason === "favourite" ? tt("spotlightFavourite") : reason === "recent" ? tt("spotlightRecent") : tt("spotlightOnNow");
     const minutesLeft = (stop) => tt("minutesLeft", { min: Math.max(0, Math.round((stop - model.nowMs) / 6e4)) });
     const cardStation = (channel, extra) => station(() => nav.play({ channel }), (el) => nav.channelMenu(channel, el), extra);
@@ -197887,6 +197938,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
   init_jsx_runtime_shim();
+  var ROW_STEP = 40;
   function TvGuidePlaylists({ model, nav, settings }) {
     const { tt, locale } = useTvText();
     const clock = useTvClockNode(locale);
@@ -197903,6 +197955,11 @@ ${cue.text}`).join("\n\n")}
       if (!list) return [];
       return sel.group ? list.channels.filter((c) => c.group === sel.group) : list.channels;
     }, [sel, tree, model.favouriteChannels]);
+    const [visible, setVisible] = useState(ROW_STEP);
+    useEffect(() => {
+      setVisible(ROW_STEP);
+    }, [sel]);
+    const shownRows = useMemo(() => rows.slice(0, visible), [rows, visible]);
     const selected = useMemo(() => (selectedKey ? rows.find((c) => channelKey(c) === selectedKey) ?? null : null) ?? rows[0] ?? null, [selectedKey, rows]);
     const previewChannel = useDebouncedChannel(selected, 300);
     const info = selected ? model.nowFor(selected) : { now: null, next: null, later: null };
@@ -197966,7 +198023,7 @@ ${cue.text}`).join("\n\n")}
             clock
           ] })
         ] }),
-        rows.map((channel, index3) => {
+        shownRows.map((channel, index3) => {
           const key = channelKey(channel);
           const rowInfo = model.nowFor(channel);
           const focused = selected ? channelKey(selected) === key : false;
@@ -197989,6 +198046,7 @@ ${cue.text}`).join("\n\n")}
             key
           );
         }),
+        rows.length > visible ? /* @__PURE__ */ jsx("div", { ...station(() => setVisible((v) => v + ROW_STEP)), style: { margin: `${dp(20)}px auto ${dp(20)}px`, width: "fit-content", height: dp(48), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.s10, display: "flex", alignItems: "center", fontSize: dp(18), cursor: "pointer" }, children: tt("showMore") }) : null,
         rows.length === 0 ? /* @__PURE__ */ jsx("div", { style: { padding: dp(24), color: TV.dim, fontSize: dp(19) }, children: tt("guideEmpty") }) : null
       ] }),
       /* @__PURE__ */ jsxs("div", { "data-testid": "pl-detail", style: { width: dp(560), flexShrink: 0, padding: `${dp(30)}px ${dp(48)}px 0 ${dp(28)}px`, display: "flex", flexDirection: "column", gap: dp(14) }, children: [
@@ -198007,7 +198065,7 @@ ${cue.text}`).join("\n\n")}
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_jsx_runtime_shim();
-  var ROW_STEP = 40;
+  var ROW_STEP2 = 40;
   function TvGuide(props) {
     const storedMode = useGuideMode();
     const [mode, setMode] = useState(storedMode);
@@ -198044,7 +198102,7 @@ ${cue.text}`).join("\n\n")}
       return model.groups.includes(raw) ? raw : null;
     });
     const rows = useMemo(() => filterByGroup(model, group), [model, group]);
-    const [visible, setVisible] = useState(ROW_STEP);
+    const [visible, setVisible] = useState(ROW_STEP2);
     const [selectedKey, setSelectedKey] = useState(null);
     const selected = useMemo(() => selectedKey ? model.byKey.get(selectedKey) ?? null : null, [selectedKey, model.byKey]);
     const previewChannel = useDebouncedChannel(selected, 300);
@@ -198052,7 +198110,7 @@ ${cue.text}`).join("\n\n")}
     const win = useMemo(() => scheduleWindow(model.nowMs), [model.nowMs]);
     const nowLeftPct = useMemo(() => nowLinePct(model.nowMs, win), [model.nowMs, win]);
     useEffect(() => {
-      setVisible(ROW_STEP);
+      setVisible(ROW_STEP2);
     }, [group, mode]);
     const visibleRows = useMemo(() => rows.slice(0, visible), [rows, visible]);
     const selectedVisible = useMemo(() => selected ? visibleRows.some((c) => channelKey(c) === channelKey(selected)) : false, [selected, visibleRows]);
@@ -198150,6 +198208,7 @@ ${cue.text}`).join("\n\n")}
             }
             baseOnKeyDown?.(event);
           };
+          const timeline = mode === "tl" ? model.scheduleFor(channel, win.start, win.end) : null;
           return /* @__PURE__ */ jsxs("div", { style: { height: dp(86), borderBottom: `1px solid rgba(255,255,255,0.07)`, display: "flex", alignItems: "center", gap: dp(16) }, children: [
             /* @__PURE__ */ jsx(
               "div",
@@ -198182,7 +198241,7 @@ ${cue.text}`).join("\n\n")}
                 /* @__PURE__ */ jsx("div", { style: { fontSize: dp(14), color: "rgba(243,244,248,0.4)" }, children: formatClock(rowInfo.later.start, locale) })
               ] }) : null })
             ] }) : /* @__PURE__ */ jsxs("div", { style: { flex: 1, position: "relative", height: dp(72), minWidth: 0 }, children: [
-              model.scheduleFor(channel, win.start, win.end).map((p) => {
+              (timeline ?? []).map((p) => {
                 const g = blockGeometry(p, win);
                 if (!g) return null;
                 const onNow = p.start <= model.nowMs && p.stop > model.nowMs;
@@ -198195,12 +198254,12 @@ ${cue.text}`).join("\n\n")}
                   ] })
                 ] }, p.start);
               }),
-              model.scheduleFor(channel, win.start, win.end).length === 0 ? /* @__PURE__ */ jsx("div", { style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", paddingLeft: dp(16), color: TV.dim, fontSize: dp(18) }, children: tt("noProgramme") }) : null,
+              timeline !== null && timeline.length === 0 ? /* @__PURE__ */ jsx("div", { style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", paddingLeft: dp(16), color: TV.dim, fontSize: dp(18) }, children: tt("noProgramme") }) : null,
               /* @__PURE__ */ jsx("div", { style: { position: "absolute", top: 0, bottom: 0, left: `${nowLeftPct}%`, width: 2, background: TV.acc, boxShadow: `0 0 12px ${TV.accMix(60)}`, pointerEvents: "none" } })
             ] })
           ] }, key);
         }),
-        rows.length > visible ? /* @__PURE__ */ jsx("div", { ...station(() => setVisible((v) => v + ROW_STEP)), style: { margin: `${dp(20)}px auto 0`, width: "fit-content", height: dp(48), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.s10, display: "flex", alignItems: "center", fontSize: dp(18), cursor: "pointer" }, children: tt("showMore") }) : null
+        rows.length > visible ? /* @__PURE__ */ jsx("div", { ...station(() => setVisible((v) => v + ROW_STEP2)), style: { margin: `${dp(20)}px auto 0`, width: "fit-content", height: dp(48), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.s10, display: "flex", alignItems: "center", fontSize: dp(18), cursor: "pointer" }, children: tt("showMore") }) : null
       ] })
     ] });
   }
@@ -198344,7 +198403,20 @@ ${cue.text}`).join("\n\n")}
       }
       setSelectedStart(null);
     }, [dayOffset]);
-    if (!channel) return /* @__PURE__ */ jsx("div", { style: { padding: dp(48), color: TV.dim }, children: tt("noProgramme") });
+    if (!channel) {
+      return /* @__PURE__ */ jsx("div", { style: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: dp(48) }, children: /* @__PURE__ */ jsxs(
+        "div",
+        {
+          "data-testid": "channel-unresolved",
+          ...station(() => nav.back(), void 0, { "data-init": "" }),
+          style: { height: dp(52), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.s10, display: "inline-flex", alignItems: "center", gap: dp(10), fontSize: dp(19), color: TV.dim, cursor: "pointer" },
+          children: [
+            /* @__PURE__ */ jsx(Icons.ChevronLeft, {}),
+            tt("noProgramme")
+          ]
+        }
+      ) });
+    }
     const primary = () => {
       if (!selected) {
         nav.play({ channel });
@@ -198555,12 +198627,17 @@ ${cue.text}`).join("\n\n")}
   function TvSearch({ model, nav }) {
     const { tt, locale } = useTvText();
     const [query, setQuery] = useState("");
+    const [deferredQuery, setDeferredQuery] = useState("");
+    useEffect(() => {
+      const timer = window.setTimeout(() => setDeferredQuery(query), 150);
+      return () => window.clearTimeout(timer);
+    }, [query]);
     const day = useMemo(() => {
       const start3 = startOfLocalDay(model.nowMs);
       return { start: start3, end: start3 + 864e5 };
     }, [model.nowMs]);
     const channels = useMemo(() => searchChannels(query, model.channels), [query, model.channels]);
-    const programmes = useMemo(() => searchProgrammes(query, model.channels, model.scheduleFor, day), [query, model.channels, model.scheduleFor, day]);
+    const programmes = useMemo(() => searchProgrammes(deferredQuery, model.channels, model.scheduleFor, day), [deferredQuery, model.channels, model.scheduleFor, day]);
     const hints = useMemo(() => suggestions(query, model.channels, programmes.map((p) => p.programme.title)), [query, model.channels, programmes]);
     const focusFirstResult = () => {
       const first = document.querySelector("[data-live-tv-search-results] [data-f]");
@@ -198630,16 +198707,22 @@ ${cue.text}`).join("\n\n")}
     const rows = useMemo(() => filterByGroup(model, group).slice(0, 200), [model, group]);
     const rootRef = useRef(null);
     const openerRef = useRef(null);
+    const navRef = useRef(nav);
+    const onCloseRef = useRef(onClose);
+    useEffect(() => {
+      navRef.current = nav;
+      onCloseRef.current = onClose;
+    });
     useEffect(() => {
       openerRef.current = document.activeElement;
       const close = () => {
-        onClose();
+        onCloseRef.current();
         window.setTimeout(() => openerRef.current?.focus({ preventScroll: true }), 0);
       };
-      const off = nav.pushLayer(close);
+      const off = navRef.current.pushLayer(close);
       window.setTimeout(() => rootRef.current?.querySelector("[data-init]")?.focus({ preventScroll: true }), 0);
       return off;
-    }, [nav, onClose]);
+    }, []);
     return /* @__PURE__ */ jsxs("div", { ref: rootRef, "data-testid": "channel-picker", "data-panel-root": "", "data-live-tv-layer": "", style: { position: "fixed", top: 0, right: 0, bottom: 0, width: dp(640), zIndex: 60, background: TV.panel, borderLeft: `1px solid ${TV.line}`, padding: `${dp(34)}px ${dp(32)}px`, display: "flex", flexDirection: "column", gap: dp(18) }, children: [
       /* @__PURE__ */ jsx("div", { style: { fontSize: dp(28), fontWeight: 600 }, children: title }),
       /* @__PURE__ */ jsx("div", { "data-row": "", style: { display: "flex", gap: dp(8), overflowX: "auto" }, children: groups.map((chip) => /* @__PURE__ */ jsx(Chip, { active: group === chip.key, ...station(() => setGroup(chip.key)), style: { height: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }, children: chip.label }, chip.id)) }),
@@ -198647,7 +198730,7 @@ ${cue.text}`).join("\n\n")}
         const info = model.nowFor(channel);
         return /* @__PURE__ */ jsxs("div", { "data-testid": `picker-row-${channel.name}`, ...station(() => {
           onPick(channel);
-          onClose();
+          onCloseRef.current();
           window.setTimeout(() => openerRef.current?.focus({ preventScroll: true }), 0);
         }, void 0, index3 === 0 ? { "data-init": "" } : void 0), style: { height: dp(74), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(12)}px`, cursor: "pointer" }, children: [
           /* @__PURE__ */ jsx("span", { style: { width: dp(40), fontSize: dp(16), color: "rgba(243,244,248,0.5)", textAlign: "right" }, children: model.channelNumber(channel) ?? "" }),
@@ -198794,7 +198877,7 @@ ${cue.text}`).join("\n\n")}
       hint ? /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: "rgba(243,244,248,0.5)" }, children: hint }) : null
     ] });
   }
-  function TvSettingsView({ model, params, settings }) {
+  function TvSettingsView({ model, nav, params, settings }) {
     const { tt, locale } = useTvText();
     const initial = TABS.includes(params.tab ?? "") ? params.tab : "appearance";
     const [tab, setTab] = useState(initial);
@@ -198806,7 +198889,7 @@ ${cue.text}`).join("\n\n")}
       ] }),
       /* @__PURE__ */ jsxs("div", { "data-live-tv-settings-content": "", "data-scroll": "", style: { flex: 1, minWidth: 0, overflowY: "auto", padding: `${dp(40)}px ${dp(48)}px`, display: "flex", flexDirection: "column", gap: dp(36) }, children: [
         tab === "appearance" ? /* @__PURE__ */ jsx(AppearanceTab, { settings, tt }) : null,
-        tab === "playlists" ? /* @__PURE__ */ jsx(PlaylistsTab, { lists: model.lists, tt, locale }) : null,
+        tab === "playlists" ? /* @__PURE__ */ jsx(PlaylistsTab, { lists: model.lists, tt, locale, toast: nav.toast }) : null,
         tab === "epg" ? /* @__PURE__ */ jsx(EpgTab, { lists: model.lists, tt }) : null,
         tab === "parental" ? /* @__PURE__ */ jsx(ParentalTab, { model, tt }) : null
       ] })
@@ -198850,6 +198933,16 @@ ${cue.text}`).join("\n\n")}
   function useKeyboardPrompt() {
     const Panel = getTvKeyboardPanel();
     const [prompt, setPrompt] = useState(null);
+    const open = prompt !== null;
+    const openerRef = useRef(null);
+    useEffect(() => {
+      if (!open) return;
+      openerRef.current = document.activeElement;
+      return () => {
+        const opener = openerRef.current;
+        window.setTimeout(() => opener?.focus({ preventScroll: true }), 0);
+      };
+    }, [open]);
     const node = Panel && prompt ? /* @__PURE__ */ jsx("div", { "data-live-tv-host-ui": "", style: { position: "fixed", inset: 0, zIndex: 70 }, children: /* @__PURE__ */ jsx(Panel, { title: prompt.title, initial: prompt.initial, onDone: (value) => {
       setPrompt(null);
       prompt.onDone(value);
@@ -198859,7 +198952,7 @@ ${cue.text}`).join("\n\n")}
   async function fetchAndAddM3uList(url) {
     try {
       const response = await fetch("/api/m3u", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url }) });
-      if (!response.ok) return;
+      if (!response.ok) return false;
       const parsed = await response.json().catch(() => ({}));
       const channels = Array.isArray(parsed.channels) ? parsed.channels.map((c) => ({
         name: String(c.name ?? "Unknown"),
@@ -198870,7 +198963,9 @@ ${cue.text}`).join("\n\n")}
       })) : [];
       upsertLiveTvListFromFetch(url, parsed.urlTvg ?? null, channels);
       applyM3uUrls([...getM3uUrls(), url]);
+      return true;
     } catch {
+      return false;
     }
   }
   function hostOf2(url) {
@@ -198886,11 +198981,14 @@ ${cue.text}`).join("\n\n")}
     if (remaining.length !== urls.length) applyM3uUrls(remaining);
     deleteLiveTvList(list.id);
   }
-  function PlaylistsTab({ lists, tt, locale }) {
+  function PlaylistsTab({ lists, tt, locale, toast }) {
     const keyboard = useKeyboardPrompt();
     const addUrl = () => keyboard.ask(tt("addM3u"), "", (value) => {
       const url = value.trim();
-      if (url) void fetchAndAddM3uList(url);
+      if (!url) return;
+      void fetchAndAddM3uList(url).then((ok) => {
+        if (!ok) toast(tt("addM3uFailed"));
+      });
     });
     return /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: dp(10) }, children: [
       /* @__PURE__ */ jsx(Heading, { children: tt("tabPlaylists") }),
@@ -198995,7 +199093,7 @@ ${cue.text}`).join("\n\n")}
     const model = useLiveTvModel();
     const settings = useTvSettings();
     const view = viewFromParams(params);
-    const viewParams = params ?? {};
+    const viewParams = useMemo(() => params ?? {}, [params]);
     const [Player, setPlayer] = useState(null);
     const [active, setActive] = useState(null);
     const [pending2, setPending] = useState(null);
@@ -199038,14 +199136,18 @@ ${cue.text}`).join("\n\n")}
       setToastText(text);
       window.setTimeout(() => setToastText((current2) => current2 === text ? null : current2), 1800);
     }, []);
+    const modelRef = useRef(model);
+    useEffect(() => {
+      modelRef.current = model;
+    });
     const play = useCallback((request) => {
-      const locked = model.locked.has(channelKey(request.channel));
+      const locked = modelRef.current.locked.has(channelKey(request.channel));
       if (locked && !isUnlockedThisSession() && pinSupportAvailable() && activeProfileHasPin2()) {
-        setPending(request);
+        setPending({ kind: "play", request });
         return;
       }
       void releaseAllSurfaces().finally(() => setActive(request));
-    }, [model.locked]);
+    }, []);
     const openChannel = useCallback((channel, programmeStart) => {
       go("channel", { ...encodeChannelParams(channel), ...programmeStart ? { programme: String(programmeStart) } : {} });
     }, [go]);
@@ -199053,25 +199155,31 @@ ${cue.text}`).join("\n\n")}
       setMultiviewState(addToFirstFree(getMultiviewState(), channelKey(channel)));
       toast(tt("addedToMultiview"));
     }, [toast, tt]);
+    const requestLockToggle = useCallback((channel) => {
+      if (!pinSupportAvailable() || !activeProfileHasPin2()) {
+        toggleChannelLock(channel);
+        return;
+      }
+      setPending({ kind: "lock", channel });
+    }, []);
     const channelMenu = useCallback((channel, element, extra = []) => {
+      const model2 = modelRef.current;
       const key = channelKey(channel);
-      const pinned = model.pinnedSet.has(key);
-      const locked = model.locked.has(key);
+      const pinned = model2.pinnedSet.has(key);
+      const locked = model2.locked.has(key);
       setMenu({
         title: channel.name,
         element,
         actions: [
           { key: "play", label: tt("watchNow"), run: () => play({ channel }) },
-          { key: "pin", label: pinned ? tt("menuRemoveFavourite") : tt("menuAddFavourite"), run: () => model.togglePin(channel) },
+          { key: "pin", label: pinned ? tt("menuRemoveFavourite") : tt("menuAddFavourite"), run: () => model2.togglePin(channel) },
           { key: "info", label: tt("menuChannelDetails"), run: () => openChannel(channel) },
           { key: "multi", label: tt("menuAddMultiview"), run: () => addToMultiview(channel) },
           ...extra,
-          ...pinSupportAvailable() && activeProfileHasPin2() ? [{ key: "lock", label: locked ? tt("menuUnlock") : tt("menuLock"), run: () => {
-            toggleChannelLock(channel);
-          } }] : []
+          ...pinSupportAvailable() && activeProfileHasPin2() ? [{ key: "lock", label: locked ? tt("menuUnlock") : tt("menuLock"), run: () => requestLockToggle(channel) }] : []
         ]
       });
-    }, [model, tt, play, openChannel, addToMultiview]);
+    }, [tt, play, openChannel, addToMultiview, requestLockToggle]);
     const pushLayer = useCallback((close) => {
       layersRef.current.push(close);
       return () => {
@@ -199106,7 +199214,7 @@ ${cue.text}`).join("\n\n")}
       const onKey = (event) => {
         if (!BACK_KEYS2.has(event.key)) return;
         if (menu) return;
-        if (active) return;
+        if (active && Player) return;
         const target2 = event.target;
         if (target2 && (target2.tagName === "INPUT" || target2.tagName === "TEXTAREA")) return;
         if (target2?.closest?.("[data-live-tv-host-ui]")) return;
@@ -199116,7 +199224,7 @@ ${cue.text}`).join("\n\n")}
       };
       window.addEventListener("keydown", onKey, true);
       return () => window.removeEventListener("keydown", onKey, true);
-    }, [back, menu, active]);
+    }, [back, menu, active, Player]);
     const favourites = model.favouriteChannels;
     const channels = model.channels;
     const zapDepsRef = useRef({ favourites, channels, play, toast, tt });
@@ -199228,7 +199336,11 @@ ${cue.text}`).join("\n\n")}
         go("guide");
       },
       onAddToMultiview: addToMultiview,
-      onSwitchChannel: (channel) => setActive({ channel })
+      // Kanalbyte inifrån spelaren (ChannelUp/Down, mini-guiden) går genom
+      // `play` — inte `setActive` — så att en LÅST kanal möter PIN-grinden.
+      // `play` lämnar `active` orörd tills grinden är klar, så spelaren
+      // blinkar inte bort under bytet.
+      onSwitchChannel: (channel) => play({ channel })
     } : void 0;
     return /* @__PURE__ */ jsxs("div", { "data-live-tv-tv-root": "", style: { display: "flex", height: "100%", minHeight: 0, background: TV.bg, color: TV.text, fontFamily: TV.font, fontSize: dp(22), lineHeight: 1.3 }, children: [
       /* @__PURE__ */ jsx(TvFocusStyle, {}),
@@ -199238,7 +199350,7 @@ ${cue.text}`).join("\n\n")}
         railItem({ key: "settings", label: tt("railSettings"), icon: /* @__PURE__ */ jsx(Icons.Gear, {}) }, { marginTop: "auto" })
       ] }),
       /* @__PURE__ */ jsx("main", { ref: mainRef, style: { flex: 1, minWidth: 0, minHeight: 0, position: "relative", display: "flex", flexDirection: "column" }, children: /* @__PURE__ */ jsx(View, { model, nav, params: viewParams, settings }, view) }),
-      activeChannel && Player ? /* @__PURE__ */ jsx(Player, { channel: activeChannel, onClose: () => setActive(null), listId: model.epgListId, epgUrls: model.epgUrls, onSwitchChannel: (channel) => setActive({ channel }), tv: tvPlayerProps }) : null,
+      activeChannel && Player ? /* @__PURE__ */ jsx(Player, { channel: activeChannel, onClose: () => setActive(null), listId: model.epgListId, epgUrls: model.epgUrls, onSwitchChannel: (channel) => play({ channel }), tv: tvPlayerProps }) : null,
       /* @__PURE__ */ jsx(
         PinGate,
         {
@@ -199250,10 +199362,15 @@ ${cue.text}`).join("\n\n")}
           onVerify: verifyActiveProfilePin2,
           onClose: () => setPending(null),
           onUnlocked: () => {
-            markUnlockedThisSession();
-            const request = pending2;
+            const gate = pending2;
             setPending(null);
-            if (request) void releaseAllSurfaces().finally(() => setActive(request));
+            if (!gate) return;
+            if (gate.kind === "lock") {
+              toggleChannelLock(gate.channel);
+              return;
+            }
+            markUnlockedThisSession();
+            void releaseAllSurfaces().finally(() => setActive(gate.request));
           }
         }
       ),
