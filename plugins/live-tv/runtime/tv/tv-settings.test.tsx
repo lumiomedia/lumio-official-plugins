@@ -168,6 +168,32 @@ describe('TvSettingsView', () => {
     expect((await screen.findByTestId('tv-keyboard-input')).getAttribute('value')).toBe('http://panel.test:8080')
   })
 
+  it('Spellistor: Xtream-guiden går vidare från server till användarnamn fast värden också stänger panelen', async () => {
+    /*
+      REGRESSION. Värdens tangentbordspanel anropar `onDone(value)` OCH
+      `onClose()` på SAMMA tryck (components/tv/tv-settings-rows.tsx — både
+      Klar-tangenten och Enter i systemtangentbordet). Pluginets prompt
+      stängde då blint, och stängde därmed det steg som `onDone` just öppnat:
+      guiden server → användarnamn → lösenord kom aldrig förbi steg ett på en
+      riktig TV. Teststubben ropade bara `onDone`, så felet var osynligt här
+      tills stubben gjordes trogen.
+    */
+    mount('playlists')
+    fireEvent.click(screen.getByText('Add Xtream login'))
+    expect(await screen.findByText('Xtream server — http://host:8080')).toBeInTheDocument()
+    fireEvent.change(screen.getByTestId('tv-keyboard-input'), { target: { value: 'http://panel.test:8080' } })
+    fireEvent.click(screen.getByText('Done'))
+    expect(await screen.findByText('Xtream username')).toBeInTheDocument()
+    // Steg två ska öppnas TOMT. Panelen ligger på samma plats i trädet, så
+    // utan en ny `key` återanvände React komponenten och dess `useState`
+    // behöll serveradressen — användarnamnet blev "http://panel.test:8080jerry".
+    expect(screen.getByTestId('tv-keyboard-input')).toHaveValue('')
+    fireEvent.change(screen.getByTestId('tv-keyboard-input'), { target: { value: 'jerry' } })
+    fireEvent.click(screen.getByText('Done'))
+    expect(await screen.findByText('Xtream password')).toBeInTheDocument()
+    expect(screen.getByTestId('tv-keyboard-input')).toHaveValue('')
+  })
+
   it('EPG-källor: listar URL:er', () => {
     mount('epg')
     expect(screen.getByText('http://x/epg.xml')).toBeInTheDocument()

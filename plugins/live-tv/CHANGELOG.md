@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.5.0
+
+- Channels live in the app's own on-disk index instead of plugin storage. The
+  plugin keeps list metadata only and loads channels into memory in pages, so
+  browser storage quotas stop being the limit.
+- The 2 000-channel cap on Xtream panels is gone. A panel is imported by the
+  app in one pass, with live progress ("Fetching 12 000 of 17 000 ...").
+- EPG is fetched, parsed and served by the app. The plugin holds a compact
+  now/next/later snapshot and asks for a schedule window when a view needs
+  one; the plugin's own XMLTV cache is gone.
+- Existing lists are migrated automatically on first start: embedded channels
+  are written to the index, the lists are rewritten without them and the old
+  channel caches are removed.
+- Settings transfer between devices no longer carries channel payloads. A
+  device that receives a list it has no channels for imports it once, by
+  itself.
+- Requires Lumio 0.1.596 or later.
+
 ## 0.4.0
 
 - TV mode is rebuilt for the remote. A left icon rail (Search, Home, Channel

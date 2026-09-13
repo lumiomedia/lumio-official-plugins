@@ -37,18 +37,39 @@ const USER = process.env.XTREAM_USER ?? 'lumio'
 const PASS = process.env.XTREAM_PASS ?? 'test'
 
 /**
+ * Hur stor panelen låtsas vara. Standard är de tre riktiga testkanalerna;
+ * sätt `STREAMS` för att fylla på med genererade kanaler upp till talet.
+ *
+ *   STREAMS=17000 CATEGORIES=60 node plugins/live-tv/tools/fake-xtream-panel.mjs
+ *
+ * 17 000 strömmar i 60 kategorier är måttet ur specen (§1): en stor panel ska
+ * importeras på under 10 s. De genererade kanalerna pekar på samma publika
+ * HLS-testström som kanal 1 — poängen är volymen genom importen, parsningen,
+ * indexskrivningen och vyerna, inte att titta på 17 000 olika strömmar.
+ *
+ * EPG:n genereras bara för de tre riktiga kanalerna plus `EPG_CHANNELS`
+ * (standard 300) av de genererade. En XMLTV med 17 000 kanaler × 30 block är
+ * ~500 MB text och säger inget mer om appen än 300 kanaler gör.
+ */
+const STREAM_TARGET = Number(process.env.STREAMS ?? 0)
+const CATEGORY_TARGET = Math.max(1, Number(process.env.CATEGORIES ?? 60))
+const EPG_CHANNEL_LIMIT = Number(process.env.EPG_CHANNELS ?? 300)
+
+/**
  * Publika HLS-testresurser, inte sändningsinnehåll. Poängen är att träna
  * uppspelningskedjan, inte att titta på tv. Byt fritt — allt som är en
  * spelbar HLS-URL fungerar.
  */
-const CHANNELS = [
+const BIPBOP = 'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8'
+
+const REAL_CHANNELS = [
   {
     id: 1,
     tvgId: 'lumio.test.bipbop',
     name: 'Lumio Test 1 (Apple BipBop)',
     group: 'Test',
     logo: null,
-    stream: 'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8',
+    stream: BIPBOP,
   },
   {
     id: 2,
@@ -69,6 +90,70 @@ const CHANNELS = [
     stream: 'https://127.0.0.1:9/nope.m3u8',
   },
 ]
+
+/**
+ * Kategorinamnen. Första är "Test" (de tre riktiga kanalerna), resten är
+ * genererade länder/genrer så grupplistan i vyerna blir lika lång som en
+ * riktig panels.
+ */
+const CATEGORY_WORDS = [
+  'Sverige', 'Norge', 'Danmark', 'Finland', 'Island', 'Storbritannien', 'Irland',
+  'Tyskland', 'Frankrike', 'Spanien', 'Italien', 'Portugal', 'Nederländerna',
+  'Belgien', 'Polen', 'Tjeckien', 'Österrike', 'Schweiz', 'Grekland', 'Turkiet',
+  'USA', 'Kanada', 'Mexiko', 'Brasilien', 'Argentina', 'Chile', 'Australien',
+  'Nya Zeeland', 'Japan', 'Sydkorea', 'Indien', 'Pakistan', 'Kina', 'Thailand',
+  'Vietnam', 'Filippinerna', 'Egypten', 'Marocko', 'Sydafrika', 'Nigeria',
+]
+const CATEGORY_KINDS = ['Sport', 'Film', 'Serier', 'Nyheter', 'Barn', 'Musik', 'Dokumentär', 'Underhållning']
+
+function categoryName(index) {
+  if (index === 0) return 'Test'
+  const i = index - 1
+  const word = CATEGORY_WORDS[i % CATEGORY_WORDS.length]
+  const kind = CATEGORY_KINDS[Math.floor(i / CATEGORY_WORDS.length) % CATEGORY_KINDS.length]
+  return `${word} ${kind}`
+}
+
+const CATEGORIES = Array.from({ length: STREAM_TARGET > REAL_CHANNELS.length ? CATEGORY_TARGET : 1 }, (_, i) => ({
+  category_id: String(i + 1),
+  category_name: categoryName(i),
+  parent_id: 0,
+}))
+
+/**
+ * Genererade kanaler. Namnen är avsiktligt olika (nummer i namnet) så
+ * sök, namnmatchning och "prefix före substring" har något att arbeta med;
+ * `tvg-id` sätts bara på var tredje kanal, precis som en riktig panel där
+ * långtifrån alla strömmar har en EPG-koppling.
+ */
+function buildChannels() {
+  const channels = REAL_CHANNELS.slice()
+  if (STREAM_TARGET <= channels.length) return channels
+  const generatedCategories = Math.max(1, CATEGORIES.length - 1)
+  for (let n = channels.length + 1; n <= STREAM_TARGET; n += 1) {
+    const catIndex = 1 + ((n - 1) % generatedCategories)
+    const group = CATEGORIES[catIndex]?.category_name ?? 'Övrigt'
+    const hasEpg = n % 3 === 0
+    channels.push({
+      id: n,
+      tvgId: hasEpg ? `lumio.gen.${n}` : null,
+      name: `${group} ${String(n).padStart(5, '0')}`,
+      group,
+      logo: null,
+      stream: BIPBOP,
+      categoryId: String(catIndex + 1),
+    })
+  }
+  return channels
+}
+
+const CHANNELS = buildChannels()
+const EPG_CHANNELS = CHANNELS.filter((c) => c.tvgId).slice(0, Math.max(0, EPG_CHANNEL_LIMIT))
+
+/** Kategori-id per kanal: de tre riktiga ligger i kategori 1 ("Test"). */
+function categoryIdFor(channel) {
+  return channel.categoryId ?? '1'
+}
 
 function credentialsOk(query) {
   return query.get('username') === USER && query.get('password') === PASS
@@ -106,12 +191,12 @@ function buildXmltv() {
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<tv generator-info-name="fake-xtream-panel">',
   ]
-  for (const channel of CHANNELS) {
+  for (const channel of EPG_CHANNELS) {
     lines.push(`  <channel id="${escapeXml(channel.tvgId)}">`)
     lines.push(`    <display-name>${escapeXml(channel.name)}</display-name>`)
     lines.push('  </channel>')
   }
-  for (const channel of CHANNELS) {
+  for (const channel of EPG_CHANNELS) {
     for (let i = 0; i < slots; i += 1) {
       const from = new Date(start.getTime() + i * SLOT_MIN * 60_000)
       const to = new Date(from.getTime() + SLOT_MIN * 60_000)
@@ -144,7 +229,7 @@ function buildPlaylist(origin, output) {
   const lines = ['#EXTM3U']
   for (const channel of CHANNELS) {
     const attrs = [
-      `tvg-id="${channel.tvgId}"`,
+      channel.tvgId ? `tvg-id="${channel.tvgId}"` : null,
       channel.logo ? `tvg-logo="${channel.logo}"` : null,
       `group-title="${channel.group}"`,
     ]
@@ -163,7 +248,15 @@ const server = createServer((req, res) => {
   const stamp = new Date().toISOString().slice(11, 19)
 
   const send = (status, contentType, body) => {
-    res.writeHead(status, { 'content-type': contentType, 'cache-control': 'no-store' })
+    // CORS: webviewn hämtar player_api.php DIREKT innan den faller tillbaka på
+    // appens proxy. Utan huvudet blev varje direktanrop ett CORS-fel och
+    // fallbacken var den enda vägen — då provas aldrig den väg en riktig
+    // panel med rätt huvuden går.
+    res.writeHead(status, {
+      'content-type': contentType,
+      'cache-control': 'no-store',
+      'access-control-allow-origin': '*',
+    })
     res.end(body)
   }
 
@@ -208,6 +301,10 @@ const server = createServer((req, res) => {
     if (action === '' || action === 'get_account_info') {
       return json({
         user_info: {
+          // `auth: 1` är det fältet klienten läser för "inloggningen gick
+          // igenom" (live-tv-data.ts fetchXtreamAccount). Utan den svarade
+          // panelen 200 och appen sa ändå "inloggningen misslyckades".
+          auth: 1,
           username: USER,
           status: 'Active',
           // Ett år fram, så panelen inte "går ut" mitt i en testrunda.
@@ -219,17 +316,20 @@ const server = createServer((req, res) => {
       })
     }
     if (action === 'get_live_categories') {
-      return json([{ category_id: '1', category_name: 'Test', parent_id: 0 }])
+      return json(CATEGORIES)
     }
     if (action === 'get_live_streams') {
+      // Hela listan i ETT svar — precis som en riktig panel utan
+      // `category_id`. 17 000 strömmar blir ~4 MB JSON; det är den formen
+      // Rust-importen ska klara på under 10 s (spec §1).
       return json(
         CHANNELS.map((c) => ({
           num: c.id,
           name: c.name,
           stream_id: c.id,
           stream_icon: c.logo ?? '',
-          epg_channel_id: c.tvgId,
-          category_id: '1',
+          epg_channel_id: c.tvgId ?? '',
+          category_id: categoryIdFor(c),
         })),
       )
     }
@@ -249,7 +349,8 @@ server.on('error', (error) => {
 
 server.listen(PORT, () => {
   const base = `http://127.0.0.1:${PORT}`
-  console.log('fejkad Xtream-panel lyssnar\n')
+  console.log(`fejkad Xtream-panel lyssnar — ${CHANNELS.length} kanaler i ${CATEGORIES.length} kategorier`)
+  console.log(`(EPG genereras för ${EPG_CHANNELS.length} av dem)\n`)
   console.log('Klistra in DENNA i M3U-fältet (Live TV -> inställningar):')
   console.log(`  ${base}/get.php?username=${USER}&password=${PASS}&type=m3u_plus&output=ts\n`)
   console.log('Lämna EPG-fältet TOMT — den ska härledas till:')
@@ -260,5 +361,7 @@ server.listen(PORT, () => {
   console.log('  3. Källan visas som "Auto" i EPG-listan och ska gå att stänga av.')
   console.log('  4. Kanal 3 är trasig med vilje: det ska bli ett synligt fel,')
   console.log('     inte en spinner som står kvar.\n')
-  console.log(`(PORT, XTREAM_USER, XTREAM_PASS går att sätta via env. Nu: ${USER}/${PASS})\n`)
+  console.log('Stor panel (spec §1, 17 000 kanaler under 10 s):')
+  console.log(`  STREAMS=17000 CATEGORIES=60 node ${process.argv[1]}\n`)
+  console.log(`(PORT, XTREAM_USER, XTREAM_PASS, STREAMS, CATEGORIES, EPG_CHANNELS går att sätta via env. Nu: ${USER}/${PASS}, ${CHANNELS.length} kanaler)\n`)
 })

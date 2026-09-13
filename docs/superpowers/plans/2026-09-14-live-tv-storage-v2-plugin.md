@@ -98,9 +98,9 @@ export const INDEX_CHANGED_EVENT = 'lumio-live-tv-index-changed'; export functio
 
 ### Task P6: Version, changelog, bygge, verifiering
 
-- [ ] `plugin.json`/`package.json`/`runtime/index.ts`/`marketplace.json` → 0.5.0, `minAppVersion` 0.1.596. CHANGELOG (engelska, kort: channels live in the app's on-disk index, no 2 000 cap, Xtream imported server-side in one pass, EPG served by the app, existing lists migrated automatically, settings transfer no longer carries channel payloads).
-- [ ] Bygg bunten mot app-worktreet `Moviefinder/.worktrees/live-tv-storage-v2` (INTE huvudcheckouten: den saknar de nya endpointsen) — `node scripts/build-plugin-runtime.mjs` från det worktreet; starta dess dev-server på en annan port om 5173 är upptagen (`npm run dev -- --port 5174`) och verifiera i `tv-sim.html`: lägg till en M3U på ~2 000+ kanaler och `tools/fake-xtream-panel.mjs` utökad till 17 000 strömmar; mät importtid, hubb/guide-svarstid, minne (`performance.memory` om tillgängligt). Migrering: seeda en gammal lista med inbäddade kanaler och kontrollera att den hamnar i indexet.
-- [ ] Bygg om `dist/runtime.js` EFTER bumpen; commit `live-tv 0.5.0: kanaler och EPG i appens index`.
+- [x] `plugin.json`/`package.json`/`runtime/index.ts`/`marketplace.json` → 0.5.0, `minAppVersion` 0.1.596. CHANGELOG (engelska, kort: channels live in the app's on-disk index, no 2 000 cap, Xtream imported server-side in one pass, EPG served by the app, existing lists migrated automatically, settings transfer no longer carries channel payloads).
+- [x] Bygg bunten mot app-worktreet `Moviefinder/.worktrees/live-tv-storage-v2` (INTE huvudcheckouten: den saknar de nya endpointsen) — `node scripts/build-plugin-runtime.mjs` från det worktreet; starta dess dev-server på en annan port om 5173 är upptagen (`npm run dev -- --port 5174`) och verifiera i `tv-sim.html`: lägg till en M3U på ~2 000+ kanaler och `tools/fake-xtream-panel.mjs` utökad till 17 000 strömmar; mät importtid, hubb/guide-svarstid, minne (`performance.memory` om tillgängligt). Migrering: seeda en gammal lista med inbäddade kanaler och kontrollera att den hamnar i indexet.
+- [x] Bygg om `dist/runtime.js` EFTER bumpen; commit `live-tv 0.5.0: kanaler och EPG i appens index`.
 
 ## Självgranskning
 

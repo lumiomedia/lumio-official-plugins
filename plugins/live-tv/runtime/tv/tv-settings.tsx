@@ -132,7 +132,15 @@ function AppearanceTab({ settings, tt }: { settings: TvSettings; tt: TT }) {
 
 function useKeyboardPrompt() {
   const Panel = getTvKeyboardPanel()
-  const [prompt, setPrompt] = useState<{ title: string; initial: string; onDone: (value: string) => void } | null>(null)
+  /**
+   * `id` finns för `key` på panelen nedan: två prompts i rad ligger på SAMMA
+   * plats i trädet, så React återanvänder komponenten och dess `useState`
+   * behåller förra stegets text. Xtream-guidens andra steg öppnades då med
+   * serveradressen redan i fältet och användarnamnet blev
+   * "http://panel:8080jerry". Ett nytt id per öppning tvingar en ommontering.
+   */
+  const [prompt, setPrompt] = useState<{ id: number; title: string; initial: string; onDone: (value: string) => void } | null>(null)
+  const promptId = useRef(0)
   /**
    * Öppnaren fångas EN gång per öppning — samma regel som de andra lagren
    * (tv-channel-picker.tsx, hubbens spellistmeny).
@@ -160,10 +168,29 @@ function useKeyboardPrompt() {
   // öppen — den stänger sig själv.
   const node = Panel && prompt ? (
     <div data-live-tv-host-ui="" style={{ position: 'fixed', inset: 0, zIndex: 70 }}>
-      <Panel title={prompt.title} initial={prompt.initial} onDone={(value: string) => { setPrompt(null); prompt.onDone(value) }} onClose={() => setPrompt(null)} />
+      <Panel
+        key={prompt.id}
+        title={prompt.title}
+        initial={prompt.initial}
+        onDone={(value: string) => { setPrompt(null); prompt.onDone(value) }}
+        /*
+          VÄRDENS panel anropar `onDone` OCH `onClose` på samma tryck (Klar och
+          Enter i systemtangentbordet gör båda, se components/tv/
+          tv-settings-rows.tsx). Ett `setPrompt(null)` rakt av stängde därför
+          den prompt som `onDone` just hade öppnat: Xtream-guiden (server →
+          användarnamn → lösenord) tog ALDRIG sig förbi första steget på en
+          riktig TV. Stäng bara om det fortfarande är DEN HÄR prompten som står
+          öppen; har onDone kedjat vidare är `current` en annan och lämnas i
+          fred. Back (som bara ropar onClose) fungerar som förut.
+        */
+        onClose={() => setPrompt((current) => (current === prompt ? null : current))}
+      />
     </div>
   ) : null
-  return { available: Panel !== null, ask: (title: string, initial: string, onDone: (value: string) => void) => setPrompt({ title, initial, onDone }), node }
+  return { available: Panel !== null, ask: (title: string, initial: string, onDone: (value: string) => void) => {
+    promptId.current += 1
+    setPrompt({ id: promptId.current, title, initial, onDone })
+  }, node }
 }
 
 /**

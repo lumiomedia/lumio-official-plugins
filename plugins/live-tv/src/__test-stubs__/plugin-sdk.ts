@@ -316,7 +316,13 @@ function TvKeyboardPanelStub({ title, initial, onDone, onClose }: { title: strin
       defaultValue: initial,
       onChange: (event: { target: { value: string } }) => { value = event.target.value },
     }),
-    createElement('button', { type: 'button', 'data-f': '', 'data-init': '', onClick: () => onDone(value) }, 'Done'),
+    // Klar anropar BÅDE onDone och onClose — precis som värdens panel gör
+    // (components/tv/tv-settings-rows.tsx: `onDone(value.trim()); onClose()`,
+    // både på Klar-tangenten och på Enter i systemtangentbordet). Stubben
+    // ropade bara onDone, och därför gick en KEDJA av prompts (Xtream:
+    // server → användarnamn → lösenord) igenom i testet men aldrig på en
+    // riktig TV: värdens onClose stängde det steg som onDone just öppnat.
+    createElement('button', { type: 'button', 'data-f': '', 'data-init': '', onClick: () => { onDone(value); onClose() } }, 'Done'),
     createElement('button', { type: 'button', 'data-f': '', onClick: onClose }, 'Close'),
   )
 }
