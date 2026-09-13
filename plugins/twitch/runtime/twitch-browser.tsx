@@ -865,7 +865,7 @@ export function TwitchBrowsePage({ pageId, onNavigate }: BrowsePageProps) {
     ) : sorted.length === 0 ? (
       <p className="text-sm text-slate-400">{text('empty')}</p>
     ) : (
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {sorted.map((stream) => (
           <StreamCard key={stream.id} stream={stream} onPlay={(s) => setSelectedChannel(channelFromStream(s, true))} />
         ))}
@@ -981,7 +981,7 @@ export function TwitchCategoriesPage({ pageId, onNavigate }: BrowsePageProps) {
           {streams.length === 0 ? (
             <p className="text-sm text-slate-400">{text('streamsEmpty')}</p>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {streams.map((stream) => (
                 <StreamCard
                   key={stream.id}
@@ -1155,7 +1155,7 @@ export function TwitchFollowingPage({ pageId, onNavigate }: BrowsePageProps) {
   ]
 
   const liveGrid = (streams: TwitchStream[]) => (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {streams.map((stream) => (
         <StreamCard
           key={stream.id}
@@ -1260,7 +1260,7 @@ export function TwitchFollowingPage({ pageId, onNavigate }: BrowsePageProps) {
           ) : videosState.videos.length === 0 ? (
             <p className="text-sm text-slate-400">{text('followingVideosEmpty')}</p>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {videosState.videos.map((video) => (
                 <VideoCard
                   key={video.id}
@@ -1565,7 +1565,7 @@ export function TwitchChannelPage({ userId, broadcasterId, login, displayName, i
         ) : videos.length === 0 ? (
           <p className="text-sm text-slate-400">{text('vodsEmpty')}</p>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {videos.map((video) => (
               <VideoCard
                 key={video.id}
@@ -1582,7 +1582,7 @@ export function TwitchChannelPage({ userId, broadcasterId, login, displayName, i
       ) : clips.length === 0 ? (
         <p className="text-sm text-slate-400">{text('clipsEmpty')}</p>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {clips.map((clip) => (
             <ClipCard
               key={clip.id}
@@ -1737,7 +1737,7 @@ export function TwitchSearchPage({ pageId, onNavigate }: BrowsePageProps) {
           {categoryStreams.length === 0 ? (
             <p className="text-sm text-slate-400">{text('streamsEmpty')}</p>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {categoryStreams.map((stream) => (
                 <StreamCard
                   key={stream.id}
@@ -1824,7 +1824,7 @@ export function TwitchSearchPage({ pageId, onNavigate }: BrowsePageProps) {
         <div className="space-y-8">
           {channels.length > 0 ? (
             <TwitchGridShell title={text('channelsHeading')}>
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {channels.map((stream) => (
                   <StreamCard key={stream.id} stream={stream} onPlay={openChannel} />
                 ))}
