@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Card, Checkbox, PillBtn, TOKENS, inputStyle, useLang, useTvMode, getTvKeyboardPanel } from '@/lib/plugin-sdk'
 import {
   clearLiveTvMemoryCache,
@@ -20,6 +20,7 @@ import {
   type XtreamCategory,
   type XtreamLogin,
 } from './live-tv-data'
+import { useHubText } from './hub-strings'
 
 const inputClass =
   'w-full rounded-[1.1rem] border border-white/10 bg-white/8 px-3.5 py-2 text-sm text-slate-50 outline-none transition placeholder:text-slate-500 focus:bg-white/10'
@@ -27,6 +28,33 @@ const actionButtonClass =
   'rounded-full border border-white/10 px-4 py-2 text-xs uppercase tracking-[0.22em] text-slate-300 transition hover:border-white/30 hover:text-white disabled:opacity-50'
 const smallButtonClass =
   'rounded bg-white/10 px-3 py-1.5 text-xs text-slate-200 transition hover:bg-white/15 disabled:opacity-50'
+
+/**
+ * "Logga in på nytt"-bryggan från listkorten (`live-tv-settings-section.tsx`).
+ *
+ * En Xtream-lista som kommit hit via enhetsöverföringen har kvar sin källa
+ * (`xtream://<host>/<loginId>`) men INTE inloggningen — lösenord speglas inte
+ * — så `importList` kan inte köras för den. Kortet skickar då hit panelens
+ * värdnamn och listans login-id; formuläret fylls i, och id:t ÅTERANVÄNDS när
+ * den nya inloggningen sparas så att pseudo-URL:en (och därmed listan och
+ * dess plats i indexet) blir densamma i stället för att en andra, tom lista
+ * skapas bredvid den trasiga.
+ */
+export interface XtreamPrefill {
+  server: string
+  loginId?: string
+}
+
+const prefillListeners = new Set<(prefill: XtreamPrefill) => void>()
+
+export function prefillXtreamLogin(prefill: XtreamPrefill): void {
+  for (const listener of [...prefillListeners]) listener(prefill)
+}
+
+function onXtreamPrefill(listener: (prefill: XtreamPrefill) => void): () => void {
+  prefillListeners.add(listener)
+  return () => { prefillListeners.delete(listener) }
+}
 
 /**
  * Xtream Codes-inloggning: server + användarnamn + lösenord i stället för
@@ -37,6 +65,7 @@ const smallButtonClass =
  */
 export function XtreamLoginSection() {
   const { t } = useLang()
+  const { h, locale } = useHubText()
   const [logins, setLogins] = useState<XtreamLogin[]>([])
   const [server, setServer] = useState('')
   const [username, setUsername] = useState('')
@@ -45,6 +74,9 @@ export function XtreamLoginSection() {
   // Jobbets `state.received/total` (importList) — synlig framstegsräknare för
   // stora Xtream-utbud (tiotusentals kanaler kan ta en stund).
   const [importProgress, setImportProgress] = useState<{ received: number; total: number | null } | null>(null)
+  // Sätts av "Logga in på nytt" på ett listkort; se prefillXtreamLogin ovan.
+  const [reuseLoginId, setReuseLoginId] = useState<string | null>(null)
+  const cardRef = useRef<HTMLDivElement | null>(null)
   /**
    * TV: fälten är knappar som öppnar värdens tangentbordspanel på OK. Ett
    * vanligt <input> fick fokus av fjärrens navigering och drog upp systemets
@@ -71,6 +103,15 @@ export function XtreamLoginSection() {
     sync()
     return onXtreamLoginsChanged(sync)
   }, [])
+
+  useEffect(() => onXtreamPrefill((prefill) => {
+    setServer(prefill.server)
+    setUsername('')
+    setPassword('')
+    setReuseLoginId(prefill.loginId ?? null)
+    setState('idle')
+    cardRef.current?.scrollIntoView({ block: 'center' })
+  }), [])
 
   async function refreshChannels(login: XtreamLogin): Promise<void> {
     const source = xtreamPseudoUrl(login)
@@ -116,7 +157,7 @@ export function XtreamLoginSection() {
       // förnyat konto) i stället för att skapa en dubblettlista.
       const existing = getXtreamLogins().find((entry) => entry.base === base && entry.username === user)
       const login: XtreamLogin = {
-        id: existing?.id ?? crypto.randomUUID(),
+        id: existing?.id ?? reuseLoginId ?? crypto.randomUUID(),
         base,
         username: user,
         password: pass,
@@ -124,6 +165,7 @@ export function XtreamLoginSection() {
         categoryIds: existing?.categoryIds ?? [],
       }
       saveXtreamLogin(login)
+      setReuseLoginId(null)
       await refreshChannels(login)
       setState('done')
       window.setTimeout(() => setState('idle'), 1800)
@@ -146,7 +188,7 @@ export function XtreamLoginSection() {
 
   return (
     <Card>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div ref={cardRef} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div>
           <div style={{ fontSize: 14.5, fontWeight: 600, color: TOKENS.text }}>{t('liveTvXtreamTitle')}</div>
           <p style={{ margin: '4px 0 0', fontSize: 12, lineHeight: 1.5, color: TOKENS.textMute }}>{t('liveTvXtreamDesc')}</p>
@@ -210,7 +252,9 @@ export function XtreamLoginSection() {
         </div>
         {importProgress ? (
           <p style={{ margin: 0, fontSize: 12, color: TOKENS.textMute }}>
-            {importProgress.received}{importProgress.total ? ` / ${importProgress.total}` : ''}
+            {importProgress.total
+              ? h('listImportProgress', { received: importProgress.received.toLocaleString(locale), total: importProgress.total.toLocaleString(locale) })
+              : h('listImportProgressUnknown')}
           </p>
         ) : null}
         {logins.map((login) => (

@@ -98,8 +98,8 @@ export interface LiveTvList {
   /**
    * Stänger av den AUTO-härledda EPG-källan (url-tvg ur spellistan, eller
    * xmltv.php som servern härleder ur en Xtream-inloggning). Egen flagga och
-   * inte "nolla urlTvg": upsertLiveTvListFromFetch skriver över urlTvg vid
-   * VARJE ny M3U-hämtning, så ett nollat värde hade kommit tillbaka. Med en
+   * inte "nolla urlTvg": varje ny import skriver över urlTvg, så ett nollat
+   * värde hade kommit tillbaka vid nästa hämtning. Med en
    * flagga blir valet kvar, och källan kan slås på igen — den är härledd, så
    * att radera den vore inte återställbart.
    */
@@ -206,7 +206,7 @@ function classifyLegacyList(
   for (const login of xtreamLogins) {
     // Listans `name` kommer från `deriveListName(xtreamPseudoUrl(login))`
     // (hostnamn, UTAN port — `new URL().hostname`) eftersom det är så den
-    // GAMLA `upsertLiveTvListFromFetch`-vägen döpte Xtream-listor. Att jämföra
+    // GAMLA hämtningsvägen (borttagen i P5) döpte Xtream-listor. Att jämföra
     // mot `new URL(login.base).host` (MED port) missade varje panel på en
     // icke-standardport: listan klassades `custom` och migreringen hoppade
     // över den, trots att den hade en fullt giltig Xtream-källa.
@@ -433,76 +433,6 @@ function deriveListName(sourceUrl: string): string {
 }
 
 /**
- * Kvarvarande äldre hämtningsväg: pluginlagringen bär kanalerna direkt, ingen
- * import-jobb-körning i värden. Bara `runtime/tv/tv-settings.tsx` (Task P5)
- * anropar den här längre — skrivbordets `live-tv-settings-section.tsx` och
- * `xtream-login-section.tsx` går via `importList` (spec 4.1). Skriver v2-fält
- * (kind/source/channelCount/groups) så listan är sanerbar och konsistent även
- * innan `migrateStorageV2`/P5 hinner byta TV-flödet till jobbet.
- */
-export function upsertLiveTvListFromFetch(
-  sourceUrl: string,
-  urlTvg: string | null,
-  channels: M3uChannel[],
-): LiveTvList {
-  const trimmedSource = sourceUrl.trim()
-  if (!trimmedSource) throw new Error('sourceUrl is required')
-  const name = deriveListName(trimmedSource)
-  const source = getLiveTvUrlsKey([trimmedSource])
-  const existing = readLists().find((list) => list.source === source || list.name === name)
-  const cleanChannels = sanitizeChannels(channels)
-  const cleanUrlTvg = typeof urlTvg === 'string' && urlTvg.trim().length > 0 ? urlTvg.trim() : null
-  const groups = computeGroups(cleanChannels)
-
-  if (existing) {
-    /*
-     * EN HÄMTNING UTAN url-tvg FÅR INTE RADERA DEN SOM REDAN FINNS.
-     *
-     * Tidigare skrevs urlTvg över vid VARJE hämtning, också när svaret saknade
-     * attributet. En spellista som ibland bär `url-tvg` och ibland inte — eller
-     * en uppdatering mot en variant av samma källa — nollade då EPG-källan
-     * tyst. Kanalerna blev kvar (de fanns i samma svar), så det såg ut som att
-     * bara EPG:n försvann av sig själv, och kom tillbaka först vid nästa
-     * hämtning som råkade ha attributet med.
-     *
-     * Att INTE nolla tar inte ifrån användaren kontrollen: `autoEpgDisabled` är
-     * den uttryckliga vägen att stänga av den härledda källan, och den ligger
-     * kvar orörd här.
-     */
-    const updated: LiveTvList = {
-      ...existing,
-      kind: 'm3u',
-      source,
-      url: trimmedSource,
-      channels: cleanChannels,
-      channelCount: cleanChannels.length,
-      groups,
-      urlTvg: cleanUrlTvg ?? existing.urlTvg,
-      fetchedAt: new Date().toISOString(),
-    }
-    writeLists(readLists().map((list) => (list.id === existing.id ? updated : list)))
-    return updated
-  }
-  const next: LiveTvList = {
-    id: crypto.randomUUID(),
-    name,
-    kind: 'm3u',
-    source,
-    url: trimmedSource,
-    channels: cleanChannels,
-    createdAt: new Date().toISOString(),
-    urlTvg: cleanUrlTvg,
-    epgUrls: [],
-    autoEpgDisabled: false,
-    fetchedAt: new Date().toISOString(),
-    channelCount: cleanChannels.length,
-    groups,
-  }
-  writeLists([...readLists(), next])
-  return next
-}
-
-/**
  * BARA manuellt skapade (`kind === 'custom'`) listor lagrar kanaler — m3u/
  * xtream-listors kanaler bor i indexet, och `channelCount`/`groups` för dem är
  * importjobbets kvitto (skrivs av `importList`). Ett anrop på en icke-custom
@@ -680,9 +610,9 @@ function findListBySource(source: string): LiveTvList | undefined {
 /**
  * Hittar eller skapar listposten för en M3U-URL UTAN att hämta något —
  * `importList` gör den delen (jobbet i värden). Källan är samma
- * `getLiveTvUrlsKey([url])` som `upsertLiveTvListFromFetch` skriver, så en
- * lista som redan finns (skapad via den äldre TV-vägen) hittas och
- * återanvänds i stället för att dubbleras.
+ * `getLiveTvUrlsKey([url])` som den gamla hämtningsvägen skrev, så en lista
+ * som redan finns (skapad före v2) hittas och återanvänds i stället för att
+ * dubbleras.
  */
 export function ensureM3uList(url: string): LiveTvList {
   const trimmed = url.trim()
@@ -737,10 +667,8 @@ export function ensureXtreamList(login: XtreamLogin): LiveTvList {
 }
 
 /**
- * Hämtar en lista via värdens importjobb (Rust) i stället för att synto-
- * tisera/parsa i webviewn — ersätter `upsertLiveTvListFromFetch` +
- * `fetchXtreamChannels`-vägen för de skrivbordsinställningar som anropar den
- * här (spec 4.1). Uppdaterar listans kvitto (`channelCount/groups/urlTvg/
+ * Hämtar en lista via värdens importjobb (Rust) i stället för att syntetisera/
+ * parsa i webviewn — den ENDA hämtningsvägen sedan P5 (spec 4.1). Uppdaterar listans kvitto (`channelCount/groups/urlTvg/
  * fetchedAt`) bara vid `done`; ett fel lämnar listan orörd (Rust-jobbets
  * `error` bär texten, `waitForJob` löser aldrig ut på annat än done/error).
  */
@@ -801,8 +729,8 @@ let importMissingSourcesInFlight: Promise<void> | null = null
 export async function importMissingSources(): Promise<void> {
   if (importMissingSourcesInFlight) return importMissingSourcesInFlight
   importMissingSourcesInFlight = (async () => {
-    const { sources } = await indexStatus()
-    const known = new Set(sources)
+    const { sourceIds } = await indexStatus()
+    const known = new Set(sourceIds)
     const missing = readLists().filter(
       (list) => list.source && !known.has(list.source) && (list.kind === 'm3u' || list.kind === 'xtream'),
     )

@@ -1,9 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type * as React from 'react'
 import { PillBtn, TOKENS, eyebrowStyle, inputStyle, useLang } from '@/lib/plugin-sdk'
-import { useLiveTvEpgCache } from './hooks/useLiveTvEpgCache'
+import { LIVE_TV_GLOBAL_EPG_ID, getAllLiveTvEpgUrls, getLiveTvLists } from './live-tv-data'
+import { epgStatus, refreshEpg, waitForJob, type EpgStatus } from './index-client'
+import { useHubText } from './hub-strings'
 
 interface Props {
   autoUrl: string | null
@@ -16,6 +18,32 @@ interface Props {
   allUrls?: string[]
 }
 
+function formatRelative(ms: number | null, locale: string): string | null {
+  if (!ms) return null
+  const then = new Date(ms)
+  if (Number.isNaN(then.getTime())) return null
+  const now = new Date()
+  return then.toDateString() === now.toDateString()
+    ? then.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+    : then.toLocaleString(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+}
+
+/**
+ * EPG-källorna för en lista + appens diagnostik för dem.
+ *
+ * Fram till v2 höll pluginet en EGEN XMLTV-cache (`epg/cache.ts` via
+ * `useLiveTvEpgCache`) bara för att kunna skriva "3 kanaler · 812 program"
+ * under varje adress: så länge inställningarna var öppna laddade webviewn ner
+ * hela tablån en gång till, parallellt med appens hämtning. Nu läses samma
+ * siffror ur appens butik (`/api/live-tv/epg/status`), som ändå är den som
+ * vyerna får sin tablå ifrån — det som visas här är alltså vad som FAKTISKT
+ * gäller, inte vad webviewns kopia råkade innehålla.
+ *
+ * Butiken är GLOBAL (ett lager för alla list-id, P3): status och omhämtning
+ * går därför mot `LIVE_TV_GLOBAL_EPG_ID` med samtliga listors adresser, inte
+ * mot den enskilda listan. `listId`-propen säger bara om sektionen sitter på
+ * en riktig lista (och alltså ska visa diagnostik alls).
+ */
 export function EpgSourcesSection({
   autoUrl,
   manualUrls,
@@ -26,8 +54,50 @@ export function EpgSourcesSection({
   allUrls = [],
 }: Props) {
   const { t } = useLang()
+  const { h, locale } = useHubText()
   const [draft, setDraft] = useState('')
-  const cache = useLiveTvEpgCache(listId, allUrls)
+  const [status, setStatus] = useState<EpgStatus | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
+  const urlsKey = allUrls.join('|')
+
+  const readStatus = useCallback(async (): Promise<EpgStatus | null> => {
+    try {
+      return await epgStatus(LIVE_TV_GLOBAL_EPG_ID)
+    } catch {
+      // Äldre app utan endpointen, eller ett övergående fel: sektionen ska
+      // fortsätta gå att använda (lägga till/ta bort adresser) utan siffror.
+      return null
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!listId) {
+      setStatus(null)
+      return
+    }
+    let cancelled = false
+    void readStatus().then((next) => { if (!cancelled) setStatus(next) })
+    return () => { cancelled = true }
+  }, [listId, urlsKey, readStatus])
+
+  async function handleRefresh() {
+    setRefreshing(true)
+    try {
+      const lists = getLiveTvLists()
+      const urls = getAllLiveTvEpgUrls(lists)
+      const sources = lists.map((list) => list.source).filter((source): source is string => Boolean(source))
+      const job = await refreshEpg(LIVE_TV_GLOBAL_EPG_ID, urls, sources, true)
+      await waitForJob(job)
+    } catch {
+      // Felet syns i statusen nedan (failedAt / per-adress `error`), som
+      // läses om oavsett utfall.
+    } finally {
+      const next = await readStatus()
+      setStatus(next)
+      setRefreshing(false)
+    }
+  }
+
   const addUrl = () => {
     const trimmed = draft.trim()
     if (!trimmed) return
@@ -36,24 +106,21 @@ export function EpgSourcesSection({
   }
   const removeUrl = (index: number) => onChangeManual(manualUrls.filter((_, j) => j !== index))
   const hasAny = (autoUrl !== null && !autoDisabled) || manualUrls.length > 0
-  const sourceStats = cache?.sourceStats ?? []
-  const failures = cache?.failures ?? []
   const renderSourceMeta = (url: string) => {
-    const stat = sourceStats.find((item) => item.url === url)
-    const failure = failures.find((item) => item.url === url)
-    if (stat) {
-      return (
-        <span className="mt-1 block text-[10px] text-emerald-300/70">
-          {t('liveTvEpgSourceStats')
-            .replace('{channels}', String(stat.channelCount))
-            .replace('{programmes}', String(stat.programmeCount))}
-        </span>
-      )
+    const stat = status?.urls.find((item) => item.url === url)
+    if (!stat) return null
+    if (stat.error) {
+      return <span style={{ display: 'block', marginTop: 3, fontSize: 10.5, color: '#fca5a5' }}>{stat.error}</span>
     }
-    if (failure) {
-      return <span className="mt-1 block text-[10px] text-rose-300/80">{failure.error}</span>
-    }
-    return null
+    const fetched = formatRelative(stat.fetchedAt || null, locale)
+    return (
+      <span style={{ display: 'block', marginTop: 3, fontSize: 10.5, color: 'rgba(110,231,183,0.75)' }}>
+        {t('liveTvEpgSourceStats')
+          .replace('{channels}', String(stat.channels))
+          .replace('{programmes}', String(stat.programmes))}
+        {fetched ? ` · ${h('epgSourceFetched', { time: fetched })}` : ''}
+      </span>
+    )
   }
   const sourceRow = (url: string, meta: React.ReactNode, right: React.ReactNode, dimmed = false) => (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '8px 12px', borderRadius: 10, border: `1px solid ${TOKENS.border}`, background: TOKENS.surface0 }}>
@@ -64,6 +131,8 @@ export function EpgSourcesSection({
       <span style={{ display: 'flex', flex: 'none', alignItems: 'center', gap: 8 }}>{right}</span>
     </div>
   )
+
+  const overallFetched = formatRelative(status?.fetchedAt ?? null, locale)
 
   return (
     <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -109,6 +178,18 @@ export function EpgSourcesSection({
         />
         <PillBtn variant="accent" onClick={addUrl} style={{ minHeight: 44 }}>{t('add')}</PillBtn>
       </div>
+      {listId && hasAny ? (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 11.5, color: status?.failedAt && !status.fetchedAt ? '#fca5a5' : TOKENS.textMute }}>
+            {overallFetched
+              ? h('epgFetchedAt', { time: overallFetched, programmes: status?.programmes ?? 0 })
+              : h('epgNeverFetched')}
+          </span>
+          <PillBtn size="sm" onClick={() => void handleRefresh()} disabled={refreshing}>
+            {refreshing ? h('epgRefreshing') : h('epgRefresh')}
+          </PillBtn>
+        </div>
+      ) : null}
       {!hasAny ? <p style={{ margin: 0, fontSize: 12, color: TOKENS.textMute }}>{t('liveTvNoEpgSourcesPrefix')}</p> : null}
     </section>
   )

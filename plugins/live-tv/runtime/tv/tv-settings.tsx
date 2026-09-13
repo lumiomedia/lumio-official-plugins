@@ -7,12 +7,24 @@ import {
   applyM3uUrls,
   channelKey,
   deleteLiveTvList,
+  ensureM3uList,
+  ensureXtreamList,
+  fetchXtreamAccount,
+  getLiveTvLists,
+  getLiveTvUrlsKey,
   getM3uUrls,
+  getXtreamLogins,
+  importList,
+  normalizeXtreamBase,
+  saveXtreamLogin,
   updateLiveTvListEpg,
-  upsertLiveTvListFromFetch,
+  xtreamPseudoUrl,
   type LiveTvList,
   type M3uChannel,
+  type XtreamLogin,
 } from '../live-tv-data'
+import type { ImportStatus } from '../index-client'
+import { recordListImportOutcome } from '../list-import-flags'
 import { activeProfileHasPin, getLockedChannelKeys, onChannelLocksChanged, pinSupportAvailable, toggleChannelLock, verifyActiveProfilePin } from '../channel-locks'
 import { PinGate } from '../live-tv-ui'
 import type { TvViewProps } from './tv-shell'
@@ -154,49 +166,11 @@ function useKeyboardPrompt() {
 }
 
 /**
- * Samma hämtningsväg som skrivbordets `live-tv-settings-section.tsx`
- * (`handleFetchM3uList` → lokala `fetchParsedM3u` + `upsertLiveTvListFromFetch`):
- * ett rent `applyM3uUrls([...urls, url])` lägger bara till adressen —
- * listan hämtas aldrig och kanalerna dyker aldrig upp. `fetchParsedM3u`
- * exporteras inte härifrån (den filen ägs inte av den här uppgiften), så
- * den minimala hämtnings- och normaliseringsbiten är duplicerad här; ingen
- * Xtream-utan-output-reprövning eller stegningsvisning — TV-tillägget är för
- * en enstaka M3U-URL i taget.
- */
-async function fetchAndAddM3uList(url: string): Promise<boolean> {
-  try {
-    const response = await fetch('/api/m3u', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) })
-    if (!response.ok) return false
-    const parsed = (await response.json().catch(() => ({}))) as { channels?: unknown[]; urlTvg?: string | null }
-    const channels: M3uChannel[] = Array.isArray(parsed.channels)
-      ? (parsed.channels as Array<{ name?: unknown; logo?: unknown; group?: unknown; url?: unknown; tvgId?: unknown }>).map((c) => ({
-          name: String(c.name ?? 'Unknown'),
-          logo: typeof c.logo === 'string' ? c.logo : null,
-          group: String(c.group ?? 'Other'),
-          url: String(c.url ?? ''),
-          tvgId: typeof c.tvgId === 'string' ? c.tvgId : null,
-        }))
-      : []
-    upsertLiveTvListFromFetch(url, parsed.urlTvg ?? null, channels)
-    applyM3uUrls([...getM3uUrls(), url])
-    return true
-  } catch {
-    // Nätverksfel: adressen läggs inte till om hämtningen misslyckas helt —
-    // annars stod en URL kvar som aldrig gav några kanaler.
-    return false
-  }
-}
-
-/**
- * Samma matchning som skrivbordets `live-tv-settings-section.tsx`
- * (`handleRemoveList`, rad ~166–178): en spellistas namn ÄR värdnamnet ur
- * käll-URL:en (`deriveListName` i `live-tv-data.ts`) — det finns ingen
- * sparad käll-URL-referens på listposten. Ta bort listan utan att också
- * plocka bort adressen ur `m3u_urls` hade gjort att exakt samma feed kom
- * tillbaka vid nästa hämtning. Xtream-inloggningar (`xtream://`) har sin
- * egen borttagningsväg och matchas aldrig här. Om ingen sparad URL har det
- * här värdnamnet (manuellt skapad lista, eller redan borttagen) tas bara
- * listan bort.
+ * Ta bort en lista helt: raden, kanalerna i indexet (nästa hämtning skriver
+ * inte tillbaka dem) OCH M3U-adressen den kom ifrån. Ett listnamn ÄR
+ * värdnamnet ur käll-URL:en (`deriveListName` i `live-tv-data.ts`), så
+ * matchningen går på värdnamn. Xtream-inloggningar (`xtream://`) har sin egen
+ * borttagningsväg och matchas aldrig här.
  */
 function hostOf(url: string): string {
   try { return new URL(url).hostname || url } catch { return url }
@@ -209,29 +183,199 @@ function removeListAndSourceUrl(list: LiveTvList): void {
   deleteLiveTvList(list.id)
 }
 
+/**
+ * `xtream://<host>/<loginId>` → delarna. En lista som kommit hit via
+ * enhetsöverföringen har källan kvar men INTE inloggningen (lösenord speglas
+ * inte), och då är bägge delarna det enda vi har: värdnamnet fyller i
+ * serverfältet, och login-id:t återanvänds när den nya inloggningen sparas så
+ * att pseudo-URL:en — och därmed listan och dess plats i indexet — blir
+ * densamma i stället för att en andra, tom lista skapas bredvid.
+ */
+function parseXtreamSource(source: string | undefined): { host: string; loginId: string } | null {
+  if (!source || !source.startsWith('xtream://')) return null
+  const rest = source.slice('xtream://'.length)
+  const slash = rest.lastIndexOf('/')
+  if (slash <= 0) return null
+  return { host: rest.slice(0, slash), loginId: rest.slice(slash + 1) }
+}
+
+function xtreamLoginMissing(list: LiveTvList): boolean {
+  if (list.kind !== 'xtream') return false
+  return !getXtreamLogins().some((login) => login.id === list.xtreamLoginId)
+}
+
+/** Jobbets tillstånd översatt till en rad text under listan som hämtas. */
+type ImportProgress = { listId: string; state: ImportStatus['state']; received: number; total: number | null }
+
+function progressText(tt: TT, locale: string, progress: ImportProgress): string {
+  if (progress.state === 'parsing') return tt('importParsing')
+  if (progress.state === 'writing') return tt('importWriting')
+  return progress.total
+    ? tt('importProgress', { received: progress.received.toLocaleString(locale), total: progress.total.toLocaleString(locale) })
+    : tt('importProgressUnknown')
+}
+
+function Action({ label, onOk, testId }: { label: string; onOk: () => void; testId?: string }) {
+  return (
+    <div
+      data-testid={testId}
+      {...station(onOk)}
+      style={{ height: dp(48), padding: `0 ${dp(20)}px`, borderRadius: 999, background: TV.s12, display: 'inline-flex', alignItems: 'center', fontSize: dp(17), whiteSpace: 'nowrap', cursor: 'pointer' }}
+    >
+      {label}
+    </div>
+  )
+}
+
+/**
+ * Spellistor: hämtning går genom VÄRDENS importjobb (`importList`), inte
+ * genom webviewn.
+ *
+ * Tidigare hämtade och parsade den här vyn M3U:n själv och skrev kanalerna
+ * inbäddade i pluginlagringen (`upsertLiveTvListFromFetch`) — samma väg som
+ * hade ett tak på 2 000 kanaler och som lagring v2 tog bort. Nu skapas bara
+ * listposten här (`ensureM3uList`/`ensureXtreamList`), jobbet gör hämtningen
+ * i Rust och raden visar dess `received`/`total` medan det pågår.
+ */
 function PlaylistsTab({ lists, tt, locale, toast }: { lists: LiveTvList[]; tt: TT; locale: string; toast: (text: string) => void }) {
   const keyboard = useKeyboardPrompt()
-  // En misslyckad hämtning var HELT tyst: raden lades inte till (rätt), men
-  // skärmen såg likadan ut som innan och användaren hade ingen aning om ifall
-  // adressen var fel, servern nere eller tangentbordet slarvigt. Notisen är
-  // skalets egen (nav.toast), samma som resten av TV-läget använder.
+  const [progress, setProgress] = useState<ImportProgress | null>(null)
+
+  /**
+   * `existedBefore`: en NY lista vars allra första import misslyckas ska inte
+   * lämnas kvar som en tom, permanent post (spec §5) — men en lista som redan
+   * fanns behåller sitt gamla innehåll när en omhämtning faller.
+   */
+  async function runImport(list: LiveTvList, existedBefore: boolean): Promise<boolean> {
+    setProgress({ listId: list.id, state: 'fetching', received: 0, total: null })
+    try {
+      const status = await importList(list, (s) => setProgress({ listId: list.id, state: s.state, received: s.received, total: s.total ?? null }))
+      if (status.state === 'error') {
+        if (existedBefore) recordListImportOutcome(list.id, status.error ?? 'import failed')
+        else deleteLiveTvList(list.id)
+        toast(`${tt('importFailed')}: ${status.error ?? ''}`.trim())
+        return false
+      }
+      recordListImportOutcome(list.id)
+      return true
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      if (existedBefore) recordListImportOutcome(list.id, message)
+      else deleteLiveTvList(list.id)
+      toast(`${tt('importFailed')}: ${message}`)
+      return false
+    } finally {
+      setProgress(null)
+    }
+  }
+
   const addUrl = () => keyboard.ask(tt('addM3u'), '', (value) => {
     const url = value.trim()
     if (!url) return
-    void fetchAndAddM3uList(url).then((ok) => { if (!ok) toast(tt('addM3uFailed')) })
+    const source = getLiveTvUrlsKey([url])
+    const existedBefore = getLiveTvLists().some((entry) => entry.source === source)
+    const list = ensureM3uList(url)
+    void runImport(list, existedBefore).then((ok) => {
+      // Adressen skrivs bara in bland de aktiva när hämtningen gick igenom —
+      // annars stod en URL kvar som aldrig gav några kanaler.
+      if (ok && !getM3uUrls().includes(url)) applyM3uUrls([...getM3uUrls(), url])
+    })
   })
+
+  /** Server → användarnamn → lösenord, ett tangentbord i taget. */
+  const askXtream = (prefillServer: string, reuseLoginId: string | null) => keyboard.ask(tt('xtreamServer'), prefillServer, (serverValue) => {
+    const server = serverValue.trim()
+    if (!server) return
+    keyboard.ask(tt('xtreamUsername'), '', (usernameValue) => {
+      const username = usernameValue.trim()
+      if (!username) return
+      keyboard.ask(tt('xtreamPassword'), '', (passwordValue) => {
+        const password = passwordValue.trim()
+        if (!password) return
+        void connectXtream(server, username, password, reuseLoginId)
+      })
+    })
+  })
+
+  async function connectXtream(server: string, username: string, password: string, reuseLoginId: string | null): Promise<void> {
+    const base = normalizeXtreamBase(server)
+    if (!base) { toast(tt('xtreamLoginFailed')); return }
+    let account: Awaited<ReturnType<typeof fetchXtreamAccount>>
+    try {
+      account = await fetchXtreamAccount({ base, username, password })
+    } catch {
+      toast(tt('xtreamLoginFailed'))
+      return
+    }
+    if (!account.auth) { toast(tt('xtreamLoginFailed')); return }
+    const existing = getXtreamLogins().find((entry) => entry.base === base && entry.username === username)
+    const login: XtreamLogin = {
+      id: existing?.id ?? reuseLoginId ?? crypto.randomUUID(),
+      base,
+      username,
+      password,
+      format: account.allowedFormats.length === 0 || account.allowedFormats.includes('ts') ? 'ts' : 'm3u8',
+      categoryIds: existing?.categoryIds ?? [],
+    }
+    saveXtreamLogin(login)
+    const source = xtreamPseudoUrl(login)
+    const existedBefore = getLiveTvLists().some((entry) => entry.source === source)
+    await runImport(ensureXtreamList(login), existedBefore)
+  }
+
+  // Listor som behöver hämtas om ligger överst, och "Hämta om" är radens
+  // FÖRSTA station — fjärrkontrollen når alltså åtgärden som faktiskt behövs
+  // före "Ta bort".
+  const ordered = [...lists].sort((a, b) => Number(Boolean(b.needsReimport)) - Number(Boolean(a.needsReimport)))
+
   return (
     <section style={{ display: 'flex', flexDirection: 'column', gap: dp(10) }}>
       <Heading>{tt('tabPlaylists')}</Heading>
-      {lists.map((list) => (
-        <Row
-          key={list.id}
-          label={<><strong>{list.name}</strong> <span style={{ color: 'rgba(243,244,248,0.5)', fontSize: dp(16) }}>· {tt('channelsCount', { count: list.channelCount ?? list.channels?.length ?? 0 })}{list.fetchedAt ? ` · ${tt('fetchedAt', { time: new Date(list.fetchedAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) })}` : ''}</span></>}
-          right={tt('remove')}
-          onOk={() => removeListAndSourceUrl(list)}
-        />
-      ))}
+      {ordered.map((list) => {
+        const needsLogin = xtreamLoginMissing(list)
+        const importable = list.kind === 'm3u' || list.kind === 'xtream'
+        const busy = progress?.listId === list.id ? progress : null
+        const refetch = () => {
+          if (busy) return
+          if (needsLogin) {
+            const parsed = parseXtreamSource(list.source)
+            askXtream(parsed ? `http://${parsed.host}` : '', parsed?.loginId ?? null)
+            return
+          }
+          void runImport(list, true)
+        }
+        return (
+          <div
+            key={list.id}
+            data-testid={`list-row-${list.id}`}
+            style={{ minHeight: dp(64), borderRadius: dp(12), background: TV.s06, padding: `${dp(12)}px ${dp(18)}px`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: dp(16), fontSize: dp(19) }}
+          >
+            <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: dp(4) }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: dp(10), minWidth: 0 }}>
+                <strong style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{list.name}</strong>
+                {list.needsReimport ? (
+                  <span style={{ flexShrink: 0, fontSize: dp(14), fontWeight: 600, padding: `${dp(3)}px ${dp(10)}px`, borderRadius: dp(8), background: 'rgba(244,132,95,0.18)', color: '#f4845f' }}>{tt('needsReimport')}</span>
+                ) : null}
+              </div>
+              <div style={{ fontSize: dp(16), color: TV.dim }}>
+                {tt('channelsCount', { count: (list.channelCount ?? list.channels?.length ?? 0).toLocaleString(locale) })}
+                {list.fetchedAt ? ` · ${tt('fetchedAt', { time: new Date(list.fetchedAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) })}` : ''}
+              </div>
+              {busy ? <div style={{ fontSize: dp(16), color: TV.muted }}>{progressText(tt, locale, busy)}</div> : null}
+              {!busy && needsLogin ? <div style={{ fontSize: dp(15), color: TV.muted }}>{tt('xtreamNeedsLogin')}</div> : null}
+              {!busy && list.lastImportError ? (
+                <div data-testid={`list-error-${list.id}`} style={{ fontSize: dp(15), color: '#fca5a5', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{list.lastImportError}</div>
+              ) : null}
+            </div>
+            <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: dp(10) }}>
+              {importable ? <Action testId={`list-refetch-${list.id}`} label={busy ? tt('refetching') : tt('refetch')} onOk={refetch} /> : null}
+              <Action testId={`list-remove-${list.id}`} label={tt('remove')} onOk={() => removeListAndSourceUrl(list)} />
+            </div>
+          </div>
+        )
+      })}
       {keyboard.available ? <Row label={tt('addM3u')} right="+" onOk={addUrl} /> : null}
+      {keyboard.available ? <Row label={tt('addXtream')} right="+" onOk={() => askXtream('', null)} /> : null}
       {keyboard.node}
     </section>
   )

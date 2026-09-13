@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
-import { LIVE_TV_PLUGIN_ID, channelKey, getM3uUrls, type LiveTvList } from '../live-tv-data'
+import { LIVE_TV_PLUGIN_ID, channelKey, getLiveTvLists, getM3uUrls, type LiveTvList } from '../live-tv-data'
 import { getLockedChannelKeys } from '../channel-locks'
 import { getTvSettings, getGuideMode } from './tv-settings-store'
 
@@ -23,7 +23,10 @@ import { LiveTvTvShell } from './tv-shell'
 const list: LiveTvList = { id: 'l1', name: 'Xtream', channels: [{ name: 'A', logo: null, group: 'Sport', url: 'http://x/A', tvgId: null }], createdAt: '', urlTvg: null, epgUrls: ['http://x/epg.xml'], autoEpgDisabled: false, fetchedAt: '2026-09-12T10:00:00Z' }
 const urlList: LiveTvList = { id: 'l2', name: 'iptv.example.com', channels: [], createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null }
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.unstubAllGlobals()
+})
 beforeEach(() => {
   __resetForTests()
   __setTvModeForTests(true)
@@ -31,6 +34,22 @@ beforeEach(() => {
   writePluginJson(LIVE_TV_PLUGIN_ID, 'pins', [])
   seedLiveTvIndex()
 })
+
+/**
+ * Importjobbets endpoints ovanpå indexstubbens `fetch`: `status`-svaret
+ * bestäms av `next()` per poll, resten (query/lookup/epg) går vidare till
+ * stubben.
+ */
+function stubImportFetch(next: () => Record<string, unknown>): void {
+  const base = globalThis.fetch
+  const json = (body: unknown) => Promise.resolve({ ok: true, status: 200, json: async () => body } as unknown as Response)
+  vi.stubGlobal('fetch', ((input: RequestInfo | URL, init?: RequestInit) => {
+    const path = new URL(typeof input === 'string' ? input : String(input), 'http://localhost').pathname
+    if (path === '/api/live-tv/import') return json({ job: 'job-1' })
+    if (path === '/api/live-tv/import/status') return json(next())
+    return base(input as RequestInfo, init)
+  }) as typeof fetch)
+}
 
 const mount = (tab?: string) => render(<LiveTvTvShell pageId="live-tv-browse" params={{ view: 'settings', ...(tab ? { tab } : {}) }} onNavigate={() => {}} onOpenDetails={() => {}} />)
 
@@ -60,23 +79,68 @@ describe('TvSettingsView', () => {
     fireEvent.click(screen.getByText('Remove'))
     expect(getM3uUrls()).not.toContain('http://iptv.example.com/list.m3u8')
   })
-  it('Spellistor: en misslyckad hämtning säger till i stället för att vara tyst', async () => {
-    // Adressen ska INTE läggas till när hämtningen misslyckas — men tystnaden
-    // var värre än felet: skärmen såg exakt likadan ut som innan, och inget
-    // sa om adressen var fel, servern nere eller tangentbordet slarvigt.
-    const fetchMock = vi.fn(async () => ({ ok: false, json: async () => ({}) }))
-    vi.stubGlobal('fetch', fetchMock)
-    try {
-      mount('playlists')
-      fireEvent.click(screen.getByText('Add M3U URL'))
-      fireEvent.change(screen.getByTestId('tv-keyboard-input'), { target: { value: 'http://trasig.example/list.m3u' } })
-      fireEvent.click(screen.getByText('Done'))
-      expect(await screen.findByText('Could not fetch the playlist')).toBeInTheDocument()
-      expect(getM3uUrls()).not.toContain('http://trasig.example/list.m3u')
-    } finally {
-      vi.unstubAllGlobals()
-    }
+  it('Spellistor: Lägg till kör importjobbet, visar dess förlopp och kvittot', async () => {
+    // Hämtningen sker i VÄRDEN (Rust-jobbet). Vyn ska visa jobbets egna
+    // `received`/`total` medan det pågår — "Hämtar…" utan siffror sa inget
+    // om en panel med 17 000 kanaler tog en minut eller hade hängt sig.
+    const statuses = [
+      { state: 'fetching', received: 12000, total: 17000 },
+      { state: 'done', received: 17000, total: 17000, result: { total: 17000, groups: [], urlTvg: null, truncated: false } },
+    ]
+    stubImportFetch(() => statuses.shift() ?? { state: 'done', received: 17000, total: 17000, result: { total: 17000, groups: [], urlTvg: null, truncated: false } })
+
+    mount('playlists')
+    fireEvent.click(screen.getByText('Add M3U URL'))
+    fireEvent.change(screen.getByTestId('tv-keyboard-input'), { target: { value: 'http://ny.example/list.m3u' } })
+    fireEvent.click(screen.getByText('Done'))
+
+    expect(await screen.findByText('Fetching 12,000 of 17,000…')).toBeInTheDocument()
+    await waitFor(() => expect(getM3uUrls()).toContain('http://ny.example/list.m3u'))
+    const created = getLiveTvLists().find((entry) => entry.source === 'http://ny.example/list.m3u')!
+    expect(created.channelCount).toBe(17000)
+    expect(await screen.findByText(/17,000 channels/)).toBeInTheDocument()
   })
+
+  it('Spellistor: en misslyckad förstahämtning tar bort den nyss skapade listan och säger till', async () => {
+    // Tystnaden var värre än felet: skärmen såg exakt likadan ut som innan.
+    // Och en tom listpost som ligger kvar (spec §5) är en orphan användaren
+    // inte kan tolka.
+    stubImportFetch(() => ({ state: 'error', received: 0, error: 'HTTP 404' }))
+
+    mount('playlists')
+    fireEvent.click(screen.getByText('Add M3U URL'))
+    fireEvent.change(screen.getByTestId('tv-keyboard-input'), { target: { value: 'http://trasig.example/list.m3u' } })
+    fireEvent.click(screen.getByText('Done'))
+
+    expect(await screen.findByText('The fetch failed: HTTP 404')).toBeInTheDocument()
+    expect(getM3uUrls()).not.toContain('http://trasig.example/list.m3u')
+    expect(getLiveTvLists().some((entry) => entry.source === 'http://trasig.example/list.m3u')).toBe(false)
+  })
+
+  it('Spellistor: en lista som behöver hämtas om visar märket, felet och ligger överst', () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list, { ...urlList, kind: 'm3u', source: 'http://iptv.example.com/list.m3u8', url: 'http://iptv.example.com/list.m3u8', channelCount: 0, needsReimport: true, lastImportError: 'HTTP 500' }])
+    seedLiveTvIndex()
+    mount('playlists')
+    expect(screen.getByText('Needs refetching')).toBeInTheDocument()
+    expect(screen.getByTestId('list-error-l2')).toHaveTextContent('HTTP 500')
+    const rows = screen.getAllByTestId(/^list-row-/)
+    expect(rows[0]).toHaveAttribute('data-testid', 'list-row-l2')
+  })
+
+  it('Spellistor: en Xtream-lista utan inloggning ber om ny inloggning med värden ifylld', async () => {
+    // Enhetsöverföringen speglar `lists` men INTE `xtream_logins` (lösenord),
+    // så listan finns men importen kan inte köras. Raden ska säga det, och
+    // "Hämta om" ska öppna inloggningen med panelen redan ifylld.
+    const orphan: LiveTvList = { id: 'x1', name: 'panel.test:8080', kind: 'xtream', source: 'xtream://panel.test:8080/login-1', xtreamLoginId: 'login-1', channels: [], channelCount: 0, createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null, needsReimport: true }
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [orphan])
+    seedLiveTvIndex()
+    mount('playlists')
+
+    expect(screen.getByText('Sign in again to fetch channels')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('list-refetch-x1'))
+    expect((await screen.findByTestId('tv-keyboard-input')).getAttribute('value')).toBe('http://panel.test:8080')
+  })
+
   it('EPG-källor: listar URL:er', () => {
     mount('epg')
     expect(screen.getByText('http://x/epg.xml')).toBeInTheDocument()

@@ -121,7 +121,8 @@ export function seedLiveTvIndex(opts: SeedOptions = {}): void {
       return json({ groups: [...counts].map(([name, count]) => ({ name, count })) })
     }
     if (path === '/api/live-tv/status') {
-      return json({ sources: [...bySource.keys()] })
+      // Appens form: objekt, inte strängar (se indexStatus i index-client.ts).
+      return json({ sources: [...bySource].map(([id, items]) => ({ id, channels: items.length, updatedAt: Date.now() })) })
     }
     if (path === '/api/live-tv/epg/now') {
       const at = Date.now()
@@ -132,6 +133,14 @@ export function seedLiveTvIndex(opts: SeedOptions = {}): void {
         items[channel.key] = nowNextLaterFrom(programmes, at)
       }
       return json({ at, fetchedAt, items })
+    }
+    if (path === '/api/live-tv/epg/status') {
+      // Diagnostiken som EPG-källsektionen läser (ersätter pluginets gamla
+      // XMLTV-cache). Fixturen har ingen per-adress-statistik, så listan är
+      // tom och totalerna räknas ur samma tablå som resten av stubben.
+      const programmes = allNumbered.reduce((sum, channel) => sum + scheduleFor(channel).length, 0)
+      const channels = allNumbered.filter((channel) => scheduleFor(channel).length > 0).length
+      return json({ listId: params.get('listId') ?? '', fetchedAt, failedAt: null, channels, programmes, urls: [] })
     }
     if (path === '/api/live-tv/epg/schedule') {
       // POST med JSON-kropp: kanalnycklar kan innehålla komma.

@@ -92,8 +92,9 @@ export const INDEX_CHANGED_EVENT = 'lumio-live-tv-index-changed'; export functio
 
 **Files:** Modify `runtime/tv/tv-settings.tsx`, `runtime/live-tv-settings-section.tsx`, `runtime/xtream-login-section.tsx`, `runtime/hub-strings.ts`/`tv/tv-strings.ts`.
 
-- [ ] Lägg till/hämta om kör `importList` med progress ("Hämtar 12 000 av 17 000…", jobbets `received/total`), Xtream-cap-notisen tas bort, fel visas som notis. TV-vyn visar `channelCount` per lista. Tester på båda.
-- [ ] Commit `live-tv: importen visar Rust-jobbets förlopp, Xtream utan tak`.
+- [x] Lägg till/hämta om kör `importList` med progress ("Hämtar 12 000 av 17 000…", jobbets `received/total`), Xtream-cap-notisen tas bort, fel visas som notis. TV-vyn visar `channelCount` per lista. Tester på båda.
+- [x] EPG-källsektionen läser appens diagnostik (`epgStatus` → `/api/live-tv/epg/status`) i stället för pluginets egen XMLTV-cache; `epg/cache.ts`, `epg/fetcher.ts` och `hooks/useLiveTvEpgCache.ts` raderade. `needsReimport`/`lastImportError` syns i båda inställningsvyerna, och en överförd Xtream-lista utan speglad inloggning erbjuder ny inloggning med panelen ifylld.
+- [x] Commit `live-tv: importen visar Rust-jobbets förlopp, Xtream utan tak, EPG-diagnostik från appen`.
 
 ### Task P6: Version, changelog, bygge, verifiering
 

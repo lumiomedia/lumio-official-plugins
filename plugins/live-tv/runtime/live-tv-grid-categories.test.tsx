@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { writePluginJson, __resetForTests } from '@/lib/plugin-sdk'
 
-vi.mock('./hooks/useLiveTvEpgCache', () => ({ useLiveTvEpgCache: vi.fn(() => null) }))
 vi.mock('./live-tv-player', () => ({ LiveTvPlayer: () => <div data-testid="player" /> }))
 // Pagineringen kommer från värdens @heroui/react, som inte finns i testträdet.
 vi.mock('./results-pagination', () => ({ ResultsPagination: () => null }))

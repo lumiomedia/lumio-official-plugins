@@ -10,6 +10,7 @@ import {
   waitForJob,
   refreshEpg,
   epgNow,
+  epgStatus,
   epgSchedule,
   epgSearch,
   indexStatus,
@@ -262,6 +263,43 @@ describe('epgNow', () => {
   })
 })
 
+describe('epgStatus', () => {
+  it('reads per-url diagnostics and defaults the optional fields', async () => {
+    const fetchMock = mockFetch()
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        listId: 'global',
+        fetchedAt: 1700,
+        failedAt: null,
+        channels: 3,
+        programmes: 812,
+        urls: [
+          { url: 'https://a/epg.xml', channels: 3, programmes: 812, fetchedAt: 1700 },
+          { url: 'https://b/epg.xml', channels: 0, programmes: 0, error: 'HTTP 404', fetchedAt: 1700 },
+        ],
+      }),
+    )
+
+    const status = await epgStatus('global')
+
+    expect(String(fetchMock.mock.calls[0][0])).toBe('/api/live-tv/epg/status?listId=global')
+    expect(status.fetchedAt).toBe(1700)
+    expect(status.urls).toHaveLength(2)
+    expect(status.urls[1].error).toBe('HTTP 404')
+    // Den färdiga adressen har inget `error`-flt alls i svaret.
+    expect(status.urls[0].error).toBeUndefined()
+  })
+
+  it('treats a bare response as "nothing fetched yet" instead of throwing', async () => {
+    const fetchMock = mockFetch()
+    fetchMock.mockResolvedValueOnce(jsonResponse({}))
+
+    const status = await epgStatus('global')
+
+    expect(status).toEqual({ listId: 'global', fetchedAt: null, failedAt: null, channels: 0, programmes: 0, urls: [] })
+  })
+})
+
 describe('epgSchedule', () => {
   it('chunks 200 keys per call and merges the results', async () => {
     const fetchMock = mockFetch()
@@ -310,19 +348,35 @@ describe('epgSearch', () => {
 })
 
 describe('indexStatus', () => {
-  it('reads known sources from /api/live-tv/status', async () => {
+  it('reads the app\'s OBJECT source list and exposes the ids', async () => {
+    // Appen svarar `{ sources: [{ id, channels, updatedAt }] }`. Klienten
+    // typade det som `string[]`, så `known.has(list.source)` var alltid
+    // falskt och varje lista importerades om vid varje start.
     const fetchMock = mockFetch()
-    fetchMock.mockResolvedValueOnce(jsonResponse({ sources: ['src1', 'src2'] }))
+    fetchMock.mockResolvedValueOnce(jsonResponse({
+      sources: [
+        { id: 'src1', channels: 12, updatedAt: 1700 },
+        { id: 'src2', channels: 0, updatedAt: 0 },
+      ],
+    }))
     const result = await indexStatus()
     expect(String(fetchMock.mock.calls[0][0])).toBe('/api/live-tv/status')
-    expect(result).toEqual({ sources: ['src1', 'src2'] })
+    expect(result.sourceIds).toEqual(['src1', 'src2'])
+    expect(result.sources[0]).toEqual({ id: 'src1', channels: 12, updatedAt: 1700 })
+  })
+
+  it('accepts a bare string list from an older app', async () => {
+    const fetchMock = mockFetch()
+    fetchMock.mockResolvedValueOnce(jsonResponse({ sources: ['src1'] }))
+    const result = await indexStatus()
+    expect(result.sourceIds).toEqual(['src1'])
   })
 
   it('defaults to an empty source list', async () => {
     const fetchMock = mockFetch()
     fetchMock.mockResolvedValueOnce(jsonResponse({}))
     const result = await indexStatus()
-    expect(result).toEqual({ sources: [] })
+    expect(result).toEqual({ sourceIds: [], sources: [] })
   })
 })
 

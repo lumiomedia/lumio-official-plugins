@@ -27,7 +27,10 @@ import {
   type LiveTvList,
   getLiveTvHideHero,
   setLiveTvHideHero,
+  getXtreamLogins,
 } from './live-tv-data'
+import type { ImportStatus } from './index-client'
+import { recordListImportOutcome } from './list-import-flags'
 import {
   getM3uFetchProgress,
   reportM3uFetchJobProgress,
@@ -36,7 +39,7 @@ import {
 } from './m3u-fetch-progress'
 import { useHubText } from './hub-strings'
 import { EpgSourcesSection } from './epg-sources-section'
-import { XtreamLoginSection } from './xtream-login-section'
+import { XtreamLoginSection, prefillXtreamLogin } from './xtream-login-section'
 
 
 const settingsActionButtonClass =
@@ -45,6 +48,15 @@ const HOME_OVERRIDE_PLUGIN_ID = 'com.lumio.live-tv'
 
 function hostOf(url: string): string {
   try { return new URL(url).hostname || url } catch { return url }
+}
+
+/** `xtream://<host>/<loginId>` → delarna. Se prefillXtreamLogin. */
+function parseXtreamSource(source: string | undefined): { host: string; loginId: string } | null {
+  if (!source || !source.startsWith('xtream://')) return null
+  const rest = source.slice('xtream://'.length)
+  const slash = rest.lastIndexOf('/')
+  if (slash <= 0) return null
+  return { host: rest.slice(0, slash), loginId: rest.slice(slash + 1) }
 }
 
 /**
@@ -71,6 +83,9 @@ export function LiveTvSettingsSection() {
   const [homeOverrideEnabled, setHomeOverrideEnabled] = useState(false)
   const [homeOverrideError, setHomeOverrideError] = useState('')
   const [lists, setLists] = useState<LiveTvList[]>([])
+  // Omhämtning av EN lista (kortets egen knapp) — skild från M3U-fältets kö
+  // ovan, som hämtar hela uppsättningen adresser.
+  const [listProgress, setListProgress] = useState<{ listId: string; state: ImportStatus['state']; received: number; total: number | null } | null>(null)
 
   useEffect(() => {
     const sync = () => setLists(getLiveTvLists())
@@ -141,6 +156,23 @@ export function LiveTvSettingsSection() {
     deleteLiveTvList(list.id)
     clearLiveTvMemoryCache()
     clearStoredLiveTvChannels()
+  }
+
+  /**
+   * Hämta om EN lista. Listan finns redan, så ett fel lämnar den orörd med
+   * sitt gamla innehåll (spec §5) — `needsReimport`/`lastImportError` på
+   * posten är det som gör felet synligt efteråt.
+   */
+  async function handleRefetchList(list: LiveTvList) {
+    setListProgress({ listId: list.id, state: 'fetching', received: 0, total: null })
+    try {
+      const status = await importList(list, (s) => setListProgress({ listId: list.id, state: s.state, received: s.received, total: s.total ?? null }))
+      recordListImportOutcome(list.id, status.state === 'error' ? (status.error ?? 'import failed') : undefined)
+    } catch (err) {
+      recordListImportOutcome(list.id, err instanceof Error ? err.message : String(err))
+    } finally {
+      setListProgress(null)
+    }
   }
 
   function handleHomeOverrideToggle(checked: boolean) {
@@ -222,9 +254,17 @@ export function LiveTvSettingsSection() {
                     }}
                   />
                   <span>{h('m3uFetchProgress', { current: fetchProgress.current, total: fetchProgress.total })}</span>
+                  {/* Jobbets EGET förlopp: en enda adress kan vara 17 000
+                      kanaler, och "Hämtar lista 1 av 1…" stod still i en
+                      minut utan den här raden. */}
                   {fetchProgress.jobProgress ? (
                     <span style={{ color: TOKENS.textMute }}>
-                      ({fetchProgress.jobProgress.received}{fetchProgress.jobProgress.total ? ` / ${fetchProgress.jobProgress.total}` : ''})
+                      {fetchProgress.jobProgress.total
+                        ? h('listImportProgress', {
+                            received: fetchProgress.jobProgress.received.toLocaleString(locale),
+                            total: fetchProgress.jobProgress.total.toLocaleString(locale),
+                          })
+                        : h('listImportProgressUnknown')}
                     </span>
                   ) : null}
                 </div>
@@ -249,20 +289,62 @@ export function LiveTvSettingsSection() {
 
       <XtreamLoginSection />
 
-      {lists.map((list) => (
+      {lists.map((list) => {
+        const busy = listProgress?.listId === list.id ? listProgress : null
+        const importable = list.kind === 'm3u' || list.kind === 'xtream'
+        // Enhetsöverföringen speglar `lists` men inte `xtream_logins`
+        // (lösenord), så en överförd Xtream-lista har en källa som ingen
+        // inloggning svarar mot — `importList` kastar, och listan står tom
+        // utan att säga varför.
+        const xtreamSource = list.kind === 'xtream' ? parseXtreamSource(list.source) : null
+        const needsLogin = list.kind === 'xtream' && !getXtreamLogins().some((login) => login.id === list.xtreamLoginId)
+        return (
         <Card key={list.id}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 14.5, fontWeight: 600, color: TOKENS.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{list.name}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                <span style={{ fontSize: 14.5, fontWeight: 600, color: TOKENS.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{list.name}</span>
+                {list.needsReimport ? (
+                  <span style={{ flex: 'none', fontSize: 10, fontWeight: 600, letterSpacing: 0.6, textTransform: 'uppercase', padding: '2px 8px', borderRadius: 999, background: 'rgba(244,132,95,0.18)', color: '#f4845f' }}>{h('listNeedsReimport')}</span>
+                ) : null}
+              </div>
               <div style={{ fontSize: 12, color: TOKENS.textMute, marginTop: 2 }}>
-                {list.channelCount ?? 0} {t('m3uChannels')}
+                {(list.channelCount ?? 0).toLocaleString(locale)} {t('m3uChannels')}
                 {' · '}
                 {list.fetchedAt
                   ? h('m3uFetchedAt', { time: formatFetchedAt(list.fetchedAt, locale) })
                   : h('m3uNeverFetched')}
               </div>
+              {busy ? (
+                <div style={{ fontSize: 12, color: TOKENS.text, marginTop: 4 }}>
+                  {busy.state === 'parsing'
+                    ? h('listImportParsing')
+                    : busy.state === 'writing'
+                      ? h('listImportWriting')
+                      : busy.total
+                        ? h('listImportProgress', { received: busy.received.toLocaleString(locale), total: busy.total.toLocaleString(locale) })
+                        : h('listImportProgressUnknown')}
+                </div>
+              ) : null}
+              {!busy && needsLogin ? (
+                <div style={{ fontSize: 12, color: TOKENS.textMute, marginTop: 4 }}>{h('xtreamNeedsLogin')}</div>
+              ) : null}
+              {!busy && list.lastImportError ? (
+                <div role="alert" style={{ fontSize: 12, color: '#fca5a5', marginTop: 4 }}>{h('listImportFailed', { error: list.lastImportError })}</div>
+              ) : null}
             </div>
-            <PillBtn size="sm" variant="danger" onClick={() => handleRemoveList(list)}>{t('liveTvXtreamRemove')}</PillBtn>
+            <div style={{ display: 'flex', flex: 'none', alignItems: 'center', gap: 8 }}>
+              {needsLogin ? (
+                <PillBtn size="sm" variant="accent" onClick={() => prefillXtreamLogin({ server: xtreamSource ? `http://${xtreamSource.host}` : '', loginId: xtreamSource?.loginId })}>
+                  {h('xtreamRelogin')}
+                </PillBtn>
+              ) : importable ? (
+                <PillBtn size="sm" onClick={() => void handleRefetchList(list)} disabled={busy !== null}>
+                  {busy ? h('listRefetching') : h('listRefetch')}
+                </PillBtn>
+              ) : null}
+              <PillBtn size="sm" variant="danger" onClick={() => handleRemoveList(list)}>{t('liveTvXtreamRemove')}</PillBtn>
+            </div>
           </div>
           <div style={{ marginTop: 12 }}>
             <EpgSourcesSection
@@ -277,7 +359,8 @@ export function LiveTvSettingsSection() {
             />
           </div>
         </Card>
-      ))}
+        )
+      })}
     </div>
   )
 

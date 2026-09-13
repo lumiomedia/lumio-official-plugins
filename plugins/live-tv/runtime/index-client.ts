@@ -170,10 +170,32 @@ export async function listGroups(source: string | null): Promise<{ name: string;
   return data.groups ?? []
 }
 
-/** Vilka källor indexet redan känner till (enhetsöverföring: `importMissingSources`). */
-export async function indexStatus(): Promise<{ sources: string[] }> {
-  const data = await requestJson<{ sources?: string[] }>('/api/live-tv/status', { cache: 'no-store' })
-  return { sources: data.sources ?? [] }
+export interface IndexSourceStatus {
+  id: string
+  channels: number
+  updatedAt: number
+}
+
+/**
+ * Vilka källor indexet redan känner till (enhetsöverföring:
+ * `importMissingSources`).
+ *
+ * Appen svarar med OBJEKT — `{ sources: [{ id, channels, updatedAt }] }` —
+ * inte med rena strängar. Klienten typade svaret som `string[]`, så
+ * `new Set(sources).has(list.source)` var alltid falskt och VARJE m3u-/
+ * Xtream-lista importerades om vid varje start på varje enhet (spec §3.4
+ * säger att bara SAKNADE källor ska hämtas). `sourceIds` är därför den form
+ * anroparen jämför mot; mappningen tar också emot en ren sträng, så en äldre
+ * app som fortfarande svarar i det formatet inte faller igenom till samma
+ * bugg åt andra hållet.
+ */
+export async function indexStatus(): Promise<{ sourceIds: string[]; sources: IndexSourceStatus[] }> {
+  const data = await requestJson<{ sources?: Array<IndexSourceStatus | string> }>('/api/live-tv/status', { cache: 'no-store' })
+  const sources = (data.sources ?? []).map((entry) => (typeof entry === 'string'
+    ? { id: entry, channels: 0, updatedAt: 0 }
+    : { id: String(entry.id ?? ''), channels: entry.channels ?? 0, updatedAt: entry.updatedAt ?? 0 }))
+    .filter((entry) => entry.id.length > 0)
+  return { sourceIds: sources.map((entry) => entry.id), sources }
 }
 
 /**
@@ -232,6 +254,51 @@ export async function refreshEpg(
 ): Promise<string> {
   const data = await postJson<{ job: string }>('/api/live-tv/epg/refresh', { listId, urls, sources, force })
   return data.job
+}
+
+/** Diagnostik per EPG-adress, så som appen ser den efter senaste hämtningen. */
+export interface EpgSourceStatus {
+  url: string
+  channels: number
+  programmes: number
+  error?: string
+  /** Unix-ms. 0 när adressen aldrig hämtats. */
+  fetchedAt: number
+}
+
+export interface EpgStatus {
+  listId: string
+  fetchedAt: number | null
+  failedAt: number | null
+  channels: number
+  programmes: number
+  urls: EpgSourceStatus[]
+}
+
+/**
+ * Vad appens EPG-butik innehåller för en lista, per adress. Ersätter pluginets
+ * egen XMLTV-cache (`epg/cache.ts`): webviewn laddade tidigare ner samma
+ * tablå en gång till bara för att kunna visa "3 kanaler / 812 program" i
+ * inställningarna. En saknad butik är inte ett fel utan "inget hämtat än" —
+ * appen svarar med nollor, inte 404.
+ */
+export async function epgStatus(listId: string): Promise<EpgStatus> {
+  const qs = buildQuery({ listId })
+  const data = await requestJson<Partial<EpgStatus>>(`/api/live-tv/epg/status${qs}`)
+  return {
+    listId: data.listId ?? listId,
+    fetchedAt: data.fetchedAt ?? null,
+    failedAt: data.failedAt ?? null,
+    channels: data.channels ?? 0,
+    programmes: data.programmes ?? 0,
+    urls: (data.urls ?? []).map((entry) => ({
+      url: entry.url,
+      channels: entry.channels ?? 0,
+      programmes: entry.programmes ?? 0,
+      ...(entry.error ? { error: entry.error } : {}),
+      fetchedAt: entry.fetchedAt ?? 0,
+    })),
+  }
 }
 
 export async function epgNow(opts: {

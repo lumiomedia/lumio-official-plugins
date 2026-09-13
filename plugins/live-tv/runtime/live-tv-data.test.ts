@@ -143,6 +143,35 @@ describe('importMissingSources', () => {
     expect(list?.lastImportError).toBeUndefined()
   })
 
+  it('importerar bara källor som SAKNAS i indexet (appens objektform)', async () => {
+    // `/api/live-tv/status` svarar med objekt, inte strängar. Så länge
+    // klienten jämförde mot objekten var ingen källa någonsin "känd" och
+    // VARJE lista importerades om vid varje start på varje enhet.
+    const imported: string[] = []
+    vi.stubGlobal('fetch', vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      const s = String(url)
+      if (s.includes('/api/live-tv/status')) {
+        return jsonResponse({ sources: [{ id: 'http://known.test/list.m3u', channels: 10, updatedAt: 1 }] })
+      }
+      if (s.includes('/api/live-tv/import/status')) {
+        return jsonResponse({ state: 'done', received: 1, result: { total: 1, groups: [], urlTvg: null, truncated: false } })
+      }
+      if (s.includes('/api/live-tv/import')) {
+        imported.push(JSON.parse(String(init?.body ?? '{}')).source)
+        return jsonResponse({ job: 'job-1' })
+      }
+      throw new Error(`unexpected fetch: ${s}`)
+    }))
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [
+      rawList({ id: 'k1', name: 'known.test', kind: 'm3u', source: 'http://known.test/list.m3u', url: 'http://known.test/list.m3u' }),
+      rawList({ id: 'm1', name: 'missing.test', kind: 'm3u', source: 'http://missing.test/list.m3u', url: 'http://missing.test/list.m3u' }),
+    ])
+
+    await importMissingSources()
+
+    expect(imported).toEqual(['http://missing.test/list.m3u'])
+  })
+
   it('två samtidiga anrop kör bara en gång (återinträdesskydd)', async () => {
     let statusCalls = 0
     vi.stubGlobal('fetch', vi.fn(async (url: RequestInfo | URL) => {

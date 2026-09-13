@@ -117,6 +117,23 @@ const EN = {
   hubShowMore: 'Show more',
   epgShowingRows: 'Showing {shown} channels with a guide',
   epgAllWithGuide: 'All {shown} channels with a guide',
+  // EPG-diagnostik (appens butik, /api/live-tv/epg/status)
+  epgSourceFetched: 'fetched {time}',
+  epgFetchedAt: 'Guide fetched {time} · {programmes} programmes',
+  epgNeverFetched: 'The guide has not been fetched yet.',
+  epgRefresh: 'Refetch EPG',
+  epgRefreshing: 'Fetching…',
+  // Import-UX
+  listNeedsReimport: 'Needs refetching',
+  listRefetch: 'Refetch',
+  listRefetching: 'Fetching…',
+  listImportProgress: 'Fetching {received} of {total}…',
+  listImportProgressUnknown: 'Fetching…',
+  listImportParsing: 'Reading the playlist…',
+  listImportWriting: 'Saving the channels…',
+  listImportFailed: 'The fetch failed: {error}',
+  xtreamNeedsLogin: 'Sign in again to fetch channels',
+  xtreamRelogin: 'Sign in again',
 } as const
 
 const SV: Record<keyof typeof EN, string> = {
@@ -222,6 +239,21 @@ const SV: Record<keyof typeof EN, string> = {
   hubShowMore: 'Visa fler',
   epgShowingRows: 'Visar {shown} kanaler med tablå',
   epgAllWithGuide: 'Alla {shown} kanaler med tablå',
+  epgSourceFetched: 'hämtad {time}',
+  epgFetchedAt: 'Tablån hämtad {time} · {programmes} program',
+  epgNeverFetched: 'Tablån är inte hämtad än.',
+  epgRefresh: 'Hämta om EPG',
+  epgRefreshing: 'Hämtar…',
+  listNeedsReimport: 'Behöver hämtas om',
+  listRefetch: 'Hämta om',
+  listRefetching: 'Hämtar…',
+  listImportProgress: 'Hämtar {received} av {total}…',
+  listImportProgressUnknown: 'Hämtar…',
+  listImportParsing: 'Läser spellistan…',
+  listImportWriting: 'Sparar kanalerna…',
+  listImportFailed: 'Hämtningen misslyckades: {error}',
+  xtreamNeedsLogin: 'Logga in på nytt för att hämta kanaler',
+  xtreamRelogin: 'Logga in på nytt',
 }
 
 export type HubStringKey = keyof typeof EN

@@ -1,9 +1,32 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
-import { render, screen, fireEvent, cleanup } from '@testing-library/react'
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
+import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react'
+import { __resetForTests, writePluginJson } from '@/lib/plugin-sdk'
+import { LIVE_TV_PLUGIN_ID, type LiveTvList } from './live-tv-data'
+
+// Diagnostiken kommer från APPEN sedan v2 (pluginets egen XMLTV-cache är
+// borta), så sektionen mockas mot indexklienten i stället för mot en
+// cachehook.
+vi.mock('./index-client', () => ({
+  epgStatus: vi.fn(),
+  refreshEpg: vi.fn(),
+  waitForJob: vi.fn(),
+}))
+
+import { epgStatus, refreshEpg, waitForJob } from './index-client'
 import { EpgSourcesSection } from './epg-sources-section'
+
+const emptyStatus = { listId: 'global', fetchedAt: null, failedAt: null, channels: 0, programmes: 0, urls: [] }
+
+beforeEach(() => {
+  __resetForTests()
+  vi.mocked(epgStatus).mockResolvedValue(emptyStatus)
+  vi.mocked(refreshEpg).mockResolvedValue('job-1')
+  vi.mocked(waitForJob).mockResolvedValue({ state: 'done', received: 0 })
+})
 
 afterEach(() => {
   cleanup()
+  vi.clearAllMocks()
 })
 
 describe('EpgSourcesSection', () => {
@@ -69,5 +92,58 @@ describe('EpgSourcesSection', () => {
       <EpgSourcesSection autoUrl={null} manualUrls={[]} onChangeManual={() => {}} />,
     )
     expect(screen.getByText(/no epg sources yet/i)).toBeInTheDocument()
+  })
+
+  it('renders the app\'s per-url diagnostics instead of a plugin-side cache', async () => {
+    vi.mocked(epgStatus).mockResolvedValue({
+      listId: 'global',
+      fetchedAt: Date.now(),
+      failedAt: null,
+      channels: 3,
+      programmes: 812,
+      urls: [
+        { url: 'https://a.example/epg.xml', channels: 3, programmes: 812, fetchedAt: Date.now() },
+        { url: 'https://b.example/epg.xml', channels: 0, programmes: 0, error: 'HTTP 404', fetchedAt: Date.now() },
+      ],
+    })
+
+    render(
+      <EpgSourcesSection
+        autoUrl={null}
+        manualUrls={['https://a.example/epg.xml', 'https://b.example/epg.xml']}
+        onChangeManual={() => {}}
+        listId="l1"
+        allUrls={['https://a.example/epg.xml', 'https://b.example/epg.xml']}
+      />,
+    )
+
+    expect(await screen.findByText('HTTP 404')).toBeInTheDocument()
+    expect(vi.mocked(epgStatus).mock.calls[0][0]).toBe('global')
+    // Programtotalen finns i sammanfattningsraden.
+    expect(screen.getByText('3 channels · 812 programmes', { exact: false })).toBeInTheDocument()
+    expect(screen.getByText(/Guide fetched .* · 812 programmes/)).toBeInTheDocument()
+  })
+
+  it('refetches the EPG through the app and re-reads the status', async () => {
+    const list: LiveTvList = { id: 'l1', name: 'Panel', kind: 'm3u', source: 'http://panel/list.m3u', url: 'http://panel/list.m3u', createdAt: '', urlTvg: null, epgUrls: ['https://a.example/epg.xml'], autoEpgDisabled: false, fetchedAt: null }
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list])
+
+    render(
+      <EpgSourcesSection
+        autoUrl={null}
+        manualUrls={['https://a.example/epg.xml']}
+        onChangeManual={() => {}}
+        listId="l1"
+        allUrls={['https://a.example/epg.xml']}
+      />,
+    )
+
+    fireEvent.click(await screen.findByRole('button', { name: /refetch epg/i }))
+
+    await waitFor(() => expect(refreshEpg).toHaveBeenCalledTimes(1))
+    expect(vi.mocked(refreshEpg).mock.calls[0]).toEqual(['global', ['https://a.example/epg.xml'], ['http://panel/list.m3u'], true])
+    expect(waitForJob).toHaveBeenCalledWith('job-1')
+    // Statusen läses om efter jobbet: en gång vid montering, en gång efter.
+    await waitFor(() => expect(epgStatus).toHaveBeenCalledTimes(2))
   })
 })
