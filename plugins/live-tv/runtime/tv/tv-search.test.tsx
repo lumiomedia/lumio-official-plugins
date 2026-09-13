@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
 import type { EpgCacheEntry } from '../epg/types'
@@ -28,12 +28,13 @@ describe('TvSearch', () => {
     const onNavigate = vi.fn()
     render(<LiveTvTvShell pageId="live-tv-browse" params={{ view: 'search' }} onNavigate={onNavigate} onOpenDetails={() => {}} />)
     fireEvent.click(screen.getByText('g'))
-    expect(screen.getByTestId('search-programmes')).toHaveTextContent('Golf Tonight')
+    expect(within(screen.getByTestId('search-programmes')).getByText('Golf Tonight')).toBeInTheDocument()
+    expect(screen.getAllByTestId('search-suggestion').some((el) => el.textContent === 'Golf Tonight')).toBe(true)
     fireEvent.click(screen.getByText('o'))
     fireEvent.click(screen.getByText('l'))
     fireEvent.click(screen.getByText('f'))
     expect(screen.getByTestId('search-channels')).toHaveTextContent('No results')
-    fireEvent.click(screen.getByText('Golf Tonight').closest('[data-f]')!)
+    fireEvent.click(within(screen.getByTestId('search-programmes')).getByText('Golf Tonight').closest('[data-f]')!)
     expect(onNavigate).toHaveBeenCalledWith(expect.objectContaining({ params: expect.objectContaining({ view: 'channel', name: 'Sky Sports', programme: String(now + 60_000) }) }))
   })
 })

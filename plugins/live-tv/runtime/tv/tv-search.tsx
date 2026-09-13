@@ -16,16 +16,7 @@ export function TvSearch({ model, nav }: TvViewProps) {
   const day = useMemo(() => { const start = startOfLocalDay(model.nowMs); return { start, end: start + 86_400_000 } }, [model.nowMs])
   const channels = useMemo(() => searchChannels(query, model.channels), [query, model.channels])
   const programmes = useMemo(() => searchProgrammes(query, model.channels, model.scheduleFor, day), [query, model.channels, model.scheduleFor, day])
-  // Ett förslag som redan syns exakt som en träff i listorna nedanför är
-  // överflödigt som chip (och kolliderar textmässigt med listraden).
-  const resultTitles = useMemo(
-    () => new Set([...channels.map((c) => c.name.trim().toLowerCase()), ...programmes.map((p) => p.programme.title.trim().toLowerCase())]),
-    [channels, programmes],
-  )
-  const hints = useMemo(
-    () => suggestions(query, model.channels, programmes.map((p) => p.programme.title)).filter((hint) => !resultTitles.has(hint.trim().toLowerCase())),
-    [query, model.channels, programmes, resultTitles],
-  )
+  const hints = useMemo(() => suggestions(query, model.channels, programmes.map((p) => p.programme.title)), [query, model.channels, programmes])
   const focusFirstResult = () => {
     const first = document.querySelector<HTMLElement>('[data-live-tv-search-results] [data-f]')
     first?.focus({ preventScroll: true })
@@ -40,7 +31,7 @@ export function TvSearch({ model, nav }: TvViewProps) {
         </div>
         <div data-row="" style={{ display: 'flex', gap: dp(8), overflowX: 'auto', minHeight: dp(44) }}>
           {hints.map((hint) => (
-            <div key={hint} {...station(() => setQuery(hint))} style={{ height: dp(44), padding: `0 ${dp(18)}px`, borderRadius: 999, background: TV.s08, display: 'inline-flex', alignItems: 'center', fontSize: dp(18), whiteSpace: 'nowrap', cursor: 'pointer' }}>{hint}</div>
+            <div key={hint} data-testid="search-suggestion" {...station(() => setQuery(hint))} style={{ height: dp(44), padding: `0 ${dp(18)}px`, borderRadius: 999, background: TV.s08, display: 'inline-flex', alignItems: 'center', fontSize: dp(18), whiteSpace: 'nowrap', cursor: 'pointer' }}>{hint}</div>
           ))}
         </div>
         <TvKeyboard value={query} onChange={setQuery} onDone={focusFirstResult} initFocus />
