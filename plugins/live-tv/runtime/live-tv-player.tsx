@@ -37,6 +37,9 @@ import { PlayerScheduleOverlay } from './player-schedule-overlay'
 import { PlayerFavouritesRow, PlayerNextUpCard, PlayerProgrammeProgress } from './player-extras'
 import { useHtmlVideoPlayer } from './hooks/useHtmlVideoPlayer'
 import { HOST_PROXY_MIME, hostProxyUrl as buildHostProxyUrl, nativeFailureAction } from './live-tv-playback-fallback'
+import { TvPlayerChrome } from './tv/tv-player-chrome'
+import { releaseAllSurfaces } from './tv/video-surface'
+import type { LiveTvPlayerTvProps } from './tv/tv-player-types'
 
 interface M3uChannel {
   name: string
@@ -53,6 +56,8 @@ interface LiveTvPlayerProps {
   epgUrls?: string[]
   /** Guide-radens kanalbyte (favoriter). Utan den visar Guide-knappen tablån. */
   onSwitchChannel?: (channel: M3uChannel) => void
+  /** TV-skalets krom (Task 16): banner, ⋯-meny, mini-guide, kanalstegning. */
+  tv?: LiveTvPlayerTvProps
 }
 
 function isIosWebKitBrowser(): boolean {
@@ -86,7 +91,7 @@ const MPV_STARTUP_TIMEOUT_MS = 18_000
 /** Budget för kanalens egen URL innan värdens strömproxy får försöka. */
 const MPV_FIRST_ATTEMPT_TIMEOUT_MS = 9_000
 
-export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], onSwitchChannel }: LiveTvPlayerProps) {
+export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], onSwitchChannel, tv }: LiveTvPlayerProps) {
   const { t } = useLang()
   /**
    * TV-läget: spelaren är en helskärmsoverlay och därmed fokusfälla
@@ -97,6 +102,10 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
    */
   const isTv = useTvMode()
   const tvStation = isTv ? { 'data-f': '' } : {}
+  // TV-skalets krom (Task 16) ersätter topprad + kontrollrad + tablå-ark när
+  // skalet gett oss `tv`. Utan `tv` (t.ex. äldre värd) beter sig TV-läget som
+  // förut.
+  const tvChrome = isTv && tv ? tv : null
   // Hubbens "Fortsätt titta": en post per kanal, senast sedd först.
   useEffect(() => {
     recordChannelWatch(channel, listId)
@@ -532,7 +541,11 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
         .then(() => {
           if (cancelled) return
           syncRepeatedly()
-          return engineOpen(channel.url, nativeAttempt > 0)
+          // Guidens förhandsvisning (tv-preview) äger annars den enda nativa
+          // ytan (v1: en yta, se video-surface.ts) — utan det här kunde
+          // spelaren öppnas medan en förhandsvisning fortfarande höll den,
+          // och den nya kanalen tystnade tyst i bakgrunden.
+          return releaseAllSurfaces().catch(() => {}).then(() => engineOpen(channel.url, nativeAttempt > 0))
         })
         .then(() => {
           if (cancelled) return
@@ -1041,6 +1054,10 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
           <p className="text-xs text-slate-500">{t('liveTvStreamErrorHelp')}</p>
         </div>
       )}
+      {tvChrome ? (
+        <TvPlayerChrome channel={channel} tv={tvChrome} paused={mpvPaused} onTogglePause={toggleMpvPause} onClose={handleClose} />
+      ) : (
+      <>
       <div
         // Android ritar edge-to-edge och webview:n får ALDRIG insets via
         // env(safe-area-inset-*) — de är alltid 0 där. Bryggan känner dem och
@@ -1342,6 +1359,8 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
         open={scheduleOpen}
         onClose={() => setScheduleOpen(false)}
       />
+      </>
+      )}
     </div>
   )
 
