@@ -22,6 +22,32 @@ describe('TvPlayerChrome', () => {
     expect(screen.getByLabelText('More')).toHaveAttribute('data-init')
     expect(screen.getByText('2 · B')).toBeInTheDocument()
   })
+  it('⋯ tar fokus när spelaren öppnas och behåller det över ett kanalbyte', async () => {
+    const view = render(<TvPlayerChrome channel={channels[1]} tv={tv()} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
+    // Självhävdande slinga över några bildrutor: skalet fokuserar inte vyer
+    // medan spelaren är öppen, så utan den här står fokus kvar i vyn BAKOM.
+    await act(async () => { await new Promise((r) => setTimeout(r, 120)) })
+    const dots = screen.getByLabelText('More')
+    expect(document.activeElement).toBe(dots)
+    // Kanalbyte (onSwitchChannel → ny channel-prop) får inte tappa fokus.
+    document.body.focus()
+    view.rerender(<TvPlayerChrome channel={channels[2]} tv={tv()} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
+    await act(async () => { await new Promise((r) => setTimeout(r, 120)) })
+    expect(document.activeElement).toBe(screen.getByLabelText('More'))
+  })
+  it('mini-guiden fokuserar ett kort även när kanalen inte finns i listan', async () => {
+    // Spelas något utanför `neighbours` (index −1) fanns ingen data-init alls
+    // och mini-guiden öppnades utan fokus i sig.
+    const outsider = ch('Z')
+    render(<TvPlayerChrome channel={outsider} tv={tv()} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
+    await act(async () => { await new Promise((r) => setTimeout(r, 60)) })
+    fireEvent.keyDown(window, { key: 'ArrowDown' })
+    await act(async () => { await new Promise((r) => setTimeout(r, 60)) })
+    const cards = screen.getAllByTestId('mini-card')
+    expect(cards.filter((c) => c.hasAttribute('data-init'))).toHaveLength(1)
+    expect(cards[0]).toHaveAttribute('data-init')
+    expect(cards).toContain(document.activeElement)
+  })
   it('bannern döljs efter tiden och ▲ visar den igen', () => {
     vi.useFakeTimers()
     render(<TvPlayerChrome channel={channels[1]} tv={tv()} paused={false} onTogglePause={() => {}} onClose={() => {}} />)

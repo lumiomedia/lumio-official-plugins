@@ -42,6 +42,58 @@ export function TvPlayerChrome({ channel, tv, paused, onTogglePause, onClose }: 
   }, [tv, index])
 
   /**
+   * Var kromets lager står just nu, läst av fokusslingan nedan.
+   *
+   * Slingan får inte läsa `menu`/`miniOpen` direkt: den lever i en effekt som
+   * bara ska starta om när KANALEN byts, annars börjar den om varje gång ett
+   * lager öppnas och stjäl då fokus från just det lagret.
+   */
+  const layerRef = useRef({ menuOpen: false, miniOpen: false })
+  useEffect(() => { layerRef.current = { menuOpen: menu !== null, miniOpen } })
+
+  /**
+   * ⋯ tar fokus när spelaren öppnas — annars finns ingen station alls.
+   *
+   * Skalet hoppar över sin fokuseffekt medan spelaren är öppen
+   * (`tv-shell.tsx`: `if (active) return`), och värdens fokusmotor kallas bara
+   * när en SIDA monteras. Fokus blev därför kvar på stationen i vyn BAKOM
+   * spelaren (uppmätt i tv-sim: `guide-row`). Sedan kromet äger ◂/▸/OK utanför
+   * sina egna element var ⋯ därmed omöjlig att nå: dess `data-init` hjälpte
+   * ingen, och håll-OK kunde aldrig öppna menyn trots att bannern lovar det.
+   *
+   * Självhävdande slinga, samma mönster som gamla TV-grenens Stäng-knapp
+   * (`live-tv-player.tsx`): fokus sätts om tills det suttit kvar några
+   * bildrutor, för spelarens egen uppstart (yta, hls, värdens motor) flyttar
+   * fokus sent och en enda `focus()` vid montering försvinner.
+   *
+   * Slingan avstår medan glasmenyn eller mini-guiden är öppen — de äger fokus
+   * då — och ger upp efter fyra sekunder så att den aldrig slåss i evighet.
+   */
+  useEffect(() => {
+    const node = dotsRef.current
+    if (!node) return
+    let frame = 0
+    let held = 0
+    const deadline = Date.now() + 4000
+    const tick = () => {
+      if (!node.isConnected) return
+      const active = document.activeElement
+      const inLayer = layerRef.current.menuOpen || layerRef.current.miniOpen
+      if (active === node) {
+        if (++held >= 5) return
+      } else if (inLayer) {
+        held = 0
+      } else {
+        held = 0
+        node.focus({ preventScroll: true })
+      }
+      if (Date.now() < deadline) frame = window.requestAnimationFrame(tick)
+    }
+    frame = window.requestAnimationFrame(tick)
+    return () => window.cancelAnimationFrame(frame)
+  }, [channel])
+
+  /**
    * Stäng mini-guiden och lämna ALDRIG fokus på `body`.
    *
    * Korten är mini-guidens enda stationer: försvinner de medan ett av dem har
@@ -120,7 +172,13 @@ export function TvPlayerChrome({ channel, tv, paused, onTogglePause, onClose }: 
 
   useEffect(() => {
     if (!miniOpen) return
-    const current = miniRef.current?.querySelector<HTMLElement>('[data-init]')
+    // Fallback på första kortet: `data-init` sitter på kortet för den kanal
+    // som spelas, och den kanalen behöver inte finnas i `tv.neighbours` alls
+    // (spelas något utanför listan blir `index` −1). Utan fallbacken öppnades
+    // mini-guiden med fokus kvar där det stod — ⋯ eller vyn bakom — och
+    // korten gick inte att nå med fjärren.
+    const mini = miniRef.current
+    const current = mini?.querySelector<HTMLElement>('[data-init]') ?? mini?.querySelector<HTMLElement>('[data-testid="mini-card"]')
     current?.focus({ preventScroll: true })
     current?.scrollIntoView({ inline: 'center', block: 'nearest' })
   }, [miniOpen])
@@ -170,11 +228,15 @@ export function TvPlayerChrome({ channel, tv, paused, onTogglePause, onClose }: 
       </div>
       {miniOpen ? (
         <div ref={miniRef} data-panel-root="" data-row="" data-live-tv-layer="" style={{ position: 'absolute', left: 0, right: 0, bottom: dp(200), padding: `0 ${dp(48)}px`, display: 'flex', gap: dp(14), overflowX: 'auto', zIndex: 31 }}>
-          {tv.neighbours.map((c) => {
+          {tv.neighbours.map((c, cardIndex) => {
             const n = tv.nowFor(c)
             const current = channelKey(c) === channelKey(channel)
+            // Exakt EN data-init i mini-guiden: den spelande kanalens kort,
+            // eller första kortet när den kanalen inte ligger i listan
+            // (`index` −1).
+            const cardInit = index < 0 ? cardIndex === 0 : current
             return (
-              <div key={channelKey(c)} data-testid="mini-card" {...station(() => { closeMini(); tv.onSwitchChannel(c) }, (el) => setMenu({ title: c.name, element: el, actions: [{ key: 'multi', label: tt('menuAddMultiview'), run: () => tv.onAddToMultiview(c) }] }), current ? { 'data-init': '' } : undefined)} style={{ width: dp(330), height: dp(118), flexShrink: 0, borderRadius: dp(14), padding: `${dp(14)}px ${dp(16)}px`, background: current ? TV.s16 : 'rgba(20,22,30,0.85)', display: 'flex', flexDirection: 'column', gap: dp(6), cursor: 'pointer', boxSizing: 'border-box' }}>
+              <div key={channelKey(c)} data-testid="mini-card" {...station(() => { closeMini(); tv.onSwitchChannel(c) }, (el) => setMenu({ title: c.name, element: el, actions: [{ key: 'multi', label: tt('menuAddMultiview'), run: () => tv.onAddToMultiview(c) }] }), cardInit ? { 'data-init': '' } : undefined)} style={{ width: dp(330), height: dp(118), flexShrink: 0, borderRadius: dp(14), padding: `${dp(14)}px ${dp(16)}px`, background: current ? TV.s16 : 'rgba(20,22,30,0.85)', display: 'flex', flexDirection: 'column', gap: dp(6), cursor: 'pointer', boxSizing: 'border-box' }}>
                 <div style={{ fontSize: dp(14), color: 'rgba(243,244,248,0.55)' }}>{c.name}</div>
                 <div style={{ fontSize: dp(19), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{n.now?.title ?? tt('noProgramme')}</div>
                 {n.next ? <div style={{ fontSize: dp(15), color: 'rgba(243,244,248,0.6)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tt('nextLabel')}: {n.next.title}</div> : null}
