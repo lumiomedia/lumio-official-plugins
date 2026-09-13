@@ -209,6 +209,28 @@ describe('TvGuideGrid', () => {
     })
   })
 
+  it('kanalkolumnen ligger fast på en bred yta', async () => {
+    await openGrid()
+    expect(screen.getAllByTestId('grid-channel')[0].style.position).toBe('sticky')
+  })
+
+  it('kanalkolumnen följer med i sidoscrollen när värden flaggar en smal yta', async () => {
+    // Måttet är VÄRDENS: `tvScene()` håller golvet 1280 designpixlar och gör
+    // scenen högre i stället för smalare, så fönsterbredden säger ingenting.
+    // Lådan bär `data-tv-scene-narrow="1"` under 1024 css-px, och det är den
+    // flaggan `useNarrowSurface()` (P1) läser.
+    const box = document.createElement('div')
+    box.setAttribute('data-tv-scene-box', '1')
+    box.setAttribute('data-tv-scene-narrow', '1')
+    document.body.appendChild(box)
+    try {
+      await openGrid()
+      expect(screen.getAllByTestId('grid-channel')[0].style.position).toBe('')
+    } finally {
+      box.remove()
+    }
+  })
+
   it('kanalkolumnen är en station per rad och detaljremsan går att markera', async () => {
     await openGrid()
     const channels = screen.getAllByTestId('grid-channel')

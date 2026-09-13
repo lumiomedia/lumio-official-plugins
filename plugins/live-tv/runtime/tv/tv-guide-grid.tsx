@@ -8,7 +8,7 @@ import { formatClock } from '../live-tv-ui'
 import { isReminded, toggleReminder } from '../reminders'
 import { selectEpgRows } from '../epg-rows'
 import { useSchedules } from '../hooks/useSchedules'
-import { useIsMobileLayout } from '../hooks/useIsMobileLayout'
+import { useNarrowSurface } from '../hooks/useNarrowSurface'
 import type { TvViewProps } from './tv-shell'
 import { ChannelArt, Chip, Icons, Segment, TV, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
@@ -102,13 +102,21 @@ export function TvGuideGrid({ model, nav, mode, onModeChange }: TvViewProps & { 
   const [reminderTick, setReminderTick] = useState(0)
   const scrollRef = useRef<HTMLDivElement | null>(null)
   /**
-   * TODO(P1): useNarrowSurface — byt raden nedan mot `useNarrowSurface()` när
-   * P1 landat. Hooken läser värdens `data-tv-scene-narrow` på scenlådan,
-   * alltså den MÄTTA bredden; `useIsMobileLayout()` är dagens mått och samma
-   * villkor skrivbordssidan använde. Villkoret står på EN plats just för att
-   * bytet ska bli en rad.
+   * Fast kanalkolumn — men bara när ytan är bred nog att ha råd med 160 px.
+   *
+   * Måttet är värdens, inte vårt: `tvScene()` håller golvet 1280 designpixlar
+   * och gör scenen HÖGRE i stället för smalare, så en fönsterbredd säger
+   * ingenting om hur trångt det faktiskt är. Värden mäter lådans verkliga
+   * innehållsyta och skriver `data-tv-scene-narrow="1"` under 1024 css-px;
+   * `useNarrowSurface()` läser den flaggan. På en smal yta FÖLJER kolumnen
+   * med i sidoscrollen i stället för att ligga fast — annars äter den halva
+   * skärmen och mindre än en timme av tablån blir kvar (samma beslut som
+   * skrivbordets `CHANNEL_COL_MOBILE`, Jerry 2026-09-03).
+   *
+   * Ingen ref skickas in: hooken frågar dokumentet efter lådan, och
+   * pluginsidan är den enda som ber om en.
    */
-  const narrow = useIsMobileLayout()
+  const narrow = useNarrowSurface()
   const finePointer = useFinePointer()
   const { nowMs } = model
 
