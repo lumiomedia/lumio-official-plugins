@@ -114,3 +114,58 @@ describe('LiveTvGrid: listor', () => {
     expect(await screen.findByText(/could not resolve host a.tld/)).toBeInTheDocument()
   })
 })
+
+describe('LiveTvGrid: Uppdatera per lista och Uppdatera alla', () => {
+  const second = rawList({
+    id: 'l3',
+    name: 'Andra panelen',
+    kind: 'm3u',
+    source: 'http://second.test/playlist.m3u',
+    url: 'http://second.test/playlist.m3u',
+    channels: [ch('Kanal C')],
+  })
+
+  beforeEach(() => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'm3u_urls', [PLAYLIST_URL, 'http://second.test/playlist.m3u'])
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [imported, custom, second])
+  })
+
+  it('Uppdatera per lista kör importList bara för den listan', async () => {
+    const importSpy = vi.spyOn(liveTvData, 'importList').mockResolvedValue({
+      state: 'done', received: 1, total: 1, result: { total: 1, groups: [], urlTvg: null, truncated: false },
+    })
+
+    await mount()
+    // Fliken "Alla" är aktiv från start — knappen sitter ändå direkt på
+    // panelens egen pill, utan att man först behöver klicka sig dit.
+    fireEvent.click(screen.getByTestId('list-refresh-l1'))
+
+    await waitFor(() => expect(importSpy).toHaveBeenCalledTimes(1))
+    expect(importSpy.mock.calls[0][0]).toMatchObject({ id: 'l1', kind: 'm3u', source: PLAYLIST_URL })
+  })
+
+  it('Uppdatera alla kör importList för varje (importerbar) lista', async () => {
+    const importSpy = vi.spyOn(liveTvData, 'importList').mockResolvedValue({
+      state: 'done', received: 1, total: 1, result: { total: 1, groups: [], urlTvg: null, truncated: false },
+    })
+
+    await mount()
+    fireEvent.click(screen.getByLabelText('refreshStatus'))
+
+    await waitFor(() => expect(importSpy).toHaveBeenCalledTimes(2))
+    const ids = importSpy.mock.calls.map((call) => (call[0] as LiveTvList).id).sort()
+    expect(ids).toEqual(['l1', 'l3'])
+  })
+
+  it('Uppdatera per lista rör inte de andra listorna', async () => {
+    const importSpy = vi.spyOn(liveTvData, 'importList').mockResolvedValue({
+      state: 'done', received: 1, total: 1, result: { total: 1, groups: [], urlTvg: null, truncated: false },
+    })
+
+    await mount()
+    fireEvent.click(screen.getByTestId('list-refresh-l3'))
+
+    await waitFor(() => expect(importSpy).toHaveBeenCalledTimes(1))
+    expect(importSpy.mock.calls[0][0]).toMatchObject({ id: 'l3' })
+  })
+})

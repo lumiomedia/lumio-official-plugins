@@ -430,8 +430,7 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
    *
    * Manuella (`custom`) listor har inget att hämta: de läses bara om.
    */
-  async function handleRefreshChannels() {
-    const scope = activeList ? [activeList] : lists
+  async function refreshLists(scope: LiveTvList[]) {
     const targets = scope.filter((list) => Boolean(list.source) && (list.kind === 'm3u' || list.kind === 'xtream'))
     if (targets.length === 0) return
     setImportError(null)
@@ -467,6 +466,21 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
     // Ingen omladdning här: varje lyckad `importList` emitterar
     // INDEX_CHANGED_EVENT, som invaliderar cachen och väcker både modellen och
     // den här vyn. En egen bump hade gett N+1 omläsningar av hela utbudet.
+  }
+
+  async function handleRefreshChannels() {
+    await refreshLists(activeList ? [activeList] : lists)
+  }
+
+  /**
+   * Uppdatera EN lista — utan att först behöva klicka fliken. Toppknappen
+   * (`handleRefreshChannels`) körde redan bara den aktiva listan när en flik
+   * var vald, men det krävde bytet av flik; den här sitter direkt på
+   * listpillen och kör alltid EXAKT den listan, oavsett vilken flik som råkar
+   * vara aktiv (spec 4.4 punkt 4 — samma två knappar som TV-inställningarna).
+   */
+  async function handleRefreshList(list: LiveTvList) {
+    await refreshLists([list])
   }
 
   function handleCreateList(name: string): LiveTvList | null {
@@ -1139,12 +1153,16 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
                   </span>
                 </button>
               ) : null}
-              {lists.map((list) => (
+              {lists.map((list) => {
+                const importable = list.kind === 'm3u' || list.kind === 'xtream'
+                return (
                 <div key={list.id} className="relative">
                   <button
                     type="button"
                     onClick={() => setActiveListId(list.id)}
-                    className={`inline-flex h-9 items-center gap-2 rounded-full border px-4 pr-10 text-[0.6rem] font-normal uppercase tracking-[0.2em] whitespace-nowrap transition ${
+                    className={`inline-flex h-9 items-center gap-2 rounded-full border px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] whitespace-nowrap transition ${
+                      importable ? 'pr-16' : 'pr-10'
+                    } ${
                       activeListId === list.id
                         ? activePillClass
                         : neutralPillClass
@@ -1159,6 +1177,26 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
                       {list.kind === 'custom' ? (list.channels ?? []).length : list.channelCount ?? 0}
                     </span>
                   </button>
+                  {/* Uppdatera DEN HÄR listan, utan att först klicka fliken —
+                      toppens knapp kör redan alla (eller den aktiva, om en
+                      flik råkar vara vald); den här kompletterar med "per
+                      lista" oavsett vald flik (spec 4.4 punkt 4). Manuella
+                      (`custom`) listor har inget att hämta och får ingen knapp. */}
+                  {importable ? (
+                    <button
+                      type="button"
+                      data-testid={`list-refresh-${list.id}`}
+                      onClick={() => void handleRefreshList(list)}
+                      disabled={refreshing}
+                      className="absolute right-8 top-1/2 z-10 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.04] text-slate-400 transition hover:border-accent-400/40 hover:bg-accent-400/10 hover:text-accent-300 disabled:cursor-default disabled:opacity-50"
+                      title={h('listRefetch')}
+                    >
+                      <svg className={`h-3 w-3 ${refreshing ? 'animate-spin' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+                        <path d="M21 3v6h-6" />
+                      </svg>
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     onClick={() => {
@@ -1174,7 +1212,8 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
                     </svg>
                   </button>
                 </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>}

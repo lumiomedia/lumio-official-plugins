@@ -168,3 +168,44 @@ describe('EpgStatusCard', () => {
     expect(epgStatus).not.toHaveBeenCalled()
   })
 })
+
+// Renderingen ovan bevisar behaviouren; det här beviset är att den kommer ur
+// den DELADE hooken (P7), inte en egen useState/useEffect-kopia — annars kan
+// skrivbordet och TV-inställningarna glida isär utan att något test slår till.
+// `vi.spyOn` på modulnamnrymden (i stället för `vi.mock` på filnivå) håller
+// bytet till EN test, så resten av filens tester rör den riktiga hooken precis
+// som förut.
+import * as useEpgStatusModule from './hooks/useEpgStatus'
+
+describe('EpgStatusCard hämtar via den delade hooken', () => {
+  it('läser status/urls/refreshing ur useEpgStatus och anropar dess refresh()', () => {
+    const refresh = vi.fn().mockResolvedValue(undefined)
+    const spy = vi.spyOn(useEpgStatusModule, 'useEpgStatus').mockReturnValue({
+      status: {
+        listId: 'global', fetchedAt: Date.now(), failedAt: null, channels: 1, programmes: 2,
+        urls: [{ url: 'https://a.example/epg.xml', channels: 1, programmes: 2, fetchedAt: Date.now() }],
+      },
+      urls: ['https://a.example/epg.xml'],
+      refreshing: false,
+      refresh,
+      reload: vi.fn(),
+    })
+
+    render(<EpgStatusCard />)
+    expect(screen.getByText('https://a.example/epg.xml')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /refetch epg/i }))
+    expect(refresh).toHaveBeenCalledTimes(1)
+    // Ren rendering: komponenten pratar aldrig direkt med index-clienten.
+    expect(epgStatus).not.toHaveBeenCalled()
+    spy.mockRestore()
+  })
+
+  it('visar ingenting när hooken svarar utan urls', () => {
+    const spy = vi.spyOn(useEpgStatusModule, 'useEpgStatus').mockReturnValue({
+      status: null, urls: [], refreshing: false, refresh: vi.fn(), reload: vi.fn(),
+    })
+    const { container } = render(<EpgStatusCard />)
+    expect(container).toBeEmptyDOMElement()
+    spy.mockRestore()
+  })
+})

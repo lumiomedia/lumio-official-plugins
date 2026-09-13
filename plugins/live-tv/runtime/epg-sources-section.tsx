@@ -1,11 +1,10 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import type * as React from 'react'
 import { Card, PillBtn, TOKENS, eyebrowStyle, inputStyle, useLang } from '@/lib/plugin-sdk'
-import { LIVE_TV_GLOBAL_EPG_ID, getAllLiveTvEpgUrls, getLiveTvLists, onLiveTvListsChanged } from './live-tv-data'
-import { epgStatus, refreshEpg, waitForJob, type EpgStatus } from './index-client'
 import { useHubText } from './hub-strings'
+import { useEpgStatus } from './hooks/useEpgStatus'
 
 interface Props {
   autoUrl: string | null
@@ -52,55 +51,14 @@ function sourceRow(url: string, meta: React.ReactNode, right: React.ReactNode, d
  * det N statusläsningar av samma sak och N "Hämta om EPG"-knappar som alla
  * gjorde exakt samma globala omhämtning — men med var sitt `refreshing`, så
  * de andra knapparna såg overksamma ut medan en av dem arbetade.
+ *
+ * Datadelen (läsning/omhämtning) är ren utbrytning i `hooks/useEpgStatus.ts`,
+ * delad med TV-inställningarnas EPG-flik (P7) — den här komponenten äger
+ * bara renderingen.
  */
 export function EpgStatusCard() {
   const { h, locale } = useHubText()
-  const [status, setStatus] = useState<EpgStatus | null>(null)
-  const [refreshing, setRefreshing] = useState(false)
-  const [lists, setLists] = useState(() => getLiveTvLists())
-  const urls = getAllLiveTvEpgUrls(lists)
-  const urlsKey = urls.join('|')
-
-  const readStatus = useCallback(async (): Promise<EpgStatus | null> => {
-    try {
-      return await epgStatus(LIVE_TV_GLOBAL_EPG_ID)
-    } catch {
-      // Äldre app utan endpointen, eller ett övergående fel: resten av
-      // inställningarna ska fortsätta fungera utan siffror.
-      return null
-    }
-  }, [])
-
-  // Adresserna redigeras i listkorten under det här blocket; utan
-  // prenumerationen visade det den uppsättning som råkade gälla vid
-  // monteringen.
-  useEffect(() => onLiveTvListsChanged(() => setLists(getLiveTvLists())), [])
-
-  useEffect(() => {
-    // Utan EPG-adresser finns ingen butik att fråga om — och blocket ritas
-    // inte heller (se returen nedan).
-    if (urlsKey.length === 0) return
-    let cancelled = false
-    void readStatus().then((next) => { if (!cancelled) setStatus(next) })
-    return () => { cancelled = true }
-  }, [urlsKey, readStatus])
-
-  async function handleRefresh() {
-    setRefreshing(true)
-    try {
-      const current = getLiveTvLists()
-      setLists(current)
-      const sources = current.map((list) => list.source).filter((source): source is string => Boolean(source))
-      const job = await refreshEpg(LIVE_TV_GLOBAL_EPG_ID, getAllLiveTvEpgUrls(current), sources, true)
-      await waitForJob(job)
-    } catch {
-      // Utfallet syns i statusen nedan (failedAt / per-adress `error`), som
-      // läses om oavsett.
-    } finally {
-      setStatus(await readStatus())
-      setRefreshing(false)
-    }
-  }
+  const { status, urls, refreshing, refresh } = useEpgStatus()
 
   if (urls.length === 0) return null
 
@@ -131,7 +89,7 @@ export function EpgStatusCard() {
               ? h('epgFetchedAt', { time: overallFetched, programmes: status?.programmes ?? 0 })
               : h('epgNeverFetched')}
           </span>
-          <PillBtn size="sm" onClick={() => void handleRefresh()} disabled={refreshing}>
+          <PillBtn size="sm" onClick={() => void refresh()} disabled={refreshing}>
             {refreshing ? h('epgRefreshing') : h('epgRefresh')}
           </PillBtn>
         </div>
