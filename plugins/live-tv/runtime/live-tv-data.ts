@@ -14,6 +14,7 @@ import {
 import {
   emitIndexChanged,
   indexStatus,
+  resetSource,
   startImport,
   waitForJob,
   type ImportStatus,
@@ -88,6 +89,13 @@ export interface LiveTvList {
   channelCount?: number
   /** Grupper (kategorier) i listan, för filterkedjan utan att ladda kanalerna. */
   groups?: { name: string; count: number }[]
+  /**
+   * Appen slutade läsa spellistan vid sitt storlekstak (64 MiB) — kanalerna
+   * som kom efter finns inte i indexet. Jobbet svarar `done`, så utan den här
+   * flaggan såg en HALV lista ut som en hel: kvittot visade sitt antal och
+   * ingenting sa att resten saknades.
+   */
+  truncated?: boolean
   /**
    * Inbäddade kanaler ur den GAMLA lagringen (innan v2). Läses för sanering
    * och av äldre kod (`flattenChannels` m.fl., bytta i P3) — v2-koden här
@@ -251,6 +259,7 @@ function sanitizeListEntry(entry: Record<string, unknown>, xtreamLogins: XtreamL
     fetchedAt: typeof entry.fetchedAt === 'string' && entry.fetchedAt.trim().length > 0 ? entry.fetchedAt : null,
     channelCount,
     groups,
+    truncated: entry.truncated === true,
     channels,
     needsReimport: entry.needsReimport === true,
     lastImportError: typeof entry.lastImportError === 'string' && entry.lastImportError.trim().length > 0
@@ -419,8 +428,37 @@ export function updateLiveTvListEpg(
   )
 }
 
+/**
+ * Tar bort listposten OCH dess kanaler ur appens index.
+ *
+ * Bara att skriva om `lists` räckte inte: kanalerna bor i indexet sedan v2, så
+ * en borttagen spellista fortsatte synas i varje uppslag utan källa ("alla
+ * kanaler", sök, favoritupplösning) tills något annat råkade skriva om
+ * källan. Alla fyra borttagningsvägar (skrivbordets inställningar, Xtream-
+ * kortet, TV-inställningarna, rutnätets listflik) går genom den här funktionen
+ * och får därför städningen på köpet.
+ *
+ * Tre undantag: `custom`-listor har inga kanaler i indexet (de bär dem
+ * inbäddade), en källa som en ANNAN lista fortfarande pekar på får inte tömmas,
+ * och en lista utan källa har ingenting att tömma. Nollställningen är
+ * eldochglöm — `emitIndexChanged` skickas när försöket är gjort, eftersom
+ * listan är borta oavsett och vyerna måste läsa om.
+ */
 export function deleteLiveTvList(listId: string): void {
-  writeLists(readLists().filter((list) => list.id !== listId))
+  const lists = readLists()
+  const removed = lists.find((list) => list.id === listId) ?? null
+  const remaining = lists.filter((list) => list.id !== listId)
+  writeLists(remaining)
+
+  const source = removed?.source
+  if (!source || removed?.kind === 'custom') return
+  if (remaining.some((list) => list.source === source)) return
+  void resetSource(source)
+    .catch(() => {
+      // Ett nätfel lämnar kanalerna i indexet. Vyerna läser ändå om: nästa
+      // borttagning/import städar, och listan är borta ur lagringen redan.
+    })
+    .finally(() => emitIndexChanged())
 }
 
 function deriveListName(sourceUrl: string): string {
@@ -432,20 +470,52 @@ function deriveListName(sourceUrl: string): string {
   }
 }
 
+export type AddChannelResult = 'added' | 'duplicate' | 'full' | 'not-custom'
+
+/**
+ * Tak för en manuellt skapad lista.
+ *
+ * `lists` SPEGLAS mellan enheter och skrivs i sin helhet vid varje ändring.
+ * En "custom"-lista är den enda som fortfarande bär kanaler inbäddade, och
+ * utan tak kunde någon lägga dit tusentals — då är vi tillbaka i exakt den
+ * lagringsform lagring v2 tog bort (hundratals kB som synkas fram och
+ * tillbaka vid varje nålning).
+ */
+export const MAX_CUSTOM_LIST_CHANNELS = 500
+
 /**
  * BARA manuellt skapade (`kind === 'custom'`) listor lagrar kanaler — m3u/
  * xtream-listors kanaler bor i indexet, och `channelCount`/`groups` för dem är
  * importjobbets kvitto (skrivs av `importList`). Ett anrop på en icke-custom
- * lista är därför ett no-op i stället för att skriva en kanalpayload (som för
- * Xtream kan bära `archive` med inloggningsuppgifter) till speglade `lists`
- * och skeva kvittot till "1 kanal".
+ * lista är därför ett no-op i stället för att skriva en kanalpayload till
+ * speglade `lists` och skeva kvittot till "1 kanal".
+ *
+ * `archive` FÖLJER ALDRIG MED. Fältet bär Xtream-panelens bas, användarnamn
+ * och lösenord: att skriva in det i `lists` la inloggningsuppgifter i den
+ * nyckel som speglas mellan enheter, en gång per tillagd kanal. Catch-up
+ * behöver dem ändå inte härifrån — kanalens tvilling i indexet har dem, och
+ * vyerna slår upp den på URL:en (`withIndexTwins`/`model.byUrl`) innan de
+ * spelar eller ritar repriser.
  */
-export function addChannelToLiveTvList(listId: string, channel: M3uChannel): void {
+export function addChannelToLiveTvList(listId: string, channel: M3uChannel): AddChannelResult {
+  let outcome: AddChannelResult = 'not-custom'
   writeLists(readLists().map((list) => {
     if (list.id !== listId || list.kind !== 'custom') return list
-    const channels = dedupeChannels([...(list.channels ?? []), channel])
+    const current = list.channels ?? []
+    if (current.length >= MAX_CUSTOM_LIST_CHANNELS) {
+      outcome = 'full'
+      return list
+    }
+    const { archive: _archive, ...withoutArchive } = channel
+    const channels = dedupeChannels([...current, withoutArchive])
+    if (channels.length === current.length) {
+      outcome = 'duplicate'
+      return list
+    }
+    outcome = 'added'
     return { ...list, channels, channelCount: channels.length, groups: computeGroups(channels) }
   }))
+  return outcome
 }
 
 export function removeChannelFromLiveTvList(listId: string, channel: Pick<M3uChannel, 'name' | 'url'>): void {
@@ -721,7 +791,13 @@ export async function importList(list: LiveTvList, onProgress?: (status: ImportS
           ...entry,
           channelCount: result?.total ?? entry.channelCount ?? 0,
           groups: result?.groups ?? entry.groups ?? [],
-          urlTvg: result?.urlTvg ?? entry.urlTvg,
+          // `urlTvg` tas RAKT AV ur jobbets svar när det finns ett svar:
+          // `?? entry.urlTvg` behöll den gamla adressen när appen svarade
+          // null, så en url-tvg som tagits bort ur spellistan levde kvar och
+          // pluginet fortsatte be om en tablå ingen längre publicerade. Ett
+          // FELAT jobb (ingen `result`) lämnar den orörd, som allt annat.
+          urlTvg: result ? result.urlTvg : entry.urlTvg,
+          truncated: result?.truncated === true,
           fetchedAt: new Date().toISOString(),
         }
       : entry)))

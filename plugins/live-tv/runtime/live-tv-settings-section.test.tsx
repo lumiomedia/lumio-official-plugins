@@ -142,6 +142,16 @@ describe('LiveTvSettingsSection', () => {
     expect(getXtreamLogins().map((login) => login.id)).toEqual(['login-1'])
   })
 
+  it('en kapad spellista säger att kanaler saknas', () => {
+    // Jobbet svarade `done` — utan raden ser en halv lista ut som en hel.
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list({
+      id: 'm1', name: 'stor.test', kind: 'm3u', source: 'http://stor.test/list.m3u', url: 'http://stor.test/list.m3u', channelCount: 120000, truncated: true,
+    })])
+
+    render(<LiveTvSettingsSection />)
+    expect(screen.getByTestId('list-truncated-m1')).toHaveTextContent('cut off at 64 MiB')
+  })
+
   it('en överförd Xtream-lista utan inloggning ber om ny inloggning med panelen ifylld', () => {
     // `lists` speglas mellan enheter, `xtream_logins` gör det inte — listan
     // finns men importen kan inte köras förrän någon loggat in igen.

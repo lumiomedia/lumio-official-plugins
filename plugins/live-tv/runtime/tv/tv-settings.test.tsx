@@ -127,6 +127,13 @@ describe('TvSettingsView', () => {
     expect(rows[0]).toHaveAttribute('data-testid', 'list-row-l2')
   })
 
+  it('Spellistor: en kapad spellista säger att kanaler saknas', () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ ...urlList, kind: 'm3u', source: 'http://iptv.example.com/list.m3u8', url: 'http://iptv.example.com/list.m3u8', channelCount: 120000, truncated: true }])
+    seedLiveTvIndex()
+    mount('playlists')
+    expect(screen.getByTestId('list-truncated-l2')).toHaveTextContent('cut off at 64 MiB')
+  })
+
   it('Spellistor: fokus stannar kvar i raden när märket rensas av en lyckad hämtning', async () => {
     // Sorteringen "behöver hämtas om först" räknades om vid varje rendering:
     // i samma ögonblick som flaggan rensades bytte raden plats, React

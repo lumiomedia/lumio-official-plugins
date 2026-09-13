@@ -46,6 +46,17 @@ describe('TvGuide', () => {
     expect(screen.getAllByText('No programme information').length).toBeGreaterThan(0)
     expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
   })
+  it('tomlägets nod ligger kvar när raderna kommit — bara stationen flyttar', async () => {
+    // Noden bar `data-init` under laddningen och AVMONTERADES när raderna kom:
+    // fokusmotorn stod utan startstation i ögonblicket däremellan.
+    await mount()
+    const empty = screen.getByTestId('guide-empty')
+    expect(empty).toBeInTheDocument()
+    expect(empty).not.toHaveAttribute('data-f')
+    expect(empty).not.toHaveAttribute('data-init')
+    expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
+  })
+
   it('fokus på en rad uppdaterar toppbandet', async () => {
     await mount()
     const rows = screen.getAllByTestId('guide-row')

@@ -90,6 +90,11 @@ export function TvHub({ model, nav }: TvViewProps) {
 
   return (
     <div data-scroll="" style={{ flex: 1, overflowY: 'auto', padding: `${dp(30)}px ${dp(48)}px ${dp(48)}px`, display: 'flex', flexDirection: 'column', gap: dp(22), scrollPaddingTop: dp(120) }}>
+      {/* Appen saknar v2-endpointerna (0.1.596+): starten hoppade över
+          migreringen med flit, så vyn kan vara tom utan att något är trasigt. */}
+      {model.appTooOld ? (
+        <div data-testid="live-tv-app-too-old" style={{ padding: `${dp(12)}px ${dp(18)}px`, borderRadius: dp(12), background: 'rgba(244,132,95,0.18)', color: '#f4845f', fontSize: dp(19) }}>{tt('appTooOld')}</div>
+      ) : null}
       {/* Topprad */}
       <div style={{ display: 'flex', alignItems: 'center', gap: dp(20) }}>
         <div style={{ fontSize: dp(34), fontWeight: 600 }}>{tt('liveTv')}</div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   clearPluginMemoryCacheByPrefix,
   getPluginMemoryCache,
@@ -8,8 +8,14 @@ import {
   useTvMode,
 } from '@/lib/plugin-sdk'
 import type { NowNextLater } from './epg/types'
-import { fetchNowSnapshot, getCachedNowSnapshot, type NowSnapshot } from './epg/now-snapshot'
 import {
+  fetchNowSnapshot,
+  getCachedNowSnapshot,
+  nowSnapshotNeedsRefetch,
+  type NowSnapshot,
+} from './epg/now-snapshot'
+import {
+  epgStatus,
   loadAllChannels,
   onIndexChanged,
   refreshEpg,
@@ -130,8 +136,13 @@ export interface LiveTvModel {
   epgFetchedAt: number | null
   /** Slår upp kanaler på nyckel mot indexet (favoriter, historik, sökträffar). */
   resolveKeys: (keys: string[]) => Promise<M3uChannel[]>
-  /** Tvinga en ny sidhämtning ur indexet (efter import, eller manuell uppdatering). */
-  refreshChannels: () => void
+  /**
+   * Appen är äldre än 0.1.596 och saknar `/import` + `/epg/*`. Migreringen och
+   * enhetsöverföringens importer är då avstängda (de hade tömt listorna på
+   * sina inbäddade kanaler och lämnat dem oåtkomliga), och vyerna visar en
+   * notis i stället för tomma rutnät.
+   */
+  appTooOld: boolean
   nowFor: (channel: M3uChannel) => NowNextLater
   reminders: Reminder[]
   locked: Set<string>
@@ -155,9 +166,42 @@ export function ensureLiveTvBootstrap(): Promise<void> {
   return ensureBootstrap()
 }
 
+let appTooOldFlag = false
+
+/** Sant när starten fann en app utan v2-endpoints (se `LiveTvModel.appTooOld`). */
+export function isLiveTvAppTooOld(): boolean {
+  return appTooOldFlag
+}
+
+/**
+ * Finns appens v2-endpoints över huvud taget?
+ *
+ * `/api/live-tv/epg/status` kom i 0.1.596, tillsammans med `/import` och
+ * resten av `/epg/*`. En app från 0.1.595 har `/batch` och `/query` men inget
+ * annat — och just den kombinationen är farlig: migreringen hade FLYTTAT
+ * kanalerna ur `lists` in i indexet (det går), och sedan hade varje import och
+ * varje tablåfråga svarat 404. Resultatet: listor utan kanaler, utan tablå och
+ * utan väg tillbaka, eftersom de inbäddade kanalerna var borta.
+ *
+ * Probet är därför en GRIND framför migreringen, inte en diagnostik efteråt.
+ * Ett nätfel räknas som "för gammal" — vi skriver hellre ingenting alls än
+ * skriver om lagringen på en gissning; nästa sidladdning provar igen.
+ */
+async function probeLiveTvApi(): Promise<boolean> {
+  try {
+    await epgStatus('probe')
+    return true
+  } catch {
+    return false
+  }
+}
+
 function ensureBootstrap(): Promise<void> {
   if (!bootstrapPromise) {
     bootstrapPromise = (async () => {
+      const supported = await probeLiveTvApi()
+      appTooOldFlag = !supported
+      if (!supported) return
       await migrateStorageV2().catch(() => {})
       await importMissingSources().catch(() => {})
     })()
@@ -220,6 +264,46 @@ export function invalidateChannels(): void {
 }
 
 /**
+ * "Alla kanaler" = UNIONEN av källorna, inte en egen hämtning.
+ *
+ * `/query` utan `source` svarar med hela indexet — men svaret bär ingen
+ * källa per rad, så resultatet gick inte att dela med vyer som frågar per
+ * källa (rutnätets listflikar, spellisteguiden). Rutnätet håller BÅDA:
+ * modellens `channels:all` och `useChannelsBySource`s `channels:<source>`,
+ * alltså två fullständiga uppsättningar kanalOBJEKT för samma 17 000 kanaler.
+ *
+ * Unionen bygger i stället "alla" av exakt de per-källa-laddningar som redan
+ * är delade. Arrayen är ny (den är bara pekare, ~8 byte per kanal), men
+ * kanalobjekten är SAMMA objekt som ligger i `channels:<source>` — en
+ * uppsättning per källa i minnet, aldrig två.
+ *
+ * Utan indexerbara listor (inga listor alls, eller bara manuellt skapade som
+ * inte har någon källa i indexet) faller den tillbaka på den gamla vägen:
+ * då finns det ingen källa att bygga unionen av, och indexet kan ändå bära
+ * kanaler.
+ */
+async function loadEveryChannel(signal?: AbortSignal): Promise<IndexChannel[]> {
+  const sources = [...new Set(
+    getLiveTvLists()
+      .filter((list) => list.kind !== 'custom' && Boolean(list.source))
+      .map((list) => list.source as string),
+  )]
+  if (sources.length === 0) return loadAllChannels(null, undefined, signal)
+
+  const items: IndexChannel[] = []
+  const seen = new Set<string>()
+  for (const source of sources) {
+    if (signal?.aborted) throw new DOMException('aborted', 'AbortError')
+    for (const channel of await loadChannelsShared(source)) {
+      if (seen.has(channel.key)) continue
+      seen.add(channel.key)
+      items.push(channel)
+    }
+  }
+  return items
+}
+
+/**
  * Kanalerna för en källa. Returnerar minnescachen direkt när den är varm,
  * annars den pågående hämtningen (eller startar den).
  */
@@ -235,7 +319,9 @@ export function loadChannelsShared(source: string | null): Promise<IndexChannel[
   if (controller) channelAborts.set(cacheKey, controller)
   const request = (async () => {
     await ensureBootstrap()
-    const items = await loadAllChannels(source, undefined, controller?.signal)
+    const items = source === null
+      ? await loadEveryChannel(controller?.signal)
+      : await loadAllChannels(source, undefined, controller?.signal)
     setPluginMemoryCache(LIVE_TV_PLUGIN_ID, cacheKey, items)
     return items
   })()
@@ -266,6 +352,7 @@ export function subscribeChannelGeneration(listener: () => void): () => void {
 
 export function __resetLiveTvModelForTests(): void {
   bootstrapPromise = null
+  appTooOldFlag = false
   epgRefreshRequested.clear()
   for (const controller of channelAborts.values()) controller.abort()
   channelAborts.clear()
@@ -347,10 +434,20 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
     }
   }, [activeSource, reloadToken])
 
-  /** Indexet ändrat eller manuell uppdatering: rensa delat och ladda om. */
-  const refreshChannels = useCallback(() => {
-    invalidateChannels()
-    setReloadToken((token) => token + 1)
+  /**
+   * Appversionsgrinden. Flaggan sätts i starten (`ensureBootstrap`) och ändras
+   * inte igen under sidans livstid, så en avläsning när starten är klar räcker
+   * — ingen prenumeration behövs.
+   */
+  const [appTooOld, setAppTooOld] = useState(() => isLiveTvAppTooOld())
+  useEffect(() => {
+    let live = true
+    void ensureBootstrap().finally(() => {
+      if (live) setAppTooOld(isLiveTvAppTooOld())
+    })
+    return () => {
+      live = false
+    }
   }, [])
 
   // Import klar, migrering körd, lista borttagen: indexet har bytt innehåll.
@@ -478,6 +575,12 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
   }, [tickMs])
 
   /**
+   * Vad som utlöste EPG-effekten senast. En ren MINUTTICK behandlas annorlunda
+   * än ett källbyte eller en indexändring — se villkoren nedan.
+   */
+  const epgTriggerRef = useRef({ tick: epgTick, token: reloadToken, source: activeSource, urls: epgUrlsId })
+
+  /**
    * Snapshotet läses under den KONSTANTA lista-nyckeln, inte under epgListId
    * (Jerry 2026-09-03).
    *
@@ -494,22 +597,44 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
   useEffect(() => {
     let live = true
     const listId = LIVE_TV_GLOBAL_EPG_ID
+    const previous = epgTriggerRef.current
+    const tickOnly = previous.tick !== epgTick
+      && previous.token === reloadToken
+      && previous.source === activeSource
+      && previous.urls === epgUrlsId
+    epgTriggerRef.current = { tick: epgTick, token: reloadToken, source: activeSource, urls: epgUrlsId }
+
     const cached = getCachedNowSnapshot(listId, activeSource)
     if (cached) setSnapshot(cached)
     /*
-     * Minuttickern hämtar bara om när det FINNS EPG-källor. Utan källor kan
-     * innehållet ändå finnas (appen härleder xmltv.php ur en Xtream-inloggning),
-     * så den FÖRSTA hämtningen görs alltid — men den kan inte bli färskare av
-     * att frågas om varje minut, och en spellista utan EPG ska inte generera
-     * ett anrop i minuten i all evighet.
+     * PÅ EN MINUTTICK hämtas snapshotet bara om det kan ha ÄNDRATS.
+     *
+     * Hela `/epg/now` är upp till 3 MB för 17 000 kanaler, och det hämtades
+     * om varje minut i all evighet så länge sidan låg framme. Men svaret byter
+     * innehåll först när ett program passerat en gräns — `now` har slutat,
+     * eller `next` har börjat (`nowSnapshotNeedsRefetch`, en genomgång utan
+     * allokering). Utan en sådan gräns är det vi redan har fortfarande sant.
+     *
+     * Två undantag behåller sitt gamla beteende: utan EPG-källor kan
+     * snapshotet inte bli färskare av en ny fråga alls, och ett snapshot som
+     * ändå hunnit bli 10 minuter gammalt hämtas om (appen kan ha hämtat ny
+     * EPG under tiden). Källbyte, indexändring och färdig omhämtning går inte
+     * via den här grinden — de är inte tickar.
      */
-    if (cached && epgTick > 0 && epgUrls.length === 0) {
+    if (tickOnly && cached && (epgUrls.length === 0 || !nowSnapshotNeedsRefetch(cached, Date.now()))) {
       setEpgLoading(false)
       return
     }
     setEpgLoading(!cached)
     void (async () => {
       try {
+        // Migreringen/enhetsöverföringens importer först: en tablåfråga före
+        // dem svarar på ett index som ännu inte fått sina kanaler, och det
+        // tomma svaret cachas som sanning i en hel minut (eller tills något
+        // annat råkar invalidera det). På en uppgraderad eller nyss ihopparad
+        // enhet var det skillnaden mellan "ingen tablå" och en färdig guide.
+        await ensureBootstrap()
+        if (!live) return
         const first = await fetchNowSnapshot(listId, activeSource)
         if (!live) return
         setSnapshot(first)
@@ -592,8 +717,8 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
     channelsLoading,
     epgLoading,
     epgFetchedAt: snapshot?.fetchedAt ?? null,
+    appTooOld,
     resolveKeys,
-    refreshChannels,
     nowFor,
     reminders,
     locked,

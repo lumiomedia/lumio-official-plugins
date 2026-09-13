@@ -25,17 +25,27 @@ export function searchChannels(query: string, channels: M3uChannel[], limit = 30
  * en genomsökning av 17 000 kanaler per tangenttryck finns inte längre.
  */
 
+/**
+ * Förslagen räknas vid VARJE tangenttryck. Den gamla versionen byggde först
+ * `[...channels.map((c) => c.name), ...programmeTitles]` — två nya arrayer med
+ * upp till 17 000 strängar — för att sedan i praktiken läsa de första
+ * träffarna av dem. Genomgången sker nu på plats, och avbryts så fort taket är
+ * nått.
+ */
 export function suggestions(query: string, channels: M3uChannel[], programmeTitles: string[], limit = 6): string[] {
   const q = norm(query)
   if (!q) return []
   const seen = new Set<string>()
   const out: string[] = []
-  for (const text of [...channels.map((c) => c.name), ...programmeTitles]) {
+  /** Sant när taket är nått och genomgången kan sluta. */
+  const take = (text: string): boolean => {
     const key = norm(text)
-    if (!key.startsWith(q) || seen.has(key)) continue
+    if (!key.startsWith(q) || seen.has(key)) return false
     seen.add(key)
     out.push(text)
-    if (out.length >= limit) break
+    return out.length >= limit
   }
+  for (const channel of channels) if (take(channel.name)) return out
+  for (const title of programmeTitles) if (take(title)) return out
   return out
 }

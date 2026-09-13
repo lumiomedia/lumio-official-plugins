@@ -39,7 +39,89 @@ interface Entry {
 }
 
 const cache = new Map<string, Entry>()
+
+/**
+ * Nycklar som väntar på att skickas, per FÖNSTER.
+ *
+ * Kanalkorten frågar en nyckel i taget (`useEpgNowNextLater`): fyrtio kort som
+ * monteras i samma rendering gav fyrtio POST:ar mot `/epg/schedule` för exakt
+ * samma fönster. Frågorna samlas därför upp och skickas i EN begäran.
+ *
+ * Fönstret är en mikrotask och inte en timer: alla effekter i en React-commit
+ * körs i samma task, så mikrotasken efter den fångar hela skärmen — utan att
+ * lägga till någon väntan för den som frågar ensam (en 50 ms fördröjning hade
+ * synts i guiden, som frågar om hundratals nycklar på en gång).
+ */
+interface PendingBatch {
+  keys: Set<string>
+  promise: Promise<Record<string, EpgProgramme[]>>
+  scheduled: boolean
+  send: () => void
+}
+
+const batches = new Map<string, PendingBatch>()
+
+/**
+ * Redan AVSKICKADE frågor, per (kanal, fönster).
+ *
+ * En fråga som kommer medan svaret är på väg får inte skicka en till: guiden
+ * och kanalsidan monterar om hela tiden, och den gamla koden delade in-flight
+ * per exakt samma nyckeluppsättning. Här sker det per nyckel i stället, så en
+ * ENSKILD kanal ur en tidigare skickad hög också räknas som redan frågad.
+ */
 const inflight = new Map<string, Promise<Record<string, EpgProgramme[]>>>()
+
+function queueBatch(
+  listId: string,
+  keys: string[],
+  from: number,
+  to: number,
+): Promise<Record<string, EpgProgramme[]>> {
+  const id = `${epgStoreId(listId)}|${from}|${to}`
+  let batch = batches.get(id)
+  if (!batch) {
+    let settle!: (items: Promise<Record<string, EpgProgramme[]>>) => void
+    const promise = new Promise<Record<string, EpgProgramme[]>>((resolve, reject) => {
+      settle = (items) => items.then(resolve, reject)
+    })
+    const entry: PendingBatch = {
+      keys: new Set(),
+      promise,
+      scheduled: false,
+      send: () => {
+        batches.delete(id)
+        const wanted = [...entry.keys]
+        const request = epgSchedule(epgStoreId(listId), wanted, from, to).then((items) => {
+          const storedAt = Date.now()
+          for (const key of wanted) {
+            cache.set(entryKey(listId, key, from, to), { programmes: items[key] ?? [], storedAt })
+          }
+          evict(storedAt)
+          return items
+        })
+        for (const key of wanted) inflight.set(entryKey(listId, key, from, to), request)
+        request
+          .catch(() => {})
+          .finally(() => {
+            for (const key of wanted) {
+              if (inflight.get(entryKey(listId, key, from, to)) === request) {
+                inflight.delete(entryKey(listId, key, from, to))
+              }
+            }
+          })
+        settle(request)
+      },
+    }
+    batch = entry
+    batches.set(id, entry)
+  }
+  for (const key of keys) batch.keys.add(key)
+  if (!batch.scheduled) {
+    batch.scheduled = true
+    queueMicrotask(batch.send)
+  }
+  return batch.promise
+}
 
 function entryKey(listId: string, key: string, from: number, to: number): string {
   // Alla list-id pekar på samma EPG-store, se epg/store-id.ts.
@@ -105,32 +187,38 @@ export async function fetchSchedules(
   const { hits, missing } = split(listId, unique, from, to, Date.now())
   if (missing.length === 0) return hits
 
-  const requestKey = entryKey(listId, missing.join(','), from, to)
-  let request = inflight.get(requestKey)
-  if (!request) {
-    request = epgSchedule(epgStoreId(listId), missing, from, to)
-      .then((items) => {
-        const storedAt = Date.now()
-        for (const key of missing) {
-          cache.set(entryKey(listId, key, from, to), { programmes: items[key] ?? [], storedAt })
-        }
-        evict(storedAt)
-        return items
-      })
-      .finally(() => {
-        inflight.delete(requestKey)
-      })
-    inflight.set(requestKey, request)
+  // Nycklar vars svar redan är på väg väntar in den begäran; resten läggs i
+  // nästa hög.
+  const waiting = new Set<Promise<Record<string, EpgProgramme[]>>>()
+  const queue: string[] = []
+  for (const key of missing) {
+    const pending = inflight.get(entryKey(listId, key, from, to))
+    if (pending) waiting.add(pending)
+    else queue.push(key)
   }
+  if (queue.length > 0) waiting.add(queueBatch(listId, queue, from, to))
+  const answers = await Promise.all([...waiting])
 
-  const items = await request
+  // Svaren först, cachen som reserv: en ENDA fråga kan ha delats på flera
+  // högar, och en riktigt stor hög kan ha trängt ut sina egna första nycklar
+  // ur cachen (taket) innan vi hinner läsa dem.
   const merged: Record<string, EpgProgramme[]> = { ...hits }
-  for (const key of missing) merged[key] = items[key] ?? []
+  for (const key of missing) {
+    let value: EpgProgramme[] | undefined
+    for (const answer of answers) {
+      if (answer[key]) {
+        value = answer[key]
+        break
+      }
+    }
+    merged[key] = value ?? cache.get(entryKey(listId, key, from, to))?.programmes ?? []
+  }
   return merged
 }
 
 export function __resetScheduleCacheForTests(): void {
   cache.clear()
+  batches.clear()
   inflight.clear()
 }
 

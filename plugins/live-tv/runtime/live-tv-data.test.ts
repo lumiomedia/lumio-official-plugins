@@ -2,8 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { __resetForTests, writePluginJson } from '@/lib/plugin-sdk'
 import {
   LIVE_TV_PLUGIN_ID,
+  MAX_CUSTOM_LIST_CHANNELS,
   addChannelToLiveTvList,
+  deleteLiveTvList,
   getLiveTvLists,
+  importList,
   importMissingSources,
   removeChannelFromLiveTvList,
   type LiveTvList,
@@ -186,5 +189,139 @@ describe('importMissingSources', () => {
     await Promise.all([importMissingSources(), importMissingSources()])
 
     expect(statusCalls).toBe(1)
+  })
+})
+
+describe('deleteLiveTvList', () => {
+  function stubReset(): { calls: unknown[]; fetch: ReturnType<typeof vi.fn> } {
+    const calls: unknown[] = []
+    const fetchMock = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      const s = String(url)
+      if (s.includes('/api/live-tv/reset')) {
+        calls.push(JSON.parse(String(init?.body ?? '{}')))
+        return jsonResponse({ ok: true, removed: 3 })
+      }
+      throw new Error(`unexpected fetch: ${s}`)
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    return { calls, fetch: fetchMock }
+  }
+
+  it('nollställer källan i indexet och säger till om ändringen', async () => {
+    const { calls } = stubReset()
+    const changed = vi.fn()
+    window.addEventListener('lumio-live-tv-index-changed', changed)
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [
+      rawList({ id: 'm1', name: 'a.tld', kind: 'm3u', source: 'http://a.tld/list.m3u', url: 'http://a.tld/list.m3u' }),
+    ])
+
+    deleteLiveTvList('m1')
+    await vi.waitFor(() => expect(calls).toEqual([{ source: 'http://a.tld/list.m3u' }]))
+    await vi.waitFor(() => expect(changed).toHaveBeenCalled())
+    window.removeEventListener('lumio-live-tv-index-changed', changed)
+    expect(getLiveTvLists()).toHaveLength(0)
+  })
+
+  it('rör inte indexet för en custom-lista (kanalerna bor i listan)', async () => {
+    const { fetch: fetchMock } = stubReset()
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [
+      rawList({ id: 'c1', name: 'Min lista', kind: 'custom', source: 'custom:c1', channels: [channel('a')] }),
+    ])
+
+    deleteLiveTvList('c1')
+    await Promise.resolve()
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('rör inte indexet när en ANNAN lista delar samma källa', async () => {
+    const { fetch: fetchMock } = stubReset()
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [
+      rawList({ id: 'a1', name: 'a.tld', kind: 'm3u', source: 'http://a.tld/list.m3u', url: 'http://a.tld/list.m3u' }),
+      rawList({ id: 'a2', name: 'a.tld (kopia)', kind: 'm3u', source: 'http://a.tld/list.m3u', url: 'http://a.tld/list.m3u' }),
+    ])
+
+    deleteLiveTvList('a1')
+    await Promise.resolve()
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('importList: kvittot efter ett klart jobb', () => {
+  function stubImport(result: unknown) {
+    vi.stubGlobal('fetch', vi.fn(async (url: RequestInfo | URL) => {
+      const s = String(url)
+      if (s.includes('/api/live-tv/import/status')) return jsonResponse({ state: 'done', received: 1, result })
+      if (s.includes('/api/live-tv/import')) return jsonResponse({ job: 'job-1' })
+      throw new Error(`unexpected fetch: ${s}`)
+    }))
+  }
+
+  const m3u = rawList({ id: 'm1', name: 'a.tld', kind: 'm3u', source: 'http://a.tld/list.m3u', url: 'http://a.tld/list.m3u' })
+
+  it('bär med sig att spellistan kapades vid taket', async () => {
+    stubImport({ total: 12, groups: [], urlTvg: null, truncated: true })
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [m3u])
+
+    await importList(getLiveTvLists()[0])
+
+    expect(getLiveTvLists()[0].truncated).toBe(true)
+  })
+
+  it('rensar flaggan när nästa hämtning ryms', async () => {
+    stubImport({ total: 12, groups: [], urlTvg: null, truncated: false })
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ ...m3u, truncated: true }])
+
+    await importList(getLiveTvLists()[0])
+
+    expect(getLiveTvLists()[0].truncated).toBe(false)
+  })
+
+  it('tar appens urlTvg även när den är null (den auto-härledda källan försvann)', async () => {
+    stubImport({ total: 12, groups: [], urlTvg: null, truncated: false })
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ ...m3u, urlTvg: 'http://gammal/epg.xml' }])
+
+    await importList(getLiveTvLists()[0])
+
+    expect(getLiveTvLists()[0].urlTvg).toBeNull()
+  })
+
+  it('behåller gammal urlTvg när jobbet föll', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url: RequestInfo | URL) => {
+      const s = String(url)
+      if (s.includes('/api/live-tv/import/status')) return jsonResponse({ state: 'error', received: 0, error: 'boom' })
+      if (s.includes('/api/live-tv/import')) return jsonResponse({ job: 'job-1' })
+      throw new Error(`unexpected fetch: ${s}`)
+    }))
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ ...m3u, urlTvg: 'http://gammal/epg.xml' }])
+
+    await importList(getLiveTvLists()[0])
+
+    expect(getLiveTvLists()[0].urlTvg).toBe('http://gammal/epg.xml')
+  })
+})
+
+describe('addChannelToLiveTvList: custom-listans gränser', () => {
+  const archiveChannel = {
+    ...channel('Xtream 1'),
+    archive: { days: 7, streamId: 42, base: 'http://panel.test:8080', username: 'u', password: 'hemligt' },
+  }
+
+  it('lägger aldrig Xtream-inloggningen i den speglade listan', () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [rawList({ id: 'c1', name: 'Min lista', kind: 'custom', source: 'custom:c1' })])
+
+    expect(addChannelToLiveTvList('c1', archiveChannel)).toBe('added')
+
+    const stored = getLiveTvLists()[0].channels ?? []
+    expect(stored).toHaveLength(1)
+    expect(stored[0].archive).toBeUndefined()
+    expect(JSON.stringify(stored)).not.toContain('hemligt')
+  })
+
+  it('stannar vid taket i stället för att svälla den speglade nyckeln', () => {
+    const many = Array.from({ length: MAX_CUSTOM_LIST_CHANNELS }, (_, i) => channel(`K${i}`))
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [rawList({ id: 'c1', name: 'Min lista', kind: 'custom', source: 'custom:c1', channels: many })])
+
+    expect(addChannelToLiveTvList('c1', channel('En till'))).toBe('full')
+    expect(getLiveTvLists()[0].channels).toHaveLength(MAX_CUSTOM_LIST_CHANNELS)
   })
 })

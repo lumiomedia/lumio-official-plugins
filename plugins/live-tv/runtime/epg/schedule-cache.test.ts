@@ -23,6 +23,19 @@ describe('schedule-cache', () => {
     expect(epgSchedule).toHaveBeenCalledTimes(1)
   })
 
+  it('slår ihop enskilda nycklar som frågas i samma tick till ETT anrop', async () => {
+    // Varje kanalkort (`useEpgNowNextLater`) frågar efter EN nyckel. Fyrtio
+    // kort som monteras samtidigt gav fyrtio POST:ar för samma fönster.
+    const pending = [
+      fetchSchedules('global', ['k1'], 0, 100),
+      fetchSchedules('global', ['k2'], 0, 100),
+      fetchSchedules('global', ['k3'], 0, 100),
+    ]
+    await Promise.all(pending)
+    expect(epgSchedule).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(epgSchedule).mock.calls[0][1]).toEqual(['k1', 'k2', 'k3'])
+  })
+
   it('kastar de äldsta posterna när taket nås', async () => {
     // 700 kanaler i ETT fönster spränger taket på 600.
     const keys = Array.from({ length: 700 }, (_, i) => `k${i}`)

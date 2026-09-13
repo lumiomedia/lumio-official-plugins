@@ -211,6 +211,19 @@ export async function batchChannels(source: string, channels: BatchChannel[], re
   }
 }
 
+/**
+ * Tömmer EN källa ur appens index (`ResetBody { source }` i `live_tv_index.rs`).
+ *
+ * Anropas när en spellista tas bort: raden försvann ur `lists`, men kanalerna
+ * låg kvar i indexet och kom tillbaka i varje `/query` UTAN källa — "alla
+ * kanaler" visade fortfarande den borttagna listan, och en ny lista med samma
+ * namn ärvde dess innehåll. Utan `source` skulle endpointen tömma HELA indexet
+ * (alla källor), så argumentet är obligatoriskt här.
+ */
+export async function resetSource(source: string): Promise<void> {
+  await postJson('/api/live-tv/reset', { source })
+}
+
 export async function startImport(body: {
   source: string
   m3u?: { url: string }

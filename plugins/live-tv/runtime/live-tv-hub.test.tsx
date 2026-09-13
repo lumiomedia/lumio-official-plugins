@@ -148,3 +148,25 @@ describe('LiveTvHub', () => {
     expect(await screen.findByTestId('player')).toBeInTheDocument()
   })
 })
+
+describe('LiveTvHub mot en för gammal app', () => {
+  it('säger vilken appversion Live TV behöver i stället för att bara vara tom', async () => {
+    // 0.1.595 saknar /import och /epg/*: starten hoppar över migreringen med
+    // flit (annars hade de inbäddade kanalerna flyttats till ett index som
+    // inget kan läsa), och då måste vyn säga varför den är tom.
+    seedLiveTvIndex()
+    const base = globalThis.fetch
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const path = new URL(typeof input === 'string' ? input : String(input), 'http://localhost').pathname
+      if (path.startsWith('/api/live-tv/epg')) {
+        return { ok: false, status: 404, json: async () => ({}) } as unknown as Response
+      }
+      return base(input as RequestInfo, init)
+    }) as typeof fetch
+
+    render(<LiveTvHub onNavigate={() => {}} />)
+    await flushLiveTvIndex()
+
+    expect(await screen.findByTestId('live-tv-app-too-old')).toHaveTextContent('0.1.596')
+  })
+})

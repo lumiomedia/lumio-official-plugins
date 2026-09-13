@@ -323,6 +323,11 @@ export function LiveTvSettingsSection() {
               {!busy && needsLogin ? (
                 <div style={{ fontSize: 12, color: TOKENS.textMute, marginTop: 4 }}>{h('xtreamNeedsLogin')}</div>
               ) : null}
+              {/* Kapad spellista: jobbet svarade `done`, så utan den här raden
+                  ser en HALV lista ut som en hel. */}
+              {list.truncated ? (
+                <div data-testid={`list-truncated-${list.id}`} role="alert" style={{ fontSize: 12, color: '#fbbf24', marginTop: 4 }}>{h('listTruncated')}</div>
+              ) : null}
               {!busy && list.lastImportError ? (
                 <div role="alert" style={{ fontSize: 12, color: '#fca5a5', marginTop: 4 }}>{h('listImportFailed', { error: list.lastImportError })}</div>
               ) : null}

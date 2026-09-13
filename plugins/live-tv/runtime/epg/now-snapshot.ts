@@ -43,6 +43,38 @@ function snapshotKey(listId: string, source: string | null): string {
   return `${epgStoreId(listId)}|${source ?? ''}`
 }
 
+/**
+ * Så gammalt ett snapshot får bli innan minuttickern hämtar om det även utan
+ * en passerad programgräns (klockan hos appen kan ha rullat vidare på annat
+ * sätt: ny EPG-hämtning, ändrade källor).
+ */
+export const NOW_SNAPSHOT_MAX_AGE_MS = 10 * 60 * 1000
+
+/**
+ * Ska minuttickern hämta ett nytt `/epg/now`?
+ *
+ * Tidigare hämtades hela snapshotet (upp till 3 MB för 17 000 kanaler) varje
+ * minut, oavsett om något ändrats — TTL:en ovan var satt till exakt tickens
+ * längd, så varje tick blev ett nytt anrop. Svaret ändras bara när ett program
+ * PASSERAT en gräns: `now` har slutat, eller `next` har börjat. Det räcker att
+ * hitta EN sådan för att veta att snapshotet är inaktuellt.
+ *
+ * Genomgången är avsiktligt en `for...in` utan `Object.values`/`entries`: den
+ * körs en gång per minut över tiotusentals nycklar, och en mellanliggande
+ * array vore en allokering i samma storleksordning som hela kanallistan.
+ */
+export function nowSnapshotNeedsRefetch(snapshot: NowSnapshot, nowMs: number): boolean {
+  if (nowMs - snapshot.loadedAt >= NOW_SNAPSHOT_MAX_AGE_MS) return true
+  const items = snapshot.items
+  for (const key in items) {
+    const entry = items[key]
+    if (!entry) continue
+    if (entry.now && entry.now.stop <= nowMs) return true
+    if (entry.next && entry.next.start <= nowMs) return true
+  }
+  return false
+}
+
 export function getCachedNowSnapshot(listId: string, source: string | null): NowSnapshot | null {
   return snapshots.get(snapshotKey(listId, source)) ?? null
 }

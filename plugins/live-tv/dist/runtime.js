@@ -188536,10 +188536,13 @@ ${cue.text}`).join("\n\n")}
     return { sourceIds: sources.map((entry) => entry.id), sources };
   }
   async function batchChannels(source, channels, replace) {
-    const batches = channels.length > 0 ? chunk(channels, BATCH_CHUNK_SIZE) : [[]];
-    for (let i = 0; i < batches.length; i += 1) {
-      await postJson("/api/live-tv/batch", { source, replace: replace && i === 0, channels: batches[i] });
+    const batches2 = channels.length > 0 ? chunk(channels, BATCH_CHUNK_SIZE) : [[]];
+    for (let i = 0; i < batches2.length; i += 1) {
+      await postJson("/api/live-tv/batch", { source, replace: replace && i === 0, channels: batches2[i] });
     }
+  }
+  async function resetSource(source) {
+    await postJson("/api/live-tv/reset", { source });
   }
   async function startImport(body) {
     const data = await postJson("/api/live-tv/import", body);
@@ -188705,6 +188708,7 @@ ${cue.text}`).join("\n\n")}
       fetchedAt: typeof entry.fetchedAt === "string" && entry.fetchedAt.trim().length > 0 ? entry.fetchedAt : null,
       channelCount,
       groups,
+      truncated: entry.truncated === true,
       channels,
       needsReimport: entry.needsReimport === true,
       lastImportError: typeof entry.lastImportError === "string" && entry.lastImportError.trim().length > 0 ? entry.lastImportError : void 0
@@ -188828,7 +188832,15 @@ ${cue.text}`).join("\n\n")}
     );
   }
   function deleteLiveTvList(listId) {
-    writeLists(readLists().filter((list) => list.id !== listId));
+    const lists = readLists();
+    const removed = lists.find((list) => list.id === listId) ?? null;
+    const remaining = lists.filter((list) => list.id !== listId);
+    writeLists(remaining);
+    const source = removed?.source;
+    if (!source || removed?.kind === "custom") return;
+    if (remaining.some((list) => list.source === source)) return;
+    void resetSource(source).catch(() => {
+    }).finally(() => emitIndexChanged());
   }
   function deriveListName(sourceUrl) {
     try {
@@ -188839,11 +188851,24 @@ ${cue.text}`).join("\n\n")}
     }
   }
   function addChannelToLiveTvList(listId, channel) {
+    let outcome = "not-custom";
     writeLists(readLists().map((list) => {
       if (list.id !== listId || list.kind !== "custom") return list;
-      const channels = dedupeChannels([...list.channels ?? [], channel]);
+      const current2 = list.channels ?? [];
+      if (current2.length >= MAX_CUSTOM_LIST_CHANNELS) {
+        outcome = "full";
+        return list;
+      }
+      const { archive: _archive, ...withoutArchive } = channel;
+      const channels = dedupeChannels([...current2, withoutArchive]);
+      if (channels.length === current2.length) {
+        outcome = "duplicate";
+        return list;
+      }
+      outcome = "added";
       return { ...list, channels, channelCount: channels.length, groups: computeGroups(channels) };
     }));
+    return outcome;
   }
   function removeChannelFromLiveTvList(listId, channel) {
     const key = channelKey(channel);
@@ -189026,7 +189051,13 @@ ${cue.text}`).join("\n\n")}
         ...entry,
         channelCount: result?.total ?? entry.channelCount ?? 0,
         groups: result?.groups ?? entry.groups ?? [],
-        urlTvg: result?.urlTvg ?? entry.urlTvg,
+        // `urlTvg` tas RAKT AV ur jobbets svar när det finns ett svar:
+        // `?? entry.urlTvg` behöll den gamla adressen när appen svarade
+        // null, så en url-tvg som tagits bort ur spellistan levde kvar och
+        // pluginet fortsatte be om en tablå ingen längre publicerade. Ett
+        // FELAT jobb (ingen `result`) lämnar den orörd, som allt annat.
+        urlTvg: result ? result.urlTvg : entry.urlTvg,
+        truncated: result?.truncated === true,
         fetchedAt: (/* @__PURE__ */ new Date()).toISOString()
       } : entry));
       emitIndexChanged();
@@ -189100,7 +189131,7 @@ ${cue.text}`).join("\n\n")}
   function onLiveTvHideHeroChanged(listener) {
     return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, HIDE_HERO_KEY, listener);
   }
-  var LIVE_TV_PLUGIN_ID, LIVE_TV_GLOBAL_EPG_ID, M3U_URLS_KEY, M3U_DRAFT_URLS_KEY, LIVE_TV_LISTS_KEY, LIVE_TV_PINS_KEY, LIVE_TV_CHANNELS_PREFIX, LIVE_TV_LOGO_BUCKET, XTREAM_LOGINS_KEY, XTREAM_URL_PREFIX, importMissingSourcesInFlight, HIDE_HERO_KEY;
+  var LIVE_TV_PLUGIN_ID, LIVE_TV_GLOBAL_EPG_ID, M3U_URLS_KEY, M3U_DRAFT_URLS_KEY, LIVE_TV_LISTS_KEY, LIVE_TV_PINS_KEY, LIVE_TV_CHANNELS_PREFIX, LIVE_TV_LOGO_BUCKET, MAX_CUSTOM_LIST_CHANNELS, XTREAM_LOGINS_KEY, XTREAM_URL_PREFIX, importMissingSourcesInFlight, HIDE_HERO_KEY;
   var init_live_tv_data = __esm({
     "../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-data.ts"() {
       "use strict";
@@ -189115,6 +189146,7 @@ ${cue.text}`).join("\n\n")}
       LIVE_TV_PINS_KEY = "pins";
       LIVE_TV_CHANNELS_PREFIX = "channels:";
       LIVE_TV_LOGO_BUCKET = "com.lumio.live-tv:logo";
+      MAX_CUSTOM_LIST_CHANNELS = 500;
       XTREAM_LOGINS_KEY = "xtream_logins";
       XTREAM_URL_PREFIX = "xtream://";
       importMissingSourcesInFlight = null;
@@ -189274,6 +189306,9 @@ ${cue.text}`).join("\n\n")}
         listImportParsing: "Reading the playlist\u2026",
         listImportWriting: "Saving the channels\u2026",
         listImportFailed: "The fetch failed: {error}",
+        listTruncated: "The playlist was cut off at 64 MiB \u2014 some channels are missing",
+        appTooOld: "Live TV requires Lumio 0.1.596 or newer",
+        listFull: "The list is full \u2014 500 channels at most",
         xtreamNeedsLogin: "Sign in again to fetch channels",
         xtreamRelogin: "Sign in again"
       };
@@ -189396,6 +189431,9 @@ ${cue.text}`).join("\n\n")}
         listImportParsing: "L\xE4ser spellistan\u2026",
         listImportWriting: "Sparar kanalerna\u2026",
         listImportFailed: "H\xE4mtningen misslyckades: {error}",
+        listTruncated: "Spellistan kapades vid 64 MiB \u2013 vissa kanaler saknas",
+        appTooOld: "Live TV kr\xE4ver Lumio 0.1.596 eller nyare",
+        listFull: "Listan \xE4r full \u2014 h\xF6gst 500 kanaler",
         xtreamNeedsLogin: "Logga in p\xE5 nytt f\xF6r att h\xE4mta kanaler",
         xtreamRelogin: "Logga in p\xE5 nytt"
       };
@@ -189503,6 +189541,17 @@ ${cue.text}`).join("\n\n")}
   function snapshotKey(listId, source) {
     return `${epgStoreId(listId)}|${source ?? ""}`;
   }
+  function nowSnapshotNeedsRefetch(snapshot, nowMs) {
+    if (nowMs - snapshot.loadedAt >= NOW_SNAPSHOT_MAX_AGE_MS) return true;
+    const items = snapshot.items;
+    for (const key in items) {
+      const entry = items[key];
+      if (!entry) continue;
+      if (entry.now && entry.now.stop <= nowMs) return true;
+      if (entry.next && entry.next.start <= nowMs) return true;
+    }
+    return false;
+  }
   function getCachedNowSnapshot(listId, source) {
     return snapshots.get(snapshotKey(listId, source)) ?? null;
   }
@@ -189545,7 +189594,7 @@ ${cue.text}`).join("\n\n")}
       listeners5.delete(listener);
     };
   }
-  var TTL_MS, snapshots, inflight6, active, listeners5;
+  var TTL_MS, snapshots, inflight6, NOW_SNAPSHOT_MAX_AGE_MS, active, listeners5;
   var init_now_snapshot = __esm({
     "../../../lumio-official-plugins/plugins/live-tv/runtime/epg/now-snapshot.ts"() {
       "use strict";
@@ -189555,6 +189604,7 @@ ${cue.text}`).join("\n\n")}
       TTL_MS = 6e4;
       snapshots = /* @__PURE__ */ new Map();
       inflight6 = /* @__PURE__ */ new Map();
+      NOW_SNAPSHOT_MAX_AGE_MS = 10 * 60 * 1e3;
       active = { snapshot: null, failed: false };
       listeners5 = /* @__PURE__ */ new Set();
     }
@@ -190024,9 +190074,23 @@ ${cue.text}`).join("\n\n")}
   function ensureLiveTvBootstrap() {
     return ensureBootstrap();
   }
+  function isLiveTvAppTooOld() {
+    return appTooOldFlag;
+  }
+  async function probeLiveTvApi() {
+    try {
+      await epgStatus("probe");
+      return true;
+    } catch {
+      return false;
+    }
+  }
   function ensureBootstrap() {
     if (!bootstrapPromise) {
       bootstrapPromise = (async () => {
+        const supported = await probeLiveTvApi();
+        appTooOldFlag = !supported;
+        if (!supported) return;
         await migrateStorageV2().catch(() => {
         });
         await importMissingSources().catch(() => {
@@ -190055,6 +190119,23 @@ ${cue.text}`).join("\n\n")}
     clearPluginMemoryCacheByPrefix(LIVE_TV_PLUGIN_ID, LIVE_TV_CHANNELS_PREFIX);
     clearResolvedChannels();
   }
+  async function loadEveryChannel(signal) {
+    const sources = [...new Set(
+      getLiveTvLists().filter((list) => list.kind !== "custom" && Boolean(list.source)).map((list) => list.source)
+    )];
+    if (sources.length === 0) return loadAllChannels(null, void 0, signal);
+    const items = [];
+    const seen = /* @__PURE__ */ new Set();
+    for (const source of sources) {
+      if (signal?.aborted) throw new DOMException("aborted", "AbortError");
+      for (const channel of await loadChannelsShared(source)) {
+        if (seen.has(channel.key)) continue;
+        seen.add(channel.key);
+        items.push(channel);
+      }
+    }
+    return items;
+  }
   function loadChannelsShared(source) {
     const cacheKey = channelsCacheKey(source);
     const cached = getPluginMemoryCache(LIVE_TV_PLUGIN_ID, cacheKey);
@@ -190065,7 +190146,7 @@ ${cue.text}`).join("\n\n")}
     if (controller) channelAborts.set(cacheKey, controller);
     const request = (async () => {
       await ensureBootstrap();
-      const items = await loadAllChannels(source, void 0, controller?.signal);
+      const items = source === null ? await loadEveryChannel(controller?.signal) : await loadAllChannels(source, void 0, controller?.signal);
       setPluginMemoryCache(LIVE_TV_PLUGIN_ID, cacheKey, items);
       return items;
     })().finally(() => {
@@ -190128,9 +190209,15 @@ ${cue.text}`).join("\n\n")}
         live = false;
       };
     }, [activeSource, reloadToken]);
-    const refreshChannels = useCallback(() => {
-      invalidateChannels();
-      setReloadToken((token) => token + 1);
+    const [appTooOld, setAppTooOld] = useState(() => isLiveTvAppTooOld());
+    useEffect(() => {
+      let live = true;
+      void ensureBootstrap().finally(() => {
+        if (live) setAppTooOld(isLiveTvAppTooOld());
+      });
+      return () => {
+        live = false;
+      };
     }, []);
     useEffect(() => {
       ensureIndexSubscription();
@@ -190220,18 +190307,24 @@ ${cue.text}`).join("\n\n")}
         document.removeEventListener("visibilitychange", onVisibility);
       };
     }, [tickMs]);
+    const epgTriggerRef = useRef({ tick: epgTick, token: reloadToken, source: activeSource, urls: epgUrlsId });
     useEffect(() => {
       let live = true;
       const listId = LIVE_TV_GLOBAL_EPG_ID;
+      const previous = epgTriggerRef.current;
+      const tickOnly = previous.tick !== epgTick && previous.token === reloadToken && previous.source === activeSource && previous.urls === epgUrlsId;
+      epgTriggerRef.current = { tick: epgTick, token: reloadToken, source: activeSource, urls: epgUrlsId };
       const cached = getCachedNowSnapshot(listId, activeSource);
       if (cached) setSnapshot(cached);
-      if (cached && epgTick > 0 && epgUrls.length === 0) {
+      if (tickOnly && cached && (epgUrls.length === 0 || !nowSnapshotNeedsRefetch(cached, Date.now()))) {
         setEpgLoading(false);
         return;
       }
       setEpgLoading(!cached);
       void (async () => {
         try {
+          await ensureBootstrap();
+          if (!live) return;
           const first = await fetchNowSnapshot(listId, activeSource);
           if (!live) return;
           setSnapshot(first);
@@ -190300,8 +190393,8 @@ ${cue.text}`).join("\n\n")}
       channelsLoading,
       epgLoading,
       epgFetchedAt: snapshot?.fetchedAt ?? null,
+      appTooOld,
       resolveKeys,
-      refreshChannels,
       nowFor,
       reminders,
       locked,
@@ -190322,7 +190415,7 @@ ${cue.text}`).join("\n\n")}
     if (/\b(SD|576|480)\b/.test(n)) return "SD";
     return null;
   }
-  var EMPTY2, PLACEHOLDER_NAME_RE, MAX_GROUP_CHIPS, EPG_TTL_MS, bootstrapPromise, epgRefreshRequested, channelLoads, channelAborts, generationListeners, indexSubscription;
+  var EMPTY2, PLACEHOLDER_NAME_RE, MAX_GROUP_CHIPS, EPG_TTL_MS, bootstrapPromise, appTooOldFlag, epgRefreshRequested, channelLoads, channelAborts, generationListeners, indexSubscription;
   var init_live_tv_model = __esm({
     "../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-model.ts"() {
       "use strict";
@@ -190343,6 +190436,7 @@ ${cue.text}`).join("\n\n")}
       MAX_GROUP_CHIPS = 8;
       EPG_TTL_MS = 6 * 60 * 60 * 1e3;
       bootstrapPromise = null;
+      appTooOldFlag = false;
       epgRefreshRequested = /* @__PURE__ */ new Set();
       channelLoads = /* @__PURE__ */ new Map();
       channelAborts = /* @__PURE__ */ new Map();
@@ -190764,6 +190858,51 @@ ${cue.text}`).join("\n\n")}
   });
 
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/epg/schedule-cache.ts
+  function queueBatch(listId, keys3, from, to) {
+    const id4 = `${epgStoreId(listId)}|${from}|${to}`;
+    let batch = batches.get(id4);
+    if (!batch) {
+      let settle;
+      const promise = new Promise((resolve, reject) => {
+        settle = (items) => items.then(resolve, reject);
+      });
+      const entry = {
+        keys: /* @__PURE__ */ new Set(),
+        promise,
+        scheduled: false,
+        send: () => {
+          batches.delete(id4);
+          const wanted = [...entry.keys];
+          const request = epgSchedule(epgStoreId(listId), wanted, from, to).then((items) => {
+            const storedAt = Date.now();
+            for (const key of wanted) {
+              cache6.set(entryKey2(listId, key, from, to), { programmes: items[key] ?? [], storedAt });
+            }
+            evict(storedAt);
+            return items;
+          });
+          for (const key of wanted) inflight7.set(entryKey2(listId, key, from, to), request);
+          request.catch(() => {
+          }).finally(() => {
+            for (const key of wanted) {
+              if (inflight7.get(entryKey2(listId, key, from, to)) === request) {
+                inflight7.delete(entryKey2(listId, key, from, to));
+              }
+            }
+          });
+          settle(request);
+        }
+      };
+      batch = entry;
+      batches.set(id4, entry);
+    }
+    for (const key of keys3) batch.keys.add(key);
+    if (!batch.scheduled) {
+      batch.scheduled = true;
+      queueMicrotask(batch.send);
+    }
+    return batch.promise;
+  }
   function entryKey2(listId, key, from, to) {
     return `${epgStoreId(listId)}|${key}|${from}|${to}`;
   }
@@ -190801,31 +190940,33 @@ ${cue.text}`).join("\n\n")}
     const unique = [...new Set(keys3.filter((key) => key.length > 0))];
     const { hits, missing } = split(listId, unique, from, to, Date.now());
     if (missing.length === 0) return hits;
-    const requestKey = entryKey2(listId, missing.join(","), from, to);
-    let request = inflight7.get(requestKey);
-    if (!request) {
-      request = epgSchedule(epgStoreId(listId), missing, from, to).then((items2) => {
-        const storedAt = Date.now();
-        for (const key of missing) {
-          cache6.set(entryKey2(listId, key, from, to), { programmes: items2[key] ?? [], storedAt });
-        }
-        evict(storedAt);
-        return items2;
-      }).finally(() => {
-        inflight7.delete(requestKey);
-      });
-      inflight7.set(requestKey, request);
+    const waiting = /* @__PURE__ */ new Set();
+    const queue2 = [];
+    for (const key of missing) {
+      const pending2 = inflight7.get(entryKey2(listId, key, from, to));
+      if (pending2) waiting.add(pending2);
+      else queue2.push(key);
     }
-    const items = await request;
+    if (queue2.length > 0) waiting.add(queueBatch(listId, queue2, from, to));
+    const answers = await Promise.all([...waiting]);
     const merged = { ...hits };
-    for (const key of missing) merged[key] = items[key] ?? [];
+    for (const key of missing) {
+      let value;
+      for (const answer of answers) {
+        if (answer[key]) {
+          value = answer[key];
+          break;
+        }
+      }
+      merged[key] = value ?? cache6.get(entryKey2(listId, key, from, to))?.programmes ?? [];
+    }
     return merged;
   }
   function hourWindow(nowMs, hoursBack, hoursAhead) {
     const anchor = Math.floor(nowMs / HOUR_MS) * HOUR_MS;
     return { from: anchor - Math.max(0, hoursBack) * HOUR_MS, to: anchor + Math.max(1, hoursAhead) * HOUR_MS };
   }
-  var TTL_MS2, MAX_ENTRIES4, cache6, inflight7, HOUR_MS;
+  var TTL_MS2, MAX_ENTRIES4, cache6, batches, inflight7, HOUR_MS;
   var init_schedule_cache = __esm({
     "../../../lumio-official-plugins/plugins/live-tv/runtime/epg/schedule-cache.ts"() {
       "use strict";
@@ -190835,6 +190976,7 @@ ${cue.text}`).join("\n\n")}
       TTL_MS2 = 5 * 60 * 1e3;
       MAX_ENTRIES4 = 600;
       cache6 = /* @__PURE__ */ new Map();
+      batches = /* @__PURE__ */ new Map();
       inflight7 = /* @__PURE__ */ new Map();
       HOUR_MS = 36e5;
     }
@@ -191078,6 +191220,10 @@ ${cue.text}`).join("\n\n")}
   }
   function isAbort(err) {
     return err instanceof Error && err.name === "AbortError";
+  }
+  function withIndexTwins(channels, byUrl) {
+    if (channels.length === 0) return [];
+    return channels.map((channel) => byUrl.get(channel.url) ?? channel);
   }
   function useListChannels(lists) {
     const sources = useMemo(
@@ -192076,6 +192222,8 @@ ${cue.text}`).join("\n\n")}
         importWriting: "Saving the channels\u2026",
         importFailed: "The fetch failed",
         needsReimport: "Needs refetching",
+        truncated: "The playlist was cut off at 64 MiB \u2014 some channels are missing",
+        appTooOld: "Live TV requires Lumio 0.1.596 or newer",
         xtreamServer: "Xtream server \u2014 http://host:8080",
         xtreamUsername: "Xtream username",
         xtreamPassword: "Xtream password",
@@ -192230,6 +192378,8 @@ ${cue.text}`).join("\n\n")}
         importWriting: "Sparar kanalerna\u2026",
         importFailed: "H\xE4mtningen misslyckades",
         needsReimport: "Beh\xF6ver h\xE4mtas om",
+        truncated: "Spellistan kapades vid 64 MiB \u2013 vissa kanaler saknas",
+        appTooOld: "Live TV kr\xE4ver Lumio 0.1.596 eller nyare",
         xtreamServer: "Xtream-server \u2014 http://host:8080",
         xtreamUsername: "Xtream-anv\xE4ndarnamn",
         xtreamPassword: "Xtream-l\xF6senord",
@@ -194860,6 +195010,7 @@ ${cue.text}`).join("\n\n")}
               ] }),
               busy ? /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: TOKENS.text, marginTop: 4 }, children: busy.state === "parsing" ? h("listImportParsing") : busy.state === "writing" ? h("listImportWriting") : busy.total ? h("listImportProgress", { received: busy.received.toLocaleString(locale), total: busy.total.toLocaleString(locale) }) : h("listImportProgressUnknown") }) : null,
               !busy && needsLogin ? /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: TOKENS.textMute, marginTop: 4 }, children: h("xtreamNeedsLogin") }) : null,
+              list.truncated ? /* @__PURE__ */ jsx("div", { "data-testid": `list-truncated-${list.id}`, role: "alert", style: { fontSize: 12, color: "#fbbf24", marginTop: 4 }, children: h("listTruncated") }) : null,
               !busy && list.lastImportError ? /* @__PURE__ */ jsx("div", { role: "alert", style: { fontSize: 12, color: "#fca5a5", marginTop: 4 }, children: h("listImportFailed", { error: list.lastImportError }) }) : null
             ] }),
             /* @__PURE__ */ jsxs("div", { style: { display: "flex", flex: "none", alignItems: "center", gap: 8 }, children: [
@@ -195029,6 +195180,7 @@ ${cue.text}`).join("\n\n")}
     const [lists, setLists] = useState([]);
     const [activeListId, setActiveListId] = useState(null);
     const [listPickerChannelKey, setListPickerChannelKey] = useState(null);
+    const [listFull, setListFull] = useState(false);
     const [createListOpen, setCreateListOpen] = useState(false);
     const [guideOpen, setGuideOpen] = useState(false);
     const defaultTabAppliedRef = useRef(false);
@@ -195224,6 +195376,7 @@ ${cue.text}`).join("\n\n")}
       setPendingChannelForNewList(null);
     }
     function handleOpenListPicker(channel) {
+      setListFull(false);
       const key = `${channel.name}::${channel.url}`;
       if (customLists.length === 0) {
         setCreateListName("");
@@ -195242,9 +195395,17 @@ ${cue.text}`).join("\n\n")}
     const activeList = activeListId && activeListId !== FAVORITES_LIST_ID ? lists.find((list) => list.id === activeListId) ?? null : null;
     const customLists = useMemo(() => lists.filter((list) => list.kind === "custom"), [lists]);
     function channelsForList(list) {
-      if (list.kind === "custom") return list.channels ?? [];
+      if (list.kind === "custom") return customChannelsByList[list.id] ?? [];
       return list.source ? channelsBySource[list.source] ?? [] : [];
     }
+    const customChannelsByList = useMemo(() => {
+      const out = {};
+      for (const list of lists) {
+        if (list.kind !== "custom") continue;
+        out[list.id] = withIndexTwins(list.channels ?? [], model.byUrl);
+      }
+      return out;
+    }, [lists, model.byUrl]);
     const allSourceChannels = useMemo(() => {
       const seen = /* @__PURE__ */ new Set();
       const out = [];
@@ -195257,11 +195418,9 @@ ${cue.text}`).join("\n\n")}
         }
       };
       add(channels);
-      for (const list of lists) {
-        if (list.kind === "custom") add(list.channels ?? []);
-      }
+      for (const entry of Object.values(customChannelsByList)) add(entry);
       return out;
-    }, [channels, lists]);
+    }, [channels, customChannelsByList]);
     const pinnedSet = model.pinnedSet;
     const pinnedChannels = useMemo(
       () => sortChannelsWithPins(allSourceChannels.filter((channel) => pinnedSet.has(channelKey(channel)))),
@@ -195272,7 +195431,7 @@ ${cue.text}`).join("\n\n")}
     const visibleChannels = useMemo(
       () => activeListId === FAVORITES_LIST_ID ? pinnedChannels : activeList ? channelsForList(activeList) : allSourceChannels,
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      [activeListId, activeList, pinnedChannels, allSourceChannels, channelsBySource]
+      [activeListId, activeList, pinnedChannels, allSourceChannels, channelsBySource, customChannelsByList]
     );
     useEffect(() => {
       if (loading) return;
@@ -195664,6 +195823,8 @@ ${cue.text}`).join("\n\n")}
                 ] }),
                 refreshing && visibleChannels.length > 0 ? /* @__PURE__ */ jsx("span", { className: "text-xs text-slate-500", children: t("liveTvRefreshing") }) : null,
                 importError ? /* @__PURE__ */ jsx("span", { className: "max-w-[18rem] truncate text-xs text-red-400", title: importError, children: importError }) : null,
+                model.appTooOld ? /* @__PURE__ */ jsx("span", { "data-testid": "live-tv-app-too-old", className: "max-w-[22rem] truncate text-xs text-amber-400", children: h("appTooOld") }) : null,
+                listFull ? /* @__PURE__ */ jsx("span", { "data-testid": "live-tv-list-full", className: "max-w-[22rem] truncate text-xs text-amber-400", children: h("listFull") }) : null,
                 /* @__PURE__ */ jsxs(
                   "button",
                   {
@@ -195858,7 +196019,7 @@ ${cue.text}`).join("\n\n")}
                                 onClick: (event) => {
                                   event.stopPropagation();
                                   if (isInList) removeChannelFromLiveTvList(list.id, channel);
-                                  else addChannelToLiveTvList(list.id, channel);
+                                  else setListFull(addChannelToLiveTvList(list.id, channel) === "full");
                                   setListPickerChannelKey(null);
                                 },
                                 className: `flex items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition ${isInList ? "bg-accent-400/10 text-white" : "text-slate-300 hover:bg-white/5 hover:text-white"}`,
@@ -197148,9 +197309,11 @@ ${cue.text}`).join("\n\n")}
         children: isMobile ? null : filterRow
       }
     );
+    const appTooOldNotice = model.appTooOld ? /* @__PURE__ */ jsx("div", { "data-testid": "live-tv-app-too-old", role: "alert", style: { ...surfaceCard, padding: 12, fontSize: 13, color: "#fbbf24" }, children: h("appTooOld") }) : null;
     if (channels.length === 0) {
       return /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 16, color: LT.text }, children: [
         header,
+        appTooOldNotice,
         /* @__PURE__ */ jsxs("div", { style: { ...surfaceCard, padding: 24 }, children: [
           /* @__PURE__ */ jsx("p", { style: { margin: 0, fontSize: 16, fontWeight: 600 }, children: h("hubEmptyTitle") }),
           /* @__PURE__ */ jsx("p", { style: { margin: "4px 0 0", fontSize: 14, color: LT.muted }, children: h("hubEmptyBody") })
@@ -197161,6 +197324,7 @@ ${cue.text}`).join("\n\n")}
     return /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 24, color: LT.text }, children: [
       /* @__PURE__ */ jsx("style", { children: "@keyframes lumio-livetv-spin{to{transform:rotate(360deg)}}" }),
       header,
+      appTooOldNotice,
       hero && !needle && isTv ? (
         /* TV (Jerry 2026-09-06): det stora kortet blev enormt på en TV. I
            stället en rad kompakta spotlightkort — heron först, sedan
@@ -198419,6 +198583,7 @@ ${cue.text}`).join("\n\n")}
       ] });
     }
     return /* @__PURE__ */ jsxs("div", { "data-scroll": "", style: { flex: 1, overflowY: "auto", padding: `${dp(30)}px ${dp(48)}px ${dp(48)}px`, display: "flex", flexDirection: "column", gap: dp(22), scrollPaddingTop: dp(120) }, children: [
+      model.appTooOld ? /* @__PURE__ */ jsx("div", { "data-testid": "live-tv-app-too-old", style: { padding: `${dp(12)}px ${dp(18)}px`, borderRadius: dp(12), background: "rgba(244,132,95,0.18)", color: "#f4845f", fontSize: dp(19) }, children: tt("appTooOld") }) : null,
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(20) }, children: [
         /* @__PURE__ */ jsx("div", { style: { fontSize: dp(34), fontWeight: 600 }, children: tt("liveTv") }),
         /* @__PURE__ */ jsxs("div", { style: { position: "relative" }, children: [
@@ -198915,14 +199080,15 @@ ${cue.text}`).join("\n\n")}
         ] })
       ] }),
       /* @__PURE__ */ jsxs("div", { ref: listRef, "data-scroll": "", style: { flex: 1, minHeight: 0, overflowY: "auto", padding: `0 ${dp(48)}px ${dp(24)}px` }, children: [
-        rows.length === 0 ? /* @__PURE__ */ jsx(
+        /* @__PURE__ */ jsx(
           "div",
           {
-            ...station(() => setGroup(null), void 0, { "data-init": "" }),
-            style: { padding: dp(24), color: TV.dim, fontSize: dp(19), cursor: "pointer", borderRadius: dp(12) },
+            "data-testid": "guide-empty",
+            ...rows.length === 0 ? station(() => setGroup(null), void 0, { "data-init": "" }) : { "aria-hidden": true },
+            style: { padding: dp(24), color: TV.dim, fontSize: dp(19), cursor: "pointer", borderRadius: dp(12), display: rows.length === 0 ? "block" : "none" },
             children: model.channelsLoading ? tt("loadingChannels") : tt("guideEmpty")
           }
-        ) : null,
+        ),
         visibleRows.map((channel, index3) => {
           const rowInfo = model.nowFor(channel);
           const key = channelKey(channel);
@@ -199354,13 +199520,15 @@ ${cue.text}`).join("\n\n")}
     if (!q) return [];
     const seen = /* @__PURE__ */ new Set();
     const out = [];
-    for (const text of [...channels.map((c) => c.name), ...programmeTitles]) {
+    const take = (text) => {
       const key = norm(text);
-      if (!key.startsWith(q) || seen.has(key)) continue;
+      if (!key.startsWith(q) || seen.has(key)) return false;
       seen.add(key);
       out.push(text);
-      if (out.length >= limit) break;
-    }
+      return out.length >= limit;
+    };
+    for (const channel of channels) if (take(channel.name)) return out;
+    for (const title of programmeTitles) if (take(title)) return out;
     return out;
   }
 
@@ -199810,6 +199978,7 @@ ${cue.text}`).join("\n\n")}
             ] }),
             busy ? /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: TV.muted }, children: progressText(tt, locale, busy) }) : null,
             !busy && needsLogin ? /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: TV.muted }, children: tt("xtreamNeedsLogin") }) : null,
+            list.truncated ? /* @__PURE__ */ jsx("div", { "data-testid": `list-truncated-${list.id}`, style: { fontSize: dp(15), color: "#fbbf24" }, children: tt("truncated") }) : null,
             !busy && list.lastImportError ? /* @__PURE__ */ jsx("div", { "data-testid": `list-error-${list.id}`, style: { fontSize: dp(15), color: "#fca5a5", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: list.lastImportError }) : null
           ] }),
           /* @__PURE__ */ jsxs("div", { style: { flexShrink: 0, display: "flex", alignItems: "center", gap: dp(10) }, children: [

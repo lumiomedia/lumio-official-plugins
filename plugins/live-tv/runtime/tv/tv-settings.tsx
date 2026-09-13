@@ -296,6 +296,9 @@ const ListRow = memo(function ListRow({
         </div>
         {busy ? <div style={{ fontSize: dp(16), color: TV.muted }}>{progressText(tt, locale, busy)}</div> : null}
         {!busy && needsLogin ? <div style={{ fontSize: dp(15), color: TV.muted }}>{tt('xtreamNeedsLogin')}</div> : null}
+        {list.truncated ? (
+          <div data-testid={`list-truncated-${list.id}`} style={{ fontSize: dp(15), color: '#fbbf24' }}>{tt('truncated')}</div>
+        ) : null}
         {!busy && list.lastImportError ? (
           <div data-testid={`list-error-${list.id}`} style={{ fontSize: dp(15), color: '#fca5a5', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{list.lastImportError}</div>
         ) : null}

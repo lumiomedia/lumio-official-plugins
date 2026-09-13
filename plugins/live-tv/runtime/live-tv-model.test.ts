@@ -31,6 +31,7 @@ vi.mock('./index-client', () => ({
   importStatus: vi.fn(async () => ({ state: 'done', received: 0 })),
   waitForJob: vi.fn(async () => ({ state: 'done', received: 0 })),
   refreshEpg: vi.fn(async () => 'epg-job'),
+  epgStatus: vi.fn(async () => ({ listId: 'probe', fetchedAt: null, failedAt: null, channels: 0, programmes: 0, urls: [] })),
   epgNow: vi.fn(async () => ({ at: Date.now(), fetchedAt: Date.now(), items: {} as Record<string, NowNextLater> })),
   epgSchedule: vi.fn(async () => ({})),
   epgSearch: vi.fn(async () => []),
@@ -91,9 +92,19 @@ describe('useLiveTvModel: kanaler ur indexet', () => {
     expect(result.current.channelsLoading).toBe(true)
     await waitFor(() => expect(result.current.channelsLoading).toBe(false))
 
-    expect(loadedSources()).toEqual([null])
+    // "Alla kanaler" är UNIONEN av källorna, inte en egen hämtning utan källa:
+    // annars ligger varje kanal i minnet två gånger (modellens `channels:all`
+    // plus rutnätets `channels:<source>`).
+    expect(loadedSources()).toEqual(['s1', 's2'])
+    expect(loadedSources()).not.toContain(null)
     expect(result.current.channels.map((c) => c.name)).toEqual(['A', 'B', 'C'])
     expect(getPluginMemoryCache(LIVE_TV_PLUGIN_ID, 'channels:all')).toHaveLength(3)
+    // SAMMA objekt i båda cacheposterna — en uppsättning per källa.
+    const all = getPluginMemoryCache<IndexChannel[]>(LIVE_TV_PLUGIN_ID, 'channels:all')!
+    const s1 = getPluginMemoryCache<IndexChannel[]>(LIVE_TV_PLUGIN_ID, 'channels:s1')!
+    const s2 = getPluginMemoryCache<IndexChannel[]>(LIVE_TV_PLUGIN_ID, 'channels:s2')!
+    expect(all[0]).toBe(s1[0])
+    expect(all[2]).toBe(s2[0])
   })
 
   it('en andra modell läser minnescachen i stället för att ladda om', async () => {
@@ -136,8 +147,8 @@ describe('useLiveTvModel: kanaler ur indexet', () => {
     const second = renderHook(() => useLiveTvModel())
     await waitFor(() => expect(first.result.current.channelsLoading).toBe(false))
     await waitFor(() => expect(second.result.current.channelsLoading).toBe(false))
-    // Andra modellen läste minnescachen: EN hämtning hittills.
-    expect(loadedSources()).toEqual([null])
+    // Andra modellen läste minnescachen: EN hämtning per källa hittills.
+    expect(loadedSources()).toEqual(['s1', 's2'])
 
     vi.mocked(loadAllChannels).mockImplementation(async () => [A])
     await act(async () => {
@@ -148,7 +159,7 @@ describe('useLiveTvModel: kanaler ur indexet', () => {
     expect(second.result.current.channels.map((c) => c.name)).toEqual(['A'])
     // Två monterade modeller ska INTE ge två hämtningar (och inte rensa
     // varandras cache mitt i).
-    expect(loadedSources()).toEqual([null, null])
+    expect(loadedSources()).toEqual(['s1', 's2', 's1', 's2'])
     first.unmount()
     second.unmount()
   })
@@ -165,7 +176,7 @@ describe('useLiveTvModel: kanaler ur indexet', () => {
     expect(result.current.byKey.size).toBe(3)
     expect(result.current.groups).toEqual(['Sport', 'News'])
     expect(result.current.activePlaylistId).toBeNull()
-    expect(loadedSources()).toEqual([null])
+    expect(loadedSources()).toEqual(['s1', 's2'])
   })
 })
 

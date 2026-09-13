@@ -434,10 +434,22 @@ export function LiveTvHub({ onNavigate }: Props) {
     </LiveTvHeader>
   )
 
+  /**
+   * Appen är för gammal för lagring v2 (`/import` + `/epg/*` kom i 0.1.596).
+   * Starten har då hoppat över migreringen med flit — utan notisen ser sidan
+   * bara tom ut, och det ser ut som pluginets fel.
+   */
+  const appTooOldNotice = model.appTooOld ? (
+    <div data-testid="live-tv-app-too-old" role="alert" style={{ ...surfaceCard, padding: 12, fontSize: 13, color: '#fbbf24' }}>
+      {h('appTooOld')}
+    </div>
+  ) : null
+
   if (channels.length === 0) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, color: LT.text }}>
         {header}
+        {appTooOldNotice}
         <div style={{ ...surfaceCard, padding: 24 }}>
           <p style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{h('hubEmptyTitle')}</p>
           <p style={{ margin: '4px 0 0', fontSize: 14, color: LT.muted }}>{h('hubEmptyBody')}</p>
@@ -453,6 +465,7 @@ export function LiveTvHub({ onNavigate }: Props) {
       {/* Egen keyframe: pluginets buntar får inga klasser ur appens Tailwind. */}
       <style>{'@keyframes lumio-livetv-spin{to{transform:rotate(360deg)}}'}</style>
       {header}
+      {appTooOldNotice}
 
       {hero && !needle && isTv ? (
         /* TV (Jerry 2026-09-06): det stora kortet blev enormt på en TV. I

@@ -135,6 +135,9 @@ const EN = {
   listImportParsing: 'Reading the playlist…',
   listImportWriting: 'Saving the channels…',
   listImportFailed: 'The fetch failed: {error}',
+  listTruncated: 'The playlist was cut off at 64 MiB — some channels are missing',
+  appTooOld: 'Live TV requires Lumio 0.1.596 or newer',
+  listFull: 'The list is full — 500 channels at most',
   xtreamNeedsLogin: 'Sign in again to fetch channels',
   xtreamRelogin: 'Sign in again',
 } as const
@@ -258,6 +261,9 @@ const SV: Record<keyof typeof EN, string> = {
   listImportParsing: 'Läser spellistan…',
   listImportWriting: 'Sparar kanalerna…',
   listImportFailed: 'Hämtningen misslyckades: {error}',
+  listTruncated: 'Spellistan kapades vid 64 MiB – vissa kanaler saknas',
+  appTooOld: 'Live TV kräver Lumio 0.1.596 eller nyare',
+  listFull: 'Listan är full — högst 500 kanaler',
   xtreamNeedsLogin: 'Logga in på nytt för att hämta kanaler',
   xtreamRelogin: 'Logga in på nytt',
 }

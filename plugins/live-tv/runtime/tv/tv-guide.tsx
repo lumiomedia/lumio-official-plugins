@@ -181,14 +181,20 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
 
       {/* Rader */}
       <div ref={listRef} data-scroll="" style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: `0 ${dp(48)}px ${dp(24)}px` }}>
-        {rows.length === 0 ? (
-          <div
-            {...station(() => setGroup(null), undefined, { 'data-init': '' })}
-            style={{ padding: dp(24), color: TV.dim, fontSize: dp(19), cursor: 'pointer', borderRadius: dp(12) }}
-          >
-            {model.channelsLoading ? tt('loadingChannels') : tt('guideEmpty')}
-          </div>
-        ) : null}
+        {/* Tomläget MONTERAS ALLTID.
+            Under laddningen är det den enda stationen i vyn och bär därför
+            `data-init`. När raderna kom avmonterades noden — mitt under
+            fokusmotorns blick — och fjärrkontrollen stod utan startstation en
+            bildruta innan den första raden hann ta över. Noden ligger kvar och
+            döljs i stället; `data-f`/`data-init` flyttar till raderna, precis
+            som attributet flyttar mellan rader i listan nedan. */}
+        <div
+          data-testid="guide-empty"
+          {...(rows.length === 0 ? station(() => setGroup(null), undefined, { 'data-init': '' }) : { 'aria-hidden': true })}
+          style={{ padding: dp(24), color: TV.dim, fontSize: dp(19), cursor: 'pointer', borderRadius: dp(12), display: rows.length === 0 ? 'block' : 'none' }}
+        >
+          {model.channelsLoading ? tt('loadingChannels') : tt('guideEmpty')}
+        </div>
         {visibleRows.map((channel, index) => {
           const rowInfo = model.nowFor(channel)
           const key = channelKey(channel)

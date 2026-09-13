@@ -4,7 +4,7 @@ import { __resetForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { LIVE_TV_PLUGIN_ID, type LiveTvList, type M3uChannel } from './live-tv-data'
 import { __resetLiveTvModelForTests } from './live-tv-model'
 import { emitIndexChanged } from './index-client'
-import { pickReplayChannels, useChannelsBySource, useChannelsPage } from './view-helpers'
+import { pickReplayChannels, useChannelsBySource, useChannelsPage, withIndexTwins } from './view-helpers'
 
 const SOURCE_A = 'http://a.tld/list.m3u'
 const SOURCE_B = 'http://b.tld/list.m3u'
@@ -185,5 +185,22 @@ describe('pickReplayChannels', () => {
 
   it('inga arkivkanaler bland favoriter/historik ger ingen reprisrad', () => {
     expect(pickReplayChannels([plain('A')], [plain('B')])).toEqual([])
+  })
+})
+
+describe('withIndexTwins', () => {
+  it('hämtar tillbaka arkivet ur indexet för en lagrad kanal', () => {
+    // Custom-listan lagrar kanalen UTAN `archive` (inloggningen ska inte
+    // speglas mellan enheter) — repriserna behöver den ändå.
+    const stored = { name: 'Sport 1', logo: null, group: 'Sport', url: 'http://x/s1', tvgId: null }
+    const twin = { ...stored, archive: { days: 7, streamId: 42, base: 'http://panel', username: 'u', password: 'p' } }
+    const byUrl = new Map([[twin.url, twin]])
+
+    expect(withIndexTwins([stored], byUrl)[0]).toBe(twin)
+  })
+
+  it('behåller kanalen när indexet inte känner URL:en', () => {
+    const stored = { name: 'Egen', logo: null, group: 'Other', url: 'http://x/egen', tvgId: null }
+    expect(withIndexTwins([stored], new Map())[0]).toBe(stored)
   })
 })

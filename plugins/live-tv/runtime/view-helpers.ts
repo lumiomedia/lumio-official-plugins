@@ -143,6 +143,27 @@ function isAbort(err: unknown): boolean {
   return err instanceof Error && err.name === 'AbortError'
 }
 
+/**
+ * Byter ut manuellt lagrade kanaler mot sina tvillingar i indexet.
+ *
+ * En `custom`-lista lagrar kanalen själv, och sedan v2 UTAN `archive`
+ * (Xtream-inloggningen ska inte ligga i den speglade `lists`-nyckeln). Fältet
+ * behövs ändå för repriser och timeshift — det finns i indexet, på samma URL.
+ * Uppslaget går på `url` och inte på kanalnyckeln: namnet kan ha redigerats i
+ * den egna listan, strömadressen är den som identifierar kanalen.
+ *
+ * Utan en tvilling (källan borttagen, eller aldrig importerad på den här
+ * enheten) behålls den lagrade kanalen oförändrad — den är fortfarande
+ * spelbar, bara utan repriser.
+ */
+export function withIndexTwins(
+  channels: readonly M3uChannel[],
+  byUrl: ReadonlyMap<string, M3uChannel>,
+): M3uChannel[] {
+  if (channels.length === 0) return []
+  return channels.map((channel) => byUrl.get(channel.url) ?? channel)
+}
+
 export interface ListChannelsResult {
   /** Kanaler per listid, i listornas ordning. */
   byListId: Record<string, M3uChannel[]>

@@ -41,7 +41,7 @@ import {
   type LiveTvList,
 } from './live-tv-data'
 import { useSchedules } from './hooks/useSchedules'
-import { useChannelsBySource } from './view-helpers'
+import { useChannelsBySource, withIndexTwins } from './view-helpers'
 import { getM3uFetchProgress, reportM3uFetchJobProgress, runM3uFetch } from './m3u-fetch-progress'
 
 interface M3uChannel {
@@ -197,6 +197,8 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
   const [lists, setLists] = useState<LiveTvList[]>([])
   const [activeListId, setActiveListId] = useState<string | null>(null)
   const [listPickerChannelKey, setListPickerChannelKey] = useState<string | null>(null)
+  /** Senaste "lägg till i lista" föll på taket (500 kanaler). Rensas när väljaren öppnas igen. */
+  const [listFull, setListFull] = useState(false)
   const [createListOpen, setCreateListOpen] = useState(false)
   const [guideOpen, setGuideOpen] = useState(false)
   const defaultTabAppliedRef = useRef(false)
@@ -493,6 +495,7 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
   }
 
   function handleOpenListPicker(channel: M3uChannel) {
+    setListFull(false)
     const key = `${channel.name}::${channel.url}`
     if (customLists.length === 0) {
       setCreateListName('')
@@ -534,9 +537,10 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
    * kanaler hämtas ur `channelsBySource` (samma karta som "ALL"-fliken).
    */
   function channelsForList(list: LiveTvList): M3uChannel[] {
-    if (list.kind === 'custom') return list.channels ?? []
+    if (list.kind === 'custom') return customChannelsByList[list.id] ?? []
     return list.source ? (channelsBySource[list.source] ?? []) : []
   }
+
 
   /**
    * "ALL"-fliken: unionen av allt som lästs ur indexet PLUS de manuellt
@@ -547,6 +551,23 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
    * öppnad meny, en logotyp som laddat klart — byggde om unionen av 17 000
    * kanaler, plockade ut kategorierna och sorterade om hela filtret.
    */
+  /**
+   * Manuellt skapade listors kanaler, med indexets tvilling där den finns.
+   *
+   * Den lagrade kopian bär inte längre `archive` (Xtream-inloggningen ska inte
+   * speglas mellan enheter), så repriser och timeshift skulle annars saknas på
+   * just de här kanalerna. Egen memo och inte inlagd i unionen nedan: den här
+   * väger hundratals kanaler, unionen tiotusentals.
+   */
+  const customChannelsByList = useMemo(() => {
+    const out: Record<string, M3uChannel[]> = {}
+    for (const list of lists) {
+      if (list.kind !== 'custom') continue
+      out[list.id] = withIndexTwins(list.channels ?? [], model.byUrl)
+    }
+    return out
+  }, [lists, model.byUrl])
+
   const allSourceChannels = useMemo(() => {
     const seen = new Set<string>()
     const out: M3uChannel[] = []
@@ -559,11 +580,9 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
       }
     }
     add(channels)
-    for (const list of lists) {
-      if (list.kind === 'custom') add(list.channels ?? [])
-    }
+    for (const entry of Object.values(customChannelsByList)) add(entry)
     return out
-  }, [channels, lists])
+  }, [channels, customChannelsByList])
   /**
    * Nålarna läses EN gång per ändring, inte en gång per kanal.
    * `isPinnedLiveTvChannel` gör ett `readPluginJson` + en linjär sökning per
@@ -583,7 +602,7 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
       ? pinnedChannels
       : activeList ? channelsForList(activeList) : allSourceChannels),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeListId, activeList, pinnedChannels, allSourceChannels, channelsBySource],
+    [activeListId, activeList, pinnedChannels, allSourceChannels, channelsBySource, customChannelsByList],
   )
 
   useEffect(() => {
@@ -1039,6 +1058,10 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
             {isTv ? null : <span className="text-xs text-white">{filtered.length} / {visibleChannels.length} {t('m3uChannels')}</span>}
             {refreshing && visibleChannels.length > 0 ? <span className="text-xs text-slate-500">{t('liveTvRefreshing')}</span> : null}
             {importError ? <span className="max-w-[18rem] truncate text-xs text-red-400" title={importError}>{importError}</span> : null}
+            {/* Appen saknar v2-endpointerna: migreringen hoppades över med
+                flit, och utan den här raden ser rutnätet bara tomt ut. */}
+            {model.appTooOld ? <span data-testid="live-tv-app-too-old" className="max-w-[22rem] truncate text-xs text-amber-400">{h('appTooOld')}</span> : null}
+            {listFull ? <span data-testid="live-tv-list-full" className="max-w-[22rem] truncate text-xs text-amber-400">{h('listFull')}</span> : null}
             <button
               type="button"
               {...tvStation}
@@ -1284,7 +1307,7 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
                                 onClick={(event) => {
                                   event.stopPropagation()
                                   if (isInList) removeChannelFromLiveTvList(list.id, channel)
-                                  else addChannelToLiveTvList(list.id, channel)
+                                  else setListFull(addChannelToLiveTvList(list.id, channel) === 'full')
                                   setListPickerChannelKey(null)
                                 }}
                                 className={`flex items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition ${
