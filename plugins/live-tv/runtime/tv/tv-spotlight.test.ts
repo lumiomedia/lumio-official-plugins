@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { pickSpotlight } from './tv-spotlight'
 
 const ch = (name: string) => ({ name, group: '', url: `http://x/${name}`, tvgId: null })
@@ -18,5 +18,16 @@ describe('pickSpotlight', () => {
     const a = ch('A')
     const picks = pickSpotlight({ favourites: [a], recent: [a], channels: [a, ch('B')], nowFor: () => ({ now, next: null, later: null }), count: 2 })
     expect(picks.map((p) => p.channel.name)).toEqual(['A', 'B'])
+  })
+  it('slutar leta så snart urvalet är fullt', () => {
+    // Slingorna gick förut till slutet även när urvalet var fullt, och två av
+    // dem slår upp EPG per kanal. Hubben ber om en handfull kort ur en
+    // spellista som kan ha tiotusentals kanaler — varje minuttick kostade en
+    // full genomsökning för fyra kort.
+    const channels = Array.from({ length: 5000 }, (_, i) => ch(`K${i}`))
+    const nowFor = vi.fn(() => ({ now, next: null, later: null }))
+    const picks = pickSpotlight({ favourites: [], recent: [], channels, nowFor, count: 4 })
+    expect(picks).toHaveLength(4)
+    expect(nowFor.mock.calls.length).toBeLessThanOrEqual(5)
   })
 })

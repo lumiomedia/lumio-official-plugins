@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { channelKey, type M3uChannel } from '../live-tv-data'
 import { flattenChannels, qualityFromName, topGroups } from '../live-tv-model'
 import { formatClock, progressOf } from '../live-tv-ui'
@@ -13,6 +13,16 @@ import { ChannelCell, FAVS_GROUP, useDebouncedChannel } from './tv-guide-shared'
 import { TvPreview } from './tv-preview'
 
 type Selection = { listId: string | null; group: string | null }
+
+/**
+ * Rader per sida i mittenkolumnen, samma steg som `tv-guide.tsx`.
+ *
+ * Kolumnen ritade tidigare HELA listan: en IPTV-spellista med tiotusentals
+ * kanaler byggde lika många rader — var och en med ett `model.nowFor`-uppslag
+ * och en `ChannelCell` — i ett enda pass, vilket låser en TV-box i sekunder
+ * vid varje listbyte.
+ */
+const ROW_STEP = 40
 
 export function TvGuidePlaylists({ model, nav, settings }: TvViewProps) {
   const { tt, locale } = useTvText()
@@ -32,6 +42,10 @@ export function TvGuidePlaylists({ model, nav, settings }: TvViewProps) {
     if (!list) return []
     return sel.group ? list.channels.filter((c) => c.group === sel.group) : list.channels
   }, [sel, tree, model.favouriteChannels])
+
+  const [visible, setVisible] = useState(ROW_STEP)
+  useEffect(() => { setVisible(ROW_STEP) }, [sel])
+  const shownRows = useMemo(() => rows.slice(0, visible), [rows, visible])
 
   const selected = useMemo(() => (selectedKey ? rows.find((c) => channelKey(c) === selectedKey) ?? null : null) ?? rows[0] ?? null, [selectedKey, rows])
   const previewChannel = useDebouncedChannel(selected, 300)
@@ -93,7 +107,7 @@ export function TvGuidePlaylists({ model, nav, settings }: TvViewProps) {
           <span style={{ fontSize: dp(26), fontWeight: 600 }}>{title}</span>
           <span style={{ fontSize: dp(16), color: 'rgba(243,244,248,0.5)' }}>{tt('channelsCount', { count: rows.length })} · {clock}</span>
         </div>
-        {rows.map((channel, index) => {
+        {shownRows.map((channel, index) => {
           const key = channelKey(channel)
           const rowInfo = model.nowFor(channel)
           const focused = selected ? channelKey(selected) === key : false
@@ -113,6 +127,9 @@ export function TvGuidePlaylists({ model, nav, settings }: TvViewProps) {
             </div>
           )
         })}
+        {rows.length > visible ? (
+          <div {...station(() => setVisible((v) => v + ROW_STEP))} style={{ margin: `${dp(20)}px auto ${dp(20)}px`, width: 'fit-content', height: dp(48), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.s10, display: 'flex', alignItems: 'center', fontSize: dp(18), cursor: 'pointer' }}>{tt('showMore')}</div>
+        ) : null}
         {rows.length === 0 ? <div style={{ padding: dp(24), color: TV.dim, fontSize: dp(19) }}>{tt('guideEmpty')}</div> : null}
       </div>
 

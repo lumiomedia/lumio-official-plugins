@@ -47,6 +47,19 @@ describe('TvGuidePlaylists', () => {
     fireEvent.focus(rows[0])
     expect(screen.getByTestId('pl-detail')).toHaveTextContent('B')
   })
+  it('mittenkolumnen sidindelar en stor spellista i stället för att rita allt', () => {
+    // Kolumnen ritade tidigare HELA listan: varje rad kostar ett
+    // `model.nowFor`-uppslag och en ChannelCell, så en spellista med
+    // tiotusentals kanaler låste TV-boxen i sekunder vid varje listbyte.
+    // Samma steg (40) och samma "Visa fler"-station som tv-guide.tsx.
+    const big: LiveTvList = { id: 'l3', name: 'Stor', channels: Array.from({ length: 300 }, (_, i) => ch(`K${i}`, 'Alla')), createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null }
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [big])
+    mount()
+    fireEvent.click(screen.getByTestId('pl-list-l3'))
+    expect(screen.getAllByTestId('pl-row')).toHaveLength(40)
+    fireEvent.click(screen.getByText('Show more'))
+    expect(screen.getAllByTestId('pl-row')).toHaveLength(80)
+  })
   it('OK på Sen-kortet sätter påminnelse', () => {
     mount()
     fireEvent.focus(screen.getAllByTestId('pl-row')[0])

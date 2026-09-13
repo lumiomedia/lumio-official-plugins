@@ -203,6 +203,12 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
             }
             baseOnKeyDown?.(event)
           }
+          // EN uppslagning per rad. `model.scheduleFor` filtrerar hela
+          // kanalens tablå mot fönstret vid varje anrop (ingen memo per
+          // kanal), och tablån anropades två gånger per rad: en för blocken
+          // och en till bara för att fråga om listan var tom. Med 40 rader
+          // blev det 40 genomsökningar i onödan vid varje minuttick.
+          const timeline = mode === 'tl' ? model.scheduleFor(channel, win.start, win.end) : null
           return (
             <div key={key} style={{ height: dp(86), borderBottom: `1px solid rgba(255,255,255,0.07)`, display: 'flex', alignItems: 'center', gap: dp(16) }}>
               <div
@@ -229,7 +235,7 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
                 </>
               ) : (
                 <div style={{ flex: 1, position: 'relative', height: dp(72), minWidth: 0 }}>
-                  {model.scheduleFor(channel, win.start, win.end).map((p) => {
+                  {(timeline ?? []).map((p) => {
                     const g = blockGeometry(p, win)
                     if (!g) return null
                     const onNow = p.start <= model.nowMs && p.stop > model.nowMs
@@ -240,7 +246,7 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
                       </div>
                     )
                   })}
-                  {model.scheduleFor(channel, win.start, win.end).length === 0 ? <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', paddingLeft: dp(16), color: TV.dim, fontSize: dp(18) }}>{tt('noProgramme')}</div> : null}
+                  {timeline !== null && timeline.length === 0 ? <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', paddingLeft: dp(16), color: TV.dim, fontSize: dp(18) }}>{tt('noProgramme')}</div> : null}
                   <div style={{ position: 'absolute', top: 0, bottom: 0, left: `${nowLeftPct}%`, width: 2, background: TV.acc, boxShadow: `0 0 12px ${TV.accMix(60)}`, pointerEvents: 'none' }} />
                 </div>
               )}

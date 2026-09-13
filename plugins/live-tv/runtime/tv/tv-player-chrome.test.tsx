@@ -48,6 +48,31 @@ describe('TvPlayerChrome', () => {
     expect(cards[0]).toHaveAttribute('data-init')
     expect(cards).toContain(document.activeElement)
   })
+  it('mini-guiden fönstrar en stor kanallista i stället för att rita hela', () => {
+    // `tv.neighbours` ÄR modellens kompletta kanallista — i en IPTV-spellista
+    // tiotusentals poster, och varje kort slår dessutom upp `tv.nowFor(c)`.
+    // Ett enda ▾ byggde alltså hela listan på en gång och frös TV-boxen i
+    // sekunder. Fjärrkontrollen går ändå bara ett steg i taget.
+    const many = Array.from({ length: 300 }, (_, i) => ch(`K${i}`))
+    render(<TvPlayerChrome channel={many[150]} tv={tv({ neighbours: many })} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
+    fireEvent.keyDown(window, { key: 'ArrowDown' })
+    const cards = screen.getAllByTestId('mini-card')
+    expect(cards.length).toBeLessThanOrEqual(51)
+    // Fönstret är centrerat kring den spelande kanalen …
+    expect(cards[0]).toHaveTextContent('K125')
+    expect(cards[cards.length - 1]).toHaveTextContent('K175')
+    // … och exakt ett kort bär startfokus.
+    expect(cards.filter((c) => c.hasAttribute('data-init'))).toHaveLength(1)
+  })
+  it('mini-guiden tar de första korten när kanalen inte finns i en stor lista', () => {
+    const many = Array.from({ length: 300 }, (_, i) => ch(`K${i}`))
+    render(<TvPlayerChrome channel={ch('Utanför')} tv={tv({ neighbours: many })} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
+    fireEvent.keyDown(window, { key: 'ArrowDown' })
+    const cards = screen.getAllByTestId('mini-card')
+    expect(cards).toHaveLength(50)
+    expect(cards[0]).toHaveTextContent('K0')
+    expect(cards.filter((c) => c.hasAttribute('data-init'))).toHaveLength(1)
+  })
   it('bannern döljs efter tiden och ▲ visar den igen', () => {
     vi.useFakeTimers()
     render(<TvPlayerChrome channel={channels[1]} tv={tv()} paused={false} onTogglePause={() => {}} onClose={() => {}} />)

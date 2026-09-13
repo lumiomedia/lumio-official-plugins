@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { channelKey } from '../live-tv-data'
 import { startOfLocalDay } from '../live-tv-model'
 import { formatClock } from '../live-tv-ui'
@@ -13,9 +13,26 @@ import { searchChannels, searchProgrammes, suggestions } from './tv-search-logic
 export function TvSearch({ model, nav }: TvViewProps) {
   const { tt, locale } = useTvText()
   const [query, setQuery] = useState('')
+  /**
+   * Programsökningen är fördröjd, kanalsökningen inte.
+   *
+   * `searchChannels` går igenom kanalnamnen en gång. `searchProgrammes` slår i
+   * stället upp HELA dagens tablå för VARJE kanal (`model.scheduleFor` per
+   * kanal) — i en stor spellista tiotusentals uppslag. På TV skrivs frågan en
+   * bokstav i taget med fjärrkontrollen, och varje bokstav körde om hela den
+   * genomsökningen synkront: tangentbordet hakade upp sig mellan trycken.
+   * 150 ms är kortare än ett bekvämt tryckintervall på fjärrkontrollen, så en
+   * användare som slutat skriva ser resultatet som omedelbart, medan en snabb
+   * serie tryck bara ger EN genomsökning.
+   */
+  const [deferredQuery, setDeferredQuery] = useState('')
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDeferredQuery(query), 150)
+    return () => window.clearTimeout(timer)
+  }, [query])
   const day = useMemo(() => { const start = startOfLocalDay(model.nowMs); return { start, end: start + 86_400_000 } }, [model.nowMs])
   const channels = useMemo(() => searchChannels(query, model.channels), [query, model.channels])
-  const programmes = useMemo(() => searchProgrammes(query, model.channels, model.scheduleFor, day), [query, model.channels, model.scheduleFor, day])
+  const programmes = useMemo(() => searchProgrammes(deferredQuery, model.channels, model.scheduleFor, day), [deferredQuery, model.channels, model.scheduleFor, day])
   const hints = useMemo(() => suggestions(query, model.channels, programmes.map((p) => p.programme.title)), [query, model.channels, programmes])
   const focusFirstResult = () => {
     const first = document.querySelector<HTMLElement>('[data-live-tv-search-results] [data-f]')

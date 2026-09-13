@@ -14,9 +14,15 @@ export function pickSpotlight(input: { favourites: M3uChannel[]; recent: M3uChan
     seen.add(key)
     out.push({ channel, reason })
   }
-  for (const c of input.favourites) if (input.nowFor(c).now) add(c, 'favouriteLive')
-  for (const c of input.favourites) add(c, 'favourite')
-  for (const c of input.recent) add(c, 'recent')
-  for (const c of input.channels) if (input.nowFor(c).now) add(c, 'onNow')
+  // `full()` bryter varje slinga så snart urvalet är fyllt. `add` avvisade
+  // redan överskottet, men slingorna gick ändå till slutet — och de två
+  // `nowFor`-slingorna slår upp EPG per kanal. Hubben ber om en handfull kort
+  // ur en spellista som kan ha tiotusentals kanaler, så utan brytningen
+  // kostade varje minuttick en full genomsökning för fyra kort.
+  const full = () => out.length >= input.count
+  for (const c of input.favourites) { if (full()) return out; if (input.nowFor(c).now) add(c, 'favouriteLive') }
+  for (const c of input.favourites) { if (full()) return out; add(c, 'favourite') }
+  for (const c of input.recent) { if (full()) return out; add(c, 'recent') }
+  for (const c of input.channels) { if (full()) return out; if (input.nowFor(c).now) add(c, 'onNow') }
   return out
 }

@@ -1,12 +1,15 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getTvGlassMenu, type TvGlassMenuTarget } from '@/lib/plugin-sdk'
 import { channelKey, type M3uChannel } from '../live-tv-data'
 import { formatClock, progressOf } from '../live-tv-ui'
 import type { LiveTvPlayerTvProps } from './tv-player-types'
 import { Icons, Progress, RoundBtn, Tag, TV, dp, station, useTvClockNode } from './tv-ui'
 import { useTvText } from './tv-strings'
+
+/** Kort på var sida om den spelande kanalen i mini-guiden. */
+const MINI_WINDOW = 25
 
 export function TvPlayerChrome({ channel, tv, paused, onTogglePause, onClose }: { channel: M3uChannel; tv: LiveTvPlayerTvProps; paused: boolean; onTogglePause: () => void; onClose: () => void }) {
   const { tt } = useTvText()
@@ -35,6 +38,21 @@ export function TvPlayerChrome({ channel, tv, paused, onTogglePause, onClose }: 
   useEffect(() => { reveal(); return () => { if (timerRef.current !== null) window.clearTimeout(timerRef.current) } }, [reveal, channel])
 
   const index = tv.neighbours.findIndex((c) => channelKey(c) === channelKey(channel))
+
+  /**
+   * Mini-guiden ritar ett FÖNSTER, inte hela listan.
+   *
+   * `tv.neighbours` är modellens kompletta kanallista — i en IPTV-spellista
+   * tiotusentals poster. Varje kort slår dessutom upp `tv.nowFor(c)`, så en
+   * ▾-tryckning byggde tiotusentals DOM-noder och lika många EPG-uppslag i ett
+   * enda pass; på en TV-box syns det som flera sekunders frys. Fjärrkontrollen
+   * kan bara gå ett steg i taget från den spelande kanalen, så ±25 kort räcker
+   * med marginal (ChannelUp/Down byter kanal och bygger om fönstret).
+   */
+  const miniCards = useMemo(() => {
+    if (index < 0) return tv.neighbours.slice(0, MINI_WINDOW * 2)
+    return tv.neighbours.slice(Math.max(0, index - MINI_WINDOW), index + MINI_WINDOW + 1)
+  }, [tv, index])
   const step = useCallback((delta: 1 | -1) => {
     if (tv.neighbours.length === 0) return
     const next = tv.neighbours[(index + delta + tv.neighbours.length) % tv.neighbours.length]
@@ -228,7 +246,7 @@ export function TvPlayerChrome({ channel, tv, paused, onTogglePause, onClose }: 
       </div>
       {miniOpen ? (
         <div ref={miniRef} data-panel-root="" data-row="" data-live-tv-layer="" style={{ position: 'absolute', left: 0, right: 0, bottom: dp(200), padding: `0 ${dp(48)}px`, display: 'flex', gap: dp(14), overflowX: 'auto', zIndex: 31 }}>
-          {tv.neighbours.map((c, cardIndex) => {
+          {miniCards.map((c, cardIndex) => {
             const n = tv.nowFor(c)
             const current = channelKey(c) === channelKey(channel)
             // Exakt EN data-init i mini-guiden: den spelande kanalens kort,

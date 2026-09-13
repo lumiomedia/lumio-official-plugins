@@ -25,6 +25,21 @@ export function TvMultiview({ model, nav }: TvViewProps) {
 
   // Ljudrutan är alltid levande (den konsumerar ingen budget här); övriga
   // rutor får levande ytor i rutordning tills kapaciteten (maxLive - 1) tar slut.
+  //
+  // INVARIANT: `liveLeft` är en renderlokal räknare som MINSKAS INNE i
+  // `state.tiles.map()` nedan (`liveLeft-- > 0`). Den fungerar bara så länge
+  // tre saker gäller:
+  //
+  //  1. Den nollställs vid VARJE rendering — den deklareras därför här i
+  //     komponentkroppen, aldrig i en `useRef`/modulvariabel. En räknare som
+  //     överlevde renderingen hade tömts på första omritningen och alla rutor
+  //     utom ljudrutan blivit svarta stillbilder för alltid.
+  //  2. Rutorna gås igenom i rutordning, exakt en gång per rendering. Lägg
+  //     aldrig in ett andra `map` över samma rutor (t.ex. en förberäkning),
+  //     då dubbelräknas budgeten.
+  //  3. Inget villkor kortsluter förbi `liveLeft--` för en ruta som ändå
+  //     visas: `hasAudio ||` står först just för att ljudrutan INTE ska dra
+  //     från budgeten, och det är den enda tillåtna kortslutningen.
   const liveBudget = Math.max(0, caps.maxLive - 1)
   let liveLeft = liveBudget
 
