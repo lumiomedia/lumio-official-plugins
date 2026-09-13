@@ -209,9 +209,18 @@ export function Segment<K extends string>({ options, value, onChange, style }: {
   )
 }
 
-export function RoundBtn({ size = dp(52), children, background = TV.s12, ...rest }: { size?: number; children: ReactNode; background?: string } & StationProps) {
+/**
+ * `style` tas emot SEPARAT och läggs sist.
+ *
+ * Förut ingick den i `...rest` och spreds före knappens egen `style`, som då
+ * ersatte den i sin helhet — utan varning, för `StationProps` är en öppen
+ * Record. Uppmätt i tv-sim: hjärtat i kanaldetaljens rubrikrad står med
+ * `marginLeft: 'auto'` och hamnade ändå direkt efter kategorichipet (x=556 i
+ * en 918 px bred rad) i stället för vid radens högerkant som i handoffen.
+ */
+export function RoundBtn({ size = dp(52), children, background = TV.s12, style, ...rest }: { size?: number; children: ReactNode; background?: string; style?: CSSProperties } & StationProps) {
   return (
-    <div {...rest} style={{ width: size, height: size, borderRadius: 999, background, border: `1px solid ${TV.lineCard}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: TV.text, cursor: 'pointer', flexShrink: 0 }}>
+    <div {...rest} style={{ width: size, height: size, borderRadius: 999, background, border: `1px solid ${TV.lineCard}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: TV.text, cursor: 'pointer', flexShrink: 0, ...style }}>
       {children}
     </div>
   )

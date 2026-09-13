@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { ChannelArt, Progress, Tag, dp, station } from './tv-ui'
+import { ChannelArt, Progress, RoundBtn, Tag, dp, station } from './tv-ui'
 
 afterEach(cleanup)
 
@@ -9,6 +9,13 @@ describe('tv-ui', () => {
     expect(dp(22)).toBe(22)
     expect(dp(52)).toBe(52)
     expect(dp(104)).toBe(104)
+  })
+  it('RoundBtn behåller anroparens style i stället för att skriva över den', () => {
+    render(<RoundBtn {...station(() => {})} style={{ marginLeft: 'auto' }}>x</RoundBtn>)
+    const el = screen.getByRole('button')
+    expect(el.style.marginLeft).toBe('auto')
+    // Knappens egna mått ska finnas kvar.
+    expect(el.style.borderRadius).toBe('999px')
   })
   it('station ger en fokusstation som kör onOk på klick', () => {
     const ok = vi.fn()
