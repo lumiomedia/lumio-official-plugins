@@ -103,7 +103,11 @@ Värdens menychip är redan dolt för sid-id:t `live-tv-browse`.
 
 ### 3.7 Mått och färg
 
-Alla mått i handoffen är designpx för 1920×1080. I pluginkod delas de med 1,54 och skrivs som px. `tv-ui.tsx` exponerar `dp(n)` = `Math.round(n / 1.54)` för spårbarhet, samt token `TV` (ytor, linjer, live, accent via `var(--accent-500)`).
+Alla mått i handoffen är designpx för 1920×1080, och i pluginkod skrivs de RAKT AV som px. `tv-ui.tsx` exponerar `dp(n)` = `n` för spårbarhet, samt token `TV` (ytor, linjer, live, accent via `var(--accent-500)`).
+
+Här stod tidigare att måtten ska delas med 1,54 (`dp(n) = Math.round(n / 1.54)`), efter handoffens genväg "pluginet skalas redan med `--tv-base-scale: 1.54`". Det gällde aldrig råa px. Appens `lib/tv-scene.ts` lägger ut hela TV-läget i en scen med fast designhöjd (1080) och skalar scenen med en `transform`; en px inne i scenen ÄR alltså en designpixel på varje skärm. `--tv-base-scale` bor i `--tv-u`, och `lib/tv-metrics.ts` säger det rakt ut: `tvFont(n)`/`tvBox(n)` = n designpixlar just för att råa px inte bär den skalan. Divisionen gav ett TV-läge ritat 1,54 gånger för litet — uppmätt i tv-sim på 1920×1080 (scenskala 1): ikonraden 68 px i stället för 104, hubbtiteln 22 px i stället för 34. Efter rättningen mäts ikonraden till exakt 104 och titeln till 34. Bara mått uttryckta i `rem` eller `var(--tv-u)` skulle behöva ÷1,54.
+
+Känd begränsning att provköra på riktig TV: råa px följer inte appens inställning för gränssnittsskala (`--ui-scale`), som appens egna TV-ytor plockar upp via `tvFont`/`tvBox`. Live TV:s TV-läge skalas alltså bara med scenen, inte med användarens skalinställning.
 
 Bakgrund `#000`. Text `#f3f4f8`. Accent `rgb(var(--accent-500))`, accentText `#ffd9c9`. Text på accentfylld yta alltid `#fff`.
 
