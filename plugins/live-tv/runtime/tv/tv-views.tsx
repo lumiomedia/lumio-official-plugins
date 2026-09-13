@@ -6,6 +6,7 @@ import { dp, station, TV } from './tv-ui'
 import { useTvText } from './tv-strings'
 import { TvHub } from './tv-hub'
 import { TvGuide } from './tv-guide'
+import { TvFavourites } from './tv-favourites'
 
 /** Tillfällig vy tills den riktiga landar (Task 8–15 byter ut en post var). */
 export function TvViewStub({ nav }: TvViewProps) {
@@ -23,7 +24,7 @@ export function TvViewStub({ nav }: TvViewProps) {
 export const TV_VIEWS: Record<TvView, ComponentType<TvViewProps>> = {
   hub: TvHub,
   guide: TvGuide,
-  favs: TvViewStub,
+  favs: TvFavourites,
   channel: TvViewStub,
   search: TvViewStub,
   multi: TvViewStub,
