@@ -6,7 +6,7 @@ const ch = (name: string) => ({ name, group: '', url: `http://x/${name}`, tvgId:
 describe('resolveZap', () => {
   const favs = [ch('F1'), ch('F2')]
   const all = [ch('A'), ch('B'), ch('C')]
-  it('favoriter først', () => {
+  it('favoriter först', () => {
     expect(resolveZap('1', favs, all)?.name).toBe('F1')
     expect(resolveZap('2', favs, all)?.name).toBe('F2')
   })
