@@ -191282,9 +191282,9 @@ ${cue.text}`).join("\n\n")}
       const next2 = tv.neighbours[(index3 + delta + tv.neighbours.length) % tv.neighbours.length];
       if (next2) tv.onSwitchChannel(next2);
     }, [tv, index3]);
-    const layerRef = useRef({ menuOpen: false, miniOpen: false });
+    const layerRef = useRef({ menuOpen: false, miniOpen: false, gateOpen: false });
     useEffect(() => {
-      layerRef.current = { menuOpen: menu !== null, miniOpen };
+      layerRef.current = { menuOpen: menu !== null, miniOpen, gateOpen: tv.gateOpen };
     });
     useEffect(() => {
       const node = dotsRef.current;
@@ -191295,7 +191295,7 @@ ${cue.text}`).join("\n\n")}
       const tick = () => {
         if (!node.isConnected) return;
         const active = document.activeElement;
-        const inLayer = layerRef.current.menuOpen || layerRef.current.miniOpen;
+        const inLayer = layerRef.current.menuOpen || layerRef.current.miniOpen || layerRef.current.gateOpen;
         if (active === node) {
           if (++held >= 5) return;
         } else if (inLayer) {
@@ -191316,6 +191316,7 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       const onKey = (event) => {
         if (menu) return;
+        if (tv.gateOpen) return;
         if (event.key === "ChannelUp" || event.key === "PageUp") {
           event.preventDefault();
           event.stopImmediatePropagation();
@@ -191363,7 +191364,7 @@ ${cue.text}`).join("\n\n")}
       };
       window.addEventListener("keydown", onKey, true);
       return () => window.removeEventListener("keydown", onKey, true);
-    }, [menu, miniOpen, step, reveal, onClose, closeMini]);
+    }, [menu, miniOpen, step, reveal, onClose, closeMini, tv.gateOpen]);
     useEffect(() => {
       if (!miniOpen) return;
       const mini = miniRef.current;
@@ -199214,6 +199215,12 @@ ${cue.text}`).join("\n\n")}
       const onKey = (event) => {
         if (!BACK_KEYS2.has(event.key)) return;
         if (menu) return;
+        if (pending2) {
+          event.preventDefault();
+          event.stopPropagation();
+          back();
+          return;
+        }
         if (active && Player) return;
         const target2 = event.target;
         if (target2 && (target2.tagName === "INPUT" || target2.tagName === "TEXTAREA")) return;
@@ -199224,7 +199231,7 @@ ${cue.text}`).join("\n\n")}
       };
       window.addEventListener("keydown", onKey, true);
       return () => window.removeEventListener("keydown", onKey, true);
-    }, [back, menu, active, Player]);
+    }, [back, menu, active, Player, pending2]);
     const favourites = model.favouriteChannels;
     const channels = model.channels;
     const zapDepsRef = useRef({ favourites, channels, play, toast, tt });
@@ -199322,6 +199329,10 @@ ${cue.text}`).join("\n\n")}
       nowFor: model.nowFor,
       nowMs: model.nowMs,
       locale,
+      // Kanalbyte till en LÅST kanal lämnar `active` orörd och öppnar
+      // grinden ovanpå spelaren (se `play` ovan) — kromet måste då stå
+      // tillbaka helt (Enter/Back) så att PIN-grinden äger dem.
+      gateOpen: pending2 !== null,
       onToggleFavourite: () => model.togglePin(activeChannel),
       onOpenChannelDetails: () => {
         setActive(null);
