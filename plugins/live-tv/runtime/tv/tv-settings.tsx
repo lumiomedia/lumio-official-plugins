@@ -13,7 +13,8 @@ import {
   type LiveTvList,
   type M3uChannel,
 } from '../live-tv-data'
-import { getLockedChannelKeys, onChannelLocksChanged, toggleChannelLock } from '../channel-locks'
+import { activeProfileHasPin, getLockedChannelKeys, onChannelLocksChanged, pinSupportAvailable, toggleChannelLock, verifyActiveProfilePin } from '../channel-locks'
+import { PinGate } from '../live-tv-ui'
 import type { TvViewProps } from './tv-shell'
 import { TV, Toggle, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
@@ -163,6 +164,28 @@ async function fetchAndAddM3uList(url: string): Promise<void> {
   }
 }
 
+/**
+ * Samma matchning som skrivbordets `live-tv-settings-section.tsx`
+ * (`handleRemoveList`, rad ~166–178): en spellistas namn ÄR värdnamnet ur
+ * käll-URL:en (`deriveListName` i `live-tv-data.ts`) — det finns ingen
+ * sparad käll-URL-referens på listposten. Ta bort listan utan att också
+ * plocka bort adressen ur `m3u_urls` hade gjort att exakt samma feed kom
+ * tillbaka vid nästa hämtning. Xtream-inloggningar (`xtream://`) har sin
+ * egen borttagningsväg och matchas aldrig här. Om ingen sparad URL har det
+ * här värdnamnet (manuellt skapad lista, eller redan borttagen) tas bara
+ * listan bort.
+ */
+function hostOf(url: string): string {
+  try { return new URL(url).hostname || url } catch { return url }
+}
+
+function removeListAndSourceUrl(list: LiveTvList): void {
+  const urls = getM3uUrls()
+  const remaining = urls.filter((url) => !url.startsWith('xtream://') && hostOf(url) !== list.name)
+  if (remaining.length !== urls.length) applyM3uUrls(remaining)
+  deleteLiveTvList(list.id)
+}
+
 function PlaylistsTab({ lists, tt, locale }: { lists: LiveTvList[]; tt: TT; locale: string }) {
   const keyboard = useKeyboardPrompt()
   const addUrl = () => keyboard.ask(tt('addM3u'), '', (value) => { const url = value.trim(); if (url) void fetchAndAddM3uList(url) })
@@ -174,7 +197,7 @@ function PlaylistsTab({ lists, tt, locale }: { lists: LiveTvList[]; tt: TT; loca
           key={list.id}
           label={<><strong>{list.name}</strong> <span style={{ color: 'rgba(243,244,248,0.5)', fontSize: dp(16) }}>· {tt('channelsCount', { count: list.channels.length })}{list.fetchedAt ? ` · ${tt('fetchedAt', { time: new Date(list.fetchedAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) })}` : ''}</span></>}
           right={tt('remove')}
-          onOk={() => deleteLiveTvList(list.id)}
+          onOk={() => removeListAndSourceUrl(list)}
         />
       ))}
       {keyboard.available ? <Row label={tt('addM3u')} right="+" onOk={addUrl} /> : null}
@@ -205,11 +228,35 @@ function ParentalTab({ model, tt }: { model: TvViewProps['model']; tt: TT }) {
   const channels = keys
     .map((key) => model.allChannels.find((c) => channelKey(c) === key))
     .filter((c): c is M3uChannel => Boolean(c))
+  // Lås/upplåsning går via PinGate — samma regel som live-tv-channel-page.tsx
+  // och tv-channel.tsx. Utan PIN-infrastruktur (eller ingen PIN satt på
+  // profilen) finns inget att verifiera mot, så då låses kanalen upp direkt
+  // i stället för att fastna bakom en grind ingen kan öppna.
+  const lockAvailable = pinSupportAvailable() && activeProfileHasPin()
+  const [pinTarget, setPinTarget] = useState<M3uChannel | null>(null)
+  const requestUnlock = (channel: M3uChannel) => {
+    if (!lockAvailable) { toggleChannelLock(channel); return }
+    setPinTarget(channel)
+  }
   return (
     <section style={{ display: 'flex', flexDirection: 'column', gap: dp(10) }}>
       <Heading>{tt('lockedChannels')}</Heading>
       {channels.length === 0 ? <div style={{ fontSize: dp(18), color: TV.dim }}>{tt('noLocked')}</div> : null}
-      {channels.map((channel) => <Row key={channelKey(channel)} label={channel.name} right={tt('unlock')} onOk={() => toggleChannelLock(channel)} />)}
+      {channels.map((channel) => <Row key={channelKey(channel)} label={channel.name} right={tt('unlock')} onOk={() => requestUnlock(channel)} />)}
+      <PinGate
+        open={pinTarget !== null}
+        title={tt('enterPin')}
+        wrongText={tt('pinWrong')}
+        unlockLabel={tt('unlock')}
+        cancelLabel={tt('cancel')}
+        onVerify={verifyActiveProfilePin}
+        onClose={() => setPinTarget(null)}
+        onUnlocked={() => {
+          const channel = pinTarget
+          setPinTarget(null)
+          if (channel) toggleChannelLock(channel)
+        }}
+      />
     </section>
   )
 }
