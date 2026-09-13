@@ -37,4 +37,20 @@ describe('useVideoSurface v1 (HTML-motor i test)', () => {
     view.unmount()
     expect(document.querySelector('video')).toBeNull()
   })
+  it('en evicerad ägare stänger aldrig den nya ägarens ström', async () => {
+    let a: VideoSurfaceHandle | null = null
+    let b: VideoSurfaceHandle | null = null
+    const viewA = render(<Probe audio onHandle={(h) => { a = h }} />)
+    await waitFor(() => expect(a?.live).toBe(true))
+    render(<Probe audio onHandle={(h) => { b = h }} />)
+    await waitFor(() => {
+      expect(b?.live).toBe(true)
+      expect(a?.live).toBe(false)
+    })
+    viewA.unmount()
+    await waitFor(() => {
+      expect(b?.live).toBe(true)
+      expect(document.querySelectorAll('video').length).toBe(1)
+    })
+  })
 })

@@ -136,8 +136,18 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
     let setBounds: ((rect: Rect) => void) | null = null
     let closeSession: (() => Promise<void>) | null = null
     let readyTimer = 0
+    let spent = false
     const markReady = () => { if (!cancelled) setReady(true) }
     const markFailed = () => { if (!cancelled) { setFailed(true); setReady(false) } }
+    // Enkelavtryck: en gång stängd, alltid stängd. En evicerad instans (se
+    // nedan) kan annars stänga NÄSTA ägares ström när dess egen effekt-städning
+    // körs, eftersom mpv/droid-stängning är parameterlös (den stänger vad som
+    // än är öppet just nu, inte specifikt vår egen session).
+    const closeOnce = async () => {
+      if (spent) return
+      spent = true
+      await closeSession?.().catch(() => {})
+    }
 
     const start = async () => {
       setFailed(false)
@@ -152,6 +162,14 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
         await surface.open({ url, muted }).catch(markFailed)
         return
       }
+      // ExoPlayer saknar mute-API: öppna aldrig ljudlöst (visa bildruta i
+      // stället). Kontrolleras FÖRE ägarskapsanspråket så att en instans som
+      // ändå aldrig tänker öppna inte hinner evicera en existerande ägare i
+      // onödan.
+      if (caps.engine === 'droid' && muted) {
+        setLive(false)
+        return
+      }
       // v1: en yta. Bara ägaren spelar; ljudrutan har företräde.
       if (owner !== null && owner !== idRef.current) {
         if (!audio) { setLive(false); return }
@@ -161,23 +179,25 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
       owner = idRef.current
       setLive(true)
       if (caps.engine === 'mpv') {
-        await openMpvPlayer({ url }).catch(markFailed)
-        await mpvSetPropertyStrings([{ name: 'mute', value: muted ? 'yes' : 'no' }]).catch(() => {})
-        setBounds = (rect) => mpvSetBounds(rect)
         closeSession = () => closeMpvPlayer()
+        await openMpvPlayer({ url }).catch(markFailed)
+        if (cancelled || owner !== idRef.current) { await closeOnce(); return }
+        await mpvSetPropertyStrings([{ name: 'mute', value: muted ? 'yes' : 'no' }]).catch(() => {})
+        if (cancelled || owner !== idRef.current) { await closeOnce(); return }
+        setBounds = (rect) => mpvSetBounds(rect)
         readyTimer = window.setTimeout(markReady, 800)
       } else if (caps.engine === 'droid') {
-        if (muted) { setLive(false); owner = null; return }
-        await openNativePlayer({ url, mimeType: isHls(url) ? HOST_PROXY_MIME : undefined }).catch(markFailed)
-        setBounds = (rect) => nativeSetBounds(rect)
         closeSession = () => closeNativePlayer()
+        await openNativePlayer({ url, mimeType: isHls(url) ? HOST_PROXY_MIME : undefined }).catch(markFailed)
+        if (cancelled || owner !== idRef.current) { await closeOnce(); return }
+        setBounds = (rect) => nativeSetBounds(rect)
         readyTimer = window.setTimeout(markReady, 800)
       } else {
         const session = createHtmlSession(url, muted, markReady, markFailed)
-        setBounds = (rect) => session.setBounds(rect)
         closeSession = () => session.close()
+        setBounds = (rect) => session.setBounds(rect)
       }
-      ownerClose = async () => { await closeSession?.() }
+      ownerClose = closeOnce
       const rect = measure(rectRef.current)
       if (rect) setBounds(rect)
     }
@@ -204,10 +224,10 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
       if (owner === idRef.current) {
         owner = null
         ownerClose = null
-        void closeSession?.().catch(() => {})
+        void closeOnce()
         notifyWaiters()
       } else {
-        void closeSession?.().catch(() => {})
+        void closeOnce()
       }
     }
   }, [enabled, url, muted, audio, rectRef])
