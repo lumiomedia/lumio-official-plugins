@@ -18,7 +18,7 @@ vi.mock('@/lib/plugin-sdk', async (importOriginal) => {
 })
 
 import * as liveTvData from './live-tv-data'
-import { LIVE_TV_PLUGIN_ID, getLiveTvLists, type LiveTvList } from './live-tv-data'
+import { LIVE_TV_PLUGIN_ID, getLiveTvLists, getXtreamLogins, type LiveTvList } from './live-tv-data'
 import { resetM3uFetchProgressForTests } from './m3u-fetch-progress'
 import { LiveTvSettingsSection } from './live-tv-settings-section'
 
@@ -97,6 +97,49 @@ describe('LiveTvSettingsSection', () => {
     // kvar för alltid.
     await waitFor(() => expect(getLiveTvLists()[0].needsReimport).toBe(false))
     expect(getLiveTvLists()[0].lastImportError).toBeUndefined()
+  })
+
+  it('ominloggningen rensar "behöver hämtas om" och återanvänder listans login-id', async () => {
+    // Ominloggningen ÄR fixen på "behöver hämtas om". Utan att utfallet
+    // bokförs stod märket och det gamla felet kvar på kortet tills appen
+    // startades om — trots att kanalerna just hämtats.
+    const json = (body: unknown) => Promise.resolve({ ok: true, status: 200, json: async () => body } as unknown as Response)
+    vi.stubGlobal('fetch', ((input: RequestInfo | URL) => {
+      const raw = typeof input === 'string' ? input : String(input)
+      if (raw.includes('player_api.php')) {
+        return json({ user_info: { auth: 1, status: 'Active', allowed_output_formats: ['ts'] } })
+      }
+      const path = new URL(raw, 'http://localhost').pathname
+      if (path === '/api/live-tv/import') return json({ job: 'job-1' })
+      if (path === '/api/live-tv/import/status') {
+        return json({ state: 'done', received: 5, total: 5, result: { total: 5, groups: [], urlTvg: null, truncated: false } })
+      }
+      return json({})
+    }) as typeof fetch)
+
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list({
+      id: 'x1',
+      name: 'panel.test:8080',
+      kind: 'xtream',
+      source: 'xtream://panel.test:8080/login-1',
+      xtreamLoginId: 'login-1',
+      channelCount: 0,
+      needsReimport: true,
+      lastImportError: 'boom',
+    })])
+
+    render(<LiveTvSettingsSection />)
+    fireEvent.click(screen.getByText('Sign in again'))
+    fireEvent.change(screen.getByPlaceholderText('liveTvXtreamUsername'), { target: { value: 'u' } })
+    fireEvent.change(screen.getByPlaceholderText('liveTvXtreamPassword'), { target: { value: 'p' } })
+    fireEvent.click(screen.getByText('liveTvXtreamConnect'))
+
+    await waitFor(() => expect(getLiveTvLists()[0].needsReimport).toBe(false))
+    expect(getLiveTvLists()[0].lastImportError).toBeUndefined()
+    expect(getLiveTvLists()).toHaveLength(1)
+    // Samma login-id → samma pseudo-URL → listan LAGAS i stället för att en
+    // andra, tom lista skapas bredvid den trasiga.
+    expect(getXtreamLogins().map((login) => login.id)).toEqual(['login-1'])
   })
 
   it('en överförd Xtream-lista utan inloggning ber om ny inloggning med panelen ifylld', () => {

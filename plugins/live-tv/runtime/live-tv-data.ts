@@ -597,6 +597,24 @@ export function xtreamPseudoUrl(login: XtreamLogin): string {
   return `${XTREAM_URL_PREFIX}${host}/${login.id}`
 }
 
+/**
+ * `xtream://<host>/<loginId>` → delarna.
+ *
+ * En Xtream-lista som kommit till enheten via inställningsöverföringen har
+ * kvar sin källa men INTE inloggningen (lösenord speglas inte), så källan är
+ * det enda som finns kvar att laga listan med: värdnamnet fyller i
+ * serverfältet, och login-id:t återanvänds när den nya inloggningen sparas så
+ * att `xtreamPseudoUrl` ger SAMMA källa — annars skapas en andra, tom lista
+ * bredvid den trasiga i stället för att den lagas.
+ */
+export function parseXtreamSource(source: string | undefined): { host: string; loginId: string } | null {
+  if (!source || !source.startsWith(XTREAM_URL_PREFIX)) return null
+  const rest = source.slice(XTREAM_URL_PREFIX.length)
+  const slash = rest.lastIndexOf('/')
+  if (slash <= 0) return null
+  return { host: rest.slice(0, slash), loginId: rest.slice(slash + 1) }
+}
+
 export function findXtreamLoginByPseudoUrl(url: string): XtreamLogin | null {
   if (!url.startsWith(XTREAM_URL_PREFIX)) return null
   const id = url.slice(url.lastIndexOf('/') + 1)

@@ -28,6 +28,7 @@ import {
   getLiveTvHideHero,
   setLiveTvHideHero,
   getXtreamLogins,
+  parseXtreamSource,
 } from './live-tv-data'
 import type { ImportStatus } from './index-client'
 import { recordListImportOutcome } from './list-import-flags'
@@ -38,7 +39,7 @@ import {
   subscribeM3uFetch,
 } from './m3u-fetch-progress'
 import { useHubText } from './hub-strings'
-import { EpgSourcesSection } from './epg-sources-section'
+import { EpgSourcesSection, EpgStatusCard } from './epg-sources-section'
 import { XtreamLoginSection, prefillXtreamLogin } from './xtream-login-section'
 
 
@@ -48,15 +49,6 @@ const HOME_OVERRIDE_PLUGIN_ID = 'com.lumio.live-tv'
 
 function hostOf(url: string): string {
   try { return new URL(url).hostname || url } catch { return url }
-}
-
-/** `xtream://<host>/<loginId>` → delarna. Se prefillXtreamLogin. */
-function parseXtreamSource(source: string | undefined): { host: string; loginId: string } | null {
-  if (!source || !source.startsWith('xtream://')) return null
-  const rest = source.slice('xtream://'.length)
-  const slash = rest.lastIndexOf('/')
-  if (slash <= 0) return null
-  return { host: rest.slice(0, slash), loginId: rest.slice(slash + 1) }
 }
 
 /**
@@ -289,6 +281,8 @@ export function LiveTvSettingsSection() {
 
       <XtreamLoginSection />
 
+      <EpgStatusCard />
+
       {lists.map((list) => {
         const busy = listProgress?.listId === list.id ? listProgress : null
         const importable = list.kind === 'm3u' || list.kind === 'xtream'
@@ -353,9 +347,6 @@ export function LiveTvSettingsSection() {
               onChangeManual={(epgUrls) => updateLiveTvListEpg(list.id, { epgUrls })}
               autoDisabled={list.autoEpgDisabled}
               onToggleAuto={(disabled) => updateLiveTvListEpg(list.id, { autoEpgDisabled: disabled })}
-              listId={list.id}
-              allUrls={[list.autoEpgDisabled ? null : list.urlTvg, ...list.epgUrls]
-                .filter((url): url is string => Boolean(url))}
             />
           </div>
         </Card>

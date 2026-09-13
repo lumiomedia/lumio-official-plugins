@@ -127,6 +127,33 @@ describe('TvSettingsView', () => {
     expect(rows[0]).toHaveAttribute('data-testid', 'list-row-l2')
   })
 
+  it('Spellistor: fokus stannar kvar i raden när märket rensas av en lyckad hämtning', async () => {
+    // Sorteringen "behöver hämtas om först" räknades om vid varje rendering:
+    // i samma ögonblick som flaggan rensades bytte raden plats, React
+    // flyttade noden och den fokuserade knappen tappade fokus till body —
+    // fjärrkontrollen strandade mitt i det som just lyckades.
+    stubImportFetch(() => ({ state: 'done', received: 2, total: 2, result: { total: 2, groups: [], urlTvg: null, truncated: false } }))
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [
+      { ...list, id: 'ok1', name: 'Fungerande', kind: 'm3u', source: 'http://ok.example/a.m3u', url: 'http://ok.example/a.m3u', channelCount: 2 },
+      { ...urlList, id: 'bad1', name: 'Trasig', kind: 'm3u', source: 'http://bad.example/b.m3u', url: 'http://bad.example/b.m3u', channelCount: 0, needsReimport: true, lastImportError: 'HTTP 500' },
+    ])
+    seedLiveTvIndex()
+    mount('playlists')
+
+    // Den som behöver hämtas om ligger överst vid monteringen.
+    expect(screen.getAllByTestId(/^list-row-/)[0]).toHaveAttribute('data-testid', 'list-row-bad1')
+
+    const button = screen.getByTestId('list-refetch-bad1')
+    button.focus()
+    fireEvent.click(button)
+
+    await waitFor(() => expect(getLiveTvLists().find((entry) => entry.id === 'bad1')?.needsReimport).toBe(false))
+    expect(screen.queryByText('Needs refetching')).toBeNull()
+    // Ordningen är fryst, så raden ligger kvar — och fokus med den.
+    expect(screen.getAllByTestId(/^list-row-/)[0]).toHaveAttribute('data-testid', 'list-row-bad1')
+    expect(screen.getByTestId('list-row-bad1').contains(document.activeElement)).toBe(true)
+  })
+
   it('Spellistor: en Xtream-lista utan inloggning ber om ny inloggning med värden ifylld', async () => {
     // Enhetsöverföringen speglar `lists` men INTE `xtream_logins` (lösenord),
     // så listan finns men importen kan inte köras. Raden ska säga det, och

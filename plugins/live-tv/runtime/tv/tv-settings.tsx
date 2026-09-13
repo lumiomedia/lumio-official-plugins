@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import * as sdk from '@/lib/plugin-sdk'
 import { getTvKeyboardPanel } from '@/lib/plugin-sdk'
 import {
@@ -16,6 +16,7 @@ import {
   getXtreamLogins,
   importList,
   normalizeXtreamBase,
+  parseXtreamSource,
   saveXtreamLogin,
   updateLiveTvListEpg,
   xtreamPseudoUrl,
@@ -183,22 +184,6 @@ function removeListAndSourceUrl(list: LiveTvList): void {
   deleteLiveTvList(list.id)
 }
 
-/**
- * `xtream://<host>/<loginId>` → delarna. En lista som kommit hit via
- * enhetsöverföringen har källan kvar men INTE inloggningen (lösenord speglas
- * inte), och då är bägge delarna det enda vi har: värdnamnet fyller i
- * serverfältet, och login-id:t återanvänds när den nya inloggningen sparas så
- * att pseudo-URL:en — och därmed listan och dess plats i indexet — blir
- * densamma i stället för att en andra, tom lista skapas bredvid.
- */
-function parseXtreamSource(source: string | undefined): { host: string; loginId: string } | null {
-  if (!source || !source.startsWith('xtream://')) return null
-  const rest = source.slice('xtream://'.length)
-  const slash = rest.lastIndexOf('/')
-  if (slash <= 0) return null
-  return { host: rest.slice(0, slash), loginId: rest.slice(slash + 1) }
-}
-
 function xtreamLoginMissing(list: LiveTvList): boolean {
   if (list.kind !== 'xtream') return false
   return !getXtreamLogins().some((login) => login.id === list.xtreamLoginId)
@@ -226,6 +211,77 @@ function Action({ label, onOk, testId }: { label: string; onOk: () => void; test
     </div>
   )
 }
+
+/**
+ * Kvittots tidsstämpel. Bara klockslaget räcker för dagens hämtning, men
+ * "09:41" säger ingenting om en lista som hämtades i förrgår — då kommer
+ * datumet med. Samma regel som skrivbordets `formatFetchedAt`.
+ */
+function formatFetchedAt(iso: string, locale: string): string {
+  const then = new Date(iso)
+  if (Number.isNaN(then.getTime())) return iso
+  const now = new Date()
+  return then.toDateString() === now.toDateString()
+    ? then.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+    : then.toLocaleString(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+}
+
+/**
+ * En listrad. `memo` är inte pynt: framstegsräknaren tickar ~2 ggr/s under en
+ * import, och utan den här spärren ritades ALLA rader om varje gång — på en
+ * TV-box med tjugo spellistor räckte det för att rycka i fjärrnavigeringen.
+ * Raden som faktiskt hämtar får en ny `busy` och ritas om; övriga får samma
+ * `null` och hoppas över.
+ */
+const ListRow = memo(function ListRow({
+  list,
+  tt,
+  locale,
+  busy,
+  needsLogin,
+  onRefetch,
+  onRemove,
+}: {
+  list: LiveTvList
+  tt: TT
+  locale: string
+  busy: ImportProgress | null
+  needsLogin: boolean
+  onRefetch: (list: LiveTvList) => void
+  onRemove: (list: LiveTvList) => void
+}) {
+  const importable = list.kind === 'm3u' || list.kind === 'xtream'
+  return (
+    <div
+      data-testid={`list-row-${list.id}`}
+      style={{ minHeight: dp(64), borderRadius: dp(12), background: TV.s06, padding: `${dp(12)}px ${dp(18)}px`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: dp(16), fontSize: dp(19) }}
+    >
+      <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: dp(4) }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: dp(10), minWidth: 0 }}>
+          <strong style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{list.name}</strong>
+          {list.needsReimport ? (
+            <span style={{ flexShrink: 0, fontSize: dp(14), fontWeight: 600, padding: `${dp(3)}px ${dp(10)}px`, borderRadius: dp(8), background: 'rgba(244,132,95,0.18)', color: '#f4845f' }}>{tt('needsReimport')}</span>
+          ) : null}
+        </div>
+        <div style={{ fontSize: dp(16), color: TV.dim }}>
+          {tt('channelsCount', { count: (list.channelCount ?? list.channels?.length ?? 0).toLocaleString(locale) })}
+          {list.fetchedAt ? ` · ${tt('fetchedAt', { time: formatFetchedAt(list.fetchedAt, locale) })}` : ''}
+        </div>
+        {busy ? <div style={{ fontSize: dp(16), color: TV.muted }}>{progressText(tt, locale, busy)}</div> : null}
+        {!busy && needsLogin ? <div style={{ fontSize: dp(15), color: TV.muted }}>{tt('xtreamNeedsLogin')}</div> : null}
+        {!busy && list.lastImportError ? (
+          <div data-testid={`list-error-${list.id}`} style={{ fontSize: dp(15), color: '#fca5a5', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{list.lastImportError}</div>
+        ) : null}
+      </div>
+      {/* "Hämta om" FÖRE "Ta bort": åtgärden som faktiskt behövs är den
+          fjärrkontrollen når först i raden. */}
+      <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: dp(10) }}>
+        {importable ? <Action testId={`list-refetch-${list.id}`} label={busy ? tt('refetching') : tt('refetch')} onOk={() => onRefetch(list)} /> : null}
+        <Action testId={`list-remove-${list.id}`} label={tt('remove')} onOk={() => onRemove(list)} />
+      </div>
+    </div>
+  )
+})
 
 /**
  * Spellistor: hämtning går genom VÄRDENS importjobb (`importList`), inte
@@ -323,57 +379,67 @@ function PlaylistsTab({ lists, tt, locale, toast }: { lists: LiveTvList[]; tt: T
     await runImport(ensureXtreamList(login), existedBefore)
   }
 
-  // Listor som behöver hämtas om ligger överst, och "Hämta om" är radens
-  // FÖRSTA station — fjärrkontrollen når alltså åtgärden som faktiskt behövs
-  // före "Ta bort".
-  const ordered = [...lists].sort((a, b) => Number(Boolean(b.needsReimport)) - Number(Boolean(a.needsReimport)))
+  /**
+   * ORDNINGEN FRYSES VID MONTERINGEN.
+   *
+   * Listor som behöver hämtas om ska ligga överst — men om sorteringen
+   * räknades om vid varje rendering bytte raden plats i samma ögonblick som
+   * `needsReimport` rensades av en lyckad hämtning. React flyttar då nodens
+   * plats i DOM, och den fokuserade knappen i raden tappar fokus till `body`:
+   * fjärrkontrollen strandar mitt i det som just lyckades. Rangordningen
+   * bestäms därför en gång; listor som tillkommer senare läggs sist, aldrig
+   * invävda bland de befintliga.
+   */
+  const orderRef = useRef<string[]>([])
+  const ordered = useMemo(() => {
+    if (orderRef.current.length === 0) {
+      orderRef.current = [...lists]
+        .sort((a, b) => Number(Boolean(b.needsReimport)) - Number(Boolean(a.needsReimport)))
+        .map((list) => list.id)
+    } else {
+      for (const list of lists) if (!orderRef.current.includes(list.id)) orderRef.current.push(list.id)
+    }
+    const rank = new Map(orderRef.current.map((id, index) => [id, index]))
+    return [...lists].sort((a, b) => (rank.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (rank.get(b.id) ?? Number.MAX_SAFE_INTEGER))
+  }, [lists])
+
+  /**
+   * Stabila handtag till raderna: `memo` på ListRow biter bara om props inte
+   * byter identitet per rendering. Samma ref-mönster som skalets zap-buffert
+   * (`tv-shell.tsx`) — det som ändrar sig (tangentbordet, pågående jobb)
+   * skrivs till en ref i en effekt, och raderna får två oföränderliga
+   * återanrop.
+   */
+  const refetchRef = useRef<(list: LiveTvList) => void>(() => {})
+  useEffect(() => {
+    refetchRef.current = (list: LiveTvList) => {
+      if (progress?.listId === list.id) return
+      if (xtreamLoginMissing(list)) {
+        const parsed = parseXtreamSource(list.source)
+        askXtream(parsed ? `http://${parsed.host}` : '', parsed?.loginId ?? null)
+        return
+      }
+      void runImport(list, true)
+    }
+  })
+  const onRefetch = useCallback((list: LiveTvList) => refetchRef.current(list), [])
+  const onRemove = useCallback((list: LiveTvList) => removeListAndSourceUrl(list), [])
 
   return (
     <section style={{ display: 'flex', flexDirection: 'column', gap: dp(10) }}>
       <Heading>{tt('tabPlaylists')}</Heading>
-      {ordered.map((list) => {
-        const needsLogin = xtreamLoginMissing(list)
-        const importable = list.kind === 'm3u' || list.kind === 'xtream'
-        const busy = progress?.listId === list.id ? progress : null
-        const refetch = () => {
-          if (busy) return
-          if (needsLogin) {
-            const parsed = parseXtreamSource(list.source)
-            askXtream(parsed ? `http://${parsed.host}` : '', parsed?.loginId ?? null)
-            return
-          }
-          void runImport(list, true)
-        }
-        return (
-          <div
-            key={list.id}
-            data-testid={`list-row-${list.id}`}
-            style={{ minHeight: dp(64), borderRadius: dp(12), background: TV.s06, padding: `${dp(12)}px ${dp(18)}px`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: dp(16), fontSize: dp(19) }}
-          >
-            <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: dp(4) }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: dp(10), minWidth: 0 }}>
-                <strong style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{list.name}</strong>
-                {list.needsReimport ? (
-                  <span style={{ flexShrink: 0, fontSize: dp(14), fontWeight: 600, padding: `${dp(3)}px ${dp(10)}px`, borderRadius: dp(8), background: 'rgba(244,132,95,0.18)', color: '#f4845f' }}>{tt('needsReimport')}</span>
-                ) : null}
-              </div>
-              <div style={{ fontSize: dp(16), color: TV.dim }}>
-                {tt('channelsCount', { count: (list.channelCount ?? list.channels?.length ?? 0).toLocaleString(locale) })}
-                {list.fetchedAt ? ` · ${tt('fetchedAt', { time: new Date(list.fetchedAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) })}` : ''}
-              </div>
-              {busy ? <div style={{ fontSize: dp(16), color: TV.muted }}>{progressText(tt, locale, busy)}</div> : null}
-              {!busy && needsLogin ? <div style={{ fontSize: dp(15), color: TV.muted }}>{tt('xtreamNeedsLogin')}</div> : null}
-              {!busy && list.lastImportError ? (
-                <div data-testid={`list-error-${list.id}`} style={{ fontSize: dp(15), color: '#fca5a5', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{list.lastImportError}</div>
-              ) : null}
-            </div>
-            <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: dp(10) }}>
-              {importable ? <Action testId={`list-refetch-${list.id}`} label={busy ? tt('refetching') : tt('refetch')} onOk={refetch} /> : null}
-              <Action testId={`list-remove-${list.id}`} label={tt('remove')} onOk={() => removeListAndSourceUrl(list)} />
-            </div>
-          </div>
-        )
-      })}
+      {ordered.map((list) => (
+        <ListRow
+          key={list.id}
+          list={list}
+          tt={tt}
+          locale={locale}
+          busy={progress?.listId === list.id ? progress : null}
+          needsLogin={xtreamLoginMissing(list)}
+          onRefetch={onRefetch}
+          onRemove={onRemove}
+        />
+      ))}
       {keyboard.available ? <Row label={tt('addM3u')} right="+" onOk={addUrl} /> : null}
       {keyboard.available ? <Row label={tt('addXtream')} right="+" onOk={() => askXtream('', null)} /> : null}
       {keyboard.node}

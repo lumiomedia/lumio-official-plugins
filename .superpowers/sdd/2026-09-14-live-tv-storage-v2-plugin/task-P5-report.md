@@ -185,3 +185,75 @@ mina filer.
 - **Kvar:** `liveTvGuideFetchFailed` i appens i18n har ingen läsare kvar i
   pluginet (noterat redan av P4). `epg/types.ts` bär fortfarande
   `EpgSourceFailure`/`EpgSourceStat` som bara fixturer använder.
+
+---
+
+# Fixrunda (granskning av 632727c → "Needs fixes")
+
+Ovanpå P4-fixen `71c954d`.
+
+## Important
+
+**1. Ominloggningen rensade inte flaggorna.**
+`xtream-login-section.tsx` `refreshChannels` körde `importList` men aldrig
+`recordListImportOutcome` — efter en LYCKAD ominloggning stod "Behöver hämtas
+om" och det gamla felet kvar på kortet tills appen startades om, trots att
+kanalerna just hämtats. Nu bokförs utfallet på samma sätt som
+`handleRefetchList`: `recordListImportOutcome(list.id)` vid `done`, och ETT
+felskrivande ställe (`catch`) för både jobbfel och nätfel — jobbfelet kastas
+vidare i stället för att skrivas två gånger. En HELT NY lista som faller tas
+fortfarande bort i stället för att flaggas (spec §5).
+Test: `live-tv-settings-section.test.tsx` "ominloggningen rensar …" — verifierad
+RÖD utan fixen.
+
+**2. Fokus strandade när ordningen räknades om.**
+`ordered` sorterades per render, så raden bytte plats i samma ögonblick som
+`needsReimport` rensades; React flyttade DOM-noden och den fokuserade knappen
+tappade fokus till `body` — fjärrkontrollen strandade mitt i det som just
+lyckades. Ordningen FRYSES nu vid monteringen (`orderRef` med rangordning per
+list-id); listor som tillkommer senare läggs sist, aldrig invävda.
+Test: "fokus stannar kvar i raden när märket rensas av en lyckad hämtning" —
+asserterar både att raden ligger kvar överst och att `document.activeElement`
+fortfarande är inuti raden. Verifierad RÖD utan fixen.
+
+## Minor
+
+**3. `reuseLoginId` var klibbig.** Den är nu knuten till serveradressen
+förifyllningen kom med (`reuse: { loginId, server }`; `reuseLoginId` är `null`
+så snart fältet skrivits om). Skriver man om fältet till en annan panel är det
+inte samma lista man lagar, och ett kvarhängande id hade låtit den NYA
+inloggningen ta över den gamla listans källa i indexet.
+
+**4. Ett EPG-kontrollblock i stället för N.** Diagnostiken är flyttad ur
+`EpgSourcesSection` till en ny `EpgStatusCard`, renderad EN gång ovanför
+listkorten (`live-tv-settings-section.tsx`). Butiken är global (P3), så per
+lista blev det N `epgStatus`-läsningar av samma sak och N "Hämta om EPG"-
+knappar som alla gjorde exakt samma globala omhämtning — med var sitt
+`refreshing`, så de andra såg overksamma ut medan en arbetade. Kortet bär en
+egen etikett ("Tablån hämtas en gång för alla spellistor tillsammans"),
+prenumererar på `onLiveTvListsChanged` (adresserna redigeras i korten under
+det) och ritas inte alls utan EPG-adresser. `EpgSourcesSection` är tillbaka
+till ren adresshantering; `listId`/`allUrls`-propsen är borta.
+Tester: per-adress-rader + fel, EN läsning och EN knapp för två listor,
+omhämtning + omläsning, och tom rendering utan adresser.
+
+**5. `parseXtreamSource`** flyttad till `live-tv-data.ts` bredvid
+`xtreamPseudoUrl` (var dubblerad i tv-settings och settings-section).
+
+**6. TV:s `fetchedAt`** har fått samma datum-fallback som skrivbordet
+(`formatFetchedAt`): "09:41" sa ingenting om en lista hämtad i förrgår.
+
+**7. Framstegs-state scopat till raden.** `ListRow` är utbruten och `memo`:ad;
+bara raden som hämtar får en ny `busy`, övriga får samma `null` och hoppas
+över. Återanropen är stabila via ett ref-i-effekt-handtag (samma mönster som
+skalets zap-buffert), annars hade `memo` inte bitit.
+
+**Ej ändrat (beslut):** TV:s EPG-flik saknar diagnostik med avsikt
+(handoff-skärm 11).
+
+## Verifiering
+
+`npx vitest run` → **60 filer / 303 tester gröna** (före fixrundan 60/298).
+`npx tsc --noEmit -p tsconfig.json` → 49 fel, exakt samma mängd som före
+(bara radnummerskift i `live-tv-settings-section.tsx`). Inga nya fel i mina
+filer.

@@ -21,6 +21,7 @@ import {
   type XtreamLogin,
 } from './live-tv-data'
 import { useHubText } from './hub-strings'
+import { recordListImportOutcome } from './list-import-flags'
 
 const inputClass =
   'w-full rounded-[1.1rem] border border-white/10 bg-white/8 px-3.5 py-2 text-sm text-slate-50 outline-none transition placeholder:text-slate-500 focus:bg-white/10'
@@ -74,8 +75,16 @@ export function XtreamLoginSection() {
   // Jobbets `state.received/total` (importList) — synlig framstegsräknare för
   // stora Xtream-utbud (tiotusentals kanaler kan ta en stund).
   const [importProgress, setImportProgress] = useState<{ received: number; total: number | null } | null>(null)
-  // Sätts av "Logga in på nytt" på ett listkort; se prefillXtreamLogin ovan.
-  const [reuseLoginId, setReuseLoginId] = useState<string | null>(null)
+  /**
+   * Sätts av "Logga in på nytt" på ett listkort (se prefillXtreamLogin ovan).
+   *
+   * Den är KNUTEN till serveradressen förifyllningen kom med: skriver man om
+   * fältet till en annan panel är det inte längre samma lista man lagar, och
+   * då hade ett kvarhängande id gjort att den NYA inloggningen tog över den
+   * gamla listans källa i indexet.
+   */
+  const [reuse, setReuse] = useState<{ loginId: string; server: string } | null>(null)
+  const reuseLoginId = reuse && reuse.server === server ? reuse.loginId : null
   const cardRef = useRef<HTMLDivElement | null>(null)
   /**
    * TV: fälten är knappar som öppnar värdens tangentbordspanel på OK. Ett
@@ -108,7 +117,7 @@ export function XtreamLoginSection() {
     setServer(prefill.server)
     setUsername('')
     setPassword('')
-    setReuseLoginId(prefill.loginId ?? null)
+    setReuse(prefill.loginId ? { loginId: prefill.loginId, server: prefill.server } : null)
     setState('idle')
     cardRef.current?.scrollIntoView({ block: 'center' })
   }), [])
@@ -131,8 +140,17 @@ export function XtreamLoginSection() {
       clearStoredLiveTvChannels()
       if (status.state === 'error') {
         if (!existedBefore) deleteLiveTvList(list.id)
+        // Felet bokförs på listan i catch nedan — samma väg som ett kastat
+        // nätfel, så det bara finns ETT ställe som skriver flaggorna.
         throw new Error(status.error ?? 'xtream import failed')
       }
+      // Ominloggningen ÄR fixen på "behöver hämtas om": utan den här raden
+      // stod märket och det gamla felet kvar på kortet tills appen startades
+      // om, trots att kanalerna just hämtats.
+      recordListImportOutcome(list.id)
+    } catch (err) {
+      if (existedBefore) recordListImportOutcome(list.id, err instanceof Error ? err.message : String(err))
+      throw err
     } finally {
       setImportProgress(null)
     }
@@ -165,7 +183,7 @@ export function XtreamLoginSection() {
         categoryIds: existing?.categoryIds ?? [],
       }
       saveXtreamLogin(login)
-      setReuseLoginId(null)
+      setReuse(null)
       await refreshChannels(login)
       setState('done')
       window.setTimeout(() => setState('idle'), 1800)
