@@ -171,6 +171,105 @@ export function isPluginImageLoaded(): boolean {
 }
 export async function preloadPluginImage(): Promise<void> {}
 export function clearPluginMemoryCache(): void {}
-export function useTvMode(): boolean {
-  return false
+// ---- TV-läge ----
+let tvModeForTests = false
+export function __setTvModeForTests(on: boolean): void {
+  tvModeForTests = on
 }
+export function useTvMode(): boolean {
+  return tvModeForTests
+}
+export function detectTvMode(): boolean {
+  return tvModeForTests
+}
+export const BROWSE_BACK_EVENT = 'lumio-browse-back'
+export function requestBrowseBack(): void {
+  window.dispatchEvent(new CustomEvent(BROWSE_BACK_EVENT))
+}
+export function onTvFocusEdge(_handler: (dir: string, meta?: { claimed: boolean; claim(): void }) => void): () => void {
+  return () => {}
+}
+
+export const TV_HOLD_MS = 650
+const holds = new WeakMap<EventTarget, { timer: number; fired: boolean }>()
+export function tvHoldHandlers(
+  onShort: () => void,
+  onHold: (element: HTMLElement) => void,
+): { onKeyDown: (event: { key: string; repeat: boolean; currentTarget: EventTarget | null; preventDefault(): void }) => void; onKeyUp: (event: { key: string; currentTarget: EventTarget | null }) => void } {
+  return {
+    onKeyDown: (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return
+      event.preventDefault()
+      if (event.repeat || !event.currentTarget) return
+      const hold = { timer: 0, fired: false }
+      const element = event.currentTarget as HTMLElement
+      hold.timer = window.setTimeout(() => {
+        hold.fired = true
+        onHold(element)
+      }, TV_HOLD_MS)
+      holds.set(event.currentTarget, hold)
+    },
+    onKeyUp: (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return
+      if (!event.currentTarget) return
+      const hold = holds.get(event.currentTarget)
+      if (!hold) return
+      window.clearTimeout(hold.timer)
+      holds.delete(event.currentTarget)
+      if (!hold.fired) onShort()
+    },
+  }
+}
+
+export interface TvGlassMenuAction { key: string; label: string; run: () => void }
+export interface TvGlassMenuTarget { title: string; element: HTMLElement; actions: TvGlassMenuAction[] }
+function TvGlassMenuStub({ target, onClose }: { target: TvGlassMenuTarget; onClose: () => void }) {
+  return createElement(
+    'div',
+    { role: 'menu', 'data-panel-root': '', 'data-testid': 'tv-glass-menu' },
+    createElement('div', null, target.title),
+    ...target.actions.map((action, index) =>
+      createElement('button', {
+        key: action.key,
+        type: 'button',
+        'data-f': '',
+        ...(index === 0 ? { 'data-init': '' } : {}),
+        onClick: () => { action.run(); onClose() },
+      }, action.label),
+    ),
+  )
+}
+export function getTvGlassMenu(): typeof TvGlassMenuStub | null {
+  return TvGlassMenuStub
+}
+function TvKeyboardPanelStub({ title, initial, onDone, onClose }: { title: string; initial: string; onDone: (value: string) => void; onClose: () => void; hint?: string; placeholder?: string }) {
+  return createElement(
+    'div',
+    { role: 'dialog', 'data-panel-root': '', 'data-testid': 'tv-keyboard-panel' },
+    createElement('div', null, title),
+    createElement('button', { type: 'button', 'data-f': '', 'data-init': '', onClick: () => onDone(initial) }, 'Done'),
+    createElement('button', { type: 'button', 'data-f': '', onClick: onClose }, 'Close'),
+  )
+}
+export function getTvKeyboardPanel(): typeof TvKeyboardPanelStub | null {
+  return TvKeyboardPanelStub
+}
+
+// ---- Motorer (ingen riktig uppspelning i test) ----
+export const isTauriEnv = false
+export const isDesktopTauriEnv = false
+export const isAndroidTauriEnv = false
+export const surfaceCalls: string[] = []
+export async function openMpvPlayer(args: { url: string }): Promise<void> { surfaceCalls.push(`mpv:open:${args.url}`) }
+export async function closeMpvPlayer(): Promise<void> { surfaceCalls.push('mpv:close') }
+export function mpvSetBounds(_rect: { left: number; top: number; width: number; height: number }): void { surfaceCalls.push('mpv:bounds') }
+export async function mpvSetPropertyStrings(props: Array<{ name: string; value: string }>): Promise<void> { surfaceCalls.push(`mpv:prop:${props.map((p) => `${p.name}=${p.value}`).join(',')}`) }
+export async function setMpvPause(paused: boolean): Promise<void> { surfaceCalls.push(`mpv:pause:${paused}`) }
+export async function openNativePlayer(opts: { url: string; mimeType?: string }): Promise<void> { surfaceCalls.push(`droid:open:${opts.url}`) }
+export async function closeNativePlayer(): Promise<void> { surfaceCalls.push('droid:close') }
+export function nativeSetBounds(_rect: { left: number; top: number; width: number; height: number }): void { surfaceCalls.push('droid:bounds') }
+export async function capturePlayerFrame(_key: string, _video?: HTMLVideoElement | null): Promise<boolean> { return false }
+export function getHls(): null { return null }
+export function getControlsHideAfterSeconds(): number { return 3 }
+export function lockBodyScroll(): void {}
+export function unlockBodyScroll(): void {}
