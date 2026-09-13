@@ -161,6 +161,23 @@ export function useLang() {
 export function __resetForTests(): void {
   memory.clear()
   listeners.clear()
+  pinForTests = null
+}
+
+// ---- Profil-PIN (föräldrakontroll) ----
+// channel-locks.ts läser de här två DYNAMISKT ur SDK:n (de finns bara i appar
+// från 0.1.57), så `pinSupportAvailable()` är sant här medan
+// `activeProfileHasPin()` styrs av testet. Ingen PIN är satt som standard,
+// vilket är precis vad en profil utan PIN ser.
+let pinForTests: string | null = null
+export function __setProfilePinForTests(pin: string | null): void {
+  pinForTests = pin
+}
+export function activeProfileHasPin(): boolean {
+  return pinForTests !== null
+}
+export async function verifyActiveProfilePin(pin: string): Promise<boolean> {
+  return pinForTests !== null && pin === pinForTests
 }
 
 // Ytterligare SDK-yta som hubben och datalagret rör vid utan att testa den.
@@ -243,12 +260,21 @@ function TvGlassMenuStub({ target, onClose }: { target: TvGlassMenuTarget; onClo
 export function getTvGlassMenu(): typeof TvGlassMenuStub | null {
   return TvGlassMenuStub
 }
+// Värdens TV-tangentbord. Testet skriver i `tv-keyboard-input` och trycker
+// Done — utan ett fält kunde ingen text matas in alls, och varje "lägg till
+// URL"-väg såg ut att lyckas med tom sträng (dvs. gjorde ingenting).
 function TvKeyboardPanelStub({ title, initial, onDone, onClose }: { title: string; initial: string; onDone: (value: string) => void; onClose: () => void; hint?: string; placeholder?: string }) {
+  let value = initial
   return createElement(
     'div',
     { role: 'dialog', 'data-panel-root': '', 'data-testid': 'tv-keyboard-panel' },
     createElement('div', null, title),
-    createElement('button', { type: 'button', 'data-f': '', 'data-init': '', onClick: () => onDone(initial) }, 'Done'),
+    createElement('input', {
+      'data-testid': 'tv-keyboard-input',
+      defaultValue: initial,
+      onChange: (event: { target: { value: string } }) => { value = event.target.value },
+    }),
+    createElement('button', { type: 'button', 'data-f': '', 'data-init': '', onClick: () => onDone(value) }, 'Done'),
     createElement('button', { type: 'button', 'data-f': '', onClick: onClose }, 'Close'),
   )
 }

@@ -36,6 +36,19 @@ export interface TvNav {
 
 export interface TvViewProps { model: LiveTvModel; nav: TvNav; params: Record<string, string>; settings: TvSettings }
 
+/**
+ * Vad PIN-grinden väntar på.
+ *
+ * Både uppspelning av en låst kanal OCH lås/upplåsning från glasmenyn går
+ * genom SAMMA grind: `channelMenu` växlade tidigare låset rakt av, vilket lät
+ * vem som helst låsa upp en kanal med två knapptryck och därmed göra hela
+ * föräldrakontrollen verkningslös (`tv-channel.tsx` och `tv-settings.tsx`
+ * kräver PIN i båda riktningarna — menyn måste göra likadant).
+ */
+type PendingGate =
+  | { kind: 'play'; request: PlayRequest }
+  | { kind: 'lock'; channel: M3uChannel }
+
 type PlayerComponent = ComponentType<{
   channel: M3uChannel
   onClose: () => void
@@ -60,11 +73,11 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
   const model = useLiveTvModel()
   const settings = useTvSettings()
   const view = viewFromParams(params)
-  const viewParams = params ?? {}
+  const viewParams = useMemo(() => params ?? {}, [params])
 
   const [Player, setPlayer] = useState<PlayerComponent | null>(null)
   const [active, setActive] = useState<PlayRequest | null>(null)
-  const [pending, setPending] = useState<PlayRequest | null>(null)
+  const [pending, setPending] = useState<PendingGate | null>(null)
   const [menu, setMenu] = useState<TvGlassMenuTarget | null>(null)
   const [zapDigits, setZapDigits] = useState('')
   const [toastText, setToastText] = useState<string | null>(null)
@@ -118,14 +131,28 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     window.setTimeout(() => setToastText((current) => (current === text ? null : current)), 1800)
   }, [])
 
+  /**
+   * Färskaste modellen i en ref.
+   *
+   * `useLiveTvModel()` returnerar ett NYTT objekt varje rendering, och
+   * `model.locked` är dessutom en ny `Set` per anrop (channel-locks.ts). Låg
+   * de i beroendelistorna bytte `play`, `channelMenu` och därmed hela `nav`
+   * identitet vid varje minuttick — och varje lager som har `nav` i sin
+   * effekt (kanalväljaren, hubbens spellistmeny) körde om sin öppningseffekt,
+   * läste om "vem öppnade mig" från det fokus som råkade gälla just då och
+   * flyttade fokus tillbaka till [data-init]. Ref:en håller nav stabil.
+   */
+  const modelRef = useRef(model)
+  useEffect(() => { modelRef.current = model })
+
   const play = useCallback((request: PlayRequest) => {
-    const locked = model.locked.has(channelKey(request.channel))
+    const locked = modelRef.current.locked.has(channelKey(request.channel))
     if (locked && !isUnlockedThisSession() && pinSupportAvailable() && activeProfileHasPin()) {
-      setPending(request)
+      setPending({ kind: 'play', request })
       return
     }
     void releaseAllSurfaces().finally(() => setActive(request))
-  }, [model.locked])
+  }, [])
 
   const openChannel = useCallback((channel: M3uChannel, programmeStart?: number) => {
     go('channel', { ...encodeChannelParams(channel), ...(programmeStart ? { programme: String(programmeStart) } : {}) })
@@ -136,7 +163,20 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     toast(tt('addedToMultiview'))
   }, [toast, tt])
 
+  /**
+   * Lås/upplås från glasmenyn kräver PIN i BÅDA riktningarna — grinden är den
+   * enda kontrollen som finns, och utan den räckte "håll OK → Lås upp" för att
+   * gå förbi föräldrakontrollen helt. Saknas PIN-stöd (äldre app) eller har
+   * profilen ingen PIN finns inget att verifiera mot, och låset växlas direkt
+   * precis som i `tv-settings.tsx`.
+   */
+  const requestLockToggle = useCallback((channel: M3uChannel) => {
+    if (!pinSupportAvailable() || !activeProfileHasPin()) { toggleChannelLock(channel); return }
+    setPending({ kind: 'lock', channel })
+  }, [])
+
   const channelMenu = useCallback((channel: M3uChannel, element: HTMLElement, extra: TvGlassMenuAction[] = []) => {
+    const model = modelRef.current
     const key = channelKey(channel)
     const pinned = model.pinnedSet.has(key)
     const locked = model.locked.has(key)
@@ -150,11 +190,11 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
         { key: 'multi', label: tt('menuAddMultiview'), run: () => addToMultiview(channel) },
         ...extra,
         ...(pinSupportAvailable() && activeProfileHasPin()
-          ? [{ key: 'lock', label: locked ? tt('menuUnlock') : tt('menuLock'), run: () => { toggleChannelLock(channel) } }]
+          ? [{ key: 'lock', label: locked ? tt('menuUnlock') : tt('menuLock'), run: () => requestLockToggle(channel) }]
           : []),
       ],
     })
-  }, [model, tt, play, openChannel, addToMultiview])
+  }, [tt, play, openChannel, addToMultiview, requestLockToggle])
 
   const pushLayer = useCallback((close: () => void) => {
     layersRef.current.push(close)
@@ -183,11 +223,17 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
   // `back()` självt rörs inte — det kan fortfarande kallas programmatiskt
   // (t.ex. från en vy) och har redan en `if (active) { setActive(null); … }`
   // -gren för den vägen.
+  //
+  // MEN: spelaren äger Back först när den FAKTISKT är monterad. `active` sätts
+  // direkt, medan `<Player>` laddas med en dynamisk import — under de
+  // millisekunderna (långsam disk, kall runtime) fanns ingen Back-lyssnare
+  // alls, och trycket föll igenom till värdsidan bakom. Därför `active &&
+  // Player`: medan importen pågår tar skalet Back och stänger `active`.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (!BACK_KEYS.has(event.key)) return
       if (menu) return
-      if (active) return
+      if (active && Player) return
       const target = event.target as HTMLElement | null
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return
       // Värdens egna paneler (TV-tangentbordet) stänger sig själva.
@@ -198,16 +244,16 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     }
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
-  }, [back, menu, active])
+  }, [back, menu, active, Player])
 
   // Nummertangenter: favoriter 1–N först, sedan listnummer.
   const favourites = model.favouriteChannels
   const channels = model.channels
-  // Senaste versionen av allt onCommit behöver, i en ref: skapas EN gång
-  // (nedan) så en pågående zapp-timer aldrig kapas av ett orelaterat
-  // omrender. `play` byter identitet varje rendering (model.locked är en ny
-  // Set per anrop i channel-locks.ts), och hade annars gjort om bufferten —
-  // och nollställt dess timer — innan 1500 ms hunnit gå.
+  // Senaste versionen av allt onCommit behöver, i en ref: bufferten skapas EN
+  // gång (nedan) så en pågående zapp-timer aldrig kapas av ett orelaterat
+  // omrender. `favourites`/`channels` byter identitet vid varje minuttick och
+  // hade annars gjort om bufferten — och nollställt dess timer — innan
+  // 1500 ms hunnit gå.
   const zapDepsRef = useRef({ favourites, channels, play, toast, tt })
   useEffect(() => { zapDepsRef.current = { favourites, channels, play, toast, tt } })
   const zapRef = useRef<ReturnType<typeof createZapBuffer> | null>(null)
@@ -301,7 +347,11 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
         onOpenMultiview: () => { setActive(null); go('multi') },
         onOpenGuide: () => { setActive(null); go('guide') },
         onAddToMultiview: addToMultiview,
-        onSwitchChannel: (channel) => setActive({ channel }),
+        // Kanalbyte inifrån spelaren (ChannelUp/Down, mini-guiden) går genom
+        // `play` — inte `setActive` — så att en LÅST kanal möter PIN-grinden.
+        // `play` lämnar `active` orörd tills grinden är klar, så spelaren
+        // blinkar inte bort under bytet.
+        onSwitchChannel: (channel) => play({ channel }),
       }
     : undefined
 
@@ -320,7 +370,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
       </main>
 
       {activeChannel && Player ? (
-        <Player channel={activeChannel} onClose={() => setActive(null)} listId={model.epgListId} epgUrls={model.epgUrls} onSwitchChannel={(channel) => setActive({ channel })} tv={tvPlayerProps} />
+        <Player channel={activeChannel} onClose={() => setActive(null)} listId={model.epgListId} epgUrls={model.epgUrls} onSwitchChannel={(channel) => play({ channel })} tv={tvPlayerProps} />
       ) : null}
       <PinGate
         open={pending !== null}
@@ -330,7 +380,17 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
         cancelLabel={tt('cancel')}
         onVerify={verifyActiveProfilePin}
         onClose={() => setPending(null)}
-        onUnlocked={() => { markUnlockedThisSession(); const request = pending; setPending(null); if (request) void releaseAllSurfaces().finally(() => setActive(request)) }}
+        onUnlocked={() => {
+          const gate = pending
+          setPending(null)
+          if (!gate) return
+          if (gate.kind === 'lock') { toggleChannelLock(gate.channel); return }
+          // Sessionsupplåsningen gäller bara uppspelningsgrinden: att ha
+          // bevisat sin PIN för att LÅSA en kanal ska inte öppna alla andra
+          // låsta kanaler resten av sessionen.
+          markUnlockedThisSession()
+          void releaseAllSurfaces().finally(() => setActive(gate.request))
+        }}
       />
       {TvGlassMenu && menu ? <TvGlassMenu target={menu} onClose={() => setMenu(null)} /> : null}
       {zapDigits ? (
