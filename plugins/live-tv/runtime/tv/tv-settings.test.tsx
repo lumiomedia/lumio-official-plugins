@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
-import { LIVE_TV_PLUGIN_ID, channelKey, getLiveTvLists, getM3uUrls, type LiveTvList } from '../live-tv-data'
+import { LIVE_TV_PLUGIN_ID, channelKey, getLiveTvLists, getM3uUrls, getXtreamLogins, isChannelInLiveTvList, type LiveTvList, type XtreamLogin } from '../live-tv-data'
 import { getLockedChannelKeys } from '../channel-locks'
 import { getTvSettings, getGuideMode } from './tv-settings-store'
 
@@ -51,6 +51,60 @@ function stubImportFetch(next: () => Record<string, unknown>): void {
   }) as typeof fetch)
 }
 
+/**
+ * Fångar varje `POST /api/live-tv/import` så testet kan se VILKA listor som
+ * hämtades om — knappen "Uppdatera alla" skiljer sig från "Uppdatera" bara i
+ * antalet jobb den startar.
+ */
+function stubImportCapture(): string[] {
+  const sources: string[] = []
+  const base = globalThis.fetch
+  const json = (body: unknown) => Promise.resolve({ ok: true, status: 200, json: async () => body } as unknown as Response)
+  vi.stubGlobal('fetch', ((input: RequestInfo | URL, init?: RequestInit) => {
+    const path = new URL(typeof input === 'string' ? input : String(input), 'http://localhost').pathname
+    if (path === '/api/live-tv/import') {
+      const body = JSON.parse(String(init?.body ?? '{}')) as { source?: string }
+      if (body.source) sources.push(body.source)
+      return json({ job: `job-${sources.length}` })
+    }
+    if (path === '/api/live-tv/import/status') return json({ state: 'done', received: 1, total: 1, result: { total: 1, groups: [], urlTvg: null, truncated: false } })
+    return base(input as RequestInfo, init)
+  }) as typeof fetch)
+  return sources
+}
+
+/** EPG-diagnostiken per adress (indexstubben svarar med en tom `urls`-lista). */
+function stubEpgStatusFetch(payload: Record<string, unknown>): void {
+  const base = globalThis.fetch
+  const json = (body: unknown) => Promise.resolve({ ok: true, status: 200, json: async () => body } as unknown as Response)
+  vi.stubGlobal('fetch', ((input: RequestInfo | URL, init?: RequestInit) => {
+    const path = new URL(typeof input === 'string' ? input : String(input), 'http://localhost').pathname
+    if (path === '/api/live-tv/epg/status') return json(payload)
+    if (path === '/api/live-tv/epg/refresh') return json({ job: 'epg-1' })
+    return base(input as RequestInfo, init)
+  }) as typeof fetch)
+}
+
+const xtreamLogin: XtreamLogin = { id: 'login-1', base: 'http://panel.test:8080', username: 'jerry', password: 'hemlig', format: 'ts', categoryIds: [] }
+
+/** Panelens `player_api.php`: konto på rotanropet, kategorier på get_live_categories. */
+function stubXtreamPanel(): void {
+  const base = globalThis.fetch
+  const json = (body: unknown) => Promise.resolve({ ok: true, status: 200, json: async () => body } as unknown as Response)
+  vi.stubGlobal('fetch', ((input: RequestInfo | URL, init?: RequestInit) => {
+    const url = new URL(typeof input === 'string' ? input : String(input), 'http://localhost')
+    if (url.pathname === '/player_api.php') {
+      if (url.searchParams.get('action') === 'get_live_categories') {
+        return json([{ category_id: '1', category_name: 'Sport' }, { category_id: '2', category_name: 'Film' }])
+      }
+      return json({ user_info: { auth: 1, status: 'Active', exp_date: '1800000000', max_connections: '2', allowed_output_formats: ['ts'] } })
+    }
+    if (url.pathname === '/api/live-tv/import') return json({ job: 'job-1' })
+    if (url.pathname === '/api/live-tv/import/status') return json({ state: 'done', received: 1, total: 1, result: { total: 1, groups: [], urlTvg: null, truncated: false } })
+    return base(input as RequestInfo, init)
+  }) as typeof fetch)
+}
+
 const mount = (tab?: string) => render(<LiveTvTvShell pageId="live-tv-browse" params={{ view: 'settings', ...(tab ? { tab } : {}) }} onNavigate={() => {}} onOpenDetails={() => {}} />)
 
 describe('TvSettingsView', () => {
@@ -60,6 +114,9 @@ describe('TvSettingsView', () => {
     expect(screen.queryByText('Accent colour')).toBeNull()
     fireEvent.click(screen.getByTestId('guide-default-tl'))
     expect(getGuideMode()).toBe('tl')
+    // Fjärde läget sedan 0.6.0 (P6): Rutnät ska gå att välja som standardvy.
+    fireEvent.click(screen.getByTestId('guide-default-grid'))
+    expect(getGuideMode()).toBe('grid')
     fireEvent.click(screen.getByTestId('setting-previewEnabled'))
     expect(getTvSettings().previewEnabled).toBe(false)
     fireEvent.click(screen.getByTestId('setting-bannerHideMs'))
@@ -201,9 +258,11 @@ describe('TvSettingsView', () => {
     expect(screen.getByTestId('tv-keyboard-input')).toHaveValue('')
   })
 
-  it('EPG-källor: listar URL:er', () => {
+  it('EPG-källor: listar URL:er', async () => {
     mount('epg')
-    expect(screen.getByText('http://x/epg.xml')).toBeInTheDocument()
+    // Två förekomster sedan 0.6.0: adressraden (lägg till/ta bort) och
+    // diagnostikraden under den (spec 4.4 punkt 2).
+    expect(await screen.findAllByText('http://x/epg.xml')).toHaveLength(2)
   })
   it('Föräldrakontroll: tom text när inget är låst', () => {
     mount('parental')
@@ -216,5 +275,109 @@ describe('TvSettingsView', () => {
     fireEvent.click(screen.getByText('A'))
     expect(screen.getByText('Enter PIN')).toBeInTheDocument()
     expect(getLockedChannelKeys()).toContain(key)
+  })
+})
+
+describe('TvSettingsView: snabbknapparna (spec 4.4)', () => {
+  it('Spellistor kan skapa en egen lista och bocka i kanaler', async () => {
+    mount('playlists')
+    fireEvent.click(screen.getByText('Create list'))
+    fireEvent.change(screen.getByTestId('tv-keyboard-input'), { target: { value: 'Mina kanaler' } })
+    fireEvent.click(screen.getByText('Done'))
+
+    const created = await waitFor(() => {
+      const entry = getLiveTvLists().find((item) => item.name === 'Mina kanaler')
+      expect(entry).toBeTruthy()
+      return entry!
+    })
+    expect(created.kind).toBe('custom')
+
+    fireEvent.click(await screen.findByTestId(`list-channels-${created.id}`))
+    const picker = await screen.findByTestId('list-picker')
+    fireEvent.click(within(picker).getByTestId('picker-row-A'))
+    expect(isChannelInLiveTvList(created.id, (list.channels ?? [])[0])).toBe(true)
+    // Bocken är hela återkopplingen på TV: raden stängs inte som i
+    // enkelvalsväljaren, man bockar vidare i samma panel.
+    expect(within(picker).getByTestId('picker-check-A')).toBeInTheDocument()
+    fireEvent.click(within(picker).getByTestId('picker-row-A'))
+    expect(isChannelInLiveTvList(created.id, (list.channels ?? [])[0])).toBe(false)
+  })
+
+  it('EPG-fliken visar hämtad tid och fel per adress', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ ...list, epgUrls: ['http://x/epg.xml', 'http://y/epg.xml'] }])
+    seedLiveTvIndex()
+    stubEpgStatusFetch({
+      listId: 'global',
+      fetchedAt: Date.parse('2026-09-14T09:41:00Z'),
+      failedAt: null,
+      channels: 3,
+      programmes: 812,
+      urls: [
+        { url: 'http://x/epg.xml', channels: 3, programmes: 812, fetchedAt: Date.parse('2026-09-14T09:41:00Z') },
+        { url: 'http://y/epg.xml', channels: 0, programmes: 0, fetchedAt: 0, error: 'HTTP 500' },
+      ],
+    })
+    mount('epg')
+    expect(await screen.findByText(/812 programmes/)).toBeInTheDocument()
+    expect(screen.getByText('HTTP 500')).toBeInTheDocument()
+    expect(screen.getByTestId('epg-refresh')).toBeInTheDocument()
+  })
+
+  it('Xtream-fliken visar kontokortet', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'xtream_logins', [xtreamLogin])
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ ...list, id: 'x1', name: 'panel.test:8080', kind: 'xtream', source: 'xtream://panel.test:8080/login-1', xtreamLoginId: 'login-1' }])
+    seedLiveTvIndex()
+    stubXtreamPanel()
+    mount('playlists')
+    const card = await screen.findByTestId('xtream-account-login-1')
+    expect(card).toHaveTextContent('Active')
+    expect(card).toHaveTextContent('2')
+  })
+
+  it('kategorival skrivs till login.categoryIds', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'xtream_logins', [xtreamLogin])
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ ...list, id: 'x1', name: 'panel.test:8080', kind: 'xtream', source: 'xtream://panel.test:8080/login-1', xtreamLoginId: 'login-1' }])
+    seedLiveTvIndex()
+    stubXtreamPanel()
+    mount('playlists')
+    fireEvent.click(await screen.findByTestId('xtream-categories-login-1'))
+    const picker = await screen.findByTestId('list-picker')
+    fireEvent.click(within(picker).getByTestId('picker-row-Sport'))
+    await waitFor(() => expect(getXtreamLogins()[0].categoryIds).toEqual(['1']))
+  })
+
+  it('Uppdatera per lista kör importList för just den listan', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [
+      { ...list, id: 'a1', name: 'A-listan', kind: 'm3u', source: 'http://a.example/a.m3u', url: 'http://a.example/a.m3u' },
+      { ...list, id: 'b1', name: 'B-listan', kind: 'm3u', source: 'http://b.example/b.m3u', url: 'http://b.example/b.m3u' },
+    ])
+    seedLiveTvIndex()
+    const sources = stubImportCapture()
+    mount('playlists')
+    fireEvent.click(screen.getByTestId('list-refetch-b1'))
+    await waitFor(() => expect(sources).toEqual(['http://b.example/b.m3u']))
+  })
+
+  it('Uppdatera alla kör importList för varje lista', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [
+      { ...list, id: 'a1', name: 'A-listan', kind: 'm3u', source: 'http://a.example/a.m3u', url: 'http://a.example/a.m3u' },
+      { ...list, id: 'b1', name: 'B-listan', kind: 'm3u', source: 'http://b.example/b.m3u', url: 'http://b.example/b.m3u' },
+    ])
+    seedLiveTvIndex()
+    const sources = stubImportCapture()
+    mount('playlists')
+    fireEvent.click(screen.getByTestId('lists-refetch-all'))
+    await waitFor(() => expect([...sources].sort()).toEqual(['http://a.example/a.m3u', 'http://b.example/b.m3u']))
+  })
+
+  it('utanför TV-läget används ett riktigt fält i stället för panelen', async () => {
+    __setTvModeForTests(false)
+    mount('playlists')
+    fireEvent.click(screen.getByText('Add M3U URL'))
+    expect(await screen.findByTestId('text-prompt-dialog')).toBeInTheDocument()
+    expect(screen.queryByTestId('tv-keyboard-panel')).toBeNull()
+    const input = screen.getByTestId('text-prompt-input') as HTMLInputElement
+    // Adressfält: ingen autoversalisering, ingen rättstavning.
+    expect(input.type).toBe('url')
   })
 })

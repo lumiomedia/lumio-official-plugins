@@ -876,19 +876,24 @@ export interface XtreamAccount {
   status: string | null
   /// Unix-sekunder, eller null när panelen inte skickar något utgångsdatum.
   expDate: number | null
+  /// Hur många samtidiga strömmar panelen tillåter. null när den inte säger något.
+  maxConnections: number | null
   allowedFormats: string[]
 }
 
 export async function fetchXtreamAccount(login: Pick<XtreamLogin, 'base' | 'username' | 'password'>): Promise<XtreamAccount> {
   const payload = (await fetchXtreamJson(xtreamApiUrl(login))) as {
-    user_info?: { auth?: unknown; status?: unknown; exp_date?: unknown; allowed_output_formats?: unknown }
+    user_info?: { auth?: unknown; status?: unknown; exp_date?: unknown; max_connections?: unknown; allowed_output_formats?: unknown }
   } | null
   const info = payload?.user_info
   const exp = Number.parseInt(String(info?.exp_date ?? ''), 10)
+  // Panelerna skickar `max_connections` som sträng lika ofta som som tal.
+  const maxConnections = Number.parseInt(String(info?.max_connections ?? ''), 10)
   return {
     auth: info?.auth === 1 || info?.auth === '1' || info?.auth === true,
     status: typeof info?.status === 'string' ? info.status : null,
     expDate: Number.isFinite(exp) && exp > 0 ? exp : null,
+    maxConnections: Number.isFinite(maxConnections) && maxConnections > 0 ? maxConnections : null,
     allowedFormats: Array.isArray(info?.allowed_output_formats)
       ? info.allowed_output_formats.filter((f): f is string => typeof f === 'string')
       : [],

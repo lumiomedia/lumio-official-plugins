@@ -2,33 +2,42 @@
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import * as sdk from '@/lib/plugin-sdk'
-import { getTvKeyboardPanel } from '@/lib/plugin-sdk'
 import {
+  addChannelToLiveTvList,
   applyM3uUrls,
   channelKey,
+  createLiveTvList,
   deleteLiveTvList,
   ensureM3uList,
   ensureXtreamList,
   fetchXtreamAccount,
+  fetchXtreamCategories,
   getLiveTvLists,
   getLiveTvUrlsKey,
   getM3uUrls,
   getXtreamLogins,
   importList,
   normalizeXtreamBase,
+  onXtreamLoginsChanged,
   parseXtreamSource,
+  removeChannelFromLiveTvList,
   saveXtreamLogin,
   updateLiveTvListEpg,
   xtreamPseudoUrl,
   type LiveTvList,
   type M3uChannel,
+  type XtreamAccount,
+  type XtreamCategory,
   type XtreamLogin,
 } from '../live-tv-data'
 import type { ImportStatus } from '../index-client'
 import { recordListImportOutcome } from '../list-import-flags'
 import { activeProfileHasPin, getLockedChannelKeys, onChannelLocksChanged, pinSupportAvailable, toggleChannelLock, verifyActiveProfilePin } from '../channel-locks'
 import { PinGate } from '../live-tv-ui'
-import type { TvViewProps } from './tv-shell'
+import { useEpgStatus } from '../hooks/useEpgStatus'
+import type { TvNav, TvViewProps } from './tv-shell'
+import { TvCategoryPicker, TvListPicker } from './tv-list-picker'
+import { useTextPrompt } from './tv-text-entry'
 import { TV, Toggle, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
 import { BANNER_HIDE_OPTIONS, setGuideMode, setTvSettings, useGuideMode, type BannerHideMs, type GuideMode, type TvSettings } from './tv-settings-store'
@@ -74,8 +83,8 @@ export function TvSettingsView({ model, nav, params, settings }: TvViewProps) {
       </div>
       <div data-live-tv-settings-content="" data-scroll="" style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: `${dp(40)}px ${dp(48)}px`, display: 'flex', flexDirection: 'column', gap: dp(36) }}>
         {tab === 'appearance' ? <AppearanceTab settings={settings} tt={tt} /> : null}
-        {tab === 'playlists' ? <PlaylistsTab lists={model.lists} tt={tt} locale={locale} toast={nav.toast} /> : null}
-        {tab === 'epg' ? <EpgTab lists={model.lists} tt={tt} /> : null}
+        {tab === 'playlists' ? <PlaylistsTab model={model} nav={nav} lists={model.lists} tt={tt} locale={locale} toast={nav.toast} /> : null}
+        {tab === 'epg' ? <EpgTab lists={model.lists} nav={nav} tt={tt} locale={locale} /> : null}
         {tab === 'parental' ? <ParentalTab model={model} tt={tt} /> : null}
       </div>
     </div>
@@ -87,7 +96,9 @@ type TT = ReturnType<typeof useTvText>['tt']
 function AppearanceTab({ settings, tt }: { settings: TvSettings; tt: TT }) {
   const guideMode = useGuideMode()
   const [accent, setAccentState] = useState(() => (hasAccent ? accentApi.getAccent!() : ''))
-  const modes: { key: GuideMode; label: string }[] = [{ key: 'now', label: tt('modeNow') }, { key: 'tl', label: tt('modeTimeline') }, { key: 'playlists', label: tt('modePlaylists') }]
+  // Fyra lägen sedan 0.6.0: Rutnät (P6) ligger mellan Tablå och Spellistor,
+  // samma ordning som segmentväxeln i guiden.
+  const modes: { key: GuideMode; label: string }[] = [{ key: 'now', label: tt('modeNow') }, { key: 'tl', label: tt('modeTimeline') }, { key: 'grid', label: tt('modeGrid') }, { key: 'playlists', label: tt('modePlaylists') }]
   const nextBanner = (current: BannerHideMs): BannerHideMs => BANNER_HIDE_OPTIONS[(BANNER_HIDE_OPTIONS.indexOf(current) + 1) % BANNER_HIDE_OPTIONS.length]
   return (
     <>
@@ -108,11 +119,11 @@ function AppearanceTab({ settings, tt }: { settings: TvSettings; tt: TT }) {
       ) : null}
       <section style={{ display: 'flex', flexDirection: 'column', gap: dp(14) }}>
         <Heading hint={tt('guideDefaultHint')}>{tt('guideDefault')}</Heading>
-        <div style={{ display: 'flex', gap: dp(16) }}>
+        <div style={{ display: 'flex', gap: dp(16), flexWrap: 'wrap' }}>
           {modes.map((m) => (
-            <div key={m.key} data-testid={`guide-default-${m.key}`} {...station(() => setGuideMode(m.key))} style={{ width: dp(300), borderRadius: dp(14), border: `1px solid ${guideMode === m.key ? TV.acc : TV.lineCard}`, background: TV.s06, padding: dp(16), display: 'flex', flexDirection: 'column', gap: dp(12), cursor: 'pointer' }}>
-              <div style={{ height: dp(110), borderRadius: dp(10), background: TV.s05, display: 'grid', gridTemplateColumns: m.key === 'playlists' ? '1fr 2fr 1fr' : m.key === 'tl' ? '1fr 3fr' : '1fr 1.2fr 1fr 1fr', gap: dp(6), padding: dp(10) }}>
-                {Array.from({ length: m.key === 'playlists' ? 3 : m.key === 'tl' ? 2 : 4 }).map((_, i) => <div key={i} style={{ borderRadius: dp(4), background: i === 1 ? TV.accMix(35) : TV.s12 }} />)}
+            <div key={m.key} data-testid={`guide-default-${m.key}`} {...station(() => setGuideMode(m.key))} style={{ width: dp(240), borderRadius: dp(14), border: `1px solid ${guideMode === m.key ? TV.acc : TV.lineCard}`, background: TV.s06, padding: dp(16), display: 'flex', flexDirection: 'column', gap: dp(12), cursor: 'pointer' }}>
+              <div style={{ height: dp(110), borderRadius: dp(10), background: TV.s05, display: 'grid', gridTemplateColumns: m.key === 'playlists' ? '1fr 2fr 1fr' : m.key === 'tl' ? '1fr 3fr' : m.key === 'grid' ? '1fr 1fr 1fr' : '1fr 1.2fr 1fr 1fr', gridTemplateRows: m.key === 'grid' ? '1fr 1fr' : undefined, gap: dp(6), padding: dp(10) }}>
+                {Array.from({ length: m.key === 'playlists' ? 3 : m.key === 'tl' ? 2 : m.key === 'grid' ? 6 : 4 }).map((_, i) => <div key={i} style={{ borderRadius: dp(4), background: i === 1 ? TV.accMix(35) : TV.s12 }} />)}
               </div>
               <div style={{ fontSize: dp(19), fontWeight: 600 }}>{m.label}</div>
             </div>
@@ -130,68 +141,12 @@ function AppearanceTab({ settings, tt }: { settings: TvSettings; tt: TT }) {
   )
 }
 
-function useKeyboardPrompt() {
-  const Panel = getTvKeyboardPanel()
-  /**
-   * `id` finns för `key` på panelen nedan: två prompts i rad ligger på SAMMA
-   * plats i trädet, så React återanvänder komponenten och dess `useState`
-   * behåller förra stegets text. Xtream-guidens andra steg öppnades då med
-   * serveradressen redan i fältet och användarnamnet blev
-   * "http://panel:8080jerry". Ett nytt id per öppning tvingar en ommontering.
-   */
-  const [prompt, setPrompt] = useState<{ id: number; title: string; initial: string; onDone: (value: string) => void } | null>(null)
-  const promptId = useRef(0)
-  /**
-   * Öppnaren fångas EN gång per öppning — samma regel som de andra lagren
-   * (tv-channel-picker.tsx, hubbens spellistmeny).
-   *
-   * Effekten beror bara på om panelen är öppen. Läste den i stället
-   * `document.activeElement` vid varje omrender (minuttick, lagringsändring)
-   * hade den skrivit över öppnaren med panelens egen knapp, och fokus efter
-   * stängning landat på en nod som just tagits bort — i praktiken på `body`,
-   * där fjärrkontrollen inte har någon station att gå vidare från.
-   *
-   * Panelen är VÄRDENS UI (`data-live-tv-host-ui`): den äger Back själv och
-   * stänger sig själv, så den registreras medvetet INTE som ett `pushLayer`.
-   * Två stängare på samma Back hade stängt både panelen och vyn bakom.
-   */
-  const open = prompt !== null
-  const openerRef = useRef<HTMLElement | null>(null)
-  useEffect(() => {
-    if (!open) return
-    openerRef.current = document.activeElement as HTMLElement | null
-    return () => { const opener = openerRef.current; window.setTimeout(() => opener?.focus({ preventScroll: true }), 0) }
-  }, [open])
-  // TvKeyboardPanel positionerar sig `inset: 0` mot närmaste positionerade
-  // förälder, därför omslutningen här. `data-live-tv-host-ui` gör att
-  // skalets Back-hantering (tv-shell.tsx) står tillbaka medan panelen är
-  // öppen — den stänger sig själv.
-  const node = Panel && prompt ? (
-    <div data-live-tv-host-ui="" style={{ position: 'fixed', inset: 0, zIndex: 70 }}>
-      <Panel
-        key={prompt.id}
-        title={prompt.title}
-        initial={prompt.initial}
-        onDone={(value: string) => { setPrompt(null); prompt.onDone(value) }}
-        /*
-          VÄRDENS panel anropar `onDone` OCH `onClose` på samma tryck (Klar och
-          Enter i systemtangentbordet gör båda, se components/tv/
-          tv-settings-rows.tsx). Ett `setPrompt(null)` rakt av stängde därför
-          den prompt som `onDone` just hade öppnat: Xtream-guiden (server →
-          användarnamn → lösenord) tog ALDRIG sig förbi första steget på en
-          riktig TV. Stäng bara om det fortfarande är DEN HÄR prompten som står
-          öppen; har onDone kedjat vidare är `current` en annan och lämnas i
-          fred. Back (som bara ropar onClose) fungerar som förut.
-        */
-        onClose={() => setPrompt((current) => (current === prompt ? null : current))}
-      />
-    </div>
-  ) : null
-  return { available: Panel !== null, ask: (title: string, initial: string, onDone: (value: string) => void) => {
-    promptId.current += 1
-    setPrompt({ id: promptId.current, title, initial, onDone })
-  }, node }
-}
+/*
+ * Textinmatningen bor sedan 0.6.0 i `tv/tv-text-entry.tsx` (`useTextPrompt`):
+ * samma värdpanel som förut i TV-läge, ett riktigt <input> utanför. Alla
+ * kommentarer om fällorna (id-nyckeln mot återanvänd useState, öppnaren
+ * fångad en gång, data-live-tv-host-ui, onDone+onClose) följde med dit.
+ */
 
 /**
  * Ta bort en lista helt: raden, kanalerna i indexet (nästa hämtning skriver
@@ -268,6 +223,7 @@ const ListRow = memo(function ListRow({
   needsLogin,
   onRefetch,
   onRemove,
+  onEditChannels,
 }: {
   list: LiveTvList
   tt: TT
@@ -276,6 +232,7 @@ const ListRow = memo(function ListRow({
   needsLogin: boolean
   onRefetch: (list: LiveTvList) => void
   onRemove: (list: LiveTvList) => void
+  onEditChannels: (list: LiveTvList) => void
 }) {
   const importable = list.kind === 'm3u' || list.kind === 'xtream'
   return (
@@ -307,6 +264,8 @@ const ListRow = memo(function ListRow({
           fjärrkontrollen når först i raden. */}
       <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: dp(10) }}>
         {importable ? <Action testId={`list-refetch-${list.id}`} label={busy ? tt('refetching') : tt('refetch')} onOk={() => onRefetch(list)} /> : null}
+        {/* Egna listor har inget att hämta — de fylls med kanalväljaren. */}
+        {list.kind === 'custom' ? <Action testId={`list-channels-${list.id}`} label={tt('listChannels')} onOk={() => onEditChannels(list)} /> : null}
         <Action testId={`list-remove-${list.id}`} label={tt('remove')} onOk={() => onRemove(list)} />
       </div>
     </div>
@@ -323,8 +282,10 @@ const ListRow = memo(function ListRow({
  * listposten här (`ensureM3uList`/`ensureXtreamList`), jobbet gör hämtningen
  * i Rust och raden visar dess `received`/`total` medan det pågår.
  */
-function PlaylistsTab({ lists, tt, locale, toast }: { lists: LiveTvList[]; tt: TT; locale: string; toast: (text: string) => void }) {
-  const keyboard = useKeyboardPrompt()
+function PlaylistsTab({ model, nav, lists, tt, locale, toast }: { model: TvViewProps['model']; nav: TvNav; lists: LiveTvList[]; tt: TT; locale: string; toast: (text: string) => void }) {
+  // Dialogen utanför TV-läget registreras som lager, så skalets Bakåt (Esc
+  // eller Bakåt-posten i ikonraden) stänger den före inställningsvyn.
+  const keyboard = useTextPrompt({ pushLayer: nav.pushLayer })
   const [progress, setProgress] = useState<ImportProgress | null>(null)
 
   /**
@@ -366,7 +327,7 @@ function PlaylistsTab({ lists, tt, locale, toast }: { lists: LiveTvList[]; tt: T
       // annars stod en URL kvar som aldrig gav några kanaler.
       if (ok && !getM3uUrls().includes(url)) applyM3uUrls([...getM3uUrls(), url])
     })
-  })
+  }, 'url')
 
   /** Server → användarnamn → lösenord, ett tangentbord i taget. */
   const askXtream = (prefillServer: string, reuseLoginId: string | null) => keyboard.ask(tt('xtreamServer'), prefillServer, (serverValue) => {
@@ -379,9 +340,9 @@ function PlaylistsTab({ lists, tt, locale, toast }: { lists: LiveTvList[]; tt: T
         const password = passwordValue.trim()
         if (!password) return
         void connectXtream(server, username, password, reuseLoginId)
-      })
-    })
-  })
+      }, 'password')
+    }, 'username')
+  }, 'url')
 
   async function connectXtream(server: string, username: string, password: string, reuseLoginId: string | null): Promise<void> {
     const base = normalizeXtreamBase(server)
@@ -455,9 +416,62 @@ function PlaylistsTab({ lists, tt, locale, toast }: { lists: LiveTvList[]; tt: T
   const onRefetch = useCallback((list: LiveTvList) => refetchRef.current(list), [])
   const onRemove = useCallback((list: LiveTvList) => removeListAndSourceUrl(list), [])
 
+  /**
+   * EGNA LISTOR: kanalerna bockas i en flervalsväljare, och medlemskapet hålls
+   * i ett eget set i stället för att läsas ur `lists` vid varje rendering.
+   * Listpropsen kommer via modellen, som läser om asynkront efter en
+   * lagringsändring — bocken hade då blinkat till en halv sekund efter trycket.
+   */
+  const [pickerListId, setPickerListId] = useState<string | null>(null)
+  const [members, setMembers] = useState<ReadonlySet<string>>(() => new Set())
+  const pickerList = pickerListId ? (getLiveTvLists().find((entry) => entry.id === pickerListId) ?? null) : null
+  const openPicker = useCallback((list: LiveTvList) => {
+    setMembers(new Set((getLiveTvLists().find((entry) => entry.id === list.id)?.channels ?? []).map(channelKey)))
+    setPickerListId(list.id)
+  }, [])
+  const toggleMember = (channel: M3uChannel) => {
+    if (!pickerListId) return
+    const key = channelKey(channel)
+    if (members.has(key)) {
+      removeChannelFromLiveTvList(pickerListId, channel)
+      setMembers((current) => { const next = new Set(current); next.delete(key); return next })
+      return
+    }
+    const outcome = addChannelToLiveTvList(pickerListId, channel)
+    // 500-taket sitter i lagringen: utan kvitto hade trycket sett ut att göra
+    // ingenting alls.
+    if (outcome === 'full') { toast(tt('listFull')); return }
+    if (outcome === 'added') setMembers((current) => new Set(current).add(key))
+  }
+  const createList = () => keyboard.ask(tt('listName'), '', (value) => {
+    const name = value.trim()
+    if (!name) return
+    openPicker(createLiveTvList(name))
+  })
+
+  /**
+   * UPPDATERA ALLA: samma anrop som knappen per lista, en lista i taget.
+   * Sekventiellt med flit — parallella importjobb i värden slogs om samma
+   * skrivlås, och förloppsraden kan bara visa ett jobb.
+   */
+  const [refetchingAll, setRefetchingAll] = useState(false)
+  const importable = lists.filter((list) => Boolean(list.source) && (list.kind === 'm3u' || list.kind === 'xtream') && !xtreamLoginMissing(list))
+  async function refetchAll(): Promise<void> {
+    if (refetchingAll) return
+    setRefetchingAll(true)
+    try {
+      for (const list of importable) await runImport(list, true)
+    } finally {
+      setRefetchingAll(false)
+    }
+  }
+
   return (
     <section style={{ display: 'flex', flexDirection: 'column', gap: dp(10) }}>
-      <Heading>{tt('tabPlaylists')}</Heading>
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: dp(16) }}>
+        <Heading>{tt('tabPlaylists')}</Heading>
+        {importable.length > 0 ? <Action testId="lists-refetch-all" label={refetchingAll ? tt('refetching') : tt('refetchAll')} onOk={() => { void refetchAll() }} /> : null}
+      </div>
       {ordered.map((list) => (
         <ListRow
           key={list.id}
@@ -468,28 +482,195 @@ function PlaylistsTab({ lists, tt, locale, toast }: { lists: LiveTvList[]; tt: T
           needsLogin={xtreamLoginMissing(list)}
           onRefetch={onRefetch}
           onRemove={onRemove}
+          onEditChannels={openPicker}
         />
       ))}
       {keyboard.available ? <Row label={tt('addM3u')} right="+" onOk={addUrl} /> : null}
       {keyboard.available ? <Row label={tt('addXtream')} right="+" onOk={() => askXtream('', null)} /> : null}
+      {keyboard.available ? <Row testId="create-list" label={tt('createList')} right="+" onOk={createList} /> : null}
+      <XtreamAccounts nav={nav} tt={tt} locale={locale} onReimport={(list) => { void runImport(list, true) }} />
+      {pickerList ? (
+        <TvListPicker
+          model={model}
+          nav={nav}
+          title={tt('pickChannels', { list: pickerList.name })}
+          selected={members}
+          onToggle={toggleMember}
+          onClose={() => setPickerListId(null)}
+        />
+      ) : null}
       {keyboard.node}
     </section>
   )
 }
 
-function EpgTab({ lists, tt }: { lists: LiveTvList[]; tt: TT }) {
-  const keyboard = useKeyboardPrompt()
+/** Utgångsdatumet ur Xtream-panelen (unix-sekunder). */
+function formatExpiry(expDate: number | null, locale: string): string | null {
+  if (!expDate) return null
+  const when = new Date(expDate * 1000)
+  if (Number.isNaN(when.getTime())) return null
+  return when.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+/**
+ * KONTOKORTET + KATEGORIVALET — skrivbordets `xtream-login-section.tsx` i
+ * TV-form. Kontot hämtas ur panelen (`fetchXtreamAccount`), kategorierna ur
+ * `fetchXtreamCategories`, och valet skrivs till `login.categoryIds` — exakt
+ * samma fält som importjobbet läser.
+ */
+function XtreamAccounts({ nav, tt, locale, onReimport }: { nav: TvNav; tt: TT; locale: string; onReimport: (list: LiveTvList) => void }) {
+  const [logins, setLogins] = useState<XtreamLogin[]>(getXtreamLogins)
+  useEffect(() => onXtreamLoginsChanged(() => setLogins(getXtreamLogins())), [])
+  const [pickerLoginId, setPickerLoginId] = useState<string | null>(null)
+  const [categories, setCategories] = useState<XtreamCategory[] | null>(null)
+  const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set())
+  const [dirty, setDirty] = useState(false)
+  const pickerLogin = pickerLoginId ? (logins.find((entry) => entry.id === pickerLoginId) ?? null) : null
+
+  function openCategories(login: XtreamLogin): void {
+    setCategories(null)
+    setSelected(new Set(login.categoryIds))
+    setDirty(false)
+    setPickerLoginId(login.id)
+    void fetchXtreamCategories(login).then((list) => setCategories(list)).catch(() => setCategories([]))
+  }
+
+  function writeCategories(login: XtreamLogin, ids: string[]): void {
+    saveXtreamLogin({ ...login, categoryIds: ids })
+    setSelected(new Set(ids))
+    setDirty(true)
+  }
+
+  /** Urvalet ändrar VAD som importeras, så listan hämtas om när panelen stängs. */
+  function closeCategories(): void {
+    const login = pickerLogin
+    setPickerLoginId(null)
+    if (!login || !dirty) return
+    const source = xtreamPseudoUrl({ ...login, categoryIds: [...selected] })
+    const list = getLiveTvLists().find((entry) => entry.source === source || entry.xtreamLoginId === login.id)
+    if (list) onReimport(list)
+  }
+
+  if (logins.length === 0) return null
+  return (
+    <>
+      <Heading>{tt('xtreamAccount')}</Heading>
+      {logins.map((login) => (
+        <XtreamAccountCard key={login.id} login={login} tt={tt} locale={locale} onCategories={() => openCategories(login)} />
+      ))}
+      {pickerLogin ? (
+        <TvCategoryPicker
+          nav={nav}
+          title={tt('xtreamCategoriesTitle')}
+          categories={categories}
+          selected={selected}
+          onToggle={(category) => {
+            const next = new Set(selected)
+            if (next.has(category.id)) next.delete(category.id)
+            else next.add(category.id)
+            writeCategories(pickerLogin, [...next])
+          }}
+          onSelectAll={() => writeCategories(pickerLogin, [])}
+          onClose={closeCategories}
+        />
+      ) : null}
+    </>
+  )
+}
+
+function XtreamAccountCard({ login, tt, locale, onCategories }: { login: XtreamLogin; tt: TT; locale: string; onCategories: () => void }) {
+  const [account, setAccount] = useState<XtreamAccount | null>(null)
+  const [failed, setFailed] = useState(false)
+  useEffect(() => {
+    let cancelled = false
+    setFailed(false)
+    void fetchXtreamAccount(login)
+      .then((next) => { if (!cancelled) setAccount(next) })
+      .catch(() => { if (!cancelled) setFailed(true) })
+    return () => { cancelled = true }
+  }, [login.base, login.username, login.password])
+  let host = login.base
+  try { host = new URL(login.base).host } catch { /* behåll basen */ }
+  const expiry = account ? formatExpiry(account.expDate, locale) : null
+  const meta = failed
+    ? tt('xtreamAccountUnavailable')
+    : account
+      ? [account.status, expiry ? tt('xtreamExpires', { date: expiry }) : tt('xtreamNoExpiry'), account.maxConnections ? tt('xtreamMaxConnections', { count: account.maxConnections }) : null]
+        .filter((part): part is string => Boolean(part)).join(' · ')
+      : tt('refetching')
+  return (
+    <div
+      data-testid={`xtream-account-${login.id}`}
+      style={{ minHeight: dp(64), borderRadius: dp(12), background: TV.s06, padding: `${dp(12)}px ${dp(18)}px`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: dp(16), fontSize: dp(19) }}
+    >
+      <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: dp(4) }}>
+        <strong style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{host}</strong>
+        <span style={{ fontSize: dp(16), color: failed ? '#fca5a5' : TV.dim }}>{meta}</span>
+      </div>
+      <Action
+        testId={`xtream-categories-${login.id}`}
+        label={`${tt('xtreamCategories')}${login.categoryIds.length > 0 ? ` (${login.categoryIds.length})` : ''}`}
+        onOk={onCategories}
+      />
+    </div>
+  )
+}
+
+/**
+ * EPG-fliken: adresserna OCH diagnostiken.
+ *
+ * Liggarens beslut att TV:s EPG-flik avsiktligt SKA SAKNA diagnostik är
+ * UPPHÄVT (Jerry, 2026-09-14, spec 4.4 punkt 2): samma siffror ska finnas på
+ * båda ytorna. Rätta alltså inte tillbaka till "TV visar bara adresserna".
+ * Datat kommer ur den delade hooken (`hooks/useEpgStatus.ts`), som
+ * skrivbordets `EpgStatusCard` läser likadant — två ytor kan inte visa olika
+ * siffror för samma globala butik.
+ */
+function EpgTab({ lists, nav, tt, locale }: { lists: LiveTvList[]; nav: TvNav; tt: TT; locale: string }) {
+  const keyboard = useTextPrompt({ pushLayer: nav.pushLayer })
+  const { status, urls: statusUrls, refreshing, refresh } = useEpgStatus()
   const urls = useMemo(() => lists.flatMap((list) => list.epgUrls.map((url) => ({ listId: list.id, url }))), [lists])
   return (
-    <section style={{ display: 'flex', flexDirection: 'column', gap: dp(10) }}>
-      <Heading>{tt('tabEpg')}</Heading>
-      {urls.map(({ listId, url }) => {
-        const list = lists.find((l) => l.id === listId)!
-        return <Row key={`${listId}:${url}`} label={url} right={tt('remove')} onOk={() => updateLiveTvListEpg(listId, { epgUrls: list.epgUrls.filter((u) => u !== url) })} />
-      })}
-      {keyboard.available && lists[0] ? <Row label={tt('addEpgUrl')} right="+" onOk={() => keyboard.ask(tt('addEpgUrl'), '', (value) => { const url = value.trim(); if (url) updateLiveTvListEpg(lists[0].id, { epgUrls: [...lists[0].epgUrls, url] }) })} /> : null}
-      {keyboard.node}
-    </section>
+    <>
+      <section style={{ display: 'flex', flexDirection: 'column', gap: dp(10) }}>
+        <Heading>{tt('tabEpg')}</Heading>
+        {urls.map(({ listId, url }) => {
+          const list = lists.find((l) => l.id === listId)!
+          return <Row key={`${listId}:${url}`} label={url} right={tt('remove')} onOk={() => updateLiveTvListEpg(listId, { epgUrls: list.epgUrls.filter((u) => u !== url) })} />
+        })}
+        {keyboard.available && lists[0] ? <Row label={tt('addEpgUrl')} right="+" onOk={() => keyboard.ask(tt('addEpgUrl'), '', (value) => { const url = value.trim(); if (url) updateLiveTvListEpg(lists[0].id, { epgUrls: [...lists[0].epgUrls, url] }) }, 'url')} /> : null}
+        {keyboard.node}
+      </section>
+      {statusUrls.length > 0 ? (
+        <section style={{ display: 'flex', flexDirection: 'column', gap: dp(10) }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: dp(16) }}>
+            <Heading>{tt('epgStatusTitle')}</Heading>
+            <Action testId="epg-refresh" label={refreshing ? tt('epgRefreshing') : tt('epgRefresh')} onOk={() => { void refresh() }} />
+          </div>
+          {statusUrls.map((url) => {
+            const stat = status?.urls.find((item) => item.url === url)
+            const fetched = stat?.fetchedAt ? formatFetchedAt(new Date(stat.fetchedAt).toISOString(), locale) : null
+            return (
+              <div
+                key={url}
+                data-testid={`epg-status-${url}`}
+                style={{ minHeight: dp(64), borderRadius: dp(12), background: TV.s06, padding: `${dp(12)}px ${dp(18)}px`, display: 'flex', flexDirection: 'column', gap: dp(4), fontSize: dp(18) }}
+              >
+                <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{url}</span>
+                {stat?.error
+                  ? <span style={{ fontSize: dp(16), color: '#fca5a5', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stat.error}</span>
+                  : (
+                    <span style={{ fontSize: dp(16), color: TV.dim }}>
+                      {stat ? tt('epgSourceStats', { channels: stat.channels.toLocaleString(locale), programmes: stat.programmes.toLocaleString(locale) }) : tt('epgNeverFetched')}
+                      {fetched ? ` · ${tt('fetchedAt', { time: fetched })}` : ''}
+                    </span>
+                  )}
+              </div>
+            )
+          })}
+        </section>
+      ) : null}
+    </>
   )
 }
 
