@@ -8,9 +8,10 @@ import { formatClock, progressOf } from '../live-tv-ui'
 import { isReminded, toggleReminder } from '../reminders'
 import type { EpgProgramme } from '../epg/types'
 import type { TvViewProps } from './tv-shell'
-import { Progress, Tag, TV, dp, station, useTvClockNode } from './tv-ui'
+import { Progress, Segment, Tag, TV, dp, station, useTvClockNode } from './tv-ui'
 import { useTvText } from './tv-strings'
 import { ChannelCell, FAVS_GROUP, useDebouncedChannel } from './tv-guide-shared'
+import type { GuideMode } from './tv-settings-store'
 import { TvPreview } from './tv-preview'
 
 type Selection = { listId: string | null; group: string | null }
@@ -25,7 +26,7 @@ type Selection = { listId: string | null; group: string | null }
  */
 const ROW_STEP = 40
 
-export function TvGuidePlaylists({ model, nav, settings }: TvViewProps) {
+export function TvGuidePlaylists({ model, nav, settings, mode, onModeChange }: TvViewProps & { mode: GuideMode; onModeChange: (mode: GuideMode) => void }) {
   const { tt, locale } = useTvText()
   const clock = useTvClockNode(locale)
   const [sel, setSel] = useState<Selection>({ listId: model.lists[0]?.id ?? null, group: null })
@@ -75,6 +76,15 @@ export function TvGuidePlaylists({ model, nav, settings }: TvViewProps) {
   const previewChannel = useDebouncedChannel(selected, 300)
   const info = selected ? model.nowFor(selected) : { now: null, next: null, later: null }
   const title = sel.listId === FAVS_GROUP ? tt('favourites') : sel.group ?? tree.find((l) => l.id === sel.listId)?.name ?? ''
+  /**
+   * Lägesväxeln står i ALLA guidelägen — även här.
+   *
+   * Spellistevyn ritade den inte: den som bytte hit hade ingen station kvar
+   * som tog hen tillbaka till Nu/Sen eller Tablå, och eftersom läget sparas
+   * öppnades guiden i spellistevyn även nästa gång. Enda vägen ut var
+   * Inställningar → Kanalguidens standardvy.
+   */
+  const modeOptions: { key: GuideMode; label: string }[] = [{ key: 'now', label: tt('modeNow') }, { key: 'tl', label: tt('modeTimeline') }, { key: 'playlists', label: tt('modePlaylists') }]
 
   const remind = (programme: EpgProgramme) => {
     if (!selected) return
@@ -130,6 +140,7 @@ export function TvGuidePlaylists({ model, nav, settings }: TvViewProps) {
         <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(12), marginBottom: dp(16) }}>
           <span style={{ fontSize: dp(26), fontWeight: 600 }}>{title}</span>
           <span style={{ fontSize: dp(16), color: 'rgba(243,244,248,0.5)' }}>{tt('channelsCount', { count: rows.length })} · {clock}</span>
+          <Segment options={modeOptions} value={mode} onChange={onModeChange} style={{ marginLeft: 'auto', marginRight: dp(24), alignSelf: 'center' }} />
         </div>
         {shownRows.map((channel, index) => {
           const key = channelKey(channel)

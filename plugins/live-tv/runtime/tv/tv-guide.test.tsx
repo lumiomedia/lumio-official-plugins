@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { flushLiveTvIndex, seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
+import { getGuideMode } from './tv-settings-store'
 import type { EpgCacheEntry } from '../epg/types'
 
 vi.mock('../live-tv-player', () => ({ LiveTvPlayer: ({ channel }: { channel: { name: string } }) => <div data-testid="player">{channel.name}</div> }))
@@ -122,5 +123,76 @@ describe('TvGuide', () => {
     await mount({ view: 'guide', group: 'Nonexistent' })
     expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
     expect(screen.getAllByTestId('guide-row')).toHaveLength(3)
+  })
+})
+
+/**
+ * Lägesbytet i guiden (Nu/Sen · Tablå · Spellistor) är en navigering INNE i
+ * vyn. Skalets Back kände bara till vyer: Back ur ett bytt läge lämnade hela
+ * guiden, och eftersom läget sparas landade nästa besök i samma bytta läge —
+ * spellistevyn hade dessutom ingen växel alls, så vägen tillbaka till den nya
+ * guidevyn fanns helt enkelt inte (Jerry, riktig TV, plugin 0.5.0).
+ */
+describe('TvGuide: lägesbyte och Bakåt', () => {
+  const mountWithNav = async (onNavigate: (arg: unknown) => void, params: Record<string, string> = { view: 'guide' }) => {
+    const rendered = render(<LiveTvTvShell pageId="live-tv-browse" params={params} onNavigate={onNavigate} onOpenDetails={() => {}} />)
+    await flushLiveTvIndex()
+    return rendered
+  }
+
+  it('spellisteläget behåller lägesväxeln — vägen tillbaka till guiden finns kvar', async () => {
+    await mount()
+    fireEvent.click(screen.getByText('Playlists'))
+    await flushLiveTvIndex()
+    expect(screen.getAllByTestId('pl-row').length).toBeGreaterThan(0)
+    // Exakt en startstation även här.
+    expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
+    // Och en station som tar användaren tillbaka.
+    fireEvent.click(screen.getByText('Now / Next'))
+    await flushLiveTvIndex()
+    expect(screen.getAllByTestId('guide-row').length).toBeGreaterThan(0)
+    expect(getGuideMode()).toBe('now')
+  })
+
+  it('Bakåt efter ett lägesbyte går tillbaka till läget före — inte ut ur guiden', async () => {
+    const onNavigate = vi.fn()
+    await mountWithNav(onNavigate)
+    fireEvent.click(screen.getByText('Playlists'))
+    await flushLiveTvIndex()
+    fireEvent.keyDown(window, { key: 'Backspace' })
+    await flushLiveTvIndex()
+    expect(screen.getAllByTestId('guide-row').length).toBeGreaterThan(0)
+    expect(getGuideMode()).toBe('now')
+    expect(onNavigate).not.toHaveBeenCalled()
+    // Stacken är tom: nästa Bakåt lämnar guiden som förut.
+    fireEvent.keyDown(window, { key: 'Backspace' })
+    expect(onNavigate).toHaveBeenCalledTimes(1)
+    expect((onNavigate.mock.calls[0][0] as { params: Record<string, string> }).params.view).toBe('hub')
+  })
+
+  it('två byten kräver två Bakåt — ett läge per tryck', async () => {
+    await mount()
+    fireEvent.click(screen.getByText('Timeline'))
+    await flushLiveTvIndex()
+    fireEvent.click(screen.getByText('Playlists'))
+    await flushLiveTvIndex()
+    fireEvent.keyDown(window, { key: 'Backspace' })
+    await flushLiveTvIndex()
+    expect(screen.getByTestId('now-line')).toBeInTheDocument()
+    expect(getGuideMode()).toBe('tl')
+    fireEvent.keyDown(window, { key: 'Backspace' })
+    await flushLiveTvIndex()
+    expect(screen.queryByTestId('now-line')).toBeNull()
+    expect(getGuideMode()).toBe('now')
+  })
+
+  it('utan lägesbyte i sessionen lämnar Bakåt guiden precis som förut', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'playlists')
+    const onNavigate = vi.fn()
+    await mountWithNav(onNavigate)
+    expect(screen.getAllByTestId('pl-row').length).toBeGreaterThan(0)
+    fireEvent.keyDown(window, { key: 'Backspace' })
+    expect(onNavigate).toHaveBeenCalledTimes(1)
+    expect((onNavigate.mock.calls[0][0] as { params: Record<string, string> }).params.view).toBe('hub')
   })
 })

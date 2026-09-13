@@ -17,6 +17,7 @@ import { useSchedules } from '../hooks/useSchedules'
 const ROW_STEP = 40
 
 export function TvGuide(props: TvViewProps) {
+  const { nav } = props
   const storedMode = useGuideMode()
   // Lokalt speglat läge: skrivningen sker via storage (för andra vyer/
   // omstarter) men uppdaterar inte sig själv i samma instans (stubben notifierar
@@ -24,10 +25,49 @@ export function TvGuide(props: TvViewProps) {
   // setGuideMode inte anropar). Samma mönster som modellens activePlaylistId.
   const [mode, setMode] = useState<GuideMode>(storedMode)
   useEffect(() => { setMode(storedMode) }, [storedMode])
+  /**
+   * Lägesstack: Back tar ETT läge i taget tillbaka.
+   *
+   * Lägesbytet är en navigering inne i guiden, men skalets Back kände bara
+   * till VYER — Back ur ett bytt läge lämnade hela guiden till hubben, och
+   * eftersom läget dessutom sparas (`setGuideMode`) landade nästa besök i
+   * guiden i samma bytta läge igen. Uppmätt på riktig TV: efter ett byte till
+   * Spellistor fanns ingen väg tillbaka till den nya guidevyn alls.
+   *
+   * Varje byte lägger FÖREGÅENDE läge på stacken och registrerar ett lager i
+   * skalet (`nav.pushLayer`), som äger Back före vybytet. Ett tryck = ett
+   * läge. Är stacken tom rörs ingenting: Back går till hubben precis som
+   * förut, och nummertangenternas zapp (skalet står tillbaka medan ett lager
+   * finns) påverkas bara mellan bytet och nästa Back.
+   */
+  const [modeStack, setModeStack] = useState<GuideMode[]>([])
   const changeMode = (next: GuideMode) => {
+    if (next === mode) return
+    setModeStack((stack) => [...stack, mode])
     setGuideMode(next)
     setMode(next)
   }
+  const popMode = () => {
+    const prev = modeStack[modeStack.length - 1]
+    if (prev === undefined) return
+    setModeStack((stack) => stack.slice(0, -1))
+    setGuideMode(prev)
+    setMode(prev)
+  }
+  // `nav` och `popMode` byter identitet vid varje omrender (minuttick,
+  // lagringsändring). Låg de i effektens beroendelista hade lagret av- och
+  // återregistrerats om och om igen; ref:erna håller effekten still.
+  const navRef = useRef(nav)
+  useEffect(() => { navRef.current = nav })
+  const popRef = useRef(popMode)
+  useEffect(() => { popRef.current = popMode })
+  // Spelaren äger Back helt medan den är öppen — guiden får inte stjäla det
+  // trycket och byta läge bakom spelaren.
+  const claimBack = modeStack.length > 0 && !nav.playerOpen
+  useEffect(() => {
+    if (!claimBack) return
+    return navRef.current.pushLayer(() => popRef.current())
+  }, [claimBack, modeStack.length])
   /**
    * Lägesbytet får inte lämna fokus på `body`.
    *
@@ -51,7 +91,7 @@ export function TvGuide(props: TvViewProps) {
     frame = window.requestAnimationFrame(() => { frame = window.requestAnimationFrame(focusInit) })
     return () => window.cancelAnimationFrame(frame)
   }, [mode])
-  if (mode === 'playlists') return <TvGuidePlaylists {...props} />
+  if (mode === 'playlists') return <TvGuidePlaylists {...props} mode={mode} onModeChange={changeMode} />
   return <TvGuideStandard {...props} mode={mode} onModeChange={changeMode} />
 }
 
