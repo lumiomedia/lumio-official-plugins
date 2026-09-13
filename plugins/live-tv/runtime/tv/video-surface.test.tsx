@@ -71,6 +71,24 @@ describe('useVideoSurface v1 (HTML-motor i test)', () => {
       expect(document.querySelectorAll('video').length).toBe(1)
     })
   })
+  it('en evicerad yta tar tillbaka ytan när ägaren försvinner', async () => {
+    // Utan omförsöket blev en evicerad förhandsvisning svart FÖR ALLTID: den
+    // satte `live=false` och hade ingen väg tillbaka ens när ägarskapet blev
+    // ledigt sekunden efter. Uppmätt i multivyn: byt ljudruta fram och
+    // tillbaka och den första rutan kom aldrig igen.
+    let a: VideoSurfaceHandle | null = null
+    let b: VideoSurfaceHandle | null = null
+    render(<Probe audio onHandle={(h) => { a = h }} />)
+    await waitFor(() => expect(a?.live).toBe(true))
+    const viewB = render(<Probe audio onHandle={(h) => { b = h }} />)
+    await waitFor(() => {
+      expect(b?.live).toBe(true)
+      expect(a?.live).toBe(false)
+    })
+    viewB.unmount()
+    await waitFor(() => expect(a?.live).toBe(true))
+    expect(document.querySelectorAll('video')).toHaveLength(1)
+  })
   it('en statisk ruta får portalen i stället — hooken skriver aldrig i anroparens stil', async () => {
     render(<StaticProbe />)
     await waitFor(() => expect(document.querySelector('video')).not.toBeNull())

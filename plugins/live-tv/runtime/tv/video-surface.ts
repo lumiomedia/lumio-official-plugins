@@ -37,6 +37,9 @@ type HostApi = {
   // Finns bara i nyare appversioner; läses defensivt så att bunten bygger mot
   // appträd som saknar den.
   mpvSetPropertyStrings?: (props: Array<{ name: string; value: string }>) => Promise<void>
+  // Värdens egen uppstädning av extraytor. Finns inte i alla appar — läses
+  // defensivt, precis som de andra valfria broarna här.
+  closeAllAuxSurfaces?: () => Promise<void> | void
 }
 const host = sdk as unknown as HostApi
 
@@ -51,18 +54,40 @@ export function videoSurfaceCapabilities(): { maxLive: number; engine: 'mpv' | '
 
 let owner: symbol | null = null
 let ownerClose: (() => Promise<void>) | null = null
-const waiters = new Set<() => void>()
+/**
+ * Värdens ytor har ingen enda ägare: `getVideoSurfaceCapabilities()` lovar
+ * flera samtidiga ytor, så `owner`/`ownerClose` (som bara rymmer EN) räcker
+ * inte. Varje öppnad värdyta lägger i stället sin stängare här, och
+ * `releaseAllSurfaces()` river dem allihop — annars fortsatte multivyns rutor
+ * spela under spelaren, som är precis vad anroparen bad om att slippa.
+ */
+const hostSurfaces = new Set<() => Promise<void>>()
+/**
+ * `reacquire` = ytan släpptes för att dess ÄGARE försvann (avmontering), inte
+ * för att någon annan tar över skärmen. Bara då får en vilande yta försöka
+ * igen: `releaseAllSurfaces()` anropas av skalet strax innan spelaren öppnas,
+ * och en förhandsvisning som genast tog tillbaka ytan hade konkurrerat med
+ * just den spelare den nyss lämnade plats åt.
+ */
+const waiters = new Set<(reacquire: boolean) => void>()
 
-function notifyWaiters() {
-  for (const w of waiters) w()
+function notifyWaiters(reacquire: boolean) {
+  for (const w of waiters) w(reacquire)
 }
 
 export async function releaseAllSurfaces(): Promise<void> {
   const close = ownerClose
   owner = null
   ownerClose = null
+  const hosts = [...hostSurfaces]
+  hostSurfaces.clear()
   if (close) await close().catch(() => {})
-  notifyWaiters()
+  for (const closeHost of hosts) await closeHost().catch(() => {})
+  const closeAux = host.closeAllAuxSurfaces
+  if (typeof closeAux === 'function') {
+    try { await closeAux() } catch { /* värdens uppstädning får aldrig fälla anroparen */ }
+  }
+  notifyWaiters(false)
 }
 
 /**
@@ -141,6 +166,12 @@ function createHtmlSession(url: string, muted: boolean, onReady: () => void, onF
   const anchored = hostEl !== null
   if (hostEl) {
     video.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;pointer-events:none;z-index:0;border-radius:inherit'
+    // INVARIANT: videon ska vara rutans FÖRSTA barn. Etiketterna (LIVE-taggen,
+    // "MUTED", multivyns kanalnamn) är absolut positionerade syskon utan
+    // z-index, och bland positionerade element på samma nivå vinner den som
+    // kommer sist i DOM:en. Läggs videon sist målas den alltså över dem, och
+    // hela överlagret försvinner. `insertBefore(..., firstChild)` — aldrig
+    // `appendChild` — och video-surface.test.tsx vaktar ordningen.
     hostEl.insertBefore(video, hostEl.firstChild)
   } else {
     video.style.cssText = 'position:fixed;object-fit:cover;background:#000;pointer-events:none;z-index:5;border-radius:inherit'
@@ -196,6 +227,11 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
   const [ready, setReady] = useState(false)
   const [failed, setFailed] = useState(false)
   const [live, setLive] = useState(false)
+  // Räknare, inte flagga: varje uppräkning kör om effekten, och en NY körning
+  // får färska `spent`/`closeOnce` (de är per körning). Utan omkörningen blev
+  // en evicerad eller nekad yta svart för alltid — även när ägaren försvann
+  // sekunden efter.
+  const [attempt, setAttempt] = useState(0)
   const idRef = useRef<symbol>(Symbol('surface'))
   const enabled = options.enabled !== false && source !== null
   const url = source?.url ?? null
@@ -241,8 +277,19 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
         const off = surface.onState((s) => { if (s.firstFrameRendered) markReady(); if (s.loadFailed) markFailed() })
         setBounds = (rect) => surface.setBounds(rect)
         closeSession = async () => { off(); await surface.destroy() }
+        // Spåras så att releaseAllSurfaces() river ÄVEN värdens ytor.
+        hostSurfaces.add(closeOnce)
         setLive(true)
         await surface.open({ url, muted }).catch(markFailed)
+        return
+      }
+      // mpv utan mute-brygga: exakt samma regel som droid nedan. `openMpvPlayer`
+      // startar alltid med ljud, och tystandet sker efteråt via den VALFRIA
+      // `mpvSetPropertyStrings`. Saknas den (alla nuvarande skrivbordsbyggen)
+      // spelade en "tyst" förhandsvisning på full volym. Kontrolleras FÖRE
+      // ägarskapsanspråket, av samma skäl som droid-grenen.
+      if (caps.engine === 'mpv' && muted && typeof host.mpvSetPropertyStrings !== 'function') {
+        setLive(false)
         return
       }
       // ExoPlayer saknar mute-API: öppna aldrig ljudlöst (visa bildruta i
@@ -296,7 +343,20 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
       window.addEventListener('resize', sync)
       document.addEventListener('scroll', sync, true)
     }
-    const onReleased = () => { if (owner !== idRef.current) setLive(false) }
+    const onReleased = (reacquire: boolean) => {
+      if (caps.engine === 'host') {
+        // Värdytor äger inget `owner`-lås: de är släppta exakt när
+        // releaseAllSurfaces() plockat bort deras stängare ur mängden.
+        if (hostSurfaces.has(closeOnce)) return
+        setLive(false)
+        if (reacquire) setAttempt((n) => n + 1)
+        return
+      }
+      if (owner === idRef.current) return
+      setLive(false)
+      // Ägarskapet är ledigt igen (ägaren avmonterades): försök ta ytan.
+      if (reacquire && owner === null) setAttempt((n) => n + 1)
+    }
     waiters.add(onReleased)
 
     return () => {
@@ -308,16 +368,17 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
         document.removeEventListener('scroll', sync, true)
       }
       waiters.delete(onReleased)
+      hostSurfaces.delete(closeOnce)
       if (owner === idRef.current) {
         owner = null
         ownerClose = null
         void closeOnce()
-        notifyWaiters()
+        notifyWaiters(true)
       } else {
         void closeOnce()
       }
     }
-  }, [enabled, url, muted, audio, rectRef])
+  }, [enabled, url, muted, audio, rectRef, attempt])
 
   return { ready, failed, live, frameUrl }
 }
