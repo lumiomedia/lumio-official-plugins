@@ -80,6 +80,12 @@ const EN = {
   logoComplete: 'Complete',
   logoCompleteRunning: 'Completing…',
   logoCompleteResult: '{matched} of {total} completed',
+  // Flerlistekörningen (Jerrys granskningsfynd): scope + framsteg syns i
+  // knappens egen text, en enda lista ser fortfarande ut som `logoCompleteRunning`.
+  logoCompleteRunningProgress: 'Completing list {current} of {total}…',
+  // Delresultatet innan ett fel mitt i en flerlistekörning — `{error}` är
+  // appens egen feltext, ordagrant, inte en omskriven variant.
+  logoCompletePartialError: '{completed} of {total} lists completed — then: {error}',
   // Komplettera-knappen i själva Live TV-vyn — en egen handling, skild från
   // ovanstående switch (som bara styr OM reserven får användas).
   logoCompleteButton: 'Complete logos',
@@ -153,6 +159,8 @@ const SV: Record<keyof typeof EN, string> = {
   logoComplete: 'Komplettera',
   logoCompleteRunning: 'Kompletterar…',
   logoCompleteResult: '{matched} av {total} kompletterade',
+  logoCompleteRunningProgress: 'Kompletterar lista {current} av {total}…',
+  logoCompletePartialError: '{completed} av {total} listor klara — sedan: {error}',
   logoCompleteButton: 'Komplettera logotyper',
   // P8
   xtreamAccountUnavailable: 'Kunde inte läsa kontot',

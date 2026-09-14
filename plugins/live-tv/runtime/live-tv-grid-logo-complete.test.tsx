@@ -124,3 +124,83 @@ describe('LiveTvGrid: komplettera logotyper direkt i vyn', () => {
     await waitFor(() => expect(screen.getByTestId('live-tv-logo-complete')).not.toBeDisabled())
   })
 })
+
+/**
+ * Granskningsfynd (Important) på flerlistefallet: knappen kör alla listor
+ * vars switch är på när ingen flik är vald, men gav bara ett odifferentierat
+ * "pågår" — ingen omfattning, inget framsteg, och ett fel mitt i körningen
+ * dolde delresultatet från de listor som redan hann bli klara.
+ */
+describe('LiveTvGrid: komplettera logotyper över flera listor', () => {
+  const list2 = rawList({
+    id: 'l2',
+    name: 'Panel 2',
+    kind: 'm3u',
+    source: 'http://example.test/playlist-2.m3u',
+    url: 'http://example.test/playlist-2.m3u',
+    channels: [],
+  })
+  const list3 = rawList({
+    id: 'l3',
+    name: 'Panel 3',
+    kind: 'm3u',
+    source: 'http://example.test/playlist-3.m3u',
+    url: 'http://example.test/playlist-3.m3u',
+    channels: [],
+  })
+
+  it('visar omfattningen direkt och räknar upp framsteget lista för lista', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'm3u_urls', [PLAYLIST_URL])
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [imported, list2, list3])
+    seedLiveTvIndex()
+    const resolvers: Array<(value: { matched: number; total: number }) => void> = []
+    vi.mocked(completeLogos).mockImplementation(() => new Promise((resolve) => { resolvers.push(resolve) }))
+    await mount()
+
+    fireEvent.click(screen.getByTestId('live-tv-logo-complete'))
+    // Omfattningen (3 listor) ska synas direkt — innan någon lista hunnit bli
+    // klar — annars ser en flerlistekörning ut som att appen hänger.
+    await waitFor(() => expect(screen.getByTestId('live-tv-logo-complete')).toHaveTextContent('1 of 3'))
+
+    resolvers[0]({ matched: 1, total: 1 })
+    await waitFor(() => expect(screen.getByTestId('live-tv-logo-complete')).toHaveTextContent('2 of 3'))
+
+    resolvers[1]({ matched: 1, total: 1 })
+    await waitFor(() => expect(screen.getByTestId('live-tv-logo-complete')).toHaveTextContent('3 of 3'))
+
+    resolvers[2]({ matched: 1, total: 1 })
+    await waitFor(() => expect(screen.getByTestId('live-tv-logo-complete')).not.toBeDisabled())
+  })
+
+  it('en enda lista ser fortfarande ut som idag — ingen "1 av 1"', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'm3u_urls', [PLAYLIST_URL])
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [imported])
+    seedLiveTvIndex()
+    let resolveComplete!: (value: { matched: number; total: number }) => void
+    vi.mocked(completeLogos).mockReturnValue(new Promise((resolve) => { resolveComplete = resolve }))
+    await mount()
+
+    fireEvent.click(screen.getByTestId('live-tv-logo-complete'))
+    await waitFor(() => expect(screen.getByTestId('live-tv-logo-complete')).toHaveTextContent(/completing/i))
+    expect(screen.getByTestId('live-tv-logo-complete')).not.toHaveTextContent(/of 1/i)
+    resolveComplete({ matched: 1, total: 1 })
+  })
+
+  it('redovisar delresultatet och appens ordagranna feltext vid fel mitt i körningen', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'm3u_urls', [PLAYLIST_URL])
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [imported, list2, list3])
+    seedLiveTvIndex()
+    vi.mocked(completeLogos)
+      .mockResolvedValueOnce({ matched: 2, total: 2 })
+      .mockRejectedValueOnce(new Error('iptv-org svarade 503 mitt i listan'))
+    await mount()
+
+    fireEvent.click(screen.getByTestId('live-tv-logo-complete'))
+    const alert = await screen.findByRole('alert')
+    // Den första listan (imported) hann bli klar innan den andra (list2)
+    // föll — delresultatet (1 av 3) ska synas TILLSAMMANS med appens egen,
+    // ordagranna feltext, inte i stället för den.
+    expect(alert).toHaveTextContent('1 of 3')
+    expect(alert).toHaveTextContent('iptv-org svarade 503 mitt i listan')
+  })
+})

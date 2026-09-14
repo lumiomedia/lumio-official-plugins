@@ -219,7 +219,9 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavi
   // här knappen kör en eller flera listor på en gång (se `handleCompleteLogos`
   // nedan), inte en enda rad.
   const [logoComplete, setLogoComplete] = useState<
-    | { status: 'running' }
+    // `current`/`listCount` är listnumret i körningen, inte kanalräkningen —
+    // se granskningsfyndet i `handleCompleteLogos` nedan.
+    | { status: 'running'; current: number; listCount: number }
     | { status: 'done'; matched: number; total: number }
     | { status: 'error'; error: string }
     | null
@@ -581,22 +583,46 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavi
    * ska gå att nå "direkt på appvyn", inte bara via inställningarna.
    * `completeLogos` sänder `emitIndexChanged()` själv (se `index-client.ts`)
    * — ropas INTE här igen, det hade blivit en dubbelsändning.
+   *
+   * Granskningsfynd (flerlistefallet): utan en vald flik körs varje lista
+   * vars switch är på, sekventiellt, en efter en. Med flera stora Xtream-
+   * /M3U-listor kan det klicket dra i gång en körning över tusentals kanaler
+   * medan knappen bara sa "pågår" — omöjligt att se hur mycket som återstod,
+   * eller att skilja "hänger" från "jobbar". Knappens egen text bär nu
+   * omfattningen OCH framsteget ("lista 2 av 4"); en enda lista (det vanliga
+   * fallet) ser fortfarande ut som förut, ingen "1 av 1".
+   *
+   * Loopen är fortsatt sekventiell och avbryts vid första `throw` — de listor
+   * som redan hann klart har redan skrivit sitt resultat till indexet
+   * (`completeLogos` per lista), så det delresultatet redovisas TILLSAMMANS
+   * med appens egen feltext i stället för att försvinna bakom den.
    */
   async function handleCompleteLogos(): Promise<void> {
     const targets = logoCompleteTargets
     if (targets.length === 0) return
-    setLogoComplete({ status: 'running' })
+    const listCount = targets.length
     let matched = 0
     let total = 0
+    let completed = 0
     try {
       for (const list of targets) {
+        setLogoComplete({ status: 'running', current: completed + 1, listCount })
         const result = await completeLogos(list.source as string)
         matched += result.matched
         total += result.total
+        completed += 1
       }
       setLogoComplete({ status: 'done', matched, total })
     } catch (err) {
-      setLogoComplete({ status: 'error', error: err instanceof Error ? err.message : String(err) })
+      const message = err instanceof Error ? err.message : String(err)
+      setLogoComplete({
+        status: 'error',
+        // En enda lista har inget delresultat att redovisa (0 av 1 säger
+        // inget) — bara flerlistefallet får den sammansatta texten.
+        error: listCount > 1
+          ? h('logoCompletePartialError', { completed, total: listCount, error: message })
+          : message,
+      })
     }
   }
 
@@ -1159,7 +1185,11 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavi
             disabled={logoComplete?.status === 'running' || logoCompleteTargets.length === 0}
             className={`flex h-9 items-center px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] ${neutralPillClass} disabled:cursor-default disabled:opacity-50`}
           >
-            {logoComplete?.status === 'running' ? h('logoCompleteRunning') : h('logoCompleteButton')}
+            {logoComplete?.status === 'running'
+              ? (logoComplete.listCount > 1
+                  ? h('logoCompleteRunningProgress', { current: logoComplete.current, total: logoComplete.listCount })
+                  : h('logoCompleteRunning'))
+              : h('logoCompleteButton')}
           </button>}
           {!isTv && logoComplete?.status === 'done' ? (
             <span className="text-xs text-slate-500">{h('logoCompleteResult', { matched: logoComplete.matched, total: logoComplete.total })}</span>
