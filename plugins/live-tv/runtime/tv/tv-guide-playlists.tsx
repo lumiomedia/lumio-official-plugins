@@ -107,7 +107,7 @@ export function TvGuidePlaylists({ model, nav, settings, mode, onModeChange }: T
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: dp(phoneTextFloor(14, phone)), letterSpacing: '0.1em', textTransform: 'uppercase', color: isNow ? TV.accText : 'rgba(243,244,248,0.5)' }}>
           <span>{label}</span><span style={{ fontSize: dp(phoneTextFloor(15, phone)), letterSpacing: 0, textTransform: 'none' }}>{isNow ? `${formatClock(programme.start, locale)}–${formatClock(programme.stop, locale)}` : formatClock(programme.start, locale)}</span>
         </div>
-        <div style={{ fontSize: isNow ? dp(24) : dp(phoneTextFloor(20, phone)), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{programme.title}</div>
+        <div style={{ fontSize: isNow ? dp(phoneTextFloor(24, phone)) : dp(phoneTextFloor(20, phone)), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{programme.title}</div>
         {isNow ? <Progress value={progressOf(programme.start, programme.stop, model.nowMs)} height={dp(4)} /> : null}
         <div style={{ fontSize: dp(phoneTextFloor(15, phone)), color: 'rgba(243,244,248,0.55)' }}>{isNow ? tt('okWatch') : reminded ? tt('reminderSet') : tt('okRemind')}</div>
       </div>
