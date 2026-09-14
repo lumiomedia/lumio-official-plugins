@@ -45,16 +45,14 @@ describe('TvHub', () => {
   })
 })
 
-// Jerrys återkoppling 2026-09-14, ändring 1: fjärrhjälpen ("OK = watch ·
-// hold OK = menu") beskriver fjärrkontrollen och ska bara synas i TV-läge —
-// ingen ersättningstext på skrivbord/telefon. `useTvMode()` styr, inte ytan.
-describe('TvHub fjärrhjälp (Jerrys återkoppling 2026-09-14)', () => {
-  it('visas i TV-läge', () => {
+// Jerrys uppföljning: fjärrhjälpen ("OK = watch · hold OK = menu") ska bort
+// HELT — även i TV-läge, ingen ersättningstext någonstans.
+describe('TvHub fjärrhjälp (borttagen, Jerrys uppföljning)', () => {
+  it('renderas aldrig, varken i TV-läge eller utanför', () => {
     __setTvModeForTests(true)
     render(<LiveTvTvShell pageId="live-tv-browse" params={{}} onNavigate={() => {}} onOpenDetails={() => {}} />)
-    expect(screen.getByText('OK = watch · hold OK = menu')).toBeInTheDocument()
-  })
-  it('döljs utanför TV-läge, utan ersättningstext', () => {
+    expect(screen.queryByText('OK = watch · hold OK = menu')).not.toBeInTheDocument()
+    cleanup()
     __setTvModeForTests(false)
     render(<LiveTvTvShell pageId="live-tv-browse" params={{}} onNavigate={() => {}} onOpenDetails={() => {}} />)
     expect(screen.queryByText('OK = watch · hold OK = menu')).not.toBeInTheDocument()

@@ -53,24 +53,23 @@ describe('TvMultiview', () => {
   })
 })
 
-// Jerrys återkoppling 2026-09-14, ändring 1: fjärrhjälpen ("OK on a tile =
-// audio here · hold OK = switch channel / remove") beskriver fjärrkontrollen
-// och ska bara synas i TV-läge — ljudetiketten ("Audio: A") är innehåll, inte
+// Jerrys uppföljning: fjärrhjälpen ("OK on a tile = audio here · hold OK =
+// switch channel / remove") ska bort HELT — även i TV-läge, ingen
+// ersättningstext någonstans. Ljudetiketten ("Audio: A") är innehåll, inte
 // fjärrhjälp, och ska vara kvar oavsett läge.
-describe('TvMultiview fjärrhjälp (Jerrys återkoppling 2026-09-14)', () => {
-  it('visas i TV-läge, tillsammans med ljudetiketten', () => {
+describe('TvMultiview fjärrhjälp (borttagen, Jerrys uppföljning)', () => {
+  it('ljudetiketten är kvar, hjälptexten renderas aldrig — varken i TV-läge eller utanför', () => {
     __setTvModeForTests(true)
     mount()
-    const help = screen.getByTestId('mv-audio-help')
-    expect(help.textContent).toContain('Audio: A')
-    expect(help.textContent).toContain('OK on a tile = audio here')
-  })
-  it('döljs utanför TV-läge, men ljudetiketten är kvar utan ersättningstext', () => {
+    const helpTv = screen.getByTestId('mv-audio-help')
+    expect(helpTv.textContent).toContain('Audio: A')
+    expect(helpTv.textContent).not.toContain('OK on a tile = audio here')
+    cleanup()
     __setTvModeForTests(false)
     mount()
-    const help = screen.getByTestId('mv-audio-help')
-    expect(help.textContent).toContain('Audio: A')
-    expect(help.textContent).not.toContain('OK on a tile = audio here')
+    const helpDesktop = screen.getByTestId('mv-audio-help')
+    expect(helpDesktop.textContent).toContain('Audio: A')
+    expect(helpDesktop.textContent).not.toContain('OK on a tile = audio here')
   })
 })
 

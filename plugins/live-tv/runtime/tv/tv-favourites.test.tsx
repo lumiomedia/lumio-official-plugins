@@ -48,15 +48,14 @@ describe('TvFavourites', () => {
   })
 })
 
-// Jerrys återkoppling 2026-09-14, ändring 1: fjärrhjälpen beskriver
-// fjärrkontrollen och ska bara synas i TV-läge, ingen ersättningstext utanför.
-describe('TvFavourites fjärrhjälp (Jerrys återkoppling 2026-09-14)', () => {
-  it('visas i TV-läge', () => {
+// Jerrys uppföljning: fjärrhjälpen ska bort HELT — även i TV-läge, ingen
+// ersättningstext någonstans.
+describe('TvFavourites fjärrhjälp (borttagen, Jerrys uppföljning)', () => {
+  it('renderas aldrig, varken i TV-läge eller utanför', () => {
     __setTvModeForTests(true)
     mount()
-    expect(screen.getByText(/OK = watch · hold OK = move up\/down/)).toBeInTheDocument()
-  })
-  it('döljs utanför TV-läge, utan ersättningstext', () => {
+    expect(screen.queryByText(/OK = watch · hold OK = move up\/down/)).not.toBeInTheDocument()
+    cleanup()
     __setTvModeForTests(false)
     mount()
     expect(screen.queryByText(/OK = watch · hold OK = move up\/down/)).not.toBeInTheDocument()

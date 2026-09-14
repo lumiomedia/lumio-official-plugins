@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { useTvMode } from '@/lib/plugin-sdk'
 import { channelKey, movePinnedLiveTvChannel } from '../live-tv-data'
 import { qualityFromName } from '../live-tv-model'
 import { formatClock, progressOf } from '../live-tv-ui'
@@ -17,7 +16,6 @@ function escapeKey(key: string): string {
 export function TvFavourites({ model, nav }: TvViewProps) {
   const { tt, locale } = useTvText()
   const phone = usePhoneSurface()
-  const isTv = useTvMode()
   const favourites = model.favouriteChannels
   const gridRef = useRef<HTMLDivElement | null>(null)
   const refocusKey = useRef<string | null>(null)
@@ -77,9 +75,6 @@ export function TvFavourites({ model, nav }: TvViewProps) {
           )
         })}
       </div>
-      {/* Fjärrhjälpen beskriver fjärrkontrollen — bort utanför TV-läget
-          (Jerrys återkoppling 2026-09-14), ingen ersättningstext. */}
-      {isTv ? <div style={{ fontSize: dp(phoneTextFloor(16, phone)), color: TV.faint, paddingBottom: dp(32) }}>{tt('helpFavourites')}</div> : null}
     </div>
   )
 }

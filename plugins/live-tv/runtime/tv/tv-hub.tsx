@@ -296,7 +296,6 @@ export function TvHub({ model, nav }: TvViewProps) {
         {filtered.length > visible ? (
           <div {...station(() => setVisible((v) => v + ALL_STEP))} style={{ alignSelf: 'center', height: dp(phoneHitFloor(48, phone)), minHeight: dp(phoneHitFloor(48, phone)), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.s10, display: 'inline-flex', alignItems: 'center', fontSize: dp(phoneTextFloor(18, phone)), cursor: 'pointer' }}>{tt('showMore')}</div>
         ) : null}
-        {isTv ? <div style={{ fontSize: dp(phoneTextFloor(16, phone)), color: TV.faint }}>{tt('helpHub')}</div> : null}
       </section>
     </div>
   )

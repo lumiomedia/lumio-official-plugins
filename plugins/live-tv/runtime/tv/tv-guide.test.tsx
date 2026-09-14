@@ -288,16 +288,14 @@ describe('TvGuide i porträtt (telefon): orimligt långa kanalnamn klipps', () =
   })
 })
 
-// Jerrys återkoppling 2026-09-14, ändring 1: fjärrhjälpen ("OK watch · hold
-// OK menu · ◂▸ category") beskriver fjärrkontrollen och ska bara synas i
-// TV-läge, ingen ersättningstext utanför.
-describe('TvGuide fjärrhjälp (Jerrys återkoppling 2026-09-14)', () => {
-  it('visas i TV-läge', async () => {
+// Jerrys uppföljning: fjärrhjälpen ("OK watch · hold OK menu · ◂▸ category")
+// ska bort HELT — även i TV-läge, ingen ersättningstext någonstans.
+describe('TvGuide fjärrhjälp (borttagen, Jerrys uppföljning)', () => {
+  it('renderas aldrig, varken i TV-läge eller utanför', async () => {
     __setTvModeForTests(true)
     await mount()
-    expect(screen.getByText('OK watch · hold OK menu · ◂▸ category')).toBeInTheDocument()
-  })
-  it('döljs utanför TV-läge, utan ersättningstext', async () => {
+    expect(screen.queryByText('OK watch · hold OK menu · ◂▸ category')).not.toBeInTheDocument()
+    cleanup()
     __setTvModeForTests(false)
     await mount()
     expect(screen.queryByText('OK watch · hold OK menu · ◂▸ category')).not.toBeInTheDocument()

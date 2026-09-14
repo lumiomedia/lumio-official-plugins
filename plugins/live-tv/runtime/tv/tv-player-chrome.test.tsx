@@ -188,16 +188,14 @@ describe('TvPlayerChrome', () => {
   })
 })
 
-// Jerrys återkoppling 2026-09-14, ändring 1: fjärrhjälpen ("▾ guide · hold OK
-// = menu") beskriver fjärrkontrollen och ska bara synas i TV-läge, ingen
-// ersättningstext utanför.
-describe('TvPlayerChrome fjärrhjälp (Jerrys återkoppling 2026-09-14)', () => {
-  it('visas i TV-läge', () => {
+// Jerrys uppföljning: fjärrhjälpen ("▾ guide · hold OK = menu") ska bort
+// HELT — även i TV-läge, ingen ersättningstext någonstans.
+describe('TvPlayerChrome fjärrhjälp (borttagen, Jerrys uppföljning)', () => {
+  it('renderas aldrig, varken i TV-läge eller utanför', () => {
     __setTvModeForTests(true)
     render(<TvPlayerChrome channel={channels[1]} tv={tv()} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
-    expect(screen.getByText('▾ guide · hold OK = menu')).toBeInTheDocument()
-  })
-  it('döljs utanför TV-läge, utan ersättningstext', () => {
+    expect(screen.queryByText('▾ guide · hold OK = menu')).not.toBeInTheDocument()
+    cleanup()
     __setTvModeForTests(false)
     render(<TvPlayerChrome channel={channels[1]} tv={tv()} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
     expect(screen.queryByText('▾ guide · hold OK = menu')).not.toBeInTheDocument()

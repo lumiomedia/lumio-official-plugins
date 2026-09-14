@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
-import { useTvMode } from '@/lib/plugin-sdk'
 import { channelKey, computeGroups, type LiveTvList, type M3uChannel } from '../live-tv-data'
 import { isPlayableChannel, qualityFromName } from '../live-tv-model'
 import { useListChannels } from '../view-helpers'
@@ -31,7 +30,6 @@ const ROW_STEP = 40
 export function TvGuidePlaylists({ model, nav, settings, mode, onModeChange }: TvViewProps & { mode: GuideMode; onModeChange: (mode: GuideMode) => void }) {
   const { tt, locale } = useTvText()
   const phone = usePhoneSurface()
-  const isTv = useTvMode()
   const clock = useTvClockNode(locale, phone)
   const [sel, setSel] = useState<Selection>({ listId: model.lists[0]?.id ?? null, group: null })
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
@@ -174,9 +172,6 @@ export function TvGuidePlaylists({ model, nav, settings, mode, onModeChange }: T
           ...list.groups.map((g) => colItem(`${list.id}:${g.name}`, sel.listId === list.id && sel.group === g.name, g.name, g.count, true, () => { setSel({ listId: list.id, group: g.name }); setSelectedKey(null) }, `pl-group-${list.id}-${g.name}`)),
         ])}
         {colItem('__favs', sel.listId === FAVS_GROUP, tt('favourites'), model.favouriteChannels.length, false, () => { setSel({ listId: FAVS_GROUP, group: null }); setSelectedKey(null) }, 'pl-list-favs', noRows && tree.length === 0 ? { 'data-init': '' } : undefined)}
-        {/* Fjärrhjälpen beskriver fjärrkontrollen — bort utanför TV-läget
-            (Jerrys återkoppling 2026-09-14), ingen ersättningstext. */}
-        {isTv ? <div style={{ marginTop: 'auto', padding: `${dp(20)}px 0`, fontSize: dp(phoneTextFloor(15, phone)), color: TV.faint }}>{tt('helpPlaylists')}</div> : null}
       </div>
 
       {/* Mitten: kanaler */}

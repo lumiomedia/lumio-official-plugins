@@ -275,25 +275,22 @@ describe('TvGuideGrid — kanalkolumnens stationer', () => {
   })
 })
 
-// Jerrys återkoppling 2026-09-14, ändring 1: fjärrhjälpen ("OK = watch or
-// channel details · hold OK = reminder, lock · ◂▸ time · ▴▾ channel")
-// beskriver fjärrkontrollen och ska bara synas i TV-läge, ingen
-// ersättningstext utanför. Detaljremsan visar den bara när inget är valt —
-// den skarpa monteringen fokuserar (och väljer) alltid första blocket, så
-// "inget valt" nås genom att filtrera till Nyheter (kanal C: ingen tablå,
-// alltså inga block att fokusera/välja).
-describe('TvGuideGrid fjärrhjälp (Jerrys återkoppling 2026-09-14)', () => {
+// Jerrys uppföljning: fjärrhjälpen ("OK = watch or channel details · hold OK
+// = reminder, lock · ◂▸ time · ▴▾ channel") ska bort HELT — även i TV-läge,
+// ingen ersättningstext någonstans. Detaljremsan visade den bara när inget
+// är valt — "inget valt" nås genom att filtrera till Nyheter (kanal C: ingen
+// tablå, alltså inga block att fokusera/välja).
+describe('TvGuideGrid fjärrhjälp (borttagen, Jerrys uppföljning)', () => {
   const selectEmptyGroup = async () => {
     await openGrid()
     fireEvent.click(screen.getByTestId('grid-chip-News'))
     await flushLiveTvIndex()
   }
-  it('visas i TV-läge när inget block är valt', async () => {
+  it('renderas aldrig när inget block är valt, varken i TV-läge eller utanför', async () => {
     __setTvModeForTests(true)
     await selectEmptyGroup()
-    expect(screen.getByText('OK = watch or channel details · hold OK = reminder, lock · ◂▸ time · ▴▾ channel')).toBeInTheDocument()
-  })
-  it('döljs utanför TV-läge, utan ersättningstext', async () => {
+    expect(screen.queryByText('OK = watch or channel details · hold OK = reminder, lock · ◂▸ time · ▴▾ channel')).not.toBeInTheDocument()
+    cleanup()
     __setTvModeForTests(false)
     await selectEmptyGroup()
     expect(screen.queryByText('OK = watch or channel details · hold OK = reminder, lock · ◂▸ time · ▴▾ channel')).not.toBeInTheDocument()
