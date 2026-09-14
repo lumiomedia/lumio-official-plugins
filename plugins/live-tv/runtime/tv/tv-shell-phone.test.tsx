@@ -33,9 +33,9 @@ beforeEach(() => {
 })
 
 /** `phone: true` märker lådan precis som värdens `applyTvSceneBox` gör på en telefon. */
-function mount(options?: { phone?: boolean }) {
+function mount(options?: { phone?: boolean; params?: Record<string, string> }) {
   const onNavigate = vi.fn()
-  const page = <LiveTvTvShell pageId="live-tv-browse" params={{}} onNavigate={onNavigate} onOpenDetails={() => {}} />
+  const page = <LiveTvTvShell pageId="live-tv-browse" params={options?.params ?? {}} onNavigate={onNavigate} onOpenDetails={() => {}} />
   const box = document.createElement('div')
   box.setAttribute(TV_SCENE_BOX_ATTR, '1')
   if (options?.phone) {
@@ -86,5 +86,34 @@ describe('Live TV-skalet på telefon: ikonraden som en låda', () => {
     mount()
     expect(screen.getByTestId('tv-rail')).toBeInTheDocument()
     expect(screen.queryByTestId('tv-rail-open')).toBeNull()
+  })
+
+  // Fixrunda 1, fynd 1: Bakåt-posten pushade lådans EGET lager när den
+  // öppnades, och `back()` läser `layersRef`-toppen FÖRST — den hittade bara
+  // sig själv och stannade där. Ett klick på `rail-back` stängde alltså
+  // lådan men bytte aldrig vy. Testet monterar på en vy som INTE är hubben
+  // (`guide`), där `back()` ska ta ett steg mot `hub` — och bevisar att
+  // navigeringen faktiskt sker, inte bara att lådan försvinner.
+  it('Bakåt-posten i lådan navigerar (inte bara stänger lådan)', async () => {
+    const { onNavigate } = mount({ phone: true, params: { view: 'guide' } })
+    fireEvent.click(screen.getByTestId('tv-rail-open'))
+    const drawer = await screen.findByTestId('tv-rail')
+    fireEvent.click(within(drawer).getByTestId('rail-back'))
+    await waitFor(() => expect(screen.queryByTestId('tv-rail')).toBeNull())
+    expect(onNavigate).toHaveBeenCalled()
+    const [{ params }] = onNavigate.mock.calls[onNavigate.mock.calls.length - 1]
+    expect(params.view).toBe('hub')
+  })
+
+  // Fixrunda 1, fynd 2: öppningsknappen låg kvar i DOM:en (bara visuellt
+  // skymd av lådan, zIndex 40 mot 60) utan att tas bort ur tabbordningen —
+  // Shift+Tab från lådans första post kunde landa på en knapp ingen ser.
+  it('öppningsknappen går inte att nå med tangentbordet medan lådan är öppen', async () => {
+    mount({ phone: true })
+    const openButton = screen.getByTestId('tv-rail-open')
+    fireEvent.click(openButton)
+    await screen.findByTestId('tv-rail')
+    expect(openButton).toHaveAttribute('tabindex', '-1')
+    expect(openButton).toHaveAttribute('aria-hidden', 'true')
   })
 })

@@ -29,6 +29,15 @@ export function dp(n: number): number {
   return n
 }
 
+/**
+ * Telefonens träffytegolv (spec §3, fas 2): minst 88 designpixlar högt på
+ * allt som går att trycka på — vid skalan 0,5 är det 44 riktiga pixlar,
+ * Apples och Googles golv. Delad här (inte lokal i `tv-shell.tsx`) så att
+ * öppningsknappen, lådans poster och M-P4:s golvtest alla mäter mot samma
+ * tal i stället för en kopia som kan halka efter.
+ */
+export const PHONE_HIT_MIN_DP = 88
+
 export const TV = {
   bg: '#000',
   text: '#f3f4f8',

@@ -11,7 +11,7 @@ import { useNarrowSurface } from '../hooks/useNarrowSurface'
 import { usePhoneSurface } from '../hooks/usePhoneSurface'
 import { useSwipeBack } from '../hooks/useSwipeBack'
 import { useTvText } from './tv-strings'
-import { TV, TvFocusStyle, dp, station, Icons } from './tv-ui'
+import { PHONE_HIT_MIN_DP, TV, TvFocusStyle, dp, station, Icons } from './tv-ui'
 import { TvHoldAffordance } from './tv-hold-affordance'
 import { useTvSettings, type TvSettings } from './tv-settings-store'
 import { addToFirstFree, getMultiviewState, setMultiviewState } from './tv-multiview-store'
@@ -144,12 +144,8 @@ const RAIL_W_NARROW = 64
 const RAIL_ITEM_WIDE = 60
 /** Postens sida på en smal yta — fortfarande över 44 px träffyta. */
 const RAIL_ITEM_NARROW = 48
-/**
- * Telefonens träffytegolv (spec §3): minst 88 designpixlar högt på allt som
- * går att trycka på — vid skalan 0,5 är det 44 riktiga pixlar. Gäller
- * öppningsknappen och varje post i lådan.
- */
-const PHONE_HIT_MIN = 88
+// Telefonens träffytegolv (spec §3, `PHONE_HIT_MIN_DP`) bor i `tv-ui.tsx` —
+// delad med M-P4:s golvtest i stället för en egen lokal kopia här.
 
 export { RAIL_ITEM_NARROW, RAIL_ITEM_WIDE, RAIL_W_DESKTOP, RAIL_W_NARROW, RAIL_W_TV }
 
@@ -216,14 +212,22 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
    *
    * `closeRail` gör TVÅ saker, precis som channel-väljarens `close`: stänger
    * lådan OCH lämnar tillbaka fokus till det som hade det innan lådan öppnades
-   * (öppningsknappen, om inget annat tog fokus däremellan). Den är den ENDA
-   * vägen ut — Bakåt-kedjan (`back()` nedan, som redan kollar
-   * `layersRef`-toppen), utanförtryck och en vald post ropar alla på samma
-   * funktion, så ingen väg kan komma ur synk med en annan.
+   * (öppningsknappen, om inget annat tog fokus däremellan). Utanförtryck och
+   * en vald POST (utom Bakåt-posten, se `backFromRail` vid `pushLayer` nedan)
+   * ropar båda på den — men den är INTE en generell "stäng lådan"-mekanism
+   * för Bakåt-kedjan: `back()` läser `layersRef`-toppen FÖRST, och om lådans
+   * eget lager fortfarande ligger där hittar `back()` bara sig självt och
+   * navigerar aldrig längre (fixrunda 1, fynd 1 — täckt av
+   * `layerOffRef` och `backFromRail`).
    */
   const [railOpen, setRailOpen] = useState(false)
   const railRef = useRef<HTMLDivElement | null>(null)
   const railOpenerRef = useRef<HTMLElement | null>(null)
+  // Unregistrerarfunktionen `pushLayer` returnerade, sparad så att
+  // `backFromRail` (vid `back` nedan) kan plocka bort lådans EGET lager
+  // SYNKRONT innan den ropar `back()` — annars läser `back()` fortfarande
+  // sitt eget lager som toppen (fynd 1).
+  const layerOffRef = useRef<(() => void) | null>(null)
   const closeRail = useCallback(() => {
     setRailOpen(false)
     window.setTimeout(() => railOpenerRef.current?.focus({ preventScroll: true }), 0)
@@ -381,8 +385,12 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     if (!railOpen) return
     railOpenerRef.current = document.activeElement as HTMLElement | null
     const off = pushLayer(closeRail)
+    layerOffRef.current = off
     window.setTimeout(() => railRef.current?.querySelector<HTMLElement>('[data-init]')?.focus({ preventScroll: true }), 0)
-    return off
+    return () => {
+      off()
+      layerOffRef.current = null
+    }
   }, [railOpen, closeRail, pushLayer])
 
   const back = useCallback(() => {
@@ -400,6 +408,30 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     if (view !== 'hub') { go('hub'); return }
     requestBrowseBack()
   }, [menu, pending, active, view, go])
+
+  /**
+   * BAKÅT-POSTEN I LÅDAN (telefon) — INTE bara "kör `back()` och stäng lådan".
+   *
+   * Lådan pushade sig SJÄLV som lager när den öppnades (effekten ovan), så
+   * `back()` hittar sitt eget lager som `layersRef`-toppen och stannar där —
+   * den når aldrig `view==='channel' → guide`, `view!=='hub' → hub` eller
+   * `requestBrowseBack()`. Ett efterföljande `closeRail()` gör ingen skillnad:
+   * lådan var redan stängd, och `back()` hann aldrig titta vidare (fixrunda 1,
+   * fynd 1 — reproducerat med `view='guide'`, klick på `rail-back`, vyn stod
+   * kvar på guide).
+   *
+   * Fixen: plocka bort lådans EGNA lager SYNKRONT (samma `off` som effekten
+   * annars städar vid unmount/stängning) INNAN `back()` läser `layersRef`.
+   * `setRailOpen(false)` döljer lådan utan att gå via `closeRail` — den
+   * skulle annars schemalägga en refokusering på öppningsknappen som
+   * kapplöper med den nya vyns egna fokus-effekt.
+   */
+  const backFromRail = useCallback(() => {
+    layerOffRef.current?.()
+    layerOffRef.current = null
+    setRailOpen(false)
+    back()
+  }, [back])
 
   // Back i capture-fas. Glasmenyn sköter sin egen Back, därför avstår skalet
   // medan den är öppen.
@@ -566,14 +598,21 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
    * (`closeRail`) — Bakåt-posten behöver inget extra anrop: `back()` hittar
    * redan lådan som lagrets topp och stänger den genom samma `closeRail`.
    */
+  /**
+   * `item.run` är HELA handlingen (inklusive att stänga lådan) — den läggs
+   * INTE på ovanpå här. Bakåt-posten (`backFromRail`) måste plocka bort
+   * lådans lager FÖRE den ropar `back()` (fynd 1), medan de andra posterna
+   * bara navigerar och sedan stänger lådan rakt av — två olika ordningar som
+   * inte kan uttryckas av ETT gemensamt "kör, stäng sedan" här.
+   */
   const drawerItem = (item: RailItem, extraStyle?: CSSProperties, isFirst?: boolean) => {
     const activeItem = item.key === view || (item.key === 'guide' && view === 'channel')
-    const run = item.run ?? (() => go(item.key as TvView))
+    const run = item.run ?? (() => { go(item.key as TvView); closeRail() })
     return (
       <div
         key={item.key}
-        {...station(() => { run(); closeRail() }, undefined, { 'data-testid': `rail-${item.key}`, 'aria-label': item.label, title: item.label, ...(isFirst ? { 'data-init': '' } : {}) })}
-        style={{ height: dp(PHONE_HIT_MIN), borderRadius: dp(14), display: 'flex', alignItems: 'center', gap: dp(16), padding: `0 ${dp(18)}px`, cursor: 'pointer', background: activeItem ? TV.s14 : 'transparent', color: activeItem ? TV.text : 'rgba(243,244,248,0.75)', ...extraStyle }}
+        {...station(run, undefined, { 'data-testid': `rail-${item.key}`, 'aria-label': item.label, title: item.label, ...(isFirst ? { 'data-init': '' } : {}) })}
+        style={{ height: dp(PHONE_HIT_MIN_DP), minHeight: dp(PHONE_HIT_MIN_DP), borderRadius: dp(14), display: 'flex', alignItems: 'center', gap: dp(16), padding: `0 ${dp(18)}px`, cursor: 'pointer', background: activeItem ? TV.s14 : 'transparent', color: activeItem ? TV.text : 'rgba(243,244,248,0.75)', ...extraStyle }}
       >
         <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: dp(32), flexShrink: 0 }}>{item.icon}</span>
         <span style={{ fontSize: dp(26), fontWeight: activeItem ? 600 : 400 }}>{item.label}</span>
@@ -624,11 +663,17 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
         /* Telefon (spec §2): ingen fast rad — en enda öppningsknapp i övre
            vänstra hörnet, en station som alla andra så en telefon kopplad
            till en skärm nås med piltangenter/fjärr precis som varje annan
-           post. Lådan den öppnar ligger som ett separat lager nedan. */
+           post. Lådan den öppnar ligger som ett separat lager nedan.
+           `tabIndex`/`aria-hidden` växlar med `railOpen`: knappen ligger KVAR
+           i DOM:en under lådan (zIndex 40 mot lådans 60), bara visuellt
+           dold — utan detta kunde Shift+Tab från lådans första post landa på
+           en knapp som var helt skymd (fixrunda 1, fynd 2). */
         <div
           data-testid="tv-rail-open"
           {...station(() => setRailOpen(true), undefined, { 'aria-label': tt('railMenu'), title: tt('railMenu') })}
-          style={{ position: 'absolute', top: dp(20), left: dp(20), zIndex: 40, width: dp(PHONE_HIT_MIN), height: dp(PHONE_HIT_MIN), borderRadius: dp(18), border: `1px solid ${TV.line}`, background: TV.glass, color: TV.text, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+          tabIndex={railOpen ? -1 : 0}
+          aria-hidden={railOpen ? true : undefined}
+          style={{ position: 'absolute', top: dp(20), left: dp(20), zIndex: 40, width: dp(PHONE_HIT_MIN_DP), height: dp(PHONE_HIT_MIN_DP), minHeight: dp(PHONE_HIT_MIN_DP), borderRadius: dp(18), border: `1px solid ${TV.line}`, background: TV.glass, color: TV.text, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
         >
           <Icons.Menu />
         </div>
@@ -666,7 +711,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
           aria-label={tt('liveTv')}
           style={{ position: 'fixed', top: 0, left: 0, bottom: 0, width: `min(${dp(560)}px, 82%)`, zIndex: 60, background: TV.panel, borderRight: `1px solid ${TV.line}`, padding: `${dp(32)}px ${dp(20)}px`, display: 'flex', flexDirection: 'column', gap: dp(6) }}
         >
-          {drawerItem({ key: 'back', label: tt('railBack'), icon: <Icons.ChevronLeft />, run: back }, undefined, true)}
+          {drawerItem({ key: 'back', label: tt('railBack'), icon: <Icons.ChevronLeft />, run: backFromRail }, undefined, true)}
           {rail.map((item) => drawerItem(item))}
           {drawerItem({ key: 'settings', label: tt('railSettings'), icon: <Icons.Gear /> }, { marginTop: 'auto' })}
         </div>
