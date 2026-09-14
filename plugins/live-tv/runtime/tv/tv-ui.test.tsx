@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, createEvent, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import * as sdk from '@/lib/plugin-sdk'
-import { TV_SCENE_BOX_ATTR, __setHostClockForTests } from '@/lib/plugin-sdk'
+import { TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR, __setHostClockForTests } from '@/lib/plugin-sdk'
 import { ChannelArt, Chip, Progress, RoundBtn, Tag, TvFocusStyle, dp, station, useTvClockNode } from './tv-ui'
 import { __resetLogoQueueForTests } from '../live-tv-logo-image'
 
@@ -410,5 +410,38 @@ describe('useTvClockNode i en scenlåda (Jerrys återkoppling 2026-09-14)', () =
     expect(screen.queryByTestId('host-clock')).not.toBeInTheDocument()
     expect(screen.getByText(/^\d{2}:\d{2} \| /)).toBeInTheDocument()
     spy.mockRestore()
+  })
+
+  // Jerrys uppföljning samma dag: inversen ovan reserverar ingen layoutplats
+  // (bara MÅLNINGEN växer med 1/skala) — klockan sitter som sista flex-item
+  // med `marginLeft: 'auto'` bland andra chips, och vid en smal låda (låg
+  // skala → invers uppåt 1,3–1,7×) målas den över grannchipsen. `useNarrowSurface`
+  // läser SAMMA lådas `data-tv-scene-narrow` (< 1024 css-px, precis det spannet
+  // där inversen blir stor) — så en smal låda ska hellre visa pluginets EGEN
+  // kompakta dp()-klocka än riskera överlappet, medan en bred låda fortsatt
+  // får hälsningen.
+  it('smal låda (< 1024 css-px): kompakta dp()-klockan i stället för inversskalad HostClock (överlappsrisk)', () => {
+    __setHostClockForTests(HostClockMarker)
+    const box = document.createElement('div')
+    box.setAttribute(TV_SCENE_BOX_ATTR, '1')
+    box.setAttribute(TV_SCENE_NARROW_ATTR, '1')
+    box.style.setProperty('--tv-scene-box-scale', '0.6')
+    document.body.appendChild(box)
+    render(<ClockProbe />, { container: box })
+    expect(screen.queryByTestId('host-clock')).not.toBeInTheDocument()
+    expect(screen.getByText(/^\d{2}:\d{2} \| /)).toBeInTheDocument()
+  })
+
+  it('bred låda (data-tv-scene-narrow ej satt): behåller inversskalad HostClock (hälsningen)', () => {
+    __setHostClockForTests(HostClockMarker)
+    const box = document.createElement('div')
+    box.setAttribute(TV_SCENE_BOX_ATTR, '1')
+    box.style.setProperty('--tv-scene-box-scale', '0.6')
+    document.body.appendChild(box)
+    render(<ClockProbe />, { container: box })
+    const clock = screen.getByTestId('host-clock')
+    expect(clock).toBeInTheDocument()
+    const wrapper = clock.parentElement as HTMLElement
+    expect(wrapper.style.transform).toBe(`scale(${1 / 0.6})`)
   })
 })

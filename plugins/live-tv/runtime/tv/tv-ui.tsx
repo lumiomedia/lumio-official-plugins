@@ -7,6 +7,7 @@ import { channelKey, getLiveTvLogoSrc, type M3uChannel } from '../live-tv-data'
 import { LiveTvLogoImage } from '../live-tv-logo-image'
 import { initialsOf } from '../live-tv-ui'
 import { useInSceneBox } from '../hooks/useInSceneBox'
+import { useNarrowSurface } from '../hooks/useNarrowSurface'
 import { useSceneBoxScale } from '../hooks/useSceneBoxScale'
 
 /**
@@ -441,12 +442,26 @@ export const Icons = {
  * saknar `tvSceneBoxScale` i en äldre app — `useSceneBoxScale` svarar då
  * `null`) faller koden tillbaka på 2541690:s lösning: pluginets egen
  * dp()-klocka. Ingen kompensation utan en skala vi litar på.
+ *
+ * ÖVERLAPPSFÄLLAN (Jerrys uppföljning samma dag): en CSS-transform reserverar
+ * ingen layoutplats — bara MÅLNINGEN växer med `1 / skala`. Klockan sitter
+ * som sista flex-item med `marginLeft: 'auto'` i en rad med andra chips, så
+ * vid en SMAL låda (låg skala → invers uppåt 1,3–1,7×) målas den större än
+ * sin egen flex-ruta och kan lägga sig över grannchipsen — särskilt runt
+ * 1280-designpixelbrytpunkten (se `Segment` ovan) som redan är trång.
+ * `useNarrowSurface` läser SAMMA lådas `data-tv-scene-narrow` (< 1024
+ * css-px, precis det spannet där inversen blir stor nog för att krocka), så
+ * en smal låda väljer hellre pluginets EGEN kompakta dp()-klocka — mindre
+ * text, ingen risk för överlapp — och bara en tillräckligt BRED låda får
+ * den inversskalade hälsningen. Gränsen finns för att förhindra krocken, inte
+ * av estetiska skäl.
  */
 export function useTvClockNode(locale: string, phone = false): ReactNode {
   const HostClock = (sdk as unknown as { getTvClock?: () => ComponentType<{ variant?: 'tv' | 'desktop' }> | null }).getTvClock?.() ?? null
   const inSceneBox = useInSceneBox()
   const sceneBoxScale = useSceneBoxScale()
-  const canCompensate = inSceneBox && sceneBoxScale !== null
+  const narrowSurface = useNarrowSurface()
+  const canCompensate = inSceneBox && sceneBoxScale !== null && !narrowSurface
   const useHostClock = HostClock !== null && (!inSceneBox || canCompensate)
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
