@@ -182,9 +182,22 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
       <div style={{ height: previewOn ? dp(340) : dp(230), padding: `${dp(34)}px ${dp(48)}px 0`, display: 'flex', gap: dp(32), flexShrink: 0 }}>
         <TvPreview channel={previewChannel} enabled={previewOn} live={Boolean(info.now)} width={dp(480)} height={dp(270)} label={previewOn ? tt('previewLabel') : tt('previewFrame')} onOk={() => selected && nav.play({ channel: selected })} />
         <div data-testid="guide-headline" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: dp(10) }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: dp(12), fontSize: dp(18), color: 'rgba(243,244,248,0.65)' }}>
-            {selected ? <><span style={{ color: TV.accText, fontWeight: 600 }}>{model.channelNumber(selected) ?? ''}</span><span>{selected.name}</span>{selected.group ? <Tag variant="neutral">{selected.group}</Tag> : null}</> : null}
-            <span style={{ marginLeft: 'auto' }}>{clock}</span>
+          {/*
+            RUBRIKRADEN TÅL 1280 DESIGNPIXLAR (spec 5).
+
+            Klockan låg i en `<span>`. Värdens klocka (`getTvClock()`) är inget
+            textfragment utan ett BLOCK om två rader — hälsning ("Good
+            morning") över `07:13 | 14 SEP | MON` — och ett block i en
+            inline-låda ritas utanför radens flöde: i skrivbordets 1280-scen
+            hamnade klockan ovanpå kanalnamnet. Den bor därför i en egen
+            flexlåda som inte krymper, och kanalnamnet är det som trunkerar när
+            raden tryter. `flex-wrap` är bältet under 1280 (sceruta, telefon):
+            klockan går ner på egen rad i stället för att pressa namnet till
+            noll. Vid 1920 rörs ingenting — raden hade redan plats.
+          */}
+          <div data-testid="guide-meta-row" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', columnGap: dp(12), rowGap: dp(4), fontSize: dp(18), color: 'rgba(243,244,248,0.65)' }}>
+            {selected ? <><span style={{ color: TV.accText, fontWeight: 600, flexShrink: 0 }}>{model.channelNumber(selected) ?? ''}</span><span data-testid="guide-channel-name" style={{ minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selected.name}</span>{selected.group ? <Tag variant="neutral" style={{ flexShrink: 0 }}>{selected.group}</Tag> : null}</> : null}
+            <div data-testid="guide-clock" style={{ marginLeft: 'auto', flexShrink: 0, textAlign: 'right' }}>{clock}</div>
           </div>
           <div style={{ fontSize: headlineSize, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{info.now ? info.now.title : model.epgLoading ? tt('loadingGuide') : tt('noProgramme')}</div>
           {info.now ? (

@@ -137,9 +137,34 @@ export function TvGuidePlaylists({ model, nav, settings, mode, onModeChange }: T
 
       {/* Mitten: kanaler */}
       <div data-scroll="" style={{ flex: 1, minWidth: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(30)}px 0 0 ${dp(24)}px`, overflowY: 'auto' }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(12), marginBottom: dp(16) }}>
-          <span style={{ fontSize: dp(26), fontWeight: 600 }}>{title}</span>
-          <span style={{ fontSize: dp(16), color: 'rgba(243,244,248,0.5)' }}>{tt('channelsCount', { count: rows.length })} · {clock}</span>
+        {/*
+          RUBRIKRADEN TÅL 1280 DESIGNPIXLAR (spec 5).
+
+          Raden var tre lådor lagda för 1920: titeln utan gräns, antalet OCH
+          klockan i samma `<span>`, och segmentväxeln till höger. I
+          skrivbordets TV-läge byter scenen till breddgrenen (1280) och då
+          krockade allt på en gång (uppmätt av Jerry i DMG v7): växeln bröt
+          "Now / Next" över tre rader, och värdens klocka — ett BLOCK om två
+          rader, hälsning över `07:13 | 14 SEP | MON`, inte ett textfragment —
+          ritades utanför radens flöde rakt ovanpå titeln, eftersom ett block i
+          en inline-låda inte hör till raden.
+
+          Nu: titeln är den enda som ger vika (trunkerar), antalet och klockan
+          är egna lådor som inte krymper, klockan är ett BLOCK i sin egen
+          flexlåda, och växeln faller ner som en hel enhet när raden inte
+          räcker (`flex-wrap`). Ordningen — titel, antal ·, klocka, växel till
+          höger — är handoffens, så 1920 ser likadant ut som förut.
+
+          `center` och inte `baseline`: en trunkerande titel är en
+          rullningsbehållare (`overflow: hidden`), och en sådan får sin
+          baslinje SYNTETISERAD ur underkanten i stället för ur texten. Med
+          `baseline` hade titeln därför sjunkit några pixlar på 1920 — just den
+          sortens tysta drift som fixen ska bli av med.
+        */}
+        <div data-testid="pl-header" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', columnGap: dp(12), rowGap: dp(8), marginBottom: dp(16) }}>
+          <span data-testid="pl-title" style={{ fontSize: dp(26), fontWeight: 600, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</span>
+          <span data-testid="pl-meta" style={{ fontSize: dp(16), color: 'rgba(243,244,248,0.5)', whiteSpace: 'nowrap', flexShrink: 0 }}>{tt('channelsCount', { count: rows.length })} ·</span>
+          <div data-testid="pl-clock" style={{ flexShrink: 0 }}>{clock}</div>
           <Segment options={modeOptions} value={mode} onChange={onModeChange} style={{ marginLeft: 'auto', marginRight: dp(24), alignSelf: 'center' }} />
         </div>
         {shownRows.map((channel, index) => {

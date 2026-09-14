@@ -95,8 +95,16 @@ export function TvHub({ model, nav }: TvViewProps) {
       {model.appTooOld ? (
         <div data-testid="live-tv-app-too-old" style={{ padding: `${dp(12)}px ${dp(18)}px`, borderRadius: dp(12), background: 'rgba(244,132,95,0.18)', color: '#f4845f', fontSize: dp(19) }}>{tt('appTooOld')}</div>
       ) : null}
-      {/* Topprad */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: dp(20) }}>
+      {/*
+        Topprad. `flex-wrap` av samma skäl som guidens rubrikrader (spec 5):
+        i breddgrenen (1280 designpixlar, skrivbordets TV-läge i ett fönster
+        smalare än 16:9) ryms inte titel + spellistpill + sökchip (min 420) +
+        kanalguideknapp + klocka på en rad. Utan brytning pressades sökchipet
+        in i klockan; nu går det som inte får plats ner på nästa rad, och
+        klockan — värdens tvåradiga `TvClock` — behåller sin bredd i stället
+        för att krympa in i grannen. Vid 1920 ryms allt och inget ändras.
+      */}
+      <div data-testid="hub-topbar" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', columnGap: dp(20), rowGap: dp(12) }}>
         <div style={{ fontSize: dp(34), fontWeight: 600 }}>{tt('liveTv')}</div>
         <div style={{ position: 'relative' }}>
           <div ref={pillRef} data-testid="playlist-pill" {...station(() => setPlaylistOpen(true), undefined, spotlight.length === 0 && shown.length === 0 ? { 'data-init': '' } : undefined)} style={{ height: dp(52), padding: `0 ${dp(22)}px`, borderRadius: 999, background: TV.s12, display: 'inline-flex', alignItems: 'center', gap: dp(10), fontSize: dp(20), fontWeight: 600, cursor: 'pointer' }}>
@@ -123,7 +131,7 @@ export function TvHub({ model, nav }: TvViewProps) {
         <div {...station(() => nav.go('guide'))} style={{ height: dp(52), padding: `0 ${dp(22)}px`, borderRadius: 999, border: `1px solid ${TV.lineStrong}`, background: TV.s06, display: 'inline-flex', alignItems: 'center', gap: dp(10), fontSize: dp(20), cursor: 'pointer' }}>
           <Icons.Calendar /> {tt('railGuide')}
         </div>
-        <div style={{ marginLeft: 'auto', textAlign: 'right' }}>{clock}</div>
+        <div data-testid="hub-clock" style={{ marginLeft: 'auto', flexShrink: 0, textAlign: 'right' }}>{clock}</div>
       </div>
 
       {/* Spotlight */}
