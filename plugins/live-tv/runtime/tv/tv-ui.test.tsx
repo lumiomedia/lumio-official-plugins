@@ -35,6 +35,14 @@ describe('tv-ui', () => {
     const { container } = render(<Progress value={1.5} />)
     expect((container.querySelector('[data-fill]') as HTMLElement).style.width).toBe('100%')
   })
+  it('ChannelArt faller tillbaka på initialer när logotypen inte kan laddas', () => {
+    // Leverantörens bildserver svarade 503 → proxyn ger 502 → <img> onerror.
+    render(<ChannelArt channel={{ name: 'Sky Sports', logo: 'http://logos.example/sky.png' }} />)
+    const img = document.querySelector('img.lumio-tv-logo-img') as HTMLImageElement | null
+    if (img) fireEvent.error(img)
+    expect(screen.getByText('SS')).toBeTruthy()
+  })
+
   it('ChannelArt visar initialer utan logotyp och bildruta', () => {
     render(<ChannelArt channel={{ name: 'Sky Sports', logo: null }} />)
     expect(screen.getByText('SS')).toBeInTheDocument()

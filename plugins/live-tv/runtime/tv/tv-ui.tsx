@@ -226,17 +226,20 @@ export function ChannelArt({ channel, frameVersion, height, aspect, radius, chil
   style?: CSSProperties
 }) {
   const [frameFailed, setFrameFailed] = useState(false)
+  // Leverantörens bildserver kan ligga nere (503) eller sakna filen; då ska
+  // kortet falla tillbaka på initialer, inte stå tomt (Jerry 2026-09-14).
+  const [logoFailed, setLogoFailed] = useState(false)
   // Bildrutan är cachad under channelKey (namn + url). Utan url kan vi inte
   // forma en tillförlitlig nyckel, så vi hoppar rakt till logotyp/initialer
   // i stället för att chansa med en ostabil nyckel.
   const frameSrc = !frameFailed && 'url' in channel ? sdk.playerFrameUrl(channelKey(channel), frameVersion ?? null) : null
-  const logo = getLiveTvLogoSrc(channel.logo)
+  const logo = logoFailed ? null : getLiveTvLogoSrc(channel.logo)
   return (
     <div style={{ position: 'relative', height, aspectRatio: aspect, background: 'rgba(252,252,255,0.06)', borderRadius: radius, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', ...style }}>
       {frameSrc ? (
         <img src={frameSrc} alt="" onError={() => setFrameFailed(true)} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
       ) : logo ? (
-        <LiveTvLogoImage src={logo} alt="" className="lumio-tv-logo-img" />
+        <LiveTvLogoImage src={logo} alt="" className="lumio-tv-logo-img" onError={() => setLogoFailed(true)} />
       ) : (
         <span style={{ fontSize: dp(22), fontWeight: 600, color: TV.dim, letterSpacing: '0.04em' }}>{initialsOf(channel.name)}</span>
       )}
@@ -262,14 +265,30 @@ export function Chip({ active, children, style, ...rest }: { active: boolean; ch
   )
 }
 
+/**
+ * Segmentväxeln är EN ENHET i sin rad (spec 5, 1280-scenen).
+ *
+ * Scenen är inte alltid 1920 designpixlar bred: `tvScene()` byter till
+ * breddgrenen (1280) så fort fönstret är smalare än 16:9, och skrivbordets
+ * TV-läge i ett vanligt fönster landar just där. Växeln ritades för 1920 och
+ * fick då krympa: "Now / Next" bröts över tre rader mitt i rubrikraden
+ * (uppmätt av Jerry i DMG v7).
+ *
+ * `white-space: nowrap` på både lådan och varje etikett gör att texten aldrig
+ * bryts, och `flex-shrink: 0` att lådan hellre flyttas ner som en hel enhet
+ * (raden radbryter) än pressas ihop. `max-width: 100%` är bältet för en
+ * ännu smalare yta — skrivbordets sceruta och telefonen — så att växeln inte
+ * kan svämma ut ur sin rad. Vid 1920 ändras ingenting: raden hade redan plats.
+ */
 export function Segment<K extends string>({ options, value, onChange, style }: { options: { key: K; label: string }[]; value: K; onChange: (key: K) => void; style?: CSSProperties }) {
   return (
-    <div style={{ display: 'inline-flex', padding: dp(4), borderRadius: 999, background: TV.s08, gap: dp(2), ...style }}>
+    <div data-testid="tv-segment" style={{ display: 'inline-flex', padding: dp(4), borderRadius: 999, background: TV.s08, gap: dp(2), flexShrink: 0, whiteSpace: 'nowrap', maxWidth: '100%', ...style }}>
       {options.map((option) => (
         <div
           key={option.key}
+          data-testid="tv-segment-option"
           {...station(() => onChange(option.key))}
-          style={{ height: dp(38), padding: `0 ${dp(18)}px`, borderRadius: 999, display: 'inline-flex', alignItems: 'center', fontSize: dp(16), cursor: 'pointer', background: option.key === value ? TV.s16 : 'transparent', color: option.key === value ? TV.text : TV.muted }}
+          style={{ height: dp(38), padding: `0 ${dp(18)}px`, borderRadius: 999, display: 'inline-flex', alignItems: 'center', fontSize: dp(16), whiteSpace: 'nowrap', cursor: 'pointer', background: option.key === value ? TV.s16 : 'transparent', color: option.key === value ? TV.text : TV.muted }}
         >
           {option.label}
         </div>
