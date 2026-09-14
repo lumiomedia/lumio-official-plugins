@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
 import { __resetForTests, __setTvModeForTests, getPluginMemoryCache, writePluginJson } from '@/lib/plugin-sdk'
-import { LIVE_TV_PLUGIN_ID, type LiveTvList } from './live-tv-data'
+import { LIVE_TV_PLUGIN_ID, setLogoFallbackEnabled, type LiveTvList } from './live-tv-data'
 import type { IndexChannel } from './index-client'
 import type { NowNextLater } from './epg/types'
 
@@ -205,6 +205,43 @@ describe('loadChannelsShared: reservlogotypens switch per lista', () => {
     const channels = await loadChannelsShared('http://lista')
 
     expect(channels[0].logoFallback).toBe('http://x/a.png')
+  })
+
+  it('rensar minnescachen direkt när switchen ändras — utan att någon indexhändelse skickas', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [
+      { id: 'a', name: 'A', createdAt: '', urlTvg: null, epgUrls: [], source: 'http://lista', kind: 'm3u' },
+    ])
+    vi.mocked(loadAllChannels).mockResolvedValue([
+      { name: 'K', url: 'u', group: '', tvgId: null, key: 'K::u', number: 1, tvgIdResolved: null, logo: null, logoFallback: 'http://x/a.png' },
+    ])
+
+    const first = await loadChannelsShared('http://lista')
+    expect(first[0].logoFallback).toBe('http://x/a.png')
+
+    // Ingen import, ingen EPG-uppdatering, ingen omstart — bara switchen.
+    setLogoFallbackEnabled('a', false)
+
+    const second = await loadChannelsShared('http://lista')
+    expect(second[0].logoFallback ?? null).toBeNull()
+  })
+
+  it('en skrivning som INTE ändrar switchens värde tömmer inte minnescachen', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [
+      { id: 'a', name: 'A', createdAt: '', urlTvg: null, epgUrls: [], source: 'http://lista', kind: 'm3u' },
+    ])
+    vi.mocked(loadAllChannels).mockResolvedValue([
+      { name: 'K', url: 'u', group: '', tvgId: null, key: 'K::u', number: 1, tvgIdResolved: null, logo: null, logoFallback: 'http://x/a.png' },
+    ])
+
+    const first = await loadChannelsShared('http://lista')
+    vi.mocked(loadAllChannels).mockClear()
+
+    // Samma värde som redan gäller (på) — ska INTE räknas som en ändring.
+    setLogoFallbackEnabled('a', true)
+
+    const second = await loadChannelsShared('http://lista')
+    expect(loadAllChannels).not.toHaveBeenCalled()
+    expect(second).toBe(first)
   })
 })
 

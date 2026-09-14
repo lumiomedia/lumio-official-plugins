@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  clearPluginMemoryCache,
   clearPluginMemoryCacheByPrefix,
   getPluginMemoryCache,
   setPluginMemoryCache,
@@ -265,6 +266,52 @@ export function invalidateChannels(): void {
 }
 
 /**
+ * Switchens värde per källa, senast sedd. Bara diffen mot den här (inte
+ * "listorna ändrades") avgör om minnescachen ska kastas — `lists` skrivs om
+ * av mycket annat (import, kvitto, EPG-inställning), och en sådan skrivning
+ * ska inte tömma redan varma kanaler bara för att den råkar trigga samma
+ * händelse som switchen.
+ */
+let logoFallbackStateBySource: Map<string, boolean> | null = null
+let logoFallbackSwitchSubscription: (() => void) | null = null
+
+function logoFallbackStateSnapshot(): Map<string, boolean> {
+  const lists = getLiveTvLists()
+  const sources = new Set(lists.map((list) => list.source).filter((source): source is string => Boolean(source)))
+  const snapshot = new Map<string, boolean>()
+  for (const source of sources) {
+    // Samma "första listan för källan vinner"-upplösning som
+    // `applyLogoFallbackSwitch` använder vid laddning.
+    const list = lists.find((entry) => entry.source === source)
+    if (list) snapshot.set(source, isLogoFallbackEnabled(list))
+  }
+  return snapshot
+}
+
+/**
+ * Utan den här väcktes bara `onLiveTvListsChanged` (rätt lagringshändelse,
+ * men ingen lyssnare gjorde något med den för minnescachen) — kanalerna som
+ * redan låg varma i minnet behöll sitt gamla `logoFallback` tills nästa
+ * indexhändelse (import/EPG-uppdatering) eller omstart råkade tömma cachen.
+ * Att slå av/på switchen skulle alltså se ut att fungera men inte göra
+ * något förrän något helt orelaterat hände.
+ */
+function ensureLogoFallbackSwitchSubscription(): void {
+  if (logoFallbackSwitchSubscription || typeof window === 'undefined') return
+  logoFallbackStateBySource = logoFallbackStateSnapshot()
+  logoFallbackSwitchSubscription = onLiveTvListsChanged(() => {
+    const next = logoFallbackStateSnapshot()
+    const previous = logoFallbackStateBySource
+    logoFallbackStateBySource = next
+    for (const [source, enabled] of next) {
+      if (previous?.get(source) === enabled) continue
+      clearPluginMemoryCache(LIVE_TV_PLUGIN_ID, channelsCacheKey(source))
+      clearPluginMemoryCache(LIVE_TV_PLUGIN_ID, channelsCacheKey(null))
+    }
+  })
+}
+
+/**
  * "Alla kanaler" = UNIONEN av källorna, inte en egen hämtning.
  *
  * `/query` utan `source` svarar med hela indexet — men svaret bär ingen
@@ -323,6 +370,7 @@ function applyLogoFallbackSwitch(source: string, items: IndexChannel[]): void {
  * annars den pågående hämtningen (eller startar den).
  */
 export function loadChannelsShared(source: string | null): Promise<IndexChannel[]> {
+  ensureLogoFallbackSwitchSubscription()
   const cacheKey = channelsCacheKey(source)
   const cached = getPluginMemoryCache<IndexChannel[]>(LIVE_TV_PLUGIN_ID, cacheKey)
   if (cached) return Promise.resolve(cached)
@@ -376,6 +424,9 @@ export function __resetLiveTvModelForTests(): void {
   indexSubscription?.()
   indexSubscription = null
   generationListeners.clear()
+  logoFallbackSwitchSubscription?.()
+  logoFallbackSwitchSubscription = null
+  logoFallbackStateBySource = null
 }
 
 export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
