@@ -26,6 +26,7 @@ import {
   getM3uUrls,
   getXtreamLogins,
   importList,
+  isLogoFallbackEnabled,
   onXtreamLoginsChanged,
   xtreamPseudoUrl,
   LIVE_TV_GLOBAL_EPG_ID,
@@ -41,6 +42,7 @@ import {
   type LiveTvList,
   type M3uChannel as DataChannel,
 } from './live-tv-data'
+import { completeLogos } from './index-client'
 import { LIVE_TV_BROWSE_PAGE_ID, encodeChannelParams } from './live-tv-shell'
 import { useTvSettings } from './tv/tv-settings-store'
 import { buildTvPlayerProps } from './tv/tv-player-props'
@@ -212,6 +214,16 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavi
   const [groupDropdownOpen, setGroupDropdownOpen] = useState(false)
   const [pinVersion, setPinVersion] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
+  // Komplettera-knappens eget tillstånd — samma form som skrivbordets
+  // inställningar (`live-tv-settings-section.tsx`), men utan `listId`: den
+  // här knappen kör en eller flera listor på en gång (se `handleCompleteLogos`
+  // nedan), inte en enda rad.
+  const [logoComplete, setLogoComplete] = useState<
+    | { status: 'running' }
+    | { status: 'done'; matched: number; total: number }
+    | { status: 'error'; error: string }
+    | null
+  >(null)
   const [refreshing, setRefreshing] = useState(false)
   const [loadedLogoUrls, setLoadedLogoUrls] = useState<Record<string, string>>({})
   const [lists, setLists] = useState<LiveTvList[]>([])
@@ -548,6 +560,45 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavi
   const activeList = activeListId && activeListId !== FAVORITES_LIST_ID
     ? (lists.find((list) => list.id === activeListId) ?? null)
     : null
+
+  /**
+   * Samma "aktiv flik eller alla" som `refreshLists`/`handleRefreshChannels`
+   * nedan: en vald flik kompletterar BARA den listan, annars körs varje lista
+   * vars switch är på. `custom`-listor och listor utan reserven aktiverad
+   * hoppas tyst över — precis de villkor som redan gäller för
+   * Komplettera-knappen i inställningarna (`isLogoFallbackEnabled`,
+   * `kind !== 'custom'`). Knappen nedan spärras när listan blir tom.
+   */
+  const logoCompleteTargets = useMemo(
+    () => (activeList ? [activeList] : lists).filter(
+      (list) => list.kind !== 'custom' && Boolean(list.source) && isLogoFallbackEnabled(list),
+    ),
+    [activeList, lists],
+  )
+
+  /**
+   * Kompletterar logotyperna direkt från vyn — Jerrys ord efter test: knappen
+   * ska gå att nå "direkt på appvyn", inte bara via inställningarna.
+   * `completeLogos` sänder `emitIndexChanged()` själv (se `index-client.ts`)
+   * — ropas INTE här igen, det hade blivit en dubbelsändning.
+   */
+  async function handleCompleteLogos(): Promise<void> {
+    const targets = logoCompleteTargets
+    if (targets.length === 0) return
+    setLogoComplete({ status: 'running' })
+    let matched = 0
+    let total = 0
+    try {
+      for (const list of targets) {
+        const result = await completeLogos(list.source as string)
+        matched += result.matched
+        total += result.total
+      }
+      setLogoComplete({ status: 'done', matched, total })
+    } catch (err) {
+      setLogoComplete({ status: 'error', error: err instanceof Error ? err.message : String(err) })
+    }
+  }
 
   /**
    * "Lägg till i lista" gäller BARA manuellt skapade listor.
@@ -1094,6 +1145,28 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavi
           >
             {t('liveTvCreateList')}
           </button>}
+          {/* Direkt i vyn, inte bara i inställningarna (Jerrys ord efter test).
+              Samma administrationsrad som Skapa lista/Uppdatera — det är
+              precis vad det här är: en handling man gör då och då, inte en
+              inställning. Riktar sig mot den aktiva fliken om en är vald,
+              annars mot varje lista vars switch redan är på (samma mönster
+              som `handleRefreshChannels`). */}
+          {isTv ? null : <button
+            type="button"
+            {...tvStation}
+            data-testid="live-tv-logo-complete"
+            onClick={() => void handleCompleteLogos()}
+            disabled={logoComplete?.status === 'running' || logoCompleteTargets.length === 0}
+            className={`flex h-9 items-center px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] ${neutralPillClass} disabled:cursor-default disabled:opacity-50`}
+          >
+            {logoComplete?.status === 'running' ? h('logoCompleteRunning') : h('logoCompleteButton')}
+          </button>}
+          {!isTv && logoComplete?.status === 'done' ? (
+            <span className="text-xs text-slate-500">{h('logoCompleteResult', { matched: logoComplete.matched, total: logoComplete.total })}</span>
+          ) : null}
+          {!isTv && logoComplete?.status === 'error' ? (
+            <span role="alert" className="max-w-[22rem] truncate text-xs text-red-400" title={logoComplete.error}>{logoComplete.error}</span>
+          ) : null}
           <div className="ml-auto flex items-center gap-3">
             {isTv ? null : <span className="text-xs text-white">{filtered.length} / {visibleChannels.length} {t('m3uChannels')}</span>}
             {refreshing && visibleChannels.length > 0 ? <span className="text-xs text-slate-500">{t('liveTvRefreshing')}</span> : null}

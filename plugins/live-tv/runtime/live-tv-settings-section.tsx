@@ -380,7 +380,7 @@ export function LiveTvSettingsSection() {
               onToggleAuto={(disabled) => updateLiveTvListEpg(list.id, { autoEpgDisabled: disabled })}
             />
           </div>
-          <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
             {/* data-testid sitter på en vanlig div, inte på primitiven — Checkbox
                 tar bara { checked, onChange, disabled, label, hint, right }, och
                 appens riktiga primitiv (dist-bygget löser @/lib/plugin-sdk mot
@@ -397,9 +397,16 @@ export function LiveTvSettingsSection() {
                 onChange={(value) => setLogoFallbackEnabled(list.id, value)}
                 disabled={list.kind === 'custom'}
                 label={h('logoFallbackToggle')}
+                hint={h('logoFallbackHint')}
               />
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            {/* Egen rad, med en synlig avdelare ovanför: switchen ÄR
+                inställningen (styr OM reserven får användas), knappen är en
+                HANDLING (hämtar matchningarna nu) — de ska inte läsas som en
+                enda kontroll bara för att de står i samma kort (Jerrys ord
+                efter test: "bara en checkbox, finns en complete-knapp men
+                borde vara en separat inställning"). */}
+            <div style={{ borderTop: `1px solid ${TOKENS.border}`, paddingTop: 12, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <span data-testid={`logo-complete-${list.id}`}>
                 <PillBtn
                   size="sm"

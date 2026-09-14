@@ -212,6 +212,17 @@ describe('LiveTvSettingsSection', () => {
     expect(within(screen.getByTestId('logo-complete-a')).getByRole('button')).toBeDisabled()
   })
 
+  it('switchen bär en egen ledtext — den är inställningen, Komplettera är handlingen', () => {
+    // Jerrys ord efter test: "bara en checkbox, finns en complete-knapp men
+    // borde vara en separat inställning". En ledtext på switchen (som
+    // `hideHero`-switchen redan har högre upp i filen) och en avdelare framför
+    // knapp-raden är hur filen redan skiljer inställning från handling —
+    // innan den här ändringen fanns ingen ledtext här alls.
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list({ id: 'a', name: 'A', kind: 'm3u', source: 'http://lista' })])
+    render(<LiveTvSettingsSection />)
+    expect(within(screen.getByTestId('logo-fallback-toggle-a')).getByText(/iptv-org logo registry/)).toBeInTheDocument()
+  })
+
   it('switchen är verkningslös för en egen lista och ska spärras', () => {
     // Egna listors kanaler renderas via `customChannelsByList` → `withIndexTwins`,
     // som bär tvillingens switch-tillstånd från URSPRUNGSLISTAN — den egna

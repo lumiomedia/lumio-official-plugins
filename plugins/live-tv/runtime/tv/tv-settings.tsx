@@ -315,16 +315,38 @@ export const ListRow = memo(function ListRow({
         {importable ? <Action testId={`list-refetch-${list.id}`} label={busy ? tt('refetching') : tt('refetch')} onOk={() => onRefetch(list)} /> : null}
         {/* Egna listor har inget att hämta — de fylls med kanalväljaren. */}
         {list.kind === 'custom' ? <Action testId={`list-channels-${list.id}`} label={tt('listChannels')} onOk={() => onEditChannels(list)} /> : null}
-        {/* Egna listors kanaler renderas via tvillingar som bär
+        {/* Inställning, inte handling: egen bakgrundston — samma TV.s06 som
+            radens egen grund, inte TV.s12 som knapparna nedan — och en
+            riktig växel i stället för en på/av-etikett i en annars identisk
+            pill. Utan skillnaden såg switchen ut som ännu en Komplettera-
+            knapp (Jerrys ord efter test: "bara en checkbox ... klämd
+            bredvid"). Egna listors kanaler renderas via tvillingar som bär
             URSPRUNGSLISTANS switch-tillstånd — den egna listans switch
-            filtrerar ingenting. Spärrad av samma skäl som Komplettera
-            nedan. */}
-        <Action
-          testId={`list-logo-fallback-${list.id}`}
-          label={logoEnabled ? tt('logoFallbackOn') : tt('logoFallbackOff')}
-          disabled={list.kind === 'custom'}
-          onOk={() => setLogoFallbackEnabled(list.id, !logoEnabled)}
-        />
+            filtrerar ingenting, så den spärras av samma skäl som
+            Komplettera nedan. */}
+        <div
+          data-testid={`list-logo-fallback-${list.id}`}
+          aria-disabled={list.kind === 'custom' ? 'true' : undefined}
+          {...station(() => { if (list.kind !== 'custom') setLogoFallbackEnabled(list.id, !logoEnabled) })}
+          style={{
+            height: dp(phoneHitFloor(48, phone)),
+            minHeight: dp(phoneHitFloor(48, phone)),
+            padding: `0 ${dp(16)}px`,
+            borderRadius: 999,
+            background: TV.s06,
+            border: `1px solid ${TV.line}`,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: dp(10),
+            fontSize: dp(phoneTextFloor(15, phone)),
+            whiteSpace: 'nowrap',
+            cursor: list.kind === 'custom' ? 'default' : 'pointer',
+            opacity: list.kind === 'custom' ? 0.5 : 1,
+          }}
+        >
+          <span>{tt('logoFallback')}</span>
+          <Toggle on={logoEnabled} />
+        </div>
         <Action
           testId={`list-logo-complete-${list.id}`}
           label={logoBusy ? tt('logoCompleteRunning') : tt('logoComplete')}

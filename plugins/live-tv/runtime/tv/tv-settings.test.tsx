@@ -461,6 +461,19 @@ describe('ListRow — logotypreserv i TV-läget (P6)', () => {
     expect(await screen.findByText(/3 of 9/)).toBeInTheDocument()
   })
 
+  it('switchen ser inte längre ut som Komplettera-knappen — läget står i en växel, inte i etiketten', () => {
+    // Före den här ändringen var switchen en `Action`-pill vars EGEN etikett
+    // bar läget ("Logos: on"/"Logos: off") — exakt samma sorts pill som
+    // Komplettera bredvid. Jerrys ord efter test: den ska inte se ut som en
+    // och samma kontroll. Etiketten är nu bara "Logos"; själva läget syns i
+    // en riktig `Toggle`.
+    render(<ListRow list={{ id: 'a', name: 'A', createdAt: '', urlTvg: null, epgUrls: [], source: 'http://lista', kind: 'm3u' }} {...baseProps} />)
+    const toggle = screen.getByTestId('list-logo-fallback-a')
+    expect(toggle).toHaveTextContent('Logos')
+    expect(toggle).not.toHaveTextContent('Logos: on')
+    expect(toggle).not.toHaveTextContent('Logos: off')
+  })
+
   it('switchen är spärrad för en egen lista — den gör ingenting där (P1-fynd 2)', () => {
     // Egna listors kanaler renderas via tvillingar som bär URSPRUNGSLISTANS
     // switch-tillstånd; den egna listans egen switch filtrerar ingenting.

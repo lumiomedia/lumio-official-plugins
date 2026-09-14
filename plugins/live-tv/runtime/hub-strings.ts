@@ -76,9 +76,13 @@ const EN = {
   xtreamRelogin: 'Sign in again',
   // Logotypreserv (P5)
   logoFallbackToggle: 'Fill in missing logos from iptv-org',
+  logoFallbackHint: 'Lets the list use the iptv-org logo registry when a channel has none of its own.',
   logoComplete: 'Complete',
   logoCompleteRunning: 'Completing…',
   logoCompleteResult: '{matched} of {total} completed',
+  // Komplettera-knappen i själva Live TV-vyn — en egen handling, skild från
+  // ovanstående switch (som bara styr OM reserven får användas).
+  logoCompleteButton: 'Complete logos',
   // P8
   xtreamAccountUnavailable: 'Could not read the account',
   xtreamExpires: 'expires {date}',
@@ -145,9 +149,11 @@ const SV: Record<keyof typeof EN, string> = {
   xtreamNeedsLogin: 'Logga in på nytt för att hämta kanaler',
   xtreamRelogin: 'Logga in på nytt',
   logoFallbackToggle: 'Fyll i saknade logotyper från iptv-org',
+  logoFallbackHint: 'Låter listan använda iptv-orgs logotypregister när en kanal saknar egen logotyp.',
   logoComplete: 'Komplettera',
   logoCompleteRunning: 'Kompletterar…',
   logoCompleteResult: '{matched} av {total} kompletterade',
+  logoCompleteButton: 'Komplettera logotyper',
   // P8
   xtreamAccountUnavailable: 'Kunde inte läsa kontot',
   xtreamExpires: 'giltigt till {date}',

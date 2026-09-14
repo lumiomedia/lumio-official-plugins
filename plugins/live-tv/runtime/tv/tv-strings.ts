@@ -167,11 +167,11 @@ const EN = {
   importWriting: 'Saving the channels…',
   importFailed: 'The fetch failed',
   needsReimport: 'Needs refetching',
-  // Logotypreserv (P6): switchen visas som en Action vars etikett själv
-  // bär läget (på/av), och kompletteringens kvitto delar text/parametrar
-  // med skrivbordets `logoCompleteResult` (hub-strings.ts).
-  logoFallbackOn: 'Logos: on',
-  logoFallbackOff: 'Logos: off',
+  // Logotypreserv (P6): switchen är en riktig växel (Toggle), inte en
+  // Action-etikett som bär läget i sin text — annars ser den ut som samma
+  // sorts knapp som Komplettera. Kompletteringens kvitto delar
+  // text/parametrar med skrivbordets `logoCompleteResult` (hub-strings.ts).
+  logoFallback: 'Logos',
   logoComplete: 'Complete',
   logoCompleteRunning: 'Completing…',
   logoCompleteResult: '{matched} of {total} completed',
@@ -372,8 +372,7 @@ const SV: Record<keyof typeof EN, string> = {
   importWriting: 'Sparar kanalerna…',
   importFailed: 'Hämtningen misslyckades',
   needsReimport: 'Behöver hämtas om',
-  logoFallbackOn: 'Logotyper: på',
-  logoFallbackOff: 'Logotyper: av',
+  logoFallback: 'Logotyper',
   logoComplete: 'Komplettera',
   logoCompleteRunning: 'Kompletterar…',
   logoCompleteResult: '{matched} av {total} kompletterade',
