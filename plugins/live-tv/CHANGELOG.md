@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.6.0
+
+- The redesigned Live TV is now the only Live TV: the same views render on TV,
+  desktop and phone. The separate desktop hub, EPG page and channel page are
+  gone.
+- Mouse and touch are first-class. Hovering a card shows a "…" button for the
+  hold menu, right-click and long-press open the same menu, and the icon rail
+  has a Back item next to Escape and the edge swipe.
+- The channel guide has a fourth mode, **Grid**: the full timeline table, with
+  the block overlap fixed and short programmes drawn as marks with a tooltip.
+- Live TV's own settings became quick controls that reach everything the app's
+  settings reach: custom lists, EPG status per address, the Xtream account with
+  its categories, and refresh for one list or all of them — on both surfaces.
+- Multiview works on a phone: narrow surfaces show two tiles above each other
+  and keep sound, focus and the starting channel when tiles are hidden.
+- Phone is "works, small" for now; the layout is not yet redesigned for
+  portrait.
+- Requires Lumio 0.1.597 or later.
+
 ## 0.5.0
 
 - Channels live in the app's own on-disk index instead of plugin storage. The
