@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import type { M3uChannel } from '../live-tv-data'
 import type { LiveTvModel } from '../live-tv-model'
 import { ChannelArt, Icons, TV, dp } from './tv-ui'
@@ -32,21 +32,41 @@ export function filterByGroup(model: LiveTvModel, group: string | null): M3uChan
   return model.channels
 }
 
-/**
- * Kanalstationens bredd på skrivbord/TV (spec §3). Guidens rubrikkolumn
- * (`tv-guide.tsx`, kolumnrubrikerna) måste hålla SAMMA tal — annars glider
- * rubrik och innehåll isär. Se `channelCellWidth` för porträttvalet.
- */
+/** Kanalstationens bredd på skrivbord/TV (spec §3). */
 export const CHANNEL_CELL_WIDTH_DP = 520
 
 /**
- * Bredd efter yta: telefonen får full bredd (spec §3, "kanalstationen på 520
- * designpixlar blir full bredd"), skrivbord/TV behåller den fasta
- * stationsbredden. Delad funktion så att `ChannelCell` och guidens
- * rubrikkolumn alltid väljer samma tal.
+ * Kanalkolumnens LAYOUTKONTEXT — inte bara ett tal. Guidens rubrikkolumn
+ * (`tv-guide.tsx`, kolumnrubrikerna) och radens wrapper
+ * (`data-testid="guide-row"`) måste bära EXAKT den här stilen, båda, annars
+ * glider rubrik och innehåll isär trots att `ChannelCell` fyller ut sin
+ * förälder till 100 %.
+ *
+ * Fixrunda 1 (granskning av M-P3): ett gemensamt tal (`CHANNEL_CELL_WIDTH_DP`
+ * + ett `width: '100%'` på `ChannelCell`) räckte INTE. `guide-row` saknade
+ * egen bredd/flex-basis, så en procentbredd på dess enda barn föll tillbaka
+ * på auto — cellen krympte till sitt innehåll i stället för att fylla raden.
+ * Samtidigt åt rubrikens `width: '100%'` + `flexShrink: 0` hela radens
+ * bredd och trängde ut NU/SEN/SENARE (som saknar `minWidth: 0`). Två
+ * anropsställen med samma tal gav alltså olika renderad bredd — glidningen
+ * kom via DOM-strukturen, inte via ett hårdkodat tal, och syntes aldrig i
+ * jsdom.
+ *
+ * Lösningen: samma flex-egenskaper på BÅDA ställena. Skrivbord/TV: fast
+ * bredd, ingen krympning (som förut). Telefon: motsvarande `flex: 1` (skrivet
+ * i långform — `flexGrow`/`flexShrink`/`flexBasis` — så testerna kan läsa
+ * varje del för sig i stället för att lita på webbläsarens normalisering av
+ * `flex`-kortformen) + `minWidth: 0` — kolumnen delar radens bredd med
+ * NU/SEN/SENARE precis som rubrikens flex 1.2/1/1-kolumner redan gör, i
+ * stället för att kräva HELA bredden. `ChannelCell` själv sätts alltid till
+ * `width: '100%'` av sin förälder (som nu har en DEFINITIV bredd att fylla),
+ * så dess egna `overflow: hidden` + `text-overflow: ellipsis` på namnet
+ * fungerar i båda lägena — även med orimligt långa kanalnamn.
  */
-export function channelCellWidth(phone: boolean): number | string {
-  return phone ? '100%' : dp(CHANNEL_CELL_WIDTH_DP)
+export function channelColumnStyle(phone: boolean): CSSProperties {
+  return phone
+    ? { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0 }
+    : { width: dp(CHANNEL_CELL_WIDTH_DP), flexShrink: 0 }
 }
 
 export function ChannelCell({ channel, number, pinned, locked, quality, focused, width = dp(CHANNEL_CELL_WIDTH_DP) }: {

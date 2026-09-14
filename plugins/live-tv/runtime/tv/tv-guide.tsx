@@ -10,7 +10,7 @@ import { Chip, Progress, Segment, Tag, TV, dp, station, useTvClockNode } from '.
 import { useTvText } from './tv-strings'
 import { setGuideMode, useGuideMode, type GuideMode } from './tv-settings-store'
 import { blockGeometry, nowLinePct, scheduleWindow, timeTicks } from './tv-schedule-window'
-import { ChannelCell, FAVS_GROUP, channelCellWidth, filterByGroup, useDebouncedChannel, useGuideGroups } from './tv-guide-shared'
+import { ChannelCell, FAVS_GROUP, channelColumnStyle, filterByGroup, useDebouncedChannel, useGuideGroups } from './tv-guide-shared'
 import { TvPreview } from './tv-preview'
 import { TvGuidePlaylists } from './tv-guide-playlists'
 import { TvGuideGrid } from './tv-guide-grid'
@@ -105,7 +105,7 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
   const { tt, locale } = useTvText()
   const clock = useTvClockNode(locale)
   const phone = usePhoneSurface()
-  const channelColWidth = channelCellWidth(phone)
+  const channelColStyle = channelColumnStyle(phone)
   const groups = useGuideGroups(model, tt)
   // params.group kan vara en föråldrad eller manipulerad query-parameter
   // (t.ex. ett borttaget spellistnamn) — validera mot de faktiska grupperna
@@ -229,9 +229,9 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
 
       {/* Kolumnrubriker */}
       <div style={{ padding: `0 ${dp(48)}px`, display: 'flex', gap: dp(16), fontSize: dp(15), letterSpacing: '0.1em', textTransform: 'uppercase', color: TV.faint, flexShrink: 0 }}>
-        <div style={{ width: channelColWidth, flexShrink: 0, padding: `0 ${dp(12)}px` }}>{tt('colChannel')}</div>
+        <div data-testid="guide-channel-col-header" style={{ ...channelColStyle, padding: `0 ${dp(12)}px` }}>{tt('colChannel')}</div>
         {mode === 'now' ? (
-          <><div style={{ flex: 1.2 }}>{tt('colNow')}</div><div style={{ flex: 1 }}>{tt('colNext')}</div><div style={{ flex: 1 }}>{tt('colLater')}</div></>
+          <><div style={{ flex: 1.2, minWidth: 0 }}>{tt('colNow')}</div><div style={{ flex: 1, minWidth: 0 }}>{tt('colNext')}</div><div style={{ flex: 1, minWidth: 0 }}>{tt('colLater')}</div></>
         ) : (
           <div style={{ flex: 1, position: 'relative', height: dp(20) }}>
             {timeTicks(win).map((tick, i) => <span key={tick} style={{ position: 'absolute', left: `${i * 25}%` }}>{formatClock(tick, locale)}</span>)}
@@ -295,9 +295,9 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
                 {...rowStation}
                 onKeyDown={onKeyDown}
                 onFocus={() => setSelectedKey(key)}
-                style={{ cursor: 'pointer', borderRadius: dp(12) }}
+                style={{ ...channelColStyle, cursor: 'pointer', borderRadius: dp(12) }}
               >
-                <ChannelCell channel={channel} number={model.channelNumber(channel)} pinned={model.pinnedSet.has(key)} locked={model.locked.has(key)} quality={qualityFromName(channel.name)} focused={focused} width={channelColWidth} />
+                <ChannelCell channel={channel} number={model.channelNumber(channel)} pinned={model.pinnedSet.has(key)} locked={model.locked.has(key)} quality={qualityFromName(channel.name)} focused={focused} width="100%" />
               </div>
               {mode === 'now' ? (
                 <>

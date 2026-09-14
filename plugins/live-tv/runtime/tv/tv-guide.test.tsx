@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR, TV_SCENE_PHONE_ATTR, __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { flushLiveTvIndex, seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
@@ -198,25 +198,88 @@ describe('TvGuide: lägesbyte och Bakåt', () => {
   })
 })
 
-describe('TvGuide i porträtt (telefon)', () => {
+describe('TvGuide i porträtt (telefon): kanalkolumnens layoutkontext (fixrunda 1)', () => {
   // Lådan måste bort i `afterEach` — se M-P2:s skaltest/rapport.
   let box: HTMLElement | null = null
   afterEach(() => { box?.remove(); box = null })
 
-  const mountOnPhone = async () => {
+  const mountWith = async (phone: boolean) => {
     box = document.createElement('div')
     box.setAttribute(TV_SCENE_BOX_ATTR, '1')
-    box.setAttribute(TV_SCENE_NARROW_ATTR, '1')
-    box.setAttribute(TV_SCENE_PHONE_ATTR, '1')
+    if (phone) {
+      box.setAttribute(TV_SCENE_NARROW_ATTR, '1')
+      box.setAttribute(TV_SCENE_PHONE_ATTR, '1')
+    }
     document.body.appendChild(box)
     const rendered = render(<LiveTvTvShell pageId="live-tv-browse" params={{ view: 'guide' }} onNavigate={() => {}} onOpenDetails={() => {}} />, { container: box })
     await flushLiveTvIndex()
     return rendered
   }
 
-  it('kanalkolumnen tar full bredd på telefon', async () => {
-    await mountOnPhone()
-    const cell = screen.getAllByTestId('guide-channel-cell')[0]
-    expect(cell.style.width).not.toBe(`${dp(520)}px`)
+  // FYND 1 (granskning): ett gemensamt TAL räckte inte — `ChannelCell` fyller
+  // alltid ut till 100 %, så det som faktiskt avgör bredden är layouten på
+  // wrappern (`guide-row`) och rubrikkolumnen. Testerna nedan läser DEN
+  // stilen, inte cellens egen (som alltid är '100%').
+  it('raden delar bredden med NU/SEN/SENARE på telefon: flex 1, minWidth 0, ingen fast bredd', async () => {
+    await mountWith(true)
+    const row = screen.getAllByTestId('guide-row')[0]
+    expect(row.style.flexGrow).toBe('1')
+    expect(row.style.flexShrink).toBe('1')
+    expect(row.style.flexBasis).toBe('0px')
+    expect(row.style.minWidth).toBe('0')
+    expect(row.style.width).toBe('')
+  })
+
+  it('rubrikkolumnen bär EXAKT samma layout som raden på telefon', async () => {
+    await mountWith(true)
+    const header = screen.getByTestId('guide-channel-col-header')
+    const row = screen.getAllByTestId('guide-row')[0]
+    for (const prop of ['flexGrow', 'flexShrink', 'flexBasis', 'minWidth', 'width'] as const) {
+      expect(header.style[prop]).toBe(row.style[prop])
+    }
+  })
+
+  it('raden och rubrikkolumnen behåller 520 dp och ingen krympning på skrivbordet/TV', async () => {
+    await mountWith(false)
+    const row = screen.getAllByTestId('guide-row')[0]
+    const header = screen.getByTestId('guide-channel-col-header')
+    expect(row.style.width).toBe(`${dp(520)}px`)
+    expect(row.style.flexShrink).toBe('0')
+    expect(header.style.width).toBe(`${dp(520)}px`)
+    expect(header.style.flexShrink).toBe('0')
+  })
+})
+
+describe('TvGuide i porträtt (telefon): orimligt långa kanalnamn klipps', () => {
+  // FYND 2 (granskning): `width: '100%'` i en osizead wrapper triggar
+  // sannolikt aldrig ellipsen — cellen växer med namnet i stället för att
+  // klippa. Egen kanallista med ett orimligt långt namn, isolerad till detta
+  // describe-block så den inte stör de andra testernas A/B/C-antaganden.
+  const longName = 'X'.repeat(180) + ' Ett Orimligt Långt Kanalnamn Som Aldrig Ska Få Spränga Raden'
+  let box: HTMLElement | null = null
+  afterEach(() => { box?.remove(); box = null })
+  beforeEach(() => {
+    const longList: LiveTvList = { id: 'l1', name: 'Xtream', channels: [ch(longName, 'Sport')], createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null }
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [longList])
+    seedLiveTvIndex()
+  })
+
+  it('kanalcellens namnrad klipper i stället för att sprängas, på telefon', async () => {
+    box = document.createElement('div')
+    box.setAttribute(TV_SCENE_BOX_ATTR, '1')
+    box.setAttribute(TV_SCENE_NARROW_ATTR, '1')
+    box.setAttribute(TV_SCENE_PHONE_ATTR, '1')
+    document.body.appendChild(box)
+    render(<LiveTvTvShell pageId="live-tv-browse" params={{ view: 'guide' }} onNavigate={() => {}} onOpenDetails={() => {}} />, { container: box })
+    await flushLiveTvIndex()
+    const cell = screen.getByTestId('guide-channel-cell')
+    const nameEl = within(cell).getByText(longName)
+    expect(nameEl).toHaveStyle({ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' })
+    // Raden som håller cellen bär den delade layoutkontexten (flex 1, ingen
+    // fast/växande bredd) — inte en bredd som sväller med innehållet.
+    const row = screen.getByTestId('guide-row')
+    expect(row.style.width).toBe('')
+    expect(row.style.flexGrow).toBe('1')
+    expect(row.style.flexBasis).toBe('0px')
   })
 })
