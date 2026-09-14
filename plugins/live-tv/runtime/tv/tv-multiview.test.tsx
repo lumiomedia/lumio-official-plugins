@@ -99,4 +99,19 @@ describe('TvMultiview på smal yta', () => {
     expect(screen.getByText('2 tiles')).toBeInTheDocument()
     expect(screen.getByText('4 tiles')).toBeInTheDocument()
   })
+
+  it('en tilldelning på smal yta sparar inte layout 2', async () => {
+    // Den smala grenen är render-only (Jerrys beslut): en tilldelning som
+    // görs medan ytan är smal ska persisteras på RÄTT ruta, men INTE tvinga
+    // igenom layout 2 i lagret — annars käkas de rutor som inte syns upp så
+    // fort ytan breddas igen.
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_multiview_v1', { layout: 4, tiles: [channelKey(ch('A')), null, null, null], audioIndex: 0 })
+    mountInBox(true)
+    await waitFor(() => expect(screen.getAllByTestId('mv-tile')).toHaveLength(2))
+    fireEvent.click(screen.getAllByTestId('mv-tile')[1])
+    expect(screen.getByTestId('channel-picker')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('picker-row-B'))
+    expect(getMultiviewState().layout).toBe(4)
+    expect(getMultiviewState().tiles).toEqual([channelKey(ch('A')), channelKey(ch('B')), null, null])
+  })
 })

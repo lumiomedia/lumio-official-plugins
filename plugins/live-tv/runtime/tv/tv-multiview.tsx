@@ -23,18 +23,24 @@ export function TvMultiview({ model, nav }: TvViewProps) {
   const state = useMultiviewState()
   const narrow = useNarrowSurface()
   /**
-   * FORCERAD SMAL LAYOUT. `setLayout(state, 2)` kör exakt samma kompaktering
-   * som Segment-växeln gör när användaren själv väljer "2 tiles" — men
-   * resultatet skrivs ALDRIG till lagret här. `state.layout` (2/3/4) ligger
-   * orört i lagret hela tiden ytan är smal, och kommer tillbaka av sig självt
-   * så fort `useNarrowSurface()` blir falskt igen (telefon i landskap, fönster
-   * som breddas). `view` är alltså en ren renderingsartefakt.
+   * FORCERAD SMAL LAYOUT — REN VISNING, INGEN MUTATION. På en smal yta visas
+   * bara de två FÖRSTA rutorna av det sparade lagret (index 0 och 1), rakt
+   * av utan kompaktering — så en tilldelning som görs härifrån (`onOk`,
+   * `onHold`, kanalväljaren) kan gå direkt mot `state` med samma index och
+   * ändra EXAKT den rutan, utan att röra `state.layout` (Jerrys beslut: "det
+   * sparade valet rörs inte" gäller även vid tilldelning, inte bara vid
+   * mätning). Just därför body `update(...)`-anropen nedan alltid bygger på
+   * `state`, ALDRIG på `displayTiles` — annars hade en tilldelning på en
+   * smal yta av misstag sparat layout 2 och ätit upp de rutor som inte syns.
+   * `state.layout` (2/3/4) kommer tillbaka av sig självt så fort
+   * `useNarrowSurface()` blir falskt igen (telefon i landskap, fönster som
+   * breddas).
    */
-  const view = narrow ? setLayout(state, 2) : state
+  const displayTiles = narrow ? state.tiles.slice(0, 2) : state.tiles
   const [pickerTile, setPickerTile] = useState<number | null>(null)
   const caps = videoSurfaceCapabilities()
   const update = (next: MultiviewState) => setMultiviewState(next)
-  const audioChannel = view.tiles[view.audioIndex] ? model.byKey.get(view.tiles[view.audioIndex]!) ?? model.allChannels.find((c) => channelKey(c) === view.tiles[view.audioIndex]) ?? null : null
+  const audioChannel = state.tiles[state.audioIndex] ? model.byKey.get(state.tiles[state.audioIndex]!) ?? model.allChannels.find((c) => channelKey(c) === state.tiles[state.audioIndex]) ?? null : null
 
   // Ljudrutan är alltid levande (den konsumerar ingen budget här); övriga
   // rutor får levande ytor i rutordning tills kapaciteten (maxLive - 1) tar slut.
@@ -62,7 +68,7 @@ export function TvMultiview({ model, nav }: TvViewProps) {
         <span style={{ fontSize: dp(34), fontWeight: 600 }}>{tt('multiview')}</span>
         {/* Segment<K extends string> tar bara strängnycklar — layout (2|3|4) är
             numerisk, så vi växlar via strängar och tolkar tillbaka i onChange.
-            Döljs på en smal yta: kapaciteten är forcerad till 2 där (se `view`
+            Döljs på en smal yta: bara två rutor visas där (se `displayTiles`
             ovan), och växeln ska inte kunna skriva över det sparade valet
             medan ytan är smal. */}
         {narrow ? null : (
@@ -76,10 +82,10 @@ export function TvMultiview({ model, nav }: TvViewProps) {
           {audioChannel ? <><span>{tt('audioLabel')}: </span><strong style={{ color: TV.text }}>{audioChannel.name}</strong> · </> : null}{tt('multiviewHelp')}
         </span>
       </div>
-      <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: (narrow ? NARROW_GRID : GRID[view.layout]).columns, gridTemplateRows: (narrow ? NARROW_GRID : GRID[view.layout]).rows, gap: dp(16) }}>
-        {view.tiles.map((key, index) => {
+      <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: (narrow ? NARROW_GRID : GRID[state.layout]).columns, gridTemplateRows: (narrow ? NARROW_GRID : GRID[state.layout]).rows, gap: dp(16) }}>
+        {displayTiles.map((key, index) => {
           const channel = key ? model.byKey.get(key) ?? model.allChannels.find((c) => channelKey(c) === key) ?? null : null
-          const hasAudio = index === view.audioIndex && channel !== null
+          const hasAudio = index === state.audioIndex && channel !== null
           const live = hasAudio || (channel !== null && liveLeft-- > 0)
           return (
             <Tile
@@ -88,13 +94,13 @@ export function TvMultiview({ model, nav }: TvViewProps) {
               channel={channel}
               hasAudio={hasAudio}
               live={live}
-              isInit={index === view.audioIndex}
-              span={view.layout === 3 && index === 0}
+              isInit={index === state.audioIndex}
+              span={!narrow && state.layout === 3 && index === 0}
               nowTitle={channel ? model.nowFor(channel).now?.title ?? null : null}
               number={channel ? model.channelNumber(channel) : null}
               onOk={() => {
                 if (!channel) { setPickerTile(index); return }
-                update({ ...view, audioIndex: index })
+                update({ ...state, audioIndex: index })
               }}
               onHold={(el) => {
                 if (!channel) { setPickerTile(index); return }
@@ -102,11 +108,11 @@ export function TvMultiview({ model, nav }: TvViewProps) {
                   title: channel.name,
                   element: el,
                   actions: [
-                    { key: 'audio', label: tt('menuAudioHere'), run: () => update({ ...view, audioIndex: index }) },
+                    { key: 'audio', label: tt('menuAudioHere'), run: () => update({ ...state, audioIndex: index }) },
                     { key: 'switch', label: tt('menuSwitchChannel'), run: () => setPickerTile(index) },
-                    { key: 'enlarge', label: tt('menuEnlarge'), run: () => update(enlargeTile(view, index)) },
+                    { key: 'enlarge', label: tt('menuEnlarge'), run: () => update(enlargeTile(state, index)) },
                     { key: 'full', label: tt('menuFullscreen'), run: () => nav.play({ channel }) },
-                    { key: 'remove', label: tt('menuRemoveTile'), run: () => update(removeTile(view, index)) },
+                    { key: 'remove', label: tt('menuRemoveTile'), run: () => update(removeTile(state, index)) },
                   ],
                 })
               }}
@@ -115,7 +121,7 @@ export function TvMultiview({ model, nav }: TvViewProps) {
         })}
       </div>
       {pickerTile !== null ? (
-        <TvChannelPicker model={model} nav={nav} title={tt('pickChannelFor', { n: pickerTile + 1 })} onPick={(channel: M3uChannel) => update(assignTile(view, pickerTile, channelKey(channel)))} onClose={() => setPickerTile(null)} />
+        <TvChannelPicker model={model} nav={nav} title={tt('pickChannelFor', { n: pickerTile + 1 })} onPick={(channel: M3uChannel) => update(assignTile(state, pickerTile, channelKey(channel)))} onClose={() => setPickerTile(null)} />
       ) : null}
     </div>
   )
