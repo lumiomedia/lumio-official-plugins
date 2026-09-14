@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { channelKey, type M3uChannel } from '../live-tv-data'
 import type { TvViewProps } from './tv-shell'
 import { ChannelArt, Icons, Segment, Tag, TV, dp, station } from './tv-ui'
@@ -18,29 +18,66 @@ const GRID: Record<MultiviewLayout, { columns: string; rows: string }> = {
 /** Smal yta (spec §8.5 / plan P10): två rutor staplade lodrätt i stället för sida vid sida. */
 const NARROW_GRID = { columns: '1fr', rows: '1fr 1fr' }
 
+/**
+ * NARROW-VISNINGSORDNING (granskningsfynd på b6c7a69/307608e): ljudrutan
+ * (`state.audioIndex`) MÅSTE alltid vara en av de två synliga — annars
+ * tystnar ingenting men rubriken påstår att en kanal spelar, och ingen ruta
+ * bär `data-init`. Audio-rutan visas därför alltid FÖRST; den andra platsen
+ * är nästa tilldelade ruta, annars första tomma — bara VISNINGSordningen
+ * ändras (verkliga index skickas oförändrade in i `update()`/`assignTile()`
+ * osv.), så det sparade laget rörs aldrig.
+ */
+function narrowVisibleIndices(state: MultiviewState): [number, number] {
+  const count = state.tiles.length
+  const audioIdx = state.audioIndex
+  const others = Array.from({ length: count }, (_, i) => i).filter((i) => i !== audioIdx)
+  const second = others.find((i) => state.tiles[i] !== null) ?? others.find((i) => state.tiles[i] === null) ?? others[0] ?? audioIdx
+  return [audioIdx, second]
+}
+
 export function TvMultiview({ model, nav }: TvViewProps) {
   const { tt } = useTvText()
   const state = useMultiviewState()
-  const narrow = useNarrowSurface()
+  const rootRef = useRef<HTMLDivElement | null>(null)
+  const narrow = useNarrowSurface(rootRef)
   /**
    * FORCERAD SMAL LAYOUT — REN VISNING, INGEN MUTATION. På en smal yta visas
-   * bara de två FÖRSTA rutorna av det sparade lagret (index 0 och 1), rakt
+   * bara två rutor (audiorutan + en till, se `narrowVisibleIndices`), rakt
    * av utan kompaktering — så en tilldelning som görs härifrån (`onOk`,
-   * `onHold`, kanalväljaren) kan gå direkt mot `state` med samma index och
-   * ändra EXAKT den rutan, utan att röra `state.layout` (Jerrys beslut: "det
-   * sparade valet rörs inte" gäller även vid tilldelning, inte bara vid
-   * mätning). Just därför body `update(...)`-anropen nedan alltid bygger på
-   * `state`, ALDRIG på `displayTiles` — annars hade en tilldelning på en
-   * smal yta av misstag sparat layout 2 och ätit upp de rutor som inte syns.
-   * `state.layout` (2/3/4) kommer tillbaka av sig självt så fort
-   * `useNarrowSurface()` blir falskt igen (telefon i landskap, fönster som
-   * breddas).
+   * `onHold`, kanalväljaren) kan gå direkt mot `state` med samma VERKLIGA
+   * index och ändra EXAKT den rutan, utan att röra `state.layout` (Jerrys
+   * beslut: "det sparade valet rörs inte" gäller även vid tilldelning, inte
+   * bara vid mätning). Just därför bygger `update(...)`-anropen nedan alltid
+   * på `state` och det verkliga indexet (`realIndex`), ALDRIG på ett index i
+   * `slots` — annars hade en tilldelning på en smal yta av misstag sparat
+   * layout 2 och ätit upp de rutor som inte syns. `state.layout` (2/3/4)
+   * kommer tillbaka av sig självt så fort `useNarrowSurface()` blir falskt
+   * igen (telefon i landskap, fönster som breddas).
    */
-  const displayTiles = narrow ? state.tiles.slice(0, 2) : state.tiles
+  const slots = narrow
+    ? narrowVisibleIndices(state).map((realIndex) => ({ realIndex, key: state.tiles[realIndex] ?? null }))
+    : state.tiles.map((key, realIndex) => ({ realIndex, key }))
   const [pickerTile, setPickerTile] = useState<number | null>(null)
   const caps = videoSurfaceCapabilities()
   const update = (next: MultiviewState) => setMultiviewState(next)
   const audioChannel = state.tiles[state.audioIndex] ? model.byKey.get(state.tiles[state.audioIndex]!) ?? model.allChannels.find((c) => channelKey(c) === state.tiles[state.audioIndex]) ?? null : null
+
+  /**
+   * FOKUS VID SMALNING (granskningsfynd): skalets montingsfokus (`[data-init]`
+   * vid sidbyte) körs bara vid navigering, inte när ytan smalnar av under
+   * pågående multivy. Två rutor unmountas då tyst, och om fokus stod där
+   * hoppar webbläsaren tillbaka till `<body>` — osynligt, men fjärren/tabben
+   * "tappar bort sig". Effekten kör bara vid övergången TILL smalt (inte vid
+   * varje rendering) och bara om fokus verkligen lämnat vyn.
+   */
+  useEffect(() => {
+    if (!narrow) return
+    const root = rootRef.current
+    if (!root) return
+    const active = document.activeElement
+    if (active && root.contains(active)) return
+    root.querySelector<HTMLElement>('[data-init]')?.focus({ preventScroll: true })
+  }, [narrow])
 
   // Ljudrutan är alltid levande (den konsumerar ingen budget här); övriga
   // rutor får levande ytor i rutordning tills kapaciteten (maxLive - 1) tar slut.
@@ -63,14 +100,14 @@ export function TvMultiview({ model, nav }: TvViewProps) {
   let liveLeft = liveBudget
 
   return (
-    <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', padding: `${dp(34)}px ${dp(48)}px ${dp(32)}px`, gap: dp(18) }}>
+    <div ref={rootRef} style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', padding: `${dp(34)}px ${dp(48)}px ${dp(32)}px`, gap: dp(18) }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: dp(20) }}>
         <span style={{ fontSize: dp(34), fontWeight: 600 }}>{tt('multiview')}</span>
         {/* Segment<K extends string> tar bara strängnycklar — layout (2|3|4) är
             numerisk, så vi växlar via strängar och tolkar tillbaka i onChange.
-            Döljs på en smal yta: bara två rutor visas där (se `displayTiles`
-            ovan), och växeln ska inte kunna skriva över det sparade valet
-            medan ytan är smal. */}
+            Döljs på en smal yta: bara två rutor visas där (se `slots` ovan),
+            och växeln ska inte kunna skriva över det sparade valet medan
+            ytan är smal. */}
         {narrow ? null : (
           <Segment<string>
             options={[{ key: '2', label: tt('layout2') }, { key: '3', label: tt('layout3') }, { key: '4', label: tt('layout4') }]}
@@ -83,36 +120,39 @@ export function TvMultiview({ model, nav }: TvViewProps) {
         </span>
       </div>
       <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: (narrow ? NARROW_GRID : GRID[state.layout]).columns, gridTemplateRows: (narrow ? NARROW_GRID : GRID[state.layout]).rows, gap: dp(16) }}>
-        {displayTiles.map((key, index) => {
+        {slots.map(({ realIndex, key }) => {
           const channel = key ? model.byKey.get(key) ?? model.allChannels.find((c) => channelKey(c) === key) ?? null : null
-          const hasAudio = index === state.audioIndex && channel !== null
+          const hasAudio = realIndex === state.audioIndex && channel !== null
           const live = hasAudio || (channel !== null && liveLeft-- > 0)
           return (
             <Tile
-              key={`${index}:${key ?? 'empty'}`}
-              index={index}
+              key={`${realIndex}:${key ?? 'empty'}`}
+              index={realIndex}
               channel={channel}
               hasAudio={hasAudio}
               live={live}
-              isInit={index === state.audioIndex}
-              span={!narrow && state.layout === 3 && index === 0}
+              isInit={realIndex === state.audioIndex}
+              span={!narrow && state.layout === 3 && realIndex === 0}
               nowTitle={channel ? model.nowFor(channel).now?.title ?? null : null}
               number={channel ? model.channelNumber(channel) : null}
               onOk={() => {
-                if (!channel) { setPickerTile(index); return }
-                update({ ...state, audioIndex: index })
+                if (!channel) { setPickerTile(realIndex); return }
+                update({ ...state, audioIndex: realIndex })
               }}
               onHold={(el) => {
-                if (!channel) { setPickerTile(index); return }
+                if (!channel) { setPickerTile(realIndex); return }
                 nav.openMenu({
                   title: channel.name,
                   element: el,
                   actions: [
-                    { key: 'audio', label: tt('menuAudioHere'), run: () => update({ ...state, audioIndex: index }) },
-                    { key: 'switch', label: tt('menuSwitchChannel'), run: () => setPickerTile(index) },
-                    { key: 'enlarge', label: tt('menuEnlarge'), run: () => update(enlargeTile(state, index)) },
+                    { key: 'audio', label: tt('menuAudioHere'), run: () => update({ ...state, audioIndex: realIndex }) },
+                    { key: 'switch', label: tt('menuSwitchChannel'), run: () => setPickerTile(realIndex) },
+                    // "Förstora" byter layout till 1+2 (`enlargeTile`) — en
+                    // riktig skrivning av det sparade valet, så den döljs på
+                    // en smal yta (samma regel som kapacitetsväxeln ovan).
+                    ...(narrow ? [] : [{ key: 'enlarge', label: tt('menuEnlarge'), run: () => update(enlargeTile(state, realIndex)) }]),
                     { key: 'full', label: tt('menuFullscreen'), run: () => nav.play({ channel }) },
-                    { key: 'remove', label: tt('menuRemoveTile'), run: () => update(removeTile(state, index)) },
+                    { key: 'remove', label: tt('menuRemoveTile'), run: () => update(removeTile(state, realIndex)) },
                   ],
                 })
               }}

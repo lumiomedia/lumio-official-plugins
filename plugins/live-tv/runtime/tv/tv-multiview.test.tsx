@@ -114,4 +114,45 @@ describe('TvMultiview på smal yta', () => {
     expect(getMultiviewState().layout).toBe(4)
     expect(getMultiviewState().tiles).toEqual([channelKey(ch('A')), channelKey(ch('B')), null, null])
   })
+
+  it('ljudrutan syns och behåller data-init även om ljudet ligger på en dold ruta', async () => {
+    // Granskningsfynd: audioIndex kan peka på ruta 3 (verkligt index 2) i ett
+    // 4-layout — en naiv "de två första" hade tystat ljudrutan helt och gett
+    // noll data-init i vyn, trots att rubriken påstår att C spelar.
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_multiview_v1', { layout: 4, tiles: [null, null, channelKey(ch('C')), null], audioIndex: 2 })
+    mountInBox(true)
+    await waitFor(() => expect(screen.getAllByTestId('mv-tile')).toHaveLength(2))
+    const tiles = screen.getAllByTestId('mv-tile')
+    const withInit = tiles.filter((t) => t.hasAttribute('data-init'))
+    expect(withInit).toHaveLength(1)
+    expect(withInit[0]).toHaveTextContent('C')
+    expect(withInit[0]).toHaveTextContent(/LJUD|AUDIO/)
+  })
+
+  it('fokus flyttas till en synlig ruta när ytan smalnar och den fokuserade rutan döljs', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_multiview_v1', { layout: 4, tiles: [channelKey(ch('A')), null, null, null], audioIndex: 0 })
+    const box = document.createElement('div')
+    box.setAttribute(TV_SCENE_BOX_ATTR, '1')
+    document.body.appendChild(box)
+    render(<LiveTvTvShell pageId="live-tv-browse" params={{ view: 'multi' }} onNavigate={() => {}} onOpenDetails={() => {}} />, { container: box })
+    const wideTiles = screen.getAllByTestId('mv-tile')
+    expect(wideTiles).toHaveLength(4)
+    wideTiles[3].focus()
+    expect(document.activeElement).toBe(wideTiles[3])
+    box.setAttribute(TV_SCENE_NARROW_ATTR, '1')
+    await waitFor(() => expect(screen.getAllByTestId('mv-tile')).toHaveLength(2))
+    expect(document.activeElement).not.toBe(document.body)
+    expect(document.activeElement?.hasAttribute('data-init')).toBe(true)
+  })
+
+  it('hållmenyns Förstora är dold på en smal yta', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_multiview_v1', { layout: 4, tiles: [channelKey(ch('A')), channelKey(ch('B')), null, null], audioIndex: 0 })
+    mountInBox(true)
+    await waitFor(() => expect(screen.getAllByTestId('mv-tile')).toHaveLength(2))
+    fireEvent.contextMenu(screen.getAllByTestId('mv-tile')[0])
+    expect(screen.getByTestId('tv-glass-menu')).toBeInTheDocument()
+    expect(screen.queryByText('Enlarge')).toBeNull()
+    // Regression: menyn öppnas fortfarande med resten av handlingarna intakta.
+    expect(screen.getByText('Remove tile')).toBeInTheDocument()
+  })
 })
