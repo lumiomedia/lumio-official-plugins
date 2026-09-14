@@ -27,6 +27,7 @@ function assertFloors(container: ParentNode) {
     expect(h, `${el.getAttribute('data-testid') ?? el.tagName} minHeight`).toBeGreaterThanOrEqual(PHONE_HIT_MIN_DP)
   }
   const texts = [...container.querySelectorAll<HTMLElement>('[style*="font-size"]')]
+  expect(texts.length).toBeGreaterThan(0)
   for (const el of texts) {
     const size = Number.parseFloat(el.style.fontSize)
     if (Number.isFinite(size)) expect(size, `"${(el.textContent ?? '').slice(0, 30)}" font-size`).toBeGreaterThanOrEqual(PHONE_TEXT_MIN_DP)
