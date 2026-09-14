@@ -44,6 +44,16 @@ it('anropar onError bara när alla källor är slut', () => {
   expect(onError).toHaveBeenCalledTimes(1)
 })
 
+it('skickar inte samma URL som både primär och reserv (bortkastat andra försök)', () => {
+  const onError = vi.fn()
+  render(<LiveTvLogoImage src="http://p/samma.png" fallbackSrc="http://p/samma.png" alt="K" onError={onError} />)
+  fireEvent.error(screen.getByAltText('K'))
+  // En reserv IDENTISK med den redan fallerade adressen är inget nytt försök
+  // — samma beteende som "ingen reserv alls": ge upp direkt.
+  expect(onError).toHaveBeenCalledTimes(1)
+  expect(screen.queryByAltText('K')).toBeNull()
+})
+
 it('ger upp direkt utan reserv', () => {
   const onError = vi.fn()
   render(<LiveTvLogoImage src="http://p/primar.png" alt="K" onError={onError} />)

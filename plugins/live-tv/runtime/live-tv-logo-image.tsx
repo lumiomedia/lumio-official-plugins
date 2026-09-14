@@ -92,9 +92,14 @@ export function LiveTvLogoImage({ src, fallbackSrc, alt, className, onError }: L
 
   if (failed) return null
 
+  // En reserv IDENTISK med `src` är inget nytt försök — bara ett bortkastat
+  // andra anrop mot en adress som redan just fallerat. Räknas som "ingen
+  // reserv" överallt nedanför, oavsett vilken av de fyra ytorna som ropat.
+  const usableFallbackSrc = fallbackSrc && fallbackSrc !== src ? fallbackSrc : null
+
   // Reserven tar över samma bildplats som leverantörens logotyp — den
   // konsumerar inte en egen plats i laddkön (bara ett steg i samma laddning).
-  const activeSrc = stage === 'fallback' && fallbackSrc ? fallbackSrc : src
+  const activeSrc = stage === 'fallback' && usableFallbackSrc ? usableFallbackSrc : src
 
   return (
     <img
@@ -109,7 +114,7 @@ export function LiveTvLogoImage({ src, fallbackSrc, alt, className, onError }: L
       style={isTauriEnv ? undefined : { contentVisibility: 'auto' }}
       onLoad={() => finishLogoLoad(activeSrc)}
       onError={() => {
-        if (stage === 'primary' && fallbackSrc) {
+        if (stage === 'primary' && usableFallbackSrc) {
           // Leverantörens logotyp fallerade — prova reserven innan vi ger upp.
           // Ingen ny köplats begärs, och räknaren räknas inte ned här; det
           // sker när den bild som faktiskt laddades (reserven) själv landar.
