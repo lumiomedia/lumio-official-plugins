@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
+import { TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR, TV_SCENE_PHONE_ATTR, __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { flushLiveTvIndex, seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
 import type { EpgCacheEntry } from '../epg/types'
+import { dp } from './tv-ui'
 
 vi.mock('../live-tv-player', () => ({ LiveTvPlayer: ({ channel }: { channel: { name: string; url: string } }) => <div data-testid="player">{channel.name}|{channel.url}</div> }))
 import { getReminders } from '../reminders'
@@ -77,5 +78,60 @@ describe('TvChannel', () => {
     await mount()
     expect(screen.getAllByTestId('day-btn')).toHaveLength(5)
     expect(screen.getByTestId('day-btn-0')).toHaveTextContent(/Today|Idag|\w{3}/)
+  })
+})
+
+/**
+ * FYND 1 (slutgranskning M-P4, fixrunda 2): dagväljaren (fast 150 dp) och
+ * detaljpanelen (fast 560 dp) omgav tablån på BÅDA sidor. 150 + 560 = 710 dp
+ * av scenens 780 — tablån klämdes till ~70 dp. Golven på text/träffytor
+ * (M-P4, fixrunda 1) rörde aldrig detta: problemet satt i kolumnernas EGNA
+ * bredder, inte i deras innehålls mått.
+ */
+describe('TvChannel i porträtt (telefon): tre fasta kolumner staplas (fixrunda 2, FYND 1)', () => {
+  let box: HTMLElement | null = null
+  afterEach(() => { box?.remove(); box = null })
+
+  const mountWith = async (phone: boolean) => {
+    box = document.createElement('div')
+    box.setAttribute(TV_SCENE_BOX_ATTR, '1')
+    if (phone) {
+      box.setAttribute(TV_SCENE_NARROW_ATTR, '1')
+      box.setAttribute(TV_SCENE_PHONE_ATTR, '1')
+    }
+    document.body.appendChild(box)
+    const rendered = render(<LiveTvTvShell pageId="live-tv-browse" params={params} onNavigate={() => {}} onOpenDetails={() => {}} />, { container: box })
+    await flushLiveTvIndex()
+    return rendered
+  }
+
+  it('dagväljaren och detaljpanelen tappar sina fasta bredder och staplas under tablån på telefon', async () => {
+    await mountWith(true)
+    const root = screen.getByTestId('channel-view-root')
+    const dayPicker = screen.getByTestId('day-picker')
+    const detail = screen.getByTestId('detail')
+    // Roten staplar de tre sektionerna i stället för att lägga dem i en rad.
+    expect(root.style.flexDirection).toBe('column')
+    // Ingen av de tidigare fasta bredderna (150/560 dp) finns kvar.
+    expect(dayPicker.style.width).not.toBe(`${dp(150)}px`)
+    expect(dayPicker.style.width).toBe('100%')
+    expect(detail.style.width).not.toBe(`${dp(560)}px`)
+    expect(detail.style.width).toBe('100%')
+    // Dagväljaren är en horisontell rad (samma mönster som kategorichipsen)
+    // i stället för en smal vertikal kolumn.
+    expect(dayPicker.style.flexDirection).toBe('row')
+  })
+
+  it('dagväljaren och detaljpanelen behåller 150/560 dp och radlayout på skrivbord/TV', async () => {
+    await mountWith(false)
+    const root = screen.getByTestId('channel-view-root')
+    const dayPicker = screen.getByTestId('day-picker')
+    const detail = screen.getByTestId('detail')
+    expect(root.style.flexDirection).not.toBe('column')
+    expect(dayPicker.style.width).toBe(`${dp(150)}px`)
+    expect(dayPicker.style.flexShrink).toBe('0')
+    expect(dayPicker.style.flexDirection).toBe('column')
+    expect(detail.style.width).toBe(`${dp(560)}px`)
+    expect(detail.style.flexShrink).toBe('0')
   })
 })

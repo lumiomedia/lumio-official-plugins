@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { channelKey, type M3uChannel } from '../live-tv-data'
 import { qualityFromName, startOfLocalDay } from '../live-tv-model'
 import { PinGate, formatClock } from '../live-tv-ui'
@@ -150,10 +150,45 @@ export function TvChannel({ model, nav, params, settings }: TvViewProps) {
     setLockGate(true)
   }
 
+  /**
+   * PORTRÄTTBEHANDLING (granskning M-P4, FYND 1).
+   *
+   * Vyn hade tre kolumner sida vid sida: tablån (flex), dagväljaren (fast
+   * 150 dp) och detaljpanelen (fast 560 dp). De två fasta kolumnerna äter
+   * 710 av scenens 780 designpixlar och klämmer tablån till ~70 dp — golven
+   * på text/träffytor (M-P4) gjorde INGET åt det, för problemet satt i
+   * kolumnernas egna bredder, inte i deras innehåll.
+   *
+   * Tre fasta kolumner får inte plats bredvid varandra på 780 dp (samma
+   * slutsats som guidens spellistvy) — telefonen staplar dem i stället:
+   * tablå, dagväljare, detalj, i den ordningen de redan står i trädet.
+   * Dagväljaren byter samtidigt till en horisontell rad (samma mönster som
+   * kategorichipsen i tv-guide.tsx/tv-hub.tsx) i stället för en smal kolumn
+   * ingen skulle kunna trycka rätt i.
+   */
+  const outerStyle: CSSProperties = phone
+    ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflowY: 'auto' }
+    : { flex: 1, minHeight: 0, display: 'flex' }
+  const scheduleStyle: CSSProperties = phone
+    ? { padding: `${dp(20)}px ${dp(20)}px 0`, display: 'flex', flexDirection: 'column' }
+    : { flex: 1, minWidth: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(34)}px ${dp(40)}px 0 ${dp(48)}px`, display: 'flex', flexDirection: 'column' }
+  // Listan hade egen scroll (`flex: 1, minHeight: 0, overflowY: 'auto'`) när
+  // den satt i en höjdbegränsad kolumn bredvid dagväljare/detalj. Staplad på
+  // telefon äger sidan (outerStyle) den enda scrollen — en nästlad scrollyta
+  // hade antingen kollapsat till 0 höjd (ingen given höjd att fylla) eller
+  // gett en telefon med två scrollhjul i samma vy.
+  const scheduleListStyle: CSSProperties = phone ? {} : { flex: 1, minHeight: 0, overflowY: 'auto' }
+  const dayPickerStyle: CSSProperties = phone
+    ? { width: '100%', flexShrink: 0, padding: `${dp(16)}px ${dp(20)}px`, display: 'flex', flexDirection: 'row', gap: dp(10), overflowX: 'auto' }
+    : { width: dp(150), flexShrink: 0, padding: `${dp(120)}px ${dp(14)}px 0`, display: 'flex', flexDirection: 'column', gap: dp(10) }
+  const detailStyle: CSSProperties = phone
+    ? { width: '100%', flexShrink: 0, padding: `${dp(20)}px ${dp(20)}px ${dp(32)}px`, display: 'flex', flexDirection: 'column', gap: dp(16) }
+    : { width: dp(560), flexShrink: 0, padding: `${dp(34)}px ${dp(48)}px ${dp(32)}px ${dp(36)}px`, display: 'flex', flexDirection: 'column', gap: dp(16) }
+
   return (
-    <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
+    <div data-testid="channel-view-root" style={outerStyle}>
       {/* Tablå */}
-      <div style={{ flex: 1, minWidth: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(34)}px ${dp(40)}px 0 ${dp(48)}px`, display: 'flex', flexDirection: 'column' }}>
+      <div data-testid="channel-schedule" style={scheduleStyle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: dp(16), marginBottom: dp(16) }}>
           <RoundBtn phone={phone} {...station(() => nav.back())}><Icons.ChevronLeft /></RoundBtn>
           <ChannelArt channel={channel} style={{ width: dp(88), height: dp(56) }} radius={dp(8)} />
@@ -161,7 +196,7 @@ export function TvChannel({ model, nav, params, settings }: TvViewProps) {
           {channel.group ? <Tag variant="neutral" phone={phone}>{channel.group}</Tag> : null}
           <RoundBtn phone={phone} {...station(() => model.togglePin(channel))} background={pinned ? TV.accMix(22) : TV.s12} style={{ marginLeft: 'auto' }}><span style={{ color: pinned ? TV.acc : TV.text }}><Icons.Heart size={dp(24)} filled={pinned} /></span></RoundBtn>
         </div>
-        <div data-scroll="" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+        <div data-scroll="" style={scheduleListStyle}>
           {rows.length === 0 ? <div style={{ padding: dp(24), color: TV.dim, fontSize: dp(phoneTextFloor(19, phone)) }}>{scheduleLoading ? tt('loadingGuide') : tt('noProgramme')}</div> : null}
           {rows.map((row, index) => {
             const k = kindOf(row.p, model.nowMs)
@@ -192,13 +227,13 @@ export function TvChannel({ model, nav, params, settings }: TvViewProps) {
       </div>
 
       {/* Dagväljare */}
-      <div style={{ width: dp(150), flexShrink: 0, padding: `${dp(120)}px ${dp(14)}px 0`, display: 'flex', flexDirection: 'column', gap: dp(10) }}>
+      <div data-testid="day-picker" style={dayPickerStyle}>
         {DAY_OFFSETS.map((offset) => {
           const active = offset === dayOffset
           const label = dayLabel(offset)
           return (
-            <div key={offset} data-testid={offset === 0 ? 'day-btn-0' : undefined}>
-              <div {...station(() => setDayOffset(offset), undefined, { 'data-testid': 'day-btn' })} style={{ height: dp(phoneHitFloor(74, phone)), minHeight: dp(phoneHitFloor(74, phone)), borderRadius: dp(12), display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: active ? '#f3f4f8' : 'transparent', color: active ? '#111' : offset > 0 ? TV.accText : 'rgba(243,244,248,0.6)', cursor: 'pointer' }}>
+            <div key={offset} data-testid={offset === 0 ? 'day-btn-0' : undefined} style={phone ? { flexShrink: 0 } : undefined}>
+              <div {...station(() => setDayOffset(offset), undefined, { 'data-testid': 'day-btn' })} style={{ width: phone ? dp(72) : undefined, height: dp(phoneHitFloor(74, phone)), minHeight: dp(phoneHitFloor(74, phone)), borderRadius: dp(12), display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: active ? '#f3f4f8' : 'transparent', color: active ? '#111' : offset > 0 ? TV.accText : 'rgba(243,244,248,0.6)', cursor: 'pointer' }}>
                 <span style={{ fontSize: dp(phoneTextFloor(17, phone)), fontWeight: 600 }}>{label.top}</span>
                 <span style={{ fontSize: dp(phoneTextFloor(15, phone)), opacity: 0.75 }}>{label.bottom}</span>
               </div>
@@ -208,7 +243,7 @@ export function TvChannel({ model, nav, params, settings }: TvViewProps) {
       </div>
 
       {/* Detalj */}
-      <div data-testid="detail" style={{ width: dp(560), flexShrink: 0, padding: `${dp(34)}px ${dp(48)}px ${dp(32)}px ${dp(36)}px`, display: 'flex', flexDirection: 'column', gap: dp(16) }}>
+      <div data-testid="detail" style={detailStyle}>
         <TvPreview channel={channel} enabled={settings.previewEnabled && kind === 'now'} live={kind === 'now'} width="100%" height={dp(268)} label={previewLabel} onOk={primary} phone={phone} />
         <div style={{ fontSize: dp(28), fontWeight: 600 }}>{selected?.title ?? channel.name}</div>
         {selected ? <div style={{ fontSize: dp(phoneTextFloor(18, phone)), color: 'rgba(243,244,248,0.6)' }}>{tt('airedAt', { time: formatClock(selected.start, locale), channel: channel.name })}</div> : null}
