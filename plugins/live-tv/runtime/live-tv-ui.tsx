@@ -176,9 +176,11 @@ export function Btn({
 
 /* ---------- Kanal, förlopp, rubriker ---------- */
 
-export function ChannelBadge({ channel, size = 40, radius = LT.radiusSm }: { channel: Pick<M3uChannel, 'name' | 'logo'>; size?: number; radius?: number }) {
+export function ChannelBadge({ channel, size = 40, radius = LT.radiusSm }: { channel: Pick<M3uChannel, 'name' | 'logo' | 'logoFallback'>; size?: number; radius?: number }) {
   const [failed, setFailed] = useState(false)
-  const src = getLiveTvLogoSrc(channel.logo)
+  const primarySrc = getLiveTvLogoSrc(channel.logo)
+  const fallbackSrc = getLiveTvLogoSrc(channel.logoFallback)
+  const src = primarySrc ?? fallbackSrc
   const box: CSSProperties = {
     width: size,
     height: size,
@@ -193,7 +195,13 @@ export function ChannelBadge({ channel, size = 40, radius = LT.radiusSm }: { cha
   if (src && !failed) {
     return (
       <div style={box}>
-        <LiveTvLogoImage src={src} alt="" className="h-full w-full object-contain p-1" onError={() => setFailed(true)} />
+        <LiveTvLogoImage
+          src={src}
+          fallbackSrc={primarySrc ? fallbackSrc : undefined}
+          alt=""
+          className="h-full w-full object-contain p-1"
+          onError={() => setFailed(true)}
+        />
       </div>
     )
   }

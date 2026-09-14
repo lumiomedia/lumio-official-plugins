@@ -1,7 +1,19 @@
 import { useState } from 'react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, createEvent, fireEvent, render, screen } from '@testing-library/react'
 import { ChannelArt, Chip, Progress, RoundBtn, Tag, TvFocusStyle, dp, station } from './tv-ui'
+import { __resetLogoQueueForTests } from '../live-tv-logo-image'
+
+// happy-dom har en riktig IntersectionObserver som aldrig rapporterar
+// intersection i test — utan den odefinierad hänger ChannelArts logotyp i
+// laddkön för evigt och `src`-attributet sätts aldrig.
+vi.stubGlobal('IntersectionObserver', undefined)
+
+// Laddkön är modulglobal (se live-tv-logo-image.tsx) — utan nollställning tar
+// återanvända URL:er cache-genvägen i stället för att gå genom kön.
+beforeEach(() => {
+  __resetLogoQueueForTests()
+})
 
 afterEach(cleanup)
 
@@ -46,6 +58,29 @@ describe('tv-ui', () => {
   it('ChannelArt visar initialer utan logotyp och bildruta', () => {
     render(<ChannelArt channel={{ name: 'Sky Sports', logo: null }} />)
     expect(screen.getByText('SS')).toBeInTheDocument()
+  })
+
+  it('ChannelArt kanalkortet skickar med reserven', () => {
+    render(
+      <ChannelArt channel={{ name: 'K', logo: 'http://p/a.png', logoFallback: 'http://p/b.png' }} />,
+    )
+    const img = document.querySelector('img.lumio-tv-logo-img') as HTMLImageElement
+    fireEvent.error(img)
+    expect(img.getAttribute('src')).toContain(encodeURIComponent('http://p/b.png'))
+  })
+
+  it('ChannelArt: kanal utan leverantörslogotyp går direkt på reserven', () => {
+    render(
+      <ChannelArt channel={{ name: 'K', logo: null, logoFallback: 'http://p/b.png' }} />,
+    )
+    const img = document.querySelector('img.lumio-tv-logo-img') as HTMLImageElement
+    expect(img.getAttribute('src')).toContain(encodeURIComponent('http://p/b.png'))
+  })
+
+  it('ChannelArt: kanal utan både och visar initialerna', () => {
+    render(<ChannelArt channel={{ name: 'Kanal Ett', logo: null, logoFallback: null }} />)
+    expect(document.querySelector('img.lumio-tv-logo-img')).toBeNull()
+    expect(screen.getByText('KE')).toBeInTheDocument()
   })
 })
 

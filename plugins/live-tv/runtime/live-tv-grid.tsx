@@ -696,8 +696,11 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavi
 
   useEffect(() => {
     let cancelled = false
+    // Reservens URL läggs bara till när kanalen saknar leverantörslogotyp —
+    // annars skulle förladdningen dubblas för varje kanal som redan har en
+    // egen logotyp att prova.
     const logoEntries = pagedChannels
-      .map((channel) => ({ key: channel.url, src: getLiveTvLogoSrc(channel.logo) }))
+      .map((channel) => ({ key: channel.url, src: getLiveTvLogoSrc(channel.logo) ?? getLiveTvLogoSrc(channel.logoFallback) }))
       .filter((entry): entry is { key: string; src: string } => Boolean(entry.src))
 
     if (logoEntries.length === 0) {

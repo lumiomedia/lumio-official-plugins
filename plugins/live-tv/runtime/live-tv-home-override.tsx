@@ -195,10 +195,13 @@ export function LiveTvHomeOverride({ onNavigate }: HomeOverrideProps) {
         <div className="space-y-3 rounded-3xl border border-white/10 bg-white/[0.02] p-4">
           <div className="flex flex-wrap items-center gap-3">
             {(() => {
-              const logoSrc = getLiveTvLogoSrc(focused.channel.logo)
+              const primarySrc = getLiveTvLogoSrc(focused.channel.logo)
+              const fallbackSrc = getLiveTvLogoSrc(focused.channel.logoFallback)
+              const logoSrc = primarySrc ?? fallbackSrc
               return logoSrc ? (
                 <LiveTvLogoImage
                   src={logoSrc}
+                  fallbackSrc={primarySrc ? fallbackSrc : undefined}
                   alt=""
                   className="h-10 w-10 rounded object-contain bg-slate-800/90 p-1"
                 />

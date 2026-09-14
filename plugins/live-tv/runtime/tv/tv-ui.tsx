@@ -217,7 +217,9 @@ export function Progress({ value, height = dp(5), track = TV.s14, style }: { val
  * ritas ovanpå (taggar, text, gradient).
  */
 export function ChannelArt({ channel, frameVersion, height, aspect, radius, children, style }: {
-  channel: Pick<M3uChannel, 'name' | 'logo' | 'url'> | Pick<M3uChannel, 'name' | 'logo'>
+  channel:
+    | Pick<M3uChannel, 'name' | 'logo' | 'logoFallback' | 'url'>
+    | Pick<M3uChannel, 'name' | 'logo' | 'logoFallback'>
   frameVersion?: number | string | null
   height?: number
   aspect?: string
@@ -233,13 +235,21 @@ export function ChannelArt({ channel, frameVersion, height, aspect, radius, chil
   // forma en tillförlitlig nyckel, så vi hoppar rakt till logotyp/initialer
   // i stället för att chansa med en ostabil nyckel.
   const frameSrc = !frameFailed && 'url' in channel ? sdk.playerFrameUrl(channelKey(channel), frameVersion ?? null) : null
-  const logo = logoFailed ? null : getLiveTvLogoSrc(channel.logo)
+  const primaryLogo = getLiveTvLogoSrc(channel.logo)
+  const fallbackLogo = getLiveTvLogoSrc(channel.logoFallback)
+  const logo = logoFailed ? null : primaryLogo ?? fallbackLogo
   return (
     <div style={{ position: 'relative', height, aspectRatio: aspect, background: 'rgba(252,252,255,0.06)', borderRadius: radius, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', ...style }}>
       {frameSrc ? (
         <img src={frameSrc} alt="" onError={() => setFrameFailed(true)} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
       ) : logo ? (
-        <LiveTvLogoImage src={logo} alt="" className="lumio-tv-logo-img" onError={() => setLogoFailed(true)} />
+        <LiveTvLogoImage
+          src={logo}
+          fallbackSrc={primaryLogo ? fallbackLogo : undefined}
+          alt=""
+          className="lumio-tv-logo-img"
+          onError={() => setLogoFailed(true)}
+        />
       ) : (
         <span style={{ fontSize: dp(22), fontWeight: 600, color: TV.dim, letterSpacing: '0.04em' }}>{initialsOf(channel.name)}</span>
       )}
