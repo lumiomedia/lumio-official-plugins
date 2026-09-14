@@ -78,11 +78,21 @@ export const CHANNEL_CELL_WIDTH_DP = 520
  * Numret (`width: dp(44)`) får krympa (ingen `flexShrink: 0`) och räknas
  * INTE in i overheaden ovan — utan ett golv på kolumnen själv är det annars
  * numret och namnet som delar det som blir kvar, ibland noll eller negativt.
- * Golvet nedan reserverar dessutom minst 44 dp åt numret och minst 96 dp åt
- * namnet (cirka sex tecken vid teckengolvets 28 dp/14 riktiga pixlar — nog
- * för korta kanalnamn som "BBC1"/"SVT2", ellipsen tar resten):
+ * Golvet nedan reserverar dessutom minst 44 dp åt numret och siktar på minst
+ * 96 dp åt namnet (cirka sex tecken vid teckengolvets 28 dp/14 riktiga
+ * pixlar — nog för korta kanalnamn som "BBC1"/"SVT2", ellipsen tar resten):
  *
- *   140 (overhead) + 44 (nummer) + 96 (namn, golv) = 280 dp
+ *   140 (overhead) + 44 (nummer) + 96 (namn, mål) = 280 dp
+ *
+ * De 96 dp:n är ett MÅL, inte en garanti: en fastnålad OCH låst kanal lägger
+ * till två ikonspann (Icons.Heart + Icons.Lock, 18 dp var) och två extra
+ * `gap`, 28 dp mer overhead (56 dp gap totalt i stället för 28, plus 36 dp
+ * ikoner) — 204 dp overhead+ikoner i stället för 140. Med numrets 44 dp
+ * kvar krymper namnets andel till 280 − 204 − 44 = 32 dp: fortfarande
+ * positivt och fortfarande med ellipsis (`ChannelCell`s
+ * `overflow: hidden`/`text-overflow: ellipsis` rörs inte av det här), men
+ * bara ett par tecken synliga, inte sex. Golvet garanterar "namnet klipps
+ * aldrig till noll", inte "namnet visar sex tecken".
  *
  * Vid 780 dp scenbredd (padding 48 dp × 2 + tre 16 dp-mellanrum mellan de
  * fyra kolumnerna = 144 dp overhead) blir NU/SEN/SENARE tillsammans

@@ -18,6 +18,17 @@ const list: LiveTvList = { id: 'l1', name: 'Xtream', channels: [channelA, ch('B'
 // Varje vy som skalet kan slå upp (`TV_VIEWS`, tv-views.tsx). Testerna är
 // avsiktligt breda: de ska fälla VARJE vy som glömts bort, inte bara den man
 // råkar ändra — se M-P4 i planen.
+//
+// KÄND BEGRÄNSNING (fixrunda 1, granskningsfynd): sviten monterar bara varje
+// vys STANDARDLÄGE — hubben som den ser ut direkt efter montering, guiden i
+// Nu-läge, osv. Den öppnar INGA dialoger (textprompten, kanal-/listväljaren,
+// PIN-grinden), byter INTE guidens läge till Tablå/Rutnät/Spellistor, och
+// startar ingen uppspelning (spelaren mockas bort helt, se ovan — kromet
+// testas därför inte här alls). Text eller träffytor som bara finns bakom en
+// sådan handling kan alltså glida under golven utan att detta test märker
+// det. Golv i sådana ytor har hittills lagts till manuellt när de rörts
+// (spelarkromet, guidens rutnät/spellistor, de delade panelerna) — inte för
+// att sviten bevisat att de behövs.
 const VIEW_PARAMS: Record<string, Record<string, string>> = {
   hub: {},
   guide: { view: 'guide' },

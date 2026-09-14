@@ -11,7 +11,7 @@ import { useNarrowSurface } from '../hooks/useNarrowSurface'
 import { usePhoneSurface } from '../hooks/usePhoneSurface'
 import { useSwipeBack } from '../hooks/useSwipeBack'
 import { useTvText } from './tv-strings'
-import { PHONE_HIT_MIN_DP, PHONE_TEXT_MIN_DP, TV, TvFocusStyle, dp, phoneTextFloor, station, Icons } from './tv-ui'
+import { PHONE_HIT_MIN_DP, TV, TvFocusStyle, dp, phoneTextFloor, station, Icons } from './tv-ui'
 import { TvHoldAffordance } from './tv-hold-affordance'
 import { useTvSettings, type TvSettings } from './tv-settings-store'
 import { addToFirstFree, getMultiviewState, setMultiviewState } from './tv-multiview-store'
@@ -615,8 +615,11 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
         style={{ height: dp(PHONE_HIT_MIN_DP), minHeight: dp(PHONE_HIT_MIN_DP), borderRadius: dp(14), display: 'flex', alignItems: 'center', gap: dp(16), padding: `0 ${dp(18)}px`, cursor: 'pointer', background: activeItem ? TV.s14 : 'transparent', color: activeItem ? TV.text : 'rgba(243,244,248,0.75)', ...extraStyle }}
       >
         <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: dp(32), flexShrink: 0 }}>{item.icon}</span>
-        {/* Lådan finns bara på telefon, så etiketten mäter alltid mot teckengolvet. */}
-        <span style={{ fontSize: dp(PHONE_TEXT_MIN_DP), fontWeight: activeItem ? 600 : 400 }}>{item.label}</span>
+        {/* Samma hjälpare som resten av vyerna, inte konstanten direkt i
+            märkningen — lådan finns bara på telefon, så `phone` är alltid
+            sann här, men golvet ska ändå gå genom `phoneTextFloor` som
+            överallt annars (fixrunda 1). */}
+        <span style={{ fontSize: dp(phoneTextFloor(26, phone)), fontWeight: activeItem ? 600 : 400 }}>{item.label}</span>
       </div>
     )
   }
