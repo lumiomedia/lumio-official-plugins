@@ -8,8 +8,10 @@ import { LIVE_TV_BROWSE_PAGE_ID, encodeChannelParams, type PlayRequest } from '.
 import { PinGate } from '../live-tv-ui'
 import { activeProfileHasPin, isUnlockedThisSession, markUnlockedThisSession, pinSupportAvailable, toggleChannelLock, verifyActiveProfilePin } from '../channel-locks'
 import { useNarrowSurface } from '../hooks/useNarrowSurface'
+import { useSwipeBack } from '../hooks/useSwipeBack'
 import { useTvText } from './tv-strings'
 import { TV, TvFocusStyle, dp, station, Icons } from './tv-ui'
+import { TvHoldAffordance } from './tv-hold-affordance'
 import { useTvSettings, type TvSettings } from './tv-settings-store'
 import { addToFirstFree, getMultiviewState, setMultiviewState } from './tv-multiview-store'
 import { createZapBuffer, resolveZap } from './tv-zap'
@@ -389,6 +391,9 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
       if (menu || layersRef.current.length > 0) return
       const target = event.target as HTMLElement | null
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return
+      // Värdens egna redigerbara ytor (spec §5). Sätts oavsett läge: en TV har
+      // inga contenteditable-fält, så undantaget är inert där.
+      if (target?.closest?.('[contenteditable]:not([contenteditable="false"])')) return
       if (target?.closest?.('[data-live-tv-keyboard]')) return
       if (/^[0-9]$/.test(event.key)) {
         event.preventDefault()
@@ -419,24 +424,42 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     view, params: viewParams, go, back, play, openChannel, openMenu: setMenu, channelMenu, addToMultiview, pushLayer, toast, playerOpen: active !== null,
   }), [view, viewParams, go, back, play, openChannel, channelMenu, addToMultiview, pushLayer, toast, active])
 
+  /**
+   * Kantsvepet tar ETT steg i Bakåt-kedjan — det hoppar inte till hubben som
+   * skrivbordssidorna gjorde (spec §4.1). `back` är samma funktion som
+   * tangenten och ikonradens Bakåt-post kör, så gesten kan aldrig komma ur fas
+   * med dem. Hooken no-oppar själv i TV-läge.
+   *
+   * `enabled`: glasmenyn och PIN-grinden täcker skärmen men ligger kvar i
+   * sidans DOM — utan flaggan hade ett drag bakom dem navigerat undan sidan
+   * under dem. Glasmenyn äger dessutom sin egen Back.
+   */
+  useSwipeBack(back, !menu && pending === null)
+
   const View = TV_VIEWS[view]
   const activeChannel: M3uChannel | null = active
     ? active.url ? { ...active.channel, url: active.url, name: active.label ?? active.channel.name } : active.channel
     : null
 
-  const rail: { key: TvView; label: string; icon: ReactNode }[] = [
+  /**
+   * `run` saknas för vyposterna — de navigerar till sin egen vy. Bakåt-posten
+   * är den enda som kör något annat, och delar i övrigt exakt radens mått och
+   * utseende (smalläget följer med av sig själv genom `railItemSize`).
+   */
+  type RailItem = { key: string; label: string; icon: ReactNode; run?: () => void }
+  const rail: RailItem[] = [
     { key: 'search', label: tt('railSearch'), icon: <Icons.Search /> },
     { key: 'hub', label: tt('railHome'), icon: <Icons.Home /> },
     { key: 'guide', label: tt('railGuide'), icon: <Icons.Tv /> },
     { key: 'multi', label: tt('railMultiview'), icon: <Icons.SquaresFour /> },
     { key: 'favs', label: tt('railFavourites'), icon: <Icons.Heart /> },
   ]
-  const railItem = (item: { key: TvView; label: string; icon: ReactNode }, extraStyle?: CSSProperties) => {
+  const railItem = (item: RailItem, extraStyle?: CSSProperties) => {
     const activeItem = item.key === view || (item.key === 'guide' && view === 'channel')
     return (
       <div
         key={item.key}
-        {...station(() => go(item.key), undefined, { 'data-testid': `rail-${item.key}`, 'aria-label': item.label, title: item.label })}
+        {...station(item.run ?? (() => go(item.key as TvView)), undefined, { 'data-testid': `rail-${item.key}`, 'aria-label': item.label, title: item.label })}
         style={{ width: dp(railItemSize), height: dp(railItemSize), borderRadius: dp(16), display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: activeItem ? TV.s14 : 'transparent', color: activeItem ? TV.text : 'rgba(243,244,248,0.55)', ...extraStyle }}
       >
         {item.icon}
@@ -475,11 +498,16 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     <div
       ref={rootRef}
       data-live-tv-tv-root=""
-      // `position: relative; zIndex: 0` bara när hål finns: det gör roten till
-      // en stackningskontext så att bakgrundens `zIndex: -1` hamnar under
-      // skalets innehåll men inte rymmer ut ur pluginet. Utan hål är stilen
-      // exakt som förut.
-      style={{ display: 'flex', height: '100%', minHeight: 0, background: hasCutouts ? 'transparent' : TV.bg, color: TV.text, fontFamily: TV.font, fontSize: dp(22), lineHeight: 1.3, ...(hasCutouts ? { position: 'relative' as const, zIndex: 0 } : null) }}
+      // `position: relative` alltid: "…"-knappen (P3) ligger absolut placerad
+      // i ROTENS koordinatrum, och utan en positionerad rot hade den räknats
+      // mot en godtycklig förfader i värdens träd. Det skapar ingen
+      // stackningskontext och påverkar inte de `position: fixed`-lager som
+      // ligger i skalet (toasts, paneler).
+      //
+      // `zIndex: 0` bara när hål finns: DÅ blir roten en stackningskontext, så
+      // att bakgrundens `zIndex: -1` hamnar under skalets innehåll men inte
+      // rymmer ut ur pluginet.
+      style={{ display: 'flex', position: 'relative', height: '100%', minHeight: 0, background: hasCutouts ? 'transparent' : TV.bg, color: TV.text, fontFamily: TV.font, fontSize: dp(22), lineHeight: 1.3, ...(hasCutouts ? { zIndex: 0 } : null) }}
     >
       {hasCutouts ? <SurfaceBackdrop cutouts={cutouts} /> : null}
       <TvFocusStyle />
@@ -492,7 +520,11 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
         {narrow ? null : (
           <div data-live-tv-rail-badge="" aria-hidden="true" style={{ width: dp(44), height: dp(44), borderRadius: dp(12), background: TV.acc, color: TV.onAcc, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: dp(22), marginBottom: dp(24) }}>L</div>
         )}
-        {/* P3 lägger Bakåt-posten överst här, utanför TV-läget. */}
+        {/* Bakåt med pekaren: SAMMA `back()` som tangenten, så alla fyra
+            nivåerna (lager → spelare → vy → requestBrowseBack) nås med musen.
+            Aldrig på TV — där finns fjärrens egen Bakåt-knapp, och TV-designen
+            är godkänd som den är. */}
+        {isTv ? null : railItem({ key: 'back', label: tt('railBack'), icon: <Icons.ChevronLeft />, run: back })}
         {rail.map((item) => railItem(item))}
         {railItem({ key: 'settings', label: tt('railSettings'), icon: <Icons.Gear /> }, { marginTop: 'auto' })}
       </nav>
@@ -523,9 +555,13 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
           void releaseAllSurfaces().finally(() => setActive(gate.request))
         }}
       />
+      {/* EN "…"-knapp för hela skalet, placerad över den hovrade stationen.
+          Ligger i ROTENS koordinatrum (roten är `position: relative` ovan) —
+          scenlådans transform gäller båda, så måtten förblir designpixlar. */}
+      <TvHoldAffordance rootRef={rootRef} enabled={!isTv} />
       {TvGlassMenu && menu ? <TvGlassMenu target={menu} onClose={() => setMenu(null)} /> : null}
       {zapDigits ? (
-        <div style={{ position: 'fixed', top: dp(36), right: dp(48), zIndex: 80, padding: `${dp(10)}px ${dp(22)}px`, borderRadius: dp(12), background: TV.glass, fontSize: dp(34), fontWeight: 600, letterSpacing: '0.1em' }}>{zapDigits}</div>
+        <div data-testid="zap-digits" style={{ position: 'fixed', top: dp(36), right: dp(48), zIndex: 80, padding: `${dp(10)}px ${dp(22)}px`, borderRadius: dp(12), background: TV.glass, fontSize: dp(34), fontWeight: 600, letterSpacing: '0.1em' }}>{zapDigits}</div>
       ) : null}
       {toastText ? (
         <div role="status" data-live-tv-layer="" style={{ position: 'fixed', bottom: dp(40), left: '50%', transform: 'translateX(-50%)', zIndex: 80, padding: `${dp(12)}px ${dp(24)}px`, borderRadius: 999, background: TV.glass, fontSize: dp(19) }}>{toastText}</div>

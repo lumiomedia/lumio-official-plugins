@@ -16,6 +16,9 @@ const EN = {
   railMultiview: 'Multiview',
   railFavourites: 'Favourites',
   railSettings: 'Settings',
+  railBack: 'Back', // P3
+  // P3: "…"-knappen på hovring — tydlig affordans, ikon OCH verktygstips.
+  moreOptions: 'More options',
   // Gemensamt
   liveTv: 'Live TV',
   live: 'LIVE',
@@ -212,6 +215,8 @@ const SV: Record<keyof typeof EN, string> = {
   railMultiview: 'Multivy',
   railFavourites: 'Favoriter',
   railSettings: 'Inställningar',
+  railBack: 'Tillbaka', // P3
+  moreOptions: 'Fler val', // P3
   liveTv: 'Live TV',
   live: 'LIVE',
   replay: 'Repris',

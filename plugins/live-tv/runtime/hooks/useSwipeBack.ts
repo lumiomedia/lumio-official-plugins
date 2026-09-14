@@ -4,9 +4,15 @@ import { useEffect } from 'react'
 import { useTvMode } from '@/lib/plugin-sdk'
 
 /**
- * Swipe tillbaka till hubben på mobil (Jerry 2026-09-09). Undersidorna hade
- * bara sin Tillbaka-knapp, och på telefon är den längst upp till vänster —
- * en återvändsgränd för tummen.
+ * Kantsvep bakåt på mobil (Jerry 2026-09-09). Undersidorna hade bara sin
+ * Tillbaka-knapp, och på telefon är den längst upp till vänster — en
+ * återvändsgränd för tummen.
+ *
+ * Gesten tar ETT STEG I BAKÅT-KEDJAN, den hoppar inte till hubben. Hooken
+ * bestämmer inte själv vad "bakåt" betyder — det gör anroparen, och skalet
+ * skickar in sitt eget `back()` (spec §4.1). Skrivbordssidorna som ännu
+ * skickar in `() => go('hub')` (`live-tv-epg-page.tsx`,
+ * `live-tv-channel-page.tsx`) raderas i P9.
  *
  * Gesten måste BÖRJA vid vänsterkanten. Det är inte kosmetik: EPG-tablån och
  * flera rader scrollar i sidled, och ett drag var som helst hade slagits om
@@ -41,9 +47,13 @@ export function isSwipeBackGesture({ startX, startY, endX, endY }: SwipeBackGeom
  * innehåll i flera scrollande lager, och en behållare hade tappat gesten så
  * fort dragningen började i ett av dem.
  *
- * `enabled` är till för att stänga av gesten när spelaren eller PIN-rutan
- * ligger över sidan — de täcker skärmen men ligger kvar i sidans DOM, så
- * utan flaggan hade ett drag bakom dem navigerat undan spelaren.
+ * `enabled` är till för att stänga av gesten när ett lager som äger Back själv
+ * ligger över sidan — glasmenyn och PIN-grinden täcker skärmen men ligger kvar
+ * i sidans DOM, så utan flaggan hade ett drag bakom dem navigerat undan sidan
+ * under dem.
+ *
+ * TV-läget no-oppar: en fjärr har ingen kant att svepa från, och gesten hade
+ * bara kunnat utlösas av misstag på en TV med pekskärmsemulering.
  */
 export function useSwipeBack(onBack: () => void, enabled = true): void {
   const tvMode = useTvMode()
