@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
+import { TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR, TV_SCENE_PHONE_ATTR, __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { flushLiveTvIndex, seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
 import { getGuideMode } from './tv-settings-store'
+import { dp } from './tv-ui'
 import type { EpgCacheEntry } from '../epg/types'
 
 vi.mock('../live-tv-player', () => ({ LiveTvPlayer: ({ channel }: { channel: { name: string } }) => <div data-testid="player">{channel.name}</div> }))
@@ -194,5 +195,28 @@ describe('TvGuide: lägesbyte och Bakåt', () => {
     fireEvent.keyDown(window, { key: 'Backspace' })
     expect(onNavigate).toHaveBeenCalledTimes(1)
     expect((onNavigate.mock.calls[0][0] as { params: Record<string, string> }).params.view).toBe('hub')
+  })
+})
+
+describe('TvGuide i porträtt (telefon)', () => {
+  // Lådan måste bort i `afterEach` — se M-P2:s skaltest/rapport.
+  let box: HTMLElement | null = null
+  afterEach(() => { box?.remove(); box = null })
+
+  const mountOnPhone = async () => {
+    box = document.createElement('div')
+    box.setAttribute(TV_SCENE_BOX_ATTR, '1')
+    box.setAttribute(TV_SCENE_NARROW_ATTR, '1')
+    box.setAttribute(TV_SCENE_PHONE_ATTR, '1')
+    document.body.appendChild(box)
+    const rendered = render(<LiveTvTvShell pageId="live-tv-browse" params={{ view: 'guide' }} onNavigate={() => {}} onOpenDetails={() => {}} />, { container: box })
+    await flushLiveTvIndex()
+    return rendered
+  }
+
+  it('kanalkolumnen tar full bredd på telefon', async () => {
+    await mountOnPhone()
+    const cell = screen.getAllByTestId('guide-channel-cell')[0]
+    expect(cell.style.width).not.toBe(`${dp(520)}px`)
   })
 })

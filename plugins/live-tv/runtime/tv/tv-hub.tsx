@@ -7,13 +7,21 @@ import { pickReplayChannels } from '../view-helpers'
 import { formatClock, progressOf } from '../live-tv-ui'
 import { qualityFromName, startOfLocalDay } from '../live-tv-model'
 import { useEpgLoadStatus } from '../hooks/useEpgLoadStatus'
+import { usePhoneSurface } from '../hooks/usePhoneSurface'
 import { useSchedules } from '../hooks/useSchedules'
 import type { TvViewProps } from './tv-shell'
 import { ChannelArt, Chip, Icons, Progress, Tag, TV, cardStyle, dp, station, useTvClockNode } from './tv-ui'
 import { useTvText } from './tv-strings'
 import { pickSpotlight, type SpotlightReason } from './tv-spotlight'
 
-const SPOTLIGHT_COUNT = 3
+// Spotlight: 3 kolumner på skrivbord/TV, 2 i porträtt (spec §3).
+const SPOTLIGHT_COUNT_DESKTOP = 3
+const SPOTLIGHT_COUNT_PHONE = 2
+// "Alla kanaler": den gamla specen kallade DETTA rutnät "hubbens
+// sexkolumnsrutnät" (inte spotlighten, som alltid varit 3) — sex på
+// skrivbord/TV, två i porträtt, samma behandling som spotlighten.
+const ALL_CHANNELS_COLUMNS_DESKTOP = 6
+const ALL_CHANNELS_COLUMNS_PHONE = 2
 const ALL_STEP = 36
 const MAX_CHIPS = 12
 /** Repriser: hur långt bakåt tablån hämtas (urvalet av kanaler görs i view-helpers). */
@@ -22,6 +30,9 @@ const REPLAY_DAYS = 3
 export function TvHub({ model, nav }: TvViewProps) {
   const { tt, locale } = useTvText()
   const clock = useTvClockNode(locale)
+  const phone = usePhoneSurface()
+  const spotlightCount = phone ? SPOTLIGHT_COUNT_PHONE : SPOTLIGHT_COUNT_DESKTOP
+  const allChannelsColumns = phone ? ALL_CHANNELS_COLUMNS_PHONE : ALL_CHANNELS_COLUMNS_DESKTOP
   const [group, setGroup] = useState<string | null>(null)
   const [visible, setVisible] = useState(ALL_STEP)
   const [playlistOpen, setPlaylistOpen] = useState(false)
@@ -31,7 +42,7 @@ export function TvHub({ model, nav }: TvViewProps) {
 
   const favourites = model.favouriteChannels
   const recent = useMemo(() => model.history.map((h) => model.byUrl.get(h.url)).filter((c): c is M3uChannel => Boolean(c)), [model.history, model.byUrl])
-  const spotlight = useMemo(() => pickSpotlight({ favourites, recent, channels: model.channels, nowFor: model.nowFor, count: SPOTLIGHT_COUNT }), [favourites, recent, model.channels, model.nowFor])
+  const spotlight = useMemo(() => pickSpotlight({ favourites, recent, channels: model.channels, nowFor: model.nowFor, count: spotlightCount }), [favourites, recent, model.channels, model.nowFor, spotlightCount])
   /**
    * Repriser: favoriter och nyss sedda kanaler med arkiv (Xtream tv_archive),
    * inte hela spellistan. Tablån bor i appen sedan lagring v2, så varje kanal
@@ -136,7 +147,7 @@ export function TvHub({ model, nav }: TvViewProps) {
 
       {/* Spotlight */}
       {spotlight.length > 0 ? (
-        <div data-row="" style={{ display: 'grid', gridTemplateColumns: `repeat(${SPOTLIGHT_COUNT}, minmax(0, 1fr))`, gap: dp(20) }}>
+        <div data-testid="hub-spotlight" data-row="" style={{ display: 'grid', gridTemplateColumns: `repeat(${spotlightCount}, minmax(0, 1fr))`, gap: dp(20) }}>
           {spotlight.map((pick, index) => {
             const info = model.nowFor(pick.channel)
             const number = model.channelNumber(pick.channel)
@@ -233,7 +244,7 @@ export function TvHub({ model, nav }: TvViewProps) {
             ))}
           </div>
         </div>
-        <div data-testid="all-channels" style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: dp(14) }}>
+        <div data-testid="all-channels" style={{ display: 'grid', gridTemplateColumns: `repeat(${allChannelsColumns}, minmax(0, 1fr))`, gap: dp(14) }}>
           {shown.map((channel, index) => {
             const info = model.nowFor(channel)
             const number = model.channelNumber(channel)
