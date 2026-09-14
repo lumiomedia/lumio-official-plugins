@@ -190453,7 +190453,8 @@ ${cue.text}`).join("\n\n")}
       return () => observer2.disconnect();
     }, [shouldLoad, src]);
     if (failed) return null;
-    const activeSrc = stage === "fallback" && fallbackSrc ? fallbackSrc : src;
+    const usableFallbackSrc = fallbackSrc && fallbackSrc !== src ? fallbackSrc : null;
+    const activeSrc = stage === "fallback" && usableFallbackSrc ? usableFallbackSrc : src;
     return /* @__PURE__ */ jsx(
       "img",
       {
@@ -190468,7 +190469,7 @@ ${cue.text}`).join("\n\n")}
         style: isTauriEnv ? void 0 : { contentVisibility: "auto" },
         onLoad: () => finishLogoLoad(activeSrc),
         onError: () => {
-          if (stage === "primary" && fallbackSrc) {
+          if (stage === "primary" && usableFallbackSrc) {
             setStage("fallback");
             return;
           }
@@ -193948,6 +193949,7 @@ ${cue.text}`).join("\n\n")}
               {
                 checked: isLogoFallbackEnabled(list),
                 onChange: (value) => setLogoFallbackEnabled(list.id, value),
+                disabled: list.kind === "custom",
                 label: h("logoFallbackToggle")
               }
             ) }),
@@ -194526,6 +194528,15 @@ ${cue.text}`).join("\n\n")}
       if (item.logoFallback != null) item.logoFallback = null;
     }
   }
+  function applyLogoFallbackSwitchToExtra(channel, lists, listByUrl) {
+    if (channel.logoFallback == null) return channel;
+    const owner2 = listByUrl.get(channel.url);
+    if (owner2) return isLogoFallbackEnabled(owner2) ? channel : { ...channel, logoFallback: null };
+    const anyIndexedListDisabled = lists.some(
+      (list) => list.kind !== "custom" && Boolean(list.source) && !isLogoFallbackEnabled(list)
+    );
+    return anyIndexedListDisabled ? { ...channel, logoFallback: null } : channel;
+  }
   function loadChannelsShared(source) {
     ensureLogoFallbackSwitchSubscription();
     const cacheKey = channelsCacheKey(source);
@@ -194625,12 +194636,24 @@ ${cue.text}`).join("\n\n")}
       () => new Map(channels.map((channel, index3) => [channelKey(channel), index3 + 1])),
       [channels]
     );
+    const listByUrl = useMemo(() => {
+      const map = /* @__PURE__ */ new Map();
+      for (const list of lists) for (const channel of list.channels ?? []) if (!map.has(channel.url)) map.set(channel.url, list);
+      return map;
+    }, [lists]);
+    const extrasWithLogoFallbackSwitch = useMemo(() => {
+      const out = {};
+      for (const [key, channel] of Object.entries(extras)) {
+        out[key] = applyLogoFallbackSwitchToExtra(channel, lists, listByUrl);
+      }
+      return out;
+    }, [extras, lists, listByUrl]);
     const byKey = useMemo(() => {
       const map = /* @__PURE__ */ new Map();
-      for (const channel of Object.values(extras)) map.set(channel.key, channel);
+      for (const channel of Object.values(extrasWithLogoFallbackSwitch)) map.set(channel.key, channel);
       for (const channel of channels) map.set(channelKey(channel), channel);
       return map;
-    }, [channels, extras]);
+    }, [channels, extrasWithLogoFallbackSwitch]);
     const byUrl = useMemo(() => {
       const map = /* @__PURE__ */ new Map();
       for (const channel of byKey.values()) if (!map.has(channel.url)) map.set(channel.url, channel);
@@ -194641,11 +194664,6 @@ ${cue.text}`).join("\n\n")}
       () => lists.map((list) => ({ id: list.id, name: list.name, count: list.channelCount ?? list.channels?.length ?? 0 })),
       [lists]
     );
-    const listByUrl = useMemo(() => {
-      const map = /* @__PURE__ */ new Map();
-      for (const list of lists) for (const channel of list.channels ?? []) if (!map.has(channel.url)) map.set(channel.url, list);
-      return map;
-    }, [lists]);
     const loadedKeys = useMemo(() => new Set(channels.map((channel) => channelKey(channel))), [channels]);
     const pinnedId = pinnedKeys.join(",");
     const historyId = history.map((entry) => entry.key).join(",");
@@ -199638,6 +199656,7 @@ ${cue.text}`).join("\n\n")}
               {
                 testId: `list-logo-fallback-${list.id}`,
                 label: logoEnabled ? tt("logoFallbackOn") : tt("logoFallbackOff"),
+                disabled: list.kind === "custom",
                 onOk: () => setLogoFallbackEnabled(list.id, !logoEnabled)
               }
             ),
