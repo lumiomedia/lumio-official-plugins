@@ -1,18 +1,39 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { getTvGlassMenu, type TvGlassMenuTarget } from '@/lib/plugin-sdk'
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
+import { getTvGlassMenu, useTvMode, type TvGlassMenuTarget } from '@/lib/plugin-sdk'
 import { channelKey, type M3uChannel } from '../live-tv-data'
 import { formatClock, progressOf } from '../live-tv-ui'
-import type { LiveTvPlayerTvProps } from './tv-player-types'
+import type { LiveTvPlayerControls, LiveTvPlayerTvProps } from './tv-player-types'
 import { Icons, Progress, RoundBtn, Tag, TV, dp, station, useTvClockNode } from './tv-ui'
 import { useTvText } from './tv-strings'
 
 /** Kort på var sida om den spelande kanalen i mini-guiden. */
 const MINI_WINDOW = 25
 
-export function TvPlayerChrome({ channel, tv, paused, onTogglePause, onClose }: { channel: M3uChannel; tv: LiveTvPlayerTvProps; paused: boolean; onTogglePause: () => void; onClose: () => void }) {
+/** Ett pilsteg på volymreglaget (spec 4.1: tangentbordet ska nå allt). */
+const VOLUME_STEP = 0.1
+
+/*
+ * P13-ikonerna bor HÄR och inte i `tv-ui.tsx`.
+ *
+ * De hör till en kontrollrad som bara finns utanför TV-läget; `Icons` i
+ * tv-ui är TV-vyernas delade uppsättning och ska inte växa med sådant som
+ * ingen TV-vy ritar. Samma 24-rutnät och stroke som där, så de ser likadana
+ * ut bredvid ⋯ och Back.
+ */
+const stroke = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
+const CtlIcon = ({ children }: { children: ReactNode }) => (
+  <svg width={dp(24)} height={dp(24)} viewBox="0 0 24 24" {...stroke}>{children}</svg>
+)
+const SpeakerOn = () => <CtlIcon><path d="M4 9.5v5h3.3L12 18.5v-13L7.3 9.5H4z" /><path d="M15.6 9.4a3.6 3.6 0 0 1 0 5.2" /><path d="M18.2 6.9a7.2 7.2 0 0 1 0 10.2" /></CtlIcon>
+const SpeakerOff = () => <CtlIcon><path d="M4 9.5v5h3.3L12 18.5v-13L7.3 9.5H4z" /><path d="m16 10 4 4M20 10l-4 4" /></CtlIcon>
+const CornersOut = () => <CtlIcon><path d="M9.5 4H4v5.5M14.5 4H20v5.5M14.5 20H20v-5.5M9.5 20H4v-5.5" /></CtlIcon>
+const CornersIn = () => <CtlIcon><path d="M4 9.5h5.5V4M20 9.5h-5.5V4M20 14.5h-5.5V20M4 14.5h5.5V20" /></CtlIcon>
+
+export function TvPlayerChrome({ channel, tv, controls, paused, onTogglePause, onClose }: { channel: M3uChannel; tv: LiveTvPlayerTvProps; controls?: LiveTvPlayerControls; paused: boolean; onTogglePause: () => void; onClose: () => void }) {
   const { tt } = useTvText()
+  const isTv = useTvMode()
   const clock = useTvClockNode(tv.locale)
   const [visible, setVisible] = useState(true)
   const [miniOpen, setMiniOpen] = useState(false)
@@ -36,6 +57,53 @@ export function TvPlayerChrome({ channel, tv, paused, onTogglePause, onClose }: 
     if (hideMs > 0 && !miniOpen && !menu) timerRef.current = window.setTimeout(() => setVisible(false), hideMs)
   }, [hideMs, miniOpen, menu])
   useEffect(() => { reveal(); return () => { if (timerRef.current !== null) window.clearTimeout(timerRef.current) } }, [reveal, channel])
+
+  /**
+   * Musen visar bannern igen — utanför TV-läget.
+   *
+   * På TV finns bara ▲ (och den räcker: fjärren har inget pekdon). På
+   * skrivbordet leder musen (spec §4.5), och utan det här hade bannerns
+   * göm-timer lagt ljud-, volym- och fullskärmsknapparna utom räckhåll efter
+   * fyra sekunder för någon som aldrig rör tangentbordet.
+   */
+  useEffect(() => {
+    if (isTv) return
+    const onPointer = () => reveal()
+    window.addEventListener('pointermove', onPointer)
+    window.addEventListener('pointerdown', onPointer)
+    return () => {
+      window.removeEventListener('pointermove', onPointer)
+      window.removeEventListener('pointerdown', onPointer)
+    }
+  }, [isTv, reveal])
+
+  /*
+   * Pekarkontrollerna (P13): ljud av, volym, fullskärm, bildförhållande.
+   *
+   * När det gamla skrivbordskromet raderades försvann den ENDA vägen till
+   * dem — funktionerna låg kvar i `live-tv-player.tsx` utan anropsställe, och
+   * `muted` nådde aldrig `<video>`. De ritas bara utanför TV-läget:
+   * handoffens spelarskärm (§9) har "inga knapprader", och på TV äger fjärren
+   * ljudet. Varje kontroll är ändå en `station()`, så en fjärrkontroll som
+   * styr skrivbordet (Fjärr/LAN) når dem.
+   */
+  const volumeRef = useRef<HTMLDivElement | null>(null)
+  const volumePercent = Math.round((controls?.volume ?? 0) * 100)
+  const setVolumeFromPointer = useCallback((clientX: number) => {
+    const rect = volumeRef.current?.getBoundingClientRect()
+    if (!rect || rect.width === 0 || !controls) return
+    controls.onVolume(Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)))
+  }, [controls])
+  const onVolumeKey = useCallback((event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (!controls) return
+    const delta = event.key === 'ArrowRight' ? VOLUME_STEP : event.key === 'ArrowLeft' ? -VOLUME_STEP : 0
+    if (delta === 0) return
+    event.preventDefault()
+    event.stopPropagation()
+    // Avrundning till hundradelar: 0.5 + 0.1 är 0.6000000000000001 i flyttal,
+    // och det talet hade läckt hela vägen ut i aria-valuenow och mpv.
+    controls.onVolume(Math.max(0, Math.min(1, Math.round((controls.volume + delta) * 100) / 100)))
+  }, [controls])
 
   const index = tv.neighbours.findIndex((c) => channelKey(c) === channelKey(channel))
 
@@ -242,6 +310,38 @@ export function TvPlayerChrome({ channel, tv, paused, onTogglePause, onClose }: 
           ) : null}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: dp(16), flexShrink: 0 }}>
+          {!isTv && controls ? (
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: dp(12) }}>
+              <RoundBtn {...station(controls.onToggleMute, undefined, { 'aria-label': controls.muted ? tt('playerUnmute') : tt('playerMute') })} background="rgba(252,252,255,0.10)">
+                {controls.muted ? <SpeakerOff /> : <SpeakerOn />}
+              </RoundBtn>
+              <div
+                {...station(controls.onToggleMute, undefined, { 'aria-label': tt('playerVolume') })}
+                ref={volumeRef}
+                role="slider"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={volumePercent}
+                onKeyDown={onVolumeKey}
+                onPointerDown={(event: ReactPointerEvent<HTMLDivElement>) => setVolumeFromPointer(event.clientX)}
+                onPointerMove={(event: ReactPointerEvent<HTMLDivElement>) => { if (event.buttons === 1) setVolumeFromPointer(event.clientX) }}
+                // Klicket gör om samma sak som pointerdown: samma X ger samma
+                // värde, så den här extra vägen är gratis och räddar miljöer
+                // utan pekarhändelser.
+                onClick={(event: { clientX: number }) => setVolumeFromPointer(event.clientX)}
+                style={{ width: dp(132), height: dp(52), display: 'inline-flex', alignItems: 'center', padding: `0 ${dp(6)}px`, borderRadius: 999, cursor: 'pointer', touchAction: 'none', boxSizing: 'border-box' }}
+              >
+                <span style={{ position: 'relative', width: '100%', height: dp(6), borderRadius: 999, background: 'rgba(252,252,255,0.22)' }}>
+                  <span style={{ position: 'absolute', inset: 0, right: `${100 - volumePercent}%`, borderRadius: 999, background: TV.acc }} />
+                  <span style={{ position: 'absolute', top: '50%', left: `${volumePercent}%`, width: dp(14), height: dp(14), marginTop: dp(-7), marginLeft: dp(-7), borderRadius: 999, background: '#fff' }} />
+                </span>
+              </div>
+              <RoundBtn {...station(controls.onToggleFullscreen, undefined, { 'aria-label': controls.fullscreen ? tt('playerExitFullscreen') : tt('playerFullscreen') })} background="rgba(252,252,255,0.10)">
+                {controls.fullscreen ? <CornersIn /> : <CornersOut />}
+              </RoundBtn>
+              <div {...station(controls.onCycleAspect, undefined, { 'aria-label': tt('playerAspect') })} style={{ height: dp(52), padding: `0 ${dp(18)}px`, borderRadius: 999, background: 'rgba(252,252,255,0.10)', border: `1px solid ${TV.lineCard}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: dp(16), color: TV.text, cursor: 'pointer', whiteSpace: 'nowrap', boxSizing: 'border-box' }}>{controls.aspectLabel}</div>
+            </div>
+          ) : null}
           <span style={{ fontSize: dp(16), color: 'rgba(243,244,248,0.45)' }}>{tt('playerHelp')}</span>
           <div ref={dotsRef} {...station(() => dotsRef.current && openMenu(dotsRef.current), (el) => openMenu(el), { 'data-init': '', 'aria-label': tt('moreActions') })} style={{ width: dp(52), height: dp(52), borderRadius: 999, background: 'rgba(252,252,255,0.10)', border: `1px solid ${TV.lineCard}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Icons.Dots /></div>
         </div>

@@ -33,7 +33,7 @@ import { useHtmlVideoPlayer } from './hooks/useHtmlVideoPlayer'
 import { HOST_PROXY_MIME, hostProxyUrl as buildHostProxyUrl, nativeFailureAction } from './live-tv-playback-fallback'
 import { TvPlayerChrome } from './tv/tv-player-chrome'
 import { releaseAllSurfaces } from './tv/video-surface'
-import type { LiveTvPlayerTvProps } from './tv/tv-player-types'
+import type { LiveTvPlayerControls, LiveTvPlayerTvProps } from './tv/tv-player-types'
 
 interface M3uChannel {
   name: string
@@ -266,14 +266,26 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
       mpvSetMuted(false)
     }
     mpvSetVolume(clamped)
-    if (videoRef.current) videoRef.current.volume = clamped
   }, [mpvSetMuted, mpvSetVolume, muted])
   const toggleMute = useCallback(() => {
     const next = !muted
     setMutedState(next)
     mpvSetMuted(next)
-    if (videoRef.current) videoRef.current.muted = next
   }, [mpvSetMuted, muted])
+  /**
+   * Tillståndet skrivs på elementet, inte i klickhandlaren.
+   *
+   * `muted` sitter som prop på `<video>` (React skriver EGENSKAPEN, inte
+   * attributet) och volymen genom effekten nedan — `volume` finns inte som
+   * React-attribut. Imperativa skrivningar i handlarna räckte inte: elementet
+   * monteras om vid varje kanalbyte (`key={channel.url}`), och ett nytt
+   * element börjar på volym 1 och ljudet på. `muted` nådde dessutom aldrig
+   * elementet alls, så ljud av gjorde ingenting i en webbläsarsession.
+   */
+  useEffect(() => {
+    const media = videoRef.current
+    if (media) media.volume = volumeLevel
+  }, [volumeLevel, channel.url, isHtmlEngine])
 
   const tryEnterMobileFullscreen = useCallback(() => {
     if (mobileFullscreenAttemptedRef.current) return
@@ -340,6 +352,17 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
     if (!hasNativeSurface) return
     void getWindowFullscreen().then(setDesktopFullscreen).catch(() => {})
   }, [channel.url, hasNativeSurface])
+
+  // Webbläsarsession: helskärmen kan lämnas UTAN vår knapp (Esc, ▣-knappen i
+  // ramen, en annan flik som tar över). Utan den här lyssnaren fastnade
+  // knappens ikon och etikett i "lämna helskärm" på en sida som inte längre
+  // var i helskärm.
+  useEffect(() => {
+    if (hasNativeSurface || typeof document === 'undefined') return
+    const onChange = () => setDesktopFullscreen(document.fullscreenElement !== null)
+    document.addEventListener('fullscreenchange', onChange)
+    return () => document.removeEventListener('fullscreenchange', onChange)
+  }, [hasNativeSurface])
 
   useEffect(() => {
     lockBodyScroll()
@@ -920,6 +943,23 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
       })
   }
 
+  /**
+   * Kontrollerna kromet ritar UTANFÖR TV-läget (P13).
+   *
+   * Tillståndet och motoranropen bor här — kromet vet varken vilken motor som
+   * spelar eller om det finns ett Tauri-fönster att helskärma.
+   */
+  const playerControls: LiveTvPlayerControls = {
+    muted,
+    volume: volumeLevel,
+    fullscreen: desktopFullscreen,
+    aspectLabel: ASPECT_OPTIONS[aspectIndex].label,
+    onToggleMute: toggleMute,
+    onVolume: updateVolume,
+    onToggleFullscreen: toggleFullscreen,
+    onCycleAspect: cycleAspect,
+  }
+
   const content = (
     <div
       data-lumio-player-open="1"
@@ -950,6 +990,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
             // den (Jerry 2026-09-03).
             autoPlay
             playsInline
+            muted={muted}
             style={{ objectFit: ASPECT_OPTIONS[aspectIndex].htmlFit, background: '#000' }}
             onCanPlay={() => setLoading(false)}
             onError={(event) => {
@@ -993,7 +1034,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
         </div>
       )}
       {tvChrome ? (
-        <TvPlayerChrome channel={channel} tv={tvChrome} paused={mpvPaused} onTogglePause={toggleMpvPause} onClose={handleClose} />
+        <TvPlayerChrome channel={channel} tv={tvChrome} controls={playerControls} paused={mpvPaused} onTogglePause={toggleMpvPause} onClose={handleClose} />
       ) : null}
     </div>
   )

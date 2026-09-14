@@ -21,3 +21,27 @@ export interface LiveTvPlayerTvProps {
   onAddToMultiview(channel: M3uChannel): void
   onSwitchChannel(channel: M3uChannel): void
 }
+
+/**
+ * Pekarkontrollerna: ljud av, volym, fullskärm, bildförhållande.
+ *
+ * Egen prop och INTE en del av `LiveTvPlayerTvProps`: den byggs av skalet
+ * (`tv/tv-player-props.ts`) och beskriver kanalen och dess grannar, medan
+ * det här är spelarens eget tillstånd — bara `live-tv-player.tsx` kan äga
+ * det (motorn, `<video>`-elementet, fönstret).
+ *
+ * Kromet ritar dem BARA utanför TV-läget: på TV sköter fjärrkontrollen
+ * ljudet och handoffens spelarskärm (§9) ska inte ha några knapprader.
+ */
+export interface LiveTvPlayerControls {
+  muted: boolean
+  /** 0–1. */
+  volume: number
+  fullscreen: boolean
+  /** Namnet på det valda läget, t.ex. "Auto" eller "16:9". */
+  aspectLabel: string
+  onToggleMute(): void
+  onVolume(next: number): void
+  onToggleFullscreen(): void
+  onCycleAspect(): void
+}

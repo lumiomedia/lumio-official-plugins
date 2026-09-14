@@ -204,6 +204,13 @@ const EN = {
   moreActions: 'More',
   nextLabel: 'Next',
   zapMiss: 'No channel {n}',
+  // P13: pekarkontroller i spelarkromet, bara utanför TV-läget
+  playerMute: 'Mute',
+  playerUnmute: 'Unmute',
+  playerVolume: 'Volume',
+  playerFullscreen: 'Fullscreen',
+  playerExitFullscreen: 'Exit fullscreen',
+  playerAspect: 'Aspect ratio',
   // Tomma
   guideEmpty: 'No channels in this category',
 } as const
@@ -390,6 +397,13 @@ const SV: Record<keyof typeof EN, string> = {
   moreActions: 'Mer',
   nextLabel: 'Sen',
   zapMiss: 'Ingen kanal {n}',
+  // P13
+  playerMute: 'Ljud av',
+  playerUnmute: 'Ljud på',
+  playerVolume: 'Volym',
+  playerFullscreen: 'Fullskärm',
+  playerExitFullscreen: 'Lämna fullskärm',
+  playerAspect: 'Bildförhållande',
   guideEmpty: 'Inga kanaler i kategorin',
 }
 
