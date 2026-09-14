@@ -11,7 +11,7 @@ import { useNarrowSurface } from '../hooks/useNarrowSurface'
 import { usePhoneSurface } from '../hooks/usePhoneSurface'
 import { useSwipeBack } from '../hooks/useSwipeBack'
 import { useTvText } from './tv-strings'
-import { PHONE_HIT_MIN_DP, TV, TvFocusStyle, dp, station, Icons } from './tv-ui'
+import { PHONE_HIT_MIN_DP, PHONE_TEXT_MIN_DP, TV, TvFocusStyle, dp, phoneTextFloor, station, Icons } from './tv-ui'
 import { TvHoldAffordance } from './tv-hold-affordance'
 import { useTvSettings, type TvSettings } from './tv-settings-store'
 import { addToFirstFree, getMultiviewState, setMultiviewState } from './tv-multiview-store'
@@ -615,7 +615,8 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
         style={{ height: dp(PHONE_HIT_MIN_DP), minHeight: dp(PHONE_HIT_MIN_DP), borderRadius: dp(14), display: 'flex', alignItems: 'center', gap: dp(16), padding: `0 ${dp(18)}px`, cursor: 'pointer', background: activeItem ? TV.s14 : 'transparent', color: activeItem ? TV.text : 'rgba(243,244,248,0.75)', ...extraStyle }}
       >
         <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: dp(32), flexShrink: 0 }}>{item.icon}</span>
-        <span style={{ fontSize: dp(26), fontWeight: activeItem ? 600 : 400 }}>{item.label}</span>
+        {/* Lådan finns bara på telefon, så etiketten mäter alltid mot teckengolvet. */}
+        <span style={{ fontSize: dp(PHONE_TEXT_MIN_DP), fontWeight: activeItem ? 600 : 400 }}>{item.label}</span>
       </div>
     )
   }
@@ -655,7 +656,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
       // `zIndex: 0` bara när hål finns: DÅ blir roten en stackningskontext, så
       // att bakgrundens `zIndex: -1` hamnar under skalets innehåll men inte
       // rymmer ut ur pluginet.
-      style={{ display: 'flex', position: 'relative', height: '100%', minHeight: 0, background: hasCutouts ? 'transparent' : TV.bg, color: TV.text, fontFamily: TV.font, fontSize: dp(22), lineHeight: 1.3, ...(hasCutouts ? { zIndex: 0 } : null) }}
+      style={{ display: 'flex', position: 'relative', height: '100%', minHeight: 0, background: hasCutouts ? 'transparent' : TV.bg, color: TV.text, fontFamily: TV.font, fontSize: dp(phoneTextFloor(22, phone)), lineHeight: 1.3, ...(hasCutouts ? { zIndex: 0 } : null) }}
     >
       {hasCutouts ? <SurfaceBackdrop cutouts={cutouts} /> : null}
       <TvFocusStyle />
@@ -754,7 +755,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
         <div data-testid="zap-digits" style={{ position: 'fixed', top: dp(36), right: dp(48), zIndex: 80, padding: `${dp(10)}px ${dp(22)}px`, borderRadius: dp(12), background: TV.glass, fontSize: dp(34), fontWeight: 600, letterSpacing: '0.1em' }}>{zapDigits}</div>
       ) : null}
       {toastText ? (
-        <div role="status" data-live-tv-layer="" style={{ position: 'fixed', bottom: dp(40), left: '50%', transform: 'translateX(-50%)', zIndex: 80, padding: `${dp(12)}px ${dp(24)}px`, borderRadius: 999, background: TV.glass, fontSize: dp(19) }}>{toastText}</div>
+        <div role="status" data-live-tv-layer="" style={{ position: 'fixed', bottom: dp(40), left: '50%', transform: 'translateX(-50%)', zIndex: 80, padding: `${dp(12)}px ${dp(24)}px`, borderRadius: 999, background: TV.glass, fontSize: dp(phoneTextFloor(19, phone)) }}>{toastText}</div>
       ) : null}
     </div>
   )

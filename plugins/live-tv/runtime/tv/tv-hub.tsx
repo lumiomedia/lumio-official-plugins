@@ -10,7 +10,7 @@ import { useEpgLoadStatus } from '../hooks/useEpgLoadStatus'
 import { usePhoneSurface } from '../hooks/usePhoneSurface'
 import { useSchedules } from '../hooks/useSchedules'
 import type { TvViewProps } from './tv-shell'
-import { ChannelArt, Chip, Icons, Progress, Tag, TV, cardStyle, dp, station, useTvClockNode } from './tv-ui'
+import { ChannelArt, Chip, Icons, PHONE_HIT_MIN_DP, Progress, Tag, TV, cardStyle, dp, phoneHitFloor, phoneTextFloor, station, useTvClockNode } from './tv-ui'
 import { useTvText } from './tv-strings'
 import { pickSpotlight, type SpotlightReason } from './tv-spotlight'
 
@@ -29,8 +29,8 @@ const REPLAY_DAYS = 3
 
 export function TvHub({ model, nav }: TvViewProps) {
   const { tt, locale } = useTvText()
-  const clock = useTvClockNode(locale)
   const phone = usePhoneSurface()
+  const clock = useTvClockNode(locale, phone)
   const spotlightCount = phone ? SPOTLIGHT_COUNT_PHONE : SPOTLIGHT_COUNT_DESKTOP
   const allChannelsColumns = phone ? ALL_CHANNELS_COLUMNS_PHONE : ALL_CHANNELS_COLUMNS_DESKTOP
   const [group, setGroup] = useState<string | null>(null)
@@ -93,8 +93,8 @@ export function TvHub({ model, nav }: TvViewProps) {
             sidhämtningen är klar, annars "lägg till en spellista". Utan
             skillnaden möttes varje kallstart av tomsidan i en halv sekund. */}
         <div style={{ fontSize: dp(34), fontWeight: 600 }}>{model.channelsLoading ? tt('loadingChannels') : tt('emptyTitle')}</div>
-        <div style={{ fontSize: dp(20), color: TV.muted }}>{model.channelsLoading ? '' : tt('emptyBody')}</div>
-        <div {...station(() => nav.go('settings'), undefined, { 'data-init': '' })} style={{ alignSelf: 'flex-start', height: dp(52), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.acc, color: TV.onAcc, display: 'inline-flex', alignItems: 'center', fontSize: dp(19), fontWeight: 600 }}>{tt('openSettings')}</div>
+        <div style={{ fontSize: dp(phoneTextFloor(20, phone)), color: TV.muted }}>{model.channelsLoading ? '' : tt('emptyBody')}</div>
+        <div {...station(() => nav.go('settings'), undefined, { 'data-init': '' })} style={{ alignSelf: 'flex-start', height: dp(phoneHitFloor(52, phone)), minHeight: dp(phoneHitFloor(52, phone)), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.acc, color: TV.onAcc, display: 'inline-flex', alignItems: 'center', fontSize: dp(phoneTextFloor(19, phone)), fontWeight: 600 }}>{tt('openSettings')}</div>
       </div>
     )
   }
@@ -118,7 +118,7 @@ export function TvHub({ model, nav }: TvViewProps) {
       <div data-testid="hub-topbar" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', columnGap: dp(20), rowGap: dp(12) }}>
         <div style={{ fontSize: dp(34), fontWeight: 600 }}>{tt('liveTv')}</div>
         <div style={{ position: 'relative' }}>
-          <div ref={pillRef} data-testid="playlist-pill" {...station(() => setPlaylistOpen(true), undefined, spotlight.length === 0 && shown.length === 0 ? { 'data-init': '' } : undefined)} style={{ height: dp(52), padding: `0 ${dp(22)}px`, borderRadius: 999, background: TV.s12, display: 'inline-flex', alignItems: 'center', gap: dp(10), fontSize: dp(20), fontWeight: 600, cursor: 'pointer' }}>
+          <div ref={pillRef} data-testid="playlist-pill" {...station(() => setPlaylistOpen(true), undefined, spotlight.length === 0 && shown.length === 0 ? { 'data-init': '' } : undefined)} style={{ height: dp(phoneHitFloor(52, phone)), minHeight: dp(phoneHitFloor(52, phone)), padding: `0 ${dp(22)}px`, borderRadius: 999, background: TV.s12, display: 'inline-flex', alignItems: 'center', gap: dp(10), fontSize: dp(phoneTextFloor(20, phone)), fontWeight: 600, cursor: 'pointer' }}>
             {model.activePlaylistName ?? tt('allPlaylists')} <Icons.ChevronDown />
           </div>
           {playlistOpen ? (
@@ -126,20 +126,20 @@ export function TvHub({ model, nav }: TvViewProps) {
               {[{ id: null as string | null, name: tt('allPlaylists'), count: model.allChannels.length }, ...model.playlists].map((p) => {
                 const active = (model.activePlaylistId ?? null) === p.id
                 return (
-                  <div key={p.id ?? '__all'} data-testid={`playlist-${p.id ?? 'all'}`} data-live-tv-menu-item="" {...station(() => { model.setActivePlaylist(p.id); setPlaylistOpen(false); setGroup(null); setVisible(ALL_STEP); window.setTimeout(() => pillRef.current?.focus({ preventScroll: true }), 0) }, undefined, active ? { 'data-init': '' } : {})} style={{ height: dp(56), padding: `0 ${dp(16)}px`, borderRadius: dp(12), display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: active ? TV.s12 : 'transparent', cursor: 'pointer' }}>
-                    <span style={{ fontSize: dp(19), fontWeight: 600 }}>{p.name}</span>
-                    <span style={{ fontSize: dp(14), color: 'rgba(243,244,248,0.5)' }}>{tt('channelsCount', { count: p.count })}</span>
+                  <div key={p.id ?? '__all'} data-testid={`playlist-${p.id ?? 'all'}`} data-live-tv-menu-item="" {...station(() => { model.setActivePlaylist(p.id); setPlaylistOpen(false); setGroup(null); setVisible(ALL_STEP); window.setTimeout(() => pillRef.current?.focus({ preventScroll: true }), 0) }, undefined, active ? { 'data-init': '' } : {})} style={{ height: dp(phoneHitFloor(56, phone)), minHeight: dp(phoneHitFloor(56, phone)), padding: `0 ${dp(16)}px`, borderRadius: dp(12), display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: active ? TV.s12 : 'transparent', cursor: 'pointer' }}>
+                    <span style={{ fontSize: dp(phoneTextFloor(19, phone)), fontWeight: 600 }}>{p.name}</span>
+                    <span style={{ fontSize: dp(phoneTextFloor(14, phone)), color: 'rgba(243,244,248,0.5)' }}>{tt('channelsCount', { count: p.count })}</span>
                   </div>
                 )
               })}
-              <div data-live-tv-menu-item="" {...station(() => { setPlaylistOpen(false); nav.go('settings', { tab: 'playlists' }) })} style={{ height: dp(56), padding: `0 ${dp(16)}px`, display: 'flex', alignItems: 'center', fontSize: dp(17), color: 'rgba(243,244,248,0.65)', borderTop: `1px solid ${TV.line}`, marginTop: dp(4), cursor: 'pointer' }}>{tt('addPlaylist')}</div>
+              <div data-live-tv-menu-item="" {...station(() => { setPlaylistOpen(false); nav.go('settings', { tab: 'playlists' }) })} style={{ height: dp(phoneHitFloor(56, phone)), minHeight: dp(phoneHitFloor(56, phone)), padding: `0 ${dp(16)}px`, display: 'flex', alignItems: 'center', fontSize: dp(phoneTextFloor(17, phone)), color: 'rgba(243,244,248,0.65)', borderTop: `1px solid ${TV.line}`, marginTop: dp(4), cursor: 'pointer' }}>{tt('addPlaylist')}</div>
             </div>
           ) : null}
         </div>
-        <div {...station(() => nav.go('search'))} style={{ height: dp(52), minWidth: dp(420), padding: `0 ${dp(22)}px`, borderRadius: 999, background: TV.s10, display: 'inline-flex', alignItems: 'center', gap: dp(12), color: 'rgba(243,244,248,0.7)', fontSize: dp(20), cursor: 'pointer' }}>
+        <div {...station(() => nav.go('search'))} style={{ height: dp(phoneHitFloor(52, phone)), minHeight: dp(phoneHitFloor(52, phone)), minWidth: dp(420), padding: `0 ${dp(22)}px`, borderRadius: 999, background: TV.s10, display: 'inline-flex', alignItems: 'center', gap: dp(12), color: 'rgba(243,244,248,0.7)', fontSize: dp(phoneTextFloor(20, phone)), cursor: 'pointer' }}>
           <Icons.Search size={dp(20)} /> {tt('searchPlaceholder')}
         </div>
-        <div {...station(() => nav.go('guide'))} style={{ height: dp(52), padding: `0 ${dp(22)}px`, borderRadius: 999, border: `1px solid ${TV.lineStrong}`, background: TV.s06, display: 'inline-flex', alignItems: 'center', gap: dp(10), fontSize: dp(20), cursor: 'pointer' }}>
+        <div {...station(() => nav.go('guide'))} style={{ height: dp(phoneHitFloor(52, phone)), minHeight: dp(phoneHitFloor(52, phone)), padding: `0 ${dp(22)}px`, borderRadius: 999, border: `1px solid ${TV.lineStrong}`, background: TV.s06, display: 'inline-flex', alignItems: 'center', gap: dp(10), fontSize: dp(phoneTextFloor(20, phone)), cursor: 'pointer' }}>
           <Icons.Calendar /> {tt('railGuide')}
         </div>
         <div data-testid="hub-clock" style={{ marginLeft: 'auto', flexShrink: 0, textAlign: 'right' }}>{clock}</div>
@@ -152,20 +152,20 @@ export function TvHub({ model, nav }: TvViewProps) {
             const info = model.nowFor(pick.channel)
             const number = model.channelNumber(pick.channel)
             return (
-              <div key={channelKey(pick.channel)} {...cardStation(pick.channel, index === 0 ? { 'data-init': '' } : undefined)} style={{ ...cardStyle, borderRadius: dp(18), cursor: 'pointer' }}>
+              <div key={channelKey(pick.channel)} {...cardStation(pick.channel, index === 0 ? { 'data-init': '' } : undefined)} style={{ ...cardStyle, borderRadius: dp(18), cursor: 'pointer', minHeight: phone ? dp(PHONE_HIT_MIN_DP) : undefined }}>
                 <ChannelArt channel={pick.channel} height={dp(150)}>
                   <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.75))' }} />
-                  <div style={{ position: 'absolute', top: dp(12), right: dp(12) }}><Tag variant="reason">{reasonLabel(pick.reason)}</Tag></div>
-                  <div style={{ position: 'absolute', left: dp(16), bottom: dp(12), display: 'flex', alignItems: 'center', gap: dp(10), fontSize: dp(16), color: 'rgba(243,244,248,0.75)' }}>
-                    {info.now ? <Tag variant="live">{tt('live')}</Tag> : null}
+                  <div style={{ position: 'absolute', top: dp(12), right: dp(12) }}><Tag variant="reason" phone={phone}>{reasonLabel(pick.reason)}</Tag></div>
+                  <div style={{ position: 'absolute', left: dp(16), bottom: dp(12), display: 'flex', alignItems: 'center', gap: dp(10), fontSize: dp(phoneTextFloor(16, phone)), color: 'rgba(243,244,248,0.75)' }}>
+                    {info.now ? <Tag variant="live" phone={phone}>{tt('live')}</Tag> : null}
                     <span>{number ? `${number} · ` : ''}{pick.channel.name}</span>
                   </div>
                 </ChannelArt>
                 <div style={{ padding: `${dp(16)}px ${dp(18)}px`, display: 'flex', flexDirection: 'column', gap: dp(8) }}>
-                  <div style={{ fontSize: dp(24), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{info.now ? info.now.title : noProgrammeLabel}</div>
+                  <div style={{ fontSize: dp(phoneTextFloor(24, phone)), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{info.now ? info.now.title : noProgrammeLabel}</div>
                   {info.now ? (
                     <>
-                      <div style={{ fontSize: dp(17), color: 'rgba(243,244,248,0.6)' }}>{`${formatClock(info.now.start, locale)}–${formatClock(info.now.stop, locale)} · ${minutesLeft(info.now.stop)}`}</div>
+                      <div style={{ fontSize: dp(phoneTextFloor(17, phone)), color: 'rgba(243,244,248,0.6)' }}>{`${formatClock(info.now.start, locale)}–${formatClock(info.now.stop, locale)} · ${minutesLeft(info.now.stop)}`}</div>
                       <Progress value={progressOf(info.now.start, info.now.stop, model.nowMs)} />
                     </>
                   ) : null}
@@ -179,16 +179,16 @@ export function TvHub({ model, nav }: TvViewProps) {
       {/* Favoriter */}
       {favourites.length > 0 ? (
         <section style={{ display: 'flex', flexDirection: 'column', gap: dp(14) }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(14) }}><span style={{ fontSize: dp(26), fontWeight: 600 }}>{tt('favourites')}</span><span style={{ fontSize: dp(17), color: 'rgba(243,244,248,0.5)' }}>{tt('channelsCount', { count: favourites.length })}</span></div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(14) }}><span style={{ fontSize: dp(phoneTextFloor(26, phone)), fontWeight: 600 }}>{tt('favourites')}</span><span style={{ fontSize: dp(phoneTextFloor(17, phone)), color: 'rgba(243,244,248,0.5)' }}>{tt('channelsCount', { count: favourites.length })}</span></div>
           <div data-row="" style={{ display: 'flex', gap: dp(14), overflowX: 'auto', paddingBottom: dp(4) }}>
             {favourites.map((channel) => {
               const info = model.nowFor(channel)
               return (
-                <div key={channelKey(channel)} {...station(() => nav.openChannel(channel), (el) => nav.channelMenu(channel, el))} style={{ ...cardStyle, background: TV.s08, width: dp(300), height: dp(88), flexShrink: 0, display: 'flex', alignItems: 'center', gap: dp(14), padding: `0 ${dp(14)}px`, cursor: 'pointer' }}>
+                <div key={channelKey(channel)} {...station(() => nav.openChannel(channel), (el) => nav.channelMenu(channel, el))} style={{ ...cardStyle, background: TV.s08, width: dp(300), height: dp(phoneHitFloor(88, phone)), minHeight: dp(phoneHitFloor(88, phone)), flexShrink: 0, display: 'flex', alignItems: 'center', gap: dp(14), padding: `0 ${dp(14)}px`, cursor: 'pointer' }}>
                   <ChannelArt channel={channel} style={{ width: dp(76), height: dp(50), flexShrink: 0 }} radius={dp(8)} />
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: dp(19), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{channel.name}</div>
-                    <div style={{ fontSize: dp(16), color: 'rgba(243,244,248,0.6)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{info.now?.title ?? noProgrammeLabel}</div>
+                    <div style={{ fontSize: dp(phoneTextFloor(19, phone)), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{channel.name}</div>
+                    <div style={{ fontSize: dp(phoneTextFloor(16, phone)), color: 'rgba(243,244,248,0.6)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{info.now?.title ?? noProgrammeLabel}</div>
                   </div>
                 </div>
               )
@@ -200,31 +200,31 @@ export function TvHub({ model, nav }: TvViewProps) {
       {/* Fortsätt titta */}
       {replays.length > 0 || recent.length > 0 ? (
         <section style={{ display: 'flex', flexDirection: 'column', gap: dp(14) }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(14) }}><span style={{ fontSize: dp(26), fontWeight: 600 }}>{tt('continueWatching')}</span><span style={{ fontSize: dp(17), color: 'rgba(243,244,248,0.5)' }}>{tt('continueSub')}</span></div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(14) }}><span style={{ fontSize: dp(phoneTextFloor(26, phone)), fontWeight: 600 }}>{tt('continueWatching')}</span><span style={{ fontSize: dp(phoneTextFloor(17, phone)), color: 'rgba(243,244,248,0.5)' }}>{tt('continueSub')}</span></div>
           <div data-row="" style={{ display: 'flex', gap: dp(14), overflowX: 'auto', paddingBottom: dp(4) }}>
             {replays.map((item: CatchUpItem) => (
-              <div key={`${channelKey(item.channel)}:${item.programme.start}`} {...station(() => nav.play({ channel: item.channel, url: item.url, label: item.programme.title }), (el) => nav.channelMenu(item.channel, el))} style={{ ...cardStyle, width: dp(300), flexShrink: 0, cursor: 'pointer' }}>
+              <div key={`${channelKey(item.channel)}:${item.programme.start}`} {...station(() => nav.play({ channel: item.channel, url: item.url, label: item.programme.title }), (el) => nav.channelMenu(item.channel, el))} style={{ ...cardStyle, width: dp(300), flexShrink: 0, cursor: 'pointer', minHeight: phone ? dp(PHONE_HIT_MIN_DP) : undefined }}>
                 <ChannelArt channel={item.channel} height={dp(120)}>
-                  <div style={{ position: 'absolute', top: dp(10), right: dp(10) }}><Tag variant="replay">{tt('replay')}</Tag></div>
+                  <div style={{ position: 'absolute', top: dp(10), right: dp(10) }}><Tag variant="replay" phone={phone}>{tt('replay')}</Tag></div>
                   <div style={{ position: 'absolute', left: dp(12), bottom: dp(10), color: TV.text }}><Icons.Play size={dp(28)} /></div>
                 </ChannelArt>
                 <div style={{ padding: `${dp(12)}px ${dp(14)}px` }}>
-                  <div style={{ fontSize: dp(19), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.programme.title}</div>
-                  <div style={{ fontSize: dp(15), color: 'rgba(243,244,248,0.55)' }}>{`${item.channel.name} · ${formatClock(item.programme.start, locale)} · ${Math.round((item.programme.stop - item.programme.start) / 60_000)} min`}</div>
+                  <div style={{ fontSize: dp(phoneTextFloor(19, phone)), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.programme.title}</div>
+                  <div style={{ fontSize: dp(phoneTextFloor(15, phone)), color: 'rgba(243,244,248,0.55)' }}>{`${item.channel.name} · ${formatClock(item.programme.start, locale)} · ${Math.round((item.programme.stop - item.programme.start) / 60_000)} min`}</div>
                 </div>
               </div>
             ))}
             {recent.filter((c) => !replays.some((r) => channelKey(r.channel) === channelKey(c))).slice(0, 8).map((channel) => {
               const info = model.nowFor(channel)
               return (
-                <div key={`recent:${channelKey(channel)}`} {...cardStation(channel)} style={{ ...cardStyle, width: dp(300), flexShrink: 0, cursor: 'pointer' }}>
+                <div key={`recent:${channelKey(channel)}`} {...cardStation(channel)} style={{ ...cardStyle, width: dp(300), flexShrink: 0, cursor: 'pointer', minHeight: phone ? dp(PHONE_HIT_MIN_DP) : undefined }}>
                   <ChannelArt channel={channel} height={dp(120)}>
-                    <div style={{ position: 'absolute', top: dp(10), right: dp(10) }}><Tag variant="reason">{tt('spotlightRecent')}</Tag></div>
+                    <div style={{ position: 'absolute', top: dp(10), right: dp(10) }}><Tag variant="reason" phone={phone}>{tt('spotlightRecent')}</Tag></div>
                     <div style={{ position: 'absolute', left: dp(12), bottom: dp(10), color: TV.text }}><Icons.Play size={dp(28)} /></div>
                   </ChannelArt>
                   <div style={{ padding: `${dp(12)}px ${dp(14)}px` }}>
-                    <div style={{ fontSize: dp(19), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{info.now?.title ?? channel.name}</div>
-                    <div style={{ fontSize: dp(15), color: 'rgba(243,244,248,0.55)' }}>{channel.name}</div>
+                    <div style={{ fontSize: dp(phoneTextFloor(19, phone)), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{info.now?.title ?? channel.name}</div>
+                    <div style={{ fontSize: dp(phoneTextFloor(15, phone)), color: 'rgba(243,244,248,0.55)' }}>{channel.name}</div>
                   </div>
                 </div>
               )
@@ -236,11 +236,11 @@ export function TvHub({ model, nav }: TvViewProps) {
       {/* Alla kanaler */}
       <section style={{ display: 'flex', flexDirection: 'column', gap: dp(14) }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: dp(14) }}>
-          <span style={{ fontSize: dp(26), fontWeight: 600 }}>{tt('allChannels')}</span>
-          <span style={{ fontSize: dp(17), color: 'rgba(243,244,248,0.5)' }}>{tt('allChannelsSub', { playlist: model.activePlaylistName ?? tt('allPlaylists'), count: filtered.length })}</span>
+          <span style={{ fontSize: dp(phoneTextFloor(26, phone)), fontWeight: 600 }}>{tt('allChannels')}</span>
+          <span style={{ fontSize: dp(phoneTextFloor(17, phone)), color: 'rgba(243,244,248,0.5)' }}>{tt('allChannelsSub', { playlist: model.activePlaylistName ?? tt('allPlaylists'), count: filtered.length })}</span>
           <div data-row="" style={{ marginLeft: 'auto', display: 'flex', gap: dp(10), overflowX: 'auto', maxWidth: '55%' }}>
             {[{ key: null as string | null, label: tt('allGroups'), id: 'all' }, ...(favourites.length ? [{ key: '__favs', label: tt('favourites'), id: 'favs' }] : []), ...chips.map((g) => ({ key: g, label: g, id: g }))].map((chip) => (
-              <Chip key={chip.id} active={group === chip.key} {...station(() => { setGroup(chip.key); setVisible(ALL_STEP) }, undefined, { 'data-testid': `chip-${chip.id}` })} style={{ height: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }}>{chip.label}</Chip>
+              <Chip key={chip.id} active={group === chip.key} {...station(() => { setGroup(chip.key); setVisible(ALL_STEP) }, undefined, { 'data-testid': `chip-${chip.id}` })} style={{ height: dp(phoneHitFloor(40, phone)), minHeight: dp(phoneHitFloor(40, phone)), fontSize: dp(phoneTextFloor(16, phone)), padding: `0 ${dp(18)}px` }}>{chip.label}</Chip>
             ))}
           </div>
         </div>
@@ -250,25 +250,25 @@ export function TvHub({ model, nav }: TvViewProps) {
             const number = model.channelNumber(channel)
             const pinned = model.pinnedSet.has(channelKey(channel))
             return (
-              <div key={channelKey(channel)} {...cardStation(channel, spotlight.length === 0 && index === 0 ? { 'data-init': '' } : undefined)} style={{ ...cardStyle, cursor: 'pointer' }}>
+              <div key={channelKey(channel)} {...cardStation(channel, spotlight.length === 0 && index === 0 ? { 'data-init': '' } : undefined)} style={{ ...cardStyle, cursor: 'pointer', minHeight: phone ? dp(PHONE_HIT_MIN_DP) : undefined }}>
                 <ChannelArt channel={channel} aspect="16 / 10">
-                  <span style={{ position: 'absolute', top: dp(8), left: dp(10), fontSize: dp(13), color: 'rgba(243,244,248,0.55)' }}>{number ?? ''}</span>
+                  <span style={{ position: 'absolute', top: dp(8), left: dp(10), fontSize: dp(phoneTextFloor(13, phone)), color: 'rgba(243,244,248,0.55)' }}>{number ?? ''}</span>
                   {pinned ? <span style={{ position: 'absolute', top: dp(8), right: dp(10), color: TV.acc }}><Icons.Heart size={dp(16)} filled /></span> : null}
                   {model.locked.has(channelKey(channel)) ? <span style={{ position: 'absolute', bottom: dp(10), right: dp(10), color: 'rgba(243,244,248,0.55)' }}><Icons.Lock size={dp(16)} /></span> : null}
                   {info.now ? <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}><Progress value={progressOf(info.now.start, info.now.stop, model.nowMs)} height={dp(3)} track="rgba(0,0,0,0.4)" style={{ borderRadius: 0 }} /></div> : null}
                 </ChannelArt>
                 <div style={{ padding: `${dp(10)}px ${dp(12)}px` }}>
-                  <div style={{ fontSize: dp(17), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{channel.name}</div>
-                  <div style={{ fontSize: dp(15), color: 'rgba(243,244,248,0.6)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{info.now?.title ?? (qualityFromName(channel.name) ?? channel.group)}</div>
+                  <div style={{ fontSize: dp(phoneTextFloor(17, phone)), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{channel.name}</div>
+                  <div style={{ fontSize: dp(phoneTextFloor(15, phone)), color: 'rgba(243,244,248,0.6)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{info.now?.title ?? (qualityFromName(channel.name) ?? channel.group)}</div>
                 </div>
               </div>
             )
           })}
         </div>
         {filtered.length > visible ? (
-          <div {...station(() => setVisible((v) => v + ALL_STEP))} style={{ alignSelf: 'center', height: dp(48), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.s10, display: 'inline-flex', alignItems: 'center', fontSize: dp(18), cursor: 'pointer' }}>{tt('showMore')}</div>
+          <div {...station(() => setVisible((v) => v + ALL_STEP))} style={{ alignSelf: 'center', height: dp(phoneHitFloor(48, phone)), minHeight: dp(phoneHitFloor(48, phone)), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.s10, display: 'inline-flex', alignItems: 'center', fontSize: dp(phoneTextFloor(18, phone)), cursor: 'pointer' }}>{tt('showMore')}</div>
         ) : null}
-        <div style={{ fontSize: dp(16), color: TV.faint }}>{tt('helpHub')}</div>
+        <div style={{ fontSize: dp(phoneTextFloor(16, phone)), color: TV.faint }}>{tt('helpHub')}</div>
       </section>
     </div>
   )

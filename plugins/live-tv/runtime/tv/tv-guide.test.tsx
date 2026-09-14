@@ -4,6 +4,7 @@ import { TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR, TV_SCENE_PHONE_ATTR, __resetFo
 import { flushLiveTvIndex, seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
 import { getGuideMode } from './tv-settings-store'
+import { CHANNEL_COLUMN_PHONE_MIN_DP } from './tv-guide-shared'
 import { dp } from './tv-ui'
 import type { EpgCacheEntry } from '../epg/types'
 
@@ -220,13 +221,16 @@ describe('TvGuide i porträtt (telefon): kanalkolumnens layoutkontext (fixrunda 
   // alltid ut till 100 %, så det som faktiskt avgör bredden är layouten på
   // wrappern (`guide-row`) och rubrikkolumnen. Testerna nedan läser DEN
   // stilen, inte cellens egen (som alltid är '100%').
-  it('raden delar bredden med NU/SEN/SENARE på telefon: flex 1, minWidth 0, ingen fast bredd', async () => {
+  it('raden delar bredden med NU/SEN/SENARE på telefon: flex 1, breddgolv, ingen fast bredd', async () => {
     await mountWith(true)
     const row = screen.getAllByTestId('guide-row')[0]
     expect(row.style.flexGrow).toBe('1')
     expect(row.style.flexShrink).toBe('1')
     expect(row.style.flexBasis).toBe('0px')
-    expect(row.style.minWidth).toBe('0')
+    // M-P4: `minWidth: 0` gav ChannelArt + padding + mellanrum (~140 dp)
+    // fritt fram att äta hela kolumnen och klippa namnet till noll bredd —
+    // se `CHANNEL_COLUMN_PHONE_MIN_DP` (tv-guide-shared.tsx).
+    expect(row.style.minWidth).toBe(`${dp(CHANNEL_COLUMN_PHONE_MIN_DP)}px`)
     expect(row.style.width).toBe('')
   })
 

@@ -38,6 +38,36 @@ export function dp(n: number): number {
  */
 export const PHONE_HIT_MIN_DP = 88
 
+/**
+ * Telefonens teckengolv (spec §3, fas 2): ingen text under 28 designpixlar —
+ * vid skalen 0,5 är det 14 riktiga pixlar. Delad här av samma skäl som
+ * `PHONE_HIT_MIN_DP` ovan: en enda källa som vyerna och M-P4:s golvtest mäter
+ * mot, i stället för en kopia per vy som kan halka efter.
+ */
+export const PHONE_TEXT_MIN_DP = 28
+
+/**
+ * Höjer en teckenstorlek till telefonens golv, annars orörd. Beräknas EN
+ * GÅNG per vy (samma mönster som `railWidth`/`railItemSize` i
+ * `tv-shell.tsx`: en toppkonstant vyn räknar ut från sin egen `phone`, som
+ * markeringen sedan bara refererar) — inte en ternär utspridd i varje
+ * `style`-objekt.
+ */
+export function phoneTextFloor(n: number, phone: boolean): number {
+  return phone ? Math.max(n, PHONE_TEXT_MIN_DP) : n
+}
+
+/**
+ * Samma sak för träffytegolvet — höjer en uttalad höjd/bredd till minst
+ * `PHONE_HIT_MIN_DP` på telefon. Kort och rader vars mått bara följer av
+ * innehållet (ingen uttalad höjd att höja) sätter i stället `minHeight: dp(
+ * PHONE_HIT_MIN_DP)` direkt när `phone` är sann — se t.ex. spotlightkortet i
+ * `tv-hub.tsx`.
+ */
+export function phoneHitFloor(n: number, phone: boolean): number {
+  return phone ? Math.max(n, PHONE_HIT_MIN_DP) : n
+}
+
 export const TV = {
   bg: '#000',
   text: '#f3f4f8',
@@ -193,16 +223,21 @@ export function station(onOk: () => void, onHold?: (element: HTMLElement) => voi
   }
 }
 
-/** `title` finns för verktygstips på trunkerade texter (spec 4.5). */
-export function Tag({ variant, children, style, title }: { variant: 'live' | 'neutral' | 'replay' | 'reason' | 'audio' | 'quality'; children: ReactNode; style?: CSSProperties; title?: string }) {
+/**
+ * `title` finns för verktygstips på trunkerade texter (spec 4.5). `phone`
+ * (fas 2): höjer taggens text till teckengolvet — anropsställena som lever i
+ * en telefonvy skickar sin egen `phone`, övriga (TV/skrivbord) lämnar den
+ * odefinierad och får exakt dagens tal.
+ */
+export function Tag({ variant, children, style, title, phone = false }: { variant: 'live' | 'neutral' | 'replay' | 'reason' | 'audio' | 'quality'; children: ReactNode; style?: CSSProperties; title?: string; phone?: boolean }) {
   const base: CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: dp(8), whiteSpace: 'nowrap', lineHeight: 1.2 }
   const look: Record<typeof variant, CSSProperties> = {
-    live: { fontSize: dp(13), fontWeight: 600, letterSpacing: '0.14em', padding: `${dp(5)}px ${dp(12)}px`, borderRadius: dp(8), background: TV.liveSoft, color: TV.liveText, textTransform: 'uppercase' },
-    neutral: { fontSize: dp(15), padding: `${dp(3)}px ${dp(12)}px`, borderRadius: dp(8), background: TV.s12, color: TV.text },
-    quality: { fontSize: dp(15), padding: `${dp(3)}px ${dp(12)}px`, borderRadius: dp(8), background: 'rgba(0,0,0,0.45)', color: TV.text },
-    replay: { fontSize: dp(13), letterSpacing: '0.08em', padding: `${dp(4)}px ${dp(10)}px`, borderRadius: dp(6), background: TV.accMix(22), color: TV.accText },
-    reason: { fontSize: dp(13), letterSpacing: '0.08em', padding: `${dp(4)}px ${dp(10)}px`, borderRadius: dp(6), background: 'rgba(0,0,0,0.45)', color: TV.text },
-    audio: { fontSize: dp(13), fontWeight: 600, letterSpacing: '0.12em', padding: `${dp(4)}px ${dp(10)}px`, borderRadius: dp(6), background: TV.acc, color: TV.onAcc, textTransform: 'uppercase' },
+    live: { fontSize: dp(phoneTextFloor(13, phone)), fontWeight: 600, letterSpacing: '0.14em', padding: `${dp(5)}px ${dp(12)}px`, borderRadius: dp(8), background: TV.liveSoft, color: TV.liveText, textTransform: 'uppercase' },
+    neutral: { fontSize: dp(phoneTextFloor(15, phone)), padding: `${dp(3)}px ${dp(12)}px`, borderRadius: dp(8), background: TV.s12, color: TV.text },
+    quality: { fontSize: dp(phoneTextFloor(15, phone)), padding: `${dp(3)}px ${dp(12)}px`, borderRadius: dp(8), background: 'rgba(0,0,0,0.45)', color: TV.text },
+    replay: { fontSize: dp(phoneTextFloor(13, phone)), letterSpacing: '0.08em', padding: `${dp(4)}px ${dp(10)}px`, borderRadius: dp(6), background: TV.accMix(22), color: TV.accText },
+    reason: { fontSize: dp(phoneTextFloor(13, phone)), letterSpacing: '0.08em', padding: `${dp(4)}px ${dp(10)}px`, borderRadius: dp(6), background: 'rgba(0,0,0,0.45)', color: TV.text },
+    audio: { fontSize: dp(phoneTextFloor(13, phone)), fontWeight: 600, letterSpacing: '0.12em', padding: `${dp(4)}px ${dp(10)}px`, borderRadius: dp(6), background: TV.acc, color: TV.onAcc, textTransform: 'uppercase' },
   }
   return (
     <span title={title} style={{ ...base, ...look[variant], ...style }}>
@@ -272,12 +307,13 @@ export function ChannelArt({ channel, frameVersion, height, aspect, radius, chil
  * kantfärg i stället för att lysa upp hela ytan. `title` är genomsläppet för
  * verktygstips på trunkerade kategorinamn (spec 4.5); det går via `rest`.
  */
-export function Chip({ active, children, style, ...rest }: { active: boolean; children: ReactNode; style?: CSSProperties; title?: string } & StationProps) {
+/** `phone` (fas 2): höjer standardmåtten till golven — se `Tag` ovan för samma mönster. */
+export function Chip({ active, children, style, phone = false, ...rest }: { active: boolean; children: ReactNode; style?: CSSProperties; title?: string; phone?: boolean } & StationProps) {
   return (
     <div
       data-live-tv-chip=""
       {...rest}
-      style={{ height: dp(46), padding: `0 ${dp(22)}px`, borderRadius: 999, display: 'inline-flex', alignItems: 'center', fontSize: dp(19), whiteSpace: 'nowrap', cursor: 'pointer', flexShrink: 0, background: active ? TV.s16 : TV.s05, color: active ? TV.text : TV.muted, fontWeight: active ? 600 : 400, border: `1px solid ${active ? TV.lineStrong : 'transparent'}`, ...style }}
+      style={{ height: dp(phoneHitFloor(46, phone)), minHeight: dp(phoneHitFloor(46, phone)), padding: `0 ${dp(22)}px`, borderRadius: 999, display: 'inline-flex', alignItems: 'center', fontSize: dp(phoneTextFloor(19, phone)), whiteSpace: 'nowrap', cursor: 'pointer', flexShrink: 0, background: active ? TV.s16 : TV.s05, color: active ? TV.text : TV.muted, fontWeight: active ? 600 : 400, border: `1px solid ${active ? TV.lineStrong : 'transparent'}`, ...style }}
     >
       {children}
     </div>
@@ -299,7 +335,8 @@ export function Chip({ active, children, style, ...rest }: { active: boolean; ch
  * ännu smalare yta — skrivbordets sceruta och telefonen — så att växeln inte
  * kan svämma ut ur sin rad. Vid 1920 ändras ingenting: raden hade redan plats.
  */
-export function Segment<K extends string>({ options, value, onChange, style }: { options: { key: K; label: string }[]; value: K; onChange: (key: K) => void; style?: CSSProperties }) {
+/** `phone` (fas 2): höjer varje postens träffyta/text till golven. */
+export function Segment<K extends string>({ options, value, onChange, style, phone = false }: { options: { key: K; label: string }[]; value: K; onChange: (key: K) => void; style?: CSSProperties; phone?: boolean }) {
   return (
     <div data-testid="tv-segment" style={{ display: 'inline-flex', padding: dp(4), borderRadius: 999, background: TV.s08, gap: dp(2), flexShrink: 0, whiteSpace: 'nowrap', maxWidth: '100%', ...style }}>
       {options.map((option) => (
@@ -307,7 +344,7 @@ export function Segment<K extends string>({ options, value, onChange, style }: {
           key={option.key}
           data-testid="tv-segment-option"
           {...station(() => onChange(option.key))}
-          style={{ height: dp(38), padding: `0 ${dp(18)}px`, borderRadius: 999, display: 'inline-flex', alignItems: 'center', fontSize: dp(16), whiteSpace: 'nowrap', cursor: 'pointer', background: option.key === value ? TV.s16 : 'transparent', color: option.key === value ? TV.text : TV.muted }}
+          style={{ height: dp(phoneHitFloor(38, phone)), minHeight: dp(phoneHitFloor(38, phone)), padding: `0 ${dp(18)}px`, borderRadius: 999, display: 'inline-flex', alignItems: 'center', fontSize: dp(phoneTextFloor(16, phone)), whiteSpace: 'nowrap', cursor: 'pointer', background: option.key === value ? TV.s16 : 'transparent', color: option.key === value ? TV.text : TV.muted }}
         >
           {option.label}
         </div>
@@ -325,9 +362,11 @@ export function Segment<K extends string>({ options, value, onChange, style }: {
  * `marginLeft: 'auto'` och hamnade ändå direkt efter kategorichipet (x=556 i
  * en 918 px bred rad) i stället för vid radens högerkant som i handoffen.
  */
-export function RoundBtn({ size = dp(52), children, background = TV.s12, style, ...rest }: { size?: number; children: ReactNode; background?: string; style?: CSSProperties } & StationProps) {
+/** `phone` (fas 2): höjer standardstorleken till träffytegolvet. Ett uttryckligt `size` vinner alltid — anropsställen som redan floor:ar sin egen storlek behöver inte `phone`. */
+export function RoundBtn({ size, phone = false, children, background = TV.s12, style, ...rest }: { size?: number; phone?: boolean; children: ReactNode; background?: string; style?: CSSProperties } & StationProps) {
+  const resolvedSize = size ?? dp(phoneHitFloor(52, phone))
   return (
-    <div {...rest} style={{ width: size, height: size, borderRadius: 999, background, border: `1px solid ${TV.lineCard}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: TV.text, cursor: 'pointer', flexShrink: 0, ...style }}>
+    <div {...rest} style={{ width: resolvedSize, height: resolvedSize, minHeight: resolvedSize, borderRadius: 999, background, border: `1px solid ${TV.lineCard}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: TV.text, cursor: 'pointer', flexShrink: 0, ...style }}>
       {children}
     </div>
   )
@@ -365,8 +404,12 @@ export const Icons = {
   Calendar: ({ size = dp(20) }: IconProps) => svg(size, <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></>),
 }
 
-/** Värdens klocka när SDK:t har den, annars enkel lokal klocka. */
-export function useTvClockNode(locale: string): ReactNode {
+/**
+ * Värdens klocka när SDK:t har den, annars enkel lokal klocka. `phone`
+ * höjer den lokala klockans text till teckengolvet — värdens egen klocka
+ * (HostClock) styr sin egen typografi och rörs inte härifrån.
+ */
+export function useTvClockNode(locale: string, phone = false): ReactNode {
   const HostClock = (sdk as unknown as { getTvClock?: () => ComponentType<{ variant?: 'tv' | 'desktop' }> | null }).getTvClock?.() ?? null
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
@@ -384,7 +427,7 @@ export function useTvClockNode(locale: string): ReactNode {
   const time = now.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
   const date = now.toLocaleDateString(locale, { day: 'numeric', month: 'short' }).replace('.', '').toUpperCase()
   const day = now.toLocaleDateString(locale, { weekday: 'short' }).replace('.', '').toUpperCase()
-  return <span style={{ fontSize: dp(17), letterSpacing: '0.1em', color: 'rgba(243,244,248,0.65)', whiteSpace: 'nowrap' }}>{`${time} | ${date} | ${day}`}</span>
+  return <span style={{ fontSize: dp(phoneTextFloor(17, phone)), letterSpacing: '0.1em', color: 'rgba(243,244,248,0.65)', whiteSpace: 'nowrap' }}>{`${time} | ${date} | ${day}`}</span>
 }
 
 /** Alltid appens accentfärg (token). Egen hook för framtida per-tema-behov. */

@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { channelKey, type M3uChannel } from '../live-tv-data'
 import type { TvViewProps } from './tv-shell'
-import { ChannelArt, Icons, Segment, Tag, TV, dp, station } from './tv-ui'
+import { ChannelArt, Icons, PHONE_HIT_MIN_DP, Segment, Tag, TV, dp, phoneTextFloor, station } from './tv-ui'
 import { useTvText } from './tv-strings'
 import { useNarrowSurface } from '../hooks/useNarrowSurface'
+import { usePhoneSurface } from '../hooks/usePhoneSurface'
 import { assignTile, enlargeTile, removeTile, setLayout, setMultiviewState, useMultiviewState, type MultiviewLayout, type MultiviewState } from './tv-multiview-store'
 import { useVideoSurface, videoSurfaceCapabilities } from './video-surface'
 import { TvChannelPicker } from './tv-channel-picker'
@@ -40,6 +41,7 @@ export function TvMultiview({ model, nav }: TvViewProps) {
   const state = useMultiviewState()
   const rootRef = useRef<HTMLDivElement | null>(null)
   const narrow = useNarrowSurface(rootRef)
+  const phone = usePhoneSurface(rootRef)
   /**
    * FORCERAD SMAL LAYOUT — REN VISNING, INGEN MUTATION. På en smal yta visas
    * bara två rutor (audiorutan + en till, se `narrowVisibleIndices`), rakt
@@ -113,9 +115,10 @@ export function TvMultiview({ model, nav }: TvViewProps) {
             options={[{ key: '2', label: tt('layout2') }, { key: '3', label: tt('layout3') }, { key: '4', label: tt('layout4') }]}
             value={String(state.layout)}
             onChange={(key) => update(setLayout(state, Number(key) as MultiviewLayout))}
+            phone={phone}
           />
         )}
-        <span style={{ marginLeft: 'auto', fontSize: dp(18), color: 'rgba(243,244,248,0.6)', textAlign: 'right' }}>
+        <span style={{ marginLeft: 'auto', fontSize: dp(phoneTextFloor(18, phone)), color: 'rgba(243,244,248,0.6)', textAlign: 'right' }}>
           {audioChannel ? <><span>{tt('audioLabel')}: </span><strong style={{ color: TV.text }}>{audioChannel.name}</strong> · </> : null}{tt('multiviewHelp')}
         </span>
       </div>
@@ -135,6 +138,7 @@ export function TvMultiview({ model, nav }: TvViewProps) {
               span={!narrow && state.layout === 3 && realIndex === 0}
               nowTitle={channel ? model.nowFor(channel).now?.title ?? null : null}
               number={channel ? model.channelNumber(channel) : null}
+              phone={phone}
               onOk={() => {
                 if (!channel) { setPickerTile(realIndex); return }
                 update({ ...state, audioIndex: realIndex })
@@ -167,8 +171,8 @@ export function TvMultiview({ model, nav }: TvViewProps) {
   )
 }
 
-function Tile({ index, channel, hasAudio, live, isInit, span, nowTitle, number, onOk, onHold }: {
-  index: number; channel: M3uChannel | null; hasAudio: boolean; live: boolean; isInit: boolean; span: boolean; nowTitle: string | null; number: number | null
+function Tile({ index, channel, hasAudio, live, isInit, span, nowTitle, number, phone, onOk, onHold }: {
+  index: number; channel: M3uChannel | null; hasAudio: boolean; live: boolean; isInit: boolean; span: boolean; nowTitle: string | null; number: number | null; phone: boolean
   onOk: () => void; onHold: (el: HTMLElement) => void
 }) {
   const { tt } = useTvText()
@@ -181,24 +185,24 @@ function Tile({ index, channel, hasAudio, live, isInit, span, nowTitle, number, 
     // Skalet klipper samtidigt ett hål i sin egen bakgrund (`surface-cutouts`).
     // Tom eller laddande ruta behåller plattan; ramen, etikettgradienten och
     // fokusringen är överlager inne i rutan och påverkas inte.
-    <div ref={ref} data-testid="mv-tile" {...station(onOk, onHold, isInit ? { 'data-init': '' } : undefined)} style={{ position: 'relative', borderRadius: dp(14), border: `1px solid ${TV.lineCard}`, overflow: 'hidden', background: showsVideo ? 'transparent' : '#05070d', gridRow: span ? 'span 2' : undefined, cursor: 'pointer', minHeight: 0 }}>
+    <div ref={ref} data-testid="mv-tile" {...station(onOk, onHold, isInit ? { 'data-init': '' } : undefined)} style={{ position: 'relative', borderRadius: dp(14), border: `1px solid ${TV.lineCard}`, overflow: 'hidden', background: showsVideo ? 'transparent' : '#05070d', gridRow: span ? 'span 2' : undefined, cursor: 'pointer', minHeight: phone ? dp(PHONE_HIT_MIN_DP) : 0 }}>
       {channel && !showsVideo ? <ChannelArt channel={channel} style={{ position: 'absolute', inset: 0, borderRadius: 0 }} /> : null}
       {channel ? (
         <>
           <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: `${dp(40)}px ${dp(18)}px ${dp(14)}px`, background: 'linear-gradient(180deg, transparent, rgba(0,0,0,0.8))', display: 'flex', alignItems: 'baseline', gap: dp(10), whiteSpace: 'nowrap', overflow: 'hidden' }}>
-            <span style={{ fontSize: dp(15), color: 'rgba(243,244,248,0.6)' }}>{number ?? ''}</span>
-            <span style={{ fontSize: dp(19), fontWeight: 600 }}>{channel.name}</span>
-            {nowTitle ? <span style={{ fontSize: dp(17), color: 'rgba(243,244,248,0.7)', overflow: 'hidden', textOverflow: 'ellipsis' }}>· {nowTitle}</span> : null}
+            <span style={{ fontSize: dp(phoneTextFloor(15, phone)), color: 'rgba(243,244,248,0.6)' }}>{number ?? ''}</span>
+            <span style={{ fontSize: dp(phoneTextFloor(19, phone)), fontWeight: 600 }}>{channel.name}</span>
+            {nowTitle ? <span style={{ fontSize: dp(phoneTextFloor(17, phone)), color: 'rgba(243,244,248,0.7)', overflow: 'hidden', textOverflow: 'ellipsis' }}>· {nowTitle}</span> : null}
           </div>
           {/* Tag-varianten "audio" sätter versaler via CSS (text-transform), vilket
               inte syns i textContent — DOM-texten uppercasas därför explicit här så
               att den matchar den versala etiketten i design (LJUD/AUDIO). */}
-          {hasAudio ? <span style={{ position: 'absolute', top: dp(12), right: dp(14) }}><Tag variant="audio">{tt('audioLabel').toUpperCase()}</Tag></span> : null}
-          {!live || !surface.live ? <span style={{ position: 'absolute', top: dp(12), left: dp(14), fontFamily: TV.mono, fontSize: dp(12), letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(243,244,248,0.55)' }}>{surface.failed ? tt('tileFailed') : tt('frameLabel')}</span> : null}
+          {hasAudio ? <span style={{ position: 'absolute', top: dp(12), right: dp(14) }}><Tag variant="audio" phone={phone}>{tt('audioLabel').toUpperCase()}</Tag></span> : null}
+          {!live || !surface.live ? <span style={{ position: 'absolute', top: dp(12), left: dp(14), fontFamily: TV.mono, fontSize: dp(phoneTextFloor(12, phone)), letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(243,244,248,0.55)' }}>{surface.failed ? tt('tileFailed') : tt('frameLabel')}</span> : null}
         </>
       ) : (
         <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: dp(8), color: 'rgba(243,244,248,0.7)' }}>
-          <Icons.Plus /><span style={{ fontSize: dp(20) }}>{tt('pickChannel')}</span>
+          <Icons.Plus /><span style={{ fontSize: dp(phoneTextFloor(20, phone)) }}>{tt('pickChannel')}</span>
         </div>
       )}
     </div>

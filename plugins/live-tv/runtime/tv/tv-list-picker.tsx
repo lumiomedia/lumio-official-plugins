@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { channelKey, type M3uChannel, type XtreamCategory } from '../live-tv-data'
 import type { LiveTvModel } from '../live-tv-model'
+import { usePhoneSurface } from '../hooks/usePhoneSurface'
 import type { TvNav } from './tv-shell'
-import { ChannelArt, Chip, TV, dp, station } from './tv-ui'
+import { ChannelArt, Chip, TV, dp, phoneHitFloor, phoneTextFloor, station } from './tv-ui'
 import { useTvText } from './tv-strings'
 import { filterByGroup, useGuideGroups } from './tv-guide-shared'
 
@@ -67,10 +68,10 @@ function PickerPanel({
 }
 
 /** Bocken. Enda återkopplingen i flervalsläget — raden ligger kvar. */
-function Check({ on, label }: { on: boolean; label: string }) {
+function Check({ on, label, phone }: { on: boolean; label: string; phone: boolean }) {
   if (!on) return <span style={{ width: dp(28), flexShrink: 0 }} />
   return (
-    <span data-testid={`picker-check-${label}`} style={{ width: dp(28), flexShrink: 0, color: TV.acc, fontSize: dp(22), textAlign: 'center' }}>✓</span>
+    <span data-testid={`picker-check-${label}`} style={{ width: dp(28), flexShrink: 0, color: TV.acc, fontSize: dp(phoneTextFloor(22, phone)), textAlign: 'center' }}>✓</span>
   )
 }
 
@@ -84,6 +85,7 @@ export function TvListPicker({ model, nav, title, selected, onToggle, onClose }:
   onClose: () => void
 }) {
   const { tt } = useTvText()
+  const phone = usePhoneSurface()
   const groups = useGuideGroups(model, tt)
   const [group, setGroup] = useState<string | null>(null)
   const rows = useMemo(() => filterByGroup(model, group).slice(0, 200), [model, group])
@@ -97,7 +99,7 @@ export function TvListPicker({ model, nav, title, selected, onToggle, onClose }:
           {/* Tom kategori = inga rader att sätta `data-init` på. Då tar första
               chipet det, annars öppnades panelen utan någon station att
               landa på och fjärrkontrollen strandade på body. */}
-          {groups.map((chip, index) => <Chip key={chip.id} active={group === chip.key} {...station(() => setGroup(chip.key), undefined, rows.length === 0 && index === 0 ? { 'data-init': '' } : undefined)} style={{ height: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }}>{chip.label}</Chip>)}
+          {groups.map((chip, index) => <Chip key={chip.id} active={group === chip.key} {...station(() => setGroup(chip.key), undefined, rows.length === 0 && index === 0 ? { 'data-init': '' } : undefined)} phone={phone} style={{ height: dp(phoneHitFloor(40, phone)), minHeight: dp(phoneHitFloor(40, phone)), fontSize: dp(phoneTextFloor(16, phone)), padding: `0 ${dp(18)}px` }}>{chip.label}</Chip>)}
         </div>
       )}
       rows={rows.map((channel, index) => {
@@ -107,13 +109,13 @@ export function TvListPicker({ model, nav, title, selected, onToggle, onClose }:
             key={channelKey(channel)}
             data-testid={`picker-row-${channel.name}`}
             {...station(() => onToggle(channel), undefined, index === 0 ? { 'data-init': '' } : undefined)}
-            style={{ height: dp(74), borderRadius: dp(12), display: 'flex', alignItems: 'center', gap: dp(14), padding: `0 ${dp(12)}px`, cursor: 'pointer' }}
+            style={{ height: dp(phoneHitFloor(74, phone)), minHeight: dp(phoneHitFloor(74, phone)), borderRadius: dp(12), display: 'flex', alignItems: 'center', gap: dp(14), padding: `0 ${dp(12)}px`, cursor: 'pointer' }}
           >
-            <Check on={on} label={channel.name} />
+            <Check on={on} label={channel.name} phone={phone} />
             <ChannelArt channel={channel} style={{ width: dp(70), height: dp(46), flexShrink: 0 }} radius={dp(8)} />
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: dp(19), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{channel.name}</div>
-              <div style={{ fontSize: dp(15), color: 'rgba(243,244,248,0.6)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{channel.group}</div>
+              <div style={{ fontSize: dp(phoneTextFloor(19, phone)), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{channel.name}</div>
+              <div style={{ fontSize: dp(phoneTextFloor(15, phone)), color: 'rgba(243,244,248,0.6)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{channel.group}</div>
             </div>
           </div>
         )
@@ -136,6 +138,7 @@ export function TvCategoryPicker({ nav, title, categories, selected, onToggle, o
   onClose: () => void
 }) {
   const { tt } = useTvText()
+  const phone = usePhoneSurface()
   const all = selected.size === 0
   return (
     <PickerPanel
@@ -148,21 +151,21 @@ export function TvCategoryPicker({ nav, title, categories, selected, onToggle, o
           <div
             data-testid="picker-row-all"
             {...station(onSelectAll, undefined, { 'data-init': '' })}
-            style={{ height: dp(64), borderRadius: dp(12), display: 'flex', alignItems: 'center', gap: dp(14), padding: `0 ${dp(12)}px`, fontSize: dp(19), cursor: 'pointer' }}
+            style={{ height: dp(phoneHitFloor(64, phone)), minHeight: dp(phoneHitFloor(64, phone)), borderRadius: dp(12), display: 'flex', alignItems: 'center', gap: dp(14), padding: `0 ${dp(12)}px`, fontSize: dp(phoneTextFloor(19, phone)), cursor: 'pointer' }}
           >
-            <Check on={all} label="all" />
+            <Check on={all} label="all" phone={phone} />
             {tt('xtreamAllCategories')}
           </div>
           {categories === null
-            ? <div style={{ padding: dp(12), fontSize: dp(17), color: TV.dim }}>{tt('loadingChannels')}</div>
+            ? <div style={{ padding: dp(12), fontSize: dp(phoneTextFloor(17, phone)), color: TV.dim }}>{tt('loadingChannels')}</div>
             : categories.map((category) => (
               <div
                 key={category.id}
                 data-testid={`picker-row-${category.name}`}
                 {...station(() => onToggle(category))}
-                style={{ height: dp(64), borderRadius: dp(12), display: 'flex', alignItems: 'center', gap: dp(14), padding: `0 ${dp(12)}px`, fontSize: dp(19), cursor: 'pointer' }}
+                style={{ height: dp(phoneHitFloor(64, phone)), minHeight: dp(phoneHitFloor(64, phone)), borderRadius: dp(12), display: 'flex', alignItems: 'center', gap: dp(14), padding: `0 ${dp(12)}px`, fontSize: dp(phoneTextFloor(19, phone)), cursor: 'pointer' }}
               >
-                <Check on={selected.has(category.id)} label={category.name} />
+                <Check on={selected.has(category.id)} label={category.name} phone={phone} />
                 <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{category.name}</span>
               </div>
             ))}
