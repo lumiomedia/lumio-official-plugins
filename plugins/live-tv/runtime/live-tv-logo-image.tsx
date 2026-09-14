@@ -38,6 +38,18 @@ function finishLogoLoad(src: string) {
   drainLogoQueue()
 }
 
+/**
+ * Testhjälpare: nollställer laddköns modulglobala tillstånd. Utan den läcker
+ * `loadedLogoSrcs`/`activeLogoLoads` mellan tester (samma URL:er tar
+ * cache-genvägen i stället för att gå genom kön, och en läckt räknare kan
+ * dölja en dubbelnedräkning). Används bara från tester.
+ */
+export function __resetLogoQueueForTests(): void {
+  loadedLogoSrcs.clear()
+  pendingLogoLoads.length = 0
+  activeLogoLoads = 0
+}
+
 export function LiveTvLogoImage({ src, fallbackSrc, alt, className, onError }: LiveTvLogoImageProps) {
   const ref = useRef<HTMLImageElement | null>(null)
   const [shouldLoad, setShouldLoad] = useState(false)
