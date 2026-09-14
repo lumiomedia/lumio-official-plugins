@@ -17,8 +17,16 @@ vi.mock('@/lib/plugin-sdk', async (importOriginal) => {
   }
 })
 
+// completeLogos gör ett riktigt nätverksanrop i produktionskoden — testerna
+// ersätter den med en spion så kvittot/felet går att styra per test.
+vi.mock('./index-client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./index-client')>()
+  return { ...actual, completeLogos: vi.fn() }
+})
+
 import * as liveTvData from './live-tv-data'
-import { LIVE_TV_PLUGIN_ID, getLiveTvLists, getXtreamLogins, type LiveTvList } from './live-tv-data'
+import { LIVE_TV_PLUGIN_ID, getLiveTvLists, getXtreamLogins, isLogoFallbackEnabled, type LiveTvList } from './live-tv-data'
+import { completeLogos } from './index-client'
 import { resetM3uFetchProgressForTests } from './m3u-fetch-progress'
 import { LiveTvSettingsSection } from './live-tv-settings-section'
 
@@ -170,5 +178,37 @@ describe('LiveTvSettingsSection', () => {
 
     fireEvent.click(screen.getByText('Sign in again'))
     expect(screen.getByPlaceholderText(/liveTvXtreamServer/)).toHaveValue('http://panel.test:8080')
+  })
+
+  it('visar switchen påslagen för en lista utan fältet', () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list({ id: 'a', name: 'A', kind: 'm3u', source: 'http://lista' })])
+    render(<LiveTvSettingsSection />)
+    expect(screen.getByTestId('logo-fallback-toggle-a')).toBeChecked()
+  })
+
+  it('sparar när switchen slås av', () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list({ id: 'a', name: 'A', kind: 'm3u', source: 'http://lista' })])
+    render(<LiveTvSettingsSection />)
+    fireEvent.click(screen.getByTestId('logo-fallback-toggle-a'))
+    expect(isLogoFallbackEnabled(getLiveTvLists()[0])).toBe(false)
+  })
+
+  it('kompletterar och visar kvittot', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list({ id: 'a', name: 'A', kind: 'm3u', source: 'http://lista' })])
+    vi.mocked(completeLogos).mockResolvedValue({ matched: 12, total: 40 })
+    render(<LiveTvSettingsSection />)
+    fireEvent.click(screen.getByTestId('logo-complete-a'))
+    // Testmiljöns useLang() ligger fast på 'en' (se plugin-sdk-stubben) — filens
+    // övriga tester (t.ex. "Fetching 12,000 of 17,000…") verifierar mot samma
+    // engelska text av samma skäl. Briefens "12 av 40" är den svenska varianten
+    // i tabellen (verifierad separat via hub-strings), men det är den engelska
+    // som faktiskt renderas här.
+    expect(await screen.findByText(/12 of 40/)).toBeInTheDocument()
+  })
+
+  it('knappen är avstängd när switchen är av', () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list({ id: 'a', name: 'A', kind: 'm3u', source: 'http://lista', logoFallbackEnabled: false })])
+    render(<LiveTvSettingsSection />)
+    expect(screen.getByTestId('logo-complete-a')).toBeDisabled()
   })
 })

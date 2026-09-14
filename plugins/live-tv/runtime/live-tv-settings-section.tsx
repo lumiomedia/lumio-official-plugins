@@ -21,7 +21,9 @@ import {
   getM3uUrls,
   importList,
   getM3uDraftUrls,
+  isLogoFallbackEnabled,
   onLiveTvListsChanged,
+  setLogoFallbackEnabled,
   setM3uDraftUrls,
   updateLiveTvListEpg,
   type LiveTvList,
@@ -30,6 +32,7 @@ import {
   getXtreamLogins,
   parseXtreamSource,
 } from './live-tv-data'
+import { completeLogos } from './index-client'
 import type { ImportStatus } from './index-client'
 import { recordListImportOutcome } from './list-import-flags'
 import {
@@ -78,6 +81,14 @@ export function LiveTvSettingsSection() {
   // Omhämtning av EN lista (kortets egen knapp) — skild från M3U-fältets kö
   // ovan, som hämtar hela uppsättningen adresser.
   const [listProgress, setListProgress] = useState<{ listId: string; state: ImportStatus['state']; received: number; total: number | null } | null>(null)
+  // Komplettera-knappens eget tillstånd, per lista — samma mönster som
+  // `listProgress`: en enda useState nyckelad på list-id, ingen global.
+  const [logoComplete, setLogoComplete] = useState<
+    | { listId: string; status: 'running' }
+    | { listId: string; status: 'done'; matched: number; total: number }
+    | { listId: string; status: 'error'; error: string }
+    | null
+  >(null)
 
   useEffect(() => {
     const sync = () => setLists(getLiveTvLists())
@@ -164,6 +175,21 @@ export function LiveTvSettingsSection() {
       recordListImportOutcome(list.id, err instanceof Error ? err.message : String(err))
     } finally {
       setListProgress(null)
+    }
+  }
+
+  /**
+   * Kompletterar en listas logotyper mot iptv-org. `completeLogos` sänder
+   * `emitIndexChanged()` själv vid ett lyckat svar (se `index-client.ts`) —
+   * den ropas INTE här igen, det hade blivit en dubbelsändning.
+   */
+  async function handleCompleteLogos(list: LiveTvList) {
+    setLogoComplete({ listId: list.id, status: 'running' })
+    try {
+      const result = await completeLogos(list.source)
+      setLogoComplete({ listId: list.id, status: 'done', matched: result.matched, total: result.total })
+    } catch (err) {
+      setLogoComplete({ listId: list.id, status: 'error', error: err instanceof Error ? err.message : String(err) })
     }
   }
 
@@ -353,6 +379,32 @@ export function LiveTvSettingsSection() {
               autoDisabled={list.autoEpgDisabled}
               onToggleAuto={(disabled) => updateLiveTvListEpg(list.id, { autoEpgDisabled: disabled })}
             />
+          </div>
+          <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <Checkbox
+              checked={isLogoFallbackEnabled(list)}
+              onChange={(value) => setLogoFallbackEnabled(list.id, value)}
+              label={h('logoFallbackToggle')}
+              data-testid={`logo-fallback-toggle-${list.id}`}
+            />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <PillBtn
+                size="sm"
+                onClick={() => void handleCompleteLogos(list)}
+                disabled={!isLogoFallbackEnabled(list) || list.kind === 'custom' || (logoComplete?.listId === list.id && logoComplete.status === 'running')}
+                data-testid={`logo-complete-${list.id}`}
+              >
+                {logoComplete?.listId === list.id && logoComplete.status === 'running' ? h('logoCompleteRunning') : h('logoComplete')}
+              </PillBtn>
+              {logoComplete?.listId === list.id && logoComplete.status === 'done' ? (
+                <span style={{ fontSize: 12, color: TOKENS.textMute }}>
+                  {h('logoCompleteResult', { matched: logoComplete.matched, total: logoComplete.total })}
+                </span>
+              ) : null}
+              {logoComplete?.listId === list.id && logoComplete.status === 'error' ? (
+                <span role="alert" style={{ fontSize: 12, color: '#fca5a5' }}>{logoComplete.error}</span>
+              ) : null}
+            </div>
           </div>
         </Card>
         )

@@ -43,7 +43,7 @@ export function onPluginStorageChanged(pluginId: string, k: string, cb: Listener
 // divar: testen letar efter roller ("button", "textbox") och etiketter, så en
 // PillBtn som inte är ett <button> hade gjort sviten oanvändbar för allt som
 // faktiskt klickas.
-export function PillBtn({ children, onClick, disabled, type, title, style }: {
+export function PillBtn({ children, onClick, disabled, type, title, style, 'data-testid': testId }: {
   children?: ReactNode
   onClick?: () => void
   variant?: string
@@ -53,8 +53,9 @@ export function PillBtn({ children, onClick, disabled, type, title, style }: {
   type?: 'button' | 'submit'
   title?: string
   style?: Record<string, unknown>
+  'data-testid'?: string
 }) {
-  return createElement('button', { type: type ?? 'button', onClick, disabled, title, style }, children)
+  return createElement('button', { type: type ?? 'button', onClick, disabled, title, style, 'data-testid': testId }, children)
 }
 
 export function Card({ children, style }: { children?: ReactNode; padding?: number | string; style?: Record<string, unknown> }) {
@@ -71,13 +72,14 @@ export function Section({ eyebrow, title, hint, children, action }: {
   return createElement('section', null, eyebrow, title, hint, action, children)
 }
 
-export function Checkbox({ checked, onChange, disabled, label, hint, right }: {
+export function Checkbox({ checked, onChange, disabled, label, hint, right, 'data-testid': testId }: {
   checked: boolean
   onChange?: (v: boolean) => void
   disabled?: boolean
   label?: ReactNode
   hint?: ReactNode
   right?: ReactNode
+  'data-testid'?: string
 }) {
   return createElement(
     'label',
@@ -86,6 +88,7 @@ export function Checkbox({ checked, onChange, disabled, label, hint, right }: {
       type: 'checkbox',
       checked,
       disabled,
+      'data-testid': testId,
       onChange: (event: { target: { checked: boolean } }) => onChange?.(event.target.checked),
     }),
     label,
