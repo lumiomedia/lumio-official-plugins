@@ -47,15 +47,15 @@ it('respekterar ett uttryckligt av', () => {
 })
 
 it('sparar switchen på rätt lista', () => {
-  writeLists([{ id: 'a', name: 'A', createdAt: '', urlTvg: null, epgUrls: [] }, { id: 'b', name: 'B', createdAt: '', urlTvg: null, epgUrls: [] }])
+  writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ id: 'a', name: 'A', createdAt: '', urlTvg: null, epgUrls: [] }, { id: 'b', name: 'B', createdAt: '', urlTvg: null, epgUrls: [] }])
   setLogoFallbackEnabled('b', false)
-  const lists = readLists()
+  const lists = getLiveTvLists()
   expect(isLogoFallbackEnabled(lists[0])).toBe(true)
   expect(isLogoFallbackEnabled(lists[1])).toBe(false)
 })
 
 it('sanerar logoFallback som tom sträng till null', () => {
-  const channel = sanitizeChannel({ name: 'A', url: 'u', logoFallback: '  ' })
+  const [channel] = sanitizeChannels([{ name: 'A', url: 'u', logoFallback: '  ' }])
   expect(channel.logoFallback).toBeNull()
 })
 ```
@@ -64,8 +64,8 @@ och i `live-tv-model.test.ts`:
 
 ```ts
 it('tar bort reserven när listans switch är av', async () => {
-  writeLists([{ id: 'a', name: 'A', createdAt: '', urlTvg: null, epgUrls: [], source: 'http://lista', kind: 'm3u', logoFallbackEnabled: false }])
-  mockQueryResponse([{ name: 'K', url: 'u', key: 'K::u', number: 1, logo: null, logoFallback: 'http://x/a.png' }])
+  writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ id: 'a', name: 'A', createdAt: '', urlTvg: null, epgUrls: [], source: 'http://lista', kind: 'm3u', logoFallbackEnabled: false }])
+  vi.mocked(loadAllChannels).mockResolvedValue([{ name: 'K', url: 'u', group: '', tvgId: null, key: 'K::u', number: 1, tvgIdResolved: null, logo: null, logoFallback: 'http://x/a.png' }])
 
   const channels = await loadChannelsShared('http://lista')
 
@@ -73,8 +73,8 @@ it('tar bort reserven när listans switch är av', async () => {
 })
 
 it('behåller reserven när switchen är på', async () => {
-  writeLists([{ id: 'a', name: 'A', createdAt: '', urlTvg: null, epgUrls: [], source: 'http://lista', kind: 'm3u' }])
-  mockQueryResponse([{ name: 'K', url: 'u', key: 'K::u', number: 1, logo: null, logoFallback: 'http://x/a.png' }])
+  writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ id: 'a', name: 'A', createdAt: '', urlTvg: null, epgUrls: [], source: 'http://lista', kind: 'm3u' }])
+  vi.mocked(loadAllChannels).mockResolvedValue([{ name: 'K', url: 'u', group: '', tvgId: null, key: 'K::u', number: 1, tvgIdResolved: null, logo: null, logoFallback: 'http://x/a.png' }])
 
   const channels = await loadChannelsShared('http://lista')
 
@@ -82,7 +82,7 @@ it('behåller reserven när switchen är på', async () => {
 })
 ```
 
-`mockQueryResponse` finns redan i `live-tv-model.test.ts` (eller motsvarande fetch-stubb) — använd den som testerna runt omkring gör, hitta inte på en ny.
+`live-tv-model.test.ts` mockar `./index-client`, INTE `fetch` — modellen pratar bara med appen genom den modulen. Sätt kanalerna genom att låta blockets `loadAllChannels` svara med dem: `vi.mocked(loadAllChannels).mockResolvedValue([...])`. Listorna seedas med `writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [...])` som filens övriga tester gör.
 
 - [ ] **Steg 2: Kör testerna och se dem falla**
 
@@ -306,20 +306,20 @@ git commit -m "live-tv: klient för komplettering av logotyper"
 
 ```tsx
 it('visar switchen påslagen för en lista utan fältet', () => {
-  writeLists([{ id: 'a', name: 'A', createdAt: '', urlTvg: null, epgUrls: [], source: 'http://lista', kind: 'm3u' }])
+  writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ id: 'a', name: 'A', createdAt: '', urlTvg: null, epgUrls: [], source: 'http://lista', kind: 'm3u' }])
   render(<LiveTvSettingsSection />)
   expect(screen.getByTestId('logo-fallback-toggle-a')).toBeChecked()
 })
 
 it('sparar när switchen slås av', () => {
-  writeLists([{ id: 'a', name: 'A', createdAt: '', urlTvg: null, epgUrls: [], source: 'http://lista', kind: 'm3u' }])
+  writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ id: 'a', name: 'A', createdAt: '', urlTvg: null, epgUrls: [], source: 'http://lista', kind: 'm3u' }])
   render(<LiveTvSettingsSection />)
   fireEvent.click(screen.getByTestId('logo-fallback-toggle-a'))
-  expect(isLogoFallbackEnabled(readLists()[0])).toBe(false)
+  expect(isLogoFallbackEnabled(getLiveTvLists()[0])).toBe(false)
 })
 
 it('kompletterar och visar kvittot', async () => {
-  writeLists([{ id: 'a', name: 'A', createdAt: '', urlTvg: null, epgUrls: [], source: 'http://lista', kind: 'm3u' }])
+  writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ id: 'a', name: 'A', createdAt: '', urlTvg: null, epgUrls: [], source: 'http://lista', kind: 'm3u' }])
   vi.mocked(completeLogos).mockResolvedValue({ matched: 12, total: 40 })
   render(<LiveTvSettingsSection />)
   fireEvent.click(screen.getByTestId('logo-complete-a'))
@@ -327,7 +327,7 @@ it('kompletterar och visar kvittot', async () => {
 })
 
 it('knappen är avstängd när switchen är av', () => {
-  writeLists([{ id: 'a', name: 'A', createdAt: '', urlTvg: null, epgUrls: [], source: 'http://lista', kind: 'm3u', logoFallbackEnabled: false }])
+  writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ id: 'a', name: 'A', createdAt: '', urlTvg: null, epgUrls: [], source: 'http://lista', kind: 'm3u', logoFallbackEnabled: false }])
   render(<LiveTvSettingsSection />)
   expect(screen.getByTestId('logo-complete-a')).toBeDisabled()
 })
