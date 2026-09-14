@@ -6,13 +6,21 @@ import { LiveTvGrid } from './live-tv-grid'
 import { LiveTvLogoImage } from './live-tv-logo-image'
 import { NowNextLaterRow } from './now-next-later-row'
 import {
+  channelKey,
   getLiveTvLists,
   getLiveTvLogoSrc,
   onLiveTvListsChanged,
   type LiveTvList,
   type M3uChannel,
 } from './live-tv-data'
+import { useHubText } from './hub-strings'
 import { useChannelsPage } from './view-helpers'
+import { useLiveTvModel } from './live-tv-model'
+import { LIVE_TV_BROWSE_PAGE_ID, encodeChannelParams } from './live-tv-shell'
+import { useTvSettings } from './tv/tv-settings-store'
+import { buildTvPlayerProps } from './tv/tv-player-props'
+import { addToFirstFree, getMultiviewState, setMultiviewState } from './tv/tv-multiview-store'
+import type { LiveTvPlayerTvProps } from './tv/tv-player-types'
 
 interface FocusedTarget {
   list: LiveTvList
@@ -44,8 +52,19 @@ function isPlayableChannel(channel: M3uChannel): boolean {
   return true
 }
 
-export function LiveTvHomeOverride(_props: HomeOverrideProps) {
+export function LiveTvHomeOverride({ onNavigate }: HomeOverrideProps) {
   const { t } = useLang()
+  const { locale } = useHubText()
+  const model = useLiveTvModel()
+  const tvSettings = useTvSettings()
+  /**
+   * Startsidan är en HEMVY, inte bläddringssidan — guiden, multivyn och
+   * kanalsidan bor i `live-tv-browse`. Både rutnätet och spelarkromet
+   * navigerar dit i stället för att öppna egna överlagringar.
+   */
+  const goBrowse = (view: string, params: Record<string, string> = {}) => {
+    onNavigate?.({ pageId: LIVE_TV_BROWSE_PAGE_ID, params: { view, ...params } })
+  }
   const [lists, setLists] = useState<LiveTvList[]>([])
   /** Löpnummer i den sammanslagna kanalföljden över alla listor. */
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null)
@@ -55,6 +74,7 @@ export function LiveTvHomeOverride(_props: HomeOverrideProps) {
       onClose: () => void
       listId?: string | null
       epgUrls?: string[]
+      tv?: LiveTvPlayerTvProps
     }> | null
   >(null)
   const [activeChannel, setActiveChannel] = useState<M3uChannel | null>(null)
@@ -144,6 +164,11 @@ export function LiveTvHomeOverride(_props: HomeOverrideProps) {
     setFocusedIndex(((index + delta) % total + total) % total)
   }
 
+  function closePlayer() {
+    setActiveChannel(null)
+    setActiveList(null)
+  }
+
   function playFocused() {
     if (!focused) return
     setActiveList(focused.list)
@@ -230,16 +255,32 @@ export function LiveTvHomeOverride(_props: HomeOverrideProps) {
           />
         </div>
       ) : null}
-      <LiveTvGrid />
+      <LiveTvGrid onNavigate={onNavigate} />
       {activeChannel && LiveTvPlayerComponent ? (
         <LiveTvPlayerComponent
           channel={activeChannel}
-          onClose={() => {
-            setActiveChannel(null)
-            setActiveList(null)
-          }}
+          onClose={closePlayer}
           listId={activeList?.id ?? null}
           epgUrls={activeEpgUrls}
+          // Spelaren ritar krom bara när `tv` följer med. Hjältekortets
+          // uppspelning saknade det och fick den gamla skrivbordsgrenen —
+          // raderad med de ersatta vyerna.
+          tv={buildTvPlayerProps({
+            model,
+            settings: tvSettings,
+            channel: activeChannel,
+            locale,
+            gateOpen: false,
+            onOpenGuide: () => { closePlayer(); goBrowse('guide') },
+            onOpenMultiview: () => { closePlayer(); goBrowse('multi') },
+            onOpenChannelDetails: () => { const channel = activeChannel; closePlayer(); goBrowse('channel', encodeChannelParams(channel)) },
+            onAddToMultiview: (channel) => {
+              setMultiviewState(addToFirstFree(getMultiviewState(), channelKey(channel)))
+              closePlayer()
+              goBrowse('multi')
+            },
+            onSwitchChannel: (channel) => setActiveChannel(channel),
+          })}
         />
       ) : null}
     </div>

@@ -20,7 +20,7 @@ const EMPTY: NowNextLater = { now: null, next: null, later: null }
  * Sedan lagring v2 kommer tablån från appens `/api/live-tv/epg/*` som en ren
  * lista per kanalnyckel — det finns ingen `EpgCacheEntry` att slå i. Räknandet
  * är detsamma, så det bor här och `computeNowNextLater` (kvar för den äldre
- * cachevägen i `live-tv-guide.tsx`/`epg-sources-section.tsx`) anropar det.
+ * cachevägen i `epg-sources-section.tsx`) anropar det.
  */
 export function nowNextLaterFrom(
   programmes: readonly EpgProgramme[] | null | undefined,

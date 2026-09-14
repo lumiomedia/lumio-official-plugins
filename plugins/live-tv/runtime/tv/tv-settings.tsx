@@ -720,8 +720,7 @@ function ParentalTab({ model, tt }: { model: TvViewProps['model']; tt: TT }) {
   const channels = keys
     .map((key) => model.allChannels.find((c) => channelKey(c) === key))
     .filter((c): c is M3uChannel => Boolean(c))
-  // Lås/upplåsning går via PinGate — samma regel som live-tv-channel-page.tsx
-  // och tv-channel.tsx. Utan PIN-infrastruktur (eller ingen PIN satt på
+  // Lås/upplåsning går via PinGate — samma regel som tv-channel.tsx. Utan PIN-infrastruktur (eller ingen PIN satt på
   // profilen) finns inget att verifiera mot, så då låses kanalen upp direkt
   // i stället för att fastna bakom en grind ingen kan öppna.
   const lockAvailable = pinSupportAvailable() && activeProfileHasPin()

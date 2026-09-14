@@ -538,3 +538,49 @@ export function getHls(): null { return null }
 export function getControlsHideAfterSeconds(): number { return 3 }
 export function lockBodyScroll(): void {}
 export function unlockBodyScroll(): void {}
+
+// ---- Motorernas tillståndskrokar ----
+//
+// `live-tv-player.tsx` kallar ALLA tre motorkrokarna och väljer sedan en
+// (`isDroidEngine ? droid : isHtmlEngine ? htmlVideo : mpvDesktop`). Utan
+// stubbar här kastade redan importen av spelarmodulen, så ingen test kunde
+// rendera den riktiga spelaren — och just den vägen bär regeln om vilket krom
+// som ritas. Tillståndet är statiskt: `isTauriEnv` är false i test, alltså är
+// HTML-motorn den som faktiskt används.
+const NATIVE_PLAYER_STATE = {
+  timePos: 0,
+  duration: 0,
+  paused: false,
+  ended: false,
+  sid: null as number | null,
+  fileLoaded: false,
+  fileLoadedToken: 0,
+  playbackRestarted: false,
+  playbackRestartedToken: 0,
+  pausedForCache: false,
+  coreIdle: true,
+  firstFrameRendered: false,
+  loadFailed: false,
+  loadFailedToken: 0,
+  loadFailedError: null as string | null,
+  seek: async (_seconds: number) => {},
+  seekRelative: async (_delta: number) => {},
+  setPlayPause: async (_paused: boolean) => {},
+  setVolume: async (_volume: number) => {},
+  setSpeed: async (_speed: number) => {},
+  setMuted: async (_muted: boolean) => {},
+  setAudioTrack: async (_id: number | null) => {},
+  resetFileLoaded: () => {},
+  resetPlaybackRestarted: () => {},
+  resetFirstFrameRendered: () => {},
+  resetLoadFailed: () => {},
+  resetEnded: () => {},
+  resetTimePos: () => {},
+}
+export function useMpvPlayer(_enabled: boolean): typeof NATIVE_PLAYER_STATE { return NATIVE_PLAYER_STATE }
+export function useNativePlayer(_enabled: boolean): typeof NATIVE_PLAYER_STATE { return NATIVE_PLAYER_STATE }
+export async function getWindowFullscreen(): Promise<boolean> { return false }
+export async function setWindowNativeFullscreen(on: boolean): Promise<boolean> { return on }
+export function setAndroidImmersive(_on: boolean): void {}
+export function setMpvVideoGeometry(_geometry: Record<string, unknown>): void {}
+export function nativeSetVideoGeometry(_geometry: Record<string, unknown>): void {}

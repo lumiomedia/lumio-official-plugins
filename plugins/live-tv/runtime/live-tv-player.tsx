@@ -26,15 +26,9 @@ import {
   useLang,
   useTvMode,
   capturePlayerFrame,
-  getControlsHideAfterSeconds,
 } from '@/lib/plugin-sdk'
-import { LiveTvLogoImage } from './live-tv-logo-image'
-import { getLiveTvLogoSrc } from './live-tv-data'
 import { recordChannelWatch } from './channel-history'
 import { channelKey } from './live-tv-data'
-import { PlayerNowOverlay } from './player-now-overlay'
-import { PlayerScheduleOverlay } from './player-schedule-overlay'
-import { PlayerFavouritesRow, PlayerNextUpCard, PlayerProgrammeProgress } from './player-extras'
 import { useHtmlVideoPlayer } from './hooks/useHtmlVideoPlayer'
 import { HOST_PROXY_MIME, hostProxyUrl as buildHostProxyUrl, nativeFailureAction } from './live-tv-playback-fallback'
 import { TvPlayerChrome } from './tv/tv-player-chrome'
@@ -54,9 +48,13 @@ interface LiveTvPlayerProps {
   onClose: () => void
   listId?: string | null
   epgUrls?: string[]
-  /** Guide-radens kanalbyte (favoriter). Utan den visar Guide-knappen tablån. */
+  /**
+   * Kanalbyte. Läses inte längre av spelaren själv — kromet byter kanal via
+   * `tv.onSwitchChannel` — men anropsställena skickar den och propen står
+   * kvar så att äldre kod inte slutar typa.
+   */
   onSwitchChannel?: (channel: M3uChannel) => void
-  /** TV-skalets krom (Task 16): banner, ⋯-meny, mini-guide, kanalstegning. */
+  /** Spelarens krom: banner, ⋯-meny, mini-guide, kanalstegning. Bygg det med `tv/tv-player-props.ts`. */
   tv?: LiveTvPlayerTvProps
 }
 
@@ -77,21 +75,11 @@ function proxyUrl(url: string): string {
   return `/api/m3u?stream=${encodeURIComponent(url)}`
 }
 
-function formatClock(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds <= 0) return '00:00'
-  const total = Math.floor(seconds)
-  const h = Math.floor(total / 3600)
-  const m = Math.floor((total % 3600) / 60)
-  const s = total % 60
-  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
-  return `${m}:${String(s).padStart(2, '0')}`
-}
-
 const MPV_STARTUP_TIMEOUT_MS = 18_000
 /** Budget för kanalens egen URL innan värdens strömproxy får försöka. */
 const MPV_FIRST_ATTEMPT_TIMEOUT_MS = 9_000
 
-export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], onSwitchChannel, tv }: LiveTvPlayerProps) {
+export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv }: LiveTvPlayerProps) {
   const { t } = useLang()
   /**
    * TV-läget: spelaren är en helskärmsoverlay och därmed fokusfälla
@@ -101,18 +89,17 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
    * knapparna fanns men låg utanför fokusmotorns värld.
    */
   const isTv = useTvMode()
-  const tvStation = isTv ? { 'data-f': '' } : {}
-  // TV-skalets krom (Task 16) ersätter topprad + kontrollrad + tablå-ark när
-  // skalet gett oss `tv`. Utan `tv` (t.ex. äldre värd) beter sig TV-läget som
-  // förut.
-  const tvChrome = isTv && tv ? tv : null
+  // ETT KROM. `tv/tv-player-chrome.tsx` är spelarens enda krom sedan de
+  // ersatta skrivbordsvyerna raderades — villkoret är därför bara `tv`, inte
+  // `isTv && tv`. Byggaren `tv/tv-player-props.ts` ser till att varje yta
+  // (TV-skalet, startsideöverstyrningen, rutnätet) skickar med det.
+  const tvChrome = tv ?? null
   // Hubbens "Fortsätt titta": en post per kanal, senast sedd först.
   useEffect(() => {
     recordChannelWatch(channel, listId)
   }, [channel.url, channel.name, listId])
   const videoRef = useRef<HTMLVideoElement>(null)
   const stageRef = useRef<HTMLDivElement>(null)
-  const controlsHideTimerRef = useRef<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   /**
@@ -127,10 +114,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
    * till samma ström och inte bara ett omtag.
    */
   const [nativeAttempt, setNativeAttempt] = useState(0)
-  const [controlsVisible, setControlsVisible] = useState(true)
-  const [scheduleOpen, setScheduleOpen] = useState(false)
   // Guide-raden (favoriter med nu-titel) under kontrollerna — handoff §4.
-  const canSwitch = typeof onSwitchChannel === 'function' && !isTv
   const [portalEl] = useState<HTMLElement | null>(() => {
     if (typeof document === 'undefined') return null
     const div = document.createElement('div')
@@ -138,7 +122,6 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
     div.style.background = 'transparent'
     return div
   })
-  const logoSrc = getLiveTvLogoSrc(channel.logo)
   const closingRef = useRef(false)
   const mobileFullscreenAttemptedRef = useRef(false)
   // Forward-declared so the keyboard effect can reference `handleClose`
@@ -314,7 +297,6 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
 
   useEffect(() => {
     mobileFullscreenAttemptedRef.current = false
-    setScheduleOpen(false)
   }, [channel.url])
 
   /*
@@ -347,74 +329,33 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
     return () => document.removeEventListener('visibilitychange', onVisibilityChange)
   }, [])
 
-  const clearControlsHideTimer = useCallback(() => {
-    if (controlsHideTimerRef.current !== null) {
-      window.clearTimeout(controlsHideTimerRef.current)
-      controlsHideTimerRef.current = null
-    }
-  }, [])
-
-  const revealControls = useCallback(() => {
-    setControlsVisible(true)
-    clearControlsHideTimer()
-    if (!loading && !error && !scheduleOpen) {
-      // Tiden är appens inställning, inte pluginets eget tal. Förut stod här
-      // 2400 medan appspelaren körde 3000 — två spelare i samma app gömde sin
-      // kontrollrad olika snabbt, och ingen av dem gick att ställa in. En
-      // betatestare frågade efter just det.
-      //
-      // Ingen fallback behövs: playback-settings bundlas IN i pluginet vid
-      // bygget (@/ löses mot appträdet), så funktionen finns alltid och läser
-      // samma profilskopade nyckel som appspelaren.
-      const seconds = getControlsHideAfterSeconds()
-      // 0 = göm aldrig: sätt då ingen timer alls.
-      if (seconds > 0) {
-        controlsHideTimerRef.current = window.setTimeout(() => {
-          setControlsVisible(false)
-          controlsHideTimerRef.current = null
-        }, seconds * 1000)
-      }
-    }
-  }, [clearControlsHideTimer, error, loading, scheduleOpen])
-
-  const keepControlsVisible = useCallback(() => {
-    setControlsVisible(true)
-    clearControlsHideTimer()
-  }, [clearControlsHideTimer])
-
-  // Kontrollraden gäller ALLA motorer nu — webbläsaren fick tidigare ingen.
-  // Fönsterhelskärm är däremot ett Tauri-begrepp och frågas bara där.
+  // KONTROLLRADENS SYNLIGHET BOR I KROMET NU.
+  //
+  // Här låg en `controlsVisible` + en göm-timer (`getControlsHideAfterSeconds()`)
+  // som bara skrivbordskromet läste. Kromet är raderat, och TV-kromet
+  // (`tv/tv-player-chrome.tsx`) sköter sin egen bannertid ur
+  // `tv.bannerHideMs` — två timers hade gömt samma banner olika snabbt.
+  // Fönsterhelskärm är ett Tauri-begrepp och frågas bara där.
   useEffect(() => {
-    revealControls()
-    if (hasNativeSurface) {
-      void getWindowFullscreen().then(setDesktopFullscreen).catch(() => {})
-    }
-    return clearControlsHideTimer
-  }, [channel.url, clearControlsHideTimer, revealControls, hasNativeSurface])
+    if (!hasNativeSurface) return
+    void getWindowFullscreen().then(setDesktopFullscreen).catch(() => {})
+  }, [channel.url, hasNativeSurface])
 
   useEffect(() => {
     lockBodyScroll()
     function onKey(event: KeyboardEvent) {
-      // TV: kontrollraden gömmer sig efter 2,4 s — varje fjärrtryck ska
-      // väcka den igen, annars navigerar man bland osynliga knappar.
-      if (isTv) revealControls()
       const target = event.target as HTMLElement | null
       if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA') return
-      // TV-kromet (Task 16) äger Back helt medan det är aktivt: det stänger
-      // mini-guiden/menyn själv eller anropar onClose (se tv-player-chrome.tsx).
-      // Spelarens egen Back-gren nedan (helskärm, schemaark) gäller bara den
-      // äldre TV-kromen (utan `tv`-prop) — utan den här spärren kunde BÅDA
-      // stänga spelaren på samma tryck, beroende på lyssnarordning.
+      // Kromet äger Back helt medan det är aktivt: det stänger mini-guiden
+      // eller menyn själv, annars anropar det onClose (se
+      // tv-player-chrome.tsx). Spelarens egen Back-gren nedan (helskärm) rör
+      // bara anrop UTAN `tv` — utan den här spärren kunde BÅDA stänga
+      // spelaren på samma tryck, beroende på lyssnarordning.
       if (tvChrome && (event.key === 'Escape' || event.key === 'Backspace')) return
       // Backspace är TV-fjärrens bakåtknapp — samma väg som Escape.
       if (event.key === 'Escape' || (isTv && event.key === 'Backspace')) {
         event.preventDefault()
         event.stopPropagation()
-        // Tablå-arket stängs först: bakåt kliver ur ett lager i taget.
-        if (scheduleOpen) {
-          setScheduleOpen(false)
-          return
-        }
         if (hasNativeSurface) {
           // Always query the real window state — `desktopFullscreen` can be
           // stale if the user toggled native fullscreen via the green traffic
@@ -429,7 +370,6 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
               }
               return setWindowNativeFullscreen(false).then((nextFullscreen) => {
                 setDesktopFullscreen(nextFullscreen)
-                revealControls()
               })
             })
             .catch(() => handleCloseRef.current())
@@ -444,7 +384,6 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
       }
       if (event.key === ' ' || event.key === 'Spacebar') {
         event.preventDefault()
-        revealControls()
         void mpv.setPlayPause(!mpvPaused)
       }
     }
@@ -457,19 +396,18 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
       unlockBodyScroll()
       window.removeEventListener('keydown', onKey, isTv)
     }
-  }, [isTv, mpvPaused, revealControls, scheduleOpen, hasNativeSurface, tvChrome])
+  }, [isTv, mpvPaused, hasNativeSurface, tvChrome])
 
   // Vänster vid en vänsterkant i spelaren: anspråka trycket så värdens
-  // reservlyssnare inte öppnar huvudmenyn ovanpå strömmen. Trycket väcker
-  // bara kontrollraden. Defensivt meta?.claim?.() — äldre värdar saknar metan.
+  // reservlyssnare inte öppnar huvudmenyn ovanpå strömmen. Trycket ska inte
+  // göra något annat. Defensivt meta?.claim?.() — äldre värdar saknar metan.
   useEffect(() => {
     if (!isTv) return
     return onTvFocusEdge((dir, meta) => {
       if (dir !== 'left') return
       meta?.claim?.()
-      revealControls()
     })
-  }, [isTv, revealControls])
+  }, [isTv])
 
   useLayoutEffect(() => {
     if (!portalEl) return
@@ -898,7 +836,6 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
   }, [handleClose])
 
   const toggleMpvPause = () => {
-    revealControls()
     // Spela efter paus = ladda om kanalen, inte "unpause". Live har ingen
     // meningsfull återupptagning — livekanten rullar vidare medan man är
     // pausad — och paus-läget i JS kan hamna i osync med motorn när en
@@ -945,7 +882,6 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
   }
 
   const toggleFullscreen = () => {
-    revealControls()
     // Webbläsarsession: elementets Fullscreen-API. Det finns inget
     // Tauri-fönster att växla, och iOS Safari ger bara videons egen helskärm.
     if (isHtmlEngine) {
@@ -987,15 +923,11 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
   const content = (
     <div
       data-lumio-player-open="1"
-      // TV: fokusfälla medan spelaren är öppen. onFocusCapture väcker
-      // kontrollraden när motorn flyttar fokus mellan stationerna.
+      // TV: fokusfälla medan spelaren är öppen.
       // data-tv-fullbleed: värdens CSS ger panelrötter vänsterpadding för
       // ikonrailen — en videoyta ska täcka hela skärmen och väljer bort den.
       {...(isTv ? { 'data-panel-root': '', 'data-tv-fullbleed': '' } : {})}
       className="fixed inset-0 z-[70] bg-transparent cursor-default"
-      onMouseMove={revealControls}
-      onPointerMove={revealControls}
-      onFocusCapture={revealControls}
     >
       <div
         ref={stageRef}
@@ -1013,12 +945,12 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
             key={channel.url}
             ref={videoRef}
             className="absolute inset-0 h-full w-full"
-            // INGA inbyggda kontroller: kontrollraden nedan ÄR spelaren, och
-            // webbläsarens egen overlay låg ovanpå den (Jerry 2026-09-03).
+            // INGA inbyggda kontroller: kromet (tv/tv-player-chrome.tsx) ÄR
+            // spelarens kontroller, och webbläsarens egen overlay låg ovanpå
+            // den (Jerry 2026-09-03).
             autoPlay
             playsInline
             style={{ objectFit: ASPECT_OPTIONS[aspectIndex].htmlFit, background: '#000' }}
-            onClick={revealControls}
             onCanPlay={() => setLoading(false)}
             onError={(event) => {
               // Elementet larmar ÄVEN utan källa: uppsättningen hämtar en
@@ -1062,311 +994,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], on
       )}
       {tvChrome ? (
         <TvPlayerChrome channel={channel} tv={tvChrome} paused={mpvPaused} onTogglePause={toggleMpvPause} onClose={handleClose} />
-      ) : (
-      <>
-      <div
-        // Android ritar edge-to-edge och webview:n får ALDRIG insets via
-        // env(safe-area-inset-*) — de är alltid 0 där. Bryggan känner dem och
-        // startAndroidInsetSync() lägger dem i --android-inset-*, så max()
-        // måste läsa BÅDA: env() bär iOS, variabeln bär Android.
-        className="absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-4 bg-gradient-to-b from-black/75 via-black/45 to-transparent px-5 pb-4 pt-[max(1rem,env(safe-area-inset-top),var(--android-inset-top,0px))] transition-opacity duration-200"
-        onMouseEnter={keepControlsVisible}
-        onMouseLeave={revealControls}
-        style={{
-          opacity: controlsVisible ? 1 : 0,
-          pointerEvents: controlsVisible ? 'auto' : 'none',
-        }}
-      >
-        <div className="min-w-0 flex items-center gap-3">
-          {logoSrc && (
-            <LiveTvLogoImage
-              src={logoSrc}
-              alt=""
-              className="h-8 w-8 rounded object-contain bg-slate-800/90 p-0.5"
-            />
-          )}
-          <div className="min-w-0">
-            <p className="truncate font-semibold text-white">{channel.name}</p>
-            <div className="min-w-0">
-              <PlayerNowOverlay channel={channel} listId={listId} urls={epgUrls} />
-            </div>
-          </div>
-        </div>
-        {!isTv ? (
-          <div className="hidden min-w-0 flex-1 justify-center sm:flex">
-            <PlayerNextUpCard channel={channel} listId={listId} urls={epgUrls} />
-          </div>
-        ) : null}
-        <button
-          type="button"
-          {...tvStation}
-          {...(isTv ? { 'data-init': '' } : {})}
-          // Förstafokus på Stäng när strömmen öppnas: motorn kallar aldrig
-          // focusInit för en vy, så knappen fokuserar sig själv vid
-          // montering (och håller emot sena fokusstölder några frames).
-          ref={(node: HTMLButtonElement | null) => {
-            if (!isTv || !node || node.dataset.focusAsserted === '1') return
-            node.dataset.focusAsserted = '1'
-            let held = 0
-            const deadline = Date.now() + 4000
-            const tick = () => {
-              if (!node.isConnected) return
-              if (node.offsetParent !== null) {
-                if (document.activeElement === node) {
-                  if (++held >= 5) return
-                } else { held = 0; node.focus() }
-              }
-              if (Date.now() < deadline) requestAnimationFrame(tick)
-            }
-            requestAnimationFrame(tick)
-          }}
-          onClick={handleClose}
-          className="rounded-full border border-white/15 bg-black/45 px-3 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-200 transition hover:border-white/35 hover:text-white"
-        >
-          {t('close')}
-        </button>
-      </div>
-      <div
-        // Se kommentaren vid topbaren: navigeringsfältets inset kommer bara
-        // via --android-inset-bottom, aldrig via env() på Android.
-        className="absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-5 pb-[max(1.25rem,env(safe-area-inset-bottom),var(--android-inset-bottom,0px))] pt-12 transition-opacity duration-200"
-        onMouseEnter={keepControlsVisible}
-        onMouseLeave={revealControls}
-        style={{
-          opacity: controlsVisible ? 1 : 0,
-          pointerEvents: controlsVisible ? 'auto' : 'none',
-        }}
-      >
-        <div className="mb-2 px-1">
-          <PlayerProgrammeProgress channel={channel} listId={listId} urls={epgUrls} />
-        </div>
-        {/*
-          RADEN SCROLLAR I SIDLED. Uppmätt minsta innehållsbredd: fem knappar
-          (spela, fullskärm, guide, volym, bildförhållande) á 44 px = 220,
-          fem gap á 16 = 80, volymreglaget 96 + 8, infoblockets golv 176 (se
-          kommentaren där), plus radens px-4 = 32. Alltså runt 590 px min mot
-          320 tillgängliga i
-          telefonens stående läge (360 − förälderns px-5) — raden gick utanför
-          viewporten och de sista knapparna gick inte att nå
-          (Jerry 2026-09-09: "player meny går utanför viewporten, den ska vara
-          scrollbar i det läget").
-
-          I LANDSKAP ska den däremot rymmas, och gjorde det inte: de två
-          extradelarna (bildförhållandets etikett, motorbrickan) tändes vid
-          sm=640, alltså strax under en telefons landskapsbredd, och lade på
-          runt 150 px. De ligger nu på lg — scrollen är kvar som skydd för
-          porträtt, inte som normalläge.
-
-          Scroll och inte radbrytning: knapparna ska stå i EN rad man drar i,
-          som en spelarkontroll gör, och höjden är dyr i stående läge där
-          videon redan är liten.
-
-          Regeln är villkorslös och inte breddvillkorad: utan överflöd är en
-          scrollcontainer helt inert, och ett `sm:`-villkor hade bara gett två
-          beteenden att hålla i huvudet. Rullisten göms — man drar i raden.
-
-          INGET ABSOLUT POSITIONERAT FÅR LIGGA HÄR INNE. En scrollcontainer
-          klipper i båda axlarna; det var därför volympopupen blev inline
-          ovan. Nästa popup i den här raden måste renderas utanför den.
-        */}
-        <div className="flex items-center gap-4 overflow-x-auto rounded-2xl border border-white/10 bg-black/55 px-4 py-3 text-white shadow-2xl backdrop-blur-md [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <button
-            type="button"
-            {...tvStation}
-            // Startfokus: spela/paus är det man oftast vill åt med fjärren.
-            onClick={toggleMpvPause}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/35 hover:bg-white/15"
-            aria-label={mpvPaused ? t('play') : t('liveTvPause')}
-            title={mpvPaused ? t('play') : t('liveTvPause')}
-          >
-            {mpvPaused ? (
-              <svg className="h-5 w-5 translate-x-0.5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            ) : (
-              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M7 5h4v14H7zM13 5h4v14h-4z" />
-              </svg>
-            )}
-          </button>
-          <button
-            type="button"
-            {...tvStation}
-            onClick={toggleFullscreen}
-            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-white transition ${
-              desktopFullscreen
-                ? 'border-white/45 bg-white/20 hover:border-white/60'
-                : 'border-white/15 bg-white/10 hover:border-white/35 hover:bg-white/15'
-            }`}
-            aria-label={desktopFullscreen ? t('liveTvExitFullscreen') : t('liveTvFullscreen')}
-            title={desktopFullscreen ? t('liveTvExitFullscreen') : t('liveTvFullscreen')}
-            aria-pressed={desktopFullscreen}
-          >
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M8 3H3v5" />
-              <path d="M16 3h5v5" />
-              <path d="M21 16v5h-5" />
-              <path d="M3 16v5h5" />
-            </svg>
-          </button>
-          <button
-            type="button"
-            {...tvStation}
-            onClick={() => setScheduleOpen((open) => !open)}
-            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-white transition ${
-              scheduleOpen
-                ? 'border-emerald-300/60 bg-emerald-400/20 hover:border-emerald-200/80'
-                : 'border-white/15 bg-white/10 hover:border-white/35 hover:bg-white/15'
-            }`}
-            aria-label={t('liveTvGuide')}
-            title={t('liveTvGuide')}
-            aria-pressed={scheduleOpen}
-          >
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="4" width="18" height="16" rx="2" />
-              <path d="M8 2v4" />
-              <path d="M16 2v4" />
-              <path d="M3 10h18" />
-              <path d="M7 14h4" />
-              <path d="M7 18h10" />
-            </svg>
-          </button>
-
-          {/*
-            VOLYMEN LIGGER INLINE, inte i en popup.
-
-            Popupen var `absolute bottom-full` INNE i kontrollraden, och raden
-            måste kunna scrolla i stående läge (se overflow nedan) — en
-            scrollcontainer klipper i båda axlarna, så popupen hade försvunnit
-            i just det läge fixen finns för. Inline är dessutom mindre kod:
-            ingen öppna/stäng-state och ingen hover-glapp-hack mellan knapp och
-            pop-up.
-
-            Reglaget ritas INTE på TV. Ett range-input som fokusstation
-            sväljer alla pilar, så mute-knappen är TV:ns hela volymkontroll —
-            samma regel som popupen bar förut.
-          */}
-          <div className="flex shrink-0 items-center gap-2">
-            <button
-              type="button"
-              {...tvStation}
-              onClick={toggleMute}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/35 hover:bg-white/15"
-              aria-label={muted ? t('liveTvUnmute') : t('liveTvMute')}
-              title={muted ? t('liveTvUnmute') : t('liveTvMute')}
-              aria-pressed={muted}
-            >
-              {muted || volumeLevel === 0 ? (
-                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M11 5 6 9H3v6h3l5 4V5Z" />
-                  <path d="m22 9-6 6" />
-                  <path d="m16 9 6 6" />
-                </svg>
-              ) : (
-                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M11 5 6 9H3v6h3l5 4V5Z" />
-                  {volumeLevel > 0.33 ? <path d="M15.5 8.5a5 5 0 0 1 0 7" /> : null}
-                  {volumeLevel > 0.66 ? <path d="M19 4.5a10 10 0 0 1 0 15" /> : null}
-                </svg>
-              )}
-            </button>
-            {!isTv ? (
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.01}
-                value={muted ? 0 : volumeLevel}
-                onChange={(e) => updateVolume(parseFloat(e.target.value))}
-                className="h-1 w-24 shrink-0 cursor-pointer appearance-none rounded-full bg-white/15 accent-white"
-                aria-label={t('liveTvVolume')}
-              />
-            ) : null}
-          </div>
-
-          <button
-            type="button"
-            {...tvStation}
-            onClick={cycleAspect}
-            className="flex h-11 shrink-0 items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 text-white transition hover:border-white/35 hover:bg-white/15"
-            /* Etiketten bär det AKTUELLA värdet, så den måste in i aria-label
-               när texten göms — annars blir knappen "bildförhållande" utan
-               att avslöja vilket, för både skärmläsare och TV-fokus. */
-            aria-label={`${t('aspectRatio')}: ${ASPECT_OPTIONS[aspectIndex].label}`}
-            title={`${t('aspectRatio')}: ${ASPECT_OPTIONS[aspectIndex].label}`}
-          >
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="5" width="18" height="14" rx="2" />
-              <path d="M3 9h18M9 5v14" />
-            </svg>
-            {/* Bara ikon när bredden inte räcker. Breddvillkor och inte
-                `portrait:`/`landscape:`: det är utrymmet som är problemet, så
-                en smal fönsterruta på skrivbordet ska bete sig likadant.
-
-                lg och inte sm (Jerry/betatestare 2026-09-09, "in landscape it
-                should fit"): raden VÄXTE vid 640 px, för då tillkom både den
-                här etiketten och motorbrickan nedan. En telefon i landskap
-                ligger strax över den brytpunkten, så extradelarna tippade
-                raden över viewporten i exakt det läge man har mest plats i.
-                De hör till skrivbordets utrymme, inte till en 780 px skärm. */}
-            <span className="hidden text-[11px] font-semibold uppercase tracking-[0.1em] lg:inline">
-              {ASPECT_OPTIONS[aspectIndex].label}
-            </span>
-          </button>
-
-          {/*
-            EN GOLVBREDD, annars försvinner kanalnamnet i den scrollande raden.
-            `flex-1` växer bara i LEDIGT utrymme, och när raden överflödar finns
-            inget — blocket krympte då till sitt min-content, vilket är
-            LIVE-brickan plus ett `truncate` som klipptes till noll tecken. Man
-            hade scrollat fram till en bricka utan namn.
-
-            Inline-stil och inte `min-w-[11rem]`: pluginet körs även på ÄLDRE
-            appar, vars CSS-bunt byggdes innan klassen fanns (Tailwind skannar
-            pluginens runtime, men bara vid VÄRDENS bygge). En layoutregel som
-            pluginet måste kunna lita på får därför inte ligga i en klass.
-            `flex-1` står kvar så skrivbordet fortfarande fyller ut raden.
-          */}
-          <div className="min-w-0 flex-1" style={{ minWidth: 176 }}>
-            <div className="flex min-w-0 items-center gap-3">
-              <span className="inline-flex h-6 shrink-0 items-center rounded-full border border-red-400/35 bg-red-500/15 px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-red-200">
-                {t('liveTvLiveBadge')}
-              </span>
-              <p className="min-w-0 truncate text-sm font-semibold text-white">{channel.name}</p>
-            </div>
-            <div className="mt-1 flex min-w-0 items-center gap-3 text-xs text-slate-300">
-              <span>{mpvPaused ? t('liveTvPaused') : t('liveTvPlaying')}</span>
-              <span className="text-slate-600">/</span>
-              <span>{formatClock(mpvTimePos)}</span>
-              {channel.group ? (
-                <>
-                  <span className="text-slate-600">/</span>
-                  <span className="truncate">{channel.group}</span>
-                </>
-              ) : null}
-            </div>
-          </div>
-
-          {/* Motorbrickan: se etiketten ovan för varför lg och inte sm. */}
-          <div className="hidden shrink-0 items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-slate-400 lg:flex">
-            <span>{engineKind === 'mpv' ? 'MPV' : engineKind === 'droid' ? 'ANDROID' : 'HLS'}</span>
-            <span className="h-1 w-1 rounded-full bg-slate-600" />
-            <span>Live TV</span>
-          </div>
-        </div>
-        {canSwitch && onSwitchChannel ? (
-          <PlayerFavouritesRow current={channel} listId={listId} urls={epgUrls} onSwitch={onSwitchChannel} />
-        ) : null}
-      </div>
-      <PlayerScheduleOverlay
-        channel={channel}
-        listId={listId}
-        urls={epgUrls}
-        open={scheduleOpen}
-        onClose={() => setScheduleOpen(false)}
-      />
-      </>
-      )}
+      ) : null}
     </div>
   )
 

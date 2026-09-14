@@ -39,7 +39,13 @@ import {
   togglePinnedLiveTvChannel,
   channelKey,
   type LiveTvList,
+  type M3uChannel as DataChannel,
 } from './live-tv-data'
+import { LIVE_TV_BROWSE_PAGE_ID, encodeChannelParams } from './live-tv-shell'
+import { useTvSettings } from './tv/tv-settings-store'
+import { buildTvPlayerProps } from './tv/tv-player-props'
+import type { LiveTvPlayerTvProps } from './tv/tv-player-types'
+import { addToFirstFree, getMultiviewState, setMultiviewState } from './tv/tv-multiview-store'
 import { useSchedules } from './hooks/useSchedules'
 import { useChannelsBySource, withIndexTwins } from './view-helpers'
 import { getM3uFetchProgress, reportM3uFetchJobProgress, runM3uFetch } from './m3u-fetch-progress'
@@ -89,7 +95,7 @@ function logLiveTvStage(message: string, details?: Record<string, unknown>) {
   }).catch(() => {})
 }
 
-export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
+export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavigate }: {
   initialChannel?: M3uChannel | null
   /**
    * Browse-sidans värdlayout reserverar hero-yta som Live TV aldrig fyller
@@ -98,6 +104,15 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
    * (som har kanalkortet ovanför) lämnas orörd.
    */
   tvCompactTop?: boolean
+  /**
+   * Bläddringssidans vyer (guide, multivy, kanalsida).
+   *
+   * Rutnätet hade en EGEN guideoverlay (`live-tv-guide.tsx`) — en andra
+   * implementation av en vy som TV-trädet redan har. Den är raderad: guiden
+   * öppnas nu där den bor, i bläddringssidan. Startsidan skickar in värdens
+   * `onNavigate`; saknas den (t.ex. i test) är knapparna bara passiva.
+   */
+  onNavigate?: (target: { pageId: string; params?: Record<string, string> }) => void
 }) {
   const { t, lang } = useLang()
   /**
@@ -187,7 +202,12 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
   // useHubText returnerar { lang, locale, h } sedan hubbens omgörning — det
   // var hela objektet som skickades som `h`, och ChannelSidePanel kraschade
   // med "h is not a function" (Jerry 2026-09-06).
-  const { h } = useHubText()
+  const { h, locale } = useHubText()
+  const tvSettings = useTvSettings()
+  /** Bläddringssidans vy — guiden, multivyn och kanalsidan bor där, inte här. */
+  const goBrowse = (view: string, params: Record<string, string> = {}) => {
+    onNavigate?.({ pageId: LIVE_TV_BROWSE_PAGE_ID, params: { view, ...params } })
+  }
   const [activeGroup, setActiveGroup] = useState<string | null>(null)
   const [groupDropdownOpen, setGroupDropdownOpen] = useState(false)
   const [pinVersion, setPinVersion] = useState(0)
@@ -200,11 +220,7 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
   /** Senaste "lägg till i lista" föll på taket (500 kanaler). Rensas när väljaren öppnas igen. */
   const [listFull, setListFull] = useState(false)
   const [createListOpen, setCreateListOpen] = useState(false)
-  const [guideOpen, setGuideOpen] = useState(false)
   const defaultTabAppliedRef = useRef(false)
-  const [LiveTvGuideComponent, setLiveTvGuideComponent] = useState<
-    null | typeof import('./live-tv-guide').LiveTvGuide
-  >(null)
   const [createListName, setCreateListName] = useState('')
   const [pendingChannelForNewList, setPendingChannelForNewList] = useState<M3uChannel | null>(null)
   const [LiveTvPlayerComponent, setLiveTvPlayerComponent] = useState<ComponentType<{
@@ -213,6 +229,7 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
     listId?: string | null
     epgUrls?: string[]
     onSwitchChannel?: (channel: M3uChannel) => void
+    tv?: LiveTvPlayerTvProps
   }> | null>(null)
   const urlsKey = getLiveTvUrlsKey(urls)
   const m3uErrorText = t('m3uError')
@@ -763,21 +780,6 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
   }, [activeChannel, LiveTvPlayerComponent])
 
   useEffect(() => {
-    if (!guideOpen || LiveTvGuideComponent) return
-    let cancelled = false
-    void import('./live-tv-guide')
-      .then((mod) => {
-        if (!cancelled) setLiveTvGuideComponent(() => mod.LiveTvGuide)
-      })
-      .catch(() => {
-        if (!cancelled) setGuideOpen(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [guideOpen, LiveTvGuideComponent])
-
-  useEffect(() => {
     if (!loading) {
       logLiveTvStage('render state ready', {
         channels: channels.length,
@@ -1079,7 +1081,7 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
             <button
               type="button"
               {...tvStation}
-              onClick={() => setGuideOpen(true)}
+              onClick={() => goBrowse('guide')}
               className={isTv
                 ? `inline-flex items-center gap-2 ${tvControlClass}`
                 : `inline-flex h-9 items-center gap-2 px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] ${neutralPillClass}`}
@@ -1475,17 +1477,26 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
           listId={globalEpgListId}
           epgUrls={globalEpgUrls}
           onSwitchChannel={setActiveChannel}
-        />
-      ) : null}
-
-      {guideOpen && LiveTvGuideComponent ? (
-        <LiveTvGuideComponent
-          open={guideOpen}
-          onClose={() => setGuideOpen(false)}
-          onPlayChannel={(channel) => {
-            setGuideOpen(false)
-            setActiveChannel(channel)
-          }}
+          // Spelaren har ETT krom, och det ritas bara när `tv` följer med.
+          // Rutnätet öppnade förut spelaren utan det och fick den gamla
+          // skrivbordsgrenen — den finns inte längre.
+          tv={buildTvPlayerProps({
+            model,
+            settings: tvSettings,
+            channel: activeChannel as DataChannel,
+            locale,
+            // Rutnätet har ingen PIN-grind över spelaren.
+            gateOpen: false,
+            onOpenGuide: () => { setActiveChannel(null); goBrowse('guide') },
+            onOpenMultiview: () => { setActiveChannel(null); goBrowse('multi') },
+            onOpenChannelDetails: () => { setActiveChannel(null); goBrowse('channel', encodeChannelParams(activeChannel as DataChannel)) },
+            onAddToMultiview: (channel) => {
+              setMultiviewState(addToFirstFree(getMultiviewState(), channelKey(channel)))
+              setActiveChannel(null)
+              goBrowse('multi')
+            },
+            onSwitchChannel: (channel) => setActiveChannel(channel as M3uChannel),
+          })}
         />
       ) : null}
 
@@ -1573,7 +1584,7 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false }: {
                     {...tvStation}
                     onClick={() => {
                       closeTvMenu(false)
-                      setGuideOpen(true)
+                      goBrowse('guide')
                     }}
                     className={tvMenuItemClass}
                   >

@@ -18,7 +18,7 @@ import { TvPreview } from './tv-preview'
 const DAY_OFFSETS = [-2, -1, 0, 1, 2] as const
 const DAY_MS = 86_400_000
 
-/** Kopierad från live-tv-channel-page.tsx (rad 41–52): slår upp i model.byUrl först. */
+/** Slår upp i model.byUrl först; sidans params är reservvägen. */
 function channelFromParams(params: Record<string, string>, byUrl: Map<string, M3uChannel>): M3uChannel | null {
   const url = params.url?.trim()
   if (!url) return null
@@ -140,8 +140,7 @@ export function TvChannel({ model, nav, params, settings }: TvViewProps) {
 
   const requestLockToggle = () => {
     // Låsning och upplåsning kräver profilens PIN i båda riktningarna —
-    // samma regel som live-tv-channel-page.tsx:s requestLockToggle (rad
-    // ~111–118), tv-settings.tsx:s requestUnlock och tv-shell.tsx:s
+    // samma regel som tv-settings.tsx:s requestUnlock och tv-shell.tsx:s
     // requestLockToggle. Raden ritas bara när lockAvailable ändå är sant, så
     // det "PIN saknas"-läget som skrivbordet visar en notis för uppstår
     // aldrig här.
