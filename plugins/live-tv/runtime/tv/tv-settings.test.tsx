@@ -7,6 +7,13 @@ import { getLockedChannelKeys } from '../channel-locks'
 import { getTvSettings, getGuideMode } from './tv-settings-store'
 
 vi.mock('../live-tv-player', () => ({ LiveTvPlayer: () => <div data-testid="player" /> }))
+// completeLogos gör ett riktigt nätverksanrop i produktionskoden — testerna
+// ersätter den med en spion, samma mönster som skrivbordets
+// `live-tv-settings-section.test.tsx`.
+vi.mock('../index-client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../index-client')>()
+  return { ...actual, completeLogos: vi.fn() }
+})
 // Föräldrakontrollens PIN-grind (channel-locks.ts) läser PIN-stödet dynamiskt
 // från plugin-sdk:t; teststubben saknar de funktionerna helt (ingen PIN-motor
 // i test), så utan den här utökningen skulle lockAvailable alltid vara
@@ -19,6 +26,9 @@ vi.mock('@/lib/plugin-sdk', async (importOriginal) => {
   return { ...actual, getAccent: undefined, setAccent: undefined, ACCENT_PRESETS: undefined, activeProfileHasPin: () => true, verifyActiveProfilePin: async () => true }
 })
 import { LiveTvTvShell } from './tv-shell'
+import { ListRow } from './tv-settings'
+import { tvText } from './tv-strings'
+import { completeLogos } from '../index-client'
 
 const list: LiveTvList = { id: 'l1', name: 'Xtream', channels: [{ name: 'A', logo: null, group: 'Sport', url: 'http://x/A', tvgId: null }], createdAt: '', urlTvg: null, epgUrls: ['http://x/epg.xml'], autoEpgDisabled: false, fetchedAt: '2026-09-12T10:00:00Z' }
 const urlList: LiveTvList = { id: 'l2', name: 'iptv.example.com', channels: [], createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null }
@@ -412,5 +422,42 @@ describe('TvSettingsView: snabbknapparna (spec 4.4)', () => {
     const input = screen.getByTestId('text-prompt-input') as HTMLInputElement
     // Adressfält: ingen autoversalisering, ingen rättstavning.
     expect(input.type).toBe('url')
+  })
+})
+
+describe('ListRow — logotypreserv i TV-läget (P6)', () => {
+  // `tt` byggs direkt mot `tvText('en', ...)` i stället för `useTvText()`:
+  // ListRow renderas här helt fristående (ingen skalkontext runt), och 'en'
+  // är ändå det enda testmiljön någonsin visar — teststubbens `useLang()`
+  // ligger fast på 'en' (se plugin-sdk-stubben).
+  const baseProps = {
+    tt: (key: Parameters<typeof tvText>[1], vars?: Record<string, string | number>) => tvText('en', key, vars),
+    locale: 'en-GB',
+    busy: null,
+    needsLogin: false,
+    onRefetch: () => {},
+    onRemove: () => {},
+    onEditChannels: () => {},
+  }
+
+  afterEach(() => {
+    vi.mocked(completeLogos).mockReset()
+  })
+
+  it('raden har en logotypswitch som går att nå med fjärren', () => {
+    render(<ListRow list={{ id: 'a', name: 'A', createdAt: '', urlTvg: null, epgUrls: [], source: 'http://lista', kind: 'm3u' }} {...baseProps} />)
+    expect(screen.getByTestId('list-logo-fallback-a')).toBeInTheDocument()
+  })
+
+  it('kompletterar från TV och visar kvittot', async () => {
+    vi.mocked(completeLogos).mockResolvedValue({ matched: 3, total: 9 })
+    render(<ListRow list={{ id: 'a', name: 'A', createdAt: '', urlTvg: null, epgUrls: [], source: 'http://lista', kind: 'm3u' }} {...baseProps} />)
+    fireEvent.click(screen.getByTestId('list-logo-complete-a'))
+    // Briefens assertion är skriven mot den svenska texten ("3 av 9"), men
+    // teststubbens useLang() ligger fast på 'en' (se ovan) — samma fälla som
+    // redan dokumenterats i `live-tv-settings-section.test.tsx` för
+    // skrivbordets motsvarande test. Den engelska texten ("3 of 9") är vad
+    // som faktiskt renderas här, så testet skrivs mot den i stället.
+    expect(await screen.findByText(/3 of 9/)).toBeInTheDocument()
   })
 })

@@ -163,6 +163,14 @@ const EN = {
   importWriting: 'Saving the channels…',
   importFailed: 'The fetch failed',
   needsReimport: 'Needs refetching',
+  // Logotypreserv (P6): switchen visas som en Action vars etikett själv
+  // bär läget (på/av), och kompletteringens kvitto delar text/parametrar
+  // med skrivbordets `logoCompleteResult` (hub-strings.ts).
+  logoFallbackOn: 'Logos: on',
+  logoFallbackOff: 'Logos: off',
+  logoComplete: 'Complete',
+  logoCompleteRunning: 'Completing…',
+  logoCompleteResult: '{matched} of {total} completed',
   truncated: 'The playlist was cut off at 64 MiB — some channels are missing',
   appTooOld: 'Live TV requires Lumio 0.1.596 or newer',
   xtreamServer: 'Xtream server — http://host:8080',
@@ -358,6 +366,11 @@ const SV: Record<keyof typeof EN, string> = {
   importWriting: 'Sparar kanalerna…',
   importFailed: 'Hämtningen misslyckades',
   needsReimport: 'Behöver hämtas om',
+  logoFallbackOn: 'Logotyper: på',
+  logoFallbackOff: 'Logotyper: av',
+  logoComplete: 'Komplettera',
+  logoCompleteRunning: 'Kompletterar…',
+  logoCompleteResult: '{matched} av {total} kompletterade',
   truncated: 'Spellistan kapades vid 64 MiB – vissa kanaler saknas',
   appTooOld: 'Live TV kräver Lumio 0.1.596 eller nyare',
   xtreamServer: 'Xtream-server — http://host:8080',

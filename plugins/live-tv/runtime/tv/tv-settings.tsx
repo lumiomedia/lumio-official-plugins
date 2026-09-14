@@ -17,11 +17,13 @@ import {
   getM3uUrls,
   getXtreamLogins,
   importList,
+  isLogoFallbackEnabled,
   normalizeXtreamBase,
   onXtreamLoginsChanged,
   parseXtreamSource,
   removeChannelFromLiveTvList,
   saveXtreamLogin,
+  setLogoFallbackEnabled,
   updateLiveTvListEpg,
   xtreamPseudoUrl,
   type LiveTvList,
@@ -30,6 +32,7 @@ import {
   type XtreamCategory,
   type XtreamLogin,
 } from '../live-tv-data'
+import { completeLogos } from '../index-client'
 import type { ImportStatus } from '../index-client'
 import { recordListImportOutcome } from '../list-import-flags'
 import { activeProfileHasPin, getLockedChannelKeys, onChannelLocksChanged, pinSupportAvailable, toggleChannelLock, verifyActiveProfilePin } from '../channel-locks'
@@ -221,7 +224,7 @@ function formatFetchedAt(iso: string, locale: string): string {
  * Raden som faktiskt hämtar får en ny `busy` och ritas om; övriga får samma
  * `null` och hoppas över.
  */
-const ListRow = memo(function ListRow({
+export const ListRow = memo(function ListRow({
   list,
   tt,
   locale,
@@ -241,6 +244,31 @@ const ListRow = memo(function ListRow({
   onEditChannels: (list: LiveTvList) => void
 }) {
   const importable = list.kind === 'm3u' || list.kind === 'xtream'
+  const logoEnabled = isLogoFallbackEnabled(list)
+  // Kvittot/felet lever i raden själv, inte i föräldern: samma mönster som
+  // `logoComplete` i skrivbordets `live-tv-settings-section.tsx`, men
+  // nyckling per lista behövs inte här — varje `ListRow` ÄR redan en lista.
+  const [logoBusy, setLogoBusy] = useState(false)
+  const [logoResult, setLogoResult] = useState<{ matched: number; total: number } | null>(null)
+  const [logoError, setLogoError] = useState<string | null>(null)
+
+  /**
+   * `completeLogos` sänder `emitIndexChanged()` själv (se `index-client.ts`)
+   * — ropas INTE här igen, det hade blivit en dubbelsändning.
+   */
+  async function handleCompleteLogos(): Promise<void> {
+    setLogoBusy(true)
+    setLogoError(null)
+    try {
+      const result = await completeLogos(list.source ?? '')
+      setLogoResult(result)
+    } catch (err) {
+      setLogoError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setLogoBusy(false)
+    }
+  }
+
   return (
     <div
       data-testid={`list-row-${list.id}`}
@@ -265,13 +293,32 @@ const ListRow = memo(function ListRow({
         {!busy && list.lastImportError ? (
           <div data-testid={`list-error-${list.id}`} style={{ fontSize: dp(15), color: '#fca5a5', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{list.lastImportError}</div>
         ) : null}
+        {logoResult ? (
+          <div data-testid={`list-logo-complete-result-${list.id}`} style={{ fontSize: dp(15), color: TV.dim }}>
+            {tt('logoCompleteResult', { matched: logoResult.matched, total: logoResult.total })}
+          </div>
+        ) : null}
+        {logoError ? (
+          <div data-testid={`list-logo-complete-error-${list.id}`} style={{ fontSize: dp(15), color: '#fca5a5', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{logoError}</div>
+        ) : null}
       </div>
-      {/* "Hämta om" FÖRE "Ta bort": åtgärden som faktiskt behövs är den
-          fjärrkontrollen når först i raden. */}
+      {/* Ordning: Hämta om, Logotyper, Komplettera, Ta bort — "Ta bort" sist
+          så fjärrkontrollen inte råkar landa på den. */}
       <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: dp(10) }}>
         {importable ? <Action testId={`list-refetch-${list.id}`} label={busy ? tt('refetching') : tt('refetch')} onOk={() => onRefetch(list)} /> : null}
         {/* Egna listor har inget att hämta — de fylls med kanalväljaren. */}
         {list.kind === 'custom' ? <Action testId={`list-channels-${list.id}`} label={tt('listChannels')} onOk={() => onEditChannels(list)} /> : null}
+        <Action
+          testId={`list-logo-fallback-${list.id}`}
+          label={logoEnabled ? tt('logoFallbackOn') : tt('logoFallbackOff')}
+          onOk={() => setLogoFallbackEnabled(list.id, !logoEnabled)}
+        />
+        <Action
+          testId={`list-logo-complete-${list.id}`}
+          label={logoBusy ? tt('logoCompleteRunning') : tt('logoComplete')}
+          disabled={!logoEnabled || list.kind === 'custom' || logoBusy}
+          onOk={() => { void handleCompleteLogos() }}
+        />
         <Action testId={`list-remove-${list.id}`} label={tt('remove')} onOk={() => onRemove(list)} />
       </div>
     </div>
