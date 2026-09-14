@@ -696,22 +696,35 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavi
 
   useEffect(() => {
     let cancelled = false
-    // Reservens URL läggs bara till när kanalen saknar leverantörslogotyp —
-    // annars skulle förladdningen dubblas för varje kanal som redan har en
-    // egen logotyp att prova.
+    // Bär primär- och reservkällan var för sig hela vägen genom kön: om
+    // leverantörens logotyp fallerar (502/404/timeout) ska reserven få en
+    // egen chans, inte bara när kanalen saknar leverantörslogotyp helt.
     const logoEntries = pagedChannels
-      .map((channel) => ({ key: channel.url, src: getLiveTvLogoSrc(channel.logo) ?? getLiveTvLogoSrc(channel.logoFallback) }))
-      .filter((entry): entry is { key: string; src: string } => Boolean(entry.src))
+      .map((channel) => ({
+        key: channel.url,
+        primarySrc: getLiveTvLogoSrc(channel.logo),
+        fallbackSrc: getLiveTvLogoSrc(channel.logoFallback),
+      }))
+      .filter((entry) => Boolean(entry.primarySrc || entry.fallbackSrc))
 
     if (logoEntries.length === 0) {
       setLoadedLogoUrls({})
       return
     }
 
+    // Snabbväg: primären vinner om båda källorna råkar vara klara sedan
+    // tidigare (cache eller en föregående rendering av samma kanal).
     const initialLoaded = Object.fromEntries(
       logoEntries
-        .filter((entry) => rememberedChannelLogoSrcs.get(entry.key) === entry.src || isLiveTvLogoLoaded(entry.src))
-        .map((entry) => [entry.key, entry.src]),
+        .map((entry): [string, string] | null => {
+          const candidate = [entry.primarySrc, entry.fallbackSrc].find(
+            (candidateSrc): candidateSrc is string =>
+              Boolean(candidateSrc) &&
+              (rememberedChannelLogoSrcs.get(entry.key) === candidateSrc || isLiveTvLogoLoaded(candidateSrc)),
+          )
+          return candidate ? [entry.key, candidate] : null
+        })
+        .filter((pair): pair is [string, string] => pair !== null),
     ) as Record<string, string>
 
     Object.entries(initialLoaded).forEach(([key, src]) => rememberedChannelLogoSrcs.set(key, src))
@@ -725,17 +738,25 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavi
         if (cancelled) break
         const batch = pendingEntries.slice(i, i + batchSize)
         const results = await Promise.all(
-          batch.map(async (entry) => ({
-            key: entry.key,
-            src: entry.src,
-            ok: await preloadLiveTvLogo(entry.src),
-          })),
+          batch.map(async (entry) => {
+            if (entry.primarySrc && (await preloadLiveTvLogo(entry.primarySrc))) {
+              return { key: entry.key, src: entry.primarySrc as string | null }
+            }
+            // Leverantörens logotyp saknas eller kunde inte laddas — reserven
+            // får ta över innan kortet ger upp helt.
+            if (entry.fallbackSrc && (await preloadLiveTvLogo(entry.fallbackSrc))) {
+              return { key: entry.key, src: entry.fallbackSrc as string | null }
+            }
+            return { key: entry.key, src: null as string | null }
+          }),
         )
 
         if (cancelled) break
 
         const batchLoaded = Object.fromEntries(
-          results.filter((result) => result.ok).map((result) => [result.key, result.src]),
+          results
+            .filter((result): result is { key: string; src: string } => Boolean(result.src))
+            .map((result) => [result.key, result.src]),
         ) as Record<string, string>
 
         Object.entries(batchLoaded).forEach(([key, src]) => rememberedChannelLogoSrcs.set(key, src))
@@ -1249,6 +1270,11 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavi
             <div className="live-tv-channel-grid grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-3 2xl:grid-cols-4">
               {pagedChannels.map((channel, i) => {
                 const logoSrc = loadedLogoUrls[channel.url] ?? null
+                const primaryLogoSrc = getLiveTvLogoSrc(channel.logo)
+                const reserveLogoSrc = getLiveTvLogoSrc(channel.logoFallback)
+                // Reserven skickas bara med när det som faktiskt laddades ÄR
+                // primärkällan — annars skulle samma URL provas två gånger.
+                const cardFallbackSrc = logoSrc && logoSrc === primaryLogoSrc ? reserveLogoSrc : undefined
                 const channelListKey = `${channel.name}::${channel.url}`
                 const isListPickerOpen = listPickerChannelKey === channelListKey
                 const isInAnyList = customLists.some((list) => isChannelInLiveTvList(list.id, channel))
@@ -1263,6 +1289,7 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavi
                       {logoSrc ? (
                         <LiveTvLogoImage
                           src={logoSrc}
+                          fallbackSrc={cardFallbackSrc}
                           alt={channel.name}
                           className="h-full w-full object-contain p-2"
                           onError={() => {}}
