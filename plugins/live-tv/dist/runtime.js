@@ -191318,6 +191318,13 @@ ${cue.text}`).join("\n\n")}
         moreActions: "More",
         nextLabel: "Next",
         zapMiss: "No channel {n}",
+        // P13: pekarkontroller i spelarkromet, bara utanför TV-läget
+        playerMute: "Mute",
+        playerUnmute: "Unmute",
+        playerVolume: "Volume",
+        playerFullscreen: "Fullscreen",
+        playerExitFullscreen: "Exit fullscreen",
+        playerAspect: "Aspect ratio",
         // Tomma
         guideEmpty: "No channels in this category"
       };
@@ -191505,14 +191512,22 @@ ${cue.text}`).join("\n\n")}
         moreActions: "Mer",
         nextLabel: "Sen",
         zapMiss: "Ingen kanal {n}",
+        // P13
+        playerMute: "Ljud av",
+        playerUnmute: "Ljud p\xE5",
+        playerVolume: "Volym",
+        playerFullscreen: "Fullsk\xE4rm",
+        playerExitFullscreen: "L\xE4mna fullsk\xE4rm",
+        playerAspect: "Bildf\xF6rh\xE5llande",
         guideEmpty: "Inga kanaler i kategorin"
       };
     }
   });
 
   // ../../../../../../private/tmp/claude-502/-Users-jerry-Local-Sites-cadenza/4c15c7f3-5852-4d5c-915f-1d7b0929362c/scratchpad/p11-clean/plugins/live-tv/runtime/tv/tv-player-chrome.tsx
-  function TvPlayerChrome({ channel, tv, paused, onTogglePause, onClose }) {
+  function TvPlayerChrome({ channel, tv, controls, paused, onTogglePause, onClose }) {
     const { tt } = useTvText();
+    const isTv = useTvMode();
     const clock = useTvClockNode(tv.locale);
     const [visible, setVisible] = useState(true);
     const [miniOpen, setMiniOpen] = useState(false);
@@ -191537,6 +191552,31 @@ ${cue.text}`).join("\n\n")}
         if (timerRef.current !== null) window.clearTimeout(timerRef.current);
       };
     }, [reveal, channel]);
+    useEffect(() => {
+      if (isTv) return;
+      const onPointer = () => reveal();
+      window.addEventListener("pointermove", onPointer);
+      window.addEventListener("pointerdown", onPointer);
+      return () => {
+        window.removeEventListener("pointermove", onPointer);
+        window.removeEventListener("pointerdown", onPointer);
+      };
+    }, [isTv, reveal]);
+    const volumeRef = useRef(null);
+    const volumePercent = Math.round((controls?.volume ?? 0) * 100);
+    const setVolumeFromPointer = useCallback((clientX) => {
+      const rect = volumeRef.current?.getBoundingClientRect();
+      if (!rect || rect.width === 0 || !controls) return;
+      controls.onVolume(Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)));
+    }, [controls]);
+    const onVolumeKey = useCallback((event) => {
+      if (!controls) return;
+      const delta = event.key === "ArrowRight" ? VOLUME_STEP : event.key === "ArrowLeft" ? -VOLUME_STEP : 0;
+      if (delta === 0) return;
+      event.preventDefault();
+      event.stopPropagation();
+      controls.onVolume(Math.max(0, Math.min(1, Math.round((controls.volume + delta) * 100) / 100)));
+    }, [controls]);
     const index3 = tv.neighbours.findIndex((c) => channelKey(c) === channelKey(channel));
     const miniCards = useMemo(() => {
       if (index3 < 0) return tv.neighbours.slice(0, MINI_WINDOW * 2);
@@ -191680,6 +191720,33 @@ ${cue.text}`).join("\n\n")}
           ] }) : null
         ] }),
         /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(16), flexShrink: 0 }, children: [
+          !isTv && controls ? /* @__PURE__ */ jsxs("div", { style: { display: "inline-flex", alignItems: "center", gap: dp(12) }, children: [
+            /* @__PURE__ */ jsx(RoundBtn, { ...station(controls.onToggleMute, void 0, { "aria-label": controls.muted ? tt("playerUnmute") : tt("playerMute") }), background: "rgba(252,252,255,0.10)", children: controls.muted ? /* @__PURE__ */ jsx(SpeakerOff, {}) : /* @__PURE__ */ jsx(SpeakerOn, {}) }),
+            /* @__PURE__ */ jsx(
+              "div",
+              {
+                ...station(controls.onToggleMute, void 0, { "aria-label": tt("playerVolume") }),
+                ref: volumeRef,
+                role: "slider",
+                "aria-valuemin": 0,
+                "aria-valuemax": 100,
+                "aria-valuenow": volumePercent,
+                onKeyDown: onVolumeKey,
+                onPointerDown: (event) => setVolumeFromPointer(event.clientX),
+                onPointerMove: (event) => {
+                  if (event.buttons === 1) setVolumeFromPointer(event.clientX);
+                },
+                onClick: (event) => setVolumeFromPointer(event.clientX),
+                style: { width: dp(132), height: dp(52), display: "inline-flex", alignItems: "center", padding: `0 ${dp(6)}px`, borderRadius: 999, cursor: "pointer", touchAction: "none", boxSizing: "border-box" },
+                children: /* @__PURE__ */ jsxs("span", { style: { position: "relative", width: "100%", height: dp(6), borderRadius: 999, background: "rgba(252,252,255,0.22)" }, children: [
+                  /* @__PURE__ */ jsx("span", { style: { position: "absolute", inset: 0, right: `${100 - volumePercent}%`, borderRadius: 999, background: TV.acc } }),
+                  /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: "50%", left: `${volumePercent}%`, width: dp(14), height: dp(14), marginTop: dp(-7), marginLeft: dp(-7), borderRadius: 999, background: "#fff" } })
+                ] })
+              }
+            ),
+            /* @__PURE__ */ jsx(RoundBtn, { ...station(controls.onToggleFullscreen, void 0, { "aria-label": controls.fullscreen ? tt("playerExitFullscreen") : tt("playerFullscreen") }), background: "rgba(252,252,255,0.10)", children: controls.fullscreen ? /* @__PURE__ */ jsx(CornersIn, {}) : /* @__PURE__ */ jsx(CornersOut, {}) }),
+            /* @__PURE__ */ jsx("div", { ...station(controls.onCycleAspect, void 0, { "aria-label": tt("playerAspect") }), style: { height: dp(52), padding: `0 ${dp(18)}px`, borderRadius: 999, background: "rgba(252,252,255,0.10)", border: `1px solid ${TV.lineCard}`, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: dp(16), color: TV.text, cursor: "pointer", whiteSpace: "nowrap", boxSizing: "border-box" }, children: controls.aspectLabel })
+          ] }) : null,
           /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: "rgba(243,244,248,0.45)" }, children: tt("playerHelp") }),
           /* @__PURE__ */ jsx("div", { ref: dotsRef, ...station(() => dotsRef.current && openMenu(dotsRef.current), (el) => openMenu(el), { "data-init": "", "aria-label": tt("moreActions") }), style: { width: dp(52), height: dp(52), borderRadius: 999, background: "rgba(252,252,255,0.10)", border: `1px solid ${TV.lineCard}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }, children: /* @__PURE__ */ jsx(Icons.Dots, {}) })
         ] })
@@ -191708,7 +191775,7 @@ ${cue.text}`).join("\n\n")}
       } }) : null
     ] });
   }
-  var MINI_WINDOW;
+  var MINI_WINDOW, VOLUME_STEP, stroke, CtlIcon, SpeakerOn, SpeakerOff, CornersOut, CornersIn;
   var init_tv_player_chrome = __esm({
     "../../../../../../private/tmp/claude-502/-Users-jerry-Local-Sites-cadenza/4c15c7f3-5852-4d5c-915f-1d7b0929362c/scratchpad/p11-clean/plugins/live-tv/runtime/tv/tv-player-chrome.tsx"() {
       "use strict";
@@ -191721,6 +191788,20 @@ ${cue.text}`).join("\n\n")}
       init_tv_strings();
       init_jsx_runtime_shim();
       MINI_WINDOW = 25;
+      VOLUME_STEP = 0.1;
+      stroke = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" };
+      CtlIcon = ({ children }) => /* @__PURE__ */ jsx("svg", { width: dp(24), height: dp(24), viewBox: "0 0 24 24", ...stroke, children });
+      SpeakerOn = () => /* @__PURE__ */ jsxs(CtlIcon, { children: [
+        /* @__PURE__ */ jsx("path", { d: "M4 9.5v5h3.3L12 18.5v-13L7.3 9.5H4z" }),
+        /* @__PURE__ */ jsx("path", { d: "M15.6 9.4a3.6 3.6 0 0 1 0 5.2" }),
+        /* @__PURE__ */ jsx("path", { d: "M18.2 6.9a7.2 7.2 0 0 1 0 10.2" })
+      ] });
+      SpeakerOff = () => /* @__PURE__ */ jsxs(CtlIcon, { children: [
+        /* @__PURE__ */ jsx("path", { d: "M4 9.5v5h3.3L12 18.5v-13L7.3 9.5H4z" }),
+        /* @__PURE__ */ jsx("path", { d: "m16 10 4 4M20 10l-4 4" })
+      ] });
+      CornersOut = () => /* @__PURE__ */ jsx(CtlIcon, { children: /* @__PURE__ */ jsx("path", { d: "M9.5 4H4v5.5M14.5 4H20v5.5M14.5 20H20v-5.5M9.5 20H4v-5.5" }) });
+      CornersIn = () => /* @__PURE__ */ jsx(CtlIcon, { children: /* @__PURE__ */ jsx("path", { d: "M4 9.5h5.5V4M20 9.5h-5.5V4M20 14.5h-5.5V20M4 14.5h5.5V20" }) });
     }
   });
 
@@ -192231,14 +192312,16 @@ ${cue.text}`).join("\n\n")}
         mpvSetMuted(false);
       }
       mpvSetVolume(clamped);
-      if (videoRef.current) videoRef.current.volume = clamped;
     }, [mpvSetMuted, mpvSetVolume, muted]);
     const toggleMute = useCallback(() => {
       const next2 = !muted;
       setMutedState(next2);
       mpvSetMuted(next2);
-      if (videoRef.current) videoRef.current.muted = next2;
     }, [mpvSetMuted, muted]);
+    useEffect(() => {
+      const media = videoRef.current;
+      if (media) media.volume = volumeLevel;
+    }, [volumeLevel, channel.url, isHtmlEngine]);
     const tryEnterMobileFullscreen = useCallback(() => {
       if (mobileFullscreenAttemptedRef.current) return;
       if (!isMobileBrowser()) return;
@@ -192279,6 +192362,12 @@ ${cue.text}`).join("\n\n")}
       void getWindowFullscreen().then(setDesktopFullscreen).catch(() => {
       });
     }, [channel.url, hasNativeSurface]);
+    useEffect(() => {
+      if (hasNativeSurface || typeof document === "undefined") return;
+      const onChange = () => setDesktopFullscreen(document.fullscreenElement !== null);
+      document.addEventListener("fullscreenchange", onChange);
+      return () => document.removeEventListener("fullscreenchange", onChange);
+    }, [hasNativeSurface]);
     useEffect(() => {
       lockBodyScroll();
       function onKey(event) {
@@ -192713,6 +192802,16 @@ ${cue.text}`).join("\n\n")}
         if (rect) engineSetBounds(rect);
       });
     };
+    const playerControls = {
+      muted,
+      volume: volumeLevel,
+      fullscreen: desktopFullscreen,
+      aspectLabel: ASPECT_OPTIONS[aspectIndex].label,
+      onToggleMute: toggleMute,
+      onVolume: updateVolume,
+      onToggleFullscreen: toggleFullscreen,
+      onCycleAspect: cycleAspect
+    };
     const content = /* @__PURE__ */ jsxs(
       "div",
       {
@@ -192739,6 +192838,7 @@ ${cue.text}`).join("\n\n")}
                   className: "absolute inset-0 h-full w-full",
                   autoPlay: true,
                   playsInline: true,
+                  muted,
                   style: { objectFit: ASPECT_OPTIONS[aspectIndex].htmlFit, background: "#000" },
                   onCanPlay: () => setLoading(false),
                   onError: (event) => {
@@ -192768,7 +192868,7 @@ ${cue.text}`).join("\n\n")}
             /* @__PURE__ */ jsx("p", { className: "text-sm text-red-400", children: error }),
             /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500", children: t("liveTvStreamErrorHelp") })
           ] }),
-          tvChrome ? /* @__PURE__ */ jsx(TvPlayerChrome, { channel, tv: tvChrome, paused: mpvPaused, onTogglePause: toggleMpvPause, onClose: handleClose }) : null
+          tvChrome ? /* @__PURE__ */ jsx(TvPlayerChrome, { channel, tv: tvChrome, controls: playerControls, paused: mpvPaused, onTogglePause: toggleMpvPause, onClose: handleClose }) : null
         ]
       }
     );
