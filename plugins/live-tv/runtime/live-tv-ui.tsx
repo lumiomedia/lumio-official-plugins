@@ -1,8 +1,6 @@
 'use client'
 
-import { useTvMode } from '@/lib/plugin-sdk'
-
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { LiveTvLogoImage } from './live-tv-logo-image'
 import { getLiveTvLogoSrc, type M3uChannel } from './live-tv-data'
 
@@ -37,14 +35,7 @@ export const LT = {
   radiusSm: 4,
 } as const
 
-export const heroGradient: CSSProperties = {
-  background: 'linear-gradient(120deg, rgba(252,252,255,0.14), rgba(252,252,255,0.05))',
-  border: `1px solid ${LT.line}`,
-  borderRadius: LT.radiusLg,
-  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
-}
-
-export const surfaceCard: CSSProperties = {
+const surfaceCard: CSSProperties = {
   background: LT.surface,
   borderRadius: LT.radiusMd,
   border: `1px solid ${LT.line}`,
@@ -66,59 +57,9 @@ export function formatClock(ms: number, locale: string): string {
   return new Date(ms).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
 }
 
-/* ---------- Ikoner (Phosphor-liknande, 24-rutnät) ---------- */
-
-type IconProps = { size?: number; className?: string }
-const stroke = { fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
-
-export const Icon = {
-  Back: ({ size = 18, className }: IconProps) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...stroke}><path d="M15 18l-6-6 6-6" /></svg>
-  ),
-  Search: ({ size = 18, className }: IconProps) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...stroke}><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
-  ),
-  Bell: ({ size = 18, className, filled = false }: IconProps & { filled?: boolean }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...stroke} fill={filled ? 'currentColor' : 'none'}>
-      <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z" /><path d="M10 20a2 2 0 0 0 4 0" />
-    </svg>
-  ),
-  Heart: ({ size = 18, className, filled = false }: IconProps & { filled?: boolean }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...stroke} fill={filled ? 'currentColor' : 'none'}>
-      <path d="M12 21s-7-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 12C19 16.4 12 21 12 21z" />
-    </svg>
-  ),
-  Play: ({ size = 14, className }: IconProps) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" className={className} fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-  ),
-  ArrowRight: ({ size = 14, className }: IconProps) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...stroke}><path d="M5 12h14" /><path d="m13 6 6 6-6 6" /></svg>
-  ),
-  Calendar: ({ size = 14, className }: IconProps) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...stroke}><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg>
-  ),
-  Close: ({ size = 18, className }: IconProps) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...stroke}><path d="M6 6l12 12M18 6 6 18" /></svg>
-  ),
-  Lock: ({ size = 12, className }: IconProps) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...stroke}><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
-  ),
-  Info: ({ size = 16, className }: IconProps) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...stroke}><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></svg>
-  ),
-  ChevronDown: ({ size = 14, className }: IconProps) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <path d="m6 9 6 6 6-6" />
-    </svg>
-  ),
-  Grid: ({ size = 18, className }: IconProps) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...stroke}><rect x="3" y="3" width="8" height="8" rx="1.5" /><rect x="13" y="3" width="8" height="8" rx="1.5" /><rect x="3" y="13" width="8" height="8" rx="1.5" /><rect x="13" y="13" width="8" height="8" rx="1.5" /></svg>
-  ),
-}
-
 /* ---------- Taggar och knappar ---------- */
 
-export function Tag({ variant = 'neutral', children, style }: { variant?: 'accent' | 'neutral' | 'outline' | 'live'; children: ReactNode; style?: CSSProperties }) {
+function Tag({ variant = 'neutral', children, style }: { variant?: 'accent' | 'neutral' | 'outline' | 'live'; children: ReactNode; style?: CSSProperties }) {
   const base: CSSProperties = {
     display: 'inline-flex',
     alignItems: 'center',
@@ -271,183 +212,8 @@ export function ProgressBar({ value, width, height = 4 }: { value: number; width
   )
 }
 
-export function SectionTitle({ title, sub, action }: { title: string; sub?: string; action?: ReactNode }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 10 }}>
-      <h3 style={{ fontSize: 17, margin: 0, fontWeight: 600, color: LT.text }}>{title}</h3>
-      {sub ? <span style={{ fontSize: 12, color: LT.dim }}>{sub}</span> : null}
-      {action ? <div style={{ marginLeft: 'auto' }}>{action}</div> : null}
-    </div>
-  )
-}
-
 export function Kicker({ children }: { children: ReactNode }) {
   return <div style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: LT.accent }}>{children}</div>
-}
-
-/** 64 px toppbar: tillbaka, titel, valfria filter i mitten, ikoner till höger. */
-export function LiveTvHeader({
-  title,
-  onBack,
-  backLabel,
-  children,
-  right,
-  bottom,
-  backTvStation,
-}: {
-  title: string
-  onBack?: () => void
-  backLabel: string
-  children?: ReactNode
-  right?: ReactNode
-  /** TV: Tillbaka-knappen som fokusstation. */
-  backTvStation?: Record<string, string>
-  /**
-   * EGEN RAD under resten av rubriken, vänster- och högerställd innehåll i
-   * samma linje (`space-between`).
-   *
-   * Behövs för att rubriken är en radbrytande flexrad: sökfältet (minst
-   * 220 px) fyller mobilens bredd, så allt efter det hamnar på nya rader i
-   * den ordning webbläsaren råkar få plats med dem — knapparna gick inte att
-   * placera. Den här platsen tar `width: 100%` och får därför ALLTID en egen
-   * rad, längst ned (Jerry 2026-09-03).
-   */
-  bottom?: ReactNode
-}) {
-  // TV: rubrikraden ligger på SAMMA rad som värdens menychip uppe till vänster
-  // (Jerry 2026-09-06, "en lång rad"): knapparna i chipens höjd (chipen står
-  // 20 px från kanten, 42 px hög) och linjen under chipen. Raden börjar till
-  // höger om chipens fotavtryck (150 + 20 px luft). Läget MÄTS — sidans
-  // toppavstånd skiljer mellan värdar, så ett fast negativt avstånd hamnade
-  // fel (Jerry 2026-09-06, "raden måste ner").
-  const isTv = useTvMode()
-  // Värdens menypill även utanför TV (data-menu-chip på roten): rubriken
-  // lägger sig då på pillrets rad, titeln till höger om pillret och EPG/klockan
-  // längst till höger, i stället för att ta en egen rad (Jerry 2026-09-07).
-  const [menuChip, setMenuChip] = useState(() => typeof document !== 'undefined' && document.documentElement.getAttribute('data-menu-chip') === '1')
-  useEffect(() => {
-    if (typeof document === 'undefined') return
-    const root = document.documentElement
-    const read = () => setMenuChip(root.getAttribute('data-menu-chip') === '1')
-    read()
-    const observer = new MutationObserver(read)
-    observer.observe(root, { attributes: true, attributeFilter: ['data-menu-chip'] })
-    return () => observer.disconnect()
-  }, [])
-  const chipRow = isTv || menuChip
-  // Skrivbord (mus, inte TV): ingen Tillbaka-knapp — sidomenyn/Hem är vägen ut
-  // — och filterchipsen på egen rad under rubriken, i linje med högersidan
-  // (Jerry 2026-09-06). Mobil behåller knappen.
-  // Med värdens menypill-läge är sidomenyn borta: då behålls Tillbaka även på
-  // skrivbordet (Jerry 2026-09-07). Läget läses från roten (data-menu-chip-mode).
-  const chipMode = typeof document !== 'undefined' && document.documentElement.getAttribute('data-menu-chip-mode') === '1'
-  const desktopPointer = !isTv && !chipMode && typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(pointer: fine) and (min-width: 640px)').matches
-  const headerRef = useRef<HTMLDivElement | null>(null)
-  const [tvShift, setTvShift] = useState(0)
-  const [chipClear, setChipClear] = useState(0)
-  // Utanför TV utan pill på sidan (värden döljer det på Live TV): raden ligger
-  // på hörnlinjen och Tillbaka ska stå exakt där pillret annars står — 3 px ner
-  // (36 mot 42 px hög) och på mobilen 4 px in (sidans px-4 mot pillrets 20)
-  // (Jerry 2026-09-07, "fortfarande för lågt").
-  const [edgeFit, setEdgeFit] = useState(false)
-  const tvShiftRef = useRef(0)
-  useLayoutEffect(() => {
-    // Mäts alltid utanför TV (även utan pill: kantläget), på TV bara i chipraden.
-    if (isTv && !chipRow) return
-    const el = headerRef.current
-    if (!el) return
-    // Värdens chip flyttas ner på macOS (överlagrad titelrad): --tv-top-inset.
-    const ROW_PADDING = 8
-    const measure = () => {
-      // Pillrets faktiska läge när det finns i DOM (skrivbord/mobil har en
-      // annan hörnlinje än TV); annars TV:ns konstanter.
-      const chip = document.querySelector('.mc-chip')
-      const chipRect = chip ? chip.getBoundingClientRect() : null
-      const hasChip = Boolean(chipRect && chipRect.width > 0 && chipRect.height > 0)
-      // Utan chip på sidan (värden döljer det på Live TV): ingen flytt, ingen
-      // vänsterluft — Tillbaka står längst till vänster (Jerry 2026-09-07).
-      if (!hasChip) {
-        if (chipClear !== 0) setChipClear(0)
-        if (tvShiftRef.current !== 0) { tvShiftRef.current = 0; setTvShift(0) }
-        setEdgeFit(!isTv)
-        return
-      }
-      setEdgeFit(false)
-      const chipTop = chipRect!.top
-      const natural = el.getBoundingClientRect().top - tvShiftRef.current
-      const next = Math.round(chipTop - ROW_PADDING - natural)
-      const clear = Math.round(chipRect!.right + 12 - el.getBoundingClientRect().left)
-      if (Math.abs(clear - chipClear) >= 1) setChipClear(clear)
-      if (Math.abs(next - tvShiftRef.current) < 1) return
-      tvShiftRef.current = next
-      setTvShift(next)
-    }
-    measure()
-    const settle = window.setTimeout(measure, 300)
-    window.addEventListener('resize', measure)
-    return () => { window.clearTimeout(settle); window.removeEventListener('resize', measure) }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chipRow, isTv])
-  const mobileEdge = edgeFit && typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 639px)').matches
-  return (
-    <div
-      ref={headerRef}
-      data-live-tv-header=""
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        minHeight: chipRow || edgeFit ? 42 : 64,
-        padding: edgeFit ? `3px 0 8px ${mobileEdge ? 4 : 0}px` : '8px 0',
-        borderBottom: `1px solid ${LT.line}`,
-        flexWrap: 'wrap',
-        ...(chipRow ? { marginTop: tvShift, paddingLeft: chipClear } : null),
-      }}
-    >
-      {/* Tillbaka på alla enheter, även skrivbord med mus: pillret är dolt på
-          Live TV, och i sidomenyläget saknades knappen helt (Jerry 2026-09-07,
-          "Tillbaka knapp saknas före Live TV-titeln"). */}
-      {onBack ? (
-        <Btn
-          variant={backTvStation ? 'secondary' : 'ghost'}
-          icon
-          onClick={onBack}
-          ariaLabel={backLabel}
-          title={backLabel}
-          tvStation={backTvStation}
-          // TV: chipbakgrund på pilen (Jerry 2026-09-06), som gruppväljaren.
-          style={backTvStation ? { background: LT.neutral, borderColor: 'transparent', color: LT.text } : undefined}
-        >
-          <Icon.Back />
-        </Btn>
-      ) : null}
-      <div style={{ fontSize: 18, fontWeight: 600, color: LT.text }}>{title}</div>
-      {children && !desktopPointer ? <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginLeft: 12, alignItems: 'center' }}>{children}</div> : null}
-      {right ? <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>{right}</div> : null}
-      {children && desktopPointer ? <div style={{ width: '100%', display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', paddingTop: 4 }}>{children}</div> : null}
-      {bottom ? <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>{bottom}</div> : null}
-    </div>
-  )
-}
-
-/** Horisontell kortrad med snäpp; `peek` låter nästa kort kika in. */
-export function ScrollRow({ children, gap = 12, tvRow = false }: { children: ReactNode; gap?: number; tvRow?: boolean }) {
-  return (
-    <div
-      className="flex overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      // TV: data-row + data-scroll så värdens fokusmotor rullar in det
-      // fokuserade kortet i raden (Jerry 2026-09-06).
-      {...(tvRow ? { 'data-row': '', 'data-scroll': '' } : {})}
-      // TV: luft runt raden så fokusramen (outline 2 px utanför kortet) inte
-      // klipps av rullbehållaren i kanterna (Jerry 2026-09-06).
-      // scroll-padding: snappningen (scroll-snap-align: start på korten) drog
-      // annars kortets kant till rullportens kant FÖRBI luften, och ringens
-      // vänstra sida klipptes (Jerry 2026-09-06, "syns inte hela borden").
-      style={tvRow ? { gap, padding: 6, margin: -6, scrollSnapType: 'x proximity', scrollPaddingInline: 6 } : { gap, paddingBottom: 6, scrollSnapType: 'x proximity' }}
-    >
-      {children}
-    </div>
-  )
 }
 
 /* ---------- PIN-grind ---------- */

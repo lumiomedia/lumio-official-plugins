@@ -304,7 +304,17 @@ export function tvSceneBoxScale(element: HTMLElement): number {
 }
 
 export const TV_HOLD_MS = 650
-const holds = new WeakMap<EventTarget, { timer: number; fired: boolean }>()
+/**
+ * Vem håller stationen — tangenten eller pekaren?
+ *
+ * Kartan är delad (en station kan bara hållas på ETT sätt i taget), men
+ * avbrotten måste skilja på vems håll de river. Musen som VILAR på ett kort
+ * skickar `pointerleave` så fort den nuddas, och utan källan raderade det en
+ * pågående tangenthållning: `onKeyUp` hittade ingen post, `onShort` uteblev
+ * och OK försvann spårlöst (granskning 2026-09-14).
+ */
+type TvHoldSource = 'key' | 'pointer'
+const holds = new WeakMap<EventTarget, { timer: number; fired: boolean; source: TvHoldSource }>()
 export function tvHoldHandlers(
   onShort: () => void,
   onHold: (element: HTMLElement) => void,
@@ -314,7 +324,12 @@ export function tvHoldHandlers(
       if (event.key !== 'Enter' && event.key !== ' ') return
       event.preventDefault()
       if (event.repeat || !event.currentTarget) return
-      const hold = { timer: 0, fired: false }
+      // Ett nytt nedtryck äger stationen, oavsett vem som höll den förut: en
+      // kvarlämnad pekarpost (fingret lyftes utanför elementet) hade annars
+      // haft en timer kvar som fyrat sitt onHold mitt i tangentens håll.
+      const previous = holds.get(event.currentTarget)
+      if (previous) window.clearTimeout(previous.timer)
+      const hold = { timer: 0, fired: false, source: 'key' as const }
       const element = event.currentTarget as HTMLElement
       hold.timer = window.setTimeout(() => {
         hold.fired = true
@@ -326,7 +341,10 @@ export function tvHoldHandlers(
       if (event.key !== 'Enter' && event.key !== ' ') return
       if (!event.currentTarget) return
       const hold = holds.get(event.currentTarget)
-      if (!hold) return
+      // BARA tangentens eget håll. Ett keyup utan föregående keydown (tangenten
+      // trycktes ned i en annan vy, eller fokus flyttade under hållet) får inte
+      // avsluta ett pågående långtryck med fingret.
+      if (!hold || hold.source !== 'key') return
       window.clearTimeout(hold.timer)
       holds.delete(event.currentTarget)
       if (!hold.fired) onShort()
@@ -340,9 +358,15 @@ export function tvHoldHandlers(
  * BETEENDET. Ändras appens variant ska den här följa med, annars testar vi
  * något som inte finns i produkten.
  *
- * Samma `TV_HOLD_MS` och samma modul-`WeakMap` som `tvHoldHandlers` ovan:
- * en station kan aldrig hållas med tangent och pekare samtidigt, och en delad
- * karta gör att ett avbrott i den ena vägen städar den andra.
+ * KARTAN ÄR DELAD, MEN POSTERNA ÄR MÄRKTA. En station kan bara hållas på ett
+ * sätt i taget, så en karta räcker — men varje avbrottsväg river BARA sin egen
+ * källa (`source`). Det omvända var en riktig bugg: musen som vilar på ett
+ * kort skickar `pointerleave` vid minsta knuff, och den raderade en pågående
+ * TANGENThållning, så `onKeyUp` inte hittade något och OK tyst uteblev.
+ * Undantaget är NEDTRYCKEN (`onPointerDown`, `onKeyDown`): ett nytt tryck äger
+ * stationen och kapar vad som än låg kvar — annars hade en post som aldrig
+ * städats (glasmenyn sväljer Enter-keyup i capture-fasen) gjort stationen
+ * permanent död för den andra vägen.
  */
 export interface TvPointerEvent {
   pointerType?: string
@@ -409,11 +433,12 @@ export function tvPointerHoldHandlers(
   // ALDRIG härifrån: det korta trycket når onOk via elementets vanliga
   // onClick. Ropa inte på den här — då fyras OK två gånger.
   void onShort
+  /** Avbryter BARA ett pekarhåll — se källkommentaren vid `TvHoldSource`. */
   const abort = (event: TvPointerEvent) => {
     const target = event.currentTarget
     if (!target) return
     const hold = holds.get(target)
-    if (!hold) return
+    if (!hold || hold.source !== 'pointer') return
     window.clearTimeout(hold.timer)
     holds.delete(target)
   }
@@ -430,7 +455,7 @@ export function tvPointerHoldHandlers(
       // att vänta ut den. Självutgången finns kvar som säkerhetsnät för ett
       // håll vars click aldrig kommer.
       releaseClickSuppression(target)
-      const hold = { timer: 0, fired: false }
+      const hold = { timer: 0, fired: false, source: 'pointer' as const }
       const element = target as HTMLElement
       hold.timer = window.setTimeout(() => {
         hold.fired = true
@@ -445,7 +470,8 @@ export function tvPointerHoldHandlers(
     },
     onPointerUp: (event) => {
       const target = event.currentTarget
-      const fired = target ? holds.get(target)?.fired === true : false
+      const record = target ? holds.get(target) : undefined
+      const fired = record?.source === 'pointer' && record.fired
       abort(event)
       // Starta om spärrfönstret precis före det click som följer.
       if (target && fired) suppressNextClick(target)
@@ -458,6 +484,19 @@ export function tvPointerHoldHandlers(
       event.preventDefault()
       const target = event.currentTarget
       if (!target) return
+      /*
+        ETT LÅNGTRYCK GER TVÅ SIGNALER, INTE EN.
+
+        På touch skickar Android och iOS sin egen `contextmenu` för långtryck,
+        och den kommer EFTER våra 650 ms — timern hade redan kört `onHold`.
+        Utan spärren öppnades hållmenyn två gånger i följd (den andra ovanpå
+        den första, som hann rendera om emellan). Ett FYRAT håll har alltså
+        redan gjort jobbet: städa posten och gå.
+
+        Bara `fired`, inte varje pågående post: ett högerklick mitt i ett
+        pågående tryck är en ny handling och ska öppna menyn direkt.
+      */
+      if (holds.get(target)?.fired === true) { abort(event); return }
       abort(event)
       onHold(target as HTMLElement)
     },

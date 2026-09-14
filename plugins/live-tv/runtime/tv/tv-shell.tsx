@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentType, type CSSProperties, type ReactNode } from 'react'
 import { getTvGlassMenu, requestBrowseBack, useTvMode, type BrowsePageProps, type TvGlassMenuAction, type TvGlassMenuTarget } from '@/lib/plugin-sdk'
 import { channelKey, type M3uChannel } from '../live-tv-data'
-import { qualityFromName, useLiveTvModel, type LiveTvModel } from '../live-tv-model'
+import { useLiveTvModel, type LiveTvModel } from '../live-tv-model'
 import { LIVE_TV_BROWSE_PAGE_ID, encodeChannelParams, type PlayRequest } from '../live-tv-shell'
 import { PinGate } from '../live-tv-ui'
 import { activeProfileHasPin, isUnlockedThisSession, markUnlockedThisSession, pinSupportAvailable, toggleChannelLock, verifyActiveProfilePin } from '../channel-locks'
@@ -17,6 +17,7 @@ import { addToFirstFree, getMultiviewState, setMultiviewState } from './tv-multi
 import { createZapBuffer, resolveZap } from './tv-zap'
 import { releaseAllSurfaces } from './video-surface'
 import { cutoutClipPath, useSurfaceCutouts, type SurfaceCutout } from './surface-cutouts'
+import { buildTvPlayerProps } from './tv-player-props'
 import type { LiveTvPlayerTvProps } from './tv-player-types'
 import { TV_VIEWS } from './tv-views'
 
@@ -474,20 +475,15 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
   }
 
   const tvPlayerProps: LiveTvPlayerTvProps | undefined = activeChannel
-    ? {
-        channelNumber: model.channelNumber(activeChannel),
-        quality: qualityFromName(activeChannel.name),
-        favourite: model.pinnedSet.has(channelKey(activeChannel)),
-        bannerHideMs: settings.bannerHideMs,
-        neighbours: model.channels,
-        nowFor: model.nowFor,
-        nowMs: model.nowMs,
+    ? buildTvPlayerProps({
+        model,
+        settings,
+        channel: activeChannel,
         locale,
         // Kanalbyte till en LÅST kanal lämnar `active` orörd och öppnar
         // grinden ovanpå spelaren (se `play` ovan) — kromet måste då stå
         // tillbaka helt (Enter/Back) så att PIN-grinden äger dem.
         gateOpen: pending !== null,
-        onToggleFavourite: () => model.togglePin(activeChannel),
         onOpenChannelDetails: () => { setActive(null); openChannel(activeChannel) },
         onOpenMultiview: () => { setActive(null); go('multi') },
         onOpenGuide: () => { setActive(null); go('guide') },
@@ -497,7 +493,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
         // `play` lämnar `active` orörd tills grinden är klar, så spelaren
         // blinkar inte bort under bytet.
         onSwitchChannel: (channel) => play({ channel }),
-      }
+      })
     : undefined
 
   return (
