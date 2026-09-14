@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type CSSProperties } from 'react'
 import { useTvMode } from '@/lib/plugin-sdk'
 import { channelKey } from '../live-tv-data'
 import { startOfLocalDay } from '../live-tv-model'
@@ -39,9 +39,27 @@ export function TvSearch({ model, nav }: TvViewProps) {
     first?.focus({ preventScroll: true })
   }
 
+  /**
+   * PORTRÄTTBEHANDLING (granskning M-P4, FYND 2).
+   *
+   * Vänsterkolumnen (sökfält + förslag) var fast 760 dp på en 780 dp scen —
+   * resultatlistan fick ~20 dp. Samma stapling som kanaldetaljsidan: sök-
+   * kolumnen läggs ovanpå, resultaten under, med sidans egen scroll i
+   * stället för två nästlade scrollytor.
+   */
+  const outerStyle: CSSProperties = phone
+    ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflowY: 'auto' }
+    : { flex: 1, minHeight: 0, display: 'flex' }
+  const queryColStyle: CSSProperties = phone
+    ? { width: '100%', flexShrink: 0, padding: `${dp(20)}px ${dp(20)}px 0`, display: 'flex', flexDirection: 'column', gap: dp(18) }
+    : { width: dp(760), flexShrink: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(34)}px ${dp(40)}px 0 ${dp(48)}px`, display: 'flex', flexDirection: 'column', gap: dp(18) }
+  const resultsStyle: CSSProperties = phone
+    ? { width: '100%', padding: `${dp(20)}px ${dp(20)}px 0`, display: 'flex', flexDirection: 'column', gap: dp(28) }
+    : { flex: 1, minWidth: 0, overflowY: 'auto', padding: `${dp(34)}px ${dp(48)}px 0 ${dp(40)}px`, display: 'flex', flexDirection: 'column', gap: dp(28) }
+
   return (
-    <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
-      <div style={{ width: dp(760), flexShrink: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(34)}px ${dp(40)}px 0 ${dp(48)}px`, display: 'flex', flexDirection: 'column', gap: dp(18) }}>
+    <div data-testid="search-view-root" style={outerStyle}>
+      <div data-testid="search-query-col" style={queryColStyle}>
         {tvMode ? (
           // TvKeyboard visar ingen text själv — den här raden är fältets enda
           // display i TV-läge. Utanför TV visar `TvTextField`s riktiga
@@ -58,7 +76,7 @@ export function TvSearch({ model, nav }: TvViewProps) {
         </div>
         <TvTextField value={query} onChange={setQuery} onSubmit={focusFirstResult} placeholder={tt('searchPlaceholder')} autoFocus />
       </div>
-      <div data-live-tv-search-results="" data-scroll="" style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: `${dp(34)}px ${dp(48)}px 0 ${dp(40)}px`, display: 'flex', flexDirection: 'column', gap: dp(28) }}>
+      <div data-live-tv-search-results="" data-scroll="" style={resultsStyle}>
         <section data-testid="search-channels" style={{ display: 'flex', flexDirection: 'column', gap: dp(8) }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(12) }}><span style={{ fontSize: dp(phoneTextFloor(24, phone)), fontWeight: 600 }}>{tt('searchChannels')}</span><span style={{ fontSize: dp(phoneTextFloor(16, phone)), color: 'rgba(243,244,248,0.5)' }}>{tt('hits', { count: channels.length })}</span></div>
           {query && channels.length === 0 ? <div style={{ color: TV.dim, fontSize: dp(phoneTextFloor(18, phone)) }}>{model.channelsLoading ? tt('loadingChannels') : tt('noResults')}</div> : null}
