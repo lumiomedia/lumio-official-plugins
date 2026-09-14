@@ -386,10 +386,16 @@ export function LiveTvSettingsSection() {
                 appens riktiga primitiv (dist-bygget löser @/lib/plugin-sdk mot
                 den) fäller TypeScripts excess-property-check annars. Samma
                 mönster som `list-truncated-${list.id}` ovan. */}
+            {/* Egna listors kanaler renderas via `withIndexTwins` (tvillingen bär
+                URSPRUNGSLISTANS switch-tillstånd) — den egna listans switch
+                filtrerar ingenting. Spärrad av samma skäl som Komplettera
+                nedan: en kontroll som inte gör något får inte visas som om
+                den gjorde det. */}
             <div data-testid={`logo-fallback-toggle-${list.id}`}>
               <Checkbox
                 checked={isLogoFallbackEnabled(list)}
                 onChange={(value) => setLogoFallbackEnabled(list.id, value)}
+                disabled={list.kind === 'custom'}
                 label={h('logoFallbackToggle')}
               />
             </div>

@@ -460,4 +460,17 @@ describe('ListRow — logotypreserv i TV-läget (P6)', () => {
     // som faktiskt renderas här, så testet skrivs mot den i stället.
     expect(await screen.findByText(/3 of 9/)).toBeInTheDocument()
   })
+
+  it('switchen är spärrad för en egen lista — den gör ingenting där (P1-fynd 2)', () => {
+    // Egna listors kanaler renderas via tvillingar som bär URSPRUNGSLISTANS
+    // switch-tillstånd; den egna listans egen switch filtrerar ingenting.
+    // Komplettera-knappen är redan spärrad för `kind: 'custom'` ovanför.
+    render(
+      <ListRow
+        list={{ id: 'c', name: 'Mina kanaler', createdAt: '', urlTvg: null, epgUrls: [], source: 'custom:c', kind: 'custom', channels: [] }}
+        {...baseProps}
+      />,
+    )
+    expect(screen.getByTestId('list-logo-fallback-c')).toHaveAttribute('aria-disabled', 'true')
+  })
 })

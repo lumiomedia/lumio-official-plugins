@@ -308,9 +308,14 @@ export const ListRow = memo(function ListRow({
         {importable ? <Action testId={`list-refetch-${list.id}`} label={busy ? tt('refetching') : tt('refetch')} onOk={() => onRefetch(list)} /> : null}
         {/* Egna listor har inget att hämta — de fylls med kanalväljaren. */}
         {list.kind === 'custom' ? <Action testId={`list-channels-${list.id}`} label={tt('listChannels')} onOk={() => onEditChannels(list)} /> : null}
+        {/* Egna listors kanaler renderas via tvillingar som bär
+            URSPRUNGSLISTANS switch-tillstånd — den egna listans switch
+            filtrerar ingenting. Spärrad av samma skäl som Komplettera
+            nedan. */}
         <Action
           testId={`list-logo-fallback-${list.id}`}
           label={logoEnabled ? tt('logoFallbackOn') : tt('logoFallbackOff')}
+          disabled={list.kind === 'custom'}
           onOk={() => setLogoFallbackEnabled(list.id, !logoEnabled)}
         />
         <Action

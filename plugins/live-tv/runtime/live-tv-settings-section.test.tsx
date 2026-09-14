@@ -211,4 +211,14 @@ describe('LiveTvSettingsSection', () => {
     render(<LiveTvSettingsSection />)
     expect(within(screen.getByTestId('logo-complete-a')).getByRole('button')).toBeDisabled()
   })
+
+  it('switchen är verkningslös för en egen lista och ska spärras', () => {
+    // Egna listors kanaler renderas via `customChannelsByList` → `withIndexTwins`,
+    // som bär tvillingens switch-tillstånd från URSPRUNGSLISTAN — den egna
+    // listans switch gör ingenting. Komplettera-knappen är redan spärrad här;
+    // switchen ska vara det av samma skäl (P1-fynd 2).
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list({ id: 'c', name: 'Mina kanaler', kind: 'custom', source: 'custom:c', channels: [] })])
+    render(<LiveTvSettingsSection />)
+    expect(within(screen.getByTestId('logo-fallback-toggle-c')).getByRole('checkbox')).toBeDisabled()
+  })
 })
