@@ -7,6 +7,7 @@ import { channelKey, getLiveTvLogoSrc, type M3uChannel } from '../live-tv-data'
 import { LiveTvLogoImage } from '../live-tv-logo-image'
 import { initialsOf } from '../live-tv-ui'
 import { useInSceneBox } from '../hooks/useInSceneBox'
+import { useSceneBoxScale } from '../hooks/useSceneBoxScale'
 
 /**
  * Designpx (1920-scenen) → pluginpx. Identitet, och det är mätt.
@@ -415,25 +416,38 @@ export const Icons = {
 }
 
 /**
- * Värdens klocka när SDK:t har den OCH den kan ritas oskalad, annars
- * pluginets egen lokala klocka. `phone` höjer den lokala klockans text till
- * teckengolvet — värdens egen klocka (HostClock) styr sin egen typografi och
- * rörs inte härifrån.
+ * Värdens klocka när SDK:t har den, annars pluginets egen lokala klocka.
+ * `phone` höjer den lokala klockans text till teckengolvet — värdens egen
+ * klocka (HostClock) styr sin egen typografi och rörs inte härifrån.
  *
- * VÄRDENS KLOCKA I EN SCENLÅDA (Jerrys återkoppling 2026-09-14): HostClock
- * är medvetet skriven i äkta rem/px — dess ordinarie hem är appens egen
- * ORESKALADE topprad. Skrivbordets scenlåda (`tvSceneBox`) skalar sitt inre
- * lager med `transform: scale()`, och en HostClock som hamnar DÄR krymper
- * med scenens faktor i stället för att stå still. Appens kontrakt för
- * klockan (äkta pixlar) rörs inte — pluginet väljer i stället sin EGEN
- * dp()-klocka (grenen nedan, byggd för att skalas precis som resten av
- * TV-trädet) när en scenlåda finns, och HostClock bara när den kan ritas
- * oskalad (TV-läge, eller skrivbord/telefon utan låda).
+ * VÄRDENS KLOCKA I EN SCENLÅDA (Jerrys återkoppling 2026-09-14, uppföljning
+ * samma dag): HostClock är medvetet skriven i äkta rem/px — dess ordinarie
+ * hem är appens egen ORESKALADE topprad. Skrivbordets scenlåda (`tvSceneBox`)
+ * skalar sitt inre lager med `transform: scale()`, och en HostClock som
+ * hamnar DÄR krymper med scenens faktor i stället för att stå still.
+ *
+ * Första fixen (commit 2541690) bytte i det läget ut HostClock mot pluginets
+ * egen dp()-klocka. Granskningen visade att bytet tog bort mer än storleken:
+ * HostClock visar värdens HÄLSNING (profilnamn, t.ex. "God natt Jerry") plus
+ * korta kontextmeddelanden — det Jerry kallar "välkomstmeddelandet" — och
+ * pluginets egen klocka har bara tid/datum/veckodag. I stället kompenseras
+ * HostClock nu med INVERSEN av lådans skala (`useSceneBoxScale`, samma
+ * läsmönster som `useInSceneBox`/`usePhoneSurface`): en `span` runt den
+ * skalas med `1 / skala` och `transform-origin: top right` håller den kvar i
+ * sitt hörn i stället för att glida. Appens HostClock-kontrakt (äkta pixlar)
+ * rörs inte — bara VISNINGEN skalas.
+ *
+ * Går inversen inte att räkna fram (skalan 0, odefinierad, eller SDK:t
+ * saknar `tvSceneBoxScale` i en äldre app — `useSceneBoxScale` svarar då
+ * `null`) faller koden tillbaka på 2541690:s lösning: pluginets egen
+ * dp()-klocka. Ingen kompensation utan en skala vi litar på.
  */
 export function useTvClockNode(locale: string, phone = false): ReactNode {
   const HostClock = (sdk as unknown as { getTvClock?: () => ComponentType<{ variant?: 'tv' | 'desktop' }> | null }).getTvClock?.() ?? null
   const inSceneBox = useInSceneBox()
-  const useHostClock = HostClock !== null && !inSceneBox
+  const sceneBoxScale = useSceneBoxScale()
+  const canCompensate = inSceneBox && sceneBoxScale !== null
+  const useHostClock = HostClock !== null && (!inSceneBox || canCompensate)
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
     if (useHostClock) return
@@ -446,7 +460,16 @@ export function useTvClockNode(locale: string, phone = false): ReactNode {
     tick()
     return () => window.clearTimeout(timer)
   }, [useHostClock])
-  if (useHostClock) return <HostClock variant="desktop" />
+  if (useHostClock) {
+    if (inSceneBox) {
+      return (
+        <span style={{ display: 'inline-block', transform: `scale(${1 / sceneBoxScale!})`, transformOrigin: 'top right' }}>
+          <HostClock variant="desktop" />
+        </span>
+      )
+    }
+    return <HostClock variant="desktop" />
+  }
   const time = now.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
   const date = now.toLocaleDateString(locale, { day: 'numeric', month: 'short' }).replace('.', '').toUpperCase()
   const day = now.toLocaleDateString(locale, { weekday: 'short' }).replace('.', '').toUpperCase()
