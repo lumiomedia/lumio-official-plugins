@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
 
 // Hem-övertagandet och profilbytet är app-API:er som teststubben inte har —
@@ -183,13 +183,13 @@ describe('LiveTvSettingsSection', () => {
   it('visar switchen påslagen för en lista utan fältet', () => {
     writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list({ id: 'a', name: 'A', kind: 'm3u', source: 'http://lista' })])
     render(<LiveTvSettingsSection />)
-    expect(screen.getByTestId('logo-fallback-toggle-a')).toBeChecked()
+    expect(within(screen.getByTestId('logo-fallback-toggle-a')).getByRole('checkbox')).toBeChecked()
   })
 
   it('sparar när switchen slås av', () => {
     writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list({ id: 'a', name: 'A', kind: 'm3u', source: 'http://lista' })])
     render(<LiveTvSettingsSection />)
-    fireEvent.click(screen.getByTestId('logo-fallback-toggle-a'))
+    fireEvent.click(within(screen.getByTestId('logo-fallback-toggle-a')).getByRole('checkbox'))
     expect(isLogoFallbackEnabled(getLiveTvLists()[0])).toBe(false)
   })
 
@@ -197,7 +197,7 @@ describe('LiveTvSettingsSection', () => {
     writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list({ id: 'a', name: 'A', kind: 'm3u', source: 'http://lista' })])
     vi.mocked(completeLogos).mockResolvedValue({ matched: 12, total: 40 })
     render(<LiveTvSettingsSection />)
-    fireEvent.click(screen.getByTestId('logo-complete-a'))
+    fireEvent.click(within(screen.getByTestId('logo-complete-a')).getByRole('button'))
     // Testmiljöns useLang() ligger fast på 'en' (se plugin-sdk-stubben) — filens
     // övriga tester (t.ex. "Fetching 12,000 of 17,000…") verifierar mot samma
     // engelska text av samma skäl. Briefens "12 av 40" är den svenska varianten
@@ -209,6 +209,6 @@ describe('LiveTvSettingsSection', () => {
   it('knappen är avstängd när switchen är av', () => {
     writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list({ id: 'a', name: 'A', kind: 'm3u', source: 'http://lista', logoFallbackEnabled: false })])
     render(<LiveTvSettingsSection />)
-    expect(screen.getByTestId('logo-complete-a')).toBeDisabled()
+    expect(within(screen.getByTestId('logo-complete-a')).getByRole('button')).toBeDisabled()
   })
 })

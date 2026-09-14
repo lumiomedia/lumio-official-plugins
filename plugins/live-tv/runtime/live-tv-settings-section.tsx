@@ -381,21 +381,28 @@ export function LiveTvSettingsSection() {
             />
           </div>
           <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <Checkbox
-              checked={isLogoFallbackEnabled(list)}
-              onChange={(value) => setLogoFallbackEnabled(list.id, value)}
-              label={h('logoFallbackToggle')}
-              data-testid={`logo-fallback-toggle-${list.id}`}
-            />
+            {/* data-testid sitter på en vanlig div, inte på primitiven — Checkbox
+                tar bara { checked, onChange, disabled, label, hint, right }, och
+                appens riktiga primitiv (dist-bygget löser @/lib/plugin-sdk mot
+                den) fäller TypeScripts excess-property-check annars. Samma
+                mönster som `list-truncated-${list.id}` ovan. */}
+            <div data-testid={`logo-fallback-toggle-${list.id}`}>
+              <Checkbox
+                checked={isLogoFallbackEnabled(list)}
+                onChange={(value) => setLogoFallbackEnabled(list.id, value)}
+                label={h('logoFallbackToggle')}
+              />
+            </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <PillBtn
-                size="sm"
-                onClick={() => void handleCompleteLogos(list)}
-                disabled={!isLogoFallbackEnabled(list) || list.kind === 'custom' || (logoComplete?.listId === list.id && logoComplete.status === 'running')}
-                data-testid={`logo-complete-${list.id}`}
-              >
-                {logoComplete?.listId === list.id && logoComplete.status === 'running' ? h('logoCompleteRunning') : h('logoComplete')}
-              </PillBtn>
+              <span data-testid={`logo-complete-${list.id}`}>
+                <PillBtn
+                  size="sm"
+                  onClick={() => void handleCompleteLogos(list)}
+                  disabled={!isLogoFallbackEnabled(list) || list.kind === 'custom' || (logoComplete?.listId === list.id && logoComplete.status === 'running')}
+                >
+                  {logoComplete?.listId === list.id && logoComplete.status === 'running' ? h('logoCompleteRunning') : h('logoComplete')}
+                </PillBtn>
+              </span>
               {logoComplete?.listId === list.id && logoComplete.status === 'done' ? (
                 <span style={{ fontSize: 12, color: TOKENS.textMute }}>
                   {h('logoCompleteResult', { matched: logoComplete.matched, total: logoComplete.total })}
