@@ -10,8 +10,11 @@ import {
   importList,
   fetchXtreamAccount,
   importMissingSources,
+  isLogoFallbackEnabled,
   removeChannelFromLiveTvList,
+  sanitizeChannels,
   saveXtreamLogin,
+  setLogoFallbackEnabled,
   type LiveTvList,
   type XtreamLogin,
 } from './live-tv-data'
@@ -34,7 +37,7 @@ function rawList(overrides: Partial<LiveTvList> & { id: string; name: string }):
   } as LiveTvList
 }
 
-const channel = (name: string) => ({ name, logo: null, group: 'Other', url: `http://stream/${name}`, tvgId: null })
+const channel = (name: string) => ({ name, logo: null, logoFallback: null, group: 'Other', url: `http://stream/${name}`, tvgId: null })
 
 beforeEach(() => {
   __resetForTests()
@@ -71,6 +74,32 @@ describe('classifyLegacyList (via readLists/getLiveTvLists)', () => {
     const [list] = getLiveTvLists()
     expect(list.kind).toBe('custom')
     expect(list.source).toBe('custom:legacy2')
+  })
+})
+
+describe('isLogoFallbackEnabled / setLogoFallbackEnabled', () => {
+  it('behandlar listor utan fältet som påslagna', () => {
+    expect(isLogoFallbackEnabled({ id: 'a', name: 'A', createdAt: '', urlTvg: null, epgUrls: [] } as LiveTvList)).toBe(true)
+  })
+
+  it('respekterar ett uttryckligt av', () => {
+    expect(isLogoFallbackEnabled({ id: 'a', name: 'A', createdAt: '', urlTvg: null, epgUrls: [], logoFallbackEnabled: false } as LiveTvList)).toBe(false)
+  })
+
+  it('sparar switchen på rätt lista', () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [
+      { id: 'a', name: 'A', createdAt: '', urlTvg: null, epgUrls: [] },
+      { id: 'b', name: 'B', createdAt: '', urlTvg: null, epgUrls: [] },
+    ])
+    setLogoFallbackEnabled('b', false)
+    const lists = getLiveTvLists()
+    expect(isLogoFallbackEnabled(lists[0])).toBe(true)
+    expect(isLogoFallbackEnabled(lists[1])).toBe(false)
+  })
+
+  it('sanerar logoFallback som tom sträng till null', () => {
+    const [ch] = sanitizeChannels([{ name: 'A', url: 'u', logoFallback: '  ' }])
+    expect(ch.logoFallback).toBeNull()
   })
 })
 

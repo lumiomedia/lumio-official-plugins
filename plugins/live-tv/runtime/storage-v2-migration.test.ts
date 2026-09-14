@@ -6,7 +6,7 @@ import { migrateStorageV2, isStorageV2Migrated } from './storage-v2-migration'
 import * as indexClient from './index-client'
 
 function ch(name: string, group = 'Other') {
-  return { name, logo: null, group, url: `http://x/${name}`, tvgId: null }
+  return { name, logo: null, logoFallback: null, group, url: `http://x/${name}`, tvgId: null }
 }
 
 function rawList(overrides: Partial<LiveTvList> & { id: string; name: string }): LiveTvList {
@@ -51,15 +51,15 @@ describe('migrateStorageV2', () => {
       1,
       'http://a.tld/list.m3u',
       [
-        { name: 'One', logo: null, group: 'Sport', url: 'http://x/One', tvgId: null, key: 'One::http://x/One', number: 1 },
-        { name: 'Two', logo: null, group: 'Sport', url: 'http://x/Two', tvgId: null, key: 'Two::http://x/Two', number: 2 },
+        { name: 'One', logo: null, logoFallback: null, group: 'Sport', url: 'http://x/One', tvgId: null, key: 'One::http://x/One', number: 1 },
+        { name: 'Two', logo: null, logoFallback: null, group: 'Sport', url: 'http://x/Two', tvgId: null, key: 'Two::http://x/Two', number: 2 },
       ],
       true,
     )
     expect(batchSpy).toHaveBeenNthCalledWith(
       2,
       'xtream://b.tld/login1',
-      [{ name: 'Three', logo: null, group: 'News', url: 'http://x/Three', tvgId: null, key: 'Three::http://x/Three', number: 1 }],
+      [{ name: 'Three', logo: null, logoFallback: null, group: 'News', url: 'http://x/Three', tvgId: null, key: 'Three::http://x/Three', number: 1 }],
       true,
     )
 

@@ -36,6 +36,7 @@ import {
   getLiveTvLists,
   getPinnedLiveTvKeys,
   importMissingSources,
+  isLogoFallbackEnabled,
   onLiveTvListsChanged,
   onPinnedLiveTvKeysChanged,
   togglePinnedLiveTvChannel,
@@ -304,6 +305,20 @@ async function loadEveryChannel(signal?: AbortSignal): Promise<IndexChannel[]> {
 }
 
 /**
+ * Nollar `logoFallback` på kanalerna från en källa vars lista har switchen
+ * av (spec 2026-09-14-live-tv-logos-v2). Kanalerna är färska ur svaret och
+ * inte cachade än, så en mutation är rätt ställe — ingen kopia av potentiellt
+ * tiotusentals kanalobjekt bara för att nolla ett fält.
+ */
+function applyLogoFallbackSwitch(source: string, items: IndexChannel[]): void {
+  const list = getLiveTvLists().find((entry) => entry.source === source)
+  if (!list || isLogoFallbackEnabled(list)) return
+  for (const item of items) {
+    if (item.logoFallback != null) item.logoFallback = null
+  }
+}
+
+/**
  * Kanalerna för en källa. Returnerar minnescachen direkt när den är varm,
  * annars den pågående hämtningen (eller startar den).
  */
@@ -322,6 +337,7 @@ export function loadChannelsShared(source: string | null): Promise<IndexChannel[
     const items = source === null
       ? await loadEveryChannel(controller?.signal)
       : await loadAllChannels(source, undefined, controller?.signal)
+    if (source !== null) applyLogoFallbackSwitch(source, items)
     setPluginMemoryCache(LIVE_TV_PLUGIN_ID, cacheKey, items)
     return items
   })()

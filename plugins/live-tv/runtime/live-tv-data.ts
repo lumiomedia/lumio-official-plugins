@@ -24,6 +24,13 @@ import {
 export interface M3uChannel {
   name: string
   logo?: string | null
+  /**
+   * Reservlogotyp ur iptv-orgs öppna register. ÄGS av appen (matchningen
+   * sker där, mot indexet) — pluginet läser bara fältet, skriver aldrig till
+   * det. `logo` vinner alltid: det här visas bara när leverantörens egen
+   * logotyp saknas eller fallerar.
+   */
+  logoFallback?: string | null
   group: string
   url: string
   tvgId: string | null
@@ -129,14 +136,24 @@ export interface LiveTvList {
   needsReimport?: boolean
   /** Senaste felmeddelandet, för samma UI. Rensas tillsammans med `needsReimport`. */
   lastImportError?: string
+  /**
+   * Slår av/på reservlogotypen (`M3uChannel.logoFallback`) för den här
+   * listan. `undefined` betyder PÅ — även för listor skapade före v2, som
+   * aldrig haft fältet. Filtreringen sker när kanalerna laddas
+   * (`loadChannelsShared`), inte i någon vy.
+   */
+  logoFallbackEnabled?: boolean
 }
 
-function sanitizeChannels(channels: unknown[]): M3uChannel[] {
+export function sanitizeChannels(channels: unknown[]): M3uChannel[] {
   return channels
     .filter((channel): channel is Record<string, unknown> => Boolean(channel) && typeof channel === 'object')
     .map((channel) => ({
       name: String(channel.name ?? 'Unknown').trim() || 'Unknown',
       logo: typeof channel.logo === 'string' && channel.logo.trim().length > 0 ? channel.logo.trim() : null,
+      logoFallback: typeof channel.logoFallback === 'string' && channel.logoFallback.trim().length > 0
+        ? channel.logoFallback.trim()
+        : null,
       group: String(channel.group ?? 'Other').trim() || 'Other',
       url: String(channel.url ?? '').trim(),
       tvgId: typeof channel.tvgId === 'string' && channel.tvgId.trim().length > 0 ? channel.tvgId.trim() : null,
@@ -265,6 +282,9 @@ function sanitizeListEntry(entry: Record<string, unknown>, xtreamLogins: XtreamL
     lastImportError: typeof entry.lastImportError === 'string' && entry.lastImportError.trim().length > 0
       ? entry.lastImportError
       : undefined,
+    // `undefined` betyder PÅ (se `isLogoFallbackEnabled`) — bara ett
+    // uttryckligt `false` ska överleva saneringen.
+    logoFallbackEnabled: entry.logoFallbackEnabled === false ? false : undefined,
   }
 }
 
@@ -425,6 +445,17 @@ export function updateLiveTvListEpg(
           : list.autoEpgDisabled,
       }
     }),
+  )
+}
+
+/** `undefined` betyder PÅ — också för listor skapade innan v2-fältet fanns. */
+export function isLogoFallbackEnabled(list: LiveTvList): boolean {
+  return list.logoFallbackEnabled !== false
+}
+
+export function setLogoFallbackEnabled(listId: string, enabled: boolean): void {
+  writeLists(
+    readLists().map((list) => (list.id === listId ? { ...list, logoFallbackEnabled: enabled } : list)),
   )
 }
 

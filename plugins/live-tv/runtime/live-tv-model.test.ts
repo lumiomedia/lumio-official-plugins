@@ -38,7 +38,7 @@ vi.mock('./index-client', () => ({
 }))
 
 import { epgNow, loadAllChannels, lookupChannels, refreshEpg, waitForJob } from './index-client'
-import { __resetLiveTvModelForTests, useLiveTvModel } from './live-tv-model'
+import { __resetLiveTvModelForTests, loadChannelsShared, useLiveTvModel } from './live-tv-model'
 import { __resetScheduleCacheForTests } from './epg/schedule-cache'
 import { __resetNowSnapshotForTests } from './epg/now-snapshot'
 import { __resetChannelResolverForTests } from './channel-resolver'
@@ -177,6 +177,34 @@ describe('useLiveTvModel: kanaler ur indexet', () => {
     expect(result.current.groups).toEqual(['Sport', 'News'])
     expect(result.current.activePlaylistId).toBeNull()
     expect(loadedSources()).toEqual(['s1', 's2'])
+  })
+})
+
+describe('loadChannelsShared: reservlogotypens switch per lista', () => {
+  it('tar bort reserven när listans switch är av', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [
+      { id: 'a', name: 'A', createdAt: '', urlTvg: null, epgUrls: [], source: 'http://lista', kind: 'm3u', logoFallbackEnabled: false },
+    ])
+    vi.mocked(loadAllChannels).mockResolvedValue([
+      { name: 'K', url: 'u', group: '', tvgId: null, key: 'K::u', number: 1, tvgIdResolved: null, logo: null, logoFallback: 'http://x/a.png' },
+    ])
+
+    const channels = await loadChannelsShared('http://lista')
+
+    expect(channels[0].logoFallback ?? null).toBeNull()
+  })
+
+  it('behåller reserven när switchen är på', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [
+      { id: 'a', name: 'A', createdAt: '', urlTvg: null, epgUrls: [], source: 'http://lista', kind: 'm3u' },
+    ])
+    vi.mocked(loadAllChannels).mockResolvedValue([
+      { name: 'K', url: 'u', group: '', tvgId: null, key: 'K::u', number: 1, tvgIdResolved: null, logo: null, logoFallback: 'http://x/a.png' },
+    ])
+
+    const channels = await loadChannelsShared('http://lista')
+
+    expect(channels[0].logoFallback).toBe('http://x/a.png')
   })
 })
 
