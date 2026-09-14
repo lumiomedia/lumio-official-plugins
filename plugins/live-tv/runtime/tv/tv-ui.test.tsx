@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, createEvent, fireEvent, render, screen } from '@testing-library/react'
-import { ChannelArt, Chip, Progress, RoundBtn, Tag, TvFocusStyle, dp, station } from './tv-ui'
+import { TV_SCENE_BOX_ATTR, __setHostClockForTests } from '@/lib/plugin-sdk'
+import { ChannelArt, Chip, Progress, RoundBtn, Tag, TvFocusStyle, dp, station, useTvClockNode } from './tv-ui'
 import { __resetLogoQueueForTests } from '../live-tv-logo-image'
 
 // happy-dom har en riktig IntersectionObserver som aldrig rapporterar
@@ -297,5 +298,41 @@ describe('verktygstips på trunkerade titlar', () => {
   it('Tag släpper igenom title', () => {
     render(<Tag variant="neutral" title="Hela taggen">Ta…</Tag>)
     expect(screen.getByText('Ta…')).toHaveAttribute('title', 'Hela taggen')
+  })
+})
+
+// Jerrys återkoppling 2026-09-14: "Välkomstmeddelandet i högra hörnet har
+// förminskats i desktop" — värdens klocka (HostClock) är skriven i äkta
+// rem/px och krymper med scenlådans `transform: scale()` om den hamnar
+// INUTI lådan. Fixen väljer pluginets EGEN dp()-klocka där i stället, och
+// HostClock bara när den kan ritas oskalad (ingen låda). Appens HostClock
+// rörs inte — testet dubbelgångar den bara för att bevisa vilken gren som
+// väljs.
+function HostClockMarker({ variant }: { variant?: 'tv' | 'desktop' }) {
+  return <span data-testid="host-clock">host:{variant}</span>
+}
+
+function ClockProbe() {
+  return <>{useTvClockNode('en-GB')}</>
+}
+
+afterEach(() => __setHostClockForTests(null))
+
+describe('useTvClockNode i en scenlåda (Jerrys återkoppling 2026-09-14)', () => {
+  it('använder värdens klocka oskalad — ingen låda', () => {
+    __setHostClockForTests(HostClockMarker)
+    render(<ClockProbe />)
+    expect(screen.getByTestId('host-clock')).toBeInTheDocument()
+  })
+
+  it('växlar till pluginets EGEN dp()-klocka inuti en scenlåda, i stället för att låta HostClock krympa', () => {
+    __setHostClockForTests(HostClockMarker)
+    const box = document.createElement('div')
+    box.setAttribute(TV_SCENE_BOX_ATTR, '1')
+    document.body.appendChild(box)
+    render(<ClockProbe />, { container: box })
+    expect(screen.queryByTestId('host-clock')).not.toBeInTheDocument()
+    // Pluginets egen klocka: "HH:MM | DAG MÅN | VECKODAG".
+    expect(screen.getByText(/^\d{2}:\d{2} \| /)).toBeInTheDocument()
   })
 })

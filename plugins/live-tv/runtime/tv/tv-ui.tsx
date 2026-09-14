@@ -6,6 +6,7 @@ import { tvHoldHandlers, tvPointerHoldHandlers } from '@/lib/plugin-sdk'
 import { channelKey, getLiveTvLogoSrc, type M3uChannel } from '../live-tv-data'
 import { LiveTvLogoImage } from '../live-tv-logo-image'
 import { initialsOf } from '../live-tv-ui'
+import { useInSceneBox } from '../hooks/useInSceneBox'
 
 /**
  * Designpx (1920-scenen) → pluginpx. Identitet, och det är mätt.
@@ -414,15 +415,28 @@ export const Icons = {
 }
 
 /**
- * Värdens klocka när SDK:t har den, annars enkel lokal klocka. `phone`
- * höjer den lokala klockans text till teckengolvet — värdens egen klocka
- * (HostClock) styr sin egen typografi och rörs inte härifrån.
+ * Värdens klocka när SDK:t har den OCH den kan ritas oskalad, annars
+ * pluginets egen lokala klocka. `phone` höjer den lokala klockans text till
+ * teckengolvet — värdens egen klocka (HostClock) styr sin egen typografi och
+ * rörs inte härifrån.
+ *
+ * VÄRDENS KLOCKA I EN SCENLÅDA (Jerrys återkoppling 2026-09-14): HostClock
+ * är medvetet skriven i äkta rem/px — dess ordinarie hem är appens egen
+ * ORESKALADE topprad. Skrivbordets scenlåda (`tvSceneBox`) skalar sitt inre
+ * lager med `transform: scale()`, och en HostClock som hamnar DÄR krymper
+ * med scenens faktor i stället för att stå still. Appens kontrakt för
+ * klockan (äkta pixlar) rörs inte — pluginet väljer i stället sin EGEN
+ * dp()-klocka (grenen nedan, byggd för att skalas precis som resten av
+ * TV-trädet) när en scenlåda finns, och HostClock bara när den kan ritas
+ * oskalad (TV-läge, eller skrivbord/telefon utan låda).
  */
 export function useTvClockNode(locale: string, phone = false): ReactNode {
   const HostClock = (sdk as unknown as { getTvClock?: () => ComponentType<{ variant?: 'tv' | 'desktop' }> | null }).getTvClock?.() ?? null
+  const inSceneBox = useInSceneBox()
+  const useHostClock = HostClock !== null && !inSceneBox
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
-    if (HostClock) return
+    if (useHostClock) return
     let timer = 0
     const tick = () => {
       const next = new Date()
@@ -431,8 +445,8 @@ export function useTvClockNode(locale: string, phone = false): ReactNode {
     }
     tick()
     return () => window.clearTimeout(timer)
-  }, [HostClock])
-  if (HostClock) return <HostClock variant="desktop" />
+  }, [useHostClock])
+  if (useHostClock) return <HostClock variant="desktop" />
   const time = now.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
   const date = now.toLocaleDateString(locale, { day: 'numeric', month: 'short' }).replace('.', '').toUpperCase()
   const day = now.toLocaleDateString(locale, { weekday: 'short' }).replace('.', '').toUpperCase()

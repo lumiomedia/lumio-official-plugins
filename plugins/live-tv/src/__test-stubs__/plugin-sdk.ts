@@ -1,7 +1,7 @@
 // Test-only stub of @/lib/plugin-sdk. Mirrors the surface the live-tv plugin
 // uses, with no real persistence. Spies should re-mock per test via vi.spyOn.
 
-import { createElement, type ReactNode } from 'react'
+import { createElement, type ComponentType, type ReactNode } from 'react'
 
 type Listener = () => void
 
@@ -197,6 +197,7 @@ export function __resetForTests(): void {
   pluginMemoryCache.clear()
   pinForTests = null
   sceneBoxPortalTargetForTests = null
+  hostClockForTests = null
 }
 
 // ---- Profil-PIN (föräldrakontroll) ----
@@ -246,6 +247,18 @@ export function detectTvMode(): boolean {
 export const BROWSE_BACK_EVENT = 'lumio-browse-back'
 export function requestBrowseBack(): void {
   window.dispatchEvent(new CustomEvent(BROWSE_BACK_EVENT))
+}
+
+// `getTvClock` är `undefined` som standard (precis som en riktig äldre värd
+// utan klockan): `useTvClockNode` i tv-ui.tsx probar den defensivt och ska
+// falla tillbaka på sin egen dp()-klocka. Tester som vill bevisa VILKEN gren
+// som väljs (scenlåda vs. inte) sätter en dubbelgångare här.
+let hostClockForTests: ComponentType<{ variant?: 'tv' | 'desktop' }> | null = null
+export function __setHostClockForTests(component: ComponentType<{ variant?: 'tv' | 'desktop' }> | null): void {
+  hostClockForTests = component
+}
+export function getTvClock(): ComponentType<{ variant?: 'tv' | 'desktop' }> | null {
+  return hostClockForTests
 }
 export function onTvFocusEdge(_handler: (dir: string, meta?: { claimed: boolean; claim(): void }) => void): () => void {
   return () => {}
