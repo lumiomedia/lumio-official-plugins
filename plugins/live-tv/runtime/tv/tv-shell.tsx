@@ -8,6 +8,7 @@ import { LIVE_TV_BROWSE_PAGE_ID, encodeChannelParams, type PlayRequest } from '.
 import { PinGate } from '../live-tv-ui'
 import { activeProfileHasPin, isUnlockedThisSession, markUnlockedThisSession, pinSupportAvailable, toggleChannelLock, verifyActiveProfilePin } from '../channel-locks'
 import { useNarrowSurface } from '../hooks/useNarrowSurface'
+import { usePhoneSurface } from '../hooks/usePhoneSurface'
 import { useSwipeBack } from '../hooks/useSwipeBack'
 import { useTvText } from './tv-strings'
 import { TV, TvFocusStyle, dp, station, Icons } from './tv-ui'
@@ -123,12 +124,18 @@ const ZAP_TIMEOUT_MS = 1500
  * appens sidomeny i stället för i stället för den, och 104 px blev en tom
  * marginal mellan två menyer — därför 84 (Jerry 2026-09-14).
  *
- * FAS 2: här ersätts den komprimerade ikonraden av en bottenrad (spec §2).
- * Villkoret (`useNarrowSurface`) och måttet (`RAIL_W_NARROW`) samlas här så
- * fas 2 har ett ställe att ändra på.
+ * FAS 1 (smal yta som INTE är en telefon, t.ex. ett smalt skrivbordsfönster):
+ * raden komprimeras till `RAIL_W_NARROW`, den döljs inte — se
+ * `usePhoneSurface`-kommentaren nedan för varför en TELEFON hanteras
+ * annorlunda.
  *
- * Raden DÖLJS inte på en smal yta i fas 1 (koordinatorbeslut 2026-09-14): en
- * telefon utan rad har ingen navigering alls. Den komprimeras i stället.
+ * FAS 2 (telefon, `usePhoneSurface`): Jerrys beslut 2026-09-14 — på en
+ * telefon äter även den komprimerade raden en tiondel av skärmbredden för
+ * navigering som knappt används. Den fasta raden (och dess mått nedan) rörs
+ * INTE på telefon — den utelämnas helt ur trädet och ersätts av en enda
+ * knapp i övre vänstra hörnet som öppnar samma poster i en låda som glider
+ * in från vänster (se `railOpen`/`closeRail` längre ner). Måtten här gäller
+ * därför fortsatt bara TV, skrivbord och en smal-men-inte-telefon yta.
  */
 const RAIL_W_TV = 104
 const RAIL_W_DESKTOP = 84
@@ -137,6 +144,12 @@ const RAIL_W_NARROW = 64
 const RAIL_ITEM_WIDE = 60
 /** Postens sida på en smal yta — fortfarande över 44 px träffyta. */
 const RAIL_ITEM_NARROW = 48
+/**
+ * Telefonens träffytegolv (spec §3): minst 88 designpixlar högt på allt som
+ * går att trycka på — vid skalan 0,5 är det 44 riktiga pixlar. Gäller
+ * öppningsknappen och varje post i lådan.
+ */
+const PHONE_HIT_MIN = 88
 
 export { RAIL_ITEM_NARROW, RAIL_ITEM_WIDE, RAIL_W_DESKTOP, RAIL_W_NARROW, RAIL_W_TV }
 
@@ -182,8 +195,64 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
    * är ändå med så en kvarglömd låda aldrig kan krympa TV-raden.
    */
   const narrow = useNarrowSurface(rootRef) && !isTv
+  /**
+   * Telefon = värdens mätning av lådan, aldrig ett eget breddtal — precis som
+   * `narrow` ovan. En telefon är ALLTID också smal (spec), men det omvända
+   * gäller inte: ett smalt SKRIVBORDSFÖNSTER är `narrow` utan att vara
+   * `phone`, och ska fortsatt få fas 1:s komprimerade rad, inte lådan.
+   */
+  const phone = usePhoneSurface(rootRef) && !isTv
   const railWidth = isTv ? RAIL_W_TV : narrow ? RAIL_W_NARROW : RAIL_W_DESKTOP
   const railItemSize = narrow ? RAIL_ITEM_NARROW : RAIL_ITEM_WIDE
+
+  /**
+   * IKONRADEN SOM LÅDA (telefon, spec §2).
+   *
+   * `railOpen` styr bara SYNLIGHET — lådan monteras/avmonteras inte som en
+   * egen komponent, den är samma träd som skrivbordets `<nav>` fast klädd i
+   * panelmönstret från `tv-channel-picker.tsx` (position: fixed, kant-ankrad,
+   * `data-panel-root`/`data-live-tv-layer`), SPEGELVÄNT: från vänster i
+   * stället för höger.
+   *
+   * `closeRail` gör TVÅ saker, precis som channel-väljarens `close`: stänger
+   * lådan OCH lämnar tillbaka fokus till det som hade det innan lådan öppnades
+   * (öppningsknappen, om inget annat tog fokus däremellan). Den är den ENDA
+   * vägen ut — Bakåt-kedjan (`back()` nedan, som redan kollar
+   * `layersRef`-toppen), utanförtryck och en vald post ropar alla på samma
+   * funktion, så ingen väg kan komma ur synk med en annan.
+   */
+  const [railOpen, setRailOpen] = useState(false)
+  const railRef = useRef<HTMLDivElement | null>(null)
+  const railOpenerRef = useRef<HTMLElement | null>(null)
+  const closeRail = useCallback(() => {
+    setRailOpen(false)
+    window.setTimeout(() => railOpenerRef.current?.focus({ preventScroll: true }), 0)
+  }, [])
+
+  // Registreringen av lådan som ETT LAGER i skalets Bakåt-kedja (`pushLayer`)
+  // står längre ner, direkt efter `pushLayer`s egen definition — den är en
+  // `useCallback` och behöver deklareras innan den kan refereras.
+
+  // Utanförtryck stänger lådan (spec §2). Lyssnar på `pointerdown` (inte
+  // `click`): en vald post stänger sig redan själv genom `closeRail` i sin
+  // egen `onOk`, så den här lyssnaren behöver bara fånga tryck UTANFÖR
+  // panelen.
+  useEffect(() => {
+    if (!railOpen) return
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null
+      if (target && railRef.current?.contains(target)) return
+      closeRail()
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => document.removeEventListener('pointerdown', onPointerDown)
+  }, [railOpen, closeRail])
+
+  // Försvinner ytan (rotation, ombyggd låda) medan lådan är öppen ska den
+  // inte bli hängande osynlig-men-registrerad i Bakåt-kedjan.
+  useEffect(() => {
+    if (!phone && railOpen) setRailOpen(false)
+  }, [phone, railOpen])
 
   /**
    * Fokus på vyns startstation vid varje vybyte.
@@ -300,6 +369,21 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     layersRef.current.push(close)
     return () => { layersRef.current = layersRef.current.filter((c) => c !== close) }
   }, [])
+
+  // Registrerar lådan som ETT LAGER i skalets egen Bakåt-kedja när den öppnas
+  // (spec §2, krav 1): Esc/Backspace (lyssnaren nedan), kantsvepet
+  // (`useSwipeBack`) och en framtida Bakåt-post går alla genom `back()`, som
+  // redan stänger det översta lagret FÖRE den lämnar vyn. En egen
+  // tangentlyssnare hade kapplöpt med skalets — `pushLayer` är stabil
+  // (`useCallback` utan beroenden) så effekten registrerar om sig bara när
+  // lådan faktiskt öppnas eller stängs, aldrig vid ett orelaterat omrender.
+  useEffect(() => {
+    if (!railOpen) return
+    railOpenerRef.current = document.activeElement as HTMLElement | null
+    const off = pushLayer(closeRail)
+    window.setTimeout(() => railRef.current?.querySelector<HTMLElement>('[data-init]')?.focus({ preventScroll: true }), 0)
+    return off
+  }, [railOpen, closeRail, pushLayer])
 
   const back = useCallback(() => {
     // Glasmenyn ligger ÖVERST. Tangentvägen når aldrig hit medan den är öppen
@@ -474,6 +558,29 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     )
   }
 
+  /**
+   * SAMMA POSTER, LÅDANS FORM (telefon, spec §2): en rad med ikon OCH etikett
+   * i stället för en ikonruta — bredden räcker på 780 designpixlar, till
+   * skillnad från fas 1:s smala ikonrad. Höjden är telefonens träffytegolv,
+   * 88 designpixlar (spec §3). En post stänger lådan EFTER sin handling
+   * (`closeRail`) — Bakåt-posten behöver inget extra anrop: `back()` hittar
+   * redan lådan som lagrets topp och stänger den genom samma `closeRail`.
+   */
+  const drawerItem = (item: RailItem, extraStyle?: CSSProperties, isFirst?: boolean) => {
+    const activeItem = item.key === view || (item.key === 'guide' && view === 'channel')
+    const run = item.run ?? (() => go(item.key as TvView))
+    return (
+      <div
+        key={item.key}
+        {...station(() => { run(); closeRail() }, undefined, { 'data-testid': `rail-${item.key}`, 'aria-label': item.label, title: item.label, ...(isFirst ? { 'data-init': '' } : {}) })}
+        style={{ height: dp(PHONE_HIT_MIN), borderRadius: dp(14), display: 'flex', alignItems: 'center', gap: dp(16), padding: `0 ${dp(18)}px`, cursor: 'pointer', background: activeItem ? TV.s14 : 'transparent', color: activeItem ? TV.text : 'rgba(243,244,248,0.75)', ...extraStyle }}
+      >
+        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: dp(32), flexShrink: 0 }}>{item.icon}</span>
+        <span style={{ fontSize: dp(26), fontWeight: activeItem ? 600 : 400 }}>{item.label}</span>
+      </div>
+    )
+  }
+
   const tvPlayerProps: LiveTvPlayerTvProps | undefined = activeChannel
     ? buildTvPlayerProps({
         model,
@@ -513,23 +620,57 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     >
       {hasCutouts ? <SurfaceBackdrop cutouts={cutouts} /> : null}
       <TvFocusStyle />
-      {/* Ikonrad: pluginets egen navigation inne i Live TV. Inte data-col="side" —
-          värdens Back-regel hade då flyttat fokus hit i stället för att gå bakåt. */}
-      <nav aria-label={tt('liveTv')} style={{ width: dp(railWidth), flexShrink: 0, borderRight: `1px solid ${TV.line}`, background: 'linear-gradient(180deg, rgba(252,252,255,0.05), rgba(252,252,255,0.02))', padding: `${dp(narrow ? 16 : 36)}px 0 ${dp(narrow ? 16 : 32)}px`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(narrow ? 8 : 14) }}>
-        {/* Märket är ren dekor och det enda "etiketten" raden har. På en smal
-            yta går den bort tillsammans med luften ovanför — posterna ska nå
-            ner i skärmen, inte trängas under en logotyp. */}
-        {narrow ? null : (
-          <div data-live-tv-rail-badge="" aria-hidden="true" style={{ width: dp(44), height: dp(44), borderRadius: dp(12), background: TV.acc, color: TV.onAcc, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: dp(22), marginBottom: dp(24) }}>L</div>
-        )}
-        {/* Bakåt med pekaren: SAMMA `back()` som tangenten, så alla fyra
-            nivåerna (lager → spelare → vy → requestBrowseBack) nås med musen.
-            Aldrig på TV — där finns fjärrens egen Bakåt-knapp, och TV-designen
-            är godkänd som den är. */}
-        {isTv ? null : railItem({ key: 'back', label: tt('railBack'), icon: <Icons.ChevronLeft />, run: back })}
-        {rail.map((item) => railItem(item))}
-        {railItem({ key: 'settings', label: tt('railSettings'), icon: <Icons.Gear /> }, { marginTop: 'auto' })}
-      </nav>
+      {phone ? (
+        /* Telefon (spec §2): ingen fast rad — en enda öppningsknapp i övre
+           vänstra hörnet, en station som alla andra så en telefon kopplad
+           till en skärm nås med piltangenter/fjärr precis som varje annan
+           post. Lådan den öppnar ligger som ett separat lager nedan. */
+        <div
+          data-testid="tv-rail-open"
+          {...station(() => setRailOpen(true), undefined, { 'aria-label': tt('railMenu'), title: tt('railMenu') })}
+          style={{ position: 'absolute', top: dp(20), left: dp(20), zIndex: 40, width: dp(PHONE_HIT_MIN), height: dp(PHONE_HIT_MIN), borderRadius: dp(18), border: `1px solid ${TV.line}`, background: TV.glass, color: TV.text, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+        >
+          <Icons.Menu />
+        </div>
+      ) : (
+        /* Ikonrad: pluginets egen navigation inne i Live TV. Inte data-col="side" —
+            värdens Back-regel hade då flyttat fokus hit i stället för att gå bakåt.
+            OFÖRÄNDRAD ovanför telefonbredden (spec §1/krav 3) — se
+            "behåller den fasta raden på skrivbordet" i tv-shell-phone.test.tsx. */
+        <nav data-testid="tv-rail" aria-label={tt('liveTv')} style={{ width: dp(railWidth), flexShrink: 0, borderRight: `1px solid ${TV.line}`, background: 'linear-gradient(180deg, rgba(252,252,255,0.05), rgba(252,252,255,0.02))', padding: `${dp(narrow ? 16 : 36)}px 0 ${dp(narrow ? 16 : 32)}px`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(narrow ? 8 : 14) }}>
+          {/* Märket är ren dekor och det enda "etiketten" raden har. På en smal
+              yta går den bort tillsammans med luften ovanför — posterna ska nå
+              ner i skärmen, inte trängas under en logotyp. */}
+          {narrow ? null : (
+            <div data-live-tv-rail-badge="" aria-hidden="true" style={{ width: dp(44), height: dp(44), borderRadius: dp(12), background: TV.acc, color: TV.onAcc, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: dp(22), marginBottom: dp(24) }}>L</div>
+          )}
+          {/* Bakåt med pekaren: SAMMA `back()` som tangenten, så alla fyra
+              nivåerna (lager → spelare → vy → requestBrowseBack) nås med musen.
+              Aldrig på TV — där finns fjärrens egen Bakåt-knapp, och TV-designen
+              är godkänd som den är. */}
+          {isTv ? null : railItem({ key: 'back', label: tt('railBack'), icon: <Icons.ChevronLeft />, run: back })}
+          {rail.map((item) => railItem(item))}
+          {railItem({ key: 'settings', label: tt('railSettings'), icon: <Icons.Gear /> }, { marginTop: 'auto' })}
+        </nav>
+      )}
+      {phone && railOpen ? (
+        /* Lådan: samma panelmönster som `tv-channel-picker.tsx`
+           (`data-panel-root`, `data-live-tv-layer`, kant-ankrad `position:
+           fixed`), speglat till vänster i stället för höger. Etiketterna
+           syns (till skillnad från fas 1:s ikonrad) — bredden räcker. */
+        <div
+          ref={railRef}
+          data-testid="tv-rail"
+          data-panel-root=""
+          data-live-tv-layer=""
+          aria-label={tt('liveTv')}
+          style={{ position: 'fixed', top: 0, left: 0, bottom: 0, width: `min(${dp(560)}px, 82%)`, zIndex: 60, background: TV.panel, borderRight: `1px solid ${TV.line}`, padding: `${dp(32)}px ${dp(20)}px`, display: 'flex', flexDirection: 'column', gap: dp(6) }}
+        >
+          {drawerItem({ key: 'back', label: tt('railBack'), icon: <Icons.ChevronLeft />, run: back }, undefined, true)}
+          {rail.map((item) => drawerItem(item))}
+          {drawerItem({ key: 'settings', label: tt('railSettings'), icon: <Icons.Gear /> }, { marginTop: 'auto' })}
+        </div>
+      ) : null}
       <main ref={mainRef} style={{ flex: 1, minWidth: 0, minHeight: 0, position: 'relative', display: 'flex', flexDirection: 'column' }}>
         <View key={view} model={model} nav={nav} params={viewParams} settings={settings} />
       </main>
