@@ -142,6 +142,39 @@ describe('useLiveTvModel: kanaler ur indexet', () => {
     expect(lookupChannels).toHaveBeenCalledWith(['C::http://x/C'])
   })
 
+  it('en favorit ur en ANNAN lista vars switch är av visas utan reserven, trots TV-skopningen', async () => {
+    // C hör till l2/s2 (se `loadAllChannels`-mocken ovan). Aktiv spellista är
+    // l1/s1 — precis den TV-skopning som gör C till en "extra" via
+    // `resolveChannelKeys`, en väg som INTE går genom `applyLogoFallbackSwitch`.
+    const cWithFallback = { ...C, logoFallback: 'http://logo/c-fallback.png' }
+    vi.mocked(lookupChannels).mockResolvedValue([cWithFallback])
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [
+      lists[0],
+      { ...lists[1], logoFallbackEnabled: false },
+    ])
+    writePluginJson(LIVE_TV_PLUGIN_ID, ACTIVE_PLAYLIST_KEY, 'l1')
+
+    const { result } = renderHook(() => useLiveTvModel())
+    await waitFor(() => expect(result.current.channels.map((c) => c.name)).toEqual(['A', 'B']))
+    await waitFor(() => expect(result.current.favouriteChannels.map((c) => c.name)).toEqual(['C', 'A']))
+
+    const favouriteC = result.current.favouriteChannels.find((c) => c.name === 'C')
+    expect(favouriteC?.logoFallback ?? null).toBeNull()
+  })
+
+  it('behåller reserven för en favorit i en annan lista när ingen lista har switchen av', async () => {
+    const cWithFallback = { ...C, logoFallback: 'http://logo/c-fallback.png' }
+    vi.mocked(lookupChannels).mockResolvedValue([cWithFallback])
+    writePluginJson(LIVE_TV_PLUGIN_ID, ACTIVE_PLAYLIST_KEY, 'l1')
+
+    const { result } = renderHook(() => useLiveTvModel())
+    await waitFor(() => expect(result.current.channels.map((c) => c.name)).toEqual(['A', 'B']))
+    await waitFor(() => {
+      const favouriteC = result.current.favouriteChannels.find((c) => c.name === 'C')
+      expect(favouriteC?.logoFallback).toBe('http://logo/c-fallback.png')
+    })
+  })
+
   it('INDEX_CHANGED_EVENT laddar om kanalerna, en gång för flera modeller', async () => {
     const first = renderHook(() => useLiveTvModel())
     const second = renderHook(() => useLiveTvModel())

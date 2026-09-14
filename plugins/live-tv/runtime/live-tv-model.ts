@@ -366,6 +366,36 @@ function applyLogoFallbackSwitch(source: string, items: IndexChannel[]): void {
 }
 
 /**
+ * Samma switch, för en kanal utanför den laddade uppsättningen (favorit/
+ * historik i TV-läget, spec P1-fynd 1). `applyLogoFallbackSwitch` ovan
+ * tillämpas bara på det en enskild `loadChannelsShared(source)` just laddat —
+ * favoriter/historik i andra listor slås i stället upp EN OCH EN via
+ * `channel-resolver.ts`, en väg som aldrig gick genom switchen.
+ *
+ * Kanalobjekt bär ingen källa (samma begränsning som modellens `listFor`), så
+ * en säker attribuering finns bara för EMBEDDADE kanaler (manuella listor,
+ * `listByUrl` — exakt den grund `listFor` redan använder). För indexerade
+ * listor går det inte att veta vilken av dem en enskild uppslagen kanal hör
+ * till: så länge NÅGON av dem har switchen av kan just den kanalen komma
+ * därifrån, så reserven nollas hellre än att visas utan täckning. Först när
+ * INGEN indexerad lista har switchen av är det bevisat säkert att låta den
+ * vara.
+ */
+function applyLogoFallbackSwitchToExtra<T extends M3uChannel>(
+  channel: T,
+  lists: LiveTvList[],
+  listByUrl: Map<string, LiveTvList>,
+): T {
+  if (channel.logoFallback == null) return channel
+  const owner = listByUrl.get(channel.url)
+  if (owner) return isLogoFallbackEnabled(owner) ? channel : { ...channel, logoFallback: null }
+  const anyIndexedListDisabled = lists.some(
+    (list) => list.kind !== 'custom' && Boolean(list.source) && !isLogoFallbackEnabled(list),
+  )
+  return anyIndexedListDisabled ? { ...channel, logoFallback: null } : channel
+}
+
+/**
  * Kanalerna för en källa. Returnerar minnescachen direkt när den är varm,
  * annars den pågående hämtningen (eller startar den).
  */
@@ -540,22 +570,6 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
     () => new Map(channels.map((channel, index) => [channelKey(channel), index + 1])),
     [channels],
   )
-  const byKey = useMemo(() => {
-    const map = new Map<string, M3uChannel>()
-    for (const channel of Object.values(extras)) map.set(channel.key, channel)
-    for (const channel of channels) map.set(channelKey(channel), channel)
-    return map
-  }, [channels, extras])
-  const byUrl = useMemo(() => {
-    const map = new Map<string, M3uChannel>()
-    for (const channel of byKey.values()) if (!map.has(channel.url)) map.set(channel.url, channel)
-    return map
-  }, [byKey])
-  const groups = useMemo(() => topGroups(channels), [channels])
-  const playlists = useMemo(
-    () => lists.map((list) => ({ id: list.id, name: list.name, count: list.channelCount ?? list.channels?.length ?? 0 })),
-    [lists],
-  )
   /**
    * Listan en kanal kom från. Efter v2 bär listorna inga kanaler, så kopplingen
    * går via den aktiva källan (TV) eller — när det bara finns en lista — den.
@@ -566,6 +580,36 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
     for (const list of lists) for (const channel of list.channels ?? []) if (!map.has(channel.url)) map.set(channel.url, list)
     return map
   }, [lists])
+  /**
+   * Reservlogotypens switch för de kanaler `extras` bär (favoriter/historik
+   * utanför den laddade uppsättningen, se `applyLogoFallbackSwitchToExtra`).
+   * Ligger i ett eget minne — inte i själva `extras`-tillståndet — så en
+   * switch som ändras EFTER uppslaget klipps direkt vid nästa render, utan
+   * att behöva slå upp kanalen igen.
+   */
+  const extrasWithLogoFallbackSwitch = useMemo(() => {
+    const out: Record<string, IndexChannel> = {}
+    for (const [key, channel] of Object.entries(extras)) {
+      out[key] = applyLogoFallbackSwitchToExtra(channel, lists, listByUrl)
+    }
+    return out
+  }, [extras, lists, listByUrl])
+  const byKey = useMemo(() => {
+    const map = new Map<string, M3uChannel>()
+    for (const channel of Object.values(extrasWithLogoFallbackSwitch)) map.set(channel.key, channel)
+    for (const channel of channels) map.set(channelKey(channel), channel)
+    return map
+  }, [channels, extrasWithLogoFallbackSwitch])
+  const byUrl = useMemo(() => {
+    const map = new Map<string, M3uChannel>()
+    for (const channel of byKey.values()) if (!map.has(channel.url)) map.set(channel.url, channel)
+    return map
+  }, [byKey])
+  const groups = useMemo(() => topGroups(channels), [channels])
+  const playlists = useMemo(
+    () => lists.map((list) => ({ id: list.id, name: list.name, count: list.channelCount ?? list.channels?.length ?? 0 })),
+    [lists],
+  )
 
   /** Favoriter och historik kan peka på kanaler utanför den laddade uppsättningen. */
   const loadedKeys = useMemo(() => new Set(channels.map((channel) => channelKey(channel))), [channels])
