@@ -53,6 +53,27 @@ describe('TvMultiview', () => {
   })
 })
 
+// Jerrys återkoppling 2026-09-14, ändring 1: fjärrhjälpen ("OK on a tile =
+// audio here · hold OK = switch channel / remove") beskriver fjärrkontrollen
+// och ska bara synas i TV-läge — ljudetiketten ("Audio: A") är innehåll, inte
+// fjärrhjälp, och ska vara kvar oavsett läge.
+describe('TvMultiview fjärrhjälp (Jerrys återkoppling 2026-09-14)', () => {
+  it('visas i TV-läge, tillsammans med ljudetiketten', () => {
+    __setTvModeForTests(true)
+    mount()
+    const help = screen.getByTestId('mv-audio-help')
+    expect(help.textContent).toContain('Audio: A')
+    expect(help.textContent).toContain('OK on a tile = audio here')
+  })
+  it('döljs utanför TV-läge, men ljudetiketten är kvar utan ersättningstext', () => {
+    __setTvModeForTests(false)
+    mount()
+    const help = screen.getByTestId('mv-audio-help')
+    expect(help.textContent).toContain('Audio: A')
+    expect(help.textContent).not.toContain('OK on a tile = audio here')
+  })
+})
+
 describe('TvMultiview på smal yta', () => {
   /** Samma böjrigg som `tv-shell-scene.test.tsx`: värden lindar sidan i en
       låda med `data-tv-scene-box`/`data-tv-scene-narrow`, pluginet läser dem

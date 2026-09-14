@@ -6,6 +6,7 @@ import { catchUpAcross, type CatchUpItem } from '../catch-up'
 import { pickReplayChannels } from '../view-helpers'
 import { formatClock, progressOf } from '../live-tv-ui'
 import { qualityFromName, startOfLocalDay } from '../live-tv-model'
+import { useTvMode } from '@/lib/plugin-sdk'
 import { useEpgLoadStatus } from '../hooks/useEpgLoadStatus'
 import { usePhoneSurface } from '../hooks/usePhoneSurface'
 import { useSchedules } from '../hooks/useSchedules'
@@ -30,6 +31,7 @@ const REPLAY_DAYS = 3
 export function TvHub({ model, nav }: TvViewProps) {
   const { tt, locale } = useTvText()
   const phone = usePhoneSurface()
+  const isTv = useTvMode()
   const clock = useTvClockNode(locale, phone)
   const spotlightCount = phone ? SPOTLIGHT_COUNT_PHONE : SPOTLIGHT_COUNT_DESKTOP
   const allChannelsColumns = phone ? ALL_CHANNELS_COLUMNS_PHONE : ALL_CHANNELS_COLUMNS_DESKTOP
@@ -64,6 +66,13 @@ export function TvHub({ model, nav }: TvViewProps) {
   }, [group, favourites, model.channels])
   const shown = filtered.slice(0, visible)
   const noProgrammeLabel = epgStatus === 'loading' ? tt('loadingGuide') : tt('noProgramme')
+  // Kategorichippen i "Alla kanaler": samma lista oavsett TV-läge, bara
+  // raden runt dem och chippens yta skiljer sig (se sektionen nedan).
+  const chipItems: { key: string | null; label: string; id: string }[] = [
+    { key: null, label: tt('allGroups'), id: 'all' },
+    ...(favourites.length ? [{ key: '__favs', label: tt('favourites'), id: 'favs' }] : []),
+    ...chips.map((g) => ({ key: g, label: g, id: g })),
+  ]
 
   // Spellistmenyn är ett lager: Back stänger, fokus tillbaka till pillen.
   //
@@ -235,15 +244,34 @@ export function TvHub({ model, nav }: TvViewProps) {
 
       {/* Alla kanaler */}
       <section style={{ display: 'flex', flexDirection: 'column', gap: dp(14) }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: dp(14) }}>
-          <span style={{ fontSize: dp(phoneTextFloor(26, phone)), fontWeight: 600 }}>{tt('allChannels')}</span>
-          <span style={{ fontSize: dp(phoneTextFloor(17, phone)), color: 'rgba(243,244,248,0.5)' }}>{tt('allChannelsSub', { playlist: model.activePlaylistName ?? tt('allPlaylists'), count: filtered.length })}</span>
-          <div data-row="" style={{ marginLeft: 'auto', display: 'flex', gap: dp(10), overflowX: 'auto', maxWidth: '55%' }}>
-            {[{ key: null as string | null, label: tt('allGroups'), id: 'all' }, ...(favourites.length ? [{ key: '__favs', label: tt('favourites'), id: 'favs' }] : []), ...chips.map((g) => ({ key: g, label: g, id: g }))].map((chip) => (
-              <Chip key={chip.id} active={group === chip.key} {...station(() => { setGroup(chip.key); setVisible(ALL_STEP) }, undefined, { 'data-testid': `chip-${chip.id}` })} style={{ height: dp(phoneHitFloor(40, phone)), minHeight: dp(phoneHitFloor(40, phone)), fontSize: dp(phoneTextFloor(16, phone)), padding: `0 ${dp(18)}px` }}>{chip.label}</Chip>
-            ))}
+        {isTv ? (
+          // TV-designen är godkänd (Jerry) och rörs inte: rubrik + underrad
+          // (spellista, antal, fjärrhjälp) på en rad, chippen i högerkant.
+          <div style={{ display: 'flex', alignItems: 'center', gap: dp(14) }}>
+            <span style={{ fontSize: dp(phoneTextFloor(26, phone)), fontWeight: 600 }}>{tt('allChannels')}</span>
+            <span style={{ fontSize: dp(phoneTextFloor(17, phone)), color: 'rgba(243,244,248,0.5)' }}>{tt('allChannelsSub', { playlist: model.activePlaylistName ?? tt('allPlaylists'), count: filtered.length })}</span>
+            <div data-row="" data-testid="all-channels-filter-row" style={{ marginLeft: 'auto', display: 'flex', gap: dp(10), overflowX: 'auto', maxWidth: '55%' }}>
+              {chipItems.map((chip) => (
+                <Chip key={chip.id} active={group === chip.key} {...station(() => { setGroup(chip.key); setVisible(ALL_STEP) }, undefined, { 'data-testid': `chip-${chip.id}` })} style={{ height: dp(phoneHitFloor(40, phone)), minHeight: dp(phoneHitFloor(40, phone)), fontSize: dp(phoneTextFloor(16, phone)), padding: `0 ${dp(18)}px` }}>{chip.label}</Chip>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : (
+          // Skrivbord/telefon (Jerrys återkoppling 2026-09-14): rubriken är
+          // bara antalet — "All playlists" och fjärrhjälpen är beskrivande
+          // text utan motsvarighet utanför TV-läget, se `tv-strings.ts`.
+          // Filterraden får en egen rad under rubriken i stället för att
+          // trängas ihop med den, och chippen får glasytan (samma yta som
+          // Bakåt-knappen/toasten) så de syns som klickbara.
+          <>
+            <span style={{ fontSize: dp(phoneTextFloor(26, phone)), fontWeight: 600 }}>{tt('allChannelsCount', { count: filtered.length.toLocaleString(locale) })}</span>
+            <div data-row="" data-testid="all-channels-filter-row" style={{ display: 'flex', gap: dp(10), overflowX: 'auto', width: '100%' }}>
+              {chipItems.map((chip) => (
+                <Chip key={chip.id} active={group === chip.key} glass {...station(() => { setGroup(chip.key); setVisible(ALL_STEP) }, undefined, { 'data-testid': `chip-${chip.id}` })} phone={phone} style={{ height: dp(phoneHitFloor(40, phone)), minHeight: dp(phoneHitFloor(40, phone)), fontSize: dp(phoneTextFloor(16, phone)), padding: `0 ${dp(18)}px` }}>{chip.label}</Chip>
+              ))}
+            </div>
+          </>
+        )}
         <div data-testid="all-channels" style={{ display: 'grid', gridTemplateColumns: `repeat(${allChannelsColumns}, minmax(0, 1fr))`, gap: dp(14) }}>
           {shown.map((channel, index) => {
             const info = model.nowFor(channel)
@@ -268,7 +296,7 @@ export function TvHub({ model, nav }: TvViewProps) {
         {filtered.length > visible ? (
           <div {...station(() => setVisible((v) => v + ALL_STEP))} style={{ alignSelf: 'center', height: dp(phoneHitFloor(48, phone)), minHeight: dp(phoneHitFloor(48, phone)), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.s10, display: 'inline-flex', alignItems: 'center', fontSize: dp(phoneTextFloor(18, phone)), cursor: 'pointer' }}>{tt('showMore')}</div>
         ) : null}
-        <div style={{ fontSize: dp(phoneTextFloor(16, phone)), color: TV.faint }}>{tt('helpHub')}</div>
+        {isTv ? <div style={{ fontSize: dp(phoneTextFloor(16, phone)), color: TV.faint }}>{tt('helpHub')}</div> : null}
       </section>
     </div>
   )

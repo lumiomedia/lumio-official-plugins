@@ -72,6 +72,9 @@ const EN = {
   continueSub: 'Replays & last watched',
   allChannels: 'All channels',
   allChannelsSub: '{playlist} · {count} channels · OK = watch · hold OK = menu',
+  // Rubrik utanför TV-läget (Jerrys återkoppling 2026-09-14): bara antalet,
+  // ingen spellista och ingen fjärrhjälp — se `tv-hub.tsx`.
+  allChannelsCount: 'All {count} channels',
   emptyTitle: 'No channels yet',
   emptyBody: 'Add an M3U playlist or an Xtream login under Settings.',
   openSettings: 'Open settings',
@@ -283,6 +286,7 @@ const SV: Record<keyof typeof EN, string> = {
   continueSub: 'Repriser & senast sedda',
   allChannels: 'Alla kanaler',
   allChannelsSub: '{playlist} · {count} kanaler · OK = titta · håll OK = meny',
+  allChannelsCount: 'Alla {count} kanaler',
   emptyTitle: 'Inga kanaler än',
   emptyBody: 'Lägg till en M3U-spellista eller en Xtream-inloggning under Inställningar.',
   openSettings: 'Öppna inställningar',

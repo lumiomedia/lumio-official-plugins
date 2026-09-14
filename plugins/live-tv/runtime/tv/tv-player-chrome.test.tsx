@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { __setTvModeForTests } from '@/lib/plugin-sdk'
 import { TvPlayerChrome } from './tv-player-chrome'
 import type { LiveTvPlayerTvProps } from './tv-player-types'
 
@@ -13,6 +14,8 @@ function tv(overrides: Partial<LiveTvPlayerTvProps> = {}): LiveTvPlayerTvProps {
 }
 
 afterEach(cleanup)
+// Default utanför TV-läget om inget test säger annat (stubbens egen default).
+afterEach(() => { __setTvModeForTests(false) })
 
 describe('TvPlayerChrome', () => {
   it('visar banner med titel, tid och Sen, och ⋯ är data-init', () => {
@@ -182,5 +185,21 @@ describe('TvPlayerChrome', () => {
     fireEvent.keyDown(window, { key: 'Backspace' })
     expect(later).not.toHaveBeenCalled()
     window.removeEventListener('keydown', later, true)
+  })
+})
+
+// Jerrys återkoppling 2026-09-14, ändring 1: fjärrhjälpen ("▾ guide · hold OK
+// = menu") beskriver fjärrkontrollen och ska bara synas i TV-läge, ingen
+// ersättningstext utanför.
+describe('TvPlayerChrome fjärrhjälp (Jerrys återkoppling 2026-09-14)', () => {
+  it('visas i TV-läge', () => {
+    __setTvModeForTests(true)
+    render(<TvPlayerChrome channel={channels[1]} tv={tv()} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
+    expect(screen.getByText('▾ guide · hold OK = menu')).toBeInTheDocument()
+  })
+  it('döljs utanför TV-läge, utan ersättningstext', () => {
+    __setTvModeForTests(false)
+    render(<TvPlayerChrome channel={channels[1]} tv={tv()} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
+    expect(screen.queryByText('▾ guide · hold OK = menu')).not.toBeInTheDocument()
   })
 })

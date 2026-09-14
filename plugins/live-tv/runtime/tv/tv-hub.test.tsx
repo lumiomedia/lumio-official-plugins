@@ -45,6 +45,66 @@ describe('TvHub', () => {
   })
 })
 
+// Jerrys återkoppling 2026-09-14, ändring 1: fjärrhjälpen ("OK = watch ·
+// hold OK = menu") beskriver fjärrkontrollen och ska bara synas i TV-läge —
+// ingen ersättningstext på skrivbord/telefon. `useTvMode()` styr, inte ytan.
+describe('TvHub fjärrhjälp (Jerrys återkoppling 2026-09-14)', () => {
+  it('visas i TV-läge', () => {
+    __setTvModeForTests(true)
+    render(<LiveTvTvShell pageId="live-tv-browse" params={{}} onNavigate={() => {}} onOpenDetails={() => {}} />)
+    expect(screen.getByText('OK = watch · hold OK = menu')).toBeInTheDocument()
+  })
+  it('döljs utanför TV-läge, utan ersättningstext', () => {
+    __setTvModeForTests(false)
+    render(<LiveTvTvShell pageId="live-tv-browse" params={{}} onNavigate={() => {}} onOpenDetails={() => {}} />)
+    expect(screen.queryByText('OK = watch · hold OK = menu')).not.toBeInTheDocument()
+  })
+})
+
+// Ändring 2: rubriken utanför TV-läget blir bara antalet ("All 3 channels"),
+// spellistnamnet och fjärrhjälpen (del av `allChannelsSub`) utgår — och
+// filterraden flyttar ner på egen rad med glasyta. TV-designen (godkänd)
+// rörs inte.
+describe('TvHub rubrikrad (Jerrys återkoppling 2026-09-14)', () => {
+  it('TV-läge: behåller rubriken, underraden och chippen på samma rad', () => {
+    __setTvModeForTests(true)
+    render(<LiveTvTvShell pageId="live-tv-browse" params={{}} onNavigate={() => {}} onOpenDetails={() => {}} />)
+    expect(screen.getByText('All channels')).toBeInTheDocument()
+    expect(screen.getByText('All playlists · 3 channels · OK = watch · hold OK = menu')).toBeInTheDocument()
+  })
+  it('utanför TV-läge: rubriken är bara antalet, ingen spellista/fjärrhjälp kvar av den gamla underraden', () => {
+    __setTvModeForTests(false)
+    render(<LiveTvTvShell pageId="live-tv-browse" params={{}} onNavigate={() => {}} onOpenDetails={() => {}} />)
+    expect(screen.getByText('All 3 channels')).toBeInTheDocument()
+    expect(screen.queryByText(/All playlists · 3 channels/)).not.toBeInTheDocument()
+  })
+  it('utanför TV-läge: filterraden ligger på egen rad (fyller bredden, inte tryckt intill rubriken)', () => {
+    __setTvModeForTests(false)
+    render(<LiveTvTvShell pageId="live-tv-browse" params={{}} onNavigate={() => {}} onOpenDetails={() => {}} />)
+    const row = screen.getByTestId('all-channels-filter-row')
+    expect(row).toHaveStyle({ width: '100%' })
+    expect(row.style.marginLeft).not.toBe('auto')
+  })
+  it('utanför TV-läge: filterchippen har glasytan (samma yta som Bakåt-knappen/toasten)', () => {
+    __setTvModeForTests(false)
+    render(<LiveTvTvShell pageId="live-tv-browse" params={{}} onNavigate={() => {}} onOpenDetails={() => {}} />)
+    expect(screen.getByTestId('chip-all')).toHaveAttribute('data-live-tv-chip-glass')
+  })
+  it('TV-läge: filterchippen rör sig inte — ingen glasyta', () => {
+    __setTvModeForTests(true)
+    render(<LiveTvTvShell pageId="live-tv-browse" params={{}} onNavigate={() => {}} onOpenDetails={() => {}} />)
+    expect(screen.getByTestId('chip-all')).not.toHaveAttribute('data-live-tv-chip-glass')
+  })
+  it('formaterar antalet med tusentalsavgränsare enligt språk (teststubbens useLang: en)', () => {
+    __setTvModeForTests(false)
+    const big: LiveTvList = { id: 'l2', name: 'Big', channels: Array.from({ length: 1234 }, (_, i) => ch(`C${i}`, 'Grp')), createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null }
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [big])
+    seedLiveTvIndex()
+    render(<LiveTvTvShell pageId="live-tv-browse" params={{}} onNavigate={() => {}} onOpenDetails={() => {}} />)
+    expect(screen.getByText('All 1,234 channels')).toBeInTheDocument()
+  })
+})
+
 describe('TvHub i porträtt (telefon)', () => {
   // Lådan som `render(page, { container })` skriver in i — måste bort i
   // `afterEach`, precis som i M-P2:s skaltest.

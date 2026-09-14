@@ -344,7 +344,9 @@ export function TvPlayerChrome({ channel, tv, controls, paused, onTogglePause, o
               <div {...station(controls.onCycleAspect, undefined, { 'aria-label': tt('playerAspect') })} style={{ height: dp(phoneHitFloor(52, phone)), minHeight: dp(phoneHitFloor(52, phone)), padding: `0 ${dp(18)}px`, borderRadius: 999, background: 'rgba(252,252,255,0.10)', border: `1px solid ${TV.lineCard}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: dp(phoneTextFloor(16, phone)), color: TV.text, cursor: 'pointer', whiteSpace: 'nowrap', boxSizing: 'border-box' }}>{controls.aspectLabel}</div>
             </div>
           ) : null}
-          <span style={{ fontSize: dp(phoneTextFloor(16, phone)), color: 'rgba(243,244,248,0.45)' }}>{tt('playerHelp')}</span>
+          {/* Fjärrhjälpen beskriver fjärrkontrollen — bort utanför TV-läget
+              (Jerrys återkoppling 2026-09-14), ingen ersättningstext. */}
+          {isTv ? <span style={{ fontSize: dp(phoneTextFloor(16, phone)), color: 'rgba(243,244,248,0.45)' }}>{tt('playerHelp')}</span> : null}
           <div ref={dotsRef} {...station(() => dotsRef.current && openMenu(dotsRef.current), (el) => openMenu(el), { 'data-init': '', 'aria-label': tt('moreActions') })} style={{ width: dp(phoneHitFloor(52, phone)), height: dp(phoneHitFloor(52, phone)), minHeight: dp(phoneHitFloor(52, phone)), borderRadius: 999, background: 'rgba(252,252,255,0.10)', border: `1px solid ${TV.lineCard}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Icons.Dots /></div>
         </div>
       </div>

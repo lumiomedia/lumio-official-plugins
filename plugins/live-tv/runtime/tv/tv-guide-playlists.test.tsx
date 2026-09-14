@@ -173,3 +173,19 @@ describe('TvGuidePlaylists i porträtt (telefon): tre fasta kolumner staplas (fi
     expect(col.style.flexShrink).toBe('0')
   })
 })
+
+// Jerrys återkoppling 2026-09-14, ändring 1: fjärrhjälpen ("◂ ▸ switch
+// column · Back closes") beskriver fjärrkontrollen och ska bara synas i
+// TV-läge, ingen ersättningstext utanför.
+describe('TvGuidePlaylists fjärrhjälp (Jerrys återkoppling 2026-09-14)', () => {
+  it('visas i TV-läge', async () => {
+    __setTvModeForTests(true)
+    await mount()
+    expect(screen.getByText('◂ ▸ switch column · Back closes')).toBeInTheDocument()
+  })
+  it('döljs utanför TV-läge, utan ersättningstext', async () => {
+    __setTvModeForTests(false)
+    await mount()
+    expect(screen.queryByText('◂ ▸ switch column · Back closes')).not.toBeInTheDocument()
+  })
+})

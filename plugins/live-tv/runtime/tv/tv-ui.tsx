@@ -307,13 +307,22 @@ export function ChannelArt({ channel, frameVersion, height, aspect, radius, chil
  * kantfärg i stället för att lysa upp hela ytan. `title` är genomsläppet för
  * verktygstips på trunkerade kategorinamn (spec 4.5); det går via `rest`.
  */
-/** `phone` (fas 2): höjer standardmåtten till golven — se `Tag` ovan för samma mönster. */
-export function Chip({ active, children, style, phone = false, ...rest }: { active: boolean; children: ReactNode; style?: CSSProperties; title?: string; phone?: boolean } & StationProps) {
+/**
+ * `phone` (fas 2): höjer standardmåtten till golven — se `Tag` ovan för samma mönster.
+ *
+ * `glass` (Jerrys återkoppling 2026-09-14): återanvänder samma glasyta som
+ * Bakåt-knappen/hold-affordansen/toasten (`TV.glass` + `TV.line`) i stället
+ * för chipets vanliga svaga overlay — bara startsidans filterrad utanför
+ * TV-läget ber om det, se `tv-hub.tsx`. TV-chippet (och guidens/favoriternas
+ * chip) rörs inte.
+ */
+export function Chip({ active, children, style, phone = false, glass = false, ...rest }: { active: boolean; children: ReactNode; style?: CSSProperties; title?: string; phone?: boolean; glass?: boolean } & StationProps) {
   return (
     <div
       data-live-tv-chip=""
+      data-live-tv-chip-glass={glass ? '' : undefined}
       {...rest}
-      style={{ height: dp(phoneHitFloor(46, phone)), minHeight: dp(phoneHitFloor(46, phone)), padding: `0 ${dp(22)}px`, borderRadius: 999, display: 'inline-flex', alignItems: 'center', fontSize: dp(phoneTextFloor(19, phone)), whiteSpace: 'nowrap', cursor: 'pointer', flexShrink: 0, background: active ? TV.s16 : TV.s05, color: active ? TV.text : TV.muted, fontWeight: active ? 600 : 400, border: `1px solid ${active ? TV.lineStrong : 'transparent'}`, ...style }}
+      style={{ height: dp(phoneHitFloor(46, phone)), minHeight: dp(phoneHitFloor(46, phone)), padding: `0 ${dp(22)}px`, borderRadius: 999, display: 'inline-flex', alignItems: 'center', fontSize: dp(phoneTextFloor(19, phone)), whiteSpace: 'nowrap', cursor: 'pointer', flexShrink: 0, background: glass ? TV.glass : (active ? TV.s16 : TV.s05), color: active ? TV.text : TV.muted, fontWeight: active ? 600 : 400, border: `1px solid ${glass ? (active ? TV.lineStrong : TV.line) : (active ? TV.lineStrong : 'transparent')}`, ...style }}
     >
       {children}
     </div>

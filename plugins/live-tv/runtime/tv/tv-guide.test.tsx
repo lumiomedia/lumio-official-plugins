@@ -287,3 +287,19 @@ describe('TvGuide i porträtt (telefon): orimligt långa kanalnamn klipps', () =
     expect(row.style.flexBasis).toBe('0px')
   })
 })
+
+// Jerrys återkoppling 2026-09-14, ändring 1: fjärrhjälpen ("OK watch · hold
+// OK menu · ◂▸ category") beskriver fjärrkontrollen och ska bara synas i
+// TV-läge, ingen ersättningstext utanför.
+describe('TvGuide fjärrhjälp (Jerrys återkoppling 2026-09-14)', () => {
+  it('visas i TV-läge', async () => {
+    __setTvModeForTests(true)
+    await mount()
+    expect(screen.getByText('OK watch · hold OK menu · ◂▸ category')).toBeInTheDocument()
+  })
+  it('döljs utanför TV-läge, utan ersättningstext', async () => {
+    __setTvModeForTests(false)
+    await mount()
+    expect(screen.queryByText('OK watch · hold OK menu · ◂▸ category')).not.toBeInTheDocument()
+  })
+})

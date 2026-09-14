@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { channelKey, type M3uChannel } from '../live-tv-data'
 import { startOfLocalDay } from '../live-tv-model'
 import type { EpgProgramme } from '../epg/types'
+import { useTvMode } from '@/lib/plugin-sdk'
 import { formatClock } from '../live-tv-ui'
 import { isReminded, toggleReminder } from '../reminders'
 import { selectEpgRows } from '../epg-rows'
@@ -93,6 +94,7 @@ function useFinePointer(): boolean {
 
 export function TvGuideGrid({ model, nav, mode, onModeChange }: TvViewProps & { mode: GuideMode; onModeChange: (mode: GuideMode) => void }) {
   const { tt, locale } = useTvText()
+  const isTv = useTvMode()
   const groups = useGuideGroups(model, tt)
   const [group, setGroup] = useState<string | null>(null)
   const [dayOffset, setDayOffset] = useState<0 | 1>(0)
@@ -401,9 +403,11 @@ export function TvGuideGrid({ model, nav, mode, onModeChange }: TvViewProps & { 
               <Icons.Play size={dp(16)} /> {tt('watchNow')}
             </div>
           </>
-        ) : (
+        ) : isTv ? (
+          // Fjärrhjälpen beskriver fjärrkontrollen — bort utanför TV-läget
+          // (Jerrys återkoppling 2026-09-14), ingen ersättningstext.
           <span style={{ fontSize: dp(phoneTextFloor(16, phone)), color: TV.faint }}>{tt('gridHelp')}</span>
-        )}
+        ) : null}
       </div>
     </div>
   )

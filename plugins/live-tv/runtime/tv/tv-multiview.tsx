@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useTvMode } from '@/lib/plugin-sdk'
 import { channelKey, type M3uChannel } from '../live-tv-data'
 import type { TvViewProps } from './tv-shell'
 import { ChannelArt, Icons, PHONE_HIT_MIN_DP, Segment, Tag, TV, dp, phoneTextFloor, station } from './tv-ui'
@@ -38,6 +39,7 @@ function narrowVisibleIndices(state: MultiviewState): [number, number] {
 
 export function TvMultiview({ model, nav }: TvViewProps) {
   const { tt } = useTvText()
+  const isTv = useTvMode()
   const state = useMultiviewState()
   const rootRef = useRef<HTMLDivElement | null>(null)
   const narrow = useNarrowSurface(rootRef)
@@ -118,8 +120,11 @@ export function TvMultiview({ model, nav }: TvViewProps) {
             phone={phone}
           />
         )}
-        <span style={{ marginLeft: 'auto', fontSize: dp(phoneTextFloor(18, phone)), color: 'rgba(243,244,248,0.6)', textAlign: 'right' }}>
-          {audioChannel ? <><span>{tt('audioLabel')}: </span><strong style={{ color: TV.text }}>{audioChannel.name}</strong> · </> : null}{tt('multiviewHelp')}
+        <span data-testid="mv-audio-help" style={{ marginLeft: 'auto', fontSize: dp(phoneTextFloor(18, phone)), color: 'rgba(243,244,248,0.6)', textAlign: 'right' }}>
+          {audioChannel ? <><span>{tt('audioLabel')}: </span><strong style={{ color: TV.text }}>{audioChannel.name}</strong>{isTv ? ' · ' : ''}</> : null}
+          {/* Fjärrhjälpen beskriver fjärrkontrollen — bort utanför TV-läget
+              (Jerrys återkoppling 2026-09-14), ingen ersättningstext. */}
+          {isTv ? tt('multiviewHelp') : null}
         </span>
       </div>
       <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: (narrow ? NARROW_GRID : GRID[state.layout]).columns, gridTemplateRows: (narrow ? NARROW_GRID : GRID[state.layout]).rows, gap: dp(16) }}>

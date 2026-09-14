@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { channelKey, type M3uChannel } from '../live-tv-data'
 import { qualityFromName } from '../live-tv-model'
+import { useTvMode } from '@/lib/plugin-sdk'
 import { formatClock, progressOf } from '../live-tv-ui'
 import { usePhoneSurface } from '../hooks/usePhoneSurface'
 import type { TvViewProps } from './tv-shell'
@@ -104,6 +105,7 @@ export function TvGuide(props: TvViewProps) {
 function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: TvViewProps & { mode: 'now' | 'tl'; onModeChange: (mode: GuideMode) => void }) {
   const { tt, locale } = useTvText()
   const phone = usePhoneSurface()
+  const isTv = useTvMode()
   const clock = useTvClockNode(locale, phone)
   const channelColStyle = channelColumnStyle(phone)
   const groups = useGuideGroups(model, tt)
@@ -212,7 +214,9 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
           ) : null}
           <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'baseline', gap: dp(12), fontSize: dp(phoneTextFloor(18, phone)), color: 'rgba(243,244,248,0.55)' }}>
             {info.next ? <><span style={{ color: TV.accText, fontWeight: 600 }}>{tt('next')}</span><span>{info.next.title} · {formatClock(info.next.start, locale)}</span></> : null}
-            <span style={{ marginLeft: 'auto', fontSize: dp(phoneTextFloor(16, phone)), color: TV.faint }}>{tt('helpGuide')}</span>
+            {/* Fjärrhjälpen beskriver fjärrkontrollen — bort utanför TV-läget
+                (Jerrys återkoppling 2026-09-14), ingen ersättningstext. */}
+            {isTv ? <span style={{ marginLeft: 'auto', fontSize: dp(phoneTextFloor(16, phone)), color: TV.faint }}>{tt('helpGuide')}</span> : null}
           </div>
         </div>
       </div>

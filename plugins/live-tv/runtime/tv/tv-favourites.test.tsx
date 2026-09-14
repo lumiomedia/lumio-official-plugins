@@ -47,3 +47,18 @@ describe('TvFavourites', () => {
     expect(onNavigate).toHaveBeenCalledWith({ pageId: 'live-tv-browse', params: { view: 'guide', group: 'all' } })
   })
 })
+
+// Jerrys återkoppling 2026-09-14, ändring 1: fjärrhjälpen beskriver
+// fjärrkontrollen och ska bara synas i TV-läge, ingen ersättningstext utanför.
+describe('TvFavourites fjärrhjälp (Jerrys återkoppling 2026-09-14)', () => {
+  it('visas i TV-läge', () => {
+    __setTvModeForTests(true)
+    mount()
+    expect(screen.getByText(/OK = watch · hold OK = move up\/down/)).toBeInTheDocument()
+  })
+  it('döljs utanför TV-läge, utan ersättningstext', () => {
+    __setTvModeForTests(false)
+    mount()
+    expect(screen.queryByText(/OK = watch · hold OK = move up\/down/)).not.toBeInTheDocument()
+  })
+})

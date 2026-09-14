@@ -274,3 +274,28 @@ describe('TvGuideGrid — kanalkolumnens stationer', () => {
     expect(onNavigate.mock.calls[0][0].params.view).toBe('channel')
   })
 })
+
+// Jerrys återkoppling 2026-09-14, ändring 1: fjärrhjälpen ("OK = watch or
+// channel details · hold OK = reminder, lock · ◂▸ time · ▴▾ channel")
+// beskriver fjärrkontrollen och ska bara synas i TV-läge, ingen
+// ersättningstext utanför. Detaljremsan visar den bara när inget är valt —
+// den skarpa monteringen fokuserar (och väljer) alltid första blocket, så
+// "inget valt" nås genom att filtrera till Nyheter (kanal C: ingen tablå,
+// alltså inga block att fokusera/välja).
+describe('TvGuideGrid fjärrhjälp (Jerrys återkoppling 2026-09-14)', () => {
+  const selectEmptyGroup = async () => {
+    await openGrid()
+    fireEvent.click(screen.getByTestId('grid-chip-News'))
+    await flushLiveTvIndex()
+  }
+  it('visas i TV-läge när inget block är valt', async () => {
+    __setTvModeForTests(true)
+    await selectEmptyGroup()
+    expect(screen.getByText('OK = watch or channel details · hold OK = reminder, lock · ◂▸ time · ▴▾ channel')).toBeInTheDocument()
+  })
+  it('döljs utanför TV-läge, utan ersättningstext', async () => {
+    __setTvModeForTests(false)
+    await selectEmptyGroup()
+    expect(screen.queryByText('OK = watch or channel details · hold OK = reminder, lock · ◂▸ time · ▴▾ channel')).not.toBeInTheDocument()
+  })
+})
