@@ -1,12 +1,23 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState, type JSX, type RefObject } from 'react'
+import { tvSceneBoxScale } from '@/lib/plugin-sdk'
 import { useTvText } from './tv-strings'
 import { TV, dp, Icons } from './tv-ui'
 
 /** Knappens sida i designpixlar, och hur långt in i hörnet den ligger. */
 const BUTTON_PX = 36
 const INSET_PX = 6
+/**
+ * Frågan är "finns det NÅGON fin pekare?", inte "är den primära grov".
+ *
+ * En hybrid (pekskärmslaptop, Surface, Chromebook med touch) svarar
+ * `pointer: coarse` på sin PRIMÄRA pekare och hade då blivit av med knappen
+ * trots att en mus är inkopplad. `any-pointer: fine` matchar så fort någon fin
+ * pekare finns. Frågan ställs om vid `change` — en mus kan kopplas in och ur
+ * medan sidan lever (uppmätt på en surfplatta med tangentbordsdocka).
+ */
+const FINE_POINTER_QUERY = '(any-pointer: fine)'
 
 /**
  * EN "…"-knapp för hela skalet, inte en per kort (spec §4.1).
@@ -27,6 +38,7 @@ export function TvHoldAffordance({ rootRef, enabled }: {
 }): JSX.Element | null {
   const { tt } = useTvText()
   const [spot, setSpot] = useState<{ left: number; top: number } | null>(null)
+  const [finePointer, setFinePointer] = useState(true)
   const stationRef = useRef<HTMLElement | null>(null)
 
   const hide = useCallback(() => {
@@ -34,11 +46,23 @@ export function TvHoldAffordance({ rootRef, enabled }: {
     setSpot((current) => (current === null ? current : null))
   }, [])
 
+  // Utan matchMedia (mycket gammal webbvy) står svaret kvar på `true`: hellre
+  // en knapp för mycket än en yta utan väg till hållmenyn på en skrivbordsmus.
   useEffect(() => {
-    if (!enabled) { hide(); return }
+    if (typeof window.matchMedia !== 'function') return
+    const query = window.matchMedia(FINE_POINTER_QUERY)
+    const onChange = () => setFinePointer(query.matches)
+    onChange()
+    query.addEventListener?.('change', onChange)
+    return () => query.removeEventListener?.('change', onChange)
+  }, [])
+
+  const active = enabled && finePointer
+
+  useEffect(() => {
+    if (!active) { hide(); return }
     const root = rootRef.current
     if (!root) return
-    if (typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches) return
 
     const place = (station: HTMLElement) => {
       /**
@@ -47,13 +71,15 @@ export function TvHoldAffordance({ rootRef, enabled }: {
        * Värdens scenlåda skalar hela trädet med en CSS-transform, så
        * `getBoundingClientRect()` ger skalade px — men knappen ligger inne i
        * samma transform och positioneras i designpixlar. Därför mäts allt
-       * relativt rotnodens EGEN rect och delas med lådans skala (rektangelns
-       * bredd mot layoutbredden). Utan lådan är skalan 1 och räkningen
-       * oförändrad.
+       * relativt rotnodens EGEN rect och delas med lådans skala. Skalan läses
+       * ur värdens egen `--tv-scene-box-scale` (`tvSceneBoxScale`, ärvs ner
+       * till roten) i stället för att räknas om ur rect mot layoutbredd — då
+       * kan pluginet aldrig komma fram till en annan skala än lådan använder.
+       * Utan låda är den 1 och räkningen oförändrad.
        */
       const rootRect = root.getBoundingClientRect()
       const rect = station.getBoundingClientRect()
-      const scale = rootRect.width > 0 && root.offsetWidth > 0 ? rootRect.width / root.offsetWidth : 1
+      const scale = tvSceneBoxScale(root) || 1
       stationRef.current = station
       setSpot({ left: (rect.right - rootRect.left) / scale, top: (rect.top - rootRect.top) / scale })
     }
@@ -70,22 +96,29 @@ export function TvHoldAffordance({ rootRef, enabled }: {
       place(station)
     }
 
-    // `scroll` bubblar inte — capture-fasen på roten fångar ändå varje
-    // scrollande förfader inne i skalet, och en knapp som blir kvar i luften
-    // när listan rullar är värre än ingen knapp alls.
     root.addEventListener('pointerover', onPointerOver)
+    // `pointermove` utöver `pointerover`: hovringen kan börja UTAN ett
+    // pointerover på stationen — listan scrollar under en stillastående mus,
+    // ett kort renderas om under pekaren, eller fönstret får tillbaka fokus
+    // med pekaren redan på plats. `place()` hoppar över stationen som redan är
+    // vald, så rörelsen kostar ingenting.
+    root.addEventListener('pointermove', onPointerOver)
     root.addEventListener('pointerleave', hide)
-    root.addEventListener('scroll', hide, true)
+    // `scroll` bubblar inte, så lyssnaren sitter i capture-fasen på FÖNSTRET:
+    // den fångar både skalets egna scrollytor och värdens sida utanför
+    // pluginet (en knapp som blir kvar i luften är värre än ingen knapp alls).
+    window.addEventListener('scroll', hide, true)
     window.addEventListener('resize', hide)
     return () => {
       root.removeEventListener('pointerover', onPointerOver)
+      root.removeEventListener('pointermove', onPointerOver)
       root.removeEventListener('pointerleave', hide)
-      root.removeEventListener('scroll', hide, true)
+      window.removeEventListener('scroll', hide, true)
       window.removeEventListener('resize', hide)
     }
-  }, [enabled, hide, rootRef])
+  }, [active, hide, rootRef])
 
-  if (!enabled || !spot) return null
+  if (!active || !spot) return null
 
   return (
     <button
@@ -110,7 +143,15 @@ export function TvHoldAffordance({ rootRef, enabled }: {
          * `preventDefault()` är redan anropad när eventet skickas, precis som
          * när webbläsaren själv hade lämnat över det.
          */
-        const synthetic = new MouseEvent('contextmenu', { bubbles: true, cancelable: true })
+        // Koordinaterna pekar på KNAPPENS mitt: glasmenyn får lägga sig vid
+        // pekaren precis som efter ett högerklick, inte i stationens mitt.
+        const here = event.currentTarget.getBoundingClientRect()
+        const synthetic = new MouseEvent('contextmenu', {
+          bubbles: true,
+          cancelable: true,
+          clientX: here.left + here.width / 2,
+          clientY: here.top + here.height / 2,
+        })
         synthetic.preventDefault()
         station.dispatchEvent(synthetic)
       }}
@@ -129,7 +170,9 @@ export function TvHoldAffordance({ rootRef, enabled }: {
         justifyContent: 'center',
         padding: 0,
         cursor: 'pointer',
-        zIndex: 60,
+        // Över spelaren (z 70): mini-guidens kort är stationer med håll, och
+        // en knapp under spelaren hade varit osynlig just där.
+        zIndex: 71,
       }}
     >
       <Icons.Dots size={dp(20)} />

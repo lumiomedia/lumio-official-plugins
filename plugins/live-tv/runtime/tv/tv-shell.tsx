@@ -301,6 +301,12 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
   }, [])
 
   const back = useCallback(() => {
+    // Glasmenyn ligger ÖVERST. Tangentvägen når aldrig hit medan den är öppen
+    // (lyssnaren nedan står tillbaka — värdens meny äger sin egen Back), men
+    // pekarvägen gör det: Bakåt-posten i raden anropar `back()` direkt, och
+    // utan den här nivån stängde ett klick vyn BAKOM en öppen meny och lämnade
+    // menyn hängande över en ny sida.
+    if (menu) { setMenu(null); return }
     const top = layersRef.current[layersRef.current.length - 1]
     if (top) { top(); return }
     if (pending) { setPending(null); return }
@@ -308,7 +314,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     if (view === 'channel') { go('guide'); return }
     if (view !== 'hub') { go('hub'); return }
     requestBrowseBack()
-  }, [pending, active, view, go])
+  }, [menu, pending, active, view, go])
 
   // Back i capture-fas. Glasmenyn sköter sin egen Back, därför avstår skalet
   // medan den är öppen.
@@ -558,7 +564,9 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
       {/* EN "…"-knapp för hela skalet, placerad över den hovrade stationen.
           Ligger i ROTENS koordinatrum (roten är `position: relative` ovan) —
           scenlådans transform gäller båda, så måtten förblir designpixlar. */}
-      <TvHoldAffordance rootRef={rootRef} enabled={!isTv} />
+      {/* `key={view}` monterar om knappen vid vybyte: stationen den pekade på
+          är borta ur DOM:en, och en knapp kvar i luften pekar på ingenting. */}
+      <TvHoldAffordance key={view} rootRef={rootRef} enabled={!isTv} />
       {TvGlassMenu && menu ? <TvGlassMenu target={menu} onClose={() => setMenu(null)} /> : null}
       {zapDigits ? (
         <div data-testid="zap-digits" style={{ position: 'fixed', top: dp(36), right: dp(48), zIndex: 80, padding: `${dp(10)}px ${dp(22)}px`, borderRadius: dp(12), background: TV.glass, fontSize: dp(34), fontWeight: 600, letterSpacing: '0.1em' }}>{zapDigits}</div>

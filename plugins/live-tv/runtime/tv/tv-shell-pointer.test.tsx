@@ -1,9 +1,57 @@
 import { useEffect } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { __resetForTests, __setTvModeForTests, BROWSE_BACK_EVENT, writePluginJson } from '@/lib/plugin-sdk'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+
+/**
+ * Glasmenyn är VÄRDENS UI och äger sin egen Back — teststubben gör det inte.
+ * Utan modellen hade kedjetestets tangentväg jämförts mot en meny som ingen
+ * stänger, och asymmetrin hade sett ut som en bugg i skalet i stället för som
+ * stubbens lucka. Dubbelgångaren gör exakt det värdens meny gör: stänger sig
+ * själv på Escape.
+ */
+vi.mock('@/lib/plugin-sdk', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>()
+  const { createElement, useEffect: onMount } = await import('react')
+  const HostGlassMenu = ({ target, onClose }: { target: { title: string; actions: Array<{ key: string; label: string; run: () => void }> }; onClose: () => void }) => {
+    onMount(() => {
+      const onKey = (event: KeyboardEvent) => {
+        if (event.key !== 'Escape' && event.key !== 'Backspace') return
+        event.preventDefault()
+        event.stopPropagation()
+        onClose()
+      }
+      window.addEventListener('keydown', onKey, true)
+      return () => window.removeEventListener('keydown', onKey, true)
+    }, [onClose])
+    return createElement(
+      'div',
+      { role: 'menu', 'data-panel-root': '', 'data-testid': 'tv-glass-menu' },
+      createElement('div', null, target.title),
+      ...target.actions.map((action) => createElement('button', { key: action.key, type: 'button', onClick: () => { action.run(); onClose() } }, action.label)),
+    )
+  }
+  // Explicita `undefined`-nycklar (inte utelämnade): vitests mockade modul
+  // KASTAR på `typeof sdk.getAccent` och de andra defensiva probningarna som
+  // pluginet gör mot äldre appar, medan en riktig modul bara ger undefined.
+  return {
+    ...actual,
+    getAccent: undefined,
+    setAccent: undefined,
+    ACCENT_PRESETS: undefined,
+    getTvClock: undefined,
+    notifyPluginRegistryChanged: undefined,
+    createVideoSurface: undefined,
+    getVideoSurfaceCapabilities: undefined,
+    mpvSetPropertyStrings: undefined,
+    closeAllAuxSurfaces: undefined,
+    getTvGlassMenu: () => HostGlassMenu,
+  }
+})
+
+import { __resetForTests, __setProfilePinForTests, __setTvModeForTests, BROWSE_BACK_EVENT, writePluginJson } from '@/lib/plugin-sdk'
 import { seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
-import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
+import { LOCKED_CHANNELS_KEY } from '../channel-locks'
+import { LIVE_TV_PLUGIN_ID, channelKey, type LiveTvList } from '../live-tv-data'
 
 // Spelaren äger Back medan den är öppen (se tv-shell.tsx). Mocken måste därför
 // stänga sig själv på Back precis som den riktiga spelaren gör — annars hade
@@ -51,10 +99,13 @@ function mount(params: Record<string, string> = {}) {
 const firstHoldStation = () => screen.getByTestId('all-channels').querySelectorAll<HTMLElement>('[data-hold]')[0]
 const affordance = () => screen.queryByTestId('hold-affordance')
 
-/** Pekaren rapporterar grovt (pekskärm/fjärr) — spec §5. */
-function stubCoarsePointer(coarse: boolean) {
+/**
+ * En enhet UTAN någon fin pekare (ren pekskärm) — spec §5. Frågan skalet
+ * ställer är `(any-pointer: fine)`, så en hybrid med mus behåller knappen.
+ */
+function stubPointer({ fine }: { fine: boolean }) {
   window.matchMedia = ((query: string) => ({
-    matches: query.includes('pointer: coarse') ? coarse : false,
+    matches: query.includes('any-pointer: fine') ? fine : false,
     media: query,
     onchange: null,
     addListener: () => {},
@@ -75,6 +126,8 @@ describe('"…"-knappen på hovring', () => {
     // Tydlig affordans, inte diskret: ikon OCH verktygstips (Jerrys följdkrav).
     expect(button?.getAttribute('title')).toBe('More options')
     expect(button?.querySelector('svg')).not.toBeNull()
+    // Över spelarens lager (z 70): mini-guidens kort är stationer med håll.
+    expect(Number((button as HTMLElement).style.zIndex)).toBeGreaterThan(70)
   })
 
   it('det finns bara EN knapp för hela skalet', () => {
@@ -120,9 +173,36 @@ describe('"…"-knappen på hovring', () => {
 
   it('ingen "…"-knapp när pekaren är grov', () => {
     // Spec §5: långtryck är enda vägen till hållmenyn på en pekskärm.
-    stubCoarsePointer(true)
+    stubPointer({ fine: false })
     mount()
     fireEvent.pointerOver(firstHoldStation())
+    expect(affordance()).toBeNull()
+  })
+
+  it('en hybrid med mus behåller knappen', () => {
+    // `(any-pointer: fine)` matchar så fort NÅGON fin pekare finns, även när
+    // den primära är grov (pekskärmslaptop).
+    stubPointer({ fine: true })
+    mount()
+    fireEvent.pointerOver(firstHoldStation())
+    expect(affordance()).not.toBeNull()
+  })
+
+  it('pointermove på en station visar knappen utan föregående pointerover', () => {
+    // Listan kan scrolla under en stillastående mus: då kommer ingen
+    // pointerover, bara rörelse.
+    mount()
+    fireEvent.pointerMove(firstHoldStation())
+    expect(affordance()).not.toBeNull()
+  })
+
+  it('vybyte tar bort knappen', () => {
+    // Stationen den pekade på avmonteras med vyn — en knapp kvar i luften
+    // pekar på ingenting.
+    const { view } = mount()
+    fireEvent.pointerOver(firstHoldStation())
+    expect(affordance()).not.toBeNull()
+    view.rerender(<LiveTvTvShell pageId="live-tv-browse" params={{ view: 'favs' }} onNavigate={() => {}} onOpenDetails={() => {}} />)
     expect(affordance()).toBeNull()
   })
 })
@@ -153,23 +233,31 @@ describe('Bakåt med pekare', () => {
     )
     const view = render(page({}))
 
-    // 1. Lager: hubbens spellistmeny registreras med nav.pushLayer.
+    // 1. Glasmenyn, överst av alla nivåer. Tangenten når den genom värdens
+    // egen meny (som äger sin Back), klicket genom `back()`:s menygren —
+    // två vägar, samma utfall.
+    fireEvent.contextMenu(firstHoldStation())
+    expect(screen.getByTestId('tv-glass-menu')).toBeTruthy()
+    trigger()
+    events.push(screen.queryByTestId('tv-glass-menu') ? 'meny kvar' : 'meny stängd')
+
+    // 2. Lager: hubbens spellistmeny registreras med nav.pushLayer.
     fireEvent.click(screen.getByTestId('playlist-pill'))
     expect(screen.getByTestId('playlist-l1')).toBeTruthy()
     trigger()
     events.push(screen.queryByTestId('playlist-l1') ? 'lager kvar' : 'lager stängt')
 
-    // 2. Spelaren.
+    // 3. Spelaren.
     fireEvent.click(firstHoldStation())
     await screen.findByTestId('player')
     trigger()
     events.push(screen.queryByTestId('player') ? 'spelare kvar' : 'spelare stängd')
 
-    // 3. Vyn.
+    // 4. Vyn.
     view.rerender(page({ view: 'favs' }))
     trigger()
 
-    // 4. Ut ur Live TV.
+    // 5. Ut ur Live TV.
     view.rerender(page({}))
     trigger()
 
@@ -187,7 +275,7 @@ describe('Bakåt med pekare', () => {
     seedLiveTvIndex()
     const fromClick = await runChain(() => { fireEvent.click(screen.getByTestId('rail-back')) })
     expect(fromClick).toEqual(fromKey)
-    expect(fromKey).toEqual(['lager stängt', 'spelare stängd', 'vy:hub', 'browse-back'])
+    expect(fromKey).toEqual(['meny stängd', 'lager stängt', 'spelare stängd', 'vy:hub', 'browse-back'])
   })
 })
 
@@ -211,6 +299,24 @@ describe('Kantsvepet', () => {
     // Ett steg: lagret stängdes, och ingen navigering skedde.
     expect(screen.queryByTestId('playlist-l1')).toBeNull()
     expect(onNavigate).not.toHaveBeenCalled()
+  })
+
+  it('svepet är avstängt medan PIN-grinden är öppen', async () => {
+    // Andra halvan av `enabled` (`pending === null`): grinden ligger ÖVER
+    // sidan men i samma DOM, så utan flaggan hade ett drag bakom den
+    // navigerat undan sidan och lämnat grinden utan sammanhang.
+    __setProfilePinForTests('1234')
+    writePluginJson(LIVE_TV_PLUGIN_ID, LOCKED_CHANNELS_KEY, [channelKey({ name: 'A', url: 'http://x/A' })])
+    const { onNavigate } = mount()
+    const leftLiveTv = vi.fn()
+    window.addEventListener(BROWSE_BACK_EVENT, leftLiveTv)
+    fireEvent.click(firstHoldStation())
+    expect(await screen.findByRole('dialog')).toBeInTheDocument()
+    swipeFromLeftEdge()
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeNull())
+    expect(onNavigate).not.toHaveBeenCalled()
+    expect(leftLiveTv).not.toHaveBeenCalled()
+    window.removeEventListener(BROWSE_BACK_EVENT, leftLiveTv)
   })
 
   it('svepet är avstängt medan glasmenyn ligger över', () => {
