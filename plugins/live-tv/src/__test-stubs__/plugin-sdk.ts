@@ -267,6 +267,13 @@ export const TV_SCENE_NARROW_ATTR = 'data-tv-scene-narrow'
  * mätning — aldrig av scenens egen bredd.
  */
 export const TV_SCENE_NARROW_PX = 1024
+/**
+ * Attributet lådan sätter när ytan är FYSISKT telefonsmal (< 700 css-px).
+ * Precis som `TV_SCENE_NARROW_ATTR` är det INGEN garanti för vilken
+ * designbredd scenen räknade mot — bara att den fysiska ytan var smal nog
+ * för att aspektjämförelsen kunnat välja telefongrenen.
+ */
+export const TV_SCENE_PHONE_ATTR = 'data-tv-scene-phone'
 
 /** Attributet lådans inre lager (= portalmålet) bär. */
 const TV_SCENE_PORTAL_ATTR = 'data-tv-scene-portal'
