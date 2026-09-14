@@ -197970,8 +197970,13 @@ ${cue.text}`).join("\n\n")}
       /* @__PURE__ */ jsx("span", { style: { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: label2 }),
       /* @__PURE__ */ jsx("span", { style: { fontSize: dp(phoneTextFloor(14, phone)), color: "rgba(243,244,248,0.45)" }, children: count })
     ] }, key);
-    return /* @__PURE__ */ jsxs("div", { style: { flex: 1, minHeight: 0, display: "flex" }, children: [
-      /* @__PURE__ */ jsxs("div", { "data-testid": "playlists-column", "data-scroll": "", style: { width: dp(330), flexShrink: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(30)}px ${dp(16)}px 0 ${dp(20)}px`, overflowY: "auto", display: "flex", flexDirection: "column", gap: dp(2) }, children: [
+    const plChannelColStyle = phone ? { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: dp(CHANNEL_COLUMN_PHONE_MIN_DP) } : { width: dp(560), flexShrink: 0 };
+    const outerStyle = phone ? { flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflowY: "auto" } : { flex: 1, minHeight: 0, display: "flex" };
+    const leftColStyle = phone ? { width: "100%", flexShrink: 0, padding: `${dp(20)}px ${dp(20)}px 0`, display: "flex", flexDirection: "column", gap: dp(2) } : { width: dp(330), flexShrink: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(30)}px ${dp(16)}px 0 ${dp(20)}px`, overflowY: "auto", display: "flex", flexDirection: "column", gap: dp(2) };
+    const midColStyle = phone ? { width: "100%", padding: `${dp(20)}px ${dp(20)}px 0` } : { flex: 1, minWidth: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(30)}px 0 0 ${dp(24)}px`, overflowY: "auto" };
+    const rightColStyle = phone ? { width: "100%", flexShrink: 0, padding: `${dp(20)}px ${dp(20)}px ${dp(32)}px`, display: "flex", flexDirection: "column", gap: dp(14) } : { width: dp(560), flexShrink: 0, padding: `${dp(30)}px ${dp(48)}px 0 ${dp(28)}px`, display: "flex", flexDirection: "column", gap: dp(14) };
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "playlists-view-root", style: outerStyle, children: [
+      /* @__PURE__ */ jsxs("div", { "data-testid": "playlists-column", "data-scroll": "", style: leftColStyle, children: [
         tree.map((list, listIndex) => [
           colItem(list.id, sel.listId === list.id && !sel.group, list.name, list.count, false, () => {
             setSel({ listId: list.id, group: null });
@@ -197988,7 +197993,7 @@ ${cue.text}`).join("\n\n")}
         }, "pl-list-favs", noRows && tree.length === 0 ? { "data-init": "" } : void 0),
         /* @__PURE__ */ jsx("div", { style: { marginTop: "auto", padding: `${dp(20)}px 0`, fontSize: dp(phoneTextFloor(15, phone)), color: TV.faint }, children: tt("helpPlaylists") })
       ] }),
-      /* @__PURE__ */ jsxs("div", { "data-scroll": "", style: { flex: 1, minWidth: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(30)}px 0 0 ${dp(24)}px`, overflowY: "auto" }, children: [
+      /* @__PURE__ */ jsxs("div", { "data-scroll": "", style: midColStyle, children: [
         /* @__PURE__ */ jsxs("div", { "data-testid": "pl-header", style: { display: "flex", alignItems: "center", flexWrap: "wrap", columnGap: dp(12), rowGap: dp(8), marginBottom: dp(16) }, children: [
           /* @__PURE__ */ jsx("span", { "data-testid": "pl-title", style: { fontSize: dp(phoneTextFloor(26, phone)), fontWeight: 600, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: title }),
           /* @__PURE__ */ jsxs("span", { "data-testid": "pl-meta", style: { fontSize: dp(phoneTextFloor(16, phone)), color: "rgba(243,244,248,0.5)", whiteSpace: "nowrap", flexShrink: 0 }, children: [
@@ -198010,7 +198015,7 @@ ${cue.text}`).join("\n\n")}
               onFocus: () => setSelectedKey(key),
               style: { height: dp(phoneHitFloor(82, phone)), minHeight: dp(phoneHitFloor(82, phone)), marginRight: dp(24), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(14)}px`, background: focused ? TV.s10 : "transparent", cursor: "pointer" },
               children: [
-                /* @__PURE__ */ jsx(ChannelCell, { channel, number: model.channelNumber(channel), pinned: model.pinnedSet.has(key), locked: model.locked.has(key), quality: null, focused: false, width: dp(560), phone }),
+                /* @__PURE__ */ jsx("div", { "data-testid": "pl-row-channel-col", style: plChannelColStyle, children: /* @__PURE__ */ jsx(ChannelCell, { channel, number: model.channelNumber(channel), pinned: model.pinnedSet.has(key), locked: model.locked.has(key), quality: null, focused: false, width: "100%", phone }) }),
                 /* @__PURE__ */ jsx("div", { style: { minWidth: 0, flex: 1, fontSize: dp(phoneTextFloor(17, phone)), color: "rgba(243,244,248,0.65)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: rowInfo.now?.title ?? tt("noProgramme") }),
                 /* @__PURE__ */ jsx("div", { style: { width: dp(110), flexShrink: 0 }, children: rowInfo.now ? /* @__PURE__ */ jsxs(Fragment2, { children: [
                   /* @__PURE__ */ jsx("div", { style: { fontSize: dp(phoneTextFloor(14, phone)), color: "rgba(243,244,248,0.5)", textAlign: "right" }, children: tt("minutesLeft", { min: Math.max(0, Math.round((rowInfo.now.stop - model.nowMs) / 6e4)) }) }),
@@ -198024,7 +198029,7 @@ ${cue.text}`).join("\n\n")}
         rows.length > visible ? /* @__PURE__ */ jsx("div", { ...station(() => setVisible((v) => v + ROW_STEP)), style: { margin: `${dp(20)}px auto ${dp(20)}px`, width: "fit-content", height: dp(phoneHitFloor(48, phone)), minHeight: dp(phoneHitFloor(48, phone)), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.s10, display: "flex", alignItems: "center", fontSize: dp(phoneTextFloor(18, phone)), cursor: "pointer" }, children: tt("showMore") }) : null,
         rows.length === 0 ? /* @__PURE__ */ jsx("div", { "data-testid": "pl-empty", style: { padding: dp(24), color: TV.dim, fontSize: dp(phoneTextFloor(19, phone)) }, children: channelsLoading ? tt("loadingChannels") : tt("guideEmpty") }) : null
       ] }),
-      /* @__PURE__ */ jsxs("div", { "data-testid": "pl-detail", style: { width: dp(560), flexShrink: 0, padding: `${dp(30)}px ${dp(48)}px 0 ${dp(28)}px`, display: "flex", flexDirection: "column", gap: dp(14) }, children: [
+      /* @__PURE__ */ jsxs("div", { "data-testid": "pl-detail", style: rightColStyle, children: [
         /* @__PURE__ */ jsx(TvPreview, { channel: previewChannel, enabled: settings.previewEnabled, live: Boolean(info.now), width: "100%", height: dp(272), label: settings.previewEnabled ? tt("previewLabel") : tt("previewFrame"), onOk: () => selected && nav.play({ channel: selected }), extra: { "data-testid": "pl-preview" }, phone }),
         selected ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(10), fontSize: dp(phoneTextFloor(16, phone)), color: "rgba(243,244,248,0.55)" }, children: [
           /* @__PURE__ */ jsx("span", { style: { color: TV.accText, fontWeight: 600 }, children: model.channelNumber(selected) ?? "" }),
@@ -198817,8 +198822,13 @@ ${cue.text}`).join("\n\n")}
       if (!lockAvailable) return;
       setLockGate(true);
     };
-    return /* @__PURE__ */ jsxs("div", { style: { flex: 1, minHeight: 0, display: "flex" }, children: [
-      /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(34)}px ${dp(40)}px 0 ${dp(48)}px`, display: "flex", flexDirection: "column" }, children: [
+    const outerStyle = phone ? { flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflowY: "auto" } : { flex: 1, minHeight: 0, display: "flex" };
+    const scheduleStyle = phone ? { padding: `${dp(20)}px ${dp(20)}px 0`, display: "flex", flexDirection: "column" } : { flex: 1, minWidth: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(34)}px ${dp(40)}px 0 ${dp(48)}px`, display: "flex", flexDirection: "column" };
+    const scheduleListStyle = phone ? {} : { flex: 1, minHeight: 0, overflowY: "auto" };
+    const dayPickerStyle = phone ? { width: "100%", flexShrink: 0, padding: `${dp(16)}px ${dp(20)}px`, display: "flex", flexDirection: "row", gap: dp(10), overflowX: "auto" } : { width: dp(150), flexShrink: 0, padding: `${dp(120)}px ${dp(14)}px 0`, display: "flex", flexDirection: "column", gap: dp(10) };
+    const detailStyle = phone ? { width: "100%", flexShrink: 0, padding: `${dp(20)}px ${dp(20)}px ${dp(32)}px`, display: "flex", flexDirection: "column", gap: dp(16) } : { width: dp(560), flexShrink: 0, padding: `${dp(34)}px ${dp(48)}px ${dp(32)}px ${dp(36)}px`, display: "flex", flexDirection: "column", gap: dp(16) };
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "channel-view-root", style: outerStyle, children: [
+      /* @__PURE__ */ jsxs("div", { "data-testid": "channel-schedule", style: scheduleStyle, children: [
         /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(16), marginBottom: dp(16) }, children: [
           /* @__PURE__ */ jsx(RoundBtn, { phone, ...station(() => nav.back()), children: /* @__PURE__ */ jsx(Icons.ChevronLeft, {}) }),
           /* @__PURE__ */ jsx(ChannelArt, { channel, style: { width: dp(88), height: dp(56) }, radius: dp(8) }),
@@ -198826,7 +198836,7 @@ ${cue.text}`).join("\n\n")}
           channel.group ? /* @__PURE__ */ jsx(Tag2, { variant: "neutral", phone, children: channel.group }) : null,
           /* @__PURE__ */ jsx(RoundBtn, { phone, ...station(() => model.togglePin(channel)), background: pinned ? TV.accMix(22) : TV.s12, style: { marginLeft: "auto" }, children: /* @__PURE__ */ jsx("span", { style: { color: pinned ? TV.acc : TV.text }, children: /* @__PURE__ */ jsx(Icons.Heart, { size: dp(24), filled: pinned }) }) })
         ] }),
-        /* @__PURE__ */ jsxs("div", { "data-scroll": "", style: { flex: 1, minHeight: 0, overflowY: "auto" }, children: [
+        /* @__PURE__ */ jsxs("div", { "data-scroll": "", style: scheduleListStyle, children: [
           rows.length === 0 ? /* @__PURE__ */ jsx("div", { style: { padding: dp(24), color: TV.dim, fontSize: dp(phoneTextFloor(19, phone)) }, children: scheduleLoading ? tt("loadingGuide") : tt("noProgramme") }) : null,
           rows.map((row, index3) => {
             const k = kindOf(row.p, model.nowMs);
@@ -198853,15 +198863,15 @@ ${cue.text}`).join("\n\n")}
           })
         ] })
       ] }),
-      /* @__PURE__ */ jsx("div", { style: { width: dp(150), flexShrink: 0, padding: `${dp(120)}px ${dp(14)}px 0`, display: "flex", flexDirection: "column", gap: dp(10) }, children: DAY_OFFSETS.map((offset) => {
+      /* @__PURE__ */ jsx("div", { "data-testid": "day-picker", style: dayPickerStyle, children: DAY_OFFSETS.map((offset) => {
         const active2 = offset === dayOffset;
         const label2 = dayLabel(offset);
-        return /* @__PURE__ */ jsx("div", { "data-testid": offset === 0 ? "day-btn-0" : void 0, children: /* @__PURE__ */ jsxs("div", { ...station(() => setDayOffset(offset), void 0, { "data-testid": "day-btn" }), style: { height: dp(phoneHitFloor(74, phone)), minHeight: dp(phoneHitFloor(74, phone)), borderRadius: dp(12), display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: active2 ? "#f3f4f8" : "transparent", color: active2 ? "#111" : offset > 0 ? TV.accText : "rgba(243,244,248,0.6)", cursor: "pointer" }, children: [
+        return /* @__PURE__ */ jsx("div", { "data-testid": offset === 0 ? "day-btn-0" : void 0, style: phone ? { flexShrink: 0 } : void 0, children: /* @__PURE__ */ jsxs("div", { ...station(() => setDayOffset(offset), void 0, { "data-testid": "day-btn" }), style: { width: phone ? dp(72) : void 0, height: dp(phoneHitFloor(74, phone)), minHeight: dp(phoneHitFloor(74, phone)), borderRadius: dp(12), display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: active2 ? "#f3f4f8" : "transparent", color: active2 ? "#111" : offset > 0 ? TV.accText : "rgba(243,244,248,0.6)", cursor: "pointer" }, children: [
           /* @__PURE__ */ jsx("span", { style: { fontSize: dp(phoneTextFloor(17, phone)), fontWeight: 600 }, children: label2.top }),
           /* @__PURE__ */ jsx("span", { style: { fontSize: dp(phoneTextFloor(15, phone)), opacity: 0.75 }, children: label2.bottom })
         ] }) }, offset);
       }) }),
-      /* @__PURE__ */ jsxs("div", { "data-testid": "detail", style: { width: dp(560), flexShrink: 0, padding: `${dp(34)}px ${dp(48)}px ${dp(32)}px ${dp(36)}px`, display: "flex", flexDirection: "column", gap: dp(16) }, children: [
+      /* @__PURE__ */ jsxs("div", { "data-testid": "detail", style: detailStyle, children: [
         /* @__PURE__ */ jsx(TvPreview, { channel, enabled: settings.previewEnabled && kind === "now", live: kind === "now", width: "100%", height: dp(268), label: previewLabel, onOk: primary, phone }),
         /* @__PURE__ */ jsx("div", { style: { fontSize: dp(28), fontWeight: 600 }, children: selected?.title ?? channel.name }),
         selected ? /* @__PURE__ */ jsx("div", { style: { fontSize: dp(phoneTextFloor(18, phone)), color: "rgba(243,244,248,0.6)" }, children: tt("airedAt", { time: formatClock(selected.start, locale), channel: channel.name }) }) : null,
@@ -199197,8 +199207,11 @@ ${cue.text}`).join("\n\n")}
       const first = document.querySelector("[data-live-tv-search-results] [data-f]");
       first?.focus({ preventScroll: true });
     };
-    return /* @__PURE__ */ jsxs("div", { style: { flex: 1, minHeight: 0, display: "flex" }, children: [
-      /* @__PURE__ */ jsxs("div", { style: { width: dp(760), flexShrink: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(34)}px ${dp(40)}px 0 ${dp(48)}px`, display: "flex", flexDirection: "column", gap: dp(18) }, children: [
+    const outerStyle = phone ? { flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflowY: "auto" } : { flex: 1, minHeight: 0, display: "flex" };
+    const queryColStyle = phone ? { width: "100%", flexShrink: 0, padding: `${dp(20)}px ${dp(20)}px 0`, display: "flex", flexDirection: "column", gap: dp(18) } : { width: dp(760), flexShrink: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(34)}px ${dp(40)}px 0 ${dp(48)}px`, display: "flex", flexDirection: "column", gap: dp(18) };
+    const resultsStyle = phone ? { width: "100%", padding: `${dp(20)}px ${dp(20)}px 0`, display: "flex", flexDirection: "column", gap: dp(28) } : { flex: 1, minWidth: 0, overflowY: "auto", padding: `${dp(34)}px ${dp(48)}px 0 ${dp(40)}px`, display: "flex", flexDirection: "column", gap: dp(28) };
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "search-view-root", style: outerStyle, children: [
+      /* @__PURE__ */ jsxs("div", { "data-testid": "search-query-col", style: queryColStyle, children: [
         tvMode ? /* @__PURE__ */ jsxs("div", { style: { height: dp(64), borderRadius: dp(14), background: TV.s10, display: "flex", alignItems: "center", padding: `0 ${dp(20)}px`, fontSize: dp(28), color: query ? TV.text : "rgba(243,244,248,0.5)" }, children: [
           query || /* @__PURE__ */ jsx("span", { style: { fontSize: dp(phoneTextFloor(18, phone)) }, children: tt("searchPlaceholder") }),
           /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { width: 2, height: dp(32), background: TV.acc, marginLeft: dp(4) } })
@@ -199206,7 +199219,7 @@ ${cue.text}`).join("\n\n")}
         /* @__PURE__ */ jsx("div", { "data-row": "", style: { display: "flex", gap: dp(8), overflowX: "auto", minHeight: dp(44) }, children: hints.map((hint) => /* @__PURE__ */ jsx("div", { "data-testid": "search-suggestion", ...station(() => setQuery(hint)), style: { height: dp(phoneHitFloor(44, phone)), minHeight: dp(phoneHitFloor(44, phone)), padding: `0 ${dp(18)}px`, borderRadius: 999, background: TV.s08, display: "inline-flex", alignItems: "center", fontSize: dp(phoneTextFloor(18, phone)), whiteSpace: "nowrap", cursor: "pointer" }, children: hint }, hint)) }),
         /* @__PURE__ */ jsx(TvTextField, { value: query, onChange: setQuery, onSubmit: focusFirstResult, placeholder: tt("searchPlaceholder"), autoFocus: true })
       ] }),
-      /* @__PURE__ */ jsxs("div", { "data-live-tv-search-results": "", "data-scroll": "", style: { flex: 1, minWidth: 0, overflowY: "auto", padding: `${dp(34)}px ${dp(48)}px 0 ${dp(40)}px`, display: "flex", flexDirection: "column", gap: dp(28) }, children: [
+      /* @__PURE__ */ jsxs("div", { "data-live-tv-search-results": "", "data-scroll": "", style: resultsStyle, children: [
         /* @__PURE__ */ jsxs("section", { "data-testid": "search-channels", style: { display: "flex", flexDirection: "column", gap: dp(8) }, children: [
           /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: dp(12) }, children: [
             /* @__PURE__ */ jsx("span", { style: { fontSize: dp(phoneTextFloor(24, phone)), fontWeight: 600 }, children: tt("searchChannels") }),
@@ -200698,7 +200711,7 @@ ${cue.text}`).join("\n\n")}
       useEpgNowNextLater,
       useEpgLoadStatus,
       useChannelSchedule,
-      version: "0.7.0"
+      version: "0.8.0"
     };
     try {
       window.dispatchEvent(new CustomEvent("lumio-live-tv-bridge-ready"));
@@ -200712,7 +200725,7 @@ ${cue.text}`).join("\n\n")}
   var LiveTvPlugin = {
     id: "com.lumio.live-tv",
     name: { en: "Live TV", sv: "Live TV" },
-    version: "0.7.0",
+    version: "0.8.0",
     description: {
       en: "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",
       sv: "Hantera M3U-k\xE4llor, bl\xE4ddra bland live-TV-kanaler och se EPG (nu/h\xE4rn\xE4st) i Lumio."
