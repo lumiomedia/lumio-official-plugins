@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { channelKey, computeGroups, type LiveTvList, type M3uChannel } from '../live-tv-data'
 import { isPlayableChannel, qualityFromName } from '../live-tv-model'
 import { useListChannels } from '../view-helpers'
@@ -10,7 +10,7 @@ import type { EpgProgramme } from '../epg/types'
 import type { TvViewProps } from './tv-shell'
 import { PHONE_HIT_MIN_DP, Progress, Segment, Tag, TV, dp, phoneHitFloor, phoneTextFloor, station, useTvClockNode } from './tv-ui'
 import { useTvText } from './tv-strings'
-import { ChannelCell, FAVS_GROUP, useDebouncedChannel } from './tv-guide-shared'
+import { CHANNEL_COLUMN_PHONE_MIN_DP, ChannelCell, FAVS_GROUP, useDebouncedChannel } from './tv-guide-shared'
 import type { GuideMode } from './tv-settings-store'
 import { TvPreview } from './tv-preview'
 import { usePhoneSurface } from '../hooks/usePhoneSurface'
@@ -125,10 +125,48 @@ export function TvGuidePlaylists({ model, nav, settings, mode, onModeChange }: T
     </div>
   )
 
+  /**
+   * PORTRÄTTBEHANDLING (granskning M-P4, FYND 3 — allvarligast: en sparad
+   * `live_tv_guide_mode_v1: 'playlists'` landar HÄR förvalt, utan att
+   * användaren gjort något nytt val).
+   *
+   * Tre kolumner sida vid sida: vänster (330 dp, fast), mitten (flex) och
+   * höger (560 dp, fast) — 890 dp bara i sidokolumnerna, mer än hela
+   * 780 dp-scenen. Samma slutsats som kanaldetaljsidan: tre fasta spalter
+   * får inte plats bredvid varandra på telefon, så de staplas i DOM-
+   * ordningen (spellistor/grupper → kanaler → förhandsvisning) med sidans
+   * egen scroll i stället för tre nästlade scrollytor.
+   *
+   * Mittenkolumnens rader (`pl-row`) hade DESSUTOM en egen fast bredd bakad
+   * i anropet till `ChannelCell` (`width={dp(560)}`, matchat mot
+   * högerkolumnens bredd för skrivbordets radjustering) — den överlever
+   * stapling av de tre panelerna rakt av, för raden i sig är fortfarande en
+   * flexrad med en icke-krympbar 560 dp-cell bredvid titel och timer.
+   * Samma recept som `channelColumnStyle` (tv-guide-shared.tsx), men med
+   * skrivbordets EGNA 560 dp bevarat i stället för guidens 520 — de två
+   * ställena har alltid haft olika tal, och den skillnaden är inte den här
+   * fixens att sudda ut.
+   */
+  const plChannelColStyle: CSSProperties = phone
+    ? { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: dp(CHANNEL_COLUMN_PHONE_MIN_DP) }
+    : { width: dp(560), flexShrink: 0 }
+  const outerStyle: CSSProperties = phone
+    ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflowY: 'auto' }
+    : { flex: 1, minHeight: 0, display: 'flex' }
+  const leftColStyle: CSSProperties = phone
+    ? { width: '100%', flexShrink: 0, padding: `${dp(20)}px ${dp(20)}px 0`, display: 'flex', flexDirection: 'column', gap: dp(2) }
+    : { width: dp(330), flexShrink: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(30)}px ${dp(16)}px 0 ${dp(20)}px`, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: dp(2) }
+  const midColStyle: CSSProperties = phone
+    ? { width: '100%', padding: `${dp(20)}px ${dp(20)}px 0` }
+    : { flex: 1, minWidth: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(30)}px 0 0 ${dp(24)}px`, overflowY: 'auto' }
+  const rightColStyle: CSSProperties = phone
+    ? { width: '100%', flexShrink: 0, padding: `${dp(20)}px ${dp(20)}px ${dp(32)}px`, display: 'flex', flexDirection: 'column', gap: dp(14) }
+    : { width: dp(560), flexShrink: 0, padding: `${dp(30)}px ${dp(48)}px 0 ${dp(28)}px`, display: 'flex', flexDirection: 'column', gap: dp(14) }
+
   return (
-    <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
+    <div data-testid="playlists-view-root" style={outerStyle}>
       {/* Vänster: spellistor + grupper */}
-      <div data-testid="playlists-column" data-scroll="" style={{ width: dp(330), flexShrink: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(30)}px ${dp(16)}px 0 ${dp(20)}px`, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: dp(2) }}>
+      <div data-testid="playlists-column" data-scroll="" style={leftColStyle}>
         {tree.map((list, listIndex) => [
           colItem(list.id, sel.listId === list.id && !sel.group, list.name, list.count, false, () => { setSel({ listId: list.id, group: null }); setSelectedKey(null) }, `pl-list-${list.id}`, noRows && listIndex === 0 ? { 'data-init': '' } : undefined),
           ...list.groups.map((g) => colItem(`${list.id}:${g.name}`, sel.listId === list.id && sel.group === g.name, g.name, g.count, true, () => { setSel({ listId: list.id, group: g.name }); setSelectedKey(null) }, `pl-group-${list.id}-${g.name}`)),
@@ -138,7 +176,7 @@ export function TvGuidePlaylists({ model, nav, settings, mode, onModeChange }: T
       </div>
 
       {/* Mitten: kanaler */}
-      <div data-scroll="" style={{ flex: 1, minWidth: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(30)}px 0 0 ${dp(24)}px`, overflowY: 'auto' }}>
+      <div data-scroll="" style={midColStyle}>
         {/*
           RUBRIKRADEN TÅL 1280 DESIGNPIXLAR (spec 5).
 
@@ -181,7 +219,9 @@ export function TvGuidePlaylists({ model, nav, settings, mode, onModeChange }: T
               onFocus={() => setSelectedKey(key)}
               style={{ height: dp(phoneHitFloor(82, phone)), minHeight: dp(phoneHitFloor(82, phone)), marginRight: dp(24), borderRadius: dp(12), display: 'flex', alignItems: 'center', gap: dp(14), padding: `0 ${dp(14)}px`, background: focused ? TV.s10 : 'transparent', cursor: 'pointer' }}
             >
-              <ChannelCell channel={channel} number={model.channelNumber(channel)} pinned={model.pinnedSet.has(key)} locked={model.locked.has(key)} quality={null} focused={false} width={dp(560)} phone={phone} />
+              <div data-testid="pl-row-channel-col" style={plChannelColStyle}>
+                <ChannelCell channel={channel} number={model.channelNumber(channel)} pinned={model.pinnedSet.has(key)} locked={model.locked.has(key)} quality={null} focused={false} width="100%" phone={phone} />
+              </div>
               <div style={{ minWidth: 0, flex: 1, fontSize: dp(phoneTextFloor(17, phone)), color: 'rgba(243,244,248,0.65)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rowInfo.now?.title ?? tt('noProgramme')}</div>
               <div style={{ width: dp(110), flexShrink: 0 }}>
                 {rowInfo.now ? <><div style={{ fontSize: dp(phoneTextFloor(14, phone)), color: 'rgba(243,244,248,0.5)', textAlign: 'right' }}>{tt('minutesLeft', { min: Math.max(0, Math.round((rowInfo.now.stop - model.nowMs) / 60_000)) })}</div><Progress value={progressOf(rowInfo.now.start, rowInfo.now.stop, model.nowMs)} height={dp(4)} /></> : null}
@@ -196,7 +236,7 @@ export function TvGuidePlaylists({ model, nav, settings, mode, onModeChange }: T
       </div>
 
       {/* Höger: förhandsvisning + Nu/Sen/Senare */}
-      <div data-testid="pl-detail" style={{ width: dp(560), flexShrink: 0, padding: `${dp(30)}px ${dp(48)}px 0 ${dp(28)}px`, display: 'flex', flexDirection: 'column', gap: dp(14) }}>
+      <div data-testid="pl-detail" style={rightColStyle}>
         <TvPreview channel={previewChannel} enabled={settings.previewEnabled} live={Boolean(info.now)} width="100%" height={dp(272)} label={settings.previewEnabled ? tt('previewLabel') : tt('previewFrame')} onOk={() => selected && nav.play({ channel: selected })} extra={{ 'data-testid': 'pl-preview' }} phone={phone} />
         {selected ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: dp(10), fontSize: dp(phoneTextFloor(16, phone)), color: 'rgba(243,244,248,0.55)' }}>
