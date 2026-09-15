@@ -605,48 +605,80 @@ function TwitchPageNav({
     TV rör vi inte: där är flikraden en rad fokusstationer i sidans flöde, och
     fjärren navigerar i den.
   */
+  /* Bara skrivbordet portalerar till toppsloten (Jerry 2026-09-15: "Twitch
+     ... filtret där är position absolut i toppen, här ska det ligga ovanför
+     sitt underfilter (most viewers etc)"). Portalen var ovillkorlig för allt
+     utom TV — en fjärr-/LAN-telefon eller en smal vy saknar värdens
+     reserverade toppyta, och raden la sig fast pinnad överst i stället för
+     i flödet ovanför StreamFilterBar (TwitchGridShell, "most viewers").
+     Samma fix som appens egna sidor (History/Watchlist/Plex) samma dag —
+     JSX-ordningen (TwitchPageNav FÖRE TwitchGridShell i TwitchBrowsePage)
+     ger rätt stapling automatiskt när raden ligger i flödet. */
+  const [desktopWide, setDesktopWide] = useState(
+    () => typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(min-width: 1024px)').matches,
+  )
+  useEffect(() => {
+    if (isTvDom() || typeof window.matchMedia !== 'function') return
+    const mq = window.matchMedia('(min-width: 1024px)')
+    const sync = () => setDesktopWide(mq.matches)
+    sync()
+    mq.addEventListener('change', sync)
+    return () => mq.removeEventListener('change', sync)
+  }, [])
+  const navContent = (
+    <>
+      {TWITCH_PAGES.filter((page) => page.id !== 'twitch-search').map((page) => (
+        <button
+          key={page.id}
+          type="button"
+          onClick={() => { if (page.id !== current) onNavigate({ pageId: page.id }) }}
+          className={`flex h-8 flex-none items-center whitespace-nowrap rounded-full border px-3.5 text-[0.65rem] font-normal uppercase tracking-[0.2em] transition-all ${
+            page.id === current
+              ? 'border-transparent bg-[#fcfcff2e] text-white backdrop-blur-md'
+              : 'border-transparent bg-transparent text-slate-200 hover:bg-[#fcfcff1a] hover:text-white'
+          }`}
+        >
+          {page.label[lang] ?? page.label.en}
+        </button>
+      ))}
+      {/*
+        SÖKET ÄR EN BUBBLA I RADEN, inte en egen flik. Första tecknet tar
+        en till sökvyn, så träffarna kommer medan man skriver i stället för
+        efter ett extra klick. Fältet behåller sin text över bytet:
+        frågan bor i modulen ovanför, inte i sidan.
+      */}
+      {/* Glas utan kant (Jerry 2026-09-12: "Twitch-sök ska också få glass
+          utan border-designen") — samma platta som appens sökfält under
+          heron, #fcfcff14, och ingen ram i något läge. */}
+      <label className="order-first flex h-8 w-[min(40vw,16rem)] flex-none items-center gap-2 rounded-full border border-transparent bg-[#fcfcff14] px-3.5 text-[0.72rem] text-white backdrop-blur-md transition focus-within:bg-[#fcfcff22]">
+        <svg className="h-3.5 w-3.5 flex-none text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+        <input
+          type="search"
+          value={navQuery}
+          onChange={(event) => {
+            const value = event.target.value
+            setTwitchNavQuery(value)
+            if (value.trim() && current !== 'twitch-search') onNavigate({ pageId: 'twitch-search' })
+          }}
+          onKeyDown={(event) => { if (event.key === 'Escape') setTwitchNavQuery('') }}
+          placeholder={TEXT.searchPlaceholder[lang] ?? TEXT.searchPlaceholder.en}
+          className="w-full bg-transparent text-white outline-none placeholder:text-white/75"
+        />
+      </label>
+    </>
+  )
   if (!isTvDom()) {
+    if (!desktopWide) {
+      return (
+        <div data-filter-row="" data-twitch-nav="" className="-mx-1 flex min-w-max items-center gap-1.5 overflow-x-auto px-1 pb-1">
+          {navContent}
+        </div>
+      )
+    }
     return createPortal((
       <div data-filter-row="" data-twitch-nav="" style={{ position: 'fixed', top: 20, left: 0, right: 0, zIndex: 25 }}>
         <div className="mx-auto flex min-w-max items-center justify-center gap-1.5 px-1">
-          {TWITCH_PAGES.filter((page) => page.id !== 'twitch-search').map((page) => (
-            <button
-              key={page.id}
-              type="button"
-              onClick={() => { if (page.id !== current) onNavigate({ pageId: page.id }) }}
-              className={`flex h-8 flex-none items-center whitespace-nowrap rounded-full border px-3.5 text-[0.65rem] font-normal uppercase tracking-[0.2em] transition-all ${
-                page.id === current
-                  ? 'border-transparent bg-[#fcfcff2e] text-white backdrop-blur-md'
-                  : 'border-transparent bg-transparent text-slate-200 hover:bg-[#fcfcff1a] hover:text-white'
-              }`}
-            >
-              {page.label[lang] ?? page.label.en}
-            </button>
-          ))}
-          {/*
-            SÖKET ÄR EN BUBBLA I RADEN, inte en egen flik. Första tecknet tar
-            en till sökvyn, så träffarna kommer medan man skriver i stället för
-            efter ett extra klick. Fältet behåller sin text över bytet:
-            frågan bor i modulen ovanför, inte i sidan.
-          */}
-          {/* Glas utan kant (Jerry 2026-09-12: "Twitch-sök ska också få glass
-              utan border-designen") — samma platta som appens sökfält under
-              heron, #fcfcff14, och ingen ram i något läge. */}
-          <label className="order-first flex h-8 w-[min(40vw,16rem)] flex-none items-center gap-2 rounded-full border border-transparent bg-[#fcfcff14] px-3.5 text-[0.72rem] text-white backdrop-blur-md transition focus-within:bg-[#fcfcff22]">
-            <svg className="h-3.5 w-3.5 flex-none text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
-            <input
-              type="search"
-              value={navQuery}
-              onChange={(event) => {
-                const value = event.target.value
-                setTwitchNavQuery(value)
-                if (value.trim() && current !== 'twitch-search') onNavigate({ pageId: 'twitch-search' })
-              }}
-              onKeyDown={(event) => { if (event.key === 'Escape') setTwitchNavQuery('') }}
-              placeholder={TEXT.searchPlaceholder[lang] ?? TEXT.searchPlaceholder.en}
-              className="w-full bg-transparent text-white outline-none placeholder:text-white/75"
-            />
-          </label>
+          {navContent}
         </div>
       </div>
     ), document.body)
