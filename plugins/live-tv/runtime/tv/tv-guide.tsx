@@ -101,8 +101,9 @@ export function TvGuide(props: TvViewProps) {
     // (annars hade ett lagrat `'tl'` + tryck på Now lagt ett lager i skalet).
     const pm = phoneGuideMode(mode)
     const changePhone = (next: PhoneGuideMode) => { if (next !== pm) changeMode(next) }
-    // Rutnätet och spellistorna får sina telefongrenar i P6/P7 och tar då
-    // `PhoneGuideModeBar`; de får redan här det telefonnormaliserade läget.
+    // Rutnätet och spellistorna grenar själva till sina telefonfiler
+    // (`mobile/guide-grid-phone.tsx`, `mobile/guide-lists-phone.tsx`) och
+    // tar där `PhoneGuideModeBar`; de får redan här det telefonnormaliserade läget.
     if (pm === 'playlists') return <TvGuidePlaylists {...props} mode={pm} onModeChange={changeMode} />
     if (pm === 'grid') return <TvGuideGrid {...props} mode={pm} onModeChange={changeMode} />
     return <TvGuideNowPhone {...props} mode="now" onModeChange={changePhone} />

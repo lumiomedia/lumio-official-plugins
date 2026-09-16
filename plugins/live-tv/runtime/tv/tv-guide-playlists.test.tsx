@@ -105,20 +105,14 @@ describe('TvGuidePlaylists', () => {
 })
 
 /**
- * FYND 3 (slutgranskning M-P4, fixrunda 2) — den allvarligaste av de tre:
- * vänsterkolumnen (330 dp) + högerkolumnen (560 dp) = 890 dp, MER än hela
- * 780 dp-scenen, innan mittenkolumnen ens räknats. Och eftersom
- * `live_tv_guide_mode_v1` sparas landar en användare som tidigare valt
- * Spellistor direkt i den här vyn nästa gång hen öppnar guiden på telefon —
- * `beforeEach` ovan seedar exakt den lagringsnyckeln, så `mount()` här är
- * redan den "landar direkt utan nytt val"-vägen granskningen beskrev.
- *
- * Radernas egen `ChannelCell` hade DESSUTOM en fast 560 dp-bredd bakad i
- * anropet (matchad mot högerkolumnen för skrivbordets radjustering) — den
- * överlever att bara stapla de tre panelerna, för raden är fortfarande en
- * flexrad med en icke-krympbar cell bredvid titel och timer.
+ * Telefonen (fas 3, Task 7) ritar INTE de tre kolumnerna: spellistvyn
+ * grenar tidigt till `mobile/guide-lists-phone.tsx` (drill-down i två steg,
+ * se `guide-lists-phone.test.tsx`). Fas 2:s staplade kolumner — FYND 3 i
+ * slutgranskningen M-P4 (330 + 560 dp sidokolumner > 780 dp-scenen) — gick
+ * med den grenen; `live_tv_guide_mode_v1: 'playlists'` seedas i `beforeEach`
+ * ovan, så `mountWith(true)` här är samma "landar direkt utan nytt val"-väg.
  */
-describe('TvGuidePlaylists i porträtt (telefon): tre fasta kolumner staplas (fixrunda 2, FYND 3)', () => {
+describe('TvGuidePlaylists på telefon grenar till drill-down, skrivbordet behåller kolumnerna', () => {
   // En telefon är aldrig en TV: skalet gatar `phone` med `!isTv` (fas 3 ger
   // vyerna `phone` som prop därifrån i stället för en egen mätning), så
   // telefonblocket kör utanför TV-läget som filens beforeEach annars slår på.
@@ -139,28 +133,12 @@ describe('TvGuidePlaylists i porträtt (telefon): tre fasta kolumner staplas (fi
     return rendered
   }
 
-  it('vänster-/högerkolumnen tappar 330/560 dp och staplas i tur och ordning på telefon', async () => {
+  it('på telefon ritas telefongrenen, inte kolumnerna', async () => {
     await mountWith(true)
-    const root = screen.getByTestId('playlists-view-root')
-    const left = screen.getByTestId('playlists-column')
-    const right = screen.getByTestId('pl-detail')
-    expect(root.style.flexDirection).toBe('column')
-    expect(left.style.width).not.toBe(`${dp(330)}px`)
-    expect(left.style.width).toBe('100%')
-    expect(right.style.width).not.toBe(`${dp(560)}px`)
-    expect(right.style.width).toBe('100%')
-  })
-
-  it('raderna delar bredden med titel/timer på telefon i stället för radens fasta 560 dp-kanalcell', async () => {
-    await mountWith(true)
-    const col = screen.getAllByTestId('pl-row-channel-col')[0]
-    expect(col.style.width).toBe('')
-    expect(col.style.flexGrow).toBe('1')
-    expect(col.style.flexShrink).toBe('1')
-    expect(col.style.flexBasis).toBe('0px')
-    // Fas 2:s breddgolv gick med fas 3 (kolumnen ritas i äkta px tills
-    // spellistvyn får sin egen telefonlayout).
-    expect(col.style.minWidth).toBe('0')
+    expect(screen.getByTestId('lists-phone')).toBeInTheDocument()
+    expect(screen.queryByTestId('playlists-view-root')).toBeNull()
+    expect(screen.queryByTestId('playlists-column')).toBeNull()
+    expect(screen.queryByTestId('pl-detail')).toBeNull()
   })
 
   it('vänster-/högerkolumnen och radens kanalcell behåller 330/560 dp på skrivbord/TV', async () => {

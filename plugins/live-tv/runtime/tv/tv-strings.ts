@@ -235,6 +235,9 @@ const EN = {
   phoneModeNow: 'Now',
   phoneModeTimeline: 'Timeline',
   phoneModeLists: 'Lists',
+  // Guiden · Lists på telefon (P7): filterfältet och Visa alla-raden per lista
+  filterCategories: 'Filter categories',
+  showAllCategories: 'Show all {count} categories',
 } as const
 
 const SV: Record<keyof typeof EN, string> = {
@@ -440,6 +443,8 @@ const SV: Record<keyof typeof EN, string> = {
   phoneModeNow: 'Nu',
   phoneModeTimeline: 'Tablå',
   phoneModeLists: 'Listor',
+  filterCategories: 'Filtrera kategorier',
+  showAllCategories: 'Visa alla {count} kategorier',
 }
 
 export type TvStringKey = keyof typeof EN
