@@ -30,6 +30,8 @@ const EN = {
   minutesLeft: '{min} min left',
   channelsCount: '{count} channels',
   allPlaylists: 'All playlists',
+  // Telefonens spellistark: rubriken får inte heta samma som första posten ("All playlists").
+  playlists: 'Playlists',
   addPlaylist: '+ Add playlist…',
   allGroups: 'All',
   favourites: 'Favourites',
@@ -249,6 +251,7 @@ const SV: Record<keyof typeof EN, string> = {
   minutesLeft: '{min} min kvar',
   channelsCount: '{count} kanaler',
   allPlaylists: 'Alla spellistor',
+  playlists: 'Spellistor',
   addPlaylist: '+ Lägg till spellista …',
   allGroups: 'Alla',
   favourites: 'Favoriter',

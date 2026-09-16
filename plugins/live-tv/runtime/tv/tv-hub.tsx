@@ -1,68 +1,42 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { channelKey, type M3uChannel } from '../live-tv-data'
-import { catchUpAcross, type CatchUpItem } from '../catch-up'
-import { pickReplayChannels } from '../view-helpers'
+import type { CatchUpItem } from '../catch-up'
 import { formatClock, progressOf } from '../live-tv-ui'
-import { qualityFromName, startOfLocalDay } from '../live-tv-model'
+import { qualityFromName } from '../live-tv-model'
 import { useTvMode } from '@/lib/plugin-sdk'
-import { useEpgLoadStatus } from '../hooks/useEpgLoadStatus'
-import { useSchedules } from '../hooks/useSchedules'
 import type { TvViewProps } from './tv-shell'
 import { ChannelArt, Chip, Icons, Progress, Tag, TV, cardStyle, dp, station, useTvClockNode } from './tv-ui'
 import { useTvText } from './tv-strings'
-import { pickSpotlight, type SpotlightReason } from './tv-spotlight'
+import type { SpotlightReason } from './tv-spotlight'
+import { ALL_STEP, useHubData } from './hub-data'
+import { TvHubPhone } from './mobile/hub-phone'
 
-// Spotlight: 3 kolumner på skrivbord/TV, 2 i porträtt (spec §3).
+// Datahooken bor i `hub-data.ts` (ingen importcykel mot telefongrenen) men
+// hör hit: det är hubbens urval, filter och steg.
+export { ALL_STEP, useHubData }
+
+// Spotlight: 3 kolumner på skrivbord/TV; telefonen (egen gren) visar ett kort.
 const SPOTLIGHT_COUNT_DESKTOP = 3
-const SPOTLIGHT_COUNT_PHONE = 2
 // "Alla kanaler": den gamla specen kallade DETTA rutnät "hubbens
-// sexkolumnsrutnät" (inte spotlighten, som alltid varit 3) — sex på
-// skrivbord/TV, två i porträtt, samma behandling som spotlighten.
+// sexkolumnsrutnät" (inte spotlighten, som alltid varit 3).
 const ALL_CHANNELS_COLUMNS_DESKTOP = 6
-const ALL_CHANNELS_COLUMNS_PHONE = 2
-const ALL_STEP = 36
-const MAX_CHIPS = 12
-/** Repriser: hur långt bakåt tablån hämtas (urvalet av kanaler görs i view-helpers). */
-const REPLAY_DAYS = 3
+export function TvHub(props: TvViewProps) {
+  if (props.phone) return <TvHubPhone {...props} />
+  return <TvHubDesktop {...props} />
+}
 
-export function TvHub({ model, nav, phone }: TvViewProps) {
+function TvHubDesktop({ model, nav }: TvViewProps) {
   const { tt, locale } = useTvText()
   const isTv = useTvMode()
   const clock = useTvClockNode(locale)
-  const spotlightCount = phone ? SPOTLIGHT_COUNT_PHONE : SPOTLIGHT_COUNT_DESKTOP
-  const allChannelsColumns = phone ? ALL_CHANNELS_COLUMNS_PHONE : ALL_CHANNELS_COLUMNS_DESKTOP
-  const [group, setGroup] = useState<string | null>(null)
-  const [visible, setVisible] = useState(ALL_STEP)
+  const spotlightCount = SPOTLIGHT_COUNT_DESKTOP
+  const allChannelsColumns = ALL_CHANNELS_COLUMNS_DESKTOP
   const [playlistOpen, setPlaylistOpen] = useState(false)
   const pillRef = useRef<HTMLDivElement | null>(null)
   const menuRef = useRef<HTMLDivElement | null>(null)
-  const epgStatus = useEpgLoadStatus(model.epgListId, model.epgUrls)
-
-  const favourites = model.favouriteChannels
-  const recent = useMemo(() => model.history.map((h) => model.byUrl.get(h.url)).filter((c): c is M3uChannel => Boolean(c)), [model.history, model.byUrl])
-  const spotlight = useMemo(() => pickSpotlight({ favourites, recent, channels: model.channels, nowFor: model.nowFor, count: spotlightCount }), [favourites, recent, model.channels, model.nowFor, spotlightCount])
-  /**
-   * Repriser: favoriter och nyss sedda kanaler med arkiv (Xtream tv_archive),
-   * inte hela spellistan. Tablån bor i appen sedan lagring v2, så varje kanal
-   * i urvalet är en nyckel i ett fönsteranrop — 200 kanaler × 3 dygn vid varje
-   * montering för ett band med åtta kort var den dyraste frågan i hela vyn.
-   */
-  const replayChannels = useMemo(() => pickReplayChannels(favourites, recent), [favourites, recent])
-  const replayWindow = useMemo(() => {
-    const to = startOfLocalDay(model.nowMs, 1)
-    return { from: to - REPLAY_DAYS * 86_400_000, to }
-  }, [model.nowMs])
-  const { schedules: replaySchedules } = useSchedules(replayChannels, replayWindow.from, replayWindow.to)
-  const replays = useMemo(() => catchUpAcross(replayChannels, replaySchedules, model.nowMs, 8), [replayChannels, replaySchedules, model.nowMs])
-  const chips = useMemo(() => model.groups.slice(0, MAX_CHIPS), [model.groups])
-  const filtered = useMemo(() => {
-    if (group === '__favs') return favourites
-    if (group) return model.channels.filter((c) => c.group === group)
-    return model.channels
-  }, [group, favourites, model.channels])
-  const shown = filtered.slice(0, visible)
+  const { favourites, recent, spotlight, replays, chips, filtered, shown, group, setGroup, visible, setVisible, epgStatus } = useHubData(model, spotlightCount)
   const noProgrammeLabel = epgStatus === 'loading' ? tt('loadingGuide') : tt('noProgramme')
   // Kategorichippen i "Alla kanaler": samma lista oavsett TV-läge, bara
   // raden runt dem och chippens yta skiljer sig (se sektionen nedan).
@@ -255,7 +229,7 @@ export function TvHub({ model, nav, phone }: TvViewProps) {
             </div>
           </div>
         ) : (
-          // Skrivbord/telefon (Jerrys återkoppling 2026-09-14): rubriken är
+          // Skrivbord (Jerrys återkoppling 2026-09-14): rubriken är
           // bara antalet — "All playlists" och fjärrhjälpen är beskrivande
           // text utan motsvarighet utanför TV-läget, se `tv-strings.ts`.
           // Filterraden får en egen rad under rubriken i stället för att

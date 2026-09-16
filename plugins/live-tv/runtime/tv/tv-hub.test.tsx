@@ -128,10 +128,14 @@ describe('TvHub i porträtt (telefon)', () => {
     return render(<LiveTvTvShell pageId="live-tv-browse" params={{}} onNavigate={() => {}} onOpenDetails={() => {}} />, { container: box })
   }
 
-  it('lägger spotlight i två kolumner på telefon', () => {
+  // Fas 3: telefonen har en egen gren (`mobile/hub-phone.tsx`) med ETT
+  // spotlightkort i full bredd — inte fas 2:s tvåkolumnsrutnät. Detaljerna
+  // testas i `mobile/hub-phone.test.tsx`; här bara att grenen tar över.
+  it('visar ett enda spotlightkort på telefon (ingen rutnätsgren)', () => {
     renderHubOnPhone()
-    const grid = screen.getByTestId('hub-spotlight')
-    expect(grid).toHaveStyle({ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' })
+    const card = screen.getByTestId('hub-spotlight')
+    expect(card.style.display).not.toBe('grid')
+    expect(card).toHaveAttribute('data-f')
   })
   it('behåller tre kolumner i spotlighten på skrivbordet', () => {
     renderHubOnDesktop()
