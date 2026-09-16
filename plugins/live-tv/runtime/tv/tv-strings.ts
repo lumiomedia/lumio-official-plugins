@@ -253,6 +253,13 @@ const EN = {
   // Guiden · Lists på telefon (P7): filterfältet och Visa alla-raden per lista
   filterCategories: 'Filter categories',
   showAllCategories: 'Show all {count} categories',
+  // Inställningar på telefon (P12): sektionslistan + de två beteendevalen
+  settingKeepAwake: 'Keep screen awake while playing',
+  settingFullscreenOnRotate: 'Autoplay in fullscreen on rotate',
+  sectionPlaylists: 'Playlists',
+  sectionGuide: 'Guide default',
+  sectionBehaviour: 'Behaviour',
+  sectionMore: 'More',
 } as const
 
 const SV: Record<keyof typeof EN, string> = {
@@ -469,6 +476,12 @@ const SV: Record<keyof typeof EN, string> = {
   phoneModeLists: 'Listor',
   filterCategories: 'Filtrera kategorier',
   showAllCategories: 'Visa alla {count} kategorier',
+  settingKeepAwake: 'Håll skärmen tänd vid uppspelning',
+  settingFullscreenOnRotate: 'Helskärm automatiskt vid rotation',
+  sectionPlaylists: 'Spellistor',
+  sectionGuide: 'Guidens standardvy',
+  sectionBehaviour: 'Beteende',
+  sectionMore: 'Mer',
 }
 
 export type TvStringKey = keyof typeof EN

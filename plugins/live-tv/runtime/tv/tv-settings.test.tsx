@@ -26,7 +26,7 @@ vi.mock('@/lib/plugin-sdk', async (importOriginal) => {
   return { ...actual, getAccent: undefined, setAccent: undefined, ACCENT_PRESETS: undefined, activeProfileHasPin: () => true, verifyActiveProfilePin: async () => true }
 })
 import { LiveTvTvShell } from './tv-shell'
-import { ListRow } from './tv-settings'
+import { ListRow } from './settings-tabs'
 import { tvText } from './tv-strings'
 import { completeLogos } from '../index-client'
 
