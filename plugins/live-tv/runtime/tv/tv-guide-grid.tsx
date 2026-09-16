@@ -6,16 +6,13 @@ import { startOfLocalDay } from '../live-tv-model'
 import type { EpgProgramme } from '../epg/types'
 import { formatClock } from '../live-tv-ui'
 import { isReminded, toggleReminder } from '../reminders'
-import { selectEpgRows } from '../epg-rows'
-import { useSchedules } from '../hooks/useSchedules'
 import { useNarrowSurface } from '../hooks/useNarrowSurface'
 import type { TvViewProps } from './tv-shell'
 import { ChannelArt, Chip, Icons, Segment, TV, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
 import type { GuideMode } from './tv-settings-store'
-import { FAVS_GROUP, useGuideGroups } from './tv-guide-shared'
-import type { LiveTvModel } from '../live-tv-model'
-import type { EpgRow } from '../epg-rows'
+import { useGuideGroups } from './tv-guide-shared'
+import { useGridRows } from './grid-rows'
 import { phoneGuideMode } from './mobile/guide-phone'
 import { TvGuideGridPhone } from './mobile/guide-grid-phone'
 import {
@@ -57,13 +54,6 @@ import {
 /** Startantal rader, och steget per "Visa fler" — samma tal som skrivbordet. */
 const MAX_ROWS = 80
 const EPG_ROWS_STEP = 80
-/**
- * Hur många kanaler som frågas efter per synlig rad. Tablån bor i appen sedan
- * lagring v2, så raderna kostar ett fönsteranrop och inte en cachesökning:
- * hela spellistan (17 000 nycklar) hade blivit 85 anrop för 80 rader.
- * Överskottet finns för att kanaler UTAN tablå faller bort i `selectEpgRows`.
- */
-const CANDIDATE_FACTOR = 3
 
 function alignToHour(ms: number): number {
   const d = new Date(ms)
@@ -94,59 +84,7 @@ function useFinePointer(): boolean {
   return fine
 }
 
-export interface GridRows {
-  rows: EpgRow[]
-  /** Fler kanaler MED tablå finns bortom `visibleRows` — visa "Visa fler". */
-  hasMore: boolean
-  /** Fönstrets tablåer hämtas fortfarande (delvis eller helt). */
-  schedulesLoading: boolean
-}
-
-/**
- * Tablåns radpipeline, delad av skrivbordets rutnät och telefonens tablå
- * (P6): favoriter först, kategorifilter, kandidatfönster, tablåhämtning för
- * `[windowStart, windowEnd)` och `selectEpgRows`. Ren funktion av sina
- * argument — fönstret räknas av anroparen, så skrivbordets Idag/Imorgon och
- * telefonens 30-min-före-nu-fönster går genom exakt samma väg.
- */
-export function useGridRows(model: LiveTvModel, group: string | null, visibleRows: number, windowStart: number, windowEnd: number): GridRows {
-  // Favoriter först, sedan övriga kanaler — kanaler utan tablå faller bort i
-  // `selectEpgRows`, en tom rad säger inget.
-  const ordered = useMemo(
-    () => [
-      ...model.pinnedKeys.map((key) => model.byKey.get(key)).filter((channel): channel is M3uChannel => Boolean(channel)),
-      ...model.channels.filter((channel) => !model.pinnedSet.has(channelKey(channel))),
-    ],
-    [model.pinnedKeys, model.byKey, model.channels, model.pinnedSet],
-  )
-  /**
-   * Kategorin filtreras HÄR och inte i `selectEpgRows`.
-   *
-   * TV-chipsen har två poster som inte är gruppnamn ("Alla" och "Favoriter"),
-   * och `selectEpgRows` jämför rakt mot `channel.group` — `__favs` hade
-   * filtrerat bort varenda kanal. Urvalet görs alltså före, och funktionen får
-   * `null` som grupp.
-   */
-  const eligible = useMemo(() => {
-    if (group === FAVS_GROUP) return model.favouriteChannels
-    if (group) return ordered.filter((channel) => channel.group === group)
-    return ordered
-  }, [ordered, group, model.favouriteChannels])
-  const candidates = useMemo(() => eligible.slice(0, visibleRows * CANDIDATE_FACTOR), [eligible, visibleRows])
-  const { schedules, loading: schedulesLoading } = useSchedules(candidates, windowStart, windowEnd)
-  const { rows, hasMore: moreAmongCandidates } = useMemo(
-    () => selectEpgRows(candidates, (channel) => schedules[channelKey(channel)] ?? [], null, visibleRows),
-    [candidates, schedules, visibleRows],
-  )
-  /**
-   * "Visa fler" måste finnas kvar även när KANDIDATERNA tog slut men
-   * spellistan inte gjorde det: `selectEpgRows` vet bara om det urval den
-   * fick, och skulle annars påstå "alla kanaler med tablå visas" fast
-   * överskottsfönstret kapade listan långt före spellistans slut.
-   */
-  const hasMore = moreAmongCandidates || candidates.length < eligible.length
-  return { rows, hasMore, schedulesLoading }
-}
+export { useGridRows, type GridRows } from './grid-rows'
 
 export function TvGuideGrid(props: TvViewProps & { mode: GuideMode; onModeChange: (mode: GuideMode) => void }) {
   // Telefonen (fas 3, handoffen §3) får sin egen tablå: sticky kanalkolumn,
