@@ -7,12 +7,15 @@ import { formatClock, progressOf } from '../live-tv-ui'
 import type { TvViewProps } from './tv-shell'
 import { ChannelArt, Progress, Tag, TV, cardStyle, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
+import { TvFavouritesPhone } from './mobile/favourites-phone'
 
 function escapeKey(key: string): string {
   return typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(key) : key.replace(/"/g, '\\"')
 }
 
-export function TvFavourites({ model, nav }: TvViewProps) {
+export function TvFavourites(props: TvViewProps) {
+  if (props.phone) return <TvFavouritesPhone {...props} />
+  const { model, nav } = props
   const { tt, locale } = useTvText()
   const favourites = model.favouriteChannels
   const gridRef = useRef<HTMLDivElement | null>(null)

@@ -569,7 +569,7 @@ export function getPinnedLiveTvKeys(): string[] {
   return sanitizeStringArray(readPluginJson<unknown>(LIVE_TV_PLUGIN_ID, LIVE_TV_PINS_KEY, []))
 }
 
-function setPinnedLiveTvKeys(keys: string[]): void {
+export function setPinnedLiveTvKeys(keys: string[]): void {
   writePluginJson(LIVE_TV_PLUGIN_ID, LIVE_TV_PINS_KEY, keys)
 }
 
