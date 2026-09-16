@@ -218,6 +218,14 @@ const EN = {
   playerAspect: 'Aspect ratio',
   // Tomma
   guideEmpty: 'No channels in this category',
+  // Telefonens flik-rad + bottenark (fas 3)
+  tabHome: 'Home',
+  tabGuide: 'Guide',
+  tabFavourites: 'Favourites',
+  tabSearch: 'Search',
+  tabMore: 'More',
+  sheetMultiview: 'Multiview',
+  sheetSettings: 'Settings',
 } as const
 
 const SV: Record<keyof typeof EN, string> = {
@@ -409,6 +417,14 @@ const SV: Record<keyof typeof EN, string> = {
   playerExitFullscreen: 'Lämna fullskärm',
   playerAspect: 'Bildförhållande',
   guideEmpty: 'Inga kanaler i kategorin',
+  // Telefonens flik-rad + bottenark (fas 3)
+  tabHome: 'Hem',
+  tabGuide: 'Guide',
+  tabFavourites: 'Favoriter',
+  tabSearch: 'Sök',
+  tabMore: 'Mer',
+  sheetMultiview: 'Multivy',
+  sheetSettings: 'Inställningar',
 }
 
 export type TvStringKey = keyof typeof EN
