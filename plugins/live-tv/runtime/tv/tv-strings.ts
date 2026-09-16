@@ -225,6 +225,9 @@ const EN = {
   tabMore: 'More',
   sheetMultiview: 'Multiview',
   sheetSettings: 'Settings',
+  // Delade rader (P3): sök-varianten prefixar nu-titeln, förloppet visar minuter kvar
+  nowPrefix: 'Now',
+  minutesShort: '{min} min',
 } as const
 
 const SV: Record<keyof typeof EN, string> = {
@@ -423,6 +426,8 @@ const SV: Record<keyof typeof EN, string> = {
   tabMore: 'Mer',
   sheetMultiview: 'Multivy',
   sheetSettings: 'Inställningar',
+  nowPrefix: 'Nu',
+  minutesShort: '{min} min',
 }
 
 export type TvStringKey = keyof typeof EN
