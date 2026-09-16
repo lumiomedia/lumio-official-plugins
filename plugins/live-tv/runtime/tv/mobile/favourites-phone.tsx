@@ -50,7 +50,7 @@ export function TvFavouritesPhone({ model, nav }: TvViewProps) {
       <div style={{ fontSize: 13, color: MT.dim, marginBottom: 10 }}>{tt('channelsCount', { count: favourites.length })}</div>
 
       {favourites.length === 0 ? (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 24, color: MT.dim, fontSize: 15 }}>{tt('favouritesEmpty')}</div>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 24, color: MT.dim, fontSize: 15 }}>{tt('favouritesEmptyPhone')}</div>
       ) : (
         favourites.map((channel, index) => {
           const key = channelKey(channel)

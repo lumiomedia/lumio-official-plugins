@@ -58,10 +58,11 @@ describe('Favoriter på telefon', () => {
     expect(getPinnedLiveTvKeys()).toEqual([twoPins[1], twoPins[0]])
   })
 
-  it('tomt läge: centrerad tomtext', async () => {
-    mountPhone({ view: 'favs' }, { pins: [] })
-    expect(await screen.findByText('No favourites yet. Hold OK on a channel and choose Add to favourites.')).toBeInTheDocument()
+  it('tomt läge: centrerad tomtext utan fjärrkontrollsord', async () => {
+    const { box } = mountPhone({ view: 'favs' }, { pins: [] })
+    expect(await screen.findByText('No favourites yet. Add channels from the guide.')).toBeInTheDocument()
     expect(screen.queryByTestId('fav-row')).toBeNull()
+    expect(box.textContent).not.toMatch(/OK|hold|håll/i)
   })
 
   it('inga fjärrkontrollstexter', async () => {

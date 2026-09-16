@@ -101,6 +101,9 @@ const EN = {
   favouritesSub: '{count} channels · order sets channel numbers 1–{count}',
   addFromGuide: '+ Add from the guide',
   favouritesEmpty: 'No favourites yet. Hold OK on a channel and choose Add to favourites.',
+  // Telefonens tomma läge: ingen fjärrkontrollstext (skiljer sig medvetet
+  // från skrivbordets favouritesEmpty ovan).
+  favouritesEmptyPhone: 'No favourites yet. Add channels from the guide.',
   // Telefonens redigeringsläge (dra-omordning)
   edit: 'Edit',
   done: 'Done',
@@ -328,6 +331,7 @@ const SV: Record<keyof typeof EN, string> = {
   favouritesSub: '{count} kanaler · ordningen styr kanalnummer 1–{count}',
   addFromGuide: '+ Lägg till från guiden',
   favouritesEmpty: 'Inga favoriter än. Håll OK på en kanal och välj Lägg till i favoriter.',
+  favouritesEmptyPhone: 'Inga favoriter än. Lägg till kanaler från guiden.',
   edit: 'Redigera',
   done: 'Klar',
   yesterday: 'Igår',
