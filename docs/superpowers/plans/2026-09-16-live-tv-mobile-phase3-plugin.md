@@ -25,7 +25,7 @@
 
 ---
 
-### Task P0: Appen — telefongrenen slutar skala (skala 1, tröskel 640, kortaste sidan)
+### Task 0 (P0): Appen — telefongrenen slutar skala (skala 1, tröskel 640, kortaste sidan)
 
 **Arbetsträd:** `/Users/jerry/Local Sites/Moviefinder/.worktrees/mobile-phase3-app`
 
@@ -94,7 +94,7 @@ Sök resten av filen efter `TV_SCENE_PHONE_WIDTH` (`grep -rn TV_SCENE_PHONE_WIDT
 
 ---
 
-### Task P1: Mobila byggstenar — tokens, ikoner, sidhuvud, flik-rad, bottenark
+### Task 1 (P1): Mobila byggstenar — tokens, ikoner, sidhuvud, flik-rad, bottenark
 
 **Arbetsträd:** pluginet.
 
@@ -345,7 +345,7 @@ Lägg till i `tv-ui.tsx`:s `TvFocusStyle` (fokusstil, se P2) inget ännu — ark
 
 ---
 
-### Task P2: Skalet — `phone` som prop, flik-rad + ark i stället för låda, golven bort
+### Task 2 (P2): Skalet — `phone` som prop, flik-rad + ark i stället för låda, golven bort
 
 **Filer:**
 - Ändra: `runtime/tv/tv-shell.tsx`, `runtime/tv/tv-ui.tsx`, `runtime/tv/tv-guide-shared.tsx`, `runtime/tv/tv-player-props.ts`, `runtime/tv/tv-player-types.ts`, alla `runtime/tv/tv-*.tsx` som anropar `usePhoneSurface`/`phoneTextFloor`/`phoneHitFloor`/`PHONE_HIT_MIN_DP` (lista: `grep -ln "usePhoneSurface\|phoneTextFloor\|phoneHitFloor\|PHONE_HIT_MIN_DP\|CHANNEL_COLUMN_PHONE_MIN_DP" runtime/tv/*.tsx runtime/*.tsx`)
@@ -463,7 +463,7 @@ Håll-mönstret (pointerDown + 700 ms under fake timers) finns i `tv-shell-point
 
 ---
 
-### Task P3: Delade rader — `MobileChannelRow`, `MobileLogo`, `MobileSegment`, `MobileChips`
+### Task 3 (P3): Delade rader — `MobileChannelRow`, `MobileLogo`, `MobileSegment`, `MobileChips`
 
 **Filer:**
 - Skapa: `runtime/tv/mobile/mobile-logo.tsx`, `runtime/tv/mobile/mobile-channel-row.tsx`, `runtime/tv/mobile/mobile-segment.tsx`, `runtime/tv/mobile/mobile-chips.tsx`
@@ -620,7 +620,7 @@ Nya strängar: `minutesShort: '{min} min' / '{min} min'`, `nowPrefix: 'Now' / 'N
 
 ---
 
-### Task P4: Hubben på telefon
+### Task 4 (P4): Hubben på telefon
 
 **Filer:**
 - Skapa: `runtime/tv/mobile/hub-phone.tsx`
@@ -686,7 +686,7 @@ describe('Hubben på telefon', () => {
 
 ---
 
-### Task P5: Guiden · Now på telefon (+ segmentväxeln Now/Timeline/Lists)
+### Task 5 (P5): Guiden · Now på telefon (+ segmentväxeln Now/Timeline/Lists)
 
 **Filer:**
 - Skapa: `runtime/tv/mobile/guide-phone.tsx`
@@ -763,7 +763,7 @@ it('inga fjärrkontrollstexter', async () => {
 
 ---
 
-### Task P6: Guiden · Timeline på telefon
+### Task 6 (P6): Guiden · Timeline på telefon
 
 **Filer:**
 - Ändra: `runtime/tv/epg-grid-geometry.ts` (px/min som parameter), `runtime/tv/tv-guide-grid.tsx` (tidig gren)
@@ -815,7 +815,7 @@ Layout (handoffen §3): header + segment (`PhoneGuideModeBar`) + `<MobileChips>`
 
 ---
 
-### Task P7: Guiden · Lists på telefon (drill-down)
+### Task 7 (P7): Guiden · Lists på telefon (drill-down)
 
 **Filer:**
 - Skapa: `runtime/tv/mobile/guide-lists-phone.tsx`
@@ -841,7 +841,7 @@ Nivå 2: `<MobileHeader title={path.title} back onBack={() => setPath(null)} />`
 
 ---
 
-### Task P8: Kanaldetalj på telefon
+### Task 8 (P8): Kanaldetalj på telefon
 
 **Filer:**
 - Skapa: `runtime/tv/mobile/channel-phone.tsx`
@@ -869,7 +869,7 @@ Layout (handoffen §5), kolumn `padding 0 16px`, `paddingBottom: MT.SCROLL_PAD_B
 
 ---
 
-### Task P9: Favoriter på telefon (lista + dra-omordning)
+### Task 9 (P9): Favoriter på telefon (lista + dra-omordning)
 
 **Filer:**
 - Skapa: `runtime/tv/mobile/favourites-phone.tsx`, `runtime/tv/mobile/use-drag-reorder.ts`
@@ -899,7 +899,7 @@ Layout (handoffen §6): `<MobileHeader title={tt('favourites')} right={<pill 36 
 
 ---
 
-### Task P10: Sök på telefon
+### Task 10 (P10): Sök på telefon
 
 **Filer:**
 - Skapa: `runtime/tv/mobile/search-phone.tsx`
@@ -921,7 +921,7 @@ Layout (handoffen §7): kolumn `padding 0 16px`, `paddingBottom: MT.SCROLL_PAD_B
 
 ---
 
-### Task P11: Multivy på telefon
+### Task 11 (P11): Multivy på telefon
 
 **Filer:**
 - Skapa: `runtime/tv/mobile/multiview-phone.tsx`
@@ -941,7 +941,7 @@ Byt plats: `tiles[a] ↔ tiles[b]` för de två synliga indexen och `audioIndex`
 
 ---
 
-### Task P12: Inställningar på telefon
+### Task 12 (P12): Inställningar på telefon
 
 **Filer:**
 - Skapa: `runtime/tv/mobile/settings-phone.tsx`
@@ -963,7 +963,7 @@ Layout (handoffen §9): `<MobileHeader title={tt('railSettings')} />` + kolumn `
 
 ---
 
-### Task P13: Spelaren på telefon — porträtt, liggande, rotation, wake lock
+### Task 13 (P13): Spelaren på telefon — porträtt, liggande, rotation, wake lock
 
 **Filer:**
 - Skapa: `runtime/tv/mobile/player-chrome-phone.tsx`, `runtime/hooks/useOrientation.ts`, `runtime/hooks/useWakeLock.ts`
@@ -990,7 +990,7 @@ Nya strängar: `audioSubs: 'Audio & subs' / 'Ljud & text'`, `autoQuality: 'Auto'
 
 ---
 
-### Task P14: Strängvakt, död kod, runtime-bygge, versioner
+### Task 14 (P14): Strängvakt, död kod, runtime-bygge, versioner
 
 **Filer:**
 - Ändra: `runtime/tv/tv-strings.ts` (ta bort oanvända hjälpsträngar `okWatch`, `okRemind`, `previewLabel`… — bara de som ingen anropare har kvar: `grep -rn "tt('okWatch')"` etc.), `plugins/live-tv/plugin.json`, `plugins/live-tv/package.json`, `plugins/live-tv/CHANGELOG.md`, `plugins/live-tv/dist/runtime.js`, appen: `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`, `lib/generated/bundled-plugin-runtimes/com-lumio-live-tv.js`
