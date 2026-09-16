@@ -25,8 +25,7 @@ export function MobileChips<K>({ items, value, onChange, testId }: {
               fontSize: 14, whiteSpace: 'nowrap', flexShrink: 0,
               background: active ? MT.s16 : MT.s05,
               border: active ? `1px solid ${MT.line20}` : '1px solid transparent',
-              color: active ? MT.text : MT.muted,
-              opacity: active ? 1 : 0.7,
+              color: active ? MT.text : MT.muted70,
               fontWeight: active ? 600 : 400,
               cursor: 'pointer',
             }}
