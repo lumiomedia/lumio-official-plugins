@@ -22,7 +22,7 @@ function model(overrides: Partial<LiveTvModel> = {}): LiveTvModel {
   } as unknown as LiveTvModel
 }
 
-const settings = { bannerHideMs: 4000 } as TvSettings
+const settings = { bannerHideMs: 4000, keepAwake: true, fullscreenOnRotate: false } as TvSettings
 
 function build(args: Partial<Parameters<typeof buildTvPlayerProps>[0]> = {}) {
   return buildTvPlayerProps({
@@ -31,6 +31,7 @@ function build(args: Partial<Parameters<typeof buildTvPlayerProps>[0]> = {}) {
     channel: channels[0],
     locale: 'sv-SE',
     gateOpen: false,
+    phone: false,
     onOpenGuide: vi.fn(),
     onOpenMultiview: vi.fn(),
     onOpenChannelDetails: vi.fn(),
@@ -61,6 +62,14 @@ describe('buildTvPlayerProps', () => {
   it('gateOpen går rakt igenom', () => {
     expect(build({ gateOpen: true }).gateOpen).toBe(true)
     expect(build({ gateOpen: false }).gateOpen).toBe(false)
+  })
+
+  it('phone går rakt igenom; keepAwake/fullscreenOnRotate läses ur inställningarna', () => {
+    expect(build({ phone: true }).phone).toBe(true)
+    expect(build({ phone: false }).phone).toBe(false)
+    const props = build()
+    expect(props.keepAwake).toBe(true)
+    expect(props.fullscreenOnRotate).toBe(false)
   })
 
   it('onToggleFavourite pinnar den kanal som spelas', () => {

@@ -89,6 +89,10 @@ describe('TvChannel', () => {
  * bredder, inte i deras innehålls mått.
  */
 describe('TvChannel i porträtt (telefon): tre fasta kolumner staplas (fixrunda 2, FYND 1)', () => {
+  // En telefon är aldrig en TV: skalet gatar `phone` med `!isTv` (fas 3 ger
+  // vyerna `phone` som prop därifrån i stället för en egen mätning), så
+  // telefonblocket kör utanför TV-läget som filens beforeEach annars slår på.
+  beforeEach(() => __setTvModeForTests(false))
   let box: HTMLElement | null = null
   afterEach(() => { box?.remove(); box = null })
 

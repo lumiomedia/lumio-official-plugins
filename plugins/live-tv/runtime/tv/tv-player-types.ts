@@ -14,6 +14,12 @@ export interface LiveTvPlayerTvProps {
   locale: string
   /** PIN-grinden (kanalbyte till en låst kanal) är öppen ovanpå spelaren. */
   gateOpen: boolean
+  /** Telefonyta (fas 3): skalets mätning, skickad vidare så kromet slipper mäta själv. */
+  phone: boolean
+  /** Ur `TvSettings`: rotation till liggande ger fullskärm (telefon). */
+  fullscreenOnRotate: boolean
+  /** Ur `TvSettings`: håll skärmen vaken under uppspelning (telefon). */
+  keepAwake: boolean
   onToggleFavourite(): void
   onOpenChannelDetails(): void
   onOpenMultiview(): void

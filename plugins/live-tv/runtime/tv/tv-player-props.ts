@@ -25,13 +25,15 @@ export function buildTvPlayerProps(args: {
   locale: string
   /** PIN-grinden (kanalbyte till en låst kanal) är öppen ovanpå spelaren. */
   gateOpen: boolean
+  /** Telefonyta — skalets `usePhoneSurface`-mätning; ytor utanför TV-scenen skickar `false`. */
+  phone: boolean
   onOpenGuide: () => void
   onOpenMultiview: () => void
   onOpenChannelDetails: () => void
   onAddToMultiview: (channel: M3uChannel) => void
   onSwitchChannel: (channel: M3uChannel) => void
 }): LiveTvPlayerTvProps {
-  const { model, settings, channel, locale, gateOpen } = args
+  const { model, settings, channel, locale, gateOpen, phone } = args
   return {
     channelNumber: model.channelNumber(channel),
     quality: qualityFromName(channel.name),
@@ -42,6 +44,9 @@ export function buildTvPlayerProps(args: {
     nowMs: model.nowMs,
     locale,
     gateOpen,
+    phone,
+    fullscreenOnRotate: settings.fullscreenOnRotate,
+    keepAwake: settings.keepAwake,
     onToggleFavourite: () => model.togglePin(channel),
     onOpenChannelDetails: args.onOpenChannelDetails,
     onOpenMultiview: args.onOpenMultiview,

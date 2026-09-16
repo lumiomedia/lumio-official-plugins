@@ -11,7 +11,7 @@ import { useNarrowSurface } from '../hooks/useNarrowSurface'
 import { usePhoneSurface } from '../hooks/usePhoneSurface'
 import { useSwipeBack } from '../hooks/useSwipeBack'
 import { useTvText } from './tv-strings'
-import { PHONE_HIT_MIN_DP, TV, TvFocusStyle, dp, phoneTextFloor, station, Icons } from './tv-ui'
+import { TV, TvFocusStyle, dp, station, Icons } from './tv-ui'
 import { TvHoldAffordance } from './tv-hold-affordance'
 import { useTvSettings, type TvSettings } from './tv-settings-store'
 import { addToFirstFree, getMultiviewState, setMultiviewState } from './tv-multiview-store'
@@ -21,6 +21,8 @@ import { cutoutClipPath, useSurfaceCutouts, type SurfaceCutout } from './surface
 import { buildTvPlayerProps } from './tv-player-props'
 import type { LiveTvPlayerTvProps } from './tv-player-types'
 import { TV_VIEWS } from './tv-views'
+import { MobileTabBar } from './mobile/mobile-tab-bar'
+import { MobileSheet } from './mobile/mobile-sheet'
 
 /**
  * TV-SKALETS BAKGRUND MED HÅL.
@@ -89,7 +91,7 @@ export interface TvNav {
   playerOpen: boolean
 }
 
-export interface TvViewProps { model: LiveTvModel; nav: TvNav; params: Record<string, string>; settings: TvSettings }
+export interface TvViewProps { model: LiveTvModel; nav: TvNav; params: Record<string, string>; settings: TvSettings; phone: boolean }
 
 /**
  * Vad PIN-grinden väntar på.
@@ -129,13 +131,10 @@ const ZAP_TIMEOUT_MS = 1500
  * `usePhoneSurface`-kommentaren nedan för varför en TELEFON hanteras
  * annorlunda.
  *
- * FAS 2 (telefon, `usePhoneSurface`): Jerrys beslut 2026-09-14 — på en
- * telefon äter även den komprimerade raden en tiondel av skärmbredden för
- * navigering som knappt används. Den fasta raden (och dess mått nedan) rörs
- * INTE på telefon — den utelämnas helt ur trädet och ersätts av en enda
- * knapp i övre vänstra hörnet som öppnar samma poster i en låda som glider
- * in från vänster (se `railOpen`/`closeRail` längre ner). Måtten här gäller
- * därför fortsatt bara TV, skrivbord och en smal-men-inte-telefon yta.
+ * TELEFON (`usePhoneSurface`, fas 3): raden finns inte alls — telefonen får
+ * en flik-rad i botten (`MobileTabBar`) och ett bottenark för det som inte
+ * ryms där (`MobileSheet`). Måtten här gäller därför bara TV, skrivbord och
+ * en smal-men-inte-telefon yta.
  */
 const RAIL_W_TV = 104
 const RAIL_W_DESKTOP = 84
@@ -144,8 +143,6 @@ const RAIL_W_NARROW = 64
 const RAIL_ITEM_WIDE = 60
 /** Postens sida på en smal yta — fortfarande över 44 px träffyta. */
 const RAIL_ITEM_NARROW = 48
-// Telefonens träffytegolv (spec §3, `PHONE_HIT_MIN_DP`) bor i `tv-ui.tsx` —
-// delad med M-P4:s golvtest i stället för en egen lokal kopia här.
 
 export { RAIL_ITEM_NARROW, RAIL_ITEM_WIDE, RAIL_W_DESKTOP, RAIL_W_NARROW, RAIL_W_TV }
 
@@ -195,68 +192,22 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
    * Telefon = värdens mätning av lådan, aldrig ett eget breddtal — precis som
    * `narrow` ovan. En telefon är ALLTID också smal (spec), men det omvända
    * gäller inte: ett smalt SKRIVBORDSFÖNSTER är `narrow` utan att vara
-   * `phone`, och ska fortsatt få fas 1:s komprimerade rad, inte lådan.
+   * `phone`, och ska fortsatt få fas 1:s komprimerade rad, inte flik-raden.
+   *
+   * Det här är skalets ENDA anrop av `usePhoneSurface`: vyerna och deras
+   * underkomponenter får `phone` som prop härifrån (`TvViewProps`), så att
+   * hela trädet svarar på samma mätning.
    */
   const phone = usePhoneSurface(rootRef) && !isTv
   const railWidth = isTv ? RAIL_W_TV : narrow ? RAIL_W_NARROW : RAIL_W_DESKTOP
   const railItemSize = narrow ? RAIL_ITEM_NARROW : RAIL_ITEM_WIDE
 
   /**
-   * IKONRADEN SOM LÅDA (telefon, spec §2).
-   *
-   * `railOpen` styr bara SYNLIGHET — lådan monteras/avmonteras inte som en
-   * egen komponent, den är samma träd som skrivbordets `<nav>` fast klädd i
-   * panelmönstret från `tv-channel-picker.tsx` (position: fixed, kant-ankrad,
-   * `data-panel-root`/`data-live-tv-layer`), SPEGELVÄNT: från vänster i
-   * stället för höger.
-   *
-   * `closeRail` gör TVÅ saker, precis som channel-väljarens `close`: stänger
-   * lådan OCH lämnar tillbaka fokus till det som hade det innan lådan öppnades
-   * (öppningsknappen, om inget annat tog fokus däremellan). Utanförtryck och
-   * en vald POST (utom Bakåt-posten, se `backFromRail` vid `pushLayer` nedan)
-   * ropar båda på den — men den är INTE en generell "stäng lådan"-mekanism
-   * för Bakåt-kedjan: `back()` läser `layersRef`-toppen FÖRST, och om lådans
-   * eget lager fortfarande ligger där hittar `back()` bara sig självt och
-   * navigerar aldrig längre (fixrunda 1, fynd 1 — täckt av
-   * `layerOffRef` och `backFromRail`).
+   * More-arket (telefon): flik-raden har fyra vyer; multivy och inställningar
+   * ligger i ett bottenark bakom "Mer". Arket registrerar sig självt som
+   * lager i Bakåt-kedjan via `pushLayer` (se `MobileSheet`).
    */
-  const [railOpen, setRailOpen] = useState(false)
-  const railRef = useRef<HTMLDivElement | null>(null)
-  const railOpenerRef = useRef<HTMLElement | null>(null)
-  // Unregistrerarfunktionen `pushLayer` returnerade, sparad så att
-  // `backFromRail` (vid `back` nedan) kan plocka bort lådans EGET lager
-  // SYNKRONT innan den ropar `back()` — annars läser `back()` fortfarande
-  // sitt eget lager som toppen (fynd 1).
-  const layerOffRef = useRef<(() => void) | null>(null)
-  const closeRail = useCallback(() => {
-    setRailOpen(false)
-    window.setTimeout(() => railOpenerRef.current?.focus({ preventScroll: true }), 0)
-  }, [])
-
-  // Registreringen av lådan som ETT LAGER i skalets Bakåt-kedja (`pushLayer`)
-  // står längre ner, direkt efter `pushLayer`s egen definition — den är en
-  // `useCallback` och behöver deklareras innan den kan refereras.
-
-  // Utanförtryck stänger lådan (spec §2). Lyssnar på `pointerdown` (inte
-  // `click`): en vald post stänger sig redan själv genom `closeRail` i sin
-  // egen `onOk`, så den här lyssnaren behöver bara fånga tryck UTANFÖR
-  // panelen.
-  useEffect(() => {
-    if (!railOpen) return
-    const onPointerDown = (event: PointerEvent) => {
-      const target = event.target as Node | null
-      if (target && railRef.current?.contains(target)) return
-      closeRail()
-    }
-    document.addEventListener('pointerdown', onPointerDown)
-    return () => document.removeEventListener('pointerdown', onPointerDown)
-  }, [railOpen, closeRail])
-
-  // Försvinner ytan (rotation, ombyggd låda) medan lådan är öppen ska den
-  // inte bli hängande osynlig-men-registrerad i Bakåt-kedjan.
-  useEffect(() => {
-    if (!phone && railOpen) setRailOpen(false)
-  }, [phone, railOpen])
+  const [moreOpen, setMoreOpen] = useState(false)
 
   /**
    * Fokus på vyns startstation vid varje vybyte.
@@ -374,25 +325,6 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     return () => { layersRef.current = layersRef.current.filter((c) => c !== close) }
   }, [])
 
-  // Registrerar lådan som ETT LAGER i skalets egen Bakåt-kedja när den öppnas
-  // (spec §2, krav 1): Esc/Backspace (lyssnaren nedan), kantsvepet
-  // (`useSwipeBack`) och en framtida Bakåt-post går alla genom `back()`, som
-  // redan stänger det översta lagret FÖRE den lämnar vyn. En egen
-  // tangentlyssnare hade kapplöpt med skalets — `pushLayer` är stabil
-  // (`useCallback` utan beroenden) så effekten registrerar om sig bara när
-  // lådan faktiskt öppnas eller stängs, aldrig vid ett orelaterat omrender.
-  useEffect(() => {
-    if (!railOpen) return
-    railOpenerRef.current = document.activeElement as HTMLElement | null
-    const off = pushLayer(closeRail)
-    layerOffRef.current = off
-    window.setTimeout(() => railRef.current?.querySelector<HTMLElement>('[data-init]')?.focus({ preventScroll: true }), 0)
-    return () => {
-      off()
-      layerOffRef.current = null
-    }
-  }, [railOpen, closeRail, pushLayer])
-
   const back = useCallback(() => {
     // Glasmenyn ligger ÖVERST. Tangentvägen når aldrig hit medan den är öppen
     // (lyssnaren nedan står tillbaka — värdens meny äger sin egen Back), men
@@ -409,32 +341,10 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     requestBrowseBack()
   }, [menu, pending, active, view, go])
 
-  /**
-   * BAKÅT-POSTEN I LÅDAN (telefon) — INTE bara "kör `back()` och stäng lådan".
-   *
-   * Lådan pushade sig SJÄLV som lager när den öppnades (effekten ovan), så
-   * `back()` hittar sitt eget lager som `layersRef`-toppen och stannar där —
-   * den når aldrig `view==='channel' → guide`, `view!=='hub' → hub` eller
-   * `requestBrowseBack()`. Ett efterföljande `closeRail()` gör ingen skillnad:
-   * lådan var redan stängd, och `back()` hann aldrig titta vidare (fixrunda 1,
-   * fynd 1 — reproducerat med `view='guide'`, klick på `rail-back`, vyn stod
-   * kvar på guide).
-   *
-   * Fixen: plocka bort lådans EGNA lager SYNKRONT (samma `off` som effekten
-   * annars städar vid unmount/stängning) INNAN `back()` läser `layersRef`.
-   * `setRailOpen(false)` döljer lådan utan att gå via `closeRail` — den
-   * skulle annars schemalägga en refokusering på öppningsknappen som
-   * kapplöper med den nya vyns egna fokus-effekt.
-   */
-  const backFromRail = useCallback(() => {
-    layerOffRef.current?.()
-    layerOffRef.current = null
-    setRailOpen(false)
-    back()
-  }, [back])
-
-  // Back i capture-fas. Glasmenyn sköter sin egen Back, därför avstår skalet
-  // medan den är öppen.
+  // Back i capture-fas. Värdens glasmeny sköter sin egen Back, därför avstår
+  // skalet medan den är öppen. På telefon är kanalmenyn i stället skalets EGET
+  // bottenark (`MobileSheet`, utan egen lyssnare) — då tar skalet Back och
+  // `back()` stänger arket som sin första nivå.
   //
   // Spelaren äger Back helt medan den är öppen (Fix round 1, Task 16-review):
   // med `active !== null` renderas `<Player>`, som har sin egen capture-fas-
@@ -463,7 +373,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (!BACK_KEYS.has(event.key)) return
-      if (menu) return
+      if (menu && !phone) return
       if (pending) {
         event.preventDefault()
         event.stopPropagation()
@@ -481,7 +391,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     }
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
-  }, [back, menu, active, Player, pending])
+  }, [back, menu, phone, active, Player, pending])
 
   // Nummertangenter: favoriter 1–N först, sedan listnummer.
   const favourites = model.favouriteChannels
@@ -555,9 +465,10 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
    *
    * `enabled`: glasmenyn och PIN-grinden täcker skärmen men ligger kvar i
    * sidans DOM — utan flaggan hade ett drag bakom dem navigerat undan sidan
-   * under dem. Glasmenyn äger dessutom sin egen Back.
+   * under dem. Glasmenyn äger dessutom sin egen Back. Telefonens kanalark
+   * är däremot skalets eget lager: där tar svepet ett steg och stänger arket.
    */
-  useSwipeBack(back, !menu && pending === null)
+  useSwipeBack(back, (!menu || phone) && pending === null)
 
   const View = TV_VIEWS[view]
   const activeChannel: M3uChannel | null = active
@@ -590,46 +501,13 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     )
   }
 
-  /**
-   * SAMMA POSTER, LÅDANS FORM (telefon, spec §2): en rad med ikon OCH etikett
-   * i stället för en ikonruta — bredden räcker på 780 designpixlar, till
-   * skillnad från fas 1:s smala ikonrad. Höjden är telefonens träffytegolv,
-   * 88 designpixlar (spec §3). En post stänger lådan EFTER sin handling
-   * (`closeRail`) — Bakåt-posten behöver inget extra anrop: `back()` hittar
-   * redan lådan som lagrets topp och stänger den genom samma `closeRail`.
-   */
-  /**
-   * `item.run` är HELA handlingen (inklusive att stänga lådan) — den läggs
-   * INTE på ovanpå här. Bakåt-posten (`backFromRail`) måste plocka bort
-   * lådans lager FÖRE den ropar `back()` (fynd 1), medan de andra posterna
-   * bara navigerar och sedan stänger lådan rakt av — två olika ordningar som
-   * inte kan uttryckas av ETT gemensamt "kör, stäng sedan" här.
-   */
-  const drawerItem = (item: RailItem, extraStyle?: CSSProperties, isFirst?: boolean) => {
-    const activeItem = item.key === view || (item.key === 'guide' && view === 'channel')
-    const run = item.run ?? (() => { go(item.key as TvView); closeRail() })
-    return (
-      <div
-        key={item.key}
-        {...station(run, undefined, { 'data-testid': `rail-${item.key}`, 'aria-label': item.label, title: item.label, ...(isFirst ? { 'data-init': '' } : {}) })}
-        style={{ height: dp(PHONE_HIT_MIN_DP), minHeight: dp(PHONE_HIT_MIN_DP), borderRadius: dp(14), display: 'flex', alignItems: 'center', gap: dp(16), padding: `0 ${dp(18)}px`, cursor: 'pointer', background: activeItem ? TV.s14 : 'transparent', color: activeItem ? TV.text : 'rgba(243,244,248,0.75)', ...extraStyle }}
-      >
-        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: dp(32), flexShrink: 0 }}>{item.icon}</span>
-        {/* Samma hjälpare som resten av vyerna, inte konstanten direkt i
-            märkningen — lådan finns bara på telefon, så `phone` är alltid
-            sann här, men golvet ska ändå gå genom `phoneTextFloor` som
-            överallt annars (fixrunda 1). */}
-        <span style={{ fontSize: dp(phoneTextFloor(26, phone)), fontWeight: activeItem ? 600 : 400 }}>{item.label}</span>
-      </div>
-    )
-  }
-
   const tvPlayerProps: LiveTvPlayerTvProps | undefined = activeChannel
     ? buildTvPlayerProps({
         model,
         settings,
         channel: activeChannel,
         locale,
+        phone,
         // Kanalbyte till en LÅST kanal lämnar `active` orörd och öppnar
         // grinden ovanpå spelaren (se `play` ovan) — kromet måste då stå
         // tillbaka helt (Enter/Back) så att PIN-grinden äger dem.
@@ -659,33 +537,20 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
       // `zIndex: 0` bara när hål finns: DÅ blir roten en stackningskontext, så
       // att bakgrundens `zIndex: -1` hamnar under skalets innehåll men inte
       // rymmer ut ur pluginet.
-      style={{ display: 'flex', position: 'relative', height: '100%', minHeight: 0, background: hasCutouts ? 'transparent' : TV.bg, color: TV.text, fontFamily: TV.font, fontSize: dp(phoneTextFloor(22, phone)), lineHeight: 1.3, ...(hasCutouts ? { zIndex: 0 } : null) }}
+      // `data-lt-phone`: telefonens CSS-krok (fokusring/hovring av, se
+      // `TvFocusStyle`). Telefonen ritas i äkta px (skala 1 under 640 px),
+      // därför en egen grundstorlek i stället för scenens 22 designpixlar.
+      {...(phone ? { 'data-lt-phone': '1' } : {})}
+      style={{ display: 'flex', position: 'relative', height: '100%', minHeight: 0, background: hasCutouts ? 'transparent' : TV.bg, color: TV.text, fontFamily: TV.font, fontSize: phone ? 15 : dp(22), lineHeight: phone ? 1.4 : 1.3, ...(hasCutouts ? { zIndex: 0 } : null) }}
     >
       {hasCutouts ? <SurfaceBackdrop cutouts={cutouts} /> : null}
       <TvFocusStyle />
-      {phone ? (
-        /* Telefon (spec §2): ingen fast rad — en enda öppningsknapp i övre
-           vänstra hörnet, en station som alla andra så en telefon kopplad
-           till en skärm nås med piltangenter/fjärr precis som varje annan
-           post. Lådan den öppnar ligger som ett separat lager nedan.
-           `tabIndex`/`aria-hidden` växlar med `railOpen`: knappen ligger KVAR
-           i DOM:en under lådan (zIndex 40 mot lådans 60), bara visuellt
-           dold — utan detta kunde Shift+Tab från lådans första post landa på
-           en knapp som var helt skymd (fixrunda 1, fynd 2). */
-        <div
-          data-testid="tv-rail-open"
-          {...station(() => setRailOpen(true), undefined, { 'aria-label': tt('railMenu'), title: tt('railMenu') })}
-          tabIndex={railOpen ? -1 : 0}
-          aria-hidden={railOpen ? true : undefined}
-          style={{ position: 'absolute', top: dp(20), left: dp(20), zIndex: 40, width: dp(PHONE_HIT_MIN_DP), height: dp(PHONE_HIT_MIN_DP), minHeight: dp(PHONE_HIT_MIN_DP), borderRadius: dp(18), border: `1px solid ${TV.line}`, background: TV.glass, color: TV.text, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-        >
-          <Icons.Menu />
-        </div>
-      ) : (
+      {phone ? null : (
         /* Ikonrad: pluginets egen navigation inne i Live TV. Inte data-col="side" —
             värdens Back-regel hade då flyttat fokus hit i stället för att gå bakåt.
             OFÖRÄNDRAD ovanför telefonbredden (spec §1/krav 3) — se
-            "behåller den fasta raden på skrivbordet" i tv-shell-phone.test.tsx. */
+            "utan telefonattribut: ikonraden som förut" i tv-shell-phone.test.tsx.
+            På telefon finns ingen rad alls: flik-raden nedan tar över. */
         <nav data-testid="tv-rail" aria-label={tt('liveTv')} style={{ width: dp(railWidth), flexShrink: 0, borderRight: `1px solid ${TV.line}`, background: 'linear-gradient(180deg, rgba(252,252,255,0.05), rgba(252,252,255,0.02))', padding: `${dp(narrow ? 16 : 36)}px 0 ${dp(narrow ? 16 : 32)}px`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(narrow ? 8 : 14) }}>
           {/* Märket är ren dekor och det enda "etiketten" raden har. På en smal
               yta går den bort tillsammans med luften ovanför — posterna ska nå
@@ -702,27 +567,24 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
           {railItem({ key: 'settings', label: tt('railSettings'), icon: <Icons.Gear /> }, { marginTop: 'auto' })}
         </nav>
       )}
-      {phone && railOpen ? (
-        /* Lådan: samma panelmönster som `tv-channel-picker.tsx`
-           (`data-panel-root`, `data-live-tv-layer`, kant-ankrad `position:
-           fixed`), speglat till vänster i stället för höger. Etiketterna
-           syns (till skillnad från fas 1:s ikonrad) — bredden räcker. */
-        <div
-          ref={railRef}
-          data-testid="tv-rail"
-          data-panel-root=""
-          data-live-tv-layer=""
-          aria-label={tt('liveTv')}
-          style={{ position: 'fixed', top: 0, left: 0, bottom: 0, width: `min(${dp(560)}px, 82%)`, zIndex: 60, background: TV.panel, borderRight: `1px solid ${TV.line}`, padding: `${dp(32)}px ${dp(20)}px`, display: 'flex', flexDirection: 'column', gap: dp(6) }}
-        >
-          {drawerItem({ key: 'back', label: tt('railBack'), icon: <Icons.ChevronLeft />, run: backFromRail }, undefined, true)}
-          {rail.map((item) => drawerItem(item))}
-          {drawerItem({ key: 'settings', label: tt('railSettings'), icon: <Icons.Gear /> }, { marginTop: 'auto' })}
-        </div>
-      ) : null}
       <main ref={mainRef} style={{ flex: 1, minWidth: 0, minHeight: 0, position: 'relative', display: 'flex', flexDirection: 'column' }}>
-        <View key={view} model={model} nav={nav} params={viewParams} settings={settings} />
+        <View key={view} model={model} nav={nav} params={viewParams} settings={settings} phone={phone} />
       </main>
+      {/* Flik-raden (telefon): borta medan spelaren är öppen — den ligger
+          `position: fixed` och hade annars legat över bilden. */}
+      {phone && active === null ? <MobileTabBar view={view} onGo={(v) => go(v)} onMore={() => setMoreOpen(true)} /> : null}
+      {phone && moreOpen ? (
+        <MobileSheet
+          title={tt('moreActions')}
+          items={[
+            { key: 'multi', label: tt('sheetMultiview'), run: () => go('multi') },
+            { key: 'settings', label: tt('sheetSettings'), run: () => go('settings') },
+          ]}
+          onClose={() => setMoreOpen(false)}
+          pushLayer={pushLayer}
+          testId="more-sheet"
+        />
+      ) : null}
 
       {activeChannel && Player ? (
         <Player channel={activeChannel} onClose={() => setActive(null)} listId={model.epgListId} epgUrls={model.epgUrls} onSwitchChannel={(channel) => play({ channel })} tv={tvPlayerProps} />
@@ -752,13 +614,25 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
           scenlådans transform gäller båda, så måtten förblir designpixlar. */}
       {/* `key={view}` monterar om knappen vid vybyte: stationen den pekade på
           är borta ur DOM:en, och en knapp kvar i luften pekar på ingenting. */}
-      <TvHoldAffordance key={view} rootRef={rootRef} enabled={!isTv} />
-      {TvGlassMenu && menu ? <TvGlassMenu target={menu} onClose={() => setMenu(null)} /> : null}
-      {zapDigits ? (
+      {/* Aldrig på telefon: där finns ingen hovring, och långtrycket är vägen
+          till kanalmenyn (spec §5). */}
+      <TvHoldAffordance key={view} rootRef={rootRef} enabled={!isTv && !phone} />
+      {/* Kanalmenyn: värdens glasmeny är TV-scenens; på telefon landar SAMMA
+          `menu`-mål i ett bottenark. `back()` läser `menu` först och stänger
+          den där — arket registrerar sig dessutom som lager via `pushLayer`,
+          men `back()` returnerar efter `setMenu(null)` och når aldrig lagrets
+          close i samma anrop. */}
+      {menu ? (
+        phone
+          ? <MobileSheet title={menu.title} items={menu.actions} onClose={() => setMenu(null)} pushLayer={pushLayer} testId="channel-sheet" />
+          : TvGlassMenu ? <TvGlassMenu target={menu} onClose={() => setMenu(null)} /> : null
+      ) : null}
+      {/* Sifferzappningens ruta hör till fjärr/tangentbord — inte telefonen. */}
+      {zapDigits && !phone ? (
         <div data-testid="zap-digits" style={{ position: 'fixed', top: dp(36), right: dp(48), zIndex: 80, padding: `${dp(10)}px ${dp(22)}px`, borderRadius: dp(12), background: TV.glass, fontSize: dp(34), fontWeight: 600, letterSpacing: '0.1em' }}>{zapDigits}</div>
       ) : null}
       {toastText ? (
-        <div role="status" data-live-tv-layer="" style={{ position: 'fixed', bottom: dp(40), left: '50%', transform: 'translateX(-50%)', zIndex: 80, padding: `${dp(12)}px ${dp(24)}px`, borderRadius: 999, background: TV.glass, fontSize: dp(phoneTextFloor(19, phone)) }}>{toastText}</div>
+        <div role="status" data-live-tv-layer="" style={{ position: 'fixed', bottom: dp(40), left: '50%', transform: 'translateX(-50%)', zIndex: 80, padding: `${dp(12)}px ${dp(24)}px`, borderRadius: 999, background: TV.glass, fontSize: dp(19) }}>{toastText}</div>
       ) : null}
     </div>
   )

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { BROWSE_BACK_EVENT, TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR, TV_SCENE_PHONE_ATTR, __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
+import { TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR, TV_SCENE_PHONE_ATTR, __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
 
@@ -17,11 +17,13 @@ const list: LiveTvList = { id: 'l1', name: 'Xtream', channels: [ch('A', 'Sport')
 // `screen`-frågor (som bara ser aktuellt innehåll), men `document.querySelector`
 // gjorde det i ett tidigare uppdrag — se rapporten/fällan i M-P1.
 let currentBox: HTMLElement | null = null
+const realMatchMedia = window.matchMedia
 
 afterEach(() => {
   cleanup()
   currentBox?.remove()
   currentBox = null
+  window.matchMedia = realMatchMedia
 })
 
 beforeEach(() => {
@@ -47,73 +49,95 @@ function mount(options?: { phone?: boolean; params?: Record<string, string> }) {
   return { onNavigate, box, ...render(page, { container: box }) }
 }
 
-describe('Live TV-skalet på telefon: ikonraden som en låda', () => {
-  it('visar ingen fast ikonrad på telefon', () => {
+/** Fin pekare (mus) eller ren pekskärm — samma stubb som i tv-shell-pointer.test.tsx. */
+function stubPointer({ fine }: { fine: boolean }) {
+  window.matchMedia = ((query: string) => ({
+    matches: query.includes('any-pointer: fine') ? fine : false,
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  })) as unknown as typeof window.matchMedia
+}
+
+describe('Live TV-skalet på telefon (fas 3)', () => {
+  it('visar flik-raden, ingen ikonrad, ingen låda och ingen öppningsknapp', () => {
     mount({ phone: true })
+    expect(screen.getByTestId('mobile-tab-bar')).toBeInTheDocument()
     expect(screen.queryByTestId('tv-rail')).toBeNull()
-    expect(screen.getByTestId('tv-rail-open')).toBeInTheDocument()
-  })
-
-  it('öppnar lådan och stänger den när en post väljs', async () => {
-    mount({ phone: true })
-    fireEvent.click(screen.getByTestId('tv-rail-open'))
-    const drawer = await screen.findByTestId('tv-rail')
-    fireEvent.click(within(drawer).getAllByRole('button')[1])
-    await waitFor(() => expect(screen.queryByTestId('tv-rail')).toBeNull())
-  })
-
-  it('Bakåt stänger lådan före vyn', async () => {
-    mount({ phone: true })
-    const leftLiveTv = vi.fn()
-    window.addEventListener(BROWSE_BACK_EVENT, leftLiveTv)
-    fireEvent.click(screen.getByTestId('tv-rail-open'))
-    await screen.findByTestId('tv-rail')
-    fireEvent.keyDown(window, { key: 'Escape' })
-    await waitFor(() => expect(screen.queryByTestId('tv-rail')).toBeNull())
-    expect(leftLiveTv).not.toHaveBeenCalled()
-    window.removeEventListener(BROWSE_BACK_EVENT, leftLiveTv)
-  })
-
-  it('tryck utanför stänger lådan', async () => {
-    mount({ phone: true })
-    fireEvent.click(screen.getByTestId('tv-rail-open'))
-    await screen.findByTestId('tv-rail')
-    fireEvent.pointerDown(document.body)
-    await waitFor(() => expect(screen.queryByTestId('tv-rail')).toBeNull())
-  })
-
-  it('behåller den fasta raden på skrivbordet', () => {
-    mount()
-    expect(screen.getByTestId('tv-rail')).toBeInTheDocument()
     expect(screen.queryByTestId('tv-rail-open')).toBeNull()
   })
-
-  // Fixrunda 1, fynd 1: Bakåt-posten pushade lådans EGET lager när den
-  // öppnades, och `back()` läser `layersRef`-toppen FÖRST — den hittade bara
-  // sig själv och stannade där. Ett klick på `rail-back` stängde alltså
-  // lådan men bytte aldrig vy. Testet monterar på en vy som INTE är hubben
-  // (`guide`), där `back()` ska ta ett steg mot `hub` — och bevisar att
-  // navigeringen faktiskt sker, inte bara att lådan försvinner.
-  it('Bakåt-posten i lådan navigerar (inte bara stänger lådan)', async () => {
-    const { onNavigate } = mount({ phone: true, params: { view: 'guide' } })
-    fireEvent.click(screen.getByTestId('tv-rail-open'))
-    const drawer = await screen.findByTestId('tv-rail')
-    fireEvent.click(within(drawer).getByTestId('rail-back'))
-    await waitFor(() => expect(screen.queryByTestId('tv-rail')).toBeNull())
-    expect(onNavigate).toHaveBeenCalled()
-    const [{ params }] = onNavigate.mock.calls[onNavigate.mock.calls.length - 1]
-    expect(params.view).toBe('hub')
+  it('märker roten med data-lt-phone', () => {
+    const { box } = mount({ phone: true })
+    expect(box.querySelector('[data-live-tv-tv-root]')).toHaveAttribute('data-lt-phone', '1')
   })
-
-  // Fixrunda 1, fynd 2: öppningsknappen låg kvar i DOM:en (bara visuellt
-  // skymd av lådan, zIndex 40 mot 60) utan att tas bort ur tabbordningen —
-  // Shift+Tab från lådans första post kunde landa på en knapp ingen ser.
-  it('öppningsknappen går inte att nå med tangentbordet medan lådan är öppen', async () => {
+  it('utan telefonattribut: ikonraden som förut, ingen flik-rad, ingen märkning', () => {
+    const { box } = mount({ phone: false })
+    expect(screen.getByTestId('tv-rail')).toBeInTheDocument()
+    expect(screen.queryByTestId('mobile-tab-bar')).toBeNull()
+    expect(box.querySelector('[data-live-tv-tv-root]')).not.toHaveAttribute('data-lt-phone')
+  })
+  it('flikarna navigerar', () => {
+    const { onNavigate } = mount({ phone: true })
+    fireEvent.click(screen.getByTestId('tab-search'))
+    expect(onNavigate).toHaveBeenCalledWith({ pageId: 'live-tv-browse', params: { view: 'search' } })
+  })
+  it('More öppnar ett ark med Multiview och Settings; Settings navigerar och stänger arket', async () => {
+    const { onNavigate } = mount({ phone: true })
+    fireEvent.click(screen.getByTestId('tab-more'))
+    const sheet = await screen.findByRole('dialog')
+    expect(within(sheet).getByText('Multiview')).toBeInTheDocument()
+    fireEvent.click(within(sheet).getByText('Settings'))
+    expect(onNavigate).toHaveBeenCalledWith({ pageId: 'live-tv-browse', params: { view: 'settings' } })
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+  })
+  it('Bakåt (Escape) stänger More-arket innan något annat händer', async () => {
+    const { onNavigate } = mount({ phone: true })
+    fireEvent.click(screen.getByTestId('tab-more'))
+    await screen.findByRole('dialog')
+    fireEvent.keyDown(window, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(onNavigate).not.toHaveBeenCalled()
+  })
+  it('kanalmenyn (håll på ett kort) landar i ett bottenark, inte i värdens glasmeny', async () => {
+    vi.useFakeTimers()
     mount({ phone: true })
-    const openButton = screen.getByTestId('tv-rail-open')
-    fireEvent.click(openButton)
-    await screen.findByTestId('tv-rail')
-    expect(openButton).toHaveAttribute('tabindex', '-1')
-    expect(openButton).toHaveAttribute('aria-hidden', 'true')
+    const card = await screen.findByText('A')
+    fireEvent.pointerDown(card.closest('[data-f]') as HTMLElement, { pointerType: 'touch', button: 0 })
+    vi.advanceTimersByTime(700)
+    vi.useRealTimers()
+    expect(await screen.findByRole('dialog')).toHaveTextContent('Watch now')
+    expect(screen.queryByTestId('tv-glass-menu')).toBeNull()
+  })
+  // Kanalarket har ingen egen Escape-lyssnare (till skillnad från värdens
+  // glasmeny) — skalets Bakåt måste därför stänga det, inte stå tillbaka.
+  it('Bakåt (Escape) stänger kanalarket i stället för att lämna vyn', async () => {
+    vi.useFakeTimers()
+    const { onNavigate } = mount({ phone: true })
+    const card = await screen.findByText('A')
+    fireEvent.pointerDown(card.closest('[data-f]') as HTMLElement, { pointerType: 'touch', button: 0 })
+    vi.advanceTimersByTime(700)
+    vi.useRealTimers()
+    await screen.findByTestId('channel-sheet')
+    fireEvent.keyDown(window, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByTestId('channel-sheet')).toBeNull())
+    expect(onNavigate).not.toHaveBeenCalled()
+  })
+  // Knappen ritas bara på hovring över en station med håll (`data-hold`), så
+  // testet hovrar med en FIN pekare — annars hade det varit sant av sig självt.
+  it('hold-affordansen ("…"-knappen) finns inte på telefon', async () => {
+    stubPointer({ fine: true })
+    const { box } = mount({ phone: true })
+    fireEvent.pointerOver((await screen.findByText('A')).closest('[data-hold]') as HTMLElement)
+    expect(box.querySelector('[data-live-tv-hold-button]')).toBeNull()
+  })
+  it('flik-raden döljs när spelaren är öppen', async () => {
+    mount({ phone: true })
+    // Simulera uppspelning: klicka första kanalkortet i hubben (fixturen har A och B).
+    fireEvent.click(await screen.findByText('A'))
+    await waitFor(() => expect(screen.queryByTestId('mobile-tab-bar')).toBeNull())
   })
 })

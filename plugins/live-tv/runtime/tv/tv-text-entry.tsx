@@ -2,10 +2,9 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { getTvKeyboardPanel, useTvMode } from '@/lib/plugin-sdk'
-import { TV, dp, phoneHitFloor, phoneTextFloor, station } from './tv-ui'
+import { TV, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
 import { TvKeyboard } from './tv-keyboard'
-import { usePhoneSurface } from '../hooks/usePhoneSurface'
 
 /**
  * Fälttypen styr BARA det riktiga fältet utanför TV-läget: värdens
@@ -145,7 +144,6 @@ function TextPromptDialog({ title, initial, kind, pushLayer, onDone, onCancel }:
   onCancel: () => void
 }) {
   const { tt } = useTvText()
-  const phone = usePhoneSurface()
   const [value, setValue] = useState(initial)
   const inputRef = useRef<HTMLInputElement | null>(null)
   useEffect(() => { inputRef.current?.focus() }, [])
@@ -171,7 +169,7 @@ function TextPromptDialog({ title, initial, kind, pushLayer, onDone, onCancel }:
       style={{ position: 'fixed', inset: 0, zIndex: 70, display: 'flex', alignItems: 'center', justifyContent: 'center', background: TV.scrim }}
     >
       <div style={{ width: dp(420), borderRadius: dp(14), background: TV.panel, border: `1px solid ${TV.line}`, padding: dp(24), display: 'flex', flexDirection: 'column', gap: dp(16) }}>
-        <div style={{ fontSize: dp(phoneTextFloor(20, phone)), fontWeight: 600 }}>{title}</div>
+        <div style={{ fontSize: dp(20), fontWeight: 600 }}>{title}</div>
         <input
           ref={inputRef}
           data-testid="text-prompt-input"
@@ -182,11 +180,11 @@ function TextPromptDialog({ title, initial, kind, pushLayer, onDone, onCancel }:
             if (event.key === 'Enter') { if (isComposing(event)) return; event.preventDefault(); submit() }
             else if (event.key === 'Escape') { event.preventDefault(); onCancel() }
           }}
-          style={{ height: dp(phoneHitFloor(44, phone)), borderRadius: dp(8), border: `1px solid ${TV.lineCard}`, background: TV.s08, color: TV.text, padding: `0 ${dp(12)}px`, fontSize: dp(phoneTextFloor(16, phone)) }}
+          style={{ height: dp(44), borderRadius: dp(8), border: `1px solid ${TV.lineCard}`, background: TV.s08, color: TV.text, padding: `0 ${dp(12)}px`, fontSize: dp(16) }}
         />
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: dp(10) }}>
-          <div {...station(onCancel)} style={{ height: dp(phoneHitFloor(38, phone)), minHeight: dp(phoneHitFloor(38, phone)), padding: `0 ${dp(16)}px`, borderRadius: 999, background: TV.s12, display: 'inline-flex', alignItems: 'center', fontSize: dp(phoneTextFloor(15, phone)), cursor: 'pointer' }}>{tt('cancel')}</div>
-          <div {...station(submit)} style={{ height: dp(phoneHitFloor(38, phone)), minHeight: dp(phoneHitFloor(38, phone)), padding: `0 ${dp(16)}px`, borderRadius: 999, background: TV.acc, color: TV.onAcc, display: 'inline-flex', alignItems: 'center', fontSize: dp(phoneTextFloor(15, phone)), fontWeight: 600, cursor: 'pointer' }}>{tt('keyDone')}</div>
+          <div {...station(onCancel)} style={{ height: dp(38), minHeight: dp(38), padding: `0 ${dp(16)}px`, borderRadius: 999, background: TV.s12, display: 'inline-flex', alignItems: 'center', fontSize: dp(15), cursor: 'pointer' }}>{tt('cancel')}</div>
+          <div {...station(submit)} style={{ height: dp(38), minHeight: dp(38), padding: `0 ${dp(16)}px`, borderRadius: 999, background: TV.acc, color: TV.onAcc, display: 'inline-flex', alignItems: 'center', fontSize: dp(15), fontWeight: 600, cursor: 'pointer' }}>{tt('keyDone')}</div>
         </div>
       </div>
     </div>
@@ -209,7 +207,6 @@ export function TvTextField({ value, onChange, onSubmit, placeholder, autoFocus 
   autoFocus?: boolean
 }) {
   const tvMode = useTvMode()
-  const phone = usePhoneSurface()
   const inputRef = useRef<HTMLInputElement | null>(null)
   useEffect(() => {
     if (!tvMode && autoFocus) inputRef.current?.focus()
@@ -227,7 +224,7 @@ export function TvTextField({ value, onChange, onSubmit, placeholder, autoFocus 
       onKeyDown={(event) => {
         if (event.key === 'Enter') { if (isComposing(event)) return; event.preventDefault(); onSubmit?.() }
       }}
-      style={{ height: dp(phoneHitFloor(64, phone)), borderRadius: dp(14), background: TV.s10, border: `1px solid ${TV.line}`, color: TV.text, padding: `0 ${dp(20)}px`, fontSize: dp(phoneTextFloor(20, phone)) }}
+      style={{ height: dp(64), borderRadius: dp(14), background: TV.s10, border: `1px solid ${TV.line}`, color: TV.text, padding: `0 ${dp(20)}px`, fontSize: dp(20) }}
     />
   )
 }

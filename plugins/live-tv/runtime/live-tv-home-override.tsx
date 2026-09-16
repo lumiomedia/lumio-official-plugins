@@ -274,6 +274,8 @@ export function LiveTvHomeOverride({ onNavigate }: HomeOverrideProps) {
             channel: activeChannel,
             locale,
             gateOpen: false,
+            // Startsidan lever utanför TV-scenen — ingen telefonmätning finns.
+            phone: false,
             onOpenGuide: () => { closePlayer(); goBrowse('guide') },
             onOpenMultiview: () => { closePlayer(); goBrowse('multi') },
             onOpenChannelDetails: () => { const channel = activeChannel; closePlayer(); goBrowse('channel', encodeChannelParams(channel)) },

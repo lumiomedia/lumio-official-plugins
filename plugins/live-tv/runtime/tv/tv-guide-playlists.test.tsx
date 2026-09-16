@@ -5,7 +5,6 @@ import { flushLiveTvIndex, seedLiveTvIndex } from '../../src/__test-stubs__/live
 import { LIVE_TV_PLUGIN_ID, computeGroups, type LiveTvList } from '../live-tv-data'
 import type { EpgCacheEntry } from '../epg/types'
 import { dp } from './tv-ui'
-import { CHANNEL_COLUMN_PHONE_MIN_DP } from './tv-guide-shared'
 
 vi.mock('../live-tv-player', () => ({ LiveTvPlayer: () => <div data-testid="player" /> }))
 import { LiveTvTvShell } from './tv-shell'
@@ -120,6 +119,10 @@ describe('TvGuidePlaylists', () => {
  * flexrad med en icke-krympbar cell bredvid titel och timer.
  */
 describe('TvGuidePlaylists i porträtt (telefon): tre fasta kolumner staplas (fixrunda 2, FYND 3)', () => {
+  // En telefon är aldrig en TV: skalet gatar `phone` med `!isTv` (fas 3 ger
+  // vyerna `phone` som prop därifrån i stället för en egen mätning), så
+  // telefonblocket kör utanför TV-läget som filens beforeEach annars slår på.
+  beforeEach(() => __setTvModeForTests(false))
   let box: HTMLElement | null = null
   afterEach(() => { box?.remove(); box = null })
 
@@ -155,7 +158,9 @@ describe('TvGuidePlaylists i porträtt (telefon): tre fasta kolumner staplas (fi
     expect(col.style.flexGrow).toBe('1')
     expect(col.style.flexShrink).toBe('1')
     expect(col.style.flexBasis).toBe('0px')
-    expect(col.style.minWidth).toBe(`${dp(CHANNEL_COLUMN_PHONE_MIN_DP)}px`)
+    // Fas 2:s breddgolv gick med fas 3 (kolumnen ritas i äkta px tills
+    // spellistvyn får sin egen telefonlayout).
+    expect(col.style.minWidth).toBe('0')
   })
 
   it('vänster-/högerkolumnen och radens kanalcell behåller 330/560 dp på skrivbord/TV', async () => {

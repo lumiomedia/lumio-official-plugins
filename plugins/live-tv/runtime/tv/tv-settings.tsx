@@ -41,10 +41,9 @@ import { useEpgStatus } from '../hooks/useEpgStatus'
 import type { TvNav, TvViewProps } from './tv-shell'
 import { TvCategoryPicker, TvListPicker } from './tv-list-picker'
 import { useTextPrompt } from './tv-text-entry'
-import { PHONE_HIT_MIN_DP, TV, Toggle, dp, phoneHitFloor, phoneTextFloor, station } from './tv-ui'
+import { TV, Toggle, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
 import { BANNER_HIDE_OPTIONS, setGuideMode, setTvSettings, useGuideMode, type BannerHideMs, type GuideMode, type TvSettings } from './tv-settings-store'
-import { usePhoneSurface } from '../hooks/usePhoneSurface'
 
 type Tab = 'appearance' | 'playlists' | 'epg' | 'parental'
 const TABS: Tab[] = ['appearance', 'playlists', 'epg', 'parental']
@@ -60,9 +59,8 @@ const hasAccent = typeof accentApi.getAccent === 'function' && typeof accentApi.
  * råkar sakna innehåll (t.ex. Spellistor utan listor).
  */
 function Row({ label, right, onOk, testId }: { label: ReactNode; right: ReactNode; onOk: () => void; testId?: string }) {
-  const phone = usePhoneSurface()
   return (
-    <div data-testid={testId} {...station(onOk)} style={{ height: dp(phoneHitFloor(64, phone)), minHeight: dp(phoneHitFloor(64, phone)), borderRadius: dp(12), background: TV.s06, padding: `0 ${dp(18)}px`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: dp(16), fontSize: dp(phoneTextFloor(19, phone)), cursor: 'pointer' }}>
+    <div data-testid={testId} {...station(onOk)} style={{ height: dp(64), minHeight: dp(64), borderRadius: dp(12), background: TV.s06, padding: `0 ${dp(18)}px`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: dp(16), fontSize: dp(19), cursor: 'pointer' }}>
       <span style={{ minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
       <span style={{ flexShrink: 0, color: 'rgba(243,244,248,0.6)', display: 'inline-flex', alignItems: 'center', gap: dp(10) }}>{right}</span>
     </div>
@@ -70,13 +68,11 @@ function Row({ label, right, onOk, testId }: { label: ReactNode; right: ReactNod
 }
 
 function Heading({ children, hint }: { children: ReactNode; hint?: string }) {
-  const phone = usePhoneSurface()
-  return <div><div style={{ fontSize: dp(phoneTextFloor(26, phone)), fontWeight: 600 }}>{children}</div>{hint ? <div style={{ fontSize: dp(phoneTextFloor(16, phone)), color: 'rgba(243,244,248,0.5)' }}>{hint}</div> : null}</div>
+  return <div><div style={{ fontSize: dp(26), fontWeight: 600 }}>{children}</div>{hint ? <div style={{ fontSize: dp(16), color: 'rgba(243,244,248,0.5)' }}>{hint}</div> : null}</div>
 }
 
 export function TvSettingsView({ model, nav, params, settings }: TvViewProps) {
   const { tt, locale } = useTvText()
-  const phone = usePhoneSurface()
   const initial = (TABS as string[]).includes(params.tab ?? '') ? (params.tab as Tab) : 'appearance'
   const [tab, setTab] = useState<Tab>(initial)
   const labels: Record<Tab, string> = { appearance: tt('tabAppearance'), playlists: tt('tabPlaylists'), epg: tt('tabEpg'), parental: tt('tabParental') }
@@ -85,7 +81,7 @@ export function TvSettingsView({ model, nav, params, settings }: TvViewProps) {
       <div style={{ width: dp(340), flexShrink: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(34)}px ${dp(20)}px 0 ${dp(48)}px`, display: 'flex', flexDirection: 'column', gap: dp(6) }}>
         <div style={{ fontSize: dp(30), fontWeight: 600, marginBottom: dp(16) }}>{tt('liveTv')}</div>
         {TABS.map((t) => (
-          <div key={t} data-testid={`tab-${t}`} {...station(() => setTab(t), undefined, { ...(t === tab ? { 'data-init': '' } : {}), 'data-f-right': '[data-live-tv-settings-content] [data-f]' })} style={{ height: dp(phoneHitFloor(60, phone)), minHeight: dp(phoneHitFloor(60, phone)), borderRadius: dp(12), padding: `0 ${dp(18)}px`, display: 'flex', alignItems: 'center', fontSize: dp(phoneTextFloor(20, phone)), background: t === tab ? TV.s12 : 'transparent', color: t === tab ? TV.text : TV.muted, cursor: 'pointer' }}>{labels[t]}</div>
+          <div key={t} data-testid={`tab-${t}`} {...station(() => setTab(t), undefined, { ...(t === tab ? { 'data-init': '' } : {}), 'data-f-right': '[data-live-tv-settings-content] [data-f]' })} style={{ height: dp(60), minHeight: dp(60), borderRadius: dp(12), padding: `0 ${dp(18)}px`, display: 'flex', alignItems: 'center', fontSize: dp(20), background: t === tab ? TV.s12 : 'transparent', color: t === tab ? TV.text : TV.muted, cursor: 'pointer' }}>{labels[t]}</div>
         ))}
       </div>
       <div data-live-tv-settings-content="" data-scroll="" style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: `${dp(40)}px ${dp(48)}px`, display: 'flex', flexDirection: 'column', gap: dp(36) }}>
@@ -101,7 +97,6 @@ export function TvSettingsView({ model, nav, params, settings }: TvViewProps) {
 type TT = ReturnType<typeof useTvText>['tt']
 
 function AppearanceTab({ settings, tt }: { settings: TvSettings; tt: TT }) {
-  const phone = usePhoneSurface()
   const guideMode = useGuideMode()
   const [accent, setAccentState] = useState(() => (hasAccent ? accentApi.getAccent!() : ''))
   // Fyra lägen sedan 0.6.0: Rutnät (P6) ligger mellan Tablå och Spellistor,
@@ -117,7 +112,7 @@ function AppearanceTab({ settings, tt }: { settings: TvSettings; tt: TT }) {
             {Object.entries(accentApi.ACCENT_PRESETS!).map(([id, preset]) => {
               const color = `rgb(${preset.shades[1]})`
               return (
-                <div key={id} {...station(() => { accentApi.setAccent!(id); setAccentState(id) })} style={{ height: dp(phoneHitFloor(60, phone)), minHeight: dp(phoneHitFloor(60, phone)), padding: `0 ${dp(22)}px 0 ${dp(14)}px`, borderRadius: 999, border: `1px solid ${accent === id ? color : TV.lineCard}`, background: TV.s06, display: 'inline-flex', alignItems: 'center', gap: dp(12), fontSize: dp(phoneTextFloor(19, phone)), cursor: 'pointer' }}>
+                <div key={id} {...station(() => { accentApi.setAccent!(id); setAccentState(id) })} style={{ height: dp(60), minHeight: dp(60), padding: `0 ${dp(22)}px 0 ${dp(14)}px`, borderRadius: 999, border: `1px solid ${accent === id ? color : TV.lineCard}`, background: TV.s06, display: 'inline-flex', alignItems: 'center', gap: dp(12), fontSize: dp(19), cursor: 'pointer' }}>
                   <span style={{ width: dp(28), height: dp(28), borderRadius: 999, background: color }} />{preset.label}
                 </div>
               )
@@ -129,11 +124,11 @@ function AppearanceTab({ settings, tt }: { settings: TvSettings; tt: TT }) {
         <Heading hint={tt('guideDefaultHint')}>{tt('guideDefault')}</Heading>
         <div style={{ display: 'flex', gap: dp(16), flexWrap: 'wrap' }}>
           {modes.map((m) => (
-            <div key={m.key} data-testid={`guide-default-${m.key}`} {...station(() => setGuideMode(m.key))} style={{ width: dp(300), minHeight: phone ? dp(PHONE_HIT_MIN_DP) : undefined, borderRadius: dp(14), border: `1px solid ${guideMode === m.key ? TV.acc : TV.lineCard}`, background: TV.s06, padding: dp(16), display: 'flex', flexDirection: 'column', gap: dp(12), cursor: 'pointer' }}>
+            <div key={m.key} data-testid={`guide-default-${m.key}`} {...station(() => setGuideMode(m.key))} style={{ width: dp(300), borderRadius: dp(14), border: `1px solid ${guideMode === m.key ? TV.acc : TV.lineCard}`, background: TV.s06, padding: dp(16), display: 'flex', flexDirection: 'column', gap: dp(12), cursor: 'pointer' }}>
               <div style={{ height: dp(110), borderRadius: dp(10), background: TV.s05, display: 'grid', gridTemplateColumns: m.key === 'playlists' ? '1fr 2fr 1fr' : m.key === 'tl' ? '1fr 3fr' : m.key === 'grid' ? '1fr 1fr 1fr' : '1fr 1.2fr 1fr 1fr', gridTemplateRows: m.key === 'grid' ? '1fr 1fr' : undefined, gap: dp(6), padding: dp(10) }}>
                 {Array.from({ length: m.key === 'playlists' ? 3 : m.key === 'tl' ? 2 : m.key === 'grid' ? 6 : 4 }).map((_, i) => <div key={i} style={{ borderRadius: dp(4), background: i === 1 ? TV.accMix(35) : TV.s12 }} />)}
               </div>
-              <div style={{ fontSize: dp(phoneTextFloor(19, phone)), fontWeight: 600 }}>{m.label}</div>
+              <div style={{ fontSize: dp(19), fontWeight: 600 }}>{m.label}</div>
             </div>
           ))}
         </div>
@@ -196,13 +191,12 @@ function progressText(tt: TT, locale: string, progress: ImportProgress): string 
  * hade flyttat fokus till body mitt i en hämtning).
  */
 function Action({ label, onOk, testId, disabled }: { label: string; onOk: () => void; testId?: string; disabled?: boolean }) {
-  const phone = usePhoneSurface()
   return (
     <div
       data-testid={testId}
       aria-disabled={disabled ? 'true' : undefined}
       {...station(() => { if (!disabled) onOk() })}
-      style={{ height: dp(phoneHitFloor(48, phone)), minHeight: dp(phoneHitFloor(48, phone)), padding: `0 ${dp(20)}px`, borderRadius: 999, background: TV.s12, display: 'inline-flex', alignItems: 'center', fontSize: dp(phoneTextFloor(17, phone)), whiteSpace: 'nowrap', cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.5 : 1 }}
+      style={{ height: dp(48), minHeight: dp(48), padding: `0 ${dp(20)}px`, borderRadius: 999, background: TV.s12, display: 'inline-flex', alignItems: 'center', fontSize: dp(17), whiteSpace: 'nowrap', cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.5 : 1 }}
     >
       {label}
     </div>
@@ -249,7 +243,6 @@ export const ListRow = memo(function ListRow({
   onRemove: (list: LiveTvList) => void
   onEditChannels: (list: LiveTvList) => void
 }) {
-  const phone = usePhoneSurface()
   const importable = list.kind === 'm3u' || list.kind === 'xtream'
   const logoEnabled = isLogoFallbackEnabled(list)
   // Kvittot/felet lever i raden själv, inte i föräldern: samma mönster som
@@ -279,34 +272,34 @@ export const ListRow = memo(function ListRow({
   return (
     <div
       data-testid={`list-row-${list.id}`}
-      style={{ minHeight: dp(phoneHitFloor(64, phone)), borderRadius: dp(12), background: TV.s06, padding: `${dp(12)}px ${dp(18)}px`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: dp(16), fontSize: dp(phoneTextFloor(19, phone)) }}
+      style={{ minHeight: dp(64), borderRadius: dp(12), background: TV.s06, padding: `${dp(12)}px ${dp(18)}px`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: dp(16), fontSize: dp(19) }}
     >
       <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: dp(4) }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: dp(10), minWidth: 0 }}>
           <strong style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{list.name}</strong>
           {list.needsReimport ? (
-            <span style={{ flexShrink: 0, fontSize: dp(phoneTextFloor(14, phone)), fontWeight: 600, padding: `${dp(3)}px ${dp(10)}px`, borderRadius: dp(8), background: 'rgba(244,132,95,0.18)', color: '#f4845f' }}>{tt('needsReimport')}</span>
+            <span style={{ flexShrink: 0, fontSize: dp(14), fontWeight: 600, padding: `${dp(3)}px ${dp(10)}px`, borderRadius: dp(8), background: 'rgba(244,132,95,0.18)', color: '#f4845f' }}>{tt('needsReimport')}</span>
           ) : null}
         </div>
-        <div style={{ fontSize: dp(phoneTextFloor(16, phone)), color: TV.dim }}>
+        <div style={{ fontSize: dp(16), color: TV.dim }}>
           {tt('channelsCount', { count: (list.channelCount ?? list.channels?.length ?? 0).toLocaleString(locale) })}
           {list.fetchedAt ? ` · ${tt('fetchedAt', { time: formatFetchedAt(list.fetchedAt, locale) })}` : ''}
         </div>
-        {busy ? <div style={{ fontSize: dp(phoneTextFloor(16, phone)), color: TV.muted }}>{progressText(tt, locale, busy)}</div> : null}
-        {!busy && needsLogin ? <div style={{ fontSize: dp(phoneTextFloor(15, phone)), color: TV.muted }}>{tt('xtreamNeedsLogin')}</div> : null}
+        {busy ? <div style={{ fontSize: dp(16), color: TV.muted }}>{progressText(tt, locale, busy)}</div> : null}
+        {!busy && needsLogin ? <div style={{ fontSize: dp(15), color: TV.muted }}>{tt('xtreamNeedsLogin')}</div> : null}
         {list.truncated ? (
-          <div data-testid={`list-truncated-${list.id}`} style={{ fontSize: dp(phoneTextFloor(15, phone)), color: '#fbbf24' }}>{tt('truncated')}</div>
+          <div data-testid={`list-truncated-${list.id}`} style={{ fontSize: dp(15), color: '#fbbf24' }}>{tt('truncated')}</div>
         ) : null}
         {!busy && list.lastImportError ? (
-          <div data-testid={`list-error-${list.id}`} style={{ fontSize: dp(phoneTextFloor(15, phone)), color: '#fca5a5', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{list.lastImportError}</div>
+          <div data-testid={`list-error-${list.id}`} style={{ fontSize: dp(15), color: '#fca5a5', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{list.lastImportError}</div>
         ) : null}
         {logoResult ? (
-          <div data-testid={`list-logo-complete-result-${list.id}`} style={{ fontSize: dp(phoneTextFloor(15, phone)), color: TV.dim }}>
+          <div data-testid={`list-logo-complete-result-${list.id}`} style={{ fontSize: dp(15), color: TV.dim }}>
             {tt('logoCompleteResult', { matched: logoResult.matched, total: logoResult.total })}
           </div>
         ) : null}
         {logoError ? (
-          <div data-testid={`list-logo-complete-error-${list.id}`} style={{ fontSize: dp(phoneTextFloor(15, phone)), color: '#fca5a5', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{logoError}</div>
+          <div data-testid={`list-logo-complete-error-${list.id}`} style={{ fontSize: dp(15), color: '#fca5a5', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{logoError}</div>
         ) : null}
       </div>
       {/* Ordning: Hämta om, Logotyper, Komplettera, Ta bort — "Ta bort" sist
@@ -329,8 +322,8 @@ export const ListRow = memo(function ListRow({
           aria-disabled={list.kind === 'custom' ? 'true' : undefined}
           {...station(() => { if (list.kind !== 'custom') setLogoFallbackEnabled(list.id, !logoEnabled) })}
           style={{
-            height: dp(phoneHitFloor(48, phone)),
-            minHeight: dp(phoneHitFloor(48, phone)),
+            height: dp(48),
+            minHeight: dp(48),
             padding: `0 ${dp(16)}px`,
             borderRadius: 999,
             background: TV.s06,
@@ -338,7 +331,7 @@ export const ListRow = memo(function ListRow({
             display: 'inline-flex',
             alignItems: 'center',
             gap: dp(10),
-            fontSize: dp(phoneTextFloor(15, phone)),
+            fontSize: dp(15),
             whiteSpace: 'nowrap',
             cursor: list.kind === 'custom' ? 'default' : 'pointer',
             opacity: list.kind === 'custom' ? 0.5 : 1,
@@ -700,7 +693,6 @@ function XtreamAccounts({ nav, tt, locale, onReimport }: { nav: TvNav; tt: TT; l
 }
 
 function XtreamAccountCard({ login, tt, locale, onCategories }: { login: XtreamLogin; tt: TT; locale: string; onCategories: () => void }) {
-  const phone = usePhoneSurface()
   const [account, setAccount] = useState<XtreamAccount | null>(null)
   const [failed, setFailed] = useState(false)
   useEffect(() => {
@@ -723,11 +715,11 @@ function XtreamAccountCard({ login, tt, locale, onCategories }: { login: XtreamL
   return (
     <div
       data-testid={`xtream-account-${login.id}`}
-      style={{ minHeight: dp(phoneHitFloor(64, phone)), borderRadius: dp(12), background: TV.s06, padding: `${dp(12)}px ${dp(18)}px`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: dp(16), fontSize: dp(phoneTextFloor(19, phone)) }}
+      style={{ minHeight: dp(64), borderRadius: dp(12), background: TV.s06, padding: `${dp(12)}px ${dp(18)}px`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: dp(16), fontSize: dp(19) }}
     >
       <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: dp(4) }}>
         <strong style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{host}</strong>
-        <span style={{ fontSize: dp(phoneTextFloor(16, phone)), color: failed ? '#fca5a5' : TV.dim }}>{meta}</span>
+        <span style={{ fontSize: dp(16), color: failed ? '#fca5a5' : TV.dim }}>{meta}</span>
       </div>
       <Action
         testId={`xtream-categories-${login.id}`}
@@ -749,7 +741,6 @@ function XtreamAccountCard({ login, tt, locale, onCategories }: { login: XtreamL
  * siffror för samma globala butik.
  */
 function EpgTab({ lists, nav, tt, locale }: { lists: LiveTvList[]; nav: TvNav; tt: TT; locale: string }) {
-  const phone = usePhoneSurface()
   const keyboard = useTextPrompt({ pushLayer: nav.pushLayer })
   const { status, urls: statusUrls, refreshing, refresh } = useEpgStatus()
   const urls = useMemo(() => lists.flatMap((list) => list.epgUrls.map((url) => ({ listId: list.id, url }))), [lists])
@@ -777,13 +768,13 @@ function EpgTab({ lists, nav, tt, locale }: { lists: LiveTvList[]; nav: TvNav; t
               <div
                 key={url}
                 data-testid={`epg-status-${url}`}
-                style={{ minHeight: dp(phoneHitFloor(64, phone)), borderRadius: dp(12), background: TV.s06, padding: `${dp(12)}px ${dp(18)}px`, display: 'flex', flexDirection: 'column', gap: dp(4), fontSize: dp(phoneTextFloor(18, phone)) }}
+                style={{ minHeight: dp(64), borderRadius: dp(12), background: TV.s06, padding: `${dp(12)}px ${dp(18)}px`, display: 'flex', flexDirection: 'column', gap: dp(4), fontSize: dp(18) }}
               >
                 <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{url}</span>
                 {stat?.error
-                  ? <span style={{ fontSize: dp(phoneTextFloor(16, phone)), color: '#fca5a5', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stat.error}</span>
+                  ? <span style={{ fontSize: dp(16), color: '#fca5a5', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stat.error}</span>
                   : (
-                    <span style={{ fontSize: dp(phoneTextFloor(16, phone)), color: TV.dim }}>
+                    <span style={{ fontSize: dp(16), color: TV.dim }}>
                       {stat ? tt('epgSourceStats', { channels: stat.channels.toLocaleString(locale), programmes: stat.programmes.toLocaleString(locale) }) : tt('epgNeverFetched')}
                       {fetched ? ` · ${tt('fetchedAt', { time: fetched })}` : ''}
                     </span>
@@ -798,7 +789,6 @@ function EpgTab({ lists, nav, tt, locale }: { lists: LiveTvList[]; nav: TvNav; t
 }
 
 function ParentalTab({ model, tt }: { model: TvViewProps['model']; tt: TT }) {
-  const phone = usePhoneSurface()
   const [keys, setKeys] = useState(getLockedChannelKeys)
   useEffect(() => onChannelLocksChanged(() => setKeys(getLockedChannelKeys())), [])
   const channels = keys
@@ -816,7 +806,7 @@ function ParentalTab({ model, tt }: { model: TvViewProps['model']; tt: TT }) {
   return (
     <section style={{ display: 'flex', flexDirection: 'column', gap: dp(10) }}>
       <Heading>{tt('lockedChannels')}</Heading>
-      {channels.length === 0 ? <div style={{ fontSize: dp(phoneTextFloor(18, phone)), color: TV.dim }}>{tt('noLocked')}</div> : null}
+      {channels.length === 0 ? <div style={{ fontSize: dp(18), color: TV.dim }}>{tt('noLocked')}</div> : null}
       {channels.map((channel) => <Row key={channelKey(channel)} label={channel.name} right={tt('unlock')} onOk={() => requestUnlock(channel)} />)}
       <PinGate
         open={pinTarget !== null}

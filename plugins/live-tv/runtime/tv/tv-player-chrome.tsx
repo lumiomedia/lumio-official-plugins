@@ -5,9 +5,8 @@ import { getTvGlassMenu, useTvMode, type TvGlassMenuTarget } from '@/lib/plugin-
 import { channelKey, type M3uChannel } from '../live-tv-data'
 import { formatClock, progressOf } from '../live-tv-ui'
 import type { LiveTvPlayerControls, LiveTvPlayerTvProps } from './tv-player-types'
-import { Icons, Progress, RoundBtn, Tag, TV, dp, phoneHitFloor, phoneTextFloor, station, useTvClockNode } from './tv-ui'
+import { Icons, Progress, RoundBtn, Tag, TV, dp, station, useTvClockNode } from './tv-ui'
 import { useTvText } from './tv-strings'
-import { usePhoneSurface } from '../hooks/usePhoneSurface'
 
 /** Kort på var sida om den spelande kanalen i mini-guiden. */
 const MINI_WINDOW = 25
@@ -35,8 +34,7 @@ const CornersIn = () => <CtlIcon><path d="M4 9.5h5.5V4M20 9.5h-5.5V4M20 14.5h-5.
 export function TvPlayerChrome({ channel, tv, controls, paused, onTogglePause, onClose }: { channel: M3uChannel; tv: LiveTvPlayerTvProps; controls?: LiveTvPlayerControls; paused: boolean; onTogglePause: () => void; onClose: () => void }) {
   const { tt } = useTvText()
   const isTv = useTvMode()
-  const phone = usePhoneSurface()
-  const clock = useTvClockNode(tv.locale, phone)
+  const clock = useTvClockNode(tv.locale)
   const [visible, setVisible] = useState(true)
   const [miniOpen, setMiniOpen] = useState(false)
   const [menu, setMenu] = useState<TvGlassMenuTarget | null>(null)
@@ -290,10 +288,10 @@ export function TvPlayerChrome({ channel, tv, controls, paused, onTogglePause, o
   return (
     <>
       <div ref={topRef} style={{ position: 'absolute', top: 0, left: 0, right: 0, padding: `${dp(36)}px ${dp(48)}px`, display: 'flex', alignItems: 'center', gap: dp(16), opacity: visible ? 1 : 0, transition: 'opacity 200ms', pointerEvents: visible ? 'auto' : 'none', zIndex: 30 }}>
-        <RoundBtn phone={phone} {...station(onClose)} background="rgba(252,252,255,0.12)"><Icons.ChevronLeft /></RoundBtn>
-        <span style={{ fontSize: dp(phoneTextFloor(20, phone)), color: 'rgba(243,244,248,0.75)' }}>{tv.channelNumber ? `${tv.channelNumber} · ` : ''}{channel.name}</span>
-        <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: dp(14), fontSize: dp(phoneTextFloor(17, phone)) }}>
-          {info.now ? <Tag variant="live" phone={phone}>{tt('live')}</Tag> : null}
+        <RoundBtn {...station(onClose)} background="rgba(252,252,255,0.12)"><Icons.ChevronLeft /></RoundBtn>
+        <span style={{ fontSize: dp(20), color: 'rgba(243,244,248,0.75)' }}>{tv.channelNumber ? `${tv.channelNumber} · ` : ''}{channel.name}</span>
+        <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: dp(14), fontSize: dp(17) }}>
+          {info.now ? <Tag variant="live">{tt('live')}</Tag> : null}
           {tv.quality ? <span style={{ color: 'rgba(243,244,248,0.75)' }}>{tv.quality}</span> : null}
           {clock}
         </span>
@@ -303,7 +301,7 @@ export function TvPlayerChrome({ channel, tv, controls, paused, onTogglePause, o
           <div style={{ fontSize: dp(44), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{info.now?.title ?? channel.name}</div>
           {info.now ? (
             <>
-              <div style={{ fontSize: dp(phoneTextFloor(20, phone)), color: 'rgba(243,244,248,0.7)' }}>
+              <div style={{ fontSize: dp(20), color: 'rgba(243,244,248,0.7)' }}>
                 {`${formatClock(info.now.start, tv.locale)}–${formatClock(info.now.stop, tv.locale)} · ${tt('minutesLeft', { min: Math.max(0, Math.round((info.now.stop - tv.nowMs) / 60_000)) })}`}
                 {info.next ? <> · <span style={{ color: TV.accText }}>{tt('nextLabel')}</span> {info.next.title}</> : null}
               </div>
@@ -314,7 +312,7 @@ export function TvPlayerChrome({ channel, tv, controls, paused, onTogglePause, o
         <div style={{ display: 'flex', alignItems: 'center', gap: dp(16), flexShrink: 0 }}>
           {!isTv && controls ? (
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: dp(12) }}>
-              <RoundBtn phone={phone} {...station(controls.onToggleMute, undefined, { 'aria-label': controls.muted ? tt('playerUnmute') : tt('playerMute') })} background="rgba(252,252,255,0.10)">
+              <RoundBtn {...station(controls.onToggleMute, undefined, { 'aria-label': controls.muted ? tt('playerUnmute') : tt('playerMute') })} background="rgba(252,252,255,0.10)">
                 {controls.muted ? <SpeakerOff /> : <SpeakerOn />}
               </RoundBtn>
               <div
@@ -331,20 +329,20 @@ export function TvPlayerChrome({ channel, tv, controls, paused, onTogglePause, o
                 // värde, så den här extra vägen är gratis och räddar miljöer
                 // utan pekarhändelser.
                 onClick={(event: { clientX: number }) => setVolumeFromPointer(event.clientX)}
-                style={{ width: dp(132), height: dp(phoneHitFloor(52, phone)), minHeight: dp(phoneHitFloor(52, phone)), display: 'inline-flex', alignItems: 'center', padding: `0 ${dp(6)}px`, borderRadius: 999, cursor: 'pointer', touchAction: 'none', boxSizing: 'border-box' }}
+                style={{ width: dp(132), height: dp(52), minHeight: dp(52), display: 'inline-flex', alignItems: 'center', padding: `0 ${dp(6)}px`, borderRadius: 999, cursor: 'pointer', touchAction: 'none', boxSizing: 'border-box' }}
               >
                 <span style={{ position: 'relative', width: '100%', height: dp(6), borderRadius: 999, background: 'rgba(252,252,255,0.22)' }}>
                   <span style={{ position: 'absolute', inset: 0, right: `${100 - volumePercent}%`, borderRadius: 999, background: TV.acc }} />
                   <span style={{ position: 'absolute', top: '50%', left: `${volumePercent}%`, width: dp(14), height: dp(14), marginTop: dp(-7), marginLeft: dp(-7), borderRadius: 999, background: '#fff' }} />
                 </span>
               </div>
-              <RoundBtn phone={phone} {...station(controls.onToggleFullscreen, undefined, { 'aria-label': controls.fullscreen ? tt('playerExitFullscreen') : tt('playerFullscreen') })} background="rgba(252,252,255,0.10)">
+              <RoundBtn {...station(controls.onToggleFullscreen, undefined, { 'aria-label': controls.fullscreen ? tt('playerExitFullscreen') : tt('playerFullscreen') })} background="rgba(252,252,255,0.10)">
                 {controls.fullscreen ? <CornersIn /> : <CornersOut />}
               </RoundBtn>
-              <div {...station(controls.onCycleAspect, undefined, { 'aria-label': tt('playerAspect') })} style={{ height: dp(phoneHitFloor(52, phone)), minHeight: dp(phoneHitFloor(52, phone)), padding: `0 ${dp(18)}px`, borderRadius: 999, background: 'rgba(252,252,255,0.10)', border: `1px solid ${TV.lineCard}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: dp(phoneTextFloor(16, phone)), color: TV.text, cursor: 'pointer', whiteSpace: 'nowrap', boxSizing: 'border-box' }}>{controls.aspectLabel}</div>
+              <div {...station(controls.onCycleAspect, undefined, { 'aria-label': tt('playerAspect') })} style={{ height: dp(52), minHeight: dp(52), padding: `0 ${dp(18)}px`, borderRadius: 999, background: 'rgba(252,252,255,0.10)', border: `1px solid ${TV.lineCard}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: dp(16), color: TV.text, cursor: 'pointer', whiteSpace: 'nowrap', boxSizing: 'border-box' }}>{controls.aspectLabel}</div>
             </div>
           ) : null}
-          <div ref={dotsRef} {...station(() => dotsRef.current && openMenu(dotsRef.current), (el) => openMenu(el), { 'data-init': '', 'aria-label': tt('moreActions') })} style={{ width: dp(phoneHitFloor(52, phone)), height: dp(phoneHitFloor(52, phone)), minHeight: dp(phoneHitFloor(52, phone)), borderRadius: 999, background: 'rgba(252,252,255,0.10)', border: `1px solid ${TV.lineCard}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Icons.Dots /></div>
+          <div ref={dotsRef} {...station(() => dotsRef.current && openMenu(dotsRef.current), (el) => openMenu(el), { 'data-init': '', 'aria-label': tt('moreActions') })} style={{ width: dp(52), height: dp(52), minHeight: dp(52), borderRadius: 999, background: 'rgba(252,252,255,0.10)', border: `1px solid ${TV.lineCard}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Icons.Dots /></div>
         </div>
       </div>
       {miniOpen ? (
@@ -357,10 +355,10 @@ export function TvPlayerChrome({ channel, tv, controls, paused, onTogglePause, o
             // (`index` −1).
             const cardInit = index < 0 ? cardIndex === 0 : current
             return (
-              <div key={channelKey(c)} data-testid="mini-card" {...station(() => { closeMini(); tv.onSwitchChannel(c) }, (el) => setMenu({ title: c.name, element: el, actions: [{ key: 'multi', label: tt('menuAddMultiview'), run: () => tv.onAddToMultiview(c) }] }), cardInit ? { 'data-init': '' } : undefined)} style={{ width: dp(330), height: dp(118), minHeight: dp(phoneHitFloor(118, phone)), flexShrink: 0, borderRadius: dp(14), padding: `${dp(14)}px ${dp(16)}px`, background: current ? TV.s16 : 'rgba(20,22,30,0.85)', display: 'flex', flexDirection: 'column', gap: dp(6), cursor: 'pointer', boxSizing: 'border-box' }}>
-                <div style={{ fontSize: dp(phoneTextFloor(14, phone)), color: 'rgba(243,244,248,0.55)' }}>{c.name}</div>
-                <div style={{ fontSize: dp(phoneTextFloor(19, phone)), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{n.now?.title ?? tt('noProgramme')}</div>
-                {n.next ? <div style={{ fontSize: dp(phoneTextFloor(15, phone)), color: 'rgba(243,244,248,0.6)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tt('nextLabel')}: {n.next.title}</div> : null}
+              <div key={channelKey(c)} data-testid="mini-card" {...station(() => { closeMini(); tv.onSwitchChannel(c) }, (el) => setMenu({ title: c.name, element: el, actions: [{ key: 'multi', label: tt('menuAddMultiview'), run: () => tv.onAddToMultiview(c) }] }), cardInit ? { 'data-init': '' } : undefined)} style={{ width: dp(330), height: dp(118), minHeight: dp(118), flexShrink: 0, borderRadius: dp(14), padding: `${dp(14)}px ${dp(16)}px`, background: current ? TV.s16 : 'rgba(20,22,30,0.85)', display: 'flex', flexDirection: 'column', gap: dp(6), cursor: 'pointer', boxSizing: 'border-box' }}>
+                <div style={{ fontSize: dp(14), color: 'rgba(243,244,248,0.55)' }}>{c.name}</div>
+                <div style={{ fontSize: dp(19), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{n.now?.title ?? tt('noProgramme')}</div>
+                {n.next ? <div style={{ fontSize: dp(15), color: 'rgba(243,244,248,0.6)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tt('nextLabel')}: {n.next.title}</div> : null}
                 {n.now ? <Progress value={progressOf(n.now.start, n.now.stop, tv.nowMs)} height={dp(4)} /> : null}
               </div>
             )

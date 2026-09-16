@@ -1620,6 +1620,8 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavi
             locale,
             // Rutnätet har ingen PIN-grind över spelaren.
             gateOpen: false,
+            // Rutnätet lever utanför TV-scenen — ingen telefonmätning finns.
+            phone: false,
             onOpenGuide: () => { setActiveChannel(null); goBrowse('guide') },
             onOpenMultiview: () => { setActiveChannel(null); goBrowse('multi') },
             onOpenChannelDetails: () => { setActiveChannel(null); goBrowse('channel', encodeChannelParams(activeChannel as DataChannel)) },

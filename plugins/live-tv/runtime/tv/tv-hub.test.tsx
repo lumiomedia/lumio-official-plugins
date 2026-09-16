@@ -104,6 +104,10 @@ describe('TvHub rubrikrad (Jerrys återkoppling 2026-09-14)', () => {
 })
 
 describe('TvHub i porträtt (telefon)', () => {
+  // En telefon är aldrig en TV: skalet gatar `phone` med `!isTv` (fas 3 ger
+  // vyerna `phone` som prop därifrån i stället för en egen mätning), så
+  // telefonblocket kör utanför TV-läget som filens beforeEach annars slår på.
+  beforeEach(() => __setTvModeForTests(false))
   // Lådan som `render(page, { container })` skriver in i — måste bort i
   // `afterEach`, precis som i M-P2:s skaltest.
   let box: HTMLElement | null = null

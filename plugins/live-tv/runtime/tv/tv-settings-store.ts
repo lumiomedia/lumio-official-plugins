@@ -16,9 +16,13 @@ export interface TvSettings {
   startOnLastChannel: boolean
   numericZap: boolean
   bannerHideMs: BannerHideMs
+  /** Telefon (fas 3): håll skärmen vaken medan spelaren är öppen. */
+  keepAwake: boolean
+  /** Telefon (fas 3): rotation till liggande öppnar fullskärm. */
+  fullscreenOnRotate: boolean
 }
 
-const DEFAULTS: TvSettings = { previewEnabled: true, startOnLastChannel: false, numericZap: true, bannerHideMs: 4000 }
+const DEFAULTS: TvSettings = { previewEnabled: true, startOnLastChannel: false, numericZap: true, bannerHideMs: 4000, keepAwake: true, fullscreenOnRotate: true }
 
 function sanitize(raw: unknown): TvSettings {
   const r = (raw && typeof raw === 'object' ? raw : {}) as Partial<Record<keyof TvSettings, unknown>>
@@ -28,6 +32,8 @@ function sanitize(raw: unknown): TvSettings {
     startOnLastChannel: typeof r.startOnLastChannel === 'boolean' ? r.startOnLastChannel : DEFAULTS.startOnLastChannel,
     numericZap: typeof r.numericZap === 'boolean' ? r.numericZap : DEFAULTS.numericZap,
     bannerHideMs: banner,
+    keepAwake: typeof r.keepAwake === 'boolean' ? r.keepAwake : DEFAULTS.keepAwake,
+    fullscreenOnRotate: typeof r.fullscreenOnRotate === 'boolean' ? r.fullscreenOnRotate : DEFAULTS.fullscreenOnRotate,
   }
 }
 

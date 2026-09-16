@@ -4,9 +4,8 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboa
 import { channelKey, type M3uChannel } from '../live-tv-data'
 import { qualityFromName } from '../live-tv-model'
 import { formatClock, progressOf } from '../live-tv-ui'
-import { usePhoneSurface } from '../hooks/usePhoneSurface'
 import type { TvViewProps } from './tv-shell'
-import { Chip, PHONE_HIT_MIN_DP, Progress, Segment, Tag, TV, dp, phoneHitFloor, phoneTextFloor, station, useTvClockNode } from './tv-ui'
+import { Chip, Progress, Segment, Tag, TV, dp, station, useTvClockNode } from './tv-ui'
 import { useTvText } from './tv-strings'
 import { setGuideMode, useGuideMode, type GuideMode } from './tv-settings-store'
 import { blockGeometry, nowLinePct, scheduleWindow, timeTicks } from './tv-schedule-window'
@@ -103,9 +102,8 @@ export function TvGuide(props: TvViewProps) {
 
 function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: TvViewProps & { mode: 'now' | 'tl'; onModeChange: (mode: GuideMode) => void }) {
   const { tt, locale } = useTvText()
-  const phone = usePhoneSurface()
-  const clock = useTvClockNode(locale, phone)
-  const channelColStyle = channelColumnStyle(phone)
+  const clock = useTvClockNode(locale)
+  const channelColStyle = channelColumnStyle()
   const groups = useGuideGroups(model, tt)
   // params.group kan vara en föråldrad eller manipulerad query-parameter
   // (t.ex. ett borttaget spellistnamn) — validera mot de faktiska grupperna
@@ -183,7 +181,7 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
     <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
       {/* Toppband */}
       <div style={{ height: previewOn ? dp(340) : dp(230), padding: `${dp(34)}px ${dp(48)}px 0`, display: 'flex', gap: dp(32), flexShrink: 0 }}>
-        <TvPreview channel={previewChannel} enabled={previewOn} live={Boolean(info.now)} width={dp(480)} height={dp(270)} label={previewOn ? tt('previewLabel') : tt('previewFrame')} onOk={() => selected && nav.play({ channel: selected })} phone={phone} />
+        <TvPreview channel={previewChannel} enabled={previewOn} live={Boolean(info.now)} width={dp(480)} height={dp(270)} label={previewOn ? tt('previewLabel') : tt('previewFrame')} onOk={() => selected && nav.play({ channel: selected })} />
         <div data-testid="guide-headline" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: dp(10) }}>
           {/*
             RUBRIKRADEN TÅL 1280 DESIGNPIXLAR (spec 5).
@@ -198,19 +196,19 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
             klockan går ner på egen rad i stället för att pressa namnet till
             noll. Vid 1920 rörs ingenting — raden hade redan plats.
           */}
-          <div data-testid="guide-meta-row" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', columnGap: dp(12), rowGap: dp(4), fontSize: dp(phoneTextFloor(18, phone)), color: 'rgba(243,244,248,0.65)' }}>
-            {selected ? <><span style={{ color: TV.accText, fontWeight: 600, flexShrink: 0 }}>{model.channelNumber(selected) ?? ''}</span><span data-testid="guide-channel-name" style={{ minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selected.name}</span>{selected.group ? <Tag variant="neutral" phone={phone} style={{ flexShrink: 0 }}>{selected.group}</Tag> : null}</> : null}
+          <div data-testid="guide-meta-row" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', columnGap: dp(12), rowGap: dp(4), fontSize: dp(18), color: 'rgba(243,244,248,0.65)' }}>
+            {selected ? <><span style={{ color: TV.accText, fontWeight: 600, flexShrink: 0 }}>{model.channelNumber(selected) ?? ''}</span><span data-testid="guide-channel-name" style={{ minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selected.name}</span>{selected.group ? <Tag variant="neutral" style={{ flexShrink: 0 }}>{selected.group}</Tag> : null}</> : null}
             <div data-testid="guide-clock" style={{ marginLeft: 'auto', flexShrink: 0, textAlign: 'right' }}>{clock}</div>
           </div>
           <div style={{ fontSize: headlineSize, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{info.now ? info.now.title : model.epgLoading ? tt('loadingGuide') : tt('noProgramme')}</div>
           {info.now ? (
             <>
-              <div style={{ fontSize: dp(phoneTextFloor(19, phone)), color: 'rgba(243,244,248,0.65)' }}>{`${formatClock(info.now.start, locale)}–${formatClock(info.now.stop, locale)} · ${minutesLeft(info.now.stop)}`}</div>
+              <div style={{ fontSize: dp(19), color: 'rgba(243,244,248,0.65)' }}>{`${formatClock(info.now.start, locale)}–${formatClock(info.now.stop, locale)} · ${minutesLeft(info.now.stop)}`}</div>
               <Progress value={progressOf(info.now.start, info.now.stop, model.nowMs)} height={dp(6)} style={{ maxWidth: dp(720) }} />
-              {previewOn && info.now.description ? <div style={{ fontSize: dp(phoneTextFloor(19, phone)), color: 'rgba(243,244,248,0.75)', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{info.now.description}</div> : null}
+              {previewOn && info.now.description ? <div style={{ fontSize: dp(19), color: 'rgba(243,244,248,0.75)', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{info.now.description}</div> : null}
             </>
           ) : null}
-          <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'baseline', gap: dp(12), fontSize: dp(phoneTextFloor(18, phone)), color: 'rgba(243,244,248,0.55)' }}>
+          <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'baseline', gap: dp(12), fontSize: dp(18), color: 'rgba(243,244,248,0.55)' }}>
             {info.next ? <><span style={{ color: TV.accText, fontWeight: 600 }}>{tt('next')}</span><span>{info.next.title} · {formatClock(info.next.start, locale)}</span></> : null}
           </div>
         </div>
@@ -220,14 +218,14 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
       <div style={{ padding: `0 ${dp(48)}px ${dp(18)}px`, display: 'flex', alignItems: 'center', gap: dp(16), flexShrink: 0 }}>
         <div data-row="" style={{ display: 'flex', gap: dp(10), overflowX: 'auto', flex: 1, minWidth: 0 }}>
           {groups.map((chip) => (
-            <Chip key={chip.id} active={group === chip.key} {...station(() => { setGroup(chip.key); setSelectedKey(null) }, undefined, { 'data-live-tv-chip': chip.id, 'data-testid': `chip-${chip.id}` })} phone={phone}>{chip.label}</Chip>
+            <Chip key={chip.id} active={group === chip.key} {...station(() => { setGroup(chip.key); setSelectedKey(null) }, undefined, { 'data-live-tv-chip': chip.id, 'data-testid': `chip-${chip.id}` })}>{chip.label}</Chip>
           ))}
         </div>
-        <Segment options={modeOptions} value={mode} onChange={onModeChange} phone={phone} />
+        <Segment options={modeOptions} value={mode} onChange={onModeChange} />
       </div>
 
       {/* Kolumnrubriker */}
-      <div style={{ padding: `0 ${dp(48)}px`, display: 'flex', gap: dp(16), fontSize: dp(phoneTextFloor(15, phone)), letterSpacing: '0.1em', textTransform: 'uppercase', color: TV.faint, flexShrink: 0 }}>
+      <div style={{ padding: `0 ${dp(48)}px`, display: 'flex', gap: dp(16), fontSize: dp(15), letterSpacing: '0.1em', textTransform: 'uppercase', color: TV.faint, flexShrink: 0 }}>
         <div data-testid="guide-channel-col-header" style={{ ...channelColStyle, padding: `0 ${dp(12)}px` }}>{tt('colChannel')}</div>
         {mode === 'now' ? (
           <><div style={{ flex: 1.2, minWidth: 0 }}>{tt('colNow')}</div><div style={{ flex: 1, minWidth: 0 }}>{tt('colNext')}</div><div style={{ flex: 1, minWidth: 0 }}>{tt('colLater')}</div></>
@@ -251,7 +249,7 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
         <div
           data-testid="guide-empty"
           {...(rows.length === 0 ? station(() => setGroup(null), undefined, { 'data-init': '' }) : { 'aria-hidden': true })}
-          style={{ padding: dp(24), color: TV.dim, fontSize: dp(phoneTextFloor(19, phone)), cursor: 'pointer', borderRadius: dp(12), minHeight: phone ? dp(PHONE_HIT_MIN_DP) : undefined, display: rows.length === 0 ? 'block' : 'none' }}
+          style={{ padding: dp(24), color: TV.dim, fontSize: dp(19), cursor: 'pointer', borderRadius: dp(12), display: rows.length === 0 ? 'block' : 'none' }}
         >
           {model.channelsLoading ? tt('loadingChannels') : tt('guideEmpty')}
         </div>
@@ -288,27 +286,27 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
           // programinformation" innan tablån landade.
           const timeline = mode === 'tl' ? timelineSchedules[key] ?? null : null
           return (
-            <div key={key} style={{ height: dp(phoneHitFloor(86, phone)), borderBottom: `1px solid rgba(255,255,255,0.07)`, display: 'flex', alignItems: 'center', gap: dp(16) }}>
+            <div key={key} style={{ height: dp(86), borderBottom: `1px solid rgba(255,255,255,0.07)`, display: 'flex', alignItems: 'center', gap: dp(16) }}>
               <div
                 data-testid="guide-row"
                 {...rowStation}
                 onKeyDown={onKeyDown}
                 onFocus={() => setSelectedKey(key)}
-                style={{ ...channelColStyle, cursor: 'pointer', borderRadius: dp(12), minHeight: dp(phoneHitFloor(86, phone)) }}
+                style={{ ...channelColStyle, cursor: 'pointer', borderRadius: dp(12), minHeight: dp(86) }}
               >
-                <ChannelCell channel={channel} number={model.channelNumber(channel)} pinned={model.pinnedSet.has(key)} locked={model.locked.has(key)} quality={qualityFromName(channel.name)} focused={focused} width="100%" phone={phone} />
+                <ChannelCell channel={channel} number={model.channelNumber(channel)} pinned={model.pinnedSet.has(key)} locked={model.locked.has(key)} quality={qualityFromName(channel.name)} focused={focused} width="100%" />
               </div>
               {mode === 'now' ? (
                 <>
                   <div style={{ flex: 1.2, minWidth: 0 }}>
-                    <div style={{ fontSize: dp(phoneTextFloor(20, phone)), fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: rowInfo.now ? TV.text : TV.dim }}>{rowInfo.now?.title ?? tt('noProgramme')}</div>
-                    {rowInfo.now ? <div style={{ display: 'flex', alignItems: 'center', gap: dp(12), marginTop: dp(8) }}><Progress value={progressOf(rowInfo.now.start, rowInfo.now.stop, model.nowMs)} height={dp(4)} style={{ flex: 1 }} /><span style={{ fontSize: dp(phoneTextFloor(14, phone)), color: 'rgba(243,244,248,0.5)', whiteSpace: 'nowrap' }}>{Math.max(0, Math.round((rowInfo.now.stop - model.nowMs) / 60_000))} min</span></div> : null}
+                    <div style={{ fontSize: dp(20), fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: rowInfo.now ? TV.text : TV.dim }}>{rowInfo.now?.title ?? tt('noProgramme')}</div>
+                    {rowInfo.now ? <div style={{ display: 'flex', alignItems: 'center', gap: dp(12), marginTop: dp(8) }}><Progress value={progressOf(rowInfo.now.start, rowInfo.now.stop, model.nowMs)} height={dp(4)} style={{ flex: 1 }} /><span style={{ fontSize: dp(14), color: 'rgba(243,244,248,0.5)', whiteSpace: 'nowrap' }}>{Math.max(0, Math.round((rowInfo.now.stop - model.nowMs) / 60_000))} min</span></div> : null}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    {rowInfo.next ? <><div style={{ fontSize: dp(phoneTextFloor(19, phone)), color: 'rgba(243,244,248,0.8)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rowInfo.next.title}</div><div style={{ fontSize: dp(phoneTextFloor(14, phone)), color: 'rgba(243,244,248,0.5)' }}>{formatClock(rowInfo.next.start, locale)}</div></> : null}
+                    {rowInfo.next ? <><div style={{ fontSize: dp(19), color: 'rgba(243,244,248,0.8)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rowInfo.next.title}</div><div style={{ fontSize: dp(14), color: 'rgba(243,244,248,0.5)' }}>{formatClock(rowInfo.next.start, locale)}</div></> : null}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    {rowInfo.later ? <><div style={{ fontSize: dp(phoneTextFloor(19, phone)), color: 'rgba(243,244,248,0.6)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rowInfo.later.title}</div><div style={{ fontSize: dp(phoneTextFloor(14, phone)), color: 'rgba(243,244,248,0.4)' }}>{formatClock(rowInfo.later.start, locale)}</div></> : null}
+                    {rowInfo.later ? <><div style={{ fontSize: dp(19), color: 'rgba(243,244,248,0.6)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rowInfo.later.title}</div><div style={{ fontSize: dp(14), color: 'rgba(243,244,248,0.4)' }}>{formatClock(rowInfo.later.start, locale)}</div></> : null}
                   </div>
                 </>
               ) : (
@@ -319,12 +317,12 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
                     const onNow = p.start <= model.nowMs && p.stop > model.nowMs
                     return (
                       <div key={p.start} style={{ position: 'absolute', top: 0, bottom: 0, left: `${g.leftPct}%`, width: `calc(${g.widthPct}% - ${dp(6)}px)`, borderRadius: dp(10), padding: `${dp(14)}px ${dp(16)}px`, background: onNow ? TV.accMix(16) : TV.s05, color: onNow ? TV.text : 'rgba(243,244,248,0.7)', overflow: 'hidden' }}>
-                        <div style={{ fontSize: dp(phoneTextFloor(18, phone)), whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title}</div>
-                        <div style={{ fontSize: dp(phoneTextFloor(14, phone)), color: 'rgba(243,244,248,0.45)' }}>{formatClock(p.start, locale)}–{formatClock(p.stop, locale)}</div>
+                        <div style={{ fontSize: dp(18), whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title}</div>
+                        <div style={{ fontSize: dp(14), color: 'rgba(243,244,248,0.45)' }}>{formatClock(p.start, locale)}–{formatClock(p.stop, locale)}</div>
                       </div>
                     )
                   })}
-                  {(timeline?.length ?? 0) === 0 ? <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', paddingLeft: dp(16), color: TV.dim, fontSize: dp(phoneTextFloor(18, phone)) }}>{timeline === null && timelineLoading ? tt('loadingGuide') : tt('noProgramme')}</div> : null}
+                  {(timeline?.length ?? 0) === 0 ? <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', paddingLeft: dp(16), color: TV.dim, fontSize: dp(18) }}>{timeline === null && timelineLoading ? tt('loadingGuide') : tt('noProgramme')}</div> : null}
                   <div style={{ position: 'absolute', top: 0, bottom: 0, left: `${nowLeftPct}%`, width: 2, background: TV.acc, boxShadow: `0 0 12px ${TV.accMix(60)}`, pointerEvents: 'none' }} />
                 </div>
               )}
@@ -332,7 +330,7 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
           )
         })}
         {rows.length > visible ? (
-          <div {...station(() => setVisible((v) => v + ROW_STEP))} style={{ margin: `${dp(20)}px auto 0`, width: 'fit-content', height: dp(phoneHitFloor(48, phone)), minHeight: dp(phoneHitFloor(48, phone)), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.s10, display: 'flex', alignItems: 'center', fontSize: dp(phoneTextFloor(18, phone)), cursor: 'pointer' }}>{tt('showMore')}</div>
+          <div {...station(() => setVisible((v) => v + ROW_STEP))} style={{ margin: `${dp(20)}px auto 0`, width: 'fit-content', height: dp(48), minHeight: dp(48), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.s10, display: 'flex', alignItems: 'center', fontSize: dp(18), cursor: 'pointer' }}>{tt('showMore')}</div>
         ) : null}
       </div>
     </div>

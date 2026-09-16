@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { __resetForTests } from '@/lib/plugin-sdk'
-import { getTvSettings, setTvSettings, getGuideMode, setGuideMode, getActivePlaylistId, setActivePlaylistId } from './tv-settings-store'
+import { __resetForTests, writePluginJson } from '@/lib/plugin-sdk'
+import { LIVE_TV_PLUGIN_ID } from '../live-tv-data'
+import { TV_SETTINGS_KEY, getTvSettings, setTvSettings, getGuideMode, setGuideMode, getActivePlaylistId, setActivePlaylistId } from './tv-settings-store'
 
 beforeEach(() => __resetForTests())
 
 describe('tv-settings-store', () => {
   it('har standardvärden', () => {
-    expect(getTvSettings()).toEqual({ previewEnabled: true, startOnLastChannel: false, numericZap: true, bannerHideMs: 4000 })
+    expect(getTvSettings()).toEqual({ previewEnabled: true, startOnLastChannel: false, numericZap: true, bannerHideMs: 4000, keepAwake: true, fullscreenOnRotate: true })
     expect(getGuideMode()).toBe('now')
     expect(getActivePlaylistId()).toBeNull()
   })
@@ -22,5 +23,17 @@ describe('tv-settings-store', () => {
     expect(getGuideMode()).toBe('tl')
     setActivePlaylistId('list-1')
     expect(getActivePlaylistId()).toBe('list-1')
+  })
+  it('telefonens spelarval (fas 3): keepAwake/fullscreenOnRotate, default true, sanerade', () => {
+    expect(getTvSettings().keepAwake).toBe(true)
+    expect(getTvSettings().fullscreenOnRotate).toBe(true)
+    setTvSettings({ keepAwake: false })
+    expect(getTvSettings().keepAwake).toBe(false)
+    setTvSettings({ fullscreenOnRotate: false })
+    expect(getTvSettings().fullscreenOnRotate).toBe(false)
+    // Ett okänt värde skrivet förbi `setTvSettings` faller tillbaka på default.
+    writePluginJson(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, { keepAwake: 'x', fullscreenOnRotate: 0 })
+    expect(getTvSettings().keepAwake).toBe(true)
+    expect(getTvSettings().fullscreenOnRotate).toBe(true)
   })
 })

@@ -8,12 +8,11 @@ import { formatClock, progressOf } from '../live-tv-ui'
 import { isReminded, toggleReminder } from '../reminders'
 import type { EpgProgramme } from '../epg/types'
 import type { TvViewProps } from './tv-shell'
-import { PHONE_HIT_MIN_DP, Progress, Segment, Tag, TV, dp, phoneHitFloor, phoneTextFloor, station, useTvClockNode } from './tv-ui'
+import { Progress, Segment, Tag, TV, dp, station, useTvClockNode } from './tv-ui'
 import { useTvText } from './tv-strings'
-import { CHANNEL_COLUMN_PHONE_MIN_DP, ChannelCell, FAVS_GROUP, useDebouncedChannel } from './tv-guide-shared'
+import { ChannelCell, FAVS_GROUP, useDebouncedChannel } from './tv-guide-shared'
 import type { GuideMode } from './tv-settings-store'
 import { TvPreview } from './tv-preview'
-import { usePhoneSurface } from '../hooks/usePhoneSurface'
 
 type Selection = { listId: string | null; group: string | null }
 
@@ -27,10 +26,9 @@ type Selection = { listId: string | null; group: string | null }
  */
 const ROW_STEP = 40
 
-export function TvGuidePlaylists({ model, nav, settings, mode, onModeChange }: TvViewProps & { mode: GuideMode; onModeChange: (mode: GuideMode) => void }) {
+export function TvGuidePlaylists({ model, nav, settings, phone, mode, onModeChange }: TvViewProps & { mode: GuideMode; onModeChange: (mode: GuideMode) => void }) {
   const { tt, locale } = useTvText()
-  const phone = usePhoneSurface()
-  const clock = useTvClockNode(locale, phone)
+  const clock = useTvClockNode(locale)
   const [sel, setSel] = useState<Selection>({ listId: model.lists[0]?.id ?? null, group: null })
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const [, bump] = useState(0)
@@ -102,14 +100,14 @@ export function TvGuidePlaylists({ model, nav, settings, mode, onModeChange }: T
       <div
         data-testid={`pl-${kind}-card`}
         {...station(() => (isNow ? selected && nav.play({ channel: selected }) : remind(programme)))}
-        style={{ padding: `${dp(14)}px ${dp(18)}px`, borderRadius: dp(14), background: isNow ? TV.accMix(14) : TV.s06, border: `1px solid ${isNow ? TV.accMix(45) : TV.line}`, display: 'flex', flexDirection: 'column', gap: dp(6), cursor: 'pointer', minHeight: phone ? dp(PHONE_HIT_MIN_DP) : undefined }}
+        style={{ padding: `${dp(14)}px ${dp(18)}px`, borderRadius: dp(14), background: isNow ? TV.accMix(14) : TV.s06, border: `1px solid ${isNow ? TV.accMix(45) : TV.line}`, display: 'flex', flexDirection: 'column', gap: dp(6), cursor: 'pointer' }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: dp(phoneTextFloor(14, phone)), letterSpacing: '0.1em', textTransform: 'uppercase', color: isNow ? TV.accText : 'rgba(243,244,248,0.5)' }}>
-          <span>{label}</span><span style={{ fontSize: dp(phoneTextFloor(15, phone)), letterSpacing: 0, textTransform: 'none' }}>{isNow ? `${formatClock(programme.start, locale)}–${formatClock(programme.stop, locale)}` : formatClock(programme.start, locale)}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: dp(14), letterSpacing: '0.1em', textTransform: 'uppercase', color: isNow ? TV.accText : 'rgba(243,244,248,0.5)' }}>
+          <span>{label}</span><span style={{ fontSize: dp(15), letterSpacing: 0, textTransform: 'none' }}>{isNow ? `${formatClock(programme.start, locale)}–${formatClock(programme.stop, locale)}` : formatClock(programme.start, locale)}</span>
         </div>
-        <div style={{ fontSize: isNow ? dp(phoneTextFloor(24, phone)) : dp(phoneTextFloor(20, phone)), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{programme.title}</div>
+        <div style={{ fontSize: isNow ? dp(24) : dp(20), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{programme.title}</div>
         {isNow ? <Progress value={progressOf(programme.start, programme.stop, model.nowMs)} height={dp(4)} /> : null}
-        <div style={{ fontSize: dp(phoneTextFloor(15, phone)), color: 'rgba(243,244,248,0.55)' }}>{isNow ? tt('okWatch') : reminded ? tt('reminderSet') : tt('okRemind')}</div>
+        <div style={{ fontSize: dp(15), color: 'rgba(243,244,248,0.55)' }}>{isNow ? tt('okWatch') : reminded ? tt('reminderSet') : tt('okRemind')}</div>
       </div>
     )
   }
@@ -119,9 +117,9 @@ export function TvGuidePlaylists({ model, nav, settings, mode, onModeChange }: T
   const noRows = rows.length === 0
 
   const colItem = (key: string, active: boolean, label: string, count: number, indent: boolean, onOk: () => void, testId: string, extra?: Record<string, string>) => (
-    <div key={key} data-testid={testId} {...station(onOk, undefined, { 'data-live-tv-col': 'left', ...(extra ?? {}) })} style={{ height: dp(phoneHitFloor(indent ? 48 : 56, phone)), minHeight: dp(phoneHitFloor(indent ? 48 : 56, phone)), marginLeft: indent ? dp(28) : 0, padding: `0 ${dp(16)}px`, borderRadius: dp(12), display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: active ? (indent ? TV.accMix(18) : TV.s12) : 'transparent', color: active ? TV.text : indent ? 'rgba(243,244,248,0.6)' : TV.text, fontSize: dp(phoneTextFloor(indent ? 18 : 19, phone)), fontWeight: indent ? 400 : 600, cursor: 'pointer' }}>
+    <div key={key} data-testid={testId} {...station(onOk, undefined, { 'data-live-tv-col': 'left', ...(extra ?? {}) })} style={{ height: dp(indent ? 48 : 56), minHeight: dp(indent ? 48 : 56), marginLeft: indent ? dp(28) : 0, padding: `0 ${dp(16)}px`, borderRadius: dp(12), display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: active ? (indent ? TV.accMix(18) : TV.s12) : 'transparent', color: active ? TV.text : indent ? 'rgba(243,244,248,0.6)' : TV.text, fontSize: dp(indent ? 18 : 19), fontWeight: indent ? 400 : 600, cursor: 'pointer' }}>
       <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
-      <span style={{ fontSize: dp(phoneTextFloor(14, phone)), color: 'rgba(243,244,248,0.45)' }}>{count}</span>
+      <span style={{ fontSize: dp(14), color: 'rgba(243,244,248,0.45)' }}>{count}</span>
     </div>
   )
 
@@ -142,13 +140,15 @@ export function TvGuidePlaylists({ model, nav, settings, mode, onModeChange }: T
    * högerkolumnens bredd för skrivbordets radjustering) — den överlever
    * stapling av de tre panelerna rakt av, för raden i sig är fortfarande en
    * flexrad med en icke-krympbar 560 dp-cell bredvid titel och timer.
-   * Samma recept som `channelColumnStyle` (tv-guide-shared.tsx), men med
-   * skrivbordets EGNA 560 dp bevarat i stället för guidens 520 — de två
-   * ställena har alltid haft olika tal, och den skillnaden är inte den här
-   * fixens att sudda ut.
+   * Skrivbordets EGNA 560 dp bevaras i stället för guidens 520
+   * (`channelColumnStyle`, tv-guide-shared.tsx) — de två ställena har
+   * alltid haft olika tal, och den skillnaden är inte den här fixens att
+   * sudda ut. Telefongrenen är fas 2:s (krympbar kolumn utan breddgolv —
+   * golvet gick med fas 3) och lever bara tills spellistvyn får sin egen
+   * telefonlayout.
    */
   const plChannelColStyle: CSSProperties = phone
-    ? { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: dp(CHANNEL_COLUMN_PHONE_MIN_DP) }
+    ? { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0 }
     : { width: dp(560), flexShrink: 0 }
   const outerStyle: CSSProperties = phone
     ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflowY: 'auto' }
@@ -201,10 +201,10 @@ export function TvGuidePlaylists({ model, nav, settings, mode, onModeChange }: T
           sortens tysta drift som fixen ska bli av med.
         */}
         <div data-testid="pl-header" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', columnGap: dp(12), rowGap: dp(8), marginBottom: dp(16) }}>
-          <span data-testid="pl-title" style={{ fontSize: dp(phoneTextFloor(26, phone)), fontWeight: 600, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</span>
-          <span data-testid="pl-meta" style={{ fontSize: dp(phoneTextFloor(16, phone)), color: 'rgba(243,244,248,0.5)', whiteSpace: 'nowrap', flexShrink: 0 }}>{tt('channelsCount', { count: rows.length })} ·</span>
+          <span data-testid="pl-title" style={{ fontSize: dp(26), fontWeight: 600, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</span>
+          <span data-testid="pl-meta" style={{ fontSize: dp(16), color: 'rgba(243,244,248,0.5)', whiteSpace: 'nowrap', flexShrink: 0 }}>{tt('channelsCount', { count: rows.length })} ·</span>
           <div data-testid="pl-clock" style={{ flexShrink: 0 }}>{clock}</div>
-          <Segment options={modeOptions} value={mode} onChange={onModeChange} style={{ marginLeft: 'auto', marginRight: dp(24), alignSelf: 'center' }} phone={phone} />
+          <Segment options={modeOptions} value={mode} onChange={onModeChange} style={{ marginLeft: 'auto', marginRight: dp(24), alignSelf: 'center' }} />
         </div>
         {shownRows.map((channel, index) => {
           const key = channelKey(channel)
@@ -216,30 +216,30 @@ export function TvGuidePlaylists({ model, nav, settings, mode, onModeChange }: T
               data-testid="pl-row"
               {...station(() => nav.play({ channel }), (el) => nav.channelMenu(channel, el), { ...(index === 0 ? { 'data-init': '' } : {}), 'data-f-left': '[data-live-tv-col="left"]', 'data-f-right': '[data-testid="pl-now-card"], [data-testid="pl-preview"]' })}
               onFocus={() => setSelectedKey(key)}
-              style={{ height: dp(phoneHitFloor(82, phone)), minHeight: dp(phoneHitFloor(82, phone)), marginRight: dp(24), borderRadius: dp(12), display: 'flex', alignItems: 'center', gap: dp(14), padding: `0 ${dp(14)}px`, background: focused ? TV.s10 : 'transparent', cursor: 'pointer' }}
+              style={{ height: dp(82), minHeight: dp(82), marginRight: dp(24), borderRadius: dp(12), display: 'flex', alignItems: 'center', gap: dp(14), padding: `0 ${dp(14)}px`, background: focused ? TV.s10 : 'transparent', cursor: 'pointer' }}
             >
               <div data-testid="pl-row-channel-col" style={plChannelColStyle}>
-                <ChannelCell channel={channel} number={model.channelNumber(channel)} pinned={model.pinnedSet.has(key)} locked={model.locked.has(key)} quality={null} focused={false} width="100%" phone={phone} />
+                <ChannelCell channel={channel} number={model.channelNumber(channel)} pinned={model.pinnedSet.has(key)} locked={model.locked.has(key)} quality={null} focused={false} width="100%" />
               </div>
-              <div style={{ minWidth: 0, flex: 1, fontSize: dp(phoneTextFloor(17, phone)), color: 'rgba(243,244,248,0.65)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rowInfo.now?.title ?? tt('noProgramme')}</div>
+              <div style={{ minWidth: 0, flex: 1, fontSize: dp(17), color: 'rgba(243,244,248,0.65)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rowInfo.now?.title ?? tt('noProgramme')}</div>
               <div style={{ width: dp(110), flexShrink: 0 }}>
-                {rowInfo.now ? <><div style={{ fontSize: dp(phoneTextFloor(14, phone)), color: 'rgba(243,244,248,0.5)', textAlign: 'right' }}>{tt('minutesLeft', { min: Math.max(0, Math.round((rowInfo.now.stop - model.nowMs) / 60_000)) })}</div><Progress value={progressOf(rowInfo.now.start, rowInfo.now.stop, model.nowMs)} height={dp(4)} /></> : null}
+                {rowInfo.now ? <><div style={{ fontSize: dp(14), color: 'rgba(243,244,248,0.5)', textAlign: 'right' }}>{tt('minutesLeft', { min: Math.max(0, Math.round((rowInfo.now.stop - model.nowMs) / 60_000)) })}</div><Progress value={progressOf(rowInfo.now.start, rowInfo.now.stop, model.nowMs)} height={dp(4)} /></> : null}
               </div>
             </div>
           )
         })}
         {rows.length > visible ? (
-          <div {...station(() => setVisible((v) => v + ROW_STEP))} style={{ margin: `${dp(20)}px auto ${dp(20)}px`, width: 'fit-content', height: dp(phoneHitFloor(48, phone)), minHeight: dp(phoneHitFloor(48, phone)), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.s10, display: 'flex', alignItems: 'center', fontSize: dp(phoneTextFloor(18, phone)), cursor: 'pointer' }}>{tt('showMore')}</div>
+          <div {...station(() => setVisible((v) => v + ROW_STEP))} style={{ margin: `${dp(20)}px auto ${dp(20)}px`, width: 'fit-content', height: dp(48), minHeight: dp(48), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.s10, display: 'flex', alignItems: 'center', fontSize: dp(18), cursor: 'pointer' }}>{tt('showMore')}</div>
         ) : null}
-        {rows.length === 0 ? <div data-testid="pl-empty" style={{ padding: dp(24), color: TV.dim, fontSize: dp(phoneTextFloor(19, phone)) }}>{channelsLoading ? tt('loadingChannels') : tt('guideEmpty')}</div> : null}
+        {rows.length === 0 ? <div data-testid="pl-empty" style={{ padding: dp(24), color: TV.dim, fontSize: dp(19) }}>{channelsLoading ? tt('loadingChannels') : tt('guideEmpty')}</div> : null}
       </div>
 
       {/* Höger: förhandsvisning + Nu/Sen/Senare */}
       <div data-testid="pl-detail" style={rightColStyle}>
-        <TvPreview channel={previewChannel} enabled={settings.previewEnabled} live={Boolean(info.now)} width="100%" height={dp(272)} label={settings.previewEnabled ? tt('previewLabel') : tt('previewFrame')} onOk={() => selected && nav.play({ channel: selected })} extra={{ 'data-testid': 'pl-preview' }} phone={phone} />
+        <TvPreview channel={previewChannel} enabled={settings.previewEnabled} live={Boolean(info.now)} width="100%" height={dp(272)} label={settings.previewEnabled ? tt('previewLabel') : tt('previewFrame')} onOk={() => selected && nav.play({ channel: selected })} extra={{ 'data-testid': 'pl-preview' }} />
         {selected ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: dp(10), fontSize: dp(phoneTextFloor(16, phone)), color: 'rgba(243,244,248,0.55)' }}>
-            <span style={{ color: TV.accText, fontWeight: 600 }}>{model.channelNumber(selected) ?? ''}</span><span>{selected.name}</span>{qualityFromName(selected.name) ? <Tag variant="quality" phone={phone}>{qualityFromName(selected.name)}</Tag> : null}
+          <div style={{ display: 'flex', alignItems: 'center', gap: dp(10), fontSize: dp(16), color: 'rgba(243,244,248,0.55)' }}>
+            <span style={{ color: TV.accText, fontWeight: 600 }}>{model.channelNumber(selected) ?? ''}</span><span>{selected.name}</span>{qualityFromName(selected.name) ? <Tag variant="quality">{qualityFromName(selected.name)}</Tag> : null}
           </div>
         ) : null}
         {card(tt('colNow'), info.now, 'now')}

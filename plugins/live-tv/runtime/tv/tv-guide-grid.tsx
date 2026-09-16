@@ -9,9 +9,8 @@ import { isReminded, toggleReminder } from '../reminders'
 import { selectEpgRows } from '../epg-rows'
 import { useSchedules } from '../hooks/useSchedules'
 import { useNarrowSurface } from '../hooks/useNarrowSurface'
-import { usePhoneSurface } from '../hooks/usePhoneSurface'
 import type { TvViewProps } from './tv-shell'
-import { ChannelArt, Chip, Icons, Segment, TV, dp, phoneHitFloor, phoneTextFloor, station } from './tv-ui'
+import { ChannelArt, Chip, Icons, Segment, TV, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
 import type { GuideMode } from './tv-settings-store'
 import { FAVS_GROUP, useGuideGroups } from './tv-guide-shared'
@@ -118,7 +117,6 @@ export function TvGuideGrid({ model, nav, mode, onModeChange }: TvViewProps & { 
    * pluginsidan är den enda som ber om en.
    */
   const narrow = useNarrowSurface()
-  const phone = usePhoneSurface()
   const finePointer = useFinePointer()
   const { nowMs } = model
 
@@ -228,7 +226,7 @@ export function TvGuideGrid({ model, nav, mode, onModeChange }: TvViewProps & { 
   ]
 
   const dayChip = (offset: 0 | 1, label: string) => (
-    <Chip active={dayOffset === offset} {...station(() => setDayOffset(offset), undefined, { 'data-testid': `grid-day-${offset}` })} phone={phone}>{label}</Chip>
+    <Chip active={dayOffset === offset} {...station(() => setDayOffset(offset), undefined, { 'data-testid': `grid-day-${offset}` })}>{label}</Chip>
   )
 
   const selectedReminded = selected ? isReminded(selected.channel, selected.programme) : false
@@ -239,11 +237,11 @@ export function TvGuideGrid({ model, nav, mode, onModeChange }: TvViewProps & { 
       <div style={{ padding: `${dp(28)}px ${dp(48)}px ${dp(16)}px`, display: 'flex', alignItems: 'center', gap: dp(12), flexShrink: 0 }}>
         {dayChip(0, tt('gridToday'))}
         {dayChip(1, tt('gridTomorrow'))}
-        <Chip active={false} {...station(() => { setDayOffset(0); window.setTimeout(scrollToNow, 0) }, undefined, { 'data-testid': 'grid-jump-now' })} phone={phone}>
+        <Chip active={false} {...station(() => { setDayOffset(0); window.setTimeout(scrollToNow, 0) }, undefined, { 'data-testid': 'grid-jump-now' })}>
           {tt('gridNow')}
           <span style={{ marginLeft: dp(8), width: dp(8), height: dp(8), borderRadius: 999, border: `1.5px solid ${TV.acc}` }} />
         </Chip>
-        <Segment options={modeOptions} value={mode} onChange={onModeChange} style={{ marginLeft: 'auto' }} phone={phone} />
+        <Segment options={modeOptions} value={mode} onChange={onModeChange} style={{ marginLeft: 'auto' }} />
       </div>
 
       {/* Kategorichips — samma rad som i standardguiden, `data-row` så motorns
@@ -265,7 +263,7 @@ export function TvGuideGrid({ model, nav, mode, onModeChange }: TvViewProps & { 
               'data-testid': `grid-chip-${chip.id}`,
               ...(rows.length === 0 && index === 0 ? { 'data-init': '' } : {}),
             })}
-            phone={phone}
+           
           >
             {chip.label}
           </Chip>
@@ -275,7 +273,7 @@ export function TvGuideGrid({ model, nav, mode, onModeChange }: TvViewProps & { 
       <div
         data-testid="grid-empty"
         aria-hidden={rows.length > 0 ? true : undefined}
-        style={{ margin: `0 ${dp(48)}px`, padding: dp(24), color: TV.dim, fontSize: dp(phoneTextFloor(19, phone)), borderRadius: dp(12), background: TV.s05, display: rows.length === 0 ? 'block' : 'none' }}
+        style={{ margin: `0 ${dp(48)}px`, padding: dp(24), color: TV.dim, fontSize: dp(19), borderRadius: dp(12), background: TV.s05, display: rows.length === 0 ? 'block' : 'none' }}
       >
         {model.channelsLoading ? tt('loadingChannels') : schedulesLoading ? tt('loadingGuide') : tt('gridEmpty')}
       </div>
@@ -291,20 +289,20 @@ export function TvGuideGrid({ model, nav, mode, onModeChange }: TvViewProps & { 
             {/* Timlinjen */}
             <div style={{ display: 'flex', paddingLeft: dp(CHANNEL_COL_PX), height: dp(30), borderBottom: `1px solid ${TV.line}`, marginBottom: dp(6), position: 'sticky', top: 0, zIndex: 3, background: TV.bg }}>
               {marks.map((mark) => (
-                <div key={mark} style={{ width: dp(HOUR_PX), flexShrink: 0, fontSize: dp(phoneTextFloor(15, phone)), color: TV.dim }}>{formatClock(mark, locale)}</div>
+                <div key={mark} style={{ width: dp(HOUR_PX), flexShrink: 0, fontSize: dp(15), color: TV.dim }}>{formatClock(mark, locale)}</div>
               ))}
             </div>
             <div style={{ position: 'relative' }}>
               {nowVisible ? (
                 <div data-testid="grid-now-line" style={{ position: 'absolute', top: 0, bottom: 0, left: dp(CHANNEL_COL_PX) + nowLeft, width: 2, background: TV.acc, boxShadow: `0 0 12px ${TV.accMix(60)}`, zIndex: 2, pointerEvents: 'none' }}>
-                  <div style={{ position: 'absolute', top: dp(-22), left: dp(-16), fontSize: dp(phoneTextFloor(13, phone)), color: TV.accText, whiteSpace: 'nowrap' }}>{tt('gridNowAt', { time: formatClock(nowMs, locale) })}</div>
+                  <div style={{ position: 'absolute', top: dp(-22), left: dp(-16), fontSize: dp(13), color: TV.accText, whiteSpace: 'nowrap' }}>{tt('gridNowAt', { time: formatClock(nowMs, locale) })}</div>
                 </div>
               ) : null}
               {rows.map(({ channel }) => {
                 const key = channelKey(channel)
                 const entries = entriesByChannel.get(key) ?? []
                 return (
-                  <div key={key} style={{ display: 'flex', alignItems: 'stretch', borderBottom: `1px solid ${TV.line}`, minHeight: dp(phoneHitFloor(ROW_MIN_H_PX, phone)) }}>
+                  <div key={key} style={{ display: 'flex', alignItems: 'stretch', borderBottom: `1px solid ${TV.line}`, minHeight: dp(ROW_MIN_H_PX) }}>
                     <div
                       data-testid="grid-channel"
                       title={channel.name}
@@ -313,10 +311,10 @@ export function TvGuideGrid({ model, nav, mode, onModeChange }: TvViewProps & { 
                         (element) => nav.channelMenu(channel, element),
                         initKey && initKey.channel === key && initKey.start === null ? { 'data-init': '' } : undefined,
                       )}
-                      style={{ width: dp(CHANNEL_COL_PX), minHeight: dp(phoneHitFloor(ROW_MIN_H_PX, phone)), flexShrink: 0, display: 'flex', alignItems: 'center', gap: dp(10), paddingRight: dp(10), background: TV.bg, zIndex: 1, cursor: 'pointer', ...(narrow ? null : { position: 'sticky' as const, left: 0 }) }}
+                      style={{ width: dp(CHANNEL_COL_PX), minHeight: dp(ROW_MIN_H_PX), flexShrink: 0, display: 'flex', alignItems: 'center', gap: dp(10), paddingRight: dp(10), background: TV.bg, zIndex: 1, cursor: 'pointer', ...(narrow ? null : { position: 'sticky' as const, left: 0 }) }}
                     >
                       <ChannelArt channel={channel} style={{ width: dp(48), height: dp(30), flexShrink: 0 }} radius={dp(6)} />
-                      <div style={{ minWidth: 0, fontSize: dp(phoneTextFloor(15, phone)), fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{channel.name}</div>
+                      <div style={{ minWidth: 0, fontSize: dp(15), fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{channel.name}</div>
                     </div>
                     {/* Tidsspåret bär MEDVETET inget `data-row`.
                         `data-row` gör raden till en sluten ◂▸-grupp, och ▸ på
@@ -347,7 +345,7 @@ export function TvGuideGrid({ model, nav, mode, onModeChange }: TvViewProps & { 
                               { key: 'remind', label: isReminded(channel, programme) ? tt('removeReminder') : tt('remindMe'), run: () => toggle(channel, programme) },
                             ])}
                             hover={finePointer}
-                            phone={phone}
+                           
                           />
                       ))}
                     </div>
@@ -365,11 +363,11 @@ export function TvGuideGrid({ model, nav, mode, onModeChange }: TvViewProps & { 
               skillnaden läses ett tomt slut som ett tak, och man letar efter en
               gräns som inte finns — de flesta kanalerna i en stor panel har
               ingen matchad tablå. */}
-          <span style={{ fontSize: dp(phoneTextFloor(15, phone)), color: TV.dim }}>
+          <span style={{ fontSize: dp(15), color: TV.dim }}>
             {hasMore ? tt('gridShowing', { shown: rows.length }) : tt('gridAllWithGuide', { shown: rows.length })}
           </span>
           {hasMore ? (
-            <div {...station(() => setVisibleRows((count) => count + EPG_ROWS_STEP), undefined, { 'data-testid': 'grid-show-more' })} style={{ height: dp(phoneHitFloor(44, phone)), minHeight: dp(phoneHitFloor(44, phone)), padding: `0 ${dp(22)}px`, borderRadius: 999, background: TV.s10, display: 'flex', alignItems: 'center', fontSize: dp(phoneTextFloor(17, phone)), cursor: 'pointer' }}>{tt('showMore')}</div>
+            <div {...station(() => setVisibleRows((count) => count + EPG_ROWS_STEP), undefined, { 'data-testid': 'grid-show-more' })} style={{ height: dp(44), minHeight: dp(44), padding: `0 ${dp(22)}px`, borderRadius: 999, background: TV.s10, display: 'flex', alignItems: 'center', fontSize: dp(17), cursor: 'pointer' }}>{tt('showMore')}</div>
           ) : null}
         </div>
       ) : null}
@@ -380,24 +378,24 @@ export function TvGuideGrid({ model, nav, mode, onModeChange }: TvViewProps & { 
           <>
             <ChannelArt channel={selected.channel} style={{ width: dp(64), height: dp(40), flexShrink: 0 }} radius={dp(8)} />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: dp(phoneTextFloor(19, phone)), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selected.programme.title}</div>
-              <div style={{ fontSize: dp(phoneTextFloor(15, phone)), color: TV.dim }}>
+              <div style={{ fontSize: dp(19), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selected.programme.title}</div>
+              <div style={{ fontSize: dp(15), color: TV.dim }}>
                 {selected.channel.name} · {formatClock(selected.programme.start, locale)}–{formatClock(selected.programme.stop, locale)}
               </div>
               {/* `data-selectable-text` är P2:s undantag från `user-select:
                   none` — beskrivningar är text man vill kunna markera. Noden
                   ritas alltid så undantaget finns även utan beskrivning. */}
-              <div data-selectable-text="" style={{ fontSize: dp(phoneTextFloor(15, phone)), color: TV.muted, marginTop: dp(2), overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+              <div data-selectable-text="" style={{ fontSize: dp(15), color: TV.muted, marginTop: dp(2), overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                 {selected.programme.description ?? ''}
               </div>
             </div>
             {selected.programme.start > nowMs ? (
-              <div {...station(() => toggle(selected.channel, selected.programme), undefined, { 'data-testid': 'grid-remind' })} style={{ height: dp(phoneHitFloor(44, phone)), minHeight: dp(phoneHitFloor(44, phone)), padding: `0 ${dp(18)}px`, borderRadius: 999, background: selectedReminded ? TV.accMix(22) : TV.s10, color: selectedReminded ? TV.accText : TV.text, display: 'inline-flex', alignItems: 'center', gap: dp(8), fontSize: dp(phoneTextFloor(16, phone)), cursor: 'pointer' }}>
+              <div {...station(() => toggle(selected.channel, selected.programme), undefined, { 'data-testid': 'grid-remind' })} style={{ height: dp(44), minHeight: dp(44), padding: `0 ${dp(18)}px`, borderRadius: 999, background: selectedReminded ? TV.accMix(22) : TV.s10, color: selectedReminded ? TV.accText : TV.text, display: 'inline-flex', alignItems: 'center', gap: dp(8), fontSize: dp(16), cursor: 'pointer' }}>
                 <Icons.Bell size={dp(18)} filled={selectedReminded} />
                 {selectedReminded ? tt('reminderSet') : tt('remindMe')}
               </div>
             ) : null}
-            <div {...station(() => nav.play({ channel: selected.channel }), undefined, { 'data-testid': 'grid-watch' })} style={{ height: dp(phoneHitFloor(44, phone)), minHeight: dp(phoneHitFloor(44, phone)), padding: `0 ${dp(20)}px`, borderRadius: 999, background: TV.acc, color: TV.onAcc, display: 'inline-flex', alignItems: 'center', gap: dp(8), fontSize: dp(phoneTextFloor(16, phone)), fontWeight: 600, cursor: 'pointer' }}>
+            <div {...station(() => nav.play({ channel: selected.channel }), undefined, { 'data-testid': 'grid-watch' })} style={{ height: dp(44), minHeight: dp(44), padding: `0 ${dp(20)}px`, borderRadius: 999, background: TV.acc, color: TV.onAcc, display: 'inline-flex', alignItems: 'center', gap: dp(8), fontSize: dp(16), fontWeight: 600, cursor: 'pointer' }}>
               <Icons.Play size={dp(16)} /> {tt('watchNow')}
             </div>
           </>
@@ -419,7 +417,7 @@ export function TvGuideGrid({ model, nav, mode, onModeChange }: TvViewProps & { 
  * Klippta kanter (`clippedStart`/`clippedEnd`) skrivs som "…" i stället för en
  * falsk start- eller sluttid: programmet fortsätter utanför fönstret.
  */
-function GridBlock({ box, programme, locale, live, init, selected, reminded, remindLabel, hover, phone, onSelect, onOk, onHold }: {
+function GridBlock({ box, programme, locale, live, init, selected, reminded, remindLabel, hover, onSelect, onOk, onHold }: {
   box: EpgBlockBox
   programme: EpgProgramme
   locale: string
@@ -430,7 +428,6 @@ function GridBlock({ box, programme, locale, live, init, selected, reminded, rem
   remindLabel: string
   /** Sant bara på en riktig pekare — se `useFinePointer`. */
   hover: boolean
-  phone: boolean
   onSelect: () => void
   onOk: () => void
   onHold: (element: HTMLElement) => void
@@ -454,7 +451,7 @@ function GridBlock({ box, programme, locale, live, init, selected, reminded, rem
         top: 0,
         bottom: 0,
         width: box.width,
-        minHeight: dp(phoneHitFloor(ROW_MIN_H_PX, phone)),
+        minHeight: dp(ROW_MIN_H_PX),
         boxSizing: 'border-box',
         // Padding ur geometrin — aldrig bredare än en tredjedel av blocket, så
         // ett smalt block inte trycks upp i minst 2 × 8 px och lägger sig över
@@ -471,9 +468,9 @@ function GridBlock({ box, programme, locale, live, init, selected, reminded, rem
     >
       {box.shape === 'marker' ? null : (
         <>
-          <div style={{ fontSize: dp(phoneTextFloor(15, phone)), fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: reminded ? dp(14) : 0 }}>{programme.title}</div>
+          <div style={{ fontSize: dp(15), fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: reminded ? dp(14) : 0 }}>{programme.title}</div>
           {box.shape === 'full' ? (
-            <div style={{ fontSize: dp(phoneTextFloor(13, phone)), color: TV.faint, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{times}</div>
+            <div style={{ fontSize: dp(13), color: TV.faint, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{times}</div>
           ) : null}
           {reminded ? (
             <span style={{ position: 'absolute', right: dp(4), top: dp(4), color: TV.acc }}><Icons.Bell size={dp(12)} filled /></span>

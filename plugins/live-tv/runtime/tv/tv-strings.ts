@@ -17,7 +17,6 @@ const EN = {
   railFavourites: 'Favourites',
   railSettings: 'Settings',
   railBack: 'Back', // P3
-  railMenu: 'Menu', // Fas 2: öppningsknappen för telefonens meny-låda
   // P3: "…"-knappen på hovring — tydlig affordans, ikon OCH verktygstips.
   moreOptions: 'More options',
   // Gemensamt
@@ -236,7 +235,6 @@ const SV: Record<keyof typeof EN, string> = {
   railFavourites: 'Favoriter',
   railSettings: 'Inställningar',
   railBack: 'Tillbaka', // P3
-  railMenu: 'Meny', // Fas 2: öppningsknappen för telefonens meny-låda
   moreOptions: 'Fler val', // P3
   liveTv: 'Live TV',
   live: 'LIVE',
