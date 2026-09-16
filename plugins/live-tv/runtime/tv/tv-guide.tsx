@@ -14,6 +14,7 @@ import { TvPreview } from './tv-preview'
 import { TvGuidePlaylists } from './tv-guide-playlists'
 import { TvGuideGrid } from './tv-guide-grid'
 import { useSchedules } from '../hooks/useSchedules'
+import { TvGuideNowPhone, phoneGuideMode, type PhoneGuideMode } from './mobile/guide-phone'
 
 const ROW_STEP = 40
 
@@ -92,6 +93,20 @@ export function TvGuide(props: TvViewProps) {
     frame = window.requestAnimationFrame(() => { frame = window.requestAnimationFrame(focusInit) })
     return () => window.cancelAnimationFrame(frame)
   }, [mode])
+  if (props.phone) {
+    // Telefonen (fas 3, handoffen §2) har tre lägen: Now / Timeline / Lists.
+    // TV:ns `'tl'` visas som Now, och ett byte från telefonen skriver bara
+    // `'now' | 'grid' | 'playlists'`. Lägesstacken och Bakåt ovan är
+    // oförändrade — ett tryck på det redan aktiva segmentet rör inte stacken
+    // (annars hade ett lagrat `'tl'` + tryck på Now lagt ett lager i skalet).
+    const pm = phoneGuideMode(mode)
+    const changePhone = (next: PhoneGuideMode) => { if (next !== pm) changeMode(next) }
+    // Rutnätet och spellistorna får sina telefongrenar i P6/P7 och tar då
+    // `PhoneGuideModeBar`; de får redan här det telefonnormaliserade läget.
+    if (pm === 'playlists') return <TvGuidePlaylists {...props} mode={pm} onModeChange={changeMode} />
+    if (pm === 'grid') return <TvGuideGrid {...props} mode={pm} onModeChange={changeMode} />
+    return <TvGuideNowPhone {...props} mode="now" onModeChange={changePhone} />
+  }
   if (mode === 'playlists') return <TvGuidePlaylists {...props} mode={mode} onModeChange={changeMode} />
   // Rutnätet är skrivbordets tablå i TV-trädet (spec 4.3). Den delar inte
   // komponent med Nu/Sen och Tablå, så lägesbytet hit går genom samma

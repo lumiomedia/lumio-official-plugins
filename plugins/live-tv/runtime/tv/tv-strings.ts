@@ -230,6 +230,11 @@ const EN = {
   // Delade rader (P3): sök-varianten prefixar nu-titeln, förloppet visar minuter kvar
   nowPrefix: 'Now',
   minutesShort: '{min} min',
+  // Guiden på telefon (P5): segmentväxeln Now/Timeline/Lists + sidtitel
+  guideTitle: 'Guide',
+  phoneModeNow: 'Now',
+  phoneModeTimeline: 'Timeline',
+  phoneModeLists: 'Lists',
 } as const
 
 const SV: Record<keyof typeof EN, string> = {
@@ -431,6 +436,10 @@ const SV: Record<keyof typeof EN, string> = {
   sheetSettings: 'Inställningar',
   nowPrefix: 'Nu',
   minutesShort: '{min} min',
+  guideTitle: 'Guide',
+  phoneModeNow: 'Nu',
+  phoneModeTimeline: 'Tablå',
+  phoneModeLists: 'Listor',
 }
 
 export type TvStringKey = keyof typeof EN
