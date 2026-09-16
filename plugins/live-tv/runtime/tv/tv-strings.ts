@@ -76,6 +76,8 @@ const EN = {
   emptyBody: 'Add an M3U playlist or an Xtream login under Settings.',
   openSettings: 'Open settings',
   searchPlaceholder: 'Search channels and programmes',
+  /** Task 10: tomt läge i sök på telefon (ingen fråga ännu). */
+  searchEmptyHint: "Search channels and today's programmes",
   // Guide
   colChannel: 'CHANNEL',
   colNow: 'NOW',
@@ -309,6 +311,7 @@ const SV: Record<keyof typeof EN, string> = {
   emptyBody: 'Lägg till en M3U-spellista eller en Xtream-inloggning under Inställningar.',
   openSettings: 'Öppna inställningar',
   searchPlaceholder: 'Sök kanaler och program',
+  searchEmptyHint: 'Sök kanaler och dagens program',
   colChannel: 'KANAL',
   colNow: 'NU',
   colNext: 'SEN',

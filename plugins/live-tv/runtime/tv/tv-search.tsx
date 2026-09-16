@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, type CSSProperties } from 'react'
+import { useMemo, useState } from 'react'
 import { useTvMode } from '@/lib/plugin-sdk'
 import { channelKey } from '../live-tv-data'
 import { startOfLocalDay } from '../live-tv-model'
@@ -11,8 +11,11 @@ import { useTvText } from './tv-strings'
 import { TvTextField } from './tv-text-entry'
 import { searchChannels, suggestions } from './tv-search-logic'
 import { useProgrammeSearch } from '../hooks/useProgrammeSearch'
+import { TvSearchPhone } from './mobile/search-phone'
 
-export function TvSearch({ model, nav, phone }: TvViewProps) {
+export function TvSearch(props: TvViewProps) {
+  if (props.phone) return <TvSearchPhone {...props} />
+  const { model, nav } = props
   const { tt, locale } = useTvText()
   const tvMode = useTvMode()
   const [query, setQuery] = useState('')
@@ -37,23 +40,9 @@ export function TvSearch({ model, nav, phone }: TvViewProps) {
     first?.focus({ preventScroll: true })
   }
 
-  /**
-   * PORTRÄTTBEHANDLING (granskning M-P4, FYND 2).
-   *
-   * Vänsterkolumnen (sökfält + förslag) var fast 760 dp på en 780 dp scen —
-   * resultatlistan fick ~20 dp. Samma stapling som kanaldetaljsidan: sök-
-   * kolumnen läggs ovanpå, resultaten under, med sidans egen scroll i
-   * stället för två nästlade scrollytor.
-   */
-  const outerStyle: CSSProperties = phone
-    ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflowY: 'auto' }
-    : { flex: 1, minHeight: 0, display: 'flex' }
-  const queryColStyle: CSSProperties = phone
-    ? { width: '100%', flexShrink: 0, padding: `${dp(20)}px ${dp(20)}px 0`, display: 'flex', flexDirection: 'column', gap: dp(18) }
-    : { width: dp(760), flexShrink: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(34)}px ${dp(40)}px 0 ${dp(48)}px`, display: 'flex', flexDirection: 'column', gap: dp(18) }
-  const resultsStyle: CSSProperties = phone
-    ? { width: '100%', padding: `${dp(20)}px ${dp(20)}px 0`, display: 'flex', flexDirection: 'column', gap: dp(28) }
-    : { flex: 1, minWidth: 0, overflowY: 'auto', padding: `${dp(34)}px ${dp(48)}px 0 ${dp(40)}px`, display: 'flex', flexDirection: 'column', gap: dp(28) }
+  const outerStyle = { flex: 1, minHeight: 0, display: 'flex' } as const
+  const queryColStyle = { width: dp(760), flexShrink: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(34)}px ${dp(40)}px 0 ${dp(48)}px`, display: 'flex', flexDirection: 'column', gap: dp(18) } as const
+  const resultsStyle = { flex: 1, minWidth: 0, overflowY: 'auto', padding: `${dp(34)}px ${dp(48)}px 0 ${dp(40)}px`, display: 'flex', flexDirection: 'column', gap: dp(28) } as const
 
   return (
     <div data-testid="search-view-root" style={outerStyle}>

@@ -4,7 +4,6 @@ import { TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR, TV_SCENE_PHONE_ATTR, __resetFo
 import { flushLiveTvIndex, seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
 import type { EpgCacheEntry } from '../epg/types'
-import { dp } from './tv-ui'
 
 vi.mock('../live-tv-player', () => ({ LiveTvPlayer: () => <div data-testid="player" /> }))
 import { LiveTvTvShell } from './tv-shell'
@@ -66,48 +65,32 @@ describe('TvSearch', () => {
 })
 
 /**
- * FYND 2 (slutgranskning M-P4, fixrunda 2): sökkolumnen (fält + förslag) var
- * fast 760 dp på en 780 dp scen — resultatlistan fick ~20 dp kvar. Vyn nås
- * med ETT tryck från hubbens sökchip, så det här är den kortaste vägen till
- * en trasig telefonvy av de tre fynden.
+ * Fas 3, Task 10: sök på telefon är nu en egen vy (`TvSearchPhone`,
+ * `mobile/search-phone.tsx`, testad i `mobile/search-phone.test.tsx`), inte
+ * längre skrivbordsvyn med `phone ? … : …`-stilar. De två gamla testerna som
+ * stod här körde det tidigare porträttlayoutet (`search-view-root`/
+ * `search-query-col` staplat, fixrunda 2 FYND 2) och MOTSÄGER den nya specen
+ * (handoffen §7: systemtangentbord, två resultatgrupper, centrerat tomt
+ * läge) — ersatta av detta enda testet: på telefon renderas telefonvyn,
+ * aldrig skrivbordets DOM.
  */
-describe('TvSearch i porträtt (telefon): sökkolumnen staplas ovanpå resultaten (fixrunda 2, FYND 2)', () => {
+describe('TvSearch på telefon: grenar till TvSearchPhone', () => {
   // En telefon är aldrig en TV: skalet gatar `phone` med `!isTv` (fas 3 ger
-  // vyerna `phone` som prop därifrån i stället för en egen mätning), så
+  // vyerna `phone` som prop härifrån (`TvViewProps`)), så
   // telefonblocket kör utanför TV-läget som filens beforeEach annars slår på.
   beforeEach(() => __setTvModeForTests(false))
   let box: HTMLElement | null = null
   afterEach(() => { box?.remove(); box = null })
 
-  const mountWith = async (phone: boolean) => {
+  it('telefon: TvSearchPhones input, inte skrivbordets search-view-root', async () => {
     box = document.createElement('div')
     box.setAttribute(TV_SCENE_BOX_ATTR, '1')
-    if (phone) {
-      box.setAttribute(TV_SCENE_NARROW_ATTR, '1')
-      box.setAttribute(TV_SCENE_PHONE_ATTR, '1')
-    }
+    box.setAttribute(TV_SCENE_NARROW_ATTR, '1')
+    box.setAttribute(TV_SCENE_PHONE_ATTR, '1')
     document.body.appendChild(box)
-    const rendered = render(<LiveTvTvShell pageId="live-tv-browse" params={{ view: 'search' }} onNavigate={() => {}} onOpenDetails={() => {}} />, { container: box })
+    render(<LiveTvTvShell pageId="live-tv-browse" params={{ view: 'search' }} onNavigate={() => {}} onOpenDetails={() => {}} />, { container: box })
     await flushLiveTvIndex()
-    return rendered
-  }
-
-  it('sökkolumnen tappar sin fasta 760 dp-bredd och staplas ovanför resultaten på telefon', async () => {
-    await mountWith(true)
-    const root = screen.getByTestId('search-view-root')
-    const queryCol = screen.getByTestId('search-query-col')
-    expect(root.style.flexDirection).toBe('column')
-    expect(queryCol.style.width).not.toBe(`${dp(760)}px`)
-    expect(queryCol.style.width).toBe('100%')
-    expect(queryCol.style.flexShrink).toBe('0')
-  })
-
-  it('sökkolumnen behåller 760 dp och radlayout på skrivbord/TV', async () => {
-    await mountWith(false)
-    const root = screen.getByTestId('search-view-root')
-    const queryCol = screen.getByTestId('search-query-col')
-    expect(root.style.flexDirection).not.toBe('column')
-    expect(queryCol.style.width).toBe(`${dp(760)}px`)
-    expect(queryCol.style.flexShrink).toBe('0')
+    expect(within(box).getByTestId('search-input')).toBeInTheDocument()
+    expect(within(box).queryByTestId('search-view-root')).toBeNull()
   })
 })
