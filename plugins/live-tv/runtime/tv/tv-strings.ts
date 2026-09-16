@@ -148,6 +148,10 @@ const EN = {
   pickChannelFor: 'Pick channel for tile {n}',
   frameLabel: 'frame',
   tileFailed: 'Could not play',
+  // Multivy på telefon (Task 11)
+  swap: 'Swap',
+  changeChannel: 'Change channel',
+  selectChannel: 'Select channel',
   // Inställningar
   tabAppearance: 'Appearance',
   tabPlaylists: 'Playlists',
@@ -372,6 +376,9 @@ const SV: Record<keyof typeof EN, string> = {
   pickChannelFor: 'Välj kanal för ruta {n}',
   frameLabel: 'bildruta',
   tileFailed: 'Kunde inte spela',
+  swap: 'Byt plats',
+  changeChannel: 'Byt kanal',
+  selectChannel: 'Välj kanal',
   tabAppearance: 'Utseende',
   tabPlaylists: 'Spellistor',
   tabEpg: 'EPG-källor',

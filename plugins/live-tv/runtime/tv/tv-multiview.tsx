@@ -7,8 +7,10 @@ import { ChannelArt, Icons, Segment, Tag, TV, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
 import { useNarrowSurface } from '../hooks/useNarrowSurface'
 import { assignTile, enlargeTile, removeTile, setLayout, setMultiviewState, useMultiviewState, type MultiviewLayout, type MultiviewState } from './tv-multiview-store'
+import { narrowVisibleIndices } from './multiview-slots'
 import { useVideoSurface, videoSurfaceCapabilities } from './video-surface'
 import { TvChannelPicker } from './tv-channel-picker'
+import { TvMultiviewPhone } from './mobile/multiview-phone'
 
 const GRID: Record<MultiviewLayout, { columns: string; rows: string }> = {
   2: { columns: '1fr 1fr', rows: '1fr' },
@@ -18,24 +20,9 @@ const GRID: Record<MultiviewLayout, { columns: string; rows: string }> = {
 /** Smal yta (spec §8.5 / plan P10): två rutor staplade lodrätt i stället för sida vid sida. */
 const NARROW_GRID = { columns: '1fr', rows: '1fr 1fr' }
 
-/**
- * NARROW-VISNINGSORDNING (granskningsfynd på b6c7a69/307608e): ljudrutan
- * (`state.audioIndex`) MÅSTE alltid vara en av de två synliga — annars
- * tystnar ingenting men rubriken påstår att en kanal spelar, och ingen ruta
- * bär `data-init`. Audio-rutan visas därför alltid FÖRST; den andra platsen
- * är nästa tilldelade ruta, annars första tomma — bara VISNINGSordningen
- * ändras (verkliga index skickas oförändrade in i `update()`/`assignTile()`
- * osv.), så det sparade laget rörs aldrig.
- */
-function narrowVisibleIndices(state: MultiviewState): [number, number] {
-  const count = state.tiles.length
-  const audioIdx = state.audioIndex
-  const others = Array.from({ length: count }, (_, i) => i).filter((i) => i !== audioIdx)
-  const second = others.find((i) => state.tiles[i] !== null) ?? others.find((i) => state.tiles[i] === null) ?? others[0] ?? audioIdx
-  return [audioIdx, second]
-}
-
-export function TvMultiview({ model, nav }: TvViewProps) {
+export function TvMultiview(props: TvViewProps) {
+  if (props.phone) return <TvMultiviewPhone {...props} />
+  const { model, nav } = props
   const { tt } = useTvText()
   const state = useMultiviewState()
   const rootRef = useRef<HTMLDivElement | null>(null)
