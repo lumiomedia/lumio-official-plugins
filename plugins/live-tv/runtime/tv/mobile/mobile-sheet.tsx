@@ -29,18 +29,11 @@ export function MobileSheet({ title, subtitle, art, items, onClose, pushLayer, t
   // ny inline-funktion.
   const onCloseRef = useRef(onClose)
   useEffect(() => { onCloseRef.current = onClose })
+  // Ingen egen Escape-lyssnare: skalet (`tv-shell.tsx`) äger REDAN en enda
+  // capture-fas-lyssnare för Bakåt/Escape och ropar toppens `pushLayer`-close
+  // (registreringen ovan). En andra lyssnare här hade kört `onClose` två
+  // gånger så fort arket satt monterat i skalet.
   useEffect(() => pushLayer(() => onCloseRef.current()), [pushLayer])
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        e.stopPropagation()
-        onCloseRef.current()
-      }
-    }
-    window.addEventListener('keydown', onKey, true)
-    return () => window.removeEventListener('keydown', onKey, true)
-  }, [])
   return (
     <>
       <div data-testid="sheet-scrim" onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 70, background: MT.scrim }} />
