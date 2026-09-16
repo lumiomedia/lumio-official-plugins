@@ -3,18 +3,21 @@ import { cleanup, render } from '@testing-library/react'
 import { TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR, TV_SCENE_PHONE_ATTR, __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { seedLiveTvIndex } from '../../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, channelKey, type LiveTvList } from '../../live-tv-data'
+import type { EpgCacheEntry } from '../../epg/types'
+import { GUIDE_MODE_KEY, type GuideMode } from '../tv-settings-store'
 import { LiveTvTvShell } from '../tv-shell'
 
 /**
  * Delad monteringshjälp för telefonvyernas tester (fas 3, Task 4→).
  *
  * Testfilen som använder den ska själv mocka spelaren
- * (`vi.mock('../live-tv-player', …)`) — `vi.mock` hissas bara i den fil den
- * står i, så den kan inte bo här.
+ * (`vi.mock('../../live-tv-player', …)` — två steg upp från `mobile/`) —
+ * `vi.mock` hissas bara i den fil den står i, så den kan inte bo här.
  *
  * Fixturen: tre kanaler i två grupper (A, B i Sport · C i News) och A som
  * favorit — tillräckligt för spotlight, favoritband, chips och rutnät i
- * samma montering. `opts.lists`/`opts.pins` byter ut den.
+ * samma montering. `opts.lists`/`opts.pins` byter ut den, och `opts.cache`
+ * ger kanalerna en tablå (fixturen är nycklad på tvg-id, se stubben).
  */
 export const phoneChannel = (name: string, group: string) => ({ name, logo: null, group, url: `http://x/${name}`, tvgId: null })
 export const phoneList: LiveTvList = { id: 'l1', name: 'Xtream', channels: [phoneChannel('A', 'Sport'), phoneChannel('B', 'Sport'), phoneChannel('C', 'News')], createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null }
@@ -33,6 +36,13 @@ afterEach(() => {
 export interface MountPhoneOptions {
   lists?: LiveTvList[]
   pins?: string[]
+  /** Tablåfixtur (gamla cacheformen, nycklad på tvg-id) för rutnätet. */
+  cache?: EpgCacheEntry
+  /**
+   * Guidens lagrade läge. Skrivs EFTER `__resetForTests()` — en
+   * `writePluginJson` före `mountPhone` nollställs av monteringen.
+   */
+  guideMode?: GuideMode
   /** `false` monterar samma sida utan telefonattribut (skrivbordsjämförelse). */
   phone?: boolean
 }
@@ -43,7 +53,8 @@ export function mountPhone(params: Record<string, string> = {}, opts: MountPhone
   __setTvModeForTests(false)
   writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', opts.lists ?? [phoneList])
   writePluginJson(LIVE_TV_PLUGIN_ID, 'pins', opts.pins ?? phonePins)
-  seedLiveTvIndex()
+  if (opts.guideMode) writePluginJson(LIVE_TV_PLUGIN_ID, GUIDE_MODE_KEY, opts.guideMode)
+  seedLiveTvIndex(opts.cache ? { cache: opts.cache } : {})
   const onNavigate = vi.fn()
   const page = <LiveTvTvShell pageId="live-tv-browse" params={params} onNavigate={onNavigate} onOpenDetails={() => {}} />
   const box = document.createElement('div')

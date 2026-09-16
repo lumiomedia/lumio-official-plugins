@@ -18,6 +18,15 @@ export const HOUR_PX = 240
 export const PX_PER_MIN = HOUR_PX / 60
 export const CHANNEL_COL_PX = 160
 export const ROW_MIN_H_PX = 56
+/**
+ * Telefonens tablå (handoffen §3, fas 3): 90 minuter synliga i ~260 px —
+ * det som blir kvar av en 375 px-skärm efter 112 px kanalkolumn. Alla tre är
+ * äkta CSS-px; skalan skickas in som `pxPerMin` så samma geometri räknar
+ * både skrivbordets 4 px/min och telefonens ~2,9.
+ */
+export const PHONE_PX_PER_MIN = 260 / 90
+export const PHONE_CHANNEL_COL_PX = 112
+export const PHONE_ROW_H_PX = 64
 /** Under så här brett kan ett block inte bära text — det ritas som en markör. */
 export const MIN_BLOCK_PX = 18
 /** Under så här brett ritas bara titeln, ingen tid. */
@@ -44,18 +53,21 @@ function shapeFor(width: number): EpgBlockShape {
 /**
  * Geometrin för ETT program, klippt mot fönstret. `null` betyder att
  * programmet ligger helt utanför `[windowStart, windowEnd)` och inte ska
- * ritas alls.
+ * ritas alls. `pxPerMin` är skalan (skrivbordets `PX_PER_MIN` om inget
+ * anges); formtrösklarna (`MIN_BLOCK_PX`, `TITLE_ONLY_PX`) är i px och gäller
+ * oavsett skala — ett block som är för smalt för text är det på varje skärm.
  */
 export function epgBlockBox(
   programme: { start: number; stop: number },
   windowStart: number,
   windowEnd: number,
+  pxPerMin: number = PX_PER_MIN,
 ): EpgBlockBox | null {
   const start = Math.max(programme.start, windowStart)
   const stop = Math.min(programme.stop, windowEnd)
   if (stop <= start) return null
-  const width = ((stop - start) / 60_000) * PX_PER_MIN
-  const left = ((start - windowStart) / 60_000) * PX_PER_MIN
+  const width = ((stop - start) / 60_000) * pxPerMin
+  const left = ((start - windowStart) / 60_000) * pxPerMin
   const shape = shapeFor(width)
   const paddingX = shape === 'marker' ? 0 : Math.min(8, width / 3)
   return {
@@ -132,18 +144,19 @@ export function epgRowBoxes<P extends EpgSpan>(
   programmes: readonly P[],
   windowStart: number,
   windowEnd: number,
+  pxPerMin: number = PX_PER_MIN,
 ): EpgRowEntry<P>[] {
   const entries: EpgRowEntry<P>[] = []
   for (const span of resolveOverlaps(programmes)) {
-    const box = epgBlockBox(span, windowStart, windowEnd)
+    const box = epgBlockBox(span, windowStart, windowEnd, pxPerMin)
     if (box) entries.push({ box, programme: span.programme })
   }
   return entries
 }
 
 /** Nu-linjens position i px, räknat från fönstrets vänsterkant. */
-export function nowLinePx(nowMs: number, windowStart: number): number {
-  return ((nowMs - windowStart) / 60_000) * PX_PER_MIN
+export function nowLinePx(nowMs: number, windowStart: number, pxPerMin: number = PX_PER_MIN): number {
+  return ((nowMs - windowStart) / 60_000) * pxPerMin
 }
 
 /**

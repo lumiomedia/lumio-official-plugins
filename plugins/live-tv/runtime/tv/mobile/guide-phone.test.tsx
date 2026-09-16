@@ -1,9 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen } from '@testing-library/react'
-import { writePluginJson } from '@/lib/plugin-sdk'
 import { mountPhone } from './__phone-mount'
-import { LIVE_TV_PLUGIN_ID } from '../../live-tv-data'
-import { GUIDE_MODE_KEY, getGuideMode } from '../tv-settings-store'
+import { getGuideMode } from '../tv-settings-store'
 import { phoneGuideMode } from './guide-phone'
 
 // Spelaren (runtime/live-tv-player, två steg upp) mockas till en markör så
@@ -24,9 +22,9 @@ describe('Guiden · Nu på telefon', () => {
     expect(screen.queryByTestId('guide-clock')).toBeNull()
   })
   it('ett lagrat "tl" visas som Now', async () => {
-    writePluginJson(LIVE_TV_PLUGIN_ID, GUIDE_MODE_KEY, 'tl')
-    mountPhone({ view: 'guide' })
+    mountPhone({ view: 'guide' }, { guideMode: 'tl' })
     expect((await screen.findByText('Now')).closest('[aria-pressed]')).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('Timeline').closest('[aria-pressed]')).toHaveAttribute('aria-pressed', 'false')
     // Ingen tablårad: nu-linjen finns bara i TV:ns tablåläge.
     expect(screen.queryByTestId('now-line')).toBeNull()
   })

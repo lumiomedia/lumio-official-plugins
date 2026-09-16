@@ -3,6 +3,9 @@ import {
   CHANNEL_COL_PX,
   HOUR_PX,
   MIN_BLOCK_PX,
+  PHONE_CHANNEL_COL_PX,
+  PHONE_PX_PER_MIN,
+  PHONE_ROW_H_PX,
   PX_PER_MIN,
   ROW_MIN_H_PX,
   TITLE_ONLY_PX,
@@ -190,4 +193,38 @@ describe('nowLinePx och hourMarks', () => {
 it('konstanterna matchar tablåns nuvarande mått', () => {
   expect(CHANNEL_COL_PX).toBe(160)
   expect(ROW_MIN_H_PX).toBe(56)
+})
+
+describe('px/min som parameter (telefonens tablå)', () => {
+  it('PHONE_PX_PER_MIN: 90 minuter ryms i ~260 px', () => {
+    expect(90 * PHONE_PX_PER_MIN).toBeCloseTo(260)
+  })
+
+  it('epgBlockBox med PHONE_PX_PER_MIN: ett 90-minutersprogram blir ~260 px och left följer samma skala', () => {
+    const box = epgBlockBox({ start: H, stop: H + 90 * M }, windowStart, windowEnd, PHONE_PX_PER_MIN)
+    expect(box?.width).toBeCloseTo(260)
+    expect(box?.left).toBeCloseTo(60 * PHONE_PX_PER_MIN)
+  })
+
+  it('epgRowBoxes med PHONE_PX_PER_MIN: bredder i telefonskalan, paret oförändrat', () => {
+    const entries = epgRowBoxes([{ start: H, stop: H + 30 * M }, { start: H + 30 * M, stop: H + 60 * M }], windowStart, windowEnd, PHONE_PX_PER_MIN)
+    expect(entries).toHaveLength(2)
+    expect(entries[0].box.width).toBeCloseTo(30 * PHONE_PX_PER_MIN)
+    expect(entries[1].box.left).toBeCloseTo(entries[0].box.left + entries[0].box.width)
+  })
+
+  it('nowLinePx med PHONE_PX_PER_MIN: 45 minuter in ger ~130 px', () => {
+    expect(nowLinePx(windowStart + 45 * M, windowStart, PHONE_PX_PER_MIN)).toBeCloseTo(130)
+  })
+
+  it('utan parametern är skalan oförändrad (PX_PER_MIN, 240 px/timme)', () => {
+    expect(epgBlockBox({ start: H, stop: H + 30 * M }, windowStart, windowEnd)?.width).toBe(30 * PX_PER_MIN)
+    expect(nowLinePx(windowStart + H, windowStart)).toBe(HOUR_PX)
+    expect(epgRowBoxes([{ start: H, stop: H + 60 * M }], windowStart, windowEnd)[0].box.width).toBeCloseTo(240)
+  })
+
+  it('telefonens konstanter matchar handoffen §3', () => {
+    expect(PHONE_CHANNEL_COL_PX).toBe(112)
+    expect(PHONE_ROW_H_PX).toBe(64)
+  })
 })

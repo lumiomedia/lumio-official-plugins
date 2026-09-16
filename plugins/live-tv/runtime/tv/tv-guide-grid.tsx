@@ -14,6 +14,10 @@ import { ChannelArt, Chip, Icons, Segment, TV, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
 import type { GuideMode } from './tv-settings-store'
 import { FAVS_GROUP, useGuideGroups } from './tv-guide-shared'
+import type { LiveTvModel } from '../live-tv-model'
+import type { EpgRow } from '../epg-rows'
+import { phoneGuideMode } from './mobile/guide-phone'
+import { TvGuideGridPhone } from './mobile/guide-grid-phone'
 import {
   CHANNEL_COL_PX,
   HOUR_PX,
@@ -90,7 +94,69 @@ function useFinePointer(): boolean {
   return fine
 }
 
-export function TvGuideGrid({ model, nav, mode, onModeChange }: TvViewProps & { mode: GuideMode; onModeChange: (mode: GuideMode) => void }) {
+export interface GridRows {
+  rows: EpgRow[]
+  /** Fler kanaler MED tablå finns bortom `visibleRows` — visa "Visa fler". */
+  hasMore: boolean
+  /** Fönstrets tablåer hämtas fortfarande (delvis eller helt). */
+  schedulesLoading: boolean
+}
+
+/**
+ * Tablåns radpipeline, delad av skrivbordets rutnät och telefonens tablå
+ * (P6): favoriter först, kategorifilter, kandidatfönster, tablåhämtning för
+ * `[windowStart, windowEnd)` och `selectEpgRows`. Ren funktion av sina
+ * argument — fönstret räknas av anroparen, så skrivbordets Idag/Imorgon och
+ * telefonens 30-min-före-nu-fönster går genom exakt samma väg.
+ */
+export function useGridRows(model: LiveTvModel, group: string | null, visibleRows: number, windowStart: number, windowEnd: number): GridRows {
+  // Favoriter först, sedan övriga kanaler — kanaler utan tablå faller bort i
+  // `selectEpgRows`, en tom rad säger inget.
+  const ordered = useMemo(
+    () => [
+      ...model.pinnedKeys.map((key) => model.byKey.get(key)).filter((channel): channel is M3uChannel => Boolean(channel)),
+      ...model.channels.filter((channel) => !model.pinnedSet.has(channelKey(channel))),
+    ],
+    [model.pinnedKeys, model.byKey, model.channels, model.pinnedSet],
+  )
+  /**
+   * Kategorin filtreras HÄR och inte i `selectEpgRows`.
+   *
+   * TV-chipsen har två poster som inte är gruppnamn ("Alla" och "Favoriter"),
+   * och `selectEpgRows` jämför rakt mot `channel.group` — `__favs` hade
+   * filtrerat bort varenda kanal. Urvalet görs alltså före, och funktionen får
+   * `null` som grupp.
+   */
+  const eligible = useMemo(() => {
+    if (group === FAVS_GROUP) return model.favouriteChannels
+    if (group) return ordered.filter((channel) => channel.group === group)
+    return ordered
+  }, [ordered, group, model.favouriteChannels])
+  const candidates = useMemo(() => eligible.slice(0, visibleRows * CANDIDATE_FACTOR), [eligible, visibleRows])
+  const { schedules, loading: schedulesLoading } = useSchedules(candidates, windowStart, windowEnd)
+  const { rows, hasMore: moreAmongCandidates } = useMemo(
+    () => selectEpgRows(candidates, (channel) => schedules[channelKey(channel)] ?? [], null, visibleRows),
+    [candidates, schedules, visibleRows],
+  )
+  /**
+   * "Visa fler" måste finnas kvar även när KANDIDATERNA tog slut men
+   * spellistan inte gjorde det: `selectEpgRows` vet bara om det urval den
+   * fick, och skulle annars påstå "alla kanaler med tablå visas" fast
+   * överskottsfönstret kapade listan långt före spellistans slut.
+   */
+  const hasMore = moreAmongCandidates || candidates.length < eligible.length
+  return { rows, hasMore, schedulesLoading }
+}
+
+export function TvGuideGrid(props: TvViewProps & { mode: GuideMode; onModeChange: (mode: GuideMode) => void }) {
+  // Telefonen (fas 3, handoffen §3) får sin egen tablå: sticky kanalkolumn,
+  // 90-minutersfönster och Nu-knapp, i äkta px. `PhoneGuideMode ⊂ GuideMode`,
+  // så telefonens segment kan ropa samma callback som skrivbordets.
+  if (props.phone) return <TvGuideGridPhone {...props} mode={phoneGuideMode(props.mode)} onModeChange={props.onModeChange} />
+  return <TvGuideGridDesktop {...props} />
+}
+
+function TvGuideGridDesktop({ model, nav, mode, onModeChange }: TvViewProps & { mode: GuideMode; onModeChange: (mode: GuideMode) => void }) {
   const { tt, locale } = useTvText()
   const groups = useGuideGroups(model, tt)
   const [group, setGroup] = useState<string | null>(null)
@@ -130,41 +196,7 @@ export function TvGuideGrid({ model, nav, mode, onModeChange }: TvViewProps & { 
 
   useEffect(() => { setVisibleRows(MAX_ROWS); setSelected(null) }, [group, dayOffset])
 
-  // Favoriter först, sedan övriga kanaler — kanaler utan tablå faller bort i
-  // `selectEpgRows`, en tom rad säger inget.
-  const ordered = useMemo(
-    () => [
-      ...model.pinnedKeys.map((key) => model.byKey.get(key)).filter((channel): channel is M3uChannel => Boolean(channel)),
-      ...model.channels.filter((channel) => !model.pinnedSet.has(channelKey(channel))),
-    ],
-    [model.pinnedKeys, model.byKey, model.channels, model.pinnedSet],
-  )
-  /**
-   * Kategorin filtreras HÄR och inte i `selectEpgRows`.
-   *
-   * TV-chipsen har två poster som inte är gruppnamn ("Alla" och "Favoriter"),
-   * och `selectEpgRows` jämför rakt mot `channel.group` — `__favs` hade
-   * filtrerat bort varenda kanal. Urvalet görs alltså före, och funktionen får
-   * `null` som grupp.
-   */
-  const eligible = useMemo(() => {
-    if (group === FAVS_GROUP) return model.favouriteChannels
-    if (group) return ordered.filter((channel) => channel.group === group)
-    return ordered
-  }, [ordered, group, model.favouriteChannels])
-  const candidates = useMemo(() => eligible.slice(0, visibleRows * CANDIDATE_FACTOR), [eligible, visibleRows])
-  const { schedules, loading: schedulesLoading } = useSchedules(candidates, windowStart, windowEnd)
-  const { rows, hasMore: moreAmongCandidates } = useMemo(
-    () => selectEpgRows(candidates, (channel) => schedules[channelKey(channel)] ?? [], null, visibleRows),
-    [candidates, schedules, visibleRows],
-  )
-  /**
-   * "Visa fler" måste finnas kvar även när KANDIDATERNA tog slut men
-   * spellistan inte gjorde det: `selectEpgRows` vet bara om det urval den
-   * fick, och skulle annars påstå "alla kanaler med tablå visas" fast
-   * överskottsfönstret kapade listan långt före spellistans slut.
-   */
-  const hasMore = moreAmongCandidates || candidates.length < eligible.length
+  const { rows, hasMore, schedulesLoading } = useGridRows(model, group, visibleRows, windowStart, windowEnd)
 
   const scrollToNow = () => {
     const el = scrollRef.current

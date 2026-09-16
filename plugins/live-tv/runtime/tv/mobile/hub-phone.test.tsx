@@ -4,7 +4,7 @@ import { mountPhone } from './__phone-mount'
 import { getActivePlaylistId } from '../tv-settings-store'
 
 // Spelaren behöver inte finnas för att hubben ska ritas.
-vi.mock('../live-tv-player', () => ({ LiveTvPlayer: () => null }))
+vi.mock('../../live-tv-player', () => ({ LiveTvPlayer: () => null }))
 
 describe('Hubben på telefon', () => {
   it('ett spotlight-kort, sökfält, flik-rad, ingen klocka och ingen ikonrad', async () => {
