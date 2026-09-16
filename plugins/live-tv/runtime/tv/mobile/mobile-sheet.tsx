@@ -9,6 +9,8 @@ export interface MobileSheetProps {
   subtitle?: ReactNode
   /** t.ex. <MobileLogo …/> 56×38 */
   art?: ReactNode
+  /** Fri text/beskrivning under huvudet (Task 8: programark, kanalinfo-ark). */
+  body?: ReactNode
   /** SAMMA typ som värdens glasmeny */
   items: TvGlassMenuAction[]
   onClose: () => void
@@ -22,7 +24,7 @@ export interface MobileSheetProps {
  * appens Bakåt stänger arket i stället för att lämna skärmen — samma mönster
  * som skalets övriga lager (kanalväljare, spellistmeny).
  */
-export function MobileSheet({ title, subtitle, art, items, onClose, pushLayer, testId }: MobileSheetProps) {
+export function MobileSheet({ title, subtitle, art, body, items, onClose, pushLayer, testId }: MobileSheetProps) {
   const { tt } = useTvText()
   // Alltid senaste onClose i lagrets stängningsfunktion, utan att effekten
   // (och därmed pushLayer/off-paret) körs om varje gång föräldern skickar en
@@ -57,6 +59,7 @@ export function MobileSheet({ title, subtitle, art, items, onClose, pushLayer, t
             {subtitle ? <div style={{ fontSize: 13, color: MT.muted, ...ellipsis }}>{subtitle}</div> : null}
           </div>
         </div>
+        {body ? <div data-testid="sheet-body" style={{ padding: '12px 20px', fontSize: 14, color: MT.muted, maxHeight: '30vh', overflow: 'auto' }}>{body}</div> : null}
         <div data-scroll="" style={{ maxHeight: '55vh', overflowY: 'auto' }}>
           {items.map((item, index) => (
             <div

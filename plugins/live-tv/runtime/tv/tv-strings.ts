@@ -119,6 +119,9 @@ const EN = {
   daysCount: '{days} days',
   lockWithPin: 'Lock with profile PIN',
   noArchive: 'None',
+  // Kanaldetalj på telefon (Task 8)
+  programmeSheetInfo: 'Channel info',
+  replayDaysShort: 'Replay available {days} days',
   // Sök
   searchChannels: 'Channels',
   searchProgrammes: 'Programmes today',
@@ -339,6 +342,8 @@ const SV: Record<keyof typeof EN, string> = {
   daysCount: '{days} dagar',
   lockWithPin: 'Lås med profilens PIN',
   noArchive: 'Ingen',
+  programmeSheetInfo: 'Kanalinfo',
+  replayDaysShort: 'Repris {days} dagar',
   searchChannels: 'Kanaler',
   searchProgrammes: 'Program idag',
   hits: '{count} träffar',

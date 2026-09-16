@@ -1,104 +1,32 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
-import { channelKey, type M3uChannel } from '../live-tv-data'
-import { qualityFromName, startOfLocalDay } from '../live-tv-model'
+import { useState } from 'react'
+import { qualityFromName } from '../live-tv-model'
 import { PinGate, formatClock } from '../live-tv-ui'
-import { buildTimeshiftUrl, catchUpForChannel } from '../catch-up'
-import { isReminded, toggleReminder } from '../reminders'
-import { activeProfileHasPin, pinSupportAvailable, toggleChannelLock, verifyActiveProfilePin } from '../channel-locks'
-import type { EpgProgramme } from '../epg/types'
-import { sliceSchedule } from '../epg/lookup'
-import { useSchedules } from '../hooks/useSchedules'
+import { toggleChannelLock, verifyActiveProfilePin } from '../channel-locks'
+import { DAY_OFFSETS, kindOf, useChannelDetail } from './channel-detail'
 import type { TvViewProps } from './tv-shell'
 import { ChannelArt, Icons, RoundBtn, Tag, TV, Toggle, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
 import { TvPreview } from './tv-preview'
+import { isReminded } from '../reminders'
+import { TvChannelPhone } from './mobile/channel-phone'
 
-const DAY_OFFSETS = [-2, -1, 0, 1, 2] as const
-const DAY_MS = 86_400_000
-
-/** Slår upp i model.byUrl först; sidans params är reservvägen. */
-function channelFromParams(params: Record<string, string>, byUrl: Map<string, M3uChannel>): M3uChannel | null {
-  const url = params.url?.trim()
-  if (!url) return null
-  return byUrl.get(url) ?? {
-    name: params.name?.trim() || 'Unknown',
-    logo: params.logo?.trim() || null,
-    group: params.group?.trim() || 'Other',
-    url,
-    tvgId: params.tvgId?.trim() || null,
-  }
+/**
+ * Telefongrenen (Task 8) har egen layout och egna testid:n — routas härifrån
+ * innan skrivbordets tre kolumner ritas. `channelFromParams`/`kindOf`/
+ * `DAY_OFFSETS` och hela datalagret bor i `channel-detail.ts`, delat av båda
+ * grenarna (ingen importcykel: ingen av grenarna importerar den andra).
+ */
+export function TvChannel(props: TvViewProps) {
+  if (props.phone) return <TvChannelPhone {...props} />
+  return <TvChannelDesktop {...props} />
 }
 
-type Kind = 'past' | 'now' | 'future'
-function kindOf(p: EpgProgramme, nowMs: number): Kind {
-  if (p.stop <= nowMs) return 'past'
-  if (p.start > nowMs) return 'future'
-  return 'now'
-}
-
-export function TvChannel({ model, nav, params, settings, phone }: TvViewProps) {
+function TvChannelDesktop({ model, nav, params, settings }: TvViewProps) {
   const { tt, locale } = useTvText()
-  const channel = useMemo(() => channelFromParams(params, model.byUrl), [params, model.byUrl])
-  const [dayOffset, setDayOffset] = useState(0)
-  const [selectedStart, setSelectedStart] = useState<number | null>(params.programme ? Number(params.programme) : null)
   const [lockGate, setLockGate] = useState(false)
-
-  const dayStart = startOfLocalDay(model.nowMs, dayOffset)
-  /**
-   * Tablån hämtas från appen per fönster (spec 4.2). Ett fönster täcker både
-   * dagen, gårdagens sista rader och — för arkivkanaler — hela reprisfönstret,
-   * så kanalsidan gör EN hämtning i stället för tre.
-   */
-  const archiveDays = channel?.archive?.days ?? 0
-  const windowFrom = dayStart - Math.max(1, archiveDays) * DAY_MS
-  const windowTo = dayStart + DAY_MS
-  const scheduleChannels = useMemo(() => (channel ? [channel] : []), [channel])
-  const { schedules, loading: scheduleLoading } = useSchedules(scheduleChannels, windowFrom, windowTo)
-  const schedule = channel ? schedules[channelKey(channel)] ?? [] : []
-  const programmes = useMemo(
-    () => sliceSchedule(schedule, dayStart, dayStart + DAY_MS),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [schedule, dayStart],
-  )
-  // Igårs sista rader syns bara på "Idag" (samma fönster som guidens tablå) —
-  // ingen egen "Igår"-rubrik behövs för andra dagar eftersom dagväljaren redan
-  // bytt hela tablån till den dagen.
-  const yesterday = useMemo(
-    () => (dayOffset === 0 ? sliceSchedule(schedule, dayStart - DAY_MS, dayStart).slice(-2) : []),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [schedule, dayStart, dayOffset],
-  )
-  const rows = useMemo(() => [...yesterday.map((p) => ({ p, day: 'yesterday' as const })), ...programmes.map((p) => ({ p, day: 'today' as const }))], [yesterday, programmes])
-
-  // Repriser är begränsade till arkivfönstret (channel.archive.days), inte
-  // bara "kanalen har tv_archive": ett program utanför fönstret ger ingen
-  // giltig timeshift-URL hos panelen även om kanalen i övrigt stöder catch-up.
-  const catchUpByStart = useMemo(() => {
-    if (!channel) return new Map<number, true>()
-    const items = catchUpForChannel(channel, schedule, model.nowMs, 500)
-    return new Map(items.map((item) => [item.programme.start, true as const]))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [channel, schedule, model.nowMs])
-
-  const selected = useMemo(() => rows.find((r) => r.p.start === selectedStart)?.p ?? rows.find((r) => kindOf(r.p, model.nowMs) === 'now')?.p ?? rows[0]?.p ?? null, [rows, selectedStart, model.nowMs])
-  const kind = selected ? kindOf(selected, model.nowMs) : null
-  const canReplaySelected = selected ? catchUpByStart.has(selected.start) : false
-  const reminded = channel && selected && kind === 'future' ? isReminded(channel, selected) : false
-  const key = channel ? channelKey(channel) : ''
-  const pinned = model.pinnedSet.has(key)
-  const locked = model.locked.has(key)
-  const lockAvailable = pinSupportAvailable() && activeProfileHasPin()
-
-  // Bytt dag → rensa valet, men inte vid första monteringen: annars slår
-  // effekten (som körs efter initialrendret också) omedelbart bort
-  // `programme`-parameterns förval innan användaren hunnit se det.
-  const mountedRef = useRef(false)
-  useEffect(() => {
-    if (!mountedRef.current) { mountedRef.current = true; return }
-    setSelectedStart(null)
-  }, [dayOffset])
+  const { channel, dayOffset, setDayOffset, rows, selected, setSelectedStart, kind, canReplaySelected, reminded, pinned, locked, lockAvailable, scheduleLoading, catchUpByStart, primary, primaryLabel, dayLabel } = useChannelDetail(model, nav, params)
 
   // Oupplösbar kanal (tom `url` i parametrarna): vyn har inget att visa, och
   // utan en enda station fanns heller ingen `data-init` — värdens fokusmotor
@@ -119,24 +47,7 @@ export function TvChannel({ model, nav, params, settings, phone }: TvViewProps) 
     )
   }
 
-  const primary = () => {
-    if (!selected) { nav.play({ channel }); return }
-    if (kind === 'now') { nav.play({ channel }); return }
-    if (kind === 'past') {
-      const url = canReplaySelected ? buildTimeshiftUrl(channel, selected.start, selected.stop - selected.start) : null
-      if (url) nav.play({ channel, url, label: selected.title })
-      else nav.play({ channel })
-      return
-    }
-    toggleReminder(channel, selected, model.nowMs)
-  }
-  const primaryLabel = kind === 'past' ? (canReplaySelected ? tt('playReplay') : tt('watchNow')) : kind === 'future' ? (reminded ? tt('removeReminder') : tt('remindMe')) : tt('watchNow')
   const previewLabel = kind === 'past' ? tt('replayAvailable', { days: channel.archive?.days ?? 0 }) : kind === 'future' && selected ? tt('startsAt', { time: formatClock(selected.start, locale) }) : tt('onNow')
-
-  const dayLabel = (offset: number) => {
-    const d = new Date(model.nowMs + offset * DAY_MS)
-    return { top: offset === 0 ? tt('today') : offset === -1 ? tt('yesterday') : offset === 1 ? tt('tomorrow') : d.toLocaleDateString(locale, { weekday: 'short' }), bottom: d.toLocaleDateString(locale, { day: 'numeric', month: 'short' }) }
-  }
 
   const requestLockToggle = () => {
     // Låsning och upplåsning kräver profilens PIN i båda riktningarna —
@@ -148,40 +59,11 @@ export function TvChannel({ model, nav, params, settings, phone }: TvViewProps) 
     setLockGate(true)
   }
 
-  /**
-   * PORTRÄTTBEHANDLING (granskning M-P4, FYND 1).
-   *
-   * Vyn hade tre kolumner sida vid sida: tablån (flex), dagväljaren (fast
-   * 150 dp) och detaljpanelen (fast 560 dp). De två fasta kolumnerna äter
-   * 710 av scenens 780 designpixlar och klämmer tablån till ~70 dp — golven
-   * på text/träffytor (M-P4) gjorde INGET åt det, för problemet satt i
-   * kolumnernas egna bredder, inte i deras innehåll.
-   *
-   * Tre fasta kolumner får inte plats bredvid varandra på 780 dp (samma
-   * slutsats som guidens spellistvy) — telefonen staplar dem i stället:
-   * tablå, dagväljare, detalj, i den ordningen de redan står i trädet.
-   * Dagväljaren byter samtidigt till en horisontell rad (samma mönster som
-   * kategorichipsen i tv-guide.tsx/tv-hub.tsx) i stället för en smal kolumn
-   * ingen skulle kunna trycka rätt i.
-   */
-  const outerStyle: CSSProperties = phone
-    ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflowY: 'auto' }
-    : { flex: 1, minHeight: 0, display: 'flex' }
-  const scheduleStyle: CSSProperties = phone
-    ? { padding: `${dp(20)}px ${dp(20)}px 0`, display: 'flex', flexDirection: 'column' }
-    : { flex: 1, minWidth: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(34)}px ${dp(40)}px 0 ${dp(48)}px`, display: 'flex', flexDirection: 'column' }
-  // Listan hade egen scroll (`flex: 1, minHeight: 0, overflowY: 'auto'`) när
-  // den satt i en höjdbegränsad kolumn bredvid dagväljare/detalj. Staplad på
-  // telefon äger sidan (outerStyle) den enda scrollen — en nästlad scrollyta
-  // hade antingen kollapsat till 0 höjd (ingen given höjd att fylla) eller
-  // gett en telefon med två scrollhjul i samma vy.
-  const scheduleListStyle: CSSProperties = phone ? {} : { flex: 1, minHeight: 0, overflowY: 'auto' }
-  const dayPickerStyle: CSSProperties = phone
-    ? { width: '100%', flexShrink: 0, padding: `${dp(16)}px ${dp(20)}px`, display: 'flex', flexDirection: 'row', gap: dp(10), overflowX: 'auto' }
-    : { width: dp(150), flexShrink: 0, padding: `${dp(120)}px ${dp(14)}px 0`, display: 'flex', flexDirection: 'column', gap: dp(10) }
-  const detailStyle: CSSProperties = phone
-    ? { width: '100%', flexShrink: 0, padding: `${dp(20)}px ${dp(20)}px ${dp(32)}px`, display: 'flex', flexDirection: 'column', gap: dp(16) }
-    : { width: dp(560), flexShrink: 0, padding: `${dp(34)}px ${dp(48)}px ${dp(32)}px ${dp(36)}px`, display: 'flex', flexDirection: 'column', gap: dp(16) }
+  const outerStyle = { flex: 1, minHeight: 0, display: 'flex' } as const
+  const scheduleStyle = { flex: 1, minWidth: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(34)}px ${dp(40)}px 0 ${dp(48)}px`, display: 'flex', flexDirection: 'column' } as const
+  const scheduleListStyle = { flex: 1, minHeight: 0, overflowY: 'auto' } as const
+  const dayPickerStyle = { width: dp(150), flexShrink: 0, padding: `${dp(120)}px ${dp(14)}px 0`, display: 'flex', flexDirection: 'column', gap: dp(10) } as const
+  const detailStyle = { width: dp(560), flexShrink: 0, padding: `${dp(34)}px ${dp(48)}px ${dp(32)}px ${dp(36)}px`, display: 'flex', flexDirection: 'column', gap: dp(16) } as const
 
   return (
     <div data-testid="channel-view-root" style={outerStyle}>
@@ -230,8 +112,8 @@ export function TvChannel({ model, nav, params, settings, phone }: TvViewProps) 
           const active = offset === dayOffset
           const label = dayLabel(offset)
           return (
-            <div key={offset} data-testid={offset === 0 ? 'day-btn-0' : undefined} style={phone ? { flexShrink: 0 } : undefined}>
-              <div {...station(() => setDayOffset(offset), undefined, { 'data-testid': 'day-btn' })} style={{ width: phone ? dp(72) : undefined, height: dp(74), minHeight: dp(74), borderRadius: dp(12), display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: active ? '#f3f4f8' : 'transparent', color: active ? '#111' : offset > 0 ? TV.accText : 'rgba(243,244,248,0.6)', cursor: 'pointer' }}>
+            <div key={offset} data-testid={offset === 0 ? 'day-btn-0' : undefined}>
+              <div {...station(() => setDayOffset(offset), undefined, { 'data-testid': 'day-btn' })} style={{ height: dp(74), minHeight: dp(74), borderRadius: dp(12), display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: active ? '#f3f4f8' : 'transparent', color: active ? '#111' : offset > 0 ? TV.accText : 'rgba(243,244,248,0.6)', cursor: 'pointer' }}>
                 <span style={{ fontSize: dp(17), fontWeight: 600 }}>{label.top}</span>
                 <span style={{ fontSize: dp(15), opacity: 0.75 }}>{label.bottom}</span>
               </div>
