@@ -105,7 +105,7 @@ describe('Live TV-skalet på telefon (fas 3)', () => {
   it('kanalmenyn (håll på ett kort) landar i ett bottenark, inte i värdens glasmeny', async () => {
     vi.useFakeTimers()
     mount({ phone: true })
-    const card = await screen.findByText('A')
+    const card = await screen.findByText('A', { ignore: '[data-initials]' })
     fireEvent.pointerDown(card.closest('[data-f]') as HTMLElement, { pointerType: 'touch', button: 0 })
     vi.advanceTimersByTime(700)
     vi.useRealTimers()
@@ -117,7 +117,7 @@ describe('Live TV-skalet på telefon (fas 3)', () => {
   it('Bakåt (Escape) stänger kanalarket i stället för att lämna vyn', async () => {
     vi.useFakeTimers()
     const { onNavigate } = mount({ phone: true })
-    const card = await screen.findByText('A')
+    const card = await screen.findByText('A', { ignore: '[data-initials]' })
     fireEvent.pointerDown(card.closest('[data-f]') as HTMLElement, { pointerType: 'touch', button: 0 })
     vi.advanceTimersByTime(700)
     vi.useRealTimers()
@@ -131,13 +131,13 @@ describe('Live TV-skalet på telefon (fas 3)', () => {
   it('hold-affordansen ("…"-knappen) finns inte på telefon', async () => {
     stubPointer({ fine: true })
     const { box } = mount({ phone: true })
-    fireEvent.pointerOver((await screen.findByText('A')).closest('[data-hold]') as HTMLElement)
+    fireEvent.pointerOver((await screen.findByText('A', { ignore: '[data-initials]' })).closest('[data-hold]') as HTMLElement)
     expect(box.querySelector('[data-live-tv-hold-button]')).toBeNull()
   })
   it('flik-raden döljs när spelaren är öppen', async () => {
     mount({ phone: true })
     // Simulera uppspelning: klicka första kanalkortet i hubben (fixturen har A och B).
-    fireEvent.click(await screen.findByText('A'))
+    fireEvent.click(await screen.findByText('A', { ignore: '[data-initials]' }))
     await waitFor(() => expect(screen.queryByTestId('mobile-tab-bar')).toBeNull())
   })
   // Telefonen i skrivbordsappen behåller den gamla guiden (spec "Beslut",

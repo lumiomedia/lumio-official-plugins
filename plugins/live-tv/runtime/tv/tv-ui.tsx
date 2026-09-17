@@ -252,6 +252,9 @@ export function Progress({ value, height = dp(5), track = TV.s14, style }: { val
  * Kanalbild: sparad bildruta (playerFrameUrl) → logotyp → initialer. Barnen
  * ritas ovanpå (taggar, text, gradient).
  */
+/** Sparade bildrutor som kanalbild — av sedan 2026-09-17, se ChannelArt. */
+export const USE_PLAYER_FRAMES = false
+
 export function ChannelArt({ channel, frameVersion, height, aspect, radius, children, style }: {
   channel:
     | Pick<M3uChannel, 'name' | 'logo' | 'logoFallback' | 'url'>
@@ -270,7 +273,10 @@ export function ChannelArt({ channel, frameVersion, height, aspect, radius, chil
   // Bildrutan är cachad under channelKey (namn + url). Utan url kan vi inte
   // forma en tillförlitlig nyckel, så vi hoppar rakt till logotyp/initialer
   // i stället för att chansa med en ostabil nyckel.
-  const frameSrc = !frameFailed && 'url' in channel ? sdk.playerFrameUrl(channelKey(channel), frameVersion ?? null) : null
+  // Sparade bildrutor är AV (Jerry 2026-09-17): en gammal screengrab som inte
+  // matchar det som faktiskt sänds förvirrar mer än en logotyp. Kedjan
+  // (bildruta → logotyp → initialer) står kvar bakom flaggan om den ska på igen.
+  const frameSrc = USE_PLAYER_FRAMES && !frameFailed && 'url' in channel ? sdk.playerFrameUrl(channelKey(channel), frameVersion ?? null) : null
   const primaryLogo = getLiveTvLogoSrc(channel.logo)
   const fallbackLogo = getLiveTvLogoSrc(channel.logoFallback)
   const logo = logoFailed ? null : primaryLogo ?? fallbackLogo
@@ -287,7 +293,7 @@ export function ChannelArt({ channel, frameVersion, height, aspect, radius, chil
           onError={() => setLogoFailed(true)}
         />
       ) : (
-        <span style={{ fontSize: dp(22), fontWeight: 600, color: TV.dim, letterSpacing: '0.04em' }}>{initialsOf(channel.name)}</span>
+        <span data-initials="" aria-hidden="true" style={{ fontSize: dp(22), fontWeight: 600, color: TV.dim, letterSpacing: '0.04em' }}>{initialsOf(channel.name)}</span>
       )}
       {children}
     </div>

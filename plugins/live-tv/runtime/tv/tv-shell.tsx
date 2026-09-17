@@ -581,7 +581,9 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
               nivåerna (lager → spelare → vy → requestBrowseBack) nås med musen.
               Aldrig på TV — där finns fjärrens egen Bakåt-knapp, och TV-designen
               är godkänd som den är. */}
-          {isTv ? null : railItem({ key: 'back', label: tt('railBack'), icon: <Icons.ChevronLeft />, run: back })}
+          {/* Bakåt-pilen i ikonraden lämnar Live TV DIREKT (Jerry 2026-09-17) —
+              inte ett steg i taget genom lager/vy/hubb som tangenten gör. */}
+          {isTv ? null : railItem({ key: 'back', label: tt('railBack'), icon: <Icons.ChevronLeft />, run: requestBrowseBack })}
           {rail.map((item) => railItem(item))}
           {railItem({ key: 'settings', label: tt('railSettings'), icon: <Icons.Gear /> }, { marginTop: 'auto' })}
         </nav>

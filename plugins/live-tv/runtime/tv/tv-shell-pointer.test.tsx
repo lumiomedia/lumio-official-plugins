@@ -273,9 +273,11 @@ describe('Bakåt med pekare', () => {
     writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list])
     writePluginJson(LIVE_TV_PLUGIN_ID, 'pins', [])
     seedLiveTvIndex()
+    // Bakåt-pilen i ikonraden lämnar Live TV DIREKT (Jerry 2026-09-17), utan
+    // att gå steg för steg genom kedjan som tangenten gör.
     const fromClick = await runChain(() => { fireEvent.click(screen.getByTestId('rail-back')) })
-    expect(fromClick).toEqual(fromKey)
     expect(fromKey).toEqual(['meny stängd', 'lager stängt', 'spelare stängd', 'vy:hub', 'browse-back'])
+    expect(fromClick[0]).toBe('browse-back')
   })
 })
 

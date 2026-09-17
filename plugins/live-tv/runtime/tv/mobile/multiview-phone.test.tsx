@@ -47,7 +47,7 @@ describe('Multivy på telefon', () => {
   it('val i kanalarket tilldelar den tomma rutan', async () => {
     await mountMulti([keyA, null, null, null], 0)
     fireEvent.click(screen.getAllByTestId('mv-tile')[1])
-    fireEvent.click(await screen.findByText('B'))
+    fireEvent.click(await screen.findByText('B', { ignore: '[data-initials]' }))
     expect(getMultiviewState().tiles[1]).toBe(keyB)
     expect(screen.queryByTestId('mv-picker-sheet')).toBeNull()
   })

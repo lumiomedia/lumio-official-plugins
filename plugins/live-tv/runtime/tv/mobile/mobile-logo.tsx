@@ -2,6 +2,7 @@ import { useState } from 'react'
 import * as sdk from '@/lib/plugin-sdk'
 import { channelKey, getLiveTvLogoSrc, type M3uChannel } from '../../live-tv-data'
 import { LiveTvLogoImage } from '../../live-tv-logo-image'
+import { USE_PLAYER_FRAMES } from '../tv-ui'
 import { initialsOf } from '../../live-tv-ui'
 import { MT } from './mobile-tokens'
 
@@ -19,7 +20,8 @@ export function MobileLogo({ channel, width, height, radius = 8, frame = true }:
 }) {
   const [frameFailed, setFrameFailed] = useState(false)
   const [logoFailed, setLogoFailed] = useState(false)
-  const frameSrc = frame && !frameFailed && channel.url ? sdk.playerFrameUrl(channelKey(channel), null) : null
+  // Sparade bildrutor av — samma beslut som ChannelArt (USE_PLAYER_FRAMES).
+  const frameSrc = USE_PLAYER_FRAMES && frame && !frameFailed && channel.url ? sdk.playerFrameUrl(channelKey(channel), null) : null
   const primaryLogo = getLiveTvLogoSrc(channel.logo)
   const fallbackLogo = getLiveTvLogoSrc(channel.logoFallback)
   const logo = logoFailed ? null : primaryLogo ?? fallbackLogo
@@ -36,7 +38,7 @@ export function MobileLogo({ channel, width, height, radius = 8, frame = true }:
           onError={() => setLogoFailed(true)}
         />
       ) : (
-        <span style={{ fontSize: 13, fontWeight: 600, color: MT.dim, letterSpacing: '0.04em' }}>{initialsOf(channel.name)}</span>
+        <span data-initials="" aria-hidden="true" style={{ fontSize: 13, fontWeight: 600, color: MT.dim, letterSpacing: '0.04em' }}>{initialsOf(channel.name)}</span>
       )}
     </div>
   )
