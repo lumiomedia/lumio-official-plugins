@@ -200156,6 +200156,7 @@ ${cue.text}`).join("\n\n")}
   }) {
     const rootRef = useRef(null);
     const openerRef = useRef(null);
+    const closeRef = useRef(null);
     const navRef = useRef(nav);
     const onCloseRef = useRef(onClose);
     useEffect(() => {
@@ -200168,6 +200169,7 @@ ${cue.text}`).join("\n\n")}
         onCloseRef.current();
         window.setTimeout(() => openerRef.current?.focus({ preventScroll: true }), 0);
       };
+      closeRef.current = close;
       const off = navRef.current.pushLayer(close);
       window.setTimeout(() => rootRef.current?.querySelector("[data-init]")?.focus({ preventScroll: true }), 0);
       return off;
@@ -200183,7 +200185,7 @@ ${cue.text}`).join("\n\n")}
         children: [
           /* @__PURE__ */ jsx("div", { style: { fontSize: dp(28), fontWeight: 600 }, children: title }),
           chips,
-          /* @__PURE__ */ jsx("div", { "data-scroll": "", style: { flex: 1, minHeight: 0, overflowY: "auto" }, children: rows })
+          /* @__PURE__ */ jsx("div", { "data-scroll": "", style: { flex: 1, minHeight: 0, overflowY: "auto" }, children: typeof rows === "function" ? rows(() => closeRef.current?.()) : rows })
         ]
       }
     );
@@ -200277,7 +200279,7 @@ ${cue.text}`).join("\n\n")}
         onClose,
         chips: null,
         testId: "choice-panel",
-        rows: options.map((option, index3) => {
+        rows: (close) => options.map((option, index3) => {
           const on = option.key === value;
           return /* @__PURE__ */ jsxs(
             "div",
@@ -200285,7 +200287,7 @@ ${cue.text}`).join("\n\n")}
               "data-testid": `choice-row-${option.label}`,
               ...station(() => {
                 onPick(option.key);
-                onClose();
+                close();
               }, void 0, index3 === initIndex ? { "data-init": "" } : void 0),
               style: { height: 56, minHeight: 56, borderRadius: 10, display: "flex", alignItems: "center", gap: 12, padding: "0 12px", cursor: "pointer", background: on ? TV.s08 : "transparent" },
               children: [
@@ -200333,6 +200335,7 @@ ${cue.text}`).join("\n\n")}
   function GuideControlRow(props) {
     const { tt } = useTvText();
     const { mode } = props;
+    const showDay = mode !== "nownext";
     const showNow = mode !== "nownext";
     const showZoom = mode === "timeline";
     const showDetails = mode === "nownext";
@@ -200340,7 +200343,7 @@ ${cue.text}`).join("\n\n")}
       /* @__PURE__ */ jsx(Dropdown, { testId: "guide-source", label: props.sourceLabel, count: props.sourceCount, onOpen: props.onOpenSource }),
       /* @__PURE__ */ jsx(Dropdown, { testId: "guide-category", label: props.categoryLabel, count: props.categoryCount, onOpen: props.onOpenCategory }),
       /* @__PURE__ */ jsx(Divider, {}),
-      /* @__PURE__ */ jsx(
+      showDay ? /* @__PURE__ */ jsx(
         ControlSegment,
         {
           testId: "guide-day",
@@ -200349,7 +200352,7 @@ ${cue.text}`).join("\n\n")}
           onChange: (key) => props.onDay(key === "1" ? 1 : 0),
           activeStyle: { background: "#f3f4f8", color: "#111" }
         }
-      ),
+      ) : null,
       showNow ? /* @__PURE__ */ jsx(
         "div",
         {
@@ -200919,7 +200922,7 @@ ${cue.text}`).join("\n\n")}
   var FOOTER_H_PX = 48;
   var SHORT_BLOCK_MIN = 20;
   var AXIS_STEP_MS = { "2h": 30 * 6e4, "6h": 36e5, day: 2 * 36e5 };
-  function GuideTimelineView({ model, category, dayOffset, selection, onSelect, isTv, zoom, onOpenGrid }) {
+  function GuideTimelineView({ model, nav, category, dayOffset, selection, onSelect, isTv, zoom, onOpenGrid }) {
     const { tt, locale } = useTvText();
     const { nowMs } = model;
     const [visibleRows, setVisibleRows] = useState(ROWS_STEP2);
@@ -200966,8 +200969,11 @@ ${cue.text}`).join("\n\n")}
       onOpenGrid(atMs);
     };
     const rowStation = (sel, init) => ({
-      ...station(() => open(sel, okTime()), void 0, initAttr(init)),
-      onClick: (event) => open(sel, timeFromClick(event) ?? okTime()),
+      ...station(() => open(sel, okTime()), (el) => nav.channelMenu(sel.channel, el), initAttr(init)),
+      onClick: (event) => {
+        if (event.defaultPrevented) return;
+        open(sel, timeFromClick(event) ?? okTime());
+      },
       onFocus: isTv ? () => onSelect(sel) : void 0
     });
     const selectedKey = selection ? channelKey(selection.channel) : null;
@@ -201066,7 +201072,7 @@ ${cue.text}`).join("\n\n")}
               border: live2 ? "1px solid rgba(59,130,246,0.5)" : "1px solid transparent",
               overflow: "hidden"
             },
-            children: marker ? null : /* @__PURE__ */ jsx("span", { style: { fontSize: 12, fontWeight: live2 ? 600 : 400, color: live2 ? TV.text : "rgba(243,244,248,0.65)", ...ellipsis2 }, children: label2 })
+            children: marker ? null : /* @__PURE__ */ jsx("span", { style: { minWidth: 0, fontSize: 12, fontWeight: live2 ? 600 : 400, color: live2 ? TV.text : "rgba(243,244,248,0.65)", ...ellipsis2 }, children: label2 })
           }
         )
       }
@@ -201075,7 +201081,7 @@ ${cue.text}`).join("\n\n")}
 
   // ../../../lumio-official-plugins/.worktrees/desktop-epg/plugins/live-tv/runtime/tv/guide-shell.tsx
   init_jsx_runtime_shim();
-  function TvGuideShell({ model, nav }) {
+  function TvGuideShell({ model, nav, params }) {
     const { tt, locale } = useTvText();
     const isTv = useTvMode();
     const clock = useTvClockNode(locale);
@@ -201118,16 +201124,28 @@ ${cue.text}`).join("\n\n")}
       if (stored === null) return null;
       return groups.some((g) => g.key === stored) ? stored : null;
     }, [settings.guideCategory, groups]);
+    const groupParam = params.group;
+    useEffect(() => {
+      if (!groupParam) return;
+      const next2 = groupParam === "all" ? null : groupParam;
+      if (next2 !== getTvSettings().guideCategory) setTvSettings({ guideCategory: next2 });
+    }, []);
     const [dayOffset, setDayOffset] = useState(0);
     const [windowStart, setWindowStart] = useState(() => guideWindowStart(model.nowMs));
     const [selection, setSelection] = useState(null);
     const [panel, setPanel] = useState(null);
+    const changeDay = (d) => {
+      setDayOffset(d);
+      setWindowStart(d === 1 ? startOfLocalDay(model.nowMs, 1) + 6 * 36e5 : guideWindowStart(model.nowMs));
+      setSelection(null);
+    };
     const jumpToNow = () => {
       setDayOffset(0);
       setWindowStart(guideWindowStart(model.nowMs));
     };
     const openGridAt = (atMs) => {
       setWindowStart(guideWindowStart(atMs));
+      setDayOffset(atMs >= startOfLocalDay(model.nowMs, 1) ? 1 : 0);
       changeMode("grid");
     };
     const sourceOptions = useMemo(() => [
@@ -201145,8 +201163,7 @@ ${cue.text}`).join("\n\n")}
     }, [groups, model.channels, model.favouriteChannels.length, tt]);
     const categoryLabel = category === null ? tt("categoryAll") : groups.find((g) => g.key === category)?.label ?? tt("categoryAll");
     const categoryCount = categoryOptions.find((o) => o.key === category)?.count ?? model.channels.length;
-    const effectiveWindowStart = dayOffset === 1 ? startOfLocalDay(model.nowMs, 1) + 6 * 36e5 : windowStart;
-    const viewProps = { model, nav, category, dayOffset, windowStart: effectiveWindowStart, selection, onSelect: setSelection, isTv };
+    const viewProps = { model, nav, category, dayOffset, windowStart, selection, onSelect: setSelection, isTv };
     const view = mode === "nownext" ? /* @__PURE__ */ jsx(GuideNowNextView, { ...viewProps, details: settings.nowNextDetails }) : mode === "grid" ? /* @__PURE__ */ jsx(GuideGridView, { ...viewProps }) : /* @__PURE__ */ jsx(GuideTimelineView, { ...viewProps, zoom: settings.timelineZoom, onOpenGrid: openGridAt });
     return /* @__PURE__ */ jsxs("div", { "data-testid": "guide-shell", "data-guide-mode": mode, style: { display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }, children: [
       /* @__PURE__ */ jsx(
@@ -201161,7 +201178,7 @@ ${cue.text}`).join("\n\n")}
           categoryCount,
           onOpenCategory: () => setPanel("category"),
           dayOffset,
-          onDay: setDayOffset,
+          onDay: changeDay,
           onNow: jumpToNow,
           zoom: settings.timelineZoom,
           onZoom: (z) => setTvSettings({ timelineZoom: z }),
@@ -201171,8 +201188,14 @@ ${cue.text}`).join("\n\n")}
         }
       ),
       /* @__PURE__ */ jsx("div", { "data-testid": "guide-content", style: { flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }, children: view }),
-      panel === "source" ? /* @__PURE__ */ jsx(TvChoicePanel, { nav, title: tt("pickSource"), options: sourceOptions, value: model.activePlaylistId, onPick: (key) => model.setActivePlaylist(key), onClose: () => setPanel(null) }) : null,
-      panel === "category" ? /* @__PURE__ */ jsx(TvChoicePanel, { nav, title: tt("pickCategory"), options: categoryOptions, value: category, onPick: (key) => setTvSettings({ guideCategory: key }), onClose: () => setPanel(null) }) : null
+      panel === "source" ? /* @__PURE__ */ jsx(TvChoicePanel, { nav, title: tt("pickSource"), options: sourceOptions, value: model.activePlaylistId, onPick: (key) => {
+        model.setActivePlaylist(key);
+        setSelection(null);
+      }, onClose: () => setPanel(null) }) : null,
+      panel === "category" ? /* @__PURE__ */ jsx(TvChoicePanel, { nav, title: tt("pickCategory"), options: categoryOptions, value: category, onPick: (key) => {
+        setTvSettings({ guideCategory: key });
+        setSelection(null);
+      }, onClose: () => setPanel(null) }) : null
     ] });
   }
 
