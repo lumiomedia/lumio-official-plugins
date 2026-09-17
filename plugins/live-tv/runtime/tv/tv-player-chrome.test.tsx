@@ -37,14 +37,14 @@ beforeEach(() => {
 })
 
 describe('TvPlayerChrome', () => {
-  it('toppfältet visar kanal, nu-rad och Sen-kortet; ⋯ är kromets enda data-init', () => {
+  it('toppfältet visar kanal, nu-rad och Sen-kortet; spela/paus är kromets enda data-init', () => {
     render(<TvPlayerChrome channel={channels[1]} tv={tv()} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
     expect(screen.getByTestId('top-bar')).toHaveTextContent('2 · B')
     expect(screen.getByTestId('top-bar')).toHaveTextContent('GameDay')
     expect(screen.getByTestId('next-up')).toHaveTextContent('Football')
     expect(screen.getByTestId('next-up-remind')).toHaveTextContent('Remind me')
     expect(screen.getByTestId('programme-progress')).toHaveTextContent('GameDay')
-    expect(screen.getByLabelText('More')).toHaveAttribute('data-init')
+    expect(screen.getByLabelText('Pause')).toHaveAttribute('data-init')
     expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
   })
   it('Påminn mig på Sen-kortet togglar påminnelsen', () => {
@@ -55,18 +55,18 @@ describe('TvPlayerChrome', () => {
     fireEvent.click(screen.getByTestId('next-up-remind'))
     expect(screen.getByTestId('next-up-remind')).toHaveTextContent('Remind me')
   })
-  it('⋯ tar fokus när spelaren öppnas och behåller det över ett kanalbyte', async () => {
+  it('spela/paus tar fokus när spelaren öppnas och behåller det över ett kanalbyte', async () => {
     const view = render(<TvPlayerChrome channel={channels[1]} tv={tv()} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
     // Självhävdande slinga över några bildrutor: skalet fokuserar inte vyer
     // medan spelaren är öppen, så utan den här står fokus kvar i vyn BAKOM.
     await act(async () => { await new Promise((r) => setTimeout(r, 120)) })
-    const dots = screen.getByLabelText('More')
-    expect(document.activeElement).toBe(dots)
+    const playPause = screen.getByLabelText('Pause')
+    expect(document.activeElement).toBe(playPause)
     // Kanalbyte (onSwitchChannel → ny channel-prop) får inte tappa fokus.
     document.body.focus()
     view.rerender(<TvPlayerChrome channel={channels[2]} tv={tv()} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
     await act(async () => { await new Promise((r) => setTimeout(r, 120)) })
-    expect(document.activeElement).toBe(screen.getByLabelText('More'))
+    expect(document.activeElement).toBe(screen.getByLabelText('Pause'))
   })
   it('favoritraden ritar chips med logotyp, namn och nu-titel; klick byter kanal', () => {
     const props = tv()
@@ -163,10 +163,15 @@ describe('TvPlayerChrome', () => {
     fireEvent.keyDown(window, { key: 'PageDown' })
     expect(props.onSwitchChannel).toHaveBeenLastCalledWith(channels[0])
   })
-  it('⋯ öppnar glasmenyn med rätt poster, och Guide där öppnar överlägget', () => {
+  it('håll OK på spela/paus öppnar glasmenyn med rätt poster, och Guide där öppnar överlägget', async () => {
     render(<TvPlayerChrome channel={channels[1]} tv={tv()} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
-    fireEvent.click(screen.getByLabelText('More'))
-    const menu = screen.getByTestId('tv-glass-menu')
+    vi.useFakeTimers()
+    const playPause = screen.getByLabelText('Pause')
+    fireEvent.keyDown(playPause, { key: 'Enter' })
+    vi.advanceTimersByTime(700)
+    fireEvent.keyUp(playPause, { key: 'Enter' })
+    vi.useRealTimers()
+    const menu = await screen.findByTestId('tv-glass-menu')
     expect(menu).toHaveTextContent('Guide (now / next)')
     expect(menu).toHaveTextContent('Multiview')
     expect(menu).toHaveTextContent('Add to favourites')
@@ -207,7 +212,7 @@ describe('TvPlayerChrome', () => {
     fireEvent.keyDown(window, { key: 'Backspace' })
     expect(onClose).toHaveBeenCalledTimes(1)
   })
-  it('OK på ett chip i överlägget lämnar fokus på ⋯ och inte på body', async () => {
+  it('OK på ett chip i överlägget lämnar fokus på spela/paus och inte på body', async () => {
     const props = tv()
     render(<TvPlayerChrome channel={channels[1]} tv={props} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
     fireEvent.click(screen.getByLabelText('Guide'))
@@ -218,7 +223,7 @@ describe('TvPlayerChrome', () => {
     // setTimeout 0 i closeGuide: fokus sätts efter att raderna tagits bort.
     await act(async () => { await new Promise((r) => setTimeout(r, 10)) })
     expect(screen.queryByTestId('schedule-overlay')).toBeNull()
-    expect(document.activeElement).toBe(screen.getByLabelText('More'))
+    expect(document.activeElement).toBe(screen.getByLabelText('Pause'))
   })
   it('◂ ▸ och OK når inte vyn bakom spelaren, men släpps igenom inne i kromet', () => {
     render(<TvPlayerChrome channel={channels[1]} tv={tv()} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
@@ -231,8 +236,8 @@ describe('TvPlayerChrome', () => {
     fireEvent.keyDown(window, { key: 'ArrowLeft' })
     fireEvent.keyDown(window, { key: 'Enter' })
     expect(behind).not.toHaveBeenCalled()
-    // Inne i kromet ska de fortfarande gå fram: ⋯-stationen behöver OK.
-    fireEvent.keyDown(screen.getByLabelText('More'), { key: 'Enter' })
+    // Inne i kromet ska de fortfarande gå fram: spela/paus-stationen behöver OK.
+    fireEvent.keyDown(screen.getByLabelText('Pause'), { key: 'Enter' })
     expect(behind).toHaveBeenCalledTimes(1)
     window.removeEventListener('keydown', behind, true)
   })
@@ -279,12 +284,12 @@ describe('TvPlayerChrome i TV-läge', () => {
       expect(chip).toHaveAttribute('data-f')
       expect(chip).toHaveAttribute('data-guide-row')
     }
-    for (const label of ['Pause', 'Fullscreen', 'Guide', 'Mute', 'Aspect ratio', 'More', 'Close']) {
+    for (const label of ['Pause', 'Fullscreen', 'Guide', 'Mute', 'Aspect ratio', 'Close']) {
       expect(screen.getByLabelText(label)).toHaveAttribute('data-f')
       expect(screen.getByLabelText(label)).toHaveAttribute('data-guide-row')
     }
     expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
-    expect(screen.getByLabelText('More')).toHaveAttribute('data-init')
+    expect(screen.getByLabelText('Pause')).toHaveAttribute('data-init')
     // Volymreglaget ritas inte på TV: en station som sväljer sidopilarna låser fjärren.
     expect(screen.queryByLabelText('Volume')).toBeNull()
   })

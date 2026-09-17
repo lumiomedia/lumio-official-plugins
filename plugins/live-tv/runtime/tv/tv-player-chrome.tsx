@@ -60,7 +60,7 @@ function TvPlayerChromeDesktop({ channel, tv, controls, paused, onTogglePause, o
   const [guideOpen, setGuideOpen] = useState(false)
   const [menu, setMenu] = useState<TvGlassMenuTarget | null>(null)
   const timerRef = useRef<number | null>(null)
-  const dotsRef = useRef<HTMLDivElement | null>(null)
+  const initRef = useRef<HTMLDivElement | null>(null)
   const volumeRef = useRef<HTMLDivElement | null>(null)
   const rootRef = useRef<HTMLDivElement | null>(null)
   const overlayRef = useRef<HTMLDivElement | null>(null)
@@ -125,7 +125,7 @@ function TvPlayerChromeDesktop({ channel, tv, controls, paused, onTogglePause, o
   useEffect(() => { layerRef.current = { menuOpen: menu !== null, guideOpen, gateOpen: tv.gateOpen } })
 
   /**
-   * ⋯ tar fokus när spelaren öppnas — kromets enda `data-init`.
+   * Spela/paus tar fokus när spelaren öppnas — kromets enda `data-init`.
    *
    * Skalet hoppar över sin fokuseffekt medan spelaren är öppen
    * (`tv-shell.tsx`: `if (active) return`), och värdens fokusmotor kallas bara
@@ -137,7 +137,7 @@ function TvPlayerChromeDesktop({ channel, tv, controls, paused, onTogglePause, o
    * fyra sekunder.
    */
   useEffect(() => {
-    const node = dotsRef.current
+    const node = initRef.current
     if (!node) return
     let frame = 0
     let held = 0
@@ -165,12 +165,12 @@ function TvPlayerChromeDesktop({ channel, tv, controls, paused, onTogglePause, o
    *
    * Försvinner raderna medan en av dem har fokus faller fokus till
    * `document.body`, och då har fjärrkontrollen ingen station att gå vidare
-   * från. ⋯ är kromets data-init-station och den rätta platsen att landa på.
+   * från. Spela/paus är kromets data-init-station och den rätta platsen att landa på.
    * setTimeout 0: fokus måste sättas EFTER att React tagit bort raderna.
    */
   const closeGuide = useCallback(() => {
     setGuideOpen(false)
-    window.setTimeout(() => dotsRef.current?.focus({ preventScroll: true }), 0)
+    window.setTimeout(() => initRef.current?.focus({ preventScroll: true }), 0)
   }, [])
   const toggleGuide = useCallback(() => {
     if (guideOpen) closeGuide()
@@ -258,7 +258,7 @@ function TvPlayerChromeDesktop({ channel, tv, controls, paused, onTogglePause, o
         onMouseLeave={release}
         style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 30, padding: `${ps(48)}px ${ps(20)}px ${ps(20)}px`, background: 'linear-gradient(0deg, rgba(0,0,0,0.85), rgba(0,0,0,0.55) 55%, transparent)', opacity: visible ? 1 : 0, transition: 'opacity 200ms', pointerEvents: visible ? 'auto' : 'none', color: '#f3f4f8' }}
       >
-        <PlayerControlRow channel={channel} tv={tv} info={info} ps={ps} isTv={isTv} paused={paused} onTogglePause={onTogglePause} controls={controls} guideOpen={guideOpen} onToggleGuide={toggleGuide} dotsRef={dotsRef} onOpenMenu={openMenu} volumeRef={volumeRef} />
+        <PlayerControlRow channel={channel} tv={tv} info={info} ps={ps} isTv={isTv} paused={paused} onTogglePause={onTogglePause} controls={controls} guideOpen={guideOpen} onToggleGuide={toggleGuide} dotsRef={initRef} onOpenMenu={openMenu} volumeRef={volumeRef} />
         <PlayerFavouritesRow channel={channel} tv={tv} ps={ps} onSwitch={switchChannel} onHold={holdChip} />
       </div>
       <PlayerScheduleOverlay channel={channel} tv={tv} ps={ps} open={guideOpen} onClose={closeGuide} onSwitch={switchChannel} onHoldChip={holdChip} overlayRef={overlayRef} />

@@ -225,7 +225,7 @@ export function PlayerControlRow({ channel, tv, info, ps, isTv, paused, onToggle
       ) : null}
       {/* Raden scrollar i sidled hellre än radbryter: ett smalt fönster drar i raden som i en spelarkontroll. */}
       <div data-testid="control-row" data-row="" style={{ display: 'flex', alignItems: 'center', gap: ps(12), overflowX: 'auto', scrollbarWidth: 'none', borderRadius: ps(16), border: `1px solid ${TV.lineCard}`, background: 'rgba(0,0,0,0.55)', padding: `${ps(10)}px ${ps(14)}px`, backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}>
-        <div {...station(onTogglePause, undefined, { 'aria-label': paused ? tt('menuResume') : tt('menuPause'), 'data-guide-row': '' })} style={{ ...ctlStyle(ps), padding: 0 }}>
+        <div ref={dotsRef} {...station(onTogglePause, (el) => onOpenMenu(el), { 'data-init': '', 'aria-label': paused ? tt('menuResume') : tt('menuPause'), 'data-guide-row': '' })} style={{ ...ctlStyle(ps), padding: 0 }}>
           {paused ? <PlayIcon size={icon} /> : <PauseIcon size={icon} />}
         </div>
         {controls ? (
@@ -274,9 +274,6 @@ export function PlayerControlRow({ channel, tv, info, ps, isTv, paused, onToggle
             <span style={{ fontSize: ps(11), fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{controls.aspectLabel}</span>
           </div>
         ) : null}
-        <div ref={dotsRef} {...station(() => { if (dotsRef.current) onOpenMenu(dotsRef.current) }, (el) => onOpenMenu(el), { 'data-init': '', 'aria-label': tt('moreActions'), 'data-guide-row': '' })} style={{ ...ctlStyle(ps), padding: 0 }}>
-          <Icons.Dots size={icon} />
-        </div>
         {/* Infoblocket har ett golv: `flex: 1` krymper till noll i en överfull rad och namnet försvann. */}
         <div style={{ flex: 1, minWidth: ps(176), display: 'flex', flexDirection: 'column', gap: ps(3), justifyContent: 'center', alignItems: 'flex-end', textAlign: 'right' }}>
           <div style={{ fontSize: ps(13), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>{channel.name}</div>

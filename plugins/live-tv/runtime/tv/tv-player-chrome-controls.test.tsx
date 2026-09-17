@@ -49,12 +49,12 @@ describe('TvPlayerChrome: pekarkontroller', () => {
     expect(c.onCycleAspect).toHaveBeenCalled()
 
     // Fjärren på skrivbordet ska nå dem: varje kontroll är en station, och
-    // kromet har fortfarande exakt EN data-init (⋯-knappen).
+    // kromet har fortfarande exakt EN data-init (spela/paus-knappen).
     for (const label of ['Mute', 'Volume', 'Fullscreen', 'Aspect ratio']) {
       expect(screen.getByLabelText(label)).toHaveAttribute('data-f')
     }
     expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
-    expect(screen.getByLabelText('More')).toHaveAttribute('data-init')
+    expect(screen.getByLabelText('Pause')).toHaveAttribute('data-init')
   })
 
   it('i TV-läge finns knapparna men inte volymreglaget', () => {
