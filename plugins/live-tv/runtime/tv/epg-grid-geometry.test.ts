@@ -17,6 +17,7 @@ import {
   hourMarks,
   mergeShortBlocks,
   nowLinePx,
+  pctShapeThresholds,
   timelineWindow,
   type EpgRowEntry,
 } from './epg-grid-geometry'
@@ -276,6 +277,39 @@ describe('PCT_PER_MIN_GRID + epgBlockBox — procentblock i Grid (fönster 3 h)'
     expect(box?.width).toBeCloseTo(16.666, 2)
     expect(box?.clippedStart).toBe(true)
   })
+
+  /**
+   * Regression: `shapeFor`s px-trösklar (18/72) jämförda mot en PROCENTbredd
+   * gjorde ett 30-minutersblock (16,67 %) till en "marker" — fel enhet.
+   * `pctShapeThresholds` ger trösklar i SAMMA enhet som `width` här.
+   */
+  describe('formtrösklar i procentskalan (pctShapeThresholds)', () => {
+    const thresholds = pctShapeThresholds(PCT_PER_MIN_GRID)
+
+    it('30-minutersblock (16,67 %) blir "full"', () => {
+      const box = epgBlockBox({ start: gridWindowStart, stop: gridWindowStart + 30 * M }, gridWindowStart, gridWindowEnd, PCT_PER_MIN_GRID, thresholds)
+      expect(box?.shape).toBe('full')
+      expect(box?.paddingX).toBe(0)
+    })
+
+    it('10-minutersblock blir "title"', () => {
+      const box = epgBlockBox({ start: gridWindowStart, stop: gridWindowStart + 10 * M }, gridWindowStart, gridWindowEnd, PCT_PER_MIN_GRID, thresholds)
+      expect(box?.shape).toBe('title')
+      expect(box?.paddingX).toBe(0)
+    })
+
+    it('3-minutersblock blir "marker"', () => {
+      const box = epgBlockBox({ start: gridWindowStart, stop: gridWindowStart + 3 * M }, gridWindowStart, gridWindowEnd, PCT_PER_MIN_GRID, thresholds)
+      expect(box?.shape).toBe('marker')
+      expect(box?.paddingX).toBe(0)
+    })
+
+    it('utan thresholds (default-anropet) är beteendet oförändrat: samma 30-minutersblock blev tidigare "marker" i procentskalan', () => {
+      const box = epgBlockBox({ start: gridWindowStart, stop: gridWindowStart + 30 * M }, gridWindowStart, gridWindowEnd, PCT_PER_MIN_GRID)
+      // Utan trösklar i rätt enhet jämförs 16,67 mot px-konstanterna (18/72) → "marker".
+      expect(box?.shape).toBe('marker')
+    })
+  })
 })
 
 describe('timelineWindow', () => {
@@ -328,5 +362,16 @@ describe('mergeShortBlocks', () => {
     const merged = mergeShortBlocks([entry('Ensam', 0, 5), entry('Bred', 5, 50)], 10)
     expect(merged).toHaveLength(2)
     expect(merged[0].mergedTitle).toBeUndefined()
+  })
+
+  it('med procenttrösklar räknas det sammanslagna blockets shape/paddingX i procent, inte px', () => {
+    const thresholds = pctShapeThresholds(PCT_PER_MIN_GRID)
+    // 3 + 3 = 6 — under px-tröskeln 18 (skulle bli "marker" utan thresholds)
+    // men mellan procenttrösklarnas marker (≈2,78) och title (≈8,33) → "title".
+    const merged = mergeShortBlocks([entry('A', 0, 3), entry('B', 3, 3)], 10, thresholds)
+    expect(merged).toHaveLength(1)
+    expect(merged[0].box.width).toBe(6)
+    expect(merged[0].box.shape).toBe('title')
+    expect(merged[0].box.paddingX).toBe(0)
   })
 })

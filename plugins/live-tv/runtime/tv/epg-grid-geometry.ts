@@ -41,15 +41,39 @@ export interface EpgBlockBox {
   left: number
   width: number
   shape: EpgBlockShape
-  /** min(8, width/3) — padding som aldrig kan vara bredare än blocket. */
+  /**
+   * `min(8, width/3)` i pluginets px-skala. I PROCENTskalan (`thresholds`
+   * angiven) är den alltid 0 — CSS-padding i sanna px läggs på av vyn, en
+   * procentandel av spårbredden vore fel enhet.
+   */
   paddingX: number
   clippedStart: boolean
   clippedEnd: boolean
 }
 
-function shapeFor(width: number): EpgBlockShape {
-  if (width < MIN_BLOCK_PX) return 'marker'
-  if (width < TITLE_ONLY_PX) return 'title'
+/** Formtrösklar i SAMMA enhet som `width` (px eller %). Default = pluginets px-konstanter. */
+export interface ShapeThresholds {
+  marker: number
+  title: number
+}
+
+const DEFAULT_THRESHOLDS: ShapeThresholds = { marker: MIN_BLOCK_PX, title: TITLE_ONLY_PX }
+
+/**
+ * Formtrösklar för PROCENTskalan (Grid/Timeline, `PCT_PER_MIN_GRID` /
+ * `timelineWindow(...).pctPerMin`): under 5 min är ett block en markör, under
+ * 15 min bara en titel — handoffen §3 säger "block under ~20 min i vald zoom
+ * renderas som rena staplar"; Timeline (Task 5) skärper det till sin egen
+ * `{ marker: 20 * pctPerMin, title: 20 * pctPerMin }` (staplar UTAN text upp
+ * till 20 min, aldrig bara "title"-läge).
+ */
+export function pctShapeThresholds(pctPerMin: number): ShapeThresholds {
+  return { marker: 5 * pctPerMin, title: 15 * pctPerMin }
+}
+
+function shapeFor(width: number, thresholds: ShapeThresholds): EpgBlockShape {
+  if (width < thresholds.marker) return 'marker'
+  if (width < thresholds.title) return 'title'
   return 'full'
 }
 
@@ -57,22 +81,29 @@ function shapeFor(width: number): EpgBlockShape {
  * Geometrin för ETT program, klippt mot fönstret. `null` betyder att
  * programmet ligger helt utanför `[windowStart, windowEnd)` och inte ska
  * ritas alls. `pxPerMin` är skalan (skrivbordets `PX_PER_MIN` om inget
- * anges); formtrösklarna (`MIN_BLOCK_PX`, `TITLE_ONLY_PX`) är i px och gäller
- * oavsett skala — ett block som är för smalt för text är det på varje skärm.
+ * anges, `PCT_PER_MIN_GRID`/`timelineWindow(...).pctPerMin` för procent).
+ *
+ * `thresholds` måste vara i SAMMA enhet som `pxPerMin` ger `width` i — annars
+ * blir ett 30-minutersblock (16,67 % i Grid) en "marker" trots att det borde
+ * fylla nästan hela spåret, eftersom px-konstanterna (18/72) då jämförs mot
+ * ett procenttal. Default (`DEFAULT_THRESHOLDS`) gäller px-skalan; procentskalan
+ * ger sin egen via `pctShapeThresholds(pctPerMin)`.
  */
 export function epgBlockBox(
   programme: { start: number; stop: number },
   windowStart: number,
   windowEnd: number,
   pxPerMin: number = PX_PER_MIN,
+  thresholds?: ShapeThresholds,
 ): EpgBlockBox | null {
   const start = Math.max(programme.start, windowStart)
   const stop = Math.min(programme.stop, windowEnd)
   if (stop <= start) return null
   const width = ((stop - start) / 60_000) * pxPerMin
   const left = ((start - windowStart) / 60_000) * pxPerMin
-  const shape = shapeFor(width)
-  const paddingX = shape === 'marker' ? 0 : Math.min(8, width / 3)
+  const shape = shapeFor(width, thresholds ?? DEFAULT_THRESHOLDS)
+  // Procentskalan ger padding i CSS-px från vyn — 0 här, aldrig en andel av bredden.
+  const paddingX = thresholds ? 0 : shape === 'marker' ? 0 : Math.min(8, width / 3)
   return {
     left,
     width,
@@ -148,10 +179,11 @@ export function epgRowBoxes<P extends EpgSpan>(
   windowStart: number,
   windowEnd: number,
   pxPerMin: number = PX_PER_MIN,
+  thresholds?: ShapeThresholds,
 ): EpgRowEntry<P>[] {
   const entries: EpgRowEntry<P>[] = []
   for (const span of resolveOverlaps(programmes)) {
-    const box = epgBlockBox(span, windowStart, windowEnd, pxPerMin)
+    const box = epgBlockBox(span, windowStart, windowEnd, pxPerMin, thresholds)
     if (box) entries.push({ box, programme: span.programme })
   }
   return entries
@@ -181,6 +213,9 @@ const HALF_HOUR_MS = 1_800_000
  * Grids tidsfönster (städad guide, desktop_handoffen §1 "Tidsaxel och
  * fönster"): börjar vid NÄRMAST FÖREGÅENDE halvtimme, inte vid en fast
  * timme. Kl. 08:44 → 08:30, så nu-linjen alltid syns utan att scrolla.
+ * Golvet räknas på epoken (UTC), vilket bara ger en LOKAL halvtimme om
+ * tidszonens offset själv är hela halvtimmar (sant för alla riktiga
+ * tidszoner utom UTC+5:45/+12:45 m.fl. udda kvartsoffset).
  */
 export function guideWindowStart(nowMs: number): number {
   return Math.floor(nowMs / HALF_HOUR_MS) * HALF_HOUR_MS
@@ -223,12 +258,15 @@ export function timelineWindow(nowMs: number, zoom: TimelineZoom): { start: numb
  * smalt för text, men det finns inget att slå ihop det MED.
  *
  * Bara kedjor på minst två block slås ihop; boxens nya bredd/shape räknas om
- * från den sammanslagna spannvidden, så samma trösklar (`MIN_BLOCK_PX`,
- * `TITLE_ONLY_PX`) gäller det sammanslagna blocket som alla andra.
+ * från den sammanslagna spannvidden med SAMMA `thresholds` som anroparen
+ * använde för `entries` (default pluginets px-konstanter) — annars skulle
+ * det sammanslagna blockets form bedömas i fel enhet, precis som i
+ * `epgBlockBox`.
  */
 export function mergeShortBlocks<P extends EpgSpan & { title: string }>(
   entries: EpgRowEntry<P>[],
   minWidthPct: number,
+  thresholds?: ShapeThresholds,
 ): Array<EpgRowEntry<P> & { mergedTitle?: string }> {
   const result: Array<EpgRowEntry<P> & { mergedTitle?: string }> = []
   let i = 0
@@ -246,9 +284,10 @@ export function mergeShortBlocks<P extends EpgSpan & { title: string }>(
       const first = group[0]
       const last = group[group.length - 1]
       const width = last.box.left + last.box.width - first.box.left
-      const shape = shapeFor(width)
+      const shape = shapeFor(width, thresholds ?? DEFAULT_THRESHOLDS)
+      const paddingX = thresholds ? 0 : shape === 'marker' ? 0 : Math.min(8, width / 3)
       result.push({
-        box: { ...first.box, width, shape, paddingX: shape === 'marker' ? 0 : Math.min(8, width / 3), clippedEnd: last.box.clippedEnd },
+        box: { ...first.box, width, shape, paddingX, clippedEnd: last.box.clippedEnd },
         programme: first.programme,
         mergedTitle: group.map((entry) => entry.programme.title).join(' · '),
       })
