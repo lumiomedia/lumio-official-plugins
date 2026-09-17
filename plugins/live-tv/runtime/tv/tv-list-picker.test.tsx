@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import type { TvNav } from './tv-shell'
 import { TvChoicePanel, type ChoiceOption } from './tv-list-picker'
+import { gp } from './guide-view-shared'
 
 /**
  * ENVALSPANELEN bakom kontrollradens käll- och kategoriväljare (spec §2).
@@ -37,8 +38,8 @@ describe('TvChoicePanel', () => {
     const root = screen.getByTestId('choice-panel')
     expect(root).toHaveAttribute('data-panel-root')
     expect(root).toHaveAttribute('data-live-tv-layer')
-    // Rader 56 px enligt handoffen; antal visas.
-    expect(row.style.height).toBe('56px')
+    // Rader 56 px i handoffen, skalade till scenens skala; antal visas.
+    expect(row.style.height).toBe(`${gp(56)}px`)
     expect(row).toHaveTextContent('4')
   })
 

@@ -2,20 +2,21 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, render, screen } from '@testing-library/react'
 import type { M3uChannel } from '../live-tv-data'
 import { GUIDE_CELL_WIDTH, GuideChannelCell, guideCellStyle } from './tv-guide-shared'
+import { gp } from './guide-view-shared'
 
 const ch = (name: string, group = 'Sport'): M3uChannel => ({ name, logo: null, group, url: `http://x/${name}`, tvgId: null })
 
 afterEach(cleanup)
 
 describe('guideCellStyle', () => {
-  it("'grid' ger exakt flex/width/minWidth/boxSizing för 240 px", () => {
-    expect(guideCellStyle('grid')).toEqual({ flex: '0 0 240px', width: 240, minWidth: 0, boxSizing: 'border-box' })
+  it("'grid' ger exakt flex/width/minWidth/boxSizing för 240 px i scenens skala", () => {
+    expect(guideCellStyle('grid')).toEqual({ flex: `0 0 ${gp(240)}px`, width: gp(240), minWidth: 0, boxSizing: 'border-box' })
   })
 
-  it("'nownext' är 340 px, 'timeline' är 240 px (GUIDE_CELL_WIDTH)", () => {
-    expect(GUIDE_CELL_WIDTH).toEqual({ grid: 240, nownext: 340, timeline: 240 })
-    expect(guideCellStyle('nownext').width).toBe(340)
-    expect(guideCellStyle('timeline').width).toBe(240)
+  it("'nownext' är 340 px, 'timeline' är 240 px i scenens skala (GUIDE_CELL_WIDTH)", () => {
+    expect(GUIDE_CELL_WIDTH).toEqual({ grid: gp(240), nownext: gp(340), timeline: gp(240) })
+    expect(guideCellStyle('nownext').width).toBe(gp(340))
+    expect(guideCellStyle('timeline').width).toBe(gp(240))
   })
 })
 
@@ -28,7 +29,7 @@ describe('GuideChannelCell', () => {
     const shortStyle = (shortC.firstChild as HTMLElement).style
     const longStyle = (longC.firstChild as HTMLElement).style
     expect(shortStyle.flex).toBe(longStyle.flex)
-    expect(shortStyle.flex).toBe('0 0 240px')
+    expect(shortStyle.flex).toBe(`0 0 ${gp(240)}px`)
   })
 
   it('visar kanalnummer, namn och grupp · kvalitet i Grid', () => {

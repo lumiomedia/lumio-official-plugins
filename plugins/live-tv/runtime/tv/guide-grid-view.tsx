@@ -11,7 +11,7 @@ import { GRID_WINDOW_MS, PCT_PER_MIN_GRID, epgRowBoxes, nowLinePx, pctShapeThres
 import { useGridRows } from './grid-rows'
 import { GuideChannelCell, filterByGroup, guideCellStyle } from './tv-guide-shared'
 import { GuideDetailPanel } from './guide-detail-panel'
-import { GuidePaginationRow, ROWS_STEP, ellipsis, initAttr, useHoverSelect, withPointerLeave } from './guide-view-shared'
+import { GuidePaginationRow, ROWS_STEP, ellipsis, gp, initAttr, useHoverSelect, withPointerLeave } from './guide-view-shared'
 import type { GuideSelection, GuideViewProps } from './guide-types'
 
 /**
@@ -31,7 +31,7 @@ import type { GuideSelection, GuideViewProps } from './guide-types'
  * en "marker". Blockets padding är CSS-px (8px 10px), aldrig en andel.
  */
 
-const ROW_H_PX = 60
+const ROW_H_PX = gp(60)
 const HALF_HOUR_MS = 30 * 60_000
 
 export function GuideGridView({ model, nav, category, dayOffset, windowStart, selection, onSelect, isTv }: GuideViewProps): JSX.Element {
@@ -119,10 +119,10 @@ export function GuideGridView({ model, nav, category, dayOffset, windowStart, se
         {/* Tidsaxel 30 px: avståndsbit i kanalcellens EXAKTA layoutkontext
             (`guideCellStyle('grid')`, samma som raderna), sedan sex etiketter
             med spaltlinje. */}
-        <div data-testid="grid-time-axis" style={{ height: 30, minHeight: 30, display: 'flex', borderBottom: `1px solid ${TV.line}`, boxSizing: 'border-box' }}>
+        <div data-testid="grid-time-axis" style={{ height: gp(30), minHeight: gp(30), display: 'flex', borderBottom: `1px solid ${TV.line}`, boxSizing: 'border-box' }}>
           <div style={guideCellStyle('grid')} />
           {labels.map((mark) => (
-            <div key={mark} data-testid="grid-time-label" style={{ flex: 1, minWidth: 0, borderLeft: '1px solid rgba(255,255,255,0.06)', paddingLeft: 8, display: 'flex', alignItems: 'center', fontSize: 11, color: 'rgba(243,244,248,0.4)', letterSpacing: '0.06em', ...ellipsis }}>
+            <div key={mark} data-testid="grid-time-label" style={{ flex: 1, minWidth: 0, borderLeft: '1px solid rgba(255,255,255,0.06)', paddingLeft: gp(8), display: 'flex', alignItems: 'center', fontSize: gp(11), color: 'rgba(243,244,248,0.4)', letterSpacing: '0.06em', ...ellipsis }}>
               {formatClock(mark, locale)}
             </div>
           ))}
@@ -139,7 +139,7 @@ export function GuideGridView({ model, nav, category, dayOffset, windowStart, se
           <div
             data-testid="grid-empty"
             {...(nothing ? station(() => {}, undefined, initAttr(true)) : {})}
-            style={{ display: nothing ? 'block' : 'none', margin: 20, padding: 20, borderRadius: 12, background: TV.s05, fontSize: 13, color: TV.faint, lineHeight: 1.5 }}
+            style={{ display: nothing ? 'block' : 'none', margin: gp(20), padding: gp(20), borderRadius: gp(12), background: TV.s05, fontSize: gp(13), color: TV.faint, lineHeight: 1.5 }}
           >
             {model.channelsLoading ? tt('loadingChannels') : schedulesLoading ? tt('loadingGuide') : tt('guideEmpty')}
           </div>
@@ -196,7 +196,7 @@ export function GuideGridView({ model, nav, category, dayOffset, windowStart, se
                       {...withPointerLeave(station(() => { onSelect(sel); nav.play({ channel }) }, (element) => nav.channelMenu(channel, element), initAttr(initKey !== null && initKey.empty && index === 0)), hover.leave)}
                       onFocus={isTv ? () => onSelect(sel) : undefined}
                       onPointerEnter={hover.enter ? () => hover.enter?.(sel) : undefined}
-                      style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', padding: '0 12px', fontSize: 13, color: 'rgba(243,244,248,0.4)', cursor: 'pointer', ...ellipsis }}
+                      style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', padding: `0 ${gp(12)}px`, fontSize: gp(13), color: 'rgba(243,244,248,0.4)', cursor: 'pointer', ...ellipsis }}
                     >
                       {tt('noEpgRow')}
                     </div>
@@ -209,7 +209,7 @@ export function GuideGridView({ model, nav, category, dayOffset, windowStart, se
               <div aria-hidden="true" style={{ position: 'absolute', top: 0, bottom: 0, left: guideCellStyle('grid').width, right: 0, display: 'flex', pointerEvents: 'none' }}>
                 {labels.map((mark) => <div key={mark} style={{ flex: 1, minWidth: 0, borderLeft: '1px solid rgba(255,255,255,0.06)' }} />)}
                 {nowVisible ? (
-                  <div data-testid="grid-now-line" style={{ position: 'absolute', top: 0, bottom: 0, left: `${nowLeft}%`, width: 2, background: TV.acc, boxShadow: `0 0 14px ${TV.accMix(55)}`, zIndex: 2 }} />
+                  <div data-testid="grid-now-line" style={{ position: 'absolute', top: 0, bottom: 0, left: `${nowLeft}%`, width: gp(2), background: TV.acc, boxShadow: `0 0 ${gp(14)}px ${TV.accMix(55)}`, zIndex: 2 }} />
                 ) : null}
               </div>
             </div>
@@ -273,27 +273,27 @@ function GridBlock({ box, programme, locale, live, init, selected, reminded, onF
       {...withPointerLeave(station(onOk, onHold, init ? { 'data-init': '' } : undefined), onLeave)}
       onFocus={onFocus}
       onPointerEnter={onEnter}
-      style={{ position: 'absolute', top: 6, bottom: 6, left: `${box.left}%`, width: `${box.width}%`, paddingRight: 2, boxSizing: 'border-box', cursor: 'pointer' }}
+      style={{ position: 'absolute', top: gp(6), bottom: gp(6), left: `${box.left}%`, width: `${box.width}%`, paddingRight: gp(2), boxSizing: 'border-box', cursor: 'pointer' }}
     >
       <div
         style={{
           height: '100%',
           boxSizing: 'border-box',
-          borderRadius: marker ? 0 : 8,
-          padding: marker ? 0 : '8px 10px',
+          borderRadius: marker ? 0 : gp(8),
+          padding: marker ? 0 : `${gp(8)}px ${gp(10)}px`,
           background: marker ? TV.acc : live ? 'rgba(59,130,246,0.18)' : TV.s05,
           border: live ? '1px solid rgba(59,130,246,0.5)' : '1px solid transparent',
-          outline: selected ? `2px solid ${TV.accMix(60)}` : undefined,
-          outlineOffset: -2,
+          outline: selected ? `${gp(2)}px solid ${TV.accMix(60)}` : undefined,
+          outlineOffset: -gp(2),
           overflow: 'hidden',
           position: 'relative',
         }}
       >
         {marker ? null : (
           <>
-            <div style={{ fontSize: 13, fontWeight: live ? 600 : 400, color: live ? TV.text : TV.muted, paddingRight: reminded ? 14 : 0, ...ellipsis }}>{programme.title}</div>
-            {box.shape === 'full' ? <div style={{ fontSize: 11, color: live ? 'rgba(243,244,248,0.6)' : TV.faint, ...ellipsis }}>{times}</div> : null}
-            {reminded ? <span style={{ position: 'absolute', right: 4, top: 4, color: TV.acc }}><Icons.Bell size={11} filled /></span> : null}
+            <div style={{ fontSize: gp(13), fontWeight: live ? 600 : 400, color: live ? TV.text : TV.muted, paddingRight: reminded ? gp(14) : 0, ...ellipsis }}>{programme.title}</div>
+            {box.shape === 'full' ? <div style={{ fontSize: gp(11), color: live ? 'rgba(243,244,248,0.6)' : TV.faint, ...ellipsis }}>{times}</div> : null}
+            {reminded ? <span style={{ position: 'absolute', right: gp(4), top: gp(4), color: TV.acc }}><Icons.Bell size={gp(11)} filled /></span> : null}
           </>
         )}
       </div>

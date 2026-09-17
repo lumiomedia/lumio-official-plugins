@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { GuideControlRow, type GuideControls } from './guide-control-row'
+import { gp } from './guide-view-shared'
 
 /**
  * Kontrollraden (spec §2, handoffen §Ram och kontrollrad): EN rad, fast
@@ -35,8 +36,8 @@ describe('GuideControlRow', () => {
     const ids = order()
     const pick = ids.filter((id) => ['guide-source', 'guide-category', 'guide-day', 'guide-now', 'guide-mode', 'guide-zoom', 'guide-details', 'clock-node'].includes(id ?? ''))
     expect(pick).toEqual(['guide-source', 'guide-category', 'guide-day', 'guide-now', 'guide-mode', 'clock-node'])
-    // 56 px hög och den enda raden: inga barnrader, bara stationer.
-    expect(screen.getByTestId('guide-control-row').style.height).toBe('56px')
+    // Skalans 56 px hög och den enda raden: inga barnrader, bara stationer.
+    expect(screen.getByTestId('guide-control-row').style.height).toBe(`${gp(56)}px`)
   })
 
   it('Timeline: zoomsegmentet ligger efter lägessegmentet, före klockan', () => {

@@ -17,6 +17,18 @@ export const ROWS_STEP = 80
 /** Hovringens fördröjning på skrivbord innan markeringen byter. */
 export const HOVER_MS = 120
 
+/**
+ * Handoffen är ritad för 1400 riktiga px (skrivbordets viewport), men
+ * guiden ritas INNE I scenen, som lägger ut sina egna designpixlar (1920 på
+ * TV, 1280+ på skrivbord — samma proportion som hubben). Utan omräkning blev
+ * guiden ~30 % nerskalad mot resten av pluginet (hubbtitlar 34 px, brödtext
+ * 19–20 px). `gp()` skalar EN gång, här, i stället för att varje vy gissar.
+ */
+export const GUIDE_SCALE = 1.4
+export function gp(n: number): number {
+  return Math.round(n * GUIDE_SCALE)
+}
+
 export const ellipsis: CSSProperties = { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }
 
 /** `data-init` som spridbart attribut — bara på EN station per vy. */
@@ -72,14 +84,14 @@ export function GuidePaginationRow({ testId, shown, total, hasMore, onMore, hint
 }): JSX.Element {
   const { tt } = useTvText()
   return (
-    <div data-testid={`${testId}-pagination`} style={{ height: 52, minHeight: 52, padding: '0 20px', display: 'flex', alignItems: 'center', gap: 14, borderTop: `1px solid ${TV.line}`, boxSizing: 'border-box' }}>
-      <span style={{ fontSize: 13, color: TV.dim, ...ellipsis }}>{tt('paginationRow', { shown, total })}</span>
+    <div data-testid={`${testId}-pagination`} style={{ height: gp(52), minHeight: gp(52), padding: `0 ${gp(20)}px`, display: 'flex', alignItems: 'center', gap: gp(14), borderTop: `1px solid ${TV.line}`, boxSizing: 'border-box' }}>
+      <span style={{ fontSize: gp(13), color: TV.dim, ...ellipsis }}>{tt('paginationRow', { shown, total })}</span>
       {hasMore ? (
-        <div data-testid={`${testId}-show-more`} {...station(onMore)} style={{ height: 32, minHeight: 32, padding: '0 14px', borderRadius: 999, background: TV.s10, display: 'inline-flex', alignItems: 'center', fontSize: 13, cursor: 'pointer', flexShrink: 0 }}>
+        <div data-testid={`${testId}-show-more`} {...station(onMore)} style={{ height: gp(32), minHeight: gp(32), padding: `0 ${gp(14)}px`, borderRadius: 999, background: TV.s10, display: 'inline-flex', alignItems: 'center', fontSize: gp(13), cursor: 'pointer', flexShrink: 0 }}>
           {tt('showMoreN', { n: ROWS_STEP })}
         </div>
       ) : null}
-      {hint ? <span style={{ marginLeft: 'auto', fontSize: 13, color: 'rgba(243,244,248,0.35)', ...ellipsis }}>{hint}</span> : null}
+      {hint ? <span style={{ marginLeft: 'auto', fontSize: gp(13), color: 'rgba(243,244,248,0.35)', ...ellipsis }}>{hint}</span> : null}
     </div>
   )
 }

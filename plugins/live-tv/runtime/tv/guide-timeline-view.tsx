@@ -11,7 +11,7 @@ import type { TimelineZoom } from './tv-settings-store'
 import { epgRowBoxes, mergeShortBlocks, nowLinePx, timelineWindow, type EpgBlockBox, type ShapeThresholds } from './epg-grid-geometry'
 import { useGridRows } from './grid-rows'
 import { GuideChannelCell, guideCellStyle } from './tv-guide-shared'
-import { ROWS_STEP, ellipsis, initAttr } from './guide-view-shared'
+import { ROWS_STEP, ellipsis, gp, initAttr } from './guide-view-shared'
 import type { GuideSelection, GuideViewProps } from './guide-types'
 
 /**
@@ -36,9 +36,9 @@ import type { GuideSelection, GuideViewProps } from './guide-types'
  * byter till Grid med fönstret på den halvtimmen (`onOpenGrid`).
  */
 
-const ROW_H_PX = 40
-const AXIS_H_PX = 30
-const FOOTER_H_PX = 48
+const ROW_H_PX = gp(40)
+const AXIS_H_PX = gp(30)
+const FOOTER_H_PX = gp(48)
 /** Under 20 minuter i vald zoom = stapel utan text (handoffen §3). */
 const SHORT_BLOCK_MIN = 20
 /** Spaltsteg per zoom (handoffen §3: 2-timmarsspalter vid `day`). */
@@ -143,7 +143,7 @@ export function GuideTimelineView({ model, nav, category, dayOffset, selection, 
       <div data-testid="timeline-time-axis" style={{ height: AXIS_H_PX, minHeight: AXIS_H_PX, display: 'flex', borderBottom: `1px solid ${TV.line}`, boxSizing: 'border-box' }}>
         <div style={cellStyle} />
         {labels.map((mark) => (
-          <div key={mark} data-testid="timeline-time-label" style={{ flex: 1, minWidth: 0, borderLeft: '1px solid rgba(255,255,255,0.06)', paddingLeft: 6, display: 'flex', alignItems: 'center', fontSize: 11, color: 'rgba(243,244,248,0.4)', letterSpacing: '0.06em', ...ellipsis }}>
+          <div key={mark} data-testid="timeline-time-label" style={{ flex: 1, minWidth: 0, borderLeft: '1px solid rgba(255,255,255,0.06)', paddingLeft: gp(6), display: 'flex', alignItems: 'center', fontSize: gp(11), color: 'rgba(243,244,248,0.4)', letterSpacing: '0.06em', ...ellipsis }}>
             {formatClock(mark, locale)}
           </div>
         ))}
@@ -156,7 +156,7 @@ export function GuideTimelineView({ model, nav, category, dayOffset, selection, 
         <div
           data-testid="timeline-empty"
           {...(nothing ? station(() => {}, undefined, initAttr(true)) : {})}
-          style={{ display: nothing ? 'block' : 'none', margin: 20, padding: 20, borderRadius: 12, background: TV.s05, fontSize: 13, color: TV.faint, lineHeight: 1.5 }}
+          style={{ display: nothing ? 'block' : 'none', margin: gp(20), padding: gp(20), borderRadius: gp(12), background: TV.s05, fontSize: gp(13), color: TV.faint, lineHeight: 1.5 }}
         >
           {model.channelsLoading ? tt('loadingChannels') : schedulesLoading ? tt('loadingGuide') : tt('guideEmpty')}
         </div>
@@ -202,7 +202,7 @@ export function GuideTimelineView({ model, nav, category, dayOffset, selection, 
                   <div style={{ ...cellStyle, display: 'flex', alignItems: 'stretch' }}>
                     <GuideChannelCell channel={channel} number={model.channelNumber(channel)} pinned={model.pinnedSet.has(key)} locked={model.locked.has(key)} variant="timeline" />
                   </div>
-                  <div data-track="" data-testid="timeline-empty-cell" style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', padding: '0 12px', fontSize: 12, color: 'rgba(243,244,248,0.4)', ...ellipsis }}>
+                  <div data-track="" data-testid="timeline-empty-cell" style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', padding: `0 ${gp(12)}px`, fontSize: gp(12), color: 'rgba(243,244,248,0.4)', ...ellipsis }}>
                     {tt('noEpgRow')}
                   </div>
                 </div>
@@ -214,7 +214,7 @@ export function GuideTimelineView({ model, nav, category, dayOffset, selection, 
             <div aria-hidden="true" style={{ position: 'absolute', top: 0, bottom: 0, left: cellStyle.width, right: 0, display: 'flex', pointerEvents: 'none' }}>
               {labels.map((mark) => <div key={mark} style={{ flex: 1, minWidth: 0, borderLeft: '1px solid rgba(255,255,255,0.06)' }} />)}
               {nowVisible ? (
-                <div data-testid="timeline-now-line" style={{ position: 'absolute', top: 0, bottom: 0, left: `${nowLeft}%`, width: 2, background: TV.acc, boxShadow: `0 0 14px ${TV.accMix(55)}`, zIndex: 2 }} />
+                <div data-testid="timeline-now-line" style={{ position: 'absolute', top: 0, bottom: 0, left: `${nowLeft}%`, width: gp(2), background: TV.acc, boxShadow: `0 0 ${gp(14)}px ${TV.accMix(55)}`, zIndex: 2 }} />
               ) : null}
             </div>
           </div>
@@ -223,10 +223,10 @@ export function GuideTimelineView({ model, nav, category, dayOffset, selection, 
 
       {/* Fotrad 48 px: hjälptexten + Visa fler — en vanlig rad under listan. */}
       {nothing ? null : (
-        <div data-testid="timeline-footer" style={{ height: FOOTER_H_PX, minHeight: FOOTER_H_PX, padding: '0 20px', display: 'flex', alignItems: 'center', gap: 14, borderTop: `1px solid ${TV.line}`, boxSizing: 'border-box' }}>
-          <span style={{ fontSize: 13, color: 'rgba(243,244,248,0.35)', ...ellipsis }}>{tt('timelineHint')}</span>
+        <div data-testid="timeline-footer" style={{ height: FOOTER_H_PX, minHeight: FOOTER_H_PX, padding: `0 ${gp(20)}px`, display: 'flex', alignItems: 'center', gap: gp(14), borderTop: `1px solid ${TV.line}`, boxSizing: 'border-box' }}>
+          <span style={{ fontSize: gp(13), color: 'rgba(243,244,248,0.35)', ...ellipsis }}>{tt('timelineHint')}</span>
           {hasMore ? (
-            <div data-testid="timeline-show-more" {...station(() => setVisibleRows((count) => count + ROWS_STEP))} style={{ marginLeft: 'auto', height: 32, minHeight: 32, padding: '0 14px', borderRadius: 999, background: TV.s10, display: 'inline-flex', alignItems: 'center', fontSize: 13, cursor: 'pointer', flexShrink: 0 }}>
+            <div data-testid="timeline-show-more" {...station(() => setVisibleRows((count) => count + ROWS_STEP))} style={{ marginLeft: 'auto', height: gp(32), minHeight: gp(32), padding: `0 ${gp(14)}px`, borderRadius: 999, background: TV.s10, display: 'inline-flex', alignItems: 'center', fontSize: gp(13), cursor: 'pointer', flexShrink: 0 }}>
               {tt('showMoreN', { n: ROWS_STEP })}
             </div>
           ) : null}
@@ -252,14 +252,14 @@ function TimelineBlock({ box, programme, title, locale, live }: { box: EpgBlockB
       data-shape={box.shape}
       data-live={live ? '' : undefined}
       title={`${label}${times}`}
-      style={{ position: 'absolute', top: 5, bottom: 5, left: `${box.left}%`, width: `${box.width}%`, paddingRight: 2, boxSizing: 'border-box' }}
+      style={{ position: 'absolute', top: gp(5), bottom: gp(5), left: `${box.left}%`, width: `${box.width}%`, paddingRight: gp(2), boxSizing: 'border-box' }}
     >
       <div
         style={{
           height: '100%',
           boxSizing: 'border-box',
-          borderRadius: marker ? 0 : 6,
-          padding: marker ? 0 : '0 8px',
+          borderRadius: marker ? 0 : gp(6),
+          padding: marker ? 0 : `0 ${gp(8)}px`,
           display: 'flex',
           alignItems: 'center',
           background: marker ? TV.acc : live ? 'rgba(59,130,246,0.22)' : TV.s05,
@@ -267,7 +267,7 @@ function TimelineBlock({ box, programme, title, locale, live }: { box: EpgBlockB
           overflow: 'hidden',
         }}
       >
-        {marker ? null : <span style={{ minWidth: 0, fontSize: 12, fontWeight: live ? 600 : 400, color: live ? TV.text : 'rgba(243,244,248,0.65)', ...ellipsis }}>{label}</span>}
+        {marker ? null : <span style={{ minWidth: 0, fontSize: gp(12), fontWeight: live ? 600 : 400, color: live ? TV.text : 'rgba(243,244,248,0.65)', ...ellipsis }}>{label}</span>}
       </div>
     </div>
   )

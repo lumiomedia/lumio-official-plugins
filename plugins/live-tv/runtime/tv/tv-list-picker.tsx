@@ -7,6 +7,7 @@ import type { TvNav } from './tv-shell'
 import { ChannelArt, Chip, TV, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
 import { filterByGroup, useGuideGroups } from './tv-guide-shared'
+import { gp } from './guide-view-shared'
 
 /**
  * FLERVALSVÄLJAREN — `tv-channel-picker.tsx` med bock i stället för "välj och
@@ -220,11 +221,11 @@ export function TvChoicePanel({ nav, title, options, value, onPick, onClose }: {
             key={option.key ?? '__all'}
             data-testid={`choice-row-${option.label}`}
             {...station(() => { onPick(option.key); close() }, undefined, index === initIndex ? { 'data-init': '' } : undefined)}
-            style={{ height: 56, minHeight: 56, borderRadius: 10, display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px', cursor: 'pointer', background: on ? TV.s08 : 'transparent' }}
+            style={{ height: gp(56), minHeight: gp(56), borderRadius: gp(10), display: 'flex', alignItems: 'center', gap: gp(12), padding: `0 ${gp(12)}px`, cursor: 'pointer', background: on ? TV.s08 : 'transparent' }}
           >
             <Check on={on} label={option.label} />
-            <span style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: on ? 600 : 400, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{option.label}</span>
-            {option.count !== undefined ? <span style={{ fontSize: 14, color: TV.faint, flexShrink: 0 }}>{option.count}</span> : null}
+            <span style={{ flex: 1, minWidth: 0, fontSize: gp(15), fontWeight: on ? 600 : 400, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{option.label}</span>
+            {option.count !== undefined ? <span style={{ fontSize: gp(14), color: TV.faint, flexShrink: 0 }}>{option.count}</span> : null}
           </div>
         )
       })}

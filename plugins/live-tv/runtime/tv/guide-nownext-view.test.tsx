@@ -6,6 +6,7 @@ import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
 import { getReminders } from '../reminders'
 import { GUIDE_MODE_KEY, TV_SETTINGS_KEY, getTvSettings } from './tv-settings-store'
 import type { EpgCacheEntry } from '../epg/types'
+import { gp } from './guide-view-shared'
 
 vi.mock('../live-tv-player', () => ({ LiveTvPlayer: ({ channel }: { channel: { name: string } }) => <div data-testid="player">{channel.name}</div> }))
 import { LiveTvTvShell } from './tv-shell'
@@ -100,7 +101,7 @@ describe('GuideNowNextView (TV-läge)', () => {
     const row = screen.getAllByTestId('nownext-row')[0]
     const rowCell = within(row).getByTestId('guide-cell')
     expect(headCell.style.flex).toBe(rowCell.style.flex)
-    expect(headCell.style.flex).toBe('0 0 340px')
+    expect(headCell.style.flex).toBe(`0 0 ${gp(340)}px`)
     const cols = within(head).getAllByTestId('nownext-header-col')
     expect(cols.map((c) => c.style.flex)).toEqual(['2 1 0%', '1.2 1 0%', '1 1 0%'])
     expect(head).toHaveTextContent('CHANNEL')
@@ -117,7 +118,7 @@ describe('GuideNowNextView (TV-läge)', () => {
     expect(within(rows[0]).getByTestId('nownext-next')).toHaveTextContent('Next A')
     expect(within(rows[0]).getByTestId('nownext-later')).toHaveTextContent('Later A')
     for (const el of [...rows, ...screen.getAllByTestId('nownext-empty-row')]) {
-      expect(Number.parseInt(el.style.height, 10)).toBeLessThanOrEqual(56)
+      expect(Number.parseInt(el.style.height, 10)).toBeLessThanOrEqual(gp(56))
     }
   })
 

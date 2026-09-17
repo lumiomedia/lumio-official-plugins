@@ -4,10 +4,11 @@ import type { CSSProperties, JSX } from 'react'
 import { formatClock, progressOf } from '../live-tv-ui'
 import { ChannelArt, Icons, Progress, TV, Tag, station } from './tv-ui'
 import { useTvText } from './tv-strings'
+import { gp } from './guide-view-shared'
 import type { GuideSelection } from './guide-types'
 
 /** Panelens bredd (handoffen §1 "Detaljpanel (320 px, permanent)"). */
-export const DETAIL_PANEL_WIDTH_PX = 320
+export const DETAIL_PANEL_WIDTH_PX = gp(320)
 
 /**
  * Grids permanenta detaljpanel (handoffen §1 "Detaljpanel", spec §4). Ritas
@@ -38,16 +39,16 @@ export function GuideDetailPanel({ selection, nowMs, locale, channelNumber, onWa
     minWidth: 0,
     boxSizing: 'border-box',
     borderLeft: `1px solid ${TV.line}`,
-    padding: 20,
+    padding: gp(20),
     display: 'flex',
     flexDirection: 'column',
-    gap: 14,
+    gap: gp(14),
     overflow: 'auto',
   }
   if (!selection) {
     return (
       <div data-testid="guide-detail-panel" style={frame}>
-        <div style={{ fontSize: 13, color: TV.faint, lineHeight: 1.5 }}>{tt('detailEmpty')}</div>
+        <div style={{ fontSize: gp(13), color: TV.faint, lineHeight: 1.5 }}>{tt('detailEmpty')}</div>
       </div>
     )
   }
@@ -58,48 +59,48 @@ export function GuideDetailPanel({ selection, nowMs, locale, channelNumber, onWa
   const timeLine = programme
     ? `${formatClock(programme.start, locale)}–${formatClock(programme.stop, locale)}${live ? ` · ${tt('minutesLeft', { min: minutesLeft })}` : ''}`
     : ''
-  const secondary: CSSProperties = { height: 38, flex: 1, minWidth: 0, borderRadius: 10, background: TV.s08, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }
+  const secondary: CSSProperties = { height: gp(38), flex: 1, minWidth: 0, borderRadius: gp(10), background: TV.s08, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: gp(8), fontSize: gp(13), cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }
   return (
     <div data-testid="guide-detail-panel" style={frame}>
-      <ChannelArt channel={channel} height={180} radius={12} style={{ width: '100%' }}>
+      <ChannelArt channel={channel} height={gp(180)} radius={gp(12)} style={{ width: '100%' }}>
         {live ? (
-          <span style={{ position: 'absolute', left: 12, bottom: 12 }}>
-            <Tag variant="live" style={{ height: 24, padding: '0 10px', fontSize: 11 }}>{tt('live')}</Tag>
+          <span style={{ position: 'absolute', left: gp(12), bottom: gp(12) }}>
+            <Tag variant="live" style={{ height: gp(24), padding: `0 ${gp(10)}px`, fontSize: gp(11) }}>{tt('live')}</Tag>
           </span>
         ) : null}
       </ChannelArt>
-      <div data-testid="detail-channel" style={{ fontSize: 12, color: 'rgba(243,244,248,0.45)', letterSpacing: '0.12em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+      <div data-testid="detail-channel" style={{ fontSize: gp(12), color: 'rgba(243,244,248,0.45)', letterSpacing: '0.12em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
         {[channelNumber, channel.name].filter((part) => part !== null && part !== '').join(' · ')}
       </div>
-      <div data-testid="detail-title" style={{ fontSize: 20, fontWeight: 600, lineHeight: 1.25, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+      <div data-testid="detail-title" style={{ fontSize: gp(20), fontWeight: 600, lineHeight: 1.25, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
         {programme ? programme.title : tt('noProgramme')}
       </div>
-      {programme ? <div data-testid="detail-time" style={{ fontSize: 13, color: 'rgba(243,244,248,0.6)' }}>{timeLine}</div> : null}
-      {live && programme ? <Progress value={progressOf(programme.start, programme.stop, nowMs)} height={4} /> : null}
+      {programme ? <div data-testid="detail-time" style={{ fontSize: gp(13), color: 'rgba(243,244,248,0.6)' }}>{timeLine}</div> : null}
+      {live && programme ? <Progress value={progressOf(programme.start, programme.stop, nowMs)} height={gp(4)} /> : null}
       {/* `data-selectable-text` är undantaget från `user-select: none` —
           beskrivningar är text man vill kunna markera. Noden ritas alltid
           när ett program finns, så undantaget finns även utan beskrivning. */}
       {programme ? (
-        <div data-testid="detail-description" data-selectable-text="" style={{ fontSize: 13, color: TV.muted, lineHeight: 1.5 }}>
+        <div data-testid="detail-description" data-selectable-text="" style={{ fontSize: gp(13), color: TV.muted, lineHeight: 1.5 }}>
           {programme.description ?? ''}
         </div>
       ) : null}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 'auto' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: gp(8), marginTop: 'auto' }}>
         <div
           data-testid="detail-watch"
           {...station(onWatch)}
-          style={{ height: 40, borderRadius: 10, background: TV.acc, color: TV.onAcc, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+          style={{ height: gp(40), borderRadius: gp(10), background: TV.acc, color: TV.onAcc, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: gp(8), fontSize: gp(14), fontWeight: 600, cursor: 'pointer' }}
         >
-          <Icons.Play size={14} /> {tt('watchNowShort')}
+          <Icons.Play size={gp(14)} /> {tt('watchNowShort')}
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: gp(8) }}>
           {future ? (
             <div data-testid="detail-remind" {...station(onRemind)} style={{ ...secondary, color: reminded ? TV.accText : TV.text }} {...(reminded ? { 'data-active': '' } : {})}>
-              <Icons.Bell size={14} filled={reminded} /> {reminded ? tt('reminderSet') : tt('remindMe')}
+              <Icons.Bell size={gp(14)} filled={reminded} /> {reminded ? tt('reminderSet') : tt('remindMe')}
             </div>
           ) : null}
           <div data-testid="detail-favourite" {...station(onToggleFavourite)} style={{ ...secondary, color: favourite ? TV.accText : TV.text }} {...(favourite ? { 'data-active': '' } : {})}>
-            <Icons.Heart size={14} filled={favourite} /> {tt('favouriteShort')}
+            <Icons.Heart size={gp(14)} filled={favourite} /> {tt('favouriteShort')}
           </div>
         </div>
       </div>

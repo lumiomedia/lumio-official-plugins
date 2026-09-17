@@ -8,6 +8,7 @@ import { formatClock } from '../live-tv-ui'
 import { guideWindowStart } from './epg-grid-geometry'
 import { getGuideMode, getTvSettings, setTvSettings } from './tv-settings-store'
 import type { EpgCacheEntry } from '../epg/types'
+import { gp } from './guide-view-shared'
 
 vi.mock('../live-tv-player', () => ({ LiveTvPlayer: ({ channel }: { channel: { name: string } }) => <div data-testid="player">{channel.name}</div> }))
 import { LiveTvTvShell } from './tv-shell'
@@ -84,7 +85,7 @@ describe('GuideTimelineView (TV-läge)', () => {
     await mount()
     const rows = screen.getAllByTestId('timeline-row')
     expect(rows).toHaveLength(1)
-    expect(rows[0].style.height).toBe('40px')
+    expect(rows[0].style.height).toBe(`${gp(40)}px`)
     expect(rows[0]).toHaveAttribute('data-init')
     expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
     const long = blockByTitle('Long')
@@ -132,11 +133,11 @@ describe('GuideTimelineView (TV-läge)', () => {
     expect(empty).toHaveLength(2)
     for (const e of empty) {
       expect(e.compareDocumentPosition(row) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy()
-      expect(e.style.height).toBe('40px')
+      expect(e.style.height).toBe(`${gp(40)}px`)
       expect(e).toHaveTextContent('No guide for this channel · broadcasting live')
     }
     const footer = screen.getByTestId('timeline-footer')
-    expect(footer.style.height).toBe('48px')
+    expect(footer.style.height).toBe(`${gp(48)}px`)
     expect(footer).toHaveTextContent('Click anywhere in a row to open Grid at that time')
     expect(screen.queryByTestId('timeline-show-more')).not.toBeInTheDocument()
   })

@@ -5,6 +5,7 @@ import type { DesktopGuideMode } from './guide-surface'
 import type { TimelineZoom } from './tv-settings-store'
 import { TV, station } from './tv-ui'
 import { useTvText } from './tv-strings'
+import { gp } from './guide-view-shared'
 
 /**
  * Kontrollradens indata (spec §2). Lägesberoende delar är valfria: Nu-knappen
@@ -40,16 +41,16 @@ export interface GuideControls {
  * padding 3, radius 999, yta .07; knappar 28 px, `0 16px`, 13 px; aktiv .16
  * + 600. Dagväljarens aktiva knapp är vit yta med mörk text.
  */
-const DROPDOWN: CSSProperties = { height: 34, minHeight: 34, padding: '0 12px', borderRadius: 10, background: TV.s08, border: `1px solid ${TV.line}`, display: 'inline-flex', alignItems: 'center', gap: 8, maxWidth: 230, cursor: 'pointer', flexShrink: 1, minWidth: 0 }
-const SEGMENT: CSSProperties = { display: 'inline-flex', padding: 3, borderRadius: 999, background: TV.s07, flexShrink: 0, whiteSpace: 'nowrap' }
-const SEGMENT_BTN: CSSProperties = { height: 28, minHeight: 28, padding: '0 16px', borderRadius: 999, display: 'inline-flex', alignItems: 'center', fontSize: 13, whiteSpace: 'nowrap', cursor: 'pointer' }
+const DROPDOWN: CSSProperties = { height: gp(34), minHeight: gp(34), padding: `0 ${gp(12)}px`, borderRadius: gp(10), background: TV.s08, border: `1px solid ${TV.line}`, display: 'inline-flex', alignItems: 'center', gap: gp(8), maxWidth: gp(230), cursor: 'pointer', flexShrink: 1, minWidth: 0 }
+const SEGMENT: CSSProperties = { display: 'inline-flex', padding: gp(3), borderRadius: 999, background: TV.s07, flexShrink: 0, whiteSpace: 'nowrap' }
+const SEGMENT_BTN: CSSProperties = { height: gp(28), minHeight: gp(28), padding: `0 ${gp(16)}px`, borderRadius: 999, display: 'inline-flex', alignItems: 'center', fontSize: gp(13), whiteSpace: 'nowrap', cursor: 'pointer' }
 
 function Dropdown({ label, count, onOpen, testId }: { label: string; count: number; onOpen: () => void; testId: string }) {
   return (
     <div data-testid={testId} {...station(onOpen)} style={DROPDOWN} title={label}>
-      <span style={{ fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>{label}</span>
-      <span style={{ fontSize: 14, color: TV.faint, flexShrink: 0 }}>{count}</span>
-      <span aria-hidden="true" style={{ color: TV.faint, fontSize: 10, flexShrink: 0 }}>▾</span>
+      <span style={{ fontSize: gp(14), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>{label}</span>
+      <span style={{ fontSize: gp(14), color: TV.faint, flexShrink: 0 }}>{count}</span>
+      <span aria-hidden="true" style={{ color: TV.faint, fontSize: gp(10), flexShrink: 0 }}>▾</span>
     </div>
   )
 }
@@ -85,12 +86,13 @@ function ControlSegment<K extends string>({ options, value, onChange, testId, ac
   )
 }
 
-const Divider = () => <span aria-hidden="true" style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
+const Divider = () => <span aria-hidden="true" style={{ width: 1, height: gp(22), background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
 
 /**
  * Kontrollraden (spec §2, handoffen §Ram och kontrollrad): 56 px och den
  * ENDA raden över innehållet. Ordning: källa · kategori · avdelare · [dag] ·
- * [Nu] · mellanrum · läge · [zoom] · avdelare · [Detaljer] · klocka. Fler
+ * [Nu] · avdelare · läge · [zoom] · mellanrum · [Detaljer] · klocka.
+ * Lägesväxlaren sitter alltså intill dagvalet, inte längst till höger — Fler
  * val ska bli fler dropdowns här — aldrig en ny rad.
  */
 export function GuideControlRow(props: GuideControls) {
@@ -103,7 +105,7 @@ export function GuideControlRow(props: GuideControls) {
   const showZoom = mode === 'timeline'
   const showDetails = mode === 'nownext'
   return (
-    <div data-testid="guide-control-row" style={{ height: 56, minHeight: 56, padding: '0 20px', display: 'flex', alignItems: 'center', gap: 10, borderBottom: `1px solid ${TV.line}`, flexShrink: 0, boxSizing: 'border-box' }}>
+    <div data-testid="guide-control-row" style={{ height: gp(56), minHeight: gp(56), padding: `0 ${gp(20)}px`, display: 'flex', alignItems: 'center', gap: gp(10), borderBottom: `1px solid ${TV.line}`, flexShrink: 0, boxSizing: 'border-box' }}>
       <Dropdown testId="guide-source" label={props.sourceLabel} count={props.sourceCount} onOpen={props.onOpenSource} />
       <Dropdown testId="guide-category" label={props.categoryLabel} count={props.categoryCount} onOpen={props.onOpenCategory} />
       <Divider />
@@ -120,12 +122,12 @@ export function GuideControlRow(props: GuideControls) {
         <div
           data-testid="guide-now"
           {...station(() => props.onNow?.())}
-          style={{ height: 34, minHeight: 34, padding: '0 14px', borderRadius: 999, display: 'inline-flex', alignItems: 'center', fontSize: 13, fontWeight: 600, background: TV.accMix(18), border: `1px solid ${TV.accMix(45)}`, color: TV.text, cursor: 'pointer', flexShrink: 0 }}
+          style={{ height: gp(34), minHeight: gp(34), padding: `0 ${gp(14)}px`, borderRadius: 999, display: 'inline-flex', alignItems: 'center', fontSize: gp(13), fontWeight: 600, background: TV.accMix(18), border: `1px solid ${TV.accMix(45)}`, color: TV.text, cursor: 'pointer', flexShrink: 0 }}
         >
           {tt('gridNow')}
         </div>
       ) : null}
-      <span style={{ flex: 1 }} />
+      <Divider />
       <ControlSegment<DesktopGuideMode>
         testId="guide-mode"
         options={[{ key: 'grid', label: tt('modeGrid') }, { key: 'nownext', label: tt('modeNowNext') }, { key: 'timeline', label: tt('modeTimelineDay') }]}
@@ -140,20 +142,20 @@ export function GuideControlRow(props: GuideControls) {
           onChange={(z) => props.onZoom?.(z)}
         />
       ) : null}
-      <Divider />
+      <span style={{ flex: 1 }} />
       {showDetails ? (
         <div
           data-testid="guide-details"
           {...station(() => props.onDetails?.(), undefined, props.details ? { 'data-active': '' } : undefined)}
-          style={{ height: 34, minHeight: 34, padding: '0 12px', borderRadius: 10, display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: props.details ? 600 : 400, background: props.details ? TV.s16 : TV.s08, border: `1px solid ${TV.line}`, color: props.details ? TV.text : TV.muted, cursor: 'pointer', flexShrink: 0 }}
+          style={{ height: gp(34), minHeight: gp(34), padding: `0 ${gp(12)}px`, borderRadius: gp(10), display: 'inline-flex', alignItems: 'center', gap: gp(8), fontSize: gp(13), fontWeight: props.details ? 600 : 400, background: props.details ? TV.s16 : TV.s08, border: `1px solid ${TV.line}`, color: props.details ? TV.text : TV.muted, cursor: 'pointer', flexShrink: 0 }}
         >
-          <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 999, background: props.details ? TV.acc : TV.faint }} />
+          <span aria-hidden="true" style={{ width: gp(8), height: gp(8), borderRadius: 999, background: props.details ? TV.acc : TV.faint }} />
           {tt('details')}
         </div>
       ) : null}
       {/* Egen blocklåda (inte span): värdens klocka kan vara ett blockelement,
           och ett block i en inline-låda ritades förut ovanpå grannen. */}
-      <div data-testid="guide-clock" style={{ display: 'inline-flex', alignItems: 'center', fontSize: 13, color: TV.dim, letterSpacing: '0.06em', whiteSpace: 'nowrap', flexShrink: 0 }}>{props.clock}</div>
+      <div data-testid="guide-clock" style={{ display: 'inline-flex', alignItems: 'center', fontSize: gp(13), color: TV.dim, letterSpacing: '0.06em', whiteSpace: 'nowrap', flexShrink: 0 }}>{props.clock}</div>
     </div>
   )
 }
