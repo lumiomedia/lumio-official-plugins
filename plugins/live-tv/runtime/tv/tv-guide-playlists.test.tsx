@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR, TV_SCENE_PHONE_ATTR, __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
+import { TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR, TV_SCENE_PHONE_ATTR, __resetForTests, __setDesktopTauriEnvForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { flushLiveTvIndex, seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, computeGroups, type LiveTvList } from '../live-tv-data'
 import type { EpgCacheEntry } from '../epg/types'
@@ -20,16 +20,18 @@ const cache: EpgCacheEntry = { index: { 'a.tv': [{ title: 'Now A', start: now - 
 
 afterEach(cleanup)
 /**
- * Task 0 ("kanalguiden städad på skrivbord och TV") lyfter TV-läget bakom
- * `useNewGuideSurface` (`guide-surface.ts`) — den städade guidens läge
- * `playlists` normaliseras där till `grid`, så `TvGuidePlaylistsDesktop`
- * blir onåbar via TV-läget. Komponenten är oförändrad och testas därför på
- * LAN/fjärr-ytan i stället (spec "Beslut": den ytan behåller dagens guide
- * orört) — samma justering som i `tv-guide.test.tsx`.
+ * LAN/FJÄRR-SVITEN. "Kanalguiden städad på skrivbord och TV" (0.10.0) lyfter
+ * TV-läget och skrivbordsappen bakom `useNewGuideSurface` (`guide-surface.ts`)
+ * — den städade guidens läge `playlists` normaliseras där till `grid` och
+ * källväljaren ersätter spellistsidan, så `TvGuidePlaylistsDesktop` är
+ * onåbar på de ytorna (skalets svit: `guide-shell.test.tsx`). Komponenten är
+ * oförändrad och testas på LAN/fjärr-ytan, explicit utan TV-läge och utan
+ * Tauri-flaggan (spec "Beslut": den ytan behåller dagens guide orört).
  */
 beforeEach(() => {
   __resetForTests()
   __setTvModeForTests(false)
+  __setDesktopTauriEnvForTests(false)
   writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', lists)
   writePluginJson(LIVE_TV_PLUGIN_ID, 'pins', [])
   writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'playlists')
@@ -43,7 +45,13 @@ const mount = async () => {
   return rendered
 }
 
-describe('TvGuidePlaylists', () => {
+describe('TvGuidePlaylists (LAN/fjärr)', () => {
+  it('den gamla spellistsidan finns kvar: kolumnerna och fyra lägen i segmentet, inget nytt skal', async () => {
+    await mount()
+    expect(screen.getByTestId('playlists-column')).toBeInTheDocument()
+    expect(screen.queryByTestId('guide-control-row')).not.toBeInTheDocument()
+    expect(screen.getAllByTestId('tv-segment-option').map((o) => o.textContent)).toEqual(['Now / Next', 'Timeline', 'Grid', 'Playlists'])
+  })
   it('ritar en icke-aktiv listas kanaler ur INDEXET, inte ur inbäddade channels', async () => {
     // Efter v2-migreringen bär listorna bara metadata. Vyn byggde tidigare
     // sina rader med `flattenChannels([list])` och hade därför stått tom i
@@ -122,9 +130,8 @@ describe('TvGuidePlaylists', () => {
  */
 describe('TvGuidePlaylists på telefon grenar till drill-down, skrivbordet behåller kolumnerna', () => {
   // En telefon är aldrig en TV: skalet gatar `phone` med `!isTv` (fas 3 ger
-  // vyerna `phone` som prop därifrån i stället för en egen mätning), så
-  // telefonblocket kör utanför TV-läget som filens beforeEach annars slår på.
-  beforeEach(() => __setTvModeForTests(false))
+  // vyerna `phone` som prop därifrån i stället för en egen mätning); filens
+  // beforeEach står redan utanför TV-läget.
   let box: HTMLElement | null = null
   afterEach(() => { box?.remove(); box = null })
 
@@ -166,14 +173,10 @@ describe('TvGuidePlaylists på telefon grenar till drill-down, skrivbordet behå
 })
 
 // Jerrys uppföljning: fjärrhjälpen ("◂ ▸ switch column · Back closes") ska
-// bort HELT — även i TV-läge, ingen ersättningstext någonstans.
-describe('TvGuidePlaylists fjärrhjälp (borttagen, Jerrys uppföljning)', () => {
-  it('renderas aldrig, varken i TV-läge eller utanför', async () => {
-    __setTvModeForTests(true)
-    await mount()
-    expect(screen.queryByText('◂ ▸ switch column · Back closes')).not.toBeInTheDocument()
-    cleanup()
-    __setTvModeForTests(false)
+// bort HELT, ingen ersättningstext någonstans. I TV-läge/skrivbordsappen
+// ritas sidan inte alls längre (lägesnormaliseringen, `guide-shell.test.tsx`).
+describe('TvGuidePlaylists (LAN/fjärr) fjärrhjälp (borttagen, Jerrys uppföljning)', () => {
+  it('renderas aldrig', async () => {
     await mount()
     expect(screen.queryByText('◂ ▸ switch column · Back closes')).not.toBeInTheDocument()
   })

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
+import { __resetForTests, __setDesktopTauriEnvForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { flushLiveTvIndex, seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
 import { getGuideMode } from './tv-settings-store'
@@ -10,10 +10,11 @@ vi.mock('../live-tv-player', () => ({ LiveTvPlayer: ({ channel }: { channel: { n
 import { LiveTvTvShell } from './tv-shell'
 
 /**
- * Det GAMLA rutnätet, som sedan Task 3 bara LAN/fjärr-webbklienten når
- * (`useNewGuideSurface` är falsk utan TV-läge och utan Tauri) — TV och
- * skrivbordsappen får `GuideGridView` via skalet, se `guide-grid-view.test.tsx`.
- * Därför monteras här UTAN TV-läge.
+ * LAN/FJÄRR-SVITEN: det GAMLA rutnätet, som sedan 0.10.0 bara LAN/fjärr-
+ * webbklienten når (`useNewGuideSurface` är falsk utan TV-läge och utan
+ * Tauri) — TV och skrivbordsappen får `GuideGridView` via skalet, se
+ * `guide-grid-view.test.tsx`. Därför monteras här UTAN TV-läge och UTAN
+ * Tauri-flaggan, explicit.
  *
  * Fönstret i rutnätet är `alignToHour(nu − 1 h)` … +12 h, så allt här ligger
  * med säkerhet inne i det: ett pågående program, ett kommande, och ett på en
@@ -47,6 +48,7 @@ afterEach(cleanup)
 beforeEach(() => {
   __resetForTests()
   __setTvModeForTests(false)
+  __setDesktopTauriEnvForTests(false)
   writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list])
   writePluginJson(LIVE_TV_PLUGIN_ID, 'pins', [])
   seedLiveTvIndex({ cache })
@@ -78,13 +80,16 @@ const blockByTitle = (title: string): HTMLElement => {
   return found
 }
 
-describe('TvGuideGrid', () => {
+describe('TvGuideGrid (LAN/fjärr)', () => {
   it('Rutnät finns i segmentväxeln och sparas i live_tv_guide_mode_v1', async () => {
     await mount()
     fireEvent.click(screen.getByText('Grid'))
     await flushLiveTvIndex()
     expect(getGuideMode()).toBe('grid')
     expect(screen.getByTestId('grid-scroll')).toBeInTheDocument()
+    // Den gamla guiden står kvar här: fyra lägen i segmentet, inget nytt skal.
+    expect(screen.queryByTestId('guide-control-row')).not.toBeInTheDocument()
+    expect(screen.getAllByTestId('tv-segment-option').map((o) => o.textContent)).toEqual(['Now / Next', 'Timeline', 'Grid', 'Playlists'])
     // Exakt en startstation, som i alla andra vyer.
     expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
   })
@@ -268,7 +273,7 @@ describe('TvGuideGrid', () => {
   })
 })
 
-describe('TvGuideGrid — kanalkolumnens stationer', () => {
+describe('TvGuideGrid (LAN/fjärr) — kanalkolumnens stationer', () => {
   it('OK på kanalkolumnen öppnar kanaldetaljen utan förvalt program', async () => {
     const onNavigate = await openGrid()
     fireEvent.click(screen.getAllByTestId('grid-channel')[0])
@@ -285,7 +290,7 @@ describe('TvGuideGrid — kanalkolumnens stationer', () => {
 // ingen ersättningstext någonstans. Detaljremsan visade den bara när inget
 // är valt — "inget valt" nås genom att filtrera till Nyheter (kanal C: ingen
 // tablå, alltså inga block att fokusera/välja).
-describe('TvGuideGrid fjärrhjälp (borttagen, Jerrys uppföljning)', () => {
+describe('TvGuideGrid (LAN/fjärr) fjärrhjälp (borttagen, Jerrys uppföljning)', () => {
   const selectEmptyGroup = async () => {
     await openGrid()
     fireEvent.click(screen.getByTestId('grid-chip-News'))

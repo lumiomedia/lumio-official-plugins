@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
+import { __resetForTests, __setDesktopTauriEnvForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, channelKey, getLiveTvLists, getM3uUrls, getXtreamLogins, isChannelInLiveTvList, type LiveTvList, type XtreamLogin } from '../live-tv-data'
 import { getLockedChannelKeys } from '../channel-locks'
@@ -128,15 +128,34 @@ describe('TvSettingsView', () => {
     mount()
     expect(screen.getByTestId('tab-appearance')).toHaveAttribute('data-init')
     expect(screen.queryByText('Accent colour')).toBeNull()
-    fireEvent.click(screen.getByTestId('guide-default-tl'))
-    expect(getGuideMode()).toBe('tl')
-    // Fjärde läget sedan 0.6.0 (P6): Rutnät ska gå att välja som standardvy.
+    // Den städade guiden (TV/skrivbord, Task 6): tre lägen i kontrollradens
+    // ordning, de gamla fyra finns inte som val här.
+    expect(screen.queryByTestId('guide-default-tl')).toBeNull()
+    expect(screen.queryByTestId('guide-default-playlists')).toBeNull()
+    fireEvent.click(screen.getByTestId('guide-default-timeline'))
+    expect(getGuideMode()).toBe('timeline')
+    fireEvent.click(screen.getByTestId('guide-default-nownext'))
+    expect(getGuideMode()).toBe('nownext')
     fireEvent.click(screen.getByTestId('guide-default-grid'))
     expect(getGuideMode()).toBe('grid')
     fireEvent.click(screen.getByTestId('setting-previewEnabled'))
     expect(getTvSettings().previewEnabled).toBe(false)
     fireEvent.click(screen.getByTestId('setting-bannerHideMs'))
     expect(getTvSettings().bannerHideMs).toBe(6000)
+  })
+  it('Utseende på LAN/fjärr: de fyra gamla lägena står kvar som standardvy', () => {
+    __setTvModeForTests(false)
+    __setDesktopTauriEnvForTests(false)
+    mount()
+    expect(screen.queryByTestId('guide-default-nownext')).toBeNull()
+    expect(screen.queryByTestId('guide-default-timeline')).toBeNull()
+    fireEvent.click(screen.getByTestId('guide-default-tl'))
+    expect(getGuideMode()).toBe('tl')
+    // Fjärde läget sedan 0.6.0 (P6): Rutnät ska gå att välja som standardvy.
+    fireEvent.click(screen.getByTestId('guide-default-grid'))
+    expect(getGuideMode()).toBe('grid')
+    fireEvent.click(screen.getByTestId('guide-default-playlists'))
+    expect(getGuideMode()).toBe('playlists')
   })
   it('Spellistor: listar listor med kvitto och har Lägg till', () => {
     mount('playlists')

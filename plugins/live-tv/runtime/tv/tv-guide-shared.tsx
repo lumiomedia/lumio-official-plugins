@@ -34,8 +34,8 @@ export function filterByGroup(model: Pick<LiveTvModel, 'channels' | 'favouriteCh
   return model.channels
 }
 
-/** Kanalstationens bredd på skrivbord/TV (spec §3). */
-export const CHANNEL_CELL_WIDTH_DP = 520
+/** Den gamla kanalstationens bredd (LAN/fjärr-guiden). Ingen importerar talet — kontexten går via `channelColumnStyle`. */
+const CHANNEL_CELL_WIDTH_DP = 520
 
 /**
  * Kanalkolumnens LAYOUTKONTEXT — inte bara ett tal. Guidens rubrikkolumn

@@ -74,6 +74,48 @@ describe('TvGuideShell (TV-läge)', () => {
     expect(onNavigate).not.toHaveBeenCalledWith({ pageId: 'live-tv-browse', params: { view: 'hub' } })
   })
 
+  it('två byten kräver två Bakåt — ett läge per tryck — och sedan lämnar Bakåt guiden', async () => {
+    // Flyttat från den gamla TV-sviten i `tv-guide.test.tsx` (Jerry, riktig
+    // TV, plugin 0.5.0): lägesbytet är en navigering INNE i guiden.
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'grid')
+    const onNavigate = await mount()
+    fireEvent.click(within(screen.getByTestId('guide-mode')).getByText('Timeline'))
+    fireEvent.click(within(screen.getByTestId('guide-mode')).getByText('Now / Next'))
+    expect(getGuideMode()).toBe('nownext')
+    fireEvent.keyDown(window, { key: 'Backspace' })
+    expect(activeMode()).toBe('Timeline')
+    expect(getGuideMode()).toBe('timeline')
+    fireEvent.keyDown(window, { key: 'Backspace' })
+    expect(activeMode()).toBe('Grid')
+    expect(getGuideMode()).toBe('grid')
+    expect(onNavigate).not.toHaveBeenCalled()
+    // Stacken är tom: nästa Bakåt lämnar guiden som förut.
+    fireEvent.keyDown(window, { key: 'Backspace' })
+    expect(onNavigate).toHaveBeenCalledTimes(1)
+    expect((onNavigate.mock.calls[0][0] as { params: Record<string, string> }).params.view).toBe('hub')
+  })
+
+  it('utan lägesbyte i sessionen lämnar Bakåt guiden direkt', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'timeline')
+    const onNavigate = await mount()
+    fireEvent.keyDown(window, { key: 'Backspace' })
+    expect(onNavigate).toHaveBeenCalledTimes(1)
+    expect((onNavigate.mock.calls[0][0] as { params: Record<string, string> }).params.view).toBe('hub')
+  })
+
+  it('en lagrad kategori som inte längre finns faller tillbaka till Alla i stället för en tom vy', async () => {
+    // Motsvarigheten till den gamla guidens `params.group`-validering: här
+    // lagras kategorin (`guideCategory`) och kan ha överlevt en borttagen lista.
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'nownext')
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_tv_settings_v1', { guideCategory: 'Nonexistent' })
+    await mount()
+    expect(screen.getByTestId('guide-category')).toHaveTextContent('All categories')
+    // Fyra kanaler i två listor: A (tablå) som rad, B/C/D som kollapsade rader sist.
+    expect(screen.getAllByTestId('nownext-row')).toHaveLength(1)
+    expect(screen.getAllByTestId('nownext-empty-row')).toHaveLength(3)
+    expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
+  })
+
   it('källknappen öppnar panelen; valet skrivs till aktiv spellista och panelen stängs', async () => {
     await mount()
     const source = screen.getByTestId('guide-source')
@@ -158,5 +200,21 @@ describe('TvGuideShell (skrivbordsappen, inte TV)', () => {
     await mount()
     fireEvent.click(within(screen.getByTestId('guide-mode')).getByText('Timeline'))
     expect(getGuideMode()).toBe('timeline')
+  })
+
+  it('inga TV-rester på skrivbordet: ingen "OK = …"/"håll OK" i något av de tre lägena', async () => {
+    // Spec §5: `OK = …`-strängarna (okWatch, okRemind, previewLabel/Frame,
+    // allChannelsSub) renderas bara när `isTv`. På TV får de finnas; här
+    // (skrivbordsappen) får inte ett enda läge bära dem — inte heller med
+    // Detaljer-bannern på, som är det enda stället som liknar det gamla toppbandet.
+    for (const stored of ['grid', 'nownext', 'timeline'] as const) {
+      writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', stored)
+      writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_tv_settings_v1', { nowNextDetails: true })
+      await mount()
+      const shell = screen.getByTestId('guide-shell')
+      expect(shell).toHaveAttribute('data-guide-mode', stored)
+      expect(shell.textContent).not.toMatch(/OK =|hold OK|håll OK/)
+      cleanup()
+    }
   })
 })

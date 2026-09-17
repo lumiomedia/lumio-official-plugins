@@ -8,6 +8,7 @@ import { useTvText } from './tv-strings'
 import { BANNER_HIDE_OPTIONS, setGuideMode, setTvSettings, useGuideMode, type BannerHideMs, type GuideMode, type TvSettings } from './tv-settings-store'
 import { EpgTab, Heading, ParentalTab, PlaylistsTab, Row } from './settings-tabs'
 import { TvSettingsPhone } from './mobile/settings-phone'
+import { useNewGuideSurface } from './guide-surface'
 
 type Tab = 'appearance' | 'playlists' | 'epg' | 'parental'
 const TABS: Tab[] = ['appearance', 'playlists', 'epg', 'parental']
@@ -57,9 +58,14 @@ type TT = ReturnType<typeof useTvText>['tt']
 function AppearanceTab({ settings, tt }: { settings: TvSettings; tt: TT }) {
   const guideMode = useGuideMode()
   const [accent, setAccentState] = useState(() => (hasAccent ? accentApi.getAccent!() : ''))
-  // Fyra lägen sedan 0.6.0: Rutnät (P6) ligger mellan Tablå och Spellistor,
-  // samma ordning som segmentväxeln i guiden.
-  const modes: { key: GuideMode; label: string }[] = [{ key: 'now', label: tt('modeNow') }, { key: 'tl', label: tt('modeTimeline') }, { key: 'grid', label: tt('modeGrid') }, { key: 'playlists', label: tt('modePlaylists') }]
+  // Den städade guiden (skrivbord/TV, spec "Beslut", Lägen) har tre lägen i
+  // kontrollradens ordning: Grid · Now / Next · Timeline. LAN/fjärr behåller
+  // de fyra gamla sedan 0.6.0 (Rutnät mellan Tablå och Spellistor, som
+  // segmentväxeln där). Telefonen når aldrig hit (egen inställningssida).
+  const newGuide = useNewGuideSurface(false)
+  const modes: { key: GuideMode; label: string }[] = newGuide
+    ? [{ key: 'grid', label: tt('modeGrid') }, { key: 'nownext', label: tt('modeNowNext') }, { key: 'timeline', label: tt('modeTimelineDay') }]
+    : [{ key: 'now', label: tt('modeNow') }, { key: 'tl', label: tt('modeTimeline') }, { key: 'grid', label: tt('modeGrid') }, { key: 'playlists', label: tt('modePlaylists') }]
   const nextBanner = (current: BannerHideMs): BannerHideMs => BANNER_HIDE_OPTIONS[(BANNER_HIDE_OPTIONS.indexOf(current) + 1) % BANNER_HIDE_OPTIONS.length]
   return (
     <>
@@ -83,8 +89,9 @@ function AppearanceTab({ settings, tt }: { settings: TvSettings; tt: TT }) {
         <div style={{ display: 'flex', gap: dp(16), flexWrap: 'wrap' }}>
           {modes.map((m) => (
             <div key={m.key} data-testid={`guide-default-${m.key}`} {...station(() => setGuideMode(m.key))} style={{ width: dp(300), borderRadius: dp(14), border: `1px solid ${guideMode === m.key ? TV.acc : TV.lineCard}`, background: TV.s06, padding: dp(16), display: 'flex', flexDirection: 'column', gap: dp(12), cursor: 'pointer' }}>
-              <div style={{ height: dp(110), borderRadius: dp(10), background: TV.s05, display: 'grid', gridTemplateColumns: m.key === 'playlists' ? '1fr 2fr 1fr' : m.key === 'tl' ? '1fr 3fr' : m.key === 'grid' ? '1fr 1fr 1fr' : '1fr 1.2fr 1fr 1fr', gridTemplateRows: m.key === 'grid' ? '1fr 1fr' : undefined, gap: dp(6), padding: dp(10) }}>
-                {Array.from({ length: m.key === 'playlists' ? 3 : m.key === 'tl' ? 2 : m.key === 'grid' ? 6 : 4 }).map((_, i) => <div key={i} style={{ borderRadius: dp(4), background: i === 1 ? TV.accMix(35) : TV.s12 }} />)}
+              {/* Miniatyren: Timeline ritas som den gamla tablåraden (`tl`), Now / Next som Nu/Sen. */}
+              <div style={{ height: dp(110), borderRadius: dp(10), background: TV.s05, display: 'grid', gridTemplateColumns: m.key === 'playlists' ? '1fr 2fr 1fr' : m.key === 'tl' || m.key === 'timeline' ? '1fr 3fr' : m.key === 'grid' ? '1fr 1fr 1fr' : '1fr 1.2fr 1fr 1fr', gridTemplateRows: m.key === 'grid' ? '1fr 1fr' : undefined, gap: dp(6), padding: dp(10) }}>
+                {Array.from({ length: m.key === 'playlists' ? 3 : m.key === 'tl' || m.key === 'timeline' ? 2 : m.key === 'grid' ? 6 : 4 }).map((_, i) => <div key={i} style={{ borderRadius: dp(4), background: i === 1 ? TV.accMix(35) : TV.s12 }} />)}
               </div>
               <div style={{ fontSize: dp(19), fontWeight: 600 }}>{m.label}</div>
             </div>
