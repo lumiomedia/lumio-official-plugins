@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.9.0 — The phone in real pixels
+
+- The phone is no longer a scaled-down TV: the host renders it at scale 1 and
+  every view has its own phone layout in one column, with a tab bar at the
+  bottom and bottom sheets instead of hold menus.
+- Home shows one spotlight card, a search field, the favourites strip and
+  "Continue watching" — no clock and no icon rail.
+- The guide has Now, Timeline and Lists as segments. Timeline is a real
+  programme grid with a sticky channel column and a now line; Lists drills
+  playlist → category → channels.
+- Favourites can be reordered by dragging the handle in edit mode.
+- Search uses the system keyboard and finds channels and today's programmes.
+- Multiview shows two tiles above each other, with swap and sound per tile.
+- The player puts the video on top in portrait; in landscape the controls sit
+  in a banner that never overlaps the picture. Rotation follows the device and
+  the screen stays awake while playing.
+- Requires Lumio 0.1.600 or later.
+
 ## 0.6.0
 
 - The redesigned Live TV is now the only Live TV: the same views render on TV,
