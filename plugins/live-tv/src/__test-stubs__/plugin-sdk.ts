@@ -198,6 +198,7 @@ export function __resetForTests(): void {
   pinForTests = null
   sceneBoxPortalTargetForTests = null
   hostClockForTests = null
+  isDesktopTauriEnv = false
 }
 
 // ---- Profil-PIN (föräldrakontroll) ----
@@ -581,7 +582,10 @@ export function getTvKeyboardPanel(): typeof TvKeyboardPanelStub | null {
 
 // ---- Motorer (ingen riktig uppspelning i test) ----
 export const isTauriEnv = false
-export const isDesktopTauriEnv = false
+export let isDesktopTauriEnv = false
+export function __setDesktopTauriEnvForTests(on: boolean): void {
+  isDesktopTauriEnv = on
+}
 export const isAndroidTauriEnv = false
 export const surfaceCalls: string[] = []
 export async function openMpvPlayer(args: { url: string }): Promise<void> { surfaceCalls.push(`mpv:open:${args.url}`) }

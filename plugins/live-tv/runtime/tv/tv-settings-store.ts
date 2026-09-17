@@ -11,6 +11,10 @@ export const ACTIVE_PLAYLIST_KEY = 'live_tv_active_playlist_v1'
 export const BANNER_HIDE_OPTIONS = [2000, 4000, 6000, 0] as const
 export type BannerHideMs = (typeof BANNER_HIDE_OPTIONS)[number]
 
+/** Zoomsteg i Timeline-vyn (den städade guiden, skrivbord/TV). */
+export type TimelineZoom = '2h' | '6h' | 'day'
+const TIMELINE_ZOOMS: TimelineZoom[] = ['2h', '6h', 'day']
+
 export interface TvSettings {
   previewEnabled: boolean
   startOnLastChannel: boolean
@@ -20,13 +24,30 @@ export interface TvSettings {
   keepAwake: boolean
   /** Telefon (fas 3): rotation till liggande öppnar fullskärm. */
   fullscreenOnRotate: boolean
+  /** Den städade guiden (skrivbord/TV): senast valda kategori i kontrollraden. */
+  guideCategory: string | null
+  /** Den städade guiden: zoomsteget i Timeline-vyn. */
+  timelineZoom: TimelineZoom
+  /** Den städade guiden: infobannern i Now/Next-vyn av/på. */
+  nowNextDetails: boolean
 }
 
-const DEFAULTS: TvSettings = { previewEnabled: true, startOnLastChannel: false, numericZap: true, bannerHideMs: 4000, keepAwake: true, fullscreenOnRotate: true }
+const DEFAULTS: TvSettings = {
+  previewEnabled: true,
+  startOnLastChannel: false,
+  numericZap: true,
+  bannerHideMs: 4000,
+  keepAwake: true,
+  fullscreenOnRotate: true,
+  guideCategory: null,
+  timelineZoom: 'day',
+  nowNextDetails: true,
+}
 
 function sanitize(raw: unknown): TvSettings {
   const r = (raw && typeof raw === 'object' ? raw : {}) as Partial<Record<keyof TvSettings, unknown>>
   const banner = (BANNER_HIDE_OPTIONS as readonly number[]).includes(r.bannerHideMs as number) ? (r.bannerHideMs as BannerHideMs) : DEFAULTS.bannerHideMs
+  const timelineZoom = TIMELINE_ZOOMS.includes(r.timelineZoom as TimelineZoom) ? (r.timelineZoom as TimelineZoom) : DEFAULTS.timelineZoom
   return {
     previewEnabled: typeof r.previewEnabled === 'boolean' ? r.previewEnabled : DEFAULTS.previewEnabled,
     startOnLastChannel: typeof r.startOnLastChannel === 'boolean' ? r.startOnLastChannel : DEFAULTS.startOnLastChannel,
@@ -34,6 +55,9 @@ function sanitize(raw: unknown): TvSettings {
     bannerHideMs: banner,
     keepAwake: typeof r.keepAwake === 'boolean' ? r.keepAwake : DEFAULTS.keepAwake,
     fullscreenOnRotate: typeof r.fullscreenOnRotate === 'boolean' ? r.fullscreenOnRotate : DEFAULTS.fullscreenOnRotate,
+    guideCategory: typeof r.guideCategory === 'string' && r.guideCategory ? r.guideCategory : DEFAULTS.guideCategory,
+    timelineZoom,
+    nowNextDetails: typeof r.nowNextDetails === 'boolean' ? r.nowNextDetails : DEFAULTS.nowNextDetails,
   }
 }
 
@@ -57,9 +81,15 @@ export function useTvSettings(): TvSettings {
  * inget i gränssnittet, men en sparad nyckel som inte finns i listan faller
  * tillbaka till `'now'` — därför måste varje nytt läge läggas till här, inte
  * bara i segmentväxeln.
+ *
+ * `'nownext'` och `'timeline'` är den städade guidens (skrivbord/TV) egna
+ * lägen (spec "Beslut", Lägen). De gamla `'now'`/`'tl'`/`'playlists'` lever
+ * kvar eftersom LAN/fjärr och telefonen fortsätter skriva dem — normalisering
+ * mellan uppsättningarna sker vid LÄSNING i `guide-surface.ts` (skrivbord/TV)
+ * respektive `mobile/guide-phone.ts` (telefon), inte här.
  */
-export type GuideMode = 'now' | 'tl' | 'playlists' | 'grid'
-const GUIDE_MODES: GuideMode[] = ['now', 'tl', 'playlists', 'grid']
+export type GuideMode = 'now' | 'tl' | 'playlists' | 'grid' | 'nownext' | 'timeline'
+const GUIDE_MODES: GuideMode[] = ['now', 'tl', 'playlists', 'grid', 'nownext', 'timeline']
 export function getGuideMode(): GuideMode {
   const raw = readPluginJson<unknown>(LIVE_TV_PLUGIN_ID, GUIDE_MODE_KEY, 'now')
   return GUIDE_MODES.includes(raw as GuideMode) ? (raw as GuideMode) : 'now'

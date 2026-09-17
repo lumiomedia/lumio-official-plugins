@@ -23,9 +23,17 @@ const cache: EpgCacheEntry = {
 }
 
 afterEach(cleanup)
+/**
+ * Task 0 ("kanalguiden städad på skrivbord och TV") flyttar HELA TV-läget
+ * bakom `useNewGuideSurface` — se `guide-surface.ts`. Den gamla Nu/Sen ·
+ * Tablå · Spellistor-navigeringen som testas här (segmentväxeln, Bakåt-
+ * stacken) lever fortfarande orört kvar, men bara på LAN/fjärr-ytan (spec
+ * "Beslut", Var). Filens tester körs därför på den ytan i stället för i
+ * TV-läge; `TvGuide: ny yta i TV-läge` nedan täcker själva ytgrinden.
+ */
 beforeEach(() => {
   __resetForTests()
-  __setTvModeForTests(true)
+  __setTvModeForTests(false)
   writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list])
   writePluginJson(LIVE_TV_PLUGIN_ID, 'pins', [])
   seedLiveTvIndex({ cache: cache })
@@ -279,5 +287,40 @@ describe('TvGuide fjärrhjälp (borttagen, Jerrys uppföljning)', () => {
     __setTvModeForTests(false)
     await mount()
     expect(screen.queryByText('OK watch · hold OK menu · ◂▸ category')).not.toBeInTheDocument()
+  })
+})
+
+/**
+ * Task 0: TV-läget går genom `useNewGuideSurface` → platshållaren i
+ * `TvGuide` (spec 1, "Guidens skal"). Den riktiga skalkomponenten
+ * (`TvGuideShell`, kontrollrad + tre vyer) kommer i en senare task — här
+ * verifieras bara att lägesnormaliseringen faktiskt kopplas in: `now`/`tl`
+ * tvingas till `TvGuideStandard`s `'now'`, `playlists`/`grid` går till
+ * `TvGuideGrid`. Ingen ny visuell yta finns ännu.
+ */
+describe('TvGuide: ny yta i TV-läge (newGuide, Task 0-platshållaren)', () => {
+  beforeEach(() => __setTvModeForTests(true))
+
+  it('now/tl normaliseras till nownext → TvGuideStandard tvingas till "now"', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'tl')
+    await mount()
+    // Tablåns egna markörer (nu-linjen, "Hämtar tablå…") finns inte —
+    // platshållaren renderar Nu/Sen, inte Tablå, för det normaliserade läget.
+    expect(screen.queryByTestId('now-line')).not.toBeInTheDocument()
+    expect(screen.getAllByTestId('guide-row').length).toBeGreaterThan(0)
+    expect(screen.getByTestId('guide-headline')).toBeInTheDocument()
+  })
+
+  it('playlists normaliseras till grid → TvGuideGrid, inte spellistkolumnerna', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'playlists')
+    await mount()
+    expect(screen.getByTestId('grid-scroll')).toBeInTheDocument()
+    expect(screen.queryByTestId('playlists-column')).not.toBeInTheDocument()
+  })
+
+  it('grid är redan normaliserat → TvGuideGrid som förut', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'grid')
+    await mount()
+    expect(screen.getByTestId('grid-scroll')).toBeInTheDocument()
   })
 })

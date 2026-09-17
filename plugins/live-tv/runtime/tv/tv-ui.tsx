@@ -105,6 +105,10 @@ export const cardStyle: CSSProperties = {
  *
  * TELEFON (`data-lt-phone`, fas 3): ingen fokusring och ingen hovringsyta —
  * fingret har varken fokus att följa eller en pekare att vila.
+ *
+ * SKRIVBORD (`data-live-tv-desktop`, den städade guiden): TV:ns glöd byts mot
+ * en tunn inre kant — skrivbordsappen har ingen fjärr att läsa glödet på
+ * avstånd för, och glöden är för TV-skalans mått, inte skrivbordets.
  */
 export function TvFocusStyle() {
   return (
@@ -125,6 +129,12 @@ export function TvFocusStyle() {
 [data-live-tv-tv-root][data-lt-phone="1"] [data-f]:focus,
 [data-live-tv-tv-root][data-lt-phone="1"] [data-f][data-fcur="1"] { outline: none !important; box-shadow: none !important; }
 [data-live-tv-tv-root][data-lt-phone="1"] [data-f]:hover { background-image: none !important; }
+[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-f]:focus,
+[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-f][data-fcur="1"] {
+  outline: 1px solid rgb(var(--accent-500)) !important;
+  outline-offset: -1px;
+  box-shadow: none !important;
+}
 [data-live-tv-tv-root] [data-live-tv-menu-item][data-f]:focus,
 [data-live-tv-tv-root] [data-live-tv-menu-item][data-f][data-fcur="1"] { outline-offset: -4px; border-radius: ${dp(12)}px; }
 [data-live-tv-tv-root] [data-scroll]::-webkit-scrollbar, [data-live-tv-tv-root] [data-row]::-webkit-scrollbar { display: none; }

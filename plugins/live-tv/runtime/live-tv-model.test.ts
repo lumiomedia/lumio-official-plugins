@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
-import { __resetForTests, __setTvModeForTests, getPluginMemoryCache, writePluginJson } from '@/lib/plugin-sdk'
+import { __resetForTests, __setDesktopTauriEnvForTests, __setTvModeForTests, getPluginMemoryCache, writePluginJson } from '@/lib/plugin-sdk'
 import { LIVE_TV_PLUGIN_ID, setLogoFallbackEnabled, type LiveTvList } from './live-tv-data'
 import type { IndexChannel } from './index-client'
 import type { NowNextLater } from './epg/types'
@@ -210,6 +210,19 @@ describe('useLiveTvModel: kanaler ur indexet', () => {
     expect(result.current.groups).toEqual(['Sport', 'News'])
     expect(result.current.activePlaylistId).toBeNull()
     expect(loadedSources()).toEqual(['s1', 's2'])
+  })
+
+  it('skrivbordsappen (Tauri) delar TV-lägets källväljare även utanför TV-läget', async () => {
+    // Spec "Beslut", Källa: `activeList`-grinden lyfts till `tvMode || isDesktopTauri()`.
+    __setTvModeForTests(false)
+    __setDesktopTauriEnvForTests(true)
+    const { result } = renderHook(() => useLiveTvModel())
+    await waitFor(() => expect(result.current.channelsLoading).toBe(false))
+    expect(result.current.activePlaylistId).toBeNull()
+
+    await act(async () => result.current.setActivePlaylist('l2'))
+    await waitFor(() => expect(result.current.channels.map((c) => c.name)).toEqual(['C']))
+    expect(result.current.activePlaylistName).toBe('Nordic')
   })
 })
 

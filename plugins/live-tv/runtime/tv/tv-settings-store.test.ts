@@ -7,7 +7,17 @@ beforeEach(() => __resetForTests())
 
 describe('tv-settings-store', () => {
   it('har standardvärden', () => {
-    expect(getTvSettings()).toEqual({ previewEnabled: true, startOnLastChannel: false, numericZap: true, bannerHideMs: 4000, keepAwake: true, fullscreenOnRotate: true })
+    expect(getTvSettings()).toEqual({
+      previewEnabled: true,
+      startOnLastChannel: false,
+      numericZap: true,
+      bannerHideMs: 4000,
+      keepAwake: true,
+      fullscreenOnRotate: true,
+      guideCategory: null,
+      timelineZoom: 'day',
+      nowNextDetails: true,
+    })
     expect(getGuideMode()).toBe('now')
     expect(getActivePlaylistId()).toBeNull()
   })
@@ -35,5 +45,19 @@ describe('tv-settings-store', () => {
     writePluginJson(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, { keepAwake: 'x', fullscreenOnRotate: 0 })
     expect(getTvSettings().keepAwake).toBe(true)
     expect(getTvSettings().fullscreenOnRotate).toBe(true)
+  })
+  it('den städade guiden (skrivbord/TV): guideCategory/timelineZoom/nowNextDetails, defaults och sanering', () => {
+    expect(getTvSettings().guideCategory).toBeNull()
+    expect(getTvSettings().timelineZoom).toBe('day')
+    expect(getTvSettings().nowNextDetails).toBe(true)
+    setTvSettings({ guideCategory: 'Sport', timelineZoom: '2h', nowNextDetails: false })
+    expect(getTvSettings().guideCategory).toBe('Sport')
+    expect(getTvSettings().timelineZoom).toBe('2h')
+    expect(getTvSettings().nowNextDetails).toBe(false)
+    // Ogiltiga värden faller tillbaka till default, precis som övriga fält.
+    writePluginJson(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, { guideCategory: '', timelineZoom: 'week', nowNextDetails: 'x' })
+    expect(getTvSettings().guideCategory).toBeNull()
+    expect(getTvSettings().timelineZoom).toBe('day')
+    expect(getTvSettings().nowNextDetails).toBe(true)
   })
 })

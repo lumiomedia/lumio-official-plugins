@@ -34,6 +34,11 @@ describe('Guiden · Nu på telefon', () => {
     expect(phoneGuideMode('grid')).toBe('grid')
     expect(phoneGuideMode('playlists')).toBe('playlists')
   })
+  // Den städade guidens (skrivbord/TV) egna lägen, normaliserade för telefon.
+  it('phoneGuideMode: nownext → now, timeline → grid', () => {
+    expect(phoneGuideMode('nownext')).toBe('now')
+    expect(phoneGuideMode('timeline')).toBe('grid')
+  })
   it('segmentbyte skriver bara now/grid/playlists och Timeline ger grid', async () => {
     mountPhone({ view: 'guide' })
     fireEvent.click(await screen.findByText('Timeline'))

@@ -24,6 +24,7 @@ import {
   type IndexChannel,
 } from './index-client'
 import { clearResolvedChannels, getResolvedChannels, resolveChannelKeys } from './channel-resolver'
+import { isDesktopTauri } from './tv/guide-surface'
 import { migrateStorageV2 } from './storage-v2-migration'
 import { getChannelHistory, onChannelHistoryChanged, type ChannelHistoryEntry } from './channel-history'
 import { useReminders, type Reminder } from './reminders'
@@ -489,12 +490,18 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
    *
    * Hooken kallas ovillkorligt (hooks-reglerna) — det är bara dess RESULTAT
    * som grindar filtret.
+   *
+   * Skrivbordsappen (Tauri) delar samma källväljare sedan den städade guiden
+   * (spec "Beslut", Källa): `isDesktopTauri()` är ingen hook (läser bara en
+   * modulflagga), så den får läggas till i samma villkor utan att bryta
+   * hooks-reglerna.
    */
   const tvMode = useTvMode()
+  const activeListGate = tvMode || isDesktopTauri()
   // Vald spellista som inte längre finns → tillbaka till alla.
   const activeList = useMemo(
-    () => (tvMode ? lists.find((list) => list.id === activePlaylistId) ?? null : null),
-    [tvMode, lists, activePlaylistId],
+    () => (activeListGate ? lists.find((list) => list.id === activePlaylistId) ?? null : null),
+    [activeListGate, lists, activePlaylistId],
   )
   const activeSource = activeList?.source ?? null
 

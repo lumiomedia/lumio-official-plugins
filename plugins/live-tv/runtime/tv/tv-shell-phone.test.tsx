@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR, TV_SCENE_PHONE_ATTR, __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
+import { TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR, TV_SCENE_PHONE_ATTR, __resetForTests, __setDesktopTauriEnvForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
 
@@ -139,5 +139,12 @@ describe('Live TV-skalet på telefon (fas 3)', () => {
     // Simulera uppspelning: klicka första kanalkortet i hubben (fixturen har A och B).
     fireEvent.click(await screen.findByText('A'))
     await waitFor(() => expect(screen.queryByTestId('mobile-tab-bar')).toBeNull())
+  })
+  // Telefonen i skrivbordsappen behåller den gamla guiden (spec "Beslut",
+  // Var) och får inte skrivbordets fokuskant — se `guide-surface.ts`.
+  it('data-live-tv-desktop sätts inte på telefon, även med Tauri-flaggan satt', () => {
+    __setDesktopTauriEnvForTests(true)
+    const { box } = mount({ phone: true })
+    expect(box.querySelector('[data-live-tv-tv-root]')).not.toHaveAttribute('data-live-tv-desktop')
   })
 })

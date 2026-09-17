@@ -11,6 +11,7 @@ import { useNarrowSurface } from '../hooks/useNarrowSurface'
 import { usePhoneSurface } from '../hooks/usePhoneSurface'
 import { useSwipeBack } from '../hooks/useSwipeBack'
 import { useTvText } from './tv-strings'
+import { isDesktopTauri } from './guide-surface'
 import { TV, TvFocusStyle, dp, station, Icons } from './tv-ui'
 import { TvHoldAffordance } from './tv-hold-affordance'
 import { useTvSettings, type TvSettings } from './tv-settings-store'
@@ -199,6 +200,14 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
    * hela trädet svarar på samma mätning.
    */
   const phone = usePhoneSurface(rootRef) && !isTv
+  /**
+   * TV-rester bort på skrivbordet (spec "Beslut", TV-rester): den städade
+   * guiden ritas i skrivbordsappen (Tauri), inte i TV-läget och inte på
+   * telefonen — TV behåller glöd, håll-OK och glasmenyn (fjärren behöver
+   * dem). Attributet är bara en CSS-krok (`TvFocusStyle`); routinggrinden
+   * för själva guiden är `useNewGuideSurface` i `guide-surface.ts`.
+   */
+  const desktopSurface = isDesktopTauri() && !isTv && !phone
   const railWidth = isTv ? RAIL_W_TV : narrow ? RAIL_W_NARROW : RAIL_W_DESKTOP
   const railItemSize = narrow ? RAIL_ITEM_NARROW : RAIL_ITEM_WIDE
 
@@ -548,6 +557,9 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
       // `TvFocusStyle`). Telefonen ritas i äkta px (skala 1 under 640 px),
       // därför en egen grundstorlek i stället för scenens 22 designpixlar.
       {...(phone ? { 'data-lt-phone': '1' } : {})}
+      // `data-live-tv-desktop`: skrivbordets CSS-krok (tunn fokuskant i
+      // stället för glöden, se `TvFocusStyle`) — bara i skrivbordsappen.
+      {...(desktopSurface ? { 'data-live-tv-desktop': '1' } : {})}
       style={{ display: 'flex', position: 'relative', height: '100%', minHeight: 0, background: hasCutouts ? 'transparent' : TV.bg, color: TV.text, fontFamily: TV.font, fontSize: phone ? 15 : dp(22), lineHeight: phone ? 1.4 : 1.3, ...(hasCutouts ? { zIndex: 0 } : null) }}
     >
       {hasCutouts ? <SurfaceBackdrop cutouts={cutouts} /> : null}

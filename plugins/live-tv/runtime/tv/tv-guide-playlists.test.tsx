@@ -19,9 +19,17 @@ const lists: LiveTvList[] = [
 const cache: EpgCacheEntry = { index: { 'a.tv': [{ title: 'Now A', start: now - 60_000, stop: now + 60_000 }, { title: 'Next A', start: now + 60_000, stop: now + 120_000 }] }, fetchedAt: now, sources: [] }
 
 afterEach(cleanup)
+/**
+ * Task 0 ("kanalguiden städad på skrivbord och TV") lyfter TV-läget bakom
+ * `useNewGuideSurface` (`guide-surface.ts`) — den städade guidens läge
+ * `playlists` normaliseras där till `grid`, så `TvGuidePlaylistsDesktop`
+ * blir onåbar via TV-läget. Komponenten är oförändrad och testas därför på
+ * LAN/fjärr-ytan i stället (spec "Beslut": den ytan behåller dagens guide
+ * orört) — samma justering som i `tv-guide.test.tsx`.
+ */
 beforeEach(() => {
   __resetForTests()
-  __setTvModeForTests(true)
+  __setTvModeForTests(false)
   writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', lists)
   writePluginJson(LIVE_TV_PLUGIN_ID, 'pins', [])
   writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'playlists')

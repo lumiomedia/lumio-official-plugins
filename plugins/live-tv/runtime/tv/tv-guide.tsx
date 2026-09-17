@@ -15,11 +15,16 @@ import { TvGuidePlaylists } from './tv-guide-playlists'
 import { TvGuideGrid } from './tv-guide-grid'
 import { useSchedules } from '../hooks/useSchedules'
 import { TvGuideNowPhone, phoneGuideMode, type PhoneGuideMode } from './mobile/guide-phone'
+import { desktopGuideMode, useNewGuideSurface } from './guide-surface'
 
 const ROW_STEP = 40
 
 export function TvGuide(props: TvViewProps) {
   const { nav } = props
+  // Ytgrinden (spec "Beslut", Var): TV-läget och skrivbordsappen (Tauri,
+  // inte telefon) delar den städade guiden. Hooken anropas ovillkorligt
+  // (hooks-reglerna) före grenarna nedan.
+  const newGuide = useNewGuideSurface(props.phone)
   const storedMode = useGuideMode()
   // Lokalt speglat läge: skrivningen sker via storage (för andra vyer/
   // omstarter) men uppdaterar inte sig själv i samma instans (stubben notifierar
@@ -110,12 +115,33 @@ export function TvGuide(props: TvViewProps) {
     if (pm === 'grid') return <TvGuideGrid {...props} mode={pm} onModeChange={changeMode} />
     return <TvGuideNowPhone {...props} mode="now" onModeChange={changePhone} />
   }
+  if (newGuide) {
+    /**
+     * PLATSHÅLLARE (Task 0 av "kanalguiden städad på skrivbord och TV").
+     *
+     * Den riktiga guidens skal (`TvGuideShell`, kontrollrad + tre vyer)
+     * byggs i en senare task. Här normaliseras bara läget och återanvänds
+     * dagens komponenter — ingen visuell ändring ännu. `TvGuideShell` läggs
+     * INTE i en egen fil nu: `tv-guide.tsx` importerar då den, och en fil
+     * som i sin tur importerar tillbaka `TvGuideStandard`/`TvGuideGrid`
+     * härifrån hade gett en importcykel.
+     */
+    const dm = desktopGuideMode(mode)
+    if (dm === 'nownext') return <TvGuideStandard {...props} mode="now" onModeChange={changeMode} />
+    return <TvGuideGrid {...props} mode={dm} onModeChange={changeMode} />
+  }
+  // Säkerhetsnät: lagringen delas mellan ytorna och skriver ingen migrering
+  // (spec "Beslut", Lagring) — `nownext`/`timeline` kan alltså dyka upp här
+  // om samma profil nyss körde den städade guiden på en annan yta. Den gamla
+  // vyn känner bara `now`/`tl`, så de faller tillbaka till sin närmsta
+  // motsvarighet (samma tanke som `phoneGuideMode`).
+  const legacyMode: 'now' | 'tl' = mode === 'tl' ? 'tl' : 'now'
   if (mode === 'playlists') return <TvGuidePlaylists {...props} mode={mode} onModeChange={changeMode} />
   // Rutnätet är skrivbordets tablå i TV-trädet (spec 4.3). Den delar inte
   // komponent med Nu/Sen och Tablå, så lägesbytet hit går genom samma
   // fokusräddning som spellistevyn — se effekten på `mode` ovan.
-  if (mode === 'grid') return <TvGuideGrid {...props} mode={mode} onModeChange={changeMode} />
-  return <TvGuideStandard {...props} mode={mode} onModeChange={changeMode} />
+  if (mode === 'grid' || mode === 'timeline') return <TvGuideGrid {...props} mode="grid" onModeChange={changeMode} />
+  return <TvGuideStandard {...props} mode={legacyMode} onModeChange={changeMode} />
 }
 
 function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: TvViewProps & { mode: 'now' | 'tl'; onModeChange: (mode: GuideMode) => void }) {

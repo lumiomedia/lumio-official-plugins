@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { __resetForTests, __setTvModeForTests, BROWSE_BACK_EVENT, writePluginJson } from '@/lib/plugin-sdk'
+import { __resetForTests, __setDesktopTauriEnvForTests, __setTvModeForTests, BROWSE_BACK_EVENT, writePluginJson } from '@/lib/plugin-sdk'
 import { seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
 
@@ -75,5 +75,31 @@ describe('LiveTvTvShell', () => {
     await waitFor(() => expect(screen.getByTestId('player')).toHaveTextContent('B'))
     fireEvent.keyDown(window, { key: 'Backspace' })
     await waitFor(() => expect(screen.queryByTestId('player')).toBeNull())
+  })
+})
+
+/**
+ * `data-live-tv-desktop` (spec "Beslut", TV-rester): den städade guidens
+ * CSS-krok för tunn fokuskant i stället för TV:ns glöd (`TvFocusStyle`).
+ * Bara skrivbordsappen (Tauri, ej TV, ej telefon) — se `guide-surface.ts`.
+ */
+describe('LiveTvTvShell: data-live-tv-desktop (skrivbordsappen, Task 0)', () => {
+  it('sätts i skrivbordsappen (Tauri, ej TV, ej telefon)', () => {
+    __setTvModeForTests(false)
+    __setDesktopTauriEnvForTests(true)
+    mount()
+    expect(document.querySelector('[data-live-tv-tv-root]')).toHaveAttribute('data-live-tv-desktop', '1')
+  })
+  it('saknas i TV-läge, även med Tauri-flaggan satt', () => {
+    __setTvModeForTests(true)
+    __setDesktopTauriEnvForTests(true)
+    mount()
+    expect(document.querySelector('[data-live-tv-tv-root]')).not.toHaveAttribute('data-live-tv-desktop')
+  })
+  it('saknas på LAN/fjärr (ingen Tauri-flagga)', () => {
+    __setTvModeForTests(false)
+    __setDesktopTauriEnvForTests(false)
+    mount()
+    expect(document.querySelector('[data-live-tv-tv-root]')).not.toHaveAttribute('data-live-tv-desktop')
   })
 })

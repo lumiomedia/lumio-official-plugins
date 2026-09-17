@@ -18,11 +18,17 @@ import { MobileChannelRow } from './mobile-channel-row'
  * `'tl'` (tablåraden i Nu-vyn) finns inte här — telefonens tablå ÄR rutnätet
  * (`'grid'`, P6), så segmentet Timeline skriver `'grid'`. Ett lagrat `'tl'`
  * från TV:n visas därför som Now och skrivs aldrig tillbaka från telefonen.
+ *
+ * Den städade guidens (skrivbord/TV) egna lägen normaliseras likadant vid
+ * läsning (spec "Beslut", Lagring): `'nownext'` → Now, `'timeline'` → Lists-
+ * rutnätet. Telefonen rörs inte av den städade guiden i övrigt (fas 3).
  */
 export type PhoneGuideMode = 'now' | 'grid' | 'playlists'
 
 export function phoneGuideMode(stored: GuideMode): PhoneGuideMode {
-  return stored === 'tl' ? 'now' : stored
+  if (stored === 'tl' || stored === 'nownext') return 'now'
+  if (stored === 'timeline') return 'grid'
+  return stored
 }
 
 /** Segmentväxeln i full bredd, delad av Nu-vyn (P5), rutnätet (P6) och listorna (P7). */

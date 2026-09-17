@@ -106,6 +106,11 @@ describe('Rubrikrader vid 1280 designpixlar', () => {
   })
 
   it('spellistvyns rubrik trunkerar titeln och håller klocka och segment hela', async () => {
+    // Task 0 ("kanalguiden städad på skrivbord och TV"): TV-läget normaliserar
+    // `playlists` → `grid` (`guide-surface.ts`), så den gamla spellistsidan är
+    // onåbar där. Rubrikens 1280-regler är oförändrade — bara ytan som når
+    // dem ändras, se LAN-läget här (spec "Beslut": den ytan behåller guiden orört).
+    __setTvModeForTests(false)
     await mountGuide('playlists')
     const header = screen.getByTestId('pl-header')
     expect(header.style.flexWrap).toBe('wrap')
