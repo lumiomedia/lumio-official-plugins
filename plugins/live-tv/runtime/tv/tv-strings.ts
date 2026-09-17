@@ -113,6 +113,8 @@ const EN = {
   paginationRow: '{shown} of {total} channels have a guide in this category',
   showMoreN: 'Show {n} more',
   noEpgLast: 'Channels without a guide are listed last',
+  // Timeline i den städade guiden (Task 5): fotradens hjälptext.
+  timelineHint: 'Click anywhere in a row to open Grid at that time',
   watchNowShort: 'Watch now',
   favouriteShort: 'Favourite',
   detailEmpty: 'Select a programme to see details',
@@ -377,6 +379,7 @@ const SV: Record<keyof typeof EN, string> = {
   paginationRow: '{shown} av {total} kanaler har tablå i den här kategorin',
   showMoreN: 'Visa {n} fler',
   noEpgLast: 'Kanaler utan tablå visas sist',
+  timelineHint: 'Klicka var som helst i en rad för att öppna Grid vid den tiden',
   watchNowShort: 'Titta nu',
   favouriteShort: 'Favorit',
   detailEmpty: 'Markera ett program för att se detaljer',

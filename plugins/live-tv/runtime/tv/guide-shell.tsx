@@ -5,16 +5,16 @@ import { useTvMode } from '@/lib/plugin-sdk'
 import type { TvViewProps } from './tv-shell'
 import { useTvClockNode } from './tv-ui'
 import { useTvText } from './tv-strings'
-import { setGuideMode, setTvSettings, useGuideMode, useTvSettings, type GuideMode } from './tv-settings-store'
+import { setGuideMode, setTvSettings, useGuideMode, useTvSettings } from './tv-settings-store'
 import { desktopGuideMode, type DesktopGuideMode } from './guide-surface'
 import { guideWindowStart } from './epg-grid-geometry'
 import { startOfLocalDay } from '../live-tv-model'
 import { FAVS_GROUP, useGuideGroups } from './tv-guide-shared'
 import { TvChoicePanel, type ChoiceOption } from './tv-list-picker'
 import { GuideControlRow } from './guide-control-row'
-import { TvGuideGrid } from './tv-guide-grid'
 import { GuideGridView } from './guide-grid-view'
 import { GuideNowNextView } from './guide-nownext-view'
+import { GuideTimelineView } from './guide-timeline-view'
 import type { GuideSelection, GuideViewProps } from './guide-types'
 
 /**
@@ -25,13 +25,11 @@ import type { GuideSelection, GuideViewProps } from './guide-types'
  *
  * Importerar ALDRIG `tv-guide.tsx` (som importerar hit): vyerna hämtar sina
  * typer ur `guide-types.ts`. Grid är `GuideGridView` (Task 3), Now / Next
- * är `GuideNowNextView` (Task 4, bannern styrs av `settings.nowNextDetails`);
- * Timeline-platshållaren är tills vidare dagens `TvGuideGrid`
- * (`tv-guide-grid.tsx` importerar inte `tv-guide.tsx`, så ingen cykel) och
- * får sin riktiga vy i en senare task.
+ * är `GuideNowNextView` (Task 4, bannern styrs av `settings.nowNextDetails`),
+ * Timeline är `GuideTimelineView` (Task 5, zoomen ur `settings.timelineZoom`;
+ * en rad där hoppar till Grid vid den klickade tiden via `openGridAt`).
  */
-export function TvGuideShell(props: TvViewProps) {
-  const { model, nav } = props
+export function TvGuideShell({ model, nav }: TvViewProps) {
   const { tt, locale } = useTvText()
   const isTv = useTvMode()
   const clock = useTvClockNode(locale)
@@ -90,6 +88,15 @@ export function TvGuideShell(props: TvViewProps) {
   const [panel, setPanel] = useState<'source' | 'category' | null>(null)
 
   const jumpToNow = () => { setDayOffset(0); setWindowStart(guideWindowStart(model.nowMs)) }
+  // Timeline → Grid vid en tidpunkt: samma lägesbyte som segmentet (lagring +
+  // lägesstack, så Bakåt tar en tillbaka till Timeline) med fönstret på
+  // tidpunktens halvtimme. Dagen behålls: Timelines fönster låg redan på
+  // rätt dag, och `effectiveWindowStart` nedan skriver över med Imorgons
+  // 06:00 bara när `dayOffset === 1` — då landar Grid på dagens början.
+  const openGridAt = (atMs: number) => {
+    setWindowStart(guideWindowStart(atMs))
+    changeMode('grid')
+  }
 
   // Källväljaren: Alla + modellens spellistor, med antal.
   const sourceOptions: ChoiceOption[] = useMemo(() => [
@@ -109,10 +116,6 @@ export function TvGuideShell(props: TvViewProps) {
   const categoryLabel = category === null ? tt('categoryAll') : groups.find((g) => g.key === category)?.label ?? tt('categoryAll')
   const categoryCount = categoryOptions.find((o) => o.key === category)?.count ?? model.channels.length
 
-  // Platshållarnas gamla segment skriver dagens nycklar — normalisera dem
-  // in i skalets läge så att stacken och lagringen förblir konsekventa.
-  const legacyModeChange = (next: GuideMode) => changeMode(desktopGuideMode(next))
-
   // Vyernas gemensamma props. Imorgon (`dayOffset === 1`) börjar fönstret
   // 06:00 nästa lokala dag — ingen halvtimmesjustering behövs där, dagens
   // `windowStart` ligger kvar i state och tas tillbaka av Idag/Nu.
@@ -123,7 +126,7 @@ export function TvGuideShell(props: TvViewProps) {
     ? <GuideNowNextView {...viewProps} details={settings.nowNextDetails} />
     : mode === 'grid'
       ? <GuideGridView {...viewProps} />
-      : <TvGuideGrid {...props} mode={mode} onModeChange={legacyModeChange} />
+      : <GuideTimelineView {...viewProps} zoom={settings.timelineZoom} onOpenGrid={openGridAt} />
 
   return (
     <div data-testid="guide-shell" data-guide-mode={mode} style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
