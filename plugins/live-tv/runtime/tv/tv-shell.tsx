@@ -332,10 +332,16 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     // utan den här nivån stängde ett klick vyn BAKOM en öppen meny och lämnade
     // menyn hängande över en ny sida.
     if (menu) { setMenu(null); return }
+    // PIN-grinden ligger över spelaren (den öppnas utan att röra `active`).
+    if (pending) { setPending(null); return }
+    // Spelaren äger Bakåt före lagren. Vyernas lager (guidens lägesstack,
+    // listornas nivå 2) står KVAR registrerade medan spelaren är öppen —
+    // av- och återregistrering runt uppspelningen kastade om deras ordning
+    // (barnets effekt kör före förälderns), så Bakåt efter spelningen hoppade
+    // fel nivå. Här stängs spelaren först; lagren rörs inte.
+    if (active) { setActive(null); return }
     const top = layersRef.current[layersRef.current.length - 1]
     if (top) { top(); return }
-    if (pending) { setPending(null); return }
-    if (active) { setActive(null); return }
     if (view === 'channel') { go('guide'); return }
     if (view !== 'hub') { go('hub'); return }
     requestBrowseBack()
@@ -419,7 +425,8 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     return () => { buffer.dispose(); zapRef.current = null }
   }, [])
   useEffect(() => {
-    if (!settings.numericZap) return
+    // Telefonen har inga sifferknappar för zapp (systemtangentbordet skriver i fält).
+    if (!settings.numericZap || phone) return
     const onKey = (event: KeyboardEvent) => {
       if (menu || layersRef.current.length > 0) return
       const target = event.target as HTMLElement | null
@@ -440,7 +447,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     }
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
-  }, [settings.numericZap, menu, zapDigits])
+  }, [settings.numericZap, menu, zapDigits, phone])
 
   // Starta på senaste kanalen: bara när hubben öppnas utan parametrar.
   const startedRef = useRef(false)

@@ -46,7 +46,7 @@ export function MobileSheet({ title, subtitle, art, body, items, onClose, pushLa
         data-live-tv-layer=""
         data-panel-root=""
         style={{
-          position: 'fixed', left: 8, right: 8, bottom: 8, zIndex: 71, borderRadius: 26,
+          position: 'fixed', left: 8, right: 8, bottom: 8, zIndex: 71, borderRadius: 26, boxSizing: 'border-box',
           background: MT.sheet, border: `1px solid ${MT.line10}`,
           boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 24px 64px rgba(0,0,0,0.6)',
           color: MT.text, fontFamily: MT.font, overflow: 'hidden', paddingBottom: MT.SAFE_BOTTOM,

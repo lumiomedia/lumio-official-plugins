@@ -47,13 +47,14 @@ export function TvGuideListsPhone({ model, nav, mode, onModeChange }: TvViewProp
    * Nivå 2 är ett lager i skalets Bakåt-kedja: svep höger/Escape/Bakåt
    * poppar lagret (tillbaka till nivå 1) i stället för att lämna guiden.
    * `nav` byter identitet varje omrender (minuttick), så ref:en håller
-   * effekten still — den registrerar en gång per öppning. Spelaren äger
-   * Bakåt helt medan den är öppen (den ligger EFTER lagren i skalets kedja),
-   * annars hade Bakåt ur spelaren stängt nivå 2 bakom den.
+   * effekten still — den registrerar en gång per öppning. Lagret står kvar
+   * medan spelaren är öppen: skalets `back()` stänger spelaren FÖRE lagren,
+   * och en av-/återregistrering runt uppspelningen hade kastat om
+   * lagerordningen mot guidens eget lager (barnets effekt kör först).
    */
   const navRef = useRef(nav)
   useEffect(() => { navRef.current = nav })
-  const claimBack = path !== null && !nav.playerOpen
+  const claimBack = path !== null
   useEffect(() => {
     if (!claimBack) return
     return navRef.current.pushLayer(() => setPath(null))

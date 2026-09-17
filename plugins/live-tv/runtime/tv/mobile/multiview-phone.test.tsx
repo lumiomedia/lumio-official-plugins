@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
-import { writePluginJson } from '@/lib/plugin-sdk'
+import { act, fireEvent, screen, waitFor } from '@testing-library/react'
+import { TV_SCENE_PHONE_ATTR, writePluginJson } from '@/lib/plugin-sdk'
 import { LIVE_TV_PLUGIN_ID, channelKey } from '../../live-tv-data'
 import { MULTIVIEW_KEY, getMultiviewState } from '../tv-multiview-store'
 import { mountPhone, phoneChannel, phoneList } from './__phone-mount'
@@ -64,5 +64,19 @@ describe('Multivy på telefon', () => {
     await mountMulti()
     fireEvent.click(screen.getAllByTestId('mv-tile')[1])
     expect(getMultiviewState().audioIndex).toBe(1)
+  })
+
+  // Slutgranskningen: `phone` kan slå om vid körning (rotation). Telefon- och
+  // skrivbordsgrenen är två komponenter, så bytet får inte ge "rendered more
+  // hooks" — skrivbordets ljudhjälp ska bara dyka upp.
+  it('phone-flaggan slår om vid körning utan hook-krasch (telefon → skrivbord)', async () => {
+    await mountMulti()
+    const box = document.querySelector<HTMLElement>(`[${TV_SCENE_PHONE_ATTR}]`)!
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect(() => { act(() => { box.removeAttribute(TV_SCENE_PHONE_ATTR) }) }).not.toThrow()
+    await waitFor(() => expect(screen.getByTestId('mv-audio-help')).toBeInTheDocument())
+    expect(screen.queryByTestId('multiview-phone')).toBeNull()
+    expect(errors.mock.calls.some((c) => String(c[0]).includes('hooks'))).toBe(false)
+    errors.mockRestore()
   })
 })

@@ -31,7 +31,16 @@ export function TvFavouritesPhone({ model, nav }: TvViewProps) {
   const { dragging, offsetY, handleProps } = useDragReorder({
     count: favourites.length,
     rowHeight: ROW_HEIGHT,
-    onCommit: (from, to) => setPinnedLiveTvKeys(reorder(model.pinnedKeys, from, to)),
+    // `from`/`to` indexerar de UPPLÖSTA favoriterna, men lagringen är
+    // `pinnedKeys` som kan ha nycklar utan kanal (spellista borta). Flytten
+    // översätts därför till nyckelindex — annars flyttas fel rad.
+    onCommit: (from, to) => {
+      const keys = model.pinnedKeys
+      const fi = keys.indexOf(channelKey(favourites[from]!))
+      const ti = keys.indexOf(channelKey(favourites[to]!))
+      if (fi < 0 || ti < 0) return
+      setPinnedLiveTvKeys(reorder(keys, fi, ti))
+    },
   })
 
   const pill = (

@@ -13,8 +13,18 @@ import { searchChannels, suggestions } from './tv-search-logic'
 import { useProgrammeSearch } from '../hooks/useProgrammeSearch'
 import { TvSearchPhone } from './mobile/search-phone'
 
+/**
+ * Tidig gren för telefonen: ett EGET komponentträd, inte en `if` inne i
+ * skrivbordsvyn (samma mönster som `TvPlayerChrome`). `phone` läses ur lådans
+ * bredd och kan slå om vid körning (rotation, fönster som breddas); två
+ * separata komponenter monteras om rent, och grenen själv anropar inga krokar
+ * — så kan ingen krok hamna före returen och ge "rendered more/fewer hooks".
+ */
 export function TvSearch(props: TvViewProps) {
-  if (props.phone) return <TvSearchPhone {...props} />
+  return props.phone ? <TvSearchPhone {...props} /> : <TvSearchDesktop {...props} />
+}
+
+function TvSearchDesktop(props: TvViewProps) {
   const { model, nav } = props
   const { tt, locale } = useTvText()
   const tvMode = useTvMode()

@@ -63,9 +63,11 @@ export function TvGuide(props: TvViewProps) {
   useEffect(() => { navRef.current = nav })
   const popRef = useRef(popMode)
   useEffect(() => { popRef.current = popMode })
-  // Spelaren äger Back helt medan den är öppen — guiden får inte stjäla det
-  // trycket och byta läge bakom spelaren.
-  const claimBack = modeStack.length > 0 && !nav.playerOpen
+  // Lagret står kvar medan spelaren är öppen: skalets `back()` stänger
+  // spelaren FÖRE lagren, så guiden kan inte stjäla trycket — och en av-/
+  // återregistrering runt uppspelningen hade kastat om ordningen mot
+  // listornas nivå 2-lager (barnets effekt kör före förälderns).
+  const claimBack = modeStack.length > 0
   useEffect(() => {
     if (!claimBack) return
     return navRef.current.pushLayer(() => popRef.current())

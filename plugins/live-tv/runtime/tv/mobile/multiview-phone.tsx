@@ -78,7 +78,7 @@ export function TvMultiviewPhone({ model, nav }: TvViewProps) {
         <MobileHeader
           title={tt('multiview')}
           right={
-            <div data-testid="mv-swap" {...station(swap)} style={{ height: 36, padding: '0 16px', borderRadius: 999, background: MT.s10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+            <div data-testid="mv-swap" {...station(swap)} style={{ minHeight: 36, padding: '0 16px', borderRadius: 999, background: MT.s10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
               {tt('swap')}
             </div>
           }
@@ -127,10 +127,10 @@ export function TvMultiviewPhone({ model, nav }: TvViewProps) {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-        <div data-testid="mv-change-channel" {...station(() => openPicker(state.audioIndex))} style={{ height: 46, borderRadius: 12, background: MT.s08, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+        <div data-testid="mv-change-channel" {...station(() => openPicker(state.audioIndex))} style={{ minHeight: 46, borderRadius: 12, background: MT.s08, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
           {tt('changeChannel')}
         </div>
-        <div data-testid="mv-fullscreen" {...station(() => { if (audioChannel) nav.play({ channel: audioChannel }) })} style={{ height: 46, borderRadius: 12, background: MT.s08, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+        <div data-testid="mv-fullscreen" {...station(() => { if (audioChannel) nav.play({ channel: audioChannel }) })} style={{ minHeight: 46, borderRadius: 12, background: MT.s08, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
           {tt('menuFullscreen')}
         </div>
       </div>

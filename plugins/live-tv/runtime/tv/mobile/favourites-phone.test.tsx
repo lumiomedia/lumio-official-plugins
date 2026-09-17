@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { fireEvent, screen } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor } from '@testing-library/react'
+import { TV_SCENE_PHONE_ATTR } from '@/lib/plugin-sdk'
 import { channelKey, getPinnedLiveTvKeys } from '../../live-tv-data'
 import { mountPhone, phoneChannel } from './__phone-mount'
 
@@ -58,6 +59,20 @@ describe('Favoriter på telefon', () => {
     expect(getPinnedLiveTvKeys()).toEqual([twoPins[1], twoPins[0]])
   })
 
+  // Slutgranskningen: en fäst nyckel utan upplöst kanal (spellistan borta) får
+  // inte förskjuta draget — flytten går mot nyckelindex, inte radindex.
+  it('drag med oupplöst fäst nyckel flyttar rätt nyckel', async () => {
+    const ghost = 'ghost::http://x/ghost'
+    mountPhone({ view: 'favs' }, { pins: [twoPins[0], ghost, twoPins[1]] })
+    fireEvent.click(await screen.findByText('Edit'))
+    expect(screen.getAllByTestId('fav-row')).toHaveLength(2)
+    const handle = screen.getAllByTestId('fav-handle')[0]
+    fireEvent.pointerDown(handle, { clientY: 0, pointerId: 1 })
+    fireEvent.pointerMove(window, { clientY: 200 })
+    fireEvent.pointerUp(window)
+    expect(getPinnedLiveTvKeys()).toEqual([ghost, twoPins[1], twoPins[0]])
+  })
+
   it('tomt läge: centrerad tomtext utan fjärrkontrollsord', async () => {
     const { box } = mountPhone({ view: 'favs' }, { pins: [] })
     expect(await screen.findByText('No favourites yet. Add channels from the guide.')).toBeInTheDocument()
@@ -69,5 +84,19 @@ describe('Favoriter på telefon', () => {
     const { box } = mountPhone({ view: 'favs' }, { pins: twoPins })
     await screen.findAllByTestId('fav-row')
     expect(box.textContent).not.toMatch(/\bOK\b|håll|hold OK/)
+  })
+
+  // Slutgranskningen: `phone` kan slå om vid körning (rotation). Telefon- och
+  // skrivbordsgrenen är två komponenter, så bytet får inte ge "rendered more
+  // hooks" — skrivbordets kort ska bara dyka upp.
+  it('phone-flaggan slår om vid körning utan hook-krasch (telefon → skrivbord)', async () => {
+    const { box } = mountPhone({ view: 'favs' }, { pins: twoPins })
+    await screen.findAllByTestId('fav-row')
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect(() => { act(() => { box.removeAttribute(TV_SCENE_PHONE_ATTR) }) }).not.toThrow()
+    await waitFor(() => expect(screen.getAllByTestId('fav-card')).toHaveLength(2))
+    expect(screen.queryByTestId('fav-row')).toBeNull()
+    expect(errors.mock.calls.some((c) => String(c[0]).includes('hooks'))).toBe(false)
+    errors.mockRestore()
   })
 })

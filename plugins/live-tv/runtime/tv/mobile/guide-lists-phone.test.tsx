@@ -1,12 +1,26 @@
 import { describe, expect, it, vi } from 'vitest'
-import { fireEvent, screen, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { flushLiveTvIndex } from '../../../src/__test-stubs__/live-tv-index'
 import { computeGroups, type LiveTvList } from '../../live-tv-data'
 import { mountPhone, phoneChannel, phoneList, phonePins } from './__phone-mount'
+import { getGuideMode } from '../tv-settings-store'
 
 // Spelaren (runtime/live-tv-player, två steg upp) mockas till en markör så
-// att "tryck på rad spelar" kan läsas av.
-vi.mock('../../live-tv-player', () => ({ LiveTvPlayer: ({ channel }: { channel: { name: string } }) => <div data-testid="player">{channel.name}</div> }))
+// att "tryck på rad spelar" kan läsas av. Som den riktiga spelaren äger
+// markören Escape medan den är monterad (skalet står tillbaka) och ropar
+// `onClose` — Bakåt-kedjan efter uppspelning testas nedan.
+vi.mock('../../live-tv-player', async () => {
+  const { useEffect } = await import('react')
+  const LiveTvPlayer = ({ channel, onClose }: { channel: { name: string }; onClose: () => void }) => {
+    useEffect(() => {
+      const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') { event.stopPropagation(); onClose() } }
+      window.addEventListener('keydown', onKey, true)
+      return () => window.removeEventListener('keydown', onKey, true)
+    }, [onClose])
+    return <div data-testid="player">{channel.name}</div>
+  }
+  return { LiveTvPlayer }
+})
 
 /** Guiden i spellistläget: fixturen är l1 "Xtream" med A, B (Sport) + C (News), A pinnad. */
 const mountLists = async (opts: Parameters<typeof mountPhone>[1] = {}) => {
@@ -172,6 +186,31 @@ describe('Guiden · Lists på telefon — nivå 2 (drill-down)', () => {
     fireEvent.click(screen.getByTestId('lists-group-l1-News'))
     fireEvent.click((await screen.findAllByTestId('guide-row'))[0])
     expect(await screen.findByTestId('player')).toHaveTextContent('C')
+  })
+
+  // Slutgranskningen: guidens lägeslager (Now → Lists) och nivå 2-lagret
+  // ligger båda i skalets kedja. Av-/återregistrering runt uppspelningen
+  // kastade om deras ordning (barnets effekt kör först), så Bakåt efter
+  // spelningen bytte läge i stället för att stänga nivå 2. Nu står lagren
+  // kvar och spelaren stängs före dem.
+  it('Bakåt efter uppspelning i nivå 2 går till nivå 1, inte tillbaka till Now', async () => {
+    const { onNavigate } = mountPhone({ view: 'guide' })
+    await flushLiveTvIndex()
+    fireEvent.click(await screen.findByText('Lists'))
+    await screen.findByTestId('lists-phone')
+    expect(getGuideMode()).toBe('playlists')
+    fireEvent.click(screen.getByTestId('lists-group-l1-News'))
+    await screen.findByTestId('lists-level2-header')
+    fireEvent.click((await screen.findAllByTestId('guide-row'))[0])
+    expect(await screen.findByTestId('player')).toHaveTextContent('C')
+    fireEvent.keyDown(window, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByTestId('player')).toBeNull())
+    expect(screen.getByTestId('lists-level2-header')).toBeInTheDocument()
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(await screen.findByTestId('lists-filter')).toBeInTheDocument()
+    expect(screen.queryByTestId('lists-level2-header')).toBeNull()
+    expect(getGuideMode()).toBe('playlists')
+    expect(onNavigate).not.toHaveBeenCalled()
   })
 
   it('Visa fler sidindelar en stor kategori i steg om 40', async () => {

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, fireEvent, screen } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import { mountPhone } from './__phone-mount'
+import { TV_SCENE_PHONE_ATTR } from '@/lib/plugin-sdk'
 
 // Spelaren (runtime/live-tv-player, två steg upp) mockas till en markör —
 // sök öppnar kanaldetalj/spelare via `nav.openChannel`, inte direkt play.
@@ -44,5 +45,19 @@ describe('Sök på telefon', () => {
     const { box } = mountPhone({ view: 'search' })
     await screen.findByTestId('search-input')
     expect(box.textContent).not.toMatch(/\bOK\b|håll|hold OK/)
+  })
+
+  // Slutgranskningen: `phone` kan slå om vid körning (rotation). Telefon- och
+  // skrivbordsgrenen är två komponenter, så bytet får inte ge "rendered more
+  // hooks" — skrivbordsvyn ska bara dyka upp.
+  it('phone-flaggan slår om vid körning utan hook-krasch (telefon → skrivbord)', async () => {
+    const { box } = mountPhone({ view: 'search' })
+    await screen.findByTestId('search-phone')
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect(() => { act(() => { box.removeAttribute(TV_SCENE_PHONE_ATTR) }) }).not.toThrow()
+    await waitFor(() => expect(screen.getByTestId('search-view-root')).toBeInTheDocument())
+    expect(screen.queryByTestId('search-phone')).toBeNull()
+    expect(errors.mock.calls.some((c) => String(c[0]).includes('hooks'))).toBe(false)
+    errors.mockRestore()
   })
 })

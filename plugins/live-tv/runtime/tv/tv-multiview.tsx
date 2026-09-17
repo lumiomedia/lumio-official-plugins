@@ -20,8 +20,18 @@ const GRID: Record<MultiviewLayout, { columns: string; rows: string }> = {
 /** Smal yta (spec §8.5 / plan P10): två rutor staplade lodrätt i stället för sida vid sida. */
 const NARROW_GRID = { columns: '1fr', rows: '1fr 1fr' }
 
+/**
+ * Tidig gren för telefonen: ett EGET komponentträd, inte en `if` inne i
+ * skrivbordsvyn (samma mönster som `TvPlayerChrome`). `phone` läses ur lådans
+ * bredd och kan slå om vid körning (rotation, fönster som breddas); två
+ * separata komponenter monteras om rent, och grenen själv anropar inga krokar
+ * — så kan ingen krok hamna före returen och ge "rendered more/fewer hooks".
+ */
 export function TvMultiview(props: TvViewProps) {
-  if (props.phone) return <TvMultiviewPhone {...props} />
+  return props.phone ? <TvMultiviewPhone {...props} /> : <TvMultiviewDesktop {...props} />
+}
+
+function TvMultiviewDesktop(props: TvViewProps) {
   const { model, nav } = props
   const { tt } = useTvText()
   const state = useMultiviewState()

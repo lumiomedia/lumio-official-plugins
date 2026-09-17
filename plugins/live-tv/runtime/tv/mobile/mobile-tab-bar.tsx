@@ -30,7 +30,7 @@ export function MobileTabBar({ view, onGo, onMore }: { view: TvView; onGo: (view
       data-testid="mobile-tab-bar"
       aria-label={tt('liveTv')}
       style={{
-        position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 50,
+        position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 50, boxSizing: 'border-box',
         height: `calc(${MT.TAB_BAR}px + ${MT.SAFE_BOTTOM})`, paddingBottom: MT.SAFE_BOTTOM,
         borderTop: `1px solid ${MT.line08}`,
         background: 'linear-gradient(180deg, transparent, rgba(0,0,0,0.92) 45%)',

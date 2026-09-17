@@ -13,8 +13,18 @@ function escapeKey(key: string): string {
   return typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(key) : key.replace(/"/g, '\\"')
 }
 
+/**
+ * Tidig gren för telefonen: ett EGET komponentträd, inte en `if` inne i
+ * skrivbordsvyn (samma mönster som `TvPlayerChrome`). `phone` läses ur lådans
+ * bredd och kan slå om vid körning (rotation, fönster som breddas); två
+ * separata komponenter monteras om rent, och grenen själv anropar inga krokar
+ * — så kan ingen krok hamna före returen och ge "rendered more/fewer hooks".
+ */
 export function TvFavourites(props: TvViewProps) {
-  if (props.phone) return <TvFavouritesPhone {...props} />
+  return props.phone ? <TvFavouritesPhone {...props} /> : <TvFavouritesDesktop {...props} />
+}
+
+function TvFavouritesDesktop(props: TvViewProps) {
   const { model, nav } = props
   const { tt, locale } = useTvText()
   const favourites = model.favouriteChannels
