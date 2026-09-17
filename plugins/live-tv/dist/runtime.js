@@ -1634,7 +1634,6 @@
   var TRANSPARENT_PROPERTIES, NATIVE_SURFACES_ATTRIBUTE, holds, restore;
   var init_transparent_webview = __esm({
     "lib/transparent-webview.ts"() {
-      "use strict";
       TRANSPARENT_PROPERTIES = [
         { property: "background-color", value: "transparent" },
         { property: "background-image", value: "none" }
@@ -193072,6 +193071,7 @@ ${cue.text}`).join("\n\n")}
             bottom: 8,
             zIndex: 71,
             borderRadius: 26,
+            boxSizing: "border-box",
             background: MT.sheet,
             border: `1px solid ${MT.line10}`,
             boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08), 0 24px 64px rgba(0,0,0,0.6)",
@@ -199226,7 +199226,7 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       navRef.current = nav;
     });
-    const claimBack = path !== null && !nav.playerOpen;
+    const claimBack = path !== null;
     useEffect(() => {
       if (!claimBack) return;
       return navRef.current.pushLayer(() => setPath(null));
@@ -199994,7 +199994,7 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       popRef.current = popMode;
     });
-    const claimBack = modeStack.length > 0 && !nav.playerOpen;
+    const claimBack = modeStack.length > 0;
     useEffect(() => {
       if (!claimBack) return;
       return navRef.current.pushLayer(() => popRef.current());
@@ -200287,7 +200287,16 @@ ${cue.text}`).join("\n\n")}
     const { dragging, offsetY, handleProps } = useDragReorder({
       count: favourites.length,
       rowHeight: ROW_HEIGHT,
-      onCommit: (from, to) => setPinnedLiveTvKeys(reorder(model.pinnedKeys, from, to))
+      // `from`/`to` indexerar de UPPLÖSTA favoriterna, men lagringen är
+      // `pinnedKeys` som kan ha nycklar utan kanal (spellista borta). Flytten
+      // översätts därför till nyckelindex — annars flyttas fel rad.
+      onCommit: (from, to) => {
+        const keys3 = model.pinnedKeys;
+        const fi = keys3.indexOf(channelKey(favourites[from]));
+        const ti = keys3.indexOf(channelKey(favourites[to]));
+        if (fi < 0 || ti < 0) return;
+        setPinnedLiveTvKeys(reorder(keys3, fi, ti));
+      }
     });
     const pill = /* @__PURE__ */ jsx(
       "div",
@@ -200370,7 +200379,9 @@ ${cue.text}`).join("\n\n")}
     return typeof CSS !== "undefined" && CSS.escape ? CSS.escape(key) : key.replace(/"/g, '\\"');
   }
   function TvFavourites(props) {
-    if (props.phone) return /* @__PURE__ */ jsx(TvFavouritesPhone, { ...props });
+    return props.phone ? /* @__PURE__ */ jsx(TvFavouritesPhone, { ...props }) : /* @__PURE__ */ jsx(TvFavouritesDesktop, { ...props });
+  }
+  function TvFavouritesDesktop(props) {
     const { model, nav } = props;
     const { tt, locale } = useTvText();
     const favourites = model.favouriteChannels;
@@ -201258,7 +201269,9 @@ ${cue.text}`).join("\n\n")}
   // ../../../lumio-official-plugins/.worktrees/mobile-phase3/plugins/live-tv/runtime/tv/tv-search.tsx
   init_jsx_runtime_shim();
   function TvSearch(props) {
-    if (props.phone) return /* @__PURE__ */ jsx(TvSearchPhone, { ...props });
+    return props.phone ? /* @__PURE__ */ jsx(TvSearchPhone, { ...props }) : /* @__PURE__ */ jsx(TvSearchDesktop, { ...props });
+  }
+  function TvSearchDesktop(props) {
     const { model, nav } = props;
     const { tt, locale } = useTvText();
     const tvMode = useTvMode();
@@ -201441,7 +201454,7 @@ ${cue.text}`).join("\n\n")}
         MobileHeader,
         {
           title: tt("multiview"),
-          right: /* @__PURE__ */ jsx("div", { "data-testid": "mv-swap", ...station(swap), style: { height: 36, padding: "0 16px", borderRadius: 999, background: MT.s10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 600, cursor: "pointer" }, children: tt("swap") })
+          right: /* @__PURE__ */ jsx("div", { "data-testid": "mv-swap", ...station(swap), style: { minHeight: 36, padding: "0 16px", borderRadius: 999, background: MT.s10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 600, cursor: "pointer" }, children: tt("swap") })
         }
       ) }),
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: 6, fontSize: 13 }, children: [
@@ -201489,10 +201502,10 @@ ${cue.text}`).join("\n\n")}
         );
       }) }),
       /* @__PURE__ */ jsxs("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }, children: [
-        /* @__PURE__ */ jsx("div", { "data-testid": "mv-change-channel", ...station(() => openPicker(state.audioIndex)), style: { height: 46, borderRadius: 12, background: MT.s08, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 600, cursor: "pointer" }, children: tt("changeChannel") }),
+        /* @__PURE__ */ jsx("div", { "data-testid": "mv-change-channel", ...station(() => openPicker(state.audioIndex)), style: { minHeight: 46, borderRadius: 12, background: MT.s08, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 600, cursor: "pointer" }, children: tt("changeChannel") }),
         /* @__PURE__ */ jsx("div", { "data-testid": "mv-fullscreen", ...station(() => {
           if (audioChannel) nav.play({ channel: audioChannel });
-        }), style: { height: 46, borderRadius: 12, background: MT.s08, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 600, cursor: "pointer" }, children: tt("menuFullscreen") })
+        }), style: { minHeight: 46, borderRadius: 12, background: MT.s08, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 600, cursor: "pointer" }, children: tt("menuFullscreen") })
       ] }),
       pickerTile !== null ? /* @__PURE__ */ jsx(
         MobileSheet,
@@ -201573,7 +201586,9 @@ ${cue.text}`).join("\n\n")}
   };
   var NARROW_GRID = { columns: "1fr", rows: "1fr 1fr" };
   function TvMultiview(props) {
-    if (props.phone) return /* @__PURE__ */ jsx(TvMultiviewPhone, { ...props });
+    return props.phone ? /* @__PURE__ */ jsx(TvMultiviewPhone, { ...props }) : /* @__PURE__ */ jsx(TvMultiviewDesktop, { ...props });
+  }
+  function TvMultiviewDesktop(props) {
     const { model, nav } = props;
     const { tt } = useTvText();
     const state = useMultiviewState();
@@ -202599,6 +202614,7 @@ ${cue.text}`).join("\n\n")}
           right: 0,
           bottom: 0,
           zIndex: 50,
+          boxSizing: "border-box",
           height: `calc(${MT.TAB_BAR}px + ${MT.SAFE_BOTTOM})`,
           paddingBottom: MT.SAFE_BOTTOM,
           borderTop: `1px solid ${MT.line08}`,
@@ -202800,17 +202816,17 @@ ${cue.text}`).join("\n\n")}
         setMenu(null);
         return;
       }
-      const top = layersRef.current[layersRef.current.length - 1];
-      if (top) {
-        top();
-        return;
-      }
       if (pending2) {
         setPending(null);
         return;
       }
       if (active2) {
         setActive(null);
+        return;
+      }
+      const top = layersRef.current[layersRef.current.length - 1];
+      if (top) {
+        top();
         return;
       }
       if (view === "channel") {
@@ -202869,7 +202885,7 @@ ${cue.text}`).join("\n\n")}
       };
     }, []);
     useEffect(() => {
-      if (!settings.numericZap) return;
+      if (!settings.numericZap || phone) return;
       const onKey = (event) => {
         if (menu || layersRef.current.length > 0) return;
         const target2 = event.target;
@@ -202888,7 +202904,7 @@ ${cue.text}`).join("\n\n")}
       };
       window.addEventListener("keydown", onKey, true);
       return () => window.removeEventListener("keydown", onKey, true);
-    }, [settings.numericZap, menu, zapDigits]);
+    }, [settings.numericZap, menu, zapDigits, phone]);
     const startedRef = useRef(false);
     useEffect(() => {
       if (startedRef.current || !settings.startOnLastChannel || view !== "hub" || params?.url) return;
