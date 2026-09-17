@@ -190,11 +190,12 @@ describe('TvGuideShell (TV-läge)', () => {
     expect(getTvSettings().nowNextDetails).toBe(false)
   })
 
-  it('zoomsegmentet i Timeline skriver timelineZoom', async () => {
+  it('Tablå = Grid utan detaljpanel: ingen zoomväxel, inget guide-detail-panel', async () => {
     writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'timeline')
     await mount()
-    fireEvent.click(screen.getByText('2 h'))
-    expect(getTvSettings().timelineZoom).toBe('2h')
+    expect(screen.queryByText('2 h')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('guide-detail-panel')).not.toBeInTheDocument()
+    expect(screen.getByTestId('grid-scroll')).toBeInTheDocument()
   })
 })
 

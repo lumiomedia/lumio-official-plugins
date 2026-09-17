@@ -40,10 +40,10 @@ describe('GuideControlRow', () => {
     expect(screen.getByTestId('guide-control-row').style.height).toBe(`${gp(56)}px`)
   })
 
-  it('Timeline: zoomsegmentet ligger efter lägessegmentet, före klockan', () => {
+  it('Tablå: ingen zoomväxel (Tablå = Grid utan detaljpanel) — Nu · läge · klocka', () => {
     render(<GuideControlRow {...base({ mode: 'timeline', onNow: () => {}, zoom: '6h', onZoom: () => {} })} />)
     const ids = order().filter((id) => ['guide-now', 'guide-mode', 'guide-zoom', 'guide-details', 'clock-node'].includes(id ?? ''))
-    expect(ids).toEqual(['guide-now', 'guide-mode', 'guide-zoom', 'clock-node'])
+    expect(ids).toEqual(['guide-now', 'guide-mode', 'clock-node'])
     expect(screen.queryByTestId('guide-details')).not.toBeInTheDocument()
   })
 
@@ -89,8 +89,8 @@ describe('GuideControlRow', () => {
     expect(onMode).toHaveBeenCalledWith('nownext')
     fireEvent.click(screen.getByText('Tomorrow'))
     expect(onDay).toHaveBeenCalledWith(1)
-    fireEvent.click(screen.getByText('2 h'))
-    expect(onZoom).toHaveBeenCalledWith('2h')
+    expect(screen.queryByText('2 h')).not.toBeInTheDocument()
+    expect(onZoom).not.toHaveBeenCalled()
     fireEvent.click(screen.getByTestId('guide-now'))
     expect(onNow).toHaveBeenCalledTimes(1)
     // Aktiv "Today" är vit yta med mörk text (handoffen).

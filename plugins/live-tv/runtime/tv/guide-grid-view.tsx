@@ -57,7 +57,7 @@ function gridWindow(nowMs: number, dayOffset: 0 | 1): { start: number; end: numb
   return { start: guideWindowStart(nowMs) - HALF_HOUR_MS, end: startOfLocalDay(nowMs, 1) + 6 * 3_600_000 }
 }
 
-export function GuideGridView({ model, nav, category, dayOffset, windowStart, nowTick, selection, onSelect, isTv }: GuideViewProps): JSX.Element {
+export function GuideGridView({ model, nav, category, dayOffset, windowStart, nowTick, selection, onSelect, isTv, detailPanel = true }: GuideViewProps & { detailPanel?: boolean }): JSX.Element {
   const { tt, locale } = useTvText()
   const { nowMs } = model
   const { start: gridStart, end: gridEnd } = gridWindow(nowMs, dayOffset)
@@ -269,17 +269,21 @@ export function GuideGridView({ model, nav, category, dayOffset, windowStart, no
         )}
       </div>
 
-      <GuideDetailPanel
-        selection={selection}
-        nowMs={nowMs}
-        locale={locale}
-        channelNumber={selection ? model.channelNumber(selection.channel) : null}
-        favourite={selection ? model.pinnedSet.has(channelKey(selection.channel)) : false}
-        reminded={selection?.programme ? isReminded(selection.channel, selection.programme) : false}
-        onWatch={() => { if (selection) nav.play({ channel: selection.channel }) }}
-        onRemind={() => { if (selection?.programme) toggle(selection.channel, selection.programme) }}
-        onToggleFavourite={() => { if (selection) model.togglePin(selection.channel) }}
-      />
+      {/* Tablå-läget (Jerry 2026-09-17) = Grid utan detaljpanelen: samma
+          täthet, rader och nu-position, hela bredden åt spåret. */}
+      {detailPanel ? (
+        <GuideDetailPanel
+          selection={selection}
+          nowMs={nowMs}
+          locale={locale}
+          channelNumber={selection ? model.channelNumber(selection.channel) : null}
+          favourite={selection ? model.pinnedSet.has(channelKey(selection.channel)) : false}
+          reminded={selection?.programme ? isReminded(selection.channel, selection.programme) : false}
+          onWatch={() => { if (selection) nav.play({ channel: selection.channel }) }}
+          onRemind={() => { if (selection?.programme) toggle(selection.channel, selection.programme) }}
+          onToggleFavourite={() => { if (selection) model.togglePin(selection.channel) }}
+        />
+      ) : null}
     </div>
   )
 }

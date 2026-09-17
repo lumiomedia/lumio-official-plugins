@@ -14,7 +14,6 @@ import { TvChoicePanel, type ChoiceOption } from './tv-list-picker'
 import { GuideControlRow } from './guide-control-row'
 import { GuideGridView } from './guide-grid-view'
 import { GuideNowNextView } from './guide-nownext-view'
-import { GuideTimelineView } from './guide-timeline-view'
 import type { GuideSelection, GuideViewProps } from './guide-types'
 
 /**
@@ -26,8 +25,8 @@ import type { GuideSelection, GuideViewProps } from './guide-types'
  * Importerar ALDRIG `tv-guide.tsx` (som importerar hit): vyerna hämtar sina
  * typer ur `guide-types.ts`. Grid är `GuideGridView` (Task 3), Now / Next
  * är `GuideNowNextView` (Task 4, bannern styrs av `settings.nowNextDetails`),
- * Timeline är `GuideTimelineView` (Task 5, zoomen ur `settings.timelineZoom`;
- * en rad där hoppar till Grid vid den klickade tiden via `openGridAt`).
+ * Tablå (`timeline`) är samma `GuideGridView` utan detaljpanelen (Jerry
+ * 2026-09-17) — samma täthet och nu-position, hela bredden åt spåret.
  */
 export function TvGuideShell({ model, nav, params }: TvViewProps) {
   const { tt, locale } = useTvText()
@@ -113,16 +112,6 @@ export function TvGuideShell({ model, nav, params }: TvViewProps) {
   // Grid scrollar till nu-linjen på VARJE Nu-tryck, inte bara när state byts.
   const [nowTick, setNowTick] = useState(0)
   const jumpToNow = () => { setDayOffset(0); setWindowStart(guideWindowStart(model.nowMs)); setNowTick((n) => n + 1) }
-  // Timeline → Grid vid en tidpunkt: samma lägesbyte som segmentet (lagring +
-  // lägesstack, så Bakåt tar en tillbaka till Timeline) med fönstret på
-  // tidpunktens halvtimme. Dagen följer tidpunkten, så en klickad tid på
-  // Imorgon ger Imorgon i dagsegmentet OCH axeln på den tiden.
-  const openGridAt = (atMs: number) => {
-    setWindowStart(guideWindowStart(atMs))
-    setDayOffset(atMs >= startOfLocalDay(model.nowMs, 1) ? 1 : 0)
-    changeMode('grid')
-  }
-
   // Källväljaren: Alla + modellens spellistor, med antal.
   const sourceOptions: ChoiceOption[] = useMemo(() => [
     { key: null, label: tt('sourceAll'), count: model.allChannels.length },
@@ -148,7 +137,7 @@ export function TvGuideShell({ model, nav, params }: TvViewProps) {
     ? <GuideNowNextView {...viewProps} details={settings.nowNextDetails} />
     : mode === 'grid'
       ? <GuideGridView {...viewProps} />
-      : <GuideTimelineView {...viewProps} zoom={settings.timelineZoom} onOpenGrid={openGridAt} />
+      : <GuideGridView {...viewProps} detailPanel={false} />
 
   return (
     <div data-testid="guide-shell" data-guide-mode={mode} style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
@@ -164,8 +153,6 @@ export function TvGuideShell({ model, nav, params }: TvViewProps) {
         dayOffset={dayOffset}
         onDay={changeDay}
         onNow={jumpToNow}
-        zoom={settings.timelineZoom}
-        onZoom={(z) => setTvSettings({ timelineZoom: z })}
         details={settings.nowNextDetails}
         onDetails={() => setTvSettings({ nowNextDetails: !settings.nowNextDetails })}
         clock={clock}

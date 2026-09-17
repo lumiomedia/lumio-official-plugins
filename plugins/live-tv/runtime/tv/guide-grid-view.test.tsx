@@ -77,7 +77,9 @@ describe('GuideGridView (TV-läge)', () => {
   it('tidsaxeln har en etikett var 30:e minut från halvtimmen före nu till i morgon 06:00', async () => {
     await mount()
     const labels = screen.getAllByTestId('grid-time-label')
-    expect(labels.length).toBeGreaterThanOrEqual(20)
+    // Fönstret slutar 06:00 i morgon, så antalet 30-min-etiketter beror på
+    // klockslaget: minst 2 × 6 h + 1 = 13 (kl 23:30), som mest ≈ 61 (kl 00:00).
+    expect(labels.length).toBeGreaterThanOrEqual(13)
     expect(labels[0]).toHaveTextContent(formatClock(gridStart, 'en-GB'))
     expect(labels[1]).toHaveTextContent(formatClock(gridStart + 30 * 60_000, 'en-GB'))
     expect(Number(labels[labels.length - 1].getAttribute('data-ms'))).toBeLessThan(startOfLocalDay(now, 1) + 6 * 3_600_000)

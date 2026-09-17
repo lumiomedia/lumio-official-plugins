@@ -102,7 +102,8 @@ export function GuideControlRow(props: GuideControls) {
   // ett dagsegment där vore en knapp som inte gör något.
   const showDay = mode !== 'nownext'
   const showNow = mode !== 'nownext'
-  const showZoom = mode === 'timeline'
+  // Tablå = Grid utan detaljpanel (Jerry 2026-09-17): ingen zoomväxel längre.
+  const showZoom = false
   const showDetails = mode === 'nownext'
   return (
     <div data-testid="guide-control-row" style={{ height: gp(56), minHeight: gp(56), padding: `0 ${gp(20)}px`, display: 'flex', alignItems: 'center', gap: gp(10), borderBottom: `1px solid ${TV.line}`, flexShrink: 0, boxSizing: 'border-box' }}>
