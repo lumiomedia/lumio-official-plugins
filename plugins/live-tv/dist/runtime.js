@@ -199071,6 +199071,57 @@ ${cue.text}`).join("\n\n")}
   init_react_shim();
   init_live_tv_model();
   init_tv_ui();
+
+  // ../../../lumio-official-plugins/.worktrees/desktop-epg/plugins/live-tv/runtime/tv/guide-view-shared.tsx
+  init_react_shim();
+  init_tv_ui();
+  init_tv_strings();
+  init_jsx_runtime_shim();
+  var ROWS_STEP = 80;
+  var HOVER_MS = 120;
+  var GUIDE_SCALE = 1.4;
+  function gp(n) {
+    return Math.round(n * GUIDE_SCALE);
+  }
+  var ellipsis2 = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
+  var initAttr = (on) => on ? { "data-init": "" } : void 0;
+  function withPointerLeave(props, onLeave) {
+    if (!onLeave) return props;
+    const own = props.onPointerLeave;
+    return { ...props, onPointerLeave: (event) => {
+      own?.(event);
+      onLeave();
+    } };
+  }
+  function useHoverSelect(enabled, onSelect) {
+    const timer = useRef(null);
+    const clear = () => {
+      if (timer.current !== null) window.clearTimeout(timer.current);
+      timer.current = null;
+    };
+    useEffect(() => clear, []);
+    if (!enabled) return { enter: void 0, leave: void 0 };
+    return {
+      enter: (sel) => {
+        clear();
+        timer.current = window.setTimeout(() => {
+          timer.current = null;
+          onSelect(sel);
+        }, HOVER_MS);
+      },
+      leave: clear
+    };
+  }
+  function GuidePaginationRow({ testId, shown, total, hasMore, onMore, hint }) {
+    const { tt } = useTvText();
+    return /* @__PURE__ */ jsxs("div", { "data-testid": `${testId}-pagination`, style: { height: gp(52), minHeight: gp(52), padding: `0 ${gp(20)}px`, display: "flex", alignItems: "center", gap: gp(14), borderTop: `1px solid ${TV.line}`, boxSizing: "border-box" }, children: [
+      /* @__PURE__ */ jsx("span", { style: { fontSize: gp(13), color: TV.dim, ...ellipsis2 }, children: tt("paginationRow", { shown, total }) }),
+      hasMore ? /* @__PURE__ */ jsx("div", { "data-testid": `${testId}-show-more`, ...station(onMore), style: { height: gp(32), minHeight: gp(32), padding: `0 ${gp(14)}px`, borderRadius: 999, background: TV.s10, display: "inline-flex", alignItems: "center", fontSize: gp(13), cursor: "pointer", flexShrink: 0 }, children: tt("showMoreN", { n: ROWS_STEP }) }) : null,
+      hint ? /* @__PURE__ */ jsx("span", { style: { marginLeft: "auto", fontSize: gp(13), color: "rgba(243,244,248,0.35)", ...ellipsis2 }, children: hint }) : null
+    ] });
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/desktop-epg/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
   init_jsx_runtime_shim();
   function useDebouncedChannel(channel, ms = 300) {
     const [value, setValue] = useState(channel);
@@ -199110,10 +199161,10 @@ ${cue.text}`).join("\n\n")}
       locked ? /* @__PURE__ */ jsx("span", { style: { color: "rgba(243,244,248,0.5)" }, children: /* @__PURE__ */ jsx(Icons.Lock, { size: dp(18) }) }) : null
     ] });
   }
-  var GUIDE_CELL_WIDTH = { grid: 240, nownext: 340, timeline: 240 };
+  var GUIDE_CELL_WIDTH = { grid: gp(240), nownext: gp(340), timeline: gp(240) };
   var GUIDE_ART_SIZE = {
-    grid: { width: 44, height: 28 },
-    nownext: { width: 48, height: 30 }
+    grid: { width: gp(44), height: gp(28) },
+    nownext: { width: gp(48), height: gp(30) }
   };
   function guideCellStyle(variant) {
     const width = GUIDE_CELL_WIDTH[variant];
@@ -199121,15 +199172,15 @@ ${cue.text}`).join("\n\n")}
   }
   function GuideChannelCell({ channel, number: number2, pinned, locked, variant }) {
     const art = variant === "timeline" ? null : GUIDE_ART_SIZE[variant];
-    return /* @__PURE__ */ jsxs("div", { "data-testid": "guide-cell", style: { ...guideCellStyle(variant), display: "flex", alignItems: "center", gap: 10, padding: "0 10px" }, children: [
-      /* @__PURE__ */ jsx("span", { style: { width: 26, flexShrink: 0, fontSize: 13, color: "rgba(243,244,248,0.45)", fontVariantNumeric: "tabular-nums", textAlign: "right" }, children: number2 ?? "" }),
-      art ? /* @__PURE__ */ jsx(ChannelArt, { channel, style: { width: art.width, flexShrink: 0 }, height: art.height, radius: 6 }) : null,
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "guide-cell", style: { ...guideCellStyle(variant), display: "flex", alignItems: "center", gap: gp(10), padding: `0 ${gp(10)}px` }, children: [
+      /* @__PURE__ */ jsx("span", { style: { width: gp(26), flexShrink: 0, fontSize: gp(13), color: "rgba(243,244,248,0.45)", fontVariantNumeric: "tabular-nums", textAlign: "right" }, children: number2 ?? "" }),
+      art ? /* @__PURE__ */ jsx(ChannelArt, { channel, style: { width: art.width, flexShrink: 0 }, height: art.height, radius: gp(6) }) : null,
       /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: 1 }, children: [
-        /* @__PURE__ */ jsx("div", { style: { fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: channel.name }),
-        variant !== "timeline" ? /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: "rgba(243,244,248,0.45)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: [channel.group, qualityFromName(channel.name)].filter(Boolean).join(" \xB7 ") }) : null
+        /* @__PURE__ */ jsx("div", { style: { fontSize: gp(14), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: channel.name }),
+        variant !== "timeline" ? /* @__PURE__ */ jsx("div", { style: { fontSize: gp(12), color: "rgba(243,244,248,0.45)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: [channel.group, qualityFromName(channel.name)].filter(Boolean).join(" \xB7 ") }) : null
       ] }),
-      pinned ? /* @__PURE__ */ jsx("span", { "data-testid": "guide-cell-pinned", style: { color: TV.acc, flexShrink: 0 }, children: /* @__PURE__ */ jsx(Icons.Heart, { size: 13, filled: true }) }) : null,
-      locked ? /* @__PURE__ */ jsx("span", { "data-testid": "guide-cell-locked", style: { color: "rgba(243,244,248,0.45)", flexShrink: 0 }, children: /* @__PURE__ */ jsx(Icons.Lock, { size: 13 }) }) : null
+      pinned ? /* @__PURE__ */ jsx("span", { "data-testid": "guide-cell-pinned", style: { color: TV.acc, flexShrink: 0 }, children: /* @__PURE__ */ jsx(Icons.Heart, { size: gp(13), filled: true }) }) : null,
+      locked ? /* @__PURE__ */ jsx("span", { "data-testid": "guide-cell-locked", style: { color: "rgba(243,244,248,0.45)", flexShrink: 0 }, children: /* @__PURE__ */ jsx(Icons.Lock, { size: gp(13) }) }) : null
     ] });
   }
 
@@ -199761,7 +199812,7 @@ ${cue.text}`).join("\n\n")}
   init_mobile_logo();
   init_jsx_runtime_shim();
   var MAX_ROWS = 80;
-  var ROWS_STEP = 80;
+  var ROWS_STEP2 = 80;
   var HALF_HOUR = 30 * 6e4;
   var TIME_ROW_H = 24;
   var BLOCK_TOP = 8;
@@ -199873,7 +199924,7 @@ ${cue.text}`).join("\n\n")}
             ] }, key);
           })
         ] }),
-        hasMore ? /* @__PURE__ */ jsx("div", { "data-testid": "show-more", ...station(() => setVisibleRows((count) => count + ROWS_STEP)), style: { position: "sticky", left: 0, margin: `16px 0 0 ${MT.PAD}px`, width: "fit-content", minHeight: MT.HIT, padding: "0 24px", borderRadius: 999, background: MT.s10, display: "flex", alignItems: "center", fontSize: 15, cursor: "pointer" }, children: tt("showMore") }) : null
+        hasMore ? /* @__PURE__ */ jsx("div", { "data-testid": "show-more", ...station(() => setVisibleRows((count) => count + ROWS_STEP2)), style: { position: "sticky", left: 0, margin: `16px 0 0 ${MT.PAD}px`, width: "fit-content", minHeight: MT.HIT, padding: "0 24px", borderRadius: 999, background: MT.s10, display: "flex", alignItems: "center", fontSize: 15, cursor: "pointer" }, children: tt("showMore") }) : null
       ] }) })
     ] });
   }
@@ -200289,11 +200340,11 @@ ${cue.text}`).join("\n\n")}
                 onPick(option.key);
                 close();
               }, void 0, index3 === initIndex ? { "data-init": "" } : void 0),
-              style: { height: 56, minHeight: 56, borderRadius: 10, display: "flex", alignItems: "center", gap: 12, padding: "0 12px", cursor: "pointer", background: on ? TV.s08 : "transparent" },
+              style: { height: gp(56), minHeight: gp(56), borderRadius: gp(10), display: "flex", alignItems: "center", gap: gp(12), padding: `0 ${gp(12)}px`, cursor: "pointer", background: on ? TV.s08 : "transparent" },
               children: [
                 /* @__PURE__ */ jsx(Check, { on, label: option.label }),
-                /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, fontSize: 15, fontWeight: on ? 600 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: option.label }),
-                option.count !== void 0 ? /* @__PURE__ */ jsx("span", { style: { fontSize: 14, color: TV.faint, flexShrink: 0 }, children: option.count }) : null
+                /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, fontSize: gp(15), fontWeight: on ? 600 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: option.label }),
+                option.count !== void 0 ? /* @__PURE__ */ jsx("span", { style: { fontSize: gp(14), color: TV.faint, flexShrink: 0 }, children: option.count }) : null
               ]
             },
             option.key ?? "__all"
@@ -200307,14 +200358,14 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
   init_jsx_runtime_shim();
-  var DROPDOWN = { height: 34, minHeight: 34, padding: "0 12px", borderRadius: 10, background: TV.s08, border: `1px solid ${TV.line}`, display: "inline-flex", alignItems: "center", gap: 8, maxWidth: 230, cursor: "pointer", flexShrink: 1, minWidth: 0 };
-  var SEGMENT = { display: "inline-flex", padding: 3, borderRadius: 999, background: TV.s07, flexShrink: 0, whiteSpace: "nowrap" };
-  var SEGMENT_BTN = { height: 28, minHeight: 28, padding: "0 16px", borderRadius: 999, display: "inline-flex", alignItems: "center", fontSize: 13, whiteSpace: "nowrap", cursor: "pointer" };
+  var DROPDOWN = { height: gp(34), minHeight: gp(34), padding: `0 ${gp(12)}px`, borderRadius: gp(10), background: TV.s08, border: `1px solid ${TV.line}`, display: "inline-flex", alignItems: "center", gap: gp(8), maxWidth: gp(230), cursor: "pointer", flexShrink: 1, minWidth: 0 };
+  var SEGMENT = { display: "inline-flex", padding: gp(3), borderRadius: 999, background: TV.s07, flexShrink: 0, whiteSpace: "nowrap" };
+  var SEGMENT_BTN = { height: gp(28), minHeight: gp(28), padding: `0 ${gp(16)}px`, borderRadius: 999, display: "inline-flex", alignItems: "center", fontSize: gp(13), whiteSpace: "nowrap", cursor: "pointer" };
   function Dropdown({ label: label2, count, onOpen, testId }) {
     return /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onOpen), style: DROPDOWN, title: label2, children: [
-      /* @__PURE__ */ jsx("span", { style: { fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }, children: label2 }),
-      /* @__PURE__ */ jsx("span", { style: { fontSize: 14, color: TV.faint, flexShrink: 0 }, children: count }),
-      /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { color: TV.faint, fontSize: 10, flexShrink: 0 }, children: "\u25BE" })
+      /* @__PURE__ */ jsx("span", { style: { fontSize: gp(14), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }, children: label2 }),
+      /* @__PURE__ */ jsx("span", { style: { fontSize: gp(14), color: TV.faint, flexShrink: 0 }, children: count }),
+      /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { color: TV.faint, fontSize: gp(10), flexShrink: 0 }, children: "\u25BE" })
     ] });
   }
   function ControlSegment({ options, value, onChange, testId, activeStyle }) {
@@ -200331,7 +200382,7 @@ ${cue.text}`).join("\n\n")}
       );
     }) });
   }
-  var Divider = () => /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { width: 1, height: 22, background: "rgba(255,255,255,0.1)", flexShrink: 0 } });
+  var Divider = () => /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { width: 1, height: gp(22), background: "rgba(255,255,255,0.1)", flexShrink: 0 } });
   function GuideControlRow(props) {
     const { tt } = useTvText();
     const { mode } = props;
@@ -200339,7 +200390,7 @@ ${cue.text}`).join("\n\n")}
     const showNow = mode !== "nownext";
     const showZoom = mode === "timeline";
     const showDetails = mode === "nownext";
-    return /* @__PURE__ */ jsxs("div", { "data-testid": "guide-control-row", style: { height: 56, minHeight: 56, padding: "0 20px", display: "flex", alignItems: "center", gap: 10, borderBottom: `1px solid ${TV.line}`, flexShrink: 0, boxSizing: "border-box" }, children: [
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "guide-control-row", style: { height: gp(56), minHeight: gp(56), padding: `0 ${gp(20)}px`, display: "flex", alignItems: "center", gap: gp(10), borderBottom: `1px solid ${TV.line}`, flexShrink: 0, boxSizing: "border-box" }, children: [
       /* @__PURE__ */ jsx(Dropdown, { testId: "guide-source", label: props.sourceLabel, count: props.sourceCount, onOpen: props.onOpenSource }),
       /* @__PURE__ */ jsx(Dropdown, { testId: "guide-category", label: props.categoryLabel, count: props.categoryCount, onOpen: props.onOpenCategory }),
       /* @__PURE__ */ jsx(Divider, {}),
@@ -200358,11 +200409,11 @@ ${cue.text}`).join("\n\n")}
         {
           "data-testid": "guide-now",
           ...station(() => props.onNow?.()),
-          style: { height: 34, minHeight: 34, padding: "0 14px", borderRadius: 999, display: "inline-flex", alignItems: "center", fontSize: 13, fontWeight: 600, background: TV.accMix(18), border: `1px solid ${TV.accMix(45)}`, color: TV.text, cursor: "pointer", flexShrink: 0 },
+          style: { height: gp(34), minHeight: gp(34), padding: `0 ${gp(14)}px`, borderRadius: 999, display: "inline-flex", alignItems: "center", fontSize: gp(13), fontWeight: 600, background: TV.accMix(18), border: `1px solid ${TV.accMix(45)}`, color: TV.text, cursor: "pointer", flexShrink: 0 },
           children: tt("gridNow")
         }
       ) : null,
-      /* @__PURE__ */ jsx("span", { style: { flex: 1 } }),
+      /* @__PURE__ */ jsx(Divider, {}),
       /* @__PURE__ */ jsx(
         ControlSegment,
         {
@@ -200381,20 +200432,20 @@ ${cue.text}`).join("\n\n")}
           onChange: (z) => props.onZoom?.(z)
         }
       ) : null,
-      /* @__PURE__ */ jsx(Divider, {}),
+      /* @__PURE__ */ jsx("span", { style: { flex: 1 } }),
       showDetails ? /* @__PURE__ */ jsxs(
         "div",
         {
           "data-testid": "guide-details",
           ...station(() => props.onDetails?.(), void 0, props.details ? { "data-active": "" } : void 0),
-          style: { height: 34, minHeight: 34, padding: "0 12px", borderRadius: 10, display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: props.details ? 600 : 400, background: props.details ? TV.s16 : TV.s08, border: `1px solid ${TV.line}`, color: props.details ? TV.text : TV.muted, cursor: "pointer", flexShrink: 0 },
+          style: { height: gp(34), minHeight: gp(34), padding: `0 ${gp(12)}px`, borderRadius: gp(10), display: "inline-flex", alignItems: "center", gap: gp(8), fontSize: gp(13), fontWeight: props.details ? 600 : 400, background: props.details ? TV.s16 : TV.s08, border: `1px solid ${TV.line}`, color: props.details ? TV.text : TV.muted, cursor: "pointer", flexShrink: 0 },
           children: [
-            /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { width: 8, height: 8, borderRadius: 999, background: props.details ? TV.acc : TV.faint } }),
+            /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { width: gp(8), height: gp(8), borderRadius: 999, background: props.details ? TV.acc : TV.faint } }),
             tt("details")
           ]
         }
       ) : null,
-      /* @__PURE__ */ jsx("div", { "data-testid": "guide-clock", style: { display: "inline-flex", alignItems: "center", fontSize: 13, color: TV.dim, letterSpacing: "0.06em", whiteSpace: "nowrap", flexShrink: 0 }, children: props.clock })
+      /* @__PURE__ */ jsx("div", { "data-testid": "guide-clock", style: { display: "inline-flex", alignItems: "center", fontSize: gp(13), color: TV.dim, letterSpacing: "0.06em", whiteSpace: "nowrap", flexShrink: 0 }, children: props.clock })
     ] });
   }
 
@@ -200411,7 +200462,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
   init_jsx_runtime_shim();
-  var DETAIL_PANEL_WIDTH_PX = 320;
+  var DETAIL_PANEL_WIDTH_PX = gp(320);
   function GuideDetailPanel({ selection, nowMs, locale, channelNumber, onWatch, onRemind, onToggleFavourite, favourite, reminded }) {
     const { tt } = useTvText();
     const frame2 = {
@@ -200420,50 +200471,50 @@ ${cue.text}`).join("\n\n")}
       minWidth: 0,
       boxSizing: "border-box",
       borderLeft: `1px solid ${TV.line}`,
-      padding: 20,
+      padding: gp(20),
       display: "flex",
       flexDirection: "column",
-      gap: 14,
+      gap: gp(14),
       overflow: "auto"
     };
     if (!selection) {
-      return /* @__PURE__ */ jsx("div", { "data-testid": "guide-detail-panel", style: frame2, children: /* @__PURE__ */ jsx("div", { style: { fontSize: 13, color: TV.faint, lineHeight: 1.5 }, children: tt("detailEmpty") }) });
+      return /* @__PURE__ */ jsx("div", { "data-testid": "guide-detail-panel", style: frame2, children: /* @__PURE__ */ jsx("div", { style: { fontSize: gp(13), color: TV.faint, lineHeight: 1.5 }, children: tt("detailEmpty") }) });
     }
     const { channel, programme } = selection;
     const live2 = programme !== null && programme.start <= nowMs && programme.stop > nowMs;
     const future = programme !== null && programme.start > nowMs;
     const minutesLeft = programme ? Math.max(0, Math.ceil((programme.stop - nowMs) / 6e4)) : 0;
     const timeLine = programme ? `${formatClock(programme.start, locale)}\u2013${formatClock(programme.stop, locale)}${live2 ? ` \xB7 ${tt("minutesLeft", { min: minutesLeft })}` : ""}` : "";
-    const secondary = { height: 38, flex: 1, minWidth: 0, borderRadius: 10, background: TV.s08, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 13, cursor: "pointer", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
+    const secondary = { height: gp(38), flex: 1, minWidth: 0, borderRadius: gp(10), background: TV.s08, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: gp(8), fontSize: gp(13), cursor: "pointer", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
     return /* @__PURE__ */ jsxs("div", { "data-testid": "guide-detail-panel", style: frame2, children: [
-      /* @__PURE__ */ jsx(ChannelArt, { channel, height: 180, radius: 12, style: { width: "100%" }, children: live2 ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", left: 12, bottom: 12 }, children: /* @__PURE__ */ jsx(Tag2, { variant: "live", style: { height: 24, padding: "0 10px", fontSize: 11 }, children: tt("live") }) }) : null }),
-      /* @__PURE__ */ jsx("div", { "data-testid": "detail-channel", style: { fontSize: 12, color: "rgba(243,244,248,0.45)", letterSpacing: "0.12em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: [channelNumber, channel.name].filter((part) => part !== null && part !== "").join(" \xB7 ") }),
-      /* @__PURE__ */ jsx("div", { "data-testid": "detail-title", style: { fontSize: 20, fontWeight: 600, lineHeight: 1.25, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }, children: programme ? programme.title : tt("noProgramme") }),
-      programme ? /* @__PURE__ */ jsx("div", { "data-testid": "detail-time", style: { fontSize: 13, color: "rgba(243,244,248,0.6)" }, children: timeLine }) : null,
-      live2 && programme ? /* @__PURE__ */ jsx(Progress, { value: progressOf(programme.start, programme.stop, nowMs), height: 4 }) : null,
-      programme ? /* @__PURE__ */ jsx("div", { "data-testid": "detail-description", "data-selectable-text": "", style: { fontSize: 13, color: TV.muted, lineHeight: 1.5 }, children: programme.description ?? "" }) : null,
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 8, marginTop: "auto" }, children: [
+      /* @__PURE__ */ jsx(ChannelArt, { channel, height: gp(180), radius: gp(12), style: { width: "100%" }, children: live2 ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", left: gp(12), bottom: gp(12) }, children: /* @__PURE__ */ jsx(Tag2, { variant: "live", style: { height: gp(24), padding: `0 ${gp(10)}px`, fontSize: gp(11) }, children: tt("live") }) }) : null }),
+      /* @__PURE__ */ jsx("div", { "data-testid": "detail-channel", style: { fontSize: gp(12), color: "rgba(243,244,248,0.45)", letterSpacing: "0.12em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: [channelNumber, channel.name].filter((part) => part !== null && part !== "").join(" \xB7 ") }),
+      /* @__PURE__ */ jsx("div", { "data-testid": "detail-title", style: { fontSize: gp(20), fontWeight: 600, lineHeight: 1.25, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }, children: programme ? programme.title : tt("noProgramme") }),
+      programme ? /* @__PURE__ */ jsx("div", { "data-testid": "detail-time", style: { fontSize: gp(13), color: "rgba(243,244,248,0.6)" }, children: timeLine }) : null,
+      live2 && programme ? /* @__PURE__ */ jsx(Progress, { value: progressOf(programme.start, programme.stop, nowMs), height: gp(4) }) : null,
+      programme ? /* @__PURE__ */ jsx("div", { "data-testid": "detail-description", "data-selectable-text": "", style: { fontSize: gp(13), color: TV.muted, lineHeight: 1.5 }, children: programme.description ?? "" }) : null,
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: gp(8), marginTop: "auto" }, children: [
         /* @__PURE__ */ jsxs(
           "div",
           {
             "data-testid": "detail-watch",
             ...station(onWatch),
-            style: { height: 40, borderRadius: 10, background: TV.acc, color: TV.onAcc, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" },
+            style: { height: gp(40), borderRadius: gp(10), background: TV.acc, color: TV.onAcc, display: "flex", alignItems: "center", justifyContent: "center", gap: gp(8), fontSize: gp(14), fontWeight: 600, cursor: "pointer" },
             children: [
-              /* @__PURE__ */ jsx(Icons.Play, { size: 14 }),
+              /* @__PURE__ */ jsx(Icons.Play, { size: gp(14) }),
               " ",
               tt("watchNowShort")
             ]
           }
         ),
-        /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 8 }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: gp(8) }, children: [
           future ? /* @__PURE__ */ jsxs("div", { "data-testid": "detail-remind", ...station(onRemind), style: { ...secondary, color: reminded ? TV.accText : TV.text }, ...reminded ? { "data-active": "" } : {}, children: [
-            /* @__PURE__ */ jsx(Icons.Bell, { size: 14, filled: reminded }),
+            /* @__PURE__ */ jsx(Icons.Bell, { size: gp(14), filled: reminded }),
             " ",
             reminded ? tt("reminderSet") : tt("remindMe")
           ] }) : null,
           /* @__PURE__ */ jsxs("div", { "data-testid": "detail-favourite", ...station(onToggleFavourite), style: { ...secondary, color: favourite ? TV.accText : TV.text }, ...favourite ? { "data-active": "" } : {}, children: [
-            /* @__PURE__ */ jsx(Icons.Heart, { size: 14, filled: favourite }),
+            /* @__PURE__ */ jsx(Icons.Heart, { size: gp(14), filled: favourite }),
             " ",
             tt("favouriteShort")
           ] })
@@ -200472,64 +200523,19 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/desktop-epg/plugins/live-tv/runtime/tv/guide-view-shared.tsx
-  init_react_shim();
-  init_tv_ui();
-  init_tv_strings();
-  init_jsx_runtime_shim();
-  var ROWS_STEP2 = 80;
-  var HOVER_MS = 120;
-  var ellipsis2 = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
-  var initAttr = (on) => on ? { "data-init": "" } : void 0;
-  function withPointerLeave(props, onLeave) {
-    if (!onLeave) return props;
-    const own = props.onPointerLeave;
-    return { ...props, onPointerLeave: (event) => {
-      own?.(event);
-      onLeave();
-    } };
-  }
-  function useHoverSelect(enabled, onSelect) {
-    const timer = useRef(null);
-    const clear = () => {
-      if (timer.current !== null) window.clearTimeout(timer.current);
-      timer.current = null;
-    };
-    useEffect(() => clear, []);
-    if (!enabled) return { enter: void 0, leave: void 0 };
-    return {
-      enter: (sel) => {
-        clear();
-        timer.current = window.setTimeout(() => {
-          timer.current = null;
-          onSelect(sel);
-        }, HOVER_MS);
-      },
-      leave: clear
-    };
-  }
-  function GuidePaginationRow({ testId, shown, total, hasMore, onMore, hint }) {
-    const { tt } = useTvText();
-    return /* @__PURE__ */ jsxs("div", { "data-testid": `${testId}-pagination`, style: { height: 52, minHeight: 52, padding: "0 20px", display: "flex", alignItems: "center", gap: 14, borderTop: `1px solid ${TV.line}`, boxSizing: "border-box" }, children: [
-      /* @__PURE__ */ jsx("span", { style: { fontSize: 13, color: TV.dim, ...ellipsis2 }, children: tt("paginationRow", { shown, total }) }),
-      hasMore ? /* @__PURE__ */ jsx("div", { "data-testid": `${testId}-show-more`, ...station(onMore), style: { height: 32, minHeight: 32, padding: "0 14px", borderRadius: 999, background: TV.s10, display: "inline-flex", alignItems: "center", fontSize: 13, cursor: "pointer", flexShrink: 0 }, children: tt("showMoreN", { n: ROWS_STEP2 }) }) : null,
-      hint ? /* @__PURE__ */ jsx("span", { style: { marginLeft: "auto", fontSize: 13, color: "rgba(243,244,248,0.35)", ...ellipsis2 }, children: hint }) : null
-    ] });
-  }
-
   // ../../../lumio-official-plugins/.worktrees/desktop-epg/plugins/live-tv/runtime/tv/guide-grid-view.tsx
   init_jsx_runtime_shim();
-  var ROW_H_PX = 60;
+  var ROW_H_PX = gp(60);
   var HALF_HOUR_MS2 = 30 * 6e4;
   function GuideGridView({ model, nav, category, dayOffset, windowStart, selection, onSelect, isTv }) {
     const { tt, locale } = useTvText();
     const { nowMs } = model;
     const windowEnd = windowStart + GRID_WINDOW_MS;
-    const [visibleRows, setVisibleRows] = useState(ROWS_STEP2);
+    const [visibleRows, setVisibleRows] = useState(ROWS_STEP);
     const [reminderTick, setReminderTick] = useState(0);
     void reminderTick;
     useEffect(() => {
-      setVisibleRows(ROWS_STEP2);
+      setVisibleRows(ROWS_STEP);
     }, [category, dayOffset, windowStart]);
     const { rows, withoutEpg, hasMore, schedulesLoading } = useGridRows(model, category, visibleRows, windowStart, windowEnd);
     const total = filterByGroup(model, category).length;
@@ -200578,9 +200584,9 @@ ${cue.text}`).join("\n\n")}
     const nothing = rows.length === 0 && (withoutEpg.length === 0 || schedulesLoading);
     return /* @__PURE__ */ jsxs("div", { "data-testid": "guide-grid-view", style: { flex: 1, minHeight: 0, display: "flex" }, children: [
       /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }, children: [
-        /* @__PURE__ */ jsxs("div", { "data-testid": "grid-time-axis", style: { height: 30, minHeight: 30, display: "flex", borderBottom: `1px solid ${TV.line}`, boxSizing: "border-box" }, children: [
+        /* @__PURE__ */ jsxs("div", { "data-testid": "grid-time-axis", style: { height: gp(30), minHeight: gp(30), display: "flex", borderBottom: `1px solid ${TV.line}`, boxSizing: "border-box" }, children: [
           /* @__PURE__ */ jsx("div", { style: guideCellStyle("grid") }),
-          labels.map((mark) => /* @__PURE__ */ jsx("div", { "data-testid": "grid-time-label", style: { flex: 1, minWidth: 0, borderLeft: "1px solid rgba(255,255,255,0.06)", paddingLeft: 8, display: "flex", alignItems: "center", fontSize: 11, color: "rgba(243,244,248,0.4)", letterSpacing: "0.06em", ...ellipsis2 }, children: formatClock(mark, locale) }, mark))
+          labels.map((mark) => /* @__PURE__ */ jsx("div", { "data-testid": "grid-time-label", style: { flex: 1, minWidth: 0, borderLeft: "1px solid rgba(255,255,255,0.06)", paddingLeft: gp(8), display: "flex", alignItems: "center", fontSize: gp(11), color: "rgba(243,244,248,0.4)", letterSpacing: "0.06em", ...ellipsis2 }, children: formatClock(mark, locale) }, mark))
         ] }),
         /* @__PURE__ */ jsxs("div", { "data-scroll": "", "data-testid": "grid-scroll", style: { flex: 1, minHeight: 0, overflow: "auto" }, children: [
           /* @__PURE__ */ jsx(
@@ -200589,7 +200595,7 @@ ${cue.text}`).join("\n\n")}
               "data-testid": "grid-empty",
               ...nothing ? station(() => {
               }, void 0, initAttr(true)) : {},
-              style: { display: nothing ? "block" : "none", margin: 20, padding: 20, borderRadius: 12, background: TV.s05, fontSize: 13, color: TV.faint, lineHeight: 1.5 },
+              style: { display: nothing ? "block" : "none", margin: gp(20), padding: gp(20), borderRadius: gp(12), background: TV.s05, fontSize: gp(13), color: TV.faint, lineHeight: 1.5 },
               children: model.channelsLoading ? tt("loadingChannels") : schedulesLoading ? tt("loadingGuide") : tt("guideEmpty")
             }
           ),
@@ -200643,7 +200649,7 @@ ${cue.text}`).join("\n\n")}
                     }, (element) => nav.channelMenu(channel, element), initAttr(initKey !== null && initKey.empty && index3 === 0)), hover2.leave),
                     onFocus: isTv ? () => onSelect(sel) : void 0,
                     onPointerEnter: hover2.enter ? () => hover2.enter?.(sel) : void 0,
-                    style: { flex: 1, minWidth: 0, display: "flex", alignItems: "center", padding: "0 12px", fontSize: 13, color: "rgba(243,244,248,0.4)", cursor: "pointer", ...ellipsis2 },
+                    style: { flex: 1, minWidth: 0, display: "flex", alignItems: "center", padding: `0 ${gp(12)}px`, fontSize: gp(13), color: "rgba(243,244,248,0.4)", cursor: "pointer", ...ellipsis2 },
                     children: tt("noEpgRow")
                   }
                 )
@@ -200651,11 +200657,11 @@ ${cue.text}`).join("\n\n")}
             }),
             /* @__PURE__ */ jsxs("div", { "aria-hidden": "true", style: { position: "absolute", top: 0, bottom: 0, left: guideCellStyle("grid").width, right: 0, display: "flex", pointerEvents: "none" }, children: [
               labels.map((mark) => /* @__PURE__ */ jsx("div", { style: { flex: 1, minWidth: 0, borderLeft: "1px solid rgba(255,255,255,0.06)" } }, mark)),
-              nowVisible ? /* @__PURE__ */ jsx("div", { "data-testid": "grid-now-line", style: { position: "absolute", top: 0, bottom: 0, left: `${nowLeft}%`, width: 2, background: TV.acc, boxShadow: `0 0 14px ${TV.accMix(55)}`, zIndex: 2 } }) : null
+              nowVisible ? /* @__PURE__ */ jsx("div", { "data-testid": "grid-now-line", style: { position: "absolute", top: 0, bottom: 0, left: `${nowLeft}%`, width: gp(2), background: TV.acc, boxShadow: `0 0 ${gp(14)}px ${TV.accMix(55)}`, zIndex: 2 } }) : null
             ] })
           ] })
         ] }),
-        nothing ? null : /* @__PURE__ */ jsx(GuidePaginationRow, { testId: "grid", shown: rows.length, total, hasMore, onMore: () => setVisibleRows((count) => count + ROWS_STEP2), hint: tt("noEpgLast") })
+        nothing ? null : /* @__PURE__ */ jsx(GuidePaginationRow, { testId: "grid", shown: rows.length, total, hasMore, onMore: () => setVisibleRows((count) => count + ROWS_STEP), hint: tt("noEpgLast") })
       ] }),
       /* @__PURE__ */ jsx(
         GuideDetailPanel,
@@ -200693,26 +200699,26 @@ ${cue.text}`).join("\n\n")}
         ...withPointerLeave(station(onOk, onHold, init ? { "data-init": "" } : void 0), onLeave),
         onFocus,
         onPointerEnter: onEnter,
-        style: { position: "absolute", top: 6, bottom: 6, left: `${box.left}%`, width: `${box.width}%`, paddingRight: 2, boxSizing: "border-box", cursor: "pointer" },
+        style: { position: "absolute", top: gp(6), bottom: gp(6), left: `${box.left}%`, width: `${box.width}%`, paddingRight: gp(2), boxSizing: "border-box", cursor: "pointer" },
         children: /* @__PURE__ */ jsx(
           "div",
           {
             style: {
               height: "100%",
               boxSizing: "border-box",
-              borderRadius: marker ? 0 : 8,
-              padding: marker ? 0 : "8px 10px",
+              borderRadius: marker ? 0 : gp(8),
+              padding: marker ? 0 : `${gp(8)}px ${gp(10)}px`,
               background: marker ? TV.acc : live2 ? "rgba(59,130,246,0.18)" : TV.s05,
               border: live2 ? "1px solid rgba(59,130,246,0.5)" : "1px solid transparent",
-              outline: selected ? `2px solid ${TV.accMix(60)}` : void 0,
-              outlineOffset: -2,
+              outline: selected ? `${gp(2)}px solid ${TV.accMix(60)}` : void 0,
+              outlineOffset: -gp(2),
               overflow: "hidden",
               position: "relative"
             },
             children: marker ? null : /* @__PURE__ */ jsxs(Fragment2, { children: [
-              /* @__PURE__ */ jsx("div", { style: { fontSize: 13, fontWeight: live2 ? 600 : 400, color: live2 ? TV.text : TV.muted, paddingRight: reminded ? 14 : 0, ...ellipsis2 }, children: programme.title }),
-              box.shape === "full" ? /* @__PURE__ */ jsx("div", { style: { fontSize: 11, color: live2 ? "rgba(243,244,248,0.6)" : TV.faint, ...ellipsis2 }, children: times }) : null,
-              reminded ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", right: 4, top: 4, color: TV.acc }, children: /* @__PURE__ */ jsx(Icons.Bell, { size: 11, filled: true }) }) : null
+              /* @__PURE__ */ jsx("div", { style: { fontSize: gp(13), fontWeight: live2 ? 600 : 400, color: live2 ? TV.text : TV.muted, paddingRight: reminded ? gp(14) : 0, ...ellipsis2 }, children: programme.title }),
+              box.shape === "full" ? /* @__PURE__ */ jsx("div", { style: { fontSize: gp(11), color: live2 ? "rgba(243,244,248,0.6)" : TV.faint, ...ellipsis2 }, children: times }) : null,
+              reminded ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", right: gp(4), top: gp(4), color: TV.acc }, children: /* @__PURE__ */ jsx(Icons.Bell, { size: gp(11), filled: true }) }) : null
             ] })
           }
         )
@@ -200729,19 +200735,19 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
   init_jsx_runtime_shim();
-  var ROW_H_PX2 = 56;
+  var ROW_H_PX2 = gp(56);
   var CELL = guideCellStyle("nownext");
   var COL_WEIGHTS = [2, 1.2, 1];
   var COL_LINE = "1px solid rgba(255,255,255,0.06)";
-  var colStyle = (weight) => ({ flex: `${weight} 1 0%`, minWidth: 0, borderRight: COL_LINE, boxSizing: "border-box", padding: "0 12px", display: "flex", alignItems: "center", gap: 10 });
+  var colStyle = (weight) => ({ flex: `${weight} 1 0%`, minWidth: 0, borderRight: COL_LINE, boxSizing: "border-box", padding: `0 ${gp(12)}px`, display: "flex", alignItems: "center", gap: gp(10) });
   function GuideNowNextView({ model, nav, category, selection, onSelect, isTv, details }) {
     const { tt, locale } = useTvText();
     const { nowMs } = model;
-    const [visibleRows, setVisibleRows] = useState(ROWS_STEP2);
+    const [visibleRows, setVisibleRows] = useState(ROWS_STEP);
     const [reminderTick, setReminderTick] = useState(0);
     void reminderTick;
     useEffect(() => {
-      setVisibleRows(ROWS_STEP2);
+      setVisibleRows(ROWS_STEP);
     }, [category]);
     const { channels: modelChannels, favouriteChannels, nowFor } = model;
     const channels = useMemo(() => filterByGroup({ channels: modelChannels, favouriteChannels }, category), [modelChannels, favouriteChannels, category]);
@@ -200806,8 +200812,8 @@ ${cue.text}`).join("\n\n")}
           onRemind: (programme) => toggle(subject.channel, programme)
         }
       ) : null,
-      /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-header", style: { height: 30, minHeight: 30, display: "flex", alignItems: "stretch", borderBottom: `1px solid ${TV.line}`, boxSizing: "border-box", fontSize: 11, color: "rgba(243,244,248,0.4)", letterSpacing: "0.12em" }, children: [
-        /* @__PURE__ */ jsx("div", { "data-testid": "nownext-header-channel", style: { ...CELL, display: "flex", alignItems: "center", padding: "0 10px", borderRight: COL_LINE }, children: tt("colChannel") }),
+      /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-header", style: { height: gp(30), minHeight: gp(30), display: "flex", alignItems: "stretch", borderBottom: `1px solid ${TV.line}`, boxSizing: "border-box", fontSize: gp(11), color: "rgba(243,244,248,0.4)", letterSpacing: "0.12em" }, children: [
+        /* @__PURE__ */ jsx("div", { "data-testid": "nownext-header-channel", style: { ...CELL, display: "flex", alignItems: "center", padding: `0 ${gp(10)}px`, borderRight: COL_LINE }, children: tt("colChannel") }),
         ["colNow", "colNext", "colLater"].map((key, index3) => /* @__PURE__ */ jsx("div", { "data-testid": "nownext-header-col", style: colStyle(COL_WEIGHTS[index3]), children: tt(key) }, key))
       ] }),
       /* @__PURE__ */ jsxs("div", { "data-scroll": "", "data-testid": "nownext-scroll", style: { flex: 1, minHeight: 0, overflow: "auto" }, children: [
@@ -200817,7 +200823,7 @@ ${cue.text}`).join("\n\n")}
             "data-testid": "nownext-empty",
             ...initTarget === "empty" ? station(() => {
             }, void 0, initAttr(true)) : {},
-            style: { display: nothing ? "block" : "none", margin: 20, padding: 20, borderRadius: 12, background: TV.s05, fontSize: 13, color: TV.faint, lineHeight: 1.5 },
+            style: { display: nothing ? "block" : "none", margin: gp(20), padding: gp(20), borderRadius: gp(12), background: TV.s05, fontSize: gp(13), color: TV.faint, lineHeight: 1.5 },
             children: model.channelsLoading ? tt("loadingChannels") : model.epgLoading ? tt("loadingGuide") : tt("guideEmpty")
           }
         ),
@@ -200828,10 +200834,10 @@ ${cue.text}`).join("\n\n")}
             return /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-row", ...rowProps(channel, now3, initTarget === "row" && index3 === 0), style: rowStyle(channel, false), children: [
               cell(channel),
               /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-now", style: colStyle(COL_WEIGHTS[0]), children: [
-                /* @__PURE__ */ jsx("div", { title: now3.title, style: { flex: 1, minWidth: 0, fontSize: 14, ...ellipsis2 }, children: now3.title }),
-                /* @__PURE__ */ jsxs("div", { style: { width: 90, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }, children: [
-                  /* @__PURE__ */ jsx(Progress, { value: progressOf(now3.start, now3.stop, nowMs), height: 4, style: { width: "100%" } }),
-                  /* @__PURE__ */ jsx("span", { style: { fontSize: 11, color: "rgba(243,244,248,0.5)", fontVariantNumeric: "tabular-nums" }, children: tt("minShort", { min: minutesLeft }) })
+                /* @__PURE__ */ jsx("div", { title: now3.title, style: { flex: 1, minWidth: 0, fontSize: gp(14), ...ellipsis2 }, children: now3.title }),
+                /* @__PURE__ */ jsxs("div", { style: { width: gp(90), flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: gp(4) }, children: [
+                  /* @__PURE__ */ jsx(Progress, { value: progressOf(now3.start, now3.stop, nowMs), height: gp(4), style: { width: "100%" } }),
+                  /* @__PURE__ */ jsx("span", { style: { fontSize: gp(11), color: "rgba(243,244,248,0.5)", fontVariantNumeric: "tabular-nums" }, children: tt("minShort", { min: minutesLeft }) })
                 ] })
               ] }),
               /* @__PURE__ */ jsx(UpcomingCell, { testId: "nownext-next", programme: info.next, locale, titleColor: "rgba(243,244,248,0.75)", timeColor: "rgba(243,244,248,0.45)", weight: COL_WEIGHTS[1] }),
@@ -200840,10 +200846,10 @@ ${cue.text}`).join("\n\n")}
           }),
           emptyRows.map((channel, index3) => /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-empty-row", ...rowProps(channel, null, initTarget === "row" && rows.length === 0 && index3 === 0), style: rowStyle(channel, true), children: [
             cell(channel),
-            /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-empty-cell", style: { flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 14, padding: "0 12px" }, children: [
-              /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, fontSize: 13, color: "rgba(243,244,248,0.4)", ...ellipsis2 }, children: tt("noEpgRow") }),
-              /* @__PURE__ */ jsxs("span", { "data-testid": "nownext-watch-pill", style: { height: 26, padding: "0 12px", borderRadius: 999, background: TV.s08, display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, flexShrink: 0 }, children: [
-                /* @__PURE__ */ jsx(Icons.Play, { size: 10 }),
+            /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-empty-cell", style: { flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: gp(14), padding: `0 ${gp(12)}px` }, children: [
+              /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, fontSize: gp(13), color: "rgba(243,244,248,0.4)", ...ellipsis2 }, children: tt("noEpgRow") }),
+              /* @__PURE__ */ jsxs("span", { "data-testid": "nownext-watch-pill", style: { height: gp(26), padding: `0 ${gp(12)}px`, borderRadius: 999, background: TV.s08, display: "inline-flex", alignItems: "center", gap: gp(6), fontSize: gp(12), flexShrink: 0 }, children: [
+                /* @__PURE__ */ jsx(Icons.Play, { size: gp(10) }),
                 " ",
                 tt("watchNowShort")
               ] })
@@ -200851,13 +200857,13 @@ ${cue.text}`).join("\n\n")}
           ] }, channelKey(channel)))
         ] })
       ] }),
-      nothing ? null : /* @__PURE__ */ jsx(GuidePaginationRow, { testId: "nownext", shown: rows.length, total: channels.length, hasMore, onMore: () => setVisibleRows((count) => count + ROWS_STEP2) })
+      nothing ? null : /* @__PURE__ */ jsx(GuidePaginationRow, { testId: "nownext", shown: rows.length, total: channels.length, hasMore, onMore: () => setVisibleRows((count) => count + ROWS_STEP) })
     ] });
   }
   function UpcomingCell({ testId, programme, locale, titleColor, timeColor, weight }) {
     return /* @__PURE__ */ jsx("div", { "data-testid": testId, style: colStyle(weight), children: programme ? /* @__PURE__ */ jsxs(Fragment2, { children: [
-      /* @__PURE__ */ jsx("div", { title: programme.title, style: { flex: 1, minWidth: 0, fontSize: 13, color: titleColor, ...ellipsis2 }, children: programme.title }),
-      /* @__PURE__ */ jsx("span", { style: { fontSize: 12, color: timeColor, flexShrink: 0, fontVariantNumeric: "tabular-nums" }, children: formatClock(programme.start, locale) })
+      /* @__PURE__ */ jsx("div", { title: programme.title, style: { flex: 1, minWidth: 0, fontSize: gp(13), color: titleColor, ...ellipsis2 }, children: programme.title }),
+      /* @__PURE__ */ jsx("span", { style: { fontSize: gp(12), color: timeColor, flexShrink: 0, fontVariantNumeric: "tabular-nums" }, children: formatClock(programme.start, locale) })
     ] }) : null });
   }
   function NowNextBanner({ selection, info, nowMs, locale, channelNumber, init, onWatch, onRemind }) {
@@ -200874,34 +200880,34 @@ ${cue.text}`).join("\n\n")}
       {
         "data-testid": testId,
         ...station(onOk, void 0, extra),
-        style: { height, minHeight: height, padding: "0 16px", borderRadius: 10, background: accent ? TV.acc : TV.s08, color: accent ? TV.onAcc : TV.text, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: accent ? 14 : 13, fontWeight: accent ? 600 : 400, cursor: "pointer", whiteSpace: "nowrap" },
+        style: { height, minHeight: height, padding: `0 ${gp(16)}px`, borderRadius: gp(10), background: accent ? TV.acc : TV.s08, color: accent ? TV.onAcc : TV.text, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: gp(8), fontSize: accent ? gp(14) : gp(13), fontWeight: accent ? 600 : 400, cursor: "pointer", whiteSpace: "nowrap" },
         children
       }
     );
-    return /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-banner", style: { display: "flex", gap: 20, padding: "18px 20px", borderBottom: `1px solid ${TV.line}`, background: "rgba(252,252,255,0.03)", alignItems: "center" }, children: [
-      /* @__PURE__ */ jsx(ChannelArt, { channel, height: 112, radius: 10, style: { width: 200, flexShrink: 0, border: "1px solid rgba(255,255,255,0.08)", boxSizing: "border-box" }, children: live2 ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", left: 10, bottom: 10 }, children: /* @__PURE__ */ jsx(Tag2, { variant: "live", style: { height: 22, padding: "0 9px", fontSize: 11 }, children: tt("live") }) }) : null }),
-      /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }, children: [
-        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, minWidth: 0 }, children: [
-          channelNumber !== null ? /* @__PURE__ */ jsx("span", { style: { fontSize: 13, color: "rgba(243,244,248,0.45)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }, children: channelNumber }) : null,
-          /* @__PURE__ */ jsx("span", { "data-testid": "nownext-banner-channel", style: { fontSize: 13, color: TV.muted, minWidth: 0, ...ellipsis2 }, children: channel.name }),
-          meta ? /* @__PURE__ */ jsx(Tag2, { variant: "neutral", style: { height: 22, padding: "0 9px", fontSize: 11, borderRadius: 7, background: TV.s08, flexShrink: 0 }, children: meta }) : null
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-banner", style: { display: "flex", gap: gp(20), padding: `${gp(18)}px ${gp(20)}px`, borderBottom: `1px solid ${TV.line}`, background: "rgba(252,252,255,0.03)", alignItems: "center" }, children: [
+      /* @__PURE__ */ jsx(ChannelArt, { channel, height: gp(112), radius: gp(10), style: { width: gp(200), flexShrink: 0, border: "1px solid rgba(255,255,255,0.08)", boxSizing: "border-box" }, children: live2 ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", left: gp(10), bottom: gp(10) }, children: /* @__PURE__ */ jsx(Tag2, { variant: "live", style: { height: gp(22), padding: `0 ${gp(9)}px`, fontSize: gp(11) }, children: tt("live") }) }) : null }),
+      /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: gp(6) }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: gp(8), minWidth: 0 }, children: [
+          channelNumber !== null ? /* @__PURE__ */ jsx("span", { style: { fontSize: gp(13), color: "rgba(243,244,248,0.45)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }, children: channelNumber }) : null,
+          /* @__PURE__ */ jsx("span", { "data-testid": "nownext-banner-channel", style: { fontSize: gp(13), color: TV.muted, minWidth: 0, ...ellipsis2 }, children: channel.name }),
+          meta ? /* @__PURE__ */ jsx(Tag2, { variant: "neutral", style: { height: gp(22), padding: `0 ${gp(9)}px`, fontSize: gp(11), borderRadius: gp(7), background: TV.s08, flexShrink: 0 }, children: meta }) : null
         ] }),
-        /* @__PURE__ */ jsx("div", { "data-testid": "nownext-banner-title", style: { fontSize: 22, fontWeight: 600, lineHeight: 1.2, ...ellipsis2 }, children: programme ? programme.title : tt("noProgramme") }),
-        programme ? /* @__PURE__ */ jsx("div", { "data-testid": "nownext-banner-time", style: { fontSize: 13, color: "rgba(243,244,248,0.6)", ...ellipsis2 }, children: `${formatClock(programme.start, locale)}\u2013${formatClock(programme.stop, locale)}${live2 ? ` \xB7 ${tt("minutesLeft", { min: minutesLeft })}` : ""}` }) : null,
-        live2 && programme ? /* @__PURE__ */ jsx(Progress, { value: progressOf(programme.start, programme.stop, nowMs), height: 4, style: { maxWidth: 520 } }) : null,
-        next2 ? /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-banner-next", style: { fontSize: 13, ...ellipsis2 }, children: [
-          /* @__PURE__ */ jsx("span", { style: { color: "rgba(243,244,248,0.45)", marginRight: 8 }, children: tt("nextLabel") }),
+        /* @__PURE__ */ jsx("div", { "data-testid": "nownext-banner-title", style: { fontSize: gp(22), fontWeight: 600, lineHeight: 1.2, ...ellipsis2 }, children: programme ? programme.title : tt("noProgramme") }),
+        programme ? /* @__PURE__ */ jsx("div", { "data-testid": "nownext-banner-time", style: { fontSize: gp(13), color: "rgba(243,244,248,0.6)", ...ellipsis2 }, children: `${formatClock(programme.start, locale)}\u2013${formatClock(programme.stop, locale)}${live2 ? ` \xB7 ${tt("minutesLeft", { min: minutesLeft })}` : ""}` }) : null,
+        live2 && programme ? /* @__PURE__ */ jsx(Progress, { value: progressOf(programme.start, programme.stop, nowMs), height: gp(4), style: { maxWidth: gp(520) } }) : null,
+        next2 ? /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-banner-next", style: { fontSize: gp(13), ...ellipsis2 }, children: [
+          /* @__PURE__ */ jsx("span", { style: { color: "rgba(243,244,248,0.45)", marginRight: gp(8) }, children: tt("nextLabel") }),
           `${next2.title} \xB7 ${formatClock(next2.start, locale)}`
         ] }) : null
       ] }),
-      /* @__PURE__ */ jsxs("div", { style: { flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "stretch", gap: 8 }, children: [
-        button("nownext-banner-watch", 38, true, onWatch, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx(Icons.Play, { size: 14 }),
+      /* @__PURE__ */ jsxs("div", { style: { flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "stretch", gap: gp(8) }, children: [
+        button("nownext-banner-watch", gp(38), true, onWatch, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx(Icons.Play, { size: gp(14) }),
           " ",
           tt("watchNowShort")
         ] }), initAttr(init)),
-        next2 ? button("nownext-banner-remind", 34, false, () => onRemind(next2), /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx(Icons.Bell, { size: 14, filled: reminded }),
+        next2 ? button("nownext-banner-remind", gp(34), false, () => onRemind(next2), /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx(Icons.Bell, { size: gp(14), filled: reminded }),
           " ",
           reminded ? tt("reminderSet") : tt("remindMe")
         ] })) : null
@@ -200917,17 +200923,17 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
   init_jsx_runtime_shim();
-  var ROW_H_PX3 = 40;
-  var AXIS_H_PX = 30;
-  var FOOTER_H_PX = 48;
+  var ROW_H_PX3 = gp(40);
+  var AXIS_H_PX = gp(30);
+  var FOOTER_H_PX = gp(48);
   var SHORT_BLOCK_MIN = 20;
   var AXIS_STEP_MS = { "2h": 30 * 6e4, "6h": 36e5, day: 2 * 36e5 };
   function GuideTimelineView({ model, nav, category, dayOffset, selection, onSelect, isTv, zoom, onOpenGrid }) {
     const { tt, locale } = useTvText();
     const { nowMs } = model;
-    const [visibleRows, setVisibleRows] = useState(ROWS_STEP2);
+    const [visibleRows, setVisibleRows] = useState(ROWS_STEP);
     useEffect(() => {
-      setVisibleRows(ROWS_STEP2);
+      setVisibleRows(ROWS_STEP);
     }, [category, dayOffset, zoom]);
     const win = useMemo(() => {
       const base = timelineWindow(nowMs, zoom);
@@ -200983,7 +200989,7 @@ ${cue.text}`).join("\n\n")}
     return /* @__PURE__ */ jsxs("div", { "data-testid": "guide-timeline-view", style: { flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }, children: [
       /* @__PURE__ */ jsxs("div", { "data-testid": "timeline-time-axis", style: { height: AXIS_H_PX, minHeight: AXIS_H_PX, display: "flex", borderBottom: `1px solid ${TV.line}`, boxSizing: "border-box" }, children: [
         /* @__PURE__ */ jsx("div", { style: cellStyle }),
-        labels.map((mark) => /* @__PURE__ */ jsx("div", { "data-testid": "timeline-time-label", style: { flex: 1, minWidth: 0, borderLeft: "1px solid rgba(255,255,255,0.06)", paddingLeft: 6, display: "flex", alignItems: "center", fontSize: 11, color: "rgba(243,244,248,0.4)", letterSpacing: "0.06em", ...ellipsis2 }, children: formatClock(mark, locale) }, mark))
+        labels.map((mark) => /* @__PURE__ */ jsx("div", { "data-testid": "timeline-time-label", style: { flex: 1, minWidth: 0, borderLeft: "1px solid rgba(255,255,255,0.06)", paddingLeft: gp(6), display: "flex", alignItems: "center", fontSize: gp(11), color: "rgba(243,244,248,0.4)", letterSpacing: "0.06em", ...ellipsis2 }, children: formatClock(mark, locale) }, mark))
       ] }),
       /* @__PURE__ */ jsxs("div", { "data-scroll": "", "data-testid": "timeline-scroll", style: { flex: 1, minHeight: 0, overflow: "auto" }, children: [
         /* @__PURE__ */ jsx(
@@ -200992,7 +200998,7 @@ ${cue.text}`).join("\n\n")}
             "data-testid": "timeline-empty",
             ...nothing ? station(() => {
             }, void 0, initAttr(true)) : {},
-            style: { display: nothing ? "block" : "none", margin: 20, padding: 20, borderRadius: 12, background: TV.s05, fontSize: 13, color: TV.faint, lineHeight: 1.5 },
+            style: { display: nothing ? "block" : "none", margin: gp(20), padding: gp(20), borderRadius: gp(12), background: TV.s05, fontSize: gp(13), color: TV.faint, lineHeight: 1.5 },
             children: model.channelsLoading ? tt("loadingChannels") : schedulesLoading ? tt("loadingGuide") : tt("guideEmpty")
           }
         ),
@@ -201028,7 +201034,7 @@ ${cue.text}`).join("\n\n")}
                 style: { display: "flex", height: ROW_H_PX3, minHeight: ROW_H_PX3, background: "rgba(252,252,255,0.04)", borderBottom: "1px solid rgba(255,255,255,0.06)", boxSizing: "border-box", cursor: "pointer" },
                 children: [
                   /* @__PURE__ */ jsx("div", { style: { ...cellStyle, display: "flex", alignItems: "stretch" }, children: /* @__PURE__ */ jsx(GuideChannelCell, { channel, number: model.channelNumber(channel), pinned: model.pinnedSet.has(key), locked: model.locked.has(key), variant: "timeline" }) }),
-                  /* @__PURE__ */ jsx("div", { "data-track": "", "data-testid": "timeline-empty-cell", style: { flex: 1, minWidth: 0, display: "flex", alignItems: "center", padding: "0 12px", fontSize: 12, color: "rgba(243,244,248,0.4)", ...ellipsis2 }, children: tt("noEpgRow") })
+                  /* @__PURE__ */ jsx("div", { "data-track": "", "data-testid": "timeline-empty-cell", style: { flex: 1, minWidth: 0, display: "flex", alignItems: "center", padding: `0 ${gp(12)}px`, fontSize: gp(12), color: "rgba(243,244,248,0.4)", ...ellipsis2 }, children: tt("noEpgRow") })
                 ]
               },
               key
@@ -201036,13 +201042,13 @@ ${cue.text}`).join("\n\n")}
           }),
           /* @__PURE__ */ jsxs("div", { "aria-hidden": "true", style: { position: "absolute", top: 0, bottom: 0, left: cellStyle.width, right: 0, display: "flex", pointerEvents: "none" }, children: [
             labels.map((mark) => /* @__PURE__ */ jsx("div", { style: { flex: 1, minWidth: 0, borderLeft: "1px solid rgba(255,255,255,0.06)" } }, mark)),
-            nowVisible ? /* @__PURE__ */ jsx("div", { "data-testid": "timeline-now-line", style: { position: "absolute", top: 0, bottom: 0, left: `${nowLeft}%`, width: 2, background: TV.acc, boxShadow: `0 0 14px ${TV.accMix(55)}`, zIndex: 2 } }) : null
+            nowVisible ? /* @__PURE__ */ jsx("div", { "data-testid": "timeline-now-line", style: { position: "absolute", top: 0, bottom: 0, left: `${nowLeft}%`, width: gp(2), background: TV.acc, boxShadow: `0 0 ${gp(14)}px ${TV.accMix(55)}`, zIndex: 2 } }) : null
           ] })
         ] })
       ] }),
-      nothing ? null : /* @__PURE__ */ jsxs("div", { "data-testid": "timeline-footer", style: { height: FOOTER_H_PX, minHeight: FOOTER_H_PX, padding: "0 20px", display: "flex", alignItems: "center", gap: 14, borderTop: `1px solid ${TV.line}`, boxSizing: "border-box" }, children: [
-        /* @__PURE__ */ jsx("span", { style: { fontSize: 13, color: "rgba(243,244,248,0.35)", ...ellipsis2 }, children: tt("timelineHint") }),
-        hasMore ? /* @__PURE__ */ jsx("div", { "data-testid": "timeline-show-more", ...station(() => setVisibleRows((count) => count + ROWS_STEP2)), style: { marginLeft: "auto", height: 32, minHeight: 32, padding: "0 14px", borderRadius: 999, background: TV.s10, display: "inline-flex", alignItems: "center", fontSize: 13, cursor: "pointer", flexShrink: 0 }, children: tt("showMoreN", { n: ROWS_STEP2 }) }) : null
+      nothing ? null : /* @__PURE__ */ jsxs("div", { "data-testid": "timeline-footer", style: { height: FOOTER_H_PX, minHeight: FOOTER_H_PX, padding: `0 ${gp(20)}px`, display: "flex", alignItems: "center", gap: gp(14), borderTop: `1px solid ${TV.line}`, boxSizing: "border-box" }, children: [
+        /* @__PURE__ */ jsx("span", { style: { fontSize: gp(13), color: "rgba(243,244,248,0.35)", ...ellipsis2 }, children: tt("timelineHint") }),
+        hasMore ? /* @__PURE__ */ jsx("div", { "data-testid": "timeline-show-more", ...station(() => setVisibleRows((count) => count + ROWS_STEP)), style: { marginLeft: "auto", height: gp(32), minHeight: gp(32), padding: `0 ${gp(14)}px`, borderRadius: 999, background: TV.s10, display: "inline-flex", alignItems: "center", fontSize: gp(13), cursor: "pointer", flexShrink: 0 }, children: tt("showMoreN", { n: ROWS_STEP }) }) : null
       ] })
     ] });
   }
@@ -201057,22 +201063,22 @@ ${cue.text}`).join("\n\n")}
         "data-shape": box.shape,
         "data-live": live2 ? "" : void 0,
         title: `${label2}${times}`,
-        style: { position: "absolute", top: 5, bottom: 5, left: `${box.left}%`, width: `${box.width}%`, paddingRight: 2, boxSizing: "border-box" },
+        style: { position: "absolute", top: gp(5), bottom: gp(5), left: `${box.left}%`, width: `${box.width}%`, paddingRight: gp(2), boxSizing: "border-box" },
         children: /* @__PURE__ */ jsx(
           "div",
           {
             style: {
               height: "100%",
               boxSizing: "border-box",
-              borderRadius: marker ? 0 : 6,
-              padding: marker ? 0 : "0 8px",
+              borderRadius: marker ? 0 : gp(6),
+              padding: marker ? 0 : `0 ${gp(8)}px`,
               display: "flex",
               alignItems: "center",
               background: marker ? TV.acc : live2 ? "rgba(59,130,246,0.22)" : TV.s05,
               border: live2 ? "1px solid rgba(59,130,246,0.5)" : "1px solid transparent",
               overflow: "hidden"
             },
-            children: marker ? null : /* @__PURE__ */ jsx("span", { style: { minWidth: 0, fontSize: 12, fontWeight: live2 ? 600 : 400, color: live2 ? TV.text : "rgba(243,244,248,0.65)", ...ellipsis2 }, children: label2 })
+            children: marker ? null : /* @__PURE__ */ jsx("span", { style: { minWidth: 0, fontSize: gp(12), fontWeight: live2 ? 600 : 400, color: live2 ? TV.text : "rgba(243,244,248,0.65)", ...ellipsis2 }, children: label2 })
           }
         )
       }
