@@ -10,6 +10,10 @@ import type { GuideMode } from './tv-settings-store'
  * fryst det ursprungliga värdet vid modulladdning.
  */
 export function isDesktopTauri(): boolean {
+  // Dev-genväg: `?desktopguide=1` i en webbläsare (Vite :5173) låtsas vara
+  // skrivbordsappen så den nya guiden kan granskas live utan DMG-bygge.
+  // Läses defensivt — ingen `location` i SSR/test.
+  if (typeof location !== 'undefined' && new URLSearchParams(location.search).has('desktopguide')) return true
   return (sdk as { isDesktopTauriEnv?: boolean }).isDesktopTauriEnv === true
 }
 
