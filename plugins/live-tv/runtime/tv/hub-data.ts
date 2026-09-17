@@ -24,7 +24,10 @@ export function useHubData(model: LiveTvModel, spotlightCount: number) {
 
   const favourites = model.favouriteChannels
   const recent = useMemo(() => model.history.map((h) => model.byUrl.get(h.url)).filter((c): c is M3uChannel => Boolean(c)), [model.history, model.byUrl])
-  const spotlight = useMemo(() => pickSpotlight({ favourites, recent, channels: model.channels, nowFor: model.nowFor, count: spotlightCount }), [favourites, recent, model.channels, model.nowFor, spotlightCount])
+  // Ett frö per besök: favoriterna blandas när hubben monteras och står
+  // sedan stilla (minuttick och lagringsändringar ändrar inte ordningen).
+  const [spotlightSeed] = useState(() => Math.floor(Math.random() * 0xffffffff))
+  const spotlight = useMemo(() => pickSpotlight({ favourites, recent, channels: model.channels, nowFor: model.nowFor, count: spotlightCount, seed: spotlightSeed }), [favourites, recent, model.channels, model.nowFor, spotlightCount, spotlightSeed])
   /**
    * Repriser: favoriter och nyss sedda kanaler med arkiv (Xtream tv_archive),
    * inte hela spellistan. Tablån bor i appen sedan lagring v2, så varje kanal
