@@ -232,6 +232,9 @@ const EN = {
   playerFullscreen: 'Fullscreen',
   playerExitFullscreen: 'Exit fullscreen',
   playerAspect: 'Aspect ratio',
+  audioSubs: 'Audio & subs',
+  autoQuality: 'Auto',
+  zapList: 'Channels',
   // Tomma
   guideEmpty: 'No channels in this category',
   // Telefonens flik-rad + bottenark (fas 3)
@@ -459,6 +462,9 @@ const SV: Record<keyof typeof EN, string> = {
   playerFullscreen: 'Fullskärm',
   playerExitFullscreen: 'Lämna fullskärm',
   playerAspect: 'Bildförhållande',
+  audioSubs: 'Ljud & text',
+  autoQuality: 'Auto',
+  zapList: 'Kanaler',
   guideEmpty: 'Inga kanaler i kategorin',
   // Telefonens flik-rad + bottenark (fas 3)
   tabHome: 'Hem',

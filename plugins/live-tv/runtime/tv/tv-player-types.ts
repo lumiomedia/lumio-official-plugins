@@ -9,6 +9,8 @@ export interface LiveTvPlayerTvProps {
   /** 0 = dölj aldrig. */
   bannerHideMs: number
   neighbours: M3uChannel[]
+  /** Favoriternas nycklar (`channelKey`): telefonens zap-lista lägger dem först. */
+  pinnedKeys: string[]
   nowFor: (channel: M3uChannel) => NowNextLater
   nowMs: number
   locale: string

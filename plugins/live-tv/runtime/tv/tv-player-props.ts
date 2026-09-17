@@ -40,6 +40,7 @@ export function buildTvPlayerProps(args: {
     favourite: model.pinnedSet.has(channelKey(channel)),
     bannerHideMs: settings.bannerHideMs,
     neighbours: model.channels,
+    pinnedKeys: [...model.pinnedSet],
     nowFor: model.nowFor,
     nowMs: model.nowMs,
     locale,

@@ -18,7 +18,7 @@ const channels = [ch('A'), ch('B'), ch('C')]
 const nowFor = () => ({ now: null, next: null, later: null })
 
 function tv(overrides: Partial<LiveTvPlayerTvProps> = {}): LiveTvPlayerTvProps {
-  return { channelNumber: 2, quality: '4K', favourite: false, bannerHideMs: 0, neighbours: channels, nowFor, nowMs: now, locale: 'en-GB', gateOpen: false, phone: false, fullscreenOnRotate: true, keepAwake: true, onToggleFavourite: vi.fn(), onOpenChannelDetails: vi.fn(), onOpenMultiview: vi.fn(), onOpenGuide: vi.fn(), onAddToMultiview: vi.fn(), onSwitchChannel: vi.fn(), ...overrides }
+  return { channelNumber: 2, quality: '4K', favourite: false, bannerHideMs: 0, neighbours: channels, pinnedKeys: [], nowFor, nowMs: now, locale: 'en-GB', gateOpen: false, phone: false, fullscreenOnRotate: true, keepAwake: true, onToggleFavourite: vi.fn(), onOpenChannelDetails: vi.fn(), onOpenMultiview: vi.fn(), onOpenGuide: vi.fn(), onAddToMultiview: vi.fn(), onSwitchChannel: vi.fn(), ...overrides }
 }
 
 function controls(overrides: Partial<LiveTvPlayerControls> = {}): LiveTvPlayerControls {

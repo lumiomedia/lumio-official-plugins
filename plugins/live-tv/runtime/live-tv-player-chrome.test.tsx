@@ -23,6 +23,7 @@ function tv(overrides: Partial<LiveTvPlayerTvProps> = {}): LiveTvPlayerTvProps {
     favourite: false,
     bannerHideMs: 0,
     neighbours: channels,
+    pinnedKeys: [],
     nowFor: () => ({ now: { title: 'GameDay', start: now - 60_000, stop: now + 60_000 }, next: null, later: null }),
     nowMs: now,
     locale: 'en-GB',

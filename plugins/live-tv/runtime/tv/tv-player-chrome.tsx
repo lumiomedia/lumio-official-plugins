@@ -7,6 +7,7 @@ import { formatClock, progressOf } from '../live-tv-ui'
 import type { LiveTvPlayerControls, LiveTvPlayerTvProps } from './tv-player-types'
 import { Icons, Progress, RoundBtn, Tag, TV, dp, station, useTvClockNode } from './tv-ui'
 import { useTvText } from './tv-strings'
+import { TvPlayerChromePhone } from './mobile/player-chrome-phone'
 
 /** Kort på var sida om den spelande kanalen i mini-guiden. */
 const MINI_WINDOW = 25
@@ -31,7 +32,33 @@ const SpeakerOff = () => <CtlIcon><path d="M4 9.5v5h3.3L12 18.5v-13L7.3 9.5H4z" 
 const CornersOut = () => <CtlIcon><path d="M9.5 4H4v5.5M14.5 4H20v5.5M14.5 20H20v-5.5M9.5 20H4v-5.5" /></CtlIcon>
 const CornersIn = () => <CtlIcon><path d="M4 9.5h5.5V4M20 9.5h-5.5V4M20 14.5h-5.5V20M4 14.5h5.5V20" /></CtlIcon>
 
-export function TvPlayerChrome({ channel, tv, controls, paused, onTogglePause, onClose }: { channel: M3uChannel; tv: LiveTvPlayerTvProps; controls?: LiveTvPlayerControls; paused: boolean; onTogglePause: () => void; onClose: () => void }) {
+export interface TvPlayerChromeProps {
+  channel: M3uChannel
+  tv: LiveTvPlayerTvProps
+  controls?: LiveTvPlayerControls
+  paused: boolean
+  onTogglePause: () => void
+  onClose: () => void
+  /** Telefon i liggande läge med `fullscreenOnRotate` — räknas av `live-tv-player.tsx`. */
+  phoneLandscape?: boolean
+}
+
+/**
+ * Tidig gren för telefonen (fas 3): ett EGET komponentträd, inte en `if` inne
+ * i skrivbordskromet. `tv.phone` läses ur lådans bredd och kan slå om under
+ * spelningen (rotation); två separata komponenter monteras om rent, medan en
+ * villkorlig retur före krokarna hade gett "rendered more hooks"-kraschen.
+ * Envägsimport: telefonkromet vet ingenting om den här filen.
+ */
+export function TvPlayerChrome(props: TvPlayerChromeProps) {
+  if (props.tv.phone) {
+    const { phoneLandscape, ...rest } = props
+    return <TvPlayerChromePhone {...rest} landscape={phoneLandscape ?? false} />
+  }
+  return <TvPlayerChromeDesktop {...props} />
+}
+
+function TvPlayerChromeDesktop({ channel, tv, controls, paused, onTogglePause, onClose }: TvPlayerChromeProps) {
   const { tt } = useTvText()
   const isTv = useTvMode()
   const clock = useTvClockNode(tv.locale)

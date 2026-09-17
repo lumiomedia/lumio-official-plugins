@@ -22,6 +22,7 @@ function tv(overrides: Partial<LiveTvPlayerTvProps> = {}): LiveTvPlayerTvProps {
     favourite: false,
     bannerHideMs: 0,
     neighbours: channels,
+    pinnedKeys: [],
     nowFor: () => ({ now: null, next: null, later: null }),
     nowMs: now,
     locale: 'en-GB',
