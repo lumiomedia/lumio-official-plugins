@@ -79,4 +79,23 @@ describe('TvChoicePanel', () => {
     expect(document.activeElement).toBe(opener)
     opener.remove()
   })
+
+  it('ett val stänger via panelens egen close och lämnar tillbaka fokus till öppnaren', async () => {
+    // Fjärrfallet: OK på en rad rev förut panelen med fokus kvar på raden →
+    // body, och fjärren dog. Valet ska gå samma väg som Bakåt.
+    const opener = document.createElement('button')
+    document.body.appendChild(opener)
+    opener.focus()
+    const onClose = vi.fn()
+    const onPick = vi.fn()
+    render(<TvChoicePanel nav={makeNav(() => () => {})} title="Playlist" options={options} value={null} onPick={onPick} onClose={onClose} />)
+    await settle()
+    expect(document.activeElement).not.toBe(opener)
+    fireEvent.click(screen.getByTestId('choice-row-Xtream'))
+    expect(onPick).toHaveBeenCalledWith('l1')
+    expect(onClose).toHaveBeenCalledTimes(1)
+    await settle()
+    expect(document.activeElement).toBe(opener)
+    opener.remove()
+  })
 })

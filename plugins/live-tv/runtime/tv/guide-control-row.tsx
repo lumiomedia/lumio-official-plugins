@@ -89,13 +89,16 @@ const Divider = () => <span aria-hidden="true" style={{ width: 1, height: 22, ba
 
 /**
  * Kontrollraden (spec §2, handoffen §Ram och kontrollrad): 56 px och den
- * ENDA raden över innehållet. Ordning: källa · kategori · avdelare · dag ·
+ * ENDA raden över innehållet. Ordning: källa · kategori · avdelare · [dag] ·
  * [Nu] · mellanrum · läge · [zoom] · avdelare · [Detaljer] · klocka. Fler
  * val ska bli fler dropdowns här — aldrig en ny rad.
  */
 export function GuideControlRow(props: GuideControls) {
   const { tt } = useTvText()
   const { mode } = props
+  // Dag och Nu hör till fönstervyerna: Now / Next visar alltid just nu, så
+  // ett dagsegment där vore en knapp som inte gör något.
+  const showDay = mode !== 'nownext'
   const showNow = mode !== 'nownext'
   const showZoom = mode === 'timeline'
   const showDetails = mode === 'nownext'
@@ -104,13 +107,15 @@ export function GuideControlRow(props: GuideControls) {
       <Dropdown testId="guide-source" label={props.sourceLabel} count={props.sourceCount} onOpen={props.onOpenSource} />
       <Dropdown testId="guide-category" label={props.categoryLabel} count={props.categoryCount} onOpen={props.onOpenCategory} />
       <Divider />
-      <ControlSegment<'0' | '1'>
-        testId="guide-day"
-        options={[{ key: '0', label: tt('today') }, { key: '1', label: tt('tomorrow') }]}
-        value={props.dayOffset === 1 ? '1' : '0'}
-        onChange={(key) => props.onDay(key === '1' ? 1 : 0)}
-        activeStyle={{ background: '#f3f4f8', color: '#111' }}
-      />
+      {showDay ? (
+        <ControlSegment<'0' | '1'>
+          testId="guide-day"
+          options={[{ key: '0', label: tt('today') }, { key: '1', label: tt('tomorrow') }]}
+          value={props.dayOffset === 1 ? '1' : '0'}
+          onChange={(key) => props.onDay(key === '1' ? 1 : 0)}
+          activeStyle={{ background: '#f3f4f8', color: '#111' }}
+        />
+      ) : null}
       {showNow ? (
         <div
           data-testid="guide-now"

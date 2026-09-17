@@ -46,7 +46,7 @@ const AXIS_STEP_MS: Record<TimelineZoom, number> = { '2h': 30 * 60_000, '6h': 3_
 
 type TimelineEntry = { box: EpgBlockBox; programme: EpgProgramme; mergedTitle?: string }
 
-export function GuideTimelineView({ model, category, dayOffset, selection, onSelect, isTv, zoom, onOpenGrid }: GuideViewProps & { zoom: TimelineZoom; onOpenGrid(atMs: number): void }): JSX.Element {
+export function GuideTimelineView({ model, nav, category, dayOffset, selection, onSelect, isTv, zoom, onOpenGrid }: GuideViewProps & { zoom: TimelineZoom; onOpenGrid(atMs: number): void }): JSX.Element {
   const { tt, locale } = useTvText()
   const { nowMs } = model
   const [visibleRows, setVisibleRows] = useState(ROWS_STEP)
@@ -111,10 +111,19 @@ export function GuideTimelineView({ model, category, dayOffset, selection, onSel
     onSelect(sel)
     onOpenGrid(atMs)
   }
-  /** Radens station: OK = `okTime`, klick = klickets tid (faller tillbaka på OK-tiden). */
+  /**
+   * Radens station: OK = `okTime`, klick = klickets tid (faller tillbaka på
+   * OK-tiden), håll = glasmenyn för kanalen (som Grid och Now / Next — utan
+   * den saknade Timeline lås/fäst/favorit på TV). Klick-handlaren skrivs
+   * över för x-mätningen, så `defaultPrevented`-vakten mot ett fyrat håll
+   * upprepas här.
+   */
   const rowStation = (sel: GuideSelection, init: boolean) => ({
-    ...station(() => open(sel, okTime()), undefined, initAttr(init)),
-    onClick: (event: MouseEvent<HTMLElement>) => open(sel, timeFromClick(event) ?? okTime()),
+    ...station(() => open(sel, okTime()), (el) => nav.channelMenu(sel.channel, el), initAttr(init)),
+    onClick: (event: MouseEvent<HTMLElement>) => {
+      if (event.defaultPrevented) return
+      open(sel, timeFromClick(event) ?? okTime())
+    },
     onFocus: isTv ? () => onSelect(sel) : undefined,
   })
 
@@ -258,7 +267,7 @@ function TimelineBlock({ box, programme, title, locale, live }: { box: EpgBlockB
           overflow: 'hidden',
         }}
       >
-        {marker ? null : <span style={{ fontSize: 12, fontWeight: live ? 600 : 400, color: live ? TV.text : 'rgba(243,244,248,0.65)', ...ellipsis }}>{label}</span>}
+        {marker ? null : <span style={{ minWidth: 0, fontSize: 12, fontWeight: live ? 600 : 400, color: live ? TV.text : 'rgba(243,244,248,0.65)', ...ellipsis }}>{label}</span>}
       </div>
     </div>
   )

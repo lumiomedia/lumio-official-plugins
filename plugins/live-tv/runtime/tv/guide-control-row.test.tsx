@@ -46,10 +46,12 @@ describe('GuideControlRow', () => {
     expect(screen.queryByTestId('guide-details')).not.toBeInTheDocument()
   })
 
-  it('Now/Next: ingen Nu-knapp, ingen zoom, men Detaljer-toggle före klockan', () => {
+  it('Now/Next: ingen dag, ingen Nu-knapp, ingen zoom, men Detaljer-toggle före klockan', () => {
     render(<GuideControlRow {...base({ mode: 'nownext', details: true, onDetails: () => {} })} />)
-    const ids = order().filter((id) => ['guide-now', 'guide-mode', 'guide-zoom', 'guide-details', 'clock-node'].includes(id ?? ''))
+    const ids = order().filter((id) => ['guide-day', 'guide-now', 'guide-mode', 'guide-zoom', 'guide-details', 'clock-node'].includes(id ?? ''))
     expect(ids).toEqual(['guide-mode', 'guide-details', 'clock-node'])
+    // Now / Next visar alltid just nu — dagsegmentet hade inget att styra.
+    expect(screen.queryByTestId('guide-day')).not.toBeInTheDocument()
     expect(screen.queryByTestId('guide-now')).not.toBeInTheDocument()
     expect(screen.queryByTestId('guide-zoom')).not.toBeInTheDocument()
   })

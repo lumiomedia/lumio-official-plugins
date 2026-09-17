@@ -145,6 +145,22 @@ describe('TvGuideStandard (LAN/fjärr)', () => {
     expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
     expect(screen.getAllByTestId('guide-row')).toHaveLength(3)
   })
+  // Lagringen delas med den städade guiden (spec "Beslut", Lagring): dess
+  // `nownext`/`timeline` kan ligga kvar från en annan yta på samma profil.
+  it('lagrat nownext (den städade guidens) ritar Nu/Sen', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'nownext')
+    await mount()
+    expect(screen.getByTestId('guide-headline')).toBeInTheDocument()
+    expect(screen.getAllByTestId('guide-row')).toHaveLength(3)
+    expect(screen.queryByTestId('grid-scroll')).not.toBeInTheDocument()
+  })
+  it('lagrat timeline (den städade guidens) ritar Rutnät', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'timeline')
+    await mount()
+    expect(screen.getByTestId('grid-scroll')).toBeInTheDocument()
+    expect(screen.queryByTestId('guide-headline')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('guide-control-row')).not.toBeInTheDocument()
+  })
 })
 
 /**

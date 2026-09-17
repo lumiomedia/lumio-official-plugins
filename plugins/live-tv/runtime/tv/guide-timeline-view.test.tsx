@@ -145,10 +145,26 @@ describe('GuideTimelineView (TV-läge)', () => {
     setTvSettings({ timelineZoom: '2h' })
     await mount()
     expect(screen.getByTestId('timeline-now-line').style.left.endsWith('%')).toBe(true)
-    fireEvent.keyDown(screen.getAllByTestId('timeline-row')[0], { key: 'Enter' })
+    // Raden bär håll-OK (glasmenyn), så ett kort OK fyrar vid keyUp.
+    const row = screen.getAllByTestId('timeline-row')[0]
+    fireEvent.keyDown(row, { key: 'Enter' })
+    fireEvent.keyUp(row, { key: 'Enter' })
     expect(getGuideMode()).toBe('grid')
     expect(screen.getByTestId('guide-shell')).toHaveAttribute('data-guide-mode', 'grid')
     expect(screen.getAllByTestId('grid-time-label')[0]).toHaveTextContent(formatClock(guideWindowStart(now), 'en-GB'))
+  })
+
+  it('håll OK på en rad öppnar glasmenyn för kanalen', async () => {
+    await mount()
+    const row = screen.getAllByTestId('timeline-row')[0]
+    vi.useFakeTimers()
+    fireEvent.keyDown(row, { key: 'Enter' })
+    vi.advanceTimersByTime(700)
+    fireEvent.keyUp(row, { key: 'Enter' })
+    vi.useRealTimers()
+    expect(await screen.findByTestId('tv-glass-menu')).toBeInTheDocument()
+    // Hållet får inte också öppna Grid.
+    expect(getGuideMode()).toBe('timeline')
   })
 })
 
@@ -168,6 +184,22 @@ describe('GuideTimelineView (skrivbordsappen, inte TV)', () => {
     fireEvent.click(row, { clientX: 550 })
     expect(getGuideMode()).toBe('grid')
     expect(screen.getAllByTestId('grid-time-label')[0]).toHaveTextContent(formatClock(at(14), 'en-GB'))
+  })
+
+  it('Imorgon + klick i spåret öppnar Grid vid den klickade tiden imorgon — inte 06:00', async () => {
+    await mount()
+    fireEvent.click(screen.getByText('Tomorrow'))
+    // Nytt fönster = ny tablåhämtning; imorgon saknar tablå i fixturen, så
+    // alla rader blir tomrader — som också är spår.
+    await flushLiveTvIndex()
+    const cell = within(screen.getAllByTestId('timeline-empty-row')[0]).getByTestId('timeline-empty-cell')
+    cell.getBoundingClientRect = () => ({ left: 0, width: 1000, top: 0, right: 1000, bottom: 40, height: 40, x: 0, y: 0, toJSON: () => ({}) })
+    // 45 % in i 06–24 imorgon = 14:06 → Grid öppnar 14:00 imorgon.
+    fireEvent.click(cell, { clientX: 450 })
+    expect(getGuideMode()).toBe('grid')
+    const tomorrow14 = startOfLocalDay(now, 1) + 14 * 3_600_000
+    expect(screen.getAllByTestId('grid-time-label')[0]).toHaveTextContent(formatClock(tomorrow14, 'en-GB'))
+    expect(screen.getByTestId('guide-day').querySelector('[data-active]')).toHaveTextContent('Tomorrow')
   })
 
   it('klick i en tom rad öppnar också Grid', async () => {

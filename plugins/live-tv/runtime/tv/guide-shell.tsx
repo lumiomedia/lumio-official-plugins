@@ -5,7 +5,7 @@ import { useTvMode } from '@/lib/plugin-sdk'
 import type { TvViewProps } from './tv-shell'
 import { useTvClockNode } from './tv-ui'
 import { useTvText } from './tv-strings'
-import { setGuideMode, setTvSettings, useGuideMode, useTvSettings } from './tv-settings-store'
+import { getTvSettings, setGuideMode, setTvSettings, useGuideMode, useTvSettings } from './tv-settings-store'
 import { desktopGuideMode, type DesktopGuideMode } from './guide-surface'
 import { guideWindowStart } from './epg-grid-geometry'
 import { startOfLocalDay } from '../live-tv-model'
@@ -29,7 +29,7 @@ import type { GuideSelection, GuideViewProps } from './guide-types'
  * Timeline är `GuideTimelineView` (Task 5, zoomen ur `settings.timelineZoom`;
  * en rad där hoppar till Grid vid den klickade tiden via `openGridAt`).
  */
-export function TvGuideShell({ model, nav }: TvViewProps) {
+export function TvGuideShell({ model, nav, params }: TvViewProps) {
   const { tt, locale } = useTvText()
   const isTv = useTvMode()
   const clock = useTvClockNode(locale)
@@ -81,20 +81,42 @@ export function TvGuideShell({ model, nav }: TvViewProps) {
     return groups.some((g) => g.key === stored) ? stored : null
   }, [settings.guideCategory, groups])
 
+  // `params.group` (hubbens kategorikort och djuplänkar) skriver kategorin
+  // EN gång vid inträde — `'all'` = Alla — precis som den gamla guiden läste
+  // den. Bara vid montering: därefter äger panelen (och lagringen) valet.
+  const groupParam = params.group
+  useEffect(() => {
+    if (!groupParam) return
+    const next = groupParam === 'all' ? null : groupParam
+    if (next !== getTvSettings().guideCategory) setTvSettings({ guideCategory: next })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const [dayOffset, setDayOffset] = useState<0 | 1>(0)
-  // Fönsterstart är VY-state: halvtimmesjusterad vid inträde och vid Nu.
+  // Fönsterstart är VY-state och ENDA källan till Grids axel: halvtimmes-
+  // justerad vid inträde och vid Nu, Imorgons 06:00 vid dagbyte, klickad
+  // halvtimme från Timeline. Dagen härleds aldrig om fönstret i efterhand —
+  // förut låg Imorgon fastnaglad på 06:00 och Timeline → Grid struntade i
+  // den klickade tiden så fort man stod på Imorgon.
   const [windowStart, setWindowStart] = useState(() => guideWindowStart(model.nowMs))
   const [selection, setSelection] = useState<GuideSelection | null>(null)
   const [panel, setPanel] = useState<'source' | 'category' | null>(null)
 
+  // Markeringen följer raden: byter man källa, kategori eller dag är raden
+  // borta ur vyn, så markeringen nollas. Lägesbyte behåller den (spec §1).
+  const changeDay = (d: 0 | 1) => {
+    setDayOffset(d)
+    setWindowStart(d === 1 ? startOfLocalDay(model.nowMs, 1) + 6 * 3_600_000 : guideWindowStart(model.nowMs))
+    setSelection(null)
+  }
   const jumpToNow = () => { setDayOffset(0); setWindowStart(guideWindowStart(model.nowMs)) }
   // Timeline → Grid vid en tidpunkt: samma lägesbyte som segmentet (lagring +
   // lägesstack, så Bakåt tar en tillbaka till Timeline) med fönstret på
-  // tidpunktens halvtimme. Dagen behålls: Timelines fönster låg redan på
-  // rätt dag, och `effectiveWindowStart` nedan skriver över med Imorgons
-  // 06:00 bara när `dayOffset === 1` — då landar Grid på dagens början.
+  // tidpunktens halvtimme. Dagen följer tidpunkten, så en klickad tid på
+  // Imorgon ger Imorgon i dagsegmentet OCH axeln på den tiden.
   const openGridAt = (atMs: number) => {
     setWindowStart(guideWindowStart(atMs))
+    setDayOffset(atMs >= startOfLocalDay(model.nowMs, 1) ? 1 : 0)
     changeMode('grid')
   }
 
@@ -116,11 +138,8 @@ export function TvGuideShell({ model, nav }: TvViewProps) {
   const categoryLabel = category === null ? tt('categoryAll') : groups.find((g) => g.key === category)?.label ?? tt('categoryAll')
   const categoryCount = categoryOptions.find((o) => o.key === category)?.count ?? model.channels.length
 
-  // Vyernas gemensamma props. Imorgon (`dayOffset === 1`) börjar fönstret
-  // 06:00 nästa lokala dag — ingen halvtimmesjustering behövs där, dagens
-  // `windowStart` ligger kvar i state och tas tillbaka av Idag/Nu.
-  const effectiveWindowStart = dayOffset === 1 ? startOfLocalDay(model.nowMs, 1) + 6 * 3_600_000 : windowStart
-  const viewProps: GuideViewProps = { model, nav, category, dayOffset, windowStart: effectiveWindowStart, selection, onSelect: setSelection, isTv }
+  // Vyernas gemensamma props: fönstret rakt ur state (se `windowStart`).
+  const viewProps: GuideViewProps = { model, nav, category, dayOffset, windowStart, selection, onSelect: setSelection, isTv }
 
   const view = mode === 'nownext'
     ? <GuideNowNextView {...viewProps} details={settings.nowNextDetails} />
@@ -140,7 +159,7 @@ export function TvGuideShell({ model, nav }: TvViewProps) {
         categoryCount={categoryCount}
         onOpenCategory={() => setPanel('category')}
         dayOffset={dayOffset}
-        onDay={setDayOffset}
+        onDay={changeDay}
         onNow={jumpToNow}
         zoom={settings.timelineZoom}
         onZoom={(z) => setTvSettings({ timelineZoom: z })}
@@ -152,10 +171,10 @@ export function TvGuideShell({ model, nav }: TvViewProps) {
         {view}
       </div>
       {panel === 'source' ? (
-        <TvChoicePanel nav={nav} title={tt('pickSource')} options={sourceOptions} value={model.activePlaylistId} onPick={(key) => model.setActivePlaylist(key)} onClose={() => setPanel(null)} />
+        <TvChoicePanel nav={nav} title={tt('pickSource')} options={sourceOptions} value={model.activePlaylistId} onPick={(key) => { model.setActivePlaylist(key); setSelection(null) }} onClose={() => setPanel(null)} />
       ) : null}
       {panel === 'category' ? (
-        <TvChoicePanel nav={nav} title={tt('pickCategory')} options={categoryOptions} value={category} onPick={(key) => setTvSettings({ guideCategory: key })} onClose={() => setPanel(null)} />
+        <TvChoicePanel nav={nav} title={tt('pickCategory')} options={categoryOptions} value={category} onPick={(key) => { setTvSettings({ guideCategory: key }); setSelection(null) }} onClose={() => setPanel(null)} />
       ) : null}
     </div>
   )

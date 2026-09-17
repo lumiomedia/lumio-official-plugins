@@ -28,12 +28,20 @@ function PickerPanel({
   nav: TvNav
   title: string
   chips: ReactNode
-  rows: ReactNode
+  /**
+   * Rader, eller en funktion som får panelens `close` — DEN stängning som
+   * lagret registrerade (ropar `onClose` OCH lämnar tillbaka fokus till
+   * öppnaren). Ett val i envalspanelen ska gå den vägen: ropar man `onClose`
+   * själv rivs panelen med fokus kvar på en borttagen rad → body, och
+   * fjärren står stilla tills man klickar med mus.
+   */
+  rows: ReactNode | ((close: () => void) => ReactNode)
   onClose: () => void
   testId?: string
 }) {
   const rootRef = useRef<HTMLDivElement | null>(null)
   const openerRef = useRef<HTMLElement | null>(null)
+  const closeRef = useRef<(() => void) | null>(null)
   // Senaste `nav`/`onClose` i refar. Effekten nedan får BARA köra en gång per
   // öppning: `nav` bytte identitet vid varje omrender av skalet (minuttick,
   // lagringsändring), och då kördes effekten om — den läste om "vem öppnade
@@ -48,6 +56,7 @@ function PickerPanel({
   useEffect(() => {
     openerRef.current = document.activeElement as HTMLElement | null
     const close = () => { onCloseRef.current(); window.setTimeout(() => openerRef.current?.focus({ preventScroll: true }), 0) }
+    closeRef.current = close
     const off = navRef.current.pushLayer(close)
     window.setTimeout(() => rootRef.current?.querySelector<HTMLElement>('[data-init]')?.focus({ preventScroll: true }), 0)
     return off
@@ -63,7 +72,7 @@ function PickerPanel({
     >
       <div style={{ fontSize: dp(28), fontWeight: 600 }}>{title}</div>
       {chips}
-      <div data-scroll="" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>{rows}</div>
+      <div data-scroll="" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>{typeof rows === 'function' ? rows(() => closeRef.current?.()) : rows}</div>
     </div>
   )
 }
@@ -183,7 +192,8 @@ export interface ChoiceOption { key: string | null; label: string; count?: numbe
  * Samma panel som fler-/kategorivalet ovan — `data-panel-root`, lager via
  * `nav.pushLayer(close)` som enda Bakåt-väg, fokus tillbaka till öppnaren —
  * men ett val STÄNGER: man byter spellista eller kategori en gång, inte tio
- * i rad. `data-init` ligger på det VALDA alternativet (annars första), så
+ * i rad. Valet stänger via panelens EGEN `close` (samma som Bakåt), så
+ * fokus landar hos öppnaren och inte på body. `data-init` ligger på det VALDA alternativet (annars första), så
  * fjärren landar där man står i stället för högst upp i en lång lista.
  * Rader 56 px och antal i 45 % enligt handoffen (§Ram och kontrollrad).
  */
@@ -203,13 +213,13 @@ export function TvChoicePanel({ nav, title, options, value, onPick, onClose }: {
       onClose={onClose}
       chips={null}
       testId="choice-panel"
-      rows={options.map((option, index) => {
+      rows={(close) => options.map((option, index) => {
         const on = option.key === value
         return (
           <div
             key={option.key ?? '__all'}
             data-testid={`choice-row-${option.label}`}
-            {...station(() => { onPick(option.key); onClose() }, undefined, index === initIndex ? { 'data-init': '' } : undefined)}
+            {...station(() => { onPick(option.key); close() }, undefined, index === initIndex ? { 'data-init': '' } : undefined)}
             style={{ height: 56, minHeight: 56, borderRadius: 10, display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px', cursor: 'pointer', background: on ? TV.s08 : 'transparent' }}
           >
             <Check on={on} label={option.label} />

@@ -35,9 +35,9 @@ beforeEach(() => {
   seedLiveTvIndex({ cache })
 })
 
-const mount = async () => {
+const mount = async (params: Record<string, string> = { view: 'guide' }) => {
   const onNavigate = vi.fn()
-  render(<LiveTvTvShell pageId="live-tv-browse" params={{ view: 'guide' }} onNavigate={onNavigate} onOpenDetails={() => {}} />)
+  render(<LiveTvTvShell pageId="live-tv-browse" params={params} onNavigate={onNavigate} onOpenDetails={() => {}} />)
   await flushLiveTvIndex()
   return onNavigate
 }
@@ -114,6 +114,23 @@ describe('TvGuideShell (TV-läge)', () => {
     expect(screen.getAllByTestId('nownext-row')).toHaveLength(1)
     expect(screen.getAllByTestId('nownext-empty-row')).toHaveLength(3)
     expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
+  })
+
+  it('params.group = all nollar en lagrad kategori vid inträde (hubbens kort, djuplänkar)', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'nownext')
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_tv_settings_v1', { guideCategory: 'Sport' })
+    await mount({ view: 'guide', group: 'all' })
+    expect(screen.getByTestId('guide-category')).toHaveTextContent('All categories')
+    expect(getTvSettings().guideCategory).toBeNull()
+  })
+
+  it('params.group = News skriver kategorin vid inträde', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'nownext')
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_tv_settings_v1', { guideCategory: 'Sport' })
+    await mount({ view: 'guide', group: 'News' })
+    expect(screen.getByTestId('guide-category')).toHaveTextContent('News')
+    expect(getTvSettings().guideCategory).toBe('News')
+    expect(screen.getAllByTestId('nownext-empty-row')).toHaveLength(1)
   })
 
   it('källknappen öppnar panelen; valet skrivs till aktiv spellista och panelen stängs', async () => {
