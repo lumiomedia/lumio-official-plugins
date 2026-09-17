@@ -1,16 +1,17 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type JSX } from 'react'
+import { useEffect, useMemo, useState, type JSX } from 'react'
 import { channelKey, type M3uChannel } from '../live-tv-data'
 import type { EpgProgramme } from '../epg/types'
 import { formatClock } from '../live-tv-ui'
 import { isReminded, toggleReminder } from '../reminders'
-import { Icons, TV, station, type StationProps } from './tv-ui'
+import { Icons, TV, station } from './tv-ui'
 import { useTvText } from './tv-strings'
 import { GRID_WINDOW_MS, PCT_PER_MIN_GRID, epgRowBoxes, nowLinePx, pctShapeThresholds, type EpgBlockBox, type EpgRowEntry } from './epg-grid-geometry'
 import { useGridRows } from './grid-rows'
 import { GuideChannelCell, filterByGroup, guideCellStyle } from './tv-guide-shared'
 import { GuideDetailPanel } from './guide-detail-panel'
+import { GuidePaginationRow, ROWS_STEP, ellipsis, initAttr, useHoverSelect, withPointerLeave } from './guide-view-shared'
 import type { GuideSelection, GuideViewProps } from './guide-types'
 
 /**
@@ -30,48 +31,8 @@ import type { GuideSelection, GuideViewProps } from './guide-types'
  * en "marker". Blockets padding är CSS-px (8px 10px), aldrig en andel.
  */
 
-/** Sidstorlek och steg för "Visa 80 fler" (handoffen "Paginering"). */
-const ROWS_STEP = 80
 const ROW_H_PX = 60
 const HALF_HOUR_MS = 30 * 60_000
-/** Hovringens fördröjning på skrivbord innan panelen byter innehåll. */
-const HOVER_MS = 120
-
-const ellipsis: CSSProperties = { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }
-
-/**
- * Stationens egen `onPointerLeave` (avbryter ett påbörjat håll) får inte
- * skrivas över av hovringens — båda ska köras. Utan detta hade ett håll som
- * gled ut ur blocket fyrat glasmenyn ändå.
- */
-function withPointerLeave(props: StationProps, onLeave?: () => void): StationProps {
-  if (!onLeave) return props
-  const own = props.onPointerLeave as ((event: unknown) => void) | undefined
-  return { ...props, onPointerLeave: (event: unknown) => { own?.(event); onLeave() } }
-}
-
-/**
- * Hovring på skrivbord (`!isTv`): `onPointerEnter` → 120 ms → `onSelect`,
- * och en pekare som lämnar blocket innan dess avbryter utan att markera —
- * annars fladdrar panelen när musen sveper över raden. Fokus flyttas aldrig
- * av hovringen. På TV är kroken inert: där styr fokus markeringen.
- */
-function useHoverSelect(enabled: boolean, onSelect: (sel: GuideSelection) => void) {
-  const timer = useRef<number | null>(null)
-  const clear = () => {
-    if (timer.current !== null) window.clearTimeout(timer.current)
-    timer.current = null
-  }
-  useEffect(() => clear, [])
-  if (!enabled) return { enter: undefined, leave: undefined }
-  return {
-    enter: (sel: GuideSelection) => {
-      clear()
-      timer.current = window.setTimeout(() => { timer.current = null; onSelect(sel) }, HOVER_MS)
-    },
-    leave: clear,
-  }
-}
 
 export function GuideGridView({ model, nav, category, dayOffset, windowStart, selection, onSelect, isTv }: GuideViewProps): JSX.Element {
   const { tt, locale } = useTvText()
@@ -127,8 +88,6 @@ export function GuideGridView({ model, nav, category, dayOffset, windowStart, se
     return { channel: key, start: live ? live.programme.start : null, empty: false }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows, withoutEpg, entriesByChannel, nowMs])
-  const initAttr = (on: boolean) => (on ? { 'data-init': '' } : undefined)
-
   const selectedKey = selection ? channelKey(selection.channel) : null
   const isSelected = (channel: M3uChannel, programme: EpgProgramme | null) =>
     selectedKey === channelKey(channel) && (selection?.programme?.start ?? null) === (programme?.start ?? null)
@@ -260,15 +219,7 @@ export function GuideGridView({ model, nav, category, dayOffset, windowStart, se
         {/* Pagineringsraden: en VANLIG rad under listan, aldrig en flytande
             pill över sista raden. */}
         {nothing ? null : (
-          <div data-testid="grid-pagination" style={{ height: 52, minHeight: 52, padding: '0 20px', display: 'flex', alignItems: 'center', gap: 14, borderTop: `1px solid ${TV.line}`, boxSizing: 'border-box' }}>
-            <span style={{ fontSize: 13, color: TV.dim, ...ellipsis }}>{tt('paginationRow', { shown: rows.length, total })}</span>
-            {hasMore ? (
-              <div data-testid="grid-show-more" {...station(() => setVisibleRows((count) => count + ROWS_STEP))} style={{ height: 32, minHeight: 32, padding: '0 14px', borderRadius: 999, background: TV.s10, display: 'inline-flex', alignItems: 'center', fontSize: 13, cursor: 'pointer', flexShrink: 0 }}>
-                {tt('showMoreN', { n: ROWS_STEP })}
-              </div>
-            ) : null}
-            <span style={{ marginLeft: 'auto', fontSize: 13, color: 'rgba(243,244,248,0.35)', ...ellipsis }}>{tt('noEpgLast')}</span>
-          </div>
+          <GuidePaginationRow testId="grid" shown={rows.length} total={total} hasMore={hasMore} onMore={() => setVisibleRows((count) => count + ROWS_STEP)} hint={tt('noEpgLast')} />
         )}
       </div>
 

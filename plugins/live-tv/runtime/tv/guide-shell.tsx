@@ -14,6 +14,7 @@ import { TvChoicePanel, type ChoiceOption } from './tv-list-picker'
 import { GuideControlRow } from './guide-control-row'
 import { TvGuideGrid } from './tv-guide-grid'
 import { GuideGridView } from './guide-grid-view'
+import { GuideNowNextView } from './guide-nownext-view'
 import type { GuideSelection, GuideViewProps } from './guide-types'
 
 /**
@@ -23,10 +24,11 @@ import type { GuideSelection, GuideViewProps } from './guide-types'
  * kategori, dag och markering behålls.
  *
  * Importerar ALDRIG `tv-guide.tsx` (som importerar hit): vyerna hämtar sina
- * typer ur `guide-types.ts`. Grid är `GuideGridView` (Task 3);
+ * typer ur `guide-types.ts`. Grid är `GuideGridView` (Task 3), Now / Next
+ * är `GuideNowNextView` (Task 4, bannern styrs av `settings.nowNextDetails`);
  * Timeline-platshållaren är tills vidare dagens `TvGuideGrid`
- * (`tv-guide-grid.tsx` importerar inte `tv-guide.tsx`, så ingen cykel);
- * Now / Next och Timeline får sina riktiga vyer i senare tasks.
+ * (`tv-guide-grid.tsx` importerar inte `tv-guide.tsx`, så ingen cykel) och
+ * får sin riktiga vy i en senare task.
  */
 export function TvGuideShell(props: TvViewProps) {
   const { model, nav } = props
@@ -118,7 +120,7 @@ export function TvGuideShell(props: TvViewProps) {
   const viewProps: GuideViewProps = { model, nav, category, dayOffset, windowStart: effectiveWindowStart, selection, onSelect: setSelection, isTv }
 
   const view = mode === 'nownext'
-    ? <div data-testid="guide-nownext-placeholder" data-window-start={viewProps.windowStart} />
+    ? <GuideNowNextView {...viewProps} details={settings.nowNextDetails} />
     : mode === 'grid'
       ? <GuideGridView {...viewProps} />
       : <TvGuideGrid {...props} mode={mode} onModeChange={legacyModeChange} />

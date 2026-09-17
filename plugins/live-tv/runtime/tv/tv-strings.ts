@@ -28,6 +28,8 @@ const EN = {
   back: 'Back',
   showMore: 'Show more',
   minutesLeft: '{min} min left',
+  /** Now / Next-radens korta rest (handoffen `N m`). */
+  minShort: '{min} m',
   channelsCount: '{count} channels',
   allPlaylists: 'All playlists',
   // Telefonens spellistark: rubriken får inte heta samma som första posten ("All playlists").
@@ -301,6 +303,7 @@ const SV: Record<keyof typeof EN, string> = {
   back: 'Tillbaka',
   showMore: 'Visa fler',
   minutesLeft: '{min} min kvar',
+  minShort: '{min} m',
   channelsCount: '{count} kanaler',
   allPlaylists: 'Alla spellistor',
   playlists: 'Spellistor',
