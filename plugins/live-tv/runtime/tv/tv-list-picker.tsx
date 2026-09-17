@@ -23,12 +23,14 @@ function PickerPanel({
   chips,
   rows,
   onClose,
+  testId = 'list-picker',
 }: {
   nav: TvNav
   title: string
   chips: ReactNode
   rows: ReactNode
   onClose: () => void
+  testId?: string
 }) {
   const rootRef = useRef<HTMLDivElement | null>(null)
   const openerRef = useRef<HTMLElement | null>(null)
@@ -54,7 +56,7 @@ function PickerPanel({
   return (
     <div
       ref={rootRef}
-      data-testid="list-picker"
+      data-testid={testId}
       data-panel-root=""
       data-live-tv-layer=""
       style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: `min(${dp(640)}px, 100%)`, zIndex: 60, background: TV.panel, borderLeft: `1px solid ${TV.line}`, padding: `${dp(34)}px ${dp(32)}px`, display: 'flex', flexDirection: 'column', gap: dp(18) }}
@@ -168,6 +170,54 @@ export function TvCategoryPicker({ nav, title, categories, selected, onToggle, o
             ))}
         </>
       )}
+    />
+  )
+}
+
+/** Ett alternativ i envalspanelen. `null` = "Alla" (spellistor/kategorier). */
+export interface ChoiceOption { key: string | null; label: string; count?: number }
+
+/**
+ * ENVALSPANELEN bakom kontrollradens käll- och kategoriväljare (spec §2).
+ *
+ * Samma panel som fler-/kategorivalet ovan — `data-panel-root`, lager via
+ * `nav.pushLayer(close)` som enda Bakåt-väg, fokus tillbaka till öppnaren —
+ * men ett val STÄNGER: man byter spellista eller kategori en gång, inte tio
+ * i rad. `data-init` ligger på det VALDA alternativet (annars första), så
+ * fjärren landar där man står i stället för högst upp i en lång lista.
+ * Rader 56 px och antal i 45 % enligt handoffen (§Ram och kontrollrad).
+ */
+export function TvChoicePanel({ nav, title, options, value, onPick, onClose }: {
+  nav: TvNav
+  title: string
+  options: ChoiceOption[]
+  value: string | null
+  onPick: (key: string | null) => void
+  onClose: () => void
+}) {
+  const initIndex = Math.max(0, options.findIndex((option) => option.key === value))
+  return (
+    <PickerPanel
+      nav={nav}
+      title={title}
+      onClose={onClose}
+      chips={null}
+      testId="choice-panel"
+      rows={options.map((option, index) => {
+        const on = option.key === value
+        return (
+          <div
+            key={option.key ?? '__all'}
+            data-testid={`choice-row-${option.label}`}
+            {...station(() => { onPick(option.key); onClose() }, undefined, index === initIndex ? { 'data-init': '' } : undefined)}
+            style={{ height: 56, minHeight: 56, borderRadius: 10, display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px', cursor: 'pointer', background: on ? TV.s08 : 'transparent' }}
+          >
+            <Check on={on} label={option.label} />
+            <span style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: on ? 600 : 400, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{option.label}</span>
+            {option.count !== undefined ? <span style={{ fontSize: 14, color: TV.faint, flexShrink: 0 }}>{option.count}</span> : null}
+          </div>
+        )
+      })}
     />
   )
 }

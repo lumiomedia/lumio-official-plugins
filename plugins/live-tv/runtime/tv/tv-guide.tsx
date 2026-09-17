@@ -15,7 +15,8 @@ import { TvGuidePlaylists } from './tv-guide-playlists'
 import { TvGuideGrid } from './tv-guide-grid'
 import { useSchedules } from '../hooks/useSchedules'
 import { TvGuideNowPhone, phoneGuideMode, type PhoneGuideMode } from './mobile/guide-phone'
-import { desktopGuideMode, useNewGuideSurface } from './guide-surface'
+import { useNewGuideSurface } from './guide-surface'
+import { TvGuideShell } from './guide-shell'
 
 const ROW_STEP = 40
 
@@ -115,21 +116,10 @@ export function TvGuide(props: TvViewProps) {
     if (pm === 'grid') return <TvGuideGrid {...props} mode={pm} onModeChange={changeMode} />
     return <TvGuideNowPhone {...props} mode="now" onModeChange={changePhone} />
   }
-  if (newGuide) {
-    /**
-     * PLATSHÅLLARE (Task 0 av "kanalguiden städad på skrivbord och TV").
-     *
-     * Den riktiga guidens skal (`TvGuideShell`, kontrollrad + tre vyer)
-     * byggs i en senare task. Här normaliseras bara läget och återanvänds
-     * dagens komponenter — ingen visuell ändring ännu. `TvGuideShell` läggs
-     * INTE i en egen fil nu: `tv-guide.tsx` importerar då den, och en fil
-     * som i sin tur importerar tillbaka `TvGuideStandard`/`TvGuideGrid`
-     * härifrån hade gett en importcykel.
-     */
-    const dm = desktopGuideMode(mode)
-    if (dm === 'nownext') return <TvGuideStandard {...props} mode="now" onModeChange={changeMode} />
-    return <TvGuideGrid {...props} mode={dm} onModeChange={changeMode} />
-  }
+  // Den städade guiden (skrivbord/TV, spec §1): skalet äger läge, stack och
+  // Bakåt själv — grenen ovanför (spegel, stack, fokusräddning) gäller bara
+  // LAN/fjärr nedan. `guide-shell.tsx` importerar aldrig tillbaka hit.
+  if (newGuide) return <TvGuideShell {...props} />
   // Säkerhetsnät: lagringen delas mellan ytorna och skriver ingen migrering
   // (spec "Beslut", Lagring) — `nownext`/`timeline` kan alltså dyka upp här
   // om samma profil nyss körde den städade guiden på en annan yta. Den gamla

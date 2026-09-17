@@ -298,29 +298,14 @@ describe('TvGuide fjärrhjälp (borttagen, Jerrys uppföljning)', () => {
  * tvingas till `TvGuideStandard`s `'now'`, `playlists`/`grid` går till
  * `TvGuideGrid`. Ingen ny visuell yta finns ännu.
  */
-describe('TvGuide: ny yta i TV-läge (newGuide, Task 0-platshållaren)', () => {
+describe('TvGuide: ny yta i TV-läge (newGuide → TvGuideShell)', () => {
   beforeEach(() => __setTvModeForTests(true))
 
-  it('now/tl normaliseras till nownext → TvGuideStandard tvingas till "now"', async () => {
-    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'tl')
-    await mount()
-    // Tablåns egna markörer (nu-linjen, "Hämtar tablå…") finns inte —
-    // platshållaren renderar Nu/Sen, inte Tablå, för det normaliserade läget.
-    expect(screen.queryByTestId('now-line')).not.toBeInTheDocument()
-    expect(screen.getAllByTestId('guide-row').length).toBeGreaterThan(0)
-    expect(screen.getByTestId('guide-headline')).toBeInTheDocument()
-  })
-
-  it('playlists normaliseras till grid → TvGuideGrid, inte spellistkolumnerna', async () => {
+  it('TV-läget grenar till skalet: kontrollrad, inga gamla spellistkolumner', async () => {
     writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'playlists')
     await mount()
-    expect(screen.getByTestId('grid-scroll')).toBeInTheDocument()
+    expect(screen.getByTestId('guide-control-row')).toBeInTheDocument()
     expect(screen.queryByTestId('playlists-column')).not.toBeInTheDocument()
-  })
-
-  it('grid är redan normaliserat → TvGuideGrid som förut', async () => {
-    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'grid')
-    await mount()
-    expect(screen.getByTestId('grid-scroll')).toBeInTheDocument()
+    // Skalets egen svit (`guide-shell.test.tsx`) täcker normalisering, paneler och Bakåt.
   })
 })

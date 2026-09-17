@@ -69,7 +69,13 @@ const mountHub = async () => {
 }
 
 describe('Rubrikrader vid 1280 designpixlar', () => {
+  // Task 2 ("kanalguiden städad på skrivbord och TV"): TV-läget renderar nu
+  // skalet med kontrollraden (`guide-shell.tsx`), inte den gamla rubrikraden.
+  // Reglerna för den gamla raden gäller oförändrat på LAN/fjärr (spec
+  // "Beslut", Var), så guidens tre rubriktester körs på den ytan — samma
+  // flytt som `tv-guide.test.tsx` gjorde i Task 0.
   it('segmentväxeln är en enhet som aldrig bryter sina etiketter', async () => {
+    __setTvModeForTests(false)
     await mountGuide('now')
     const segment = screen.getByTestId('tv-segment')
     expect(segment.style.flexShrink).toBe('0')
@@ -83,6 +89,7 @@ describe('Rubrikrader vid 1280 designpixlar', () => {
   })
 
   it('guidens klocka är ett eget block som inte krymper, inte inbakad i kanalraden', async () => {
+    __setTvModeForTests(false)
     await mountGuide('now')
     const clock = screen.getByTestId('guide-clock')
     expect(clock.style.flexShrink).toBe('0')
@@ -100,6 +107,7 @@ describe('Rubrikrader vid 1280 designpixlar', () => {
   })
 
   it('guidens rubrikrad radbryter i stället för att svämma över', async () => {
+    __setTvModeForTests(false)
     await mountGuide('now')
     const row = screen.getByTestId('guide-meta-row')
     expect(row.style.flexWrap).toBe('wrap')

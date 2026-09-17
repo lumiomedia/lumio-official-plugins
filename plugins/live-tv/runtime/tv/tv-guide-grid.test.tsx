@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { flushLiveTvIndex, seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
@@ -246,10 +246,13 @@ describe('TvGuideGrid', () => {
 
   it('Imorgon byter fönster och Nu tar tillbaka dagens', async () => {
     await openGrid()
-    fireEvent.click(screen.getByText('Tomorrow'))
+    // Skalets kontrollrad har egna Idag/Imorgon/Nu-stationer; det här testet
+    // gäller dagens rutnäts egna (tills Task 3 skriver om rutnätet).
+    const content = within(screen.getByTestId('guide-content'))
+    fireEvent.click(content.getByText('Tomorrow'))
     await flushLiveTvIndex()
     expect(screen.queryAllByTestId('grid-block')).toHaveLength(0)
-    fireEvent.click(screen.getByText('Now'))
+    fireEvent.click(content.getByText('Now'))
     await flushLiveTvIndex()
     expect(screen.getAllByTestId('grid-block').length).toBeGreaterThan(0)
   })
