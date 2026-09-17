@@ -52,10 +52,7 @@ export function GuideNowNextView({ model, nav, category, selection, onSelect, is
   // snapshot, inte per rendering: `model` byter identitet varje minut, men
   // `channels`/`favouriteChannels`/`nowFor` är memoiserade i modellen.
   const { channels: modelChannels, favouriteChannels, nowFor } = model
-  const channels = useMemo(
-    () => filterByGroup({ channels: modelChannels, favouriteChannels } as typeof model, category),
-    [modelChannels, favouriteChannels, category],
-  )
+  const channels = useMemo(() => filterByGroup({ channels: modelChannels, favouriteChannels }, category), [modelChannels, favouriteChannels, category])
   const { withEpg, withoutEpg } = useMemo(() => {
     const withEpg: Row[] = []
     const withoutEpg: M3uChannel[] = []
@@ -93,7 +90,15 @@ export function GuideNowNextView({ model, nav, category, selection, onSelect, is
     : emptyRows[0] ? { channel: emptyRows[0], programme: null } : null
   const subject = selection ?? firstRow
   const showBanner = details && subject !== null
-  const hasRows = rows.length > 0 || emptyRows.length > 0
+
+  /**
+   * Precis EN `data-init` i vyn, i FAST ordning: tomläget (även medan
+   * snapshotet laddar — då finns raderna, men de ritas inte) → första raden
+   * → bannerns Titta nu. Utan startstation låser sig fjärren; att låta
+   * placeringen bero på flera villkor var för sig gav noll stationer under
+   * kallstart (rader fanns, tomrutan visades, ingen fick attributet).
+   */
+  const initTarget: 'empty' | 'row' | 'banner' = nothing ? 'empty' : rows.length > 0 || emptyRows.length > 0 ? 'row' : 'banner'
 
   const rowProps = (channel: M3uChannel, programme: EpgProgramme | null, init: boolean) => {
     const sel: GuideSelection = { channel, programme }
@@ -126,8 +131,7 @@ export function GuideNowNextView({ model, nav, category, selection, onSelect, is
           nowMs={nowMs}
           locale={locale}
           channelNumber={model.channelNumber(subject.channel)}
-          // Utan rader är bannerns Titta nu vyns enda station → startstation.
-          init={!hasRows}
+          init={initTarget === 'banner'}
           onWatch={() => nav.play({ channel: subject.channel })}
           onRemind={(programme) => toggle(subject.channel, programme)}
         />
@@ -146,12 +150,11 @@ export function GuideNowNextView({ model, nav, category, selection, onSelect, is
       {/* Listan bär `data-scroll` så fokusmotorn scrollar fokus i sikte. */}
       <div data-scroll="" data-testid="nownext-scroll" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
         {/* Tomrutan är ALLTID monterad (dold när innehåll finns) så noden inte
-            avmonteras i ögonblicket raderna kommer. I tomläget utan banner
-            bär den en passiv station med `data-init`: vyn måste ha en
-            startstation, annars låser sig fjärren. */}
+            avmonteras i ögonblicket raderna kommer. I tomläget bär den en
+            passiv station med `data-init` (se `initTarget`). */}
         <div
           data-testid="nownext-empty"
-          {...(nothing && !showBanner ? station(() => {}, undefined, initAttr(true)) : {})}
+          {...(initTarget === 'empty' ? station(() => {}, undefined, initAttr(true)) : {})}
           style={{ display: nothing ? 'block' : 'none', margin: 20, padding: 20, borderRadius: 12, background: TV.s05, fontSize: 13, color: TV.faint, lineHeight: 1.5 }}
         >
           {model.channelsLoading ? tt('loadingChannels') : model.epgLoading ? tt('loadingGuide') : tt('guideEmpty')}
@@ -162,7 +165,7 @@ export function GuideNowNextView({ model, nav, category, selection, onSelect, is
               const now = info.now as EpgProgramme
               const minutesLeft = Math.max(0, Math.ceil((now.stop - nowMs) / 60_000))
               return (
-                <div key={channelKey(channel)} data-testid="nownext-row" {...rowProps(channel, now, index === 0)} style={rowStyle(channel, false)}>
+                <div key={channelKey(channel)} data-testid="nownext-row" {...rowProps(channel, now, initTarget === 'row' && index === 0)} style={rowStyle(channel, false)}>
                   {cell(channel)}
                   {/* NU: titel + 90 px block med förlopp och `N m`. */}
                   <div data-testid="nownext-now" style={colStyle(COL_WEIGHTS[0])}>
@@ -181,7 +184,7 @@ export function GuideNowNextView({ model, nav, category, selection, onSelect, is
                 SIST och får EN cell över databredden med en Titta nu-pill.
                 Hela raden är stationen — pillen är dess etikett, OK spelar. */}
             {emptyRows.map((channel, index) => (
-              <div key={channelKey(channel)} data-testid="nownext-empty-row" {...rowProps(channel, null, rows.length === 0 && index === 0)} style={rowStyle(channel, true)}>
+              <div key={channelKey(channel)} data-testid="nownext-empty-row" {...rowProps(channel, null, initTarget === 'row' && rows.length === 0 && index === 0)} style={rowStyle(channel, true)}>
                 {cell(channel)}
                 <div data-testid="nownext-empty-cell" style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 14, padding: '0 12px' }}>
                   <span style={{ flex: 1, minWidth: 0, fontSize: 13, color: 'rgba(243,244,248,0.4)', ...ellipsis }}>{tt('noEpgRow')}</span>

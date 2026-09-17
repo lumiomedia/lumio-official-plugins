@@ -27,7 +27,8 @@ export function useGuideGroups(model: LiveTvModel, tt: (key: TvStringKey) => str
   ], [model.favouriteChannels.length, model.groups, tt])
 }
 
-export function filterByGroup(model: LiveTvModel, group: string | null): M3uChannel[] {
+/** Tar bara de två fälten så att vyer kan memoisera på dem (modellobjektet byter identitet varje minut). */
+export function filterByGroup(model: Pick<LiveTvModel, 'channels' | 'favouriteChannels'>, group: string | null): M3uChannel[] {
   if (group === FAVS_GROUP) return model.favouriteChannels
   if (group) return model.channels.filter((c) => c.group === group)
   return model.channels

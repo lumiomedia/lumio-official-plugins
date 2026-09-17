@@ -199,6 +199,17 @@ describe('GuideNowNextView (TV-läge)', () => {
     expect(screen.queryByTestId('nownext-show-more')).not.toBeInTheDocument()
   })
 
+  it('medan snapshotet laddar (kanaler finns) bär tomrutan startstationen — exakt en', () => {
+    // Ingen `flushLiveTvIndex()`: kanalerna finns synkront, nu-snapshotet är
+    // fortfarande på väg → `epgLoading` och alla kanaler saknar tablå.
+    render(<LiveTvTvShell pageId="live-tv-browse" params={{ view: 'guide' }} onNavigate={() => {}} onOpenDetails={() => {}} />)
+    const empty = screen.getByTestId('nownext-empty')
+    expect(empty).toBeVisible()
+    expect(empty).toHaveTextContent('Fetching guide…')
+    expect(empty).toHaveAttribute('data-init')
+    expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
+  })
+
   it('utan kanaler bär tomrutan startstationen och ingen banner ritas', async () => {
     writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ ...list, channels: [] }])
     seedLiveTvIndex({ cache: { index: {}, fetchedAt: now, sources: [] } })
