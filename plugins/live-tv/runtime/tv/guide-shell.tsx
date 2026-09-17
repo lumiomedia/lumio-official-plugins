@@ -109,7 +109,10 @@ export function TvGuideShell({ model, nav, params }: TvViewProps) {
     setWindowStart(d === 1 ? startOfLocalDay(model.nowMs, 1) + 6 * 3_600_000 : guideWindowStart(model.nowMs))
     setSelection(null)
   }
-  const jumpToNow = () => { setDayOffset(0); setWindowStart(guideWindowStart(model.nowMs)) }
+  // `nowTick` räknas upp även när fönstret redan står på dagens halvtimme:
+  // Grid scrollar till nu-linjen på VARJE Nu-tryck, inte bara när state byts.
+  const [nowTick, setNowTick] = useState(0)
+  const jumpToNow = () => { setDayOffset(0); setWindowStart(guideWindowStart(model.nowMs)); setNowTick((n) => n + 1) }
   // Timeline → Grid vid en tidpunkt: samma lägesbyte som segmentet (lagring +
   // lägesstack, så Bakåt tar en tillbaka till Timeline) med fönstret på
   // tidpunktens halvtimme. Dagen följer tidpunkten, så en klickad tid på
@@ -139,7 +142,7 @@ export function TvGuideShell({ model, nav, params }: TvViewProps) {
   const categoryCount = categoryOptions.find((o) => o.key === category)?.count ?? model.channels.length
 
   // Vyernas gemensamma props: fönstret rakt ur state (se `windowStart`).
-  const viewProps: GuideViewProps = { model, nav, category, dayOffset, windowStart, selection, onSelect: setSelection, isTv }
+  const viewProps: GuideViewProps = { model, nav, category, dayOffset, windowStart, nowTick, selection, onSelect: setSelection, isTv }
 
   const view = mode === 'nownext'
     ? <GuideNowNextView {...viewProps} details={settings.nowNextDetails} />

@@ -5,20 +5,24 @@ import { flushLiveTvIndex, seedLiveTvIndex } from '../../src/__test-stubs__/live
 import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
 import { startOfLocalDay } from '../live-tv-model'
 import { formatClock } from '../live-tv-ui'
-import { guideWindowStart } from './epg-grid-geometry'
+import { guideWindowStart, nowLinePx } from './epg-grid-geometry'
+import { PX_PER_MIN_GRID } from './guide-grid-view'
+import { gp } from './guide-view-shared'
 import type { EpgCacheEntry } from '../epg/types'
 
 vi.mock('../live-tv-player', () => ({ LiveTvPlayer: ({ channel }: { channel: { name: string } }) => <div data-testid="player">{channel.name}</div> }))
 import { LiveTvTvShell } from './tv-shell'
 
 /**
- * Grid i den städade guiden (spec §4, handoffen §1): halvtimmesfönster,
- * block i procent, kollapsade tomma rader sist, pagineringsrad under listan
- * och en permanent detaljpanel till höger. Monteras via skalet i TV-läge
- * med lagrat läge `grid`.
+ * Grid i den städade guiden (spec §4, handoffen §1, Jerrys feedback):
+ * hela dagen i px bakom en fast kanalkolumn, x-scroll i EN yta med sticky
+ * tidsaxel, kollapsade tomma rader sist, pagineringsrad under ytan och en
+ * permanent detaljpanel till höger. Monteras via skalet i TV-läge med lagrat
+ * läge `grid`.
  *
- * `Now A` börjar 45 min före nu — alltså FÖRE fönstrets start (som ligger
- * högst 30 min bakåt) — och ska klippas till spårets vänsterkant.
+ * `Now A` börjar 45 min före nu — alltså FÖRE fönstrets start (halvtimmen
+ * före nu, som ligger 30–60 min bakåt) — och ska klippas till spårets
+ * vänsterkant.
  */
 const now = Date.now()
 const ch = (name: string, group: string, tvgId: string | null = null) => ({ name, logo: null, group, url: `http://x/${name}`, tvgId })
@@ -65,35 +69,71 @@ const blockByTitle = (title: string): HTMLElement => {
   if (!found) throw new Error(`inget block med titeln ${title}`)
   return found
 }
-const pct = (value: string) => Number.parseFloat(value)
+const px = (value: string) => Number.parseFloat(value)
+/** Fönstrets start: halvtimmen före närmast föregående halvtimme. */
+const gridStart = guideWindowStart(now) - 30 * 60_000
 
 describe('GuideGridView (TV-läge)', () => {
-  it('tidsaxeln har sex etiketter från närmast föregående halvtimme', async () => {
+  it('tidsaxeln har en etikett var 30:e minut från halvtimmen före nu till i morgon 06:00', async () => {
     await mount()
     const labels = screen.getAllByTestId('grid-time-label')
-    expect(labels).toHaveLength(6)
-    const start = guideWindowStart(now)
-    expect(labels[0]).toHaveTextContent(formatClock(start, 'en-GB'))
-    expect(labels[5]).toHaveTextContent(formatClock(start + 5 * 30 * 60_000, 'en-GB'))
+    expect(labels.length).toBeGreaterThanOrEqual(20)
+    expect(labels[0]).toHaveTextContent(formatClock(gridStart, 'en-GB'))
+    expect(labels[1]).toHaveTextContent(formatClock(gridStart + 30 * 60_000, 'en-GB'))
+    expect(Number(labels[labels.length - 1].getAttribute('data-ms'))).toBeLessThan(startOfLocalDay(now, 1) + 6 * 3_600_000)
+    for (const label of labels) expect(px(label.style.width)).toBe(30 * PX_PER_MIN_GRID)
   })
 
-  it('nu-linjen ligger i vänstra fjärdedelen vid mount och skrivs i procent', async () => {
+  it('nu-linjen skrivs i px från fönstrets start, 30–60 min in', async () => {
     await mount()
     const line = screen.getByTestId('grid-now-line')
-    expect(line.style.left.endsWith('%')).toBe(true)
-    expect(pct(line.style.left)).toBeGreaterThanOrEqual(0)
-    expect(pct(line.style.left)).toBeLessThan(25)
+    expect(line.style.left.endsWith('px')).toBe(true)
+    // Modellens nu är en bråkdel av en sekund efter testets — långt under en minut.
+    expect(Math.abs(px(line.style.left) - nowLinePx(now, gridStart, PX_PER_MIN_GRID))).toBeLessThan(PX_PER_MIN_GRID)
+    expect(px(line.style.left)).toBeGreaterThanOrEqual(30 * PX_PER_MIN_GRID)
+    expect(px(line.style.left)).toBeLessThanOrEqual(60 * PX_PER_MIN_GRID)
   })
 
-  it('ett block som började före fönstret klipps till vänsterkanten och blocken skrivs i procent', async () => {
+  it('kanalkolumnen är sticky i varje rad och i tidsaxelns hörn', async () => {
+    await mount()
+    for (const cell of screen.getAllByTestId('grid-channel')) {
+      expect(cell.style.position).toBe('sticky')
+      expect(cell.style.left).toBe('0px')
+    }
+    const corner = screen.getByTestId('grid-time-axis').firstElementChild as HTMLElement
+    expect(corner.style.position).toBe('sticky')
+    expect(screen.getByTestId('grid-time-axis').style.position).toBe('sticky')
+    expect(screen.getByTestId('grid-scroll').contains(screen.getByTestId('grid-time-axis'))).toBe(true)
+    // Tomma raders cell spänner spåret och är INTE sticky.
+    expect(screen.getAllByTestId('grid-empty-cell')[0].style.position).not.toBe('sticky')
+  })
+
+  it('scrollar så nu-linjen landar strax intill kanalkolumnen när raderna kommit', async () => {
+    await mount()
+    const nowLeft = px(screen.getByTestId('grid-now-line').style.left)
+    expect(screen.getByTestId('grid-scroll').scrollLeft).toBeCloseTo(Math.max(0, nowLeft - gp(40)), 3)
+  })
+
+  it('Nu-knappen scrollar tillbaka till nu-linjen även när fönstret redan står på dagens halvtimme', async () => {
+    await mount()
+    const scroll = screen.getByTestId('grid-scroll')
+    const expected = scroll.scrollLeft
+    scroll.scrollLeft = expected + 3000
+    fireEvent.click(screen.getByTestId('guide-now'))
+    expect(scroll.scrollLeft).toBeCloseTo(expected, 3)
+  })
+
+  it('ett block som började före fönstret klipps till vänsterkanten och blocken skrivs i px', async () => {
     await mount()
     const nowBlock = blockByTitle('Now A')
-    expect(nowBlock.style.left).toBe('0%')
-    expect(nowBlock.style.width.endsWith('%')).toBe(true)
+    expect(nowBlock.style.left).toBe('0px')
+    expect(nowBlock.style.width.endsWith('px')).toBe(true)
     expect(nowBlock).toHaveAttribute('data-live')
-    // 30 min av 180 = 16,67 %.
+    expect(nowBlock).toHaveAttribute('title', expect.stringContaining('…–'))
+    // 30 min = 30 × PX_PER_MIN_GRID px, tillräckligt för titel + tid.
     const next = blockByTitle('Next A')
-    expect(pct(next.style.width)).toBeCloseTo(100 / 6, 1)
+    expect(px(next.style.width)).toBeCloseTo(30 * PX_PER_MIN_GRID, 1)
+    expect(next).toHaveAttribute('data-shape', 'full')
     expect(next).not.toHaveAttribute('data-live')
   })
 
@@ -172,11 +212,12 @@ describe('GuideGridView (TV-läge)', () => {
     expect(screen.getByText('Remind me')).toBeInTheDocument()
   })
 
-  it('Imorgon flyttar fönstret till 06:00 nästa dag', async () => {
+  it('Imorgon flyttar fönstret till 06:00–06:00 nästa dag', async () => {
     await mount()
     fireEvent.click(within(screen.getByTestId('guide-control-row')).getByText('Tomorrow'))
     await flushLiveTvIndex()
     const labels = screen.getAllByTestId('grid-time-label')
+    expect(labels).toHaveLength(48)
     expect(labels[0]).toHaveTextContent(formatClock(startOfLocalDay(now, 1) + 6 * 3_600_000, 'en-GB'))
     expect(screen.queryByTestId('grid-now-line')).not.toBeInTheDocument()
   })

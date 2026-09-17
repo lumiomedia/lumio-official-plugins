@@ -5,7 +5,8 @@ import { flushLiveTvIndex, seedLiveTvIndex } from '../../src/__test-stubs__/live
 import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
 import { startOfLocalDay } from '../live-tv-model'
 import { formatClock } from '../live-tv-ui'
-import { guideWindowStart } from './epg-grid-geometry'
+import { guideWindowStart, nowLinePx } from './epg-grid-geometry'
+import { PX_PER_MIN_GRID } from './guide-grid-view'
 import { getGuideMode, getTvSettings, setTvSettings } from './tv-settings-store'
 import type { EpgCacheEntry } from '../epg/types'
 import { gp } from './guide-view-shared'
@@ -26,6 +27,19 @@ import { LiveTvTvShell } from './tv-shell'
  */
 const now = Date.now()
 const dayStart = startOfLocalDay(now) + 6 * 3_600_000
+/**
+ * Grid visar hela dagen och scrollar till begärd tid (Nu när halvtimmen är
+ * dagens, annars den klickade), `gp(40)` före, när innehållet kommit —
+ * samma formel som vyn. Fönstret börjar halvtimmen före nu i dag, 06:00
+ * i morgon.
+ */
+const expectGridScrolledTo = async (targetMs: number, dayOffset: 0 | 1 = 0) => {
+  await flushLiveTvIndex()
+  const nowMs = Date.now()
+  const gridStart = dayOffset === 1 ? startOfLocalDay(nowMs, 1) + 6 * 3_600_000 : guideWindowStart(nowMs) - 30 * 60_000
+  const target = targetMs === guideWindowStart(nowMs) ? nowMs : targetMs
+  expect(screen.getByTestId('grid-scroll').scrollLeft).toBeCloseTo(Math.max(0, nowLinePx(target, gridStart, PX_PER_MIN_GRID) - gp(40)), 0)
+}
 const at = (hours: number, minutes = 0) => dayStart + (hours - 6) * 3_600_000 + minutes * 60_000
 const ch = (name: string, group: string, tvgId: string | null = null) => ({ name, logo: null, group, url: `http://x/${name}`, tvgId })
 const list: LiveTvList = {
@@ -166,7 +180,7 @@ describe('GuideTimelineView (TV-läge)', () => {
       fireEvent.keyUp(row, { key: 'Enter' })
       expect(getGuideMode()).toBe('grid')
       expect(screen.getByTestId('guide-shell')).toHaveAttribute('data-guide-mode', 'grid')
-      expect(screen.getAllByTestId('grid-time-label')[0]).toHaveTextContent(formatClock(guideWindowStart(fixedNow), 'en-GB'))
+      await expectGridScrolledTo(guideWindowStart(fixedNow))
     })
   })
 
@@ -199,7 +213,7 @@ describe('GuideTimelineView (skrivbordsappen, inte TV)', () => {
     // 45 % in i 06–24 = 06 + 8,1 h = 14:06 → Grid öppnar 14:00.
     fireEvent.click(row, { clientX: 550 })
     expect(getGuideMode()).toBe('grid')
-    expect(screen.getAllByTestId('grid-time-label')[0]).toHaveTextContent(formatClock(at(14), 'en-GB'))
+    await expectGridScrolledTo(at(14))
   })
 
   it('Imorgon + klick i spåret öppnar Grid vid den klickade tiden imorgon — inte 06:00', async () => {
@@ -214,7 +228,7 @@ describe('GuideTimelineView (skrivbordsappen, inte TV)', () => {
     fireEvent.click(cell, { clientX: 450 })
     expect(getGuideMode()).toBe('grid')
     const tomorrow14 = startOfLocalDay(now, 1) + 14 * 3_600_000
-    expect(screen.getAllByTestId('grid-time-label')[0]).toHaveTextContent(formatClock(tomorrow14, 'en-GB'))
+    await expectGridScrolledTo(tomorrow14, 1)
     expect(screen.getByTestId('guide-day').querySelector('[data-active]')).toHaveTextContent('Tomorrow')
   })
 
@@ -225,6 +239,6 @@ describe('GuideTimelineView (skrivbordsappen, inte TV)', () => {
     // 0 % = fönstrets start = 06:00.
     fireEvent.click(cell, { clientX: 0 })
     expect(getGuideMode()).toBe('grid')
-    expect(screen.getAllByTestId('grid-time-label')[0]).toHaveTextContent(formatClock(at(6), 'en-GB'))
+    await expectGridScrolledTo(at(6))
   })
 })

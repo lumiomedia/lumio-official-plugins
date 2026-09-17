@@ -21,6 +21,8 @@ export interface GuideViewProps {
   dayOffset: 0 | 1
   /** Fönstrets start (halvtimmesjusterad, vy-state — inte lagring). */
   windowStart: number
+  /** Räknas upp på varje Nu-tryck, så Grid scrollar till nu-linjen även när `windowStart` redan är dagens halvtimme. */
+  nowTick?: number
   selection: GuideSelection | null
   onSelect(sel: GuideSelection | null): void
   /** TV-läget: fokus styr markeringen, `OK = …`-texter får visas. */
