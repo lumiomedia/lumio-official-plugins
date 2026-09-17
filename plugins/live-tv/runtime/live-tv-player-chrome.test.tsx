@@ -50,13 +50,14 @@ beforeEach(() => {
 describe('LiveTvPlayer: kromet', () => {
   it('ritar TV-kromet även utanför TV-läget när skalet gett tv-props', () => {
     render(<LiveTvPlayer channel={channels[1]} onClose={() => {}} tv={tv()} />)
-    expect(screen.getByText('GameDay')).toBeInTheDocument()
-    expect(screen.getByText('2 · B')).toBeInTheDocument()
+    expect(screen.getByTestId('top-bar')).toHaveTextContent('GameDay')
+    expect(screen.getByTestId('top-bar')).toHaveTextContent('2 · B')
+    expect(screen.getByTestId('control-row')).toBeInTheDocument()
   })
 
   it('ritar det i TV-läget också — samma krom, samma villkor', () => {
     __setTvModeForTests(true)
     render(<LiveTvPlayer channel={channels[1]} onClose={() => {}} tv={tv()} />)
-    expect(screen.getByText('GameDay')).toBeInTheDocument()
+    expect(screen.getByTestId('top-bar')).toHaveTextContent('GameDay')
   })
 })

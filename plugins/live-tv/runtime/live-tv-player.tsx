@@ -976,6 +976,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
     volume: volumeLevel,
     fullscreen: desktopFullscreen,
     aspectLabel: ASPECT_OPTIONS[aspectIndex].label,
+    timePos: mpvTimePos,
     onToggleMute: toggleMute,
     onVolume: updateVolume,
     onToggleFullscreen: toggleFullscreen,

@@ -38,8 +38,8 @@ export interface LiveTvPlayerTvProps {
  * det här är spelarens eget tillstånd — bara `live-tv-player.tsx` kan äga
  * det (motorn, `<video>`-elementet, fönstret).
  *
- * Kromet ritar dem BARA utanför TV-läget: på TV sköter fjärrkontrollen
- * ljudet och handoffens spelarskärm (§9) ska inte ha några knapprader.
+ * Kontrollraden ritas på både skrivbord och TV (den gamla layouten är
+ * tillbaka); bara volymreglaget utelämnas på TV, där ljud av/på räcker.
  */
 export interface LiveTvPlayerControls {
   muted: boolean
@@ -48,6 +48,8 @@ export interface LiveTvPlayerControls {
   fullscreen: boolean
   /** Namnet på det valda läget, t.ex. "Auto" eller "16:9". */
   aspectLabel: string
+  /** Spelad tid i sekunder (motorns time-pos) för kontrollradens klocka. */
+  timePos?: number | null
   onToggleMute(): void
   onVolume(next: number): void
   onToggleFullscreen(): void

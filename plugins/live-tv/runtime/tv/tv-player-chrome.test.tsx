@@ -1,12 +1,25 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { __setTvModeForTests } from '@/lib/plugin-sdk'
+import { __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
+import { flushLiveTvIndex, seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
+import { LIVE_TV_PLUGIN_ID, channelKey, type LiveTvList } from '../live-tv-data'
+import { isReminded } from '../reminders'
+import type { EpgCacheEntry } from '../epg/types'
 import { TvPlayerChrome } from './tv-player-chrome'
 import type { LiveTvPlayerTvProps } from './tv-player-types'
 
 const now = Date.now()
+const H = 3_600_000
 const ch = (name: string) => ({ name, logo: null, group: 'Sport', url: `http://x/${name}`, tvgId: null })
 const channels = [ch('A'), ch('B'), ch('C')]
+/** Kanal med tablå i appens index (EPG-överlägget hämtar via `useSchedules`). */
+const epgChannel = { ...ch('ESPN'), tvgId: 'espn.tv' }
+const list: LiveTvList = { id: 'l1', name: 'Xtream', channels: [...channels, epgChannel], createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null }
+const cache: EpgCacheEntry = { index: { 'espn.tv': [
+  { title: 'Morning', start: now - 3 * H, stop: now - 2 * H },
+  { title: 'GameDay', start: now - 30 * 60_000, stop: now + 30 * 60_000, description: 'Live now' },
+  { title: 'Football', start: now + 30 * 60_000, stop: now + 90 * 60_000 },
+] }, fetchedAt: now, sources: [] }
 const nowFor = (c: { name: string }) => (c.name === 'B' ? { now: { title: 'GameDay', start: now - 60_000, stop: now + 60_000 }, next: { title: 'Football', start: now + 60_000, stop: now + 120_000 }, later: null } : { now: null, next: null, later: null })
 
 function tv(overrides: Partial<LiveTvPlayerTvProps> = {}): LiveTvPlayerTvProps {
@@ -16,14 +29,31 @@ function tv(overrides: Partial<LiveTvPlayerTvProps> = {}): LiveTvPlayerTvProps {
 afterEach(cleanup)
 // Default utanför TV-läget om inget test säger annat (stubbens egen default).
 afterEach(() => { __setTvModeForTests(false) })
+beforeEach(() => {
+  __resetForTests()
+  writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list])
+  writePluginJson(LIVE_TV_PLUGIN_ID, 'pins', [])
+  seedLiveTvIndex({ cache })
+})
 
 describe('TvPlayerChrome', () => {
-  it('visar banner med titel, tid och Sen, och ⋯ är data-init', () => {
+  it('toppfältet visar kanal, nu-rad och Sen-kortet; ⋯ är kromets enda data-init', () => {
     render(<TvPlayerChrome channel={channels[1]} tv={tv()} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
-    expect(screen.getByText('GameDay')).toBeInTheDocument()
-    expect(screen.getByText(/Football/)).toBeInTheDocument()
+    expect(screen.getByTestId('top-bar')).toHaveTextContent('2 · B')
+    expect(screen.getByTestId('top-bar')).toHaveTextContent('GameDay')
+    expect(screen.getByTestId('next-up')).toHaveTextContent('Football')
+    expect(screen.getByTestId('next-up-remind')).toHaveTextContent('Remind me')
+    expect(screen.getByTestId('programme-progress')).toHaveTextContent('GameDay')
     expect(screen.getByLabelText('More')).toHaveAttribute('data-init')
-    expect(screen.getByText('2 · B')).toBeInTheDocument()
+    expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
+  })
+  it('Påminn mig på Sen-kortet togglar påminnelsen', () => {
+    render(<TvPlayerChrome channel={channels[1]} tv={tv()} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
+    fireEvent.click(screen.getByTestId('next-up-remind'))
+    expect(screen.getByTestId('next-up-remind')).toHaveTextContent('Reminder set')
+    expect(isReminded(channels[1], { start: now + 60_000 })).toBe(true)
+    fireEvent.click(screen.getByTestId('next-up-remind'))
+    expect(screen.getByTestId('next-up-remind')).toHaveTextContent('Remind me')
   })
   it('⋯ tar fokus när spelaren öppnas och behåller det över ett kanalbyte', async () => {
     const view = render(<TvPlayerChrome channel={channels[1]} tv={tv()} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
@@ -38,61 +68,92 @@ describe('TvPlayerChrome', () => {
     await act(async () => { await new Promise((r) => setTimeout(r, 120)) })
     expect(document.activeElement).toBe(screen.getByLabelText('More'))
   })
-  it('mini-guiden fokuserar ett kort även när kanalen inte finns i listan', async () => {
-    // Spelas något utanför `neighbours` (index −1) fanns ingen data-init alls
-    // och mini-guiden öppnades utan fokus i sig.
-    const outsider = ch('Z')
-    render(<TvPlayerChrome channel={outsider} tv={tv()} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
-    await act(async () => { await new Promise((r) => setTimeout(r, 60)) })
-    fireEvent.keyDown(window, { key: 'ArrowDown' })
-    await act(async () => { await new Promise((r) => setTimeout(r, 60)) })
-    const cards = screen.getAllByTestId('mini-card')
-    expect(cards.filter((c) => c.hasAttribute('data-init'))).toHaveLength(1)
-    expect(cards[0]).toHaveAttribute('data-init')
-    expect(cards).toContain(document.activeElement)
+  it('favoritraden ritar chips med logotyp, namn och nu-titel; klick byter kanal', () => {
+    const props = tv()
+    render(<TvPlayerChrome channel={channels[1]} tv={props} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
+    const chips = screen.getAllByTestId('favourite-chip')
+    expect(chips).toHaveLength(3)
+    expect(chips[1]).toHaveAttribute('aria-current', 'true')
+    expect(chips[1]).toHaveTextContent('GameDay')
+    expect(chips[0]).toHaveTextContent('A')
+    expect(chips[0]).toHaveTextContent('No programme information')
+    expect(chips[0].querySelector('[data-initials]')).not.toBeNull()
+    fireEvent.click(chips[2])
+    expect(props.onSwitchChannel).toHaveBeenCalledWith(channels[2])
   })
-  it('mini-guiden fönstrar en stor kanallista i stället för att rita hela', () => {
+  it('favoritraden lägger favoriterna först och fönstrar resten runt den spelande kanalen', () => {
     // `tv.neighbours` ÄR modellens kompletta kanallista — i en IPTV-spellista
-    // tiotusentals poster, och varje kort slår dessutom upp `tv.nowFor(c)`.
-    // Ett enda ▾ byggde alltså hela listan på en gång och frös TV-boxen i
-    // sekunder. Fjärrkontrollen går ändå bara ett steg i taget.
+    // tiotusentals poster, och varje chip slår upp `tv.nowFor(c)`. Raden får
+    // aldrig rita allt.
     const many = Array.from({ length: 300 }, (_, i) => ch(`K${i}`))
-    render(<TvPlayerChrome channel={many[150]} tv={tv({ neighbours: many })} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
-    fireEvent.keyDown(window, { key: 'ArrowDown' })
-    const cards = screen.getAllByTestId('mini-card')
-    expect(cards.length).toBeLessThanOrEqual(51)
-    // Fönstret är centrerat kring den spelande kanalen …
-    expect(cards[0]).toHaveTextContent('K125')
-    expect(cards[cards.length - 1]).toHaveTextContent('K175')
-    // … och exakt ett kort bär startfokus.
-    expect(cards.filter((c) => c.hasAttribute('data-init'))).toHaveLength(1)
+    render(<TvPlayerChrome channel={many[150]} tv={tv({ neighbours: many, pinnedKeys: [channelKey(many[3]), channelKey(many[280])] })} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
+    const chips = screen.getAllByTestId('favourite-chip')
+    expect(chips.length).toBeLessThanOrEqual(53)
+    expect(chips[0]).toHaveTextContent('K3')
+    expect(chips[1]).toHaveTextContent('K280')
+    expect(chips[2]).toHaveTextContent('K125')
+    expect(chips[chips.length - 1]).toHaveTextContent('K175')
   })
-  it('mini-guiden tar de första korten när kanalen inte finns i en stor lista', () => {
+  it('favoritraden tar de första korten när kanalen inte finns i listan, med den spelande först', () => {
     const many = Array.from({ length: 300 }, (_, i) => ch(`K${i}`))
     render(<TvPlayerChrome channel={ch('Utanför')} tv={tv({ neighbours: many })} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
-    fireEvent.keyDown(window, { key: 'ArrowDown' })
-    const cards = screen.getAllByTestId('mini-card')
-    expect(cards).toHaveLength(50)
-    expect(cards[0]).toHaveTextContent('K0')
-    expect(cards.filter((c) => c.hasAttribute('data-init'))).toHaveLength(1)
+    const chips = screen.getAllByTestId('favourite-chip')
+    expect(chips).toHaveLength(51)
+    expect(chips[0]).toHaveTextContent('Utanför')
+    expect(chips[1]).toHaveTextContent('K0')
   })
-  it('bannern döljs efter tiden och ▲ visar den igen', () => {
+  it('fälten döljs efter tiden och en tangent visar dem igen; musen över ett fält håller dem kvar', () => {
     vi.useFakeTimers()
     render(<TvPlayerChrome channel={channels[1]} tv={tv()} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
     act(() => { vi.advanceTimersByTime(4100) })
     expect(screen.getByTestId('banner').style.opacity).toBe('0')
+    expect(screen.getByTestId('top-bar').style.opacity).toBe('0')
     fireEvent.keyDown(window, { key: 'ArrowUp' })
     expect(screen.getByTestId('banner').style.opacity).toBe('1')
+    // Musen vilar på fältet: göm-timern står stilla (gamla keepControlsVisible).
+    fireEvent.mouseEnter(screen.getByTestId('banner'))
+    act(() => { vi.advanceTimersByTime(10_000) })
+    expect(screen.getByTestId('banner').style.opacity).toBe('1')
+    fireEvent.mouseLeave(screen.getByTestId('banner'))
+    act(() => { vi.advanceTimersByTime(4100) })
+    expect(screen.getByTestId('banner').style.opacity).toBe('0')
     vi.useRealTimers()
   })
-  it('▾ öppnar mini-guiden och OK på ett kort byter kanal', () => {
+  it('Guide öppnar EPG-överlägget med dagens tablå och favoritraden; Guide igen stänger', async () => {
     const props = tv()
-    render(<TvPlayerChrome channel={channels[1]} tv={props} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
-    fireEvent.keyDown(window, { key: 'ArrowDown' })
-    const cards = screen.getAllByTestId('mini-card')
-    expect(cards).toHaveLength(3)
-    fireEvent.click(cards[2])
+    render(<TvPlayerChrome channel={epgChannel} tv={props} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
+    fireEvent.click(screen.getByLabelText('Guide'))
+    await flushLiveTvIndex()
+    const rows = screen.getAllByTestId('schedule-row')
+    expect(rows).toHaveLength(3)
+    expect(rows[0]).toHaveTextContent('Morning')
+    expect(rows[0]).not.toHaveAttribute('data-f') // passerat: dämpat, ingen station
+    expect(rows[1]).toHaveAttribute('data-now')
+    expect(rows[1]).toHaveTextContent('GameDay')
+    expect(rows[2]).toHaveTextContent('Football')
+    expect(rows[2]).toHaveTextContent('Remind me')
+    // Fokus står i överlägget (nu-raden) så fjärren kan gå vidare.
+    expect(document.activeElement).toBe(rows[1])
+    // Påminn mig på en kommande rad.
+    fireEvent.click(rows[2])
+    expect(rows[2]).toHaveTextContent('Reminder set')
+    // Guide-knappen igen stänger, och öppnar på nytt.
+    fireEvent.click(screen.getByLabelText('Guide'))
+    expect(screen.queryByTestId('schedule-overlay')).toBeNull()
+    fireEvent.click(screen.getByLabelText('Guide'))
+    // Favoritraden finns i överlägget också: klick byter kanal och stänger.
+    const chips = screen.getByTestId('schedule-overlay').querySelectorAll('[data-testid="favourite-chip"]')
+    expect(chips.length).toBeGreaterThan(1)
+    fireEvent.click(chips[chips.length - 1])
     expect(props.onSwitchChannel).toHaveBeenCalledWith(channels[2])
+    expect(screen.queryByTestId('schedule-overlay')).toBeNull()
+  })
+  it('överlägget visar tomtext när kanalen saknar tablå', async () => {
+    render(<TvPlayerChrome channel={channels[1]} tv={tv()} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
+    fireEvent.click(screen.getByLabelText('Guide'))
+    await flushLiveTvIndex()
+    expect(screen.getByTestId('schedule-overlay')).toHaveTextContent('No programme information')
+    expect(screen.queryAllByTestId('schedule-row')).toHaveLength(0)
   })
   it('ChannelUp/Down byter till grannkanal', () => {
     const props = tv()
@@ -102,7 +163,7 @@ describe('TvPlayerChrome', () => {
     fireEvent.keyDown(window, { key: 'PageDown' })
     expect(props.onSwitchChannel).toHaveBeenLastCalledWith(channels[0])
   })
-  it('⋯ öppnar glasmenyn med rätt poster', () => {
+  it('⋯ öppnar glasmenyn med rätt poster, och Guide där öppnar överlägget', () => {
     render(<TvPlayerChrome channel={channels[1]} tv={tv()} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
     fireEvent.click(screen.getByLabelText('More'))
     const menu = screen.getByTestId('tv-glass-menu')
@@ -112,34 +173,51 @@ describe('TvPlayerChrome', () => {
     expect(menu).toHaveTextContent('Channel details')
     expect(menu).toHaveTextContent('Pause')
     expect(menu).not.toHaveTextContent(/Record|Spela in/)
+    fireEvent.click(screen.getByText('Guide (now / next)'))
+    expect(screen.getByTestId('schedule-overlay')).toBeInTheDocument()
+  })
+  it('spela/paus i kontrollraden speglar paused och kallar onTogglePause', () => {
+    const onTogglePause = vi.fn()
+    const view = render(<TvPlayerChrome channel={channels[1]} tv={tv()} paused={false} onTogglePause={onTogglePause} onClose={() => {}} />)
+    fireEvent.click(screen.getByLabelText('Pause'))
+    expect(onTogglePause).toHaveBeenCalledTimes(1)
+    view.rerender(<TvPlayerChrome channel={channels[1]} tv={tv()} paused={true} onTogglePause={onTogglePause} onClose={() => {}} />)
+    expect(screen.getByLabelText('Resume')).toBeInTheDocument()
+  })
+  it('Stäng-knappen i toppfältet stänger spelaren', () => {
+    const onClose = vi.fn()
+    render(<TvPlayerChrome channel={channels[1]} tv={tv()} paused={false} onTogglePause={() => {}} onClose={onClose} />)
+    fireEvent.click(screen.getByLabelText('Close'))
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
   // Fix round 1 (Task 16-review): Back ska ägas explicit av kromet, inte av
   // lyssnarregistreringsordning mellan skal/spelare/krom på samma `window`.
-  it('Backspace med öppen mini-guide stänger INTE spelaren, bara mini-guiden', () => {
+  it('Backspace med öppet överlägg stänger INTE spelaren, bara överlägget', () => {
     const onClose = vi.fn()
     render(<TvPlayerChrome channel={channels[1]} tv={tv()} paused={false} onTogglePause={() => {}} onClose={onClose} />)
-    fireEvent.keyDown(window, { key: 'ArrowDown' })
-    expect(screen.getAllByTestId('mini-card')).toHaveLength(3)
-    fireEvent.keyDown(window, { key: 'Backspace' })
+    fireEvent.click(screen.getByLabelText('Guide'))
+    expect(screen.getByTestId('schedule-overlay')).toBeInTheDocument()
+    fireEvent.keyDown(window, { key: 'Escape' })
     expect(onClose).not.toHaveBeenCalled()
-    expect(screen.queryAllByTestId('mini-card')).toHaveLength(0)
+    expect(screen.queryByTestId('schedule-overlay')).toBeNull()
   })
-  it('Backspace utan öppen mini-guide stänger spelaren', () => {
+  it('Backspace utan öppet överlägg stänger spelaren', () => {
     const onClose = vi.fn()
     render(<TvPlayerChrome channel={channels[1]} tv={tv()} paused={false} onTogglePause={() => {}} onClose={onClose} />)
     fireEvent.keyDown(window, { key: 'Backspace' })
     expect(onClose).toHaveBeenCalledTimes(1)
   })
-  it('OK på ett mini-guidekort lämnar fokus på ⋯ och inte på body', async () => {
+  it('OK på ett chip i överlägget lämnar fokus på ⋯ och inte på body', async () => {
     const props = tv()
     render(<TvPlayerChrome channel={channels[1]} tv={props} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
-    fireEvent.keyDown(window, { key: 'ArrowDown' })
-    const cards = screen.getAllByTestId('mini-card')
-    cards[2].focus()
-    fireEvent.click(cards[2])
+    fireEvent.click(screen.getByLabelText('Guide'))
+    const chips = screen.getByTestId('schedule-overlay').querySelectorAll<HTMLElement>('[data-testid="favourite-chip"]')
+    chips[2].focus()
+    fireEvent.click(chips[2])
     expect(props.onSwitchChannel).toHaveBeenCalledWith(channels[2])
-    // setTimeout 0 i closeMini: fokus sätts efter att korten tagits bort.
+    // setTimeout 0 i closeGuide: fokus sätts efter att raderna tagits bort.
     await act(async () => { await new Promise((r) => setTimeout(r, 10)) })
+    expect(screen.queryByTestId('schedule-overlay')).toBeNull()
     expect(document.activeElement).toBe(screen.getByLabelText('More'))
   })
   it('◂ ▸ och OK når inte vyn bakom spelaren, men släpps igenom inne i kromet', () => {
@@ -185,6 +263,34 @@ describe('TvPlayerChrome', () => {
     fireEvent.keyDown(window, { key: 'Backspace' })
     expect(later).not.toHaveBeenCalled()
     window.removeEventListener('keydown', later, true)
+  })
+})
+
+// TV-läget: samma layout i 1,4× — alla knappar och chips är stationer med
+// `data-guide-row` (grå fokuskant, ingen accentglöd) och exakt EN data-init.
+describe('TvPlayerChrome i TV-läge', () => {
+  it('chips och knappar är stationer med data-guide-row, roten bär tv-root och exakt en data-init', () => {
+    __setTvModeForTests(true)
+    render(<TvPlayerChrome channel={channels[1]} tv={tv()} controls={{ muted: false, volume: 0.5, fullscreen: false, aspectLabel: 'Auto', onToggleMute: vi.fn(), onVolume: vi.fn(), onToggleFullscreen: vi.fn(), onCycleAspect: vi.fn() }} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
+    const root = document.querySelector('[data-live-tv-tv-root]')
+    expect(root).not.toBeNull()
+    expect(root).not.toHaveAttribute('data-live-tv-desktop')
+    for (const chip of screen.getAllByTestId('favourite-chip')) {
+      expect(chip).toHaveAttribute('data-f')
+      expect(chip).toHaveAttribute('data-guide-row')
+    }
+    for (const label of ['Pause', 'Fullscreen', 'Guide', 'Mute', 'Aspect ratio', 'More', 'Close']) {
+      expect(screen.getByLabelText(label)).toHaveAttribute('data-f')
+      expect(screen.getByLabelText(label)).toHaveAttribute('data-guide-row')
+    }
+    expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
+    expect(screen.getByLabelText('More')).toHaveAttribute('data-init')
+    // Volymreglaget ritas inte på TV: en station som sväljer sidopilarna låser fjärren.
+    expect(screen.queryByLabelText('Volume')).toBeNull()
+  })
+  it('utanför TV-läget bär roten data-live-tv-desktop (ingen accentkant på stationerna)', () => {
+    render(<TvPlayerChrome channel={channels[1]} tv={tv()} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
+    expect(document.querySelector('[data-live-tv-tv-root]')).toHaveAttribute('data-live-tv-desktop', '1')
   })
 })
 
