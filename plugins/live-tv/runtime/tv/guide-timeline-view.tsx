@@ -305,6 +305,7 @@ function TimelineBlock({ box, programme, title, locale, live }: { box: EpgBlockB
   return (
     <div
       data-testid="timeline-block"
+      data-guide-block=""
       data-shape={box.shape}
       data-live={live ? '' : undefined}
       title={`${label}${times}`}
@@ -318,7 +319,7 @@ function TimelineBlock({ box, programme, title, locale, live }: { box: EpgBlockB
           padding: marker ? 0 : `0 ${gp(8)}px`,
           display: 'flex',
           alignItems: 'center',
-          background: marker ? TV.acc : live ? 'rgba(59,130,246,0.22)' : TV.s05,
+          background: marker ? TV.acc : live ? 'rgba(59,130,246,0.22)' : TV.s08,
           border: live ? '1px solid rgba(59,130,246,0.5)' : '1px solid transparent',
           overflow: 'hidden',
         }}

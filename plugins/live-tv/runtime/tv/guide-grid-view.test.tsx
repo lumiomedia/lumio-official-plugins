@@ -126,10 +126,15 @@ describe('GuideGridView (TV-läge)', () => {
   it('ett block som började före fönstret klipps till vänsterkanten och blocken skrivs i px', async () => {
     await mount()
     const nowBlock = blockByTitle('Now A')
-    expect(nowBlock.style.left).toBe('0px')
+    // Fönstret börjar 30 min före föregående halvtimme; "Now A" startar
+    // now−45 min och klipps bara när klockan är < 15 min in i halvtimmen.
+    // Annars ligger blocket helt i fönstret — då är left > 0 och det är rätt.
+    const minuteInHalfHour = Math.floor(now / 60_000) % 30
+    if (minuteInHalfHour < 15) expect(nowBlock.style.left).toBe('0px')
+    else expect(Number.parseFloat(nowBlock.style.left)).toBeGreaterThan(0)
     expect(nowBlock.style.width.endsWith('px')).toBe(true)
     expect(nowBlock).toHaveAttribute('data-live')
-    expect(nowBlock).toHaveAttribute('title', expect.stringContaining('…–'))
+    if (minuteInHalfHour < 15) expect(nowBlock).toHaveAttribute('title', expect.stringContaining('…–'))
     // 30 min = 30 × PX_PER_MIN_GRID px, tillräckligt för titel + tid.
     const next = blockByTitle('Next A')
     expect(px(next.style.width)).toBeCloseTo(30 * PX_PER_MIN_GRID, 1)

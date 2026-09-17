@@ -314,6 +314,7 @@ function GridBlock({ box, programme, locale, live, init, selected, reminded, onF
       data-testid="grid-block"
       data-shape={box.shape}
       data-live={live ? '' : undefined}
+      data-guide-block=""
       data-selected={selected ? '' : undefined}
       title={`${programme.title} ${times}`}
       {...withPointerLeave(station(onOk, onHold, init ? { 'data-init': '' } : undefined), onLeave)}
@@ -327,10 +328,8 @@ function GridBlock({ box, programme, locale, live, init, selected, reminded, onF
           boxSizing: 'border-box',
           borderRadius: marker ? 0 : gp(8),
           padding: marker ? 0 : `${gp(8)}px ${gp(10)}px`,
-          background: marker ? TV.acc : live ? 'rgba(59,130,246,0.18)' : TV.s05,
+          background: marker ? TV.acc : live ? 'rgba(59,130,246,0.18)' : TV.s08,
           border: live ? '1px solid rgba(59,130,246,0.5)' : '1px solid transparent',
-          outline: selected ? `${gp(2)}px solid ${TV.accMix(60)}` : undefined,
-          outlineOffset: -gp(2),
           overflow: 'hidden',
           position: 'relative',
         }}
