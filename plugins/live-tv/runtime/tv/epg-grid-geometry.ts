@@ -14,6 +14,9 @@
  * `Math.min(8, width / 3)` — aldrig bredare än blocket självt.
  */
 
+import { startOfLocalDay } from '../live-tv-model'
+import type { TimelineZoom } from './tv-settings-store'
+
 export const HOUR_PX = 240
 export const PX_PER_MIN = HOUR_PX / 60
 export const CHANNEL_COL_PX = 160
@@ -170,4 +173,90 @@ export function hourMarks(windowStart: number, windowEnd: number): number[] {
   const marks: number[] = []
   for (let t = windowStart; t < windowEnd; t += 3_600_000) marks.push(t)
   return marks
+}
+
+const HALF_HOUR_MS = 1_800_000
+
+/**
+ * Grids tidsfönster (städad guide, desktop_handoffen §1 "Tidsaxel och
+ * fönster"): börjar vid NÄRMAST FÖREGÅENDE halvtimme, inte vid en fast
+ * timme. Kl. 08:44 → 08:30, så nu-linjen alltid syns utan att scrolla.
+ */
+export function guideWindowStart(nowMs: number): number {
+  return Math.floor(nowMs / HALF_HOUR_MS) * HALF_HOUR_MS
+}
+
+/** Grids fönster är 3 timmar i 6 halvtimmesspalter (handoffen §1). */
+export const GRID_WINDOW_MS = 3 * 3_600_000
+
+/** Blockbredd i % av spårbredden i Grid: en minut är 100/180 av 3-timmarsfönstret. */
+export const PCT_PER_MIN_GRID = 100 / 180
+
+/**
+ * Timelines tre zoomlägen (handoffen §3): fönstrets start och längd skiljer
+ * sig, men alla tre delar `guideWindowStart`/`startOfLocalDay` med Grid så
+ * att en klick i Timeline landar på samma halvtimme som Grid öppnar på.
+ * `pctPerMin` är skalfaktorn till `epgBlockBox`/`epgRowBoxes` — samma
+ * `100/fönsterminuter`-formel som `PCT_PER_MIN_GRID`, fast för Timelines
+ * bredare fönster.
+ */
+export function timelineWindow(nowMs: number, zoom: TimelineZoom): { start: number; end: number; pctPerMin: number } {
+  if (zoom === '2h') {
+    const start = guideWindowStart(nowMs) - HALF_HOUR_MS
+    const durationMin = 2 * 60
+    return { start, end: start + durationMin * 60_000, pctPerMin: 100 / durationMin }
+  }
+  if (zoom === '6h') {
+    const start = guideWindowStart(nowMs) - 3_600_000
+    const durationMin = 6 * 60
+    return { start, end: start + durationMin * 60_000, pctPerMin: 100 / durationMin }
+  }
+  const start = startOfLocalDay(nowMs) + 6 * 3_600_000
+  const durationMin = 18 * 60
+  return { start, end: start + durationMin * 60_000, pctPerMin: 100 / durationMin }
+}
+
+/**
+ * Slår ihop ANGRÄNSANDE block som är smalare än `minWidthPct` till ett enda
+ * block med en sammansatt titel (`Titel · Titel`, handoffen §3 "Timeline").
+ * Ett ensamt smalt block utan smal granne rörs inte — det är fortfarande för
+ * smalt för text, men det finns inget att slå ihop det MED.
+ *
+ * Bara kedjor på minst två block slås ihop; boxens nya bredd/shape räknas om
+ * från den sammanslagna spannvidden, så samma trösklar (`MIN_BLOCK_PX`,
+ * `TITLE_ONLY_PX`) gäller det sammanslagna blocket som alla andra.
+ */
+export function mergeShortBlocks<P extends EpgSpan & { title: string }>(
+  entries: EpgRowEntry<P>[],
+  minWidthPct: number,
+): Array<EpgRowEntry<P> & { mergedTitle?: string }> {
+  const result: Array<EpgRowEntry<P> & { mergedTitle?: string }> = []
+  let i = 0
+  while (i < entries.length) {
+    const current = entries[i]
+    if (current.box.width >= minWidthPct) {
+      result.push(current)
+      i += 1
+      continue
+    }
+    let j = i + 1
+    while (j < entries.length && entries[j].box.width < minWidthPct) j += 1
+    if (j - i >= 2) {
+      const group = entries.slice(i, j)
+      const first = group[0]
+      const last = group[group.length - 1]
+      const width = last.box.left + last.box.width - first.box.left
+      const shape = shapeFor(width)
+      result.push({
+        box: { ...first.box, width, shape, paddingX: shape === 'marker' ? 0 : Math.min(8, width / 3), clippedEnd: last.box.clippedEnd },
+        programme: first.programme,
+        mergedTitle: group.map((entry) => entry.programme.title).join(' · '),
+      })
+      i = j
+    } else {
+      result.push(current)
+      i += 1
+    }
+  }
+  return result
 }

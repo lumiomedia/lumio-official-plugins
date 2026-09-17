@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import { channelKey, type M3uChannel } from '../live-tv-data'
 import type { LiveTvModel } from '../live-tv-model'
-import { selectEpgRows, type EpgRow } from '../epg-rows'
+import type { EpgRow } from '../epg-rows'
 import { useSchedules } from '../hooks/useSchedules'
 import { FAVS_GROUP } from './tv-guide-shared'
 
@@ -25,7 +25,12 @@ const CANDIDATE_FACTOR = 3
 
 export interface GridRows {
   rows: EpgRow[]
-  /** Fler kanaler MED tablå finns bortom `visibleRows` — visa "Visa fler". */
+  /**
+   * Kandidater UTAN tablå i fönstret (handoffen "Tomma rader kollapsar") —
+   * sorteras EFTER `rows`, i samma ordning de hade bland kandidaterna.
+   */
+  withoutEpg: M3uChannel[]
+  /** Fler kanaler (MED eller UTAN tablå) finns bortom `visibleRows` — visa "Visa fler". */
   hasMore: boolean
   /** Fönstrets tablåer hämtas fortfarande (delvis eller helt). */
   schedulesLoading: boolean
@@ -63,16 +68,32 @@ export function useGridRows(model: LiveTvModel, group: string | null, visibleRow
   }, [ordered, group, model.favouriteChannels])
   const candidates = useMemo(() => eligible.slice(0, visibleRows * CANDIDATE_FACTOR), [eligible, visibleRows])
   const { schedules, loading: schedulesLoading } = useSchedules(candidates, windowStart, windowEnd)
-  const { rows, hasMore: moreAmongCandidates } = useMemo(
-    () => selectEpgRows(candidates, (channel) => schedules[channelKey(channel)] ?? [], null, visibleRows),
-    [candidates, schedules, visibleRows],
-  )
   /**
-   * "Visa fler" måste finnas kvar även när KANDIDATERNA tog slut men
-   * spellistan inte gjorde det: `selectEpgRows` vet bara om det urval den
-   * fick, och skulle annars påstå "alla kanaler med tablå visas" fast
-   * överskottsfönstret kapade listan långt före spellistans slut.
+   * Kandidaterna delas i två köer, i sin ursprungliga ordning: `withEpg`
+   * (blir `rows`) och `missing` (blir `withoutEpg`, "Tomma rader kollapsar").
+   * `rows` fylls först; det som blir kvar av `visibleRows` går till
+   * `withoutEpg` — kanaler utan tablå sorteras alltså alltid sist, aldrig
+   * inblandade bland raderna med riktigt innehåll.
+   *
+   * "Visa fler" (`hasMore`) måste räkna BÅDA köerna: dels om `withEpg`
+   * eller `missing` inte fick plats inom `visibleRows`, dels om
+   * KANDIDATERNA tog slut innan spellistan gjorde det — annars påstår vyn
+   * "allt visas" fast överskottsfönstret kapade listan i förtid.
    */
-  const hasMore = moreAmongCandidates || candidates.length < eligible.length
-  return { rows, hasMore, schedulesLoading }
+  const { rows, withoutEpg, hasMore } = useMemo(() => {
+    const scheduleFor = (channel: M3uChannel) => schedules[channelKey(channel)] ?? []
+    const withEpg: EpgRow[] = []
+    const missing: M3uChannel[] = []
+    for (const channel of candidates) {
+      const programmes = scheduleFor(channel)
+      if (programmes.length === 0) missing.push(channel)
+      else withEpg.push({ channel, programmes })
+    }
+    const rows = withEpg.slice(0, visibleRows)
+    const withoutEpg = missing.slice(0, Math.max(0, visibleRows - rows.length))
+    const moreAmongCandidates = withEpg.length > rows.length || missing.length > withoutEpg.length
+    const hasMore = moreAmongCandidates || candidates.length < eligible.length
+    return { rows, withoutEpg, hasMore }
+  }, [candidates, schedules, visibleRows, eligible.length])
+  return { rows, withoutEpg, hasMore, schedulesLoading }
 }

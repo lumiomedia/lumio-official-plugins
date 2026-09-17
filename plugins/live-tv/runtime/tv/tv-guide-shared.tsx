@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties, type JSX } from 'react'
 import type { M3uChannel } from '../live-tv-data'
 import type { LiveTvModel } from '../live-tv-model'
+import { qualityFromName } from '../live-tv-model'
 import { ChannelArt, Icons, TV, dp } from './tv-ui'
 import type { TvStringKey } from './tv-strings'
 
@@ -74,6 +75,64 @@ export function ChannelCell({ channel, number, pinned, locked, quality, focused,
       </div>
       {pinned ? <span style={{ color: TV.acc }}><Icons.Heart size={dp(18)} filled /></span> : null}
       {locked ? <span style={{ color: 'rgba(243,244,248,0.5)' }}><Icons.Lock size={dp(18)} /></span> : null}
+    </div>
+  )
+}
+
+/** De tre lägenas kanalcell (handoffen "Kanalidentitet"): Grid/Timeline 240 px, Now/Next 340 px. */
+export type GuideCellVariant = 'grid' | 'nownext' | 'timeline'
+
+export const GUIDE_CELL_WIDTH: Record<GuideCellVariant, number> = { grid: 240, nownext: 340, timeline: 240 }
+
+/** Logotypens mått per läge (handoffen "Kanalidentitet") — Timeline har ingen. */
+const GUIDE_ART_SIZE: Record<'grid' | 'nownext', { width: number; height: number }> = {
+  grid: { width: 44, height: 28 },
+  nownext: { width: 48, height: 30 },
+}
+
+/**
+ * Kanalcellens LAYOUTKONTEXT (handoffen "Kanalidentitet", regel 6): `flex: 0
+ * 0 <bredd>` + `min-width: 0` + `box-sizing: border-box`. Utan `min-width: 0`
+ * blir kanalnamnets nowrap-satta min-content-bredd ett golv och cellen växer
+ * förbi sin flex-bas — och eftersom EXAKT samma stil måste sitta på både
+ * kolumnhuvudet och varje rad (annars glider tidsaxeln 1 px ur fas mot
+ * spåren, samma bugg som `channelColumnStyle` dokumenterar ovan för TV), står
+ * den HÄR en gång i stället för inline på varje anropsställe.
+ */
+export function guideCellStyle(variant: GuideCellVariant): CSSProperties {
+  const width = GUIDE_CELL_WIDTH[variant]
+  return { flex: `0 0 ${width}px`, width, minWidth: 0, boxSizing: 'border-box' }
+}
+
+/**
+ * Kanalidentiteten delad av Grid, Now/Next och Timeline (handoffen
+ * "Kanalidentitet"): nummer · logotyp (inte i Timeline) · namn + `grupp ·
+ * kvalitet` (inte i Timeline) · hjärta · lås. Tre bredder, en cell — så tio
+ * Sky-kanaler går att skilja åt i alla tre lägen, inte bara i det som råkar
+ * ha plats.
+ */
+export function GuideChannelCell({ channel, number, pinned, locked, variant }: {
+  channel: M3uChannel
+  number: number | null
+  pinned: boolean
+  locked: boolean
+  variant: GuideCellVariant
+}): JSX.Element {
+  const art = variant === 'timeline' ? null : GUIDE_ART_SIZE[variant]
+  return (
+    <div data-testid="guide-cell" style={{ ...guideCellStyle(variant), display: 'flex', alignItems: 'center', gap: 10, padding: '0 10px' }}>
+      <span style={{ width: 26, flexShrink: 0, fontSize: 13, color: 'rgba(243,244,248,0.45)', fontVariantNumeric: 'tabular-nums', textAlign: 'right' }}>{number ?? ''}</span>
+      {art ? <ChannelArt channel={channel} style={{ width: art.width, flexShrink: 0 }} height={art.height} radius={6} /> : null}
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={{ fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{channel.name}</div>
+        {variant !== 'timeline' ? (
+          <div style={{ fontSize: 12, color: 'rgba(243,244,248,0.45)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {[channel.group, qualityFromName(channel.name)].filter(Boolean).join(' · ')}
+          </div>
+        ) : null}
+      </div>
+      {pinned ? <span data-testid="guide-cell-pinned" style={{ color: TV.acc, flexShrink: 0 }}><Icons.Heart size={13} filled /></span> : null}
+      {locked ? <span data-testid="guide-cell-locked" style={{ color: 'rgba(243,244,248,0.45)', flexShrink: 0 }}><Icons.Lock size={13} /></span> : null}
     </div>
   )
 }
