@@ -98,13 +98,12 @@ function useReminded(channel: M3uChannel, programme: EpgProgramme | null): boole
 
 /* ---------------------------------------------------------------- Toppfält */
 
-export function PlayerTopBar({ channel, tv, info, ps, visible, clock, onClose, onKeep, onRelease }: {
+export function PlayerTopBar({ channel, tv, info, ps, visible, onClose, onKeep, onRelease }: {
   channel: M3uChannel
   tv: LiveTvPlayerTvProps
   info: NowNextLater
   ps: PlayerScale
   visible: boolean
-  clock: ReactNode
   onClose: () => void
   onKeep: () => void
   onRelease: () => void
@@ -136,7 +135,7 @@ export function PlayerTopBar({ channel, tv, info, ps, visible, clock, onClose, o
       <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: ps(12), fontSize: ps(13) }}>
         {info.now ? <Tag variant="live" style={{ fontSize: ps(11), padding: `${ps(4)}px ${ps(10)}px` }}>{tt('live')}</Tag> : null}
         {tv.quality ? <span style={{ color: 'rgba(243,244,248,0.75)' }}>{tv.quality}</span> : null}
-        {clock}
+        {/* Ingen klocka/hälsning i spelaren (Jerry 2026-09-17) — den låg över LIVE/HD. */}
         <div {...station(onClose, undefined, { 'aria-label': tt('playerClose'), 'data-guide-row': '' })} style={{ ...ctlStyle(ps), width: ps(36), height: ps(36), minHeight: ps(36), minWidth: ps(36), padding: 0, background: 'rgba(0,0,0,0.45)' }}>
           <CloseIcon size={ps(18)} />
         </div>

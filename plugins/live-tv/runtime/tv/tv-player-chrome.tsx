@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getTvGlassMenu, useTvMode, type TvGlassMenuTarget } from '@/lib/plugin-sdk'
 import { channelKey, type M3uChannel } from '../live-tv-data'
 import type { LiveTvPlayerControls, LiveTvPlayerTvProps } from './tv-player-types'
-import { TvFocusStyle, useTvClockNode } from './tv-ui'
+import { TvFocusStyle } from './tv-ui'
 import { useTvText } from './tv-strings'
 import { TvPlayerChromePhone } from './mobile/player-chrome-phone'
 import { PlayerControlRow, PlayerFavouritesRow, PlayerScheduleOverlay, PlayerTopBar, playerScale } from './player-chrome-parts'
@@ -55,7 +55,6 @@ function TvPlayerChromeDesktop({ channel, tv, controls, paused, onTogglePause, o
   const { tt } = useTvText()
   const isTv = useTvMode()
   const ps = useMemo(() => playerScale(isTv), [isTv])
-  const clock = useTvClockNode(tv.locale)
   const [visible, setVisible] = useState(true)
   const [guideOpen, setGuideOpen] = useState(false)
   const [menu, setMenu] = useState<TvGlassMenuTarget | null>(null)
@@ -251,7 +250,7 @@ function TvPlayerChromeDesktop({ channel, tv, controls, paused, onTogglePause, o
     // Roten släpper igenom pekaren till videon; bara fälten tar den.
     <div ref={rootRef} data-live-tv-tv-root="" {...(isTv ? {} : { 'data-live-tv-desktop': '1' })} style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 30 }}>
       <TvFocusStyle />
-      <PlayerTopBar channel={channel} tv={tv} info={info} ps={ps} visible={visible} clock={clock} onClose={onClose} onKeep={keep} onRelease={release} />
+      <PlayerTopBar channel={channel} tv={tv} info={info} ps={ps} visible={visible} onClose={onClose} onKeep={keep} onRelease={release} />
       <div
         data-testid="banner"
         onMouseEnter={keep}
