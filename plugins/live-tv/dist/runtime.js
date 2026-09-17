@@ -1634,7 +1634,6 @@
   var TRANSPARENT_PROPERTIES, NATIVE_SURFACES_ATTRIBUTE, holds, restore;
   var init_transparent_webview = __esm({
     "lib/transparent-webview.ts"() {
-      "use strict";
       TRANSPARENT_PROPERTIES = [
         { property: "background-color", value: "transparent" },
         { property: "background-image", value: "none" }
@@ -193696,7 +193695,7 @@ ${cue.text}`).join("\n\n")}
     void tick;
     return programme ? isReminded(channel, programme) : false;
   }
-  function PlayerTopBar({ channel, tv, info, ps, visible, clock, onClose, onKeep, onRelease }) {
+  function PlayerTopBar({ channel, tv, info, ps, visible, onClose, onKeep, onRelease }) {
     const { tt } = useTvText();
     return /* @__PURE__ */ jsxs(
       "div",
@@ -193728,7 +193727,6 @@ ${cue.text}`).join("\n\n")}
           /* @__PURE__ */ jsxs("div", { style: { flex: "1 1 0", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "flex-end", gap: ps(12), fontSize: ps(13) }, children: [
             info.now ? /* @__PURE__ */ jsx(Tag2, { variant: "live", style: { fontSize: ps(11), padding: `${ps(4)}px ${ps(10)}px` }, children: tt("live") }) : null,
             tv.quality ? /* @__PURE__ */ jsx("span", { style: { color: "rgba(243,244,248,0.75)" }, children: tv.quality }) : null,
-            clock,
             /* @__PURE__ */ jsx("div", { ...station(onClose, void 0, { "aria-label": tt("playerClose"), "data-guide-row": "" }), style: { ...ctlStyle(ps), width: ps(36), height: ps(36), minHeight: ps(36), minWidth: ps(36), padding: 0, background: "rgba(0,0,0,0.45)" }, children: /* @__PURE__ */ jsx(CloseIcon, { size: ps(18) }) })
           ] })
         ]
@@ -194021,7 +194019,6 @@ ${cue.text}`).join("\n\n")}
     const { tt } = useTvText();
     const isTv = useTvMode();
     const ps = useMemo(() => playerScale(isTv), [isTv]);
-    const clock = useTvClockNode(tv.locale);
     const [visible, setVisible] = useState(true);
     const [guideOpen, setGuideOpen] = useState(false);
     const [menu, setMenu] = useState(null);
@@ -194181,7 +194178,7 @@ ${cue.text}`).join("\n\n")}
       // Roten släpper igenom pekaren till videon; bara fälten tar den.
       /* @__PURE__ */ jsxs("div", { ref: rootRef, "data-live-tv-tv-root": "", ...isTv ? {} : { "data-live-tv-desktop": "1" }, style: { position: "absolute", inset: 0, pointerEvents: "none", zIndex: 30 }, children: [
         /* @__PURE__ */ jsx(TvFocusStyle, {}),
-        /* @__PURE__ */ jsx(PlayerTopBar, { channel, tv, info, ps, visible, clock, onClose, onKeep: keep, onRelease: release }),
+        /* @__PURE__ */ jsx(PlayerTopBar, { channel, tv, info, ps, visible, onClose, onKeep: keep, onRelease: release }),
         /* @__PURE__ */ jsxs(
           "div",
           {
