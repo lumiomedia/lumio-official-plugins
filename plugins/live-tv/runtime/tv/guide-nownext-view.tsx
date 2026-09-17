@@ -103,6 +103,7 @@ export function GuideNowNextView({ model, nav, category, selection, onSelect, is
   const rowProps = (channel: M3uChannel, programme: EpgProgramme | null, init: boolean) => {
     const sel: GuideSelection = { channel, programme }
     return {
+      'data-guide-row': '',
       'data-selected': isSelected(channel) ? '' : undefined,
       ...withPointerLeave(station(() => { onSelect(sel); nav.play({ channel }) }, (element) => nav.channelMenu(channel, element), initAttr(init)), hover.leave),
       onFocus: isTv ? () => onSelect(sel) : undefined,

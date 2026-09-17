@@ -142,6 +142,7 @@ export function GuideGridView({ model, nav, category, dayOffset, windowStart, no
     return (
       <div
         data-testid="grid-channel"
+        data-guide-row=""
         title={channel.name}
         {...station(() => nav.openChannel(channel), (element) => nav.channelMenu(channel, element), initAttr(init))}
         style={{ ...guideCellStyle('grid'), position: 'sticky', left: 0, zIndex: 2, background: TV.bg, display: 'flex', alignItems: 'stretch', cursor: 'pointer' }}
@@ -236,6 +237,7 @@ export function GuideGridView({ model, nav, category, dayOffset, windowStart, no
                       {channelCell(channel, false)}
                       <div
                         data-testid="grid-empty-cell"
+                        data-guide-row=""
                         data-selected={isSelected(channel, null) ? '' : undefined}
                         {...withPointerLeave(station(() => { onSelect(sel); nav.play({ channel }) }, (element) => nav.channelMenu(channel, element), initAttr(initKey !== null && initKey.empty && index === 0)), hover.leave)}
                         onFocus={isTv ? () => onSelect(sel) : undefined}

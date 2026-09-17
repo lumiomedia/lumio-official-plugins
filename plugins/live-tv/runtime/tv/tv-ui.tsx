@@ -112,7 +112,8 @@ export const cardStyle: CSSProperties = {
  */
 // GUIDENS BLOCK (Jerry 2026-09-17): grå grund (s08), ljusare grå vid hover,
 // ingen blå kant vid hover/klick på skrivbordet; pågående block är kvar i
-// accent. TV får en grå fokuskant i stället för accentglöd. Ligger som
+// accent. TV får en grå fokuskant i stället för accentglöd. Samma regler för
+// kanalcellen och Now/Next-raderna (`data-guide-row`). Ligger som
 // JS-kommentar: <style>-textens innehåll räknas som textContent och skulle
 // fälla strängvakten mot fjärrkontrollsord.
 export function TvFocusStyle() {
@@ -145,6 +146,11 @@ export function TvFocusStyle() {
 [data-live-tv-tv-root][data-live-tv-desktop="1"] [data-guide-block][data-f][data-fcur="1"] { outline: none !important; }
 [data-live-tv-tv-root]:not([data-live-tv-desktop="1"]) [data-guide-block][data-f]:focus,
 [data-live-tv-tv-root]:not([data-live-tv-desktop="1"]) [data-guide-block][data-f][data-fcur="1"] { outline: 2px solid rgba(255,255,255,0.45) !important; outline-offset: -2px; box-shadow: none !important; }
+[data-live-tv-tv-root] [data-guide-row]:hover { background: rgba(252,252,255,0.14) !important; background-image: none !important; }
+[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-guide-row][data-f]:focus,
+[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-guide-row][data-f][data-fcur="1"] { outline: none !important; }
+[data-live-tv-tv-root]:not([data-live-tv-desktop="1"]) [data-guide-row][data-f]:focus,
+[data-live-tv-tv-root]:not([data-live-tv-desktop="1"]) [data-guide-row][data-f][data-fcur="1"] { outline: 2px solid rgba(255,255,255,0.45) !important; outline-offset: -2px; box-shadow: none !important; }
 [data-live-tv-tv-root] [data-live-tv-menu-item][data-f]:focus,
 [data-live-tv-tv-root] [data-live-tv-menu-item][data-f][data-fcur="1"] { outline-offset: -4px; border-radius: ${dp(12)}px; }
 [data-live-tv-tv-root] [data-scroll]::-webkit-scrollbar, [data-live-tv-tv-root] [data-row]::-webkit-scrollbar { display: none; }
