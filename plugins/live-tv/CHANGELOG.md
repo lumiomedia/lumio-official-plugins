@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.10.0 — Cleaner channel guide on desktop and TV
+
+- One control row above the guide: source, category, day, Now, the mode
+  segment and the clock — nothing else stacked on top of the content.
+- Three modes: Grid, Now / Next and Timeline. The old Now/Next · Timeline ·
+  Grid · Playlists split is gone on desktop and TV (the LAN/remote web client
+  keeps it unchanged).
+- Playlist and category are pickers in the control row instead of a
+  separate playlists page and a chip strip.
+- A permanent detail panel: the selected channel or programme is always
+  described in the same place, with Watch now, Remind me and Favourite.
+- Grid opens on the current half hour and the now-line is always visible in
+  the first quarter of the window.
+- Channels without a guide collapse to a single row and sort last, in every
+  mode.
+- No silent preview player in the guide any more; the channel page keeps its
+  preview.
+- No TV remnants on desktop: "OK = …" hints and remote-control labels are
+  rendered only in TV mode.
+
 ## 0.9.0 — The phone in real pixels
 
 - The phone is no longer a scaled-down TV: the host renders it at scale 1 and
