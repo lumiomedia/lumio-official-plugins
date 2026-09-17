@@ -8,10 +8,12 @@ import { useTvText } from './tv-strings'
 import { setGuideMode, setTvSettings, useGuideMode, useTvSettings, type GuideMode } from './tv-settings-store'
 import { desktopGuideMode, type DesktopGuideMode } from './guide-surface'
 import { guideWindowStart } from './epg-grid-geometry'
+import { startOfLocalDay } from '../live-tv-model'
 import { FAVS_GROUP, useGuideGroups } from './tv-guide-shared'
 import { TvChoicePanel, type ChoiceOption } from './tv-list-picker'
 import { GuideControlRow } from './guide-control-row'
 import { TvGuideGrid } from './tv-guide-grid'
+import { GuideGridView } from './guide-grid-view'
 import type { GuideSelection, GuideViewProps } from './guide-types'
 
 /**
@@ -21,7 +23,8 @@ import type { GuideSelection, GuideViewProps } from './guide-types'
  * kategori, dag och markering behålls.
  *
  * Importerar ALDRIG `tv-guide.tsx` (som importerar hit): vyerna hämtar sina
- * typer ur `guide-types.ts`. Grid-platshållaren är dagens `TvGuideGrid`
+ * typer ur `guide-types.ts`. Grid är `GuideGridView` (Task 3);
+ * Timeline-platshållaren är tills vidare dagens `TvGuideGrid`
  * (`tv-guide-grid.tsx` importerar inte `tv-guide.tsx`, så ingen cykel);
  * Now / Next och Timeline får sina riktiga vyer i senare tasks.
  */
@@ -108,13 +111,17 @@ export function TvGuideShell(props: TvViewProps) {
   // in i skalets läge så att stacken och lagringen förblir konsekventa.
   const legacyModeChange = (next: GuideMode) => changeMode(desktopGuideMode(next))
 
-  // Vyernas gemensamma props (Task 3–5 tar dem). Platshållarna nedan läser
-  // dem inte än: dagens Grid äger sin egen kategori och sitt eget fönster.
-  const viewProps: GuideViewProps = { model, nav, category, dayOffset, windowStart, selection, onSelect: setSelection, isTv }
+  // Vyernas gemensamma props. Imorgon (`dayOffset === 1`) börjar fönstret
+  // 06:00 nästa lokala dag — ingen halvtimmesjustering behövs där, dagens
+  // `windowStart` ligger kvar i state och tas tillbaka av Idag/Nu.
+  const effectiveWindowStart = dayOffset === 1 ? startOfLocalDay(model.nowMs, 1) + 6 * 3_600_000 : windowStart
+  const viewProps: GuideViewProps = { model, nav, category, dayOffset, windowStart: effectiveWindowStart, selection, onSelect: setSelection, isTv }
 
   const view = mode === 'nownext'
     ? <div data-testid="guide-nownext-placeholder" data-window-start={viewProps.windowStart} />
-    : <TvGuideGrid {...props} mode={mode} onModeChange={legacyModeChange} />
+    : mode === 'grid'
+      ? <GuideGridView {...viewProps} />
+      : <TvGuideGrid {...props} mode={mode} onModeChange={legacyModeChange} />
 
   return (
     <div data-testid="guide-shell" data-guide-mode={mode} style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>

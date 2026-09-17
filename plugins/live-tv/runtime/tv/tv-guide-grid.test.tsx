@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { flushLiveTvIndex, seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
@@ -10,6 +10,11 @@ vi.mock('../live-tv-player', () => ({ LiveTvPlayer: ({ channel }: { channel: { n
 import { LiveTvTvShell } from './tv-shell'
 
 /**
+ * Det GAMLA rutnätet, som sedan Task 3 bara LAN/fjärr-webbklienten når
+ * (`useNewGuideSurface` är falsk utan TV-läge och utan Tauri) — TV och
+ * skrivbordsappen får `GuideGridView` via skalet, se `guide-grid-view.test.tsx`.
+ * Därför monteras här UTAN TV-läge.
+ *
  * Fönstret i rutnätet är `alignToHour(nu − 1 h)` … +12 h, så allt här ligger
  * med säkerhet inne i det: ett pågående program, ett kommande, och ett på en
  * enda minut (markörfallet ur skärmdumpen).
@@ -41,7 +46,7 @@ const cache: EpgCacheEntry = {
 afterEach(cleanup)
 beforeEach(() => {
   __resetForTests()
-  __setTvModeForTests(true)
+  __setTvModeForTests(false)
   writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list])
   writePluginJson(LIVE_TV_PLUGIN_ID, 'pins', [])
   seedLiveTvIndex({ cache })
@@ -246,13 +251,10 @@ describe('TvGuideGrid', () => {
 
   it('Imorgon byter fönster och Nu tar tillbaka dagens', async () => {
     await openGrid()
-    // Skalets kontrollrad har egna Idag/Imorgon/Nu-stationer; det här testet
-    // gäller dagens rutnäts egna (tills Task 3 skriver om rutnätet).
-    const content = within(screen.getByTestId('guide-content'))
-    fireEvent.click(content.getByText('Tomorrow'))
+    fireEvent.click(screen.getByText('Tomorrow'))
     await flushLiveTvIndex()
     expect(screen.queryAllByTestId('grid-block')).toHaveLength(0)
-    fireEvent.click(content.getByText('Now'))
+    fireEvent.click(screen.getByText('Now'))
     await flushLiveTvIndex()
     expect(screen.getAllByTestId('grid-block').length).toBeGreaterThan(0)
   })
@@ -289,12 +291,9 @@ describe('TvGuideGrid fjärrhjälp (borttagen, Jerrys uppföljning)', () => {
     fireEvent.click(screen.getByTestId('grid-chip-News'))
     await flushLiveTvIndex()
   }
-  it('renderas aldrig när inget block är valt, varken i TV-läge eller utanför', async () => {
-    __setTvModeForTests(true)
-    await selectEmptyGroup()
-    expect(screen.queryByText('OK = watch or channel details · hold OK = reminder, lock · ◂▸ time · ▴▾ channel')).not.toBeInTheDocument()
-    cleanup()
-    __setTvModeForTests(false)
+  it('renderas aldrig när inget block är valt', async () => {
+    // Bara LAN-grenen: i TV-läge når ingen längre det här rutnätet (skalet
+    // ritar `GuideGridView`, som saknar hjälptexten helt).
     await selectEmptyGroup()
     expect(screen.queryByText('OK = watch or channel details · hold OK = reminder, lock · ◂▸ time · ▴▾ channel')).not.toBeInTheDocument()
   })
