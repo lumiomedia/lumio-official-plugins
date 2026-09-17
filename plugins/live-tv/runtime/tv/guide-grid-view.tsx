@@ -143,6 +143,7 @@ export function GuideGridView({ model, nav, category, dayOffset, windowStart, no
       <div
         data-testid="grid-channel"
         data-guide-row=""
+        data-sticky=""
         title={channel.name}
         {...station(() => nav.openChannel(channel), (element) => nav.channelMenu(channel, element), initAttr(init))}
         style={{ ...guideCellStyle('grid'), position: 'sticky', left: 0, zIndex: 2, background: TV.bg, display: 'flex', alignItems: 'stretch', cursor: 'pointer' }}

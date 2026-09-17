@@ -147,6 +147,7 @@ export function TvFocusStyle() {
 [data-live-tv-tv-root]:not([data-live-tv-desktop="1"]) [data-guide-block][data-f]:focus,
 [data-live-tv-tv-root]:not([data-live-tv-desktop="1"]) [data-guide-block][data-f][data-fcur="1"] { outline: 2px solid rgba(255,255,255,0.45) !important; outline-offset: -2px; box-shadow: none !important; }
 [data-live-tv-tv-root] [data-guide-row]:hover { background: rgba(252,252,255,0.14) !important; background-image: none !important; }
+[data-live-tv-tv-root] [data-guide-row][data-sticky]:hover { background: #232324 !important; }
 [data-live-tv-tv-root][data-live-tv-desktop="1"] [data-guide-row][data-f]:focus,
 [data-live-tv-tv-root][data-live-tv-desktop="1"] [data-guide-row][data-f][data-fcur="1"] { outline: none !important; }
 [data-live-tv-tv-root]:not([data-live-tv-desktop="1"]) [data-guide-row][data-f]:focus,
