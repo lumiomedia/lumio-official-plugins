@@ -100,7 +100,6 @@ export function TvMultiview(props: TvViewProps) {
             options={[{ key: '2', label: tt('layout2') }, { key: '3', label: tt('layout3') }, { key: '4', label: tt('layout4') }]}
             value={String(state.layout)}
             onChange={(key) => update(setLayout(state, Number(key) as MultiviewLayout))}
-           
           />
         )}
         {/* Fjärrhjälpen ("OK on a tile = ...") är borttagen helt (Jerrys
@@ -125,7 +124,6 @@ export function TvMultiview(props: TvViewProps) {
               span={!narrow && state.layout === 3 && realIndex === 0}
               nowTitle={channel ? model.nowFor(channel).now?.title ?? null : null}
               number={channel ? model.channelNumber(channel) : null}
-             
               onOk={() => {
                 if (!channel) { setPickerTile(realIndex); return }
                 update({ ...state, audioIndex: realIndex })

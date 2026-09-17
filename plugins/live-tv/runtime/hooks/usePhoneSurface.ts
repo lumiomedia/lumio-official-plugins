@@ -2,15 +2,14 @@ import { useEffect, useState, type RefObject } from 'react'
 import { TV_SCENE_BOX_ATTR, TV_SCENE_PHONE_ATTR } from '@/lib/plugin-sdk'
 
 /**
- * TELEFONYTA — ytan är FYSISKT telefonsmal (< 700 css-px), precis som
- * `useNarrowSurface` svarar på "smalare än 1024 css-px".
+ * TELEFONYTA — värden sätter `TV_SCENE_PHONE_ATTR` på lådan när dess
+ * KORTASTE sida är < 640 css-px (`TV_SCENE_PHONE_PX`, exklusiv gräns):
+ * `Math.min(bredd, höjd)`, inte bara bredden, så att en liggande telefon
+ * fortfarande är en telefon. Grenen skalar inte alls (scale 1) — fas 3
+ * ritar telefonen i riktiga pixlar, det finns ingen designbredd att räkna
+ * mot. Jämför `useNarrowSurface`, som svarar på "smalare än 1024 css-px".
  *
- * `TV_SCENE_PHONE_ATTR` är INGEN garanti för att scenen räknat mot
- * designbredden 780 (`TV_SCENE_PHONE_WIDTH`) — bara att lådans fysiska
- * innehållsyta var smal nog för att aspektjämförelsen kunnat välja den
- * grenen. Samma reservation gäller redan `TV_SCENE_NARROW_ATTR` mot
- * 1280-golvet. Hooken svarar alltså på "är jag fysiskt telefonsmal?", inte
- * "räknade scenen mot 780?".
+ * Hooken svarar alltså på "är jag fysiskt telefonstor?", inget annat.
  *
  * Lådan är VÄRDENS element: pluginet anmäler `tvSceneBox: true` på sitt
  * sidbidrag och får sidan lindad utifrån. Hooken läser därför uppåt i DOM:en

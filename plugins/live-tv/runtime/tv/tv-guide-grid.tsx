@@ -233,7 +233,6 @@ function TvGuideGridDesktop({ model, nav, mode, onModeChange }: TvViewProps & { 
               'data-testid': `grid-chip-${chip.id}`,
               ...(rows.length === 0 && index === 0 ? { 'data-init': '' } : {}),
             })}
-           
           >
             {chip.label}
           </Chip>
@@ -315,7 +314,6 @@ function TvGuideGridDesktop({ model, nav, mode, onModeChange }: TvViewProps & { 
                               { key: 'remind', label: isReminded(channel, programme) ? tt('removeReminder') : tt('remindMe'), run: () => toggle(channel, programme) },
                             ])}
                             hover={finePointer}
-                           
                           />
                       ))}
                     </div>
