@@ -142,17 +142,32 @@ describe('GuideTimelineView (TV-läge)', () => {
     expect(screen.queryByTestId('timeline-show-more')).not.toBeInTheDocument()
   })
 
-  it('OK på en rad (2h, nu i fönstret) öppnar Grid med fönstret på nuvarande halvtimme', async () => {
-    setTvSettings({ timelineZoom: '2h' })
-    await mount()
-    expect(screen.getByTestId('timeline-now-line').style.left.endsWith('%')).toBe(true)
-    // Raden bär håll-OK (glasmenyn), så ett kort OK fyrar vid keyUp.
-    const row = screen.getAllByTestId('timeline-row')[0]
-    fireEvent.keyDown(row, { key: 'Enter' })
-    fireEvent.keyUp(row, { key: 'Enter' })
-    expect(getGuideMode()).toBe('grid')
-    expect(screen.getByTestId('guide-shell')).toHaveAttribute('data-guide-mode', 'grid')
-    expect(screen.getAllByTestId('grid-time-label')[0]).toHaveTextContent(formatClock(guideWindowStart(now), 'en-GB'))
+  describe('OK-fönstret vid fast systemtid (2h-fönstret måste ligga i den seedade tablån)', () => {
+    // 2h-fönstret räknas från live Date.now(), men tablån ovan är fast vid
+    // 14:00–16:20. Utan fast systemtid faller testet beroende på när det
+    // körs (t.ex. kvällstid ligger "nu" helt utanför fönstret och raden
+    // saknas). Klamma klockan till 15:00 samma dag som tablån är seedad.
+    const fixedNow = at(15)
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(fixedNow)
+    })
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('OK på en rad (2h, nu i fönstret) öppnar Grid med fönstret på nuvarande halvtimme', async () => {
+      setTvSettings({ timelineZoom: '2h' })
+      await mount()
+      expect(screen.getByTestId('timeline-now-line').style.left.endsWith('%')).toBe(true)
+      // Raden bär håll-OK (glasmenyn), så ett kort OK fyrar vid keyUp.
+      const row = screen.getAllByTestId('timeline-row')[0]
+      fireEvent.keyDown(row, { key: 'Enter' })
+      fireEvent.keyUp(row, { key: 'Enter' })
+      expect(getGuideMode()).toBe('grid')
+      expect(screen.getByTestId('guide-shell')).toHaveAttribute('data-guide-mode', 'grid')
+      expect(screen.getAllByTestId('grid-time-label')[0]).toHaveTextContent(formatClock(guideWindowStart(fixedNow), 'en-GB'))
+    })
   })
 
   it('håll OK på en rad öppnar glasmenyn för kanalen', async () => {
