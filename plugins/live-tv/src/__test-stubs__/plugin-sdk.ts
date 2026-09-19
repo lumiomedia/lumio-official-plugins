@@ -638,3 +638,47 @@ export function requestOpenMediaItem(request: { item: unknown; source?: string; 
   if (typeof window === 'undefined') return
   window.dispatchEvent(new CustomEvent('lumio-open-media-item', { detail: request }))
 }
+
+/**
+ * Min lista. I appen bor den i `lib/watchlist` och delas med detaljsidan och
+ * Trakt-speglingen; stubben håller den i minnet med samma form.
+ */
+export interface WatchlistEntry {
+  tmdbId: string
+  imdbId: string | null
+  title: string
+  posterUrl: string | null
+  addedAt: string
+}
+const watchlist = new Map<string, WatchlistEntry>()
+const watchlistListeners = new Set<Listener>()
+
+export function getWatchlist(): WatchlistEntry[] {
+  return [...watchlist.values()]
+}
+export function isWatching(tmdbId: string): boolean {
+  return watchlist.has(tmdbId)
+}
+export function addToWatchlist(entry: Omit<WatchlistEntry, 'addedAt'>): void {
+  watchlist.set(entry.tmdbId, { ...entry, addedAt: new Date().toISOString() })
+  for (const cb of watchlistListeners) cb()
+}
+export function removeFromWatchlist(tmdbId: string): void {
+  watchlist.delete(tmdbId)
+  for (const cb of watchlistListeners) cb()
+}
+export function toggleWatchlist(entry: Omit<WatchlistEntry, 'addedAt'>): boolean {
+  if (isWatching(entry.tmdbId)) {
+    removeFromWatchlist(entry.tmdbId)
+    return false
+  }
+  addToWatchlist(entry)
+  return true
+}
+export function onWatchlistChanged(cb: Listener): () => void {
+  watchlistListeners.add(cb)
+  return () => watchlistListeners.delete(cb)
+}
+export function __resetWatchlistForTests(): void {
+  watchlist.clear()
+}

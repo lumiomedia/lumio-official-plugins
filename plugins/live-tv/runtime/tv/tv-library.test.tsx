@@ -127,8 +127,10 @@ describe('TvLibrary', () => {
     expect(screen.getByTestId('library-card').querySelector('[data-vod-kind="series"]')).toBeTruthy()
   })
 
-  it('OK öppnar appens detaljvy med tmdb-id:t', async () => {
-    mount({ vod: LIBRARY })
+  it('OK öppnar bibliotekets EGNA detaljvy, inte appens sida', async () => {
+    // Jerrys krav 2026-09-19: detaljerna ska ligga kvar i Live TV med
+    // ikonraden synlig, inte navigera bort till appens detaljsida.
+    const onNavigate = mount({ vod: LIBRARY })
     await waitFor(() => expect(screen.getAllByTestId('library-card').length).toBe(1))
     const opened: unknown[] = []
     const handler = (event: Event) => opened.push((event as CustomEvent).detail)
@@ -138,24 +140,23 @@ describe('TvLibrary', () => {
     } finally {
       window.removeEventListener('lumio-open-media-item', handler)
     }
-    expect(opened).toHaveLength(1)
-    expect(opened[0]).toMatchObject({ item: { id: 'movie-872585', title: 'Oppenheimer' } })
+    expect(opened).toHaveLength(0)
+    expect(onNavigate).toHaveBeenCalledWith({
+      pageId: 'live-tv-browse',
+      params: { view: 'title', key: 'vod:3' },
+    })
   })
 
-  it('säger ifrån i stället för att göra ingenting när panelen saknar tmdb-id', async () => {
-    mount({ vod: [movie(1, 'UFC 244 PPV', SWEDISH)] })
+  it('öppnar detaljvyn även för en titel panelen saknar tmdb-id för', async () => {
+    // UFC-galor och liknande finns inte på TMDB. De ska ändå gå att öppna och
+    // spela — vyn visar då panelens egna uppgifter.
+    const onNavigate = mount({ vod: [movie(1, 'UFC 244 PPV', SWEDISH)] })
     await waitFor(() => expect(screen.getAllByTestId('library-card').length).toBe(1))
-    const opened: unknown[] = []
-    const handler = () => opened.push(1)
-    window.addEventListener('lumio-open-media-item', handler)
-    try {
-      fireEvent.click(screen.getByTestId('library-card'))
-    } finally {
-      window.removeEventListener('lumio-open-media-item', handler)
-    }
-    expect(opened).toHaveLength(0)
-    // Tysta misslyckanden är värre än ett felmeddelande: användaren ska få veta.
-    expect(await screen.findByText(/ingen matchning|no match/i)).toBeTruthy()
+    fireEvent.click(screen.getByTestId('library-card'))
+    expect(onNavigate).toHaveBeenCalledWith({
+      pageId: 'live-tv-browse',
+      params: { view: 'title', key: 'vod:1' },
+    })
   })
 
   it('skiljer "hämtar" från "panelen har ingen film"', async () => {

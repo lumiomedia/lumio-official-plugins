@@ -64,6 +64,9 @@ export interface VodItemFixture {
   rating?: number
   addedAt?: number
   tmdbId?: number
+  /** Film: panelens ström-id. Serier: `seriesId` i stället. */
+  streamId?: number
+  seriesId?: number
   url?: string
 }
 

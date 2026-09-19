@@ -261,6 +261,12 @@ const EN = {
   orphanLoginsHint: 'These Xtream accounts are saved but have no playlist. They still hold a username and password.',
   orphanRemove: 'Remove account',
   orphanRemoved: 'Account removed',
+  // Bibliotekets detaljvy
+  cast: 'Cast',
+  addToMyList: '+ My list',
+  inMyList: '✓ In my list',
+  librarySeasonNumber: 'Season {count}',
+  libraryNoEpisodes: 'The provider sent no episodes for this series',
   // Tomma
   guideEmpty: 'No channels in this category',
 } as const
@@ -499,6 +505,11 @@ const SV: Record<keyof typeof EN, string> = {
   orphanLoginsHint: 'De här Xtream-kontona är sparade men har ingen spellista. De bär fortfarande användarnamn och lösenord.',
   orphanRemove: 'Ta bort konto',
   orphanRemoved: 'Kontot borttaget',
+  cast: 'Skådespelare',
+  addToMyList: '+ Min lista',
+  inMyList: '✓ I min lista',
+  librarySeasonNumber: 'Säsong {count}',
+  libraryNoEpisodes: 'Leverantören skickade inga avsnitt för den här serien',
   guideEmpty: 'Inga kanaler i kategorin',
 }
 

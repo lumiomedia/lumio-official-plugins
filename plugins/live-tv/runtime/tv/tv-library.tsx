@@ -162,14 +162,34 @@ export function TvLibrary({ model, nav }: TvViewProps) {
     setVodSort(next)
   }
 
+  /**
+   * OK öppnar bibliotekets EGNA detaljvy, inne i Live TV — inte appens sida.
+   *
+   * Jerrys krav 2026-09-19: ikonraden ska vara kvar och filmen spelas
+   * härifrån. `openVodItem` (appens detaljsida) finns kvar i håll-OK-menyn
+   * som "Mer info" för den som vill ha hela sidan med rekommendationer.
+   */
   const openItem = (item: VodItem) => {
-    if (!openVodItem(item)) nav.toast(tt('libraryNoDetails'))
+    nav.go('title', { key: item.key })
   }
 
   const holdMenu = (item: VodItem, element: HTMLElement) => {
     const actions = [
-      ...(item.url ? [{ key: 'play', label: tt('menuPlay'), run: () => openVodItem(item, { autoPlay: true }) }] : []),
-      ...(canOpenDetails(item) ? [{ key: 'info', label: tt('menuMoreInfo'), run: () => openItem(item) }] : []),
+      ...(item.url
+        ? [{
+            key: 'play',
+            label: tt('menuPlay'),
+            run: () => nav.play({
+              channel: { name: item.title, logo: item.posterUrl ?? null, group: '', url: item.url as string, tvgId: null },
+              url: item.url,
+              label: item.title,
+            }),
+          }]
+        : []),
+      // "Mer info" går till APPENS sida, för den som vill ha allt den bär.
+      ...(canOpenDetails(item)
+        ? [{ key: 'info', label: tt('menuMoreInfo'), run: () => { if (!openVodItem(item)) nav.toast(tt('libraryNoDetails')) } }]
+        : []),
     ]
     if (actions.length === 0) return
     nav.openMenu({ title: item.title, element, actions })

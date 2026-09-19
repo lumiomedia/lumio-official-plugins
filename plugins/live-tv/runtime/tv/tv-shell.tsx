@@ -70,8 +70,8 @@ function SurfaceBackdrop({ cutouts }: { cutouts: SurfaceCutout[] }) {
   )
 }
 
-export type TvView = 'hub' | 'guide' | 'favs' | 'channel' | 'search' | 'multi' | 'library' | 'settings'
-const VIEWS: TvView[] = ['hub', 'guide', 'favs', 'channel', 'search', 'multi', 'library', 'settings']
+export type TvView = 'hub' | 'guide' | 'favs' | 'channel' | 'search' | 'multi' | 'library' | 'title' | 'settings'
+const VIEWS: TvView[] = ['hub', 'guide', 'favs', 'channel', 'search', 'multi', 'library', 'title', 'settings']
 
 export interface TvNav {
   view: TvView
