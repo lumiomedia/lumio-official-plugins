@@ -19,6 +19,17 @@ export const MT = {
   font: "'Avenir Next', 'Trebuchet MS', sans-serif",
   HIT: 44, PAD: 16, HEADER_H: 52, HEADER_LEFT: 60, TAB_BAR: 52,
   SAFE_BOTTOM: 'env(safe-area-inset-bottom, 18px)', SAFE_TOP: 'env(safe-area-inset-top, 0px)',
+  /**
+   * TOPPMARGINALEN MOT SYSTEMRADEN.
+   *
+   * `env(safe-area-inset-top)` ensamt räcker inte: Android-webviewn ger den
+   * bara när sidan bett om `viewport-fit=cover`, och värden räknar dessutom ut
+   * sin egen `--android-inset-top` ur fönstrets insets. Appens egna ytor tar
+   * max av båda (se `components/media-explorer.tsx`), och telefongrenen ska
+   * göra likadant — annars hamnar rubriken under kamerahålet, vilket den
+   * gjorde på en S10e: 39 px inset, sidhuvudet på y=0.
+   */
+  SAFE_TOP_GUARD: 'max(env(safe-area-inset-top, 0px), var(--android-inset-top, 0px))',
   /** Innehållets bottenluft så att sista raden inte hamnar under flik-raden. */
   SCROLL_PAD_BOTTOM: 96,
 } as const

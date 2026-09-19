@@ -13,7 +13,19 @@ import { MIcons } from './mobile-icons'
 export function MobileHeader({ title, right, back, onBack, testId }: { title: ReactNode; right?: ReactNode; back?: boolean; onBack?: () => void; testId?: string }) {
   const { tt } = useTvText()
   return (
-    <div data-testid={testId} style={{ height: MT.HEADER_H, minHeight: MT.HEADER_H, flexShrink: 0, padding: `0 ${MT.PAD}px 0 ${MT.HEADER_LEFT}px`, display: 'flex', alignItems: 'center', gap: 10 }}>
+    <div
+      data-testid={testId}
+      style={{
+        // Höjden är innehållets 52 px PLUS systemradens inset: `height` ensamt
+        // hade lagt rubriken under kamerahålet (se MT.SAFE_TOP_GUARD).
+        minHeight: `calc(${MT.HEADER_H}px + ${MT.SAFE_TOP_GUARD})`,
+        flexShrink: 0,
+        padding: `${MT.SAFE_TOP_GUARD} ${MT.PAD}px 0 ${MT.HEADER_LEFT}px`,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+      }}
+    >
       {back ? (
         <div
           {...station(onBack ?? (() => {}), undefined, { 'aria-label': tt('back'), 'data-testid': 'header-back' })}

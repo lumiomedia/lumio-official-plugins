@@ -23,7 +23,18 @@ const SPOTLIGHT_COUNT_PHONE = 1
 const RECENT_MAX = 8
 
 /** Kortets yta: samma toner som skrivbordets `cardStyle`, men i äkta px. */
-const card = { background: MT.s07, border: `1px solid ${MT.line08}`, overflow: 'hidden' as const, cursor: 'pointer' as const }
+/**
+ * `flexShrink: 0` är inte kosmetik — utan den FÖRSVINNER kortet.
+ *
+ * Hubben är en kolumn-flexbox vars innehåll är många gånger högre än skärmen.
+ * Flex-items krymper som standard, och ett item vars `min-height: auto` går
+ * att lösa till noll krymper hela vägen. `overflow: hidden` — som kortet har
+ * för sina rundade hörn — är precis det som får `auto` att bli noll i stället
+ * för innehållets höjd. Spotlightkortet kollapsade därför till 2 px: de två
+ * 1px-ramarna, och inget mer. På telefonen såg det ut som en tom orange
+ * strimma (fokusringen runt ingenting).
+ */
+const card = { background: MT.s07, border: `1px solid ${MT.line08}`, overflow: 'hidden' as const, cursor: 'pointer' as const, flexShrink: 0 }
 
 /**
  * Taggarna i bildytorna är handoffens egna 11 px-mått — inte `Tag` ur

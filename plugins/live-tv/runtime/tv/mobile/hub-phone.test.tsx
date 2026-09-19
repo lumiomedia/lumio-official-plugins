@@ -95,3 +95,16 @@ describe('Hubben på telefon', () => {
     expect(onNavigate).toHaveBeenCalledWith({ pageId: 'live-tv-browse', params: { view: 'settings' } })
   })
 })
+
+describe('Spotlightkortet kollapsar inte', () => {
+  it('kortet har flexShrink 0', async () => {
+    // Uppmätt på en S10e 2026-09-19: kortet var 2 px högt — de två 1px-ramarna
+    // och inget mer. Hubben är en kolumn-flexbox som är många gånger högre än
+    // skärmen, och `overflow: hidden` (kortets rundade hörn) löser
+    // `min-height: auto` till noll. Utan flexShrink 0 krymper flexboxen bort
+    // hela kortet. Layout går inte att mäta i happy-dom, så stilen spikas.
+    mountPhone({ view: 'hub' })
+    const card = await screen.findByTestId('hub-spotlight')
+    expect(card.style.flexShrink).toBe('0')
+  })
+})
