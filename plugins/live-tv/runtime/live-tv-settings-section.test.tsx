@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
 
 // Hem-övertagandet och profilbytet är app-API:er som teststubben inte har —
@@ -17,8 +17,16 @@ vi.mock('@/lib/plugin-sdk', async (importOriginal) => {
   }
 })
 
+// completeLogos gör ett riktigt nätverksanrop i produktionskoden — testerna
+// ersätter den med en spion så kvittot/felet går att styra per test.
+vi.mock('./index-client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./index-client')>()
+  return { ...actual, completeLogos: vi.fn() }
+})
+
 import * as liveTvData from './live-tv-data'
-import { LIVE_TV_PLUGIN_ID, getLiveTvLists, getXtreamLogins, type LiveTvList } from './live-tv-data'
+import { LIVE_TV_PLUGIN_ID, getLiveTvLists, getXtreamLogins, isLogoFallbackEnabled, type LiveTvList } from './live-tv-data'
+import { completeLogos } from './index-client'
 import { resetM3uFetchProgressForTests } from './m3u-fetch-progress'
 import { LiveTvSettingsSection } from './live-tv-settings-section'
 
@@ -170,5 +178,58 @@ describe('LiveTvSettingsSection', () => {
 
     fireEvent.click(screen.getByText('Sign in again'))
     expect(screen.getByPlaceholderText(/liveTvXtreamServer/)).toHaveValue('http://panel.test:8080')
+  })
+
+  it('visar switchen påslagen för en lista utan fältet', () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list({ id: 'a', name: 'A', kind: 'm3u', source: 'http://lista' })])
+    render(<LiveTvSettingsSection />)
+    expect(within(screen.getByTestId('logo-fallback-toggle-a')).getByRole('checkbox')).toBeChecked()
+  })
+
+  it('sparar när switchen slås av', () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list({ id: 'a', name: 'A', kind: 'm3u', source: 'http://lista' })])
+    render(<LiveTvSettingsSection />)
+    fireEvent.click(within(screen.getByTestId('logo-fallback-toggle-a')).getByRole('checkbox'))
+    expect(isLogoFallbackEnabled(getLiveTvLists()[0])).toBe(false)
+  })
+
+  it('kompletterar och visar kvittot', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list({ id: 'a', name: 'A', kind: 'm3u', source: 'http://lista' })])
+    vi.mocked(completeLogos).mockResolvedValue({ matched: 12, total: 40 })
+    render(<LiveTvSettingsSection />)
+    fireEvent.click(within(screen.getByTestId('logo-complete-a')).getByRole('button'))
+    // Testmiljöns useLang() ligger fast på 'en' (se plugin-sdk-stubben) — filens
+    // övriga tester (t.ex. "Fetching 12,000 of 17,000…") verifierar mot samma
+    // engelska text av samma skäl. Briefens "12 av 40" är den svenska varianten
+    // i tabellen (verifierad separat via hub-strings), men det är den engelska
+    // som faktiskt renderas här.
+    expect(await screen.findByText(/12 of 40/)).toBeInTheDocument()
+  })
+
+  it('knappen är avstängd när switchen är av', () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list({ id: 'a', name: 'A', kind: 'm3u', source: 'http://lista', logoFallbackEnabled: false })])
+    render(<LiveTvSettingsSection />)
+    expect(within(screen.getByTestId('logo-complete-a')).getByRole('button')).toBeDisabled()
+  })
+
+  it('switchen bär en egen ledtext — den är inställningen, Komplettera är handlingen', () => {
+    // Jerrys ord efter test: "bara en checkbox, finns en complete-knapp men
+    // borde vara en separat inställning". En ledtext på switchen (som
+    // `hideHero`-switchen redan har högre upp i filen) och en avdelare framför
+    // knapp-raden är hur filen redan skiljer inställning från handling —
+    // innan den här ändringen fanns ingen ledtext här alls.
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list({ id: 'a', name: 'A', kind: 'm3u', source: 'http://lista' })])
+    render(<LiveTvSettingsSection />)
+    expect(within(screen.getByTestId('logo-fallback-toggle-a')).getByText(/iptv-org logo registry/)).toBeInTheDocument()
+  })
+
+  it('switchen är verkningslös för en egen lista och ska spärras', () => {
+    // Egna listors kanaler renderas via `customChannelsByList` → `withIndexTwins`,
+    // som bär tvillingens switch-tillstånd från URSPRUNGSLISTAN — den egna
+    // listans switch gör ingenting. Komplettera-knappen är redan spärrad här;
+    // switchen ska vara det av samma skäl (P1-fynd 2).
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list({ id: 'c', name: 'Mina kanaler', kind: 'custom', source: 'custom:c', channels: [] })])
+    render(<LiveTvSettingsSection />)
+    expect(within(screen.getByTestId('logo-fallback-toggle-c')).getByRole('checkbox')).toBeDisabled()
   })
 })

@@ -1,16 +1,27 @@
 import { describe, expect, it } from 'vitest'
 import {
   CHANNEL_COL_PX,
+  GRID_WINDOW_MS,
   HOUR_PX,
   MIN_BLOCK_PX,
+  PCT_PER_MIN_GRID,
+  PHONE_CHANNEL_COL_PX,
+  PHONE_PX_PER_MIN,
+  PHONE_ROW_H_PX,
   PX_PER_MIN,
   ROW_MIN_H_PX,
   TITLE_ONLY_PX,
   epgBlockBox,
   epgRowBoxes,
+  guideWindowStart,
   hourMarks,
+  mergeShortBlocks,
   nowLinePx,
+  pctShapeThresholds,
+  timelineWindow,
+  type EpgRowEntry,
 } from './epg-grid-geometry'
+import { startOfLocalDay } from '../live-tv-model'
 
 const M = 60_000
 const H = 3_600_000
@@ -190,4 +201,177 @@ describe('nowLinePx och hourMarks', () => {
 it('konstanterna matchar tablåns nuvarande mått', () => {
   expect(CHANNEL_COL_PX).toBe(160)
   expect(ROW_MIN_H_PX).toBe(56)
+})
+
+describe('px/min som parameter (telefonens tablå)', () => {
+  it('PHONE_PX_PER_MIN: 90 minuter ryms i ~260 px', () => {
+    expect(90 * PHONE_PX_PER_MIN).toBeCloseTo(260)
+  })
+
+  it('epgBlockBox med PHONE_PX_PER_MIN: ett 90-minutersprogram blir ~260 px och left följer samma skala', () => {
+    const box = epgBlockBox({ start: H, stop: H + 90 * M }, windowStart, windowEnd, PHONE_PX_PER_MIN)
+    expect(box?.width).toBeCloseTo(260)
+    expect(box?.left).toBeCloseTo(60 * PHONE_PX_PER_MIN)
+  })
+
+  it('epgRowBoxes med PHONE_PX_PER_MIN: bredder i telefonskalan, paret oförändrat', () => {
+    const entries = epgRowBoxes([{ start: H, stop: H + 30 * M }, { start: H + 30 * M, stop: H + 60 * M }], windowStart, windowEnd, PHONE_PX_PER_MIN)
+    expect(entries).toHaveLength(2)
+    expect(entries[0].box.width).toBeCloseTo(30 * PHONE_PX_PER_MIN)
+    expect(entries[1].box.left).toBeCloseTo(entries[0].box.left + entries[0].box.width)
+  })
+
+  it('nowLinePx med PHONE_PX_PER_MIN: 45 minuter in ger ~130 px', () => {
+    expect(nowLinePx(windowStart + 45 * M, windowStart, PHONE_PX_PER_MIN)).toBeCloseTo(130)
+  })
+
+  it('utan parametern är skalan oförändrad (PX_PER_MIN, 240 px/timme)', () => {
+    expect(epgBlockBox({ start: H, stop: H + 30 * M }, windowStart, windowEnd)?.width).toBe(30 * PX_PER_MIN)
+    expect(nowLinePx(windowStart + H, windowStart)).toBe(HOUR_PX)
+    expect(epgRowBoxes([{ start: H, stop: H + 60 * M }], windowStart, windowEnd)[0].box.width).toBeCloseTo(240)
+  })
+
+  it('telefonens konstanter matchar handoffen §3', () => {
+    expect(PHONE_CHANNEL_COL_PX).toBe(112)
+    expect(PHONE_ROW_H_PX).toBe(64)
+  })
+})
+
+describe('guideWindowStart', () => {
+  const at = (h: number, min: number) => new Date(2026, 0, 1, h, min, 0, 0).getTime()
+
+  it('08:44 rundas ned till 08:30', () => {
+    expect(guideWindowStart(at(8, 44))).toBe(at(8, 30))
+  })
+
+  it('00:05 rundas ned till 00:00', () => {
+    expect(guideWindowStart(at(0, 5))).toBe(at(0, 0))
+  })
+
+  it('23:50 rundas ned till 23:30', () => {
+    expect(guideWindowStart(at(23, 50))).toBe(at(23, 30))
+  })
+})
+
+describe('PCT_PER_MIN_GRID + epgBlockBox — procentblock i Grid (fönster 3 h)', () => {
+  const at = (h: number, min: number) => new Date(2026, 0, 1, h, min, 0, 0).getTime()
+  const gridWindowStart = at(8, 30)
+  const gridWindowEnd = gridWindowStart + GRID_WINDOW_MS
+
+  it('GRID_WINDOW_MS är 3 timmar', () => {
+    expect(GRID_WINDOW_MS).toBe(3 * 3_600_000)
+  })
+
+  it('30/60/90-minutersblock blir ~16.67/33.33/50 % av spårbredden', () => {
+    const box30 = epgBlockBox({ start: gridWindowStart, stop: gridWindowStart + 30 * 60_000 }, gridWindowStart, gridWindowEnd, PCT_PER_MIN_GRID)
+    const box60 = epgBlockBox({ start: gridWindowStart, stop: gridWindowStart + 60 * 60_000 }, gridWindowStart, gridWindowEnd, PCT_PER_MIN_GRID)
+    const box90 = epgBlockBox({ start: gridWindowStart, stop: gridWindowStart + 90 * 60_000 }, gridWindowStart, gridWindowEnd, PCT_PER_MIN_GRID)
+    expect(box30?.width).toBeCloseTo(16.666, 2)
+    expect(box60?.width).toBeCloseTo(33.333, 2)
+    expect(box90?.width).toBeCloseTo(50, 2)
+  })
+
+  it('block 07:30–09:00 i fönster 08:30–11:30 klipps till vänsterkanten med kvarvarande bredd', () => {
+    const box = epgBlockBox({ start: at(7, 30), stop: at(9, 0) }, gridWindowStart, gridWindowEnd, PCT_PER_MIN_GRID)
+    expect(box?.left).toBe(0)
+    expect(box?.width).toBeCloseTo(16.666, 2)
+    expect(box?.clippedStart).toBe(true)
+  })
+
+  /**
+   * Regression: `shapeFor`s px-trösklar (18/72) jämförda mot en PROCENTbredd
+   * gjorde ett 30-minutersblock (16,67 %) till en "marker" — fel enhet.
+   * `pctShapeThresholds` ger trösklar i SAMMA enhet som `width` här.
+   */
+  describe('formtrösklar i procentskalan (pctShapeThresholds)', () => {
+    const thresholds = pctShapeThresholds(PCT_PER_MIN_GRID)
+
+    it('30-minutersblock (16,67 %) blir "full"', () => {
+      const box = epgBlockBox({ start: gridWindowStart, stop: gridWindowStart + 30 * M }, gridWindowStart, gridWindowEnd, PCT_PER_MIN_GRID, thresholds)
+      expect(box?.shape).toBe('full')
+      expect(box?.paddingX).toBe(0)
+    })
+
+    it('10-minutersblock blir "title"', () => {
+      const box = epgBlockBox({ start: gridWindowStart, stop: gridWindowStart + 10 * M }, gridWindowStart, gridWindowEnd, PCT_PER_MIN_GRID, thresholds)
+      expect(box?.shape).toBe('title')
+      expect(box?.paddingX).toBe(0)
+    })
+
+    it('3-minutersblock blir "marker"', () => {
+      const box = epgBlockBox({ start: gridWindowStart, stop: gridWindowStart + 3 * M }, gridWindowStart, gridWindowEnd, PCT_PER_MIN_GRID, thresholds)
+      expect(box?.shape).toBe('marker')
+      expect(box?.paddingX).toBe(0)
+    })
+
+    it('utan thresholds (default-anropet) är beteendet oförändrat: samma 30-minutersblock blev tidigare "marker" i procentskalan', () => {
+      const box = epgBlockBox({ start: gridWindowStart, stop: gridWindowStart + 30 * M }, gridWindowStart, gridWindowEnd, PCT_PER_MIN_GRID)
+      // Utan trösklar i rätt enhet jämförs 16,67 mot px-konstanterna (18/72) → "marker".
+      expect(box?.shape).toBe('marker')
+    })
+  })
+})
+
+describe('timelineWindow', () => {
+  const now = new Date(2026, 0, 1, 14, 44, 0, 0).getTime()
+
+  it("'2h': halvtimmesfönstrets start minus 30 min, 2 timmar långt", () => {
+    const win = timelineWindow(now, '2h')
+    expect(win.start).toBe(guideWindowStart(now) - 30 * 60_000)
+    expect(win.end - win.start).toBe(2 * 3_600_000)
+    expect(win.pctPerMin).toBeCloseTo(100 / 120)
+  })
+
+  it("'6h': halvtimmesfönstrets start minus 1 timme, 6 timmar långt", () => {
+    const win = timelineWindow(now, '6h')
+    expect(win.start).toBe(guideWindowStart(now) - 3_600_000)
+    expect(win.end - win.start).toBe(6 * 3_600_000)
+    expect(win.pctPerMin).toBeCloseTo(100 / 360)
+  })
+
+  it("'day': dagens 06:00 till 24:00, pctPerMin = 100/1080", () => {
+    const win = timelineWindow(now, 'day')
+    expect(win.start).toBe(startOfLocalDay(now) + 6 * 3_600_000)
+    expect(win.end - win.start).toBe(18 * 3_600_000)
+    expect(win.pctPerMin).toBeCloseTo(100 / 1080)
+  })
+})
+
+describe('mergeShortBlocks', () => {
+  type P = { title: string; start: number; stop: number }
+  const entry = (title: string, left: number, width: number): EpgRowEntry<P> => ({
+    box: { left, width, shape: width < 18 ? 'marker' : 'title', paddingX: Math.min(8, width / 3), clippedStart: false, clippedEnd: false },
+    programme: { title, start: left, stop: left + width },
+  })
+
+  it('två angränsande smala block slås ihop till ett med mergedTitle "A · B"', () => {
+    const merged = mergeShortBlocks([entry('A', 0, 5), entry('B', 5, 5)], 10)
+    expect(merged).toHaveLength(1)
+    expect(merged[0].mergedTitle).toBe('A · B')
+    expect(merged[0].box.left).toBe(0)
+    expect(merged[0].box.width).toBe(10)
+  })
+
+  it('ett brett block rörs inte och får ingen mergedTitle', () => {
+    const merged = mergeShortBlocks([entry('Bred', 0, 50)], 10)
+    expect(merged).toHaveLength(1)
+    expect(merged[0].mergedTitle).toBeUndefined()
+  })
+
+  it('ett ensamt smalt block utan smal granne rörs inte', () => {
+    const merged = mergeShortBlocks([entry('Ensam', 0, 5), entry('Bred', 5, 50)], 10)
+    expect(merged).toHaveLength(2)
+    expect(merged[0].mergedTitle).toBeUndefined()
+  })
+
+  it('med procenttrösklar räknas det sammanslagna blockets shape/paddingX i procent, inte px', () => {
+    const thresholds = pctShapeThresholds(PCT_PER_MIN_GRID)
+    // 3 + 3 = 6 — under px-tröskeln 18 (skulle bli "marker" utan thresholds)
+    // men mellan procenttrösklarnas marker (≈2,78) och title (≈8,33) → "title".
+    const merged = mergeShortBlocks([entry('A', 0, 3), entry('B', 3, 3)], 10, thresholds)
+    expect(merged).toHaveLength(1)
+    expect(merged[0].box.width).toBe(6)
+    expect(merged[0].box.shape).toBe('title')
+    expect(merged[0].box.paddingX).toBe(0)
+  })
 })

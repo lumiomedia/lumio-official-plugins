@@ -1,9 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { channelKey, computeGroups, type LiveTvList, type M3uChannel } from '../live-tv-data'
-import { isPlayableChannel, qualityFromName } from '../live-tv-model'
-import { useListChannels } from '../view-helpers'
+import { channelKey } from '../live-tv-data'
+import { qualityFromName } from '../live-tv-model'
 import { formatClock, progressOf } from '../live-tv-ui'
 import { isReminded, toggleReminder } from '../reminders'
 import type { EpgProgramme } from '../epg/types'
@@ -13,8 +12,11 @@ import { useTvText } from './tv-strings'
 import { ChannelCell, FAVS_GROUP, useDebouncedChannel } from './tv-guide-shared'
 import type { GuideMode } from './tv-settings-store'
 import { TvPreview } from './tv-preview'
+import { useListRows, useListTree, type ListSelection } from './list-tree'
+import { TvGuideListsPhone } from './mobile/guide-lists-phone'
 
-type Selection = { listId: string | null; group: string | null }
+/** Skrivbordets vänsterkolumn visar högst så här många grupper per lista. */
+const MAX_GROUPS = 12
 
 /**
  * Rader per sida i mittenkolumnen, samma steg som `tv-guide.tsx`.
@@ -26,47 +28,24 @@ type Selection = { listId: string | null; group: string | null }
  */
 const ROW_STEP = 40
 
-export function TvGuidePlaylists({ model, nav, settings, mode, onModeChange }: TvViewProps & { mode: GuideMode; onModeChange: (mode: GuideMode) => void }) {
+export function TvGuidePlaylists(props: TvViewProps & { mode: GuideMode; onModeChange: (mode: GuideMode) => void }) {
+  // Telefonen (fas 3, handoffen §4) är en drill-down i två steg, inte tre
+  // kolumner — egen fil, samma träd och rader (`list-tree.ts`).
+  if (props.phone) return <TvGuideListsPhone {...props} />
+  return <TvGuidePlaylistsDesktop {...props} />
+}
+
+function TvGuidePlaylistsDesktop({ model, nav, settings, mode, onModeChange }: TvViewProps & { mode: GuideMode; onModeChange: (mode: GuideMode) => void }) {
   const { tt, locale } = useTvText()
   const clock = useTvClockNode(locale)
-  const [sel, setSel] = useState<Selection>({ listId: model.lists[0]?.id ?? null, group: null })
+  const [sel, setSel] = useState<ListSelection>({ listId: model.lists[0]?.id ?? null, group: null })
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const [, bump] = useState(0)
 
-  /**
-   * Vänsterkolumnen ritas ur listornas METADATA, inte ur deras kanaler.
-   *
-   * Efter lagring v2 bär listorna inga inbäddade kanaler — `flattenChannels`
-   * gav tomma listor i skarp drift. Antal och grupper står numera i listans
-   * kvitto (`channelCount`/`groups`, skrivna av importjobbet), så hela trädet
-   * kan ritas utan att en enda kanal laddas. Manuellt skapade listor
-   * (`custom`) har fortfarande sina kanaler hos sig och räknas direkt.
-   */
-  const tree = useMemo(() => model.lists.map((list) => ({
-    id: list.id,
-    name: list.name,
-    count: list.kind === 'custom' ? (list.channels ?? []).length : list.channelCount ?? (list.channels?.length ?? 0),
-    groups: (list.kind === 'custom' ? computeGroups(list.channels ?? []) : list.groups ?? []).slice(0, 12),
-  })), [model.lists])
-
-  /**
-   * Kanalerna laddas bara för den VALDA listan (ur indexet, eller ur
-   * minnescachen när modellen redan har källan laddad). Att ladda alla listor
-   * på en gång hade betytt en hämtning per lista vid varje montering, för
-   * rader som ändå bara syns en lista i taget.
-   */
-  const selectedLists = useMemo<LiveTvList[]>(() => {
-    const list = model.lists.find((entry) => entry.id === sel.listId)
-    return list ? [list] : []
-  }, [model.lists, sel.listId])
-  const { byListId, loading: channelsLoading } = useListChannels(selectedLists)
-
-  const rows: M3uChannel[] = useMemo(() => {
-    if (sel.listId === FAVS_GROUP) return model.favouriteChannels
-    if (!sel.listId) return []
-    const channels = (byListId[sel.listId] ?? []).filter(isPlayableChannel)
-    return sel.group ? channels.filter((c) => c.group === sel.group) : channels
-  }, [sel, byListId, model.favouriteChannels])
+  // Vänsterkolumnen ritas ur listornas metadata och kanalerna laddas bara
+  // för den valda listan — se `list-tree.ts`.
+  const tree = useListTree(model, MAX_GROUPS)
+  const { rows, channelsLoading } = useListRows(model, sel)
 
   const [visible, setVisible] = useState(ROW_STEP)
   useEffect(() => { setVisible(ROW_STEP) }, [sel])
@@ -117,14 +96,14 @@ export function TvGuidePlaylists({ model, nav, settings, mode, onModeChange }: T
   const noRows = rows.length === 0
 
   const colItem = (key: string, active: boolean, label: string, count: number, indent: boolean, onOk: () => void, testId: string, extra?: Record<string, string>) => (
-    <div key={key} data-testid={testId} {...station(onOk, undefined, { 'data-live-tv-col': 'left', ...(extra ?? {}) })} style={{ height: indent ? dp(48) : dp(56), marginLeft: indent ? dp(28) : 0, padding: `0 ${dp(16)}px`, borderRadius: dp(12), display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: active ? (indent ? TV.accMix(18) : TV.s12) : 'transparent', color: active ? TV.text : indent ? 'rgba(243,244,248,0.6)' : TV.text, fontSize: indent ? dp(18) : dp(19), fontWeight: indent ? 400 : 600, cursor: 'pointer' }}>
+    <div key={key} data-testid={testId} {...station(onOk, undefined, { 'data-live-tv-col': 'left', ...(extra ?? {}) })} style={{ height: dp(indent ? 48 : 56), minHeight: dp(indent ? 48 : 56), marginLeft: indent ? dp(28) : 0, padding: `0 ${dp(16)}px`, borderRadius: dp(12), display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: active ? (indent ? TV.accMix(18) : TV.s12) : 'transparent', color: active ? TV.text : indent ? 'rgba(243,244,248,0.6)' : TV.text, fontSize: dp(indent ? 18 : 19), fontWeight: indent ? 400 : 600, cursor: 'pointer' }}>
       <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
       <span style={{ fontSize: dp(14), color: 'rgba(243,244,248,0.45)' }}>{count}</span>
     </div>
   )
 
   return (
-    <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
+    <div data-testid="playlists-view-root" style={{ flex: 1, minHeight: 0, display: 'flex' }}>
       {/* Vänster: spellistor + grupper */}
       <div data-testid="playlists-column" data-scroll="" style={{ width: dp(330), flexShrink: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(30)}px ${dp(16)}px 0 ${dp(20)}px`, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: dp(2) }}>
         {tree.map((list, listIndex) => [
@@ -132,7 +111,6 @@ export function TvGuidePlaylists({ model, nav, settings, mode, onModeChange }: T
           ...list.groups.map((g) => colItem(`${list.id}:${g.name}`, sel.listId === list.id && sel.group === g.name, g.name, g.count, true, () => { setSel({ listId: list.id, group: g.name }); setSelectedKey(null) }, `pl-group-${list.id}-${g.name}`)),
         ])}
         {colItem('__favs', sel.listId === FAVS_GROUP, tt('favourites'), model.favouriteChannels.length, false, () => { setSel({ listId: FAVS_GROUP, group: null }); setSelectedKey(null) }, 'pl-list-favs', noRows && tree.length === 0 ? { 'data-init': '' } : undefined)}
-        <div style={{ marginTop: 'auto', padding: `${dp(20)}px 0`, fontSize: dp(15), color: TV.faint }}>{tt('helpPlaylists')}</div>
       </div>
 
       {/* Mitten: kanaler */}
@@ -177,9 +155,11 @@ export function TvGuidePlaylists({ model, nav, settings, mode, onModeChange }: T
               data-testid="pl-row"
               {...station(() => nav.play({ channel }), (el) => nav.channelMenu(channel, el), { ...(index === 0 ? { 'data-init': '' } : {}), 'data-f-left': '[data-live-tv-col="left"]', 'data-f-right': '[data-testid="pl-now-card"], [data-testid="pl-preview"]' })}
               onFocus={() => setSelectedKey(key)}
-              style={{ height: dp(82), marginRight: dp(24), borderRadius: dp(12), display: 'flex', alignItems: 'center', gap: dp(14), padding: `0 ${dp(14)}px`, background: focused ? TV.s10 : 'transparent', cursor: 'pointer' }}
+              style={{ height: dp(82), minHeight: dp(82), marginRight: dp(24), borderRadius: dp(12), display: 'flex', alignItems: 'center', gap: dp(14), padding: `0 ${dp(14)}px`, background: focused ? TV.s10 : 'transparent', cursor: 'pointer' }}
             >
-              <ChannelCell channel={channel} number={model.channelNumber(channel)} pinned={model.pinnedSet.has(key)} locked={model.locked.has(key)} quality={null} focused={false} width={dp(560)} />
+              <div data-testid="pl-row-channel-col" style={{ width: dp(560), flexShrink: 0 }}>
+                <ChannelCell channel={channel} number={model.channelNumber(channel)} pinned={model.pinnedSet.has(key)} locked={model.locked.has(key)} quality={null} focused={false} width="100%" />
+              </div>
               <div style={{ minWidth: 0, flex: 1, fontSize: dp(17), color: 'rgba(243,244,248,0.65)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rowInfo.now?.title ?? tt('noProgramme')}</div>
               <div style={{ width: dp(110), flexShrink: 0 }}>
                 {rowInfo.now ? <><div style={{ fontSize: dp(14), color: 'rgba(243,244,248,0.5)', textAlign: 'right' }}>{tt('minutesLeft', { min: Math.max(0, Math.round((rowInfo.now.stop - model.nowMs) / 60_000)) })}</div><Progress value={progressOf(rowInfo.now.start, rowInfo.now.stop, model.nowMs)} height={dp(4)} /></> : null}
@@ -188,7 +168,7 @@ export function TvGuidePlaylists({ model, nav, settings, mode, onModeChange }: T
           )
         })}
         {rows.length > visible ? (
-          <div {...station(() => setVisible((v) => v + ROW_STEP))} style={{ margin: `${dp(20)}px auto ${dp(20)}px`, width: 'fit-content', height: dp(48), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.s10, display: 'flex', alignItems: 'center', fontSize: dp(18), cursor: 'pointer' }}>{tt('showMore')}</div>
+          <div {...station(() => setVisible((v) => v + ROW_STEP))} style={{ margin: `${dp(20)}px auto ${dp(20)}px`, width: 'fit-content', height: dp(48), minHeight: dp(48), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.s10, display: 'flex', alignItems: 'center', fontSize: dp(18), cursor: 'pointer' }}>{tt('showMore')}</div>
         ) : null}
         {rows.length === 0 ? <div data-testid="pl-empty" style={{ padding: dp(24), color: TV.dim, fontSize: dp(19) }}>{channelsLoading ? tt('loadingChannels') : tt('guideEmpty')}</div> : null}
       </div>

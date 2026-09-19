@@ -765,7 +765,7 @@ function StreamCard({
       className="group relative w-full overflow-hidden bg-transparent text-left transition-all duration-300 hover:-translate-y-1"
       aria-label={stream.title}
     >
-      <div className="relative aspect-video overflow-hidden bg-slate-800">
+      <div className="poster-card-radius relative aspect-video overflow-hidden bg-slate-800">
         {stream.thumbnail_url ? (
           <img
             src={thumb(stream.thumbnail_url, 440, 248)}
@@ -936,7 +936,7 @@ function CategoryCard({
       className="group relative w-full cursor-pointer bg-transparent text-left transition-all duration-300 hover:-translate-y-1"
       aria-label={category.name}
     >
-      <div className="relative aspect-[3/4] overflow-hidden rounded-[0.75rem] bg-slate-800">
+      <div className="poster-card-radius relative aspect-[3/4] overflow-hidden bg-slate-800">
         {category.box_art_url ? (
           <img
             src={thumb(category.box_art_url, 285, 380)}
@@ -1461,7 +1461,7 @@ function VideoCard({ video, onPlay }: { video: TwitchVideo; onPlay: (video: Twit
       className="group relative w-full overflow-hidden bg-transparent text-left transition-all duration-300 hover:-translate-y-1"
       aria-label={video.title}
     >
-      <div className="relative aspect-video overflow-hidden rounded-[0.75rem] bg-slate-800">
+      <div className="poster-card-radius relative aspect-video overflow-hidden bg-slate-800">
         {video.thumbnail_url ? (
           <img
             src={thumb(video.thumbnail_url, 440, 248)}
@@ -1500,7 +1500,7 @@ function ClipCard({ clip, onPlay }: { clip: TwitchClip; onPlay: (clip: TwitchCli
       className="group relative w-full overflow-hidden bg-transparent text-left transition-all duration-300 hover:-translate-y-1"
       aria-label={clip.title}
     >
-      <div className="relative aspect-video overflow-hidden rounded-[0.75rem] bg-slate-800">
+      <div className="poster-card-radius relative aspect-video overflow-hidden bg-slate-800">
         {clip.thumbnail_url ? (
           <img
             src={thumb(clip.thumbnail_url, 440, 248)}

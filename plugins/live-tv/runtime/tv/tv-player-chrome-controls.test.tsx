@@ -8,8 +8,8 @@ import type { LiveTvPlayerControls, LiveTvPlayerTvProps } from './tv-player-type
  * P13: när det gamla skrivbordskromet raderades försvann den ENDA vägen till
  * ljud av, volym, webbläsarhelskärm och bildförhållande — funktionerna låg
  * kvar i `live-tv-player.tsx` utan någon knapp som kallade dem. Kontrollerna
- * hör hemma i TV-kromet, men BARA utanför TV-läget: på TV äger fjärren ljudet
- * och bilden, och handoffens spelarskärm (§9) har "inga knapprader".
+ * sitter i kontrollraden (den gamla layouten, tillbaka 2026-09-17) på både
+ * skrivbord och TV; bara volymreglaget utelämnas på TV.
  */
 
 const now = Date.now()
@@ -18,7 +18,7 @@ const channels = [ch('A'), ch('B'), ch('C')]
 const nowFor = () => ({ now: null, next: null, later: null })
 
 function tv(overrides: Partial<LiveTvPlayerTvProps> = {}): LiveTvPlayerTvProps {
-  return { channelNumber: 2, quality: '4K', favourite: false, bannerHideMs: 0, neighbours: channels, nowFor, nowMs: now, locale: 'en-GB', gateOpen: false, onToggleFavourite: vi.fn(), onOpenChannelDetails: vi.fn(), onOpenMultiview: vi.fn(), onOpenGuide: vi.fn(), onAddToMultiview: vi.fn(), onSwitchChannel: vi.fn(), ...overrides }
+  return { channelNumber: 2, quality: '4K', favourite: false, bannerHideMs: 0, neighbours: channels, pinnedKeys: [], nowFor, nowMs: now, locale: 'en-GB', gateOpen: false, phone: false, fullscreenOnRotate: true, keepAwake: true, onToggleFavourite: vi.fn(), onOpenChannelDetails: vi.fn(), onOpenMultiview: vi.fn(), onOpenGuide: vi.fn(), onAddToMultiview: vi.fn(), onSwitchChannel: vi.fn(), ...overrides }
 }
 
 function controls(overrides: Partial<LiveTvPlayerControls> = {}): LiveTvPlayerControls {
@@ -49,21 +49,29 @@ describe('TvPlayerChrome: pekarkontroller', () => {
     expect(c.onCycleAspect).toHaveBeenCalled()
 
     // Fjärren på skrivbordet ska nå dem: varje kontroll är en station, och
-    // kromet har fortfarande exakt EN data-init (⋯-knappen).
+    // kromet har fortfarande exakt EN data-init (spela/paus-knappen).
     for (const label of ['Mute', 'Volume', 'Fullscreen', 'Aspect ratio']) {
       expect(screen.getByLabelText(label)).toHaveAttribute('data-f')
     }
     expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
-    expect(screen.getByLabelText('More')).toHaveAttribute('data-init')
+    expect(screen.getByLabelText('Pause')).toHaveAttribute('data-init')
   })
 
-  it('i TV-läge visas inte pekarkontrollerna', () => {
+  it('i TV-läge finns knapparna men inte volymreglaget', () => {
     __setTvModeForTests(true)
-    render(<TvPlayerChrome channel={channels[1]} tv={tv()} controls={controls()} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
-    expect(screen.queryByLabelText('Mute')).toBeNull()
+    const c = controls()
+    render(<TvPlayerChrome channel={channels[1]} tv={tv()} controls={c} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
     expect(screen.queryByLabelText('Volume')).toBeNull()
-    expect(screen.queryByLabelText('Fullscreen')).toBeNull()
-    expect(screen.queryByLabelText('Aspect ratio')).toBeNull()
+    fireEvent.click(screen.getByLabelText('Mute'))
+    expect(c.onToggleMute).toHaveBeenCalled()
+    expect(screen.getByLabelText('Fullscreen')).toBeInTheDocument()
+    expect(screen.getByLabelText('Aspect ratio')).toHaveTextContent('Auto')
+  })
+
+  it('kontrollradens högerdel visar spelad tid och kategori', () => {
+    render(<TvPlayerChrome channel={channels[1]} tv={tv()} controls={controls({ timePos: 3725 })} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
+    expect(screen.getByTestId('elapsed')).toHaveTextContent('1:02:05')
+    expect(screen.getByTestId('control-row')).toHaveTextContent('Sport')
   })
 
   it('volymreglaget svarar på pilarna', () => {

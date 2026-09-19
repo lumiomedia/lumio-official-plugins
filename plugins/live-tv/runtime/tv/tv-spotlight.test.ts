@@ -31,3 +31,28 @@ describe('pickSpotlight', () => {
     expect(nowFor.mock.calls.length).toBeLessThanOrEqual(5)
   })
 })
+
+describe('pickSpotlight med seed (Jerry 2026-09-17: slumpade favoriter)', () => {
+  const ch = (name: string) => ({ name, logo: null, group: 'Sport', url: `http://x/${name}`, tvgId: null })
+  const favs = ['A', 'B', 'C', 'D', 'E', 'F'].map(ch)
+  const live = { now: { title: 'x', start: 0, stop: 1 }, next: null, later: null }
+  it('samma seed ger samma ordning, olika seed ger (nästan säkert) en annan', () => {
+    const a = pickSpotlight({ favourites: favs, recent: [], channels: [], nowFor: () => live, count: 3, seed: 7 })
+    const b = pickSpotlight({ favourites: favs, recent: [], channels: [], nowFor: () => live, count: 3, seed: 7 })
+    expect(a.map((p) => p.channel.name)).toEqual(b.map((p) => p.channel.name))
+    const orders = new Set([1, 2, 3, 4, 5, 6, 7, 8].map((seed) => pickSpotlight({ favourites: favs, recent: [], channels: [], nowFor: () => live, count: 3, seed }).map((p) => p.channel.name).join()))
+    expect(orders.size).toBeGreaterThan(1)
+  })
+  it('utan seed: dagens ordning (de första favoriterna)', () => {
+    const out = pickSpotlight({ favourites: favs, recent: [], channels: [], nowFor: () => live, count: 3 })
+    expect(out.map((p) => p.channel.name)).toEqual(['A', 'B', 'C'])
+  })
+  it('favoriter med pågående program går först även när de blandas', () => {
+    const nowFor = (c: { name: string }) => (c.name === 'F' ? live : { now: null, next: null, later: null })
+    for (const seed of [1, 2, 3]) {
+      const out = pickSpotlight({ favourites: favs, recent: [], channels: [], nowFor, count: 3, seed })
+      expect(out[0]?.channel.name).toBe('F')
+      expect(out[0]?.reason).toBe('favouriteLive')
+    }
+  })
+})

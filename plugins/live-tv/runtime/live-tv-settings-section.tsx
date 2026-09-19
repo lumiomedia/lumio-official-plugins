@@ -21,7 +21,9 @@ import {
   getM3uUrls,
   importList,
   getM3uDraftUrls,
+  isLogoFallbackEnabled,
   onLiveTvListsChanged,
+  setLogoFallbackEnabled,
   setM3uDraftUrls,
   updateLiveTvListEpg,
   type LiveTvList,
@@ -30,6 +32,7 @@ import {
   getXtreamLogins,
   parseXtreamSource,
 } from './live-tv-data'
+import { completeLogos } from './index-client'
 import type { ImportStatus } from './index-client'
 import { recordListImportOutcome } from './list-import-flags'
 import {
@@ -78,6 +81,14 @@ export function LiveTvSettingsSection() {
   // Omhämtning av EN lista (kortets egen knapp) — skild från M3U-fältets kö
   // ovan, som hämtar hela uppsättningen adresser.
   const [listProgress, setListProgress] = useState<{ listId: string; state: ImportStatus['state']; received: number; total: number | null } | null>(null)
+  // Komplettera-knappens eget tillstånd, per lista — samma mönster som
+  // `listProgress`: en enda useState nyckelad på list-id, ingen global.
+  const [logoComplete, setLogoComplete] = useState<
+    | { listId: string; status: 'running' }
+    | { listId: string; status: 'done'; matched: number; total: number }
+    | { listId: string; status: 'error'; error: string }
+    | null
+  >(null)
 
   useEffect(() => {
     const sync = () => setLists(getLiveTvLists())
@@ -164,6 +175,21 @@ export function LiveTvSettingsSection() {
       recordListImportOutcome(list.id, err instanceof Error ? err.message : String(err))
     } finally {
       setListProgress(null)
+    }
+  }
+
+  /**
+   * Kompletterar en listas logotyper mot iptv-org. `completeLogos` sänder
+   * `emitIndexChanged()` själv vid ett lyckat svar (se `index-client.ts`) —
+   * den ropas INTE här igen, det hade blivit en dubbelsändning.
+   */
+  async function handleCompleteLogos(list: LiveTvList) {
+    setLogoComplete({ listId: list.id, status: 'running' })
+    try {
+      const result = await completeLogos(list.source)
+      setLogoComplete({ listId: list.id, status: 'done', matched: result.matched, total: result.total })
+    } catch (err) {
+      setLogoComplete({ listId: list.id, status: 'error', error: err instanceof Error ? err.message : String(err) })
     }
   }
 
@@ -353,6 +379,52 @@ export function LiveTvSettingsSection() {
               autoDisabled={list.autoEpgDisabled}
               onToggleAuto={(disabled) => updateLiveTvListEpg(list.id, { autoEpgDisabled: disabled })}
             />
+          </div>
+          <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {/* data-testid sitter på en vanlig div, inte på primitiven — Checkbox
+                tar bara { checked, onChange, disabled, label, hint, right }, och
+                appens riktiga primitiv (dist-bygget löser @/lib/plugin-sdk mot
+                den) fäller TypeScripts excess-property-check annars. Samma
+                mönster som `list-truncated-${list.id}` ovan. */}
+            {/* Egna listors kanaler renderas via `withIndexTwins` (tvillingen bär
+                URSPRUNGSLISTANS switch-tillstånd) — den egna listans switch
+                filtrerar ingenting. Spärrad av samma skäl som Komplettera
+                nedan: en kontroll som inte gör något får inte visas som om
+                den gjorde det. */}
+            <div data-testid={`logo-fallback-toggle-${list.id}`}>
+              <Checkbox
+                checked={isLogoFallbackEnabled(list)}
+                onChange={(value) => setLogoFallbackEnabled(list.id, value)}
+                disabled={list.kind === 'custom'}
+                label={h('logoFallbackToggle')}
+                hint={h('logoFallbackHint')}
+              />
+            </div>
+            {/* Egen rad, med en synlig avdelare ovanför: switchen ÄR
+                inställningen (styr OM reserven får användas), knappen är en
+                HANDLING (hämtar matchningarna nu) — de ska inte läsas som en
+                enda kontroll bara för att de står i samma kort (Jerrys ord
+                efter test: "bara en checkbox, finns en complete-knapp men
+                borde vara en separat inställning"). */}
+            <div style={{ borderTop: `1px solid ${TOKENS.border}`, paddingTop: 12, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <span data-testid={`logo-complete-${list.id}`}>
+                <PillBtn
+                  size="sm"
+                  onClick={() => void handleCompleteLogos(list)}
+                  disabled={!isLogoFallbackEnabled(list) || list.kind === 'custom' || (logoComplete?.listId === list.id && logoComplete.status === 'running')}
+                >
+                  {logoComplete?.listId === list.id && logoComplete.status === 'running' ? h('logoCompleteRunning') : h('logoComplete')}
+                </PillBtn>
+              </span>
+              {logoComplete?.listId === list.id && logoComplete.status === 'done' ? (
+                <span style={{ fontSize: 12, color: TOKENS.textMute }}>
+                  {h('logoCompleteResult', { matched: logoComplete.matched, total: logoComplete.total })}
+                </span>
+              ) : null}
+              {logoComplete?.listId === list.id && logoComplete.status === 'error' ? (
+                <span role="alert" style={{ fontSize: 12, color: '#fca5a5' }}>{logoComplete.error}</span>
+              ) : null}
+            </div>
           </div>
         </Card>
         )

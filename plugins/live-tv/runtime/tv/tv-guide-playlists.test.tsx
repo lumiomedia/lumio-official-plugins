@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
+import { TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR, TV_SCENE_PHONE_ATTR, __resetForTests, __setDesktopTauriEnvForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { flushLiveTvIndex, seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, computeGroups, type LiveTvList } from '../live-tv-data'
 import type { EpgCacheEntry } from '../epg/types'
+import { dp } from './tv-ui'
 
 vi.mock('../live-tv-player', () => ({ LiveTvPlayer: () => <div data-testid="player" /> }))
 import { LiveTvTvShell } from './tv-shell'
@@ -18,9 +19,19 @@ const lists: LiveTvList[] = [
 const cache: EpgCacheEntry = { index: { 'a.tv': [{ title: 'Now A', start: now - 60_000, stop: now + 60_000 }, { title: 'Next A', start: now + 60_000, stop: now + 120_000 }] }, fetchedAt: now, sources: [] }
 
 afterEach(cleanup)
+/**
+ * LAN/FJÄRR-SVITEN. "Kanalguiden städad på skrivbord och TV" (0.10.0) lyfter
+ * TV-läget och skrivbordsappen bakom `useNewGuideSurface` (`guide-surface.ts`)
+ * — den städade guidens läge `playlists` normaliseras där till `grid` och
+ * källväljaren ersätter spellistsidan, så `TvGuidePlaylistsDesktop` är
+ * onåbar på de ytorna (skalets svit: `guide-shell.test.tsx`). Komponenten är
+ * oförändrad och testas på LAN/fjärr-ytan, explicit utan TV-läge och utan
+ * Tauri-flaggan (spec "Beslut": den ytan behåller dagens guide orört).
+ */
 beforeEach(() => {
   __resetForTests()
-  __setTvModeForTests(true)
+  __setTvModeForTests(false)
+  __setDesktopTauriEnvForTests(false)
   writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', lists)
   writePluginJson(LIVE_TV_PLUGIN_ID, 'pins', [])
   writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'playlists')
@@ -34,7 +45,13 @@ const mount = async () => {
   return rendered
 }
 
-describe('TvGuidePlaylists', () => {
+describe('TvGuidePlaylists (LAN/fjärr)', () => {
+  it('den gamla spellistsidan finns kvar: kolumnerna och fyra lägen i segmentet, inget nytt skal', async () => {
+    await mount()
+    expect(screen.getByTestId('playlists-column')).toBeInTheDocument()
+    expect(screen.queryByTestId('guide-control-row')).not.toBeInTheDocument()
+    expect(screen.getAllByTestId('tv-segment-option').map((o) => o.textContent)).toEqual(['Now / Next', 'Timeline', 'Grid', 'Playlists'])
+  })
   it('ritar en icke-aktiv listas kanaler ur INDEXET, inte ur inbäddade channels', async () => {
     // Efter v2-migreringen bär listorna bara metadata. Vyn byggde tidigare
     // sina rader med `flattenChannels([list])` och hade därför stått tom i
@@ -100,5 +117,67 @@ describe('TvGuidePlaylists', () => {
     fireEvent.focus(screen.getAllByTestId('pl-row')[0])
     fireEvent.click(screen.getByTestId('pl-next-card'))
     expect(getReminders(now).length).toBe(1)
+  })
+})
+
+/**
+ * Telefonen (fas 3, Task 7) ritar INTE de tre kolumnerna: spellistvyn
+ * grenar tidigt till `mobile/guide-lists-phone.tsx` (drill-down i två steg,
+ * se `guide-lists-phone.test.tsx`). Fas 2:s staplade kolumner — FYND 3 i
+ * slutgranskningen M-P4 (330 + 560 dp sidokolumner > 780 dp-scenen) — gick
+ * med den grenen; `live_tv_guide_mode_v1: 'playlists'` seedas i `beforeEach`
+ * ovan, så `mountWith(true)` här är samma "landar direkt utan nytt val"-väg.
+ */
+describe('TvGuidePlaylists på telefon grenar till drill-down, skrivbordet behåller kolumnerna', () => {
+  // En telefon är aldrig en TV: skalet gatar `phone` med `!isTv` (fas 3 ger
+  // vyerna `phone` som prop därifrån i stället för en egen mätning); filens
+  // beforeEach står redan utanför TV-läget.
+  let box: HTMLElement | null = null
+  afterEach(() => { box?.remove(); box = null })
+
+  const mountWith = async (phone: boolean) => {
+    box = document.createElement('div')
+    box.setAttribute(TV_SCENE_BOX_ATTR, '1')
+    if (phone) {
+      box.setAttribute(TV_SCENE_NARROW_ATTR, '1')
+      box.setAttribute(TV_SCENE_PHONE_ATTR, '1')
+    }
+    document.body.appendChild(box)
+    const rendered = render(<LiveTvTvShell pageId="live-tv-browse" params={{ view: 'guide' }} onNavigate={() => {}} onOpenDetails={() => {}} />, { container: box })
+    await flushLiveTvIndex()
+    return rendered
+  }
+
+  it('på telefon ritas telefongrenen, inte kolumnerna', async () => {
+    await mountWith(true)
+    expect(screen.getByTestId('lists-phone')).toBeInTheDocument()
+    expect(screen.queryByTestId('playlists-view-root')).toBeNull()
+    expect(screen.queryByTestId('playlists-column')).toBeNull()
+    expect(screen.queryByTestId('pl-detail')).toBeNull()
+  })
+
+  it('vänster-/högerkolumnen och radens kanalcell behåller 330/560 dp på skrivbord/TV', async () => {
+    await mountWith(false)
+    const root = screen.getByTestId('playlists-view-root')
+    const left = screen.getByTestId('playlists-column')
+    const right = screen.getByTestId('pl-detail')
+    const col = screen.getAllByTestId('pl-row-channel-col')[0]
+    expect(root.style.flexDirection).not.toBe('column')
+    expect(left.style.width).toBe(`${dp(330)}px`)
+    expect(left.style.flexShrink).toBe('0')
+    expect(right.style.width).toBe(`${dp(560)}px`)
+    expect(right.style.flexShrink).toBe('0')
+    expect(col.style.width).toBe(`${dp(560)}px`)
+    expect(col.style.flexShrink).toBe('0')
+  })
+})
+
+// Jerrys uppföljning: fjärrhjälpen ("◂ ▸ switch column · Back closes") ska
+// bort HELT, ingen ersättningstext någonstans. I TV-läge/skrivbordsappen
+// ritas sidan inte alls längre (lägesnormaliseringen, `guide-shell.test.tsx`).
+describe('TvGuidePlaylists (LAN/fjärr) fjärrhjälp (borttagen, Jerrys uppföljning)', () => {
+  it('renderas aldrig', async () => {
+    await mount()
+    expect(screen.queryByText('◂ ▸ switch column · Back closes')).not.toBeInTheDocument()
   })
 })

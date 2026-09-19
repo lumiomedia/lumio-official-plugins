@@ -183,8 +183,8 @@ function TextPromptDialog({ title, initial, kind, pushLayer, onDone, onCancel }:
           style={{ height: dp(44), borderRadius: dp(8), border: `1px solid ${TV.lineCard}`, background: TV.s08, color: TV.text, padding: `0 ${dp(12)}px`, fontSize: dp(16) }}
         />
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: dp(10) }}>
-          <div {...station(onCancel)} style={{ height: dp(38), padding: `0 ${dp(16)}px`, borderRadius: 999, background: TV.s12, display: 'inline-flex', alignItems: 'center', fontSize: dp(15), cursor: 'pointer' }}>{tt('cancel')}</div>
-          <div {...station(submit)} style={{ height: dp(38), padding: `0 ${dp(16)}px`, borderRadius: 999, background: TV.acc, color: TV.onAcc, display: 'inline-flex', alignItems: 'center', fontSize: dp(15), fontWeight: 600, cursor: 'pointer' }}>{tt('keyDone')}</div>
+          <div {...station(onCancel)} style={{ height: dp(38), minHeight: dp(38), padding: `0 ${dp(16)}px`, borderRadius: 999, background: TV.s12, display: 'inline-flex', alignItems: 'center', fontSize: dp(15), cursor: 'pointer' }}>{tt('cancel')}</div>
+          <div {...station(submit)} style={{ height: dp(38), minHeight: dp(38), padding: `0 ${dp(16)}px`, borderRadius: 999, background: TV.acc, color: TV.onAcc, display: 'inline-flex', alignItems: 'center', fontSize: dp(15), fontWeight: 600, cursor: 'pointer' }}>{tt('keyDone')}</div>
         </div>
       </div>
     </div>

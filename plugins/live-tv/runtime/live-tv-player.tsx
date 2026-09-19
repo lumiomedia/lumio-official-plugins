@@ -30,8 +30,11 @@ import {
 import { recordChannelWatch } from './channel-history'
 import { channelKey } from './live-tv-data'
 import { useHtmlVideoPlayer } from './hooks/useHtmlVideoPlayer'
+import { useOrientation } from './hooks/useOrientation'
+import { useWakeLock } from './hooks/useWakeLock'
 import { HOST_PROXY_MIME, hostProxyUrl as buildHostProxyUrl, nativeFailureAction } from './live-tv-playback-fallback'
 import { TvPlayerChrome } from './tv/tv-player-chrome'
+import { PHONE_STAGE_BOX } from './tv/mobile/player-chrome-phone'
 import { releaseAllSurfaces } from './tv/video-surface'
 import type { LiveTvPlayerControls, LiveTvPlayerTvProps } from './tv/tv-player-types'
 
@@ -94,6 +97,17 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
   // `isTv && tv`. Byggaren `tv/tv-player-props.ts` ser till att varje yta
   // (TV-skalet, startsideöverstyrningen, rutnätet) skickar med det.
   const tvChrome = tv ?? null
+  /*
+   * Telefon (fas 3, handoffen §10–11). Liggande med `fullscreenOnRotate` ger
+   * helskärm som förut; annars STAPLAS spelaren — videon överst i sin 16:9-
+   * låda och kromets infokolumn under — så info och kontroller aldrig kan
+   * överlappa bilden. Scenens ResizeObserver flyttar mpv/media3 med lådan.
+   */
+  const orientation = useOrientation()
+  const phoneLandscape = Boolean(tvChrome?.phone && orientation === 'landscape' && tvChrome.fullscreenOnRotate)
+  const phoneStacked = Boolean(tvChrome?.phone) && !phoneLandscape
+  // Håll skärmen vaken under spelning på telefon (inställningen `keepAwake`).
+  useWakeLock(Boolean(tvChrome?.phone && tvChrome?.keepAwake))
   // Hubbens "Fortsätt titta": en post per kanal, senast sedd först.
   useEffect(() => {
     recordChannelWatch(channel, listId)
@@ -287,7 +301,15 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
     if (media) media.volume = volumeLevel
   }, [volumeLevel, channel.url, isHtmlEngine])
 
+  // Referens och inte beroende: funktionen sitter i uppsättningseffektens
+  // beroendelista, och en ny identitet vid rotation (lådan byter telefon-
+  // gren) hade startat om hela strömmen.
+  const phoneChromeRef = useRef(Boolean(tvChrome?.phone))
+  phoneChromeRef.current = Boolean(tvChrome?.phone)
   const tryEnterMobileFullscreen = useCallback(() => {
+    // Telefonkromet äger helskärmen själv (rotation/knapp): webbläsarens
+    // inbyggda videohelskärm hade lagt sig ÖVER kromet och tagit bort det.
+    if (phoneChromeRef.current) return
     if (mobileFullscreenAttemptedRef.current) return
     if (!isMobileBrowser()) return
     const media = videoRef.current
@@ -954,11 +976,16 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
     volume: volumeLevel,
     fullscreen: desktopFullscreen,
     aspectLabel: ASPECT_OPTIONS[aspectIndex].label,
+    timePos: mpvTimePos,
     onToggleMute: toggleMute,
     onVolume: updateVolume,
     onToggleFullscreen: toggleFullscreen,
     onCycleAspect: cycleAspect,
   }
+
+  // Snurra och felruta hör till VIDEON, inte hela skärmen: i staplat läge
+  // klipps de till scenens låda (`bottom: auto` + samma 16:9-mått).
+  const stackedOverlayStyle = phoneStacked ? { bottom: 'auto', ...PHONE_STAGE_BOX } : undefined
 
   const content = (
     <div
@@ -968,12 +995,16 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
       // ikonrailen — en videoyta ska täcka hela skärmen och väljer bort den.
       {...(isTv ? { 'data-panel-root': '', 'data-tv-fullbleed': '' } : {})}
       className="fixed inset-0 z-[70] bg-transparent cursor-default"
+      style={phoneStacked ? { display: 'flex', flexDirection: 'column' } : undefined}
     >
       <div
         ref={stageRef}
+        data-player-stage=""
         style={{
-          position: 'absolute',
-          inset: 0,
+          // Telefon i porträtt: scenen är första flex-barnet i sin 16:9-låda
+          // (samma mått som kromets överlägg, `PHONE_STAGE_BOX`); annars
+          // täcker den hela spelaren.
+          ...(phoneStacked ? { position: 'relative', width: '100%', flexShrink: 0, ...PHONE_STAGE_BOX } : { position: 'absolute', inset: 0 }),
           // mpv och Android ritar i ett lager BAKOM sidan; scenen är bara ett
           // hål som talar om var. `<video>` ligger i själva scenen och
           // behöver en svart botten att brevlådas mot.
@@ -1023,18 +1054,18 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
         ) : null}
       </div>
       {loading && !error && (
-        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-transparent">
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-transparent" style={stackedOverlayStyle}>
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
         </div>
       )}
       {error && (
-        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-black px-4 text-center">
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-black px-4 text-center" style={stackedOverlayStyle}>
           <p className="text-sm text-red-400">{error}</p>
           <p className="text-xs text-slate-500">{t('liveTvStreamErrorHelp')}</p>
         </div>
       )}
       {tvChrome ? (
-        <TvPlayerChrome channel={channel} tv={tvChrome} controls={playerControls} paused={mpvPaused} onTogglePause={toggleMpvPause} onClose={handleClose} />
+        <TvPlayerChrome channel={channel} tv={tvChrome} controls={playerControls} paused={mpvPaused} onTogglePause={toggleMpvPause} onClose={handleClose} phoneLandscape={phoneLandscape} />
       ) : null}
     </div>
   )

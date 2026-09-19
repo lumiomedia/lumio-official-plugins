@@ -11,6 +11,7 @@ import { useTvText } from './tv-strings'
 import { TvTextField } from './tv-text-entry'
 import { searchChannels, suggestions } from './tv-search-logic'
 import { useProgrammeSearch } from '../hooks/useProgrammeSearch'
+import { TvSearchPhone } from './mobile/search-phone'
 import { useVodPage } from '../hooks/useVodLibrary'
 import { getVodMode } from '../vod-data'
 import type { VodItem } from '../vod-client'
@@ -21,7 +22,19 @@ import type { VodItem } from '../vod-client'
  */
 type SearchScope = 'all' | 'ch' | 'vod'
 
-export function TvSearch({ model, nav, params }: TvViewProps) {
+/**
+ * Tidig gren för telefonen: ett EGET komponentträd, inte en `if` inne i
+ * skrivbordsvyn (samma mönster som `TvPlayerChrome`). `phone` läses ur lådans
+ * bredd och kan slå om vid körning (rotation, fönster som breddas); två
+ * separata komponenter monteras om rent, och grenen själv anropar inga krokar
+ * — så kan ingen krok hamna före returen och ge "rendered more/fewer hooks".
+ */
+export function TvSearch(props: TvViewProps) {
+  return props.phone ? <TvSearchPhone {...props} /> : <TvSearchDesktop {...props} />
+}
+
+function TvSearchDesktop(props: TvViewProps) {
+  const { model, nav, params } = props
   const { tt, locale } = useTvText()
   const tvMode = useTvMode()
   const [query, setQuery] = useState('')
@@ -60,9 +73,13 @@ export function TvSearch({ model, nav, params }: TvViewProps) {
     first?.focus({ preventScroll: true })
   }
 
+  const outerStyle = { flex: 1, minHeight: 0, display: 'flex' } as const
+  const queryColStyle = { width: dp(760), flexShrink: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(34)}px ${dp(40)}px 0 ${dp(48)}px`, display: 'flex', flexDirection: 'column', gap: dp(18) } as const
+  const resultsStyle = { flex: 1, minWidth: 0, overflowY: 'auto', padding: `${dp(34)}px ${dp(48)}px 0 ${dp(40)}px`, display: 'flex', flexDirection: 'column', gap: dp(28) } as const
+
   return (
-    <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
-      <div style={{ width: dp(760), flexShrink: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(34)}px ${dp(40)}px 0 ${dp(48)}px`, display: 'flex', flexDirection: 'column', gap: dp(18) }}>
+    <div data-testid="search-view-root" style={outerStyle}>
+      <div data-testid="search-query-col" style={queryColStyle}>
         {tvMode ? (
           // TvKeyboard visar ingen text själv — den här raden är fältets enda
           // display i TV-läge. Utanför TV visar `TvTextField`s riktiga
@@ -74,12 +91,12 @@ export function TvSearch({ model, nav, params }: TvViewProps) {
         ) : null}
         <div data-row="" style={{ display: 'flex', gap: dp(8), overflowX: 'auto', minHeight: dp(44) }}>
           {hints.map((hint) => (
-            <div key={hint} data-testid="search-suggestion" {...station(() => setQuery(hint))} style={{ height: dp(44), padding: `0 ${dp(18)}px`, borderRadius: 999, background: TV.s08, display: 'inline-flex', alignItems: 'center', fontSize: dp(18), whiteSpace: 'nowrap', cursor: 'pointer' }}>{hint}</div>
+            <div key={hint} data-testid="search-suggestion" {...station(() => setQuery(hint))} style={{ height: dp(44), minHeight: dp(44), padding: `0 ${dp(18)}px`, borderRadius: 999, background: TV.s08, display: 'inline-flex', alignItems: 'center', fontSize: dp(18), whiteSpace: 'nowrap', cursor: 'pointer' }}>{hint}</div>
           ))}
         </div>
         <TvTextField value={query} onChange={setQuery} onSubmit={focusFirstResult} placeholder={tt('searchPlaceholder')} autoFocus />
       </div>
-      <div data-live-tv-search-results="" data-scroll="" style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: `${dp(34)}px ${dp(48)}px 0 ${dp(40)}px`, display: 'flex', flexDirection: 'column', gap: dp(28) }}>
+      <div data-live-tv-search-results="" data-scroll="" style={resultsStyle}>
         {vodHidden ? null : (
           <div data-row="" style={{ display: 'flex', gap: dp(10) }}>
             {([['all', tt('scopeAll')], ['ch', tt('scopeChannels')], ['vod', tt('scopeVod')]] as const).map(([key, label]) => (
@@ -122,7 +139,7 @@ export function TvSearch({ model, nav, params }: TvViewProps) {
           {channels.map((channel) => {
             const info = model.nowFor(channel)
             return (
-              <div key={channelKey(channel)} {...station(() => nav.openChannel(channel), (el) => nav.channelMenu(channel, el))} style={{ height: dp(80), borderRadius: dp(12), display: 'flex', alignItems: 'center', gap: dp(14), padding: `0 ${dp(12)}px`, cursor: 'pointer' }}>
+              <div key={channelKey(channel)} {...station(() => nav.openChannel(channel), (el) => nav.channelMenu(channel, el))} style={{ height: dp(80), minHeight: dp(80), borderRadius: dp(12), display: 'flex', alignItems: 'center', gap: dp(14), padding: `0 ${dp(12)}px`, cursor: 'pointer' }}>
                 <span style={{ width: dp(44), fontSize: dp(16), color: 'rgba(243,244,248,0.5)', textAlign: 'right' }}>{model.channelNumber(channel) ?? ''}</span>
                 <ChannelArt channel={channel} style={{ width: dp(76), height: dp(50), flexShrink: 0 }} radius={dp(8)} />
                 <div style={{ minWidth: 0, flex: 1 }}>
@@ -142,7 +159,7 @@ export function TvSearch({ model, nav, params }: TvViewProps) {
               svaret kommit, inte "inga träffar". */}
           {query && programmes.length === 0 ? <div data-testid="search-programmes-empty" style={{ color: TV.dim, fontSize: dp(18) }}>{programmesLoading ? tt('loadingGuide') : tt('noResults')}</div> : null}
           {programmes.map((hit) => (
-            <div key={`${channelKey(hit.channel)}:${hit.programme.start}`} {...station(() => nav.openChannel(hit.channel, hit.programme.start))} style={{ height: dp(64), borderRadius: dp(12), display: 'flex', alignItems: 'center', gap: dp(16), padding: `0 ${dp(12)}px`, cursor: 'pointer' }}>
+            <div key={`${channelKey(hit.channel)}:${hit.programme.start}`} {...station(() => nav.openChannel(hit.channel, hit.programme.start))} style={{ height: dp(64), minHeight: dp(64), borderRadius: dp(12), display: 'flex', alignItems: 'center', gap: dp(16), padding: `0 ${dp(12)}px`, cursor: 'pointer' }}>
               <span style={{ width: dp(80), fontSize: dp(18), color: 'rgba(243,244,248,0.6)', fontVariantNumeric: 'tabular-nums' }}>{formatClock(hit.programme.start, locale)}</span>
               <span style={{ flex: 1, minWidth: 0, fontSize: dp(20), whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{hit.programme.title}</span>
               <span style={{ fontSize: dp(16), color: 'rgba(243,244,248,0.5)' }}>{hit.channel.name}</span>

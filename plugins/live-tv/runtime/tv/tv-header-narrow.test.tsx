@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
+import { __resetForTests, __setDesktopTauriEnvForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { flushLiveTvIndex, seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
 
@@ -68,7 +68,17 @@ const mountHub = async () => {
   return rendered
 }
 
-describe('Rubrikrader vid 1280 designpixlar', () => {
+describe('Rubrikrader vid 1280 designpixlar (LAN/fjärr)', () => {
+  // "Kanalguiden städad på skrivbord och TV" (0.10.0): TV-läget och
+  // skrivbordsappen renderar skalet med kontrollraden (`guide-shell.tsx`),
+  // inte den gamla rubrikraden. Reglerna för den gamla raden gäller
+  // oförändrat på LAN/fjärr (spec "Beslut", Var), så guidens rubriktester
+  // körs på den ytan — explicit utan TV-läge och utan Tauri-flaggan.
+  beforeEach(() => {
+    __setTvModeForTests(false)
+    __setDesktopTauriEnvForTests(false)
+  })
+
   it('segmentväxeln är en enhet som aldrig bryter sina etiketter', async () => {
     await mountGuide('now')
     const segment = screen.getByTestId('tv-segment')
@@ -106,6 +116,9 @@ describe('Rubrikrader vid 1280 designpixlar', () => {
   })
 
   it('spellistvyns rubrik trunkerar titeln och håller klocka och segment hela', async () => {
+    // TV-läget normaliserar `playlists` → `grid` (`guide-surface.ts`), så den
+    // gamla spellistsidan är onåbar där. Rubrikens 1280-regler är oförändrade
+    // — bara ytan som når dem ändras.
     await mountGuide('playlists')
     const header = screen.getByTestId('pl-header')
     expect(header.style.flexWrap).toBe('wrap')
@@ -128,7 +141,9 @@ describe('Rubrikrader vid 1280 designpixlar', () => {
     expect(meta.compareDocumentPosition(clock) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(screen.getByTestId('tv-segment').style.flexShrink).toBe('0')
   })
+})
 
+describe('Rubrikrader vid 1280 designpixlar (TV-läge)', () => {
   it('hubbens topprad radbryter och håller klockan hel', async () => {
     await mountHub()
     const row = screen.getByTestId('hub-topbar')

@@ -6,14 +6,15 @@ import { startOfLocalDay } from '../live-tv-model'
 import type { EpgProgramme } from '../epg/types'
 import { formatClock } from '../live-tv-ui'
 import { isReminded, toggleReminder } from '../reminders'
-import { selectEpgRows } from '../epg-rows'
-import { useSchedules } from '../hooks/useSchedules'
 import { useNarrowSurface } from '../hooks/useNarrowSurface'
 import type { TvViewProps } from './tv-shell'
 import { ChannelArt, Chip, Icons, Segment, TV, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
 import type { GuideMode } from './tv-settings-store'
-import { FAVS_GROUP, useGuideGroups } from './tv-guide-shared'
+import { useGuideGroups } from './tv-guide-shared'
+import { useGridRows } from './grid-rows'
+import { phoneGuideMode } from './mobile/guide-phone'
+import { TvGuideGridPhone } from './mobile/guide-grid-phone'
 import {
   CHANNEL_COL_PX,
   HOUR_PX,
@@ -53,13 +54,6 @@ import {
 /** Startantal rader, och steget per "Visa fler" — samma tal som skrivbordet. */
 const MAX_ROWS = 80
 const EPG_ROWS_STEP = 80
-/**
- * Hur många kanaler som frågas efter per synlig rad. Tablån bor i appen sedan
- * lagring v2, så raderna kostar ett fönsteranrop och inte en cachesökning:
- * hela spellistan (17 000 nycklar) hade blivit 85 anrop för 80 rader.
- * Överskottet finns för att kanaler UTAN tablå faller bort i `selectEpgRows`.
- */
-const CANDIDATE_FACTOR = 3
 
 function alignToHour(ms: number): number {
   const d = new Date(ms)
@@ -90,7 +84,17 @@ function useFinePointer(): boolean {
   return fine
 }
 
-export function TvGuideGrid({ model, nav, mode, onModeChange }: TvViewProps & { mode: GuideMode; onModeChange: (mode: GuideMode) => void }) {
+export { useGridRows, type GridRows } from './grid-rows'
+
+export function TvGuideGrid(props: TvViewProps & { mode: GuideMode; onModeChange: (mode: GuideMode) => void }) {
+  // Telefonen (fas 3, handoffen §3) får sin egen tablå: sticky kanalkolumn,
+  // 90-minutersfönster och Nu-knapp, i äkta px. `PhoneGuideMode ⊂ GuideMode`,
+  // så telefonens segment kan ropa samma callback som skrivbordets.
+  if (props.phone) return <TvGuideGridPhone {...props} mode={phoneGuideMode(props.mode)} onModeChange={props.onModeChange} />
+  return <TvGuideGridDesktop {...props} />
+}
+
+function TvGuideGridDesktop({ model, nav, mode, onModeChange }: TvViewProps & { mode: GuideMode; onModeChange: (mode: GuideMode) => void }) {
   const { tt, locale } = useTvText()
   const groups = useGuideGroups(model, tt)
   const [group, setGroup] = useState<string | null>(null)
@@ -130,41 +134,7 @@ export function TvGuideGrid({ model, nav, mode, onModeChange }: TvViewProps & { 
 
   useEffect(() => { setVisibleRows(MAX_ROWS); setSelected(null) }, [group, dayOffset])
 
-  // Favoriter först, sedan övriga kanaler — kanaler utan tablå faller bort i
-  // `selectEpgRows`, en tom rad säger inget.
-  const ordered = useMemo(
-    () => [
-      ...model.pinnedKeys.map((key) => model.byKey.get(key)).filter((channel): channel is M3uChannel => Boolean(channel)),
-      ...model.channels.filter((channel) => !model.pinnedSet.has(channelKey(channel))),
-    ],
-    [model.pinnedKeys, model.byKey, model.channels, model.pinnedSet],
-  )
-  /**
-   * Kategorin filtreras HÄR och inte i `selectEpgRows`.
-   *
-   * TV-chipsen har två poster som inte är gruppnamn ("Alla" och "Favoriter"),
-   * och `selectEpgRows` jämför rakt mot `channel.group` — `__favs` hade
-   * filtrerat bort varenda kanal. Urvalet görs alltså före, och funktionen får
-   * `null` som grupp.
-   */
-  const eligible = useMemo(() => {
-    if (group === FAVS_GROUP) return model.favouriteChannels
-    if (group) return ordered.filter((channel) => channel.group === group)
-    return ordered
-  }, [ordered, group, model.favouriteChannels])
-  const candidates = useMemo(() => eligible.slice(0, visibleRows * CANDIDATE_FACTOR), [eligible, visibleRows])
-  const { schedules, loading: schedulesLoading } = useSchedules(candidates, windowStart, windowEnd)
-  const { rows, hasMore: moreAmongCandidates } = useMemo(
-    () => selectEpgRows(candidates, (channel) => schedules[channelKey(channel)] ?? [], null, visibleRows),
-    [candidates, schedules, visibleRows],
-  )
-  /**
-   * "Visa fler" måste finnas kvar även när KANDIDATERNA tog slut men
-   * spellistan inte gjorde det: `selectEpgRows` vet bara om det urval den
-   * fick, och skulle annars påstå "alla kanaler med tablå visas" fast
-   * överskottsfönstret kapade listan långt före spellistans slut.
-   */
-  const hasMore = moreAmongCandidates || candidates.length < eligible.length
+  const { rows, hasMore, schedulesLoading } = useGridRows(model, group, visibleRows, windowStart, windowEnd)
 
   const scrollToNow = () => {
     const el = scrollRef.current
@@ -310,7 +280,7 @@ export function TvGuideGrid({ model, nav, mode, onModeChange }: TvViewProps & { 
                         (element) => nav.channelMenu(channel, element),
                         initKey && initKey.channel === key && initKey.start === null ? { 'data-init': '' } : undefined,
                       )}
-                      style={{ width: dp(CHANNEL_COL_PX), flexShrink: 0, display: 'flex', alignItems: 'center', gap: dp(10), paddingRight: dp(10), background: TV.bg, zIndex: 1, cursor: 'pointer', ...(narrow ? null : { position: 'sticky' as const, left: 0 }) }}
+                      style={{ width: dp(CHANNEL_COL_PX), minHeight: dp(ROW_MIN_H_PX), flexShrink: 0, display: 'flex', alignItems: 'center', gap: dp(10), paddingRight: dp(10), background: TV.bg, zIndex: 1, cursor: 'pointer', ...(narrow ? null : { position: 'sticky' as const, left: 0 }) }}
                     >
                       <ChannelArt channel={channel} style={{ width: dp(48), height: dp(30), flexShrink: 0 }} radius={dp(6)} />
                       <div style={{ minWidth: 0, fontSize: dp(15), fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{channel.name}</div>
@@ -365,7 +335,7 @@ export function TvGuideGrid({ model, nav, mode, onModeChange }: TvViewProps & { 
             {hasMore ? tt('gridShowing', { shown: rows.length }) : tt('gridAllWithGuide', { shown: rows.length })}
           </span>
           {hasMore ? (
-            <div {...station(() => setVisibleRows((count) => count + EPG_ROWS_STEP), undefined, { 'data-testid': 'grid-show-more' })} style={{ height: dp(44), padding: `0 ${dp(22)}px`, borderRadius: 999, background: TV.s10, display: 'flex', alignItems: 'center', fontSize: dp(17), cursor: 'pointer' }}>{tt('showMore')}</div>
+            <div {...station(() => setVisibleRows((count) => count + EPG_ROWS_STEP), undefined, { 'data-testid': 'grid-show-more' })} style={{ height: dp(44), minHeight: dp(44), padding: `0 ${dp(22)}px`, borderRadius: 999, background: TV.s10, display: 'flex', alignItems: 'center', fontSize: dp(17), cursor: 'pointer' }}>{tt('showMore')}</div>
           ) : null}
         </div>
       ) : null}
@@ -388,18 +358,16 @@ export function TvGuideGrid({ model, nav, mode, onModeChange }: TvViewProps & { 
               </div>
             </div>
             {selected.programme.start > nowMs ? (
-              <div {...station(() => toggle(selected.channel, selected.programme), undefined, { 'data-testid': 'grid-remind' })} style={{ height: dp(44), padding: `0 ${dp(18)}px`, borderRadius: 999, background: selectedReminded ? TV.accMix(22) : TV.s10, color: selectedReminded ? TV.accText : TV.text, display: 'inline-flex', alignItems: 'center', gap: dp(8), fontSize: dp(16), cursor: 'pointer' }}>
+              <div {...station(() => toggle(selected.channel, selected.programme), undefined, { 'data-testid': 'grid-remind' })} style={{ height: dp(44), minHeight: dp(44), padding: `0 ${dp(18)}px`, borderRadius: 999, background: selectedReminded ? TV.accMix(22) : TV.s10, color: selectedReminded ? TV.accText : TV.text, display: 'inline-flex', alignItems: 'center', gap: dp(8), fontSize: dp(16), cursor: 'pointer' }}>
                 <Icons.Bell size={dp(18)} filled={selectedReminded} />
                 {selectedReminded ? tt('reminderSet') : tt('remindMe')}
               </div>
             ) : null}
-            <div {...station(() => nav.play({ channel: selected.channel }), undefined, { 'data-testid': 'grid-watch' })} style={{ height: dp(44), padding: `0 ${dp(20)}px`, borderRadius: 999, background: TV.acc, color: TV.onAcc, display: 'inline-flex', alignItems: 'center', gap: dp(8), fontSize: dp(16), fontWeight: 600, cursor: 'pointer' }}>
+            <div {...station(() => nav.play({ channel: selected.channel }), undefined, { 'data-testid': 'grid-watch' })} style={{ height: dp(44), minHeight: dp(44), padding: `0 ${dp(20)}px`, borderRadius: 999, background: TV.acc, color: TV.onAcc, display: 'inline-flex', alignItems: 'center', gap: dp(8), fontSize: dp(16), fontWeight: 600, cursor: 'pointer' }}>
               <Icons.Play size={dp(16)} /> {tt('watchNow')}
             </div>
           </>
-        ) : (
-          <span style={{ fontSize: dp(16), color: TV.faint }}>{tt('gridHelp')}</span>
-        )}
+        ) : null}
       </div>
     </div>
   )
@@ -451,6 +419,7 @@ function GridBlock({ box, programme, locale, live, init, selected, reminded, rem
         top: 0,
         bottom: 0,
         width: box.width,
+        minHeight: dp(ROW_MIN_H_PX),
         boxSizing: 'border-box',
         // Padding ur geometrin — aldrig bredare än en tredjedel av blocket, så
         // ett smalt block inte trycks upp i minst 2 × 8 px och lägger sig över

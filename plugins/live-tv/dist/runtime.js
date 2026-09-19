@@ -1634,6 +1634,7 @@
   var TRANSPARENT_PROPERTIES, NATIVE_SURFACES_ATTRIBUTE, holds, restore;
   var init_transparent_webview = __esm({
     "lib/transparent-webview.ts"() {
+      "use strict";
       TRANSPARENT_PROPERTIES = [
         { property: "background-color", value: "transparent" },
         { property: "background-image", value: "none" }
@@ -2983,6 +2984,8 @@
           plVolume: "Volume slider",
           plAudioDelay: "Audio delay",
           plNextEpisode: "Next episode",
+          plSwitchStream: "Switch stream",
+          plStreams: "Streams",
           audioDelayTitle: "Audio delay",
           audioDelayHint: "Adjust lip sync. A positive value plays audio later.",
           btAudioAutoOffset: "Compensate for Bluetooth latency",
@@ -3320,6 +3323,8 @@
           menuScaleDesc: "Scales only the side menu \u2014 icons and labels \u2014 independently of the interface scale.",
           reduceMotion: "Reduce motion",
           reduceMotionDesc: "Turns off animations and soft transitions throughout the app.",
+          heroActionsExpanded: "Always show action labels",
+          heroActionsExpandedDesc: "The icon buttons next to Play keep their names visible instead of revealing them on hover.",
           settingsPagePluginManage: "Manage plugins",
           settingsTabStatus: "Status",
           settingsTabQuick: "Quick settings",
@@ -3932,6 +3937,10 @@
           creditsThreshold: "Credits start",
           creditsThresholdDesc: "How far before the end the credits view opens when the file has no detected credits marker. Later is safer \u2014 too early covers the ending.",
           minutesBeforeEnd: "min before the end",
+          creditsRecommendationsTv: "Recommendations after series",
+          creditsRecommendationsTvDesc: "Only when the season has ended and no next season exists.",
+          creditsThresholdTv: "Threshold for series",
+          creditsThresholdTvDesc: "Only when the season has ended and no next season exists.",
           advanceAtOutro: "Skip the credits and go straight to the next episode",
           advanceAtOutroDesc: "When an outro is detected, the next episode starts immediately instead of showing the next-episode card. Episodes without a detected outro still show the card.",
           stayFullscreenOnClose: "Stay fullscreen when the player closes",
@@ -4666,7 +4675,16 @@
           hpAlwaysShown: "Always shown",
           hpTopMenuEyebrow: "Top menu",
           hpTopButtonsTitle: "Top buttons",
-          hpTopButtonsHint: "Choose which buttons appear at the top and in what order.",
+          hpTopButtonsHint: "Choose which buttons appear in the top row next to the profile picker, and in what order. Applies to the menu row layout \u2014 the menu pill has its own panel.",
+          hpTopButtonsPillNote: "The menu pill is on, and it replaces the top row \u2014 these buttons are not shown.",
+          hpMenuDividerRow: "Divider",
+          mobileMenuDesignTitle: "Menu design on phones",
+          mobileMenuDesignDesc: "The same pill opens the menu either way \u2014 this chooses how it is drawn.",
+          mobileMenuDesignGlass: "Glass card",
+          mobileMenuDesignList: "Side menu",
+          hpTvMenuEyebrow: "TV mode",
+          hpTvMenuTitle: "TV menu",
+          hpTvMenuHint: "Choose which items the TV side menu shows and in what order. Search, Home, Profiles and Settings always stay at the top.",
           hpProfilePicker: "Profile picker",
           hpSettingsShortcutHint: "Settings can always be opened with",
           hpHomeMenuEyebrow: "Home page menu",
@@ -5577,6 +5595,8 @@
           plVolume: "Volymreglage",
           plAudioDelay: "Ljudf\xF6rdr\xF6jning",
           plNextEpisode: "N\xE4sta avsnitt",
+          plSwitchStream: "Byt str\xF6m",
+          plStreams: "Str\xF6mmar",
           audioDelayTitle: "Ljudf\xF6rdr\xF6jning",
           audioDelayHint: "Justera l\xE4ppsynk. Positivt v\xE4rde spelar ljudet senare.",
           btAudioAutoOffset: "Kompensera f\xF6r Bluetooth-latens",
@@ -5914,6 +5934,8 @@
           menuScaleDesc: "Skalar bara sidomenyn \u2014 ikoner och etiketter \u2014 oberoende av gr\xE4nssnittsskalan.",
           reduceMotion: "Minska r\xF6relse",
           reduceMotionDesc: "St\xE4nger av animationer och mjuka \xF6verg\xE5ngar i hela appen.",
+          heroActionsExpanded: "Visa alltid \xE5tg\xE4rdernas namn",
+          heroActionsExpandedDesc: "Ikonknapparna vid Spela h\xE5ller sina namn synliga i st\xE4llet f\xF6r att f\xE4lla ut dem vid hovring.",
           settingsPagePluginManage: "Hantera plugins",
           settingsTabStatus: "Status",
           settingsTabQuick: "Snabbinst\xE4llningar",
@@ -6517,6 +6539,10 @@
           creditsThreshold: "Eftertexterna b\xF6rjar",
           creditsThresholdDesc: "Hur l\xE5ngt f\xF6re slutet eftertextvyn \xF6ppnas n\xE4r filen saknar detekterad mark\xF6r. Senare \xE4r s\xE4krare \u2014 f\xF6r tidigt t\xE4cker slutet.",
           minutesBeforeEnd: "min f\xF6re slutet",
+          creditsRecommendationsTv: "Rekommendationer efter serier",
+          creditsRecommendationsTvDesc: "Bara n\xE4r s\xE4songen \xE4r slut och ingen n\xE4sta s\xE4song finns.",
+          creditsThresholdTv: "Tr\xF6skel f\xF6r serier",
+          creditsThresholdTvDesc: "Bara n\xE4r s\xE4songen \xE4r slut och ingen n\xE4sta s\xE4song finns.",
           advanceAtOutro: "Hoppa \xF6ver eftertexterna och g\xE5 direkt till n\xE4sta avsnitt",
           advanceAtOutroDesc: "N\xE4r ett outro hittas startar n\xE4sta avsnitt direkt i st\xE4llet f\xF6r att kortet visas. Avsnitt utan detekterat outro visar kortet som vanligt.",
           stayFullscreenOnClose: "Stanna i helsk\xE4rm n\xE4r spelaren st\xE4ngs",
@@ -7241,7 +7267,16 @@
           hpAlwaysShown: "Visas alltid",
           hpTopMenuEyebrow: "\xD6vre meny",
           hpTopButtonsTitle: "Topp-knappar",
-          hpTopButtonsHint: "V\xE4lj vilka knappar som visas h\xF6gst upp och i vilken ordning.",
+          hpTopButtonsHint: "V\xE4lj vilka knappar som visas i toppraden bredvid profilv\xE4ljaren, och i vilken ordning. G\xE4ller menyradsl\xE4get \u2014 menypillret har en egen panel.",
+          hpTopButtonsPillNote: "Menypillret \xE4r p\xE5 och ers\xE4tter toppraden \u2014 de h\xE4r knapparna visas inte.",
+          hpMenuDividerRow: "Avdelare",
+          mobileMenuDesignTitle: "Menyns utseende p\xE5 telefon",
+          mobileMenuDesignDesc: "Samma pill \xF6ppnar menyn i b\xE5da fallen \u2014 det h\xE4r v\xE4ljer hur den ritas.",
+          mobileMenuDesignGlass: "Glaskort",
+          mobileMenuDesignList: "Sidomeny",
+          hpTvMenuEyebrow: "TV-l\xE4get",
+          hpTvMenuTitle: "TV-menyn",
+          hpTvMenuHint: "V\xE4lj vilka poster TV-sidomenyn visar och i vilken ordning. S\xF6k, Hem, Profiler och Inst\xE4llningar ligger alltid kvar \xF6verst.",
           hpProfilePicker: "Profilv\xE4ljare",
           hpSettingsShortcutHint: "Inst\xE4llningar kan alltid \xF6ppnas med",
           hpHomeMenuEyebrow: "Startsidans meny",
@@ -7845,16 +7880,16 @@
 
   // lib/tv-scene.ts
   function tvSceneBoxScale(element) {
-    const read8 = (raw) => {
+    const read9 = (raw) => {
       const value = parseFloat(raw);
       return Number.isFinite(value) && value > 0 ? value : null;
     };
-    const inline = read8(element.style.getPropertyValue("--tv-scene-box-scale"));
+    const inline = read9(element.style.getPropertyValue("--tv-scene-box-scale"));
     if (inline !== null) return inline;
     if (typeof getComputedStyle === "undefined") return 1;
-    return read8(getComputedStyle(element).getPropertyValue("--tv-scene-box-scale")) ?? 1;
+    return read9(getComputedStyle(element).getPropertyValue("--tv-scene-box-scale")) ?? 1;
   }
-  var TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR, TV_SCENE_NARROW_PX;
+  var TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR, TV_SCENE_NARROW_PX, TV_SCENE_PHONE_ATTR;
   var init_tv_scene = __esm({
     "lib/tv-scene.ts"() {
       "use strict";
@@ -7862,6 +7897,7 @@
       TV_SCENE_BOX_ATTR = "data-tv-scene-box";
       TV_SCENE_NARROW_ATTR = "data-tv-scene-narrow";
       TV_SCENE_NARROW_PX = 1024;
+      TV_SCENE_PHONE_ATTR = "data-tv-scene-phone";
     }
   });
 
@@ -8145,6 +8181,10 @@
     if (typeof window === "undefined") return false;
     return getScopedStorageItem(MOTION_KEY) === "1";
   }
+  function getHeroActionsExpanded() {
+    if (typeof window === "undefined") return false;
+    return getScopedStorageItem(HERO_ACTIONS_KEY) === "1";
+  }
   function getAccent() {
     if (typeof window === "undefined") return "sunset";
     const raw = getScopedStorageItem(ACCENT_KEY);
@@ -8210,6 +8250,8 @@
     else root.style.setProperty("--corner-scale", String(cornerScale / 100));
     if (getReduceMotion()) root.dataset.reduceMotion = "1";
     else delete root.dataset.reduceMotion;
+    if (getHeroActionsExpanded()) root.dataset.heroActionLabels = "open";
+    else delete root.dataset.heroActionLabels;
     if (getAppTheme() === "custom") {
       const active2 = getCustomThemes().find((theme) => theme.id === getActiveCustomThemeId());
       applyCustomThemeVars(active2 ?? null);
@@ -8239,7 +8281,7 @@
       root.style.setProperty("--accent-600", a600);
     }
   }
-  var THEME_KEY, SCALE_KEY, MOTION_KEY, ACCENT_KEY, FONT_KEY, RADIUS_KEY, RADIUS_KEY_V2, EVENT2, UI_SCALE_OPTIONS, MENU_SCALE_KEY, MENU_SCALE_OPTIONS, TV_FONT_SCALE_KEY, TV_FONT_SCALE_OPTIONS, TV_MENU_SCALE_KEY, TV_MENU_SCALE_OPTIONS, CORNER_SCALE_KEY, CORNER_SCALE_OPTIONS, ACCENT_PRESETS, FONT_PAIRS, CARD_RADIUS_OPTIONS;
+  var THEME_KEY, SCALE_KEY, MOTION_KEY, ACCENT_KEY, FONT_KEY, RADIUS_KEY, RADIUS_KEY_V2, EVENT2, UI_SCALE_OPTIONS, MENU_SCALE_KEY, MENU_SCALE_OPTIONS, TV_FONT_SCALE_KEY, TV_FONT_SCALE_OPTIONS, TV_MENU_SCALE_KEY, TV_MENU_SCALE_OPTIONS, CORNER_SCALE_KEY, CORNER_SCALE_OPTIONS, HERO_ACTIONS_KEY, ACCENT_PRESETS, FONT_PAIRS, CARD_RADIUS_OPTIONS;
   var init_appearance_settings = __esm({
     "lib/appearance-settings.ts"() {
       "use strict";
@@ -8263,6 +8305,7 @@
       TV_MENU_SCALE_OPTIONS = [100, 115, 130, 150];
       CORNER_SCALE_KEY = "appearance_corner_scale";
       CORNER_SCALE_OPTIONS = [100, 115, 130, 150];
+      HERO_ACTIONS_KEY = "appearance_hero_actions_expanded";
       ACCENT_PRESETS = {
         sunset: { label: "Sunset", shades: ["247 178 103", "244 132 95", "231 111 81"] },
         ocean: { label: "Ocean", shades: ["96 165 250", "59 130 246", "37 99 235"] },
@@ -10292,6 +10335,18 @@
     if (!Number.isFinite(raw) || raw <= 0) return DEFAULT_CREDITS_THRESHOLD_MINUTES;
     return Math.max(1, Math.min(6, raw));
   }
+  function getCreditsRecommendationsTv() {
+    if (typeof window === "undefined") return DEFAULT_CREDITS_RECOMMENDATIONS_TV;
+    const raw = getScopedStorageItem(KEY_CREDITS_RECOMMENDATIONS_TV);
+    if (raw === null) return DEFAULT_CREDITS_RECOMMENDATIONS_TV;
+    return raw === "1";
+  }
+  function getCreditsThresholdMinutesTv() {
+    if (typeof window === "undefined") return DEFAULT_CREDITS_THRESHOLD_MINUTES_TV;
+    const raw = Number.parseFloat(getScopedStorageItem(KEY_CREDITS_THRESHOLD_MINUTES_TV) ?? "");
+    if (!Number.isFinite(raw) || raw <= 0) return DEFAULT_CREDITS_THRESHOLD_MINUTES_TV;
+    return Math.max(1, Math.min(6, raw));
+  }
   function getStatsHud() {
     if (typeof window === "undefined") return false;
     return getScopedStorageItem(KEY_STATS_HUD) === "1";
@@ -10308,7 +10363,7 @@
     setScopedStorageItem(KEY_STRIP_SDH, value ? "1" : "0");
     emitPlaybackSettingsChanged();
   }
-  var KEY_DEFAULT_SUBTITLE_LANGUAGE, KEY_FALLBACK_SUBTITLE_LANGUAGE, KEY_DEFAULT_AUDIO_LANGUAGE, KEY_AUDIO_OUTPUT_MODE, KEY_DEFAULT_SUBTITLE_SIZE, KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION, KEY_DEFAULT_SUBTITLE_OPACITY, KEY_SUBTITLE_TEXT_COLOR, KEY_SUBTITLE_BACKGROUND_COLOR, KEY_SUBTITLE_OUTLINE_COLOR, KEY_DEFAULT_ASPECT_RATIO, KEY_REMEMBER_ASPECT_RATIO, KEY_AUTO_SKIP_INTRO, KEY_HIDE_WATCHED_MOVIES_HOME, KEY_STILL_WATCHING_ENABLED, KEY_STILL_WATCHING_MAX_MINUTES, KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, KEY_CREDITS_RECOMMENDATIONS, KEY_CREDITS_THRESHOLD_MINUTES, KEY_NIGHT_MODE, KEY_AUDIO_DELAY_MS, KEY_BT_AUTO_OFFSET, KEY_STAY_FULLSCREEN_ON_CLOSE, KEY_HIDE_SKIP_BUTTON_AFTER, KEY_CONTROLS_HIDE_AFTER, KEY_SHOW_TITLE_ON_START, KEY_SERIES_NAME_FIRST, HIDE_SKIP_BUTTON_OPTIONS, CONTROLS_HIDE_OPTIONS, CONTROLS_HIDE_DEFAULT_SECONDS, PLAYBACK_SETTINGS_CHANGED_EVENT, LANG_NAMES, NIGHT_MODE_OPTIONS, ASPECT_RATIO_MODES, LANG3_TO_2, DEFAULT_SUBTITLE_SIZE, DEFAULT_AUDIO_OUTPUT_MODE, DEFAULT_SUBTITLE_VERTICAL_POSITION, DEFAULT_SUBTITLE_OPACITY, DEFAULT_SUBTITLE_TEXT_COLOR, DEFAULT_SUBTITLE_BACKGROUND_COLOR, DEFAULT_SUBTITLE_OUTLINE_COLOR, DEFAULT_ASPECT_RATIO, DEFAULT_REMEMBER_ASPECT_RATIO, DEFAULT_AUTO_SKIP_INTRO, DEFAULT_HIDE_WATCHED_MOVIES_HOME, DEFAULT_STILL_WATCHING_ENABLED, DEFAULT_STILL_WATCHING_MAX_MINUTES, DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, DEFAULT_CREDITS_RECOMMENDATIONS, DEFAULT_CREDITS_THRESHOLD_MINUTES, DEFAULT_NIGHT_MODE, KEY_UPGRADE_SUBTITLE_WHEN_BETTER, KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES, KEY_EXTRA_SUBTITLE_LANGUAGES, KEY_RAW_MPV_CONF, KEY_PREFER_EMBEDDED_SUBTITLES, KEY_EXTERNAL_PLAYER_APP, AUDIO_DELAY_STEP_MS, AUDIO_DELAY_LIMIT_MS, KEY_EXTERNAL_DISPLAY_VIDEO_ONLY, BLUETOOTH_AUDIO_OFFSET_MS, KEY_STATS_HUD, KEY_STRIP_SDH;
+  var KEY_DEFAULT_SUBTITLE_LANGUAGE, KEY_FALLBACK_SUBTITLE_LANGUAGE, KEY_DEFAULT_AUDIO_LANGUAGE, KEY_AUDIO_OUTPUT_MODE, KEY_DEFAULT_SUBTITLE_SIZE, KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION, KEY_DEFAULT_SUBTITLE_OPACITY, KEY_SUBTITLE_TEXT_COLOR, KEY_SUBTITLE_BACKGROUND_COLOR, KEY_SUBTITLE_OUTLINE_COLOR, KEY_DEFAULT_ASPECT_RATIO, KEY_REMEMBER_ASPECT_RATIO, KEY_AUTO_SKIP_INTRO, KEY_HIDE_WATCHED_MOVIES_HOME, KEY_STILL_WATCHING_ENABLED, KEY_STILL_WATCHING_MAX_MINUTES, KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, KEY_CREDITS_RECOMMENDATIONS, KEY_CREDITS_THRESHOLD_MINUTES, KEY_CREDITS_RECOMMENDATIONS_TV, KEY_CREDITS_THRESHOLD_MINUTES_TV, KEY_NIGHT_MODE, KEY_AUDIO_DELAY_MS, KEY_BT_AUTO_OFFSET, KEY_STAY_FULLSCREEN_ON_CLOSE, KEY_HIDE_SKIP_BUTTON_AFTER, KEY_CONTROLS_HIDE_AFTER, KEY_SHOW_TITLE_ON_START, KEY_SERIES_NAME_FIRST, HIDE_SKIP_BUTTON_OPTIONS, CONTROLS_HIDE_OPTIONS, CONTROLS_HIDE_DEFAULT_SECONDS, PLAYBACK_SETTINGS_CHANGED_EVENT, LANG_NAMES, NIGHT_MODE_OPTIONS, ASPECT_RATIO_MODES, LANG3_TO_2, DEFAULT_SUBTITLE_SIZE, DEFAULT_AUDIO_OUTPUT_MODE, DEFAULT_SUBTITLE_VERTICAL_POSITION, DEFAULT_SUBTITLE_OPACITY, DEFAULT_SUBTITLE_TEXT_COLOR, DEFAULT_SUBTITLE_BACKGROUND_COLOR, DEFAULT_SUBTITLE_OUTLINE_COLOR, DEFAULT_ASPECT_RATIO, DEFAULT_REMEMBER_ASPECT_RATIO, DEFAULT_AUTO_SKIP_INTRO, DEFAULT_HIDE_WATCHED_MOVIES_HOME, DEFAULT_STILL_WATCHING_ENABLED, DEFAULT_STILL_WATCHING_MAX_MINUTES, DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, DEFAULT_CREDITS_RECOMMENDATIONS, DEFAULT_CREDITS_THRESHOLD_MINUTES, DEFAULT_CREDITS_RECOMMENDATIONS_TV, DEFAULT_CREDITS_THRESHOLD_MINUTES_TV, DEFAULT_NIGHT_MODE, KEY_UPGRADE_SUBTITLE_WHEN_BETTER, KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES, KEY_EXTRA_SUBTITLE_LANGUAGES, KEY_RAW_MPV_CONF, KEY_PREFER_EMBEDDED_SUBTITLES, KEY_EXTERNAL_PLAYER_APP, AUDIO_DELAY_STEP_MS, AUDIO_DELAY_LIMIT_MS, KEY_EXTERNAL_DISPLAY_VIDEO_ONLY, BLUETOOTH_AUDIO_OFFSET_MS, KEY_STATS_HUD, KEY_STRIP_SDH;
   var init_playback_settings = __esm({
     "lib/playback-settings.ts"() {
       "use strict";
@@ -10333,6 +10388,8 @@
       KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES = "playback_disableSubtitlesWhenAudioMatches";
       KEY_CREDITS_RECOMMENDATIONS = "playback_creditsRecommendations";
       KEY_CREDITS_THRESHOLD_MINUTES = "playback_creditsThresholdMinutes";
+      KEY_CREDITS_RECOMMENDATIONS_TV = "playback_creditsRecommendationsTv";
+      KEY_CREDITS_THRESHOLD_MINUTES_TV = "playback_creditsThresholdMinutesTv";
       KEY_NIGHT_MODE = "playback_nightMode";
       KEY_AUDIO_DELAY_MS = "playback_audioDelayMs";
       KEY_BT_AUTO_OFFSET = "playback_btAudioAutoOffset";
@@ -10438,6 +10495,8 @@
       DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES = false;
       DEFAULT_CREDITS_RECOMMENDATIONS = false;
       DEFAULT_CREDITS_THRESHOLD_MINUTES = 3;
+      DEFAULT_CREDITS_RECOMMENDATIONS_TV = true;
+      DEFAULT_CREDITS_THRESHOLD_MINUTES_TV = 1;
       DEFAULT_NIGHT_MODE = "off";
       KEY_UPGRADE_SUBTITLE_WHEN_BETTER = "playback_upgradeSubtitleWhenBetter";
       KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES = "playback_forcedSubtitlesWhenAudioMatches";
@@ -15530,9 +15589,9 @@
           return null;
         }
         for (i = 0; i < 3; i++) {
-          rgb[i] = clamp2(rgb[i], 0, 255);
+          rgb[i] = clamp4(rgb[i], 0, 255);
         }
-        rgb[3] = clamp2(rgb[3], 0, 1);
+        rgb[3] = clamp4(rgb[3], 0, 1);
         return rgb;
       };
       cs.get.hsl = function(string) {
@@ -15544,9 +15603,9 @@
         if (match) {
           var alpha2 = parseFloat(match[4]);
           var h = (parseFloat(match[1]) % 360 + 360) % 360;
-          var s = clamp2(parseFloat(match[2]), 0, 100);
-          var l = clamp2(parseFloat(match[3]), 0, 100);
-          var a = clamp2(isNaN(alpha2) ? 1 : alpha2, 0, 1);
+          var s = clamp4(parseFloat(match[2]), 0, 100);
+          var l = clamp4(parseFloat(match[3]), 0, 100);
+          var a = clamp4(isNaN(alpha2) ? 1 : alpha2, 0, 1);
           return [h, s, l, a];
         }
         return null;
@@ -15560,9 +15619,9 @@
         if (match) {
           var alpha2 = parseFloat(match[4]);
           var h = (parseFloat(match[1]) % 360 + 360) % 360;
-          var w = clamp2(parseFloat(match[2]), 0, 100);
-          var b = clamp2(parseFloat(match[3]), 0, 100);
-          var a = clamp2(isNaN(alpha2) ? 1 : alpha2, 0, 1);
+          var w = clamp4(parseFloat(match[2]), 0, 100);
+          var b = clamp4(parseFloat(match[3]), 0, 100);
+          var a = clamp4(isNaN(alpha2) ? 1 : alpha2, 0, 1);
           return [h, w, b, a];
         }
         return null;
@@ -15597,7 +15656,7 @@
       cs.to.keyword = function(rgb) {
         return reverseNames[rgb.slice(0, 3)];
       };
-      function clamp2(num, min, max) {
+      function clamp4(num, min, max) {
         return Math.min(Math.max(min, num), max);
       }
       function hexDouble(num) {
@@ -16947,7 +17006,7 @@
         callAllHandlers: () => callAllHandlers,
         capitalize: () => capitalize,
         chain: () => chain,
-        clamp: () => clamp2,
+        clamp: () => clamp4,
         clampPercentage: () => clampPercentage,
         cleanObject: () => cleanObject,
         cleanObjectKeys: () => cleanObjectKeys,
@@ -17279,7 +17338,7 @@
         const length = end - start3 + 1;
         return Array.from({ length }, (_, index3) => index3 + start3);
       }
-      function clamp2(value, min, max) {
+      function clamp4(value, min, max) {
         return Math.min(Math.max(value, min), max);
       }
       function clampPercentage(value, max = 100) {
@@ -17459,7 +17518,7 @@
         button: () => button,
         buttonGroup: () => buttonGroup,
         calendar: () => calendar,
-        card: () => card,
+        card: () => card2,
         checkbox: () => checkbox,
         checkboxGroup: () => checkboxGroup,
         chip: () => chip,
@@ -18059,7 +18118,7 @@
           }
         }
       });
-      var card = tv({
+      var card2 = tv({
         slots: {
           base: [
             "flex",
@@ -29927,9 +29986,9 @@
         toIterator: () => toIterator2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function forwardRef3(component) {
-        return (0, import_react132.forwardRef)(component);
+        return (0, import_react161.forwardRef)(component);
       }
       var toIterator2 = (obj) => {
         return {
@@ -40987,7 +41046,7 @@
         }
         return arr;
       }
-      var clamp2 = (min, max, v) => {
+      var clamp4 = (min, max, v) => {
         if (v > max)
           return max;
         if (v < min)
@@ -41123,7 +41182,7 @@
           progress4 = direction === "end" ? Math.min(progress4, 0.999) : Math.max(progress4, 1e-3);
           const expanded = progress4 * numSteps;
           const rounded = direction === "end" ? Math.floor(expanded) : Math.ceil(expanded);
-          return clamp2(0, 1, rounded / numSteps);
+          return clamp4(0, 1, rounded / numSteps);
         };
       }
       var isEasingArray2 = (ease2) => {
@@ -41170,7 +41229,7 @@
       exports.circIn = circIn2;
       exports.circInOut = circInOut2;
       exports.circOut = circOut2;
-      exports.clamp = clamp2;
+      exports.clamp = clamp4;
       exports.cubicBezier = cubicBezier2;
       exports.easeIn = easeIn2;
       exports.easeInOut = easeInOut2;
@@ -41309,7 +41368,7 @@
           acc[key] = createRenderStep2(flagRunNextFrame, allowKeepAlive ? key : void 0);
           return acc;
         }, {});
-        const { setup, read: read8, resolveKeyframes, preUpdate, update, preRender, render, postRender } = steps2;
+        const { setup, read: read9, resolveKeyframes, preUpdate, update, preRender, render, postRender } = steps2;
         const processBatch = () => {
           const useManualTiming = motionUtils.MotionGlobalConfig.useManualTiming;
           const timestamp = useManualTiming ? state.timestamp : performance.now();
@@ -41320,7 +41379,7 @@
           state.timestamp = timestamp;
           state.isProcessing = true;
           setup.process(state);
-          read8.process(state);
+          read9.process(state);
           resolveKeyframes.process(state);
           preUpdate.process(state);
           update.process(state);
@@ -42141,10 +42200,10 @@
         };
         return isClamp ? (v) => interpolator(motionUtils.clamp(input[0], input[inputLength - 1], v)) : interpolator;
       }
-      function fillOffset2(offset, remaining) {
+      function fillOffset2(offset, remaining2) {
         const min = offset[offset.length - 1];
-        for (let i = 1; i <= remaining; i++) {
-          const offsetProgress = motionUtils.progress(0, remaining, i);
+        for (let i = 1; i <= remaining2; i++) {
+          const offsetProgress = motionUtils.progress(0, remaining2, i);
           offset.push(mixNumber$1(min, 1, offsetProgress));
         }
       }
@@ -45320,11 +45379,11 @@
           const { interrupt } = builder.options;
           if (interrupt === "immediate") {
             const batchedUpdates = builders2.slice(0, i + 1).map((b) => b.update);
-            const remaining = builders2.slice(i + 1);
+            const remaining2 = builders2.slice(i + 1);
             builder.update = () => {
               batchedUpdates.forEach((update) => update());
             };
-            builders2 = [builder, ...remaining];
+            builders2 = [builder, ...remaining2];
             break;
           }
         }
@@ -51541,15 +51600,15 @@
             const { x, y } = current2.getBBox();
             inset.x += x;
             inset.y += y;
-            let svg2 = null;
+            let svg3 = null;
             let parent = current2.parentNode;
-            while (!svg2) {
+            while (!svg3) {
               if (parent.tagName === "svg") {
-                svg2 = parent;
+                svg3 = parent;
               }
               parent = current2.parentNode;
             }
-            current2 = svg2;
+            current2 = svg3;
           } else {
             break;
           }
@@ -52429,15 +52488,15 @@
       }
       function transformViewBoxPoint2(svgRef) {
         return (point3) => {
-          const svg2 = svgRef.current;
-          if (!svg2) {
+          const svg3 = svgRef.current;
+          if (!svg3) {
             return point3;
           }
-          const viewBox = svg2.viewBox?.baseVal;
+          const viewBox = svg3.viewBox?.baseVal;
           if (!viewBox || viewBox.width === 0 && viewBox.height === 0) {
             return point3;
           }
-          const bbox = svg2.getBoundingClientRect();
+          const bbox = svg3.getBoundingClientRect();
           if (bbox.width === 0 || bbox.height === 0) {
             return point3;
           }
@@ -59430,17 +59489,17 @@
         renderFn: () => renderFn2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function getValidChildren2(children) {
-        return import_react132.Children.toArray(children).filter(
-          (child) => (0, import_react132.isValidElement)(child)
+        return import_react161.Children.toArray(children).filter(
+          (child) => (0, import_react161.isValidElement)(child)
         );
       }
       var pickChildren2 = (children, targetChild) => {
         var _a;
         let target2 = [];
-        const withoutTargetChildren = (_a = import_react132.Children.map(children, (item) => {
-          if (!(0, import_react132.isValidElement)(item)) return item;
+        const withoutTargetChildren = (_a = import_react161.Children.map(children, (item) => {
+          if (!(0, import_react161.isValidElement)(item)) return item;
           if (item.type === targetChild) {
             target2.push(item);
             return null;
@@ -59782,7 +59841,7 @@
           refs.forEach((ref) => assignRef(ref, node));
         };
       }
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function canUseDOM() {
         return !!(typeof window !== "undefined" && window.document && window.document.createElement);
       }
@@ -59868,17 +59927,17 @@
         };
       }
       function useDOMRef(ref) {
-        const domRef = (0, import_react132.useRef)(null);
-        (0, import_react132.useImperativeHandle)(ref, () => domRef.current);
+        const domRef = (0, import_react161.useRef)(null);
+        (0, import_react161.useImperativeHandle)(ref, () => domRef.current);
         return domRef;
       }
       function useFocusableRef(ref, focusableRef) {
-        const domRef = (0, import_react132.useRef)(null);
-        (0, import_react132.useImperativeHandle)(ref, () => createFocusableRef(domRef, focusableRef));
+        const domRef = (0, import_react161.useRef)(null);
+        (0, import_react161.useImperativeHandle)(ref, () => createFocusableRef(domRef, focusableRef));
         return domRef;
       }
       function useSyncRef(context, ref) {
-        (0, import_react132.useLayoutEffect)(() => {
+        (0, import_react161.useLayoutEffect)(() => {
           if (context && context.ref && ref && ref.current) {
             context.ref.current = ref.current;
             return () => {
@@ -59959,8 +60018,8 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_system_rsc = require_dist4();
-      var import_i18n14 = require_main5();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_i18n15 = require_main5();
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_motion2 = require_cjs4();
       var import_utils8 = require_main4();
       var import_overlays = require_main9();
@@ -59969,7 +60028,7 @@
         name: "ProviderContext",
         strict: false
       });
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var HeroUIProvider = ({
         children,
         navigate,
@@ -59990,9 +60049,9 @@
       }) => {
         let contents = children;
         if (navigate) {
-          contents = /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_utils8.RouterProvider, { navigate, useHref, children: contents });
+          contents = /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_utils8.RouterProvider, { navigate, useHref, children: contents });
         }
-        const context = (0, import_react132.useMemo)(() => {
+        const context = (0, import_react161.useMemo)(() => {
           if (disableAnimation && skipFramerMotionAnimations) {
             import_framer_motion2.MotionGlobalConfig.skipAnimations = true;
           }
@@ -60015,7 +60074,7 @@
           labelPlacement,
           spinnerVariant
         ]);
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(ProviderContext, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_i18n14.I18nProvider, { locale, children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_framer_motion2.MotionConfig, { reducedMotion, children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_overlays.OverlayProvider, { ...otherProps, children: contents }) }) }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(ProviderContext, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_i18n15.I18nProvider, { locale, children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_framer_motion2.MotionConfig, { reducedMotion, children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_overlays.OverlayProvider, { ...otherProps, children: contents }) }) }) });
       };
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useLabelPlacement(props) {
@@ -60099,7 +60158,7 @@
         button: () => button,
         buttonGroup: () => buttonGroup,
         calendar: () => calendar,
-        card: () => card,
+        card: () => card2,
         checkbox: () => checkbox,
         checkboxGroup: () => checkboxGroup,
         chip: () => chip,
@@ -60699,7 +60758,7 @@
           }
         }
       });
-      var card = tv({
+      var card2 = tv({
         slots: {
           base: [
             "flex",
@@ -73274,9 +73333,9 @@
         toIterator: () => toIterator2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function forwardRef3(component) {
-        return (0, import_react132.forwardRef)(component);
+        return (0, import_react161.forwardRef)(component);
       }
       var toIterator2 = (obj) => {
         return {
@@ -73488,7 +73547,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_rsc_utils = require_dist9();
       function useSeparator(props) {
         let domProps = (0, import_react_rsc_utils.filterDOMProps)(props, {
@@ -73519,14 +73578,14 @@
           elementType: typeof Component2 === "string" ? Component2 : "hr",
           orientation
         });
-        const styles = (0, import_react132.useMemo)(
+        const styles = (0, import_react161.useMemo)(
           () => (0, import_theme.divider)({
             orientation,
             className
           }),
           [orientation, className]
         );
-        const getDividerProps = (0, import_react132.useCallback)(
+        const getDividerProps = (0, import_react161.useCallback)(
           (props2 = {}) => ({
             className: styles,
             role: "separator",
@@ -73539,13 +73598,13 @@
         );
         return { Component: Component2, getDividerProps };
       }
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var Divider = (0, import_system_rsc.forwardRef)((props, ref) => {
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var Divider2 = (0, import_system_rsc.forwardRef)((props, ref) => {
         const { Component: Component2, getDividerProps } = useDivider({ ...props });
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(Component2, { ref, ...getDividerProps() });
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(Component2, { ref, ...getDividerProps() });
       });
-      Divider.displayName = "HeroUI.Divider";
-      var divider_default = Divider;
+      Divider2.displayName = "HeroUI.Divider";
+      var divider_default = Divider2;
     }
   });
 
@@ -76333,22 +76392,22 @@
         };
       }
       var import_focus2 = require_main14();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_button = require_main16();
       function useReactAriaAccordionItem(props, state, ref) {
         let { item, isDisabled: isDisabledProp } = props;
         let key = item.key;
         let manager = state.selectionManager;
-        let buttonId = (0, import_react132.useId)();
-        let regionId = (0, import_react132.useId)();
+        let buttonId = (0, import_react161.useId)();
+        let regionId = (0, import_react161.useId)();
         let isDisabled = state.disabledKeys.has(item.key) || isDisabledProp;
-        (0, import_react132.useEffect)(() => {
+        (0, import_react161.useEffect)(() => {
           let isFocused = key === state.focusedKey;
           if (isFocused && document.activeElement !== ref.current) {
             ref.current && (0, import_focus2.focusSafely)(ref.current);
           }
         }, [ref, key, state.focusedKey]);
-        let onSelect = (0, import_react132.useCallback)(
+        let onSelect = (0, import_react161.useCallback)(
           (e) => {
             if (!manager.canSelectItem(key)) {
               return;
@@ -76358,7 +76417,7 @@
           },
           [key, manager]
         );
-        const extendFocusSelection = (0, import_react132.useCallback)(
+        const extendFocusSelection = (0, import_react161.useCallback)(
           (toKey2) => {
             if (manager.selectionBehavior === "replace") {
               manager.extendSelection(toKey2);
@@ -76367,7 +76426,7 @@
           },
           [manager]
         );
-        const onKeyDown = (0, import_react132.useCallback)(
+        const onKeyDown = (0, import_react161.useCallback)(
           (event) => {
             const keyMap = {
               ArrowDown: () => {
@@ -76486,7 +76545,7 @@
         ClockCircleLinearIcon: () => ClockCircleLinearIcon,
         ClockSquareBoldIcon: () => ClockSquareBoldIcon,
         CloseFilledIcon: () => CloseFilledIcon,
-        CloseIcon: () => CloseIcon,
+        CloseIcon: () => CloseIcon2,
         CopyDocumentBulk: () => CopyDocumentBulk,
         CopyDocumentBulkIcon: () => CopyDocumentBulkIcon,
         CopyIcon: () => CopyIcon,
@@ -76553,17 +76612,17 @@
         WarningIcon: () => WarningIcon
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Sun = ({ fill, filled, size, height, width, ...props }) => {
         if (filled) {
-          return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
             "svg",
             {
               height: size || height || 24,
               viewBox: "0 0 512 512",
               width: size || width || 24,
               ...props,
-              children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M256 118a22 22 0 01-22-22V48a22 22 0 0144 0v48a22 22 0 01-22 22zM256 486a22 22 0 01-22-22v-48a22 22 0 0144 0v48a22 22 0 01-22 22zM369.14 164.86a22 22 0 01-15.56-37.55l33.94-33.94a22 22 0 0131.11 31.11l-33.94 33.94a21.93 21.93 0 01-15.55 6.44zM108.92 425.08a22 22 0 01-15.55-37.56l33.94-33.94a22 22 0 1131.11 31.11l-33.94 33.94a21.94 21.94 0 01-15.56 6.45zM464 278h-48a22 22 0 010-44h48a22 22 0 010 44zM96 278H48a22 22 0 010-44h48a22 22 0 010 44zM403.08 425.08a21.94 21.94 0 01-15.56-6.45l-33.94-33.94a22 22 0 0131.11-31.11l33.94 33.94a22 22 0 01-15.55 37.56zM142.86 164.86a21.89 21.89 0 01-15.55-6.44l-33.94-33.94a22 22 0 0131.11-31.11l33.94 33.94a22 22 0 01-15.56 37.55zM256 358a102 102 0 11102-102 102.12 102.12 0 01-102 102z",
@@ -76573,8 +76632,8 @@
             }
           );
         }
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)("svg", { height: size || height || 24, viewBox: "0 0 512 512", width: size || width || 24, ...props, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("svg", { height: size || height || 24, viewBox: "0 0 512 512", width: size || width || 24, ...props, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
             "path",
             {
               d: "M256 48v48M256 416v48M403.08 108.92l-33.94 33.94M142.86 369.14l-33.94 33.94M464 256h-48M96 256H48M403.08 403.08l-33.94-33.94M142.86 142.86l-33.94-33.94",
@@ -76585,7 +76644,7 @@
               strokeWidth: 32
             }
           ),
-          /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
             "circle",
             {
               cx: 256,
@@ -76601,21 +76660,21 @@
         ] });
       };
       var Mail = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("svg", { height: size || height || 24, viewBox: "0 0 24 24", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)("g", { fill: "none", stroke: fill, strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 1.5, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("path", { d: "M12 20.5H7c-3 0-5-1.5-5-5v-7c0-3.5 2-5 5-5h10c3 0 5 1.5 5 5v3" }),
-          /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("path", { d: "M17 9l-3.13 2.5a3.166 3.166 0 01-3.75 0L7 9M19.21 14.77l-3.539 3.54a1.232 1.232 0 00-.3.59l-.19 1.35a.635.635 0 00.76.76l1.35-.19a1.189 1.189 0 00.59-.3l3.54-3.54a1.365 1.365 0 000-2.22 1.361 1.361 0 00-2.211.01zM18.7 15.28a3.185 3.185 0 002.22 2.22" })
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("svg", { height: size || height || 24, viewBox: "0 0 24 24", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("g", { fill: "none", stroke: fill, strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 1.5, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("path", { d: "M12 20.5H7c-3 0-5-1.5-5-5v-7c0-3.5 2-5 5-5h10c3 0 5 1.5 5 5v3" }),
+          /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("path", { d: "M17 9l-3.13 2.5a3.166 3.166 0 01-3.75 0L7 9M19.21 14.77l-3.539 3.54a1.232 1.232 0 00-.3.59l-.19 1.35a.635.635 0 00.76.76l1.35-.19a1.189 1.189 0 00.59-.3l3.54-3.54a1.365 1.365 0 000-2.22 1.361 1.361 0 00-2.211.01zM18.7 15.28a3.185 3.185 0 002.22 2.22" })
         ] }) });
       };
       var Moon = ({ fill, filled, size, height, width, ...props }) => {
         if (filled) {
-          return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
             "svg",
             {
               height: size || height || 24,
               viewBox: "0 0 512 512",
               width: size || width || 24,
               ...props,
-              children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M152.62 126.77c0-33 4.85-66.35 17.23-94.77C87.54 67.83 32 151.89 32 247.38 32 375.85 136.15 480 264.62 480c95.49 0 179.55-55.54 215.38-137.85-28.42 12.38-61.8 17.23-94.77 17.23-128.47 0-232.61-104.14-232.61-232.61z",
@@ -76625,7 +76684,7 @@
             }
           );
         }
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("svg", { height: size || height || 24, viewBox: "0 0 512 512", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("svg", { height: size || height || 24, viewBox: "0 0 512 512", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
           "path",
           {
             d: "M160 136c0-30.62 4.51-61.61 16-88C99.57 81.27 48 159.32 48 248c0 119.29 96.71 216 216 216 88.68 0 166.73-51.57 200-128-26.39 11.49-57.38 16-88 16-119.29 0-216-96.71-216-216z",
@@ -76639,7 +76698,7 @@
       };
       var Lock = ({ fill, size, height, width, ...props }) => {
         const color2 = fill;
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
           "svg",
           {
             "data-name": "Iconly/Curved/Lock",
@@ -76648,8 +76707,8 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)("g", { transform: "translate(3.5 2)", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("g", { transform: "translate(3.5 2)", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M9.121,6.653V4.5A4.561,4.561,0,0,0,0,4.484V6.653",
@@ -76662,7 +76721,7 @@
                   transform: "translate(3.85 0.75)"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M.5,0V2.221",
@@ -76675,7 +76734,7 @@
                   transform: "translate(7.91 12.156)"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M7.66,0C1.915,0,0,1.568,0,6.271s1.915,6.272,7.66,6.272,7.661-1.568,7.661-6.272S13.4,0,7.66,0Z",
@@ -76694,7 +76753,7 @@
       };
       var Unlock = ({ fill, size, height, width, ...props }) => {
         const color2 = fill;
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
           "svg",
           {
             "data-name": "Iconly/Curved/Lock",
@@ -76703,8 +76762,8 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)("g", { transform: "translate(3.5 2)", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("g", { transform: "translate(3.5 2)", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M8.927,3.237A4.562,4.562,0,0,0,0,4.484V6.653",
@@ -76717,7 +76776,7 @@
                   transform: "translate(3.849 0.75)"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M.5,0V2.221",
@@ -76730,7 +76789,7 @@
                   transform: "translate(7.91 12.156)"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M7.66,0C1.915,0,0,1.568,0,6.271s1.915,6.272,7.66,6.272,7.661-1.568,7.661-6.272S13.406,0,7.66,0Z",
@@ -76748,13 +76807,13 @@
         );
       };
       var Password = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("svg", { height: size || height || 24, viewBox: "0 0 24 24", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)("g", { fill, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("path", { d: "M18.75 8v2.1a12.984 12.984 0 00-1.5-.1V8c0-3.15-.89-5.25-5.25-5.25S6.75 4.85 6.75 8v2a12.984 12.984 0 00-1.5.1V8c0-2.9.7-6.75 6.75-6.75S18.75 5.1 18.75 8z" }),
-          /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("path", { d: "M18.75 10.1a12.984 12.984 0 00-1.5-.1H6.75a12.984 12.984 0 00-1.5.1C2.7 10.41 2 11.66 2 15v2c0 4 1 5 5 5h10c4 0 5-1 5-5v-2c0-3.34-.7-4.59-3.25-4.9zM8.71 16.71A1.052 1.052 0 018 17a1 1 0 01-.38-.08 1.032 1.032 0 01-.33-.21A1.052 1.052 0 017 16a1 1 0 01.08-.38 1.155 1.155 0 01.21-.33 1.032 1.032 0 01.33-.21 1 1 0 011.09.21 1.155 1.155 0 01.21.33A1 1 0 019 16a1.052 1.052 0 01-.29.71zm4.21-.33a1.155 1.155 0 01-.21.33A1.052 1.052 0 0112 17a1.033 1.033 0 01-.71-.29 1.155 1.155 0 01-.21-.33A1 1 0 0111 16a1.033 1.033 0 01.29-.71 1.047 1.047 0 011.42 0A1.033 1.033 0 0113 16a1 1 0 01-.08.38zm3.79.33a1.014 1.014 0 01-1.42 0 1.014 1.014 0 010-1.42 1.047 1.047 0 011.42 0c.04.05.08.1.12.16a.556.556 0 01.09.17.636.636 0 01.06.18 1.5 1.5 0 01.02.2 1.052 1.052 0 01-.29.71z" })
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("svg", { height: size || height || 24, viewBox: "0 0 24 24", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("g", { fill, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("path", { d: "M18.75 8v2.1a12.984 12.984 0 00-1.5-.1V8c0-3.15-.89-5.25-5.25-5.25S6.75 4.85 6.75 8v2a12.984 12.984 0 00-1.5.1V8c0-2.9.7-6.75 6.75-6.75S18.75 5.1 18.75 8z" }),
+          /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("path", { d: "M18.75 10.1a12.984 12.984 0 00-1.5-.1H6.75a12.984 12.984 0 00-1.5.1C2.7 10.41 2 11.66 2 15v2c0 4 1 5 5 5h10c4 0 5-1 5-5v-2c0-3.34-.7-4.59-3.25-4.9zM8.71 16.71A1.052 1.052 0 018 17a1 1 0 01-.38-.08 1.032 1.032 0 01-.33-.21A1.052 1.052 0 017 16a1 1 0 01.08-.38 1.155 1.155 0 01.21-.33 1.032 1.032 0 01.33-.21 1 1 0 011.09.21 1.155 1.155 0 01.21.33A1 1 0 019 16a1.052 1.052 0 01-.29.71zm4.21-.33a1.155 1.155 0 01-.21.33A1.052 1.052 0 0112 17a1.033 1.033 0 01-.71-.29 1.155 1.155 0 01-.21-.33A1 1 0 0111 16a1.033 1.033 0 01.29-.71 1.047 1.047 0 011.42 0A1.033 1.033 0 0113 16a1 1 0 01-.08.38zm3.79.33a1.014 1.014 0 01-1.42 0 1.014 1.014 0 010-1.42 1.047 1.047 0 011.42 0c.04.05.08.1.12.16a.556.556 0 01.09.17.636.636 0 01.06.18 1.5 1.5 0 01.02.2 1.052 1.052 0 01-.29.71z" })
         ] }) });
       };
       var Notification2 = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
           "svg",
           {
             fill: "none",
@@ -76763,7 +76822,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
               "path",
               {
                 clipRule: "evenodd",
@@ -76776,7 +76835,7 @@
         );
       };
       var User = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
           "svg",
           {
             height: size || height || 24,
@@ -76784,7 +76843,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(
               "g",
               {
                 fill: "none",
@@ -76794,14 +76853,14 @@
                 strokeMiterlimit: 10,
                 strokeWidth: 1.5,
                 children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+                  /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                     "path",
                     {
                       d: "M11.845 21.662C8.153 21.662 5 21.088 5 18.787s3.133-4.425 6.845-4.425c3.692 0 6.845 2.1 6.845 4.4s-3.134 2.9-6.845 2.9z",
                       "data-name": "Stroke 1"
                     }
                   ),
-                  /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("path", { d: "M11.837 11.174a4.372 4.372 0 10-.031 0z", "data-name": "Stroke 3" })
+                  /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("path", { d: "M11.837 11.174a4.372 4.372 0 10-.031 0z", "data-name": "Stroke 3" })
                 ]
               }
             )
@@ -76809,7 +76868,7 @@
         );
       };
       var VolumeUp = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
           "svg",
           {
             fill: "none",
@@ -76818,7 +76877,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
               "path",
               {
                 clipRule: "evenodd",
@@ -76831,7 +76890,7 @@
         );
       };
       var Camera = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
           "svg",
           {
             fill: "none",
@@ -76840,7 +76899,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
               "path",
               {
                 clipRule: "evenodd",
@@ -76853,7 +76912,7 @@
         );
       };
       var Activity2 = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
           "svg",
           {
             "data-name": "Iconly/Curved/Activity",
@@ -76862,7 +76921,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(
               "g",
               {
                 fill: "none",
@@ -76872,9 +76931,9 @@
                 strokeMiterlimit: 10,
                 strokeWidth: 1.5,
                 children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("path", { d: "M6.918 14.854l2.993-3.889 3.414 2.68 2.929-3.78" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("path", { d: "M19.668 2.35a1.922 1.922 0 11-1.922 1.922 1.921 1.921 0 011.922-1.922z" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("path", { d: "M20.756 9.269a20.809 20.809 0 01.194 3.034c0 6.938-2.312 9.25-9.25 9.25s-9.25-2.312-9.25-9.25 2.313-9.25 9.25-9.25a20.931 20.931 0 012.983.187" })
+                  /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("path", { d: "M6.918 14.854l2.993-3.889 3.414 2.68 2.929-3.78" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("path", { d: "M19.668 2.35a1.922 1.922 0 11-1.922 1.922 1.921 1.921 0 011.922-1.922z" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("path", { d: "M20.756 9.269a20.809 20.809 0 01.194 3.034c0 6.938-2.312 9.25-9.25 9.25s-9.25-2.312-9.25-9.25 2.313-9.25 9.25-9.25a20.931 20.931 0 012.983.187" })
                 ]
               }
             )
@@ -76882,7 +76941,7 @@
         );
       };
       var Plus = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
           "svg",
           {
             height: size || height || 24,
@@ -76890,15 +76949,15 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)("g", { fill: "none", stroke: fill, strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 1.5, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("path", { d: "M6 12h12" }),
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("path", { d: "M12 18V6" })
+            children: /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("g", { fill: "none", stroke: fill, strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 1.5, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("path", { d: "M6 12h12" }),
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("path", { d: "M12 18V6" })
             ] })
           }
         );
       };
       var Minus = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
           "svg",
           {
             height: size || height || 24,
@@ -76906,7 +76965,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
               "path",
               {
                 d: "M6 12h12",
@@ -76921,7 +76980,7 @@
         );
       };
       var Eye = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(
           "svg",
           {
             fill: "none",
@@ -76931,7 +76990,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M12.9833 10C12.9833 11.65 11.65 12.9833 10 12.9833C8.35 12.9833 7.01666 11.65 7.01666 10C7.01666 8.35 8.35 7.01666 10 7.01666C11.65 7.01666 12.9833 8.35 12.9833 10Z",
@@ -76941,7 +77000,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M9.99999 16.8916C12.9417 16.8916 15.6833 15.1583 17.5917 12.1583C18.3417 10.9833 18.3417 9.00831 17.5917 7.83331C15.6833 4.83331 12.9417 3.09998 9.99999 3.09998C7.05833 3.09998 4.31666 4.83331 2.40833 7.83331C1.65833 9.00831 1.65833 10.9833 2.40833 12.1583C4.31666 15.1583 7.05833 16.8916 9.99999 16.8916Z",
@@ -76956,7 +77015,7 @@
         );
       };
       var Edit = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(
           "svg",
           {
             fill: "none",
@@ -76966,7 +77025,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M11.05 3.00002L4.20835 10.2417C3.95002 10.5167 3.70002 11.0584 3.65002 11.4334L3.34169 14.1334C3.23335 15.1084 3.93335 15.775 4.90002 15.6084L7.58335 15.15C7.95835 15.0834 8.48335 14.8084 8.74168 14.525L15.5834 7.28335C16.7667 6.03335 17.3 4.60835 15.4583 2.86668C13.625 1.14168 12.2334 1.75002 11.05 3.00002Z",
@@ -76977,7 +77036,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M9.90833 4.20831C10.2667 6.50831 12.1333 8.26665 14.45 8.49998",
@@ -76988,7 +77047,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M2.5 18.3333H17.5",
@@ -77004,7 +77063,7 @@
         );
       };
       var Delete = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(
           "svg",
           {
             fill: "none",
@@ -77014,7 +77073,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M17.5 4.98332C14.725 4.70832 11.9333 4.56665 9.15 4.56665C7.5 4.56665 5.85 4.64998 4.2 4.81665L2.5 4.98332",
@@ -77024,7 +77083,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M7.08331 4.14169L7.26665 3.05002C7.39998 2.25835 7.49998 1.66669 8.90831 1.66669H11.0916C12.5 1.66669 12.6083 2.29169 12.7333 3.05835L12.9166 4.14169",
@@ -77034,7 +77093,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M15.7084 7.61664L15.1667 16.0083C15.075 17.3166 15 18.3333 12.675 18.3333H7.32502C5.00002 18.3333 4.92502 17.3166 4.83335 16.0083L4.29169 7.61664",
@@ -77044,7 +77103,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M8.60834 13.75H11.3833",
@@ -77054,7 +77113,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M7.91669 10.4167H12.0834",
@@ -77069,7 +77128,7 @@
         );
       };
       var ChevronDown = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
           "svg",
           {
             fill: "none",
@@ -77078,7 +77137,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
               "path",
               {
                 d: "m19.92 8.95-6.52 6.52c-.77.77-2.03.77-2.8 0L4.08 8.95",
@@ -77093,7 +77152,7 @@
         );
       };
       var ChevronDownBold = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
           "svg",
           {
             fill: "none",
@@ -77102,7 +77161,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
               "path",
               {
                 d: "M17.9188 8.17969H11.6888H6.07877C5.11877 8.17969 4.63877 9.33969 5.31877 10.0197L10.4988 15.1997C11.3288 16.0297 12.6788 16.0297 13.5088 15.1997L15.4788 13.2297L18.6888 10.0197C19.3588 9.33969 18.8788 8.17969 17.9188 8.17969Z",
@@ -77113,7 +77172,7 @@
         );
       };
       var NewFile = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(
           "svg",
           {
             fill: "none",
@@ -77123,7 +77182,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M8 2V5",
@@ -77134,7 +77193,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M16 2V5",
@@ -77145,7 +77204,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M21 8.5V13.63C20.11 12.92 18.98 12.5 17.75 12.5C16.52 12.5 15.37 12.93 14.47 13.66C13.26 14.61 12.5 16.1 12.5 17.75C12.5 18.73 12.78 19.67 13.26 20.45C13.63 21.06 14.11 21.59 14.68 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z",
@@ -77156,7 +77215,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M7 11H13",
@@ -77167,7 +77226,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M7 16H9.62",
@@ -77178,7 +77237,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M23 17.75C23 18.73 22.72 19.67 22.24 20.45C21.96 20.93 21.61 21.35 21.2 21.69C20.28 22.51 19.08 23 17.75 23C16.6 23 15.54 22.63 14.68 22C14.11 21.59 13.63 21.06 13.26 20.45C12.78 19.67 12.5 18.73 12.5 17.75C12.5 16.1 13.26 14.61 14.47 13.66C15.37 12.93 16.52 12.5 17.75 12.5C18.98 12.5 20.11 12.92 21 13.63C22.22 14.59 23 16.08 23 17.75Z",
@@ -77189,7 +77248,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M17.75 20.25C17.75 18.87 18.87 17.75 20.25 17.75C18.87 17.75 17.75 16.63 17.75 15.25C17.75 16.63 16.63 17.75 15.25 17.75C16.63 17.75 17.75 18.87 17.75 20.25Z",
@@ -77204,7 +77263,7 @@
         );
       };
       var AddNoteBulk = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(
           "svg",
           {
             fill: "none",
@@ -77214,7 +77273,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M7.37 22h9.25a4.87 4.87 0 0 0 4.87-4.87V8.37a4.87 4.87 0 0 0-4.87-4.87H7.37A4.87 4.87 0 0 0 2.5 8.37v8.75c0 2.7 2.18 4.88 4.87 4.88Z",
@@ -77222,7 +77281,7 @@
                   opacity: 0.4
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M8.29 6.29c-.42 0-.75-.34-.75-.75V2.75a.749.749 0 1 1 1.5 0v2.78c0 .42-.33.76-.75.76ZM15.71 6.29c-.42 0-.75-.34-.75-.75V2.75a.749.749 0 1 1 1.5 0v2.78c0 .42-.33.76-.75.76ZM12 14.75h-1.69V13c0-.41-.34-.75-.75-.75s-.75.34-.75.75v1.75H7c-.41 0-.75.34-.75.75s.34.75.75.75h1.81V18c0 .41.34.75.75.75s.75-.34.75-.75v-1.75H12c.41 0 .75-.34.75-.75s-.34-.75-.75-.75Z",
@@ -77234,7 +77293,7 @@
         );
       };
       var CopyDocumentBulk = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(
           "svg",
           {
             fill: "none",
@@ -77244,7 +77303,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M15.5 13.15h-2.17c-1.78 0-3.23-1.44-3.23-3.23V7.75c0-.41-.33-.75-.75-.75H6.18C3.87 7 2 8.5 2 11.18v6.64C2 20.5 3.87 22 6.18 22h5.89c2.31 0 4.18-1.5 4.18-4.18V13.9c0-.42-.34-.75-.75-.75Z",
@@ -77252,14 +77311,14 @@
                   opacity: 0.4
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M17.82 2H11.93C9.67 2 7.84 3.44 7.76 6.01c.06 0 .11-.01.17-.01h5.89C16.13 6 18 7.5 18 10.18V16.83c0 .06-.01.11-.01.16 2.23-.07 4.01-1.55 4.01-4.16V6.18C22 3.5 20.13 2 17.82 2Z",
                   fill
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M11.98 7.15c-.31-.31-.84-.1-.84.33v2.62c0 1.1.93 2 2.07 2 .71.01 1.7.01 2.55.01.43 0 .65-.5.35-.8-1.09-1.09-3.03-3.04-4.13-4.16Z",
@@ -77271,7 +77330,7 @@
         );
       };
       var EditDocumentBulk = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(
           "svg",
           {
             fill: "none",
@@ -77281,7 +77340,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M15.48 3H7.52C4.07 3 2 5.06 2 8.52v7.95C2 19.94 4.07 22 7.52 22h7.95c3.46 0 5.52-2.06 5.52-5.52V8.52C21 5.06 18.93 3 15.48 3Z",
@@ -77289,7 +77348,7 @@
                   opacity: 0.4
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M21.02 2.98c-1.79-1.8-3.54-1.84-5.38 0L14.51 4.1c-.1.1-.13.24-.09.37.7 2.45 2.66 4.41 5.11 5.11.03.01.08.01.11.01.1 0 .2-.04.27-.11l1.11-1.12c.91-.91 1.36-1.78 1.36-2.67 0-.9-.45-1.79-1.36-2.71ZM17.86 10.42c-.27-.13-.53-.26-.77-.41-.2-.12-.4-.25-.59-.39-.16-.1-.34-.25-.52-.4-.02-.01-.08-.06-.16-.14-.31-.25-.64-.59-.95-.96-.02-.02-.08-.08-.13-.17-.1-.11-.25-.3-.38-.51-.11-.14-.24-.34-.36-.55-.15-.25-.28-.5-.4-.76-.13-.28-.23-.54-.32-.79L7.9 10.72c-.35.35-.69 1.01-.76 1.5l-.43 2.98c-.09.63.08 1.22.47 1.61.33.33.78.5 1.28.5.11 0 .22-.01.33-.02l2.97-.42c.49-.07 1.15-.4 1.5-.76l5.38-5.38c-.25-.08-.5-.19-.78-.31Z",
@@ -77301,7 +77360,7 @@
         );
       };
       var DeleteDocumentBulk = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(
           "svg",
           {
             fill: "none",
@@ -77311,14 +77370,14 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M21.07 5.23c-1.61-.16-3.22-.28-4.84-.37v-.01l-.22-1.3c-.15-.92-.37-2.3-2.71-2.3h-2.62c-2.33 0-2.55 1.32-2.71 2.29l-.21 1.28c-.93.06-1.86.12-2.79.21l-2.04.2c-.42.04-.72.41-.68.82.04.41.4.71.82.67l2.04-.2c5.24-.52 10.52-.32 15.82.21h.08c.38 0 .71-.29.75-.68a.766.766 0 0 0-.69-.82Z",
                   fill
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M19.23 8.14c-.24-.25-.57-.39-.91-.39H5.68c-.34 0-.68.14-.91.39-.23.25-.36.59-.34.94l.62 10.26c.11 1.52.25 3.42 3.74 3.42h6.42c3.49 0 3.63-1.89 3.74-3.42l.62-10.25c.02-.36-.11-.7-.34-.95Z",
@@ -77326,7 +77385,7 @@
                   opacity: 0.399
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   clipRule: "evenodd",
@@ -77346,7 +77405,7 @@
         width,
         ...props
       }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(
           "svg",
           {
             fill: "none",
@@ -77356,28 +77415,28 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M16.25 22.5C17.2165 22.5 18 21.7165 18 20.75C18 19.7835 17.2165 19 16.25 19C15.2835 19 14.5 19.7835 14.5 20.75C14.5 21.7165 15.2835 22.5 16.25 22.5Z",
                   fill
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M8.25 22.5C9.2165 22.5 10 21.7165 10 20.75C10 19.7835 9.2165 19 8.25 19C7.2835 19 6.5 19.7835 6.5 20.75C6.5 21.7165 7.2835 22.5 8.25 22.5Z",
                   fill
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M4.84 3.94L4.64 6.39C4.6 6.86 4.97 7.25 5.44 7.25H20.75C21.17 7.25 21.52 6.93 21.55 6.51C21.68 4.74 20.33 3.3 18.56 3.3H6.27C6.17 2.86 5.97 2.44 5.66 2.09C5.16 1.56 4.46 1.25 3.74 1.25H2C1.59 1.25 1.25 1.59 1.25 2C1.25 2.41 1.59 2.75 2 2.75H3.74C4.05 2.75 4.34 2.88 4.55 3.1C4.76 3.33 4.86 3.63 4.84 3.94Z",
                   fill
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M20.5101 8.75H5.17005C4.75005 8.75 4.41005 9.07 4.37005 9.48L4.01005 13.83C3.87005 15.54 5.21005 17 6.92005 17H18.0401C19.5401 17 20.8601 15.77 20.9701 14.27L21.3001 9.6C21.3401 9.14 20.9801 8.75 20.5101 8.75Z",
@@ -77395,7 +77454,7 @@
         width,
         ...props
       }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
           "svg",
           {
             fill: "none",
@@ -77404,7 +77463,7 @@
             width: size || width,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
               "path",
               {
                 d: "M6.09 13.28h3.09v7.2c0 1.68.91 2.02 2.02.76l7.57-8.6c.93-1.05.54-1.92-.87-1.92h-3.09v-7.2c0-1.68-.91-2.02-2.02-.76l-7.57 8.6c-.92 1.06-.53 1.92.87 1.92Z",
@@ -77425,7 +77484,7 @@
         width,
         ...props
       }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
           "svg",
           {
             fill: "none",
@@ -77434,7 +77493,7 @@
             width: size || width,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
               "path",
               {
                 d: "M19.32 10H4.69c-1.48 0-2.68-1.21-2.68-2.68V4.69c0-1.48 1.21-2.68 2.68-2.68h14.63C20.8 2.01 22 3.22 22 4.69v2.63C22 8.79 20.79 10 19.32 10ZM19.32 22H4.69c-1.48 0-2.68-1.21-2.68-2.68v-2.63c0-1.48 1.21-2.68 2.68-2.68h14.63c1.48 0 2.68 1.21 2.68 2.68v2.63c0 1.47-1.21 2.68-2.68 2.68ZM6 5v2M10 5v2M6 17v2M10 17v2M14 6h4M14 18h4",
@@ -77454,7 +77513,7 @@
         width,
         ...props
       }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(
           "svg",
           {
             fill: "none",
@@ -77464,7 +77523,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M18 18.86h-.76c-.8 0-1.56.31-2.12.87l-1.71 1.69c-.78.77-2.05.77-2.83 0l-1.71-1.69c-.56-.56-1.33-.87-2.12-.87H6c-1.66 0-3-1.33-3-2.97V4.98c0-1.64 1.34-2.97 3-2.97h12c1.66 0 3 1.33 3 2.97v10.91c0 1.63-1.34 2.97-3 2.97Z",
@@ -77475,7 +77534,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M12 10a2.33 2.33 0 1 0 0-4.66A2.33 2.33 0 0 0 12 10ZM16 15.66c0-1.8-1.79-3.26-4-3.26s-4 1.46-4 3.26",
@@ -77496,7 +77555,7 @@
         width,
         ...props
       }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(
           "svg",
           {
             fill: "none",
@@ -77506,7 +77565,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M9 22h6c5 0 7-2 7-7V9c0-5-2-7-7-7H9C4 2 2 4 2 9v6c0 5 2 7 7 7ZM18 6 6 18",
@@ -77516,7 +77575,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "path",
                 {
                   d: "M18 10V6h-4M6 14v4h4",
@@ -77531,7 +77590,7 @@
         );
       };
       var Search = ({ size, fill, width = 24, height = 24, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("svg", { fill: "none", height: size || height, viewBox: "0 0 24 24", width: size || width, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("svg", { fill: "none", height: size || height, viewBox: "0 0 24 24", width: size || width, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
           "path",
           {
             d: "M11.5 21a9.5 9.5 0 1 0 0-19 9.5 9.5 0 0 0 0 19ZM22 22l-2-2",
@@ -77629,7 +77688,7 @@
         }
       );
       var import_jsx_runtime510 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var CloseIcon = (props) => {
+      var CloseIcon2 = (props) => {
         const { isSelected, isIndeterminate, disableAnimation, ...otherProps } = props;
         return /* @__PURE__ */ (0, import_jsx_runtime510.jsx)(
           "svg",
@@ -77651,8 +77710,8 @@
           }
         );
       };
-      var import_jsx_runtime69 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var CloseFilledIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime69.jsx)(
+      var import_jsx_runtime610 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var CloseFilledIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime610.jsx)(
         "svg",
         {
           "aria-hidden": "true",
@@ -77662,7 +77721,7 @@
           viewBox: "0 0 24 24",
           width: "1em",
           ...props,
-          children: /* @__PURE__ */ (0, import_jsx_runtime69.jsx)(
+          children: /* @__PURE__ */ (0, import_jsx_runtime610.jsx)(
             "path",
             {
               d: "M12 2a10 10 0 1010 10A10.016 10.016 0 0012 2zm3.36 12.3a.754.754 0 010 1.06.748.748 0 01-1.06 0l-2.3-2.3-2.3 2.3a.748.748 0 01-1.06 0 .754.754 0 010-1.06l2.3-2.3-2.3-2.3A.75.75 0 019.7 8.64l2.3 2.3 2.3-2.3a.75.75 0 011.06 1.06l-2.3 2.3z",
@@ -77671,8 +77730,8 @@
           )
         }
       );
-      var import_jsx_runtime72 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var ChevronIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime72.jsx)(
+      var import_jsx_runtime710 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var ChevronIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime710.jsx)(
         "svg",
         {
           "aria-hidden": "true",
@@ -77683,7 +77742,7 @@
           viewBox: "0 0 24 24",
           width: "1em",
           ...props,
-          children: /* @__PURE__ */ (0, import_jsx_runtime72.jsx)(
+          children: /* @__PURE__ */ (0, import_jsx_runtime710.jsx)(
             "path",
             {
               d: "M15.5 19l-7-7 7-7",
@@ -77695,8 +77754,8 @@
           )
         }
       );
-      var import_jsx_runtime82 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var ChevronUpIcon = ({ strokeWidth = 1.5, ...props }) => /* @__PURE__ */ (0, import_jsx_runtime82.jsx)(
+      var import_jsx_runtime810 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var ChevronUpIcon = ({ strokeWidth = 1.5, ...props }) => /* @__PURE__ */ (0, import_jsx_runtime810.jsx)(
         "svg",
         {
           "aria-hidden": "true",
@@ -77711,11 +77770,11 @@
           viewBox: "0 0 24 24",
           width: "1em",
           ...props,
-          children: /* @__PURE__ */ (0, import_jsx_runtime82.jsx)("path", { d: "m18 15-6-6-6 6" })
+          children: /* @__PURE__ */ (0, import_jsx_runtime810.jsx)("path", { d: "m18 15-6-6-6 6" })
         }
       );
-      var import_jsx_runtime92 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var ChevronDownIcon = ({ strokeWidth = 1.5, ...props }) => /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(
+      var import_jsx_runtime97 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var ChevronDownIcon = ({ strokeWidth = 1.5, ...props }) => /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(
         "svg",
         {
           "aria-hidden": "true",
@@ -77730,7 +77789,7 @@
           viewBox: "0 0 24 24",
           width: "1em",
           ...props,
-          children: /* @__PURE__ */ (0, import_jsx_runtime92.jsx)("path", { d: "m6 9 6 6 6-6" })
+          children: /* @__PURE__ */ (0, import_jsx_runtime97.jsx)("path", { d: "m6 9 6 6 6-6" })
         }
       );
       var import_jsx_runtime102 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
@@ -79686,14 +79745,14 @@
         useMeasure: () => useMeasure
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useMeasure() {
-        const [dimensions, setDimensions] = (0, import_react132.useState)({
+        const [dimensions, setDimensions] = (0, import_react161.useState)({
           width: null,
           height: null
         });
-        const previousObserver = (0, import_react132.useRef)(null);
-        const customRef = (0, import_react132.useCallback)((node) => {
+        const previousObserver = (0, import_react161.useRef)(null);
+        const customRef = (0, import_react161.useCallback)((node) => {
           if (previousObserver.current) {
             previousObserver.current.disconnect();
             previousObserver.current = null;
@@ -79889,15 +79948,15 @@
           }
         }
       };
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_motion2 = require_cjs4();
       var import_use_measure = require_dist18();
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var ResizablePanel2 = (0, import_react132.forwardRef)(
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var ResizablePanel2 = (0, import_react161.forwardRef)(
         (originalProps, ref) => {
           const { children, ...props } = originalProps;
           let [measureRef, bounds] = (0, import_use_measure.useMeasure)();
-          return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_framer_motion2.LazyMotion, { features: import_framer_motion2.domAnimation, children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_framer_motion2.LazyMotion, { features: import_framer_motion2.domAnimation, children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
             import_framer_motion2.m.div,
             {
               ref,
@@ -79905,7 +79964,7 @@
                 width: bounds.width && (bounds == null ? void 0 : bounds.width) > 0 ? bounds.width : "auto",
                 height: bounds.height && bounds.height > 0 ? bounds.height : "auto"
               },
-              children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("div", { ref: measureRef, ...props, children })
+              children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("div", { ref: measureRef, ...props, children })
             }
           ) });
         }
@@ -83570,7 +83629,7 @@
       acc[key] = createRenderStep(flagRunNextFrame, allowKeepAlive ? key : void 0);
       return acc;
     }, {});
-    const { setup, read: read8, resolveKeyframes, preUpdate, update, preRender, render, postRender } = steps2;
+    const { setup, read: read9, resolveKeyframes, preUpdate, update, preRender, render, postRender } = steps2;
     const processBatch = () => {
       const useManualTiming = MotionGlobalConfig.useManualTiming;
       const timestamp = useManualTiming ? state.timestamp : performance.now();
@@ -83581,7 +83640,7 @@
       state.timestamp = timestamp;
       state.isProcessing = true;
       setup.process(state);
-      read8.process(state);
+      read9.process(state);
       resolveKeyframes.process(state);
       preUpdate.process(state);
       update.process(state);
@@ -84684,10 +84743,10 @@
   });
 
   // node_modules/motion-dom/dist/es/animation/keyframes/offsets/fill.mjs
-  function fillOffset(offset, remaining) {
+  function fillOffset(offset, remaining2) {
     const min = offset[offset.length - 1];
-    for (let i = 1; i <= remaining; i++) {
-      const offsetProgress = progress(0, remaining, i);
+    for (let i = 1; i <= remaining2; i++) {
+      const offsetProgress = progress(0, remaining2, i);
       offset.push(mixNumber(min, 1, offsetProgress));
     }
   }
@@ -88893,11 +88952,11 @@
       const { interrupt } = builder.options;
       if (interrupt === "immediate") {
         const batchedUpdates = builders.slice(0, i + 1).map((b) => b.update);
-        const remaining = builders.slice(i + 1);
+        const remaining2 = builders.slice(i + 1);
         builder.update = () => {
           batchedUpdates.forEach((update) => update());
         };
-        builders = [builder, ...remaining];
+        builders = [builder, ...remaining2];
         break;
       }
     }
@@ -95505,15 +95564,15 @@
         const { x, y } = current2.getBBox();
         inset.x += x;
         inset.y += y;
-        let svg2 = null;
+        let svg3 = null;
         let parent = current2.parentNode;
-        while (!svg2) {
+        while (!svg3) {
           if (parent.tagName === "svg") {
-            svg2 = parent;
+            svg3 = parent;
           }
           parent = current2.parentNode;
         }
-        current2 = svg2;
+        current2 = svg3;
       } else {
         break;
       }
@@ -97394,15 +97453,15 @@
   // node_modules/framer-motion/dist/es/utils/transform-viewbox-point.mjs
   function transformViewBoxPoint(svgRef) {
     return (point2) => {
-      const svg2 = svgRef.current;
-      if (!svg2) {
+      const svg3 = svgRef.current;
+      if (!svg3) {
         return point2;
       }
-      const viewBox = svg2.viewBox?.baseVal;
+      const viewBox = svg3.viewBox?.baseVal;
       if (!viewBox || viewBox.width === 0 && viewBox.height === 0) {
         return point2;
       }
-      const bbox = svg2.getBoundingClientRect();
+      const bbox = svg3.getBoundingClientRect();
       if (bbox.width === 0 || bbox.height === 0) {
         return point2;
       }
@@ -98560,7 +98619,7 @@
       var import_react510 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
-      var import_react132 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
+      var import_react161 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
       var import_tree = require_main12();
       var import_shared_utils = require_dist2();
       var import_theme = require_dist12();
@@ -98612,10 +98671,10 @@
         );
         const children = (0, import_react210.useMemo)(() => {
           let treeChildren = [];
-          import_react132.default.Children.map(childrenProp, (child) => {
+          import_react161.default.Children.map(childrenProp, (child) => {
             var _a2;
-            if (import_react132.default.isValidElement(child) && typeof ((_a2 = child.props) == null ? void 0 : _a2.children) !== "string") {
-              const clonedChild = import_react132.default.cloneElement(child, {
+            if (import_react161.default.isValidElement(child) && typeof ((_a2 = child.props) == null ? void 0 : _a2.children) !== "string") {
+              const clonedChild = import_react161.default.cloneElement(child, {
                 // @ts-ignore
                 hasChildItems: false
               });
@@ -98686,7 +98745,7 @@
             motionProps
           ]
         );
-        const getBaseProps = (0, import_react132.useCallback)((props2 = {}) => {
+        const getBaseProps = (0, import_react161.useCallback)((props2 = {}) => {
           return {
             ref: domRef,
             className: classNames,
@@ -98700,7 +98759,7 @@
             )
           };
         }, []);
-        const handleFocusChanged = (0, import_react132.useCallback)((isFocused, key) => {
+        const handleFocusChanged = (0, import_react161.useCallback)((isFocused, key) => {
           isFocused && setFocusedKey(key);
         }, []);
         return {
@@ -98946,7 +99005,7 @@
           getSubtitleProps
         };
       }
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var domAnimation2 = () => Promise.resolve().then(() => (init_dist(), dist_exports)).then((res) => res.default);
       var AccordionItem = (0, import_system3.forwardRef)((props, ref) => {
         const {
@@ -98976,24 +99035,24 @@
         const willChange = (0, import_framer_motion3.useWillChange)();
         const indicatorContent = (0, import_react410.useMemo)(() => {
           if (typeof indicator === "function") {
-            return indicator({ indicator: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_shared_icons.ChevronIcon, {}), isOpen, isDisabled });
+            return indicator({ indicator: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_shared_icons.ChevronIcon, {}), isOpen, isDisabled });
           }
           if (indicator) return indicator;
           return null;
         }, [indicator, isOpen, isDisabled]);
-        const indicatorComponent = indicatorContent || /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_shared_icons.ChevronIcon, {});
+        const indicatorComponent = indicatorContent || /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_shared_icons.ChevronIcon, {});
         const content = (0, import_react410.useMemo)(() => {
           if (disableAnimation) {
             if (keepContentMounted) {
-              return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("div", { ...getContentProps(), children });
+              return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("div", { ...getContentProps(), children });
             }
-            return isOpen && /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("div", { ...getContentProps(), children });
+            return isOpen && /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("div", { ...getContentProps(), children });
           }
           const transitionVariants = {
             exit: { ...import_framer_utils.TRANSITION_VARIANTS.collapse.exit, overflowY: "hidden" },
             enter: { ...import_framer_utils.TRANSITION_VARIANTS.collapse.enter, overflowY: "unset" }
           };
-          return keepContentMounted ? /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+          return keepContentMounted ? /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
             import_framer_motion3.m.section,
             {
               animate: isOpen ? "enter" : "exit",
@@ -99005,10 +99064,10 @@
                 e.stopPropagation();
               },
               ...motionProps,
-              children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("div", { ...getContentProps(), children })
+              children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("div", { ...getContentProps(), children })
             },
             "accordion-content"
-          ) }) : /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_framer_motion3.AnimatePresence, { initial: false, children: isOpen && /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+          ) }) : /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_framer_motion3.AnimatePresence, { initial: false, children: isOpen && /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
             import_framer_motion3.m.section,
             {
               animate: "enter",
@@ -99020,19 +99079,19 @@
                 e.stopPropagation();
               },
               ...motionProps,
-              children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("div", { ...getContentProps(), children })
+              children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("div", { ...getContentProps(), children })
             },
             "accordion-content"
           ) }) });
         }, [isOpen, disableAnimation, keepContentMounted, children, motionProps]);
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(Component2, { ...getBaseProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(HeadingComponent, { ...getHeadingProps(), children: /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)("button", { ...getButtonProps(), children: [
-            startContent && /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("div", { className: slots.startContent({ class: classNames == null ? void 0 : classNames.startContent }), children: startContent }),
-            /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)("div", { className: slots.titleWrapper({ class: classNames == null ? void 0 : classNames.titleWrapper }), children: [
-              title && /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("span", { ...getTitleProps(), children: title }),
-              subtitle && /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("span", { ...getSubtitleProps(), children: subtitle })
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(Component2, { ...getBaseProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(HeadingComponent, { ...getHeadingProps(), children: /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("button", { ...getButtonProps(), children: [
+            startContent && /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("div", { className: slots.startContent({ class: classNames == null ? void 0 : classNames.startContent }), children: startContent }),
+            /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("div", { className: slots.titleWrapper({ class: classNames == null ? void 0 : classNames.titleWrapper }), children: [
+              title && /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("span", { ...getTitleProps(), children: title }),
+              subtitle && /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("span", { ...getSubtitleProps(), children: subtitle })
             ] }),
-            !hideIndicator && indicatorComponent && /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("span", { ...getIndicatorProps(), children: indicatorComponent })
+            !hideIndicator && indicatorComponent && /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("span", { ...getIndicatorProps(), children: indicatorComponent })
           ] }) }),
           content
         ] });
@@ -99112,8 +99171,8 @@
         useSafeLayoutEffect: () => useSafeLayoutEffect
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var useSafeLayoutEffect = Boolean(globalThis == null ? void 0 : globalThis.document) ? import_react132.useLayoutEffect : import_react132.useEffect;
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var useSafeLayoutEffect = Boolean(globalThis == null ? void 0 : globalThis.document) ? import_react161.useLayoutEffect : import_react161.useEffect;
     }
   });
 
@@ -99144,7 +99203,7 @@
         useImage: () => useImage
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_utils = require_dist10();
       var import_use_safe_layout_effect = require_dist21();
       function useImage(props = {}) {
@@ -99160,16 +99219,16 @@
           shouldBypassImageLoad = false
         } = props;
         const isHydrated = (0, import_react_utils.useIsHydrated)();
-        const imageRef = (0, import_react132.useRef)(null);
-        const [status, setStatus] = (0, import_react132.useState)("pending");
-        const flush = (0, import_react132.useCallback)(() => {
+        const imageRef = (0, import_react161.useRef)(null);
+        const [status, setStatus] = (0, import_react161.useState)("pending");
+        const flush = (0, import_react161.useCallback)(() => {
           if (imageRef.current) {
             imageRef.current.onload = null;
             imageRef.current.onerror = null;
             imageRef.current = null;
           }
         }, []);
-        const load = (0, import_react132.useCallback)(() => {
+        const load = (0, import_react161.useCallback)(() => {
           if (!src) return "pending";
           if (ignoreFallback || shouldBypassImageLoad) return "loaded";
           flush();
@@ -99255,8 +99314,8 @@
       module.exports = __toCommonJS2(index_exports);
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist11();
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var AvatarIcon = () => /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var AvatarIcon = () => /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(
         "svg",
         {
           "aria-hidden": "true",
@@ -99266,14 +99325,14 @@
           viewBox: "0 0 24 24",
           width: "80%",
           children: [
-            /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
               "path",
               {
                 d: "M12 2C9.38 2 7.25 4.13 7.25 6.75C7.25 9.32 9.26 11.4 11.88 11.49C11.96 11.48 12.04 11.48 12.1 11.49C12.12 11.49 12.13 11.49 12.15 11.49C12.16 11.49 12.16 11.49 12.17 11.49C14.73 11.4 16.74 9.32 16.75 6.75C16.75 4.13 14.62 2 12 2Z",
                 fill: "currentColor"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
               "path",
               {
                 d: "M17.0809 14.1489C14.2909 12.2889 9.74094 12.2889 6.93094 14.1489C5.66094 14.9989 4.96094 16.1489 4.96094 17.3789C4.96094 18.6089 5.66094 19.7489 6.92094 20.5889C8.32094 21.5289 10.1609 21.9989 12.0009 21.9989C13.8409 21.9989 15.6809 21.5289 17.0809 20.5889C18.3409 19.7389 19.0409 18.5989 19.0409 17.3589C19.0309 16.1289 18.3409 14.9889 17.0809 14.1489Z",
@@ -99288,7 +99347,7 @@
       var import_react_utils2 = require_dist10();
       var import_shared_utils = require_dist2();
       var import_focus2 = require_main18();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_image = require_dist22();
       var import_interactions = require_main17();
       var import_react_utils = require_dist10();
@@ -99343,7 +99402,7 @@
         const isImgLoaded = imageStatus === "loaded";
         const shouldFilterDOMProps = !isHeroImage;
         const showFallback = (!src || !isImgLoaded) && showFallbackProp;
-        const slots = (0, import_react132.useMemo)(
+        const slots = (0, import_react161.useMemo)(
           () => {
             var _a2;
             return (0, import_theme.avatar)({
@@ -99369,10 +99428,10 @@
           ]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const canBeFocused = (0, import_react132.useMemo)(() => {
+        const canBeFocused = (0, import_react161.useMemo)(() => {
           return isFocusable || as === "button";
         }, [isFocusable, as]);
-        const getAvatarProps = (0, import_react132.useCallback)(
+        const getAvatarProps = (0, import_react161.useCallback)(
           (props = {}) => ({
             ref: domRef,
             tabIndex: canBeFocused ? 0 : -1,
@@ -99386,7 +99445,7 @@
           }),
           [canBeFocused, slots, baseStyles, focusProps, otherProps]
         );
-        const getImageProps = (0, import_react132.useCallback)(
+        const getImageProps = (0, import_react161.useCallback)(
           (props = {}) => ({
             ref: imgRef,
             src,
@@ -99589,7 +99648,7 @@
       var import_theme = require_dist12();
       var import_system = require_dist11();
       var import_shared_utils = require_dist2();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useBadge(originalProps) {
         var _a, _b;
         const globalContext = (0, import_system.useProviderContext)();
@@ -99597,19 +99656,19 @@
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.badge.variantKeys);
         const { as, children, className, content, classNames, ...otherProps } = props;
         const Component2 = as || "span";
-        const isOneChar = (0, import_react132.useMemo)(
+        const isOneChar = (0, import_react161.useMemo)(
           () => {
             var _a2;
             return ((_a2 = String(content)) == null ? void 0 : _a2.length) === 1 || (originalProps == null ? void 0 : originalProps.isOneChar);
           },
           [content, originalProps == null ? void 0 : originalProps.isOneChar]
         );
-        const isDot = (0, import_react132.useMemo)(() => {
+        const isDot = (0, import_react161.useMemo)(() => {
           var _a2;
           return ((_a2 = String(content)) == null ? void 0 : _a2.length) === 0;
         }, [content]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.badge, className);
-        const slots = (0, import_react132.useMemo)(
+        const slots = (0, import_react161.useMemo)(
           () => (0, import_theme.badge)({
             ...variantProps2,
             showOutline: !!(originalProps == null ? void 0 : originalProps.disableOutline) ? !(originalProps == null ? void 0 : originalProps.disableOutline) : originalProps == null ? void 0 : originalProps.showOutline,
@@ -99637,14 +99696,14 @@
         };
       }
       var import_system2 = require_dist11();
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Badge = (0, import_system2.forwardRef)((props, ref) => {
         const { Component: Component2, children, content, slots, classNames, getBadgeProps } = useBadge({
           ...props
         });
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)("div", { className: slots.base({ class: classNames == null ? void 0 : classNames.base }), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("div", { className: slots.base({ class: classNames == null ? void 0 : classNames.base }), children: [
           children,
-          /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(Component2, { ref, ...getBadgeProps(), children: content })
+          /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(Component2, { ref, ...getBadgeProps(), children: content })
         ] });
       });
       Badge.displayName = "HeroUI.Badge";
@@ -99683,7 +99742,7 @@
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       function useSpinner(originalProps) {
         var _a, _b;
@@ -99691,19 +99750,19 @@
         const globalContext = (0, import_system.useProviderContext)();
         const variant = (_b = (_a = originalProps == null ? void 0 : originalProps.variant) != null ? _a : globalContext == null ? void 0 : globalContext.spinnerVariant) != null ? _b : "default";
         const { children, className, classNames, label: labelProp, ...otherProps } = props;
-        const slots = (0, import_react132.useMemo)(
+        const slots = (0, import_react161.useMemo)(
           () => (0, import_theme.spinner)({ ...variantProps2, variant }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), variant]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
         const label2 = labelProp || children;
-        const ariaLabel = (0, import_react132.useMemo)(() => {
+        const ariaLabel = (0, import_react161.useMemo)(() => {
           if (label2 && typeof label2 === "string") {
             return label2;
           }
           return !otherProps["aria-label"] ? "Loading" : "";
         }, [children, label2, otherProps["aria-label"]]);
-        const getSpinnerProps = (0, import_react132.useCallback)(
+        const getSpinnerProps = (0, import_react161.useCallback)(
           () => ({
             "aria-label": ariaLabel,
             className: slots.base({
@@ -99716,12 +99775,12 @@
         return { label: label2, slots, classNames, variant, getSpinnerProps };
       }
       var import_system_rsc2 = require_dist14();
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Spinner = (0, import_system_rsc2.forwardRef)((props, ref) => {
         const { slots, classNames, label: label2, variant, getSpinnerProps } = useSpinner({ ...props });
         if (variant === "wave" || variant === "dots") {
-          return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)("div", { ref, ...getSpinnerProps(), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [...new Array(3)].map((_, index3) => /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("div", { ref, ...getSpinnerProps(), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [...new Array(3)].map((_, index3) => /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
               "i",
               {
                 className: slots.dots({ class: classNames == null ? void 0 : classNames.dots }),
@@ -99731,19 +99790,19 @@
               },
               `dot-${index3}`
             )) }),
-            label2 && /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label2 })
+            label2 && /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label2 })
           ] });
         }
         if (variant === "simple") {
-          return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)("div", { ref, ...getSpinnerProps(), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(
+          return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("div", { ref, ...getSpinnerProps(), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(
               "svg",
               {
                 className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }),
                 fill: "none",
                 viewBox: "0 0 24 24",
                 children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+                  /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                     "circle",
                     {
                       className: slots.circle1({ class: classNames == null ? void 0 : classNames.circle1 }),
@@ -99754,7 +99813,7 @@
                       strokeWidth: "4"
                     }
                   ),
-                  /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+                  /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                     "path",
                     {
                       className: slots.circle2({ class: classNames == null ? void 0 : classNames.circle2 }),
@@ -99765,12 +99824,12 @@
                 ]
               }
             ),
-            label2 && /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label2 })
+            label2 && /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label2 })
           ] });
         }
         if (variant === "spinner") {
-          return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)("div", { ref, ...getSpinnerProps(), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [...new Array(12)].map((_, index3) => /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("div", { ref, ...getSpinnerProps(), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [...new Array(12)].map((_, index3) => /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
               "i",
               {
                 className: slots.spinnerBars({ class: classNames == null ? void 0 : classNames.spinnerBars }),
@@ -99780,15 +99839,15 @@
               },
               `star-${index3}`
             )) }),
-            label2 && /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label2 })
+            label2 && /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label2 })
           ] });
         }
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)("div", { ref, ...getSpinnerProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("i", { className: slots.circle1({ class: classNames == null ? void 0 : classNames.circle1 }) }),
-            /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("i", { className: slots.circle2({ class: classNames == null ? void 0 : classNames.circle2 }) })
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("div", { ref, ...getSpinnerProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("i", { className: slots.circle1({ class: classNames == null ? void 0 : classNames.circle1 }) }),
+            /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("i", { className: slots.circle2({ class: classNames == null ? void 0 : classNames.circle2 }) })
           ] }),
-          label2 && /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label2 })
+          label2 && /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label2 })
         ] });
       });
       Spinner.displayName = "HeroUI.Spinner";
@@ -99826,13 +99885,13 @@
       module.exports = __toCommonJS2(index_exports);
       var import_framer_motion2 = require_cjs4();
       var import_shared_utils = require_dist2();
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var domAnimation2 = () => Promise.resolve().then(() => (init_dist(), dist_exports)).then((res) => res.default);
       var Ripple = (props) => {
         const { ripples = [], motionProps, color: color2 = "currentColor", style: style2, onClear } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_jsx_runtime68.Fragment, { children: ripples.map((ripple) => {
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_jsx_runtime96.Fragment, { children: ripples.map((ripple) => {
           const duration = (0, import_shared_utils.clamp)(0.01 * ripple.size, 0.2, ripple.size > 100 ? 0.75 : 0.5);
-          return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_framer_motion2.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_framer_motion2.AnimatePresence, { mode: "popLayout", children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_framer_motion2.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_framer_motion2.AnimatePresence, { mode: "popLayout", children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
             import_framer_motion2.m.span,
             {
               animate: {
@@ -99870,10 +99929,10 @@
       Ripple.displayName = "HeroUI.Ripple";
       var ripple_default = Ripple;
       var import_shared_utils2 = require_dist2();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useRipple(props = {}) {
-        const [ripples, setRipples] = (0, import_react132.useState)([]);
-        const onPress = (0, import_react132.useCallback)((event) => {
+        const [ripples, setRipples] = (0, import_react161.useState)([]);
+        const onPress = (0, import_react161.useCallback)((event) => {
           const trigger = event.target;
           const size = Math.max(trigger.clientWidth, trigger.clientHeight);
           setRipples((prevRipples) => [
@@ -99886,7 +99945,7 @@
             }
           ]);
         }, []);
-        const onClear = (0, import_react132.useCallback)((key) => {
+        const onClear = (0, import_react161.useCallback)((key) => {
           setRipples((prevState) => prevState.filter((ripple) => ripple.key !== key));
         }, []);
         return { ripples, onClear, onPress, ...props };
@@ -102973,7 +103032,7 @@
       var import_system2 = require_dist11();
       var import_system = require_dist11();
       var import_shared_utils = require_dist2();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_react_utils2 = require_dist10();
       var import_theme = require_dist12();
@@ -103050,7 +103109,7 @@
           ]
         );
         const { onPress: onRipplePressHandler, onClear: onClearRipple, ripples } = (0, import_ripple.useRipple)();
-        const handlePress = (0, import_react132.useCallback)(
+        const handlePress = (0, import_react161.useCallback)(
           (e) => {
             if (disableRipple || isDisabled || disableAnimation) return;
             domRef.current && onRipplePressHandler(e);
@@ -103068,7 +103127,7 @@
           domRef
         );
         const { isHovered, hoverProps } = (0, import_interactions.useHover)({ isDisabled });
-        const getButtonProps = (0, import_react132.useCallback)(
+        const getButtonProps = (0, import_react161.useCallback)(
           (props2 = {}) => ({
             "data-disabled": (0, import_shared_utils.dataAttr)(isDisabled),
             "data-focus": (0, import_shared_utils.dataAttr)(isFocused),
@@ -103117,7 +103176,7 @@
           };
           return buttonSpinnerSizeMap[size];
         }, [size]);
-        const getRippleProps = (0, import_react132.useCallback)(
+        const getRippleProps = (0, import_react161.useCallback)(
           () => ({ ripples, onClear: onClearRipple }),
           [ripples, onClearRipple]
         );
@@ -103138,14 +103197,14 @@
           isIconOnly
         };
       }
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Button = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
           domRef,
           children,
           spinnerSize,
-          spinner = /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_spinner.Spinner, { color: "current", size: spinnerSize }),
+          spinner = /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_spinner.Spinner, { color: "current", size: spinnerSize }),
           spinnerPlacement,
           startContent,
           endContent,
@@ -103155,13 +103214,13 @@
           getRippleProps,
           isIconOnly
         } = useButton({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(Component2, { ref: domRef, ...getButtonProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(Component2, { ref: domRef, ...getButtonProps(), children: [
           startContent,
           isLoading && spinnerPlacement === "start" && spinner,
           isLoading && isIconOnly ? null : children,
           isLoading && spinnerPlacement === "end" && spinner,
           endContent,
-          !disableRipple && /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_ripple2.Ripple, { ...getRippleProps() })
+          !disableRipple && /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_ripple2.Ripple, { ...getRippleProps() })
         ] });
       });
       Button.displayName = "HeroUI.Button";
@@ -103287,7 +103346,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_theme = require_dist12();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_interactions = require_main17();
       var import_use_aria_button = require_dist27();
@@ -103319,7 +103378,7 @@
         const disableRipple = (_d = (_c = originalProps.disableRipple) != null ? _c : globalContext == null ? void 0 : globalContext.disableRipple) != null ? _d : false;
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
         const { onClear: onClearRipple, onPress: onRipplePressHandler, ripples } = (0, import_ripple.useRipple)();
-        const handlePress = (0, import_react132.useCallback)(
+        const handlePress = (0, import_react161.useCallback)(
           (e) => {
             if (disableRipple || disableAnimation) return;
             domRef.current && onRipplePressHandler(e);
@@ -103344,14 +103403,14 @@
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)({
           autoFocus
         });
-        const slots = (0, import_react132.useMemo)(
+        const slots = (0, import_react161.useMemo)(
           () => (0, import_theme.card)({
             ...variantProps2,
             disableAnimation
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation]
         );
-        const context = (0, import_react132.useMemo)(
+        const context = (0, import_react161.useMemo)(
           () => ({
             slots,
             classNames,
@@ -103369,7 +103428,7 @@
             originalProps.fullWidth
           ]
         );
-        const getCardProps = (0, import_react132.useCallback)(
+        const getCardProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ref: domRef,
@@ -103407,7 +103466,7 @@
             otherProps
           ]
         );
-        const getRippleProps = (0, import_react132.useCallback)(
+        const getRippleProps = (0, import_react161.useCallback)(
           () => ({ ripples, onClear: onClearRipple }),
           [ripples, onClearRipple]
         );
@@ -103437,8 +103496,8 @@
       });
       var import_system2 = require_dist11();
       var import_ripple2 = require_dist26();
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var Card3 = (0, import_system2.forwardRef)((props, ref) => {
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var Card4 = (0, import_system2.forwardRef)((props, ref) => {
         const {
           children,
           context,
@@ -103449,13 +103508,13 @@
           getCardProps,
           getRippleProps
         } = useCard({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(Component2, { ...getCardProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(CardProvider, { value: context, children }),
-          isPressable && !disableAnimation && !disableRipple && /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_ripple2.Ripple, { ...getRippleProps() })
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(Component2, { ...getCardProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(CardProvider, { value: context, children }),
+          isPressable && !disableAnimation && !disableRipple && /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_ripple2.Ripple, { ...getRippleProps() })
         ] });
       });
-      Card3.displayName = "HeroUI.Card";
-      var card_default = Card3;
+      Card4.displayName = "HeroUI.Card";
+      var card_default = Card4;
       var import_system3 = require_dist11();
       var import_react_utils4 = require_dist10();
       var import_theme2 = require_dist12();
@@ -103538,7 +103597,7 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useChip(originalProps) {
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.chip.variantKeys);
         const {
@@ -103559,13 +103618,13 @@
         const isCloseable = !!onClose;
         const isDotVariant = originalProps.variant === "dot";
         const { focusProps: closeFocusProps, isFocusVisible: isCloseButtonFocusVisible } = (0, import_focus2.useFocusRing)();
-        const isOneChar = (0, import_react132.useMemo)(
+        const isOneChar = (0, import_react161.useMemo)(
           () => typeof children === "string" && (children == null ? void 0 : children.length) === 1,
           [children]
         );
-        const hasStartContent = (0, import_react132.useMemo)(() => !!avatar || !!startContent, [avatar, startContent]);
-        const hasEndContent = (0, import_react132.useMemo)(() => !!endContent || isCloseable, [endContent, isCloseable]);
-        const slots = (0, import_react132.useMemo)(
+        const hasStartContent = (0, import_react161.useMemo)(() => !!avatar || !!startContent, [avatar, startContent]);
+        const hasEndContent = (0, import_react161.useMemo)(() => !!endContent || isCloseable, [endContent, isCloseable]);
+        const slots = (0, import_react161.useMemo)(
           () => (0, import_theme.chip)({
             ...variantProps2,
             hasStartContent,
@@ -103604,13 +103663,13 @@
           };
         };
         const getAvatarClone = (avatar2) => {
-          if (!(0, import_react132.isValidElement)(avatar2)) return null;
-          return (0, import_react132.cloneElement)(avatar2, {
+          if (!(0, import_react161.isValidElement)(avatar2)) return null;
+          return (0, import_react161.cloneElement)(avatar2, {
             // @ts-ignore
             className: slots.avatar({ class: classNames == null ? void 0 : classNames.avatar })
           });
         };
-        const getContentClone = (content) => (0, import_react132.isValidElement)(content) ? (0, import_react132.cloneElement)(content, {
+        const getContentClone = (content) => (0, import_react161.isValidElement)(content) ? (0, import_react161.cloneElement)(content, {
           // @ts-ignore
           className: (0, import_theme.cn)("max-h-[80%]", content.props.className)
         }) : null;
@@ -103630,7 +103689,7 @@
       var import_shared_icons = require_dist17();
       var import_system2 = require_dist11();
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Chip2 = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -103649,19 +103708,19 @@
         });
         const start3 = (0, import_react210.useMemo)(() => {
           if (isDot && !startContent) {
-            return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("span", { className: slots.dot({ class: classNames == null ? void 0 : classNames.dot }) });
+            return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("span", { className: slots.dot({ class: classNames == null ? void 0 : classNames.dot }) });
           }
           return startContent;
         }, [slots, startContent, isDot]);
         const end = (0, import_react210.useMemo)(() => {
           if (isCloseable) {
-            return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("span", { ...getCloseButtonProps(), children: endContent || /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_shared_icons.CloseFilledIcon, {}) });
+            return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("span", { ...getCloseButtonProps(), children: endContent || /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_shared_icons.CloseFilledIcon, {}) });
           }
           return endContent;
         }, [endContent, isCloseable, getCloseButtonProps]);
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(Component2, { ...getChipProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(Component2, { ...getChipProps(), children: [
           start3,
-          /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("span", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children }),
+          /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("span", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children }),
           end
         ] });
       });
@@ -103779,14 +103838,14 @@
         useCallbackRef: () => useCallbackRef
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_safe_layout_effect = require_dist21();
       function useCallbackRef(fn, deps = []) {
-        const ref = (0, import_react132.useRef)(fn);
+        const ref = (0, import_react161.useRef)(fn);
         (0, import_use_safe_layout_effect.useSafeLayoutEffect)(() => {
           ref.current = fn;
         });
-        return (0, import_react132.useCallback)((...args) => {
+        return (0, import_react161.useCallback)((...args) => {
           var _a;
           return (_a = ref.current) == null ? void 0 : _a.call(ref, ...args);
         }, deps);
@@ -104767,7 +104826,7 @@
         button: () => button,
         buttonGroup: () => buttonGroup,
         calendar: () => calendar,
-        card: () => card,
+        card: () => card2,
         checkbox: () => checkbox,
         checkboxGroup: () => checkboxGroup,
         chip: () => chip,
@@ -105367,7 +105426,7 @@
           }
         }
       });
-      var card = tv({
+      var card2 = tv({
         slots: {
           base: [
             "flex",
@@ -117223,13 +117282,13 @@
         useSlottedContext: () => useSlottedContext
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       var DEFAULT_SLOT = /* @__PURE__ */ Symbol("default");
       function useObjectRef(ref) {
-        const objRef = (0, import_react132.useRef)(null);
-        const cleanupRef = (0, import_react132.useRef)(void 0);
-        const refEffect = (0, import_react132.useCallback)(
+        const objRef = (0, import_react161.useRef)(null);
+        const cleanupRef = (0, import_react161.useRef)(void 0);
+        const refEffect = (0, import_react161.useCallback)(
           (instance) => {
             if (typeof ref === "function") {
               const refCallback = ref;
@@ -117250,7 +117309,7 @@
           },
           [ref]
         );
-        return (0, import_react132.useMemo)(
+        return (0, import_react161.useMemo)(
           () => ({
             get current() {
               return objRef.current;
@@ -117270,7 +117329,7 @@
         );
       }
       function useSlottedContext(context, slot) {
-        let ctx = (0, import_react132.useContext)(context);
+        let ctx = (0, import_react161.useContext)(context);
         if (slot === null) {
           return null;
         }
@@ -117290,7 +117349,7 @@
       function useContextProps(props, ref, context) {
         let ctx = useSlottedContext(context, props.slot) || {};
         let { ref: contextRef, ...contextProps } = ctx;
-        let mergedRef = useObjectRef((0, import_react132.useMemo)(() => (0, import_shared_utils.mergeRefs)(ref, contextRef), [ref, contextRef]));
+        let mergedRef = useObjectRef((0, import_react161.useMemo)(() => (0, import_shared_utils.mergeRefs)(ref, contextRef), [ref, contextRef]));
         let mergedProps = (0, import_shared_utils.mergeProps)(contextProps, props);
         if ("style" in contextProps && contextProps.style && "style" in props && props.style) {
           if (typeof contextProps.style === "function" || typeof props.style === "function") {
@@ -117309,13 +117368,13 @@
       var import_form = require_main22();
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist32();
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var FormContext = (0, import_react210.createContext)(null);
       var Form = (0, import_react210.forwardRef)(function Form2(props, ref) {
         [props, ref] = useContextProps(props, ref, FormContext);
         let { validationErrors, validationBehavior = "native", children, className, ...domProps } = props;
         const styles = (0, import_react210.useMemo)(() => (0, import_theme.form)({ className }), [className]);
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("form", { noValidate: validationBehavior !== "native", ...domProps, ref, className: styles, children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(FormContext.Provider, { value: { ...props, validationBehavior }, children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_form.FormValidationContext.Provider, { value: validationErrors != null ? validationErrors : {}, children }) }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("form", { noValidate: validationBehavior !== "native", ...domProps, ref, className: styles, children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(FormContext.Provider, { value: { ...props, validationBehavior }, children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_form.FormValidationContext.Provider, { value: validationErrors != null ? validationErrors : {}, children }) }) });
       });
       var import_system = require_dist11();
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
@@ -117442,7 +117501,7 @@
       var import_system2 = require_dist11();
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_toggle = require_main21();
       var import_theme = require_dist12();
@@ -117517,7 +117576,7 @@
           };
           onChange = (0, import_shared_utils.chain)(dispatch, onChange);
         }
-        const labelId = (0, import_react132.useId)();
+        const labelId = (0, import_react161.useId)();
         const ariaCheckboxProps = (0, import_react210.useMemo)(
           () => ({
             name,
@@ -117606,7 +117665,7 @@
           toggleState.setSelected(isInputRefChecked);
         }, [inputRef.current]);
         const onChangeProp = (0, import_use_callback_ref.useCallbackRef)(onChange);
-        const handleCheckboxChange = (0, import_react132.useCallback)(
+        const handleCheckboxChange = (0, import_react161.useCallback)(
           (event) => {
             if (isReadOnly || isDisabled) {
               event.preventDefault();
@@ -117617,7 +117676,7 @@
           [isReadOnly, isDisabled, onChangeProp]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getBaseProps = (0, import_react132.useCallback)(() => {
+        const getBaseProps = (0, import_react161.useCallback)(() => {
           return {
             ref: domRef,
             className: slots.base({ class: baseStyles }),
@@ -117647,7 +117706,7 @@
           hoverProps,
           otherProps
         ]);
-        const getWrapperProps = (0, import_react132.useCallback)(
+        const getWrapperProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -117657,7 +117716,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.wrapper]
         );
-        const getInputProps = (0, import_react132.useCallback)(() => {
+        const getInputProps = (0, import_react161.useCallback)(() => {
           return {
             ref: (0, import_react_utils2.mergeRefs)(inputRef, ref),
             ...(0, import_shared_utils.mergeProps)(inputProps, focusProps),
@@ -117665,14 +117724,14 @@
             onChange: (0, import_shared_utils.chain)(inputProps.onChange, handleCheckboxChange)
           };
         }, [inputProps, focusProps, handleCheckboxChange, classNames == null ? void 0 : classNames.hiddenInput]);
-        const getLabelProps = (0, import_react132.useCallback)(
+        const getLabelProps = (0, import_react161.useCallback)(
           () => ({
             id: labelId,
             className: slots.label({ class: classNames == null ? void 0 : classNames.label })
           }),
           [slots, classNames == null ? void 0 : classNames.label, isDisabled, isSelected, isInvalid]
         );
-        const getIconProps = (0, import_react132.useCallback)(
+        const getIconProps = (0, import_react161.useCallback)(
           () => ({
             isSelected,
             isIndeterminate,
@@ -117698,10 +117757,10 @@
           getIconProps
         };
       }
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       function CheckIcon(props) {
         const { isSelected, disableAnimation, ...otherProps } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
           "svg",
           {
             "aria-hidden": "true",
@@ -117718,18 +117777,18 @@
             } : {},
             viewBox: "0 0 17 18",
             ...otherProps,
-            children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("polyline", { points: "1 9 7 14 15 4" })
+            children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("polyline", { points: "1 9 7 14 15 4" })
           }
         );
       }
       function IndeterminateIcon(props) {
         const { isSelected, disableAnimation, ...otherProps } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("svg", { stroke: "currentColor", strokeWidth: 3, viewBox: "0 0 24 24", ...otherProps, children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("line", { x1: "21", x2: "3", y1: "12", y2: "12" }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("svg", { stroke: "currentColor", strokeWidth: 3, viewBox: "0 0 24 24", ...otherProps, children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("line", { x1: "21", x2: "3", y1: "12", y2: "12" }) });
       }
       function CheckboxIcon(props) {
         const { isIndeterminate, ...otherProps } = props;
         const BaseIcon = isIndeterminate ? IndeterminateIcon : CheckIcon;
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(BaseIcon, { ...otherProps });
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(BaseIcon, { ...otherProps });
       }
       var import_jsx_runtime210 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Checkbox2 = (0, import_system2.forwardRef)((props, ref) => {
@@ -117981,13 +118040,13 @@
       var import_system_rsc2 = require_dist14();
       var import_theme = require_dist12();
       var import_system_rsc = require_dist14();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       function useCode(originalProps) {
         const [props, variantProps2] = (0, import_system_rsc.mapPropsVariants)(originalProps, import_theme.code.variantKeys);
         const { as, children, className, ...otherProps } = props;
         const Component2 = as || "code";
-        const styles = (0, import_react132.useMemo)(
+        const styles = (0, import_react161.useMemo)(
           () => (0, import_theme.code)({
             ...variantProps2,
             className
@@ -118002,10 +118061,10 @@
         };
         return { Component: Component2, children, getCodeProps };
       }
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Code = (0, import_system_rsc2.forwardRef)((props, ref) => {
         const { Component: Component2, children, getCodeProps } = useCode({ ...props });
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(Component2, { ref, ...getCodeProps(), children });
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(Component2, { ref, ...getCodeProps(), children });
       });
       Code.displayName = "HeroUI.Code";
       var code_default = Code;
@@ -121068,7 +121127,7 @@
       var import_react_utils = require_dist10();
       var import_focus2 = require_main18();
       var import_shared_utils = require_dist2();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useLink(originalProps) {
         var _a, _b, _c, _d;
         const globalContext = (0, import_system.useProviderContext)();
@@ -121111,7 +121170,7 @@
           otherProps.rel = (_c = otherProps.rel) != null ? _c : "noopener noreferrer";
           otherProps.target = (_d = otherProps.target) != null ? _d : "_blank";
         }
-        const styles = (0, import_react132.useMemo)(
+        const styles = (0, import_react161.useMemo)(
           () => (0, import_theme.link)({
             ...variantProps2,
             disableAnimation,
@@ -121119,7 +121178,7 @@
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation, className]
         );
-        const getLinkProps = (0, import_react132.useCallback)(() => {
+        const getLinkProps = (0, import_react161.useCallback)(() => {
           return {
             ref: domRef,
             className: styles,
@@ -121133,19 +121192,19 @@
         }, [styles, isFocused, isFocusVisible, focusProps, linkProps, otherProps]);
         return { Component: Component2, children, anchorIcon, showAnchorIcon, getLinkProps };
       }
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Link = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
           children,
           showAnchorIcon,
-          anchorIcon = /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_shared_icons.LinkIcon, { className: import_theme2.linkAnchorClasses }),
+          anchorIcon = /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_shared_icons.LinkIcon, { className: import_theme2.linkAnchorClasses }),
           getLinkProps
         } = useLink({
           ref,
           ...props
         });
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(Component2, { ...getLinkProps(), children: /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(import_jsx_runtime68.Fragment, { children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(Component2, { ...getLinkProps(), children: /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(import_jsx_runtime96.Fragment, { children: [
           children,
           showAnchorIcon && anchorIcon
         ] }) });
@@ -121204,8 +121263,8 @@
         usePagination: () => usePagination
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var import_i18n14 = require_main5();
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_i18n15 = require_main5();
       var import_shared_utils = require_dist2();
       var PaginationItemType2 = /* @__PURE__ */ ((PaginationItemType22) => {
         PaginationItemType22["DOTS"] = "dots";
@@ -121223,19 +121282,19 @@
           showControls = false,
           onChange
         } = props;
-        const [activePage, setActivePage] = (0, import_react132.useState)(page || initialPage);
-        const { direction } = (0, import_i18n14.useLocale)();
+        const [activePage, setActivePage] = (0, import_react161.useState)(page || initialPage);
+        const { direction } = (0, import_i18n15.useLocale)();
         const isRTL = direction === "rtl";
         const onChangeActivePage = (newPage) => {
           setActivePage(newPage);
           onChange && onChange(newPage);
         };
-        (0, import_react132.useEffect)(() => {
+        (0, import_react161.useEffect)(() => {
           if (page && page !== activePage) {
             setActivePage(page);
           }
         }, [page]);
-        const setPage = (0, import_react132.useCallback)(
+        const setPage = (0, import_react161.useCallback)(
           (pageNumber) => {
             if (pageNumber <= 0) {
               onChangeActivePage(1);
@@ -121251,7 +121310,7 @@
         const previous = () => setPage(activePage - 1);
         const first = () => setPage(1);
         const last = () => setPage(total);
-        const formatRange = (0, import_react132.useCallback)(
+        const formatRange = (0, import_react161.useCallback)(
           (range2) => {
             if (showControls) {
               return [
@@ -121265,7 +121324,7 @@
           },
           [isRTL, showControls]
         );
-        const paginationRange = (0, import_react132.useMemo)(() => {
+        const paginationRange = (0, import_react161.useMemo)(() => {
           const totalPageNumbers = siblings * 2 + 3 + boundaries * 2;
           if (totalPageNumbers >= total) {
             return formatRange((0, import_shared_utils.range)(1, total));
@@ -121427,7 +121486,7 @@
         useIntersectionObserver: () => useIntersectionObserver
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useIntersectionObserver({
         threshold: threshold2 = 0,
         root = null,
@@ -121438,15 +121497,15 @@
         onChange
       } = {}) {
         var _a;
-        const [ref, setRef2] = (0, import_react132.useState)(null);
-        const [state, setState] = (0, import_react132.useState)(() => ({
+        const [ref, setRef2] = (0, import_react161.useState)(null);
+        const [state, setState] = (0, import_react161.useState)(() => ({
           isIntersecting: initialIsIntersecting,
           entry: void 0
         }));
-        const callbackRef = (0, import_react132.useRef)();
+        const callbackRef = (0, import_react161.useRef)();
         callbackRef.current = onChange;
         const frozen = ((_a = state.entry) == null ? void 0 : _a.isIntersecting) && freezeOnceVisible;
-        (0, import_react132.useEffect)(() => {
+        (0, import_react161.useEffect)(() => {
           if (!isEnabled) return;
           if (!ref) return;
           if (!("IntersectionObserver" in window)) return;
@@ -121474,8 +121533,8 @@
             observer2.disconnect();
           };
         }, [ref, isEnabled, JSON.stringify(threshold2), root, rootMargin, frozen, freezeOnceVisible]);
-        const prevRef = (0, import_react132.useRef)(null);
-        (0, import_react132.useEffect)(() => {
+        const prevRef = (0, import_react161.useRef)(null);
+        (0, import_react161.useEffect)(() => {
           var _a2;
           if (!ref && ((_a2 = state.entry) == null ? void 0 : _a2.target) && !freezeOnceVisible && !frozen && prevRef.current !== state.entry.target) {
             prevRef.current = state.entry.target;
@@ -121534,7 +121593,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var import_i18n14 = require_main5();
+      var import_i18n15 = require_main5();
       var import_system4 = require_dist11();
       var import_use_pagination3 = require_dist38();
       var import_shared_icons = require_dist17();
@@ -121542,7 +121601,7 @@
       var import_theme3 = require_dist12();
       var import_shared_utils = require_dist2();
       var import_use_pagination = require_dist38();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_use_pagination2 = require_dist38();
       var import_scroll_into_view_if_needed = __toESM2(require_dist40());
@@ -121575,9 +121634,9 @@
         } = props;
         const Component2 = as || "nav";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const cursorRef = (0, import_react132.useRef)(null);
-        const itemsRef = (0, import_react132.useRef)();
-        const cursorTimer = (0, import_react132.useRef)();
+        const cursorRef = (0, import_react161.useRef)(null);
+        const itemsRef = (0, import_react161.useRef)();
+        const cursorTimer = (0, import_react161.useRef)();
         const disableAnimation = (_b = (_a = originalProps == null ? void 0 : originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
         const disableCursorAnimation = (_d = (_c = originalProps == null ? void 0 : originalProps.disableCursorAnimation) != null ? _c : disableAnimation) != null ? _d : false;
         function getItemsRefMap() {
@@ -121635,13 +121694,13 @@
           onChange
         });
         const [setRef2, isVisible] = (0, import_use_intersection_observer.useIntersectionObserver)();
-        (0, import_react132.useEffect)(() => {
+        (0, import_react161.useEffect)(() => {
           if (domRef.current) {
             setRef2(domRef.current);
           }
         }, [domRef.current]);
-        const activePageRef = (0, import_react132.useRef)(activePage);
-        (0, import_react132.useEffect)(() => {
+        const activePageRef = (0, import_react161.useRef)(activePage);
+        (0, import_react161.useEffect)(() => {
           if (activePage && !disableAnimation && isVisible) {
             scrollTo(activePage, activePage === activePageRef.current);
           }
@@ -121656,7 +121715,7 @@
           originalProps.isCompact,
           originalProps.showControls
         ]);
-        const slots = (0, import_react132.useMemo)(
+        const slots = (0, import_react161.useMemo)(
           () => (0, import_theme.pagination)({
             ...variantProps2,
             disableAnimation,
@@ -121843,10 +121902,10 @@
           getItemProps
         };
       }
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var PaginationItem = (0, import_system2.forwardRef)((props, ref) => {
         const { Component: Component2, children, getItemProps } = usePaginationItem({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(Component2, { ...getItemProps(), children });
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(Component2, { ...getItemProps(), children });
       });
       PaginationItem.displayName = "HeroUI.PaginationItem";
       var pagination_item_default = PaginationItem;
@@ -121886,7 +121945,7 @@
           getItemProps,
           getCursorProps
         } = usePagination({ ...props, ref });
-        const { direction } = (0, import_i18n14.useLocale)();
+        const { direction } = (0, import_i18n15.useLocale)();
         const isRTL = direction === "rtl";
         const renderChevronIcon = (0, import_react310.useCallback)(
           (key) => {
@@ -122386,7 +122445,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_system2 = require_dist11();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_interactions = require_main17();
@@ -122432,8 +122491,8 @@
         const Component2 = as || "label";
         const domRef = (0, import_react_utils2.useDOMRef)(ref);
         const inputRef = (0, import_react210.useRef)(null);
-        const labelId = (0, import_react132.useId)();
-        const descriptionId = (0, import_react132.useId)();
+        const labelId = (0, import_react161.useId)();
+        const descriptionId = (0, import_react161.useId)();
         const isRequired = (0, import_react210.useMemo)(() => {
           var _a2;
           return (_a2 = groupContext.isRequired) != null ? _a2 : false;
@@ -122487,7 +122546,7 @@
           [color2, size, isDisabled, isInvalid, disableAnimation]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getBaseProps = (0, import_react132.useCallback)(
+        const getBaseProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -122522,7 +122581,7 @@
             otherProps
           ]
         );
-        const getWrapperProps = (0, import_react132.useCallback)(
+        const getWrapperProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -122532,7 +122591,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.wrapper]
         );
-        const getInputProps = (0, import_react132.useCallback)(
+        const getInputProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ref: inputRef,
@@ -122543,7 +122602,7 @@
           },
           [inputProps, focusProps, onChange]
         );
-        const getLabelProps = (0, import_react132.useCallback)(
+        const getLabelProps = (0, import_react161.useCallback)(
           (props2 = {}) => ({
             ...props2,
             id: labelId,
@@ -122551,21 +122610,21 @@
           }),
           [slots, classNames == null ? void 0 : classNames.label, isDisabled, isSelected, isInvalid]
         );
-        const getLabelWrapperProps = (0, import_react132.useCallback)(
+        const getLabelWrapperProps = (0, import_react161.useCallback)(
           (props2 = {}) => ({
             ...props2,
             className: slots.labelWrapper({ class: classNames == null ? void 0 : classNames.labelWrapper })
           }),
           [slots, classNames == null ? void 0 : classNames.labelWrapper]
         );
-        const getControlProps = (0, import_react132.useCallback)(
+        const getControlProps = (0, import_react161.useCallback)(
           (props2 = {}) => ({
             ...props2,
             className: slots.control({ class: classNames == null ? void 0 : classNames.control })
           }),
           [slots, classNames == null ? void 0 : classNames.control]
         );
-        const getDescriptionProps = (0, import_react132.useCallback)(
+        const getDescriptionProps = (0, import_react161.useCallback)(
           (props2 = {}) => ({
             ...props2,
             id: descriptionId,
@@ -122590,7 +122649,7 @@
           getDescriptionProps
         };
       }
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Radio = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -122604,12 +122663,12 @@
           getControlProps,
           getDescriptionProps
         } = useRadio({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(Component2, { ...getBaseProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("input", { ...getInputProps() }),
-          /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("span", { ...getWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("span", { ...getControlProps() }) }),
-          /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)("div", { ...getLabelWrapperProps(), children: [
-            children && /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("span", { ...getLabelProps(), children }),
-            description && /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("span", { ...getDescriptionProps(), children: description })
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(Component2, { ...getBaseProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("input", { ...getInputProps() }),
+          /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("span", { ...getWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("span", { ...getControlProps() }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("div", { ...getLabelWrapperProps(), children: [
+            children && /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("span", { ...getLabelProps(), children }),
+            description && /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("span", { ...getDescriptionProps(), children: description })
           ] })
         ] });
       });
@@ -122838,20 +122897,20 @@
         useClipboard: () => useClipboard
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var transformValue2 = (text) => {
         return text.replace(/[\u00A0]/g, " ");
       };
       function useClipboard({ timeout = 2e3 } = {}) {
-        const [error, setError] = (0, import_react132.useState)(null);
-        const [copied, setCopied] = (0, import_react132.useState)(false);
-        const [copyTimeout, setCopyTimeout] = (0, import_react132.useState)(null);
-        const onClearTimeout = (0, import_react132.useCallback)(() => {
+        const [error, setError] = (0, import_react161.useState)(null);
+        const [copied, setCopied] = (0, import_react161.useState)(false);
+        const [copyTimeout, setCopyTimeout] = (0, import_react161.useState)(null);
+        const onClearTimeout = (0, import_react161.useCallback)(() => {
           if (copyTimeout) {
             clearTimeout(copyTimeout);
           }
         }, [copyTimeout]);
-        const handleCopyResult = (0, import_react132.useCallback)(
+        const handleCopyResult = (0, import_react161.useCallback)(
           (value) => {
             onClearTimeout();
             setCopyTimeout(setTimeout(() => setCopied(false), timeout));
@@ -122859,7 +122918,7 @@
           },
           [onClearTimeout, timeout]
         );
-        const copy = (0, import_react132.useCallback)(
+        const copy = (0, import_react161.useCallback)(
           (valueToCopy) => {
             if ("clipboard" in navigator) {
               const transformedValue = typeof valueToCopy === "string" ? transformValue2(valueToCopy) : valueToCopy;
@@ -122870,7 +122929,7 @@
           },
           [handleCopyResult]
         );
-        const reset = (0, import_react132.useCallback)(() => {
+        const reset = (0, import_react161.useCallback)(() => {
           setCopied(false);
           setError(null);
           onClearTimeout();
@@ -126168,7 +126227,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_focus2 = require_main36();
       var import_interactions = require_main35();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var visibleOverlays = [];
       function useAriaOverlay(props, ref) {
         const {
@@ -126180,7 +126239,7 @@
           shouldCloseOnBlur,
           shouldCloseOnInteractOutside
         } = props;
-        (0, import_react132.useEffect)(() => {
+        (0, import_react161.useEffect)(() => {
           if (isOpen && !visibleOverlays.includes(ref)) {
             visibleOverlays.push(ref);
             return () => {
@@ -126310,7 +126369,7 @@
       var import_shared_utils2 = require_dist2();
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_aria_utils2 = require_dist13();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_tooltip = require_main33();
       var import_tooltip2 = require_main34();
       var import_overlays = require_main9();
@@ -126374,9 +126433,9 @@
         });
         const triggerRef = (0, import_react210.useRef)(null);
         const overlayRef = (0, import_react210.useRef)(null);
-        const tooltipId = (0, import_react132.useId)();
+        const tooltipId = (0, import_react161.useId)();
         const isOpen = state.isOpen && !isDisabled;
-        (0, import_react132.useImperativeHandle)(
+        (0, import_react161.useImperativeHandle)(
           ref,
           () => (
             // @ts-ignore
@@ -126510,7 +126569,7 @@
           getTooltipProps
         };
       }
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var domAnimation2 = () => Promise.resolve().then(() => (init_dist(), dist_exports)).then((res) => res.default);
       var Tooltip = (0, import_system2.forwardRef)((props, ref) => {
         var _a;
@@ -126535,18 +126594,18 @@
           const childrenNum = import_react310.Children.count(children);
           if (childrenNum !== 1) throw new Error();
           if (!(0, import_react310.isValidElement)(children)) {
-            trigger = /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("p", { ...getTriggerProps(), children });
+            trigger = /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("p", { ...getTriggerProps(), children });
           } else {
             const child = children;
             const childRef = (_a = child.props.ref) != null ? _a : child.ref;
             trigger = (0, import_react310.cloneElement)(child, getTriggerProps(child.props, childRef));
           }
         } catch {
-          trigger = /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("span", {});
+          trigger = /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("span", {});
           (0, import_shared_utils2.warn)("Tooltip must have only one child node. Please, check your code.");
         }
         const { ref: tooltipRef, id: id4, style: style2, ...otherTooltipProps } = getTooltipProps();
-        const animatedContent = /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("div", { ref: tooltipRef, id: id4, style: style2, children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+        const animatedContent = /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("div", { ref: tooltipRef, id: id4, style: style2, children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
           import_framer_motion2.m.div,
           {
             animate: "enter",
@@ -126557,13 +126616,13 @@
             style: {
               ...(0, import_aria_utils2.getTransformOrigins)(placement)
             },
-            children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(Component2, { ...getTooltipContentProps(), children: content })
+            children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(Component2, { ...getTooltipContentProps(), children: content })
           },
           `${id4}-tooltip-inner`
         ) }, `${id4}-tooltip-content`);
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(import_jsx_runtime68.Fragment, { children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(import_jsx_runtime96.Fragment, { children: [
           trigger,
-          disableAnimation ? isOpen && /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_overlays2.OverlayContainer, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("div", { ref: tooltipRef, id: id4, style: style2, ...otherTooltipProps, children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(Component2, { ...getTooltipContentProps(), children: content }) }) }) : /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_framer_motion2.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_framer_motion2.AnimatePresence, { children: isOpen && /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_overlays2.OverlayContainer, { portalContainer, children: animatedContent }) }) })
+          disableAnimation ? isOpen && /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_overlays2.OverlayContainer, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("div", { ref: tooltipRef, id: id4, style: style2, ...otherTooltipProps, children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(Component2, { ...getTooltipContentProps(), children: content }) }) }) : /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_framer_motion2.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_framer_motion2.AnimatePresence, { children: isOpen && /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_overlays2.OverlayContainer, { portalContainer, children: animatedContent }) }) })
         ] });
       });
       Tooltip.displayName = "HeroUI.Tooltip";
@@ -126605,7 +126664,7 @@
       var import_shared_utils = require_dist2();
       var import_use_clipboard = require_dist44();
       var import_focus2 = require_main18();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useSnippet(originalProps) {
         var _a, _b, _c, _d;
         const globalContext = (0, import_system.useProviderContext)();
@@ -126643,26 +126702,26 @@
           ...userTooltipProps
         };
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const preRef = (0, import_react132.useRef)(null);
+        const preRef = (0, import_react161.useRef)(null);
         const { copy, copied } = (0, import_use_clipboard.useClipboard)({ timeout });
         const isMultiLine = children && Array.isArray(children);
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)({
           autoFocus
         });
-        const slots = (0, import_react132.useMemo)(
+        const slots = (0, import_react161.useMemo)(
           () => (0, import_theme.snippet)({
             ...variantProps2,
             disableAnimation
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation]
         );
-        const symbolBefore = (0, import_react132.useMemo)(() => {
+        const symbolBefore = (0, import_react161.useMemo)(() => {
           if (!symbol || typeof symbol !== "string") return symbol;
           const str = symbol.trim();
           return str ? `${str} ` : "";
         }, [symbol]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getSnippetProps = (0, import_react132.useCallback)(
+        const getSnippetProps = (0, import_react161.useCallback)(
           () => ({
             className: slots.base({
               class: baseStyles
@@ -126673,7 +126732,7 @@
           }),
           [slots, baseStyles, isMultiLine, otherProps]
         );
-        const onCopy = (0, import_react132.useCallback)(() => {
+        const onCopy = (0, import_react161.useCallback)(() => {
           var _a2;
           if (disableCopy) {
             return;
@@ -126703,7 +126762,7 @@
           isIconOnly: true,
           ...userButtonProps
         };
-        const getCopyButtonProps = (0, import_react132.useCallback)(
+        const getCopyButtonProps = (0, import_react161.useCallback)(
           () => ({
             ...copyButtonProps,
             "data-copied": (0, import_shared_utils.dataAttr)(copied),
@@ -126751,7 +126810,7 @@
       var import_shared_icons = require_dist17();
       var import_button = require_dist28();
       var import_shared_utils2 = require_dist2();
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Snippet = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -126761,8 +126820,8 @@
           slots,
           classNames,
           copied,
-          copyIcon = /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_shared_icons.CopyLinearIcon, {}),
-          checkIcon = /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_shared_icons.CheckLinearIcon, {}),
+          copyIcon = /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_shared_icons.CopyLinearIcon, {}),
+          checkIcon = /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_shared_icons.CheckLinearIcon, {}),
           symbolBefore,
           disableCopy,
           disableTooltip,
@@ -126775,7 +126834,7 @@
           getCopyButtonProps
         } = useSnippet({ ...props, ref });
         const TooltipContent = (0, import_react210.useCallback)(
-          ({ children: children2 }) => /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_tooltip.Tooltip, { ...tooltipProps, isDisabled: copied || tooltipProps.isDisabled, children: children2 }),
+          ({ children: children2 }) => /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_tooltip.Tooltip, { ...tooltipProps, isDisabled: copied || tooltipProps.isDisabled, children: children2 }),
           [(0, import_shared_utils2.objectToDeps)(tooltipProps)]
         );
         const contents = (0, import_react210.useMemo)(() => {
@@ -126784,14 +126843,14 @@
           }
           const clonedCheckIcon = checkIcon && (0, import_react210.cloneElement)(checkIcon, { className: slots.checkIcon() });
           const clonedCopyIcon = copyIcon && (0, import_react210.cloneElement)(copyIcon, { className: slots.copyIcon() });
-          const copyButton = /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(import_button.Button, { ...getCopyButtonProps(), children: [
+          const copyButton = /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(import_button.Button, { ...getCopyButtonProps(), children: [
             clonedCheckIcon,
             clonedCopyIcon
           ] });
           if (disableTooltip) {
             return copyButton;
           }
-          return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(TooltipContent, { children: copyButton });
+          return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(TooltipContent, { children: copyButton });
         }, [
           slots,
           classNames == null ? void 0 : classNames.copyButton,
@@ -126806,17 +126865,17 @@
         ]);
         const preContent = (0, import_react210.useMemo)(() => {
           if (isMultiLine && children && Array.isArray(children)) {
-            return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("div", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children: children.map((t, index3) => /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)("pre", { className: slots.pre({ class: classNames == null ? void 0 : classNames.pre }), children: [
-              !hideSymbol && /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("span", { className: slots.symbol({ class: classNames == null ? void 0 : classNames.symbol }), children: symbolBefore }),
+            return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("div", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children: children.map((t, index3) => /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("pre", { className: slots.pre({ class: classNames == null ? void 0 : classNames.pre }), children: [
+              !hideSymbol && /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("span", { className: slots.symbol({ class: classNames == null ? void 0 : classNames.symbol }), children: symbolBefore }),
               t
             ] }, `${index3}-${t}`)) });
           }
-          return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)("pre", { ref: preRef, className: slots.pre({ class: classNames == null ? void 0 : classNames.pre }), children: [
-            !hideSymbol && /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("span", { className: slots.symbol({ class: classNames == null ? void 0 : classNames.symbol }), children: symbolBefore }),
+          return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("pre", { ref: preRef, className: slots.pre({ class: classNames == null ? void 0 : classNames.pre }), children: [
+            !hideSymbol && /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("span", { className: slots.symbol({ class: classNames == null ? void 0 : classNames.symbol }), children: symbolBefore }),
             children
           ] });
         }, [children, hideSymbol, isMultiLine, symbolBefore, classNames == null ? void 0 : classNames.pre, slots]);
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(Component2, { ref: domRef, ...getSnippetProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(Component2, { ref: domRef, ...getSnippetProps(), children: [
           preContent,
           contents
         ] });
@@ -126893,7 +126952,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist11();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
       var import_use_safe_layout_effect = require_dist21();
@@ -126928,10 +126987,10 @@
           ...otherProps
         } = props;
         const Component2 = as || "label";
-        const domRef = (0, import_react132.useRef)(null);
-        const inputRef = (0, import_react132.useRef)(null);
+        const domRef = (0, import_react161.useRef)(null);
+        const inputRef = (0, import_react161.useRef)(null);
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        const labelId = (0, import_react132.useId)();
+        const labelId = (0, import_react161.useId)();
         const ariaSwitchProps = (0, import_react210.useMemo)(() => {
           const ariaLabel = otherProps["aria-label"] || typeof children === "string" ? children : void 0;
           return {
@@ -126998,7 +127057,7 @@
             "data-pressed": (0, import_shared_utils.dataAttr)(pressed)
           };
         };
-        const getWrapperProps = (0, import_react132.useCallback)(
+        const getWrapperProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -127017,14 +127076,14 @@
             onChange: (0, import_shared_utils.chain)(onChange, inputProps.onChange)
           };
         };
-        const getThumbProps = (0, import_react132.useCallback)(
+        const getThumbProps = (0, import_react161.useCallback)(
           (props2 = {}) => ({
             ...props2,
             className: slots.thumb({ class: (0, import_theme.cn)(classNames == null ? void 0 : classNames.thumb, props2 == null ? void 0 : props2.className) })
           }),
           [slots, classNames == null ? void 0 : classNames.thumb]
         );
-        const getLabelProps = (0, import_react132.useCallback)(
+        const getLabelProps = (0, import_react161.useCallback)(
           (props2 = {}) => ({
             ...props2,
             id: labelId,
@@ -127032,7 +127091,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.label, isDisabled, isSelected]
         );
-        const getThumbIconProps = (0, import_react132.useCallback)(
+        const getThumbIconProps = (0, import_react161.useCallback)(
           (props2 = {
             includeStateProps: false
           }) => (0, import_shared_utils.mergeProps)(
@@ -127047,7 +127106,7 @@
           ),
           [slots, classNames == null ? void 0 : classNames.thumbIcon, isSelected]
         );
-        const getStartContentProps = (0, import_react132.useCallback)(
+        const getStartContentProps = (0, import_react161.useCallback)(
           (props2 = {}) => ({
             width: "1em",
             height: "1em",
@@ -127056,7 +127115,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.startContent, isSelected]
         );
-        const getEndContentProps = (0, import_react132.useCallback)(
+        const getEndContentProps = (0, import_react161.useCallback)(
           (props2 = {}) => ({
             width: "1em",
             height: "1em",
@@ -127090,7 +127149,7 @@
           getEndContentProps
         };
       }
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Switch2 = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -127110,14 +127169,14 @@
         const clonedThumbIcon = typeof thumbIcon === "function" ? thumbIcon(getThumbIconProps({ includeStateProps: true })) : thumbIcon && (0, import_react310.cloneElement)(thumbIcon, getThumbIconProps());
         const clonedStartContent = startContent && (0, import_react310.cloneElement)(startContent, getStartContentProps());
         const clonedEndContent = endContent && (0, import_react310.cloneElement)(endContent, getEndContentProps());
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(Component2, { ...getBaseProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("input", { ...getInputProps() }),
-          /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)("span", { ...getWrapperProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(Component2, { ...getBaseProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("input", { ...getInputProps() }),
+          /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("span", { ...getWrapperProps(), children: [
             startContent && clonedStartContent,
-            /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("span", { ...getThumbProps(), children: thumbIcon && clonedThumbIcon }),
+            /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("span", { ...getThumbProps(), children: thumbIcon && clonedThumbIcon }),
             endContent && clonedEndContent
           ] }),
-          children && /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("span", { ...getLabelProps(), children })
+          children && /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("span", { ...getLabelProps(), children })
         ] });
       });
       Switch2.displayName = "HeroUI.Switch";
@@ -127153,7 +127212,7 @@
         useUser: () => useUser
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
@@ -127179,12 +127238,12 @@
         const shouldFilterDOMProps = typeof Component2 === "string";
         const domRef = (0, import_react_utils2.useDOMRef)(ref);
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)({});
-        const canBeFocused = (0, import_react132.useMemo)(() => {
+        const canBeFocused = (0, import_react161.useMemo)(() => {
           return isFocusable || as === "button";
         }, [isFocusable, as]);
-        const slots = (0, import_react132.useMemo)(() => (0, import_theme.user)(), []);
+        const slots = (0, import_react161.useMemo)(() => (0, import_theme.user)(), []);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getUserProps = (0, import_react132.useCallback)(
+        const getUserProps = (0, import_react161.useCallback)(
           () => ({
             ref: domRef,
             tabIndex: canBeFocused ? 0 : -1,
@@ -127216,17 +127275,17 @@
       }
       var import_system = require_dist11();
       var import_avatar = require_dist23();
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var User = (0, import_system.forwardRef)((props, ref) => {
         const { Component: Component2, name, slots, classNames, description, avatarProps, getUserProps } = useUser({
           ...props,
           ref
         });
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(Component2, { ...getUserProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_avatar.Avatar, { ...avatarProps }),
-          /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("span", { className: slots.name({ class: classNames == null ? void 0 : classNames.name }), children: name }),
-            /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("span", { className: slots.description({ class: classNames == null ? void 0 : classNames.description }), children: description })
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(Component2, { ...getUserProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_avatar.Avatar, { ...avatarProps }),
+          /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("span", { className: slots.name({ class: classNames == null ? void 0 : classNames.name }), children: name }),
+            /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("span", { className: slots.description({ class: classNames == null ? void 0 : classNames.description }), children: description })
           ] })
         ] });
       });
@@ -127261,12 +127320,12 @@
         useIsMounted: () => useIsMounted2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useIsMounted2(props = {}) {
         const { rerender = false, delay: delay2 = 0 } = props;
-        const isMountedRef = (0, import_react132.useRef)(false);
-        const [isMounted, setIsMounted] = (0, import_react132.useState)(false);
-        (0, import_react132.useEffect)(() => {
+        const isMountedRef = (0, import_react161.useRef)(false);
+        const [isMounted, setIsMounted] = (0, import_react161.useState)(false);
+        (0, import_react161.useEffect)(() => {
           isMountedRef.current = true;
           let timer = null;
           if (rerender) {
@@ -127288,7 +127347,7 @@
             }
           };
         }, [rerender]);
-        return [(0, import_react132.useCallback)(() => isMountedRef.current, []), isMounted];
+        return [(0, import_react161.useCallback)(() => isMountedRef.current, []), isMounted];
       }
     }
   });
@@ -127383,7 +127442,7 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_is_mounted2 = require_dist50();
       var import_progress3 = require_dist51();
       function useProgress(originalProps) {
@@ -127428,7 +127487,7 @@
           "aria-labelledby": originalProps["aria-labelledby"],
           "aria-label": originalProps["aria-label"]
         });
-        const slots = (0, import_react132.useMemo)(
+        const slots = (0, import_react161.useMemo)(
           () => (0, import_theme.progress)({
             ...variantProps2,
             disableAnimation
@@ -127436,11 +127495,11 @@
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation]
         );
         const selfMounted = disableAnimation ? true : isMounted;
-        const percentage = (0, import_react132.useMemo)(
+        const percentage = (0, import_react161.useMemo)(
           () => isIndeterminate || !selfMounted ? void 0 : (0, import_shared_utils.clampPercentage)((value - minValue) / (maxValue - minValue) * 100),
           [selfMounted, isIndeterminate, value, minValue, maxValue]
         );
-        const getProgressBarProps = (0, import_react132.useCallback)(
+        const getProgressBarProps = (0, import_react161.useCallback)(
           (props2 = {}) => ({
             ref: domRef,
             "data-indeterminate": (0, import_shared_utils.dataAttr)(isIndeterminate),
@@ -127458,7 +127517,7 @@
             otherProps
           ]
         );
-        const getLabelProps = (0, import_react132.useCallback)(
+        const getLabelProps = (0, import_react161.useCallback)(
           (props2 = {}) => ({
             className: slots.label({ class: classNames == null ? void 0 : classNames.label }),
             ...(0, import_shared_utils.mergeProps)(labelProps, props2)
@@ -127477,7 +127536,7 @@
           getLabelProps
         };
       }
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Progress2 = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -127491,12 +127550,12 @@
         } = useProgress({ ...props, ref });
         const progressBarProps = getProgressBarProps();
         const shouldShowLabelWrapper = label2 || showValueLabel;
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(Component2, { ...progressBarProps, children: [
-          shouldShowLabelWrapper ? /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)("div", { className: slots.labelWrapper({ class: classNames == null ? void 0 : classNames.labelWrapper }), children: [
-            label2 && /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("span", { ...getLabelProps(), children: label2 }),
-            showValueLabel && /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("span", { className: slots.value({ class: classNames == null ? void 0 : classNames.value }), children: progressBarProps["aria-valuetext"] })
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(Component2, { ...progressBarProps, children: [
+          shouldShowLabelWrapper ? /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("div", { className: slots.labelWrapper({ class: classNames == null ? void 0 : classNames.labelWrapper }), children: [
+            label2 && /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("span", { ...getLabelProps(), children: label2 }),
+            showValueLabel && /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("span", { className: slots.value({ class: classNames == null ? void 0 : classNames.value }), children: progressBarProps["aria-valuetext"] })
           ] }) : null,
-          /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("div", { className: slots.track({ class: classNames == null ? void 0 : classNames.track }), children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("div", { className: slots.track({ class: classNames == null ? void 0 : classNames.track }), children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
             "div",
             {
               className: slots.indicator({ class: classNames == null ? void 0 : classNames.indicator }),
@@ -128470,7 +128529,7 @@
       var import_interactions = require_main17();
       var import_shared_utils = require_dist2();
       var import_utils8 = require_main38();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_textfield = require_main40();
       var import_form = require_dist33();
       function useInput(originalProps) {
@@ -128500,13 +128559,13 @@
           },
           ...otherProps
         } = props;
-        const handleValueChange = (0, import_react132.useCallback)(
+        const handleValueChange = (0, import_react161.useCallback)(
           (value) => {
             onValueChange(value != null ? value : "");
           },
           [onValueChange]
         );
-        const [isFocusWithin, setFocusWithin] = (0, import_react132.useState)(false);
+        const [isFocusWithin, setFocusWithin] = (0, import_react161.useState)(false);
         const Component2 = as || "div";
         const disableAnimation = (_c = (_b = originalProps.disableAnimation) != null ? _b : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _c : false;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
@@ -128526,7 +128585,7 @@
         const isHiddenType = type === "hidden";
         const isMultiline = originalProps.isMultiline;
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className, isFilled ? "is-filled" : "");
-        const handleClear = (0, import_react132.useCallback)(() => {
+        const handleClear = (0, import_react161.useCallback)(() => {
           var _a2;
           if (isFileTypeInput) {
             domRef.current.value = "";
@@ -128603,7 +128662,7 @@
         const hasStartContent = !!startContent;
         const isLabelOutside = shouldLabelBeOutside ? isOutsideLeft || isOutsideTop || hasPlaceholder || labelPlacement === "outside" && hasStartContent : false;
         const isLabelOutsideAsPlaceholder = labelPlacement === "outside" && !hasPlaceholder && !hasStartContent;
-        const slots = (0, import_react132.useMemo)(
+        const slots = (0, import_react161.useMemo)(
           () => (0, import_theme.input)({
             ...variantProps2,
             isInvalid,
@@ -128620,7 +128679,7 @@
             disableAnimation
           ]
         );
-        const getBaseProps = (0, import_react132.useCallback)(
+        const getBaseProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ref: baseDomRef,
@@ -128673,7 +128732,7 @@
             originalProps.isDisabled
           ]
         );
-        const getLabelProps = (0, import_react132.useCallback)(
+        const getLabelProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "label",
@@ -128683,7 +128742,7 @@
           },
           [slots, isLabelHovered, labelProps, classNames == null ? void 0 : classNames.label]
         );
-        const handleKeyDown = (0, import_react132.useCallback)(
+        const handleKeyDown = (0, import_react161.useCallback)(
           (e) => {
             if (e.key === "Escape" && inputValue && (isClearable || onClear) && !originalProps.isReadOnly) {
               setInputValue("");
@@ -128692,7 +128751,7 @@
           },
           [inputValue, setInputValue, onClear, isClearable, originalProps.isReadOnly]
         );
-        const getInputProps = (0, import_react132.useCallback)(
+        const getInputProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "input",
@@ -128742,7 +128801,7 @@
             handleKeyDown
           ]
         );
-        const getInputWrapperProps = (0, import_react132.useCallback)(
+        const getInputWrapperProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ref: inputWrapperRef,
@@ -128775,7 +128834,7 @@
             classNames == null ? void 0 : classNames.inputWrapper
           ]
         );
-        const getInnerWrapperProps = (0, import_react132.useCallback)(
+        const getInnerWrapperProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -128793,7 +128852,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.innerWrapper]
         );
-        const getMainWrapperProps = (0, import_react132.useCallback)(
+        const getMainWrapperProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -128805,7 +128864,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.mainWrapper]
         );
-        const getHelperWrapperProps = (0, import_react132.useCallback)(
+        const getHelperWrapperProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -128817,7 +128876,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getDescriptionProps = (0, import_react132.useCallback)(
+        const getDescriptionProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -128828,7 +128887,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.description]
         );
-        const getErrorMessageProps = (0, import_react132.useCallback)(
+        const getErrorMessageProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -128839,7 +128898,7 @@
           },
           [slots, errorMessageProps, classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getClearButtonProps = (0, import_react132.useCallback)(
+        const getClearButtonProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -128890,7 +128949,7 @@
           getClearButtonProps
         };
       }
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Input = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -128917,10 +128976,10 @@
           getErrorMessageProps,
           getClearButtonProps
         } = useInput({ ...props, ref });
-        const labelContent = label2 ? /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("label", { ...getLabelProps(), children: label2 }) : null;
+        const labelContent = label2 ? /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("label", { ...getLabelProps(), children: label2 }) : null;
         const end = (0, import_react210.useMemo)(() => {
           if (isClearable) {
-            return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("button", { ...getClearButtonProps(), children: endContent || /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_shared_icons.CloseFilledIcon, {}) });
+            return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("button", { ...getClearButtonProps(), children: endContent || /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_shared_icons.CloseFilledIcon, {}) });
           }
           return endContent;
         }, [isClearable, getClearButtonProps]);
@@ -128928,7 +128987,7 @@
           const shouldShowError = isInvalid && errorMessage;
           const hasContent = shouldShowError || description;
           if (!hasHelper || !hasContent) return null;
-          return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("div", { ...getHelperWrapperProps(), children: shouldShowError ? /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("div", { ...getErrorMessageProps(), children: errorMessage }) : /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("div", { ...getDescriptionProps(), children: description }) });
+          return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("div", { ...getHelperWrapperProps(), children: shouldShowError ? /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("div", { ...getErrorMessageProps(), children: errorMessage }) : /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("div", { ...getDescriptionProps(), children: description }) });
         }, [
           hasHelper,
           isInvalid,
@@ -128939,24 +128998,24 @@
           getDescriptionProps
         ]);
         const innerWrapper = (0, import_react210.useMemo)(() => {
-          return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)("div", { ...getInnerWrapperProps(), children: [
+          return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("div", { ...getInnerWrapperProps(), children: [
             startContent,
-            /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("input", { ...getInputProps() }),
+            /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("input", { ...getInputProps() }),
             end
           ] });
         }, [startContent, end, getInputProps, getInnerWrapperProps]);
         const mainWrapper = (0, import_react210.useMemo)(() => {
           if (shouldLabelBeOutside) {
-            return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)("div", { ...getMainWrapperProps(), children: [
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)("div", { ...getInputWrapperProps(), children: [
+            return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("div", { ...getMainWrapperProps(), children: [
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("div", { ...getInputWrapperProps(), children: [
                 !isOutsideLeft && !isOutsideTop ? labelContent : null,
                 innerWrapper
               ] }),
               helperWrapper
             ] });
           }
-          return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(import_jsx_runtime68.Fragment, { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)("div", { ...getInputWrapperProps(), children: [
+          return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(import_jsx_runtime96.Fragment, { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("div", { ...getInputWrapperProps(), children: [
               labelContent,
               innerWrapper
             ] }),
@@ -128975,7 +129034,7 @@
           getErrorMessageProps,
           getDescriptionProps
         ]);
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(Component2, { ...getBaseProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(Component2, { ...getBaseProps(), children: [
           isOutsideLeft || isOutsideTop ? labelContent : null,
           mainWrapper
         ] });
@@ -129255,7 +129314,7 @@
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_aria_utils = require_dist13();
       var import_overlays = require_main9();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       var import_use_safe_layout_effect = require_dist21();
       var import_use_aria_overlay = require_dist45();
@@ -129323,7 +129382,7 @@
           if (!updatePositionDeps.length) return;
           updatePosition();
         }, updatePositionDeps);
-        (0, import_react132.useEffect)(() => {
+        (0, import_react161.useEffect)(() => {
           var _a, _b;
           if (state.isOpen && popoverRef.current) {
             if (isNonModal) {
@@ -129560,15 +129619,15 @@
         name: "PopoverContext",
         errorMessage: "usePopoverContext: `context` is undefined. Seems you forgot to wrap all popover components within `<Popover />`"
       });
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Popover = (0, import_system2.forwardRef)((props, ref) => {
         const { children, ...otherProps } = props;
         const context = usePopover({ ...otherProps, ref });
         const [trigger, content] = import_react310.Children.toArray(children);
-        const overlay = /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_overlays4.Overlay, { portalContainer: context.portalContainer, children: content });
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(PopoverProvider, { value: context, children: [
+        const overlay = /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_overlays4.Overlay, { portalContainer: context.portalContainer, children: content });
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(PopoverProvider, { value: context, children: [
           trigger,
-          context.disableAnimation && context.isOpen ? overlay : /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_framer_motion2.AnimatePresence, { children: context.isOpen ? overlay : null })
+          context.disableAnimation && context.isOpen ? overlay : /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_framer_motion2.AnimatePresence, { children: context.isOpen ? overlay : null })
         ] });
       });
       Popover.displayName = "HeroUI.Popover";
@@ -131073,7 +131132,7 @@
       var import_theme = require_dist12();
       var import_tree = require_main12();
       var import_react_utils = require_dist10();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme2 = require_dist12();
       function useMenu(props) {
         var _a;
@@ -131106,7 +131165,7 @@
         const innerState = (0, import_tree.useTreeState)({ ...otherProps, ...userMenuProps, children });
         const state = propState || innerState;
         const { menuProps } = (0, import_menu.useMenu)({ ...otherProps, ...userMenuProps, onAction }, state, domRef);
-        const slots = (0, import_react132.useMemo)(() => (0, import_theme.menu)({ className }), [className]);
+        const slots = (0, import_react161.useMemo)(() => (0, import_theme.menu)({ className }), [className]);
         const baseStyles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.base, className);
         const getBaseProps = (props2 = {}) => {
           return {
@@ -131340,10 +131399,10 @@
           getSelectedIconProps
         };
       }
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       function MenuSelectedIcon(props) {
         const { isSelected, disableAnimation, ...otherProps } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
           "svg",
           {
             "aria-hidden": "true",
@@ -131351,7 +131410,7 @@
             role: "presentation",
             viewBox: "0 0 17 18",
             ...otherProps,
-            children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
               "polyline",
               {
                 fill: "none",
@@ -131764,7 +131823,7 @@
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
       var import_react_utils2 = require_dist10();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var getMenuItem = (props, key) => {
         if (props) {
           const mergedChildren = Array.isArray(props.children) ? props.children : [...(props == null ? void 0 : props.items) || []];
@@ -131808,10 +131867,10 @@
           ...otherProps
         } = props;
         const Component2 = as || "div";
-        const triggerRef = (0, import_react132.useRef)(null);
+        const triggerRef = (0, import_react161.useRef)(null);
         const menuTriggerRef = triggerRefProp || triggerRef;
-        const menuRef = (0, import_react132.useRef)(null);
-        const popoverRef = (0, import_react132.useRef)(null);
+        const menuRef = (0, import_react161.useRef)(null);
+        const popoverRef = (0, import_react161.useRef)(null);
         const state = (0, import_menu.useMenuTriggerState)({
           trigger,
           isOpen,
@@ -131828,7 +131887,7 @@
           state,
           menuTriggerRef
         );
-        const styles = (0, import_react132.useMemo)(
+        const styles = (0, import_react161.useMemo)(
           () => (0, import_theme.dropdown)({
             className
           }),
@@ -131891,18 +131950,18 @@
           getMenuTriggerProps
         };
       }
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var Dropdown = (props) => {
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var Dropdown2 = (props) => {
         const { children, ...otherProps } = props;
         const context = useDropdown(otherProps);
         const [menuTrigger, menu] = import_react210.default.Children.toArray(children);
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(DropdownProvider, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(import_popover.Popover, { ...context.getPopoverProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(DropdownProvider, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(import_popover.Popover, { ...context.getPopoverProps(), children: [
           menuTrigger,
           menu
         ] }) });
       };
-      Dropdown.displayName = "HeroUI.Dropdown";
-      var dropdown_default = Dropdown;
+      Dropdown2.displayName = "HeroUI.Dropdown";
+      var dropdown_default = Dropdown2;
       var import_popover2 = require_dist54();
       var import_jsx_runtime210 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var DropdownTrigger = (props) => {
@@ -131955,7 +132014,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist11();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
@@ -132040,7 +132099,7 @@
             }
           };
         };
-        const getWrapperProps = (0, import_react132.useCallback)(() => {
+        const getWrapperProps = (0, import_react161.useCallback)(() => {
           const fallbackStyle = showFallback ? {
             backgroundImage: `url(${fallbackSrc})`
           } : {};
@@ -132052,7 +132111,7 @@
             }
           };
         }, [slots, showFallback, fallbackSrc, classNames == null ? void 0 : classNames.wrapper, w]);
-        const getBlurredImgProps = (0, import_react132.useCallback)(() => {
+        const getBlurredImgProps = (0, import_react161.useCallback)(() => {
           return {
             src,
             "aria-hidden": (0, import_shared_utils.dataAttr)(true),
@@ -132075,7 +132134,7 @@
           getBlurredImgProps
         };
       }
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Image2 = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -132094,19 +132153,19 @@
           ...props,
           ref
         });
-        const img = /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(Component2, { ref: domRef, ...getImgProps() });
+        const img = /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(Component2, { ref: domRef, ...getImgProps() });
         if (removeWrapper) {
           return img;
         }
-        const zoomed = /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("div", { className: slots.zoomedWrapper({ class: classNames == null ? void 0 : classNames.zoomedWrapper }), children: img });
+        const zoomed = /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("div", { className: slots.zoomedWrapper({ class: classNames == null ? void 0 : classNames.zoomedWrapper }), children: img });
         if (isBlurred) {
-          return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)("div", { ...getWrapperProps(), children: [
+          return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("div", { ...getWrapperProps(), children: [
             isZoomed ? zoomed : img,
             (0, import_react310.cloneElement)(img, getBlurredImgProps())
           ] });
         }
         if (isZoomed || !disableSkeleton || fallbackSrc) {
-          return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)("div", { ...getWrapperProps(), children: [
+          return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("div", { ...getWrapperProps(), children: [
             " ",
             isZoomed ? zoomed : img
           ] });
@@ -132146,7 +132205,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_overlays = require_main9();
       var import_utils8 = require_main4();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_aria_overlay = require_dist45();
       function useAriaModalOverlay(props = {
         shouldBlockScroll: true
@@ -132163,7 +132222,7 @@
           isDisabled: !state.isOpen || !props.shouldBlockScroll
         });
         (0, import_overlays.useOverlayFocusContain)();
-        (0, import_react132.useEffect)(() => {
+        (0, import_react161.useEffect)(() => {
           if (state.isOpen && ref.current) {
             return (0, import_overlays.ariaHideOutside)([ref.current]);
           }
@@ -132213,9 +132272,9 @@
         useViewportSize: () => useViewportSize
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react132 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
+      var import_react161 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
       var visualViewport = typeof document !== "undefined" && window.visualViewport;
-      var IsSSRContext = import_react132.default.createContext(false);
+      var IsSSRContext = import_react161.default.createContext(false);
       function getSnapshot() {
         return false;
       }
@@ -132227,15 +132286,15 @@
         };
       }
       function useIsSSR() {
-        if (typeof import_react132.default["useSyncExternalStore"] === "function") {
-          return import_react132.default["useSyncExternalStore"](subscribe, getSnapshot, getServerSnapshot);
+        if (typeof import_react161.default["useSyncExternalStore"] === "function") {
+          return import_react161.default["useSyncExternalStore"](subscribe, getSnapshot, getServerSnapshot);
         }
-        return (0, import_react132.useContext)(IsSSRContext);
+        return (0, import_react161.useContext)(IsSSRContext);
       }
       function useViewportSize() {
         let isSSR = useIsSSR();
-        let [size, setSize] = (0, import_react132.useState)(() => isSSR ? { width: 0, height: 0 } : getViewportSize());
-        (0, import_react132.useEffect)(() => {
+        let [size, setSize] = (0, import_react161.useState)(() => isSSR ? { width: 0, height: 0 } : getViewportSize());
+        (0, import_react161.useEffect)(() => {
           let onResize = () => {
             setSize((size2) => {
               let newSize = getViewportSize();
@@ -132411,7 +132470,7 @@
       var import_utils8 = require_main4();
       var import_utils22 = require_main46();
       var import_use_callback_ref = require_dist31();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useDisclosure2(props = {}) {
         const {
           id: idProp,
@@ -132425,22 +132484,22 @@
         const onOpenPropCallbackRef = (0, import_use_callback_ref.useCallbackRef)(onOpenProp);
         const onClosePropCallbackRef = (0, import_use_callback_ref.useCallbackRef)(onCloseProp);
         const [isOpen, setIsOpen] = (0, import_utils22.useControlledState)(isOpenProp, defaultOpen || false, onChange);
-        const reactId = (0, import_react132.useId)();
+        const reactId = (0, import_react161.useId)();
         const id4 = idProp || reactId;
         const isControlled = isOpenProp !== void 0;
-        const onClose = (0, import_react132.useCallback)(() => {
+        const onClose = (0, import_react161.useCallback)(() => {
           if (!isControlled) {
             setIsOpen(false);
           }
           onClosePropCallbackRef == null ? void 0 : onClosePropCallbackRef();
         }, [isControlled, onClosePropCallbackRef]);
-        const onOpen = (0, import_react132.useCallback)(() => {
+        const onOpen = (0, import_react161.useCallback)(() => {
           if (!isControlled) {
             setIsOpen(true);
           }
           onOpenPropCallbackRef == null ? void 0 : onOpenPropCallbackRef();
         }, [isControlled, onOpenPropCallbackRef]);
-        const onOpenChange = (0, import_react132.useCallback)(() => {
+        const onOpenChange = (0, import_react161.useCallback)(() => {
           const action = isOpen ? onClose : onOpen;
           action();
         }, [isOpen, onOpen, onClose]);
@@ -134556,15 +134615,15 @@
         useDraggable: () => useDraggable2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_interactions = require_main47();
       function useDraggable2(props) {
         const { targetRef, isDisabled = false, canOverflow = false } = props;
-        const boundary = (0, import_react132.useRef)({ minLeft: 0, minTop: 0, maxLeft: 0, maxTop: 0 });
-        const isDragging2 = (0, import_react132.useRef)(false);
-        const transform2 = (0, import_react132.useRef)({ offsetX: 0, offsetY: 0 });
-        const prevTargetRef = (0, import_react132.useRef)(null);
-        (0, import_react132.useEffect)(() => {
+        const boundary = (0, import_react161.useRef)({ minLeft: 0, minTop: 0, maxLeft: 0, maxTop: 0 });
+        const isDragging2 = (0, import_react161.useRef)(false);
+        const transform2 = (0, import_react161.useRef)({ offsetX: 0, offsetY: 0 });
+        const prevTargetRef = (0, import_react161.useRef)(null);
+        (0, import_react161.useEffect)(() => {
           var _a;
           const currentTarget = (_a = targetRef == null ? void 0 : targetRef.current) != null ? _a : null;
           if (prevTargetRef.current !== currentTarget) {
@@ -134572,7 +134631,7 @@
             prevTargetRef.current = currentTarget;
           }
         }, [targetRef == null ? void 0 : targetRef.current]);
-        const onMoveStart = (0, import_react132.useCallback)(() => {
+        const onMoveStart = (0, import_react161.useCallback)(() => {
           var _a, _b, _c, _d, _e;
           isDragging2.current = true;
           const { offsetX, offsetY } = transform2.current;
@@ -134594,7 +134653,7 @@
             maxTop
           };
         }, [targetRef]);
-        const onMove = (0, import_react132.useCallback)(
+        const onMove = (0, import_react161.useCallback)(
           (e) => {
             if (isDisabled) {
               return;
@@ -134617,7 +134676,7 @@
           },
           [isDisabled, canOverflow, targetRef]
         );
-        const onMoveEnd = (0, import_react132.useCallback)(() => {
+        const onMoveEnd = (0, import_react161.useCallback)(() => {
           isDragging2.current = false;
         }, []);
         const { moveProps } = (0, import_interactions.useMove)({
@@ -134625,12 +134684,12 @@
           onMove,
           onMoveEnd
         });
-        const preventDefault = (0, import_react132.useCallback)((e) => {
+        const preventDefault = (0, import_react161.useCallback)((e) => {
           if (isDragging2.current) {
             e.preventDefault();
           }
         }, []);
-        (0, import_react132.useEffect)(() => {
+        (0, import_react161.useEffect)(() => {
           if (!isDisabled) {
             document.body.addEventListener("touchmove", preventDefault, { passive: false });
           }
@@ -134688,7 +134747,7 @@
       var import_overlays2 = require_main9();
       var import_system2 = require_dist11();
       var import_use_aria_modal_overlay = require_dist59();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist12();
       var import_system = require_dist11();
       var import_use_aria_button = require_dist27();
@@ -134720,13 +134779,13 @@
         } = props;
         const Component2 = as || "section";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const closeButtonRef = (0, import_react132.useRef)(null);
-        const [headerMounted, setHeaderMounted] = (0, import_react132.useState)(false);
-        const [bodyMounted, setBodyMounted] = (0, import_react132.useState)(false);
+        const closeButtonRef = (0, import_react161.useRef)(null);
+        const [headerMounted, setHeaderMounted] = (0, import_react161.useState)(false);
+        const [bodyMounted, setBodyMounted] = (0, import_react161.useState)(false);
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        const dialogId = (0, import_react132.useId)();
-        const headerId = (0, import_react132.useId)();
-        const bodyId = (0, import_react132.useId)();
+        const dialogId = (0, import_react161.useId)();
+        const headerId = (0, import_react161.useId)();
+        const bodyId = (0, import_react161.useId)();
         const state = (0, import_overlays.useOverlayTriggerState)({
           isOpen,
           defaultOpen,
@@ -134749,7 +134808,7 @@
         const { buttonProps: closeButtonProps } = (0, import_use_aria_button.useAriaButton)({ onPress: state.close }, closeButtonRef);
         const { isFocusVisible: isCloseButtonFocusVisible, focusProps: closeButtonFocusProps } = (0, import_focus2.useFocusRing)();
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react132.useMemo)(
+        const slots = (0, import_react161.useMemo)(
           () => (0, import_theme.modal)({
             ...variantProps2,
             disableAnimation
@@ -134771,7 +134830,7 @@
             "aria-describedby": bodyMounted ? bodyId : void 0
           };
         };
-        const getBackdropProps = (0, import_react132.useCallback)(
+        const getBackdropProps = (0, import_react161.useCallback)(
           (props2 = {}) => ({
             className: slots.backdrop({ class: classNames == null ? void 0 : classNames.backdrop }),
             ...underlayProps,
@@ -134818,12 +134877,12 @@
         name: "ModalContext",
         errorMessage: "useModalContext: `context` is undefined. Seems you forgot to wrap all popover components within `<Modal />`"
       });
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Modal = (0, import_system2.forwardRef)((props, ref) => {
         const { children, ...otherProps } = props;
         const context = useModal({ ...otherProps, ref });
-        const overlay = /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_overlays2.Overlay, { portalContainer: context.portalContainer, children });
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(ModalProvider, { value: context, children: context.disableAnimation && context.isOpen ? overlay : /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_framer_motion2.AnimatePresence, { children: context.isOpen ? overlay : null }) });
+        const overlay = /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_overlays2.Overlay, { portalContainer: context.portalContainer, children });
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(ModalProvider, { value: context, children: context.disableAnimation && context.isOpen ? overlay : /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_framer_motion2.AnimatePresence, { children: context.isOpen ? overlay : null }) });
       });
       Modal.displayName = "HeroUI.Modal";
       var modal_default = Modal;
@@ -135066,7 +135125,7 @@
         useScrollPosition: () => useScrollPosition
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var isBrowser3 = typeof window !== "undefined";
       function getScrollPosition(element) {
         if (!isBrowser3) return { x: 0, y: 0 };
@@ -135077,11 +135136,11 @@
       }
       var useScrollPosition = (props) => {
         const { elementRef, delay: delay2 = 30, callback, isEnabled } = props;
-        const position = (0, import_react132.useRef)(
+        const position = (0, import_react161.useRef)(
           isEnabled ? getScrollPosition(elementRef == null ? void 0 : elementRef.current) : { x: 0, y: 0 }
         );
-        const throttleTimeout = (0, import_react132.useRef)(null);
-        const handler = (0, import_react132.useCallback)(() => {
+        const throttleTimeout = (0, import_react161.useRef)(null);
+        const handler = (0, import_react161.useCallback)(() => {
           const currPos = getScrollPosition(elementRef == null ? void 0 : elementRef.current);
           if (typeof callback === "function") {
             callback({ prevPos: position.current, currPos });
@@ -135089,7 +135148,7 @@
           position.current = currPos;
           throttleTimeout.current = null;
         }, [callback, elementRef]);
-        (0, import_react132.useEffect)(() => {
+        (0, import_react161.useEffect)(() => {
           if (!isEnabled) return;
           const handleScroll = () => {
             if (delay2) {
@@ -135143,9 +135202,9 @@
         useResizeObserver: () => useResizeObserver
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useResize(callback, immediatelyInvoke = true) {
-        (0, import_react132.useEffect)(() => {
+        (0, import_react161.useEffect)(() => {
           const fn = () => callback();
           if (immediatelyInvoke) {
             fn();
@@ -135159,7 +135218,7 @@
       }
       function useResizeObserver(options) {
         const { ref, box, onResize } = options;
-        (0, import_react132.useEffect)(() => {
+        (0, import_react161.useEffect)(() => {
           let element = ref == null ? void 0 : ref.current;
           if (!element) {
             return;
@@ -135383,7 +135442,7 @@
         useNavbarContext: () => useNavbarContext
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
@@ -135417,10 +135476,10 @@
         const Component2 = as || "nav";
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const prevWidth = (0, import_react132.useRef)(0);
-        const navHeight = (0, import_react132.useRef)(0);
-        const [isHidden, setIsHidden] = (0, import_react132.useState)(false);
-        const handleMenuOpenChange = (0, import_react132.useCallback)(
+        const prevWidth = (0, import_react161.useRef)(0);
+        const navHeight = (0, import_react161.useRef)(0);
+        const [isHidden, setIsHidden] = (0, import_react161.useState)(false);
+        const handleMenuOpenChange = (0, import_react161.useCallback)(
           (isOpen) => {
             onMenuOpenChange(isOpen || false);
           },
@@ -135457,12 +135516,12 @@
             }
           }
         });
-        (0, import_react132.useEffect)(() => {
+        (0, import_react161.useEffect)(() => {
           var _a2;
           updateWidth();
           navHeight.current = ((_a2 = domRef.current) == null ? void 0 : _a2.offsetHeight) || 0;
         }, []);
-        const slots = (0, import_react132.useMemo)(
+        const slots = (0, import_react161.useMemo)(
           () => (0, import_theme.navbar)({
             ...variantProps2,
             disableAnimation,
@@ -135564,7 +135623,7 @@
           }
         }
       };
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var domAnimation2 = () => Promise.resolve().then(() => (init_dist(), dist_exports)).then((res) => res.default);
       var NavbarMenu = (0, import_system2.forwardRef)((props, ref) => {
         var _a, _b;
@@ -135574,7 +135633,7 @@
         const styles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.menu, className);
         if (disableAnimation) {
           if (!isMenuOpen) return null;
-          return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_overlays2.Overlay, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_overlays2.Overlay, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
             "ul",
             {
               ref: domRef,
@@ -135589,7 +135648,7 @@
             }
           ) });
         }
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_framer_motion3.AnimatePresence, { mode: "wait", children: isMenuOpen ? /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_overlays2.Overlay, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_framer_motion3.AnimatePresence, { mode: "wait", children: isMenuOpen ? /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_overlays2.Overlay, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
           import_framer_motion3.m.ul,
           {
             ref: domRef,
@@ -135709,7 +135768,7 @@
       var import_interactions = require_main17();
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme6 = require_dist12();
-      var import_jsx_runtime69 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime610 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var NavbarMenuToggle = (0, import_system7.forwardRef)((props, ref) => {
         var _a;
         const {
@@ -135737,7 +135796,7 @@
           if (typeof icon === "function") {
             return icon(isMenuOpen != null ? isMenuOpen : false);
           }
-          return icon || /* @__PURE__ */ (0, import_jsx_runtime69.jsx)("span", { className: slots.toggleIcon({ class: classNames == null ? void 0 : classNames.toggleIcon }) });
+          return icon || /* @__PURE__ */ (0, import_jsx_runtime610.jsx)("span", { className: slots.toggleIcon({ class: classNames == null ? void 0 : classNames.toggleIcon }) });
         }, [icon, isMenuOpen, slots.toggleIcon, classNames == null ? void 0 : classNames.toggleIcon]);
         const srOnlyText = (0, import_react210.useMemo)(() => {
           if (srOnlyTextProp) {
@@ -135745,7 +135804,7 @@
           }
           return state.isSelected ? "close navigation menu" : "open navigation menu";
         }, [srOnlyTextProp, isMenuOpen]);
-        return /* @__PURE__ */ (0, import_jsx_runtime69.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime610.jsxs)(
           Component2,
           {
             ref: domRef,
@@ -135756,7 +135815,7 @@
             "data-pressed": (0, import_shared_utils5.dataAttr)(isPressed),
             ...(0, import_shared_utils5.mergeProps)(buttonProps, focusProps, hoverProps, otherProps),
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime69.jsx)("span", { className: slots.srOnly(), children: srOnlyText }),
+              /* @__PURE__ */ (0, import_jsx_runtime610.jsx)("span", { className: slots.srOnly(), children: srOnlyText }),
               child
             ]
           }
@@ -135768,14 +135827,14 @@
       var import_react_utils9 = require_dist10();
       var import_shared_utils6 = require_dist2();
       var import_theme7 = require_dist12();
-      var import_jsx_runtime72 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime710 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var NavbarMenuItem = (0, import_system8.forwardRef)((props, ref) => {
         var _a;
         const { className, children, isActive, ...otherProps } = props;
         const domRef = (0, import_react_utils9.useDOMRef)(ref);
         const { slots, isMenuOpen, classNames } = useNavbarContext();
         const styles = (0, import_theme7.cn)(classNames == null ? void 0 : classNames.menuItem, className);
-        return /* @__PURE__ */ (0, import_jsx_runtime72.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime710.jsx)(
           "li",
           {
             ref: domRef,
@@ -142479,7 +142538,7 @@
         useTable: () => useTable
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_table = require_main50();
       var import_table2 = require_main53();
       var import_system = require_dist11();
@@ -142581,7 +142640,7 @@
             onCellAction
           ]
         );
-        const getBaseProps = (0, import_react132.useCallback)(
+        const getBaseProps = (0, import_react161.useCallback)(
           (props2) => ({
             ...props2,
             ref: domBaseRef,
@@ -142589,7 +142648,7 @@
           }),
           [baseStyles, slots]
         );
-        const getWrapperProps = (0, import_react132.useCallback)(
+        const getWrapperProps = (0, import_react161.useCallback)(
           (props2) => ({
             ...props2,
             ref: domBaseRef,
@@ -142597,7 +142656,7 @@
           }),
           [classNames == null ? void 0 : classNames.wrapper, slots]
         );
-        const getTableProps = (0, import_react132.useCallback)(
+        const getTableProps = (0, import_react161.useCallback)(
           (props2) => ({
             ...(0, import_shared_utils.mergeProps)(
               gridProps,
@@ -142643,7 +142702,7 @@
       var import_shared_utils2 = require_dist2();
       var import_table3 = require_main53();
       var import_theme2 = require_dist12();
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var TableRowGroup = (0, import_react310.forwardRef)((props, ref) => {
         var _a;
         const { as, className, children, slots, classNames, ...otherProps } = props;
@@ -142651,7 +142710,7 @@
         const domRef = (0, import_react_utils2.useDOMRef)(ref);
         const { rowGroupProps } = (0, import_table3.useTableRowGroup)();
         const theadStyles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.thead, className);
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
           Component2,
           {
             ref: domRef,
@@ -142897,7 +142956,7 @@
       var import_table8 = require_main53();
       var import_focus4 = require_main18();
       var import_theme7 = require_dist12();
-      var import_jsx_runtime69 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime610 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var TableCell = (0, import_system6.forwardRef)((props, ref) => {
         var _a, _b, _c;
         const { as, className, node, rowKey, slots, state, classNames, ...otherProps } = props;
@@ -142910,10 +142969,10 @@
         const isRowSelected = state.selectionManager.isSelected(rowKey);
         const cell = (0, import_react610.useMemo)(() => {
           const cellType = typeof node.rendered;
-          return cellType !== "object" && cellType !== "function" ? /* @__PURE__ */ (0, import_jsx_runtime69.jsx)("span", { children: node.rendered }) : node.rendered;
+          return cellType !== "object" && cellType !== "function" ? /* @__PURE__ */ (0, import_jsx_runtime610.jsx)("span", { children: node.rendered }) : node.rendered;
         }, [node.rendered]);
         const columnProps = ((_b = node.column) == null ? void 0 : _b.props) || {};
-        return /* @__PURE__ */ (0, import_jsx_runtime69.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime610.jsx)(
           Component2,
           {
             ref: domRef,
@@ -142942,7 +143001,7 @@
       var import_checkbox2 = require_dist34();
       var import_visually_hidden3 = require_main8();
       var import_theme8 = require_dist12();
-      var import_jsx_runtime72 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime710 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var TableCheckboxCell = (0, import_system7.forwardRef)((props, ref) => {
         var _a, _b;
         const {
@@ -142969,7 +143028,7 @@
         const isSingleSelectionMode = selectionMode === "single";
         const { onChange, ...otherCheckboxProps } = checkboxProps;
         const isRowSelected = state.selectionManager.isSelected(rowKey);
-        return /* @__PURE__ */ (0, import_jsx_runtime72.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime710.jsx)(
           Component2,
           {
             ref: domRef,
@@ -142984,7 +143043,7 @@
               otherProps
             ),
             className: (_b = slots.td) == null ? void 0 : _b.call(slots, { class: tdStyles }),
-            children: isSingleSelectionMode ? /* @__PURE__ */ (0, import_jsx_runtime72.jsx)(import_visually_hidden3.VisuallyHidden, { children: checkboxProps["aria-label"] }) : /* @__PURE__ */ (0, import_jsx_runtime72.jsx)(
+            children: isSingleSelectionMode ? /* @__PURE__ */ (0, import_jsx_runtime710.jsx)(import_visually_hidden3.VisuallyHidden, { children: checkboxProps["aria-label"] }) : /* @__PURE__ */ (0, import_jsx_runtime710.jsx)(
               import_checkbox2.Checkbox,
               {
                 color: color2,
@@ -142998,7 +143057,7 @@
       });
       TableCheckboxCell.displayName = "HeroUI.TableCheckboxCell";
       var table_checkbox_cell_default = TableCheckboxCell;
-      var import_jsx_runtime82 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime810 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var VirtualizedTableBody = (0, import_system8.forwardRef)((props, ref) => {
         var _a;
         const {
@@ -143028,7 +143087,7 @@
         let emptyContent;
         let loadingContent;
         if (collection.size === 0 && bodyProps.emptyContent) {
-          emptyContent = /* @__PURE__ */ (0, import_jsx_runtime82.jsx)("tr", { role: "row", children: /* @__PURE__ */ (0, import_jsx_runtime82.jsx)(
+          emptyContent = /* @__PURE__ */ (0, import_jsx_runtime810.jsx)("tr", { role: "row", children: /* @__PURE__ */ (0, import_jsx_runtime810.jsx)(
             "td",
             {
               className: slots == null ? void 0 : slots.emptyWrapper({ class: classNames == null ? void 0 : classNames.emptyWrapper }),
@@ -143039,8 +143098,8 @@
           ) });
         }
         if (isLoading && bodyProps.loadingContent) {
-          loadingContent = /* @__PURE__ */ (0, import_jsx_runtime82.jsxs)("tr", { role: "row", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime82.jsx)(
+          loadingContent = /* @__PURE__ */ (0, import_jsx_runtime810.jsxs)("tr", { role: "row", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime810.jsx)(
               "td",
               {
                 className: slots == null ? void 0 : slots.loadingWrapper({ class: classNames == null ? void 0 : classNames.loadingWrapper }),
@@ -143049,10 +143108,10 @@
                 children: bodyProps.loadingContent
               }
             ),
-            !emptyContent && collection.size === 0 ? /* @__PURE__ */ (0, import_jsx_runtime82.jsx)("td", { className: slots == null ? void 0 : slots.emptyWrapper({ class: classNames == null ? void 0 : classNames.emptyWrapper }) }) : null
+            !emptyContent && collection.size === 0 ? /* @__PURE__ */ (0, import_jsx_runtime810.jsx)("td", { className: slots == null ? void 0 : slots.emptyWrapper({ class: classNames == null ? void 0 : classNames.emptyWrapper }) }) : null
           ] });
         }
-        return /* @__PURE__ */ (0, import_jsx_runtime82.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime810.jsxs)(
           Component2,
           {
             ref: domRef,
@@ -143072,7 +143131,7 @@
                 if (!row) {
                   return null;
                 }
-                return /* @__PURE__ */ (0, import_jsx_runtime82.jsx)(
+                return /* @__PURE__ */ (0, import_jsx_runtime810.jsx)(
                   table_row_default,
                   {
                     classNames,
@@ -143085,7 +143144,7 @@
                       height: `${virtualRow.size}px`
                     },
                     children: [...row.childNodes].map(
-                      (cell) => cell.props.isSelectionCell ? /* @__PURE__ */ (0, import_jsx_runtime82.jsx)(
+                      (cell) => cell.props.isSelectionCell ? /* @__PURE__ */ (0, import_jsx_runtime810.jsx)(
                         table_checkbox_cell_default,
                         {
                           checkboxesProps,
@@ -143099,7 +143158,7 @@
                           state
                         },
                         String(cell.key)
-                      ) : /* @__PURE__ */ (0, import_jsx_runtime82.jsx)(
+                      ) : /* @__PURE__ */ (0, import_jsx_runtime810.jsx)(
                         table_cell_default,
                         {
                           classNames,
@@ -143123,7 +143182,7 @@
       });
       VirtualizedTableBody.displayName = "HeroUI.VirtualizedTableBody";
       var virtualized_table_body_default = VirtualizedTableBody;
-      var import_jsx_runtime92 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime97 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var VirtualizedTable = (0, import_system9.forwardRef)((props, ref) => {
         const {
           BaseComponent,
@@ -143144,7 +143203,7 @@
         const { rowHeight = 40, maxTableHeight = 600 } = props;
         const Wrapper = (0, import_react710.useCallback)(
           ({ children }) => {
-            return /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(
+            return /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(
               BaseComponent,
               {
                 ...getWrapperProps(),
@@ -143173,11 +143232,11 @@
           overscan: 5
         });
         const tableProps = getTableProps();
-        return /* @__PURE__ */ (0, import_jsx_runtime92.jsxs)("div", { ...getBaseProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime97.jsxs)("div", { ...getBaseProps(), children: [
           topContentPlacement === "outside" && topContent,
-          /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(Wrapper, { children: /* @__PURE__ */ (0, import_jsx_runtime92.jsxs)(import_jsx_runtime92.Fragment, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(Wrapper, { children: /* @__PURE__ */ (0, import_jsx_runtime97.jsxs)(import_jsx_runtime97.Fragment, { children: [
             topContentPlacement === "inside" && topContent,
-            /* @__PURE__ */ (0, import_jsx_runtime92.jsxs)(
+            /* @__PURE__ */ (0, import_jsx_runtime97.jsxs)(
               Component2,
               {
                 ...tableProps,
@@ -143186,7 +143245,7 @@
                   ...tableProps.style
                 },
                 children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(table_row_group_default, { ref: headerRef, classNames: values.classNames, slots: values.slots, children: collection.headerRows.map((headerRow) => /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(
+                  /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(table_row_group_default, { ref: headerRef, classNames: values.classNames, slots: values.slots, children: collection.headerRows.map((headerRow) => /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(
                     table_header_row_default,
                     {
                       classNames: values.classNames,
@@ -143196,7 +143255,7 @@
                       children: [...headerRow.childNodes].map(
                         (column) => {
                           var _a;
-                          return ((_a = column == null ? void 0 : column.props) == null ? void 0 : _a.isSelectionCell) ? /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(
+                          return ((_a = column == null ? void 0 : column.props) == null ? void 0 : _a.isSelectionCell) ? /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(
                             table_select_all_checkbox_default,
                             {
                               checkboxesProps: values.checkboxesProps,
@@ -143209,7 +143268,7 @@
                               state: values.state
                             },
                             column == null ? void 0 : column.key
-                          ) : /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(
+                          ) : /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(
                             table_column_header_default,
                             {
                               classNames: values.classNames,
@@ -143224,7 +143283,7 @@
                     },
                     headerRow == null ? void 0 : headerRow.key
                   )) }),
-                  /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(
+                  /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(
                     virtualized_table_body_default,
                     {
                       checkboxesProps: values.checkboxesProps,
@@ -143528,7 +143587,7 @@
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var spacing = {
         px: "1px",
         0: "0px",
@@ -143574,7 +143633,7 @@
         const [props, variantProps2] = (0, import_system_rsc.mapPropsVariants)(originalProps, import_theme.spacer.variantKeys);
         const { as, className, x = 1, y = 1, ...otherProps } = props;
         const Component2 = as || "span";
-        const styles = (0, import_react132.useMemo)(
+        const styles = (0, import_react161.useMemo)(
           () => (0, import_theme.spacer)({
             ...variantProps2,
             className
@@ -143597,10 +143656,10 @@
         });
         return { Component: Component2, getSpacerProps };
       }
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Spacer = (0, import_system_rsc2.forwardRef)((props, ref) => {
         const { Component: Component2, getSpacerProps } = useSpacer({ ...props });
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(Component2, { ref, ...getSpacerProps() });
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(Component2, { ref, ...getSpacerProps() });
       });
       Spacer.displayName = "HeroUI.Spacer";
       var spacer_default = Spacer;
@@ -143639,12 +143698,12 @@
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useKbd(originalProps) {
         const [props, variantProps2] = (0, import_system_rsc.mapPropsVariants)(originalProps, import_theme.kbd.variantKeys);
         const { as, children, className, keys: keys3, title, classNames, ...otherProps } = props;
         const Component2 = as || "kbd";
-        const slots = (0, import_react132.useMemo)(
+        const slots = (0, import_react161.useMemo)(
           () => (0, import_theme.kbd)({
             ...variantProps2
           }),
@@ -143707,13 +143766,13 @@
         win: "Win",
         alt: "Alt"
       };
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Kbd = (0, import_system_rsc2.forwardRef)((props, ref) => {
         const { Component: Component2, children, slots, classNames, keysToRender, getKbdProps } = useKbd({
           ...props
         });
         const keysContent = (0, import_react210.useMemo)(() => {
-          return keysToRender.map((key) => /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+          return keysToRender.map((key) => /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
             "abbr",
             {
               className: slots.abbr({ class: classNames == null ? void 0 : classNames.abbr }),
@@ -143723,9 +143782,9 @@
             key
           ));
         }, [keysToRender]);
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(Component2, { ref, ...getKbdProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(Component2, { ref, ...getKbdProps(), children: [
           keysContent,
-          children && /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("span", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children })
+          children && /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("span", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children })
         ] });
       });
       Kbd.displayName = "HeroUI.Kbd";
@@ -144587,7 +144646,7 @@
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
       var import_react_utils2 = require_dist10();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_tabs = require_main55();
       var import_tabs2 = require_main56();
       function useTabs(originalProps) {
@@ -144621,7 +144680,7 @@
           state,
           domRef
         );
-        const slots = (0, import_react132.useMemo)(
+        const slots = (0, import_react161.useMemo)(
           () => (0, import_theme.tabs)({
             ...variantProps2,
             disableAnimation,
@@ -144630,7 +144689,7 @@
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation, isVertical]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const values = (0, import_react132.useMemo)(
+        const values = (0, import_react161.useMemo)(
           () => ({
             state,
             slots,
@@ -144652,7 +144711,7 @@
             classNames
           ]
         );
-        const getBaseProps = (0, import_react132.useCallback)(
+        const getBaseProps = (0, import_react161.useCallback)(
           (props2) => ({
             "data-slot": "base",
             className: slots.base({ class: (0, import_theme.cn)(baseStyles, props2 == null ? void 0 : props2.className) }),
@@ -144665,7 +144724,7 @@
           }),
           [baseStyles, otherProps, slots]
         );
-        const getWrapperProps = (0, import_react132.useCallback)(
+        const getWrapperProps = (0, import_react161.useCallback)(
           (props2) => ({
             "data-slot": "tabWrapper",
             className: slots.tabWrapper({ class: (0, import_theme.cn)(classNames == null ? void 0 : classNames.tabWrapper, props2 == null ? void 0 : props2.className) }),
@@ -144674,7 +144733,7 @@
           }),
           [classNames, slots, placement, isVertical]
         );
-        const getTabListProps = (0, import_react132.useCallback)(
+        const getTabListProps = (0, import_react161.useCallback)(
           (props2) => ({
             ref: domRef,
             "data-slot": "tabList",
@@ -144683,7 +144742,7 @@
           }),
           [domRef, tabListProps, classNames, slots]
         );
-        const getTabCursorProps = (0, import_react132.useCallback)(
+        const getTabCursorProps = (0, import_react161.useCallback)(
           (props2) => ({
             "data-slot": "cursor",
             className: slots.cursor({
@@ -144712,7 +144771,7 @@
       var import_tabs3 = require_main56();
       var import_interactions = require_main17();
       var import_theme2 = require_dist12();
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Tab = (0, import_system2.forwardRef)((props, ref) => {
         var _a;
         const {
@@ -144757,7 +144816,7 @@
             boundary: listRef == null ? void 0 : listRef.current
           });
         };
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
           Component2,
           {
             ref: (0, import_react_utils3.mergeRefs)(domRef, tabRef),
@@ -144788,7 +144847,7 @@
             className: (_a = slots.tab) == null ? void 0 : _a.call(slots, { class: tabStyles }),
             title: otherProps == null ? void 0 : otherProps.titleValue,
             type: Component2 === "button" ? "button" : void 0,
-            children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
               "div",
               {
                 className: slots.tabContent({
@@ -145031,7 +145090,7 @@
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist11();
       function useSkeleton(originalProps) {
         var _a, _b;
@@ -145040,7 +145099,7 @@
         const { as, children, isLoaded = false, className, classNames, ...otherProps } = props;
         const Component2 = as || "div";
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        const slots = (0, import_react132.useMemo)(
+        const slots = (0, import_react161.useMemo)(
           () => (0, import_theme.skeleton)({
             ...variantProps2,
             disableAnimation
@@ -145062,10 +145121,10 @@
         };
         return { Component: Component2, children, slots, classNames, getSkeletonProps, getContentProps };
       }
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Skeleton = (0, import_system3.forwardRef)((props, ref) => {
         const { Component: Component2, children, getSkeletonProps, getContentProps } = useSkeleton({ ...props });
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(Component2, { ref, ...getSkeletonProps(), children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("div", { ...getContentProps(), children }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(Component2, { ref, ...getSkeletonProps(), children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("div", { ...getContentProps(), children }) });
       });
       Skeleton.displayName = "HeroUI.Skeleton";
       var skeleton_default = Skeleton;
@@ -145099,7 +145158,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_shared_utils = require_dist2();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useDataScrollOverflow(props = {}) {
         const {
           domRef,
@@ -145110,8 +145169,8 @@
           onVisibilityChange,
           updateDeps = []
         } = props;
-        const visibleRef = (0, import_react132.useRef)(visibility);
-        (0, import_react132.useEffect)(() => {
+        const visibleRef = (0, import_react161.useRef)(visibility);
+        (0, import_react161.useEffect)(() => {
           const el = domRef == null ? void 0 : domRef.current;
           if (!el || !isEnabled) return;
           const setAttributes = (direction, hasBefore, hasAfter, prefix, suffix) => {
@@ -145213,7 +145272,7 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_use_data_scroll_overflow = require_dist72();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       function useScrollShadow(originalProps) {
         var _a;
@@ -145242,7 +145301,7 @@
           updateDeps: [children],
           overflowCheck: (_a = originalProps.orientation) != null ? _a : "vertical"
         });
-        const styles = (0, import_react132.useMemo)(
+        const styles = (0, import_react161.useMemo)(
           () => (0, import_theme.scrollShadow)({
             ...variantProps2,
             className
@@ -145266,10 +145325,10 @@
         };
         return { Component: Component2, styles, domRef, children, getBaseProps };
       }
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var ScrollShadow = (0, import_system2.forwardRef)((props, ref) => {
         const { Component: Component2, children, getBaseProps } = useScrollShadow({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(Component2, { ...getBaseProps(), children });
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(Component2, { ...getBaseProps(), children });
       });
       ScrollShadow.displayName = "HeroUI.ScrollShadow";
       var scroll_shadow_default = ScrollShadow;
@@ -145797,7 +145856,7 @@
       var import_theme = require_dist12();
       var import_list = require_main58();
       var import_react_utils = require_dist10();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme2 = require_dist12();
       function useListbox(props) {
         var _a;
@@ -145829,7 +145888,7 @@
         const innerState = (0, import_list.useListState)({ ...props, children, onSelectionChange });
         const state = propState || innerState;
         const { listBoxProps } = (0, import_listbox.useListBox)({ ...props, onAction }, state, domRef);
-        const slots = (0, import_react132.useMemo)(() => (0, import_theme.listbox)(), []);
+        const slots = (0, import_react161.useMemo)(() => (0, import_theme.listbox)(), []);
         const baseStyles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.base, className);
         const getBaseProps = (props2 = {}) => {
           return {
@@ -146046,10 +146105,10 @@
           getSelectedIconProps
         };
       }
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       function ListboxSelectedIcon(props) {
         const { isSelected, disableAnimation, ...otherProps } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
           "svg",
           {
             "aria-hidden": "true",
@@ -146057,7 +146116,7 @@
             role: "presentation",
             viewBox: "0 0 17 18",
             ...otherProps,
-            children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
               "polyline",
               {
                 fill: "none",
@@ -146627,27 +146686,27 @@
         useLayoutEffect: () => useLayoutEffect2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react132 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
-      var useLayoutEffect2 = typeof document !== "undefined" ? import_react132.default.useLayoutEffect : () => {
+      var import_react161 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
+      var useLayoutEffect2 = typeof document !== "undefined" ? import_react161.default.useLayoutEffect : () => {
       };
       function useEffectEvent2(fn) {
-        const ref = (0, import_react132.useRef)(null);
+        const ref = (0, import_react161.useRef)(null);
         useLayoutEffect2(() => {
           ref.current = fn;
         }, [fn]);
-        return (0, import_react132.useCallback)((...args) => {
+        return (0, import_react161.useCallback)((...args) => {
           const f = ref.current;
           return f == null ? void 0 : f(...args);
         }, []);
       }
       function useFormReset(ref, initialValue, onReset) {
-        let resetValue = (0, import_react132.useRef)(initialValue);
+        let resetValue = (0, import_react161.useRef)(initialValue);
         let handleReset = useEffectEvent2(() => {
           if (onReset) {
             onReset(resetValue.current);
           }
         });
-        (0, import_react132.useEffect)(() => {
+        (0, import_react161.useEffect)(() => {
           var _a;
           let form = (_a = ref == null ? void 0 : ref.current) == null ? void 0 : _a.form;
           form == null ? void 0 : form.addEventListener("reset", handleReset);
@@ -150163,17 +150222,17 @@
         useMultiSelectState: () => useMultiSelectState
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_i18n14 = require_main5();
+      var import_i18n15 = require_main5();
       var import_interactions = require_main59();
       var import_label = require_main60();
       var import_menu = require_main61();
       var import_selection = require_main13();
       var import_utils8 = require_main4();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useMultiSelect(props, state, ref) {
         const { disallowEmptySelection, isDisabled } = props;
-        const collator = (0, import_i18n14.useCollator)({ usage: "search", sensitivity: "base" });
-        const delegate = (0, import_react132.useMemo)(
+        const collator = (0, import_i18n15.useCollator)({ usage: "search", sensitivity: "base" });
+        const delegate = (0, import_react161.useMemo)(
           () => new import_selection.ListKeyboardDelegate(state.collection, state.disabledKeys, null, collator),
           [state.collection, state.disabledKeys, collator]
         );
@@ -150448,7 +150507,7 @@
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_aria_button = require_dist27();
       var import_focus2 = require_main18();
       var import_shared_utils = require_dist2();
@@ -150532,9 +150591,9 @@
         const Component2 = as || "button";
         const shouldFilterDOMProps = typeof Component2 === "string";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const triggerRef = (0, import_react132.useRef)(null);
-        const listBoxRef = (0, import_react132.useRef)(null);
-        const popoverRef = (0, import_react132.useRef)(null);
+        const triggerRef = (0, import_react161.useRef)(null);
+        const listBoxRef = (0, import_react161.useRef)(null);
+        const popoverRef = (0, import_react161.useRef)(null);
         let state = (0, import_use_aria_multiselect.useMultiSelectState)({
           ...props,
           isOpen,
@@ -150595,7 +150654,7 @@
           state,
           triggerRef
         );
-        const handleClear = (0, import_react132.useCallback)(() => {
+        const handleClear = (0, import_react161.useCallback)(() => {
           var _a2;
           state.setSelectedKeys(/* @__PURE__ */ new Set([]));
           onClear == null ? void 0 : onClear();
@@ -150624,7 +150683,7 @@
         const hasLabel = !!label2;
         const hasLabelOutside = hasLabel && (isOutsideLeft || shouldLabelBeOutside && hasPlaceholder);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react132.useMemo)(
+        const slots = (0, import_react161.useMemo)(
           () => (0, import_theme.select)({
             ...variantProps2,
             isInvalid,
@@ -150640,14 +150699,14 @@
         const errorMessage = typeof props.errorMessage === "function" ? props.errorMessage({ isInvalid, validationErrors, validationDetails }) : props.errorMessage || (validationErrors == null ? void 0 : validationErrors.join(" "));
         const hasHelper = !!description || !!errorMessage;
         const hasEndContent = !!endContent;
-        (0, import_react132.useEffect)(() => {
+        (0, import_react161.useEffect)(() => {
           if (state.isOpen && popoverRef.current && triggerRef.current) {
             let selectRect = triggerRef.current.getBoundingClientRect();
             let popover = popoverRef.current;
             popover.style.width = selectRect.width + "px";
           }
         }, [state.isOpen]);
-        (0, import_react132.useEffect)(() => {
+        (0, import_react161.useEffect)(() => {
           if (state.isOpen && popoverRef.current && listBoxRef.current) {
             let selectedItem = listBoxRef.current.querySelector("[aria-selected=true] [data-label=true]");
             let scrollShadow = scrollShadowRef.current;
@@ -150658,7 +150717,7 @@
             }
           }
         }, [state.isOpen, disableAnimation]);
-        const getBaseProps = (0, import_react132.useCallback)(
+        const getBaseProps = (0, import_react161.useCallback)(
           (props2 = {}) => ({
             "data-slot": "base",
             "data-filled": (0, import_shared_utils.dataAttr)(isFilled),
@@ -150675,7 +150734,7 @@
           }),
           [slots, hasHelper, hasValue, hasLabel, hasLabelOutside, isFilled, baseStyles]
         );
-        const getTriggerProps = (0, import_react132.useCallback)(
+        const getTriggerProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ref: triggerRef,
@@ -150715,7 +150774,7 @@
             shouldFilterDOMProps
           ]
         );
-        const getHiddenSelectProps = (0, import_react132.useCallback)(
+        const getHiddenSelectProps = (0, import_react161.useCallback)(
           (props2 = {}) => ({
             state,
             triggerRef,
@@ -150740,7 +150799,7 @@
             triggerRef
           ]
         );
-        const getLabelProps = (0, import_react132.useCallback)(
+        const getLabelProps = (0, import_react161.useCallback)(
           (props2 = {}) => ({
             "data-slot": "label",
             className: slots.label({
@@ -150751,7 +150810,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.label, labelProps]
         );
-        const getValueProps = (0, import_react132.useCallback)(
+        const getValueProps = (0, import_react161.useCallback)(
           (props2 = {}) => ({
             "data-slot": "value",
             className: slots.value({
@@ -150762,7 +150821,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.value, valueProps]
         );
-        const getListboxWrapperProps = (0, import_react132.useCallback)(
+        const getListboxWrapperProps = (0, import_react161.useCallback)(
           (props2 = {}) => ({
             "data-slot": "listboxWrapper",
             className: slots.listboxWrapper({
@@ -150799,7 +150858,7 @@
             ...(0, import_shared_utils.mergeProps)(slotsProps.listboxProps, props2, menuProps)
           };
         };
-        const getPopoverProps = (0, import_react132.useCallback)(
+        const getPopoverProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             var _a2, _b2;
             const popoverProps2 = (0, import_shared_utils.mergeProps)(slotsProps.popoverProps, props2);
@@ -150831,7 +150890,7 @@
             state.selectedItems
           ]
         );
-        const getSelectorIconProps = (0, import_react132.useCallback)(
+        const getSelectorIconProps = (0, import_react161.useCallback)(
           () => ({
             "data-slot": "selectorIcon",
             "aria-hidden": (0, import_shared_utils.dataAttr)(true),
@@ -150840,7 +150899,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.selectorIcon, state.isOpen]
         );
-        const getInnerWrapperProps = (0, import_react132.useCallback)(
+        const getInnerWrapperProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -150852,7 +150911,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.innerWrapper]
         );
-        const getHelperWrapperProps = (0, import_react132.useCallback)(
+        const getHelperWrapperProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -150864,7 +150923,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getDescriptionProps = (0, import_react132.useCallback)(
+        const getDescriptionProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -150875,7 +150934,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.description]
         );
-        const getMainWrapperProps = (0, import_react132.useCallback)(
+        const getMainWrapperProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -150887,7 +150946,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.mainWrapper]
         );
-        const getEndWrapperProps = (0, import_react132.useCallback)(
+        const getEndWrapperProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -150899,7 +150958,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.endWrapper]
         );
-        const getEndContentProps = (0, import_react132.useCallback)(
+        const getEndContentProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -150911,7 +150970,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.endContent]
         );
-        const getErrorMessageProps = (0, import_react132.useCallback)(
+        const getErrorMessageProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -150922,7 +150981,7 @@
           },
           [slots, errorMessageProps, classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getSpinnerProps = (0, import_react132.useCallback)(
+        const getSpinnerProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               "aria-hidden": (0, import_shared_utils.dataAttr)(true),
@@ -150937,7 +150996,7 @@
           },
           [slots, spinnerRef, spinnerProps, classNames == null ? void 0 : classNames.spinner]
         );
-        const getClearButtonProps = (0, import_react132.useCallback)(
+        const getClearButtonProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -151004,7 +151063,7 @@
           getEndContentProps
         };
       }
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       function useHiddenSelect(props, state, triggerRef) {
         var _a;
         let data = selectData.get(state) || {};
@@ -151062,20 +151121,20 @@
         let { state, triggerRef, selectRef, label: label2, name, isDisabled, form } = props;
         let { containerProps, selectProps } = useHiddenSelect({ ...props, selectRef }, state, triggerRef);
         if (state.collection.size <= 300) {
-          return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("div", { ...containerProps, "data-testid": "hidden-select-container", children: /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)("label", { children: [
+          return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("div", { ...containerProps, "data-testid": "hidden-select-container", children: /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("label", { children: [
             label2,
-            /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)("select", { ...selectProps, ref: selectRef, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("option", {}),
+            /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("select", { ...selectProps, ref: selectRef, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("option", {}),
               [...state.collection.getKeys()].map((key) => {
                 let item = state.collection.getItem(key);
                 if ((item == null ? void 0 : item.type) === "item") {
-                  return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("option", { value: item.key, children: item.textValue }, item.key);
+                  return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("option", { value: item.key, children: item.textValue }, item.key);
                 }
               })
             ] })
           ] }) });
         } else if (name) {
-          return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
             "input",
             {
               autoComplete: selectProps.autoComplete,
@@ -151777,11 +151836,11 @@
       var import_visually_hidden = require_main8();
       var import_slider = require_main63();
       var import_react_utils = require_dist10();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_interactions = require_main17();
       var import_focus2 = require_main18();
       var import_shared_utils = require_dist2();
-      var import_i18n14 = require_main5();
+      var import_i18n15 = require_main5();
       function useSliderThumb(props) {
         const {
           ref,
@@ -151801,8 +151860,8 @@
         } = props;
         const Component2 = as || "div";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const inputRef = (0, import_react132.useRef)(null);
-        const numberFormatter = (0, import_i18n14.useNumberFormatter)(formatOptions);
+        const inputRef = (0, import_react161.useRef)(null);
+        const numberFormatter = (0, import_i18n15.useNumberFormatter)(formatOptions);
         const { thumbProps, inputProps, isDragging: isDragging2, isFocused } = (0, import_slider.useSliderThumb)(
           {
             index: index3,
@@ -151865,7 +151924,7 @@
           getInputProps
         };
       }
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var SliderThumb = (0, import_system.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -151882,14 +151941,14 @@
         const thumbProps = {
           ...getThumbProps(),
           index: index3,
-          children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_visually_hidden.VisuallyHidden, { children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("input", { ...getInputProps() }) })
+          children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_visually_hidden.VisuallyHidden, { children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("input", { ...getInputProps() }) })
         };
         const content = (0, import_react_utils2.renderFn)({
           Component: Component2,
           props: thumbProps,
           renderCustom: renderThumb
         });
-        return showTooltip ? /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_tooltip.Tooltip, { ...getTooltipProps(), children: content }) : content;
+        return showTooltip ? /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_tooltip.Tooltip, { ...getTooltipProps(), children: content }) : content;
       });
       SliderThumb.displayName = "HeroUI.SliderThumb";
       var slider_thumb_default = SliderThumb;
@@ -152828,7 +152887,7 @@
       var import_react_utils = require_dist10();
       var import_breadcrumbs = require_main66();
       var import_shared_utils = require_dist2();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useBreadcrumbItem(originalProps) {
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.breadcrumbItem.variantKeys);
         const {
@@ -152855,7 +152914,7 @@
           domRef
         );
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)();
-        const slots = (0, import_react132.useMemo)(
+        const slots = (0, import_react161.useMemo)(
           () => (0, import_theme.breadcrumbItem)({
             ...variantProps2,
             isCurrent,
@@ -152904,7 +152963,7 @@
           getSeparatorProps
         };
       }
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Breadcrumbs = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -152922,13 +152981,13 @@
           ...props,
           ref
         });
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(WrapperComponent, { ...getBaseProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(Component2, { ...getItemProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(WrapperComponent, { ...getBaseProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(Component2, { ...getItemProps(), children: [
             startContent,
             children,
             endContent
           ] }),
-          !isLast && !hideSeparator && /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("span", { ...getSeparatorProps(), children: separator })
+          !isLast && !hideSeparator && /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("span", { ...getSeparatorProps(), children: separator })
         ] });
       });
       Breadcrumbs.displayName = "HeroUI.Breadcrumbs";
@@ -157022,10 +157081,10 @@
       var import_input = require_dist53();
       var import_framer_motion2 = require_cjs4();
       var import_shared_utils = require_dist2();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_utils = require_dist10();
       var import_combobox = require_main67();
-      var import_i18n14 = require_main5();
+      var import_i18n15 = require_main5();
       var import_theme = require_dist12();
       var import_use_safe_layout_effect = require_dist21();
       var import_system = require_dist11();
@@ -157077,7 +157136,7 @@
           isReadOnly = false,
           ...otherProps
         } = props;
-        const { contains } = (0, import_i18n14.useFilter)(filterOptions);
+        const { contains } = (0, import_i18n15.useFilter)(filterOptions);
         const { onChange: _onChange, ...restProps } = originalProps;
         let state = (0, import_combobox.useComboBoxState)({
           ...restProps,
@@ -157116,10 +157175,10 @@
             disabledKeys: /* @__PURE__ */ new Set([...state.collection.getKeys()])
           }
         };
-        const buttonRef = (0, import_react132.useRef)(null);
-        const inputWrapperRef = (0, import_react132.useRef)(null);
-        const listBoxRef = (0, import_react132.useRef)(null);
-        const popoverRef = (0, import_react132.useRef)(null);
+        const buttonRef = (0, import_react161.useRef)(null);
+        const inputWrapperRef = (0, import_react161.useRef)(null);
+        const listBoxRef = (0, import_react161.useRef)(null);
+        const popoverRef = (0, import_react161.useRef)(null);
         const inputRef = (0, import_react_utils.useDOMRef)(ref);
         const scrollShadowRef = (0, import_react_utils.useDOMRef)(scrollRefProp);
         const {
@@ -157218,7 +157277,7 @@
             state.setInputValue(item.textValue);
           }
         }, [inputRef.current]);
-        (0, import_react132.useEffect)(() => {
+        (0, import_react161.useEffect)(() => {
           let keyToFocus;
           if (state.value && state.collection.getItem(state.value) && !state.disabledKeys.has(state.value)) {
             keyToFocus = state.value;
@@ -157231,7 +157290,7 @@
           }
           state.selectionManager.setFocusedKey(keyToFocus);
         }, [state.collection, state.disabledKeys, state.value, state.isOpen, state.inputValue]);
-        (0, import_react132.useEffect)(() => {
+        (0, import_react161.useEffect)(() => {
           if (state.isOpen && popoverRef.current && listBoxRef.current) {
             let selectedItem = listBoxRef.current.querySelector("[aria-selected=true] [data-label=true]");
             let scrollShadow = scrollShadowRef.current;
@@ -157243,7 +157302,7 @@
             }
           }
         }, [state.isOpen, disableAnimation]);
-        (0, import_react132.useEffect)(() => {
+        (0, import_react161.useEffect)(() => {
           if (isOpen) {
             if (popoverRef.current && inputWrapperRef.current) {
               let rect = inputWrapperRef.current.getBoundingClientRect();
@@ -157263,7 +157322,7 @@
           };
         }
         const Component2 = as || "div";
-        const slots = (0, import_react132.useMemo)(
+        const slots = (0, import_react161.useMemo)(
           () => (0, import_theme.autocomplete)({
             ...variantProps2,
             isClearable,
@@ -157429,15 +157488,15 @@
           getEndContentWrapperProps
         };
       }
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Autocomplete = (0, import_system2.forwardRef)(function Autocomplete2(props, ref) {
         var _a;
         const {
           Component: Component2,
           isOpen,
           disableAnimation,
-          selectorIcon = /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_shared_icons.ChevronDownIcon, {}),
-          clearIcon = /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_shared_icons.CloseIcon, {}),
+          selectorIcon = /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_shared_icons.ChevronDownIcon, {}),
+          clearIcon = /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_shared_icons.CloseIcon, {}),
           endContent,
           getBaseProps,
           getSelectorButtonProps,
@@ -157450,19 +157509,19 @@
           getEndContentWrapperProps
         } = useAutocomplete({ ...props, ref });
         const listboxProps = getListBoxProps();
-        const popoverContent = isOpen ? /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_popover.FreeSoloPopover, { ...getPopoverProps(), children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_scroll_shadow.ScrollShadow, { ...getListBoxWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_listbox.Listbox, { ...listboxProps }) }) }) : ((_a = listboxProps.state) == null ? void 0 : _a.collection.size) === 0 ? /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("div", { ...getEmptyPopoverProps() }) : null;
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(Component2, { ...getBaseProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+        const popoverContent = isOpen ? /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_popover.FreeSoloPopover, { ...getPopoverProps(), children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_scroll_shadow.ScrollShadow, { ...getListBoxWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_listbox.Listbox, { ...listboxProps }) }) }) : ((_a = listboxProps.state) == null ? void 0 : _a.collection.size) === 0 ? /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("div", { ...getEmptyPopoverProps() }) : null;
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(Component2, { ...getBaseProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
             import_input.Input,
             {
               ...getInputProps(),
-              endContent: /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)("div", { ...getEndContentWrapperProps(), children: [
-                endContent || /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_button.Button, { ...getClearButtonProps(), children: clearIcon }),
-                selectorIcon && /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: selectorIcon })
+              endContent: /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("div", { ...getEndContentWrapperProps(), children: [
+                endContent || /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_button.Button, { ...getClearButtonProps(), children: clearIcon }),
+                selectorIcon && /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: selectorIcon })
               ] })
             }
           ),
-          disableAnimation ? popoverContent : /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_framer_motion2.AnimatePresence, { children: popoverContent })
+          disableAnimation ? popoverContent : /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_framer_motion2.AnimatePresence, { children: popoverContent })
         ] });
       });
       var autocomplete_default = Autocomplete;
@@ -162087,17 +162146,17 @@
       var import_theme2 = require_dist12();
       var import_date = require_main74();
       var import_system = require_dist11();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist12();
       var import_utils8 = require_main38();
       var import_react_utils = require_dist10();
-      var import_i18n14 = require_main5();
+      var import_i18n15 = require_main5();
       var import_shared_utils = require_dist2();
       function useCalendarBase(originalProps) {
         var _a, _b, _c, _d, _e, _f, _g;
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.calendar.variantKeys);
         const globalContext = (0, import_system.useProviderContext)();
-        const { locale, direction } = (0, import_i18n14.useLocale)();
+        const { locale, direction } = (0, import_i18n15.useLocale)();
         const isRTL = direction === "rtl";
         const calendarProp = (0, import_date.createCalendar)(
           new import_date.DateFormatter(locale).resolvedOptions().calendar
@@ -162133,7 +162192,7 @@
         const visibleMonths = (0, import_shared_utils.clamp)(visibleMonthsProp, 1, 3);
         const showMonthAndYearPickers = originalProps.showMonthAndYearPickers && visibleMonths === 1;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const handleHeaderExpandedChange = (0, import_react132.useCallback)(
+        const handleHeaderExpandedChange = (0, import_react161.useCallback)(
           (isExpanded) => {
             onHeaderExpandedChange(isExpanded || false);
           },
@@ -162144,10 +162203,10 @@
           isHeaderDefaultExpanded != null ? isHeaderDefaultExpanded : false,
           handleHeaderExpandedChange
         );
-        const visibleDuration = (0, import_react132.useMemo)(() => ({ months: visibleMonths }), [visibleMonths]);
+        const visibleDuration = (0, import_react161.useMemo)(() => ({ months: visibleMonths }), [visibleMonths]);
         const hasMultipleMonths = visibleMonths > 1;
         const shouldFilterDOMProps = typeof Component2 === "string";
-        const slots = (0, import_react132.useMemo)(
+        const slots = (0, import_react161.useMemo)(
           () => (0, import_theme.calendar)({
             ...variantProps2,
             showMonthAndYearPickers,
@@ -162350,8 +162409,8 @@
       var import_framer_motion3 = require_cjs4();
       var import_i18n62 = require_main5();
       var import_framer_utils = require_dist19();
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var ChevronLeftIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var ChevronLeftIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
         "svg",
         {
           "aria-hidden": "true",
@@ -162362,7 +162421,7 @@
           viewBox: "0 0 16 16",
           width: "1em",
           ...props,
-          children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+          children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
             "path",
             {
               d: "M10 3.33334L6 8.00001L10 12.6667",
@@ -162613,7 +162672,7 @@
           )
         }
       );
-      var import_jsx_runtime69 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime610 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       function CalendarHeader(props) {
         const { direction, date, currentMonth, buttonPickerProps } = props;
         const {
@@ -162634,7 +162693,7 @@
           year: "numeric"
         });
         const monthDateContent = monthAndYearDateFormatter.format(date.toDate(state.timeZone));
-        const headerTitle = /* @__PURE__ */ (0, import_jsx_runtime69.jsx)(import_jsx_runtime69.Fragment, { children: disableAnimation ? /* @__PURE__ */ (0, import_jsx_runtime69.jsx)(
+        const headerTitle = /* @__PURE__ */ (0, import_jsx_runtime610.jsx)(import_jsx_runtime610.Fragment, { children: disableAnimation ? /* @__PURE__ */ (0, import_jsx_runtime610.jsx)(
           "span",
           {
             "aria-hidden": true,
@@ -162643,7 +162702,7 @@
             children: monthDateContent
           },
           currentMonth.month
-        ) : /* @__PURE__ */ (0, import_jsx_runtime69.jsx)(
+        ) : /* @__PURE__ */ (0, import_jsx_runtime610.jsx)(
           import_framer_motion22.m.span,
           {
             animate: "center",
@@ -162673,18 +162732,18 @@
           },
           [setIsHeaderExpanded]
         );
-        return showMonthAndYearPickers ? /* @__PURE__ */ (0, import_jsx_runtime69.jsx)(
+        return showMonthAndYearPickers ? /* @__PURE__ */ (0, import_jsx_runtime610.jsx)(
           import_button.Button,
           {
             ...headerProps,
             "aria-label": "switch to year and month view",
             disableAnimation,
-            endContent: /* @__PURE__ */ (0, import_jsx_runtime69.jsx)(ChevronDownIcon, { className: "chevron-icon" }),
+            endContent: /* @__PURE__ */ (0, import_jsx_runtime610.jsx)(ChevronDownIcon, { className: "chevron-icon" }),
             onKeyDown: handleKeyDown,
             ...buttonPickerProps,
             children: headerTitle
           }
-        ) : /* @__PURE__ */ (0, import_jsx_runtime69.jsx)("header", { ...headerProps, children: headerTitle });
+        ) : /* @__PURE__ */ (0, import_jsx_runtime610.jsx)("header", { ...headerProps, children: headerTitle });
       }
       var import_react710 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils7 = require_dist2();
@@ -162694,7 +162753,7 @@
       var import_react510 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_utils4 = require_dist10();
       var import_shared_utils5 = require_dist2();
-      var import_jsx_runtime72 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime710 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var CalendarPickerItem = (0, import_react510.forwardRef)(({ children, autoFocus, isDisabled, onKeyDown, ...otherProps }, ref) => {
         const domRef = (0, import_react_utils4.useDOMRef)(ref);
         const { buttonProps: ariaButtonProps, isPressed } = (0, import_use_aria_button.useAriaButton)(
@@ -162710,7 +162769,7 @@
           autoFocus
         });
         const { isHovered, hoverProps } = (0, import_interactions2.useHover)({ isDisabled });
-        return /* @__PURE__ */ (0, import_jsx_runtime72.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime710.jsx)(
           "button",
           {
             ref: domRef,
@@ -162944,7 +163003,7 @@
           onPickerItemKeyDown
         };
       }
-      var import_jsx_runtime82 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime810 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var EMPTY_ITEMS_OFFSET = 3;
       function CalendarPicker(props) {
         const {
@@ -162962,7 +163021,7 @@
           onPickerItemKeyDown
         } = useCalendarPicker(props);
         const EmptyItem = (0, import_react710.useCallback)(
-          (props2) => /* @__PURE__ */ (0, import_jsx_runtime82.jsx)(
+          (props2) => /* @__PURE__ */ (0, import_jsx_runtime810.jsx)(
             "div",
             {
               "aria-hidden": "true",
@@ -162976,14 +163035,14 @@
           [slots, classNames == null ? void 0 : classNames.pickerItem]
         );
         const PickerItemWrapper = (0, import_react710.useCallback)(
-          ({ children }) => /* @__PURE__ */ (0, import_jsx_runtime82.jsxs)(import_jsx_runtime82.Fragment, { children: [
-            Array.from({ length: EMPTY_ITEMS_OFFSET }, (_, i) => /* @__PURE__ */ (0, import_jsx_runtime82.jsx)(EmptyItem, {}, i)),
+          ({ children }) => /* @__PURE__ */ (0, import_jsx_runtime810.jsxs)(import_jsx_runtime810.Fragment, { children: [
+            Array.from({ length: EMPTY_ITEMS_OFFSET }, (_, i) => /* @__PURE__ */ (0, import_jsx_runtime810.jsx)(EmptyItem, {}, i)),
             children,
-            Array.from({ length: EMPTY_ITEMS_OFFSET }, (_, i) => /* @__PURE__ */ (0, import_jsx_runtime82.jsx)(EmptyItem, {}, i))
+            Array.from({ length: EMPTY_ITEMS_OFFSET }, (_, i) => /* @__PURE__ */ (0, import_jsx_runtime810.jsx)(EmptyItem, {}, i))
           ] }),
           [EmptyItem]
         );
-        return /* @__PURE__ */ (0, import_jsx_runtime82.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime810.jsxs)(
           "div",
           {
             className: slots == null ? void 0 : slots.pickerWrapper({
@@ -162992,7 +163051,7 @@
             "data-slot": "picker-wrapper",
             inert: (0, import_shared_utils7.getInertValue)(!isHeaderExpanded),
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime82.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime810.jsx)(
                 "div",
                 {
                   ref: highlightRef,
@@ -163000,15 +163059,15 @@
                   "data-slot": "picker-highlight"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime82.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime810.jsx)(
                 "div",
                 {
                   ref: monthsListRef,
                   className: slots == null ? void 0 : slots.pickerMonthList({ class: classNames == null ? void 0 : classNames.pickerMonthList }),
                   "data-slot": "picker-month-list",
-                  children: /* @__PURE__ */ (0, import_jsx_runtime82.jsx)(PickerItemWrapper, { children: months.map((month) => {
+                  children: /* @__PURE__ */ (0, import_jsx_runtime810.jsx)(PickerItemWrapper, { children: months.map((month) => {
                     var _a;
-                    return /* @__PURE__ */ (0, import_jsx_runtime82.jsx)(
+                    return /* @__PURE__ */ (0, import_jsx_runtime810.jsx)(
                       CalendarPickerItem,
                       {
                         ref: (node) => getItemRef(node, month.value, "months"),
@@ -163024,15 +163083,15 @@
                   }) })
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime82.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime810.jsx)(
                 "div",
                 {
                   ref: yearsListRef,
                   className: slots == null ? void 0 : slots.pickerYearList({ class: classNames == null ? void 0 : classNames.pickerYearList }),
                   "data-slot": "picker-year-list",
-                  children: /* @__PURE__ */ (0, import_jsx_runtime82.jsx)(PickerItemWrapper, { children: years.map((year) => {
+                  children: /* @__PURE__ */ (0, import_jsx_runtime810.jsx)(PickerItemWrapper, { children: years.map((year) => {
                     var _a;
-                    return /* @__PURE__ */ (0, import_jsx_runtime82.jsx)(
+                    return /* @__PURE__ */ (0, import_jsx_runtime810.jsx)(
                       CalendarPickerItem,
                       {
                         ref: (node) => getItemRef(node, year.value, "years"),
@@ -163052,12 +163111,12 @@
           }
         );
       }
-      var import_jsx_runtime92 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime97 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var import_react910 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var domAnimation2 = () => Promise.resolve().then(() => (init_dist(), dist_exports)).then((res) => res.default);
       var PopLayoutWrapper = (0, import_react810.forwardRef)(
         (props, ref) => {
-          return /* @__PURE__ */ (0, import_jsx_runtime92.jsx)("div", { ref, ...props });
+          return /* @__PURE__ */ (0, import_jsx_runtime97.jsx)("div", { ref, ...props });
         }
       );
       PopLayoutWrapper.displayName = "HeroUI - PopLayoutWrapper";
@@ -163087,8 +163146,8 @@
         for (let i = 0; i < visibleMonths; i++) {
           let d = currentMonth.add({ months: i });
           headers.push(
-            /* @__PURE__ */ (0, import_jsx_runtime92.jsxs)(import_react810.Fragment, { children: [
-              i === 0 && /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime97.jsxs)(import_react810.Fragment, { children: [
+              i === 0 && /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(
                 import_button2.Button,
                 {
                   ...isRTL ? nextButtonProps : prevButtonProps,
@@ -163096,10 +163155,10 @@
                     isRTL ? nextButtonProps.onPress : prevButtonProps.onPress,
                     () => setDirection(-1)
                   ),
-                  children: /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(ChevronLeftIcon, {})
+                  children: /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(ChevronLeftIcon, {})
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(
                 CalendarHeader,
                 {
                   buttonPickerProps,
@@ -163108,7 +163167,7 @@
                   direction
                 }
               ),
-              i === visibleMonths - 1 && /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(
+              i === visibleMonths - 1 && /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(
                 import_button2.Button,
                 {
                   ...isRTL ? prevButtonProps : nextButtonProps,
@@ -163116,7 +163175,7 @@
                     isRTL ? prevButtonProps.onPress : nextButtonProps.onPress,
                     () => setDirection(1)
                   ),
-                  children: /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(ChevronRightIcon, {})
+                  children: /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(ChevronRightIcon, {})
                 }
               )
             ] }, `calendar-header-${i}`)
@@ -163133,14 +163192,14 @@
             }
           );
           calendars.push(
-            showMonthAndYearPickers ? /* @__PURE__ */ (0, import_jsx_runtime92.jsxs)(import_react810.Fragment, { children: [
+            showMonthAndYearPickers ? /* @__PURE__ */ (0, import_jsx_runtime97.jsxs)(import_react810.Fragment, { children: [
               calendarMonthContent,
-              /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(CalendarPicker, { currentMonth, date: d })
+              /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(CalendarPicker, { currentMonth, date: d })
             ] }, `calendar-month-with-pickers-${i}`) : calendarMonthContent
           );
         }
-        const calendarContent = /* @__PURE__ */ (0, import_jsx_runtime92.jsxs)(import_jsx_runtime92.Fragment, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(
+        const calendarContent = /* @__PURE__ */ (0, import_jsx_runtime97.jsxs)(import_jsx_runtime97.Fragment, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(
             "div",
             {
               className: slots == null ? void 0 : slots.headerWrapper({ class: classNames == null ? void 0 : classNames.headerWrapper }),
@@ -163149,7 +163208,7 @@
             },
             "header-wrapper"
           ),
-          /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(
             "div",
             {
               className: slots == null ? void 0 : slots.gridWrapper({ class: classNames == null ? void 0 : classNames.gridWrapper }),
@@ -163159,18 +163218,18 @@
             "grid-wrapper"
           )
         ] });
-        return /* @__PURE__ */ (0, import_jsx_runtime92.jsxs)(Component2, { ...(0, import_shared_utils8.mergeProps)(calendarProps, otherProps), ref, children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime97.jsxs)(Component2, { ...(0, import_shared_utils8.mergeProps)(calendarProps, otherProps), ref, children: [
           topContent,
-          /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(import_visually_hidden.VisuallyHidden, { children: /* @__PURE__ */ (0, import_jsx_runtime92.jsx)("h2", { children: calendarProps["aria-label"] }) }),
-          disableAnimation ? /* @__PURE__ */ (0, import_jsx_runtime92.jsx)("div", { className: slots == null ? void 0 : slots.content({ class: classNames == null ? void 0 : classNames.content }), "data-slot": "content", children: calendarContent }) : /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(import_visually_hidden.VisuallyHidden, { children: /* @__PURE__ */ (0, import_jsx_runtime97.jsx)("h2", { children: calendarProps["aria-label"] }) }),
+          disableAnimation ? /* @__PURE__ */ (0, import_jsx_runtime97.jsx)("div", { className: slots == null ? void 0 : slots.content({ class: classNames == null ? void 0 : classNames.content }), "data-slot": "content", children: calendarContent }) : /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(
             import_framer_utils.ResizablePanel,
             {
               className: slots == null ? void 0 : slots.content({ class: classNames == null ? void 0 : classNames.content }),
               "data-slot": "content",
-              children: /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(import_framer_motion3.AnimatePresence, { custom: direction, initial: false, mode: "popLayout", children: /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(PopLayoutWrapper, { children: /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(import_framer_motion3.MotionConfig, { transition, children: /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: calendarContent }) }) }) })
+              children: /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(import_framer_motion3.AnimatePresence, { custom: direction, initial: false, mode: "popLayout", children: /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(PopLayoutWrapper, { children: /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(import_framer_motion3.MotionConfig, { transition, children: /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: calendarContent }) }) }) })
             }
           ),
-          /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(import_visually_hidden.VisuallyHidden, { children: /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(import_visually_hidden.VisuallyHidden, { children: /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(
             "button",
             {
               "aria-label": nextButtonProps["aria-label"],
@@ -163179,12 +163238,12 @@
               onClick: () => state.focusNextPage()
             }
           ) }),
-          state.isValueInvalid && showHelper && /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(
+          state.isValueInvalid && showHelper && /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(
             "div",
             {
               className: slots == null ? void 0 : slots.helperWrapper({ class: classNames == null ? void 0 : classNames.helperWrapper }),
               "data-slot": "helper-wrapper",
-              children: /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(
+              children: /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(
                 "span",
                 {
                   ...errorMessageProps,
@@ -168058,7 +168117,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_system4 = require_dist11();
-      var import_i18n14 = require_main5();
+      var import_i18n15 = require_main5();
       var import_date = require_main74();
       var import_system = require_dist11();
       var import_system2 = require_dist11();
@@ -168067,14 +168126,14 @@
       var import_datepicker2 = require_main77();
       var import_shared_utils = require_dist2();
       var import_theme = require_dist12();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_form = require_dist33();
       function useDateInput(originalProps) {
         var _a, _b, _c, _d, _e, _f, _g;
         const globalContext = (0, import_system.useProviderContext)();
         const { validationBehavior: formValidationBehavior } = (0, import_form.useSlottedContext)(import_form.FormContext) || {};
         const [props, variantProps2] = (0, import_system2.mapPropsVariants)(originalProps, import_theme.dateInput.variantKeys);
-        const { locale } = (0, import_i18n14.useLocale)();
+        const { locale } = (0, import_i18n15.useLocale)();
         const calendarProp = (0, import_date.createCalendar)(
           new import_date.DateFormatter(locale).resolvedOptions().calendar
         );
@@ -168134,7 +168193,7 @@
           label: label2
         });
         const shouldLabelBeOutside = labelPlacement === "outside" || labelPlacement === "outside-left" || labelPlacement === "outside-top";
-        const slots = (0, import_react132.useMemo)(
+        const slots = (0, import_react161.useMemo)(
           () => (0, import_theme.dateInput)({
             ...variantProps2,
             disableAnimation,
@@ -168254,7 +168313,7 @@
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system3 = require_dist11();
       var import_shared_utils2 = require_dist2();
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var DateInputGroup = (0, import_system3.forwardRef)((props, ref) => {
         const {
           as,
@@ -168277,7 +168336,7 @@
           ...otherProps
         } = props;
         const Component2 = as || "div";
-        const labelContent = label2 ? /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("span", { ...labelProps, children: label2 }) : null;
+        const labelContent = label2 ? /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("span", { ...labelProps, children: label2 }) : null;
         const errorMessage = typeof errorMessageProp === "function" ? errorMessageProp({
           isInvalid,
           validationErrors,
@@ -168286,7 +168345,7 @@
         const hasHelper = !!description || !!errorMessage;
         const helperWrapper = (0, import_react210.useMemo)(() => {
           if (!hasHelper) return null;
-          return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("div", { ...helperWrapperProps, children: isInvalid && errorMessage ? /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("div", { ...errorMessageProps, children: errorMessage }) : description ? /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("div", { ...descriptionProps, children: description }) : null });
+          return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("div", { ...helperWrapperProps, children: isInvalid && errorMessage ? /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("div", { ...errorMessageProps, children: errorMessage }) : description ? /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("div", { ...descriptionProps, children: description }) : null });
         }, [
           hasHelper,
           errorMessage,
@@ -168295,11 +168354,11 @@
           errorMessageProps,
           descriptionProps
         ]);
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(Component2, { ...otherProps, ref, "data-has-helper": (0, import_shared_utils2.dataAttr)(hasHelper), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(Component2, { ...otherProps, ref, "data-has-helper": (0, import_shared_utils2.dataAttr)(hasHelper), children: [
           shouldLabelBeOutside ? labelContent : null,
-          /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)("div", { ...groupProps, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("div", { ...groupProps, children: [
             !shouldLabelBeOutside ? labelContent : null,
-            /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)("div", { ...wrapperProps, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("div", { ...wrapperProps, children: [
               startContent,
               children,
               endContent
@@ -168632,10 +168691,10 @@
       var import_form = require_dist33();
       var import_shared_utils = require_dist2();
       var import_theme = require_dist12();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
-      var import_i18n14 = require_main5();
+      var import_i18n15 = require_main5();
       var import_utils8 = require_main38();
       var messages_default = {
         "ar-AE": {
@@ -168847,7 +168906,7 @@
           onHeaderExpandedChange,
           ...restUserCalendarProps
         } = userCalendarProps;
-        const handleHeaderExpandedChange = (0, import_react132.useCallback)(
+        const handleHeaderExpandedChange = (0, import_react161.useCallback)(
           (isExpanded) => {
             onHeaderExpandedChange == null ? void 0 : onHeaderExpandedChange(isExpanded || false);
           },
@@ -168856,7 +168915,7 @@
         const [isCalendarHeaderExpanded, setIsCalendarHeaderExpanded] = (0, import_utils8.useControlledState)(isHeaderExpanded, isHeaderDefaultExpanded != null ? isHeaderDefaultExpanded : false, handleHeaderExpandedChange);
         const domRef = (0, import_react_utils.useDOMRef)(ref);
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        let stringFormatter = (0, import_i18n14.useLocalizedStringFormatter)(messages_default);
+        let stringFormatter = (0, import_i18n15.useLocalizedStringFormatter)(messages_default);
         const isDefaultColor = originalProps.color === "default" || !originalProps.color;
         const hasMultipleMonths = visibleMonths > 1;
         const placeholder = originalProps == null ? void 0 : originalProps.placeholderValue;
@@ -169150,7 +169209,7 @@
           getSelectorIconProps
         };
       }
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var DatePicker = (0, import_system3.forwardRef)(function DatePicker2(props, ref) {
         const { selectorButtonPlacement = "end", ...otherProps } = props;
         const {
@@ -169170,11 +169229,11 @@
           CalendarTopContent,
           CalendarBottomContent
         } = useDatePicker({ ...otherProps, ref });
-        const selectorContent = (0, import_react410.isValidElement)(selectorIcon) ? (0, import_react410.cloneElement)(selectorIcon, getSelectorIconProps()) : /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_shared_icons.CalendarBoldIcon, { ...getSelectorIconProps() });
+        const selectorContent = (0, import_react410.isValidElement)(selectorIcon) ? (0, import_react410.cloneElement)(selectorIcon, getSelectorIconProps()) : /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_shared_icons.CalendarBoldIcon, { ...getSelectorIconProps() });
         const calendarBottomContent = (0, import_react310.useMemo)(() => {
           if (isCalendarHeaderExpanded) return null;
-          return showTimeField ? /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(import_jsx_runtime68.Fragment, { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_date_input.TimeInput, { ...getTimeInputProps() }),
+          return showTimeField ? /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(import_jsx_runtime96.Fragment, { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_date_input.TimeInput, { ...getTimeInputProps() }),
             CalendarBottomContent
           ] }) : CalendarBottomContent;
         }, [state, showTimeField, CalendarBottomContent, isCalendarHeaderExpanded]);
@@ -169182,7 +169241,7 @@
           if (isCalendarHeaderExpanded) return null;
           return CalendarTopContent;
         }, [showTimeField, CalendarTopContent, isCalendarHeaderExpanded]);
-        const popoverContent = state.isOpen ? /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_popover.FreeSoloPopover, { ...getPopoverProps(), children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+        const popoverContent = state.isOpen ? /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_popover.FreeSoloPopover, { ...getPopoverProps(), children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
           import_calendar.Calendar,
           {
             ...getCalendarProps(),
@@ -169192,12 +169251,12 @@
         ) }) : null;
         const dateInputProps = {
           ...getDateInputProps(),
-          endContent: selectorButtonPlacement === "end" ? /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: endContent || selectorContent }) : endContent,
-          startContent: selectorButtonPlacement === "start" ? /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: startContent || selectorContent }) : startContent
+          endContent: selectorButtonPlacement === "end" ? /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: endContent || selectorContent }) : endContent,
+          startContent: selectorButtonPlacement === "start" ? /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: startContent || selectorContent }) : startContent
         };
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)(import_jsx_runtime68.Fragment, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_date_input.DateInput, { ...dateInputProps }),
-          disableAnimation ? popoverContent : /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_framer_motion2.AnimatePresence, { children: popoverContent })
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(import_jsx_runtime96.Fragment, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_date_input.DateInput, { ...dateInputProps }),
+          disableAnimation ? popoverContent : /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_framer_motion2.AnimatePresence, { children: popoverContent })
         ] });
       });
       var date_picker_default = DatePicker;
@@ -169693,7 +169752,7 @@
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist12();
       var import_utils8 = require_main38();
       var import_shared_utils = require_dist2();
@@ -169728,16 +169787,16 @@
         const Component2 = as || "div";
         const shouldFilterDOMProps = typeof Component2 === "string";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const handleClose = (0, import_react132.useCallback)(() => {
+        const handleClose = (0, import_react161.useCallback)(() => {
           setIsVisible(false);
           onClose == null ? void 0 : onClose();
         }, [setIsVisible, onClose]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react132.useMemo)(
+        const slots = (0, import_react161.useMemo)(
           () => (0, import_theme.alert)({ hasContent: !(0, import_shared_utils.isEmpty)(description) || !(0, import_shared_utils.isEmpty)(children), ...variantProps2 }),
           [description, (0, import_shared_utils.objectToDeps)(variantProps2)]
         );
-        const getBaseProps = (0, import_react132.useCallback)(() => {
+        const getBaseProps = (0, import_react161.useCallback)(() => {
           return {
             "data-visible": (0, import_shared_utils.dataAttr)(isVisible),
             "data-closeable": (0, import_shared_utils.dataAttr)(isClosable),
@@ -169752,35 +169811,35 @@
             className: slots.base({ class: baseStyles })
           };
         }, [slots, baseStyles]);
-        const getMainWrapperProps = (0, import_react132.useCallback)(() => {
+        const getMainWrapperProps = (0, import_react161.useCallback)(() => {
           return {
             className: slots.mainWrapper({ class: classNames == null ? void 0 : classNames.mainWrapper })
           };
         }, [slots, classNames == null ? void 0 : classNames.mainWrapper]);
-        const getDescriptionProps = (0, import_react132.useCallback)(() => {
+        const getDescriptionProps = (0, import_react161.useCallback)(() => {
           return {
             className: slots.description({ class: classNames == null ? void 0 : classNames.description })
           };
         }, [slots, classNames == null ? void 0 : classNames.description]);
-        const getTitleProps = (0, import_react132.useCallback)(() => {
+        const getTitleProps = (0, import_react161.useCallback)(() => {
           return {
             className: slots.title({ class: classNames == null ? void 0 : classNames.title })
           };
         }, [slots, classNames == null ? void 0 : classNames.title]);
-        const getCloseButtonProps = (0, import_react132.useCallback)(
+        const getCloseButtonProps = (0, import_react161.useCallback)(
           () => ({
             ...closeButtonProps,
             className: slots.closeButton({ class: classNames == null ? void 0 : classNames.closeButton })
           }),
           [slots, classNames == null ? void 0 : classNames.closeButton]
         );
-        const getAlertIconProps = (0, import_react132.useCallback)(
+        const getAlertIconProps = (0, import_react161.useCallback)(
           () => ({
             className: slots.alertIcon({ class: classNames == null ? void 0 : classNames.alertIcon })
           }),
           [slots, classNames == null ? void 0 : classNames.alertIcon]
         );
-        const getIconWrapperProps = (0, import_react132.useCallback)(
+        const getIconWrapperProps = (0, import_react161.useCallback)(
           () => ({
             className: slots.iconWrapper({ class: classNames == null ? void 0 : classNames.iconWrapper })
           }),
@@ -169808,7 +169867,7 @@
           getIconWrapperProps
         };
       }
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var iconMap = {
         primary: import_shared_icons.InfoCircleIcon,
         secondary: import_shared_icons.InfoCircleIcon,
@@ -169841,16 +169900,16 @@
         if (!isVisible) return null;
         const customIcon = icon && (0, import_react210.isValidElement)(icon) ? (0, import_react210.cloneElement)(icon, getAlertIconProps()) : null;
         const IconComponent = iconMap[color2] || iconMap.primary;
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)("div", { ref: domRef, role: "alert", ...getBaseProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("div", { ref: domRef, role: "alert", ...getBaseProps(), children: [
           startContent,
-          /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("div", { ...getIconWrapperProps(), children: customIcon || /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(IconComponent, { ...getAlertIconProps() }) }),
-          /* @__PURE__ */ (0, import_jsx_runtime68.jsxs)("div", { ...getMainWrapperProps(), children: [
-            !(0, import_shared_utils2.isEmpty)(title) && /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("div", { ...getTitleProps(), children: title }),
-            !(0, import_shared_utils2.isEmpty)(description) && /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("div", { ...getDescriptionProps(), children: description }),
+          /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("div", { ...getIconWrapperProps(), children: customIcon || /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(IconComponent, { ...getAlertIconProps() }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("div", { ...getMainWrapperProps(), children: [
+            !(0, import_shared_utils2.isEmpty)(title) && /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("div", { ...getTitleProps(), children: title }),
+            !(0, import_shared_utils2.isEmpty)(description) && /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("div", { ...getDescriptionProps(), children: description }),
             children
           ] }),
           endContent,
-          (isClosable || onClose) && /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+          (isClosable || onClose) && /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
             import_button.Button,
             {
               isIconOnly: true,
@@ -169859,7 +169918,7 @@
               variant: "light",
               onPress: handleClose,
               ...getCloseButtonProps(),
-              children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_shared_icons.CloseIcon, { height: 20, width: 20 })
+              children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_shared_icons.CloseIcon, { height: 20, width: 20 })
             }
           )
         ] });
@@ -169906,7 +169965,7 @@
       var import_modal = require_dist63();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_utils = require_dist19();
       var import_shared_utils = require_dist2();
       function useDrawer(originalProps) {
@@ -169921,7 +169980,7 @@
           ...otherProps
         } = originalProps;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const motionProps = (0, import_react132.useMemo)(() => {
+        const motionProps = (0, import_react161.useMemo)(() => {
           if (!(0, import_shared_utils.isEmpty)(drawerMotionProps)) return drawerMotionProps;
           const key = placement === "left" || placement === "right" ? "x" : "y";
           return {
@@ -169948,14 +170007,14 @@
           };
         }, [placement, drawerMotionProps]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react132.useMemo)(
+        const slots = (0, import_react161.useMemo)(
           () => (0, import_theme.drawer)({
             size,
             placement
           }),
           [size, placement]
         );
-        const getModalProps = (0, import_react132.useCallback)(() => {
+        const getModalProps = (0, import_react161.useCallback)(() => {
           return {
             classNames: {
               ...classNames,
@@ -169969,10 +170028,10 @@
         }, [baseStyles, classNames, motionProps, scrollBehavior, size, otherProps]);
         return { domRef, getModalProps };
       }
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Drawer = (0, import_system.forwardRef)(({ children, ...props }, ref) => {
         const { domRef, getModalProps } = useDrawer({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_modal.Modal, { ref: domRef, ...getModalProps(), children });
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_modal.Modal, { ref: domRef, ...getModalProps(), children });
       });
       Drawer.displayName = "HeroUI.Drawer";
       var drawer_default = Drawer;
@@ -170242,7 +170301,7 @@
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
       var import_use_form_reset = require_dist75();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_utils8 = require_main38();
       var import_form = require_main22();
       var import_form2 = require_main39();
@@ -170288,7 +170347,7 @@
           autoFocus,
           isTextInput: true
         });
-        const handleValueChange = (0, import_react132.useCallback)(
+        const handleValueChange = (0, import_react161.useCallback)(
           (value2) => {
             onValueChange(value2 != null ? value2 : "");
           },
@@ -170320,7 +170379,7 @@
         const errorMessage = typeof props.errorMessage === "function" ? props.errorMessage({ isInvalid, validationErrors, validationDetails }) : props.errorMessage || (validationErrors == null ? void 0 : validationErrors.join(" "));
         const description = props.description;
         const hasHelper = !!description || !!errorMessage;
-        const slots = (0, import_react132.useMemo)(
+        const slots = (0, import_react161.useMemo)(
           () => (0, import_theme.inputOtp)({
             ...variantProps2,
             disableAnimation,
@@ -170329,7 +170388,7 @@
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation, isInvalid, isReadOnly]
         );
-        const getBaseProps = (0, import_react132.useCallback)(
+        const getBaseProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ref: baseDomRef,
@@ -170364,7 +170423,7 @@
           },
           [baseDomRef, slots, baseStyles, isDisabled, isInvalid, isRequired, isReadOnly, value, length]
         );
-        const getInputOtpProps = (0, import_react132.useCallback)(
+        const getInputOtpProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             var _a2;
             const otpProps = {
@@ -170408,7 +170467,7 @@
             autoFocus
           ]
         );
-        const getSegmentWrapperProps = (0, import_react132.useCallback)(
+        const getSegmentWrapperProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.segmentWrapper({
@@ -170422,7 +170481,7 @@
           },
           [classNames == null ? void 0 : classNames.segmentWrapper, isDisabled]
         );
-        const getHelperWrapperProps = (0, import_react132.useCallback)(
+        const getHelperWrapperProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.helperWrapper({
@@ -170434,7 +170493,7 @@
           },
           [classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getErrorMessageProps = (0, import_react132.useCallback)(
+        const getErrorMessageProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.errorMessage({
@@ -170446,7 +170505,7 @@
           },
           [classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getDescriptionProps = (0, import_react132.useCallback)(
+        const getDescriptionProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.description({
@@ -170488,7 +170547,7 @@
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils2 = require_dist2();
       var import_theme2 = require_dist12();
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var InputOtpSegment = ({
         ...props
       }) => {
@@ -170500,14 +170559,14 @@
         const displayValue = (0, import_react210.useMemo)(() => {
           var _a2, _b;
           if (props.isActive && !props.char) {
-            return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("div", { className: (0, import_theme2.cn)((_a2 = slots.caret) == null ? void 0 : _a2.call(slots, { class: caretStyles })) });
+            return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("div", { className: (0, import_theme2.cn)((_a2 = slots.caret) == null ? void 0 : _a2.call(slots, { class: caretStyles })) });
           }
           if (props.char) {
-            return type === "password" ? /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("div", { className: (0, import_theme2.cn)((_b = slots.passwordChar) == null ? void 0 : _b.call(slots, { class: passwordCharStyles })) }) : /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("div", { children: props.char });
+            return type === "password" ? /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("div", { className: (0, import_theme2.cn)((_b = slots.passwordChar) == null ? void 0 : _b.call(slots, { class: passwordCharStyles })) }) : /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("div", { children: props.char });
           }
-          return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)("div", { children: props.placeholderChar });
+          return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("div", { children: props.placeholderChar });
         }, [props.char, props.isActive, props.placeholderChar, type]);
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
           "div",
           {
             className: (0, import_theme2.cn)((_a = slots.segment) == null ? void 0 : _a.call(slots, { class: segmentStyles })),
@@ -171494,11 +171553,11 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_interactions = require_main17();
-      var import_i18n14 = require_main5();
+      var import_i18n15 = require_main5();
       var import_shared_utils = require_dist2();
       var import_numberfield = require_main78();
       var import_numberfield2 = require_main79();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_form = require_dist33();
       function useNumberInput(originalProps) {
         var _a, _b, _c;
@@ -171526,14 +171585,14 @@
           hideStepper,
           ...otherProps
         } = props;
-        const [isFocusWithin, setFocusWithin] = (0, import_react132.useState)(false);
+        const [isFocusWithin, setFocusWithin] = (0, import_react161.useState)(false);
         const Component2 = as || "div";
         const disableAnimation = (_c = (_b = originalProps.disableAnimation) != null ? _b : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _c : false;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
         const baseDomRef = (0, import_react_utils.useDOMRef)(baseRef);
         const inputWrapperRef = (0, import_react_utils.useDOMRef)(wrapperRef);
         const innerWrapperRef = (0, import_react_utils.useDOMRef)(innerWrapperRefProp);
-        const { locale } = (0, import_i18n14.useLocale)();
+        const { locale } = (0, import_i18n15.useLocale)();
         const state = (0, import_numberfield.useNumberFieldState)({
           ...originalProps,
           validationBehavior,
@@ -171556,7 +171615,7 @@
         const isFilled = !(0, import_shared_utils.isEmpty)(state.inputValue) && !(0, import_shared_utils.isEmpty)(inputValue);
         const isFilledWithin = isFilled || isFocusWithin;
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className, isFilled ? "is-filled" : "");
-        const handleClear = (0, import_react132.useCallback)(() => {
+        const handleClear = (0, import_react161.useCallback)(() => {
           var _a2;
           state.setInputValue("");
           onClear == null ? void 0 : onClear();
@@ -171600,7 +171659,7 @@
         const hasStartContent = !!startContent;
         const isLabelOutside = shouldLabelBeOutside ? labelPlacement === "outside-left" || isOutsideTop || hasPlaceholder || labelPlacement === "outside" && hasStartContent : false;
         const isLabelOutsideAsPlaceholder = labelPlacement === "outside" && !hasPlaceholder && !hasStartContent;
-        const slots = (0, import_react132.useMemo)(
+        const slots = (0, import_react161.useMemo)(
           () => (0, import_theme.numberInput)({
             ...variantProps2,
             isInvalid,
@@ -171617,7 +171676,7 @@
             disableAnimation
           ]
         );
-        const handleKeyDown = (0, import_react132.useCallback)(
+        const handleKeyDown = (0, import_react161.useCallback)(
           (e) => {
             var _a2, _b2;
             const inputElement = e.currentTarget;
@@ -171647,7 +171706,7 @@
           },
           [inputValue, state, onClear, isClearable, originalProps.isReadOnly]
         );
-        const getBaseProps = (0, import_react132.useCallback)(
+        const getBaseProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ref: baseDomRef,
@@ -171697,7 +171756,7 @@
             originalProps.isDisabled
           ]
         );
-        const getLabelProps = (0, import_react132.useCallback)(
+        const getLabelProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "label",
@@ -171707,7 +171766,7 @@
           },
           [slots, isLabelHovered, labelProps, classNames == null ? void 0 : classNames.label]
         );
-        const getNumberInputProps = (0, import_react132.useCallback)(
+        const getNumberInputProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "input",
@@ -171749,7 +171808,7 @@
             handleKeyDown
           ]
         );
-        const getHiddenNumberInputProps = (0, import_react132.useCallback)(
+        const getHiddenNumberInputProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               name: originalProps.name,
@@ -171761,7 +171820,7 @@
           },
           [inputValue, originalProps.name]
         );
-        const getInputWrapperProps = (0, import_react132.useCallback)(
+        const getInputWrapperProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ref: inputWrapperRef,
@@ -171794,7 +171853,7 @@
             classNames == null ? void 0 : classNames.inputWrapper
           ]
         );
-        const getInnerWrapperProps = (0, import_react132.useCallback)(
+        const getInnerWrapperProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ref: innerWrapperRef,
@@ -171812,7 +171871,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.innerWrapper]
         );
-        const getMainWrapperProps = (0, import_react132.useCallback)(
+        const getMainWrapperProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -171824,7 +171883,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.mainWrapper]
         );
-        const getHelperWrapperProps = (0, import_react132.useCallback)(
+        const getHelperWrapperProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -171836,7 +171895,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getDescriptionProps = (0, import_react132.useCallback)(
+        const getDescriptionProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -171847,7 +171906,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.description]
         );
-        const getErrorMessageProps = (0, import_react132.useCallback)(
+        const getErrorMessageProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -171858,7 +171917,7 @@
           },
           [slots, errorMessageProps, classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getClearButtonProps = (0, import_react132.useCallback)(
+        const getClearButtonProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -171874,7 +171933,7 @@
           },
           [slots, isClearButtonFocusVisible, clearPressProps, clearFocusProps, classNames == null ? void 0 : classNames.clearButton]
         );
-        const getStepperWrapperProps = (0, import_react132.useCallback)(
+        const getStepperWrapperProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -171886,7 +171945,7 @@
           },
           [slots]
         );
-        const getStepperIncreaseButtonProps = (0, import_react132.useCallback)(
+        const getStepperIncreaseButtonProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -171901,7 +171960,7 @@
           },
           [slots, incrementButtonProps, classNames == null ? void 0 : classNames.stepperButton]
         );
-        const getStepperDecreaseButtonProps = (0, import_react132.useCallback)(
+        const getStepperDecreaseButtonProps = (0, import_react161.useCallback)(
           (props2 = {}) => {
             return {
               type: "button",
@@ -171958,9 +172017,9 @@
       }
       var import_button = require_dist28();
       var import_shared_icons = require_dist17();
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var NumberInputStepper = ({ direction, ...otherProps }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_button.Button, { disableRipple: true, isIconOnly: true, ...otherProps, children: direction == "up" ? /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_shared_icons.ChevronUpIcon, {}) : /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_shared_icons.ChevronDownIcon, {}) });
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_button.Button, { disableRipple: true, isIconOnly: true, ...otherProps, children: direction == "up" ? /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_shared_icons.ChevronUpIcon, {}) : /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_shared_icons.ChevronDownIcon, {}) });
       };
       NumberInputStepper.displayName = "HeroUI.NumberInputStepper";
       var number_input_stepper_default = NumberInputStepper;
@@ -173512,13 +173571,13 @@
       var import_spinner = require_dist25();
       var import_framer_motion22 = require_cjs4();
       var import_shared_utils = require_dist2();
-      var import_jsx_runtime68 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime96 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var domAnimation2 = () => Promise.resolve().then(() => (init_src(), src_exports)).then((res) => res.default);
       var Ripple = (props) => {
         const { ripples = [], motionProps, color: color2 = "currentColor", style: style2, onClear } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_jsx_runtime68.Fragment, { children: ripples.map((ripple) => {
+        return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_jsx_runtime96.Fragment, { children: ripples.map((ripple) => {
           const duration = (0, import_shared_utils.clamp)(0.01 * ripple.size, 0.2, ripple.size > 100 ? 0.75 : 0.5);
-          return /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_framer_motion22.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(import_framer_motion22.AnimatePresence, { mode: "popLayout", children: /* @__PURE__ */ (0, import_jsx_runtime68.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_framer_motion22.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(import_framer_motion22.AnimatePresence, { mode: "popLayout", children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
             import_framer_motion22.m.span,
             {
               animate: {
@@ -173556,10 +173615,10 @@
       Ripple.displayName = "HeroUI.Ripple";
       var ripple_default = Ripple;
       var import_shared_utils2 = require_dist2();
-      var import_react132 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react161 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useRipple(props = {}) {
-        const [ripples, setRipples] = (0, import_react132.useState)([]);
-        const onPress = (0, import_react132.useCallback)((event) => {
+        const [ripples, setRipples] = (0, import_react161.useState)([]);
+        const onPress = (0, import_react161.useCallback)((event) => {
           const trigger = event.target;
           const size = Math.max(trigger.clientWidth, trigger.clientHeight);
           setRipples((prevRipples) => [
@@ -173572,7 +173631,7 @@
             }
           ]);
         }, []);
-        const onClear = (0, import_react132.useCallback)((key) => {
+        const onClear = (0, import_react161.useCallback)((key) => {
           setRipples((prevState) => prevState.filter((ripple) => ripple.key !== key));
         }, []);
         return { ripples, onClear, onPress, ...props };
@@ -175127,6 +175186,11 @@
         return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
           /* @__PURE__ */ jsx("path", { d: "M5 5l9 7-9 7z", fill: "currentColor" }),
           /* @__PURE__ */ jsx("path", { d: "M18 5v14" })
+        ] });
+      case "switchStream":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
+          /* @__PURE__ */ jsx("path", { d: "M4 7h13M14 4l3 3-3 3" }),
+          /* @__PURE__ */ jsx("path", { d: "M20 17H7M10 14l-3 3 3 3" })
         ] });
       case "subtitles":
         return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", children: [
@@ -177733,6 +177797,7 @@
         "tuning",
         "audioDelay",
         "nextEpisode",
+        "switchStream",
         "more",
         "fullscreen"
       ];
@@ -177748,16 +177813,16 @@
       const raw = getScopedStorageItem(KEY11);
       if (!raw) return { ...DEFAULT_TUNING };
       const parsed = JSON.parse(raw);
-      const clamp2 = (v, lo, hi, dflt) => {
+      const clamp4 = (v, lo, hi, dflt) => {
         const n = Number(v);
         return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : dflt;
       };
       return {
-        brightness: clamp2(parsed.brightness, -50, 50, 0),
-        contrast: clamp2(parsed.contrast, -50, 50, 0),
-        saturation: clamp2(parsed.saturation, -50, 50, 0),
-        gamma: clamp2(parsed.gamma, -50, 50, 0),
-        sharpen: clamp2(parsed.sharpen, 0, 2, 0)
+        brightness: clamp4(parsed.brightness, -50, 50, 0),
+        contrast: clamp4(parsed.contrast, -50, 50, 0),
+        saturation: clamp4(parsed.saturation, -50, 50, 0),
+        gamma: clamp4(parsed.gamma, -50, 50, 0),
+        sharpen: clamp4(parsed.sharpen, 0, 2, 0)
       };
     } catch {
       return { ...DEFAULT_TUNING };
@@ -180027,6 +180092,215 @@
     }
   });
 
+  // lib/core-streams/stream-utils.ts
+  function parseSizeBytes(text) {
+    const match = /(\d+(?:[.,]\d+)?)\s*(tib|gib|mib|kib|tb|gb|mb|kb)\b/i.exec(text);
+    if (!match) return null;
+    const value = Number.parseFloat(match[1].replace(",", "."));
+    const unit = SIZE_UNITS[match[2].toLowerCase()];
+    if (!Number.isFinite(value) || !unit) return null;
+    return Math.round(value * unit);
+  }
+  function getStreamSizeBytes(stream) {
+    const cachedFileBytes = (stream.cachedFiles ?? []).flatMap((entry) => Object.values(entry)).reduce((sum, file) => sum + (Number.isFinite(file.filesize) ? file.filesize : 0), 0);
+    if (cachedFileBytes > 0) return cachedFileBytes;
+    if (typeof stream.sizeBytes === "number" && stream.sizeBytes > 0) return stream.sizeBytes;
+    return parseSizeBytes(`${stream.name} ${stream.title} ${stream.description ?? ""}`);
+  }
+  function formatSize(bytes) {
+    if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(bytes >= 10 * 1024 ** 3 ? 1 : 2)} GB`;
+    if (bytes >= 1024 ** 2) return `${Math.round(bytes / 1024 ** 2)} MB`;
+    return `${Math.round(bytes / 1024)} kB`;
+  }
+  function langFlag(code) {
+    return LANG_FLAGS[code.toLowerCase().split(/[-_]/)[0]] ?? null;
+  }
+  function getStreamAudioLanguages(stream) {
+    const source = `${stream.name} ${stream.title} ${stream.description ?? ""}`.toLowerCase();
+    return STREAM_LANGUAGE_PATTERNS.filter(({ pattern }) => pattern.test(source)).map(({ code }) => code);
+  }
+  var SIZE_UNITS, STREAM_LANGUAGE_PATTERNS, LANG_FLAGS;
+  var init_stream_utils = __esm({
+    "lib/core-streams/stream-utils.ts"() {
+      "use client";
+      init_profile_storage_shim();
+      SIZE_UNITS = {
+        kb: 1e3,
+        mb: 1e3 ** 2,
+        gb: 1e3 ** 3,
+        tb: 1e3 ** 4,
+        kib: 1024,
+        mib: 1024 ** 2,
+        gib: 1024 ** 3,
+        tib: 1024 ** 4
+      };
+      STREAM_LANGUAGE_PATTERNS = [
+        { code: "en", pattern: /\b(?:en|eng|english)\b/i },
+        { code: "sv", pattern: /\b(?:sv|swe|swedish|svenska)\b/i },
+        { code: "no", pattern: /\b(?:no|nor|norwegian|norsk)\b/i },
+        { code: "da", pattern: /\b(?:da|dan|danish)\b/i },
+        { code: "fi", pattern: /\b(?:fi|fin|finnish|suomi)\b/i },
+        { code: "de", pattern: /\b(?:de|ger|deu|german|deutsch)\b/i },
+        { code: "fr", pattern: /\b(?:fr|fra|fre|french|fran[cç]ais)\b/i },
+        { code: "es", pattern: /\b(?:es|spa|spanish|espa[ñn]ol)\b/i },
+        { code: "it", pattern: /\b(?:it|ita|italian|italiano)\b/i },
+        { code: "pt", pattern: /\b(?:pt|por|portuguese|portugu[eê]s)\b/i },
+        { code: "nl", pattern: /\b(?:nl|nld|dut|dutch|nederlands)\b/i },
+        { code: "pl", pattern: /\b(?:pl|pol|polish)\b/i },
+        { code: "ru", pattern: /\b(?:ru|rus|russian)\b/i },
+        { code: "tr", pattern: /\b(?:tr|tur|turkish|t[üu]rk[çc]e)\b/i },
+        { code: "ja", pattern: /\b(?:ja|jpn|japanese)\b/i },
+        { code: "ko", pattern: /\b(?:ko|kor|korean)\b/i }
+      ];
+      LANG_FLAGS = {
+        en: "\u{1F1EC}\u{1F1E7}",
+        sv: "\u{1F1F8}\u{1F1EA}",
+        no: "\u{1F1F3}\u{1F1F4}",
+        da: "\u{1F1E9}\u{1F1F0}",
+        fi: "\u{1F1EB}\u{1F1EE}",
+        de: "\u{1F1E9}\u{1F1EA}",
+        fr: "\u{1F1EB}\u{1F1F7}",
+        es: "\u{1F1EA}\u{1F1F8}",
+        it: "\u{1F1EE}\u{1F1F9}",
+        pt: "\u{1F1F5}\u{1F1F9}",
+        nl: "\u{1F1F3}\u{1F1F1}",
+        pl: "\u{1F1F5}\u{1F1F1}",
+        ru: "\u{1F1F7}\u{1F1FA}",
+        tr: "\u{1F1F9}\u{1F1F7}",
+        ja: "\u{1F1EF}\u{1F1F5}",
+        ko: "\u{1F1F0}\u{1F1F7}",
+        zh: "\u{1F1E8}\u{1F1F3}",
+        hi: "\u{1F1EE}\u{1F1F3}",
+        ar: "\u{1F1F8}\u{1F1E6}",
+        cs: "\u{1F1E8}\u{1F1FF}",
+        hu: "\u{1F1ED}\u{1F1FA}",
+        ro: "\u{1F1F7}\u{1F1F4}",
+        uk: "\u{1F1FA}\u{1F1E6}",
+        el: "\u{1F1EC}\u{1F1F7}",
+        he: "\u{1F1EE}\u{1F1F1}",
+        th: "\u{1F1F9}\u{1F1ED}",
+        vi: "\u{1F1FB}\u{1F1F3}",
+        id: "\u{1F1EE}\u{1F1E9}"
+      };
+    }
+  });
+
+  // components/player/player-streams-panel.tsx
+  function streamRowKey(stream) {
+    return `${stream.directUrl ?? `hash:${stream.infoHash}`}::${stream.fileIdx ?? ""}`;
+  }
+  function PlayerStreamsPanel({ streams, loading = false, currentUrl, onSelect, onClose }) {
+    const { t } = useLang();
+    const isTv = useTvMode();
+    const currentRef = useRef(null);
+    useEffect(() => {
+      if (!isTv) return;
+      let frames = 0;
+      let cancelled = false;
+      const attempt = () => {
+        if (cancelled) return;
+        const node = currentRef.current;
+        if (node) {
+          node.focus();
+          return;
+        }
+        if (frames++ < 60) requestAnimationFrame(attempt);
+      };
+      requestAnimationFrame(attempt);
+      return () => {
+        cancelled = true;
+      };
+    }, [isTv]);
+    return /* @__PURE__ */ jsxs(
+      "div",
+      {
+        "data-player-streams-panel": "",
+        className: "absolute inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden sm:w-[340px]",
+        style: {
+          background: "rgb(var(--base-950) / 0.96)",
+          backdropFilter: "blur(12px)",
+          borderLeft: "1px solid rgba(255,255,255,0.07)",
+          boxShadow: "-20px 0 60px rgba(0,0,0,0.5)"
+        },
+        onClick: (event) => event.stopPropagation(),
+        ...isTv ? { "data-panel-root": "" } : {},
+        children: [
+          /* @__PURE__ */ jsxs("div", { className: "flex flex-shrink-0 items-center justify-between border-b border-white/[0.07] px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top),var(--android-inset-top,0px))]", children: [
+            /* @__PURE__ */ jsxs("span", { className: "text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400", children: [
+              t("plStreams"),
+              streams.length > 0 ? /* @__PURE__ */ jsx("span", { className: "ml-2 tabular-nums text-slate-600", children: streams.length }) : null
+            ] }),
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                type: "button",
+                ...isTv ? { "data-f": "" } : {},
+                onClick: onClose,
+                "aria-label": t("close"),
+                className: "flex h-7 w-7 items-center justify-center rounded-full text-slate-500 transition hover:bg-white/10 hover:text-white",
+                children: /* @__PURE__ */ jsx("svg", { className: "h-3.5 w-3.5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2.5, children: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12" }) })
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxs(
+            "div",
+            {
+              className: "flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain",
+              ...isTv ? { "data-scroll": "" } : {},
+              children: [
+                streams.length === 0 ? /* @__PURE__ */ jsx("p", { className: "px-4 py-6 text-sm text-slate-500", children: loading ? t("coreStreamsLoading") : t("noStreamsAvailable") }) : streams.map((stream) => {
+                  const isCurrent = currentUrl != null && stream.directUrl === currentUrl;
+                  const sizeBytes = getStreamSizeBytes(stream);
+                  const titleShowsSize = parseSizeBytes(stream.title ?? "") !== null;
+                  const audio = getStreamAudioLanguages(stream).slice(0, 3).map(langFlag).filter((flag) => Boolean(flag));
+                  const fileLine = stream.title && stream.title !== stream.name ? stream.title.split("\n")[0] : null;
+                  return /* @__PURE__ */ jsxs(
+                    "button",
+                    {
+                      type: "button",
+                      ref: isCurrent ? currentRef : void 0,
+                      ...isTv ? { "data-f": "" } : {},
+                      ...isTv && isCurrent ? { "data-init": "" } : {},
+                      "aria-current": isCurrent ? "true" : void 0,
+                      disabled: !stream.directUrl,
+                      onClick: () => onSelect(stream),
+                      className: `flex min-h-[44px] w-full flex-col gap-1 border-b border-white/[0.04] px-4 py-2.5 text-left transition disabled:opacity-50 ${isCurrent ? "bg-accent-400/[0.22]" : "hover:bg-white/5"}`,
+                      children: [
+                        /* @__PURE__ */ jsxs("span", { className: "flex w-full items-center gap-2", children: [
+                          /* @__PURE__ */ jsx("span", { className: `min-w-0 flex-1 truncate text-sm font-semibold ${isCurrent ? "text-white" : "text-slate-200"}`, children: stream.name }),
+                          isCurrent ? /* @__PURE__ */ jsx("span", { className: "flex-none rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400", children: t("epPlaying") }) : null
+                        ] }),
+                        /* @__PURE__ */ jsxs("span", { className: "flex w-full flex-wrap items-center gap-1.5 text-[11px]", children: [
+                          stream.cached ? /* @__PURE__ */ jsx("span", { className: "rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-300", children: t("coreStreamsCached") }) : null,
+                          sizeBytes && sizeBytes > 0 && !titleShowsSize ? /* @__PURE__ */ jsx("span", { className: "rounded-full bg-[#fcfcff14] px-2 py-0.5 font-semibold text-slate-200", children: formatSize(sizeBytes) }) : null,
+                          stream.source ? /* @__PURE__ */ jsx("span", { className: "whitespace-nowrap rounded-full bg-[#fcfcff14] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-300", children: stream.source }) : null,
+                          audio.length > 0 ? /* @__PURE__ */ jsx("span", { className: "rounded-full bg-[#fcfcff14] px-2 py-0.5", children: audio.join(" ") }) : null
+                        ] }),
+                        fileLine ? /* @__PURE__ */ jsx("span", { className: "block w-full truncate text-[11px] text-slate-500", children: fileLine }) : null
+                      ]
+                    },
+                    streamRowKey(stream)
+                  );
+                }),
+                loading && streams.length > 0 ? /* @__PURE__ */ jsx("p", { className: "px-4 py-3 text-[11px] text-slate-500", children: t("coreStreamsLoading") }) : null
+              ]
+            }
+          )
+        ]
+      }
+    );
+  }
+  var init_player_streams_panel = __esm({
+    "components/player/player-streams-panel.tsx"() {
+      "use client";
+      init_react_shim();
+      init_i18n();
+      init_tv_focus_shim();
+      init_stream_utils();
+      init_jsx_runtime_shim();
+    }
+  });
+
   // lib/homekit-client.ts
   async function emitHomeKitEvent(input) {
     try {
@@ -181031,7 +181305,7 @@ ${cue.text}`).join("\n\n")}
     } catch {
     }
   }
-  function VideoPlayerModal({ url, filename, title, onClose, imdbId, tmdbId, mediaType, season, episode, mediaId, mediaTitle, mediaSource, posterUrl, backdropUrl, year, initialTime, expectedDurationSeconds, onFirstPlay, hideStartSplash, forceProxy, requestHeaders, onTimeUpdate, onOutroStart, onCreditsOpenDetails, onCreditsFinished, episodes, onLoadFailed, onPlaybackEnded, onOpenedExternally, skipHomeKitOnClose, skipHomeKitOnOpen, overlayContent, autoFullscreen, sourceInfoHash, playbackTraceId, scrubPreview }) {
+  function VideoPlayerModal({ url, filename, title, onClose, imdbId, tmdbId, mediaType, season, episode, mediaId, mediaTitle, mediaSource, posterUrl, backdropUrl, year, initialTime, expectedDurationSeconds, onFirstPlay, hideStartSplash, forceProxy, requestHeaders, onTimeUpdate, onOutroStart, onCreditsOpenDetails, onCreditsFinished, episodes, streams, onLoadFailed, onPlaybackEnded, onOpenedExternally, skipHomeKitOnClose, skipHomeKitOnOpen, overlayContent, autoFullscreen, sourceInfoHash, playbackTraceId, scrubPreview }) {
     const STILL_WATCHING_CLOSE_SECONDS = 20;
     const [engineKind, setEngineKind] = useState("none");
     useEffect(() => {
@@ -181304,6 +181578,10 @@ ${cue.text}`).join("\n\n")}
     const setShowSoundtrack = surfaceSetter("soundtrack");
     const showEpisodes = openSurface === "episodes";
     const setShowEpisodes = surfaceSetter("episodes");
+    const showStreams = openSurface === "streams";
+    const setShowStreams = surfaceSetter("streams");
+    const hasStreamChoice = Boolean(streams && streams.items.length >= 2);
+    const showStreamButton = Boolean(streams && (hasStreamChoice || streams.loading));
     const showTuningPanel = openSurface === "tuning";
     const setShowTuningPanel = surfaceSetter("tuning");
     const [showStartTitle, setShowStartTitle] = useState(false);
@@ -184546,11 +184824,11 @@ ${cue.text}`).join("\n\n")}
       return () => controller.abort();
     }, [mediaType, isLastEpisodeOfSeason, wikiTmdbId, tmdbId, episodes?.seasonNumber, season]);
     const creditsModeAllowed = Boolean(
-      getCreditsRecommendations() && !getAdvanceAtOutro() && (mediaType === "tv" ? isLastEpisodeOfSeason && seasonLookupSettled && nextSeasonNumber === null : true)
+      getCreditsRecommendations() && !getAdvanceAtOutro() && (mediaType === "tv" ? getCreditsRecommendationsTv() && isLastEpisodeOfSeason && seasonLookupSettled && nextSeasonNumber === null : true)
     );
     const creditsTriggerSeconds = (() => {
       if (totalDuration <= 600) return null;
-      const tailSeconds = getCreditsThresholdMinutes() * 60;
+      const tailSeconds = (mediaType === "tv" ? getCreditsThresholdMinutesTv() : getCreditsThresholdMinutes()) * 60;
       const lateThreshold = Math.max(0, totalDuration - tailSeconds);
       if (!outroSegment) return lateThreshold;
       const outroEndsAt = outroSegment.endMs / 1e3;
@@ -185173,6 +185451,19 @@ ${cue.text}`).join("\n\n")}
           children: playerIcon("nextEpisode", "h-[19px] w-[19px]")
         }
       ) : null,
+      switchStream: showStreamButton ? /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          ...hasStreamChoice ? dtStation : {},
+          disabled: !hasStreamChoice,
+          onClick: () => setShowStreams((open) => !open),
+          title: t("plSwitchStream"),
+          "aria-label": t("plSwitchStream"),
+          className: `${dtIconButtonClass(showStreams ? "open" : "idle")} disabled:opacity-40`,
+          children: playerIcon("switchStream", "h-[19px] w-[19px]")
+        }
+      ) : null,
       mute: /* @__PURE__ */ jsx("button", { type: "button", ...dtStation, onClick: toggleMute, "aria-label": t("plMute"), className: "flex-none p-1 text-slate-300 transition hover:text-white", children: muted || volume === 0 ? /* @__PURE__ */ jsx("svg", { className: "h-[18px] w-[18px]", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zM4.27 3 3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73 4.27 3zM12 4 9.91 6.09 12 8.18V4z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-[18px] w-[18px]", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" }) }) }),
       volume: playerLayout.volumeStyle === "icon" ? null : playerLayout.volumeStyle === "stepper" || isTv ? /* @__PURE__ */ jsxs("span", { className: "flex flex-none items-center gap-1.5", children: [
         /* @__PURE__ */ jsx("button", { type: "button", ...dtStation, onClick: () => applyVolume((muted ? 0 : volume) - 0.05), className: "flex h-6 w-6 items-center justify-center rounded-full border border-white/[0.14] text-xs text-slate-300 transition hover:bg-white/10 hover:text-white", children: "\u2212" }),
@@ -185369,7 +185660,7 @@ ${cue.text}`).join("\n\n")}
       ) : null
     };
     const DESKTOP_ZONES = {
-      left: [["playPause", "nextEpisode"], ["mute", "volume"]],
+      left: [["playPause", "nextEpisode", "switchStream"], ["mute", "volume"]],
       center: [["segmentBadges"]],
       right: [
         ["subtitles", "audioTrack", "aspect", "cropZoom"],
@@ -185757,6 +186048,12 @@ ${cue.text}`).join("\n\n")}
         state: showEpisodes ? "open" : "idle",
         onClick: () => setShowEpisodes((open) => !open)
       } : void 0,
+      switchStream: hasStreamChoice ? {
+        label: t("plStreams"),
+        title: t("plSwitchStream"),
+        state: showStreams ? "open" : "idle",
+        onClick: () => setShowStreams((open) => !open)
+      } : void 0,
       tuning: {
         label: t("plShortPicture"),
         title: t("vtTitle"),
@@ -185805,7 +186102,7 @@ ${cue.text}`).join("\n\n")}
         onClick: toggleFullscreen
       } : void 0
     };
-    const PHONE_ROW_ORDER = landscapeChrome ? ["subtitles", "audioTrack", "cropZoom", "tuning", "wiki", "soundtrack", "aspect", "fullscreen"] : ["subtitles", "audioTrack", "nextEpisode", "tuning", "wiki", "soundtrack", "cropZoom", "aspect"];
+    const PHONE_ROW_ORDER = landscapeChrome ? ["subtitles", "audioTrack", "cropZoom", "tuning", "wiki", "soundtrack", "switchStream", "aspect", "fullscreen"] : ["subtitles", "audioTrack", "nextEpisode", "switchStream", "tuning", "wiki", "soundtrack", "cropZoom", "aspect"];
     const LANDSCAPE_ROW_BUDGET = 6;
     const phoneDedicatedIds = landscapeChrome ? ["nextEpisode", "cast"] : ["cast", "fullscreen"];
     const phoneRowCandidates = PHONE_ROW_ORDER.filter((id4) => !phoneDedicatedIds.includes(id4) && showsControl(id4) && Boolean(phoneControls[id4]));
@@ -185927,7 +186224,7 @@ ${cue.text}`).join("\n\n")}
         "data-tv-player": tvChrome ? "1" : void 0,
         "data-tv-fullbleed": "",
         style: { "--player-accent": playerAccentRgb },
-        className: `fixed inset-x-0 top-0 z-[60] flex h-[100dvh] flex-col !mt-0 ${useMpv ? "" : "bg-black"}`,
+        className: `fixed inset-x-0 top-0 z-[60] flex h-[var(--tv-scene-vh,100dvh)] flex-col !mt-0 ${useMpv ? "" : "bg-black"}`,
         children: [
           !hasEverStarted && (!hideStartSplash || clientOwnsSplash) && /* @__PURE__ */ jsxs(
             "div",
@@ -187216,6 +187513,19 @@ ${cue.text}`).join("\n\n")}
                                 ] })
                               }
                             ) : null,
+                            switchStream: showStreamButton ? /* @__PURE__ */ jsx(
+                              "button",
+                              {
+                                type: "button",
+                                "data-f": isTv && hasStreamChoice ? "1" : void 0,
+                                disabled: !hasStreamChoice,
+                                onClick: () => setShowStreams((open) => !open),
+                                title: t("plSwitchStream"),
+                                "aria-label": t("plSwitchStream"),
+                                className: showStreams ? "text-aurora-300" : "text-slate-300 transition hover:text-white disabled:opacity-40",
+                                children: playerIcon("switchStream", "h-4 w-4")
+                              }
+                            ) : null,
                             subtitles: /* @__PURE__ */ jsx(
                               "button",
                               {
@@ -187822,6 +188132,21 @@ ${cue.text}`).join("\n\n")}
                   },
                   `episodes:${playbackSessionIdentity}`
                 ),
+                showStreams && streams && /* @__PURE__ */ jsx(
+                  PlayerStreamsPanel,
+                  {
+                    streams: streams.items,
+                    loading: streams.loading,
+                    currentUrl: streams.currentUrl,
+                    onSelect: (stream) => {
+                      setShowStreams(false);
+                      if (streams.currentUrl && stream.directUrl === streams.currentUrl) return;
+                      streams.onSelect(stream, Math.max(0, realTimeRef.current));
+                    },
+                    onClose: () => setShowStreams(false)
+                  },
+                  `streams:${playbackSessionIdentity}`
+                ),
                 showSoundtrack && /* @__PURE__ */ jsx(
                   PlayerSoundtrackPanel,
                   {
@@ -187879,6 +188204,7 @@ ${cue.text}`).join("\n\n")}
       init_player_wiki_panel();
       init_player_soundtrack_panel();
       init_player_episodes_panel();
+      init_player_streams_panel();
       init_homekit_client();
       init_plugin_sdk();
       init_playback_session_client();
@@ -189884,7 +190210,7 @@ ${cue.text}`).join("\n\n")}
     }, [value]);
     const rows = numeric ? NUM_ROWS : KEY_ROWS;
     const columns = numeric ? 5 : 10;
-    const clamp2 = (next2) => maxLength === void 0 ? next2 : next2.slice(0, maxLength);
+    const clamp4 = (next2) => maxLength === void 0 ? next2 : next2.slice(0, maxLength);
     const push = (char) => {
       if (maxLength !== void 0 && value.length >= maxLength) return;
       setValue(value + (shift && !numeric ? char.toUpperCase() : char));
@@ -189893,7 +190219,7 @@ ${cue.text}`).join("\n\n")}
     const insert = (text) => {
       const cleaned = numeric ? text.replace(/\D/g, "") : text.replace(/\s+/g, " ");
       if (!cleaned) return;
-      setValue((current2) => clamp2(current2 + cleaned));
+      setValue((current2) => clamp4(current2 + cleaned));
     };
     useEffect(() => {
       const onKeyDown = (event) => {
@@ -191302,6 +191628,7 @@ ${cue.text}`).join("\n\n")}
     TV_SCENE_BOX_ATTR: () => TV_SCENE_BOX_ATTR,
     TV_SCENE_NARROW_ATTR: () => TV_SCENE_NARROW_ATTR,
     TV_SCENE_NARROW_PX: () => TV_SCENE_NARROW_PX,
+    TV_SCENE_PHONE_ATTR: () => TV_SCENE_PHONE_ATTR,
     TraktDeviceCodePanel: () => TraktDeviceCodePanel,
     VideoPlayerModal: () => VideoPlayerModal2,
     activeProfileHasPin: () => activeProfileHasPin,
@@ -191911,6 +192238,20 @@ ${cue.text}`).join("\n\n")}
   async function resetSource(source) {
     await postJson("/api/live-tv/reset", { source });
   }
+  async function completeLogos(source) {
+    const res = await fetch("/api/live-tv/logo-fallback", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ source })
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || `/api/live-tv/logo-fallback returned ${res.status}`);
+    }
+    const data = await res.json();
+    emitIndexChanged();
+    return { matched: data.matched ?? 0, total: data.total ?? 0 };
+  }
   async function startImport(body) {
     const data = await postJson("/api/live-tv/import", body);
     return data.job;
@@ -192085,6 +192426,7 @@ ${cue.text}`).join("\n\n")}
     return channels.filter((channel) => Boolean(channel) && typeof channel === "object").map((channel) => ({
       name: String(channel.name ?? "Unknown").trim() || "Unknown",
       logo: typeof channel.logo === "string" && channel.logo.trim().length > 0 ? channel.logo.trim() : null,
+      logoFallback: typeof channel.logoFallback === "string" && channel.logoFallback.trim().length > 0 ? channel.logoFallback.trim() : null,
       group: String(channel.group ?? "Other").trim() || "Other",
       url: String(channel.url ?? "").trim(),
       tvgId: typeof channel.tvgId === "string" && channel.tvgId.trim().length > 0 ? channel.tvgId.trim() : null,
@@ -192158,7 +192500,10 @@ ${cue.text}`).join("\n\n")}
       truncated: entry.truncated === true,
       channels,
       needsReimport: entry.needsReimport === true,
-      lastImportError: typeof entry.lastImportError === "string" && entry.lastImportError.trim().length > 0 ? entry.lastImportError : void 0
+      lastImportError: typeof entry.lastImportError === "string" && entry.lastImportError.trim().length > 0 ? entry.lastImportError : void 0,
+      // `undefined` betyder PÅ (se `isLogoFallbackEnabled`) — bara ett
+      // uttryckligt `false` ska överleva saneringen.
+      logoFallbackEnabled: entry.logoFallbackEnabled === false ? false : void 0
     };
   }
   function readLists() {
@@ -192278,14 +192623,22 @@ ${cue.text}`).join("\n\n")}
       })
     );
   }
+  function isLogoFallbackEnabled(list) {
+    return list.logoFallbackEnabled !== false;
+  }
+  function setLogoFallbackEnabled(listId, enabled) {
+    writeLists(
+      readLists().map((list) => list.id === listId ? { ...list, logoFallbackEnabled: enabled } : list)
+    );
+  }
   function deleteLiveTvList(listId) {
     const lists = readLists();
     const removed = lists.find((list) => list.id === listId) ?? null;
-    const remaining = lists.filter((list) => list.id !== listId);
-    writeLists(remaining);
+    const remaining2 = lists.filter((list) => list.id !== listId);
+    writeLists(remaining2);
     const source = removed?.source;
     if (!source || removed?.kind === "custom") return;
-    if (remaining.some((list) => list.source === source)) return;
+    if (remaining2.some((list) => list.source === source)) return;
     void forgetVod(source).catch(() => {
     });
     void resetSource(source).catch(() => {
@@ -192666,12 +193019,14 @@ ${cue.text}`).join("\n\n")}
     activeLogoLoads = Math.max(0, activeLogoLoads - 1);
     drainLogoQueue();
   }
-  function LiveTvLogoImage({ src, alt, className, onError }) {
+  function LiveTvLogoImage({ src, fallbackSrc, alt, className, onError }) {
     const ref = useRef(null);
     const [shouldLoad, setShouldLoad] = useState(false);
+    const [stage, setStage] = useState("primary");
     const [failed, setFailed] = useState(false);
     useEffect(() => {
       setShouldLoad(false);
+      setStage("primary");
       setFailed(false);
     }, [src]);
     useEffect(() => {
@@ -192698,11 +193053,13 @@ ${cue.text}`).join("\n\n")}
       return () => observer2.disconnect();
     }, [shouldLoad, src]);
     if (failed) return null;
+    const usableFallbackSrc = fallbackSrc && fallbackSrc !== src ? fallbackSrc : null;
+    const activeSrc = stage === "fallback" && usableFallbackSrc ? usableFallbackSrc : src;
     return /* @__PURE__ */ jsx(
       "img",
       {
         ref,
-        src: shouldLoad ? src : void 0,
+        src: shouldLoad ? activeSrc : void 0,
         alt,
         className,
         loading: isTauriEnv ? void 0 : "lazy",
@@ -192710,10 +193067,14 @@ ${cue.text}`).join("\n\n")}
         fetchPriority: "low",
         draggable: false,
         style: isTauriEnv ? void 0 : { contentVisibility: "auto" },
-        onLoad: () => finishLogoLoad(src),
+        onLoad: () => finishLogoLoad(activeSrc),
         onError: () => {
+          if (stage === "primary" && usableFallbackSrc) {
+            setStage("fallback");
+            return;
+          }
           setFailed(true);
-          finishLogoLoad(src);
+          finishLogoLoad(activeSrc);
           onError?.();
         }
       }
@@ -192731,6 +193092,222 @@ ${cue.text}`).join("\n\n")}
       pendingLogoLoads = [];
       activeLogoLoads = 0;
       MAX_CONCURRENT_LOGO_LOADS = isTauriEnv ? 1 : 8;
+    }
+  });
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/epg/store-id.ts
+  function epgStoreId(listId) {
+    return listId === null ? null : LIVE_TV_GLOBAL_EPG_ID;
+  }
+  var init_store_id2 = __esm({
+    "../lumio-official-plugins/plugins/live-tv/runtime/epg/store-id.ts"() {
+      "use strict";
+      "use client";
+      init_live_tv_data();
+    }
+  });
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/epg/now-snapshot.ts
+  function snapshotKey(listId, source) {
+    return `${epgStoreId(listId)}|${source ?? ""}`;
+  }
+  function nowSnapshotNeedsRefetch(snapshot2, nowMs) {
+    if (nowMs - snapshot2.loadedAt >= NOW_SNAPSHOT_MAX_AGE_MS) return true;
+    const items = snapshot2.items;
+    for (const key in items) {
+      const entry = items[key];
+      if (!entry) continue;
+      if (entry.now && entry.now.stop <= nowMs) return true;
+      if (entry.next && entry.next.start <= nowMs) return true;
+    }
+    return false;
+  }
+  function getCachedNowSnapshot(listId, source) {
+    return snapshots.get(snapshotKey(listId, source)) ?? null;
+  }
+  async function fetchNowSnapshot(listId, source, opts) {
+    const key = snapshotKey(listId, source);
+    const cached = snapshots.get(key);
+    if (!opts?.force && cached && Date.now() - cached.loadedAt < TTL_MS) return cached;
+    const existing = inflight6.get(key);
+    if (existing) return existing;
+    const request = epgNow({ listId: epgStoreId(listId), source: source ?? void 0 }).then((data) => {
+      const snapshot2 = {
+        at: data.at,
+        fetchedAt: data.fetchedAt,
+        items: data.items,
+        count: Object.keys(data.items).length,
+        loadedAt: Date.now()
+      };
+      snapshots.set(key, snapshot2);
+      publish2({ snapshot: snapshot2, failed: false });
+      return snapshot2;
+    }).catch((err) => {
+      publish2({ snapshot: snapshots.get(key) ?? null, failed: true });
+      throw err;
+    }).finally(() => {
+      inflight6.delete(key);
+    });
+    inflight6.set(key, request);
+    return request;
+  }
+  function publish2(next2) {
+    active = next2;
+    for (const listener of [...listeners5]) listener();
+  }
+  function getActiveNowSnapshot() {
+    return active;
+  }
+  function subscribeNowSnapshot(listener) {
+    listeners5.add(listener);
+    return () => {
+      listeners5.delete(listener);
+    };
+  }
+  var TTL_MS, snapshots, inflight6, NOW_SNAPSHOT_MAX_AGE_MS, active, listeners5;
+  var init_now_snapshot = __esm({
+    "../lumio-official-plugins/plugins/live-tv/runtime/epg/now-snapshot.ts"() {
+      "use strict";
+      "use client";
+      init_index_client();
+      init_store_id2();
+      TTL_MS = 6e4;
+      snapshots = /* @__PURE__ */ new Map();
+      inflight6 = /* @__PURE__ */ new Map();
+      NOW_SNAPSHOT_MAX_AGE_MS = 10 * 60 * 1e3;
+      active = { snapshot: null, failed: false };
+      listeners5 = /* @__PURE__ */ new Set();
+    }
+  });
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/channel-resolver.ts
+  function remember(key, value) {
+    memo3.set(key, value);
+    while (memo3.size > MAX_ENTRIES3) {
+      const oldest = memo3.keys().next();
+      if (oldest.done) break;
+      memo3.delete(oldest.value);
+    }
+  }
+  function getResolvedChannels(keys3) {
+    const out = {};
+    for (const key of keys3) {
+      const hit = memo3.get(key);
+      if (hit) out[key] = hit;
+    }
+    return out;
+  }
+  async function resolveChannelKeys(keys3) {
+    const wanted = [...new Set(keys3.filter((key) => key.length > 0))];
+    const missing = wanted.filter((key) => !memo3.has(key));
+    if (missing.length > 0) {
+      const items = await lookupChannels(missing);
+      const found = new Map(items.map((item) => [item.key, item]));
+      for (const key of missing) remember(key, found.get(key) ?? null);
+    }
+    return wanted.map((key) => memo3.get(key) ?? null).filter((item) => item !== null);
+  }
+  function clearResolvedChannels() {
+    memo3.clear();
+  }
+  var MAX_ENTRIES3, memo3;
+  var init_channel_resolver = __esm({
+    "../lumio-official-plugins/plugins/live-tv/runtime/channel-resolver.ts"() {
+      "use strict";
+      "use client";
+      init_index_client();
+      MAX_ENTRIES3 = 1e3;
+      memo3 = /* @__PURE__ */ new Map();
+    }
+  });
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-surface.ts
+  function isDesktopTauri() {
+    if (typeof location !== "undefined" && new URLSearchParams(location.search).has("desktopguide")) return true;
+    return isDesktopTauriEnv === true;
+  }
+  function useNewGuideSurface(phone) {
+    return useTvMode() || isDesktopTauri() && !phone;
+  }
+  function desktopGuideMode(stored) {
+    if (stored === "now" || stored === "tl") return "nownext";
+    if (stored === "playlists") return "grid";
+    if (stored === "grid") return "grid";
+    return stored;
+  }
+  var init_guide_surface = __esm({
+    "../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-surface.ts"() {
+      "use strict";
+      "use client";
+      init_plugin_sdk();
+    }
+  });
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/storage-v2-migration.ts
+  function computeGroups2(channels) {
+    const counts = /* @__PURE__ */ new Map();
+    for (const channel of channels) {
+      const group = channel.group?.trim() || "Other";
+      counts.set(group, (counts.get(group) ?? 0) + 1);
+    }
+    return [...counts.entries()].sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0])).map(([name, count]) => ({ name, count }));
+  }
+  function withKeysAndNumbers(channels) {
+    return channels.map((channel, index3) => ({ ...channel, key: channelKey(channel), number: index3 + 1 }));
+  }
+  function isStorageV2Migrated() {
+    return readPluginJson(LIVE_TV_PLUGIN_ID, STORAGE_V2_MIGRATED_KEY, false) === true;
+  }
+  async function migrateStorageV2() {
+    if (isStorageV2Migrated()) return { migrated: 0 };
+    const lists = getLiveTvLists();
+    let migrated = 0;
+    let lastError;
+    const rewritten = [];
+    for (const list of lists) {
+      const embedded = list.channels ?? [];
+      const canMigrate = embedded.length > 0 && Boolean(list.source) && (list.kind === "m3u" || list.kind === "xtream");
+      if (!canMigrate) {
+        rewritten.push(list);
+        continue;
+      }
+      try {
+        await batchChannels(list.source, withKeysAndNumbers(embedded), true);
+        const { channels: _channels, ...withoutChannels } = list;
+        rewritten.push({
+          ...withoutChannels,
+          channelCount: embedded.length,
+          groups: computeGroups2(embedded)
+        });
+        migrated += 1;
+      } catch (err) {
+        lastError = err instanceof Error ? err.message : String(err);
+        rewritten.push(list);
+      }
+    }
+    try {
+      if (migrated > 0) {
+        const rewrittenById = new Map(rewritten.map((entry) => [entry.id, entry]));
+        const merged = getLiveTvLists().map((current2) => rewrittenById.get(current2.id) ?? current2);
+        replaceLiveTvLists(merged);
+        emitIndexChanged();
+      }
+      removePluginStorageByPrefix(LIVE_TV_PLUGIN_ID, LIVE_TV_CHANNELS_PREFIX);
+      if (!lastError) writePluginJson(LIVE_TV_PLUGIN_ID, STORAGE_V2_MIGRATED_KEY, true);
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : String(err);
+    }
+    return lastError ? { migrated, error: lastError } : { migrated };
+  }
+  var STORAGE_V2_MIGRATED_KEY;
+  var init_storage_v2_migration = __esm({
+    "../lumio-official-plugins/plugins/live-tv/runtime/storage-v2-migration.ts"() {
+      "use strict";
+      "use client";
+      init_plugin_sdk();
+      init_index_client();
+      init_live_tv_data();
+      STORAGE_V2_MIGRATED_KEY = "live_tv_storage_v2_migrated";
     }
   });
 
@@ -192788,6 +193365,734 @@ ${cue.text}`).join("\n\n")}
       init_live_tv_data();
       CHANNEL_HISTORY_KEY = "channel_history_v1";
       CHANNEL_HISTORY_LIMIT = 20;
+    }
+  });
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/reminders.ts
+  function reminderId(channel, programme) {
+    return `${channelKey(channel)}@${programme.start}`;
+  }
+  function sanitize3(raw) {
+    if (!Array.isArray(raw)) return [];
+    const out = [];
+    for (const item of raw) {
+      if (!item || typeof item !== "object") continue;
+      const r = item;
+      if (typeof r.id !== "string" || typeof r.start !== "number" || typeof r.channelUrl !== "string") continue;
+      out.push({
+        id: r.id,
+        channelKey: typeof r.channelKey === "string" ? r.channelKey : channelKey({ name: r.channelName ?? "", url: r.channelUrl }),
+        channelName: typeof r.channelName === "string" ? r.channelName : "Unknown",
+        channelUrl: r.channelUrl,
+        channelLogo: typeof r.channelLogo === "string" ? r.channelLogo : null,
+        channelGroup: typeof r.channelGroup === "string" ? r.channelGroup : "Other",
+        channelTvgId: typeof r.channelTvgId === "string" ? r.channelTvgId : null,
+        title: typeof r.title === "string" ? r.title : "",
+        start: r.start,
+        stop: typeof r.stop === "number" ? r.stop : r.start,
+        createdAt: typeof r.createdAt === "number" ? r.createdAt : 0,
+        notifiedAt: typeof r.notifiedAt === "number" ? r.notifiedAt : void 0
+      });
+    }
+    return out.sort((left, right) => left.start - right.start);
+  }
+  function getReminders(now3 = Date.now()) {
+    return sanitize3(readPluginJson(LIVE_TV_PLUGIN_ID, REMINDERS_KEY, [])).filter((r) => r.start + REMINDER_GRACE_MS > now3);
+  }
+  function write5(list) {
+    writePluginJson(LIVE_TV_PLUGIN_ID, REMINDERS_KEY, list);
+  }
+  function isReminded(channel, programme) {
+    const id4 = reminderId(channel, programme);
+    return getReminders().some((r) => r.id === id4);
+  }
+  function toggleReminder(channel, programme, now3 = Date.now()) {
+    const id4 = reminderId(channel, programme);
+    const current2 = getReminders(now3);
+    const next2 = current2.some((r) => r.id === id4) ? current2.filter((r) => r.id !== id4) : [
+      ...current2,
+      {
+        id: id4,
+        channelKey: channelKey(channel),
+        channelName: channel.name,
+        channelUrl: channel.url,
+        channelLogo: channel.logo ?? null,
+        channelGroup: channel.group,
+        channelTvgId: channel.tvgId,
+        title: programme.title,
+        start: programme.start,
+        stop: programme.stop,
+        createdAt: now3
+      }
+    ].sort((left, right) => left.start - right.start);
+    write5(next2);
+    return next2;
+  }
+  function markReminderNotified(id4, now3 = Date.now()) {
+    write5(getReminders(now3).map((r) => r.id === id4 ? { ...r, notifiedAt: now3 } : r));
+  }
+  function onRemindersChanged(listener) {
+    return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, REMINDERS_KEY, listener);
+  }
+  function dueReminders(now3 = Date.now(), leadMs = REMINDER_LEAD_MS) {
+    return getReminders(now3).filter((r) => r.notifiedAt === void 0 && r.start - leadMs <= now3);
+  }
+  function reminderToChannel(r) {
+    return { name: r.channelName, url: r.channelUrl, logo: r.channelLogo, group: r.channelGroup, tvgId: r.channelTvgId };
+  }
+  function startReminderScheduler(onDue) {
+    let stopped = false;
+    const tick = () => {
+      if (stopped) return;
+      const now3 = Date.now();
+      for (const r of dueReminders(now3)) {
+        markReminderNotified(r.id, now3);
+        onDue(r);
+      }
+    };
+    tick();
+    const timer = window.setInterval(tick, 3e4);
+    const off = onRemindersChanged(tick);
+    return () => {
+      stopped = true;
+      window.clearInterval(timer);
+      off();
+    };
+  }
+  function tryNativeNotification(title, body) {
+    try {
+      if (typeof Notification === "undefined") return;
+      if (Notification.permission === "granted") {
+        new Notification(title, { body });
+      } else if (Notification.permission === "default") {
+        void Notification.requestPermission().then((permission) => {
+          if (permission === "granted") new Notification(title, { body });
+        });
+      }
+    } catch {
+    }
+  }
+  function useReminders() {
+    const [list, setList] = useState(() => getReminders());
+    useEffect(() => {
+      const sync2 = () => setList(getReminders());
+      sync2();
+      const off = onRemindersChanged(sync2);
+      const timer = window.setInterval(sync2, 6e4);
+      return () => {
+        off();
+        window.clearInterval(timer);
+      };
+    }, []);
+    return list;
+  }
+  var REMINDERS_KEY, REMINDER_LEAD_MS, REMINDER_GRACE_MS;
+  var init_reminders = __esm({
+    "../lumio-official-plugins/plugins/live-tv/runtime/reminders.ts"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_plugin_sdk();
+      init_live_tv_data();
+      REMINDERS_KEY = "reminders_v1";
+      REMINDER_LEAD_MS = 5 * 6e4;
+      REMINDER_GRACE_MS = 10 * 6e4;
+    }
+  });
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/channel-locks.ts
+  function bridge() {
+    return plugin_sdk_exports;
+  }
+  function pinSupportAvailable() {
+    const b = bridge();
+    return typeof b.activeProfileHasPin === "function" && typeof b.verifyActiveProfilePin === "function";
+  }
+  function activeProfileHasPin2() {
+    const b = bridge();
+    try {
+      return typeof b.activeProfileHasPin === "function" ? b.activeProfileHasPin() : false;
+    } catch {
+      return false;
+    }
+  }
+  async function verifyActiveProfilePin2(pin) {
+    const b = bridge();
+    if (typeof b.verifyActiveProfilePin !== "function") return false;
+    try {
+      return await b.verifyActiveProfilePin(pin);
+    } catch {
+      return false;
+    }
+  }
+  function sanitize4(raw) {
+    return Array.isArray(raw) ? raw.filter((value) => typeof value === "string" && value.length > 0) : [];
+  }
+  function getLockedChannelKeys() {
+    return sanitize4(readPluginJson(LIVE_TV_PLUGIN_ID, LOCKED_CHANNELS_KEY, []));
+  }
+  function toggleChannelLock(channel) {
+    const key = channelKey(channel);
+    const current2 = getLockedChannelKeys();
+    const next2 = current2.includes(key) ? current2.filter((entry) => entry !== key) : [...current2, key];
+    writePluginJson(LIVE_TV_PLUGIN_ID, LOCKED_CHANNELS_KEY, next2);
+    return next2;
+  }
+  function onChannelLocksChanged(listener) {
+    return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, LOCKED_CHANNELS_KEY, listener);
+  }
+  function useLockedChannelKeys() {
+    const [keys3, setKeys] = useState(() => getLockedChannelKeys());
+    useEffect(() => onChannelLocksChanged(() => setKeys(getLockedChannelKeys())), []);
+    return new Set(keys3);
+  }
+  function markUnlockedThisSession() {
+    unlockedThisSession = true;
+  }
+  function isUnlockedThisSession() {
+    return unlockedThisSession;
+  }
+  var LOCKED_CHANNELS_KEY, unlockedThisSession;
+  var init_channel_locks = __esm({
+    "../lumio-official-plugins/plugins/live-tv/runtime/channel-locks.ts"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_plugin_sdk();
+      init_plugin_sdk();
+      init_live_tv_data();
+      LOCKED_CHANNELS_KEY = "locked_channels_v1";
+      unlockedThisSession = false;
+    }
+  });
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-settings-store.ts
+  function sanitize5(raw) {
+    const r = raw && typeof raw === "object" ? raw : {};
+    const banner = BANNER_HIDE_OPTIONS.includes(r.bannerHideMs) ? r.bannerHideMs : DEFAULTS2.bannerHideMs;
+    const timelineZoom = TIMELINE_ZOOMS.includes(r.timelineZoom) ? r.timelineZoom : DEFAULTS2.timelineZoom;
+    return {
+      previewEnabled: typeof r.previewEnabled === "boolean" ? r.previewEnabled : DEFAULTS2.previewEnabled,
+      startOnLastChannel: typeof r.startOnLastChannel === "boolean" ? r.startOnLastChannel : DEFAULTS2.startOnLastChannel,
+      numericZap: typeof r.numericZap === "boolean" ? r.numericZap : DEFAULTS2.numericZap,
+      bannerHideMs: banner,
+      keepAwake: typeof r.keepAwake === "boolean" ? r.keepAwake : DEFAULTS2.keepAwake,
+      fullscreenOnRotate: typeof r.fullscreenOnRotate === "boolean" ? r.fullscreenOnRotate : DEFAULTS2.fullscreenOnRotate,
+      guideCategory: typeof r.guideCategory === "string" && r.guideCategory ? r.guideCategory : DEFAULTS2.guideCategory,
+      timelineZoom,
+      nowNextDetails: typeof r.nowNextDetails === "boolean" ? r.nowNextDetails : DEFAULTS2.nowNextDetails
+    };
+  }
+  function getTvSettings() {
+    return sanitize5(readPluginJson(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, DEFAULTS2));
+  }
+  function setTvSettings(patch) {
+    const next2 = sanitize5({ ...getTvSettings(), ...patch });
+    writePluginJson(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, next2);
+    return next2;
+  }
+  function useTvSettings() {
+    const [value, setValue] = useState(getTvSettings);
+    useEffect(() => onPluginStorageChanged(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, () => setValue(getTvSettings())), []);
+    return value;
+  }
+  function getGuideMode() {
+    const raw = readPluginJson(LIVE_TV_PLUGIN_ID, GUIDE_MODE_KEY, "now");
+    return GUIDE_MODES.includes(raw) ? raw : "now";
+  }
+  function setGuideMode(mode) {
+    writePluginJson(LIVE_TV_PLUGIN_ID, GUIDE_MODE_KEY, mode);
+  }
+  function useGuideMode() {
+    const [value, setValue] = useState(getGuideMode);
+    useEffect(() => onPluginStorageChanged(LIVE_TV_PLUGIN_ID, GUIDE_MODE_KEY, () => setValue(getGuideMode())), []);
+    return value;
+  }
+  function getActivePlaylistId() {
+    const raw = readPluginJson(LIVE_TV_PLUGIN_ID, ACTIVE_PLAYLIST_KEY, null);
+    return typeof raw === "string" && raw ? raw : null;
+  }
+  function setActivePlaylistId(id4) {
+    writePluginJson(LIVE_TV_PLUGIN_ID, ACTIVE_PLAYLIST_KEY, id4);
+  }
+  function onActivePlaylistChanged(listener) {
+    return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, ACTIVE_PLAYLIST_KEY, listener);
+  }
+  var TV_SETTINGS_KEY, GUIDE_MODE_KEY, ACTIVE_PLAYLIST_KEY, BANNER_HIDE_OPTIONS, TIMELINE_ZOOMS, DEFAULTS2, GUIDE_MODES;
+  var init_tv_settings_store = __esm({
+    "../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-settings-store.ts"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_plugin_sdk();
+      init_live_tv_data();
+      TV_SETTINGS_KEY = "live_tv_tv_settings_v1";
+      GUIDE_MODE_KEY = "live_tv_guide_mode_v1";
+      ACTIVE_PLAYLIST_KEY = "live_tv_active_playlist_v1";
+      BANNER_HIDE_OPTIONS = [2e3, 4e3, 6e3, 0];
+      TIMELINE_ZOOMS = ["2h", "6h", "day"];
+      DEFAULTS2 = {
+        previewEnabled: true,
+        startOnLastChannel: false,
+        numericZap: true,
+        bannerHideMs: 4e3,
+        keepAwake: true,
+        fullscreenOnRotate: true,
+        guideCategory: null,
+        timelineZoom: "day",
+        nowNextDetails: true
+      };
+      GUIDE_MODES = ["now", "tl", "playlists", "grid", "nownext", "timeline"];
+    }
+  });
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/live-tv-model.ts
+  function isPlayableChannel(channel) {
+    if (!channel.url) return false;
+    const trimmedName = channel.name.trim();
+    if (!trimmedName) return false;
+    if (PLACEHOLDER_NAME_RE.test(trimmedName) && !channel.tvgId) return false;
+    return true;
+  }
+  function topGroups(channels, limit = MAX_GROUP_CHIPS) {
+    const counts = /* @__PURE__ */ new Map();
+    for (const channel of channels) {
+      const group = channel.group?.trim();
+      if (!group) continue;
+      counts.set(group, (counts.get(group) ?? 0) + 1);
+    }
+    return [...counts.entries()].sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0])).slice(0, limit).map(([group]) => group);
+  }
+  function ensureLiveTvBootstrap() {
+    return ensureBootstrap();
+  }
+  function isLiveTvAppTooOld() {
+    return appTooOldFlag;
+  }
+  async function probeLiveTvApi() {
+    try {
+      await epgStatus("probe");
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  function ensureBootstrap() {
+    if (!bootstrapPromise) {
+      bootstrapPromise = (async () => {
+        const supported = await probeLiveTvApi();
+        appTooOldFlag = !supported;
+        if (!supported) return;
+        await migrateStorageV2().catch(() => {
+        });
+        await importMissingSources().catch(() => {
+        });
+      })();
+    }
+    return bootstrapPromise;
+  }
+  function channelsCacheKey(source) {
+    return `${LIVE_TV_CHANNELS_PREFIX}${source ?? "all"}`;
+  }
+  function getCachedChannels(source) {
+    return getPluginMemoryCache(LIVE_TV_PLUGIN_ID, channelsCacheKey(source)) ?? null;
+  }
+  function ensureIndexSubscription() {
+    if (indexSubscription || typeof window === "undefined") return;
+    indexSubscription = onIndexChanged(() => {
+      invalidateChannels();
+      for (const listener of [...generationListeners]) listener();
+    });
+  }
+  function invalidateChannels() {
+    for (const controller of channelAborts.values()) controller.abort();
+    channelAborts.clear();
+    channelLoads.clear();
+    clearPluginMemoryCacheByPrefix(LIVE_TV_PLUGIN_ID, LIVE_TV_CHANNELS_PREFIX);
+    clearResolvedChannels();
+  }
+  function logoFallbackStateSnapshot() {
+    const lists = getLiveTvLists();
+    const sources = new Set(lists.map((list) => list.source).filter((source) => Boolean(source)));
+    const snapshot2 = /* @__PURE__ */ new Map();
+    for (const source of sources) {
+      const list = lists.find((entry) => entry.source === source);
+      if (list) snapshot2.set(source, isLogoFallbackEnabled(list));
+    }
+    return snapshot2;
+  }
+  function ensureLogoFallbackSwitchSubscription() {
+    if (logoFallbackSwitchSubscription || typeof window === "undefined") return;
+    logoFallbackStateBySource = logoFallbackStateSnapshot();
+    logoFallbackSwitchSubscription = onLiveTvListsChanged(() => {
+      const next2 = logoFallbackStateSnapshot();
+      const previous = logoFallbackStateBySource;
+      logoFallbackStateBySource = next2;
+      for (const [source, enabled] of next2) {
+        if (previous?.get(source) === enabled) continue;
+        clearPluginMemoryCache(LIVE_TV_PLUGIN_ID, channelsCacheKey(source));
+        clearPluginMemoryCache(LIVE_TV_PLUGIN_ID, channelsCacheKey(null));
+      }
+    });
+  }
+  async function loadEveryChannel(signal) {
+    const sources = [...new Set(
+      getLiveTvLists().filter((list) => list.kind !== "custom" && Boolean(list.source)).map((list) => list.source)
+    )];
+    if (sources.length === 0) return loadAllChannels(null, void 0, signal);
+    const items = [];
+    const seen = /* @__PURE__ */ new Set();
+    for (const source of sources) {
+      if (signal?.aborted) throw new DOMException("aborted", "AbortError");
+      for (const channel of await loadChannelsShared(source)) {
+        if (seen.has(channel.key)) continue;
+        seen.add(channel.key);
+        items.push(channel);
+      }
+    }
+    return items;
+  }
+  function applyLogoFallbackSwitch(source, items) {
+    const list = getLiveTvLists().find((entry) => entry.source === source);
+    if (!list || isLogoFallbackEnabled(list)) return;
+    for (const item of items) {
+      if (item.logoFallback != null) item.logoFallback = null;
+    }
+  }
+  function applyLogoFallbackSwitchToExtra(channel, lists, listByUrl) {
+    if (channel.logoFallback == null) return channel;
+    const owner2 = listByUrl.get(channel.url);
+    if (owner2) return isLogoFallbackEnabled(owner2) ? channel : { ...channel, logoFallback: null };
+    const anyIndexedListDisabled = lists.some(
+      (list) => list.kind !== "custom" && Boolean(list.source) && !isLogoFallbackEnabled(list)
+    );
+    return anyIndexedListDisabled ? { ...channel, logoFallback: null } : channel;
+  }
+  function loadChannelsShared(source) {
+    ensureLogoFallbackSwitchSubscription();
+    const cacheKey = channelsCacheKey(source);
+    const cached = getPluginMemoryCache(LIVE_TV_PLUGIN_ID, cacheKey);
+    if (cached) return Promise.resolve(cached);
+    const existing = channelLoads.get(cacheKey);
+    if (existing) return existing;
+    const controller = typeof AbortController === "function" ? new AbortController() : null;
+    if (controller) channelAborts.set(cacheKey, controller);
+    const request = (async () => {
+      await ensureBootstrap();
+      const items = source === null ? await loadEveryChannel(controller?.signal) : await loadAllChannels(source, void 0, controller?.signal);
+      if (source !== null) applyLogoFallbackSwitch(source, items);
+      setPluginMemoryCache(LIVE_TV_PLUGIN_ID, cacheKey, items);
+      return items;
+    })().finally(() => {
+      if (channelLoads.get(cacheKey) === request) channelLoads.delete(cacheKey);
+      if (channelAborts.get(cacheKey) === controller) channelAborts.delete(cacheKey);
+    });
+    channelLoads.set(cacheKey, request);
+    return request;
+  }
+  function subscribeChannelGeneration(listener) {
+    ensureIndexSubscription();
+    generationListeners.add(listener);
+    return () => {
+      generationListeners.delete(listener);
+    };
+  }
+  function useLiveTvModel(tickMs = 6e4) {
+    const [lists, setLists] = useState(() => getLiveTvLists());
+    const [activePlaylistId, setActivePlaylistIdState] = useState(() => getActivePlaylistId());
+    useEffect(() => onActivePlaylistChanged(() => setActivePlaylistIdState(getActivePlaylistId())), []);
+    const [pinnedKeys, setPinnedKeys] = useState(() => getPinnedLiveTvKeys());
+    const [history, setHistory] = useState(() => getChannelHistory());
+    const [nowMs, setNowMs] = useState(() => Date.now());
+    const reminders = useReminders();
+    const locked = useLockedChannelKeys();
+    useEffect(() => {
+      const sync2 = () => setLists(getLiveTvLists());
+      sync2();
+      return onLiveTvListsChanged(sync2);
+    }, []);
+    useEffect(() => onPinnedLiveTvKeysChanged(() => setPinnedKeys(getPinnedLiveTvKeys())), []);
+    useEffect(() => onChannelHistoryChanged(() => setHistory(getChannelHistory())), []);
+    const tvMode = useTvMode();
+    const activeListGate = tvMode || isDesktopTauri();
+    const activeList = useMemo(
+      () => activeListGate ? lists.find((list) => list.id === activePlaylistId) ?? null : null,
+      [activeListGate, lists, activePlaylistId]
+    );
+    const activeSource = activeList?.source ?? null;
+    const [loaded, setLoaded] = useState([]);
+    const [channelsLoading, setChannelsLoading] = useState(true);
+    const [reloadToken, setReloadToken] = useState(0);
+    const [extras, setExtras] = useState({});
+    useEffect(() => {
+      let live2 = true;
+      const cached = getPluginMemoryCache(LIVE_TV_PLUGIN_ID, channelsCacheKey(activeSource));
+      if (cached) {
+        setLoaded(cached);
+        setChannelsLoading(false);
+      } else {
+        setChannelsLoading(true);
+      }
+      loadChannelsShared(activeSource).then((items) => {
+        if (!live2) return;
+        setLoaded(items);
+        setChannelsLoading(false);
+      }).catch(() => {
+        if (live2) setChannelsLoading(false);
+      });
+      return () => {
+        live2 = false;
+      };
+    }, [activeSource, reloadToken]);
+    const [appTooOld, setAppTooOld] = useState(() => isLiveTvAppTooOld());
+    useEffect(() => {
+      let live2 = true;
+      void ensureBootstrap().finally(() => {
+        if (live2) setAppTooOld(isLiveTvAppTooOld());
+      });
+      return () => {
+        live2 = false;
+      };
+    }, []);
+    useEffect(() => {
+      ensureIndexSubscription();
+      const listener = () => setReloadToken((token) => token + 1);
+      generationListeners.add(listener);
+      return () => {
+        generationListeners.delete(listener);
+      };
+    }, []);
+    const channels = useMemo(() => loaded.filter(isPlayableChannel), [loaded]);
+    const numberByKey = useMemo(() => new Map(loaded.map((channel) => [channel.key, channel.number])), [loaded]);
+    const positionByKey = useMemo(
+      () => new Map(channels.map((channel, index3) => [channelKey(channel), index3 + 1])),
+      [channels]
+    );
+    const listByUrl = useMemo(() => {
+      const map = /* @__PURE__ */ new Map();
+      for (const list of lists) for (const channel of list.channels ?? []) if (!map.has(channel.url)) map.set(channel.url, list);
+      return map;
+    }, [lists]);
+    const extrasWithLogoFallbackSwitch = useMemo(() => {
+      const out = {};
+      for (const [key, channel] of Object.entries(extras)) {
+        out[key] = applyLogoFallbackSwitchToExtra(channel, lists, listByUrl);
+      }
+      return out;
+    }, [extras, lists, listByUrl]);
+    const byKey = useMemo(() => {
+      const map = /* @__PURE__ */ new Map();
+      for (const channel of Object.values(extrasWithLogoFallbackSwitch)) map.set(channel.key, channel);
+      for (const channel of channels) map.set(channelKey(channel), channel);
+      return map;
+    }, [channels, extrasWithLogoFallbackSwitch]);
+    const byUrl = useMemo(() => {
+      const map = /* @__PURE__ */ new Map();
+      for (const channel of byKey.values()) if (!map.has(channel.url)) map.set(channel.url, channel);
+      return map;
+    }, [byKey]);
+    const groups = useMemo(() => topGroups(channels), [channels]);
+    const playlists = useMemo(
+      () => lists.map((list) => ({ id: list.id, name: list.name, count: list.channelCount ?? list.channels?.length ?? 0 })),
+      [lists]
+    );
+    const loadedKeys = useMemo(() => new Set(channels.map((channel) => channelKey(channel))), [channels]);
+    const pinnedId = pinnedKeys.join(",");
+    const historyId = history.map((entry) => entry.key).join(",");
+    useEffect(() => {
+      if (channelsLoading) return;
+      const wanted = [...pinnedKeys, ...history.map((entry) => entry.key)].filter((key) => !loadedKeys.has(key));
+      if (wanted.length === 0) return;
+      let live2 = true;
+      const known = getResolvedChannels(wanted);
+      if (Object.keys(known).length > 0) setExtras((prev) => ({ ...prev, ...known }));
+      resolveChannelKeys(wanted).then((items) => {
+        if (!live2 || items.length === 0) return;
+        setExtras((prev) => {
+          const next2 = { ...prev };
+          for (const item of items) next2[item.key] = item;
+          return next2;
+        });
+      }).catch(() => {
+      });
+      return () => {
+        live2 = false;
+      };
+    }, [pinnedId, historyId, loadedKeys, channelsLoading]);
+    const epgUrls = useMemo(() => getAllLiveTvEpgUrls(lists), [lists]);
+    const epgUrlsId = epgUrls.join("|");
+    const epgListId = epgUrls.length > 0 ? LIVE_TV_GLOBAL_EPG_ID : null;
+    const sources = useMemo(
+      () => lists.map((list) => list.source).filter((source) => Boolean(source)),
+      [lists]
+    );
+    const sourcesId = sources.join("|");
+    const [snapshot2, setSnapshot] = useState(
+      () => getCachedNowSnapshot(LIVE_TV_GLOBAL_EPG_ID, null)
+    );
+    const [epgLoading, setEpgLoading] = useState(false);
+    const [epgTick, setEpgTick] = useState(0);
+    useEffect(() => {
+      const visible = () => typeof document === "undefined" || document.visibilityState === "visible";
+      const timer = window.setInterval(() => {
+        setNowMs(Date.now());
+        if (visible()) setEpgTick((tick) => tick + 1);
+      }, tickMs);
+      const onVisibility = () => {
+        if (!visible()) return;
+        setNowMs(Date.now());
+        setEpgTick((tick) => tick + 1);
+      };
+      document.addEventListener("visibilitychange", onVisibility);
+      return () => {
+        window.clearInterval(timer);
+        document.removeEventListener("visibilitychange", onVisibility);
+      };
+    }, [tickMs]);
+    const epgTriggerRef = useRef({ tick: epgTick, token: reloadToken, source: activeSource, urls: epgUrlsId });
+    useEffect(() => {
+      let live2 = true;
+      const listId = LIVE_TV_GLOBAL_EPG_ID;
+      const previous = epgTriggerRef.current;
+      const tickOnly = previous.tick !== epgTick && previous.token === reloadToken && previous.source === activeSource && previous.urls === epgUrlsId;
+      epgTriggerRef.current = { tick: epgTick, token: reloadToken, source: activeSource, urls: epgUrlsId };
+      const cached = getCachedNowSnapshot(listId, activeSource);
+      if (cached) setSnapshot(cached);
+      if (tickOnly && cached && (epgUrls.length === 0 || !nowSnapshotNeedsRefetch(cached, Date.now()))) {
+        setEpgLoading(false);
+        return;
+      }
+      setEpgLoading(!cached);
+      void (async () => {
+        try {
+          await ensureBootstrap();
+          if (!live2) return;
+          const first = await fetchNowSnapshot(listId, activeSource);
+          if (!live2) return;
+          setSnapshot(first);
+          const stale = first.fetchedAt === null || Date.now() - first.fetchedAt > EPG_TTL_MS;
+          if (!stale || epgUrls.length === 0 || epgRefreshRequested.has(listId)) return;
+          epgRefreshRequested.add(listId);
+          try {
+            const job = await refreshEpg(listId, epgUrls, sources);
+            await waitForJob(job);
+          } catch (error) {
+            epgRefreshRequested.delete(listId);
+            throw error;
+          }
+          if (!live2) return;
+          const next2 = await fetchNowSnapshot(listId, activeSource, { force: true });
+          if (!live2) return;
+          setSnapshot(next2);
+        } finally {
+          if (live2) setEpgLoading(false);
+        }
+      })().catch(() => {
+      });
+      return () => {
+        live2 = false;
+      };
+    }, [activeSource, epgUrlsId, sourcesId, reloadToken, epgTick]);
+    const nowFor = useMemo(() => {
+      const items = snapshot2?.items ?? null;
+      return (channel) => {
+        if (!items) return EMPTY2;
+        return items[channelKey(channel)] ?? EMPTY2;
+      };
+    }, [snapshot2]);
+    const favouriteChannels = useMemo(
+      () => pinnedKeys.map((key) => byKey.get(key)).filter((channel) => Boolean(channel)),
+      [pinnedKeys, byKey]
+    );
+    const resolveKeys = useCallback(
+      (keys3) => resolveChannelKeys(keys3).then((items) => items),
+      []
+    );
+    return {
+      lists,
+      allChannels: channels,
+      channels,
+      byKey,
+      byUrl,
+      groups,
+      pinnedKeys,
+      pinnedSet: useMemo(() => new Set(pinnedKeys), [pinnedKeys]),
+      togglePin: (channel) => setPinnedKeys(togglePinnedLiveTvChannel(channel)),
+      playlists,
+      activePlaylistId: activeList ? activeList.id : null,
+      activeSource,
+      activePlaylistName: activeList ? activeList.name : null,
+      setActivePlaylist: (id4) => {
+        setActivePlaylistId(id4);
+        setActivePlaylistIdState(id4);
+      },
+      channelNumber: (channel) => {
+        const key = channelKey(channel);
+        if (activeSource) return numberByKey.get(key) ?? null;
+        return positionByKey.get(key) ?? null;
+      },
+      favouriteChannels,
+      history,
+      nowMs,
+      epgListId,
+      epgUrls,
+      // `count` räknas en gång när svaret kommer — inte per render över 17 000 nycklar.
+      hasEpg: (snapshot2?.count ?? 0) > 0,
+      channelsLoading,
+      epgLoading,
+      epgFetchedAt: snapshot2?.fetchedAt ?? null,
+      appTooOld,
+      resolveKeys,
+      nowFor,
+      reminders,
+      locked,
+      listFor: (channel) => listByUrl.get(channel.url) ?? activeList ?? (lists.length === 1 ? lists[0] : null)
+    };
+  }
+  function startOfLocalDay(nowMs, dayOffset = 0) {
+    const d = new Date(nowMs);
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + dayOffset);
+    return d.getTime();
+  }
+  function qualityFromName(name) {
+    const n = name.toUpperCase();
+    if (/\b(4K|UHD|2160)/.test(n)) return "4K";
+    if (/\b(FHD|1080)/.test(n)) return "FHD";
+    if (/\b(HD|720)\b/.test(n)) return "HD";
+    if (/\b(SD|576|480)\b/.test(n)) return "SD";
+    return null;
+  }
+  var EMPTY2, PLACEHOLDER_NAME_RE, MAX_GROUP_CHIPS, EPG_TTL_MS, bootstrapPromise, appTooOldFlag, epgRefreshRequested, channelLoads, channelAborts, generationListeners, indexSubscription, logoFallbackStateBySource, logoFallbackSwitchSubscription;
+  var init_live_tv_model = __esm({
+    "../lumio-official-plugins/plugins/live-tv/runtime/live-tv-model.ts"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_plugin_sdk();
+      init_now_snapshot();
+      init_index_client();
+      init_channel_resolver();
+      init_guide_surface();
+      init_storage_v2_migration();
+      init_channel_history();
+      init_reminders();
+      init_channel_locks();
+      init_live_tv_data();
+      init_tv_settings_store();
+      EMPTY2 = { now: null, next: null, later: null };
+      PLACEHOLDER_NAME_RE = /^[\s=\-_*•·]+|=+/;
+      MAX_GROUP_CHIPS = 8;
+      EPG_TTL_MS = 6 * 60 * 60 * 1e3;
+      bootstrapPromise = null;
+      appTooOldFlag = false;
+      epgRefreshRequested = /* @__PURE__ */ new Set();
+      channelLoads = /* @__PURE__ */ new Map();
+      channelAborts = /* @__PURE__ */ new Map();
+      generationListeners = /* @__PURE__ */ new Set();
+      indexSubscription = null;
+      logoFallbackStateBySource = null;
+      logoFallbackSwitchSubscription = null;
     }
   });
 
@@ -192889,7 +194194,9 @@ ${cue.text}`).join("\n\n")}
   }
   function ChannelBadge({ channel, size = 40, radius = LT.radiusSm }) {
     const [failed, setFailed] = useState(false);
-    const src = getLiveTvLogoSrc(channel.logo);
+    const primarySrc = getLiveTvLogoSrc(channel.logo);
+    const fallbackSrc = getLiveTvLogoSrc(channel.logoFallback);
+    const src = primarySrc ?? fallbackSrc;
     const box = {
       width: size,
       height: size,
@@ -192902,7 +194209,16 @@ ${cue.text}`).join("\n\n")}
       overflow: "hidden"
     };
     if (src && !failed) {
-      return /* @__PURE__ */ jsx("div", { style: box, children: /* @__PURE__ */ jsx(LiveTvLogoImage, { src, alt: "", className: "h-full w-full object-contain p-1", onError: () => setFailed(true) }) });
+      return /* @__PURE__ */ jsx("div", { style: box, children: /* @__PURE__ */ jsx(
+        LiveTvLogoImage,
+        {
+          src,
+          fallbackSrc: primarySrc ? fallbackSrc : void 0,
+          alt: "",
+          className: "h-full w-full object-contain p-1",
+          onError: () => setFailed(true)
+        }
+      ) });
     }
     return /* @__PURE__ */ jsx("div", { style: { ...box, fontSize: Math.max(9, Math.round(size * 0.28)), fontWeight: 600, color: LT.muted }, "aria-hidden": "true", children: initialsOf(channel.name) });
   }
@@ -193034,6 +194350,206 @@ ${cue.text}`).join("\n\n")}
         border: `1px solid ${LT.line}`,
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)"
       };
+    }
+  });
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/epg/schedule-cache.ts
+  function queueBatch(listId, keys3, from, to) {
+    const id4 = `${epgStoreId(listId)}|${from}|${to}`;
+    let batch = batches.get(id4);
+    if (!batch) {
+      let settle;
+      const promise = new Promise((resolve, reject) => {
+        settle = (items) => items.then(resolve, reject);
+      });
+      const entry = {
+        keys: /* @__PURE__ */ new Set(),
+        promise,
+        scheduled: false,
+        send: () => {
+          batches.delete(id4);
+          const wanted = [...entry.keys];
+          const request = epgSchedule(epgStoreId(listId), wanted, from, to).then((items) => {
+            const storedAt = Date.now();
+            for (const key of wanted) {
+              cache6.set(entryKey2(listId, key, from, to), { programmes: items[key] ?? [], storedAt });
+            }
+            evict(storedAt);
+            return items;
+          });
+          for (const key of wanted) inflight7.set(entryKey2(listId, key, from, to), request);
+          request.catch(() => {
+          }).finally(() => {
+            for (const key of wanted) {
+              if (inflight7.get(entryKey2(listId, key, from, to)) === request) {
+                inflight7.delete(entryKey2(listId, key, from, to));
+              }
+            }
+          });
+          settle(request);
+        }
+      };
+      batch = entry;
+      batches.set(id4, entry);
+    }
+    for (const key of keys3) batch.keys.add(key);
+    if (!batch.scheduled) {
+      batch.scheduled = true;
+      queueMicrotask(batch.send);
+    }
+    return batch.promise;
+  }
+  function entryKey2(listId, key, from, to) {
+    return `${epgStoreId(listId)}|${key}|${from}|${to}`;
+  }
+  function evict(now3) {
+    for (const [key, entry] of cache6) {
+      if (now3 - entry.storedAt >= TTL_MS2) cache6.delete(key);
+    }
+    while (cache6.size > MAX_ENTRIES4) {
+      const oldest = cache6.keys().next();
+      if (oldest.done) break;
+      cache6.delete(oldest.value);
+    }
+  }
+  function split(listId, keys3, from, to, now3) {
+    const hits = {};
+    const missing = [];
+    for (const key of keys3) {
+      const id4 = entryKey2(listId, key, from, to);
+      const entry = cache6.get(id4);
+      if (entry && now3 - entry.storedAt < TTL_MS2) {
+        hits[key] = entry.programmes;
+        cache6.delete(id4);
+        cache6.set(id4, entry);
+      } else {
+        missing.push(key);
+      }
+    }
+    return { hits, missing };
+  }
+  function getCachedSchedules(listId, keys3, from, to) {
+    const { hits, missing } = split(listId, keys3, from, to, Date.now());
+    return { schedules: hits, missing };
+  }
+  async function fetchSchedules(listId, keys3, from, to) {
+    const unique = [...new Set(keys3.filter((key) => key.length > 0))];
+    const { hits, missing } = split(listId, unique, from, to, Date.now());
+    if (missing.length === 0) return hits;
+    const waiting = /* @__PURE__ */ new Set();
+    const queue2 = [];
+    for (const key of missing) {
+      const pending2 = inflight7.get(entryKey2(listId, key, from, to));
+      if (pending2) waiting.add(pending2);
+      else queue2.push(key);
+    }
+    if (queue2.length > 0) waiting.add(queueBatch(listId, queue2, from, to));
+    const answers = await Promise.all([...waiting]);
+    const merged = { ...hits };
+    for (const key of missing) {
+      let value;
+      for (const answer of answers) {
+        if (answer[key]) {
+          value = answer[key];
+          break;
+        }
+      }
+      merged[key] = value ?? cache6.get(entryKey2(listId, key, from, to))?.programmes ?? [];
+    }
+    return merged;
+  }
+  function hourWindow(nowMs, hoursBack, hoursAhead) {
+    const anchor = Math.floor(nowMs / HOUR_MS) * HOUR_MS;
+    return { from: anchor - Math.max(0, hoursBack) * HOUR_MS, to: anchor + Math.max(1, hoursAhead) * HOUR_MS };
+  }
+  var TTL_MS2, MAX_ENTRIES4, cache6, batches, inflight7, HOUR_MS;
+  var init_schedule_cache = __esm({
+    "../lumio-official-plugins/plugins/live-tv/runtime/epg/schedule-cache.ts"() {
+      "use strict";
+      "use client";
+      init_index_client();
+      init_store_id2();
+      TTL_MS2 = 5 * 60 * 1e3;
+      MAX_ENTRIES4 = 600;
+      cache6 = /* @__PURE__ */ new Map();
+      batches = /* @__PURE__ */ new Map();
+      inflight7 = /* @__PURE__ */ new Map();
+      HOUR_MS = 36e5;
+    }
+  });
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/epg/lookup.ts
+  function findCurrentIndex(programmes, now3) {
+    let lo = 0;
+    let hi = programmes.length - 1;
+    let result = -1;
+    while (lo <= hi) {
+      const mid = lo + hi >>> 1;
+      if (programmes[mid].start <= now3) {
+        result = mid;
+        lo = mid + 1;
+      } else hi = mid - 1;
+    }
+    return result;
+  }
+  function nowNextLaterFrom(programmes, now3 = Date.now()) {
+    if (!programmes || programmes.length === 0) return EMPTY3;
+    const idx = findCurrentIndex(programmes, now3);
+    const candidate = idx >= 0 ? programmes[idx] : null;
+    const isCurrent = candidate != null && candidate.stop > now3;
+    const nowProgramme = isCurrent ? candidate : null;
+    const nextIdx = nowProgramme ? idx + 1 : Math.max(0, idx + 1);
+    return { now: nowProgramme, next: programmes[nextIdx] ?? null, later: programmes[nextIdx + 1] ?? null };
+  }
+  function sliceSchedule(programmes, fromMs, toMs) {
+    if (!programmes || programmes.length === 0) return [];
+    return programmes.filter((p) => p.stop > fromMs && p.start < toMs);
+  }
+  var EMPTY3;
+  var init_lookup = __esm({
+    "../lumio-official-plugins/plugins/live-tv/runtime/epg/lookup.ts"() {
+      "use strict";
+      EMPTY3 = { now: null, next: null, later: null };
+    }
+  });
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/hooks/useSchedules.ts
+  function useSchedules(channels, from, to, listId = LIVE_TV_GLOBAL_EPG_ID) {
+    const keys3 = useMemo(() => [...new Set(channels.map((channel) => channelKey(channel)))], [channels]);
+    const keysId = keys3.join(",");
+    const [state, setState] = useState(() => ({ schedules: EMPTY5, loading: false }));
+    useEffect(() => {
+      if (!listId || keys3.length === 0 || !Number.isFinite(from) || !Number.isFinite(to) || to <= from) {
+        setState({ schedules: EMPTY5, loading: false });
+        return;
+      }
+      let live2 = true;
+      const cached = getCachedSchedules(listId, keys3, from, to);
+      if (cached.missing.length === 0) {
+        setState({ schedules: cached.schedules, loading: false });
+        return;
+      }
+      setState({ schedules: cached.schedules, loading: true });
+      fetchSchedules(listId, keys3, from, to).then((schedules) => {
+        if (live2) setState({ schedules, loading: false });
+      }).catch(() => {
+        if (live2) setState((prev) => ({ schedules: prev.schedules, loading: false }));
+      });
+      return () => {
+        live2 = false;
+      };
+    }, [listId, keysId, from, to]);
+    return state;
+  }
+  var EMPTY5;
+  var init_useSchedules = __esm({
+    "../lumio-official-plugins/plugins/live-tv/runtime/hooks/useSchedules.ts"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_live_tv_data();
+      init_schedule_cache();
+      EMPTY5 = {};
     }
   });
 
@@ -193192,6 +194708,87 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
+  // ../lumio-official-plugins/plugins/live-tv/runtime/hooks/useOrientation.ts
+  function read8() {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return "portrait";
+    return window.matchMedia(QUERY).matches ? "landscape" : "portrait";
+  }
+  function useOrientation() {
+    const [orientation, setOrientation] = useState(read8);
+    useEffect(() => {
+      if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+      const mql = window.matchMedia(QUERY);
+      const onChange = (event) => setOrientation(event.matches ? "landscape" : "portrait");
+      setOrientation(mql.matches ? "landscape" : "portrait");
+      mql.addEventListener("change", onChange);
+      return () => mql.removeEventListener("change", onChange);
+    }, []);
+    return orientation;
+  }
+  var QUERY;
+  var init_useOrientation = __esm({
+    "../lumio-official-plugins/plugins/live-tv/runtime/hooks/useOrientation.ts"() {
+      "use strict";
+      init_react_shim();
+      QUERY = "(orientation: landscape)";
+    }
+  });
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/hooks/useWakeLock.ts
+  function wakeLockOf() {
+    if (typeof navigator === "undefined") return null;
+    const candidate = navigator.wakeLock;
+    return candidate && typeof candidate.request === "function" ? candidate : null;
+  }
+  function useWakeLock(active2) {
+    useEffect(() => {
+      if (!active2) return;
+      const wakeLock = wakeLockOf();
+      if (!wakeLock) return;
+      let cancelled = false;
+      let sentinel = null;
+      const onReleased = () => {
+        sentinel = null;
+      };
+      const acquire = async () => {
+        if (cancelled || sentinel) return;
+        try {
+          const next2 = await wakeLock.request("screen");
+          if (cancelled) {
+            void next2.release().catch(() => {
+            });
+            return;
+          }
+          sentinel = next2;
+          next2.addEventListener?.("release", onReleased);
+        } catch {
+        }
+      };
+      const onVisibility = () => {
+        if (document.visibilityState === "visible") void acquire();
+      };
+      document.addEventListener("visibilitychange", onVisibility);
+      void acquire();
+      return () => {
+        cancelled = true;
+        document.removeEventListener("visibilitychange", onVisibility);
+        const held = sentinel;
+        sentinel = null;
+        if (held) {
+          held.removeEventListener?.("release", onReleased);
+          void held.release().catch(() => {
+          });
+        }
+      };
+    }, [active2]);
+  }
+  var init_useWakeLock = __esm({
+    "../lumio-official-plugins/plugins/live-tv/runtime/hooks/useWakeLock.ts"() {
+      "use strict";
+      init_react_shim();
+    }
+  });
+
   // ../lumio-official-plugins/plugins/live-tv/runtime/live-tv-playback-fallback.ts
   function hostProxyUrl(origin, url) {
     return `${origin}/api/m3u?stream=${encodeURIComponent(url)}`;
@@ -193206,6 +194803,100 @@ ${cue.text}`).join("\n\n")}
     "../lumio-official-plugins/plugins/live-tv/runtime/live-tv-playback-fallback.ts"() {
       "use strict";
       HOST_PROXY_MIME = "application/x-mpegURL";
+    }
+  });
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/hooks/useInSceneBox.ts
+  function useInSceneBox(ref) {
+    const [inBox, setInBox] = useState(false);
+    useEffect(() => {
+      if (typeof document === "undefined") return;
+      const read9 = () => {
+        const from = ref?.current ?? null;
+        const box = from ? from.closest(`[${TV_SCENE_BOX_ATTR}]`) : document.querySelector(`[${TV_SCENE_BOX_ATTR}]`);
+        return box !== null;
+      };
+      const sync2 = () => setInBox(read9());
+      sync2();
+      const observer2 = new MutationObserver(sync2);
+      observer2.observe(document.documentElement, {
+        subtree: true,
+        attributes: true,
+        attributeFilter: [TV_SCENE_BOX_ATTR]
+      });
+      return () => observer2.disconnect();
+    }, [ref]);
+    return inBox;
+  }
+  var init_useInSceneBox = __esm({
+    "../lumio-official-plugins/plugins/live-tv/runtime/hooks/useInSceneBox.ts"() {
+      "use strict";
+      init_react_shim();
+      init_plugin_sdk();
+    }
+  });
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/hooks/useNarrowSurface.ts
+  function useNarrowSurface(ref) {
+    const [narrow, setNarrow] = useState(false);
+    useEffect(() => {
+      if (typeof document === "undefined") return;
+      const read9 = () => {
+        const from = ref?.current ?? null;
+        const box = from ? from.closest(`[${TV_SCENE_BOX_ATTR}]`) : document.querySelector(`[${TV_SCENE_BOX_ATTR}]`);
+        return box?.getAttribute(TV_SCENE_NARROW_ATTR) === "1";
+      };
+      const sync2 = () => setNarrow(read9());
+      sync2();
+      const observer2 = new MutationObserver(sync2);
+      observer2.observe(document.documentElement, {
+        subtree: true,
+        attributes: true,
+        attributeFilter: [TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR]
+      });
+      return () => observer2.disconnect();
+    }, [ref]);
+    return narrow;
+  }
+  var init_useNarrowSurface = __esm({
+    "../lumio-official-plugins/plugins/live-tv/runtime/hooks/useNarrowSurface.ts"() {
+      "use strict";
+      init_react_shim();
+      init_plugin_sdk();
+    }
+  });
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts
+  function useSceneBoxScale() {
+    const [scale2, setScale] = useState(null);
+    useEffect(() => {
+      if (typeof document === "undefined") return;
+      const read9 = () => {
+        const getScale = tvSceneBoxScale2;
+        if (typeof getScale !== "function") return null;
+        const box = document.querySelector(`[${TV_SCENE_BOX_ATTR}]`);
+        if (!box) return null;
+        const value = getScale(box);
+        return Number.isFinite(value) && value > 0 ? value : null;
+      };
+      const sync2 = () => setScale(read9());
+      sync2();
+      const observer2 = new MutationObserver(sync2);
+      observer2.observe(document.documentElement, {
+        subtree: true,
+        attributes: true,
+        attributeFilter: [TV_SCENE_BOX_ATTR, "style"]
+      });
+      return () => observer2.disconnect();
+    }, []);
+    return scale2;
+  }
+  var init_useSceneBoxScale = __esm({
+    "../lumio-official-plugins/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts"() {
+      "use strict";
+      init_react_shim();
+      init_plugin_sdk();
+      init_plugin_sdk();
     }
   });
 
@@ -193228,6 +194919,26 @@ ${cue.text}`).join("\n\n")}
   [data-live-tv-tv-root] [data-f]:hover { background-image: linear-gradient(rgba(252,252,255,0.06), rgba(252,252,255,0.06)) !important; }
   [data-live-tv-tv-root] [data-live-tv-chip][data-f]:hover { border-color: rgba(255,255,255,0.22) !important; }
 }
+[data-live-tv-tv-root][data-lt-phone="1"] [data-f]:focus,
+[data-live-tv-tv-root][data-lt-phone="1"] [data-f][data-fcur="1"] { outline: none !important; box-shadow: none !important; }
+[data-live-tv-tv-root][data-lt-phone="1"] [data-f]:hover { background-image: none !important; }
+[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-f]:focus,
+[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-f][data-fcur="1"] {
+  outline: 1px solid rgb(var(--accent-500)) !important;
+  outline-offset: -1px;
+  box-shadow: none !important;
+}
+[data-live-tv-tv-root] [data-guide-block]:not([data-live]):hover { background: rgba(252,252,255,0.14) !important; background-image: none !important; }
+[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-guide-block][data-f]:focus,
+[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-guide-block][data-f][data-fcur="1"] { outline: none !important; }
+[data-live-tv-tv-root]:not([data-live-tv-desktop="1"]) [data-guide-block][data-f]:focus,
+[data-live-tv-tv-root]:not([data-live-tv-desktop="1"]) [data-guide-block][data-f][data-fcur="1"] { outline: 2px solid rgba(255,255,255,0.45) !important; outline-offset: -2px; box-shadow: none !important; }
+[data-live-tv-tv-root] [data-guide-row]:hover { background: rgba(252,252,255,0.14) !important; background-image: none !important; }
+[data-live-tv-tv-root] [data-guide-row][data-sticky]:hover { background: #232324 !important; }
+[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-guide-row][data-f]:focus,
+[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-guide-row][data-f][data-fcur="1"] { outline: none !important; }
+[data-live-tv-tv-root]:not([data-live-tv-desktop="1"]) [data-guide-row][data-f]:focus,
+[data-live-tv-tv-root]:not([data-live-tv-desktop="1"]) [data-guide-row][data-f][data-fcur="1"] { outline: 2px solid rgba(255,255,255,0.45) !important; outline-offset: -2px; box-shadow: none !important; }
 [data-live-tv-tv-root] [data-live-tv-menu-item][data-f]:focus,
 [data-live-tv-tv-root] [data-live-tv-menu-item][data-f][data-fcur="1"] { outline-offset: -4px; border-radius: ${dp(12)}px; }
 [data-live-tv-tv-root] [data-scroll]::-webkit-scrollbar, [data-live-tv-tv-root] [data-row]::-webkit-scrollbar { display: none; }
@@ -193319,20 +195030,32 @@ ${cue.text}`).join("\n\n")}
   function ChannelArt({ channel, frameVersion, height, aspect, radius, children, style: style2 }) {
     const [frameFailed, setFrameFailed] = useState(false);
     const [logoFailed, setLogoFailed] = useState(false);
-    const frameSrc = !frameFailed && "url" in channel ? playerFrameUrl(channelKey(channel), frameVersion ?? null) : null;
-    const logo = logoFailed ? null : getLiveTvLogoSrc(channel.logo);
+    const frameSrc = USE_PLAYER_FRAMES && !frameFailed && "url" in channel ? playerFrameUrl(channelKey(channel), frameVersion ?? null) : null;
+    const primaryLogo = getLiveTvLogoSrc(channel.logo);
+    const fallbackLogo = getLiveTvLogoSrc(channel.logoFallback);
+    const logo = logoFailed ? null : primaryLogo ?? fallbackLogo;
     return /* @__PURE__ */ jsxs("div", { style: { position: "relative", height, aspectRatio: aspect, background: "rgba(252,252,255,0.06)", borderRadius: radius, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", ...style2 }, children: [
-      frameSrc ? /* @__PURE__ */ jsx("img", { src: frameSrc, alt: "", onError: () => setFrameFailed(true), style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" } }) : logo ? /* @__PURE__ */ jsx(LiveTvLogoImage, { src: logo, alt: "", className: "lumio-tv-logo-img", onError: () => setLogoFailed(true) }) : /* @__PURE__ */ jsx("span", { style: { fontSize: dp(22), fontWeight: 600, color: TV2.dim, letterSpacing: "0.04em" }, children: initialsOf(channel.name) }),
+      frameSrc ? /* @__PURE__ */ jsx("img", { src: frameSrc, alt: "", onError: () => setFrameFailed(true), style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" } }) : logo ? /* @__PURE__ */ jsx(
+        LiveTvLogoImage,
+        {
+          src: logo,
+          fallbackSrc: primaryLogo ? fallbackLogo : void 0,
+          alt: "",
+          className: "lumio-tv-logo-img",
+          onError: () => setLogoFailed(true)
+        }
+      ) : /* @__PURE__ */ jsx("span", { "data-initials": "", "aria-hidden": "true", style: { fontSize: dp(22), fontWeight: 600, color: TV2.dim, letterSpacing: "0.04em" }, children: initialsOf(channel.name) }),
       children
     ] });
   }
-  function Chip({ active: active2, children, style: style2, ...rest }) {
+  function Chip({ active: active2, children, style: style2, glass = false, ...rest }) {
     return /* @__PURE__ */ jsx(
       "div",
       {
         "data-live-tv-chip": "",
+        "data-live-tv-chip-glass": glass ? "" : void 0,
         ...rest,
-        style: { height: dp(46), padding: `0 ${dp(22)}px`, borderRadius: 999, display: "inline-flex", alignItems: "center", fontSize: dp(19), whiteSpace: "nowrap", cursor: "pointer", flexShrink: 0, background: active2 ? TV2.s16 : TV2.s05, color: active2 ? TV2.text : TV2.muted, fontWeight: active2 ? 600 : 400, border: `1px solid ${active2 ? TV2.lineStrong : "transparent"}`, ...style2 },
+        style: { height: dp(46), minHeight: dp(46), padding: `0 ${dp(22)}px`, borderRadius: 999, display: "inline-flex", alignItems: "center", fontSize: dp(19), whiteSpace: "nowrap", cursor: "pointer", flexShrink: 0, background: glass ? TV2.glass : active2 ? TV2.s16 : TV2.s05, color: active2 ? TV2.text : TV2.muted, fontWeight: active2 ? 600 : 400, border: `1px solid ${glass ? active2 ? TV2.lineStrong : TV2.line : active2 ? TV2.lineStrong : "transparent"}`, ...style2 },
         children
       }
     );
@@ -193343,23 +195066,40 @@ ${cue.text}`).join("\n\n")}
       {
         "data-testid": "tv-segment-option",
         ...station(() => onChange(option.key)),
-        style: { height: dp(38), padding: `0 ${dp(18)}px`, borderRadius: 999, display: "inline-flex", alignItems: "center", fontSize: dp(16), whiteSpace: "nowrap", cursor: "pointer", background: option.key === value ? TV2.s16 : "transparent", color: option.key === value ? TV2.text : TV2.muted },
+        style: { height: dp(38), minHeight: dp(38), padding: `0 ${dp(18)}px`, borderRadius: 999, display: "inline-flex", alignItems: "center", fontSize: dp(16), whiteSpace: "nowrap", cursor: "pointer", background: option.key === value ? TV2.s16 : "transparent", color: option.key === value ? TV2.text : TV2.muted },
         children: option.label
       },
       option.key
     )) });
   }
-  function RoundBtn({ size = dp(52), children, background = TV2.s12, style: style2, ...rest }) {
-    return /* @__PURE__ */ jsx("div", { ...rest, style: { width: size, height: size, borderRadius: 999, background, border: `1px solid ${TV2.lineCard}`, display: "inline-flex", alignItems: "center", justifyContent: "center", color: TV2.text, cursor: "pointer", flexShrink: 0, ...style2 }, children });
+  function RoundBtn({ size, children, background = TV2.s12, style: style2, ...rest }) {
+    const resolvedSize = size ?? dp(52);
+    return /* @__PURE__ */ jsx("div", { ...rest, style: { width: resolvedSize, height: resolvedSize, minHeight: resolvedSize, borderRadius: 999, background, border: `1px solid ${TV2.lineCard}`, display: "inline-flex", alignItems: "center", justifyContent: "center", color: TV2.text, cursor: "pointer", flexShrink: 0, ...style2 }, children });
   }
   function Toggle({ on }) {
     return /* @__PURE__ */ jsx("span", { style: { width: dp(52), height: dp(30), borderRadius: 999, background: on ? TV2.acc : TV2.s18, position: "relative", display: "inline-block", flexShrink: 0 }, children: /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: dp(3), left: on ? dp(25) : dp(3), width: dp(24), height: dp(24), borderRadius: 999, background: "#fff", transition: "left 120ms" } }) });
   }
   function useTvClockNode(locale) {
     const HostClock = getTvClock?.() ?? null;
+    const inSceneBox = useInSceneBox();
+    const sceneBoxScale = useSceneBoxScale();
+    const narrowSurface = useNarrowSurface();
+    const canCompensate = inSceneBox && sceneBoxScale !== null && !narrowSurface;
+    const clockRef = useRef(null);
+    const [naturalWidth, setNaturalWidth] = useState(0);
+    useEffect(() => {
+      const el = clockRef.current;
+      if (!el) return;
+      const mat = () => setNaturalWidth(el.offsetWidth);
+      mat();
+      const vakt = new ResizeObserver(mat);
+      vakt.observe(el);
+      return () => vakt.disconnect();
+    }, [canCompensate]);
+    const useHostClock = HostClock !== null && (!inSceneBox || canCompensate);
     const [now3, setNow] = useState(() => /* @__PURE__ */ new Date());
     useEffect(() => {
-      if (HostClock) return;
+      if (useHostClock) return;
       let timer = 0;
       const tick = () => {
         const next2 = /* @__PURE__ */ new Date();
@@ -193368,14 +195108,27 @@ ${cue.text}`).join("\n\n")}
       };
       tick();
       return () => window.clearTimeout(timer);
-    }, [HostClock]);
-    if (HostClock) return /* @__PURE__ */ jsx(HostClock, { variant: "desktop" });
+    }, [useHostClock]);
+    if (useHostClock) {
+      if (inSceneBox) {
+        const bredd = naturalWidth > 0 ? naturalWidth / sceneBoxScale : void 0;
+        return /* @__PURE__ */ jsx("span", { style: { display: "inline-block", width: bredd, textAlign: "right" }, children: /* @__PURE__ */ jsx(
+          "span",
+          {
+            ref: clockRef,
+            style: { display: "inline-block", transform: `scale(${1 / sceneBoxScale})`, transformOrigin: "top right" },
+            children: /* @__PURE__ */ jsx(HostClock, { variant: "desktop" })
+          }
+        ) });
+      }
+      return /* @__PURE__ */ jsx(HostClock, { variant: "desktop" });
+    }
     const time2 = now3.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
     const date = now3.toLocaleDateString(locale, { day: "numeric", month: "short" }).replace(".", "").toUpperCase();
     const day = now3.toLocaleDateString(locale, { weekday: "short" }).replace(".", "").toUpperCase();
     return /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), letterSpacing: "0.1em", color: "rgba(243,244,248,0.65)", whiteSpace: "nowrap" }, children: `${time2} | ${date} | ${day}` });
   }
-  var TV2, cardStyle, sw, svg, Icons;
+  var TV2, cardStyle, USE_PLAYER_FRAMES, sw, svg, Icons;
   var init_tv_ui = __esm({
     "../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-ui.tsx"() {
       "use strict";
@@ -193386,6 +195139,9 @@ ${cue.text}`).join("\n\n")}
       init_live_tv_data();
       init_live_tv_logo_image();
       init_live_tv_ui();
+      init_useInSceneBox();
+      init_useNarrowSurface();
+      init_useSceneBoxScale();
       init_jsx_runtime_shim();
       TV2 = {
         bg: "#000",
@@ -193425,6 +195181,7 @@ ${cue.text}`).join("\n\n")}
         borderRadius: dp(14),
         overflow: "hidden"
       };
+      USE_PLAYER_FRAMES = false;
       sw = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" };
       svg = (size, children, fill) => createElement("svg", { width: size, height: size, viewBox: "0 0 24 24", ...sw, fill: fill ? "currentColor" : "none" }, children);
       Icons = {
@@ -193470,6 +195227,7 @@ ${cue.text}`).join("\n\n")}
           /* @__PURE__ */ jsx("path", { d: "M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" })
         ] })),
         ChevronLeft: ({ size = dp(24) }) => svg(size, /* @__PURE__ */ jsx("path", { d: "M15 18l-6-6 6-6" })),
+        /** Öppningsknappen för telefonens meny-låda (spec §2) — tre linjer. */
         ChevronDown: ({ size = dp(20) }) => svg(size, /* @__PURE__ */ jsx("path", { d: "m6 9 6 6 6-6" })),
         Play: ({ size = dp(24) }) => svg(size, /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }), true),
         Pause: ({ size = dp(24) }) => svg(size, /* @__PURE__ */ jsx("path", { d: "M7 5h4v14H7zM13 5h4v14h-4z" }), true),
@@ -193538,8 +195296,12 @@ ${cue.text}`).join("\n\n")}
         back: "Back",
         showMore: "Show more",
         minutesLeft: "{min} min left",
+        /** Now / Next-radens korta rest (handoffen `N m`). */
+        minShort: "{min} m",
         channelsCount: "{count} channels",
         allPlaylists: "All playlists",
+        // Telefonens spellistark: rubriken får inte heta samma som första posten ("All playlists").
+        playlists: "Playlists",
         addPlaylist: "+ Add playlist\u2026",
         allGroups: "All",
         favourites: "Favourites",
@@ -193549,10 +195311,6 @@ ${cue.text}`).join("\n\n")}
         okWatch: "OK = watch",
         okRemind: "OK = remind me",
         reminderSet: "Reminder set",
-        helpHub: "OK = watch \xB7 hold OK = menu",
-        helpGuide: "OK watch \xB7 hold OK menu \xB7 \u25C2\u25B8 category",
-        helpPlaylists: "\u25C2 \u25B8 switch column \xB7 Back closes",
-        helpFavourites: "OK = watch \xB7 hold OK = move up/down, remove, channel details \xB7 favourites come first in the guide and zap with 1\u2013N on the remote",
         // Menyer
         menuAddFavourite: "Add to favourites",
         menuRemoveFavourite: "Remove from favourites",
@@ -193581,10 +195339,15 @@ ${cue.text}`).join("\n\n")}
         continueSub: "Replays & last watched",
         allChannels: "All channels",
         allChannelsSub: "{playlist} \xB7 {count} channels \xB7 OK = watch \xB7 hold OK = menu",
+        // Rubrik utanför TV-läget (Jerrys återkoppling 2026-09-14): bara antalet,
+        // ingen spellista och ingen fjärrhjälp — se `tv-hub.tsx`.
+        allChannelsCount: "All {count} channels",
         emptyTitle: "No channels yet",
         emptyBody: "Add an M3U playlist or an Xtream login under Settings.",
         openSettings: "Open settings",
         searchPlaceholder: "Search channels and programmes",
+        /** Task 10: tomt läge i sök på telefon (ingen fråga ännu). */
+        searchEmptyHint: "Search channels and today's programmes",
         // Guide
         colChannel: "CHANNEL",
         colNow: "NOW",
@@ -193594,6 +195357,17 @@ ${cue.text}`).join("\n\n")}
         modeTimeline: "Timeline",
         modePlaylists: "Playlists",
         modeGrid: "Grid",
+        // Den städade guiden (skrivbord/TV): tre lägen, käll-/kategoriväljare, zoom.
+        modeNowNext: "Now / Next",
+        modeTimelineDay: "Timeline",
+        zoom2h: "2 h",
+        zoom6h: "6 h",
+        zoomDay: "Whole day",
+        details: "Details",
+        sourceAll: "All playlists",
+        categoryAll: "All categories",
+        pickSource: "Playlist",
+        pickCategory: "Category",
         // Rutnätet (spec 4.3) — skrivbordets tablå, med skrivbordets egna texter.
         gridToday: "Today",
         gridTomorrow: "Tomorrow",
@@ -193602,7 +195376,16 @@ ${cue.text}`).join("\n\n")}
         gridShowing: "Showing {shown} channels with a guide",
         gridAllWithGuide: "All {shown} channels with a guide",
         gridEmpty: "No programme guide for these channels yet. Add an EPG source under Settings \u2192 Live TV.",
-        gridHelp: "OK = watch or channel details \xB7 hold OK = reminder, lock \xB7 \u25C2\u25B8 time \xB7 \u25B4\u25BE channel",
+        // Grid i den städade guiden (Task 3): kollapsade tomma rader, pagineringsrad, detaljpanel.
+        noEpgRow: "No guide for this channel \xB7 broadcasting live",
+        paginationRow: "{shown} of {total} channels have a guide in this category",
+        showMoreN: "Show {n} more",
+        noEpgLast: "Channels without a guide are listed last",
+        // Timeline i den städade guiden (Task 5): fotradens hjälptext.
+        timelineHint: "Click anywhere in a row to open Grid at that time",
+        watchNowShort: "Watch now",
+        favouriteShort: "Favourite",
+        detailEmpty: "Select a programme to see details",
         next: "Next",
         later: "Later",
         previewLabel: "live stream, muted \xB7 OK = fullscreen",
@@ -193611,6 +195394,12 @@ ${cue.text}`).join("\n\n")}
         favouritesSub: "{count} channels \xB7 order sets channel numbers 1\u2013{count}",
         addFromGuide: "+ Add from the guide",
         favouritesEmpty: "No favourites yet. Hold OK on a channel and choose Add to favourites.",
+        // Telefonens tomma läge: ingen fjärrkontrollstext (skiljer sig medvetet
+        // från skrivbordets favouritesEmpty ovan).
+        favouritesEmptyPhone: "No favourites yet. Add channels from the guide.",
+        // Telefonens redigeringsläge (dra-omordning)
+        edit: "Edit",
+        done: "Done",
         // Kanaldetalj
         yesterday: "Yesterday",
         today: "Today",
@@ -193629,6 +195418,9 @@ ${cue.text}`).join("\n\n")}
         daysCount: "{days} days",
         lockWithPin: "Lock with profile PIN",
         noArchive: "None",
+        // Kanaldetalj på telefon (Task 8)
+        programmeSheetInfo: "Channel info",
+        replayDaysShort: "Replay available {days} days",
         // Sök
         searchChannels: "Channels",
         searchProgrammes: "Programmes today",
@@ -193643,11 +195435,14 @@ ${cue.text}`).join("\n\n")}
         layout3: "1 + 2",
         layout4: "4 tiles",
         audioLabel: "Audio",
-        multiviewHelp: "OK on a tile = audio here \xB7 hold OK = switch channel / remove",
         pickChannel: "Pick channel",
         pickChannelFor: "Pick channel for tile {n}",
         frameLabel: "frame",
         tileFailed: "Could not play",
+        // Multivy på telefon (Task 11)
+        swap: "Swap",
+        changeChannel: "Change channel",
+        selectChannel: "Select channel",
         // Inställningar
         tabAppearance: "Appearance",
         tabContent: "Content",
@@ -193674,6 +195469,14 @@ ${cue.text}`).join("\n\n")}
         importWriting: "Saving the channels\u2026",
         importFailed: "The fetch failed",
         needsReimport: "Needs refetching",
+        // Logotypreserv (P6): switchen är en riktig växel (Toggle), inte en
+        // Action-etikett som bär läget i sin text — annars ser den ut som samma
+        // sorts knapp som Komplettera. Kompletteringens kvitto delar
+        // text/parametrar med skrivbordets `logoCompleteResult` (hub-strings.ts).
+        logoFallback: "Logos",
+        logoComplete: "Complete",
+        logoCompleteRunning: "Completing\u2026",
+        logoCompleteResult: "{matched} of {total} completed",
         truncated: "The playlist was cut off at 64 MiB \u2014 some channels are missing",
         appTooOld: "Live TV requires Lumio 0.1.596 or newer",
         xtreamServer: "Xtream server \u2014 http://host:8080",
@@ -193711,7 +195514,6 @@ ${cue.text}`).join("\n\n")}
         xtreamCategoriesTitle: "Xtream categories",
         xtreamAllCategories: "All categories",
         // Spelare
-        playerHelp: "\u25BE guide \xB7 hold OK = menu",
         moreActions: "More",
         nextLabel: "Next",
         zapMiss: "No channel {n}",
@@ -193722,6 +195524,11 @@ ${cue.text}`).join("\n\n")}
         playerFullscreen: "Fullscreen",
         playerExitFullscreen: "Exit fullscreen",
         playerAspect: "Aspect ratio",
+        playerGuide: "Guide",
+        playerClose: "Close",
+        audioSubs: "Audio & subs",
+        autoQuality: "Auto",
+        zapList: "Channels",
         // Biblioteket (film & serier ur spellistans VOD)
         library: "Library",
         librarySub: "{playlist} \xB7 {count} titles",
@@ -193781,7 +195588,33 @@ ${cue.text}`).join("\n\n")}
         markWatched: "Mark as watched",
         playEpisode: "Play S{season}E{episode}",
         // Tomma
-        guideEmpty: "No channels in this category"
+        guideEmpty: "No channels in this category",
+        // Telefonens flik-rad + bottenark (fas 3)
+        tabHome: "Home",
+        tabGuide: "Guide",
+        tabFavourites: "Favourites",
+        tabSearch: "Search",
+        tabMore: "More",
+        sheetMultiview: "Multiview",
+        sheetSettings: "Settings",
+        // Delade rader (P3): sök-varianten prefixar nu-titeln, förloppet visar minuter kvar
+        nowPrefix: "Now",
+        minutesShort: "{min} min",
+        // Guiden på telefon (P5): segmentväxeln Now/Timeline/Lists + sidtitel
+        guideTitle: "Guide",
+        phoneModeNow: "Now",
+        phoneModeTimeline: "Timeline",
+        phoneModeLists: "Lists",
+        // Guiden · Lists på telefon (P7): filterfältet och Visa alla-raden per lista
+        filterCategories: "Filter categories",
+        showAllCategories: "Show all {count} categories",
+        // Inställningar på telefon (P12): sektionslistan + de två beteendevalen
+        settingKeepAwake: "Keep screen awake while playing",
+        settingFullscreenOnRotate: "Autoplay in fullscreen on rotate",
+        sectionPlaylists: "Playlists",
+        sectionGuide: "Guide default",
+        sectionBehaviour: "Behaviour",
+        sectionMore: "More"
       };
       SV2 = {
         railSearch: "S\xF6k",
@@ -193803,8 +195636,10 @@ ${cue.text}`).join("\n\n")}
         back: "Tillbaka",
         showMore: "Visa fler",
         minutesLeft: "{min} min kvar",
+        minShort: "{min} m",
         channelsCount: "{count} kanaler",
         allPlaylists: "Alla spellistor",
+        playlists: "Spellistor",
         addPlaylist: "+ L\xE4gg till spellista \u2026",
         allGroups: "Alla",
         favourites: "Favoriter",
@@ -193814,10 +195649,6 @@ ${cue.text}`).join("\n\n")}
         okWatch: "OK = titta",
         okRemind: "OK = p\xE5minn mig",
         reminderSet: "P\xE5minnelse satt",
-        helpHub: "OK = titta \xB7 h\xE5ll OK = meny",
-        helpGuide: "OK titta \xB7 h\xE5ll OK meny \xB7 \u25C2\u25B8 kategori",
-        helpPlaylists: "\u25C2 \u25B8 byter kolumn \xB7 Back st\xE4nger",
-        helpFavourites: "OK = titta \xB7 h\xE5ll OK = flytta upp/ner, ta bort, kanaldetaljer \xB7 favoriter ligger f\xF6rst i guiden och zappas med 1\u2013N p\xE5 fj\xE4rren",
         menuAddFavourite: "L\xE4gg till i favoriter",
         menuRemoveFavourite: "Ta bort fr\xE5n favoriter",
         menuChannelDetails: "Kanaldetaljer",
@@ -193844,10 +195675,12 @@ ${cue.text}`).join("\n\n")}
         continueSub: "Repriser & senast sedda",
         allChannels: "Alla kanaler",
         allChannelsSub: "{playlist} \xB7 {count} kanaler \xB7 OK = titta \xB7 h\xE5ll OK = meny",
+        allChannelsCount: "Alla {count} kanaler",
         emptyTitle: "Inga kanaler \xE4n",
         emptyBody: "L\xE4gg till en M3U-spellista eller en Xtream-inloggning under Inst\xE4llningar.",
         openSettings: "\xD6ppna inst\xE4llningar",
         searchPlaceholder: "S\xF6k kanaler och program",
+        searchEmptyHint: "S\xF6k kanaler och dagens program",
         colChannel: "KANAL",
         colNow: "NU",
         colNext: "SEN",
@@ -193856,6 +195689,16 @@ ${cue.text}`).join("\n\n")}
         modeTimeline: "Tabl\xE5",
         modePlaylists: "Spellistor",
         modeGrid: "Rutn\xE4t",
+        modeNowNext: "Nu / Sen",
+        modeTimelineDay: "Tabl\xE5",
+        zoom2h: "2 h",
+        zoom6h: "6 h",
+        zoomDay: "Hela dagen",
+        details: "Detaljer",
+        sourceAll: "Alla spellistor",
+        categoryAll: "Alla kategorier",
+        pickSource: "Spellista",
+        pickCategory: "Kategori",
         gridToday: "Idag",
         gridTomorrow: "Imorgon",
         gridNow: "Nu",
@@ -193863,7 +195706,14 @@ ${cue.text}`).join("\n\n")}
         gridShowing: "Visar {shown} kanaler med tabl\xE5",
         gridAllWithGuide: "Alla {shown} kanaler med tabl\xE5",
         gridEmpty: "Ingen tabl\xE5 f\xF6r de h\xE4r kanalerna \xE4nnu. L\xE4gg till en EPG-k\xE4lla under Inst\xE4llningar \u2192 Live TV.",
-        gridHelp: "OK = titta eller kanaldetaljer \xB7 h\xE5ll OK = p\xE5minnelse, l\xE5s \xB7 \u25C2\u25B8 tid \xB7 \u25B4\u25BE kanal",
+        noEpgRow: "Ingen tabl\xE5 f\xF6r den h\xE4r kanalen \xB7 s\xE4nder live",
+        paginationRow: "{shown} av {total} kanaler har tabl\xE5 i den h\xE4r kategorin",
+        showMoreN: "Visa {n} fler",
+        noEpgLast: "Kanaler utan tabl\xE5 visas sist",
+        timelineHint: "Klicka var som helst i en rad f\xF6r att \xF6ppna Grid vid den tiden",
+        watchNowShort: "Titta nu",
+        favouriteShort: "Favorit",
+        detailEmpty: "Markera ett program f\xF6r att se detaljer",
         next: "Sen",
         later: "Senare",
         previewLabel: "livestr\xF6m, tyst \xB7 OK = helsk\xE4rm",
@@ -193871,6 +195721,9 @@ ${cue.text}`).join("\n\n")}
         favouritesSub: "{count} kanaler \xB7 ordningen styr kanalnummer 1\u2013{count}",
         addFromGuide: "+ L\xE4gg till fr\xE5n guiden",
         favouritesEmpty: "Inga favoriter \xE4n. H\xE5ll OK p\xE5 en kanal och v\xE4lj L\xE4gg till i favoriter.",
+        favouritesEmptyPhone: "Inga favoriter \xE4n. L\xE4gg till kanaler fr\xE5n guiden.",
+        edit: "Redigera",
+        done: "Klar",
         yesterday: "Ig\xE5r",
         today: "Idag",
         tomorrow: "Imorgon",
@@ -193888,6 +195741,8 @@ ${cue.text}`).join("\n\n")}
         daysCount: "{days} dagar",
         lockWithPin: "L\xE5s med profilens PIN",
         noArchive: "Ingen",
+        programmeSheetInfo: "Kanalinfo",
+        replayDaysShort: "Repris {days} dagar",
         searchChannels: "Kanaler",
         searchProgrammes: "Program idag",
         hits: "{count} tr\xE4ffar",
@@ -193900,11 +195755,13 @@ ${cue.text}`).join("\n\n")}
         layout3: "1 + 2",
         layout4: "4 rutor",
         audioLabel: "Ljud",
-        multiviewHelp: "OK p\xE5 ruta = ljud hit \xB7 h\xE5ll OK = byt kanal / ta bort",
         pickChannel: "V\xE4lj kanal",
         pickChannelFor: "V\xE4lj kanal f\xF6r ruta {n}",
         frameLabel: "bildruta",
         tileFailed: "Kunde inte spela",
+        swap: "Byt plats",
+        changeChannel: "Byt kanal",
+        selectChannel: "V\xE4lj kanal",
         tabAppearance: "Utseende",
         tabContent: "Inneh\xE5ll",
         tabPlaylists: "Spellistor",
@@ -193930,6 +195787,10 @@ ${cue.text}`).join("\n\n")}
         importWriting: "Sparar kanalerna\u2026",
         importFailed: "H\xE4mtningen misslyckades",
         needsReimport: "Beh\xF6ver h\xE4mtas om",
+        logoFallback: "Logotyper",
+        logoComplete: "Komplettera",
+        logoCompleteRunning: "Kompletterar\u2026",
+        logoCompleteResult: "{matched} av {total} kompletterade",
         truncated: "Spellistan kapades vid 64 MiB \u2013 vissa kanaler saknas",
         appTooOld: "Live TV kr\xE4ver Lumio 0.1.596 eller nyare",
         xtreamServer: "Xtream-server \u2014 http://host:8080",
@@ -193965,7 +195826,6 @@ ${cue.text}`).join("\n\n")}
         xtreamCategories: "Kategorier",
         xtreamCategoriesTitle: "Xtream-kategorier",
         xtreamAllCategories: "Alla kategorier",
-        playerHelp: "\u25BE guide \xB7 h\xE5ll OK = meny",
         moreActions: "Mer",
         nextLabel: "Sen",
         zapMiss: "Ingen kanal {n}",
@@ -193976,6 +195836,11 @@ ${cue.text}`).join("\n\n")}
         playerFullscreen: "Fullsk\xE4rm",
         playerExitFullscreen: "L\xE4mna fullsk\xE4rm",
         playerAspect: "Bildf\xF6rh\xE5llande",
+        playerGuide: "Guide",
+        playerClose: "St\xE4ng",
+        audioSubs: "Ljud & text",
+        autoQuality: "Auto",
+        zapList: "Kanaler",
         library: "Bibliotek",
         librarySub: "{playlist} \xB7 {count} titlar",
         librarySectionMovies: "FILM",
@@ -194028,39 +195893,947 @@ ${cue.text}`).join("\n\n")}
         watched: "Sedd",
         markWatched: "Markera som sedd",
         playEpisode: "Spela S{season}E{episode}",
-        guideEmpty: "Inga kanaler i kategorin"
+        guideEmpty: "Inga kanaler i kategorin",
+        // Telefonens flik-rad + bottenark (fas 3)
+        tabHome: "Hem",
+        tabGuide: "Guide",
+        tabFavourites: "Favoriter",
+        tabSearch: "S\xF6k",
+        tabMore: "Mer",
+        sheetMultiview: "Multivy",
+        sheetSettings: "Inst\xE4llningar",
+        nowPrefix: "Nu",
+        minutesShort: "{min} min",
+        guideTitle: "Guide",
+        phoneModeNow: "Nu",
+        phoneModeTimeline: "Tabl\xE5",
+        phoneModeLists: "Listor",
+        filterCategories: "Filtrera kategorier",
+        showAllCategories: "Visa alla {count} kategorier",
+        settingKeepAwake: "H\xE5ll sk\xE4rmen t\xE4nd vid uppspelning",
+        settingFullscreenOnRotate: "Helsk\xE4rm automatiskt vid rotation",
+        sectionPlaylists: "Spellistor",
+        sectionGuide: "Guidens standardvy",
+        sectionBehaviour: "Beteende",
+        sectionMore: "Mer"
       };
     }
   });
 
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts
+  var MT, ellipsis, clamp2, sectionLabel;
+  var init_mobile_tokens = __esm({
+    "../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts"() {
+      "use strict";
+      MT = {
+        bg: "#000",
+        text: "#f3f4f8",
+        muted: "rgba(243,244,248,0.62)",
+        muted70: "rgba(243,244,248,0.7)",
+        // Handoffets 70 % text på chips
+        dim: "rgba(243,244,248,0.45)",
+        faint: "rgba(243,244,248,0.4)",
+        s05: "rgba(252,252,255,0.05)",
+        s06: "rgba(252,252,255,0.06)",
+        s07: "rgba(252,252,255,0.07)",
+        s08: "rgba(252,252,255,0.08)",
+        s10: "rgba(252,252,255,0.10)",
+        s12: "rgba(252,252,255,0.12)",
+        s14: "rgba(252,252,255,0.14)",
+        s16: "rgba(252,252,255,0.16)",
+        line07: "rgba(255,255,255,0.07)",
+        line08: "rgba(255,255,255,0.08)",
+        line10: "rgba(255,255,255,0.10)",
+        line14: "rgba(255,255,255,0.14)",
+        line20: "rgba(255,255,255,0.2)",
+        sheet: "rgba(38,39,45,0.98)",
+        scrim: "rgba(0,0,0,0.6)",
+        acc: "rgb(var(--accent-500))",
+        accMix: (pct) => `color-mix(in srgb, rgb(var(--accent-500)) ${pct}%, transparent)`,
+        onAcc: "#fff",
+        live: "#fb7185",
+        liveSoft: "rgba(251,113,133,0.22)",
+        liveText: "#fecdd3",
+        warnSoft: "rgba(244,132,95,0.2)",
+        warnText: "#f9c3ad",
+        font: "'Avenir Next', 'Trebuchet MS', sans-serif",
+        HIT: 44,
+        PAD: 16,
+        HEADER_H: 52,
+        HEADER_LEFT: 60,
+        TAB_BAR: 52,
+        SAFE_BOTTOM: "env(safe-area-inset-bottom, 18px)",
+        SAFE_TOP: "env(safe-area-inset-top, 0px)",
+        /** Innehållets bottenluft så att sista raden inte hamnar under flik-raden. */
+        SCROLL_PAD_BOTTOM: 96
+      };
+      ellipsis = { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
+      clamp2 = { overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" };
+      sectionLabel = { fontSize: 12, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: MT.dim };
+    }
+  });
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx
+  var svg2, MIcons;
+  var init_mobile_icons = __esm({
+    "../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx"() {
+      "use strict";
+      init_react_shim();
+      init_jsx_runtime_shim();
+      svg2 = (size, children, filled) => createElement(
+        "svg",
+        { width: size, height: size, viewBox: "0 0 24 24", fill: filled ? "currentColor" : "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" },
+        children
+      );
+      MIcons = {
+        House: ({ size = 22, filled = false }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("path", { d: "M3 11.5 12 4l9 7.5" }),
+          /* @__PURE__ */ jsx("path", { d: "M5 10v10h14V10" })
+        ] }), filled),
+        List: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsx("path", { d: "M4 6h16M4 12h16M4 18h16" })),
+        Heart: ({ size = 22, filled = false }) => svg2(size, /* @__PURE__ */ jsx("path", { d: "M12 21s-7-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 12C19 16.4 12 21 12 21z" }), filled),
+        MagnifyingGlass: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("circle", { cx: "11", cy: "11", r: "7" }),
+          /* @__PURE__ */ jsx("path", { d: "m20 20-3.5-3.5" })
+        ] })),
+        Gear: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "3" }),
+          /* @__PURE__ */ jsx("path", { d: "M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" })
+        ] })),
+        CaretLeft: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsx("path", { d: "M15 6l-6 6 6 6" })),
+        CaretRight: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsx("path", { d: "M9 6l6 6-6 6" })),
+        CaretDown: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsx("path", { d: "M6 9l6 6 6-6" })),
+        Play: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }), true),
+        SpeakerHigh: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("path", { d: "M4 9v6h4l6 5V4l-6 5H4z" }),
+          /* @__PURE__ */ jsx("path", { d: "M17.5 8.5a5 5 0 0 1 0 7" }),
+          /* @__PURE__ */ jsx("path", { d: "M20 6a8.5 8.5 0 0 1 0 12" })
+        ] })),
+        SpeakerSlash: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("path", { d: "M4 9v6h4l6 5V4l-6 5H4z" }),
+          /* @__PURE__ */ jsx("path", { d: "m16 9 5 6M21 9l-5 6" })
+        ] })),
+        Bell: ({ size = 22, filled = false }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("path", { d: "M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z" }),
+          /* @__PURE__ */ jsx("path", { d: "M10 20a2 2 0 0 0 4 0" })
+        ] }), filled),
+        Lock: ({ size = 22, filled = false }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("rect", { x: "5", y: "11", width: "14", height: "10", rx: "2" }),
+          /* @__PURE__ */ jsx("path", { d: "M8 11V7a4 4 0 0 1 8 0v4" })
+        ] }), filled),
+        SquaresFour: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("rect", { x: "4", y: "4", width: "7", height: "7", rx: "1.5" }),
+          /* @__PURE__ */ jsx("rect", { x: "13", y: "4", width: "7", height: "7", rx: "1.5" }),
+          /* @__PURE__ */ jsx("rect", { x: "4", y: "13", width: "7", height: "7", rx: "1.5" }),
+          /* @__PURE__ */ jsx("rect", { x: "13", y: "13", width: "7", height: "7", rx: "1.5" })
+        ] })),
+        ArrowsOut: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsx(Fragment2, { children: /* @__PURE__ */ jsx("path", { d: "M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5" }) })),
+        DotsThree: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("circle", { cx: "6", cy: "12", r: "1.6" }),
+          /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "1.6" }),
+          /* @__PURE__ */ jsx("circle", { cx: "18", cy: "12", r: "1.6" })
+        ] }), true),
+        /** Handtaget för dragbara listor: tre korta horisontella streck. */
+        ListHandle: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsx(Fragment2, { children: /* @__PURE__ */ jsx("path", { d: "M7 7h10M7 12h10M7 17h10" }) })),
+        Plus: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsx("path", { d: "M12 5v14M5 12h14" })),
+        X: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsx("path", { d: "M6 6l12 12M18 6 6 18" }))
+      };
+    }
+  });
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx
+  function MobileLogo({ channel, width, height, radius = 8, frame: frame2 = true }) {
+    const [frameFailed, setFrameFailed] = useState(false);
+    const [logoFailed, setLogoFailed] = useState(false);
+    const frameSrc = USE_PLAYER_FRAMES && frame2 && !frameFailed && channel.url ? playerFrameUrl(channelKey(channel), null) : null;
+    const primaryLogo = getLiveTvLogoSrc(channel.logo);
+    const fallbackLogo = getLiveTvLogoSrc(channel.logoFallback);
+    const logo = logoFailed ? null : primaryLogo ?? fallbackLogo;
+    return /* @__PURE__ */ jsx("div", { style: { position: "relative", width, height, flexShrink: 0, borderRadius: radius, overflow: "hidden", background: MT.s06, display: "flex", alignItems: "center", justifyContent: "center" }, children: frameSrc ? /* @__PURE__ */ jsx("img", { src: frameSrc, alt: "", onError: () => setFrameFailed(true), style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" } }) : logo ? /* @__PURE__ */ jsx(
+      LiveTvLogoImage,
+      {
+        src: logo,
+        fallbackSrc: primaryLogo ? fallbackLogo : void 0,
+        alt: "",
+        className: "lumio-tv-logo-img",
+        onError: () => setLogoFailed(true)
+      }
+    ) : /* @__PURE__ */ jsx("span", { "data-initials": "", "aria-hidden": "true", style: { fontSize: 13, fontWeight: 600, color: MT.dim, letterSpacing: "0.04em" }, children: initialsOf(channel.name) }) });
+  }
+  var init_mobile_logo = __esm({
+    "../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx"() {
+      "use strict";
+      init_react_shim();
+      init_plugin_sdk();
+      init_live_tv_data();
+      init_live_tv_logo_image();
+      init_tv_ui();
+      init_live_tv_ui();
+      init_mobile_tokens();
+      init_jsx_runtime_shim();
+    }
+  });
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx
+  function MobileChannelRow({ channel, number: number2, now: now3, nowMs, locale, pinned = false, locked = false, variant = "guide", noProgrammeLabel, onPress, onLongPress, init, testId = "mobile-channel-row" }) {
+    const { tt } = useTvText();
+    const logo = variant === "zap" ? { w: 48, h: 32 } : { w: 56, h: 38 };
+    const minHeight = variant === "zap" ? 56 : 68;
+    const minutes = now3.now ? Math.max(0, Math.round((now3.now.stop - nowMs) / 6e4)) : 0;
+    return /* @__PURE__ */ jsxs(
+      "div",
+      {
+        "data-testid": testId,
+        ...station(onPress, onLongPress, init ? { "data-init": "" } : void 0),
+        style: { minHeight, padding: "12px 0", display: "flex", alignItems: "center", gap: 12, borderBottom: `1px solid ${MT.line07}`, cursor: "pointer" },
+        children: [
+          /* @__PURE__ */ jsx("span", { style: { width: variant === "zap" ? 22 : 26, flexShrink: 0, textAlign: "right", fontSize: 14, color: MT.dim, fontVariantNumeric: "tabular-nums" }, children: number2 ?? "" }),
+          /* @__PURE__ */ jsx(MobileLogo, { channel, width: logo.w, height: logo.h }),
+          /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }, children: [
+            /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6, flex: 1, minWidth: "0px" }, children: [
+              /* @__PURE__ */ jsx("span", { style: { fontSize: variant === "zap" ? 14 : 15, fontWeight: 600, ...ellipsis, minWidth: "0px" }, children: channel.name }),
+              pinned ? /* @__PURE__ */ jsx("span", { "data-pinned": "", style: { color: MT.acc, flexShrink: 0, display: "inline-flex" }, children: /* @__PURE__ */ jsx(MIcons.Heart, { size: 14, filled: true }) }) : null,
+              locked ? /* @__PURE__ */ jsx("span", { "data-locked": "", style: { color: MT.dim, flexShrink: 0, display: "inline-flex" }, children: /* @__PURE__ */ jsx(MIcons.Lock, { size: 14 }) }) : null
+            ] }),
+            now3.now ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+              /* @__PURE__ */ jsx("div", { style: { fontSize: variant === "zap" ? 12 : 14, color: "rgba(243,244,248,0.85)", ...ellipsis }, children: variant === "search" ? `${tt("nowPrefix")}: ${now3.now.title}` : now3.now.title }),
+              variant === "guide" || variant === "sheet" ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
+                /* @__PURE__ */ jsx("div", { style: { flex: 1, height: 4, borderRadius: 4, background: MT.s14, overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { width: `${Math.round(progressOf(now3.now.start, now3.now.stop, nowMs) * 100)}%`, height: "100%", background: MT.acc } }) }),
+                /* @__PURE__ */ jsx("span", { style: { fontSize: 12, color: MT.dim, flexShrink: 0 }, children: tt("minutesShort", { min: minutes }) })
+              ] }) : null,
+              variant === "guide" && now3.next ? /* @__PURE__ */ jsxs("div", { style: { fontSize: 13, color: MT.dim, ...ellipsis }, children: [
+                tt("nextLabel"),
+                " ",
+                formatClock(now3.next.start, locale),
+                " ",
+                now3.next.title
+              ] }) : null
+            ] }) : /* @__PURE__ */ jsxs(Fragment2, { children: [
+              /* @__PURE__ */ jsx("div", { style: { fontSize: 14, color: MT.dim, ...ellipsis }, children: noProgrammeLabel }),
+              /* @__PURE__ */ jsx("div", { style: { fontSize: 13, color: MT.faint, ...ellipsis }, children: [channel.group, qualityFromName(channel.name)].filter(Boolean).join(" \xB7 ") })
+            ] })
+          ] })
+        ]
+      }
+    );
+  }
+  var init_mobile_channel_row = __esm({
+    "../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx"() {
+      "use strict";
+      init_live_tv_ui();
+      init_live_tv_model();
+      init_tv_ui();
+      init_tv_strings();
+      init_mobile_tokens();
+      init_mobile_icons();
+      init_mobile_logo();
+      init_jsx_runtime_shim();
+    }
+  });
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx
+  function MobileSheet({ title, subtitle, art, body, items, onClose, pushLayer, testId }) {
+    const { tt } = useTvText();
+    const onCloseRef = useRef(onClose);
+    useEffect(() => {
+      onCloseRef.current = onClose;
+    });
+    useEffect(() => pushLayer(() => onCloseRef.current()), [pushLayer]);
+    return /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("div", { "data-testid": "sheet-scrim", onClick: onClose, style: { position: "fixed", inset: 0, zIndex: 70, background: MT.scrim } }),
+      /* @__PURE__ */ jsxs(
+        "div",
+        {
+          role: "dialog",
+          "aria-modal": "true",
+          "data-testid": testId ?? "mobile-sheet",
+          "data-live-tv-layer": "",
+          "data-panel-root": "",
+          style: {
+            position: "fixed",
+            left: 8,
+            right: 8,
+            bottom: 8,
+            zIndex: 71,
+            borderRadius: 26,
+            boxSizing: "border-box",
+            background: MT.sheet,
+            border: `1px solid ${MT.line10}`,
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08), 0 24px 64px rgba(0,0,0,0.6)",
+            color: MT.text,
+            fontFamily: MT.font,
+            overflow: "hidden",
+            paddingBottom: MT.SAFE_BOTTOM
+          },
+          children: [
+            /* @__PURE__ */ jsxs("div", { style: { padding: "18px 20px 12px", display: "flex", alignItems: "center", gap: 12, borderBottom: `1px solid ${MT.line08}` }, children: [
+              art ? /* @__PURE__ */ jsx("div", { style: { flexShrink: 0 }, children: art }) : null,
+              /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+                /* @__PURE__ */ jsx("div", { style: { fontSize: 16, fontWeight: 600, ...ellipsis }, children: title }),
+                subtitle ? /* @__PURE__ */ jsx("div", { style: { fontSize: 13, color: MT.muted, ...ellipsis }, children: subtitle }) : null
+              ] })
+            ] }),
+            body ? /* @__PURE__ */ jsx("div", { "data-testid": "sheet-body", style: { padding: "12px 20px", fontSize: 14, color: MT.muted, maxHeight: "30vh", overflow: "auto" }, children: body }) : null,
+            /* @__PURE__ */ jsx("div", { "data-scroll": "", style: { maxHeight: "55vh", overflowY: "auto" }, children: items.map((item, index3) => /* @__PURE__ */ jsx(
+              "div",
+              {
+                "data-sheet-item": "",
+                ...station(() => {
+                  item.run();
+                  onClose();
+                }, void 0, index3 === 0 ? { "data-init": "" } : void 0),
+                style: {
+                  minHeight: 56,
+                  padding: "0 20px",
+                  display: "flex",
+                  alignItems: "center",
+                  fontSize: 16,
+                  fontWeight: index3 === 0 ? 600 : 400,
+                  borderBottom: `1px solid ${MT.line07}`,
+                  cursor: "pointer"
+                },
+                children: /* @__PURE__ */ jsx("span", { style: { flex: 1, ...ellipsis }, children: item.label })
+              },
+              item.key
+            )) }),
+            /* @__PURE__ */ jsx("div", { style: { padding: 8 }, children: /* @__PURE__ */ jsx("div", { ...station(onClose), style: { minHeight: 50, borderRadius: 16, background: MT.s08, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 600, cursor: "pointer" }, children: tt("cancel") }) })
+          ]
+        }
+      )
+    ] });
+  }
+  var init_mobile_sheet = __esm({
+    "../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx"() {
+      "use strict";
+      init_react_shim();
+      init_tv_ui();
+      init_tv_strings();
+      init_mobile_tokens();
+      init_jsx_runtime_shim();
+    }
+  });
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx
+  function Round({ size, label: label2, onPress, background = "rgba(0,0,0,0.55)", children }) {
+    return /* @__PURE__ */ jsx("div", { ...station(onPress, void 0, { "aria-label": label2 }), style: { width: size, height: size, minHeight: size, flexShrink: 0, borderRadius: 999, background, color: MT.text, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }, children });
+  }
+  function Pill({ label: label2, onPress, disabled = false }) {
+    const shared = { height: 44, minHeight: 44, padding: "0 16px", borderRadius: 999, background: MT.s10, border: `1px solid ${MT.line08}`, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", boxSizing: "border-box", flexShrink: 0 };
+    if (disabled || !onPress) return /* @__PURE__ */ jsx("div", { "aria-disabled": "true", style: { ...shared, color: MT.muted }, children: label2 });
+    return /* @__PURE__ */ jsx("div", { ...station(onPress), style: { ...shared, color: MT.text, cursor: "pointer" }, children: label2 });
+  }
+  function LiveTag2({ label: label2 }) {
+    return /* @__PURE__ */ jsx("span", { style: { fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", padding: "3px 7px", borderRadius: 7, background: MT.liveSoft, color: MT.liveText, flexShrink: 0 }, children: label2 });
+  }
+  function ProgressBar2({ value, height }) {
+    return /* @__PURE__ */ jsx("div", { style: { flex: 1, minWidth: 0, height, borderRadius: height, background: "rgba(252,252,255,0.22)", overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { width: `${Math.round(Math.max(0, Math.min(1, value)) * 100)}%`, height: "100%", background: MT.acc } }) });
+  }
+  function TvPlayerChromePhone({ channel, tv, controls, paused, onTogglePause, onClose, landscape }) {
+    const { tt } = useTvText();
+    const [visible, setVisible] = useState(true);
+    const [sheet, setSheet] = useState(null);
+    const timerRef = useRef(null);
+    const info = tv.nowFor(channel);
+    const hideMs = tv.bannerHideMs;
+    const clearTimer = useCallback(() => {
+      if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }, []);
+    const reveal = useCallback(() => {
+      setVisible(true);
+      clearTimer();
+      if (hideMs > 0 && !sheet) timerRef.current = window.setTimeout(() => setVisible(false), hideMs);
+    }, [hideMs, sheet, clearTimer]);
+    useEffect(() => {
+      reveal();
+      return clearTimer;
+    }, [reveal, clearTimer, channel]);
+    const onStageTap = useCallback((event) => {
+      const target2 = event.target instanceof Element ? event.target : null;
+      if (target2?.closest('[role="button"]')) {
+        reveal();
+        return;
+      }
+      if (visible) {
+        clearTimer();
+        setVisible(false);
+      } else reveal();
+    }, [visible, reveal, clearTimer]);
+    useEffect(() => {
+      const onKey = (event) => {
+        if (event.key !== "Escape" && event.key !== "Backspace") return;
+        if (tv.gateOpen) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (sheet) {
+          setSheet(null);
+          return;
+        }
+        onClose();
+      };
+      window.addEventListener("keydown", onKey, true);
+      return () => window.removeEventListener("keydown", onKey, true);
+    }, [sheet, tv.gateOpen, onClose]);
+    const closeSheet = useCallback(() => setSheet(null), []);
+    const pinnedSet = useMemo(() => new Set(tv.pinnedKeys), [tv.pinnedKeys]);
+    const zap = useMemo(() => {
+      const current2 = channelKey(channel);
+      const pinned = [];
+      const rest = [];
+      tv.neighbours.forEach((c, i) => (pinnedSet.has(channelKey(c)) ? pinned : rest).push({ channel: c, number: i + 1 }));
+      const index3 = rest.findIndex((entry) => channelKey(entry.channel) === current2);
+      const window2 = index3 < 0 ? rest.slice(0, ZAP_WINDOW * 2) : rest.slice(Math.max(0, index3 - ZAP_WINDOW), index3 + ZAP_WINDOW + 1);
+      return [...pinned, ...window2];
+    }, [tv.neighbours, pinnedSet, channel]);
+    const numberName = `${tv.channelNumber ? `${tv.channelNumber} \xB7 ` : ""}${channel.name}`;
+    const minutesLeft = info.now ? tt("minutesLeft", { min: Math.max(0, Math.round((info.now.stop - tv.nowMs) / 6e4)) }) : null;
+    const timeLine = info.now ? `${formatClock(info.now.start, tv.locale)}\u2013${formatClock(info.now.stop, tv.locale)} \xB7 ${minutesLeft}` : null;
+    const nextLine = info.next ? `${tt("nextLabel")} ${info.next.title} \xB7 ${formatClock(info.next.start, tv.locale)}` : null;
+    const progress3 = info.now ? progressOf(info.now.start, info.now.stop, tv.nowMs) : 0;
+    const qualityLabel = tv.quality ?? tt("autoQuality");
+    const favLabel = tv.favourite ? tt("menuRemoveFavourite") : tt("menuAddFavourite");
+    const audioItems = controls ? [
+      { key: "aspect", label: `${tt("playerAspect")}: ${controls.aspectLabel}`, run: controls.onCycleAspect },
+      { key: "mute", label: controls.muted ? tt("playerUnmute") : tt("playerMute"), run: controls.onToggleMute }
+    ] : [];
+    const moreItems = [
+      { key: "multi", label: tt("menuMultiview"), run: tv.onOpenMultiview },
+      { key: "pause", label: paused ? tt("menuResume") : tt("menuPause"), run: onTogglePause },
+      { key: "fav", label: favLabel, run: tv.onToggleFavourite },
+      { key: "info", label: tt("menuChannelDetails"), run: tv.onOpenChannelDetails }
+    ];
+    const sheetNode = sheet ? /* @__PURE__ */ jsx(
+      MobileSheet,
+      {
+        title: sheet === "audio" ? tt("audioSubs") : channel.name,
+        subtitle: info.now?.title,
+        items: sheet === "audio" ? audioItems : moreItems,
+        onClose: closeSheet,
+        pushLayer: noLayer,
+        testId: sheet === "audio" ? "phone-audio-sheet" : "phone-more-sheet"
+      }
+    ) : null;
+    const fade = { opacity: visible ? 1 : 0, transition: "opacity 200ms", pointerEvents: visible ? "auto" : "none" };
+    const muteBtn = (size) => controls ? /* @__PURE__ */ jsx(Round, { size, label: controls.muted ? tt("playerUnmute") : tt("playerMute"), onPress: controls.onToggleMute, background: size >= 44 ? MT.s10 : "rgba(0,0,0,0.55)", children: controls.muted ? /* @__PURE__ */ jsx(MIcons.SpeakerSlash, { size: 22 }) : /* @__PURE__ */ jsx(MIcons.SpeakerHigh, { size: 22 }) }) : null;
+    if (landscape) {
+      return /* @__PURE__ */ jsxs(Fragment2, { children: [
+        /* @__PURE__ */ jsxs("div", { "data-testid": "phone-landscape", onPointerDown: onStageTap, style: { position: "absolute", inset: 0, zIndex: 30, color: MT.text, fontFamily: MT.font }, children: [
+          /* @__PURE__ */ jsxs("div", { style: { position: "absolute", top: 0, left: 0, right: 0, padding: `max(44px, env(safe-area-inset-top, 0px)) ${SAFE_SIDE_R} 0 ${SAFE_SIDE_L}`, display: "flex", alignItems: "center", gap: 12, ...fade }, children: [
+            /* @__PURE__ */ jsx(Round, { size: 40, label: tt("back"), onPress: onClose, children: /* @__PURE__ */ jsx(MIcons.CaretLeft, { size: 22 }) }),
+            /* @__PURE__ */ jsx("span", { style: { flex: 1, fontSize: 15, color: "rgba(243,244,248,0.78)", ...ellipsis }, children: numberName }),
+            /* @__PURE__ */ jsxs("span", { style: { flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 10, fontSize: 14, color: "rgba(243,244,248,0.78)" }, children: [
+              info.now ? /* @__PURE__ */ jsx(LiveTag2, { label: tt("live") }) : null,
+              /* @__PURE__ */ jsx("span", { children: [tv.quality, formatClock(tv.nowMs, tv.locale)].filter(Boolean).join(" \xB7 ") })
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { style: { position: "absolute", left: 0, right: 0, bottom: 0, padding: `72px ${SAFE_SIDE_R} max(22px, env(safe-area-inset-bottom, 0px)) ${SAFE_SIDE_L}`, background: "linear-gradient(180deg, transparent, rgba(0,0,0,0.9) 55%)", display: "flex", flexDirection: "column", gap: 12, ...fade }, children: [
+            /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "flex-end", gap: 16 }, children: [
+              /* @__PURE__ */ jsxs("div", { "data-testid": "phone-landscape-info", style: { flex: 1, minWidth: "0px", display: "flex", flexDirection: "column", gap: 4 }, children: [
+                /* @__PURE__ */ jsx("div", { style: { fontSize: 26, fontWeight: 600, ...ellipsis }, children: info.now?.title ?? channel.name }),
+                timeLine ? /* @__PURE__ */ jsxs("div", { style: { fontSize: 14, color: MT.muted70, ...ellipsis }, children: [
+                  timeLine,
+                  nextLine ? ` \xB7 ${nextLine}` : ""
+                ] }) : null
+              ] }),
+              /* @__PURE__ */ jsxs("div", { "data-testid": "phone-landscape-controls", style: { flex: "0 0 auto", display: "flex", alignItems: "center", gap: 10 }, children: [
+                muteBtn(44),
+                /* @__PURE__ */ jsx(Pill, { label: qualityLabel, disabled: true }),
+                /* @__PURE__ */ jsx(Pill, { label: tt("menuGuide"), onPress: tv.onOpenGuide }),
+                /* @__PURE__ */ jsx(Round, { size: 44, label: tt("moreActions"), onPress: () => setSheet("more"), background: MT.s10, children: /* @__PURE__ */ jsx(MIcons.DotsThree, { size: 22 }) })
+              ] })
+            ] }),
+            /* @__PURE__ */ jsx("div", { "data-testid": "phone-landscape-progress", style: { display: "flex" }, children: /* @__PURE__ */ jsx(ProgressBar2, { value: progress3, height: 5 }) })
+          ] })
+        ] }),
+        sheetNode
+      ] });
+    }
+    return /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("div", { "data-testid": "phone-stage-tap", onPointerDown: onStageTap, style: { position: "absolute", top: 0, left: 0, right: 0, ...PHONE_STAGE_BOX, zIndex: 30, color: MT.text, fontFamily: MT.font }, children: /* @__PURE__ */ jsxs("div", { "data-testid": "phone-overlay", style: { position: "absolute", inset: 0, ...fade }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { position: "absolute", top: 12, left: 12, right: 12, display: "flex", alignItems: "center", gap: 10 }, children: [
+          /* @__PURE__ */ jsx(Round, { size: 40, label: tt("back"), onPress: onClose, children: /* @__PURE__ */ jsx(MIcons.CaretLeft, { size: 22 }) }),
+          /* @__PURE__ */ jsxs("span", { style: { marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: "rgba(243,244,248,0.85)" }, children: [
+            info.now ? /* @__PURE__ */ jsx(LiveTag2, { label: tt("live") }) : null,
+            tv.quality ? /* @__PURE__ */ jsx("span", { children: tv.quality }) : null
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { style: { position: "absolute", left: 12, right: 12, bottom: 12, display: "flex", alignItems: "center", gap: 12 }, children: [
+          muteBtn(40),
+          /* @__PURE__ */ jsx(ProgressBar2, { value: progress3, height: 4 }),
+          controls ? /* @__PURE__ */ jsx(Round, { size: 40, label: tt("playerFullscreen"), onPress: controls.onToggleFullscreen, children: /* @__PURE__ */ jsx(MIcons.ArrowsOut, { size: 22 }) }) : null
+        ] })
+      ] }) }),
+      /* @__PURE__ */ jsxs("div", { "data-testid": "phone-info", style: { flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: 16, paddingBottom: `calc(16px + ${MT.SAFE_BOTTOM})`, display: "flex", flexDirection: "column", gap: 14, background: MT.bg, color: MT.text, fontFamily: MT.font }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12, minHeight: 44 }, children: [
+          /* @__PURE__ */ jsx(MobileLogo, { channel, width: 52, height: 34 }),
+          /* @__PURE__ */ jsx("span", { style: { flex: 1, fontSize: 14, color: MT.muted70, ...ellipsis }, children: numberName }),
+          /* @__PURE__ */ jsx(Round, { size: 44, label: favLabel, onPress: tv.onToggleFavourite, background: tv.favourite ? MT.accMix(22) : MT.s10, children: /* @__PURE__ */ jsx("span", { style: { display: "flex", color: tv.favourite ? MT.acc : MT.text }, children: /* @__PURE__ */ jsx(MIcons.Heart, { size: 22, filled: tv.favourite }) }) })
+        ] }),
+        /* @__PURE__ */ jsx("div", { "data-testid": "phone-title", style: { fontSize: 22, fontWeight: 600, lineHeight: 1.2, ...clamp2 }, children: info.now?.title ?? channel.name }),
+        timeLine ? /* @__PURE__ */ jsx("div", { style: { fontSize: 14, color: MT.muted70, ...ellipsis }, children: timeLine }) : null,
+        nextLine ? /* @__PURE__ */ jsx("div", { style: { fontSize: 14, color: MT.muted, ...ellipsis }, children: nextLine }) : null,
+        /* @__PURE__ */ jsxs("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }, children: [
+          /* @__PURE__ */ jsx(GridBtn, { label: tt("audioSubs"), onPress: () => setSheet("audio") }),
+          /* @__PURE__ */ jsx(GridBtn, { label: qualityLabel }),
+          /* @__PURE__ */ jsx(GridBtn, { label: tt("menuChannelDetails"), onPress: tv.onOpenChannelDetails }),
+          /* @__PURE__ */ jsx(GridBtn, { label: tt("menuGuide"), onPress: tv.onOpenGuide })
+        ] }),
+        /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, marginTop: 4 }, children: tt("zapList") }),
+        /* @__PURE__ */ jsx("div", { style: { display: "flex", flexDirection: "column" }, children: zap.map((entry) => /* @__PURE__ */ jsx(
+          MobileChannelRow,
+          {
+            channel: entry.channel,
+            number: entry.number,
+            now: tv.nowFor(entry.channel),
+            nowMs: tv.nowMs,
+            locale: tv.locale,
+            pinned: pinnedSet.has(channelKey(entry.channel)),
+            variant: "zap",
+            noProgrammeLabel: tt("noProgramme"),
+            onPress: () => tv.onSwitchChannel(entry.channel)
+          },
+          channelKey(entry.channel)
+        )) })
+      ] }),
+      sheetNode
+    ] });
+  }
+  function GridBtn({ label: label2, onPress }) {
+    const shared = { minHeight: 46, padding: "0 12px", borderRadius: 12, background: MT.s08, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 600, boxSizing: "border-box" };
+    if (!onPress) return /* @__PURE__ */ jsx("div", { "aria-disabled": "true", style: { ...shared, color: MT.muted }, children: /* @__PURE__ */ jsx("span", { style: ellipsis, children: label2 }) });
+    return /* @__PURE__ */ jsx("div", { ...station(onPress), style: { ...shared, color: MT.text, cursor: "pointer" }, children: /* @__PURE__ */ jsx("span", { style: ellipsis, children: label2 }) });
+  }
+  var PHONE_STAGE_BOX, ZAP_WINDOW, noLayer, SAFE_SIDE_L, SAFE_SIDE_R;
+  var init_player_chrome_phone = __esm({
+    "../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_live_tv_data();
+      init_live_tv_ui();
+      init_tv_ui();
+      init_tv_strings();
+      init_mobile_tokens();
+      init_mobile_icons();
+      init_mobile_logo();
+      init_mobile_channel_row();
+      init_mobile_sheet();
+      init_jsx_runtime_shim();
+      PHONE_STAGE_BOX = { aspectRatio: "16 / 9", maxHeight: "45vh" };
+      ZAP_WINDOW = 25;
+      noLayer = () => () => {
+      };
+      SAFE_SIDE_L = "max(60px, env(safe-area-inset-left, 0px))";
+      SAFE_SIDE_R = "max(60px, env(safe-area-inset-right, 0px))";
+    }
+  });
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/player-chrome-parts.tsx
+  function playerScale(isTv) {
+    return (n) => isTv ? Math.round(n * 1.4) : n;
+  }
+  function ctlStyle(ps, active2 = false) {
+    return {
+      height: ps(44),
+      minHeight: ps(44),
+      minWidth: ps(44),
+      padding: `0 ${ps(12)}px`,
+      borderRadius: 999,
+      boxSizing: "border-box",
+      flexShrink: 0,
+      background: active2 ? "rgba(252,252,255,0.20)" : "rgba(252,252,255,0.10)",
+      border: `1px solid ${active2 ? TV2.lineStrong : "rgba(255,255,255,0.15)"}`,
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: ps(6),
+      color: TV2.text,
+      cursor: "pointer",
+      fontSize: ps(12),
+      fontWeight: 600,
+      whiteSpace: "nowrap"
+    };
+  }
+  function SmallLogo({ channel, size, radius }) {
+    const [failed, setFailed] = useState(false);
+    const primary = getLiveTvLogoSrc(channel.logo);
+    const fallback = getLiveTvLogoSrc(channel.logoFallback);
+    const logo = failed ? null : primary ?? fallback;
+    return /* @__PURE__ */ jsx("div", { style: { width: size, height: size, flexShrink: 0, borderRadius: radius, overflow: "hidden", background: "rgba(30,41,59,0.9)", display: "flex", alignItems: "center", justifyContent: "center" }, children: logo ? /* @__PURE__ */ jsx(LiveTvLogoImage, { src: logo, fallbackSrc: primary ? fallback : void 0, alt: "", className: "lumio-tv-logo-img", onError: () => setFailed(true) }) : /* @__PURE__ */ jsx("span", { "data-initials": "", "aria-hidden": "true", style: { fontSize: Math.round(size * 0.36), fontWeight: 600, color: TV2.dim, letterSpacing: "0.04em" }, children: initialsOf(channel.name) }) });
+  }
+  function remaining(stopMs, nowMs) {
+    const mins = Math.max(0, Math.round((stopMs - nowMs) / 6e4));
+    if (mins >= 60) {
+      const h = Math.floor(mins / 60);
+      const m2 = mins % 60;
+      return m2 > 0 ? `${h}h ${m2}m` : `${h}h`;
+    }
+    return `${mins}m`;
+  }
+  function useReminded(channel, programme) {
+    const [tick, setTick] = useState(0);
+    useEffect(() => onRemindersChanged(() => setTick((v) => v + 1)), []);
+    void tick;
+    return programme ? isReminded(channel, programme) : false;
+  }
+  function PlayerTopBar({ channel, tv, info, ps, visible, onClose, onKeep, onRelease }) {
+    const { tt } = useTvText();
+    return /* @__PURE__ */ jsxs(
+      "div",
+      {
+        "data-testid": "top-bar",
+        onMouseEnter: onKeep,
+        onMouseLeave: onRelease,
+        style: { position: "absolute", top: 0, left: 0, right: 0, zIndex: 30, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: ps(16), padding: `${ps(16)}px ${ps(20)}px ${ps(16)}px`, background: "linear-gradient(180deg, rgba(0,0,0,0.75), rgba(0,0,0,0.45) 60%, transparent)", opacity: visible ? 1 : 0, transition: "opacity 200ms", pointerEvents: visible ? "auto" : "none", fontFamily: TV2.font, color: TV2.text },
+        children: [
+          /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: "1 1 0", display: "flex", alignItems: "center", gap: ps(12) }, children: [
+            /* @__PURE__ */ jsx(SmallLogo, { channel, size: ps(32), radius: ps(6) }),
+            /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
+              /* @__PURE__ */ jsxs("div", { style: { fontSize: ps(14), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: [
+                tv.channelNumber ? `${tv.channelNumber} \xB7 ` : "",
+                channel.name
+              ] }),
+              info.now ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: ps(8), fontSize: ps(12), color: "rgba(203,213,225,0.9)", minWidth: 0 }, title: info.now.title, children: [
+                /* @__PURE__ */ jsx("span", { style: { fontSize: ps(9), fontWeight: 600, letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(110,231,183,0.85)", flexShrink: 0 }, children: tt("gridNow") }),
+                /* @__PURE__ */ jsx("span", { style: { fontWeight: 500, color: "rgba(255,255,255,0.9)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: info.now.title }),
+                /* @__PURE__ */ jsxs("span", { style: { color: "rgba(255,255,255,0.45)", flexShrink: 0 }, children: [
+                  formatClock(info.now.start, tv.locale),
+                  "\u2013",
+                  formatClock(info.now.stop, tv.locale)
+                ] })
+              ] }) : null
+            ] })
+          ] }),
+          /* @__PURE__ */ jsx("div", { style: { flex: "1 1 0", minWidth: 0, display: "flex", justifyContent: "center" }, children: /* @__PURE__ */ jsx(PlayerNextUpCard, { channel, next: info.next, nowMs: tv.nowMs, locale: tv.locale, ps }) }),
+          /* @__PURE__ */ jsxs("div", { style: { flex: "1 1 0", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "flex-end", gap: ps(12), fontSize: ps(13) }, children: [
+            info.now ? /* @__PURE__ */ jsx(Tag2, { variant: "live", style: { fontSize: ps(11), padding: `${ps(4)}px ${ps(10)}px` }, children: tt("live") }) : null,
+            tv.quality ? /* @__PURE__ */ jsx("span", { style: { color: "rgba(243,244,248,0.75)" }, children: tv.quality }) : null,
+            /* @__PURE__ */ jsx("div", { ...station(onClose, void 0, { "aria-label": tt("playerClose"), "data-guide-row": "" }), style: { ...ctlStyle(ps), width: ps(36), height: ps(36), minHeight: ps(36), minWidth: ps(36), padding: 0, background: "rgba(0,0,0,0.45)" }, children: /* @__PURE__ */ jsx(CloseIcon, { size: ps(18) }) })
+          ] })
+        ]
+      }
+    );
+  }
+  function PlayerNextUpCard({ channel, next: next2, nowMs, locale, ps }) {
+    const { tt } = useTvText();
+    const reminded = useReminded(channel, next2);
+    if (!next2) return null;
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "next-up", style: { display: "flex", alignItems: "center", gap: ps(12), padding: `${ps(8)}px ${ps(10)}px ${ps(8)}px ${ps(12)}px`, borderRadius: ps(12), background: "rgba(8,12,24,0.78)", border: `1px solid ${TV2.line}`, boxShadow: "0 12px 40px rgba(0,0,0,0.45)", maxWidth: ps(360), minWidth: 0 }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
+        /* @__PURE__ */ jsx("div", { style: { fontSize: ps(11), color: TV2.dim }, children: tt("nextLabel") }),
+        /* @__PURE__ */ jsxs("div", { style: { fontSize: ps(13), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, title: next2.title, children: [
+          next2.title,
+          " \xB7 ",
+          formatClock(next2.start, locale)
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs(
+        "div",
+        {
+          "data-testid": "next-up-remind",
+          ...station(() => {
+            toggleReminder(channel, next2, nowMs);
+          }, void 0, { "aria-pressed": reminded ? "true" : "false", "data-guide-row": "" }),
+          style: { ...ctlStyle(ps, reminded), height: ps(30), minHeight: ps(30), minWidth: 0, padding: `0 ${ps(10)}px`, fontSize: ps(12), color: reminded ? TV2.accText : TV2.text },
+          children: [
+            /* @__PURE__ */ jsx(Icons.Bell, { size: ps(14), filled: reminded }),
+            " ",
+            reminded ? tt("reminderSet") : tt("remindMe")
+          ]
+        }
+      )
+    ] });
+  }
+  function PlayerControlRow({ channel, tv, info, ps, isTv, paused, onTogglePause, controls, guideOpen, onToggleGuide, dotsRef, onOpenMenu, volumeRef }) {
+    const { tt } = useTvText();
+    const icon = ps(20);
+    const volumePercent = Math.round((controls?.volume ?? 0) * 100);
+    const setVolumeFromPointer = (clientX) => {
+      const rect = volumeRef.current?.getBoundingClientRect();
+      if (!rect || rect.width === 0 || !controls) return;
+      controls.onVolume(Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)));
+    };
+    const onVolumeKey = (event) => {
+      if (!controls) return;
+      const delta = event.key === "ArrowRight" ? VOLUME_STEP : event.key === "ArrowLeft" ? -VOLUME_STEP : 0;
+      if (delta === 0) return;
+      event.preventDefault();
+      event.stopPropagation();
+      controls.onVolume(Math.max(0, Math.min(1, Math.round((controls.volume + delta) * 100) / 100)));
+    };
+    return /* @__PURE__ */ jsxs(Fragment2, { children: [
+      info.now ? /* @__PURE__ */ jsxs("div", { "data-testid": "programme-progress", style: { display: "flex", flexDirection: "column", gap: ps(6), padding: `0 ${ps(4)}px`, marginBottom: ps(8) }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "space-between", gap: ps(12), fontSize: ps(12), color: "rgba(203,213,225,0.9)" }, children: [
+          /* @__PURE__ */ jsx("span", { style: { fontWeight: 600, color: TV2.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: info.now.title }),
+          /* @__PURE__ */ jsxs("span", { style: { flexShrink: 0 }, children: [
+            formatClock(info.now.start, tv.locale),
+            "\u2013",
+            formatClock(info.now.stop, tv.locale),
+            " \xB7 ",
+            tt("minutesLeft", { min: Math.max(0, Math.round((info.now.stop - tv.nowMs) / 6e4)) })
+          ] })
+        ] }),
+        /* @__PURE__ */ jsx(Progress, { value: progressOf(info.now.start, info.now.stop, tv.nowMs), height: ps(4), track: "rgba(255,255,255,0.2)" })
+      ] }) : null,
+      /* @__PURE__ */ jsxs("div", { "data-testid": "control-row", "data-row": "", style: { display: "flex", alignItems: "center", gap: ps(12), overflowX: "auto", scrollbarWidth: "none", borderRadius: ps(16), border: `1px solid ${TV2.lineCard}`, background: "rgba(0,0,0,0.55)", padding: `${ps(10)}px ${ps(14)}px`, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }, children: [
+        /* @__PURE__ */ jsx("div", { ref: dotsRef, ...station(onTogglePause, (el) => onOpenMenu(el), { "data-init": "", "aria-label": paused ? tt("menuResume") : tt("menuPause"), "data-guide-row": "" }), style: { ...ctlStyle(ps), padding: 0 }, children: paused ? /* @__PURE__ */ jsx(PlayIcon, { size: icon }) : /* @__PURE__ */ jsx(PauseIcon, { size: icon }) }),
+        controls ? /* @__PURE__ */ jsx("div", { ...station(controls.onToggleFullscreen, void 0, { "aria-label": controls.fullscreen ? tt("playerExitFullscreen") : tt("playerFullscreen"), "aria-pressed": controls.fullscreen ? "true" : "false", "data-guide-row": "" }), style: { ...ctlStyle(ps, controls.fullscreen), padding: 0 }, children: controls.fullscreen ? /* @__PURE__ */ jsx(ExitFullscreenIcon, { size: icon }) : /* @__PURE__ */ jsx(FullscreenIcon, { size: icon }) }) : null,
+        /* @__PURE__ */ jsx("div", { ...station(onToggleGuide, void 0, { "aria-label": tt("playerGuide"), "aria-pressed": guideOpen ? "true" : "false", "data-guide-row": "" }), style: { ...ctlStyle(ps, guideOpen), padding: 0 }, children: /* @__PURE__ */ jsx(GuideIcon, { size: icon }) }),
+        controls ? /* @__PURE__ */ jsxs("div", { style: { display: "inline-flex", alignItems: "center", gap: ps(8), flexShrink: 0 }, children: [
+          /* @__PURE__ */ jsx("div", { ...station(controls.onToggleMute, void 0, { "aria-label": controls.muted ? tt("playerUnmute") : tt("playerMute"), "aria-pressed": controls.muted ? "true" : "false", "data-guide-row": "" }), style: { ...ctlStyle(ps), padding: 0 }, children: controls.muted || controls.volume === 0 ? /* @__PURE__ */ jsx(SpeakerOff, { size: icon }) : /* @__PURE__ */ jsx(SpeakerOn, { size: icon, level: controls.volume }) }),
+          !isTv ? /* @__PURE__ */ jsx(
+            "div",
+            {
+              ...station(controls.onToggleMute, void 0, { "aria-label": tt("playerVolume"), "data-guide-row": "" }),
+              ref: volumeRef,
+              role: "slider",
+              "aria-valuemin": 0,
+              "aria-valuemax": 100,
+              "aria-valuenow": volumePercent,
+              onKeyDown: onVolumeKey,
+              onPointerDown: (event) => setVolumeFromPointer(event.clientX),
+              onPointerMove: (event) => {
+                if (event.buttons === 1) setVolumeFromPointer(event.clientX);
+              },
+              onClick: (event) => setVolumeFromPointer(event.clientX),
+              style: { width: ps(96), height: ps(44), minHeight: ps(44), display: "inline-flex", alignItems: "center", padding: `0 ${ps(4)}px`, borderRadius: 999, cursor: "pointer", touchAction: "none", boxSizing: "border-box", flexShrink: 0 },
+              children: /* @__PURE__ */ jsxs("span", { style: { position: "relative", width: "100%", height: ps(4), borderRadius: 999, background: "rgba(252,252,255,0.22)" }, children: [
+                /* @__PURE__ */ jsx("span", { style: { position: "absolute", inset: 0, right: `${100 - volumePercent}%`, borderRadius: 999, background: "#fff" } }),
+                /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: "50%", left: `${volumePercent}%`, width: ps(12), height: ps(12), marginTop: ps(-6), marginLeft: ps(-6), borderRadius: 999, background: "#fff" } })
+              ] })
+            }
+          ) : null
+        ] }) : null,
+        controls ? /* @__PURE__ */ jsxs("div", { ...station(controls.onCycleAspect, void 0, { "aria-label": tt("playerAspect"), title: `${tt("playerAspect")}: ${controls.aspectLabel}`, "data-guide-row": "" }), style: ctlStyle(ps), children: [
+          /* @__PURE__ */ jsx(AspectIcon, { size: ps(16) }),
+          /* @__PURE__ */ jsx("span", { style: { fontSize: ps(11), fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }, children: controls.aspectLabel })
+        ] }) : null,
+        /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: ps(176), display: "flex", flexDirection: "column", gap: ps(3), justifyContent: "center", alignItems: "flex-end", textAlign: "right" }, children: [
+          /* @__PURE__ */ jsx("div", { style: { fontSize: ps(13), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }, children: channel.name }),
+          /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: ps(8), fontSize: ps(11), color: "rgba(203,213,225,0.85)", whiteSpace: "nowrap" }, children: [
+            /* @__PURE__ */ jsx("span", { children: paused ? tt("menuPause") : tt("live") }),
+            controls && typeof controls.timePos === "number" ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+              /* @__PURE__ */ jsx("span", { style: { color: "rgba(148,163,184,0.5)" }, children: "/" }),
+              /* @__PURE__ */ jsx("span", { "data-testid": "elapsed", style: { fontVariantNumeric: "tabular-nums" }, children: formatElapsed(controls.timePos) })
+            ] }) : null,
+            channel.group ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+              /* @__PURE__ */ jsx("span", { style: { color: "rgba(148,163,184,0.5)" }, children: "/" }),
+              /* @__PURE__ */ jsx("span", { style: { overflow: "hidden", textOverflow: "ellipsis" }, children: channel.group })
+            ] }) : null
+          ] })
+        ] })
+      ] })
+    ] });
+  }
+  function formatElapsed(seconds) {
+    const total = Math.max(0, Math.floor(seconds));
+    const h = Math.floor(total / 3600);
+    const m2 = Math.floor(total % 3600 / 60);
+    const s = total % 60;
+    const mm = h > 0 ? String(m2).padStart(2, "0") : String(m2);
+    return `${h > 0 ? `${h}:` : ""}${mm}:${String(s).padStart(2, "0")}`;
+  }
+  function favouriteRowChannels(channel, tv) {
+    const pinnedSet = new Set(tv.pinnedKeys);
+    const current2 = channelKey(channel);
+    const pinned = [];
+    const rest = [];
+    for (const c of tv.neighbours) (pinnedSet.has(channelKey(c)) ? pinned : rest).push(c);
+    const index3 = rest.findIndex((c) => channelKey(c) === current2);
+    const window2 = index3 < 0 ? rest.slice(0, FAV_WINDOW * 2) : rest.slice(Math.max(0, index3 - FAV_WINDOW), index3 + FAV_WINDOW + 1);
+    const list = [...pinned, ...window2];
+    return list.some((c) => channelKey(c) === current2) ? list : [channel, ...list];
+  }
+  function PlayerFavouritesRow({ channel, tv, ps, onSwitch, onHold, style: style2 }) {
+    const { tt } = useTvText();
+    const items = useMemo(() => favouriteRowChannels(channel, tv), [channel, tv]);
+    const currentKey = channelKey(channel);
+    return /* @__PURE__ */ jsx("div", { "data-testid": "favourites-row", "data-row": "", style: { display: "flex", gap: ps(8), overflowX: "auto", scrollbarWidth: "none", padding: `${ps(8)}px 0 ${ps(2)}px`, ...style2 }, children: items.map((c) => {
+      const current2 = channelKey(c) === currentKey;
+      const n = tv.nowFor(c);
+      return /* @__PURE__ */ jsxs(
+        "div",
+        {
+          "data-testid": "favourite-chip",
+          "data-guide-row": "",
+          "aria-current": current2 ? "true" : void 0,
+          ...station(() => onSwitch(c), onHold ? (el) => onHold(c, el) : void 0, { title: c.name }),
+          onFocus: (event) => event.currentTarget.scrollIntoView?.({ inline: "nearest", block: "nearest" }),
+          style: { width: ps(190), flexShrink: 0, display: "flex", alignItems: "center", gap: ps(8), padding: `${ps(6)}px ${ps(10)}px`, borderRadius: ps(10), boxSizing: "border-box", background: current2 ? TV2.accMix(16) : "rgba(252,252,255,0.08)", border: `1px solid ${current2 ? TV2.accMix(45) : TV2.line}`, color: TV2.text, cursor: "pointer", textAlign: "left" },
+          children: [
+            /* @__PURE__ */ jsx(SmallLogo, { channel: c, size: ps(26), radius: ps(5) }),
+            /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
+              /* @__PURE__ */ jsx("div", { style: { fontSize: ps(12), fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: n.now?.title ?? tt("noProgramme") }),
+              /* @__PURE__ */ jsx("div", { style: { fontSize: ps(10), color: TV2.dim, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: c.name })
+            ] })
+          ]
+        },
+        channelKey(c)
+      );
+    }) });
+  }
+  function PlayerScheduleOverlay({ channel, tv, ps, open, onClose, onSwitch, onHoldChip, overlayRef }) {
+    const { tt } = useTvText();
+    const dayStart = startOfLocalDay(tv.nowMs);
+    const scheduleChannels = useMemo(() => open ? [channel] : [], [open, channel]);
+    const { schedules, loading } = useSchedules(scheduleChannels, dayStart, dayStart + DAY_MS);
+    const programmes = useMemo(() => sliceSchedule(schedules[channelKey(channel)] ?? [], dayStart, dayStart + DAY_MS), [schedules, channel, dayStart]);
+    const [tick, setTick] = useState(0);
+    useEffect(() => onRemindersChanged(() => setTick((v) => v + 1)), []);
+    void tick;
+    const nowMs = tv.nowMs;
+    const nowIndex = programmes.findIndex((p) => p.start <= nowMs && p.stop > nowMs);
+    useEffect(() => {
+      if (!open) return;
+      const root = overlayRef.current;
+      const target2 = root?.querySelector("[data-now]") ?? root?.querySelector('[data-testid="schedule-row"]') ?? root?.querySelector("[data-f]");
+      target2?.focus({ preventScroll: true });
+      target2?.scrollIntoView?.({ block: "start" });
+    }, [open, nowIndex, overlayRef]);
+    if (!open) return null;
+    return /* @__PURE__ */ jsxs("div", { ref: overlayRef, "data-testid": "schedule-overlay", "data-live-tv-layer": "", style: { position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 40, pointerEvents: "auto", maxHeight: "55%", display: "flex", flexDirection: "column", borderTop: `1px solid ${TV2.lineCard}`, borderRadius: `${ps(24)}px ${ps(24)}px 0 0`, background: "rgba(0,0,0,0.88)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", boxShadow: "0 -20px 60px rgba(0,0,0,0.5)", fontFamily: TV2.font, color: TV2.text }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: ps(12), padding: `${ps(12)}px ${ps(20)}px`, borderBottom: `1px solid ${TV2.line}`, flexShrink: 0 }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
+          /* @__PURE__ */ jsx("div", { style: { fontSize: ps(10), letterSpacing: "0.22em", textTransform: "uppercase", color: "rgba(110,231,183,0.85)" }, children: tt("today") }),
+          /* @__PURE__ */ jsx("div", { style: { fontSize: ps(14), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: channel.name })
+        ] }),
+        /* @__PURE__ */ jsx("div", { ...station(onClose, void 0, { "aria-label": tt("playerClose"), "data-guide-row": "" }), style: { ...ctlStyle(ps), height: ps(32), minHeight: ps(32), fontSize: ps(10), letterSpacing: "0.22em", textTransform: "uppercase", background: "rgba(252,252,255,0.06)" }, children: tt("playerClose") })
+      ] }),
+      /* @__PURE__ */ jsx("div", { "data-scroll": "", style: { overflowY: "auto", minHeight: 0, flex: 1, scrollbarWidth: "thin" }, children: programmes.length === 0 ? /* @__PURE__ */ jsx("div", { style: { padding: `${ps(24)}px ${ps(20)}px`, fontSize: ps(13), color: TV2.dim }, children: loading ? tt("loadingGuide") : tt("noProgramme") }) : programmes.map((p, i) => {
+        const live2 = i === nowIndex;
+        const past = p.stop <= nowMs;
+        const future = p.start > nowMs;
+        const reminded = future && isReminded(channel, p);
+        const progress3 = live2 ? progressOf(p.start, p.stop, nowMs) : null;
+        const act2 = future ? () => {
+          toggleReminder(channel, p, nowMs);
+        } : onClose;
+        return /* @__PURE__ */ jsxs(
+          "div",
+          {
+            "data-testid": "schedule-row",
+            "data-guide-row": "",
+            ...live2 ? { "data-now": "" } : {},
+            ...past ? {} : station(act2, void 0, { "aria-label": p.title }),
+            style: { position: "relative", display: "grid", gridTemplateColumns: `${ps(80)}px 1fr auto`, gap: ps(16), alignItems: "start", padding: `${ps(10)}px ${ps(20)}px`, borderBottom: `1px solid ${TV2.s05}`, background: live2 ? "rgba(16,185,129,0.10)" : "transparent", opacity: past ? 0.4 : 1, cursor: past ? "default" : "pointer" },
+            children: [
+              /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column" }, children: [
+                /* @__PURE__ */ jsx("span", { style: { fontSize: ps(13), fontVariantNumeric: "tabular-nums", color: live2 ? "rgb(110,231,183)" : "rgba(255,255,255,0.7)" }, children: formatClock(p.start, tv.locale) }),
+                live2 ? /* @__PURE__ */ jsx("span", { style: { marginTop: ps(2), fontSize: ps(9), fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "rgba(110,231,183,0.85)" }, children: tt("gridNow") }) : null
+              ] }),
+              /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
+                /* @__PURE__ */ jsx("div", { style: { fontSize: ps(13), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: p.title }),
+                p.description ? /* @__PURE__ */ jsx("div", { "data-selectable-text": "", style: { marginTop: ps(2), fontSize: ps(11), color: "rgba(255,255,255,0.55)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }, children: p.description }) : null
+              ] }),
+              /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: ps(8), fontSize: ps(11), color: "rgba(255,255,255,0.55)", flexShrink: 0 }, children: [
+                live2 ? remaining(p.stop, nowMs) : formatClock(p.stop, tv.locale),
+                future ? /* @__PURE__ */ jsxs("span", { "data-testid": "schedule-remind", style: { display: "inline-flex", alignItems: "center", gap: ps(4), color: reminded ? TV2.accText : "rgba(243,244,248,0.6)" }, children: [
+                  /* @__PURE__ */ jsx(Icons.Bell, { size: ps(13), filled: reminded }),
+                  " ",
+                  reminded ? tt("reminderSet") : tt("remindMe")
+                ] }) : null
+              ] }),
+              progress3 !== null ? /* @__PURE__ */ jsx("div", { "aria-hidden": "true", style: { position: "absolute", left: 0, bottom: 0, height: ps(2), width: `${Math.round(progress3 * 100)}%`, background: "rgb(52,211,153)" } }) : null
+            ]
+          },
+          `${p.start}-${i}`
+        );
+      }) }),
+      /* @__PURE__ */ jsx("div", { style: { flexShrink: 0, padding: `0 ${ps(20)}px ${ps(10)}px`, borderTop: `1px solid ${TV2.line}` }, children: /* @__PURE__ */ jsx(PlayerFavouritesRow, { channel, tv, ps, onSwitch, onHold: onHoldChip }) })
+    ] });
+  }
+  var FAV_WINDOW, DAY_MS, VOLUME_STEP, stroke, CtlIcon, PlayIcon, PauseIcon, FullscreenIcon, ExitFullscreenIcon, GuideIcon, SpeakerOn, SpeakerOff, AspectIcon, CloseIcon;
+  var init_player_chrome_parts = __esm({
+    "../lumio-official-plugins/plugins/live-tv/runtime/tv/player-chrome-parts.tsx"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_live_tv_data();
+      init_live_tv_logo_image();
+      init_live_tv_ui();
+      init_live_tv_model();
+      init_lookup();
+      init_useSchedules();
+      init_reminders();
+      init_tv_ui();
+      init_tv_strings();
+      init_jsx_runtime_shim();
+      FAV_WINDOW = 25;
+      DAY_MS = 864e5;
+      VOLUME_STEP = 0.1;
+      stroke = { fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" };
+      CtlIcon = ({ size, children, fill }) => /* @__PURE__ */ jsx("svg", { width: size, height: size, viewBox: "0 0 24 24", ...stroke, fill: fill ? "currentColor" : "none", stroke: fill ? "none" : "currentColor", children });
+      PlayIcon = ({ size }) => /* @__PURE__ */ jsx(CtlIcon, { size, fill: true, children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) });
+      PauseIcon = ({ size }) => /* @__PURE__ */ jsx(CtlIcon, { size, fill: true, children: /* @__PURE__ */ jsx("path", { d: "M7 5h4v14H7zM13 5h4v14h-4z" }) });
+      FullscreenIcon = ({ size }) => /* @__PURE__ */ jsx(CtlIcon, { size, children: /* @__PURE__ */ jsx("path", { d: "M8 3H3v5M16 3h5v5M21 16v5h-5M3 16v5h5" }) });
+      ExitFullscreenIcon = ({ size }) => /* @__PURE__ */ jsx(CtlIcon, { size, children: /* @__PURE__ */ jsx("path", { d: "M3 8h5V3M21 8h-5V3M16 21v-5h5M8 21v-5H3" }) });
+      GuideIcon = ({ size }) => /* @__PURE__ */ jsxs(CtlIcon, { size, children: [
+        /* @__PURE__ */ jsx("rect", { x: "3", y: "4", width: "18", height: "16", rx: "2" }),
+        /* @__PURE__ */ jsx("path", { d: "M8 2v4M16 2v4M3 10h18M7 14h4M7 18h10" })
+      ] });
+      SpeakerOn = ({ size, level }) => /* @__PURE__ */ jsxs(CtlIcon, { size, children: [
+        /* @__PURE__ */ jsx("path", { d: "M11 5 6 9H3v6h3l5 4V5Z" }),
+        level > 0.33 ? /* @__PURE__ */ jsx("path", { d: "M15.5 8.5a5 5 0 0 1 0 7" }) : null,
+        level > 0.66 ? /* @__PURE__ */ jsx("path", { d: "M19 4.5a10 10 0 0 1 0 15" }) : null
+      ] });
+      SpeakerOff = ({ size }) => /* @__PURE__ */ jsxs(CtlIcon, { size, children: [
+        /* @__PURE__ */ jsx("path", { d: "M11 5 6 9H3v6h3l5 4V5Z" }),
+        /* @__PURE__ */ jsx("path", { d: "m22 9-6 6M16 9l6 6" })
+      ] });
+      AspectIcon = ({ size }) => /* @__PURE__ */ jsxs(CtlIcon, { size, children: [
+        /* @__PURE__ */ jsx("rect", { x: "3", y: "5", width: "18", height: "14", rx: "2" }),
+        /* @__PURE__ */ jsx("path", { d: "M3 9h18M9 5v14" })
+      ] });
+      CloseIcon = ({ size }) => /* @__PURE__ */ jsx(CtlIcon, { size, children: /* @__PURE__ */ jsx("path", { d: "M6 6l12 12M18 6 6 18" }) });
+    }
+  });
+
   // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-player-chrome.tsx
-  function TvPlayerChrome({ channel, tv, controls, paused, onTogglePause, onClose }) {
+  function TvPlayerChrome(props) {
+    if (props.tv.phone) {
+      const { phoneLandscape, ...rest } = props;
+      return /* @__PURE__ */ jsx(TvPlayerChromePhone, { ...rest, landscape: phoneLandscape ?? false });
+    }
+    return /* @__PURE__ */ jsx(TvPlayerChromeDesktop, { ...props });
+  }
+  function TvPlayerChromeDesktop({ channel, tv, controls, paused, onTogglePause, onClose }) {
     const { tt } = useTvText();
     const isTv = useTvMode();
-    const clock = useTvClockNode(tv.locale);
+    const ps = useMemo(() => playerScale(isTv), [isTv]);
     const [visible, setVisible] = useState(true);
-    const [miniOpen, setMiniOpen] = useState(false);
+    const [guideOpen, setGuideOpen] = useState(false);
     const [menu, setMenu] = useState(null);
     const timerRef = useRef(null);
-    const dotsRef = useRef(null);
-    const miniRef = useRef(null);
-    const topRef = useRef(null);
-    const bannerRef = useRef(null);
+    const initRef = useRef(null);
+    const volumeRef = useRef(null);
+    const rootRef = useRef(null);
+    const overlayRef = useRef(null);
+    const hoverRef = useRef(false);
     const TvGlassMenu = getTvGlassMenu();
     const info = tv.nowFor(channel);
     const hideMs = tv.bannerHideMs;
-    const reveal = useCallback(() => {
-      setVisible(true);
+    const clearTimer = useCallback(() => {
       if (timerRef.current !== null) window.clearTimeout(timerRef.current);
       timerRef.current = null;
-      if (hideMs > 0 && !miniOpen && !menu) timerRef.current = window.setTimeout(() => setVisible(false), hideMs);
-    }, [hideMs, miniOpen, menu]);
+    }, []);
+    const reveal = useCallback(() => {
+      setVisible(true);
+      clearTimer();
+      if (hideMs > 0 && !guideOpen && !menu && !hoverRef.current) timerRef.current = window.setTimeout(() => setVisible(false), hideMs);
+    }, [hideMs, guideOpen, menu, clearTimer]);
+    const keep = useCallback(() => {
+      hoverRef.current = true;
+      setVisible(true);
+      clearTimer();
+    }, [clearTimer]);
+    const release = useCallback(() => {
+      hoverRef.current = false;
+      reveal();
+    }, [reveal]);
     useEffect(() => {
       reveal();
-      return () => {
-        if (timerRef.current !== null) window.clearTimeout(timerRef.current);
-      };
-    }, [reveal, channel]);
+      return clearTimer;
+    }, [reveal, clearTimer, channel]);
     useEffect(() => {
       if (isTv) return;
       const onPointer = () => reveal();
@@ -194071,37 +196844,18 @@ ${cue.text}`).join("\n\n")}
         window.removeEventListener("pointerdown", onPointer);
       };
     }, [isTv, reveal]);
-    const volumeRef = useRef(null);
-    const volumePercent = Math.round((controls?.volume ?? 0) * 100);
-    const setVolumeFromPointer = useCallback((clientX) => {
-      const rect = volumeRef.current?.getBoundingClientRect();
-      if (!rect || rect.width === 0 || !controls) return;
-      controls.onVolume(Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)));
-    }, [controls]);
-    const onVolumeKey = useCallback((event) => {
-      if (!controls) return;
-      const delta = event.key === "ArrowRight" ? VOLUME_STEP : event.key === "ArrowLeft" ? -VOLUME_STEP : 0;
-      if (delta === 0) return;
-      event.preventDefault();
-      event.stopPropagation();
-      controls.onVolume(Math.max(0, Math.min(1, Math.round((controls.volume + delta) * 100) / 100)));
-    }, [controls]);
     const index3 = tv.neighbours.findIndex((c) => channelKey(c) === channelKey(channel));
-    const miniCards = useMemo(() => {
-      if (index3 < 0) return tv.neighbours.slice(0, MINI_WINDOW * 2);
-      return tv.neighbours.slice(Math.max(0, index3 - MINI_WINDOW), index3 + MINI_WINDOW + 1);
-    }, [tv, index3]);
     const step = useCallback((delta) => {
       if (tv.neighbours.length === 0) return;
       const next2 = tv.neighbours[(index3 + delta + tv.neighbours.length) % tv.neighbours.length];
       if (next2) tv.onSwitchChannel(next2);
     }, [tv, index3]);
-    const layerRef = useRef({ menuOpen: false, miniOpen: false, gateOpen: false });
+    const layerRef = useRef({ menuOpen: false, guideOpen: false, gateOpen: false });
     useEffect(() => {
-      layerRef.current = { menuOpen: menu !== null, miniOpen, gateOpen: tv.gateOpen };
+      layerRef.current = { menuOpen: menu !== null, guideOpen, gateOpen: tv.gateOpen };
     });
     useEffect(() => {
-      const node = dotsRef.current;
+      const node = initRef.current;
       if (!node) return;
       let frame2 = 0;
       let held = 0;
@@ -194109,7 +196863,7 @@ ${cue.text}`).join("\n\n")}
       const tick = () => {
         if (!node.isConnected) return;
         const active2 = document.activeElement;
-        const inLayer = layerRef.current.menuOpen || layerRef.current.miniOpen || layerRef.current.gateOpen;
+        const inLayer = layerRef.current.menuOpen || layerRef.current.guideOpen || layerRef.current.gateOpen;
         if (active2 === node) {
           if (++held >= 5) return;
         } else if (inLayer) {
@@ -194123,10 +196877,22 @@ ${cue.text}`).join("\n\n")}
       frame2 = window.requestAnimationFrame(tick);
       return () => window.cancelAnimationFrame(frame2);
     }, [channel]);
-    const closeMini = useCallback(() => {
-      setMiniOpen(false);
-      window.setTimeout(() => dotsRef.current?.focus({ preventScroll: true }), 0);
+    const closeGuide = useCallback(() => {
+      setGuideOpen(false);
+      window.setTimeout(() => initRef.current?.focus({ preventScroll: true }), 0);
     }, []);
+    const toggleGuide = useCallback(() => {
+      if (guideOpen) closeGuide();
+      else {
+        setGuideOpen(true);
+        setVisible(true);
+        clearTimer();
+      }
+    }, [guideOpen, closeGuide, clearTimer]);
+    const switchChannel = useCallback((next2) => {
+      if (guideOpen) closeGuide();
+      tv.onSwitchChannel(next2);
+    }, [guideOpen, closeGuide, tv]);
     useEffect(() => {
       const onKey = (event) => {
         if (menu) return;
@@ -194143,55 +196909,44 @@ ${cue.text}`).join("\n\n")}
           step(-1);
           return;
         }
-        if (event.key === "ArrowDown" && !miniOpen) {
-          event.preventDefault();
-          event.stopImmediatePropagation();
-          setMiniOpen(true);
-          reveal();
-          return;
-        }
-        if (event.key === "ArrowUp" && !miniOpen) {
-          event.preventDefault();
-          event.stopImmediatePropagation();
-          reveal();
-          return;
-        }
         if (event.key === "Escape" || event.key === "Backspace") {
           event.preventDefault();
           event.stopImmediatePropagation();
-          if (miniOpen) {
-            closeMini();
+          if (guideOpen) {
+            closeGuide();
             return;
           }
           onClose();
           return;
         }
         const target2 = event.target;
-        const insideChrome = target2 instanceof Node && (topRef.current?.contains(target2) === true || bannerRef.current?.contains(target2) === true || miniRef.current?.contains(target2) === true);
+        const insideChrome = target2 instanceof Node && rootRef.current?.contains(target2) === true;
         if (!insideChrome && (event.key === "ArrowLeft" || event.key === "ArrowRight" || event.key === "Enter" || event.key === " ")) {
           event.preventDefault();
           event.stopImmediatePropagation();
           reveal();
           return;
         }
-        if (event.key.startsWith("Arrow") || event.key === "Enter") reveal();
+        if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+          if (!insideChrome) event.preventDefault();
+          reveal();
+          return;
+        }
+        reveal();
       };
       window.addEventListener("keydown", onKey, true);
       return () => window.removeEventListener("keydown", onKey, true);
-    }, [menu, miniOpen, step, reveal, onClose, closeMini, tv.gateOpen]);
-    useEffect(() => {
-      if (!miniOpen) return;
-      const mini = miniRef.current;
-      const current2 = mini?.querySelector("[data-init]") ?? mini?.querySelector('[data-testid="mini-card"]');
-      current2?.focus({ preventScroll: true });
-      current2?.scrollIntoView({ inline: "center", block: "nearest" });
-    }, [miniOpen]);
+    }, [menu, guideOpen, step, reveal, onClose, closeGuide, tv.gateOpen]);
     const openMenu = (element) => {
       setMenu({
         title: `${channel.name}${info.now ? ` \xB7 ${info.now.title}` : ""}`,
         element,
         actions: [
-          { key: "guide", label: tt("menuGuide"), run: () => setMiniOpen(true) },
+          { key: "guide", label: tt("menuGuide"), run: () => {
+            setGuideOpen(true);
+            setVisible(true);
+            clearTimer();
+          } },
           { key: "multi", label: tt("menuMultiview"), run: tv.onOpenMultiview },
           { key: "pause", label: paused ? tt("menuResume") : tt("menuPause"), run: onTogglePause },
           { key: "fav", label: tv.favourite ? tt("menuRemoveFavourite") : tt("menuAddFavourite"), run: tv.onToggleFavourite },
@@ -194199,92 +196954,33 @@ ${cue.text}`).join("\n\n")}
         ]
       });
     };
-    return /* @__PURE__ */ jsxs(Fragment2, { children: [
-      /* @__PURE__ */ jsxs("div", { ref: topRef, style: { position: "absolute", top: 0, left: 0, right: 0, padding: `${dp(36)}px ${dp(48)}px`, display: "flex", alignItems: "center", gap: dp(16), opacity: visible ? 1 : 0, transition: "opacity 200ms", pointerEvents: visible ? "auto" : "none", zIndex: 30 }, children: [
-        /* @__PURE__ */ jsx(RoundBtn, { ...station(onClose), background: "rgba(252,252,255,0.12)", children: /* @__PURE__ */ jsx(Icons.ChevronLeft, {}) }),
-        /* @__PURE__ */ jsxs("span", { style: { fontSize: dp(20), color: "rgba(243,244,248,0.75)" }, children: [
-          tv.channelNumber ? `${tv.channelNumber} \xB7 ` : "",
-          channel.name
-        ] }),
-        /* @__PURE__ */ jsxs("span", { style: { marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: dp(14), fontSize: dp(17) }, children: [
-          info.now ? /* @__PURE__ */ jsx(Tag2, { variant: "live", children: tt("live") }) : null,
-          tv.quality ? /* @__PURE__ */ jsx("span", { style: { color: "rgba(243,244,248,0.75)" }, children: tv.quality }) : null,
-          clock
-        ] })
-      ] }),
-      /* @__PURE__ */ jsxs("div", { ref: bannerRef, "data-testid": "banner", style: { position: "absolute", left: 0, right: 0, bottom: 0, padding: dp(48), paddingTop: dp(120), background: "linear-gradient(180deg, transparent, rgba(0,0,0,0.92) 55%)", display: "flex", alignItems: "flex-end", gap: dp(24), opacity: visible ? 1 : 0, transition: "opacity 200ms", pointerEvents: visible ? "auto" : "none", zIndex: 30 }, children: [
-        /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: dp(10) }, children: [
-          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(44), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: info.now?.title ?? channel.name }),
-          info.now ? /* @__PURE__ */ jsxs(Fragment2, { children: [
-            /* @__PURE__ */ jsxs("div", { style: { fontSize: dp(20), color: "rgba(243,244,248,0.7)" }, children: [
-              `${formatClock(info.now.start, tv.locale)}\u2013${formatClock(info.now.stop, tv.locale)} \xB7 ${tt("minutesLeft", { min: Math.max(0, Math.round((info.now.stop - tv.nowMs) / 6e4)) })}`,
-              info.next ? /* @__PURE__ */ jsxs(Fragment2, { children: [
-                " \xB7 ",
-                /* @__PURE__ */ jsx("span", { style: { color: TV2.accText }, children: tt("nextLabel") }),
-                " ",
-                info.next.title
-              ] }) : null
-            ] }),
-            /* @__PURE__ */ jsx(Progress, { value: progressOf(info.now.start, info.now.stop, tv.nowMs), height: dp(6), style: { maxWidth: dp(900) } })
-          ] }) : null
-        ] }),
-        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(16), flexShrink: 0 }, children: [
-          !isTv && controls ? /* @__PURE__ */ jsxs("div", { style: { display: "inline-flex", alignItems: "center", gap: dp(12) }, children: [
-            /* @__PURE__ */ jsx(RoundBtn, { ...station(controls.onToggleMute, void 0, { "aria-label": controls.muted ? tt("playerUnmute") : tt("playerMute") }), background: "rgba(252,252,255,0.10)", children: controls.muted ? /* @__PURE__ */ jsx(SpeakerOff, {}) : /* @__PURE__ */ jsx(SpeakerOn, {}) }),
-            /* @__PURE__ */ jsx(
-              "div",
-              {
-                ...station(controls.onToggleMute, void 0, { "aria-label": tt("playerVolume") }),
-                ref: volumeRef,
-                role: "slider",
-                "aria-valuemin": 0,
-                "aria-valuemax": 100,
-                "aria-valuenow": volumePercent,
-                onKeyDown: onVolumeKey,
-                onPointerDown: (event) => setVolumeFromPointer(event.clientX),
-                onPointerMove: (event) => {
-                  if (event.buttons === 1) setVolumeFromPointer(event.clientX);
-                },
-                onClick: (event) => setVolumeFromPointer(event.clientX),
-                style: { width: dp(132), height: dp(52), display: "inline-flex", alignItems: "center", padding: `0 ${dp(6)}px`, borderRadius: 999, cursor: "pointer", touchAction: "none", boxSizing: "border-box" },
-                children: /* @__PURE__ */ jsxs("span", { style: { position: "relative", width: "100%", height: dp(6), borderRadius: 999, background: "rgba(252,252,255,0.22)" }, children: [
-                  /* @__PURE__ */ jsx("span", { style: { position: "absolute", inset: 0, right: `${100 - volumePercent}%`, borderRadius: 999, background: TV2.acc } }),
-                  /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: "50%", left: `${volumePercent}%`, width: dp(14), height: dp(14), marginTop: dp(-7), marginLeft: dp(-7), borderRadius: 999, background: "#fff" } })
-                ] })
-              }
-            ),
-            /* @__PURE__ */ jsx(RoundBtn, { ...station(controls.onToggleFullscreen, void 0, { "aria-label": controls.fullscreen ? tt("playerExitFullscreen") : tt("playerFullscreen") }), background: "rgba(252,252,255,0.10)", children: controls.fullscreen ? /* @__PURE__ */ jsx(CornersIn, {}) : /* @__PURE__ */ jsx(CornersOut, {}) }),
-            /* @__PURE__ */ jsx("div", { ...station(controls.onCycleAspect, void 0, { "aria-label": tt("playerAspect") }), style: { height: dp(52), padding: `0 ${dp(18)}px`, borderRadius: 999, background: "rgba(252,252,255,0.10)", border: `1px solid ${TV2.lineCard}`, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: dp(16), color: TV2.text, cursor: "pointer", whiteSpace: "nowrap", boxSizing: "border-box" }, children: controls.aspectLabel })
-          ] }) : null,
-          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: "rgba(243,244,248,0.45)" }, children: tt("playerHelp") }),
-          /* @__PURE__ */ jsx("div", { ref: dotsRef, ...station(() => dotsRef.current && openMenu(dotsRef.current), (el) => openMenu(el), { "data-init": "", "aria-label": tt("moreActions") }), style: { width: dp(52), height: dp(52), borderRadius: 999, background: "rgba(252,252,255,0.10)", border: `1px solid ${TV2.lineCard}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }, children: /* @__PURE__ */ jsx(Icons.Dots, {}) })
-        ] })
-      ] }),
-      miniOpen ? /* @__PURE__ */ jsx("div", { ref: miniRef, "data-panel-root": "", "data-row": "", "data-live-tv-layer": "", style: { position: "absolute", left: 0, right: 0, bottom: dp(200), padding: `0 ${dp(48)}px`, display: "flex", gap: dp(14), overflowX: "auto", zIndex: 31 }, children: miniCards.map((c, cardIndex) => {
-        const n = tv.nowFor(c);
-        const current2 = channelKey(c) === channelKey(channel);
-        const cardInit = index3 < 0 ? cardIndex === 0 : current2;
-        return /* @__PURE__ */ jsxs("div", { "data-testid": "mini-card", ...station(() => {
-          closeMini();
-          tv.onSwitchChannel(c);
-        }, (el) => setMenu({ title: c.name, element: el, actions: [{ key: "multi", label: tt("menuAddMultiview"), run: () => tv.onAddToMultiview(c) }] }), cardInit ? { "data-init": "" } : void 0), style: { width: dp(330), height: dp(118), flexShrink: 0, borderRadius: dp(14), padding: `${dp(14)}px ${dp(16)}px`, background: current2 ? TV2.s16 : "rgba(20,22,30,0.85)", display: "flex", flexDirection: "column", gap: dp(6), cursor: "pointer", boxSizing: "border-box" }, children: [
-          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(14), color: "rgba(243,244,248,0.55)" }, children: c.name }),
-          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: n.now?.title ?? tt("noProgramme") }),
-          n.next ? /* @__PURE__ */ jsxs("div", { style: { fontSize: dp(15), color: "rgba(243,244,248,0.6)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: [
-            tt("nextLabel"),
-            ": ",
-            n.next.title
-          ] }) : null,
-          n.now ? /* @__PURE__ */ jsx(Progress, { value: progressOf(n.now.start, n.now.stop, tv.nowMs), height: dp(4) }) : null
-        ] }, channelKey(c));
-      }) }) : null,
-      TvGlassMenu && menu ? /* @__PURE__ */ jsx(TvGlassMenu, { target: menu, onClose: () => {
-        setMenu(null);
-        reveal();
-      } }) : null
-    ] });
+    const holdChip = (c, el) => setMenu({ title: c.name, element: el, actions: [{ key: "multi", label: tt("menuAddMultiview"), run: () => tv.onAddToMultiview(c) }] });
+    return (
+      // Roten släpper igenom pekaren till videon; bara fälten tar den.
+      /* @__PURE__ */ jsxs("div", { ref: rootRef, "data-live-tv-tv-root": "", ...isTv ? {} : { "data-live-tv-desktop": "1" }, style: { position: "absolute", inset: 0, pointerEvents: "none", zIndex: 30 }, children: [
+        /* @__PURE__ */ jsx(TvFocusStyle, {}),
+        /* @__PURE__ */ jsx(PlayerTopBar, { channel, tv, info, ps, visible, onClose, onKeep: keep, onRelease: release }),
+        /* @__PURE__ */ jsxs(
+          "div",
+          {
+            "data-testid": "banner",
+            onMouseEnter: keep,
+            onMouseLeave: release,
+            style: { position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 30, padding: `${ps(48)}px ${ps(20)}px ${ps(20)}px`, background: "linear-gradient(0deg, rgba(0,0,0,0.85), rgba(0,0,0,0.55) 55%, transparent)", opacity: visible ? 1 : 0, transition: "opacity 200ms", pointerEvents: visible ? "auto" : "none", color: "#f3f4f8" },
+            children: [
+              /* @__PURE__ */ jsx(PlayerControlRow, { channel, tv, info, ps, isTv, paused, onTogglePause, controls, guideOpen, onToggleGuide: toggleGuide, dotsRef: initRef, onOpenMenu: openMenu, volumeRef }),
+              /* @__PURE__ */ jsx(PlayerFavouritesRow, { channel, tv, ps, onSwitch: switchChannel, onHold: holdChip })
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsx(PlayerScheduleOverlay, { channel, tv, ps, open: guideOpen, onClose: closeGuide, onSwitch: switchChannel, onHoldChip: holdChip, overlayRef }),
+        TvGlassMenu && menu ? /* @__PURE__ */ jsx("div", { style: { pointerEvents: "auto" }, children: /* @__PURE__ */ jsx(TvGlassMenu, { target: menu, onClose: () => {
+          setMenu(null);
+          reveal();
+        } }) }) : null
+      ] })
+    );
   }
-  var MINI_WINDOW, VOLUME_STEP, stroke, CtlIcon, SpeakerOn, SpeakerOff, CornersOut, CornersIn;
   var init_tv_player_chrome = __esm({
     "../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-player-chrome.tsx"() {
       "use strict";
@@ -194292,25 +196988,11 @@ ${cue.text}`).join("\n\n")}
       init_react_shim();
       init_plugin_sdk();
       init_live_tv_data();
-      init_live_tv_ui();
       init_tv_ui();
       init_tv_strings();
+      init_player_chrome_phone();
+      init_player_chrome_parts();
       init_jsx_runtime_shim();
-      MINI_WINDOW = 25;
-      VOLUME_STEP = 0.1;
-      stroke = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" };
-      CtlIcon = ({ children }) => /* @__PURE__ */ jsx("svg", { width: dp(24), height: dp(24), viewBox: "0 0 24 24", ...stroke, children });
-      SpeakerOn = () => /* @__PURE__ */ jsxs(CtlIcon, { children: [
-        /* @__PURE__ */ jsx("path", { d: "M4 9.5v5h3.3L12 18.5v-13L7.3 9.5H4z" }),
-        /* @__PURE__ */ jsx("path", { d: "M15.6 9.4a3.6 3.6 0 0 1 0 5.2" }),
-        /* @__PURE__ */ jsx("path", { d: "M18.2 6.9a7.2 7.2 0 0 1 0 10.2" })
-      ] });
-      SpeakerOff = () => /* @__PURE__ */ jsxs(CtlIcon, { children: [
-        /* @__PURE__ */ jsx("path", { d: "M4 9.5v5h3.3L12 18.5v-13L7.3 9.5H4z" }),
-        /* @__PURE__ */ jsx("path", { d: "m16 10 4 4M20 10l-4 4" })
-      ] });
-      CornersOut = () => /* @__PURE__ */ jsx(CtlIcon, { children: /* @__PURE__ */ jsx("path", { d: "M9.5 4H4v5.5M14.5 4H20v5.5M14.5 20H20v-5.5M9.5 20H4v-5.5" }) });
-      CornersIn = () => /* @__PURE__ */ jsx(CtlIcon, { children: /* @__PURE__ */ jsx("path", { d: "M4 9.5h5.5V4M20 9.5h-5.5V4M20 14.5h-5.5V20M4 14.5h5.5V20" }) });
     }
   });
 
@@ -194704,6 +197386,10 @@ ${cue.text}`).join("\n\n")}
     const { t } = useLang();
     const isTv = useTvMode();
     const tvChrome = tv ?? null;
+    const orientation = useOrientation();
+    const phoneLandscape = Boolean(tvChrome?.phone && orientation === "landscape" && tvChrome.fullscreenOnRotate);
+    const phoneStacked = Boolean(tvChrome?.phone) && !phoneLandscape;
+    useWakeLock(Boolean(tvChrome?.phone && tvChrome?.keepAwake));
     useEffect(() => {
       recordChannelWatch(channel, listId);
     }, [channel.url, channel.name, listId]);
@@ -194831,7 +197517,10 @@ ${cue.text}`).join("\n\n")}
       const media = videoRef.current;
       if (media) media.volume = volumeLevel;
     }, [volumeLevel, channel.url, isHtmlEngine]);
+    const phoneChromeRef = useRef(Boolean(tvChrome?.phone));
+    phoneChromeRef.current = Boolean(tvChrome?.phone);
     const tryEnterMobileFullscreen = useCallback(() => {
+      if (phoneChromeRef.current) return;
       if (mobileFullscreenAttemptedRef.current) return;
       if (!isMobileBrowser()) return;
       const media = videoRef.current;
@@ -195316,25 +198005,31 @@ ${cue.text}`).join("\n\n")}
       volume: volumeLevel,
       fullscreen: desktopFullscreen,
       aspectLabel: ASPECT_OPTIONS[aspectIndex].label,
+      timePos: mpvTimePos,
       onToggleMute: toggleMute,
       onVolume: updateVolume,
       onToggleFullscreen: toggleFullscreen,
       onCycleAspect: cycleAspect
     };
+    const stackedOverlayStyle = phoneStacked ? { bottom: "auto", ...PHONE_STAGE_BOX } : void 0;
     const content = /* @__PURE__ */ jsxs(
       "div",
       {
         "data-lumio-player-open": "1",
         ...isTv ? { "data-panel-root": "", "data-tv-fullbleed": "" } : {},
         className: "fixed inset-0 z-[70] bg-transparent cursor-default",
+        style: phoneStacked ? { display: "flex", flexDirection: "column" } : void 0,
         children: [
           /* @__PURE__ */ jsx(
             "div",
             {
               ref: stageRef,
+              "data-player-stage": "",
               style: {
-                position: "absolute",
-                inset: 0,
+                // Telefon i porträtt: scenen är första flex-barnet i sin 16:9-låda
+                // (samma mått som kromets överlägg, `PHONE_STAGE_BOX`); annars
+                // täcker den hela spelaren.
+                ...phoneStacked ? { position: "relative", width: "100%", flexShrink: 0, ...PHONE_STAGE_BOX } : { position: "absolute", inset: 0 },
                 // mpv och Android ritar i ett lager BAKOM sidan; scenen är bara ett
                 // hål som talar om var. `<video>` ligger i själva scenen och
                 // behöver en svart botten att brevlådas mot.
@@ -195372,12 +198067,12 @@ ${cue.text}`).join("\n\n")}
               ) : null
             }
           ),
-          loading && !error && /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-transparent", children: /* @__PURE__ */ jsx("div", { className: "h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" }) }),
-          error && /* @__PURE__ */ jsxs("div", { className: "absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-black px-4 text-center", children: [
+          loading && !error && /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-transparent", style: stackedOverlayStyle, children: /* @__PURE__ */ jsx("div", { className: "h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" }) }),
+          error && /* @__PURE__ */ jsxs("div", { className: "absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-black px-4 text-center", style: stackedOverlayStyle, children: [
             /* @__PURE__ */ jsx("p", { className: "text-sm text-red-400", children: error }),
             /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500", children: t("liveTvStreamErrorHelp") })
           ] }),
-          tvChrome ? /* @__PURE__ */ jsx(TvPlayerChrome, { channel, tv: tvChrome, controls: playerControls, paused: mpvPaused, onTogglePause: toggleMpvPause, onClose: handleClose }) : null
+          tvChrome ? /* @__PURE__ */ jsx(TvPlayerChrome, { channel, tv: tvChrome, controls: playerControls, paused: mpvPaused, onTogglePause: toggleMpvPause, onClose: handleClose, phoneLandscape }) : null
         ]
       }
     );
@@ -195394,8 +198089,11 @@ ${cue.text}`).join("\n\n")}
       init_channel_history();
       init_live_tv_data();
       init_useHtmlVideoPlayer();
+      init_useOrientation();
+      init_useWakeLock();
       init_live_tv_playback_fallback();
       init_tv_player_chrome();
+      init_player_chrome_phone();
       init_video_surface();
       init_jsx_runtime_shim();
       MPV_STARTUP_TIMEOUT_MS = 18e3;
@@ -195418,6 +198116,7 @@ ${cue.text}`).join("\n\n")}
   init_plugin_sdk();
   init_plugin_sdk();
   init_live_tv_data();
+  init_index_client();
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/list-import-flags.ts
   init_live_tv_data();
@@ -195559,6 +198258,21 @@ ${cue.text}`).join("\n\n")}
     listFull: "The list is full \u2014 500 channels at most",
     xtreamNeedsLogin: "Sign in again to fetch channels",
     xtreamRelogin: "Sign in again",
+    // Logotypreserv (P5)
+    logoFallbackToggle: "Fill in missing logos from iptv-org",
+    logoFallbackHint: "Lets the list use the iptv-org logo registry when a channel has none of its own.",
+    logoComplete: "Complete",
+    logoCompleteRunning: "Completing\u2026",
+    logoCompleteResult: "{matched} of {total} completed",
+    // Flerlistekörningen (Jerrys granskningsfynd): scope + framsteg syns i
+    // knappens egen text, en enda lista ser fortfarande ut som `logoCompleteRunning`.
+    logoCompleteRunningProgress: "Completing list {current} of {total}\u2026",
+    // Delresultatet innan ett fel mitt i en flerlistekörning — `{error}` är
+    // appens egen feltext, ordagrant, inte en omskriven variant.
+    logoCompletePartialError: "{completed} of {total} lists completed \u2014 then: {error}",
+    // Komplettera-knappen i själva Live TV-vyn — en egen handling, skild från
+    // ovanstående switch (som bara styr OM reserven får användas).
+    logoCompleteButton: "Complete logos",
     // P8
     xtreamAccountUnavailable: "Could not read the account",
     xtreamExpires: "expires {date}",
@@ -195623,6 +198337,14 @@ ${cue.text}`).join("\n\n")}
     listFull: "Listan \xE4r full \u2014 h\xF6gst 500 kanaler",
     xtreamNeedsLogin: "Logga in p\xE5 nytt f\xF6r att h\xE4mta kanaler",
     xtreamRelogin: "Logga in p\xE5 nytt",
+    logoFallbackToggle: "Fyll i saknade logotyper fr\xE5n iptv-org",
+    logoFallbackHint: "L\xE5ter listan anv\xE4nda iptv-orgs logotypregister n\xE4r en kanal saknar egen logotyp.",
+    logoComplete: "Komplettera",
+    logoCompleteRunning: "Kompletterar\u2026",
+    logoCompleteResult: "{matched} av {total} kompletterade",
+    logoCompleteRunningProgress: "Kompletterar lista {current} av {total}\u2026",
+    logoCompletePartialError: "{completed} av {total} listor klara \u2014 sedan: {error}",
+    logoCompleteButton: "Komplettera logotyper",
     // P8
     xtreamAccountUnavailable: "Kunde inte l\xE4sa kontot",
     xtreamExpires: "giltigt till {date}",
@@ -196111,6 +198833,7 @@ ${cue.text}`).join("\n\n")}
     const [homeOverrideError, setHomeOverrideError] = useState("");
     const [lists, setLists] = useState([]);
     const [listProgress, setListProgress] = useState(null);
+    const [logoComplete, setLogoComplete] = useState(null);
     useEffect(() => {
       const sync2 = () => setLists(getLiveTvLists());
       sync2();
@@ -196149,9 +198872,9 @@ ${cue.text}`).join("\n\n")}
       if (ok) applyM3uUrls(urls);
     }
     function handleRemoveList(list) {
-      const remaining = getM3uUrls().filter((url) => !url.startsWith("xtream://") && hostOf(url) !== list.name);
-      applyM3uUrls(remaining);
-      setM3uText(remaining.join("\n"));
+      const remaining2 = getM3uUrls().filter((url) => !url.startsWith("xtream://") && hostOf(url) !== list.name);
+      applyM3uUrls(remaining2);
+      setM3uText(remaining2.join("\n"));
       deleteLiveTvList(list.id);
       clearLiveTvMemoryCache();
       clearStoredLiveTvChannels();
@@ -196165,6 +198888,15 @@ ${cue.text}`).join("\n\n")}
         recordListImportOutcome(list.id, err instanceof Error ? err.message : String(err));
       } finally {
         setListProgress(null);
+      }
+    }
+    async function handleCompleteLogos(list) {
+      setLogoComplete({ listId: list.id, status: "running" });
+      try {
+        const result = await completeLogos(list.source);
+        setLogoComplete({ listId: list.id, status: "done", matched: result.matched, total: result.total });
+      } catch (err) {
+        setLogoComplete({ listId: list.id, status: "error", error: err instanceof Error ? err.message : String(err) });
       }
     }
     function handleHomeOverrideToggle(checked) {
@@ -196283,7 +199015,32 @@ ${cue.text}`).join("\n\n")}
               autoDisabled: list.autoEpgDisabled,
               onToggleAuto: (disabled) => updateLiveTvListEpg(list.id, { autoEpgDisabled: disabled })
             }
-          ) })
+          ) }),
+          /* @__PURE__ */ jsxs("div", { style: { marginTop: 12, display: "flex", flexDirection: "column", gap: 12 }, children: [
+            /* @__PURE__ */ jsx("div", { "data-testid": `logo-fallback-toggle-${list.id}`, children: /* @__PURE__ */ jsx(
+              Checkbox,
+              {
+                checked: isLogoFallbackEnabled(list),
+                onChange: (value) => setLogoFallbackEnabled(list.id, value),
+                disabled: list.kind === "custom",
+                label: h("logoFallbackToggle"),
+                hint: h("logoFallbackHint")
+              }
+            ) }),
+            /* @__PURE__ */ jsxs("div", { style: { borderTop: `1px solid ${TOKENS.border}`, paddingTop: 12, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }, children: [
+              /* @__PURE__ */ jsx("span", { "data-testid": `logo-complete-${list.id}`, children: /* @__PURE__ */ jsx(
+                PillBtn,
+                {
+                  size: "sm",
+                  onClick: () => void handleCompleteLogos(list),
+                  disabled: !isLogoFallbackEnabled(list) || list.kind === "custom" || logoComplete?.listId === list.id && logoComplete.status === "running",
+                  children: logoComplete?.listId === list.id && logoComplete.status === "running" ? h("logoCompleteRunning") : h("logoComplete")
+                }
+              ) }),
+              logoComplete?.listId === list.id && logoComplete.status === "done" ? /* @__PURE__ */ jsx("span", { style: { fontSize: 12, color: TOKENS.textMute }, children: h("logoCompleteResult", { matched: logoComplete.matched, total: logoComplete.total }) }) : null,
+              logoComplete?.listId === list.id && logoComplete.status === "error" ? /* @__PURE__ */ jsx("span", { role: "alert", style: { fontSize: 12, color: "#fca5a5" }, children: logoComplete.error }) : null
+            ] })
+          ] })
         ] }, list.id);
       })
     ] });
@@ -196297,803 +199054,7 @@ ${cue.text}`).join("\n\n")}
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_logo_image();
-
-  // ../lumio-official-plugins/plugins/live-tv/runtime/live-tv-model.ts
-  init_react_shim();
-  init_plugin_sdk();
-
-  // ../lumio-official-plugins/plugins/live-tv/runtime/epg/now-snapshot.ts
-  init_index_client();
-
-  // ../lumio-official-plugins/plugins/live-tv/runtime/epg/store-id.ts
-  init_live_tv_data();
-  function epgStoreId(listId) {
-    return listId === null ? null : LIVE_TV_GLOBAL_EPG_ID;
-  }
-
-  // ../lumio-official-plugins/plugins/live-tv/runtime/epg/now-snapshot.ts
-  var TTL_MS = 6e4;
-  var snapshots = /* @__PURE__ */ new Map();
-  var inflight6 = /* @__PURE__ */ new Map();
-  function snapshotKey(listId, source) {
-    return `${epgStoreId(listId)}|${source ?? ""}`;
-  }
-  var NOW_SNAPSHOT_MAX_AGE_MS = 10 * 60 * 1e3;
-  function nowSnapshotNeedsRefetch(snapshot2, nowMs) {
-    if (nowMs - snapshot2.loadedAt >= NOW_SNAPSHOT_MAX_AGE_MS) return true;
-    const items = snapshot2.items;
-    for (const key in items) {
-      const entry = items[key];
-      if (!entry) continue;
-      if (entry.now && entry.now.stop <= nowMs) return true;
-      if (entry.next && entry.next.start <= nowMs) return true;
-    }
-    return false;
-  }
-  function getCachedNowSnapshot(listId, source) {
-    return snapshots.get(snapshotKey(listId, source)) ?? null;
-  }
-  async function fetchNowSnapshot(listId, source, opts) {
-    const key = snapshotKey(listId, source);
-    const cached = snapshots.get(key);
-    if (!opts?.force && cached && Date.now() - cached.loadedAt < TTL_MS) return cached;
-    const existing = inflight6.get(key);
-    if (existing) return existing;
-    const request = epgNow({ listId: epgStoreId(listId), source: source ?? void 0 }).then((data) => {
-      const snapshot2 = {
-        at: data.at,
-        fetchedAt: data.fetchedAt,
-        items: data.items,
-        count: Object.keys(data.items).length,
-        loadedAt: Date.now()
-      };
-      snapshots.set(key, snapshot2);
-      publish2({ snapshot: snapshot2, failed: false });
-      return snapshot2;
-    }).catch((err) => {
-      publish2({ snapshot: snapshots.get(key) ?? null, failed: true });
-      throw err;
-    }).finally(() => {
-      inflight6.delete(key);
-    });
-    inflight6.set(key, request);
-    return request;
-  }
-  var active = { snapshot: null, failed: false };
-  var listeners5 = /* @__PURE__ */ new Set();
-  function publish2(next2) {
-    active = next2;
-    for (const listener of [...listeners5]) listener();
-  }
-  function getActiveNowSnapshot() {
-    return active;
-  }
-  function subscribeNowSnapshot(listener) {
-    listeners5.add(listener);
-    return () => {
-      listeners5.delete(listener);
-    };
-  }
-
-  // ../lumio-official-plugins/plugins/live-tv/runtime/live-tv-model.ts
-  init_index_client();
-
-  // ../lumio-official-plugins/plugins/live-tv/runtime/channel-resolver.ts
-  init_index_client();
-  var MAX_ENTRIES3 = 1e3;
-  var memo3 = /* @__PURE__ */ new Map();
-  function remember(key, value) {
-    memo3.set(key, value);
-    while (memo3.size > MAX_ENTRIES3) {
-      const oldest = memo3.keys().next();
-      if (oldest.done) break;
-      memo3.delete(oldest.value);
-    }
-  }
-  function getResolvedChannels(keys3) {
-    const out = {};
-    for (const key of keys3) {
-      const hit = memo3.get(key);
-      if (hit) out[key] = hit;
-    }
-    return out;
-  }
-  async function resolveChannelKeys(keys3) {
-    const wanted = [...new Set(keys3.filter((key) => key.length > 0))];
-    const missing = wanted.filter((key) => !memo3.has(key));
-    if (missing.length > 0) {
-      const items = await lookupChannels(missing);
-      const found = new Map(items.map((item) => [item.key, item]));
-      for (const key of missing) remember(key, found.get(key) ?? null);
-    }
-    return wanted.map((key) => memo3.get(key) ?? null).filter((item) => item !== null);
-  }
-  function clearResolvedChannels() {
-    memo3.clear();
-  }
-
-  // ../lumio-official-plugins/plugins/live-tv/runtime/storage-v2-migration.ts
-  init_plugin_sdk();
-  init_index_client();
-  init_live_tv_data();
-  var STORAGE_V2_MIGRATED_KEY = "live_tv_storage_v2_migrated";
-  function computeGroups2(channels) {
-    const counts = /* @__PURE__ */ new Map();
-    for (const channel of channels) {
-      const group = channel.group?.trim() || "Other";
-      counts.set(group, (counts.get(group) ?? 0) + 1);
-    }
-    return [...counts.entries()].sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0])).map(([name, count]) => ({ name, count }));
-  }
-  function withKeysAndNumbers(channels) {
-    return channels.map((channel, index3) => ({ ...channel, key: channelKey(channel), number: index3 + 1 }));
-  }
-  function isStorageV2Migrated() {
-    return readPluginJson(LIVE_TV_PLUGIN_ID, STORAGE_V2_MIGRATED_KEY, false) === true;
-  }
-  async function migrateStorageV2() {
-    if (isStorageV2Migrated()) return { migrated: 0 };
-    const lists = getLiveTvLists();
-    let migrated = 0;
-    let lastError;
-    const rewritten = [];
-    for (const list of lists) {
-      const embedded = list.channels ?? [];
-      const canMigrate = embedded.length > 0 && Boolean(list.source) && (list.kind === "m3u" || list.kind === "xtream");
-      if (!canMigrate) {
-        rewritten.push(list);
-        continue;
-      }
-      try {
-        await batchChannels(list.source, withKeysAndNumbers(embedded), true);
-        const { channels: _channels, ...withoutChannels } = list;
-        rewritten.push({
-          ...withoutChannels,
-          channelCount: embedded.length,
-          groups: computeGroups2(embedded)
-        });
-        migrated += 1;
-      } catch (err) {
-        lastError = err instanceof Error ? err.message : String(err);
-        rewritten.push(list);
-      }
-    }
-    try {
-      if (migrated > 0) {
-        const rewrittenById = new Map(rewritten.map((entry) => [entry.id, entry]));
-        const merged = getLiveTvLists().map((current2) => rewrittenById.get(current2.id) ?? current2);
-        replaceLiveTvLists(merged);
-        emitIndexChanged();
-      }
-      removePluginStorageByPrefix(LIVE_TV_PLUGIN_ID, LIVE_TV_CHANNELS_PREFIX);
-      if (!lastError) writePluginJson(LIVE_TV_PLUGIN_ID, STORAGE_V2_MIGRATED_KEY, true);
-    } catch (err) {
-      lastError = err instanceof Error ? err.message : String(err);
-    }
-    return lastError ? { migrated, error: lastError } : { migrated };
-  }
-
-  // ../lumio-official-plugins/plugins/live-tv/runtime/live-tv-model.ts
-  init_channel_history();
-
-  // ../lumio-official-plugins/plugins/live-tv/runtime/reminders.ts
-  init_react_shim();
-  init_plugin_sdk();
-  init_live_tv_data();
-  var REMINDERS_KEY = "reminders_v1";
-  var REMINDER_LEAD_MS = 5 * 6e4;
-  var REMINDER_GRACE_MS = 10 * 6e4;
-  function reminderId(channel, programme) {
-    return `${channelKey(channel)}@${programme.start}`;
-  }
-  function sanitize3(raw) {
-    if (!Array.isArray(raw)) return [];
-    const out = [];
-    for (const item of raw) {
-      if (!item || typeof item !== "object") continue;
-      const r = item;
-      if (typeof r.id !== "string" || typeof r.start !== "number" || typeof r.channelUrl !== "string") continue;
-      out.push({
-        id: r.id,
-        channelKey: typeof r.channelKey === "string" ? r.channelKey : channelKey({ name: r.channelName ?? "", url: r.channelUrl }),
-        channelName: typeof r.channelName === "string" ? r.channelName : "Unknown",
-        channelUrl: r.channelUrl,
-        channelLogo: typeof r.channelLogo === "string" ? r.channelLogo : null,
-        channelGroup: typeof r.channelGroup === "string" ? r.channelGroup : "Other",
-        channelTvgId: typeof r.channelTvgId === "string" ? r.channelTvgId : null,
-        title: typeof r.title === "string" ? r.title : "",
-        start: r.start,
-        stop: typeof r.stop === "number" ? r.stop : r.start,
-        createdAt: typeof r.createdAt === "number" ? r.createdAt : 0,
-        notifiedAt: typeof r.notifiedAt === "number" ? r.notifiedAt : void 0
-      });
-    }
-    return out.sort((left, right) => left.start - right.start);
-  }
-  function getReminders(now3 = Date.now()) {
-    return sanitize3(readPluginJson(LIVE_TV_PLUGIN_ID, REMINDERS_KEY, [])).filter((r) => r.start + REMINDER_GRACE_MS > now3);
-  }
-  function write5(list) {
-    writePluginJson(LIVE_TV_PLUGIN_ID, REMINDERS_KEY, list);
-  }
-  function isReminded(channel, programme) {
-    const id4 = reminderId(channel, programme);
-    return getReminders().some((r) => r.id === id4);
-  }
-  function toggleReminder(channel, programme, now3 = Date.now()) {
-    const id4 = reminderId(channel, programme);
-    const current2 = getReminders(now3);
-    const next2 = current2.some((r) => r.id === id4) ? current2.filter((r) => r.id !== id4) : [
-      ...current2,
-      {
-        id: id4,
-        channelKey: channelKey(channel),
-        channelName: channel.name,
-        channelUrl: channel.url,
-        channelLogo: channel.logo ?? null,
-        channelGroup: channel.group,
-        channelTvgId: channel.tvgId,
-        title: programme.title,
-        start: programme.start,
-        stop: programme.stop,
-        createdAt: now3
-      }
-    ].sort((left, right) => left.start - right.start);
-    write5(next2);
-    return next2;
-  }
-  function markReminderNotified(id4, now3 = Date.now()) {
-    write5(getReminders(now3).map((r) => r.id === id4 ? { ...r, notifiedAt: now3 } : r));
-  }
-  function onRemindersChanged(listener) {
-    return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, REMINDERS_KEY, listener);
-  }
-  function dueReminders(now3 = Date.now(), leadMs = REMINDER_LEAD_MS) {
-    return getReminders(now3).filter((r) => r.notifiedAt === void 0 && r.start - leadMs <= now3);
-  }
-  function reminderToChannel(r) {
-    return { name: r.channelName, url: r.channelUrl, logo: r.channelLogo, group: r.channelGroup, tvgId: r.channelTvgId };
-  }
-  function startReminderScheduler(onDue) {
-    let stopped = false;
-    const tick = () => {
-      if (stopped) return;
-      const now3 = Date.now();
-      for (const r of dueReminders(now3)) {
-        markReminderNotified(r.id, now3);
-        onDue(r);
-      }
-    };
-    tick();
-    const timer = window.setInterval(tick, 3e4);
-    const off = onRemindersChanged(tick);
-    return () => {
-      stopped = true;
-      window.clearInterval(timer);
-      off();
-    };
-  }
-  function tryNativeNotification(title, body) {
-    try {
-      if (typeof Notification === "undefined") return;
-      if (Notification.permission === "granted") {
-        new Notification(title, { body });
-      } else if (Notification.permission === "default") {
-        void Notification.requestPermission().then((permission) => {
-          if (permission === "granted") new Notification(title, { body });
-        });
-      }
-    } catch {
-    }
-  }
-  function useReminders() {
-    const [list, setList] = useState(() => getReminders());
-    useEffect(() => {
-      const sync2 = () => setList(getReminders());
-      sync2();
-      const off = onRemindersChanged(sync2);
-      const timer = window.setInterval(sync2, 6e4);
-      return () => {
-        off();
-        window.clearInterval(timer);
-      };
-    }, []);
-    return list;
-  }
-
-  // ../lumio-official-plugins/plugins/live-tv/runtime/channel-locks.ts
-  init_react_shim();
-  init_plugin_sdk();
-  init_plugin_sdk();
-  init_live_tv_data();
-  var LOCKED_CHANNELS_KEY = "locked_channels_v1";
-  function bridge() {
-    return plugin_sdk_exports;
-  }
-  function pinSupportAvailable() {
-    const b = bridge();
-    return typeof b.activeProfileHasPin === "function" && typeof b.verifyActiveProfilePin === "function";
-  }
-  function activeProfileHasPin2() {
-    const b = bridge();
-    try {
-      return typeof b.activeProfileHasPin === "function" ? b.activeProfileHasPin() : false;
-    } catch {
-      return false;
-    }
-  }
-  async function verifyActiveProfilePin2(pin) {
-    const b = bridge();
-    if (typeof b.verifyActiveProfilePin !== "function") return false;
-    try {
-      return await b.verifyActiveProfilePin(pin);
-    } catch {
-      return false;
-    }
-  }
-  function sanitize4(raw) {
-    return Array.isArray(raw) ? raw.filter((value) => typeof value === "string" && value.length > 0) : [];
-  }
-  function getLockedChannelKeys() {
-    return sanitize4(readPluginJson(LIVE_TV_PLUGIN_ID, LOCKED_CHANNELS_KEY, []));
-  }
-  function toggleChannelLock(channel) {
-    const key = channelKey(channel);
-    const current2 = getLockedChannelKeys();
-    const next2 = current2.includes(key) ? current2.filter((entry) => entry !== key) : [...current2, key];
-    writePluginJson(LIVE_TV_PLUGIN_ID, LOCKED_CHANNELS_KEY, next2);
-    return next2;
-  }
-  function onChannelLocksChanged(listener) {
-    return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, LOCKED_CHANNELS_KEY, listener);
-  }
-  function useLockedChannelKeys() {
-    const [keys3, setKeys] = useState(() => getLockedChannelKeys());
-    useEffect(() => onChannelLocksChanged(() => setKeys(getLockedChannelKeys())), []);
-    return new Set(keys3);
-  }
-  var unlockedThisSession = false;
-  function markUnlockedThisSession() {
-    unlockedThisSession = true;
-  }
-  function isUnlockedThisSession() {
-    return unlockedThisSession;
-  }
-
-  // ../lumio-official-plugins/plugins/live-tv/runtime/live-tv-model.ts
-  init_live_tv_data();
-
-  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-settings-store.ts
-  init_react_shim();
-  init_plugin_sdk();
-  init_live_tv_data();
-  var TV_SETTINGS_KEY = "live_tv_tv_settings_v1";
-  var GUIDE_MODE_KEY = "live_tv_guide_mode_v1";
-  var ACTIVE_PLAYLIST_KEY = "live_tv_active_playlist_v1";
-  var BANNER_HIDE_OPTIONS = [2e3, 4e3, 6e3, 0];
-  var DEFAULTS2 = { previewEnabled: true, startOnLastChannel: false, numericZap: true, bannerHideMs: 4e3 };
-  function sanitize5(raw) {
-    const r = raw && typeof raw === "object" ? raw : {};
-    const banner = BANNER_HIDE_OPTIONS.includes(r.bannerHideMs) ? r.bannerHideMs : DEFAULTS2.bannerHideMs;
-    return {
-      previewEnabled: typeof r.previewEnabled === "boolean" ? r.previewEnabled : DEFAULTS2.previewEnabled,
-      startOnLastChannel: typeof r.startOnLastChannel === "boolean" ? r.startOnLastChannel : DEFAULTS2.startOnLastChannel,
-      numericZap: typeof r.numericZap === "boolean" ? r.numericZap : DEFAULTS2.numericZap,
-      bannerHideMs: banner
-    };
-  }
-  function getTvSettings() {
-    return sanitize5(readPluginJson(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, DEFAULTS2));
-  }
-  function setTvSettings(patch) {
-    const next2 = sanitize5({ ...getTvSettings(), ...patch });
-    writePluginJson(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, next2);
-    return next2;
-  }
-  function useTvSettings() {
-    const [value, setValue] = useState(getTvSettings);
-    useEffect(() => onPluginStorageChanged(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, () => setValue(getTvSettings())), []);
-    return value;
-  }
-  var GUIDE_MODES = ["now", "tl", "playlists", "grid"];
-  function getGuideMode() {
-    const raw = readPluginJson(LIVE_TV_PLUGIN_ID, GUIDE_MODE_KEY, "now");
-    return GUIDE_MODES.includes(raw) ? raw : "now";
-  }
-  function setGuideMode(mode) {
-    writePluginJson(LIVE_TV_PLUGIN_ID, GUIDE_MODE_KEY, mode);
-  }
-  function useGuideMode() {
-    const [value, setValue] = useState(getGuideMode);
-    useEffect(() => onPluginStorageChanged(LIVE_TV_PLUGIN_ID, GUIDE_MODE_KEY, () => setValue(getGuideMode())), []);
-    return value;
-  }
-  function getActivePlaylistId() {
-    const raw = readPluginJson(LIVE_TV_PLUGIN_ID, ACTIVE_PLAYLIST_KEY, null);
-    return typeof raw === "string" && raw ? raw : null;
-  }
-  function setActivePlaylistId(id4) {
-    writePluginJson(LIVE_TV_PLUGIN_ID, ACTIVE_PLAYLIST_KEY, id4);
-  }
-  function onActivePlaylistChanged(listener) {
-    return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, ACTIVE_PLAYLIST_KEY, listener);
-  }
-
-  // ../lumio-official-plugins/plugins/live-tv/runtime/live-tv-model.ts
-  var EMPTY2 = { now: null, next: null, later: null };
-  var PLACEHOLDER_NAME_RE = /^[\s=\-_*•·]+|=+/;
-  var MAX_GROUP_CHIPS = 8;
-  var EPG_TTL_MS = 6 * 60 * 60 * 1e3;
-  function isPlayableChannel(channel) {
-    if (!channel.url) return false;
-    const trimmedName = channel.name.trim();
-    if (!trimmedName) return false;
-    if (PLACEHOLDER_NAME_RE.test(trimmedName) && !channel.tvgId) return false;
-    return true;
-  }
-  function topGroups(channels, limit = MAX_GROUP_CHIPS) {
-    const counts = /* @__PURE__ */ new Map();
-    for (const channel of channels) {
-      const group = channel.group?.trim();
-      if (!group) continue;
-      counts.set(group, (counts.get(group) ?? 0) + 1);
-    }
-    return [...counts.entries()].sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0])).slice(0, limit).map(([group]) => group);
-  }
-  var bootstrapPromise = null;
-  function ensureLiveTvBootstrap() {
-    return ensureBootstrap();
-  }
-  var appTooOldFlag = false;
-  function isLiveTvAppTooOld() {
-    return appTooOldFlag;
-  }
-  async function probeLiveTvApi() {
-    try {
-      await epgStatus("probe");
-      return true;
-    } catch {
-      return false;
-    }
-  }
-  function ensureBootstrap() {
-    if (!bootstrapPromise) {
-      bootstrapPromise = (async () => {
-        const supported = await probeLiveTvApi();
-        appTooOldFlag = !supported;
-        if (!supported) return;
-        await migrateStorageV2().catch(() => {
-        });
-        await importMissingSources().catch(() => {
-        });
-      })();
-    }
-    return bootstrapPromise;
-  }
-  var epgRefreshRequested = /* @__PURE__ */ new Set();
-  function channelsCacheKey(source) {
-    return `${LIVE_TV_CHANNELS_PREFIX}${source ?? "all"}`;
-  }
-  function getCachedChannels(source) {
-    return getPluginMemoryCache(LIVE_TV_PLUGIN_ID, channelsCacheKey(source)) ?? null;
-  }
-  var channelLoads = /* @__PURE__ */ new Map();
-  var channelAborts = /* @__PURE__ */ new Map();
-  var generationListeners = /* @__PURE__ */ new Set();
-  var indexSubscription = null;
-  function ensureIndexSubscription() {
-    if (indexSubscription || typeof window === "undefined") return;
-    indexSubscription = onIndexChanged(() => {
-      invalidateChannels();
-      for (const listener of [...generationListeners]) listener();
-    });
-  }
-  function invalidateChannels() {
-    for (const controller of channelAborts.values()) controller.abort();
-    channelAborts.clear();
-    channelLoads.clear();
-    clearPluginMemoryCacheByPrefix(LIVE_TV_PLUGIN_ID, LIVE_TV_CHANNELS_PREFIX);
-    clearResolvedChannels();
-  }
-  async function loadEveryChannel(signal) {
-    const sources = [...new Set(
-      getLiveTvLists().filter((list) => list.kind !== "custom" && Boolean(list.source)).map((list) => list.source)
-    )];
-    if (sources.length === 0) return loadAllChannels(null, void 0, signal);
-    const items = [];
-    const seen = /* @__PURE__ */ new Set();
-    for (const source of sources) {
-      if (signal?.aborted) throw new DOMException("aborted", "AbortError");
-      for (const channel of await loadChannelsShared(source)) {
-        if (seen.has(channel.key)) continue;
-        seen.add(channel.key);
-        items.push(channel);
-      }
-    }
-    return items;
-  }
-  function loadChannelsShared(source) {
-    const cacheKey = channelsCacheKey(source);
-    const cached = getPluginMemoryCache(LIVE_TV_PLUGIN_ID, cacheKey);
-    if (cached) return Promise.resolve(cached);
-    const existing = channelLoads.get(cacheKey);
-    if (existing) return existing;
-    const controller = typeof AbortController === "function" ? new AbortController() : null;
-    if (controller) channelAborts.set(cacheKey, controller);
-    const request = (async () => {
-      await ensureBootstrap();
-      const items = source === null ? await loadEveryChannel(controller?.signal) : await loadAllChannels(source, void 0, controller?.signal);
-      setPluginMemoryCache(LIVE_TV_PLUGIN_ID, cacheKey, items);
-      return items;
-    })().finally(() => {
-      if (channelLoads.get(cacheKey) === request) channelLoads.delete(cacheKey);
-      if (channelAborts.get(cacheKey) === controller) channelAborts.delete(cacheKey);
-    });
-    channelLoads.set(cacheKey, request);
-    return request;
-  }
-  function subscribeChannelGeneration(listener) {
-    ensureIndexSubscription();
-    generationListeners.add(listener);
-    return () => {
-      generationListeners.delete(listener);
-    };
-  }
-  function useLiveTvModel(tickMs = 6e4) {
-    const [lists, setLists] = useState(() => getLiveTvLists());
-    const [activePlaylistId, setActivePlaylistIdState] = useState(() => getActivePlaylistId());
-    useEffect(() => onActivePlaylistChanged(() => setActivePlaylistIdState(getActivePlaylistId())), []);
-    const [pinnedKeys, setPinnedKeys] = useState(() => getPinnedLiveTvKeys());
-    const [history, setHistory] = useState(() => getChannelHistory());
-    const [nowMs, setNowMs] = useState(() => Date.now());
-    const reminders = useReminders();
-    const locked = useLockedChannelKeys();
-    useEffect(() => {
-      const sync2 = () => setLists(getLiveTvLists());
-      sync2();
-      return onLiveTvListsChanged(sync2);
-    }, []);
-    useEffect(() => onPinnedLiveTvKeysChanged(() => setPinnedKeys(getPinnedLiveTvKeys())), []);
-    useEffect(() => onChannelHistoryChanged(() => setHistory(getChannelHistory())), []);
-    const tvMode = useTvMode();
-    const activeList = useMemo(
-      () => tvMode ? lists.find((list) => list.id === activePlaylistId) ?? null : null,
-      [tvMode, lists, activePlaylistId]
-    );
-    const activeSource = activeList?.source ?? null;
-    const [loaded, setLoaded] = useState([]);
-    const [channelsLoading, setChannelsLoading] = useState(true);
-    const [reloadToken, setReloadToken] = useState(0);
-    const [extras, setExtras] = useState({});
-    useEffect(() => {
-      let live2 = true;
-      const cached = getPluginMemoryCache(LIVE_TV_PLUGIN_ID, channelsCacheKey(activeSource));
-      if (cached) {
-        setLoaded(cached);
-        setChannelsLoading(false);
-      } else {
-        setChannelsLoading(true);
-      }
-      loadChannelsShared(activeSource).then((items) => {
-        if (!live2) return;
-        setLoaded(items);
-        setChannelsLoading(false);
-      }).catch(() => {
-        if (live2) setChannelsLoading(false);
-      });
-      return () => {
-        live2 = false;
-      };
-    }, [activeSource, reloadToken]);
-    const [appTooOld, setAppTooOld] = useState(() => isLiveTvAppTooOld());
-    useEffect(() => {
-      let live2 = true;
-      void ensureBootstrap().finally(() => {
-        if (live2) setAppTooOld(isLiveTvAppTooOld());
-      });
-      return () => {
-        live2 = false;
-      };
-    }, []);
-    useEffect(() => {
-      ensureIndexSubscription();
-      const listener = () => setReloadToken((token) => token + 1);
-      generationListeners.add(listener);
-      return () => {
-        generationListeners.delete(listener);
-      };
-    }, []);
-    const channels = useMemo(() => loaded.filter(isPlayableChannel), [loaded]);
-    const numberByKey = useMemo(() => new Map(loaded.map((channel) => [channel.key, channel.number])), [loaded]);
-    const positionByKey = useMemo(
-      () => new Map(channels.map((channel, index3) => [channelKey(channel), index3 + 1])),
-      [channels]
-    );
-    const byKey = useMemo(() => {
-      const map = /* @__PURE__ */ new Map();
-      for (const channel of Object.values(extras)) map.set(channel.key, channel);
-      for (const channel of channels) map.set(channelKey(channel), channel);
-      return map;
-    }, [channels, extras]);
-    const byUrl = useMemo(() => {
-      const map = /* @__PURE__ */ new Map();
-      for (const channel of byKey.values()) if (!map.has(channel.url)) map.set(channel.url, channel);
-      return map;
-    }, [byKey]);
-    const groups = useMemo(() => topGroups(channels), [channels]);
-    const playlists = useMemo(
-      () => lists.map((list) => ({ id: list.id, name: list.name, count: list.channelCount ?? list.channels?.length ?? 0 })),
-      [lists]
-    );
-    const listByUrl = useMemo(() => {
-      const map = /* @__PURE__ */ new Map();
-      for (const list of lists) for (const channel of list.channels ?? []) if (!map.has(channel.url)) map.set(channel.url, list);
-      return map;
-    }, [lists]);
-    const loadedKeys = useMemo(() => new Set(channels.map((channel) => channelKey(channel))), [channels]);
-    const pinnedId = pinnedKeys.join(",");
-    const historyId = history.map((entry) => entry.key).join(",");
-    useEffect(() => {
-      if (channelsLoading) return;
-      const wanted = [...pinnedKeys, ...history.map((entry) => entry.key)].filter((key) => !loadedKeys.has(key));
-      if (wanted.length === 0) return;
-      let live2 = true;
-      const known = getResolvedChannels(wanted);
-      if (Object.keys(known).length > 0) setExtras((prev) => ({ ...prev, ...known }));
-      resolveChannelKeys(wanted).then((items) => {
-        if (!live2 || items.length === 0) return;
-        setExtras((prev) => {
-          const next2 = { ...prev };
-          for (const item of items) next2[item.key] = item;
-          return next2;
-        });
-      }).catch(() => {
-      });
-      return () => {
-        live2 = false;
-      };
-    }, [pinnedId, historyId, loadedKeys, channelsLoading]);
-    const epgUrls = useMemo(() => getAllLiveTvEpgUrls(lists), [lists]);
-    const epgUrlsId = epgUrls.join("|");
-    const epgListId = epgUrls.length > 0 ? LIVE_TV_GLOBAL_EPG_ID : null;
-    const sources = useMemo(
-      () => lists.map((list) => list.source).filter((source) => Boolean(source)),
-      [lists]
-    );
-    const sourcesId = sources.join("|");
-    const [snapshot2, setSnapshot] = useState(
-      () => getCachedNowSnapshot(LIVE_TV_GLOBAL_EPG_ID, null)
-    );
-    const [epgLoading, setEpgLoading] = useState(false);
-    const [epgTick, setEpgTick] = useState(0);
-    useEffect(() => {
-      const visible = () => typeof document === "undefined" || document.visibilityState === "visible";
-      const timer = window.setInterval(() => {
-        setNowMs(Date.now());
-        if (visible()) setEpgTick((tick) => tick + 1);
-      }, tickMs);
-      const onVisibility = () => {
-        if (!visible()) return;
-        setNowMs(Date.now());
-        setEpgTick((tick) => tick + 1);
-      };
-      document.addEventListener("visibilitychange", onVisibility);
-      return () => {
-        window.clearInterval(timer);
-        document.removeEventListener("visibilitychange", onVisibility);
-      };
-    }, [tickMs]);
-    const epgTriggerRef = useRef({ tick: epgTick, token: reloadToken, source: activeSource, urls: epgUrlsId });
-    useEffect(() => {
-      let live2 = true;
-      const listId = LIVE_TV_GLOBAL_EPG_ID;
-      const previous = epgTriggerRef.current;
-      const tickOnly = previous.tick !== epgTick && previous.token === reloadToken && previous.source === activeSource && previous.urls === epgUrlsId;
-      epgTriggerRef.current = { tick: epgTick, token: reloadToken, source: activeSource, urls: epgUrlsId };
-      const cached = getCachedNowSnapshot(listId, activeSource);
-      if (cached) setSnapshot(cached);
-      if (tickOnly && cached && (epgUrls.length === 0 || !nowSnapshotNeedsRefetch(cached, Date.now()))) {
-        setEpgLoading(false);
-        return;
-      }
-      setEpgLoading(!cached);
-      void (async () => {
-        try {
-          await ensureBootstrap();
-          if (!live2) return;
-          const first = await fetchNowSnapshot(listId, activeSource);
-          if (!live2) return;
-          setSnapshot(first);
-          const stale = first.fetchedAt === null || Date.now() - first.fetchedAt > EPG_TTL_MS;
-          if (!stale || epgUrls.length === 0 || epgRefreshRequested.has(listId)) return;
-          epgRefreshRequested.add(listId);
-          const job = await refreshEpg(listId, epgUrls, sources);
-          await waitForJob(job);
-          if (!live2) return;
-          const next2 = await fetchNowSnapshot(listId, activeSource, { force: true });
-          if (!live2) return;
-          setSnapshot(next2);
-        } finally {
-          if (live2) setEpgLoading(false);
-        }
-      })().catch(() => {
-      });
-      return () => {
-        live2 = false;
-      };
-    }, [activeSource, epgUrlsId, sourcesId, reloadToken, epgTick]);
-    const nowFor = useMemo(() => {
-      const items = snapshot2?.items ?? null;
-      return (channel) => {
-        if (!items) return EMPTY2;
-        return items[channelKey(channel)] ?? EMPTY2;
-      };
-    }, [snapshot2]);
-    const favouriteChannels = useMemo(
-      () => pinnedKeys.map((key) => byKey.get(key)).filter((channel) => Boolean(channel)),
-      [pinnedKeys, byKey]
-    );
-    const resolveKeys = useCallback(
-      (keys3) => resolveChannelKeys(keys3).then((items) => items),
-      []
-    );
-    return {
-      lists,
-      allChannels: channels,
-      channels,
-      byKey,
-      byUrl,
-      groups,
-      pinnedKeys,
-      pinnedSet: useMemo(() => new Set(pinnedKeys), [pinnedKeys]),
-      togglePin: (channel) => setPinnedKeys(togglePinnedLiveTvChannel(channel)),
-      playlists,
-      activePlaylistId: activeList ? activeList.id : null,
-      activeSource,
-      activePlaylistName: activeList ? activeList.name : null,
-      setActivePlaylist: (id4) => {
-        setActivePlaylistId(id4);
-        setActivePlaylistIdState(id4);
-      },
-      channelNumber: (channel) => {
-        const key = channelKey(channel);
-        if (activeSource) return numberByKey.get(key) ?? null;
-        return positionByKey.get(key) ?? null;
-      },
-      favouriteChannels,
-      history,
-      nowMs,
-      epgListId,
-      epgUrls,
-      // `count` räknas en gång när svaret kommer — inte per render över 17 000 nycklar.
-      hasEpg: (snapshot2?.count ?? 0) > 0,
-      channelsLoading,
-      epgLoading,
-      epgFetchedAt: snapshot2?.fetchedAt ?? null,
-      appTooOld,
-      resolveKeys,
-      nowFor,
-      reminders,
-      locked,
-      listFor: (channel) => listByUrl.get(channel.url) ?? activeList ?? (lists.length === 1 ? lists[0] : null)
-    };
-  }
-  function startOfLocalDay(nowMs, dayOffset = 0) {
-    const d = new Date(nowMs);
-    d.setHours(0, 0, 0, 0);
-    d.setDate(d.getDate() + dayOffset);
-    return d.getTime();
-  }
-  function qualityFromName(name) {
-    const n = name.toUpperCase();
-    if (/\b(4K|UHD|2160)/.test(n)) return "4K";
-    if (/\b(FHD|1080)/.test(n)) return "FHD";
-    if (/\b(HD|720)\b/.test(n)) return "HD";
-    if (/\b(SD|576|480)\b/.test(n)) return "SD";
-    return null;
-  }
-
-  // ../lumio-official-plugins/plugins/live-tv/runtime/live-tv-grid.tsx
+  init_live_tv_model();
   init_live_tv_ui();
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/now-badge.tsx
@@ -197101,152 +199062,8 @@ ${cue.text}`).join("\n\n")}
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
   init_react_shim();
-
-  // ../lumio-official-plugins/plugins/live-tv/runtime/epg/schedule-cache.ts
-  init_index_client();
-  var TTL_MS2 = 5 * 60 * 1e3;
-  var MAX_ENTRIES4 = 600;
-  var cache6 = /* @__PURE__ */ new Map();
-  var batches = /* @__PURE__ */ new Map();
-  var inflight7 = /* @__PURE__ */ new Map();
-  function queueBatch(listId, keys3, from, to) {
-    const id4 = `${epgStoreId(listId)}|${from}|${to}`;
-    let batch = batches.get(id4);
-    if (!batch) {
-      let settle;
-      const promise = new Promise((resolve, reject) => {
-        settle = (items) => items.then(resolve, reject);
-      });
-      const entry = {
-        keys: /* @__PURE__ */ new Set(),
-        promise,
-        scheduled: false,
-        send: () => {
-          batches.delete(id4);
-          const wanted = [...entry.keys];
-          const request = epgSchedule(epgStoreId(listId), wanted, from, to).then((items) => {
-            const storedAt = Date.now();
-            for (const key of wanted) {
-              cache6.set(entryKey2(listId, key, from, to), { programmes: items[key] ?? [], storedAt });
-            }
-            evict(storedAt);
-            return items;
-          });
-          for (const key of wanted) inflight7.set(entryKey2(listId, key, from, to), request);
-          request.catch(() => {
-          }).finally(() => {
-            for (const key of wanted) {
-              if (inflight7.get(entryKey2(listId, key, from, to)) === request) {
-                inflight7.delete(entryKey2(listId, key, from, to));
-              }
-            }
-          });
-          settle(request);
-        }
-      };
-      batch = entry;
-      batches.set(id4, entry);
-    }
-    for (const key of keys3) batch.keys.add(key);
-    if (!batch.scheduled) {
-      batch.scheduled = true;
-      queueMicrotask(batch.send);
-    }
-    return batch.promise;
-  }
-  function entryKey2(listId, key, from, to) {
-    return `${epgStoreId(listId)}|${key}|${from}|${to}`;
-  }
-  function evict(now3) {
-    for (const [key, entry] of cache6) {
-      if (now3 - entry.storedAt >= TTL_MS2) cache6.delete(key);
-    }
-    while (cache6.size > MAX_ENTRIES4) {
-      const oldest = cache6.keys().next();
-      if (oldest.done) break;
-      cache6.delete(oldest.value);
-    }
-  }
-  function split(listId, keys3, from, to, now3) {
-    const hits = {};
-    const missing = [];
-    for (const key of keys3) {
-      const id4 = entryKey2(listId, key, from, to);
-      const entry = cache6.get(id4);
-      if (entry && now3 - entry.storedAt < TTL_MS2) {
-        hits[key] = entry.programmes;
-        cache6.delete(id4);
-        cache6.set(id4, entry);
-      } else {
-        missing.push(key);
-      }
-    }
-    return { hits, missing };
-  }
-  function getCachedSchedules(listId, keys3, from, to) {
-    const { hits, missing } = split(listId, keys3, from, to, Date.now());
-    return { schedules: hits, missing };
-  }
-  async function fetchSchedules(listId, keys3, from, to) {
-    const unique = [...new Set(keys3.filter((key) => key.length > 0))];
-    const { hits, missing } = split(listId, unique, from, to, Date.now());
-    if (missing.length === 0) return hits;
-    const waiting = /* @__PURE__ */ new Set();
-    const queue2 = [];
-    for (const key of missing) {
-      const pending2 = inflight7.get(entryKey2(listId, key, from, to));
-      if (pending2) waiting.add(pending2);
-      else queue2.push(key);
-    }
-    if (queue2.length > 0) waiting.add(queueBatch(listId, queue2, from, to));
-    const answers = await Promise.all([...waiting]);
-    const merged = { ...hits };
-    for (const key of missing) {
-      let value;
-      for (const answer of answers) {
-        if (answer[key]) {
-          value = answer[key];
-          break;
-        }
-      }
-      merged[key] = value ?? cache6.get(entryKey2(listId, key, from, to))?.programmes ?? [];
-    }
-    return merged;
-  }
-  var HOUR_MS = 36e5;
-  function hourWindow(nowMs, hoursBack, hoursAhead) {
-    const anchor = Math.floor(nowMs / HOUR_MS) * HOUR_MS;
-    return { from: anchor - Math.max(0, hoursBack) * HOUR_MS, to: anchor + Math.max(1, hoursAhead) * HOUR_MS };
-  }
-
-  // ../lumio-official-plugins/plugins/live-tv/runtime/epg/lookup.ts
-  function findCurrentIndex(programmes, now3) {
-    let lo = 0;
-    let hi = programmes.length - 1;
-    let result = -1;
-    while (lo <= hi) {
-      const mid = lo + hi >>> 1;
-      if (programmes[mid].start <= now3) {
-        result = mid;
-        lo = mid + 1;
-      } else hi = mid - 1;
-    }
-    return result;
-  }
-  var EMPTY3 = { now: null, next: null, later: null };
-  function nowNextLaterFrom(programmes, now3 = Date.now()) {
-    if (!programmes || programmes.length === 0) return EMPTY3;
-    const idx = findCurrentIndex(programmes, now3);
-    const candidate = idx >= 0 ? programmes[idx] : null;
-    const isCurrent = candidate != null && candidate.stop > now3;
-    const nowProgramme = isCurrent ? candidate : null;
-    const nextIdx = nowProgramme ? idx + 1 : Math.max(0, idx + 1);
-    return { now: nowProgramme, next: programmes[nextIdx] ?? null, later: programmes[nextIdx + 1] ?? null };
-  }
-  function sliceSchedule(programmes, fromMs, toMs) {
-    if (!programmes || programmes.length === 0) return [];
-    return programmes.filter((p) => p.stop > fromMs && p.start < toMs);
-  }
+  init_schedule_cache();
+  init_lookup();
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/epg/auto-roll.ts
   function scheduleNextBoundary(data, onBoundary) {
@@ -197325,12 +199142,12 @@ ${cue.text}`).join("\n\n")}
   }
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/results-pagination.tsx
-  var import_react90 = __toESM(require_dist89(), 1);
+  var import_react91 = __toESM(require_dist89(), 1);
   init_jsx_runtime_shim();
   function ResultsPagination2({ currentPage, totalPages, onPageChange }) {
     if (totalPages <= 1) return null;
     return /* @__PURE__ */ jsx("div", { className: "flex items-center justify-center rounded-[1.75rem] border border-white/10 bg-slate-950/60 px-4 py-4", children: /* @__PURE__ */ jsx(
-      import_react90.Pagination,
+      import_react91.Pagination,
       {
         total: totalPages,
         page: currentPage,
@@ -197356,6 +199173,7 @@ ${cue.text}`).join("\n\n")}
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/live-tv-grid.tsx
   init_live_tv_data();
+  init_index_client();
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/live-tv-shell.tsx
   var LIVE_TV_BROWSE_PAGE_ID = "live-tv-browse";
@@ -197369,20 +199187,28 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
+  // ../lumio-official-plugins/plugins/live-tv/runtime/live-tv-grid.tsx
+  init_tv_settings_store();
+
   // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-player-props.ts
   init_live_tv_data();
+  init_live_tv_model();
   function buildTvPlayerProps(args) {
-    const { model, settings, channel, locale, gateOpen } = args;
+    const { model, settings, channel, locale, gateOpen, phone } = args;
     return {
       channelNumber: model.channelNumber(channel),
       quality: qualityFromName(channel.name),
       favourite: model.pinnedSet.has(channelKey(channel)),
       bannerHideMs: settings.bannerHideMs,
       neighbours: model.channels,
+      pinnedKeys: [...model.pinnedSet],
       nowFor: model.nowFor,
       nowMs: model.nowMs,
       locale,
       gateOpen,
+      phone,
+      fullscreenOnRotate: settings.fullscreenOnRotate,
+      keepAwake: settings.keepAwake,
       onToggleFavourite: () => model.togglePin(channel),
       onOpenChannelDetails: args.onOpenChannelDetails,
       onOpenMultiview: args.onOpenMultiview,
@@ -197457,37 +199283,8 @@ ${cue.text}`).join("\n\n")}
     return assignTile(state, free === -1 ? state.tiles.length - 1 : free, key);
   }
 
-  // ../lumio-official-plugins/plugins/live-tv/runtime/hooks/useSchedules.ts
-  init_react_shim();
-  init_live_tv_data();
-  var EMPTY5 = {};
-  function useSchedules(channels, from, to, listId = LIVE_TV_GLOBAL_EPG_ID) {
-    const keys3 = useMemo(() => [...new Set(channels.map((channel) => channelKey(channel)))], [channels]);
-    const keysId = keys3.join(",");
-    const [state, setState] = useState(() => ({ schedules: EMPTY5, loading: false }));
-    useEffect(() => {
-      if (!listId || keys3.length === 0 || !Number.isFinite(from) || !Number.isFinite(to) || to <= from) {
-        setState({ schedules: EMPTY5, loading: false });
-        return;
-      }
-      let live2 = true;
-      const cached = getCachedSchedules(listId, keys3, from, to);
-      if (cached.missing.length === 0) {
-        setState({ schedules: cached.schedules, loading: false });
-        return;
-      }
-      setState({ schedules: cached.schedules, loading: true });
-      fetchSchedules(listId, keys3, from, to).then((schedules) => {
-        if (live2) setState({ schedules, loading: false });
-      }).catch(() => {
-        if (live2) setState((prev) => ({ schedules: prev.schedules, loading: false }));
-      });
-      return () => {
-        live2 = false;
-      };
-    }, [listId, keysId, from, to]);
-    return state;
-  }
+  // ../lumio-official-plugins/plugins/live-tv/runtime/live-tv-grid.tsx
+  init_useSchedules();
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/view-helpers.ts
   init_react_shim();
@@ -197535,6 +199332,7 @@ ${cue.text}`).join("\n\n")}
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/view-helpers.ts
   init_index_client();
+  init_live_tv_model();
   function useChannelGeneration() {
     const [generation, setGeneration] = useState(0);
     useEffect(() => subscribeChannelGeneration(() => setGeneration((value) => value + 1)), []);
@@ -197751,6 +199549,7 @@ ${cue.text}`).join("\n\n")}
     const [groupDropdownOpen, setGroupDropdownOpen] = useState(false);
     const [pinVersion, setPinVersion] = useState(0);
     const [currentPage, setCurrentPage] = useState(1);
+    const [logoComplete, setLogoComplete] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
     const [loadedLogoUrls, setLoadedLogoUrls] = useState({});
     const [lists, setLists] = useState([]);
@@ -197852,12 +199651,12 @@ ${cue.text}`).join("\n\n")}
         }
         if (event.key === "ArrowUp") {
           const grid = current2.closest(".live-tv-channel-grid");
-          const card = current2.closest(".live-tv-channel-grid > div");
+          const card2 = current2.closest(".live-tv-channel-grid > div");
           const menuButton = tvMenuButtonRef.current;
-          if (!grid || !card || !menuButton) return;
+          if (!grid || !card2 || !menuButton) return;
           const firstCard = grid.firstElementChild;
           if (!firstCard) return;
-          if (Math.abs(card.getBoundingClientRect().top - firstCard.getBoundingClientRect().top) > 8) return;
+          if (Math.abs(card2.getBoundingClientRect().top - firstCard.getBoundingClientRect().top) > 8) return;
           event.preventDefault();
           event.stopPropagation();
           menuButton.focus();
@@ -197972,6 +199771,38 @@ ${cue.text}`).join("\n\n")}
       setCurrentPage(1);
     }, [search, activeGroup, activeListId]);
     const activeList = activeListId && activeListId !== FAVORITES_LIST_ID ? lists.find((list) => list.id === activeListId) ?? null : null;
+    const logoCompleteTargets = useMemo(
+      () => (activeList ? [activeList] : lists).filter(
+        (list) => list.kind !== "custom" && Boolean(list.source) && isLogoFallbackEnabled(list)
+      ),
+      [activeList, lists]
+    );
+    async function handleCompleteLogos() {
+      const targets = logoCompleteTargets;
+      if (targets.length === 0) return;
+      const listCount = targets.length;
+      let matched = 0;
+      let total = 0;
+      let completed = 0;
+      try {
+        for (const list of targets) {
+          setLogoComplete({ status: "running", current: completed + 1, listCount });
+          const result = await completeLogos(list.source);
+          matched += result.matched;
+          total += result.total;
+          completed += 1;
+        }
+        setLogoComplete({ status: "done", matched, total });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        setLogoComplete({
+          status: "error",
+          // En enda lista har inget delresultat att redovisa (0 av 1 säger
+          // inget) — bara flerlistefallet får den sammansatta texten.
+          error: listCount > 1 ? h("logoCompletePartialError", { completed, total: listCount, error: message }) : message
+        });
+      }
+    }
     const customLists = useMemo(() => lists.filter((list) => list.kind === "custom"), [lists]);
     function channelsForList(list) {
       if (list.kind === "custom") return customChannelsByList[list.id] ?? [];
@@ -198058,13 +199889,22 @@ ${cue.text}`).join("\n\n")}
     }, [currentPage, safeCurrentPage]);
     useEffect(() => {
       let cancelled = false;
-      const logoEntries = pagedChannels.map((channel) => ({ key: channel.url, src: getLiveTvLogoSrc(channel.logo) })).filter((entry) => Boolean(entry.src));
+      const logoEntries = pagedChannels.map((channel) => ({
+        key: channel.url,
+        primarySrc: getLiveTvLogoSrc(channel.logo),
+        fallbackSrc: getLiveTvLogoSrc(channel.logoFallback)
+      })).filter((entry) => Boolean(entry.primarySrc || entry.fallbackSrc));
       if (logoEntries.length === 0) {
         setLoadedLogoUrls({});
         return;
       }
       const initialLoaded = Object.fromEntries(
-        logoEntries.filter((entry) => rememberedChannelLogoSrcs.get(entry.key) === entry.src || isLiveTvLogoLoaded(entry.src)).map((entry) => [entry.key, entry.src])
+        logoEntries.map((entry) => {
+          const candidate = [entry.primarySrc, entry.fallbackSrc].find(
+            (candidateSrc) => Boolean(candidateSrc) && (rememberedChannelLogoSrcs.get(entry.key) === candidateSrc || isLiveTvLogoLoaded(candidateSrc))
+          );
+          return candidate ? [entry.key, candidate] : null;
+        }).filter((pair) => pair !== null)
       );
       Object.entries(initialLoaded).forEach(([key, src]) => rememberedChannelLogoSrcs.set(key, src));
       setLoadedLogoUrls((current2) => ({ ...current2, ...initialLoaded }));
@@ -198075,15 +199915,19 @@ ${cue.text}`).join("\n\n")}
           if (cancelled) break;
           const batch = pendingEntries.slice(i, i + batchSize);
           const results = await Promise.all(
-            batch.map(async (entry) => ({
-              key: entry.key,
-              src: entry.src,
-              ok: await preloadLiveTvLogo(entry.src)
-            }))
+            batch.map(async (entry) => {
+              if (entry.primarySrc && await preloadLiveTvLogo(entry.primarySrc)) {
+                return { key: entry.key, src: entry.primarySrc };
+              }
+              if (entry.fallbackSrc && await preloadLiveTvLogo(entry.fallbackSrc)) {
+                return { key: entry.key, src: entry.fallbackSrc };
+              }
+              return { key: entry.key, src: null };
+            })
           );
           if (cancelled) break;
           const batchLoaded = Object.fromEntries(
-            results.filter((result) => result.ok).map((result) => [result.key, result.src])
+            results.filter((result) => Boolean(result.src)).map((result) => [result.key, result.src])
           );
           Object.entries(batchLoaded).forEach(([key, src]) => rememberedChannelLogoSrcs.set(key, src));
           if (Object.keys(batchLoaded).length > 0) {
@@ -198380,6 +200224,20 @@ ${cue.text}`).join("\n\n")}
                   children: t("liveTvCreateList")
                 }
               ),
+              isTv ? null : /* @__PURE__ */ jsx(
+                "button",
+                {
+                  type: "button",
+                  ...tvStation,
+                  "data-testid": "live-tv-logo-complete",
+                  onClick: () => void handleCompleteLogos(),
+                  disabled: logoComplete?.status === "running" || logoCompleteTargets.length === 0,
+                  className: `flex h-9 items-center px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] ${neutralPillClass} disabled:cursor-default disabled:opacity-50`,
+                  children: logoComplete?.status === "running" ? logoComplete.listCount > 1 ? h("logoCompleteRunningProgress", { current: logoComplete.current, total: logoComplete.listCount }) : h("logoCompleteRunning") : h("logoCompleteButton")
+                }
+              ),
+              !isTv && logoComplete?.status === "done" ? /* @__PURE__ */ jsx("span", { className: "text-xs text-slate-500", children: h("logoCompleteResult", { matched: logoComplete.matched, total: logoComplete.total }) }) : null,
+              !isTv && logoComplete?.status === "error" ? /* @__PURE__ */ jsx("span", { role: "alert", className: "max-w-[22rem] truncate text-xs text-red-400", title: logoComplete.error, children: logoComplete.error }) : null,
               /* @__PURE__ */ jsxs("div", { className: "ml-auto flex items-center gap-3", children: [
                 isTv ? null : /* @__PURE__ */ jsxs("span", { className: "text-xs text-white", children: [
                   filtered.length,
@@ -198527,6 +200385,9 @@ ${cue.text}`).join("\n\n")}
                 /* @__PURE__ */ jsxs("div", { className: "space-y-4 xl:w-[60%]", children: [
                   /* @__PURE__ */ jsx("div", { className: "live-tv-channel-grid grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-3 2xl:grid-cols-4", children: pagedChannels.map((channel, i) => {
                     const logoSrc = loadedLogoUrls[channel.url] ?? null;
+                    const primaryLogoSrc = getLiveTvLogoSrc(channel.logo);
+                    const reserveLogoSrc = getLiveTvLogoSrc(channel.logoFallback);
+                    const cardFallbackSrc = logoSrc && logoSrc === primaryLogoSrc ? reserveLogoSrc : void 0;
                     const channelListKey = `${channel.name}::${channel.url}`;
                     const isListPickerOpen = listPickerChannelKey === channelListKey;
                     const isInAnyList = customLists.some((list) => isChannelInLiveTvList(list.id, channel));
@@ -198538,6 +200399,7 @@ ${cue.text}`).join("\n\n")}
                           LiveTvLogoImage,
                           {
                             src: logoSrc,
+                            fallbackSrc: cardFallbackSrc,
                             alt: channel.name,
                             className: "h-full w-full object-contain p-2",
                             onError: () => {
@@ -198745,6 +200607,8 @@ ${cue.text}`).join("\n\n")}
             locale,
             // Rutnätet har ingen PIN-grind över spelaren.
             gateOpen: false,
+            // Rutnätet lever utanför TV-scenen — ingen telefonmätning finns.
+            phone: false,
             onOpenGuide: () => {
               setActiveChannel(null);
               goBrowse("guide");
@@ -199133,6 +200997,7 @@ ${cue.text}`).join("\n\n")}
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/hooks/useEpgLoadStatus.ts
   init_react_shim();
+  init_now_snapshot();
   function useEpgLoadStatus(listId, urls) {
     const [state, setState] = useState(() => getActiveNowSnapshot());
     useEffect(() => {
@@ -199211,6 +201076,8 @@ ${cue.text}`).join("\n\n")}
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_live_tv_data();
+  init_live_tv_model();
+  init_tv_settings_store();
   init_jsx_runtime_shim();
   var PLACEHOLDER_NAME_RE2 = /^[\s=\-_*•·]+|=+/;
   var HERO_WINDOW = 50;
@@ -199316,11 +201183,14 @@ ${cue.text}`).join("\n\n")}
       focused ? /* @__PURE__ */ jsxs("div", { className: "space-y-3 rounded-3xl border border-white/10 bg-white/[0.02] p-4", children: [
         /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center gap-3", children: [
           (() => {
-            const logoSrc = getLiveTvLogoSrc(focused.channel.logo);
+            const primarySrc = getLiveTvLogoSrc(focused.channel.logo);
+            const fallbackSrc = getLiveTvLogoSrc(focused.channel.logoFallback);
+            const logoSrc = primarySrc ?? fallbackSrc;
             return logoSrc ? /* @__PURE__ */ jsx(
               LiveTvLogoImage,
               {
                 src: logoSrc,
+                fallbackSrc: primarySrc ? fallbackSrc : void 0,
                 alt: "",
                 className: "h-10 w-10 rounded object-contain bg-slate-800/90 p-1"
               }
@@ -199395,6 +201265,8 @@ ${cue.text}`).join("\n\n")}
             channel: activeChannel,
             locale,
             gateOpen: false,
+            // Startsidan lever utanför TV-scenen — ingen telefonmätning finns.
+            phone: false,
             onOpenGuide: () => {
               closePlayer();
               goBrowse("guide");
@@ -199423,6 +201295,7 @@ ${cue.text}`).join("\n\n")}
   // ../lumio-official-plugins/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
   init_react_shim();
   init_plugin_sdk();
+  init_reminders();
   init_live_tv_ui();
   init_jsx_runtime_shim();
   function LiveTvRemindersMount() {
@@ -199489,31 +201362,34 @@ ${cue.text}`).join("\n\n")}
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
+  init_live_tv_model();
   init_live_tv_ui();
+  init_channel_locks();
+  init_useNarrowSurface();
 
-  // ../lumio-official-plugins/plugins/live-tv/runtime/hooks/useNarrowSurface.ts
+  // ../lumio-official-plugins/plugins/live-tv/runtime/hooks/usePhoneSurface.ts
   init_react_shim();
   init_plugin_sdk();
-  function useNarrowSurface(ref) {
-    const [narrow, setNarrow] = useState(false);
+  function usePhoneSurface(ref) {
+    const [phone, setPhone] = useState(false);
     useEffect(() => {
       if (typeof document === "undefined") return;
-      const read8 = () => {
+      const read9 = () => {
         const from = ref?.current ?? null;
         const box = from ? from.closest(`[${TV_SCENE_BOX_ATTR}]`) : document.querySelector(`[${TV_SCENE_BOX_ATTR}]`);
-        return box?.getAttribute(TV_SCENE_NARROW_ATTR) === "1";
+        return box?.getAttribute(TV_SCENE_PHONE_ATTR) === "1";
       };
-      const sync2 = () => setNarrow(read8());
+      const sync2 = () => setPhone(read9());
       sync2();
       const observer2 = new MutationObserver(sync2);
       observer2.observe(document.documentElement, {
         subtree: true,
         attributes: true,
-        attributeFilter: [TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR]
+        attributeFilter: [TV_SCENE_BOX_ATTR, TV_SCENE_PHONE_ATTR]
       });
       return () => observer2.disconnect();
     }, [ref]);
-    return narrow;
+    return phone;
   }
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/hooks/useSwipeBack.ts
@@ -199570,6 +201446,7 @@ ${cue.text}`).join("\n\n")}
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_tv_strings();
+  init_guide_surface();
   init_tv_ui();
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-hold-affordance.tsx
@@ -199687,6 +201564,9 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-shell.tsx
+  init_tv_settings_store();
+
   // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-zap.ts
   function resolveZap(digits, favourites, channels) {
     const n = Number.parseInt(digits, 10);
@@ -199739,8 +201619,333 @@ ${cue.text}`).join("\n\n")}
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
+  init_live_tv_model();
+  init_plugin_sdk();
   init_tv_ui();
   init_tv_strings();
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/hub-data.ts
+  init_react_shim();
+  init_live_tv_model();
+  init_useSchedules();
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-spotlight.ts
+  init_live_tv_data();
+  function shuffleWithSeed(items, seed) {
+    let a = seed >>> 0 || 1;
+    const rnd = () => {
+      a = a + 1831565813 >>> 0;
+      let t = a;
+      t = Math.imul(t ^ t >>> 15, t | 1);
+      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+    const out = [...items];
+    for (let i = out.length - 1; i > 0; i--) {
+      const j = Math.floor(rnd() * (i + 1));
+      [out[i], out[j]] = [out[j], out[i]];
+    }
+    return out;
+  }
+  function pickSpotlight(input) {
+    const favourites = input.seed === void 0 ? input.favourites : shuffleWithSeed(input.favourites, input.seed);
+    const seen = /* @__PURE__ */ new Set();
+    const out = [];
+    const add = (channel, reason) => {
+      const key = channelKey(channel);
+      if (seen.has(key) || out.length >= input.count) return;
+      seen.add(key);
+      out.push({ channel, reason });
+    };
+    const full = () => out.length >= input.count;
+    for (const c of favourites) {
+      if (full()) return out;
+      if (input.nowFor(c).now) add(c, "favouriteLive");
+    }
+    for (const c of favourites) {
+      if (full()) return out;
+      add(c, "favourite");
+    }
+    for (const c of input.recent) {
+      if (full()) return out;
+      add(c, "recent");
+    }
+    for (const c of input.channels) {
+      if (full()) return out;
+      if (input.nowFor(c).now) add(c, "onNow");
+    }
+    return out;
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/hub-data.ts
+  var ALL_STEP = 36;
+  var MAX_CHIPS = 12;
+  var REPLAY_DAYS = 3;
+  function useHubData(model, spotlightCount) {
+    const [group, setGroup] = useState(null);
+    const [visible, setVisible] = useState(ALL_STEP);
+    const epgStatus2 = useEpgLoadStatus(model.epgListId, model.epgUrls);
+    const favourites = model.favouriteChannels;
+    const recent = useMemo(() => model.history.map((h) => model.byUrl.get(h.url)).filter((c) => Boolean(c)), [model.history, model.byUrl]);
+    const [spotlightSeed] = useState(() => Math.floor(Math.random() * 4294967295));
+    const spotlight = useMemo(() => pickSpotlight({ favourites, recent, channels: model.channels, nowFor: model.nowFor, count: spotlightCount, seed: spotlightSeed }), [favourites, recent, model.channels, model.nowFor, spotlightCount, spotlightSeed]);
+    const replayChannels = useMemo(() => pickReplayChannels(favourites, recent), [favourites, recent]);
+    const replayWindow = useMemo(() => {
+      const to = startOfLocalDay(model.nowMs, 1);
+      return { from: to - REPLAY_DAYS * 864e5, to };
+    }, [model.nowMs]);
+    const { schedules: replaySchedules } = useSchedules(replayChannels, replayWindow.from, replayWindow.to);
+    const replays = useMemo(() => catchUpAcross(replayChannels, replaySchedules, model.nowMs, 8), [replayChannels, replaySchedules, model.nowMs]);
+    const chips = useMemo(() => model.groups.slice(0, MAX_CHIPS), [model.groups]);
+    const filtered = useMemo(() => {
+      if (group === "__favs") return favourites;
+      if (group) return model.channels.filter((c) => c.group === group);
+      return model.channels;
+    }, [group, favourites, model.channels]);
+    const shown = filtered.slice(0, visible);
+    return { favourites, recent, spotlight, replays, chips, filtered, shown, group, setGroup, visible, setVisible, epgStatus: epgStatus2 };
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  init_react_shim();
+  init_live_tv_data();
+  init_live_tv_ui();
+  init_live_tv_model();
+  init_tv_ui();
+  init_tv_strings();
+  init_mobile_tokens();
+  init_mobile_icons();
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-header.tsx
+  init_tv_ui();
+  init_tv_strings();
+  init_mobile_tokens();
+  init_mobile_icons();
+  init_jsx_runtime_shim();
+  function MobileHeader({ title, right, back, onBack, testId }) {
+    const { tt } = useTvText();
+    return /* @__PURE__ */ jsxs("div", { "data-testid": testId, style: { height: MT.HEADER_H, minHeight: MT.HEADER_H, flexShrink: 0, padding: `0 ${MT.PAD}px 0 ${MT.HEADER_LEFT}px`, display: "flex", alignItems: "center", gap: 10 }, children: [
+      back ? /* @__PURE__ */ jsx(
+        "div",
+        {
+          ...station(onBack ?? (() => {
+          }), void 0, { "aria-label": tt("back"), "data-testid": "header-back" }),
+          style: { width: 40, height: 40, minHeight: 40, borderRadius: 999, background: MT.s08, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: "pointer" },
+          children: /* @__PURE__ */ jsx(MIcons.CaretLeft, {})
+        }
+      ) : null,
+      /* @__PURE__ */ jsx("div", { style: { flex: 1, fontSize: 21, fontWeight: 600, ...ellipsis }, children: title }),
+      right ? /* @__PURE__ */ jsx("div", { style: { flexShrink: 0, display: "flex", alignItems: "center", gap: 8 }, children: right }) : null
+    ] });
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  init_mobile_sheet();
+  init_mobile_logo();
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-chips.tsx
+  init_tv_ui();
+  init_mobile_tokens();
+  init_jsx_runtime_shim();
+  function MobileChips({ items, value, onChange, testId, emphasisKey, dimKeys }) {
+    return /* @__PURE__ */ jsx("div", { "data-testid": testId, "data-row": "", style: { display: "flex", gap: 8, overflowX: "auto", minHeight: 44, padding: "5px 0", alignItems: "center" }, children: items.map(({ key, label: label2, id: id4 }) => {
+      const active2 = key === value;
+      const emphasis = emphasisKey !== void 0 && key === emphasisKey;
+      const dim = dimKeys?.includes(key) ?? false;
+      return /* @__PURE__ */ jsx(
+        "div",
+        {
+          "data-testid": `chip-${id4}`,
+          ...station(() => onChange(key), void 0, { "aria-pressed": String(active2) }),
+          style: {
+            minHeight: 34,
+            padding: "0 14px",
+            borderRadius: 999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 14,
+            whiteSpace: "nowrap",
+            flexShrink: 0,
+            background: emphasis ? "#f3f4f8" : active2 ? MT.s16 : MT.s05,
+            border: active2 && !emphasis ? `1px solid ${MT.line20}` : "1px solid transparent",
+            color: emphasis ? "#111" : active2 ? MT.text : MT.muted70,
+            fontWeight: active2 ? 600 : 400,
+            opacity: dim ? 0.65 : void 0,
+            cursor: "pointer"
+          },
+          children: label2
+        },
+        id4
+      );
+    }) });
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  init_jsx_runtime_shim();
+  var SPOTLIGHT_COUNT_PHONE = 1;
+  var RECENT_MAX = 8;
+  var card = { background: MT.s07, border: `1px solid ${MT.line08}`, overflow: "hidden", cursor: "pointer" };
+  function LiveTag3({ children }) {
+    return /* @__PURE__ */ jsxs("span", { style: { display: "inline-flex", alignItems: "center", gap: 6, minHeight: 24, padding: "0 10px", borderRadius: 8, background: MT.liveSoft, color: MT.liveText, fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", whiteSpace: "nowrap" }, children: [
+      /* @__PURE__ */ jsx("span", { style: { width: 7, height: 7, borderRadius: 999, background: MT.live } }),
+      children
+    ] });
+  }
+  function ReasonTag({ children }) {
+    return /* @__PURE__ */ jsx("span", { style: { display: "inline-flex", alignItems: "center", minHeight: 22, padding: "0 8px", borderRadius: 7, background: "rgba(0,0,0,0.5)", color: MT.text, fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", whiteSpace: "nowrap" }, children });
+  }
+  function ReplayTag({ children }) {
+    return /* @__PURE__ */ jsx("span", { style: { display: "inline-flex", alignItems: "center", minHeight: 22, padding: "0 8px", borderRadius: 7, background: MT.accMix(22), color: "#ffd9c9", fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", whiteSpace: "nowrap" }, children });
+  }
+  function SectionTitle({ title, sub }) {
+    return /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: 10, minWidth: 0 }, children: [
+      /* @__PURE__ */ jsx("span", { style: { fontSize: 17, fontWeight: 600, ...ellipsis }, children: title }),
+      sub ? /* @__PURE__ */ jsx("span", { style: { fontSize: 13, color: MT.dim, flexShrink: 0 }, children: sub }) : null
+    ] });
+  }
+  function TvHubPhone({ model, nav }) {
+    const { tt, locale } = useTvText();
+    const [playlistOpen, setPlaylistOpen] = useState(false);
+    const { favourites, recent, spotlight, replays, chips, filtered, shown, group, setGroup, visible, setVisible, epgStatus: epgStatus2 } = useHubData(model, SPOTLIGHT_COUNT_PHONE);
+    const noProgrammeLabel = epgStatus2 === "loading" ? tt("loadingGuide") : tt("noProgramme");
+    const reasonLabel = (reason) => reason === "favouriteLive" ? tt("spotlightFavouriteLive") : reason === "favourite" ? tt("spotlightFavourite") : reason === "recent" ? tt("spotlightRecent") : tt("spotlightOnNow");
+    const minutesLeft = (stop) => tt("minutesLeft", { min: Math.max(0, Math.round((stop - model.nowMs) / 6e4)) });
+    const cardStation = (channel, extra) => station(() => nav.play({ channel }), (el) => nav.channelMenu(channel, el), extra);
+    const chipItems = [
+      { key: null, label: tt("allGroups"), id: "all" },
+      ...favourites.length ? [{ key: "__favs", label: tt("favourites"), id: "favs" }] : [],
+      ...chips.map((g) => ({ key: g, label: g, id: g }))
+    ];
+    const playlistItems = [
+      ...[{ id: null, name: tt("allPlaylists") }, ...model.playlists].map((p) => ({
+        key: p.id ?? "__all",
+        label: p.name,
+        run: () => {
+          model.setActivePlaylist(p.id);
+          setGroup(null);
+          setVisible(ALL_STEP);
+        }
+      })),
+      { key: "__add", label: tt("addPlaylist"), run: () => nav.go("settings", { tab: "playlists" }) }
+    ];
+    const pill = /* @__PURE__ */ jsxs("div", { "data-testid": "playlist-pill", ...station(() => setPlaylistOpen(true)), style: { minHeight: 36, padding: "0 12px", borderRadius: 999, background: MT.s12, display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 600, cursor: "pointer", maxWidth: 180 }, children: [
+      /* @__PURE__ */ jsx("span", { style: ellipsis, children: model.activePlaylistName ?? tt("allPlaylists") }),
+      /* @__PURE__ */ jsx("span", { style: { flexShrink: 0, display: "inline-flex" }, children: /* @__PURE__ */ jsx(MIcons.CaretDown, { size: 16 }) })
+    ] });
+    const sheet = playlistOpen ? /* @__PURE__ */ jsx(MobileSheet, { title: tt("playlists"), items: playlistItems, onClose: () => setPlaylistOpen(false), pushLayer: nav.pushLayer, testId: "playlist-sheet" }) : null;
+    const header = /* @__PURE__ */ jsx("div", { style: { margin: `0 -${MT.PAD}px` }, children: /* @__PURE__ */ jsx(MobileHeader, { title: tt("liveTv"), right: pill }) });
+    if (model.allChannels.length === 0) {
+      return /* @__PURE__ */ jsxs("div", { "data-scroll": "", style: { flex: 1, overflowY: "auto", padding: `0 ${MT.PAD}px`, paddingBottom: MT.SCROLL_PAD_BOTTOM, display: "flex", flexDirection: "column", gap: 14 }, children: [
+        header,
+        /* @__PURE__ */ jsxs("div", { style: { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 32, gap: 12 }, children: [
+          /* @__PURE__ */ jsx("div", { style: { fontSize: 18, fontWeight: 600 }, children: model.channelsLoading ? tt("loadingChannels") : tt("emptyTitle") }),
+          /* @__PURE__ */ jsx("div", { style: { fontSize: 15, color: MT.muted }, children: model.channelsLoading ? "" : tt("emptyBody") }),
+          /* @__PURE__ */ jsx("div", { ...station(() => nav.go("settings"), void 0, { "data-init": "" }), style: { marginTop: 8, minHeight: 48, padding: "0 24px", borderRadius: 999, background: MT.acc, color: MT.onAcc, display: "inline-flex", alignItems: "center", fontSize: 16, fontWeight: 600, cursor: "pointer" }, children: tt("openSettings") })
+        ] }),
+        sheet
+      ] });
+    }
+    const pick3 = spotlight[0];
+    const recentCards = recent.filter((c) => !replays.some((r) => channelKey(r.channel) === channelKey(c))).slice(0, RECENT_MAX);
+    return /* @__PURE__ */ jsxs("div", { "data-scroll": "", style: { flex: 1, overflowY: "auto", padding: `0 ${MT.PAD}px`, paddingBottom: MT.SCROLL_PAD_BOTTOM, display: "flex", flexDirection: "column", gap: 14 }, children: [
+      header,
+      model.appTooOld ? /* @__PURE__ */ jsx("div", { "data-testid": "live-tv-app-too-old", style: { padding: "10px 14px", borderRadius: 12, background: "rgba(244,132,95,0.18)", color: "#f4845f", fontSize: 14 }, children: tt("appTooOld") }) : null,
+      /* @__PURE__ */ jsxs("div", { "data-testid": "hub-search", ...station(() => nav.go("search")), style: { minHeight: 44, borderRadius: 14, background: MT.s10, padding: "0 14px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }, children: [
+        /* @__PURE__ */ jsx("span", { style: { display: "inline-flex", color: "rgba(243,244,248,0.55)", flexShrink: 0 }, children: /* @__PURE__ */ jsx(MIcons.MagnifyingGlass, { size: 18 }) }),
+        /* @__PURE__ */ jsx("span", { style: { fontSize: 15, color: "rgba(243,244,248,0.55)", ...ellipsis, flex: 1 }, children: tt("searchPlaceholder") })
+      ] }),
+      pick3 ? (() => {
+        const info = model.nowFor(pick3.channel);
+        const number2 = model.channelNumber(pick3.channel);
+        return /* @__PURE__ */ jsxs("div", { "data-testid": "hub-spotlight", ...cardStation(pick3.channel, { "data-init": "" }), style: { ...card, borderRadius: 18 }, children: [
+          /* @__PURE__ */ jsxs(ChannelArt, { channel: pick3.channel, height: 186, radius: 0, children: [
+            /* @__PURE__ */ jsx("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 42%, rgba(0,0,0,0.78))" } }),
+            info.now ? /* @__PURE__ */ jsx("div", { style: { position: "absolute", top: 10, left: 10 }, children: /* @__PURE__ */ jsx(LiveTag3, { children: tt("live") }) }) : null,
+            /* @__PURE__ */ jsx("div", { style: { position: "absolute", top: 10, right: 10 }, children: /* @__PURE__ */ jsx(ReasonTag, { children: reasonLabel(pick3.reason) }) }),
+            /* @__PURE__ */ jsxs("div", { style: { position: "absolute", left: 12, right: 12, bottom: 10, fontSize: 13, color: "rgba(243,244,248,0.8)", ...ellipsis }, children: [
+              number2 ? `${number2} \xB7 ` : "",
+              pick3.channel.name
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { style: { padding: "12px 14px", display: "flex", flexDirection: "column", gap: 6 }, children: [
+            /* @__PURE__ */ jsx("div", { style: { fontSize: 18, fontWeight: 600, ...ellipsis }, children: info.now ? info.now.title : noProgrammeLabel }),
+            info.now ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+              /* @__PURE__ */ jsx("div", { style: { fontSize: 13, color: MT.muted, ...ellipsis }, children: `${formatClock(info.now.start, locale)}\u2013${formatClock(info.now.stop, locale)} \xB7 ${minutesLeft(info.now.stop)}` }),
+              /* @__PURE__ */ jsx(Progress, { value: progressOf(info.now.start, info.now.stop, model.nowMs), height: 5 })
+            ] }) : null
+          ] })
+        ] });
+      })() : null,
+      favourites.length > 0 ? /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: 10, minWidth: 0 }, children: [
+        /* @__PURE__ */ jsx(SectionTitle, { title: tt("favourites"), sub: tt("channelsCount", { count: favourites.length }) }),
+        /* @__PURE__ */ jsx("div", { "data-row": "", "data-testid": "hub-favourites", style: { display: "flex", gap: 10, overflowX: "auto", scrollSnapType: "x mandatory", margin: `0 -${MT.PAD}px`, padding: `0 ${MT.PAD}px`, scrollPaddingLeft: MT.PAD }, children: favourites.map((channel) => {
+          const info = model.nowFor(channel);
+          return /* @__PURE__ */ jsxs("div", { ...station(() => nav.openChannel(channel), (el) => nav.channelMenu(channel, el)), style: { width: 156, minHeight: 72, flexShrink: 0, scrollSnapAlign: "start", borderRadius: 14, background: MT.s08, padding: "0 10px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }, children: [
+            /* @__PURE__ */ jsx(MobileLogo, { channel, width: 44, height: 30, radius: 6 }),
+            /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+              /* @__PURE__ */ jsx("div", { style: { fontSize: 14, fontWeight: 600, lineHeight: 1.25, ...clamp2 }, children: channel.name }),
+              /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: MT.muted, ...ellipsis }, children: info.now?.title ?? noProgrammeLabel })
+            ] })
+          ] }, channelKey(channel));
+        }) })
+      ] }) : null,
+      replays.length > 0 || recentCards.length > 0 ? /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: 10, minWidth: 0 }, children: [
+        /* @__PURE__ */ jsx(SectionTitle, { title: tt("continueWatching") }),
+        /* @__PURE__ */ jsxs("div", { "data-row": "", "data-testid": "hub-continue", style: { display: "flex", gap: 10, overflowX: "auto", margin: `0 -${MT.PAD}px`, padding: `0 ${MT.PAD}px` }, children: [
+          replays.map((item) => /* @__PURE__ */ jsxs("div", { ...station(() => nav.play({ channel: item.channel, url: item.url, label: item.programme.title }), (el) => nav.channelMenu(item.channel, el)), style: { ...card, width: 170, flexShrink: 0, borderRadius: 14 }, children: [
+            /* @__PURE__ */ jsxs(ChannelArt, { channel: item.channel, height: 96, radius: 0, children: [
+              /* @__PURE__ */ jsx("div", { style: { position: "absolute", top: 8, right: 8 }, children: /* @__PURE__ */ jsx(ReplayTag, { children: tt("replay") }) }),
+              /* @__PURE__ */ jsx("div", { style: { position: "absolute", left: 8, bottom: 6, color: MT.text, display: "inline-flex" }, children: /* @__PURE__ */ jsx(MIcons.Play, { size: 22 }) })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { style: { padding: "8px 10px", minWidth: 0 }, children: [
+              /* @__PURE__ */ jsx("div", { style: { fontSize: 14, fontWeight: 600, ...ellipsis }, children: item.programme.title }),
+              /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: MT.muted, ...ellipsis }, children: `${item.channel.name} \xB7 ${formatClock(item.programme.start, locale)} \xB7 ${Math.round((item.programme.stop - item.programme.start) / 6e4)} min` })
+            ] })
+          ] }, `${channelKey(item.channel)}:${item.programme.start}`)),
+          recentCards.map((channel) => {
+            const info = model.nowFor(channel);
+            return /* @__PURE__ */ jsxs("div", { ...cardStation(channel), style: { ...card, width: 170, flexShrink: 0, borderRadius: 14 }, children: [
+              /* @__PURE__ */ jsxs(ChannelArt, { channel, height: 96, radius: 0, children: [
+                /* @__PURE__ */ jsx("div", { style: { position: "absolute", top: 8, right: 8 }, children: /* @__PURE__ */ jsx(ReasonTag, { children: tt("spotlightRecent") }) }),
+                /* @__PURE__ */ jsx("div", { style: { position: "absolute", left: 8, bottom: 6, color: MT.text, display: "inline-flex" }, children: /* @__PURE__ */ jsx(MIcons.Play, { size: 22 }) })
+              ] }),
+              /* @__PURE__ */ jsxs("div", { style: { padding: "8px 10px", minWidth: 0 }, children: [
+                /* @__PURE__ */ jsx("div", { style: { fontSize: 14, fontWeight: 600, ...ellipsis }, children: info.now?.title ?? channel.name }),
+                /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: MT.muted, ...ellipsis }, children: channel.name })
+              ] })
+            ] }, `recent:${channelKey(channel)}`);
+          })
+        ] })
+      ] }) : null,
+      /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: 10, minWidth: 0 }, children: [
+        /* @__PURE__ */ jsx(SectionTitle, { title: tt("allChannelsCount", { count: filtered.length.toLocaleString(locale) }) }),
+        /* @__PURE__ */ jsx(MobileChips, { items: chipItems, value: group, onChange: (k) => {
+          setGroup(k);
+          setVisible(ALL_STEP);
+        }, testId: "all-channels-filter-row" }),
+        /* @__PURE__ */ jsx("div", { "data-testid": "all-channels", style: { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }, children: shown.map((channel, index3) => {
+          const info = model.nowFor(channel);
+          const number2 = model.channelNumber(channel);
+          const pinned = model.pinnedSet.has(channelKey(channel));
+          return /* @__PURE__ */ jsxs("div", { ...cardStation(channel, !pick3 && index3 === 0 ? { "data-init": "" } : void 0), style: { ...card, borderRadius: 14, minWidth: 0 }, children: [
+            /* @__PURE__ */ jsxs(ChannelArt, { channel, aspect: "16 / 10", radius: 12, children: [
+              /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: 6, left: 8, fontSize: 12, color: "rgba(243,244,248,0.6)" }, children: number2 ?? "" }),
+              pinned ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: 6, right: 8, color: MT.acc, display: "inline-flex" }, children: /* @__PURE__ */ jsx(MIcons.Heart, { size: 14, filled: true }) }) : null,
+              model.locked.has(channelKey(channel)) ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", bottom: 6, right: 8, color: "rgba(243,244,248,0.6)", display: "inline-flex" }, children: /* @__PURE__ */ jsx(MIcons.Lock, { size: 14 }) }) : null,
+              info.now ? /* @__PURE__ */ jsx("div", { style: { position: "absolute", left: 0, right: 0, bottom: 0 }, children: /* @__PURE__ */ jsx(Progress, { value: progressOf(info.now.start, info.now.stop, model.nowMs), height: 3, track: "rgba(0,0,0,0.4)", style: { borderRadius: 0 } }) }) : null
+            ] }),
+            /* @__PURE__ */ jsxs("div", { style: { padding: "8px 10px", minWidth: 0 }, children: [
+              /* @__PURE__ */ jsx("div", { style: { fontSize: 14, fontWeight: 600, ...ellipsis }, children: channel.name }),
+              /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: MT.muted, ...ellipsis }, children: info.now?.title ?? (qualityFromName(channel.name) ?? channel.group) })
+            ] })
+          ] }, channelKey(channel));
+        }) }),
+        filtered.length > visible ? /* @__PURE__ */ jsx("div", { "data-testid": "show-more", ...station(() => setVisible((v) => v + ALL_STEP)), style: { minHeight: 44, borderRadius: 12, background: MT.s08, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 600, cursor: "pointer" }, children: tt("showMore") }) : null
+      ] }),
+      sheet
+    ] });
+  }
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-vod-hub.tsx
   init_react_shim();
@@ -200093,70 +202298,30 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-spotlight.ts
-  init_live_tv_data();
-  function pickSpotlight(input) {
-    const seen = /* @__PURE__ */ new Set();
-    const out = [];
-    const add = (channel, reason) => {
-      const key = channelKey(channel);
-      if (seen.has(key) || out.length >= input.count) return;
-      seen.add(key);
-      out.push({ channel, reason });
-    };
-    const full = () => out.length >= input.count;
-    for (const c of input.favourites) {
-      if (full()) return out;
-      if (input.nowFor(c).now) add(c, "favouriteLive");
-    }
-    for (const c of input.favourites) {
-      if (full()) return out;
-      add(c, "favourite");
-    }
-    for (const c of input.recent) {
-      if (full()) return out;
-      add(c, "recent");
-    }
-    for (const c of input.channels) {
-      if (full()) return out;
-      if (input.nowFor(c).now) add(c, "onNow");
-    }
-    return out;
-  }
-
   // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-hub.tsx
   init_jsx_runtime_shim();
-  var SPOTLIGHT_COUNT = 3;
-  var ALL_STEP = 36;
-  var MAX_CHIPS = 12;
-  var REPLAY_DAYS = 3;
-  function TvHub({ model, nav }) {
+  var SPOTLIGHT_COUNT_DESKTOP = 3;
+  var ALL_CHANNELS_COLUMNS_DESKTOP = 6;
+  function TvHub(props) {
+    if (props.phone) return /* @__PURE__ */ jsx(TvHubPhone, { ...props });
+    return /* @__PURE__ */ jsx(TvHubDesktop, { ...props });
+  }
+  function TvHubDesktop({ model, nav }) {
     const { tt, locale } = useTvText();
+    const isTv = useTvMode();
     const clock = useTvClockNode(locale);
-    const [group, setGroup] = useState(null);
-    const [visible, setVisible] = useState(ALL_STEP);
+    const spotlightCount = SPOTLIGHT_COUNT_DESKTOP;
+    const allChannelsColumns = ALL_CHANNELS_COLUMNS_DESKTOP;
     const [playlistOpen, setPlaylistOpen] = useState(false);
     const pillRef = useRef(null);
     const menuRef = useRef(null);
-    const epgStatus2 = useEpgLoadStatus(model.epgListId, model.epgUrls);
-    const favourites = model.favouriteChannels;
-    const recent = useMemo(() => model.history.map((h) => model.byUrl.get(h.url)).filter((c) => Boolean(c)), [model.history, model.byUrl]);
-    const spotlight = useMemo(() => pickSpotlight({ favourites, recent, channels: model.channels, nowFor: model.nowFor, count: SPOTLIGHT_COUNT }), [favourites, recent, model.channels, model.nowFor]);
-    const replayChannels = useMemo(() => pickReplayChannels(favourites, recent), [favourites, recent]);
-    const replayWindow = useMemo(() => {
-      const to = startOfLocalDay(model.nowMs, 1);
-      return { from: to - REPLAY_DAYS * 864e5, to };
-    }, [model.nowMs]);
-    const { schedules: replaySchedules } = useSchedules(replayChannels, replayWindow.from, replayWindow.to);
-    const replays = useMemo(() => catchUpAcross(replayChannels, replaySchedules, model.nowMs, 8), [replayChannels, replaySchedules, model.nowMs]);
-    const chips = useMemo(() => model.groups.slice(0, MAX_CHIPS), [model.groups]);
-    const filtered = useMemo(() => {
-      if (group === "__favs") return favourites;
-      if (group) return model.channels.filter((c) => c.group === group);
-      return model.channels;
-    }, [group, favourites, model.channels]);
-    const shown = filtered.slice(0, visible);
+    const { favourites, recent, spotlight, replays, chips, filtered, shown, group, setGroup, visible, setVisible, epgStatus: epgStatus2 } = useHubData(model, spotlightCount);
     const noProgrammeLabel = epgStatus2 === "loading" ? tt("loadingGuide") : tt("noProgramme");
+    const chipItems = [
+      { key: null, label: tt("allGroups"), id: "all" },
+      ...favourites.length ? [{ key: "__favs", label: tt("favourites"), id: "favs" }] : [],
+      ...chips.map((g) => ({ key: g, label: g, id: g }))
+    ];
     const navRef = useRef(nav);
     useEffect(() => {
       navRef.current = nav;
@@ -200178,7 +202343,7 @@ ${cue.text}`).join("\n\n")}
       return /* @__PURE__ */ jsxs("div", { style: { padding: dp(48), display: "flex", flexDirection: "column", gap: dp(16) }, children: [
         /* @__PURE__ */ jsx("div", { style: { fontSize: dp(34), fontWeight: 600 }, children: model.channelsLoading ? tt("loadingChannels") : tt("emptyTitle") }),
         /* @__PURE__ */ jsx("div", { style: { fontSize: dp(20), color: TV2.muted }, children: model.channelsLoading ? "" : tt("emptyBody") }),
-        /* @__PURE__ */ jsx("div", { ...station(() => nav.go("settings"), void 0, { "data-init": "" }), style: { alignSelf: "flex-start", height: dp(52), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV2.acc, color: TV2.onAcc, display: "inline-flex", alignItems: "center", fontSize: dp(19), fontWeight: 600 }, children: tt("openSettings") })
+        /* @__PURE__ */ jsx("div", { ...station(() => nav.go("settings"), void 0, { "data-init": "" }), style: { alignSelf: "flex-start", height: dp(52), minHeight: dp(52), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV2.acc, color: TV2.onAcc, display: "inline-flex", alignItems: "center", fontSize: dp(19), fontWeight: 600 }, children: tt("openSettings") })
       ] });
     }
     return /* @__PURE__ */ jsxs("div", { "data-scroll": "", style: { flex: 1, overflowY: "auto", padding: `${dp(30)}px ${dp(48)}px ${dp(48)}px`, display: "flex", flexDirection: "column", gap: dp(22), scrollPaddingTop: dp(120) }, children: [
@@ -200186,7 +202351,7 @@ ${cue.text}`).join("\n\n")}
       /* @__PURE__ */ jsxs("div", { "data-testid": "hub-topbar", style: { display: "flex", alignItems: "center", flexWrap: "wrap", columnGap: dp(20), rowGap: dp(12) }, children: [
         /* @__PURE__ */ jsx("div", { style: { fontSize: dp(34), fontWeight: 600 }, children: tt("liveTv") }),
         /* @__PURE__ */ jsxs("div", { style: { position: "relative" }, children: [
-          /* @__PURE__ */ jsxs("div", { ref: pillRef, "data-testid": "playlist-pill", ...station(() => setPlaylistOpen(true), void 0, spotlight.length === 0 && shown.length === 0 ? { "data-init": "" } : void 0), style: { height: dp(52), padding: `0 ${dp(22)}px`, borderRadius: 999, background: TV2.s12, display: "inline-flex", alignItems: "center", gap: dp(10), fontSize: dp(20), fontWeight: 600, cursor: "pointer" }, children: [
+          /* @__PURE__ */ jsxs("div", { ref: pillRef, "data-testid": "playlist-pill", ...station(() => setPlaylistOpen(true), void 0, spotlight.length === 0 && shown.length === 0 ? { "data-init": "" } : void 0), style: { height: dp(52), minHeight: dp(52), padding: `0 ${dp(22)}px`, borderRadius: 999, background: TV2.s12, display: "inline-flex", alignItems: "center", gap: dp(10), fontSize: dp(20), fontWeight: 600, cursor: "pointer" }, children: [
             model.activePlaylistName ?? tt("allPlaylists"),
             " ",
             /* @__PURE__ */ jsx(Icons.ChevronDown, {})
@@ -200200,7 +202365,7 @@ ${cue.text}`).join("\n\n")}
                 setGroup(null);
                 setVisible(ALL_STEP);
                 window.setTimeout(() => pillRef.current?.focus({ preventScroll: true }), 0);
-              }, void 0, active2 ? { "data-init": "" } : {}), style: { height: dp(56), padding: `0 ${dp(16)}px`, borderRadius: dp(12), display: "flex", alignItems: "center", justifyContent: "space-between", background: active2 ? TV2.s12 : "transparent", cursor: "pointer" }, children: [
+              }, void 0, active2 ? { "data-init": "" } : {}), style: { height: dp(56), minHeight: dp(56), padding: `0 ${dp(16)}px`, borderRadius: dp(12), display: "flex", alignItems: "center", justifyContent: "space-between", background: active2 ? TV2.s12 : "transparent", cursor: "pointer" }, children: [
                 /* @__PURE__ */ jsx("span", { style: { fontSize: dp(19), fontWeight: 600 }, children: p.name }),
                 /* @__PURE__ */ jsx("span", { style: { fontSize: dp(14), color: "rgba(243,244,248,0.5)" }, children: tt("channelsCount", { count: p.count }) })
               ] }, p.id ?? "__all");
@@ -200208,22 +202373,22 @@ ${cue.text}`).join("\n\n")}
             /* @__PURE__ */ jsx("div", { "data-live-tv-menu-item": "", ...station(() => {
               setPlaylistOpen(false);
               nav.go("settings", { tab: "playlists" });
-            }), style: { height: dp(56), padding: `0 ${dp(16)}px`, display: "flex", alignItems: "center", fontSize: dp(17), color: "rgba(243,244,248,0.65)", borderTop: `1px solid ${TV2.line}`, marginTop: dp(4), cursor: "pointer" }, children: tt("addPlaylist") })
+            }), style: { height: dp(56), minHeight: dp(56), padding: `0 ${dp(16)}px`, display: "flex", alignItems: "center", fontSize: dp(17), color: "rgba(243,244,248,0.65)", borderTop: `1px solid ${TV2.line}`, marginTop: dp(4), cursor: "pointer" }, children: tt("addPlaylist") })
           ] }) : null
         ] }),
-        /* @__PURE__ */ jsxs("div", { ...station(() => nav.go("search")), style: { height: dp(52), minWidth: dp(420), padding: `0 ${dp(22)}px`, borderRadius: 999, background: TV2.s10, display: "inline-flex", alignItems: "center", gap: dp(12), color: "rgba(243,244,248,0.7)", fontSize: dp(20), cursor: "pointer" }, children: [
+        /* @__PURE__ */ jsxs("div", { ...station(() => nav.go("search")), style: { height: dp(52), minHeight: dp(52), minWidth: dp(420), padding: `0 ${dp(22)}px`, borderRadius: 999, background: TV2.s10, display: "inline-flex", alignItems: "center", gap: dp(12), color: "rgba(243,244,248,0.7)", fontSize: dp(20), cursor: "pointer" }, children: [
           /* @__PURE__ */ jsx(Icons.Search, { size: dp(20) }),
           " ",
           tt("searchPlaceholder")
         ] }),
-        /* @__PURE__ */ jsxs("div", { ...station(() => nav.go("guide")), style: { height: dp(52), padding: `0 ${dp(22)}px`, borderRadius: 999, border: `1px solid ${TV2.lineStrong}`, background: TV2.s06, display: "inline-flex", alignItems: "center", gap: dp(10), fontSize: dp(20), cursor: "pointer" }, children: [
+        /* @__PURE__ */ jsxs("div", { ...station(() => nav.go("guide")), style: { height: dp(52), minHeight: dp(52), padding: `0 ${dp(22)}px`, borderRadius: 999, border: `1px solid ${TV2.lineStrong}`, background: TV2.s06, display: "inline-flex", alignItems: "center", gap: dp(10), fontSize: dp(20), cursor: "pointer" }, children: [
           /* @__PURE__ */ jsx(Icons.Calendar, {}),
           " ",
           tt("railGuide")
         ] }),
         /* @__PURE__ */ jsx("div", { "data-testid": "hub-clock", style: { marginLeft: "auto", flexShrink: 0, textAlign: "right" }, children: clock })
       ] }),
-      spotlight.length > 0 ? /* @__PURE__ */ jsx("div", { "data-row": "", style: { display: "grid", gridTemplateColumns: `repeat(${SPOTLIGHT_COUNT}, minmax(0, 1fr))`, gap: dp(20) }, children: spotlight.map((pick3, index3) => {
+      spotlight.length > 0 ? /* @__PURE__ */ jsx("div", { "data-testid": "hub-spotlight", "data-row": "", style: { display: "grid", gridTemplateColumns: `repeat(${spotlightCount}, minmax(0, 1fr))`, gap: dp(20) }, children: spotlight.map((pick3, index3) => {
         const info = model.nowFor(pick3.channel);
         const number2 = model.channelNumber(pick3.channel);
         return /* @__PURE__ */ jsxs("div", { ...cardStation(pick3.channel, index3 === 0 ? { "data-init": "" } : void 0), style: { ...cardStyle, borderRadius: dp(18), cursor: "pointer" }, children: [
@@ -200254,7 +202419,7 @@ ${cue.text}`).join("\n\n")}
         ] }),
         /* @__PURE__ */ jsx("div", { "data-row": "", style: { display: "flex", gap: dp(14), overflowX: "auto", paddingBottom: dp(4) }, children: favourites.map((channel) => {
           const info = model.nowFor(channel);
-          return /* @__PURE__ */ jsxs("div", { ...station(() => nav.openChannel(channel), (el) => nav.channelMenu(channel, el)), style: { ...cardStyle, background: TV2.s08, width: dp(300), height: dp(88), flexShrink: 0, display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(14)}px`, cursor: "pointer" }, children: [
+          return /* @__PURE__ */ jsxs("div", { ...station(() => nav.openChannel(channel), (el) => nav.channelMenu(channel, el)), style: { ...cardStyle, background: TV2.s08, width: dp(300), height: dp(88), minHeight: dp(88), flexShrink: 0, display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(14)}px`, cursor: "pointer" }, children: [
             /* @__PURE__ */ jsx(ChannelArt, { channel, style: { width: dp(76), height: dp(50), flexShrink: 0 }, radius: dp(8) }),
             /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
               /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: channel.name }),
@@ -200304,15 +202469,33 @@ ${cue.text}`).join("\n\n")}
         }
       ),
       /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: dp(14) }, children: [
-        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(14) }, children: [
-          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(26), fontWeight: 600 }, children: tt("allChannels") }),
-          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), color: "rgba(243,244,248,0.5)" }, children: tt("allChannelsSub", { playlist: model.activePlaylistName ?? tt("allPlaylists"), count: filtered.length }) }),
-          /* @__PURE__ */ jsx("div", { "data-row": "", style: { marginLeft: "auto", display: "flex", gap: dp(10), overflowX: "auto", maxWidth: "55%" }, children: [{ key: null, label: tt("allGroups"), id: "all" }, ...favourites.length ? [{ key: "__favs", label: tt("favourites"), id: "favs" }] : [], ...chips.map((g) => ({ key: g, label: g, id: g }))].map((chip) => /* @__PURE__ */ jsx(Chip, { active: group === chip.key, ...station(() => {
-            setGroup(chip.key);
-            setVisible(ALL_STEP);
-          }, void 0, { "data-testid": `chip-${chip.id}` }), style: { height: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }, children: chip.label }, chip.id)) })
-        ] }),
-        /* @__PURE__ */ jsx("div", { "data-testid": "all-channels", style: { display: "grid", gridTemplateColumns: "repeat(6, minmax(0, 1fr))", gap: dp(14) }, children: shown.map((channel, index3) => {
+        isTv ? (
+          // TV-designen är godkänd (Jerry) och rörs inte: rubrik + underrad
+          // (spellista, antal, fjärrhjälp) på en rad, chippen i högerkant.
+          /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(14) }, children: [
+            /* @__PURE__ */ jsx("span", { style: { fontSize: dp(26), fontWeight: 600 }, children: tt("allChannels") }),
+            /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), color: "rgba(243,244,248,0.5)" }, children: tt("allChannelsSub", { playlist: model.activePlaylistName ?? tt("allPlaylists"), count: filtered.length }) }),
+            /* @__PURE__ */ jsx("div", { "data-row": "", "data-testid": "all-channels-filter-row", style: { marginLeft: "auto", display: "flex", gap: dp(10), overflowX: "auto", maxWidth: "55%" }, children: chipItems.map((chip) => /* @__PURE__ */ jsx(Chip, { active: group === chip.key, ...station(() => {
+              setGroup(chip.key);
+              setVisible(ALL_STEP);
+            }, void 0, { "data-testid": `chip-${chip.id}` }), style: { height: dp(40), minHeight: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }, children: chip.label }, chip.id)) })
+          ] })
+        ) : (
+          // Skrivbord (Jerrys återkoppling 2026-09-14): rubriken är
+          // bara antalet — "All playlists" och fjärrhjälpen är beskrivande
+          // text utan motsvarighet utanför TV-läget, se `tv-strings.ts`.
+          // Filterraden får en egen rad under rubriken i stället för att
+          // trängas ihop med den, och chippen får glasytan (samma yta som
+          // Bakåt-knappen/toasten) så de syns som klickbara.
+          /* @__PURE__ */ jsxs(Fragment2, { children: [
+            /* @__PURE__ */ jsx("span", { style: { fontSize: dp(26), fontWeight: 600 }, children: tt("allChannelsCount", { count: filtered.length.toLocaleString(locale) }) }),
+            /* @__PURE__ */ jsx("div", { "data-row": "", "data-testid": "all-channels-filter-row", style: { display: "flex", gap: dp(10), overflowX: "auto", width: "100%" }, children: chipItems.map((chip) => /* @__PURE__ */ jsx(Chip, { active: group === chip.key, glass: true, ...station(() => {
+              setGroup(chip.key);
+              setVisible(ALL_STEP);
+            }, void 0, { "data-testid": `chip-${chip.id}` }), style: { height: dp(40), minHeight: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }, children: chip.label }, chip.id)) })
+          ] })
+        ),
+        /* @__PURE__ */ jsx("div", { "data-testid": "all-channels", style: { display: "grid", gridTemplateColumns: `repeat(${allChannelsColumns}, minmax(0, 1fr))`, gap: dp(14) }, children: shown.map((channel, index3) => {
           const info = model.nowFor(channel);
           const number2 = model.channelNumber(channel);
           const pinned = model.pinnedSet.has(channelKey(channel));
@@ -200329,8 +202512,7 @@ ${cue.text}`).join("\n\n")}
             ] })
           ] }, channelKey(channel));
         }) }),
-        filtered.length > visible ? /* @__PURE__ */ jsx("div", { ...station(() => setVisible((v) => v + ALL_STEP)), style: { alignSelf: "center", height: dp(48), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV2.s10, display: "inline-flex", alignItems: "center", fontSize: dp(18), cursor: "pointer" }, children: tt("showMore") }) : null,
-        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: TV2.faint }, children: tt("helpHub") })
+        filtered.length > visible ? /* @__PURE__ */ jsx("div", { ...station(() => setVisible((v) => v + ALL_STEP)), style: { alignSelf: "center", height: dp(48), minHeight: dp(48), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV2.s10, display: "inline-flex", alignItems: "center", fontSize: dp(18), cursor: "pointer" }, children: tt("showMore") }) : null
       ] })
     ] });
   }
@@ -200338,9 +202520,11 @@ ${cue.text}`).join("\n\n")}
   // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_react_shim();
   init_live_tv_data();
+  init_live_tv_model();
   init_live_tv_ui();
   init_tv_ui();
   init_tv_strings();
+  init_tv_settings_store();
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-schedule-window.ts
   var MINUTE = 6e4;
@@ -200369,7 +202553,59 @@ ${cue.text}`).join("\n\n")}
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
   init_react_shim();
+  init_live_tv_model();
   init_tv_ui();
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-view-shared.tsx
+  init_react_shim();
+  init_tv_ui();
+  init_tv_strings();
+  init_jsx_runtime_shim();
+  var ROWS_STEP = 80;
+  var HOVER_MS = 120;
+  var GUIDE_SCALE = 1.4;
+  function gp(n) {
+    return Math.round(n * GUIDE_SCALE);
+  }
+  var ellipsis2 = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
+  var initAttr = (on) => on ? { "data-init": "" } : void 0;
+  function withPointerLeave(props, onLeave) {
+    if (!onLeave) return props;
+    const own = props.onPointerLeave;
+    return { ...props, onPointerLeave: (event) => {
+      own?.(event);
+      onLeave();
+    } };
+  }
+  function useHoverSelect(enabled, onSelect) {
+    const timer = useRef(null);
+    const clear = () => {
+      if (timer.current !== null) window.clearTimeout(timer.current);
+      timer.current = null;
+    };
+    useEffect(() => clear, []);
+    if (!enabled) return { enter: void 0, leave: void 0 };
+    return {
+      enter: (sel) => {
+        clear();
+        timer.current = window.setTimeout(() => {
+          timer.current = null;
+          onSelect(sel);
+        }, HOVER_MS);
+      },
+      leave: clear
+    };
+  }
+  function GuidePaginationRow({ testId, shown, total, hasMore, onMore, hint }) {
+    const { tt } = useTvText();
+    return /* @__PURE__ */ jsxs("div", { "data-testid": `${testId}-pagination`, style: { height: gp(52), minHeight: gp(52), padding: `0 ${gp(20)}px`, display: "flex", alignItems: "center", gap: gp(14), borderTop: `1px solid ${TV2.line}`, boxSizing: "border-box" }, children: [
+      /* @__PURE__ */ jsx("span", { style: { fontSize: gp(13), color: TV2.dim, ...ellipsis2 }, children: tt("paginationRow", { shown, total }) }),
+      hasMore ? /* @__PURE__ */ jsx("div", { "data-testid": `${testId}-show-more`, ...station(onMore), style: { height: gp(32), minHeight: gp(32), padding: `0 ${gp(14)}px`, borderRadius: 999, background: TV2.s10, display: "inline-flex", alignItems: "center", fontSize: gp(13), cursor: "pointer", flexShrink: 0 }, children: tt("showMoreN", { n: ROWS_STEP }) }) : null,
+      hint ? /* @__PURE__ */ jsx("span", { style: { marginLeft: "auto", fontSize: gp(13), color: "rgba(243,244,248,0.35)", ...ellipsis2 }, children: hint }) : null
+    ] });
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
   init_jsx_runtime_shim();
   function useDebouncedChannel(channel, ms = 300) {
     const [value, setValue] = useState(channel);
@@ -200393,8 +202629,12 @@ ${cue.text}`).join("\n\n")}
     if (group) return model.channels.filter((c) => c.group === group);
     return model.channels;
   }
-  function ChannelCell({ channel, number: number2, pinned, locked, quality, focused, width = dp(520) }) {
-    return /* @__PURE__ */ jsxs("div", { style: { width, height: dp(72), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(12)}px`, background: focused ? TV2.s10 : "transparent", flexShrink: 0 }, children: [
+  var CHANNEL_CELL_WIDTH_DP = 520;
+  function channelColumnStyle() {
+    return { width: dp(CHANNEL_CELL_WIDTH_DP), flexShrink: 0 };
+  }
+  function ChannelCell({ channel, number: number2, pinned, locked, quality, focused, width = dp(CHANNEL_CELL_WIDTH_DP) }) {
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "guide-channel-cell", style: { width, height: dp(72), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(12)}px`, background: focused ? TV2.s10 : "transparent", flexShrink: 0 }, children: [
       /* @__PURE__ */ jsx("span", { style: { width: dp(44), fontSize: dp(18), color: "rgba(243,244,248,0.5)", fontVariantNumeric: "tabular-nums", textAlign: "right" }, children: number2 ?? "" }),
       /* @__PURE__ */ jsx(ChannelArt, { channel, style: { width: dp(88), height: dp(56), flexShrink: 0 }, radius: dp(8) }),
       /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: 1 }, children: [
@@ -200405,6 +202645,28 @@ ${cue.text}`).join("\n\n")}
       locked ? /* @__PURE__ */ jsx("span", { style: { color: "rgba(243,244,248,0.5)" }, children: /* @__PURE__ */ jsx(Icons.Lock, { size: dp(18) }) }) : null
     ] });
   }
+  var GUIDE_CELL_WIDTH = { grid: gp(240), nownext: gp(340), timeline: gp(240) };
+  var GUIDE_ART_SIZE = {
+    grid: { width: gp(44), height: gp(28) },
+    nownext: { width: gp(48), height: gp(30) }
+  };
+  function guideCellStyle(variant) {
+    const width = GUIDE_CELL_WIDTH[variant];
+    return { flex: `0 0 ${width}px`, width, minWidth: 0, boxSizing: "border-box" };
+  }
+  function GuideChannelCell({ channel, number: number2, pinned, locked, variant }) {
+    const art = variant === "timeline" ? null : GUIDE_ART_SIZE[variant];
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "guide-cell", style: { ...guideCellStyle(variant), display: "flex", alignItems: "center", gap: gp(10), padding: `0 ${gp(10)}px` }, children: [
+      /* @__PURE__ */ jsx("span", { style: { width: gp(26), flexShrink: 0, fontSize: gp(13), color: "rgba(243,244,248,0.45)", fontVariantNumeric: "tabular-nums", textAlign: "right" }, children: number2 ?? "" }),
+      art ? /* @__PURE__ */ jsx(ChannelArt, { channel, style: { width: art.width, flexShrink: 0 }, height: art.height, radius: gp(6) }) : null,
+      /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: 1 }, children: [
+        /* @__PURE__ */ jsx("div", { style: { fontSize: gp(14), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: channel.name }),
+        variant !== "timeline" ? /* @__PURE__ */ jsx("div", { style: { fontSize: gp(12), color: "rgba(243,244,248,0.45)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: [channel.group, qualityFromName(channel.name)].filter(Boolean).join(" \xB7 ") }) : null
+      ] }),
+      pinned ? /* @__PURE__ */ jsx("span", { "data-testid": "guide-cell-pinned", style: { color: TV2.acc, flexShrink: 0 }, children: /* @__PURE__ */ jsx(Icons.Heart, { size: gp(13), filled: true }) }) : null,
+      locked ? /* @__PURE__ */ jsx("span", { "data-testid": "guide-cell-locked", style: { color: "rgba(243,244,248,0.45)", flexShrink: 0 }, children: /* @__PURE__ */ jsx(Icons.Lock, { size: gp(13) }) }) : null
+    ] });
+  }
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-preview.tsx
   init_react_shim();
@@ -200413,6 +202675,9 @@ ${cue.text}`).join("\n\n")}
   // Samma regel som multivyns ruta: en NATIV yta ritas UNDER webbvyn, så
   // plattan måste bort medan bilden spelar (skalet klipper hålet i sin
   // bakgrund). Etiketten och LIVE-taggen är överlager inne i rutan.
+  //
+  // `minHeight` speglar alltid `height`: rutan är en station (`role="button"`)
+  // och får inte klämmas ihop av en flex-förälder under sin uttalade höjd.
   init_jsx_runtime_shim();
   function TvPreview({ channel, enabled, live: live2, width, height, label: label2, onOk, extra }) {
     const ref = useRef(null);
@@ -200423,7 +202688,7 @@ ${cue.text}`).join("\n\n")}
       {
         ref,
         ...station(onOk, void 0, extra),
-        style: { width, height, borderRadius: dp(14), border: `1px solid ${TV2.lineCard}`, position: "relative", overflow: "hidden", background: showsVideo ? "transparent" : "#05070d", flexShrink: 0, cursor: "pointer" },
+        style: { width, height, minHeight: height, borderRadius: dp(14), border: `1px solid ${TV2.lineCard}`, position: "relative", overflow: "hidden", background: showsVideo ? "transparent" : "#05070d", flexShrink: 0, cursor: "pointer" },
         children: [
           channel && !showsVideo ? /* @__PURE__ */ jsx(ChannelArt, { channel, style: { position: "absolute", inset: 0, borderRadius: 0 } }) : null,
           /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: dp(12), left: dp(14), fontFamily: TV2.mono, fontSize: dp(12), letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(243,244,248,0.55)" }, children: label2 }),
@@ -200436,23 +202701,31 @@ ${cue.text}`).join("\n\n")}
   // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
   init_react_shim();
   init_live_tv_data();
+  init_live_tv_model();
   init_live_tv_ui();
+  init_reminders();
   init_tv_ui();
   init_tv_strings();
-  init_jsx_runtime_shim();
-  var ROW_STEP = 40;
-  function TvGuidePlaylists({ model, nav, settings, mode, onModeChange }) {
-    const { tt, locale } = useTvText();
-    const clock = useTvClockNode(locale);
-    const [sel, setSel] = useState({ listId: model.lists[0]?.id ?? null, group: null });
-    const [selectedKey, setSelectedKey] = useState(null);
-    const [, bump] = useState(0);
-    const tree = useMemo(() => model.lists.map((list) => ({
-      id: list.id,
-      name: list.name,
-      count: list.kind === "custom" ? (list.channels ?? []).length : list.channelCount ?? (list.channels?.length ?? 0),
-      groups: (list.kind === "custom" ? computeGroups(list.channels ?? []) : list.groups ?? []).slice(0, 12)
-    })), [model.lists]);
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/list-tree.ts
+  init_react_shim();
+  init_live_tv_data();
+  init_live_tv_model();
+  function useListTree(model, maxGroups) {
+    return useMemo(() => model.lists.map((list) => {
+      const embedded = list.channels ?? [];
+      const custom = list.kind === "custom";
+      const groups = custom ? computeGroups(embedded) : list.groups ?? [];
+      return {
+        id: list.id,
+        name: list.name,
+        count: custom ? embedded.length : list.channelCount ?? embedded.length,
+        groups: maxGroups === void 0 ? groups : groups.slice(0, maxGroups),
+        channelsLoaded: custom || embedded.length > 0
+      };
+    }), [model.lists, maxGroups]);
+  }
+  function useListRows(model, sel) {
     const selectedLists = useMemo(() => {
       const list = model.lists.find((entry) => entry.id === sel.listId);
       return list ? [list] : [];
@@ -200464,9 +202737,278 @@ ${cue.text}`).join("\n\n")}
       const channels = (byListId[sel.listId] ?? []).filter(isPlayableChannel);
       return sel.group ? channels.filter((c) => c.group === sel.group) : channels;
     }, [sel, byListId, model.favouriteChannels]);
+    return { rows, channelsLoading };
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
+  init_react_shim();
+  init_live_tv_data();
+  init_tv_ui();
+  init_tv_strings();
+  init_mobile_tokens();
+  init_mobile_icons();
+  init_mobile_channel_row();
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
+  init_react_shim();
+  init_live_tv_data();
+  init_tv_ui();
+  init_tv_strings();
+  init_mobile_tokens();
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-segment.tsx
+  init_tv_ui();
+  init_mobile_tokens();
+  init_jsx_runtime_shim();
+  function MobileSegment({ options, value, onChange, height = 36, testId }) {
+    return /* @__PURE__ */ jsx("div", { "data-testid": testId, style: { display: "flex", padding: 3, borderRadius: 999, background: MT.s08 }, children: options.map(({ key, label: label2 }) => {
+      const active2 = key === value;
+      return /* @__PURE__ */ jsx(
+        "div",
+        {
+          "data-testid": `segment-${key}`,
+          ...station(() => onChange(key), void 0, { "aria-pressed": String(active2) }),
+          style: {
+            flex: 1,
+            minHeight: height,
+            borderRadius: 999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 14,
+            fontWeight: active2 ? 600 : 400,
+            background: active2 ? MT.s16 : "transparent",
+            color: active2 ? MT.text : MT.muted,
+            cursor: "pointer"
+          },
+          children: label2
+        },
+        key
+      );
+    }) });
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
+  init_mobile_channel_row();
+  init_jsx_runtime_shim();
+  function phoneGuideMode(stored) {
+    if (stored === "tl" || stored === "nownext") return "now";
+    if (stored === "timeline") return "grid";
+    return stored;
+  }
+  function PhoneGuideModeBar({ mode, onChange }) {
+    const { tt } = useTvText();
+    const options = [
+      { key: "now", label: tt("phoneModeNow") },
+      { key: "grid", label: tt("phoneModeTimeline") },
+      { key: "playlists", label: tt("phoneModeLists") }
+    ];
+    return /* @__PURE__ */ jsx(MobileSegment, { options, value: mode, onChange, testId: "guide-mode" });
+  }
+  var ROW_STEP = 40;
+  function TvGuideNowPhone({ model, nav, params, mode, onModeChange }) {
+    const { tt, locale } = useTvText();
+    const groups = useGuideGroups(model, tt);
+    const [group, setGroup] = useState(() => {
+      const raw = params.group;
+      if (!raw || raw === "all") return null;
+      if (raw === FAVS_GROUP) return FAVS_GROUP;
+      return model.groups.includes(raw) ? raw : null;
+    });
+    const rows = useMemo(() => filterByGroup(model, group), [model, group]);
     const [visible, setVisible] = useState(ROW_STEP);
     useEffect(() => {
       setVisible(ROW_STEP);
+    }, [group]);
+    const visibleRows = useMemo(() => rows.slice(0, visible), [rows, visible]);
+    const noProgrammeLabel = model.epgLoading ? tt("loadingGuide") : tt("noProgramme");
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "guide-phone", "data-scroll": "", style: { flex: 1, overflowY: "auto", padding: `0 ${MT.PAD}px`, paddingBottom: MT.SCROLL_PAD_BOTTOM, display: "flex", flexDirection: "column", gap: 10 }, children: [
+      /* @__PURE__ */ jsx("div", { style: { margin: `0 -${MT.PAD}px` }, children: /* @__PURE__ */ jsx(MobileHeader, { title: tt("guideTitle") }) }),
+      /* @__PURE__ */ jsx(PhoneGuideModeBar, { mode, onChange: onModeChange }),
+      /* @__PURE__ */ jsx(MobileChips, { items: groups, value: group, onChange: setGroup, testId: "guide-groups" }),
+      rows.length === 0 ? (
+        // Kanalerna kommer ur appens index: tomt betyder "hämtar" tills
+        // sidhämtningen är klar, annars saknar kategorin kanaler.
+        /* @__PURE__ */ jsx("div", { "data-testid": "guide-empty", style: { padding: "32px 16px", textAlign: "center", fontSize: 15, color: MT.muted }, children: model.channelsLoading ? tt("loadingChannels") : tt("guideEmpty") })
+      ) : /* @__PURE__ */ jsxs("div", { children: [
+        visibleRows.map((channel, index3) => {
+          const key = channelKey(channel);
+          return /* @__PURE__ */ jsx(
+            MobileChannelRow,
+            {
+              channel,
+              number: model.channelNumber(channel),
+              now: model.nowFor(channel),
+              nowMs: model.nowMs,
+              locale,
+              pinned: model.pinnedSet.has(key),
+              locked: model.locked.has(key),
+              noProgrammeLabel,
+              onPress: () => nav.play({ channel }),
+              onLongPress: (el) => nav.channelMenu(channel, el),
+              init: index3 === 0,
+              testId: "guide-row"
+            },
+            key
+          );
+        }),
+        rows.length > visible ? /* @__PURE__ */ jsx("div", { "data-testid": "show-more", ...station(() => setVisible((v) => v + ROW_STEP)), style: { margin: "16px auto 0", width: "fit-content", minHeight: 44, padding: "0 24px", borderRadius: 999, background: MT.s10, display: "flex", alignItems: "center", fontSize: 15, cursor: "pointer" }, children: tt("showMore") }) : null
+      ] })
+    ] });
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
+  init_jsx_runtime_shim();
+  var GROUPS_PREVIEW = 6;
+  var ROW_STEP2 = 40;
+  var CARD_RADIUS = 14;
+  var GROUP_ROW_H = 52;
+  function TvGuideListsPhone({ model, nav, mode, onModeChange }) {
+    const { tt, locale } = useTvText();
+    const tree = useListTree(model);
+    const [path, setPath] = useState(null);
+    const [filter2, setFilter] = useState("");
+    const [expanded, setExpanded] = useState(() => /* @__PURE__ */ new Set());
+    const { rows, channelsLoading } = useListRows(model, path ?? { listId: null, group: null });
+    const navRef = useRef(nav);
+    useEffect(() => {
+      navRef.current = nav;
+    });
+    const claimBack = path !== null;
+    useEffect(() => {
+      if (!claimBack) return;
+      return navRef.current.pushLayer(() => setPath(null));
+    }, [claimBack]);
+    const [visible, setVisible] = useState(ROW_STEP2);
+    useEffect(() => {
+      setVisible(ROW_STEP2);
+    }, [path]);
+    const visibleRows = useMemo(() => rows.slice(0, visible), [rows, visible]);
+    const noProgrammeLabel = model.epgLoading ? tt("loadingGuide") : tt("noProgramme");
+    const needle = filter2.trim().toLowerCase();
+    if (path) {
+      return /* @__PURE__ */ jsxs("div", { "data-testid": "lists-phone-level2", "data-scroll": "", style: { flex: 1, overflowY: "auto", padding: `0 ${MT.PAD}px`, paddingBottom: MT.SCROLL_PAD_BOTTOM, display: "flex", flexDirection: "column" }, children: [
+        /* @__PURE__ */ jsx("div", { style: { margin: `0 -${MT.PAD}px` }, children: /* @__PURE__ */ jsx(MobileHeader, { title: path.title, back: true, onBack: () => setPath(null), testId: "lists-level2-header" }) }),
+        rows.length === 0 ? (
+          // Listans kanaler kommer ur appens index: tomt betyder "hämtar"
+          // tills hämtningen är klar, annars saknar kategorin kanaler.
+          /* @__PURE__ */ jsx("div", { "data-testid": "lists-empty", style: { padding: "32px 16px", textAlign: "center", fontSize: 15, color: MT.muted }, children: channelsLoading ? tt("loadingChannels") : tt("guideEmpty") })
+        ) : /* @__PURE__ */ jsxs("div", { children: [
+          visibleRows.map((channel, index3) => {
+            const key = channelKey(channel);
+            return /* @__PURE__ */ jsx(
+              MobileChannelRow,
+              {
+                channel,
+                number: model.channelNumber(channel),
+                now: model.nowFor(channel),
+                nowMs: model.nowMs,
+                locale,
+                pinned: model.pinnedSet.has(key),
+                locked: model.locked.has(key),
+                noProgrammeLabel,
+                onPress: () => nav.play({ channel }),
+                onLongPress: (el) => nav.channelMenu(channel, el),
+                init: index3 === 0,
+                testId: "guide-row"
+              },
+              key
+            );
+          }),
+          rows.length > visible ? /* @__PURE__ */ jsx("div", { "data-testid": "show-more", ...station(() => setVisible((v) => v + ROW_STEP2)), style: { margin: "16px auto 0", width: "fit-content", minHeight: MT.HIT, padding: "0 24px", borderRadius: 999, background: MT.s10, display: "flex", alignItems: "center", fontSize: 15, cursor: "pointer" }, children: tt("showMore") }) : null
+        ] })
+      ] });
+    }
+    const openList = (list) => setPath({ listId: list.id, group: null, title: list.name });
+    const openGroup = (list, group) => setPath({ listId: list.id, group, title: group });
+    const expand = (id4) => setExpanded((prev) => new Set(prev).add(id4));
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "lists-phone", "data-scroll": "", style: { flex: 1, overflowY: "auto", padding: `0 ${MT.PAD}px`, paddingBottom: MT.SCROLL_PAD_BOTTOM, display: "flex", flexDirection: "column", gap: 10 }, children: [
+      /* @__PURE__ */ jsx("div", { style: { margin: `0 -${MT.PAD}px` }, children: /* @__PURE__ */ jsx(MobileHeader, { title: tt("guideTitle") }) }),
+      /* @__PURE__ */ jsx(PhoneGuideModeBar, { mode: phoneGuideMode(mode), onChange: onModeChange }),
+      /* @__PURE__ */ jsx(
+        "input",
+        {
+          "data-testid": "lists-filter",
+          type: "text",
+          inputMode: "search",
+          enterKeyHint: "search",
+          autoComplete: "off",
+          value: filter2,
+          onChange: (event) => setFilter(event.target.value),
+          placeholder: tt("filterCategories"),
+          "aria-label": tt("filterCategories"),
+          style: { minHeight: MT.HIT, width: "100%", boxSizing: "border-box", padding: "0 14px", borderRadius: CARD_RADIUS, border: "none", outline: "none", background: MT.s10, color: MT.text, fontSize: 16, fontFamily: MT.font }
+        }
+      ),
+      model.favouriteChannels.length > 0 ? /* @__PURE__ */ jsxs("div", { "data-testid": "lists-favs-section", style: { display: "flex", flexDirection: "column", gap: 8 }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { minHeight: 24, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }, children: [
+          /* @__PURE__ */ jsx("span", { style: { ...sectionLabel, flex: 1, ...ellipsis }, children: tt("favourites") }),
+          /* @__PURE__ */ jsx("span", { style: { fontSize: 12, color: MT.dim, flexShrink: 0 }, children: model.favouriteChannels.length })
+        ] }),
+        /* @__PURE__ */ jsxs(
+          "div",
+          {
+            "data-testid": "lists-favs",
+            ...station(() => setPath({ listId: FAVS_GROUP, group: null, title: tt("favourites") })),
+            style: { minHeight: GROUP_ROW_H, padding: "0 14px", borderRadius: CARD_RADIUS, background: MT.accMix(14), border: `1px solid ${MT.accMix(40)}`, display: "flex", alignItems: "center", gap: 10, fontSize: 15, cursor: "pointer" },
+            children: [
+              /* @__PURE__ */ jsx("span", { style: { color: MT.acc, display: "inline-flex", flexShrink: 0 }, children: /* @__PURE__ */ jsx(MIcons.Heart, { size: 18, filled: true }) }),
+              /* @__PURE__ */ jsx("span", { style: { flex: 1, fontWeight: 600, ...ellipsis }, children: tt("favourites") }),
+              /* @__PURE__ */ jsx("span", { style: { fontSize: 13, color: MT.dim, flexShrink: 0 }, children: model.favouriteChannels.length }),
+              /* @__PURE__ */ jsx("span", { style: { color: MT.dim, display: "inline-flex", flexShrink: 0 }, children: /* @__PURE__ */ jsx(MIcons.CaretRight, { size: 16 }) })
+            ]
+          }
+        )
+      ] }) : null,
+      tree.map((list) => {
+        const matching = needle ? list.groups.filter((g) => g.name.toLowerCase().includes(needle)) : list.groups;
+        const shown = expanded.has(list.id) ? matching : matching.slice(0, GROUPS_PREVIEW);
+        return /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 8 }, children: [
+          /* @__PURE__ */ jsxs("div", { "data-testid": `lists-section-${list.id}`, ...station(() => openList(list)), style: { minHeight: MT.HIT, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, cursor: "pointer" }, children: [
+            /* @__PURE__ */ jsx("span", { style: { ...sectionLabel, flex: 1, ...ellipsis }, children: list.name }),
+            /* @__PURE__ */ jsx("span", { "data-testid": "lists-list-count", style: { fontSize: 12, color: MT.dim, flexShrink: 0 }, children: list.count })
+          ] }),
+          shown.length > 0 ? /* @__PURE__ */ jsxs("div", { style: { borderRadius: CARD_RADIUS, background: MT.s06, border: `1px solid ${MT.line08}`, overflow: "hidden" }, children: [
+            shown.map((group, index3) => /* @__PURE__ */ jsxs(
+              "div",
+              {
+                "data-testid": `lists-group-${list.id}-${group.name}`,
+                ...station(() => openGroup(list, group.name)),
+                style: { minHeight: GROUP_ROW_H, padding: "0 14px", display: "flex", alignItems: "center", gap: 10, fontSize: 15, borderTop: index3 === 0 ? "none" : `1px solid ${MT.line07}`, cursor: "pointer" },
+                children: [
+                  /* @__PURE__ */ jsx("span", { style: { flex: 1, ...ellipsis }, children: group.name }),
+                  list.channelsLoaded ? /* @__PURE__ */ jsx("span", { "data-testid": "lists-group-count", style: { fontSize: 13, color: MT.dim, flexShrink: 0 }, children: group.count }) : null,
+                  /* @__PURE__ */ jsx("span", { style: { fontSize: 13, color: MT.dim, flexShrink: 0 }, children: "\u203A" })
+                ]
+              },
+              group.name
+            )),
+            matching.length > shown.length ? /* @__PURE__ */ jsx("div", { "data-testid": `lists-show-all-${list.id}`, ...station(() => expand(list.id)), style: { minHeight: MT.HIT, padding: "0 14px", display: "flex", alignItems: "center", fontSize: 14, color: MT.muted, borderTop: `1px solid ${MT.line07}`, cursor: "pointer" }, children: tt("showAllCategories", { count: matching.length }) }) : null
+          ] }) : null
+        ] }, list.id);
+      })
+    ] });
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
+  init_jsx_runtime_shim();
+  var MAX_GROUPS2 = 12;
+  var ROW_STEP3 = 40;
+  function TvGuidePlaylists(props) {
+    if (props.phone) return /* @__PURE__ */ jsx(TvGuideListsPhone, { ...props });
+    return /* @__PURE__ */ jsx(TvGuidePlaylistsDesktop, { ...props });
+  }
+  function TvGuidePlaylistsDesktop({ model, nav, settings, mode, onModeChange }) {
+    const { tt, locale } = useTvText();
+    const clock = useTvClockNode(locale);
+    const [sel, setSel] = useState({ listId: model.lists[0]?.id ?? null, group: null });
+    const [selectedKey, setSelectedKey] = useState(null);
+    const [, bump] = useState(0);
+    const tree = useListTree(model, MAX_GROUPS2);
+    const { rows, channelsLoading } = useListRows(model, sel);
+    const [visible, setVisible] = useState(ROW_STEP3);
+    useEffect(() => {
+      setVisible(ROW_STEP3);
     }, [sel]);
     const shownRows = useMemo(() => rows.slice(0, visible), [rows, visible]);
     const selected = useMemo(() => (selectedKey ? rows.find((c) => channelKey(c) === selectedKey) ?? null : null) ?? rows[0] ?? null, [selectedKey, rows]);
@@ -200479,7 +203021,7 @@ ${cue.text}`).join("\n\n")}
       toggleReminder(selected, programme, model.nowMs);
       bump((n) => n + 1);
     };
-    const card = (label2, programme, kind) => {
+    const card2 = (label2, programme, kind) => {
       if (!programme) return null;
       const isNow = kind === "now";
       const reminded = !isNow && selected ? isReminded(selected, programme) : false;
@@ -200502,11 +203044,11 @@ ${cue.text}`).join("\n\n")}
       );
     };
     const noRows = rows.length === 0;
-    const colItem = (key, active2, label2, count, indent, onOk, testId, extra) => /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onOk, void 0, { "data-live-tv-col": "left", ...extra ?? {} }), style: { height: indent ? dp(48) : dp(56), marginLeft: indent ? dp(28) : 0, padding: `0 ${dp(16)}px`, borderRadius: dp(12), display: "flex", alignItems: "center", justifyContent: "space-between", background: active2 ? indent ? TV2.accMix(18) : TV2.s12 : "transparent", color: active2 ? TV2.text : indent ? "rgba(243,244,248,0.6)" : TV2.text, fontSize: indent ? dp(18) : dp(19), fontWeight: indent ? 400 : 600, cursor: "pointer" }, children: [
+    const colItem = (key, active2, label2, count, indent, onOk, testId, extra) => /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onOk, void 0, { "data-live-tv-col": "left", ...extra ?? {} }), style: { height: dp(indent ? 48 : 56), minHeight: dp(indent ? 48 : 56), marginLeft: indent ? dp(28) : 0, padding: `0 ${dp(16)}px`, borderRadius: dp(12), display: "flex", alignItems: "center", justifyContent: "space-between", background: active2 ? indent ? TV2.accMix(18) : TV2.s12 : "transparent", color: active2 ? TV2.text : indent ? "rgba(243,244,248,0.6)" : TV2.text, fontSize: dp(indent ? 18 : 19), fontWeight: indent ? 400 : 600, cursor: "pointer" }, children: [
       /* @__PURE__ */ jsx("span", { style: { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: label2 }),
       /* @__PURE__ */ jsx("span", { style: { fontSize: dp(14), color: "rgba(243,244,248,0.45)" }, children: count })
     ] }, key);
-    return /* @__PURE__ */ jsxs("div", { style: { flex: 1, minHeight: 0, display: "flex" }, children: [
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "playlists-view-root", style: { flex: 1, minHeight: 0, display: "flex" }, children: [
       /* @__PURE__ */ jsxs("div", { "data-testid": "playlists-column", "data-scroll": "", style: { width: dp(330), flexShrink: 0, borderRight: `1px solid ${TV2.line}`, padding: `${dp(30)}px ${dp(16)}px 0 ${dp(20)}px`, overflowY: "auto", display: "flex", flexDirection: "column", gap: dp(2) }, children: [
         tree.map((list, listIndex) => [
           colItem(list.id, sel.listId === list.id && !sel.group, list.name, list.count, false, () => {
@@ -200521,8 +203063,7 @@ ${cue.text}`).join("\n\n")}
         colItem("__favs", sel.listId === FAVS_GROUP, tt("favourites"), model.favouriteChannels.length, false, () => {
           setSel({ listId: FAVS_GROUP, group: null });
           setSelectedKey(null);
-        }, "pl-list-favs", noRows && tree.length === 0 ? { "data-init": "" } : void 0),
-        /* @__PURE__ */ jsx("div", { style: { marginTop: "auto", padding: `${dp(20)}px 0`, fontSize: dp(15), color: TV2.faint }, children: tt("helpPlaylists") })
+        }, "pl-list-favs", noRows && tree.length === 0 ? { "data-init": "" } : void 0)
       ] }),
       /* @__PURE__ */ jsxs("div", { "data-scroll": "", style: { flex: 1, minWidth: 0, borderRight: `1px solid ${TV2.line}`, padding: `${dp(30)}px 0 0 ${dp(24)}px`, overflowY: "auto" }, children: [
         /* @__PURE__ */ jsxs("div", { "data-testid": "pl-header", style: { display: "flex", alignItems: "center", flexWrap: "wrap", columnGap: dp(12), rowGap: dp(8), marginBottom: dp(16) }, children: [
@@ -200544,9 +203085,9 @@ ${cue.text}`).join("\n\n")}
               "data-testid": "pl-row",
               ...station(() => nav.play({ channel }), (el) => nav.channelMenu(channel, el), { ...index3 === 0 ? { "data-init": "" } : {}, "data-f-left": '[data-live-tv-col="left"]', "data-f-right": '[data-testid="pl-now-card"], [data-testid="pl-preview"]' }),
               onFocus: () => setSelectedKey(key),
-              style: { height: dp(82), marginRight: dp(24), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(14)}px`, background: focused ? TV2.s10 : "transparent", cursor: "pointer" },
+              style: { height: dp(82), minHeight: dp(82), marginRight: dp(24), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(14)}px`, background: focused ? TV2.s10 : "transparent", cursor: "pointer" },
               children: [
-                /* @__PURE__ */ jsx(ChannelCell, { channel, number: model.channelNumber(channel), pinned: model.pinnedSet.has(key), locked: model.locked.has(key), quality: null, focused: false, width: dp(560) }),
+                /* @__PURE__ */ jsx("div", { "data-testid": "pl-row-channel-col", style: { width: dp(560), flexShrink: 0 }, children: /* @__PURE__ */ jsx(ChannelCell, { channel, number: model.channelNumber(channel), pinned: model.pinnedSet.has(key), locked: model.locked.has(key), quality: null, focused: false, width: "100%" }) }),
                 /* @__PURE__ */ jsx("div", { style: { minWidth: 0, flex: 1, fontSize: dp(17), color: "rgba(243,244,248,0.65)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: rowInfo.now?.title ?? tt("noProgramme") }),
                 /* @__PURE__ */ jsx("div", { style: { width: dp(110), flexShrink: 0 }, children: rowInfo.now ? /* @__PURE__ */ jsxs(Fragment2, { children: [
                   /* @__PURE__ */ jsx("div", { style: { fontSize: dp(14), color: "rgba(243,244,248,0.5)", textAlign: "right" }, children: tt("minutesLeft", { min: Math.max(0, Math.round((rowInfo.now.stop - model.nowMs) / 6e4)) }) }),
@@ -200557,7 +203098,7 @@ ${cue.text}`).join("\n\n")}
             key
           );
         }),
-        rows.length > visible ? /* @__PURE__ */ jsx("div", { ...station(() => setVisible((v) => v + ROW_STEP)), style: { margin: `${dp(20)}px auto ${dp(20)}px`, width: "fit-content", height: dp(48), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV2.s10, display: "flex", alignItems: "center", fontSize: dp(18), cursor: "pointer" }, children: tt("showMore") }) : null,
+        rows.length > visible ? /* @__PURE__ */ jsx("div", { ...station(() => setVisible((v) => v + ROW_STEP3)), style: { margin: `${dp(20)}px auto ${dp(20)}px`, width: "fit-content", height: dp(48), minHeight: dp(48), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV2.s10, display: "flex", alignItems: "center", fontSize: dp(18), cursor: "pointer" }, children: tt("showMore") }) : null,
         rows.length === 0 ? /* @__PURE__ */ jsx("div", { "data-testid": "pl-empty", style: { padding: dp(24), color: TV2.dim, fontSize: dp(19) }, children: channelsLoading ? tt("loadingChannels") : tt("guideEmpty") }) : null
       ] }),
       /* @__PURE__ */ jsxs("div", { "data-testid": "pl-detail", style: { width: dp(560), flexShrink: 0, padding: `${dp(30)}px ${dp(48)}px 0 ${dp(28)}px`, display: "flex", flexDirection: "column", gap: dp(14) }, children: [
@@ -200567,9 +203108,9 @@ ${cue.text}`).join("\n\n")}
           /* @__PURE__ */ jsx("span", { children: selected.name }),
           qualityFromName(selected.name) ? /* @__PURE__ */ jsx(Tag2, { variant: "quality", children: qualityFromName(selected.name) }) : null
         ] }) : null,
-        card(tt("colNow"), info.now, "now"),
-        card(tt("colNext"), info.next, "next"),
-        card(tt("colLater"), info.later, "later")
+        card2(tt("colNow"), info.now, "now"),
+        card2(tt("colNext"), info.next, "next"),
+        card2(tt("colLater"), info.later, "later")
       ] })
     ] });
   }
@@ -200577,45 +203118,84 @@ ${cue.text}`).join("\n\n")}
   // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
   init_react_shim();
   init_live_tv_data();
+  init_live_tv_model();
   init_live_tv_ui();
+  init_reminders();
+  init_useNarrowSurface();
+  init_tv_ui();
+  init_tv_strings();
 
-  // ../lumio-official-plugins/plugins/live-tv/runtime/epg-rows.ts
-  function selectEpgRows(ordered, scheduleFor, group, limit) {
-    const rows = [];
-    for (const channel of ordered) {
-      if (group && channel.group !== group) continue;
-      const programmes = scheduleFor(channel);
-      if (programmes.length === 0) continue;
-      if (rows.length >= limit) return { rows, hasMore: true };
-      rows.push({ channel, programmes });
-    }
-    return { rows, hasMore: false };
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/grid-rows.ts
+  init_react_shim();
+  init_live_tv_data();
+  init_useSchedules();
+  var CANDIDATE_FACTOR = 3;
+  function useGridRows(model, group, visibleRows, windowStart, windowEnd) {
+    const ordered = useMemo(
+      () => [
+        ...model.pinnedKeys.map((key) => model.byKey.get(key)).filter((channel) => Boolean(channel)),
+        ...model.channels.filter((channel) => !model.pinnedSet.has(channelKey(channel)))
+      ],
+      [model.pinnedKeys, model.byKey, model.channels, model.pinnedSet]
+    );
+    const eligible = useMemo(() => {
+      if (group === FAVS_GROUP) return model.favouriteChannels;
+      if (group) return ordered.filter((channel) => channel.group === group);
+      return ordered;
+    }, [ordered, group, model.favouriteChannels]);
+    const candidates = useMemo(() => eligible.slice(0, visibleRows * CANDIDATE_FACTOR), [eligible, visibleRows]);
+    const { schedules, loading: schedulesLoading } = useSchedules(candidates, windowStart, windowEnd);
+    const { rows, withoutEpg, hasMore } = useMemo(() => {
+      const scheduleFor = (channel) => schedules[channelKey(channel)] ?? [];
+      const withEpg = [];
+      const missing = [];
+      for (const channel of candidates) {
+        const programmes = scheduleFor(channel);
+        if (programmes.length === 0) missing.push(channel);
+        else withEpg.push({ channel, programmes });
+      }
+      const rows2 = withEpg.slice(0, visibleRows);
+      const withoutEpg2 = missing.slice(0, Math.max(0, visibleRows - rows2.length));
+      const moreAmongCandidates = withEpg.length > rows2.length || missing.length > withoutEpg2.length;
+      const hasMore2 = moreAmongCandidates || candidates.length < eligible.length;
+      return { rows: rows2, withoutEpg: withoutEpg2, hasMore: hasMore2 };
+    }, [candidates, schedules, visibleRows, eligible.length]);
+    return { rows, withoutEpg, hasMore, schedulesLoading };
   }
 
-  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
+  init_react_shim();
+  init_live_tv_data();
+  init_live_tv_model();
+  init_live_tv_ui();
   init_tv_ui();
   init_tv_strings();
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/tv/epg-grid-geometry.ts
+  init_live_tv_model();
   var HOUR_PX = 240;
   var PX_PER_MIN = HOUR_PX / 60;
   var CHANNEL_COL_PX = 160;
   var ROW_MIN_H_PX = 56;
+  var PHONE_PX_PER_MIN = 260 / 90;
+  var PHONE_CHANNEL_COL_PX = 112;
+  var PHONE_ROW_H_PX = 64;
   var MIN_BLOCK_PX = 18;
   var TITLE_ONLY_PX = 72;
-  function shapeFor(width) {
-    if (width < MIN_BLOCK_PX) return "marker";
-    if (width < TITLE_ONLY_PX) return "title";
+  var DEFAULT_THRESHOLDS = { marker: MIN_BLOCK_PX, title: TITLE_ONLY_PX };
+  function shapeFor(width, thresholds2) {
+    if (width < thresholds2.marker) return "marker";
+    if (width < thresholds2.title) return "title";
     return "full";
   }
-  function epgBlockBox(programme, windowStart, windowEnd) {
+  function epgBlockBox(programme, windowStart, windowEnd, pxPerMin = PX_PER_MIN, thresholds2) {
     const start3 = Math.max(programme.start, windowStart);
     const stop = Math.min(programme.stop, windowEnd);
     if (stop <= start3) return null;
-    const width = (stop - start3) / 6e4 * PX_PER_MIN;
-    const left = (start3 - windowStart) / 6e4 * PX_PER_MIN;
-    const shape = shapeFor(width);
-    const paddingX = shape === "marker" ? 0 : Math.min(8, width / 3);
+    const width = (stop - start3) / 6e4 * pxPerMin;
+    const left = (start3 - windowStart) / 6e4 * pxPerMin;
+    const shape = shapeFor(width, thresholds2 ?? DEFAULT_THRESHOLDS);
+    const paddingX = thresholds2 ? 0 : shape === "marker" ? 0 : Math.min(8, width / 3);
     return {
       left,
       width,
@@ -200639,28 +203219,155 @@ ${cue.text}`).join("\n\n")}
     }
     return kept.filter((span) => span.stop > span.start);
   }
-  function epgRowBoxes(programmes, windowStart, windowEnd) {
+  function epgRowBoxes(programmes, windowStart, windowEnd, pxPerMin = PX_PER_MIN, thresholds2) {
     const entries = [];
     for (const span of resolveOverlaps(programmes)) {
-      const box = epgBlockBox(span, windowStart, windowEnd);
+      const box = epgBlockBox(span, windowStart, windowEnd, pxPerMin, thresholds2);
       if (box) entries.push({ box, programme: span.programme });
     }
     return entries;
   }
-  function nowLinePx(nowMs, windowStart) {
-    return (nowMs - windowStart) / 6e4 * PX_PER_MIN;
+  function nowLinePx(nowMs, windowStart, pxPerMin = PX_PER_MIN) {
+    return (nowMs - windowStart) / 6e4 * pxPerMin;
   }
   function hourMarks(windowStart, windowEnd) {
     const marks2 = [];
     for (let t = windowStart; t < windowEnd; t += 36e5) marks2.push(t);
     return marks2;
   }
+  var HALF_HOUR_MS = 18e5;
+  function guideWindowStart(nowMs) {
+    return Math.floor(nowMs / HALF_HOUR_MS) * HALF_HOUR_MS;
+  }
+  var GRID_WINDOW_MS = 3 * 36e5;
+  var PCT_PER_MIN_GRID = 100 / 180;
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
+  init_mobile_tokens();
+  init_mobile_logo();
+  init_jsx_runtime_shim();
+  var MAX_ROWS = 80;
+  var ROWS_STEP2 = 80;
+  var HALF_HOUR = 30 * 6e4;
+  var TIME_ROW_H = 24;
+  var BLOCK_TOP = 8;
+  var BLOCK_H = 48;
+  var NOW_LEAD_PX = 40;
+  function TvGuideGridPhone({ model, nav, mode, onModeChange }) {
+    const { tt, locale } = useTvText();
+    const groups = useGuideGroups(model, tt);
+    const [group, setGroup] = useState(null);
+    const [visibleRows, setVisibleRows] = useState(MAX_ROWS);
+    const scrollRef = useRef(null);
+    const { nowMs } = model;
+    const windowStart = Math.floor((nowMs - HALF_HOUR) / HALF_HOUR) * HALF_HOUR;
+    const windowEnd = startOfLocalDay(nowMs, 1) + 6 * 36e5;
+    const marks2 = useMemo(() => {
+      const list = [];
+      for (let t = windowStart; t < windowEnd; t += HALF_HOUR) list.push(t);
+      return list;
+    }, [windowStart, windowEnd]);
+    const gridWidth = (windowEnd - windowStart) / 6e4 * PHONE_PX_PER_MIN;
+    const nowLeft = nowLinePx(nowMs, windowStart, PHONE_PX_PER_MIN);
+    useEffect(() => {
+      setVisibleRows(MAX_ROWS);
+    }, [group]);
+    const { rows, hasMore, schedulesLoading } = useGridRows(model, group, visibleRows, windowStart, windowEnd);
+    const entriesByChannel = useMemo(() => {
+      const map = /* @__PURE__ */ new Map();
+      for (const row of rows) map.set(channelKey(row.channel), epgRowBoxes(row.programmes, windowStart, windowEnd, PHONE_PX_PER_MIN));
+      return map;
+    }, [rows, windowStart, windowEnd]);
+    const scrollToNow = () => {
+      const el = scrollRef.current;
+      if (el) el.scrollLeft = Math.max(0, nowLeft - NOW_LEAD_PX);
+    };
+    const hasRows = rows.length > 0;
+    useEffect(() => {
+      if (hasRows) scrollToNow();
+    }, [hasRows]);
+    const isLive = (programme) => programme.start <= nowMs && programme.stop > nowMs;
+    const dateLabel = new Date(nowMs).toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" });
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "grid-phone", style: { flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }, children: [
+      /* @__PURE__ */ jsx(MobileHeader, { title: tt("guideTitle") }),
+      /* @__PURE__ */ jsxs("div", { style: { padding: `0 ${MT.PAD}px`, display: "flex", flexDirection: "column", gap: 10, flexShrink: 0 }, children: [
+        /* @__PURE__ */ jsx(PhoneGuideModeBar, { mode, onChange: onModeChange }),
+        /* @__PURE__ */ jsx(MobileChips, { items: groups, value: group, onChange: setGroup, testId: "guide-groups" }),
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }, children: [
+          /* @__PURE__ */ jsx("span", { "data-testid": "grid-phone-date", style: { fontSize: 13, color: MT.dim, ...ellipsis }, children: dateLabel }),
+          /* @__PURE__ */ jsx("div", { "data-testid": "grid-now-btn", ...station(scrollToNow), style: { minHeight: MT.HIT, display: "flex", alignItems: "center", paddingLeft: 12, flexShrink: 0, cursor: "pointer" }, children: /* @__PURE__ */ jsx("span", { style: { minHeight: 30, padding: "0 14px", borderRadius: 999, background: MT.accMix(18), fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center" }, children: tt("gridNow") }) })
+        ] })
+      ] }),
+      !hasRows ? (
+        // Kanalerna kommer ur appens index och tablån ur fönsteranropet:
+        // tomt betyder "hämtar" tills båda landat, annars saknas tablå.
+        /* @__PURE__ */ jsx("div", { "data-testid": "grid-phone-empty", style: { margin: `12px ${MT.PAD}px`, padding: "32px 16px", textAlign: "center", fontSize: 15, color: MT.muted, borderRadius: 12, background: MT.s05 }, children: model.channelsLoading ? tt("loadingChannels") : schedulesLoading ? tt("loadingGuide") : tt("gridEmpty") })
+      ) : /* @__PURE__ */ jsx("div", { ref: scrollRef, "data-scroll": "", "data-testid": "grid-phone-scroll", style: { flex: 1, minHeight: 0, overflow: "auto", marginTop: 8, paddingBottom: MT.SCROLL_PAD_BOTTOM }, children: /* @__PURE__ */ jsxs("div", { style: { position: "relative", minWidth: PHONE_CHANNEL_COL_PX + gridWidth }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { position: "sticky", top: 0, zIndex: 3, display: "flex", minHeight: TIME_ROW_H, background: MT.bg, borderBottom: `1px solid ${MT.line07}` }, children: [
+          /* @__PURE__ */ jsx("div", { style: { position: "sticky", left: 0, zIndex: 1, width: PHONE_CHANNEL_COL_PX, flexShrink: 0, background: MT.bg } }),
+          marks2.map((mark) => /* @__PURE__ */ jsx("div", { "data-testid": "grid-time-label", "data-ms": String(mark), style: { width: 30 * PHONE_PX_PER_MIN, flexShrink: 0, fontSize: 11, color: MT.faint, lineHeight: `${TIME_ROW_H}px`, whiteSpace: "nowrap" }, children: formatClock(mark, locale) }, mark))
+        ] }),
+        /* @__PURE__ */ jsxs("div", { style: { position: "relative" }, children: [
+          /* @__PURE__ */ jsx("div", { "data-testid": "grid-now-line", style: { position: "absolute", top: 0, bottom: 0, left: PHONE_CHANNEL_COL_PX + nowLeft, width: 2, background: MT.acc, boxShadow: `0 0 12px ${MT.accMix(60)}`, zIndex: 1, pointerEvents: "none" } }),
+          rows.map(({ channel }) => {
+            const key = channelKey(channel);
+            const entries = entriesByChannel.get(key) ?? [];
+            return /* @__PURE__ */ jsxs("div", { style: { display: "flex", height: PHONE_ROW_H_PX, borderBottom: `1px solid ${MT.line07}` }, children: [
+              /* @__PURE__ */ jsxs(
+                "div",
+                {
+                  "data-testid": "grid-phone-channel",
+                  ...station(() => nav.openChannel(channel), (element) => nav.channelMenu(channel, element)),
+                  style: { position: "sticky", left: 0, zIndex: 2, width: PHONE_CHANNEL_COL_PX, flexShrink: 0, background: MT.bg, display: "flex", alignItems: "center", gap: 8, padding: "0 8px", boxSizing: "border-box", cursor: "pointer" },
+                  children: [
+                    /* @__PURE__ */ jsx(MobileLogo, { channel, width: 40, height: 28, radius: 6 }),
+                    /* @__PURE__ */ jsx("span", { style: { minWidth: 0, fontSize: 12, fontWeight: 600, ...clamp2 }, children: channel.name })
+                  ]
+                }
+              ),
+              /* @__PURE__ */ jsx("div", { style: { position: "relative", width: gridWidth, flexShrink: 0 }, children: entries.map(({ box, programme }) => {
+                const live2 = isLive(programme);
+                return /* @__PURE__ */ jsx(
+                  "div",
+                  {
+                    "data-testid": "grid-block",
+                    "data-shape": box.shape,
+                    ...live2 ? { "data-live": "1" } : {},
+                    ...station(() => nav.openChannel(channel, programme.start)),
+                    style: {
+                      position: "absolute",
+                      top: BLOCK_TOP,
+                      left: box.left,
+                      width: Math.max(box.width - 4, 4),
+                      height: BLOCK_H,
+                      boxSizing: "border-box",
+                      borderRadius: 10,
+                      padding: box.shape === "marker" ? 0 : "8px 10px",
+                      background: live2 ? MT.accMix(18) : MT.s05,
+                      border: `1px solid ${live2 ? MT.accMix(45) : "transparent"}`,
+                      overflow: "hidden",
+                      cursor: "pointer"
+                    },
+                    children: box.shape !== "marker" ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+                      /* @__PURE__ */ jsx("div", { style: { fontSize: 12, fontWeight: 600, lineHeight: "16px", ...ellipsis }, children: programme.title }),
+                      box.shape === "full" ? /* @__PURE__ */ jsx("div", { style: { fontSize: 11, lineHeight: "14px", color: MT.dim, ...ellipsis }, children: formatClock(programme.start, locale) }) : null
+                    ] }) : null
+                  },
+                  programme.start
+                );
+              }) })
+            ] }, key);
+          })
+        ] }),
+        hasMore ? /* @__PURE__ */ jsx("div", { "data-testid": "show-more", ...station(() => setVisibleRows((count) => count + ROWS_STEP2)), style: { position: "sticky", left: 0, margin: `16px 0 0 ${MT.PAD}px`, width: "fit-content", minHeight: MT.HIT, padding: "0 24px", borderRadius: 999, background: MT.s10, display: "flex", alignItems: "center", fontSize: 15, cursor: "pointer" }, children: tt("showMore") }) : null
+      ] }) })
+    ] });
+  }
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
   init_jsx_runtime_shim();
-  var MAX_ROWS = 80;
+  var MAX_ROWS2 = 80;
   var EPG_ROWS_STEP = 80;
-  var CANDIDATE_FACTOR = 3;
   function alignToHour(ms) {
     const d = new Date(ms);
     d.setMinutes(0, 0, 0);
@@ -200678,12 +203385,16 @@ ${cue.text}`).join("\n\n")}
     }, []);
     return fine;
   }
-  function TvGuideGrid({ model, nav, mode, onModeChange }) {
+  function TvGuideGrid(props) {
+    if (props.phone) return /* @__PURE__ */ jsx(TvGuideGridPhone, { ...props, mode: phoneGuideMode(props.mode), onModeChange: props.onModeChange });
+    return /* @__PURE__ */ jsx(TvGuideGridDesktop, { ...props });
+  }
+  function TvGuideGridDesktop({ model, nav, mode, onModeChange }) {
     const { tt, locale } = useTvText();
     const groups = useGuideGroups(model, tt);
     const [group, setGroup] = useState(null);
     const [dayOffset, setDayOffset] = useState(0);
-    const [visibleRows, setVisibleRows] = useState(MAX_ROWS);
+    const [visibleRows, setVisibleRows] = useState(MAX_ROWS2);
     const [selected, setSelected] = useState(null);
     const [reminderTick, setReminderTick] = useState(0);
     const scrollRef = useRef(null);
@@ -200697,28 +203408,10 @@ ${cue.text}`).join("\n\n")}
     const nowLeft = nowLinePx(nowMs, windowStart);
     const nowVisible = nowMs >= windowStart && nowMs <= windowEnd;
     useEffect(() => {
-      setVisibleRows(MAX_ROWS);
+      setVisibleRows(MAX_ROWS2);
       setSelected(null);
     }, [group, dayOffset]);
-    const ordered = useMemo(
-      () => [
-        ...model.pinnedKeys.map((key) => model.byKey.get(key)).filter((channel) => Boolean(channel)),
-        ...model.channels.filter((channel) => !model.pinnedSet.has(channelKey(channel)))
-      ],
-      [model.pinnedKeys, model.byKey, model.channels, model.pinnedSet]
-    );
-    const eligible = useMemo(() => {
-      if (group === FAVS_GROUP) return model.favouriteChannels;
-      if (group) return ordered.filter((channel) => channel.group === group);
-      return ordered;
-    }, [ordered, group, model.favouriteChannels]);
-    const candidates = useMemo(() => eligible.slice(0, visibleRows * CANDIDATE_FACTOR), [eligible, visibleRows]);
-    const { schedules, loading: schedulesLoading } = useSchedules(candidates, windowStart, windowEnd);
-    const { rows, hasMore: moreAmongCandidates } = useMemo(
-      () => selectEpgRows(candidates, (channel) => schedules[channelKey(channel)] ?? [], null, visibleRows),
-      [candidates, schedules, visibleRows]
-    );
-    const hasMore = moreAmongCandidates || candidates.length < eligible.length;
+    const { rows, hasMore, schedulesLoading } = useGridRows(model, group, visibleRows, windowStart, windowEnd);
     const scrollToNow = () => {
       const el = scrollRef.current;
       if (!el) return;
@@ -200814,7 +203507,7 @@ ${cue.text}`).join("\n\n")}
                         (element) => nav.channelMenu(channel, element),
                         initKey && initKey.channel === key && initKey.start === null ? { "data-init": "" } : void 0
                       ),
-                      style: { width: dp(CHANNEL_COL_PX), flexShrink: 0, display: "flex", alignItems: "center", gap: dp(10), paddingRight: dp(10), background: TV2.bg, zIndex: 1, cursor: "pointer", ...narrow ? null : { position: "sticky", left: 0 } },
+                      style: { width: dp(CHANNEL_COL_PX), minHeight: dp(ROW_MIN_H_PX), flexShrink: 0, display: "flex", alignItems: "center", gap: dp(10), paddingRight: dp(10), background: TV2.bg, zIndex: 1, cursor: "pointer", ...narrow ? null : { position: "sticky", left: 0 } },
                       children: [
                         /* @__PURE__ */ jsx(ChannelArt, { channel, style: { width: dp(48), height: dp(30), flexShrink: 0 }, radius: dp(6) }),
                         /* @__PURE__ */ jsx("div", { style: { minWidth: 0, fontSize: dp(15), fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: channel.name })
@@ -200853,7 +203546,7 @@ ${cue.text}`).join("\n\n")}
       ) : null,
       rows.length > 0 ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", gap: dp(16), padding: `0 ${dp(48)}px`, flexShrink: 0 }, children: [
         /* @__PURE__ */ jsx("span", { style: { fontSize: dp(15), color: TV2.dim }, children: hasMore ? tt("gridShowing", { shown: rows.length }) : tt("gridAllWithGuide", { shown: rows.length }) }),
-        hasMore ? /* @__PURE__ */ jsx("div", { ...station(() => setVisibleRows((count) => count + EPG_ROWS_STEP), void 0, { "data-testid": "grid-show-more" }), style: { height: dp(44), padding: `0 ${dp(22)}px`, borderRadius: 999, background: TV2.s10, display: "flex", alignItems: "center", fontSize: dp(17), cursor: "pointer" }, children: tt("showMore") }) : null
+        hasMore ? /* @__PURE__ */ jsx("div", { ...station(() => setVisibleRows((count) => count + EPG_ROWS_STEP), void 0, { "data-testid": "grid-show-more" }), style: { height: dp(44), minHeight: dp(44), padding: `0 ${dp(22)}px`, borderRadius: 999, background: TV2.s10, display: "flex", alignItems: "center", fontSize: dp(17), cursor: "pointer" }, children: tt("showMore") }) : null
       ] }) : null,
       /* @__PURE__ */ jsx("div", { "data-testid": "grid-detail", style: { margin: `${dp(12)}px ${dp(48)}px ${dp(20)}px`, padding: `${dp(12)}px ${dp(16)}px`, borderRadius: dp(14), background: TV2.s06, border: `1px solid ${TV2.line}`, display: "flex", alignItems: "center", gap: dp(16), minHeight: dp(72), flexShrink: 0 }, children: selected ? /* @__PURE__ */ jsxs(Fragment2, { children: [
         /* @__PURE__ */ jsx(ChannelArt, { channel: selected.channel, style: { width: dp(64), height: dp(40), flexShrink: 0 }, radius: dp(8) }),
@@ -200868,16 +203561,16 @@ ${cue.text}`).join("\n\n")}
           ] }),
           /* @__PURE__ */ jsx("div", { "data-selectable-text": "", style: { fontSize: dp(15), color: TV2.muted, marginTop: dp(2), overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }, children: selected.programme.description ?? "" })
         ] }),
-        selected.programme.start > nowMs ? /* @__PURE__ */ jsxs("div", { ...station(() => toggle(selected.channel, selected.programme), void 0, { "data-testid": "grid-remind" }), style: { height: dp(44), padding: `0 ${dp(18)}px`, borderRadius: 999, background: selectedReminded ? TV2.accMix(22) : TV2.s10, color: selectedReminded ? TV2.accText : TV2.text, display: "inline-flex", alignItems: "center", gap: dp(8), fontSize: dp(16), cursor: "pointer" }, children: [
+        selected.programme.start > nowMs ? /* @__PURE__ */ jsxs("div", { ...station(() => toggle(selected.channel, selected.programme), void 0, { "data-testid": "grid-remind" }), style: { height: dp(44), minHeight: dp(44), padding: `0 ${dp(18)}px`, borderRadius: 999, background: selectedReminded ? TV2.accMix(22) : TV2.s10, color: selectedReminded ? TV2.accText : TV2.text, display: "inline-flex", alignItems: "center", gap: dp(8), fontSize: dp(16), cursor: "pointer" }, children: [
           /* @__PURE__ */ jsx(Icons.Bell, { size: dp(18), filled: selectedReminded }),
           selectedReminded ? tt("reminderSet") : tt("remindMe")
         ] }) : null,
-        /* @__PURE__ */ jsxs("div", { ...station(() => nav.play({ channel: selected.channel }), void 0, { "data-testid": "grid-watch" }), style: { height: dp(44), padding: `0 ${dp(20)}px`, borderRadius: 999, background: TV2.acc, color: TV2.onAcc, display: "inline-flex", alignItems: "center", gap: dp(8), fontSize: dp(16), fontWeight: 600, cursor: "pointer" }, children: [
+        /* @__PURE__ */ jsxs("div", { ...station(() => nav.play({ channel: selected.channel }), void 0, { "data-testid": "grid-watch" }), style: { height: dp(44), minHeight: dp(44), padding: `0 ${dp(20)}px`, borderRadius: 999, background: TV2.acc, color: TV2.onAcc, display: "inline-flex", alignItems: "center", gap: dp(8), fontSize: dp(16), fontWeight: 600, cursor: "pointer" }, children: [
           /* @__PURE__ */ jsx(Icons.Play, { size: dp(16) }),
           " ",
           tt("watchNow")
         ] })
-      ] }) : /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: TV2.faint }, children: tt("gridHelp") }) })
+      ] }) : null })
     ] });
   }
   function GridBlock({ box, programme, locale, live: live2, init, selected, reminded, remindLabel, hover: hover2, onSelect, onOk, onHold }) {
@@ -200898,6 +203591,7 @@ ${cue.text}`).join("\n\n")}
           top: 0,
           bottom: 0,
           width: box.width,
+          minHeight: dp(ROW_MIN_H_PX),
           boxSizing: "border-box",
           // Padding ur geometrin — aldrig bredare än en tredjedel av blocket, så
           // ett smalt block inte trycks upp i minst 2 × 8 px och lägger sig över
@@ -200921,10 +203615,889 @@ ${cue.text}`).join("\n\n")}
   }
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide.tsx
+  init_useSchedules();
+  init_guide_surface();
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-shell.tsx
+  init_react_shim();
+  init_plugin_sdk();
+  init_tv_ui();
+  init_tv_strings();
+  init_tv_settings_store();
+  init_guide_surface();
+  init_live_tv_model();
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-list-picker.tsx
+  init_react_shim();
+  init_live_tv_data();
+  init_tv_ui();
+  init_tv_strings();
   init_jsx_runtime_shim();
-  var ROW_STEP2 = 40;
+  function PickerPanel({
+    nav,
+    title,
+    chips,
+    rows,
+    onClose,
+    testId = "list-picker"
+  }) {
+    const rootRef = useRef(null);
+    const openerRef = useRef(null);
+    const closeRef = useRef(null);
+    const navRef = useRef(nav);
+    const onCloseRef = useRef(onClose);
+    useEffect(() => {
+      navRef.current = nav;
+      onCloseRef.current = onClose;
+    });
+    useEffect(() => {
+      openerRef.current = document.activeElement;
+      const close = () => {
+        onCloseRef.current();
+        window.setTimeout(() => openerRef.current?.focus({ preventScroll: true }), 0);
+      };
+      closeRef.current = close;
+      const off = navRef.current.pushLayer(close);
+      window.setTimeout(() => rootRef.current?.querySelector("[data-init]")?.focus({ preventScroll: true }), 0);
+      return off;
+    }, []);
+    return /* @__PURE__ */ jsxs(
+      "div",
+      {
+        ref: rootRef,
+        "data-testid": testId,
+        "data-panel-root": "",
+        "data-live-tv-layer": "",
+        style: { position: "fixed", top: 0, right: 0, bottom: 0, width: `min(${dp(640)}px, 100%)`, zIndex: 60, background: TV2.panel, borderLeft: `1px solid ${TV2.line}`, padding: `${dp(34)}px ${dp(32)}px`, display: "flex", flexDirection: "column", gap: dp(18) },
+        children: [
+          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(28), fontWeight: 600 }, children: title }),
+          chips,
+          /* @__PURE__ */ jsx("div", { "data-scroll": "", style: { flex: 1, minHeight: 0, overflowY: "auto" }, children: typeof rows === "function" ? rows(() => closeRef.current?.()) : rows })
+        ]
+      }
+    );
+  }
+  function Check({ on, label: label2 }) {
+    if (!on) return /* @__PURE__ */ jsx("span", { style: { width: dp(28), flexShrink: 0 } });
+    return /* @__PURE__ */ jsx("span", { "data-testid": `picker-check-${label2}`, style: { width: dp(28), flexShrink: 0, color: TV2.acc, fontSize: dp(22), textAlign: "center" }, children: "\u2713" });
+  }
+  function TvListPicker({ model, nav, title, selected, onToggle, onClose }) {
+    const { tt } = useTvText();
+    const groups = useGuideGroups(model, tt);
+    const [group, setGroup] = useState(null);
+    const rows = useMemo(() => filterByGroup(model, group).slice(0, 200), [model, group]);
+    return /* @__PURE__ */ jsx(
+      PickerPanel,
+      {
+        nav,
+        title,
+        onClose,
+        chips: /* @__PURE__ */ jsx("div", { "data-row": "", style: { display: "flex", gap: dp(8), overflowX: "auto" }, children: groups.map((chip, index3) => /* @__PURE__ */ jsx(Chip, { active: group === chip.key, ...station(() => setGroup(chip.key), void 0, rows.length === 0 && index3 === 0 ? { "data-init": "" } : void 0), style: { height: dp(40), minHeight: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }, children: chip.label }, chip.id)) }),
+        rows: rows.map((channel, index3) => {
+          const on = selected.has(channelKey(channel));
+          return /* @__PURE__ */ jsxs(
+            "div",
+            {
+              "data-testid": `picker-row-${channel.name}`,
+              ...station(() => onToggle(channel), void 0, index3 === 0 ? { "data-init": "" } : void 0),
+              style: { height: dp(74), minHeight: dp(74), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(12)}px`, cursor: "pointer" },
+              children: [
+                /* @__PURE__ */ jsx(Check, { on, label: channel.name }),
+                /* @__PURE__ */ jsx(ChannelArt, { channel, style: { width: dp(70), height: dp(46), flexShrink: 0 }, radius: dp(8) }),
+                /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
+                  /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: channel.name }),
+                  /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: "rgba(243,244,248,0.6)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: channel.group })
+                ] })
+              ]
+            },
+            channelKey(channel)
+          );
+        })
+      }
+    );
+  }
+  function TvCategoryPicker({ nav, title, categories, selected, onToggle, onSelectAll, onClose }) {
+    const { tt } = useTvText();
+    const all = selected.size === 0;
+    return /* @__PURE__ */ jsx(
+      PickerPanel,
+      {
+        nav,
+        title,
+        onClose,
+        chips: null,
+        rows: /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsxs(
+            "div",
+            {
+              "data-testid": "picker-row-all",
+              ...station(onSelectAll, void 0, { "data-init": "" }),
+              style: { height: dp(64), minHeight: dp(64), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(12)}px`, fontSize: dp(19), cursor: "pointer" },
+              children: [
+                /* @__PURE__ */ jsx(Check, { on: all, label: "all" }),
+                tt("xtreamAllCategories")
+              ]
+            }
+          ),
+          categories === null ? /* @__PURE__ */ jsx("div", { style: { padding: dp(12), fontSize: dp(17), color: TV2.dim }, children: tt("loadingChannels") }) : categories.map((category) => /* @__PURE__ */ jsxs(
+            "div",
+            {
+              "data-testid": `picker-row-${category.name}`,
+              ...station(() => onToggle(category)),
+              style: { height: dp(64), minHeight: dp(64), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(12)}px`, fontSize: dp(19), cursor: "pointer" },
+              children: [
+                /* @__PURE__ */ jsx(Check, { on: selected.has(category.id), label: category.name }),
+                /* @__PURE__ */ jsx("span", { style: { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: category.name })
+              ]
+            },
+            category.id
+          ))
+        ] })
+      }
+    );
+  }
+  function TvChoicePanel({ nav, title, options, value, onPick, onClose }) {
+    const initIndex = Math.max(0, options.findIndex((option) => option.key === value));
+    return /* @__PURE__ */ jsx(
+      PickerPanel,
+      {
+        nav,
+        title,
+        onClose,
+        chips: null,
+        testId: "choice-panel",
+        rows: (close) => options.map((option, index3) => {
+          const on = option.key === value;
+          return /* @__PURE__ */ jsxs(
+            "div",
+            {
+              "data-testid": `choice-row-${option.label}`,
+              ...station(() => {
+                onPick(option.key);
+                close();
+              }, void 0, index3 === initIndex ? { "data-init": "" } : void 0),
+              style: { height: gp(56), minHeight: gp(56), borderRadius: gp(10), display: "flex", alignItems: "center", gap: gp(12), padding: `0 ${gp(12)}px`, cursor: "pointer", background: on ? TV2.s08 : "transparent" },
+              children: [
+                /* @__PURE__ */ jsx(Check, { on, label: option.label }),
+                /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, fontSize: gp(15), fontWeight: on ? 600 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: option.label }),
+                option.count !== void 0 ? /* @__PURE__ */ jsx("span", { style: { fontSize: gp(14), color: TV2.faint, flexShrink: 0 }, children: option.count }) : null
+              ]
+            },
+            option.key ?? "__all"
+          );
+        })
+      }
+    );
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-control-row.tsx
+  init_tv_ui();
+  init_tv_strings();
+  init_jsx_runtime_shim();
+  var DROPDOWN = { height: gp(34), minHeight: gp(34), padding: `0 ${gp(12)}px`, borderRadius: gp(10), background: TV2.s08, border: `1px solid ${TV2.line}`, display: "inline-flex", alignItems: "center", gap: gp(8), maxWidth: gp(230), cursor: "pointer", flexShrink: 1, minWidth: 0 };
+  var SEGMENT = { display: "inline-flex", padding: gp(3), borderRadius: 999, background: TV2.s07, flexShrink: 0, whiteSpace: "nowrap" };
+  var SEGMENT_BTN = { height: gp(28), minHeight: gp(28), padding: `0 ${gp(16)}px`, borderRadius: 999, display: "inline-flex", alignItems: "center", fontSize: gp(13), whiteSpace: "nowrap", cursor: "pointer" };
+  function Dropdown({ label: label2, count, onOpen, testId }) {
+    return /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onOpen), style: DROPDOWN, title: label2, children: [
+      /* @__PURE__ */ jsx("span", { style: { fontSize: gp(14), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }, children: label2 }),
+      /* @__PURE__ */ jsx("span", { style: { fontSize: gp(14), color: TV2.faint, flexShrink: 0 }, children: count }),
+      /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { color: TV2.faint, fontSize: gp(10), flexShrink: 0 }, children: "\u25BE" })
+    ] });
+  }
+  function ControlSegment({ options, value, onChange, testId, activeStyle }) {
+    return /* @__PURE__ */ jsx("div", { "data-testid": testId, style: SEGMENT, children: options.map((option) => {
+      const active2 = option.key === value;
+      return /* @__PURE__ */ jsx(
+        "div",
+        {
+          ...station(() => onChange(option.key), void 0, active2 ? { "data-active": "" } : void 0),
+          style: { ...SEGMENT_BTN, background: active2 ? TV2.s16 : "transparent", color: active2 ? TV2.text : TV2.muted, fontWeight: active2 ? 600 : 400, ...active2 ? activeStyle : void 0 },
+          children: option.label
+        },
+        option.key
+      );
+    }) });
+  }
+  var Divider = () => /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { width: 1, height: gp(22), background: "rgba(255,255,255,0.1)", flexShrink: 0 } });
+  function GuideControlRow(props) {
+    const { tt } = useTvText();
+    const { mode } = props;
+    const showDay = mode !== "nownext";
+    const showNow = mode !== "nownext";
+    const showZoom = false;
+    const showDetails = mode === "nownext";
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "guide-control-row", style: { height: gp(56), minHeight: gp(56), padding: `0 ${gp(20)}px`, display: "flex", alignItems: "center", gap: gp(10), borderBottom: `1px solid ${TV2.line}`, flexShrink: 0, boxSizing: "border-box" }, children: [
+      /* @__PURE__ */ jsx(Dropdown, { testId: "guide-source", label: props.sourceLabel, count: props.sourceCount, onOpen: props.onOpenSource }),
+      /* @__PURE__ */ jsx(Dropdown, { testId: "guide-category", label: props.categoryLabel, count: props.categoryCount, onOpen: props.onOpenCategory }),
+      /* @__PURE__ */ jsx(Divider, {}),
+      showDay ? /* @__PURE__ */ jsx(
+        ControlSegment,
+        {
+          testId: "guide-day",
+          options: [{ key: "0", label: tt("today") }, { key: "1", label: tt("tomorrow") }],
+          value: props.dayOffset === 1 ? "1" : "0",
+          onChange: (key) => props.onDay(key === "1" ? 1 : 0),
+          activeStyle: { background: "#f3f4f8", color: "#111" }
+        }
+      ) : null,
+      showNow ? /* @__PURE__ */ jsx(
+        "div",
+        {
+          "data-testid": "guide-now",
+          ...station(() => props.onNow?.()),
+          style: { height: gp(34), minHeight: gp(34), padding: `0 ${gp(14)}px`, borderRadius: 999, display: "inline-flex", alignItems: "center", fontSize: gp(13), fontWeight: 600, background: TV2.accMix(18), border: `1px solid ${TV2.accMix(45)}`, color: TV2.text, cursor: "pointer", flexShrink: 0 },
+          children: tt("gridNow")
+        }
+      ) : null,
+      /* @__PURE__ */ jsx(Divider, {}),
+      /* @__PURE__ */ jsx(
+        ControlSegment,
+        {
+          testId: "guide-mode",
+          options: [{ key: "grid", label: tt("modeGrid") }, { key: "nownext", label: tt("modeNowNext") }, { key: "timeline", label: tt("modeTimelineDay") }],
+          value: mode,
+          onChange: props.onMode
+        }
+      ),
+      showDetails ? /* @__PURE__ */ jsxs(
+        "div",
+        {
+          "data-testid": "guide-details",
+          ...station(() => props.onDetails?.(), void 0, props.details ? { "data-active": "" } : void 0),
+          style: { height: gp(34), minHeight: gp(34), padding: `0 ${gp(12)}px`, borderRadius: gp(10), display: "inline-flex", alignItems: "center", gap: gp(8), fontSize: gp(13), fontWeight: props.details ? 600 : 400, background: props.details ? TV2.s16 : TV2.s08, border: `1px solid ${TV2.line}`, color: props.details ? TV2.text : TV2.muted, cursor: "pointer", flexShrink: 0 },
+          children: [
+            /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { width: gp(8), height: gp(8), borderRadius: 999, background: props.details ? TV2.acc : TV2.faint } }),
+            tt("details")
+          ]
+        }
+      ) : null,
+      showZoom ? /* @__PURE__ */ jsx(
+        ControlSegment,
+        {
+          testId: "guide-zoom",
+          options: [{ key: "2h", label: tt("zoom2h") }, { key: "6h", label: tt("zoom6h") }, { key: "day", label: tt("zoomDay") }],
+          value: props.zoom ?? "day",
+          onChange: (z) => props.onZoom?.(z)
+        }
+      ) : null,
+      /* @__PURE__ */ jsx("span", { style: { flex: 1 } }),
+      /* @__PURE__ */ jsx("div", { "data-testid": "guide-clock", style: { display: "inline-flex", alignItems: "center", fontSize: gp(13), color: TV2.dim, letterSpacing: "0.06em", whiteSpace: "nowrap", flexShrink: 0 }, children: props.clock })
+    ] });
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-grid-view.tsx
+  init_react_shim();
+  init_live_tv_data();
+  init_live_tv_ui();
+  init_reminders();
+  init_tv_ui();
+  init_tv_strings();
+  init_live_tv_model();
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
+  init_live_tv_ui();
+  init_tv_ui();
+  init_tv_strings();
+  init_jsx_runtime_shim();
+  var DETAIL_PANEL_WIDTH_PX = gp(320);
+  function GuideDetailPanel({ selection, nowMs, locale, channelNumber, onWatch, onRemind, onToggleFavourite, favourite, reminded }) {
+    const { tt } = useTvText();
+    const frame2 = {
+      flex: `0 0 ${DETAIL_PANEL_WIDTH_PX}px`,
+      width: DETAIL_PANEL_WIDTH_PX,
+      minWidth: 0,
+      boxSizing: "border-box",
+      borderLeft: `1px solid ${TV2.line}`,
+      padding: gp(20),
+      display: "flex",
+      flexDirection: "column",
+      gap: gp(14),
+      overflow: "auto"
+    };
+    if (!selection) {
+      return /* @__PURE__ */ jsx("div", { "data-testid": "guide-detail-panel", style: frame2, children: /* @__PURE__ */ jsx("div", { style: { fontSize: gp(13), color: TV2.faint, lineHeight: 1.5 }, children: tt("detailEmpty") }) });
+    }
+    const { channel, programme } = selection;
+    const live2 = programme !== null && programme.start <= nowMs && programme.stop > nowMs;
+    const future = programme !== null && programme.start > nowMs;
+    const minutesLeft = programme ? Math.max(0, Math.ceil((programme.stop - nowMs) / 6e4)) : 0;
+    const timeLine = programme ? `${formatClock(programme.start, locale)}\u2013${formatClock(programme.stop, locale)}${live2 ? ` \xB7 ${tt("minutesLeft", { min: minutesLeft })}` : ""}` : "";
+    const secondary = { height: gp(38), flex: 1, minWidth: 0, borderRadius: gp(10), background: TV2.s08, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: gp(8), fontSize: gp(13), cursor: "pointer", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "guide-detail-panel", style: frame2, children: [
+      /* @__PURE__ */ jsx(ChannelArt, { channel, height: gp(180), radius: gp(12), style: { width: "100%" }, children: live2 ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", left: gp(12), bottom: gp(12) }, children: /* @__PURE__ */ jsx(Tag2, { variant: "live", style: { height: gp(24), padding: `0 ${gp(10)}px`, fontSize: gp(11) }, children: tt("live") }) }) : null }),
+      /* @__PURE__ */ jsx("div", { "data-testid": "detail-channel", style: { fontSize: gp(12), color: "rgba(243,244,248,0.45)", letterSpacing: "0.12em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: [channelNumber, channel.name].filter((part) => part !== null && part !== "").join(" \xB7 ") }),
+      /* @__PURE__ */ jsx("div", { "data-testid": "detail-title", style: { fontSize: gp(20), fontWeight: 600, lineHeight: 1.25, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }, children: programme ? programme.title : tt("noProgramme") }),
+      programme ? /* @__PURE__ */ jsx("div", { "data-testid": "detail-time", style: { fontSize: gp(13), color: "rgba(243,244,248,0.6)" }, children: timeLine }) : null,
+      live2 && programme ? /* @__PURE__ */ jsx(Progress, { value: progressOf(programme.start, programme.stop, nowMs), height: gp(4) }) : null,
+      programme ? /* @__PURE__ */ jsx("div", { "data-testid": "detail-description", "data-selectable-text": "", style: { fontSize: gp(13), color: TV2.muted, lineHeight: 1.5 }, children: programme.description ?? "" }) : null,
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: gp(8), marginTop: "auto" }, children: [
+        /* @__PURE__ */ jsxs(
+          "div",
+          {
+            "data-testid": "detail-watch",
+            ...station(onWatch),
+            style: { height: gp(40), borderRadius: gp(10), background: TV2.acc, color: TV2.onAcc, display: "flex", alignItems: "center", justifyContent: "center", gap: gp(8), fontSize: gp(14), fontWeight: 600, cursor: "pointer" },
+            children: [
+              /* @__PURE__ */ jsx(Icons.Play, { size: gp(14) }),
+              " ",
+              tt("watchNowShort")
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: gp(8) }, children: [
+          future ? /* @__PURE__ */ jsxs("div", { "data-testid": "detail-remind", ...station(onRemind), style: { ...secondary, color: reminded ? TV2.accText : TV2.text }, ...reminded ? { "data-active": "" } : {}, children: [
+            /* @__PURE__ */ jsx(Icons.Bell, { size: gp(14), filled: reminded }),
+            " ",
+            reminded ? tt("reminderSet") : tt("remindMe")
+          ] }) : null,
+          /* @__PURE__ */ jsxs("div", { "data-testid": "detail-favourite", ...station(onToggleFavourite), style: { ...secondary, color: favourite ? TV2.accText : TV2.text }, ...favourite ? { "data-active": "" } : {}, children: [
+            /* @__PURE__ */ jsx(Icons.Heart, { size: gp(14), filled: favourite }),
+            " ",
+            tt("favouriteShort")
+          ] })
+        ] })
+      ] })
+    ] });
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-grid-view.tsx
+  init_jsx_runtime_shim();
+  var ROW_H_PX = gp(60);
+  var HALF_HOUR_MS2 = 30 * 6e4;
+  var PX_PER_MIN_GRID = gp(4.7);
+  var GRID_THRESHOLDS = { marker: gp(18), title: gp(72) };
+  var NOW_LEAD_PX2 = gp(40);
+  var CHANNEL_COL_PX2 = guideCellStyle("grid").width;
+  function gridWindow(nowMs, dayOffset) {
+    if (dayOffset === 1) return { start: startOfLocalDay(nowMs, 1) + 6 * 36e5, end: startOfLocalDay(nowMs, 2) + 6 * 36e5 };
+    return { start: guideWindowStart(nowMs) - HALF_HOUR_MS2, end: startOfLocalDay(nowMs, 1) + 6 * 36e5 };
+  }
+  function GuideGridView({ model, nav, category, dayOffset, windowStart, nowTick, selection, onSelect, isTv, detailPanel = true }) {
+    const { tt, locale } = useTvText();
+    const { nowMs } = model;
+    const { start: gridStart, end: gridEnd } = gridWindow(nowMs, dayOffset);
+    const scrollRef = useRef(null);
+    const [visibleRows, setVisibleRows] = useState(ROWS_STEP);
+    const [reminderTick, setReminderTick] = useState(0);
+    void reminderTick;
+    useEffect(() => {
+      setVisibleRows(ROWS_STEP);
+    }, [category, dayOffset, windowStart]);
+    const { rows, withoutEpg, hasMore, schedulesLoading } = useGridRows(model, category, visibleRows, gridStart, gridEnd);
+    const total = filterByGroup(model, category).length;
+    const hover2 = useHoverSelect(!isTv, onSelect);
+    const labels = useMemo(() => {
+      const list = [];
+      for (let t = gridStart; t < gridEnd; t += HALF_HOUR_MS2) list.push(t);
+      return list;
+    }, [gridStart, gridEnd]);
+    const trackWidth = (gridEnd - gridStart) / 6e4 * PX_PER_MIN_GRID;
+    const nowLeft = nowLinePx(nowMs, gridStart, PX_PER_MIN_GRID);
+    const nowVisible = nowLeft >= 0 && nowLeft <= trackWidth;
+    const entriesByChannel = useMemo(() => {
+      const map = /* @__PURE__ */ new Map();
+      for (const row of rows) map.set(channelKey(row.channel), epgRowBoxes(row.programmes, gridStart, gridEnd, PX_PER_MIN_GRID, GRID_THRESHOLDS));
+      return map;
+    }, [rows, gridStart, gridEnd]);
+    const nothing = rows.length === 0 && (withoutEpg.length === 0 || schedulesLoading);
+    useEffect(() => {
+      const el = scrollRef.current;
+      if (!el || nothing) return;
+      const targetMs = windowStart === guideWindowStart(nowMs) ? nowMs : windowStart;
+      el.scrollLeft = Math.max(0, nowLinePx(targetMs, gridStart, PX_PER_MIN_GRID) - NOW_LEAD_PX2);
+    }, [windowStart, nowTick, nothing]);
+    const isLive = (programme) => programme.start <= nowMs && programme.stop > nowMs;
+    const toggle = (channel, programme) => {
+      toggleReminder(channel, programme, nowMs);
+      setReminderTick((value) => value + 1);
+    };
+    const remindAction = (channel, programme) => ({
+      key: "remind",
+      label: isReminded(channel, programme) ? tt("removeReminder") : tt("remindMe"),
+      run: () => toggle(channel, programme)
+    });
+    const initKey = useMemo(() => {
+      const first = rows[0];
+      if (!first) return withoutEpg[0] ? { channel: channelKey(withoutEpg[0]), start: null, empty: true } : null;
+      const key = channelKey(first.channel);
+      const live2 = (entriesByChannel.get(key) ?? []).find((entry) => isLive(entry.programme));
+      return { channel: key, start: live2 ? live2.programme.start : null, empty: false };
+    }, [rows, withoutEpg, entriesByChannel, nowMs]);
+    const selectedKey = selection ? channelKey(selection.channel) : null;
+    const isSelected = (channel, programme) => selectedKey === channelKey(channel) && (selection?.programme?.start ?? null) === (programme?.start ?? null);
+    const channelCell = (channel, init) => {
+      const key = channelKey(channel);
+      return /* @__PURE__ */ jsx(
+        "div",
+        {
+          "data-testid": "grid-channel",
+          "data-guide-row": "",
+          "data-sticky": "",
+          title: channel.name,
+          ...station(() => nav.openChannel(channel), (element) => nav.channelMenu(channel, element), initAttr(init)),
+          style: { ...guideCellStyle("grid"), position: "sticky", left: 0, zIndex: 2, background: TV2.bg, display: "flex", alignItems: "stretch", cursor: "pointer" },
+          children: /* @__PURE__ */ jsx(GuideChannelCell, { channel, number: model.channelNumber(channel), pinned: model.pinnedSet.has(key), locked: model.locked.has(key), variant: "grid" })
+        }
+      );
+    };
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "guide-grid-view", style: { flex: 1, minHeight: 0, display: "flex" }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }, children: [
+        /* @__PURE__ */ jsxs("div", { ref: scrollRef, "data-scroll": "", "data-testid": "grid-scroll", style: { flex: 1, minHeight: 0, overflow: "auto" }, children: [
+          /* @__PURE__ */ jsx(
+            "div",
+            {
+              "data-testid": "grid-empty",
+              ...nothing ? station(() => {
+              }, void 0, initAttr(true)) : {},
+              style: { display: nothing ? "block" : "none", margin: gp(20), padding: gp(20), borderRadius: gp(12), background: TV2.s05, fontSize: gp(13), color: TV2.faint, lineHeight: 1.5 },
+              children: model.channelsLoading ? tt("loadingChannels") : schedulesLoading ? tt("loadingGuide") : tt("guideEmpty")
+            }
+          ),
+          nothing ? null : /* @__PURE__ */ jsxs("div", { style: { minWidth: CHANNEL_COL_PX2 + trackWidth }, children: [
+            /* @__PURE__ */ jsxs("div", { "data-testid": "grid-time-axis", style: { position: "sticky", top: 0, zIndex: 3, height: gp(30), minHeight: gp(30), display: "flex", background: TV2.bg, borderBottom: `1px solid ${TV2.line}`, boxSizing: "border-box" }, children: [
+              /* @__PURE__ */ jsx("div", { style: { ...guideCellStyle("grid"), position: "sticky", left: 0, zIndex: 1, background: TV2.bg } }),
+              labels.map((mark) => /* @__PURE__ */ jsx("div", { "data-testid": "grid-time-label", "data-ms": String(mark), style: { width: 30 * PX_PER_MIN_GRID, flexShrink: 0, borderLeft: "1px solid rgba(255,255,255,0.06)", paddingLeft: gp(8), boxSizing: "border-box", display: "flex", alignItems: "center", fontSize: gp(11), color: "rgba(243,244,248,0.4)", letterSpacing: "0.06em", ...ellipsis2 }, children: formatClock(mark, locale) }, mark))
+            ] }),
+            /* @__PURE__ */ jsxs("div", { style: { position: "relative" }, children: [
+              rows.map(({ channel }) => {
+                const key = channelKey(channel);
+                const entries = entriesByChannel.get(key) ?? [];
+                const rowInit = initKey !== null && initKey.channel === key && !initKey.empty;
+                return /* @__PURE__ */ jsxs("div", { "data-testid": "grid-row", style: { display: "flex", height: ROW_H_PX, minHeight: ROW_H_PX, borderBottom: "1px solid rgba(255,255,255,0.06)", boxSizing: "border-box" }, children: [
+                  channelCell(channel, rowInit && initKey.start === null),
+                  /* @__PURE__ */ jsx("div", { "data-testid": "grid-track", style: { width: trackWidth, flexShrink: 0, position: "relative" }, children: entries.map(({ box, programme }) => {
+                    const live2 = isLive(programme);
+                    const sel = { channel, programme };
+                    return /* @__PURE__ */ jsx(
+                      GridBlock2,
+                      {
+                        box,
+                        programme,
+                        locale,
+                        live: live2,
+                        init: rowInit && initKey.start === programme.start,
+                        selected: isSelected(channel, programme),
+                        reminded: isReminded(channel, programme),
+                        onFocus: isTv ? () => onSelect(sel) : void 0,
+                        onEnter: hover2.enter ? () => hover2.enter?.(sel) : void 0,
+                        onLeave: hover2.leave,
+                        onOk: () => {
+                          onSelect(sel);
+                          if (live2) nav.play({ channel });
+                        },
+                        onHold: (element) => nav.channelMenu(channel, element, live2 ? void 0 : [remindAction(channel, programme)])
+                      },
+                      programme.start
+                    );
+                  }) })
+                ] }, key);
+              }),
+              withoutEpg.map((channel, index3) => {
+                const key = channelKey(channel);
+                const sel = { channel, programme: null };
+                return /* @__PURE__ */ jsxs("div", { "data-testid": "grid-empty-row", style: { display: "flex", height: ROW_H_PX, minHeight: ROW_H_PX, background: "rgba(252,252,255,0.04)", borderBottom: "1px solid rgba(255,255,255,0.06)", boxSizing: "border-box" }, children: [
+                  channelCell(channel, false),
+                  /* @__PURE__ */ jsx(
+                    "div",
+                    {
+                      "data-testid": "grid-empty-cell",
+                      "data-guide-row": "",
+                      "data-selected": isSelected(channel, null) ? "" : void 0,
+                      ...withPointerLeave(station(() => {
+                        onSelect(sel);
+                        nav.play({ channel });
+                      }, (element) => nav.channelMenu(channel, element), initAttr(initKey !== null && initKey.empty && index3 === 0)), hover2.leave),
+                      onFocus: isTv ? () => onSelect(sel) : void 0,
+                      onPointerEnter: hover2.enter ? () => hover2.enter?.(sel) : void 0,
+                      style: { width: trackWidth, flexShrink: 0, display: "flex", alignItems: "center", padding: `0 ${gp(12)}px`, boxSizing: "border-box", fontSize: gp(13), color: "rgba(243,244,248,0.4)", cursor: "pointer", ...ellipsis2 },
+                      children: tt("noEpgRow")
+                    }
+                  )
+                ] }, key);
+              }),
+              /* @__PURE__ */ jsxs("div", { "aria-hidden": "true", style: { position: "absolute", top: 0, bottom: 0, left: CHANNEL_COL_PX2, width: trackWidth, display: "flex", pointerEvents: "none" }, children: [
+                labels.map((mark) => /* @__PURE__ */ jsx("div", { style: { width: 30 * PX_PER_MIN_GRID, flexShrink: 0, borderLeft: "1px solid rgba(255,255,255,0.06)", boxSizing: "border-box" } }, mark)),
+                nowVisible ? /* @__PURE__ */ jsx("div", { "data-testid": "grid-now-line", style: { position: "absolute", top: 0, bottom: 0, left: nowLeft, width: gp(2), background: TV2.acc, boxShadow: `0 0 ${gp(14)}px ${TV2.accMix(55)}`, zIndex: 1 } }) : null
+              ] })
+            ] })
+          ] })
+        ] }),
+        nothing ? null : /* @__PURE__ */ jsx(GuidePaginationRow, { testId: "grid", shown: rows.length, total, hasMore, onMore: () => setVisibleRows((count) => count + ROWS_STEP), hint: tt("noEpgLast") })
+      ] }),
+      detailPanel ? /* @__PURE__ */ jsx(
+        GuideDetailPanel,
+        {
+          selection,
+          nowMs,
+          locale,
+          channelNumber: selection ? model.channelNumber(selection.channel) : null,
+          favourite: selection ? model.pinnedSet.has(channelKey(selection.channel)) : false,
+          reminded: selection?.programme ? isReminded(selection.channel, selection.programme) : false,
+          onWatch: () => {
+            if (selection) nav.play({ channel: selection.channel });
+          },
+          onRemind: () => {
+            if (selection?.programme) toggle(selection.channel, selection.programme);
+          },
+          onToggleFavourite: () => {
+            if (selection) model.togglePin(selection.channel);
+          }
+        }
+      ) : null
+    ] });
+  }
+  function GridBlock2({ box, programme, locale, live: live2, init, selected, reminded, onFocus, onEnter, onLeave, onOk, onHold }) {
+    const times = `${box.clippedStart ? "\u2026" : formatClock(programme.start, locale)}\u2013${box.clippedEnd ? "\u2026" : formatClock(programme.stop, locale)}`;
+    const marker = box.shape === "marker";
+    const textFits = box.width >= gp(44);
+    return /* @__PURE__ */ jsx(
+      "div",
+      {
+        "data-testid": "grid-block",
+        "data-shape": box.shape,
+        "data-live": live2 ? "" : void 0,
+        "data-guide-block": "",
+        "data-selected": selected ? "" : void 0,
+        title: `${programme.title} ${times}`,
+        ...withPointerLeave(station(onOk, onHold, init ? { "data-init": "" } : void 0), onLeave),
+        onFocus,
+        onPointerEnter: onEnter,
+        style: { position: "absolute", top: gp(6), bottom: gp(6), left: box.left, width: box.width, paddingRight: gp(2), boxSizing: "border-box", cursor: "pointer" },
+        children: /* @__PURE__ */ jsx(
+          "div",
+          {
+            style: {
+              height: "100%",
+              boxSizing: "border-box",
+              borderRadius: marker ? 0 : gp(8),
+              padding: marker ? 0 : `${gp(8)}px ${gp(10)}px`,
+              background: marker ? TV2.acc : live2 ? "rgba(59,130,246,0.18)" : TV2.s08,
+              border: live2 ? "1px solid rgba(59,130,246,0.5)" : "1px solid transparent",
+              overflow: "hidden",
+              position: "relative"
+            },
+            children: marker ? null : /* @__PURE__ */ jsxs(Fragment2, { children: [
+              textFits ? /* @__PURE__ */ jsx("div", { style: { fontSize: gp(13), fontWeight: live2 ? 600 : 400, color: live2 ? TV2.text : TV2.muted, paddingRight: reminded ? gp(14) : 0, ...ellipsis2 }, children: programme.title }) : null,
+              textFits && box.shape === "full" ? /* @__PURE__ */ jsx("div", { style: { fontSize: gp(11), color: live2 ? "rgba(243,244,248,0.6)" : TV2.faint, ...ellipsis2 }, children: times }) : null,
+              reminded ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", right: gp(4), top: gp(4), color: TV2.acc }, children: /* @__PURE__ */ jsx(Icons.Bell, { size: gp(11), filled: true }) }) : null
+            ] })
+          }
+        )
+      }
+    );
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-nownext-view.tsx
+  init_react_shim();
+  init_live_tv_data();
+  init_live_tv_ui();
+  init_live_tv_model();
+  init_reminders();
+  init_tv_ui();
+  init_tv_strings();
+  init_jsx_runtime_shim();
+  var ROW_H_PX2 = gp(56);
+  var CELL = guideCellStyle("nownext");
+  var COL_WEIGHTS = [2, 1.2, 1];
+  var COL_LINE = "1px solid rgba(255,255,255,0.06)";
+  var colStyle = (weight) => ({ flex: `${weight} 1 0%`, minWidth: 0, borderRight: COL_LINE, boxSizing: "border-box", padding: `0 ${gp(12)}px`, display: "flex", alignItems: "center", gap: gp(10) });
+  function GuideNowNextView({ model, nav, category, selection, onSelect, isTv, details }) {
+    const { tt, locale } = useTvText();
+    const { nowMs } = model;
+    const [visibleRows, setVisibleRows] = useState(ROWS_STEP);
+    const [reminderTick, setReminderTick] = useState(0);
+    void reminderTick;
+    useEffect(() => {
+      setVisibleRows(ROWS_STEP);
+    }, [category]);
+    const { channels: modelChannels, favouriteChannels, nowFor } = model;
+    const channels = useMemo(() => filterByGroup({ channels: modelChannels, favouriteChannels }, category), [modelChannels, favouriteChannels, category]);
+    const { withEpg, withoutEpg } = useMemo(() => {
+      const withEpg2 = [];
+      const withoutEpg2 = [];
+      for (const channel of channels) {
+        const info = nowFor(channel);
+        if (info.now) withEpg2.push({ channel, info });
+        else withoutEpg2.push(channel);
+      }
+      return { withEpg: withEpg2, withoutEpg: withoutEpg2 };
+    }, [channels, nowFor]);
+    const rows = withEpg.slice(0, visibleRows);
+    const emptyRows = withoutEpg.slice(0, Math.max(0, visibleRows - withEpg.length));
+    const hasMore = withEpg.length + withoutEpg.length > visibleRows;
+    const hover2 = useHoverSelect(!isTv, onSelect);
+    const toggle = (channel, programme) => {
+      toggleReminder(channel, programme, nowMs);
+      setReminderTick((value) => value + 1);
+    };
+    const nothing = rows.length === 0 && (emptyRows.length === 0 || model.epgLoading);
+    const selectedKey = selection ? channelKey(selection.channel) : null;
+    const isSelected = (channel) => selectedKey === channelKey(channel);
+    const firstRow = rows[0] ? { channel: rows[0].channel, programme: rows[0].info.now } : emptyRows[0] ? { channel: emptyRows[0], programme: null } : null;
+    const subject = selection ?? firstRow;
+    const showBanner = details && subject !== null;
+    const initTarget = nothing ? "empty" : rows.length > 0 || emptyRows.length > 0 ? "row" : "banner";
+    const rowProps = (channel, programme, init) => {
+      const sel = { channel, programme };
+      return {
+        "data-guide-row": "",
+        "data-selected": isSelected(channel) ? "" : void 0,
+        ...withPointerLeave(station(() => {
+          onSelect(sel);
+          nav.play({ channel });
+        }, (element) => nav.channelMenu(channel, element), initAttr(init)), hover2.leave),
+        onFocus: isTv ? () => onSelect(sel) : void 0,
+        onPointerEnter: hover2.enter ? () => hover2.enter?.(sel) : void 0
+      };
+    };
+    const rowStyle = (channel, empty) => ({
+      display: "flex",
+      height: ROW_H_PX2,
+      minHeight: ROW_H_PX2,
+      boxSizing: "border-box",
+      borderBottom: COL_LINE,
+      background: isSelected(channel) ? TV2.s05 : empty ? "rgba(252,252,255,0.04)" : void 0,
+      cursor: "pointer"
+    });
+    const cell = (channel) => /* @__PURE__ */ jsx(GuideChannelCell, { channel, number: model.channelNumber(channel), pinned: model.pinnedSet.has(channelKey(channel)), locked: model.locked.has(channelKey(channel)), variant: "nownext" });
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "guide-nownext-view", style: { flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }, children: [
+      showBanner && subject ? /* @__PURE__ */ jsx(
+        NowNextBanner,
+        {
+          selection: subject,
+          info: model.nowFor(subject.channel),
+          nowMs,
+          locale,
+          channelNumber: model.channelNumber(subject.channel),
+          init: initTarget === "banner",
+          onWatch: () => nav.play({ channel: subject.channel }),
+          onRemind: (programme) => toggle(subject.channel, programme)
+        }
+      ) : null,
+      /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-header", style: { height: gp(30), minHeight: gp(30), display: "flex", alignItems: "stretch", borderBottom: `1px solid ${TV2.line}`, boxSizing: "border-box", fontSize: gp(11), color: "rgba(243,244,248,0.4)", letterSpacing: "0.12em" }, children: [
+        /* @__PURE__ */ jsx("div", { "data-testid": "nownext-header-channel", style: { ...CELL, display: "flex", alignItems: "center", padding: `0 ${gp(10)}px`, borderRight: COL_LINE }, children: tt("colChannel") }),
+        ["colNow", "colNext", "colLater"].map((key, index3) => /* @__PURE__ */ jsx("div", { "data-testid": "nownext-header-col", style: colStyle(COL_WEIGHTS[index3]), children: tt(key) }, key))
+      ] }),
+      /* @__PURE__ */ jsxs("div", { "data-scroll": "", "data-testid": "nownext-scroll", style: { flex: 1, minHeight: 0, overflow: "auto" }, children: [
+        /* @__PURE__ */ jsx(
+          "div",
+          {
+            "data-testid": "nownext-empty",
+            ...initTarget === "empty" ? station(() => {
+            }, void 0, initAttr(true)) : {},
+            style: { display: nothing ? "block" : "none", margin: gp(20), padding: gp(20), borderRadius: gp(12), background: TV2.s05, fontSize: gp(13), color: TV2.faint, lineHeight: 1.5 },
+            children: model.channelsLoading ? tt("loadingChannels") : model.epgLoading ? tt("loadingGuide") : tt("guideEmpty")
+          }
+        ),
+        nothing ? null : /* @__PURE__ */ jsxs(Fragment2, { children: [
+          rows.map(({ channel, info }, index3) => {
+            const now3 = info.now;
+            const minutesLeft = Math.max(0, Math.ceil((now3.stop - nowMs) / 6e4));
+            return /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-row", ...rowProps(channel, now3, initTarget === "row" && index3 === 0), style: rowStyle(channel, false), children: [
+              cell(channel),
+              /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-now", style: colStyle(COL_WEIGHTS[0]), children: [
+                /* @__PURE__ */ jsx("div", { title: now3.title, style: { flex: 1, minWidth: 0, fontSize: gp(14), ...ellipsis2 }, children: now3.title }),
+                /* @__PURE__ */ jsxs("div", { style: { width: gp(90), flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: gp(4) }, children: [
+                  /* @__PURE__ */ jsx(Progress, { value: progressOf(now3.start, now3.stop, nowMs), height: gp(4), style: { width: "100%" } }),
+                  /* @__PURE__ */ jsx("span", { style: { fontSize: gp(11), color: "rgba(243,244,248,0.5)", fontVariantNumeric: "tabular-nums" }, children: tt("minShort", { min: minutesLeft }) })
+                ] })
+              ] }),
+              /* @__PURE__ */ jsx(UpcomingCell, { testId: "nownext-next", programme: info.next, locale, titleColor: "rgba(243,244,248,0.75)", timeColor: "rgba(243,244,248,0.45)", weight: COL_WEIGHTS[1] }),
+              /* @__PURE__ */ jsx(UpcomingCell, { testId: "nownext-later", programme: info.later, locale, titleColor: "rgba(243,244,248,0.55)", timeColor: "rgba(243,244,248,0.35)", weight: COL_WEIGHTS[2] })
+            ] }, channelKey(channel));
+          }),
+          emptyRows.map((channel, index3) => /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-empty-row", ...rowProps(channel, null, initTarget === "row" && rows.length === 0 && index3 === 0), style: rowStyle(channel, true), children: [
+            cell(channel),
+            /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-empty-cell", style: { flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: gp(14), padding: `0 ${gp(12)}px` }, children: [
+              /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, fontSize: gp(13), color: "rgba(243,244,248,0.4)", ...ellipsis2 }, children: tt("noEpgRow") }),
+              /* @__PURE__ */ jsxs("span", { "data-testid": "nownext-watch-pill", style: { height: gp(26), padding: `0 ${gp(12)}px`, borderRadius: 999, background: TV2.s08, display: "inline-flex", alignItems: "center", gap: gp(6), fontSize: gp(12), flexShrink: 0 }, children: [
+                /* @__PURE__ */ jsx(Icons.Play, { size: gp(10) }),
+                " ",
+                tt("watchNowShort")
+              ] })
+            ] })
+          ] }, channelKey(channel)))
+        ] })
+      ] }),
+      nothing ? null : /* @__PURE__ */ jsx(GuidePaginationRow, { testId: "nownext", shown: rows.length, total: channels.length, hasMore, onMore: () => setVisibleRows((count) => count + ROWS_STEP) })
+    ] });
+  }
+  function UpcomingCell({ testId, programme, locale, titleColor, timeColor, weight }) {
+    return /* @__PURE__ */ jsx("div", { "data-testid": testId, style: colStyle(weight), children: programme ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("div", { title: programme.title, style: { flex: 1, minWidth: 0, fontSize: gp(13), color: titleColor, ...ellipsis2 }, children: programme.title }),
+      /* @__PURE__ */ jsx("span", { style: { fontSize: gp(12), color: timeColor, flexShrink: 0, fontVariantNumeric: "tabular-nums" }, children: formatClock(programme.start, locale) })
+    ] }) : null });
+  }
+  function NowNextBanner({ selection, info, nowMs, locale, channelNumber, init, onWatch, onRemind }) {
+    const { tt } = useTvText();
+    const { channel } = selection;
+    const programme = selection.programme ?? info.now;
+    const next2 = info.next;
+    const live2 = programme !== null && programme.start <= nowMs && programme.stop > nowMs;
+    const minutesLeft = programme ? Math.max(0, Math.ceil((programme.stop - nowMs) / 6e4)) : 0;
+    const meta = [channel.group, qualityFromName(channel.name)].filter(Boolean).join(" \xB7 ");
+    const reminded = next2 ? isReminded(channel, next2) : false;
+    const button = (testId, height, accent, onOk, children, extra) => /* @__PURE__ */ jsx(
+      "div",
+      {
+        "data-testid": testId,
+        ...station(onOk, void 0, extra),
+        style: { height, minHeight: height, padding: `0 ${gp(16)}px`, borderRadius: gp(10), background: accent ? TV2.acc : TV2.s08, color: accent ? TV2.onAcc : TV2.text, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: gp(8), fontSize: accent ? gp(14) : gp(13), fontWeight: accent ? 600 : 400, cursor: "pointer", whiteSpace: "nowrap" },
+        children
+      }
+    );
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-banner", style: { display: "flex", gap: gp(20), padding: `${gp(18)}px ${gp(20)}px`, borderBottom: `1px solid ${TV2.line}`, background: "rgba(252,252,255,0.03)", alignItems: "center" }, children: [
+      /* @__PURE__ */ jsx(ChannelArt, { channel, height: gp(112), radius: gp(10), style: { width: gp(200), flexShrink: 0, border: "1px solid rgba(255,255,255,0.08)", boxSizing: "border-box" }, children: live2 ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", left: gp(10), bottom: gp(10) }, children: /* @__PURE__ */ jsx(Tag2, { variant: "live", style: { height: gp(22), padding: `0 ${gp(9)}px`, fontSize: gp(11) }, children: tt("live") }) }) : null }),
+      /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: gp(6) }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: gp(8), minWidth: 0 }, children: [
+          channelNumber !== null ? /* @__PURE__ */ jsx("span", { style: { fontSize: gp(13), color: "rgba(243,244,248,0.45)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }, children: channelNumber }) : null,
+          /* @__PURE__ */ jsx("span", { "data-testid": "nownext-banner-channel", style: { fontSize: gp(13), color: TV2.muted, minWidth: 0, ...ellipsis2 }, children: channel.name }),
+          meta ? /* @__PURE__ */ jsx(Tag2, { variant: "neutral", style: { height: gp(22), padding: `0 ${gp(9)}px`, fontSize: gp(11), borderRadius: gp(7), background: TV2.s08, flexShrink: 0 }, children: meta }) : null
+        ] }),
+        /* @__PURE__ */ jsx("div", { "data-testid": "nownext-banner-title", style: { fontSize: gp(22), fontWeight: 600, lineHeight: 1.2, ...ellipsis2 }, children: programme ? programme.title : tt("noProgramme") }),
+        programme ? /* @__PURE__ */ jsx("div", { "data-testid": "nownext-banner-time", style: { fontSize: gp(13), color: "rgba(243,244,248,0.6)", ...ellipsis2 }, children: `${formatClock(programme.start, locale)}\u2013${formatClock(programme.stop, locale)}${live2 ? ` \xB7 ${tt("minutesLeft", { min: minutesLeft })}` : ""}` }) : null,
+        live2 && programme ? /* @__PURE__ */ jsx(Progress, { value: progressOf(programme.start, programme.stop, nowMs), height: gp(4), style: { maxWidth: gp(520) } }) : null,
+        next2 ? /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-banner-next", style: { fontSize: gp(13), ...ellipsis2 }, children: [
+          /* @__PURE__ */ jsx("span", { style: { color: "rgba(243,244,248,0.45)", marginRight: gp(8) }, children: tt("nextLabel") }),
+          `${next2.title} \xB7 ${formatClock(next2.start, locale)}`
+        ] }) : null
+      ] }),
+      /* @__PURE__ */ jsxs("div", { style: { flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "stretch", gap: gp(8) }, children: [
+        button("nownext-banner-watch", gp(38), true, onWatch, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx(Icons.Play, { size: gp(14) }),
+          " ",
+          tt("watchNowShort")
+        ] }), initAttr(init)),
+        next2 ? button("nownext-banner-remind", gp(34), false, () => onRemind(next2), /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx(Icons.Bell, { size: gp(14), filled: reminded }),
+          " ",
+          reminded ? tt("reminderSet") : tt("remindMe")
+        ] })) : null
+      ] })
+    ] });
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-shell.tsx
+  init_jsx_runtime_shim();
+  function TvGuideShell({ model, nav, params }) {
+    const { tt, locale } = useTvText();
+    const isTv = useTvMode();
+    const clock = useTvClockNode(locale);
+    const settings = useTvSettings();
+    const storedMode = useGuideMode();
+    const [mode, setMode] = useState(() => desktopGuideMode(storedMode));
+    useEffect(() => {
+      setMode(desktopGuideMode(storedMode));
+    }, [storedMode]);
+    const [modeStack, setModeStack] = useState([]);
+    const changeMode = (next2) => {
+      if (next2 === mode) return;
+      setModeStack((stack) => [...stack, mode]);
+      setGuideMode(next2);
+      setMode(next2);
+    };
+    const popMode = () => {
+      const prev = modeStack[modeStack.length - 1];
+      if (prev === void 0) return;
+      setModeStack((stack) => stack.slice(0, -1));
+      setGuideMode(prev);
+      setMode(prev);
+    };
+    const navRef = useRef(nav);
+    useEffect(() => {
+      navRef.current = nav;
+    });
+    const popRef = useRef(popMode);
+    useEffect(() => {
+      popRef.current = popMode;
+    });
+    const claimBack = modeStack.length > 0;
+    useEffect(() => {
+      if (!claimBack) return;
+      return navRef.current.pushLayer(() => popRef.current());
+    }, [claimBack, modeStack.length]);
+    const groups = useGuideGroups(model, tt);
+    const category = useMemo(() => {
+      const stored = settings.guideCategory;
+      if (stored === null) return null;
+      return groups.some((g) => g.key === stored) ? stored : null;
+    }, [settings.guideCategory, groups]);
+    const groupParam = params.group;
+    useEffect(() => {
+      if (!groupParam) return;
+      const next2 = groupParam === "all" ? null : groupParam;
+      if (next2 !== getTvSettings().guideCategory) setTvSettings({ guideCategory: next2 });
+    }, []);
+    const [dayOffset, setDayOffset] = useState(0);
+    const [windowStart, setWindowStart] = useState(() => guideWindowStart(model.nowMs));
+    const [selection, setSelection] = useState(null);
+    const [panel, setPanel] = useState(null);
+    const changeDay = (d) => {
+      setDayOffset(d);
+      setWindowStart(d === 1 ? startOfLocalDay(model.nowMs, 1) + 6 * 36e5 : guideWindowStart(model.nowMs));
+      setSelection(null);
+    };
+    const [nowTick, setNowTick] = useState(0);
+    const jumpToNow = () => {
+      setDayOffset(0);
+      setWindowStart(guideWindowStart(model.nowMs));
+      setNowTick((n) => n + 1);
+    };
+    const sourceOptions = useMemo(() => [
+      { key: null, label: tt("sourceAll"), count: model.allChannels.length },
+      ...model.playlists.map((p) => ({ key: p.id, label: p.name, count: p.count }))
+    ], [model.allChannels.length, model.playlists, tt]);
+    const categoryOptions = useMemo(() => {
+      const perGroup = /* @__PURE__ */ new Map();
+      for (const c of model.channels) perGroup.set(c.group, (perGroup.get(c.group) ?? 0) + 1);
+      return groups.map((g) => ({
+        key: g.key,
+        label: g.key === null ? tt("categoryAll") : g.label,
+        count: g.key === null ? model.channels.length : g.key === FAVS_GROUP ? model.favouriteChannels.length : perGroup.get(g.key) ?? 0
+      }));
+    }, [groups, model.channels, model.favouriteChannels.length, tt]);
+    const categoryLabel = category === null ? tt("categoryAll") : groups.find((g) => g.key === category)?.label ?? tt("categoryAll");
+    const categoryCount = categoryOptions.find((o) => o.key === category)?.count ?? model.channels.length;
+    const viewProps = { model, nav, category, dayOffset, windowStart, nowTick, selection, onSelect: setSelection, isTv };
+    const view = mode === "nownext" ? /* @__PURE__ */ jsx(GuideNowNextView, { ...viewProps, details: settings.nowNextDetails }) : mode === "grid" ? /* @__PURE__ */ jsx(GuideGridView, { ...viewProps }) : /* @__PURE__ */ jsx(GuideGridView, { ...viewProps, detailPanel: false });
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "guide-shell", "data-guide-mode": mode, style: { display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }, children: [
+      /* @__PURE__ */ jsx(
+        GuideControlRow,
+        {
+          mode,
+          onMode: changeMode,
+          sourceLabel: model.activePlaylistName ?? tt("sourceAll"),
+          sourceCount: model.channels.length,
+          onOpenSource: () => setPanel("source"),
+          categoryLabel,
+          categoryCount,
+          onOpenCategory: () => setPanel("category"),
+          dayOffset,
+          onDay: changeDay,
+          onNow: jumpToNow,
+          details: settings.nowNextDetails,
+          onDetails: () => setTvSettings({ nowNextDetails: !settings.nowNextDetails }),
+          clock
+        }
+      ),
+      /* @__PURE__ */ jsx("div", { "data-testid": "guide-content", style: { flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }, children: view }),
+      panel === "source" ? /* @__PURE__ */ jsx(TvChoicePanel, { nav, title: tt("pickSource"), options: sourceOptions, value: model.activePlaylistId, onPick: (key) => {
+        model.setActivePlaylist(key);
+        setSelection(null);
+      }, onClose: () => setPanel(null) }) : null,
+      panel === "category" ? /* @__PURE__ */ jsx(TvChoicePanel, { nav, title: tt("pickCategory"), options: categoryOptions, value: category, onPick: (key) => {
+        setTvSettings({ guideCategory: key });
+        setSelection(null);
+      }, onClose: () => setPanel(null) }) : null
+    ] });
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide.tsx
+  init_jsx_runtime_shim();
+  var ROW_STEP4 = 40;
   function TvGuide(props) {
     const { nav } = props;
+    const newGuide = useNewGuideSurface(props.phone);
     const storedMode = useGuideMode();
     const [mode, setMode] = useState(storedMode);
     useEffect(() => {
@@ -200952,7 +204525,7 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       popRef.current = popMode;
     });
-    const claimBack = modeStack.length > 0 && !nav.playerOpen;
+    const claimBack = modeStack.length > 0;
     useEffect(() => {
       if (!claimBack) return;
       return navRef.current.pushLayer(() => popRef.current());
@@ -200969,13 +204542,25 @@ ${cue.text}`).join("\n\n")}
       });
       return () => window.cancelAnimationFrame(frame2);
     }, [mode]);
+    if (props.phone) {
+      const pm = phoneGuideMode(mode);
+      const changePhone = (next2) => {
+        if (next2 !== pm) changeMode(next2);
+      };
+      if (pm === "playlists") return /* @__PURE__ */ jsx(TvGuidePlaylists, { ...props, mode: pm, onModeChange: changeMode });
+      if (pm === "grid") return /* @__PURE__ */ jsx(TvGuideGrid, { ...props, mode: pm, onModeChange: changeMode });
+      return /* @__PURE__ */ jsx(TvGuideNowPhone, { ...props, mode: "now", onModeChange: changePhone });
+    }
+    if (newGuide) return /* @__PURE__ */ jsx(TvGuideShell, { ...props });
+    const legacyMode = mode === "tl" ? "tl" : "now";
     if (mode === "playlists") return /* @__PURE__ */ jsx(TvGuidePlaylists, { ...props, mode, onModeChange: changeMode });
-    if (mode === "grid") return /* @__PURE__ */ jsx(TvGuideGrid, { ...props, mode, onModeChange: changeMode });
-    return /* @__PURE__ */ jsx(TvGuideStandard, { ...props, mode, onModeChange: changeMode });
+    if (mode === "grid" || mode === "timeline") return /* @__PURE__ */ jsx(TvGuideGrid, { ...props, mode: "grid", onModeChange: changeMode });
+    return /* @__PURE__ */ jsx(TvGuideStandard, { ...props, mode: legacyMode, onModeChange: changeMode });
   }
   function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }) {
     const { tt, locale } = useTvText();
     const clock = useTvClockNode(locale);
+    const channelColStyle = channelColumnStyle();
     const groups = useGuideGroups(model, tt);
     const [group, setGroup] = useState(() => {
       const raw = params.group;
@@ -200984,7 +204569,7 @@ ${cue.text}`).join("\n\n")}
       return model.groups.includes(raw) ? raw : null;
     });
     const rows = useMemo(() => filterByGroup(model, group), [model, group]);
-    const [visible, setVisible] = useState(ROW_STEP2);
+    const [visible, setVisible] = useState(ROW_STEP4);
     const [selectedKey, setSelectedKey] = useState(null);
     const selected = useMemo(() => selectedKey ? model.byKey.get(selectedKey) ?? null : null, [selectedKey, model.byKey]);
     const previewChannel = useDebouncedChannel(selected, 300);
@@ -200992,7 +204577,7 @@ ${cue.text}`).join("\n\n")}
     const win = useMemo(() => scheduleWindow(model.nowMs), [model.nowMs]);
     const nowLeftPct = useMemo(() => nowLinePct(model.nowMs, win), [model.nowMs, win]);
     useEffect(() => {
-      setVisible(ROW_STEP2);
+      setVisible(ROW_STEP4);
     }, [group, mode]);
     const visibleRows = useMemo(() => rows.slice(0, visible), [rows, visible]);
     const selectedVisible = useMemo(() => selected ? visibleRows.some((c) => channelKey(c) === channelKey(selected)) : false, [selected, visibleRows]);
@@ -201034,17 +204619,14 @@ ${cue.text}`).join("\n\n")}
             /* @__PURE__ */ jsx(Progress, { value: progressOf(info.now.start, info.now.stop, model.nowMs), height: dp(6), style: { maxWidth: dp(720) } }),
             previewOn && info.now.description ? /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), color: "rgba(243,244,248,0.75)", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }, children: info.now.description }) : null
           ] }) : null,
-          /* @__PURE__ */ jsxs("div", { style: { marginTop: "auto", display: "flex", alignItems: "baseline", gap: dp(12), fontSize: dp(18), color: "rgba(243,244,248,0.55)" }, children: [
-            info.next ? /* @__PURE__ */ jsxs(Fragment2, { children: [
-              /* @__PURE__ */ jsx("span", { style: { color: TV2.accText, fontWeight: 600 }, children: tt("next") }),
-              /* @__PURE__ */ jsxs("span", { children: [
-                info.next.title,
-                " \xB7 ",
-                formatClock(info.next.start, locale)
-              ] })
-            ] }) : null,
-            /* @__PURE__ */ jsx("span", { style: { marginLeft: "auto", fontSize: dp(16), color: TV2.faint }, children: tt("helpGuide") })
-          ] })
+          /* @__PURE__ */ jsx("div", { style: { marginTop: "auto", display: "flex", alignItems: "baseline", gap: dp(12), fontSize: dp(18), color: "rgba(243,244,248,0.55)" }, children: info.next ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+            /* @__PURE__ */ jsx("span", { style: { color: TV2.accText, fontWeight: 600 }, children: tt("next") }),
+            /* @__PURE__ */ jsxs("span", { children: [
+              info.next.title,
+              " \xB7 ",
+              formatClock(info.next.start, locale)
+            ] })
+          ] }) : null })
         ] })
       ] }),
       /* @__PURE__ */ jsxs("div", { style: { padding: `0 ${dp(48)}px ${dp(18)}px`, display: "flex", alignItems: "center", gap: dp(16), flexShrink: 0 }, children: [
@@ -201055,11 +204637,11 @@ ${cue.text}`).join("\n\n")}
         /* @__PURE__ */ jsx(Segment, { options: modeOptions, value: mode, onChange: onModeChange })
       ] }),
       /* @__PURE__ */ jsxs("div", { style: { padding: `0 ${dp(48)}px`, display: "flex", gap: dp(16), fontSize: dp(15), letterSpacing: "0.1em", textTransform: "uppercase", color: TV2.faint, flexShrink: 0 }, children: [
-        /* @__PURE__ */ jsx("div", { style: { width: dp(520), flexShrink: 0, padding: `0 ${dp(12)}px` }, children: tt("colChannel") }),
+        /* @__PURE__ */ jsx("div", { "data-testid": "guide-channel-col-header", style: { ...channelColStyle, padding: `0 ${dp(12)}px` }, children: tt("colChannel") }),
         mode === "now" ? /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("div", { style: { flex: 1.2 }, children: tt("colNow") }),
-          /* @__PURE__ */ jsx("div", { style: { flex: 1 }, children: tt("colNext") }),
-          /* @__PURE__ */ jsx("div", { style: { flex: 1 }, children: tt("colLater") })
+          /* @__PURE__ */ jsx("div", { style: { flex: 1.2, minWidth: 0 }, children: tt("colNow") }),
+          /* @__PURE__ */ jsx("div", { style: { flex: 1, minWidth: 0 }, children: tt("colNext") }),
+          /* @__PURE__ */ jsx("div", { style: { flex: 1, minWidth: 0 }, children: tt("colLater") })
         ] }) : /* @__PURE__ */ jsxs("div", { style: { flex: 1, position: "relative", height: dp(20) }, children: [
           timeTicks(win).map((tick, i) => /* @__PURE__ */ jsx("span", { style: { position: "absolute", left: `${i * 25}%` }, children: formatClock(tick, locale) }, tick)),
           /* @__PURE__ */ jsx("div", { "data-testid": "now-line", style: { position: "absolute", top: 0, bottom: 0, left: `${nowLeftPct}%`, width: 2, background: TV2.acc, boxShadow: `0 0 12px ${TV2.accMix(60)}`, pointerEvents: "none" } })
@@ -201102,8 +204684,8 @@ ${cue.text}`).join("\n\n")}
                 ...rowStation,
                 onKeyDown,
                 onFocus: () => setSelectedKey(key),
-                style: { cursor: "pointer", borderRadius: dp(12) },
-                children: /* @__PURE__ */ jsx(ChannelCell, { channel, number: model.channelNumber(channel), pinned: model.pinnedSet.has(key), locked: model.locked.has(key), quality: qualityFromName(channel.name), focused })
+                style: { ...channelColStyle, cursor: "pointer", borderRadius: dp(12), minHeight: dp(86) },
+                children: /* @__PURE__ */ jsx(ChannelCell, { channel, number: model.channelNumber(channel), pinned: model.pinnedSet.has(key), locked: model.locked.has(key), quality: qualityFromName(channel.name), focused, width: "100%" })
               }
             ),
             mode === "now" ? /* @__PURE__ */ jsxs(Fragment2, { children: [
@@ -201144,7 +204726,7 @@ ${cue.text}`).join("\n\n")}
             ] })
           ] }, key);
         }),
-        rows.length > visible ? /* @__PURE__ */ jsx("div", { ...station(() => setVisible((v) => v + ROW_STEP2)), style: { margin: `${dp(20)}px auto 0`, width: "fit-content", height: dp(48), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV2.s10, display: "flex", alignItems: "center", fontSize: dp(18), cursor: "pointer" }, children: tt("showMore") }) : null
+        rows.length > visible ? /* @__PURE__ */ jsx("div", { ...station(() => setVisible((v) => v + ROW_STEP4)), style: { margin: `${dp(20)}px auto 0`, width: "fit-content", height: dp(48), minHeight: dp(48), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV2.s10, display: "flex", alignItems: "center", fontSize: dp(18), cursor: "pointer" }, children: tt("showMore") }) : null
       ] })
     ] });
   }
@@ -201152,14 +204734,188 @@ ${cue.text}`).join("\n\n")}
   // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-favourites.tsx
   init_react_shim();
   init_live_tv_data();
+  init_live_tv_model();
   init_live_tv_ui();
   init_tv_ui();
   init_tv_strings();
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
+  init_react_shim();
+  init_live_tv_data();
+  init_live_tv_ui();
+  init_tv_ui();
+  init_tv_strings();
+  init_mobile_tokens();
+  init_mobile_icons();
+  init_mobile_logo();
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/use-drag-reorder.ts
+  init_react_shim();
+  function reorder(items, from, to) {
+    const next2 = items.slice();
+    if (from === to) return next2;
+    const [moved] = next2.splice(from, 1);
+    next2.splice(to, 0, moved);
+    return next2;
+  }
+  function clamp3(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+  }
+  function useDragReorder({ count, rowHeight, onCommit }) {
+    const [dragging, setDragging] = useState(null);
+    const [offsetY, setOffsetY] = useState(0);
+    const fromRef = useRef(null);
+    const toRef = useRef(null);
+    const startYRef = useRef(0);
+    useEffect(() => {
+      if (dragging === null) return;
+      const onMove = (e) => {
+        const dy = e.clientY - startYRef.current;
+        setOffsetY(dy);
+        if (fromRef.current === null) return;
+        toRef.current = clamp3(Math.round(fromRef.current + dy / rowHeight), 0, count - 1);
+      };
+      const finish = () => {
+        const from = fromRef.current;
+        const to = toRef.current;
+        fromRef.current = null;
+        toRef.current = null;
+        setDragging(null);
+        setOffsetY(0);
+        if (from !== null && to !== null && to !== from) onCommit(from, to);
+      };
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", finish);
+      window.addEventListener("pointercancel", finish);
+      return () => {
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", finish);
+        window.removeEventListener("pointercancel", finish);
+      };
+    }, [dragging, rowHeight, count, onCommit]);
+    const handleProps = useCallback(
+      (index3) => ({
+        onPointerDown: (e) => {
+          const el = e.currentTarget;
+          if (typeof el.setPointerCapture === "function") el.setPointerCapture(e.pointerId);
+          fromRef.current = index3;
+          toRef.current = index3;
+          startYRef.current = e.clientY;
+          setOffsetY(0);
+          setDragging(index3);
+        }
+      }),
+      []
+    );
+    return { dragging, offsetY, handleProps };
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
+  init_jsx_runtime_shim();
+  var ROW_HEIGHT = 74;
+  function TvFavouritesPhone({ model, nav }) {
+    const { tt } = useTvText();
+    const [editing, setEditing] = useState(false);
+    const favourites = model.favouriteChannels;
+    const { dragging, offsetY, handleProps } = useDragReorder({
+      count: favourites.length,
+      rowHeight: ROW_HEIGHT,
+      // `from`/`to` indexerar de UPPLÖSTA favoriterna, men lagringen är
+      // `pinnedKeys` som kan ha nycklar utan kanal (spellista borta). Flytten
+      // översätts därför till nyckelindex — annars flyttas fel rad.
+      onCommit: (from, to) => {
+        const keys3 = model.pinnedKeys;
+        const fi = keys3.indexOf(channelKey(favourites[from]));
+        const ti = keys3.indexOf(channelKey(favourites[to]));
+        if (fi < 0 || ti < 0) return;
+        setPinnedLiveTvKeys(reorder(keys3, fi, ti));
+      }
+    });
+    const pill = /* @__PURE__ */ jsx(
+      "div",
+      {
+        "data-testid": "fav-edit-pill",
+        ...station(() => setEditing((v) => !v)),
+        style: { minHeight: 36, padding: "0 14px", borderRadius: 999, background: MT.s12, display: "inline-flex", alignItems: "center", fontSize: 14, fontWeight: 600, cursor: "pointer" },
+        children: editing ? tt("done") : tt("edit")
+      }
+    );
+    return /* @__PURE__ */ jsxs("div", { "data-scroll": "", style: { flex: 1, overflowY: "auto", padding: `0 ${MT.PAD}px`, paddingBottom: MT.SCROLL_PAD_BOTTOM, display: "flex", flexDirection: "column", gap: 4 }, children: [
+      /* @__PURE__ */ jsx("div", { style: { margin: `0 -${MT.PAD}px` }, children: /* @__PURE__ */ jsx(MobileHeader, { title: tt("favourites"), right: pill }) }),
+      /* @__PURE__ */ jsx("div", { style: { fontSize: 13, color: MT.dim, marginBottom: 10 }, children: tt("channelsCount", { count: favourites.length }) }),
+      favourites.length === 0 ? /* @__PURE__ */ jsx("div", { style: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 24, color: MT.dim, fontSize: 15 }, children: tt("favouritesEmptyPhone") }) : favourites.map((channel, index3) => {
+        const key = channelKey(channel);
+        const info = model.nowFor(channel);
+        const minutes = info.now ? Math.max(0, Math.round((info.now.stop - model.nowMs) / 6e4)) : 0;
+        const isDragging2 = dragging === index3;
+        return /* @__PURE__ */ jsxs(
+          "div",
+          {
+            "data-testid": "fav-row",
+            ...editing ? {} : station(() => nav.play({ channel }), (el) => nav.channelMenu(channel, el)),
+            style: {
+              minHeight: ROW_HEIGHT,
+              borderRadius: 14,
+              background: MT.s07,
+              border: `1px solid ${MT.line08}`,
+              padding: "0 12px",
+              marginBottom: 8,
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              cursor: editing ? "default" : "pointer",
+              transform: isDragging2 ? `translateY(${offsetY}px)` : void 0,
+              zIndex: isDragging2 ? 2 : void 0,
+              boxShadow: isDragging2 ? "0 8px 24px rgba(0,0,0,0.4)" : void 0,
+              position: "relative"
+            },
+            children: [
+              /* @__PURE__ */ jsx("span", { style: { flexShrink: 0, fontSize: 18, fontWeight: 600, color: MT.dim }, children: index3 + 1 }),
+              /* @__PURE__ */ jsx(MobileLogo, { channel, width: 64, height: 42 }),
+              /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }, children: [
+                /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, ...ellipsis }, children: channel.name }),
+                /* @__PURE__ */ jsx("div", { style: { fontSize: 13, color: "rgba(243,244,248,0.8)", ...ellipsis }, children: info.now?.title ?? tt("noProgramme") }),
+                info.now ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
+                  /* @__PURE__ */ jsx("div", { style: { flex: 1, height: 3, borderRadius: 3, background: MT.s14, overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { width: `${progressOf(info.now.start, info.now.stop, model.nowMs) * 100}%`, height: "100%", background: MT.acc } }) }),
+                  /* @__PURE__ */ jsx("span", { style: { fontSize: 11, color: MT.dim, flexShrink: 0 }, children: tt("minutesShort", { min: minutes }) })
+                ] }) : null
+              ] }),
+              editing ? /* @__PURE__ */ jsx(
+                "div",
+                {
+                  "data-testid": "fav-handle",
+                  ...handleProps(index3),
+                  style: { width: 44, height: 44, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", color: MT.faint, touchAction: "none", cursor: "grab" },
+                  children: /* @__PURE__ */ jsx(MIcons.ListHandle, { size: 20 })
+                }
+              ) : null
+            ]
+          },
+          key
+        );
+      }),
+      /* @__PURE__ */ jsx(
+        "div",
+        {
+          "data-testid": "fav-add",
+          ...station(() => nav.go("guide", { group: "all" })),
+          style: { minHeight: 48, borderRadius: 999, border: `1px solid ${MT.line14}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 600, cursor: "pointer", marginTop: 4 },
+          children: tt("addFromGuide")
+        }
+      )
+    ] });
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-favourites.tsx
   init_jsx_runtime_shim();
   function escapeKey(key) {
     return typeof CSS !== "undefined" && CSS.escape ? CSS.escape(key) : key.replace(/"/g, '\\"');
   }
-  function TvFavourites({ model, nav }) {
+  function TvFavourites(props) {
+    return props.phone ? /* @__PURE__ */ jsx(TvFavouritesPhone, { ...props }) : /* @__PURE__ */ jsx(TvFavouritesDesktop, { ...props });
+  }
+  function TvFavouritesDesktop(props) {
+    const { model, nav } = props;
     const { tt, locale } = useTvText();
     const favourites = model.favouriteChannels;
     const gridRef = useRef(null);
@@ -201178,7 +204934,7 @@ ${cue.text}`).join("\n\n")}
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(16) }, children: [
         /* @__PURE__ */ jsx("span", { style: { fontSize: dp(34), fontWeight: 600 }, children: tt("favourites") }),
         /* @__PURE__ */ jsx("span", { style: { fontSize: dp(18), color: "rgba(243,244,248,0.5)" }, children: tt("favouritesSub", { count: favourites.length }) }),
-        /* @__PURE__ */ jsx("div", { ...station(() => nav.go("guide", { group: "all" }), void 0, favourites.length === 0 ? { "data-init": "" } : {}), style: { marginLeft: "auto", height: dp(48), padding: `0 ${dp(22)}px`, borderRadius: 999, border: `1px solid ${TV2.lineStrong}`, background: TV2.s06, display: "inline-flex", alignItems: "center", fontSize: dp(18), cursor: "pointer" }, children: tt("addFromGuide") })
+        /* @__PURE__ */ jsx("div", { ...station(() => nav.go("guide", { group: "all" }), void 0, favourites.length === 0 ? { "data-init": "" } : {}), style: { marginLeft: "auto", height: dp(48), minHeight: dp(48), padding: `0 ${dp(22)}px`, borderRadius: 999, border: `1px solid ${TV2.lineStrong}`, background: TV2.s06, display: "inline-flex", alignItems: "center", fontSize: dp(18), cursor: "pointer" }, children: tt("addFromGuide") })
       ] }),
       favourites.length === 0 ? /* @__PURE__ */ jsx("div", { style: { fontSize: dp(20), color: TV2.muted }, children: tt("favouritesEmpty") }) : null,
       /* @__PURE__ */ jsx("div", { ref: gridRef, style: { display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: dp(16) }, children: favourites.map((channel, index3) => {
@@ -201226,20 +204982,27 @@ ${cue.text}`).join("\n\n")}
           },
           key
         );
-      }) }),
-      /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: TV2.faint, paddingBottom: dp(32) }, children: tt("helpFavourites") })
+      }) })
     ] });
   }
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-channel.tsx
   init_react_shim();
-  init_live_tv_data();
+  init_live_tv_model();
   init_live_tv_ui();
-  init_tv_ui();
+  init_channel_locks();
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/channel-detail.ts
+  init_react_shim();
+  init_live_tv_data();
+  init_channel_locks();
+  init_live_tv_model();
+  init_reminders();
+  init_lookup();
+  init_useSchedules();
   init_tv_strings();
-  init_jsx_runtime_shim();
   var DAY_OFFSETS = [-2, -1, 0, 1, 2];
-  var DAY_MS = 864e5;
+  var DAY_MS2 = 864e5;
   function channelFromParams(params, byUrl) {
     const url = params.url?.trim();
     if (!url) return null;
@@ -201256,36 +205019,41 @@ ${cue.text}`).join("\n\n")}
     if (p.start > nowMs) return "future";
     return "now";
   }
-  function TvChannel({ model, nav, params, settings }) {
+  function useChannelDetail(model, nav, params) {
     const { tt, locale } = useTvText();
     const channel = useMemo(() => channelFromParams(params, model.byUrl), [params, model.byUrl]);
     const [dayOffset, setDayOffset] = useState(0);
     const [selectedStart, setSelectedStart] = useState(params.programme ? Number(params.programme) : null);
-    const [lockGate, setLockGate] = useState(false);
     const dayStart = startOfLocalDay(model.nowMs, dayOffset);
     const archiveDays = channel?.archive?.days ?? 0;
-    const windowFrom = dayStart - Math.max(1, archiveDays) * DAY_MS;
-    const windowTo = dayStart + DAY_MS;
+    const windowFrom = dayStart - Math.max(1, archiveDays) * DAY_MS2;
+    const windowTo = dayStart + DAY_MS2;
     const scheduleChannels = useMemo(() => channel ? [channel] : [], [channel]);
     const { schedules, loading: scheduleLoading } = useSchedules(scheduleChannels, windowFrom, windowTo);
     const schedule = channel ? schedules[channelKey(channel)] ?? [] : [];
     const programmes = useMemo(
-      () => sliceSchedule(schedule, dayStart, dayStart + DAY_MS),
+      () => sliceSchedule(schedule, dayStart, dayStart + DAY_MS2),
       // eslint-disable-next-line react-hooks/exhaustive-deps
       [schedule, dayStart]
     );
     const yesterday = useMemo(
-      () => dayOffset === 0 ? sliceSchedule(schedule, dayStart - DAY_MS, dayStart).slice(-2) : [],
+      () => dayOffset === 0 ? sliceSchedule(schedule, dayStart - DAY_MS2, dayStart).slice(-2) : [],
       // eslint-disable-next-line react-hooks/exhaustive-deps
       [schedule, dayStart, dayOffset]
     );
-    const rows = useMemo(() => [...yesterday.map((p) => ({ p, day: "yesterday" })), ...programmes.map((p) => ({ p, day: "today" }))], [yesterday, programmes]);
+    const rows = useMemo(
+      () => [...yesterday.map((p) => ({ p, day: "yesterday" })), ...programmes.map((p) => ({ p, day: "today" }))],
+      [yesterday, programmes]
+    );
     const catchUpByStart = useMemo(() => {
       if (!channel) return /* @__PURE__ */ new Map();
       const items = catchUpForChannel(channel, schedule, model.nowMs, 500);
       return new Map(items.map((item) => [item.programme.start, true]));
     }, [channel, schedule, model.nowMs]);
-    const selected = useMemo(() => rows.find((r) => r.p.start === selectedStart)?.p ?? rows.find((r) => kindOf(r.p, model.nowMs) === "now")?.p ?? rows[0]?.p ?? null, [rows, selectedStart, model.nowMs]);
+    const selected = useMemo(
+      () => rows.find((r) => r.p.start === selectedStart)?.p ?? rows.find((r) => kindOf(r.p, model.nowMs) === "now")?.p ?? rows[0]?.p ?? null,
+      [rows, selectedStart, model.nowMs]
+    );
     const kind = selected ? kindOf(selected, model.nowMs) : null;
     const canReplaySelected = selected ? catchUpByStart.has(selected.start) : false;
     const reminded = channel && selected && kind === "future" ? isReminded(channel, selected) : false;
@@ -201301,21 +205069,8 @@ ${cue.text}`).join("\n\n")}
       }
       setSelectedStart(null);
     }, [dayOffset]);
-    if (!channel) {
-      return /* @__PURE__ */ jsx("div", { style: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: dp(48) }, children: /* @__PURE__ */ jsxs(
-        "div",
-        {
-          "data-testid": "channel-unresolved",
-          ...station(() => nav.back(), void 0, { "data-init": "" }),
-          style: { height: dp(52), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV2.s10, display: "inline-flex", alignItems: "center", gap: dp(10), fontSize: dp(19), color: TV2.dim, cursor: "pointer" },
-          children: [
-            /* @__PURE__ */ jsx(Icons.ChevronLeft, {}),
-            tt("noProgramme")
-          ]
-        }
-      ) });
-    }
     const primary = () => {
+      if (!channel) return;
       if (!selected) {
         nav.play({ channel });
         return;
@@ -201333,17 +205088,251 @@ ${cue.text}`).join("\n\n")}
       toggleReminder(channel, selected, model.nowMs);
     };
     const primaryLabel = kind === "past" ? canReplaySelected ? tt("playReplay") : tt("watchNow") : kind === "future" ? reminded ? tt("removeReminder") : tt("remindMe") : tt("watchNow");
-    const previewLabel = kind === "past" ? tt("replayAvailable", { days: channel.archive?.days ?? 0 }) : kind === "future" && selected ? tt("startsAt", { time: formatClock(selected.start, locale) }) : tt("onNow");
     const dayLabel = (offset) => {
-      const d = new Date(model.nowMs + offset * DAY_MS);
+      const d = new Date(model.nowMs + offset * DAY_MS2);
       return { top: offset === 0 ? tt("today") : offset === -1 ? tt("yesterday") : offset === 1 ? tt("tomorrow") : d.toLocaleDateString(locale, { weekday: "short" }), bottom: d.toLocaleDateString(locale, { day: "numeric", month: "short" }) };
     };
+    return {
+      channel,
+      dayOffset,
+      setDayOffset,
+      rows,
+      selected,
+      setSelectedStart,
+      kind,
+      canReplaySelected,
+      reminded,
+      pinned,
+      locked,
+      lockAvailable,
+      scheduleLoading,
+      catchUpByStart,
+      primary,
+      primaryLabel,
+      dayLabel
+    };
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-channel.tsx
+  init_tv_ui();
+  init_tv_strings();
+  init_reminders();
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/channel-phone.tsx
+  init_react_shim();
+  init_live_tv_model();
+  init_live_tv_ui();
+  init_reminders();
+  init_channel_locks();
+  init_tv_ui();
+  init_tv_strings();
+  init_mobile_tokens();
+  init_mobile_icons();
+  init_mobile_sheet();
+  init_mobile_logo();
+  init_jsx_runtime_shim();
+  var PAST_DAYS = DAY_OFFSETS.filter((o) => o < 0);
+  function TvChannelPhone({ model, nav, params }) {
+    const { tt, locale } = useTvText();
+    const { channel, dayOffset, setDayOffset, rows, setSelectedStart, pinned, locked, lockAvailable, scheduleLoading, catchUpByStart, primary, primaryLabel, dayLabel } = useChannelDetail(model, nav, params);
+    const [sheetProgramme, setSheetProgramme] = useState(null);
+    const [infoOpen, setInfoOpen] = useState(false);
+    const [lockGate, setLockGate] = useState(false);
+    if (!channel) {
+      return /* @__PURE__ */ jsxs("div", { "data-testid": "channel-phone", style: { flex: 1, display: "flex", flexDirection: "column" }, children: [
+        /* @__PURE__ */ jsx(MobileHeader, { title: "", back: true, onBack: nav.back, testId: "channel-header" }),
+        /* @__PURE__ */ jsx("div", { "data-testid": "channel-empty", style: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: MT.dim, fontSize: 15 }, children: tt("noProgramme") })
+      ] });
+    }
+    const heart = /* @__PURE__ */ jsx(
+      "div",
+      {
+        "data-testid": "channel-pin",
+        ...station(() => model.togglePin(channel)),
+        style: { width: 44, height: 44, borderRadius: 999, background: pinned ? MT.accMix(22) : MT.s10, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" },
+        children: /* @__PURE__ */ jsx("span", { style: { display: "flex", color: pinned ? MT.acc : MT.text }, children: /* @__PURE__ */ jsx(MIcons.Heart, { size: 22, filled: pinned }) })
+      }
+    );
+    const infoSheetItems = [
+      ...lockAvailable ? [{ key: "lock", label: locked ? tt("menuUnlock") : tt("menuLock"), run: () => setLockGate(true) }] : [],
+      { key: "multiview", label: tt("menuAddMultiview"), run: () => nav.addToMultiview(channel) }
+    ];
+    const infoSheetBody = /* @__PURE__ */ jsx(Fragment2, { children: [
+      [tt("quality"), qualityFromName(channel.name) ?? "\u2013"],
+      [tt("source"), model.listFor(channel)?.name ?? "\u2013"],
+      [tt("replayDays"), channel.archive ? tt("daysCount", { days: channel.archive.days }) : tt("noArchive")]
+    ].map(([label2, value]) => /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "space-between", padding: "4px 0" }, children: [
+      /* @__PURE__ */ jsx("span", { children: label2 }),
+      /* @__PURE__ */ jsx("span", { children: value })
+    ] }, label2)) });
+    const sheetKind = sheetProgramme ? kindOf(sheetProgramme, model.nowMs) : null;
+    const sheetCanReplay = sheetProgramme ? catchUpByStart.has(sheetProgramme.start) : false;
+    const sheetReminded = sheetProgramme && sheetKind === "future" ? isReminded(channel, sheetProgramme) : false;
+    const sheetLabel = sheetKind === "past" ? sheetCanReplay ? tt("playReplay") : tt("watchNow") : sheetKind === "future" ? sheetReminded ? tt("removeReminder") : tt("remindMe") : tt("watchNow");
+    const sheetRun = () => {
+      if (!sheetProgramme) return;
+      if (sheetKind === "past") {
+        const url = sheetCanReplay ? buildTimeshiftUrl(channel, sheetProgramme.start, sheetProgramme.stop - sheetProgramme.start) : null;
+        if (url) nav.play({ channel, url, label: sheetProgramme.title });
+        else nav.play({ channel });
+        return;
+      }
+      if (sheetKind === "future") {
+        toggleReminder(channel, sheetProgramme, model.nowMs);
+        return;
+      }
+      nav.play({ channel });
+    };
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "channel-phone", "data-scroll": "", style: { flex: 1, overflowY: "auto", padding: `0 ${MT.PAD}px`, paddingBottom: MT.SCROLL_PAD_BOTTOM, display: "flex", flexDirection: "column", gap: 14 }, children: [
+      /* @__PURE__ */ jsx("div", { style: { margin: `0 -${MT.PAD}px` }, children: /* @__PURE__ */ jsx(MobileHeader, { title: channel.name, back: true, onBack: nav.back, right: heart, testId: "channel-header" }) }),
+      /* @__PURE__ */ jsxs("div", { "data-testid": "channel-row", ...station(() => setInfoOpen(true)), style: { display: "flex", alignItems: "center", gap: 12, minHeight: 46, cursor: "pointer" }, children: [
+        /* @__PURE__ */ jsx(MobileLogo, { channel, width: 72, height: 46 }),
+        /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+          /* @__PURE__ */ jsx("div", { style: { fontSize: 14, color: MT.muted, ...ellipsis }, children: [model.channelNumber(channel), channel.group, qualityFromName(channel.name)].filter(Boolean).join(" \xB7 ") }),
+          channel.archive && channel.archive.days > 0 ? /* @__PURE__ */ jsx("div", { style: { fontSize: 13, color: MT.dim, ...ellipsis }, children: tt("replayDaysShort", { days: channel.archive.days }) }) : null
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs(
+        "div",
+        {
+          "data-testid": "channel-primary",
+          ...station(primary, void 0, { "data-init": "" }),
+          style: { minHeight: 48, borderRadius: 999, background: MT.acc, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, fontSize: 16, fontWeight: 600, cursor: "pointer" },
+          children: [
+            /* @__PURE__ */ jsx(MIcons.Play, { size: 18 }),
+            primaryLabel
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsx(
+        MobileChips,
+        {
+          testId: "channel-days",
+          items: DAY_OFFSETS.map((o) => ({ key: o, id: String(o), label: dayLabel(o).top })),
+          value: dayOffset,
+          onChange: setDayOffset,
+          emphasisKey: 0,
+          dimKeys: PAST_DAYS
+        }
+      ),
+      rows.length === 0 ? /* @__PURE__ */ jsx("div", { "data-testid": "channel-empty", style: { padding: 24, textAlign: "center", color: MT.dim, fontSize: 14 }, children: scheduleLoading ? tt("loadingGuide") : tt("noProgramme") }) : null,
+      rows.map(({ p }) => {
+        const k = kindOf(p, model.nowMs);
+        const rowCanReplay = catchUpByStart.has(p.start);
+        return /* @__PURE__ */ jsxs(
+          "div",
+          {
+            "data-testid": "programme-row",
+            "data-kind": k,
+            ...station(() => {
+              setSelectedStart(p.start);
+              setSheetProgramme(p);
+            }),
+            style: {
+              minHeight: 60,
+              padding: "10px 12px",
+              borderRadius: 12,
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              background: k === "now" ? MT.s06 : void 0,
+              opacity: k === "past" ? 0.6 : void 0,
+              cursor: "pointer"
+            },
+            children: [
+              /* @__PURE__ */ jsx("span", { "data-testid": "programme-time", style: { width: 46, flexShrink: 0, fontSize: 14, fontVariantNumeric: "tabular-nums", color: MT.muted }, children: formatClock(p.start, locale) }),
+              /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: "0px" }, children: [
+                /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: k === "now" ? 600 : 400, ...clamp2 }, children: p.title }),
+                k === "now" ? /* @__PURE__ */ jsx("div", { "data-testid": "programme-progress", style: { height: 4, marginTop: 4, borderRadius: 2, background: MT.s10, overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { height: "100%", width: `${progressOf(p.start, p.stop, model.nowMs) * 100}%`, background: MT.acc } }) }) : null
+              ] }),
+              k === "now" ? /* @__PURE__ */ jsx("span", { style: { fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", color: MT.live, flexShrink: 0 }, children: tt("live") }) : k === "past" ? rowCanReplay ? /* @__PURE__ */ jsx("span", { style: { fontSize: 12, letterSpacing: "0.08em", color: MT.dim, flexShrink: 0 }, children: tt("replay") }) : null : /* @__PURE__ */ jsx("span", { "data-testid": "programme-bell", style: { display: "flex", flexShrink: 0, color: isReminded(channel, p) ? MT.acc : MT.dim }, children: /* @__PURE__ */ jsx(MIcons.Bell, { size: 18, filled: isReminded(channel, p) }) })
+            ]
+          },
+          p.start
+        );
+      }),
+      sheetProgramme ? /* @__PURE__ */ jsx(
+        MobileSheet,
+        {
+          testId: "programme-sheet",
+          title: sheetProgramme.title,
+          subtitle: `${formatClock(sheetProgramme.start, locale)}\u2013${formatClock(sheetProgramme.stop, locale)}`,
+          body: sheetProgramme.description ?? void 0,
+          items: [
+            { key: "primary", label: sheetLabel, run: sheetRun },
+            { key: "info", label: tt("programmeSheetInfo"), run: () => setInfoOpen(true) }
+          ],
+          onClose: () => setSheetProgramme(null),
+          pushLayer: nav.pushLayer
+        }
+      ) : null,
+      infoOpen ? /* @__PURE__ */ jsx(
+        MobileSheet,
+        {
+          testId: "channel-info-sheet",
+          title: channel.name,
+          art: /* @__PURE__ */ jsx(MobileLogo, { channel, width: 56, height: 38 }),
+          body: infoSheetBody,
+          items: infoSheetItems,
+          onClose: () => setInfoOpen(false),
+          pushLayer: nav.pushLayer
+        }
+      ) : null,
+      /* @__PURE__ */ jsx(
+        PinGate,
+        {
+          open: lockGate,
+          title: tt("enterPin"),
+          wrongText: tt("pinWrong"),
+          unlockLabel: tt("unlock"),
+          cancelLabel: tt("cancel"),
+          onVerify: verifyActiveProfilePin2,
+          onClose: () => setLockGate(false),
+          onUnlocked: () => {
+            setLockGate(false);
+            toggleChannelLock(channel);
+          }
+        }
+      )
+    ] });
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-channel.tsx
+  init_jsx_runtime_shim();
+  function TvChannel(props) {
+    if (props.phone) return /* @__PURE__ */ jsx(TvChannelPhone, { ...props });
+    return /* @__PURE__ */ jsx(TvChannelDesktop, { ...props });
+  }
+  function TvChannelDesktop({ model, nav, params, settings }) {
+    const { tt, locale } = useTvText();
+    const [lockGate, setLockGate] = useState(false);
+    const { channel, dayOffset, setDayOffset, rows, selected, setSelectedStart, kind, canReplaySelected, reminded, pinned, locked, lockAvailable, scheduleLoading, catchUpByStart, primary, primaryLabel, dayLabel } = useChannelDetail(model, nav, params);
+    if (!channel) {
+      return /* @__PURE__ */ jsx("div", { style: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: dp(48) }, children: /* @__PURE__ */ jsxs(
+        "div",
+        {
+          "data-testid": "channel-unresolved",
+          ...station(() => nav.back(), void 0, { "data-init": "" }),
+          style: { height: dp(52), minHeight: dp(52), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV2.s10, display: "inline-flex", alignItems: "center", gap: dp(10), fontSize: dp(19), color: TV2.dim, cursor: "pointer" },
+          children: [
+            /* @__PURE__ */ jsx(Icons.ChevronLeft, {}),
+            tt("noProgramme")
+          ]
+        }
+      ) });
+    }
+    const previewLabel = kind === "past" ? tt("replayAvailable", { days: channel.archive?.days ?? 0 }) : kind === "future" && selected ? tt("startsAt", { time: formatClock(selected.start, locale) }) : tt("onNow");
     const requestLockToggle = () => {
       if (!lockAvailable) return;
       setLockGate(true);
     };
-    return /* @__PURE__ */ jsxs("div", { style: { flex: 1, minHeight: 0, display: "flex" }, children: [
-      /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0, borderRight: `1px solid ${TV2.line}`, padding: `${dp(34)}px ${dp(40)}px 0 ${dp(48)}px`, display: "flex", flexDirection: "column" }, children: [
+    const outerStyle = { flex: 1, minHeight: 0, display: "flex" };
+    const scheduleStyle = { flex: 1, minWidth: 0, borderRight: `1px solid ${TV2.line}`, padding: `${dp(34)}px ${dp(40)}px 0 ${dp(48)}px`, display: "flex", flexDirection: "column" };
+    const scheduleListStyle = { flex: 1, minHeight: 0, overflowY: "auto" };
+    const dayPickerStyle = { width: dp(150), flexShrink: 0, padding: `${dp(120)}px ${dp(14)}px 0`, display: "flex", flexDirection: "column", gap: dp(10) };
+    const detailStyle = { width: dp(560), flexShrink: 0, padding: `${dp(34)}px ${dp(48)}px ${dp(32)}px ${dp(36)}px`, display: "flex", flexDirection: "column", gap: dp(16) };
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "channel-view-root", style: outerStyle, children: [
+      /* @__PURE__ */ jsxs("div", { "data-testid": "channel-schedule", style: scheduleStyle, children: [
         /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(16), marginBottom: dp(16) }, children: [
           /* @__PURE__ */ jsx(RoundBtn, { ...station(() => nav.back()), children: /* @__PURE__ */ jsx(Icons.ChevronLeft, {}) }),
           /* @__PURE__ */ jsx(ChannelArt, { channel, style: { width: dp(88), height: dp(56) }, radius: dp(8) }),
@@ -201351,7 +205340,7 @@ ${cue.text}`).join("\n\n")}
           channel.group ? /* @__PURE__ */ jsx(Tag2, { variant: "neutral", children: channel.group }) : null,
           /* @__PURE__ */ jsx(RoundBtn, { ...station(() => model.togglePin(channel)), background: pinned ? TV2.accMix(22) : TV2.s12, style: { marginLeft: "auto" }, children: /* @__PURE__ */ jsx("span", { style: { color: pinned ? TV2.acc : TV2.text }, children: /* @__PURE__ */ jsx(Icons.Heart, { size: dp(24), filled: pinned }) }) })
         ] }),
-        /* @__PURE__ */ jsxs("div", { "data-scroll": "", style: { flex: 1, minHeight: 0, overflowY: "auto" }, children: [
+        /* @__PURE__ */ jsxs("div", { "data-scroll": "", style: scheduleListStyle, children: [
           rows.length === 0 ? /* @__PURE__ */ jsx("div", { style: { padding: dp(24), color: TV2.dim, fontSize: dp(19) }, children: scheduleLoading ? tt("loadingGuide") : tt("noProgramme") }) : null,
           rows.map((row, index3) => {
             const k = kindOf(row.p, model.nowMs);
@@ -201366,7 +205355,7 @@ ${cue.text}`).join("\n\n")}
                 {
                   ...station(primary, void 0, isSelected ? { "data-init": "" } : void 0),
                   onFocus: () => setSelectedStart(row.p.start),
-                  style: { height: dp(66), borderRadius: dp(12), padding: `0 ${dp(16)}px`, display: "flex", alignItems: "center", gap: dp(16), background: isSelected ? TV2.s10 : "transparent", color: k === "past" ? "rgba(243,244,248,0.55)" : TV2.text, cursor: "pointer" },
+                  style: { height: dp(66), minHeight: dp(66), borderRadius: dp(12), padding: `0 ${dp(16)}px`, display: "flex", alignItems: "center", gap: dp(16), background: isSelected ? TV2.s10 : "transparent", color: k === "past" ? "rgba(243,244,248,0.55)" : TV2.text, cursor: "pointer" },
                   children: [
                     /* @__PURE__ */ jsx("span", { style: { width: dp(80), fontSize: dp(21), fontVariantNumeric: "tabular-nums" }, children: formatClock(row.p.start, locale) }),
                     /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, fontSize: dp(21), fontWeight: k === "now" ? 600 : 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: row.p.title }),
@@ -201378,15 +205367,15 @@ ${cue.text}`).join("\n\n")}
           })
         ] })
       ] }),
-      /* @__PURE__ */ jsx("div", { style: { width: dp(150), flexShrink: 0, padding: `${dp(120)}px ${dp(14)}px 0`, display: "flex", flexDirection: "column", gap: dp(10) }, children: DAY_OFFSETS.map((offset) => {
+      /* @__PURE__ */ jsx("div", { "data-testid": "day-picker", style: dayPickerStyle, children: DAY_OFFSETS.map((offset) => {
         const active2 = offset === dayOffset;
         const label2 = dayLabel(offset);
-        return /* @__PURE__ */ jsx("div", { "data-testid": offset === 0 ? "day-btn-0" : void 0, children: /* @__PURE__ */ jsxs("div", { ...station(() => setDayOffset(offset), void 0, { "data-testid": "day-btn" }), style: { height: dp(74), borderRadius: dp(12), display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: active2 ? "#f3f4f8" : "transparent", color: active2 ? "#111" : offset > 0 ? TV2.accText : "rgba(243,244,248,0.6)", cursor: "pointer" }, children: [
+        return /* @__PURE__ */ jsx("div", { "data-testid": offset === 0 ? "day-btn-0" : void 0, children: /* @__PURE__ */ jsxs("div", { ...station(() => setDayOffset(offset), void 0, { "data-testid": "day-btn" }), style: { height: dp(74), minHeight: dp(74), borderRadius: dp(12), display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: active2 ? "#f3f4f8" : "transparent", color: active2 ? "#111" : offset > 0 ? TV2.accText : "rgba(243,244,248,0.6)", cursor: "pointer" }, children: [
           /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), fontWeight: 600 }, children: label2.top }),
           /* @__PURE__ */ jsx("span", { style: { fontSize: dp(15), opacity: 0.75 }, children: label2.bottom })
         ] }) }, offset);
       }) }),
-      /* @__PURE__ */ jsxs("div", { "data-testid": "detail", style: { width: dp(560), flexShrink: 0, padding: `${dp(34)}px ${dp(48)}px ${dp(32)}px ${dp(36)}px`, display: "flex", flexDirection: "column", gap: dp(16) }, children: [
+      /* @__PURE__ */ jsxs("div", { "data-testid": "detail", style: detailStyle, children: [
         /* @__PURE__ */ jsx(TvPreview, { channel, enabled: settings.previewEnabled && kind === "now", live: kind === "now", width: "100%", height: dp(268), label: previewLabel, onOk: primary }),
         /* @__PURE__ */ jsx("div", { style: { fontSize: dp(28), fontWeight: 600 }, children: selected?.title ?? channel.name }),
         selected ? /* @__PURE__ */ jsx("div", { style: { fontSize: dp(18), color: "rgba(243,244,248,0.6)" }, children: tt("airedAt", { time: formatClock(selected.start, locale), channel: channel.name }) }) : null,
@@ -201396,7 +205385,7 @@ ${cue.text}`).join("\n\n")}
           {
             "data-testid": "primary-action",
             ...station(primary, void 0, rows.length === 0 ? { "data-init": "" } : void 0),
-            style: { height: dp(52), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV2.acc, color: TV2.onAcc, display: "inline-flex", alignItems: "center", gap: dp(10), fontSize: dp(19), fontWeight: 600, cursor: "pointer" },
+            style: { height: dp(52), minHeight: dp(52), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV2.acc, color: TV2.onAcc, display: "inline-flex", alignItems: "center", gap: dp(10), fontSize: dp(19), fontWeight: 600, cursor: "pointer" },
             children: [
               kind === "future" ? /* @__PURE__ */ jsx(Icons.Bell, { filled: reminded }) : /* @__PURE__ */ jsx(Icons.Play, { size: dp(20) }),
               primaryLabel
@@ -201442,6 +205431,7 @@ ${cue.text}`).join("\n\n")}
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
+  init_live_tv_model();
   init_live_tv_ui();
   init_tv_ui();
   init_tv_strings();
@@ -201585,8 +205575,8 @@ ${cue.text}`).join("\n\n")}
             }
           ),
           /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "flex-end", gap: dp(10) }, children: [
-            /* @__PURE__ */ jsx("div", { ...station(onCancel), style: { height: dp(38), padding: `0 ${dp(16)}px`, borderRadius: 999, background: TV2.s12, display: "inline-flex", alignItems: "center", fontSize: dp(15), cursor: "pointer" }, children: tt("cancel") }),
-            /* @__PURE__ */ jsx("div", { ...station(submit), style: { height: dp(38), padding: `0 ${dp(16)}px`, borderRadius: 999, background: TV2.acc, color: TV2.onAcc, display: "inline-flex", alignItems: "center", fontSize: dp(15), fontWeight: 600, cursor: "pointer" }, children: tt("keyDone") })
+            /* @__PURE__ */ jsx("div", { ...station(onCancel), style: { height: dp(38), minHeight: dp(38), padding: `0 ${dp(16)}px`, borderRadius: 999, background: TV2.s12, display: "inline-flex", alignItems: "center", fontSize: dp(15), cursor: "pointer" }, children: tt("cancel") }),
+            /* @__PURE__ */ jsx("div", { ...station(submit), style: { height: dp(38), minHeight: dp(38), padding: `0 ${dp(16)}px`, borderRadius: 999, background: TV2.acc, color: TV2.onAcc, display: "inline-flex", alignItems: "center", fontSize: dp(15), fontWeight: 600, cursor: "pointer" }, children: tt("keyDone") })
           ] })
         ] })
       }
@@ -201659,6 +205649,7 @@ ${cue.text}`).join("\n\n")}
   // ../lumio-official-plugins/plugins/live-tv/runtime/hooks/useProgrammeSearch.ts
   init_react_shim();
   init_index_client();
+  init_channel_resolver();
   init_live_tv_data();
   var DEBOUNCE_MS = 150;
   var EMPTY6 = [];
@@ -201697,12 +205688,126 @@ ${cue.text}`).join("\n\n")}
     return state;
   }
 
-  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-search.tsx
-  // TvKeyboard visar ingen text själv — den här raden är fältets enda
-  // display i TV-läge. Utanför TV visar `TvTextField`s riktiga
-  // <input> texten själv, så raden hade bara dublett:at den.
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/search-phone.tsx
+  init_react_shim();
+  init_live_tv_data();
+  init_live_tv_model();
+  init_live_tv_ui();
+  init_tv_ui();
+  init_tv_strings();
+  init_mobile_tokens();
+  init_mobile_icons();
+  init_mobile_channel_row();
   init_jsx_runtime_shim();
-  function TvSearch({ model, nav, params }) {
+  function TvSearchPhone({ model, nav }) {
+    const { tt, locale } = useTvText();
+    const [query, setQuery] = useState("");
+    const [focused, setFocused] = useState(false);
+    const day = useMemo(() => {
+      const start3 = startOfLocalDay(model.nowMs);
+      return { start: start3, end: start3 + 864e5 };
+    }, [model.nowMs]);
+    const channels = useMemo(() => searchChannels(query, model.channels), [query, model.channels]);
+    const { hits: programmes, loading: programmesLoading } = useProgrammeSearch(query, day.start, day.end);
+    const hints = useMemo(() => suggestions(query, model.channels, programmes.map((p) => p.programme.title)), [query, model.channels, programmes]);
+    const noProgrammeLabel = model.epgLoading ? tt("loadingGuide") : tt("noProgramme");
+    const isEmptyResult = query !== "" && channels.length === 0 && programmes.length === 0 && !programmesLoading;
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "search-phone", "data-scroll": "", style: { flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", padding: `0 ${MT.PAD}px`, paddingBottom: MT.SCROLL_PAD_BOTTOM }, children: [
+      /* @__PURE__ */ jsx("div", { style: { margin: `0 -${MT.PAD}px` }, children: /* @__PURE__ */ jsx(MobileHeader, { title: tt("tabSearch") }) }),
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 10, alignItems: "center", marginTop: 10 }, children: [
+        /* @__PURE__ */ jsx(
+          "input",
+          {
+            "data-testid": "search-input",
+            type: "text",
+            inputMode: "search",
+            enterKeyHint: "search",
+            autoComplete: "off",
+            autoFocus: true,
+            value: query,
+            onChange: (event) => setQuery(event.target.value),
+            onFocus: () => setFocused(true),
+            onBlur: () => setFocused(false),
+            placeholder: tt("searchPlaceholder"),
+            "aria-label": tt("searchPlaceholder"),
+            style: {
+              flex: 1,
+              minHeight: 44,
+              borderRadius: 14,
+              background: MT.s10,
+              border: `1px solid ${focused ? MT.accMix(50) : "transparent"}`,
+              padding: "0 14px",
+              fontSize: 16,
+              color: MT.text,
+              caretColor: MT.acc,
+              outline: "none",
+              fontFamily: MT.font,
+              boxSizing: "border-box"
+            }
+          }
+        ),
+        /* @__PURE__ */ jsx("div", { "data-testid": "search-cancel", ...station(() => nav.back()), style: { minHeight: 44, flexShrink: 0, display: "flex", alignItems: "center", fontSize: 15, cursor: "pointer" }, children: tt("cancel") })
+      ] }),
+      hints.length > 0 ? /* @__PURE__ */ jsx(MobileChips, { items: hints.map((hint) => ({ key: hint, label: hint, id: hint })), value: query, onChange: setQuery, testId: "search-hints" }) : null,
+      query === "" ? /* @__PURE__ */ jsxs("div", { "data-testid": "search-empty", style: { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, textAlign: "center", padding: 24 }, children: [
+        /* @__PURE__ */ jsx("span", { style: { color: MT.faint, display: "inline-flex" }, children: /* @__PURE__ */ jsx(MIcons.MagnifyingGlass, { size: 32 }) }),
+        /* @__PURE__ */ jsx("span", { style: { fontSize: 15, color: MT.muted }, children: tt("searchEmptyHint") })
+      ] }) : isEmptyResult ? /* @__PURE__ */ jsx("div", { "data-testid": "search-no-results", style: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 24, fontSize: 15, color: MT.dim }, children: model.channelsLoading ? tt("loadingChannels") : tt("noResults") }) : /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }, children: [
+        /* @__PURE__ */ jsxs("section", { "data-testid": "search-channels", style: { display: "flex", flexDirection: "column" }, children: [
+          /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: 10, minHeight: 24 }, children: [
+            /* @__PURE__ */ jsx("span", { style: { fontSize: 16, fontWeight: 600 }, children: tt("searchChannels") }),
+            /* @__PURE__ */ jsx("span", { style: { fontSize: 13, color: MT.dim }, children: tt("hits", { count: channels.length }) })
+          ] }),
+          channels.length === 0 ? /* @__PURE__ */ jsx("div", { "data-testid": "search-channels-empty", style: { padding: "16px 0", fontSize: 14, color: MT.dim }, children: model.channelsLoading ? tt("loadingChannels") : tt("noResults") }) : channels.map((channel) => {
+            const key = channelKey(channel);
+            return /* @__PURE__ */ jsx(
+              MobileChannelRow,
+              {
+                channel,
+                number: model.channelNumber(channel),
+                now: model.nowFor(channel),
+                nowMs: model.nowMs,
+                locale,
+                variant: "search",
+                noProgrammeLabel,
+                onPress: () => nav.openChannel(channel),
+                onLongPress: (el) => nav.channelMenu(channel, el)
+              },
+              key
+            );
+          })
+        ] }),
+        /* @__PURE__ */ jsxs("section", { "data-testid": "search-programmes", style: { display: "flex", flexDirection: "column", marginTop: 6 }, children: [
+          /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: 10, minHeight: 24 }, children: [
+            /* @__PURE__ */ jsx("span", { style: { fontSize: 16, fontWeight: 600 }, children: tt("searchProgrammes") }),
+            /* @__PURE__ */ jsx("span", { style: { fontSize: 13, color: MT.dim }, children: tt("hits", { count: programmes.length }) })
+          ] }),
+          programmes.length === 0 ? /* @__PURE__ */ jsx("div", { "data-testid": "search-programmes-empty", style: { padding: "16px 0", fontSize: 14, color: MT.dim }, children: programmesLoading ? tt("loadingGuide") : tt("noResults") }) : programmes.map((hit) => /* @__PURE__ */ jsxs(
+            "div",
+            {
+              "data-testid": "search-programme-row",
+              ...station(() => nav.openChannel(hit.channel, hit.programme.start)),
+              style: { minHeight: 56, display: "flex", alignItems: "center", gap: 12, borderBottom: `1px solid ${MT.line07}`, cursor: "pointer" },
+              children: [
+                /* @__PURE__ */ jsx("span", { style: { width: 46, flexShrink: 0, fontSize: 14, color: MT.dim, fontVariantNumeric: "tabular-nums" }, children: formatClock(hit.programme.start, locale) }),
+                /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, fontSize: 15, ...ellipsis }, children: hit.programme.title }),
+                /* @__PURE__ */ jsx("span", { style: { maxWidth: "40%", fontSize: 12, color: MT.dim, ...ellipsis }, children: hit.channel.name })
+              ]
+            },
+            `${channelKey(hit.channel)}:${hit.programme.start}`
+          ))
+        ] })
+      ] })
+    ] });
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-search.tsx
+  init_jsx_runtime_shim();
+  function TvSearch(props) {
+    return props.phone ? /* @__PURE__ */ jsx(TvSearchPhone, { ...props }) : /* @__PURE__ */ jsx(TvSearchDesktop, { ...props });
+  }
+  function TvSearchDesktop(props) {
+    const { model, nav, params } = props;
     const { tt, locale } = useTvText();
     const tvMode = useTvMode();
     const [query, setQuery] = useState("");
@@ -201728,16 +205833,24 @@ ${cue.text}`).join("\n\n")}
       const first = document.querySelector("[data-live-tv-search-results] [data-f]");
       first?.focus({ preventScroll: true });
     };
-    return /* @__PURE__ */ jsxs("div", { style: { flex: 1, minHeight: 0, display: "flex" }, children: [
-      /* @__PURE__ */ jsxs("div", { style: { width: dp(760), flexShrink: 0, borderRight: `1px solid ${TV2.line}`, padding: `${dp(34)}px ${dp(40)}px 0 ${dp(48)}px`, display: "flex", flexDirection: "column", gap: dp(18) }, children: [
-        tvMode ? /* @__PURE__ */ jsxs("div", { style: { height: dp(64), borderRadius: dp(14), background: TV2.s10, display: "flex", alignItems: "center", padding: `0 ${dp(20)}px`, fontSize: dp(28), color: query ? TV2.text : "rgba(243,244,248,0.5)" }, children: [
-          query || /* @__PURE__ */ jsx("span", { style: { fontSize: dp(18) }, children: tt("searchPlaceholder") }),
-          /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { width: 2, height: dp(32), background: TV2.acc, marginLeft: dp(4) } })
-        ] }) : null,
-        /* @__PURE__ */ jsx("div", { "data-row": "", style: { display: "flex", gap: dp(8), overflowX: "auto", minHeight: dp(44) }, children: hints.map((hint) => /* @__PURE__ */ jsx("div", { "data-testid": "search-suggestion", ...station(() => setQuery(hint)), style: { height: dp(44), padding: `0 ${dp(18)}px`, borderRadius: 999, background: TV2.s08, display: "inline-flex", alignItems: "center", fontSize: dp(18), whiteSpace: "nowrap", cursor: "pointer" }, children: hint }, hint)) }),
+    const outerStyle = { flex: 1, minHeight: 0, display: "flex" };
+    const queryColStyle = { width: dp(760), flexShrink: 0, borderRight: `1px solid ${TV2.line}`, padding: `${dp(34)}px ${dp(40)}px 0 ${dp(48)}px`, display: "flex", flexDirection: "column", gap: dp(18) };
+    const resultsStyle = { flex: 1, minWidth: 0, overflowY: "auto", padding: `${dp(34)}px ${dp(48)}px 0 ${dp(40)}px`, display: "flex", flexDirection: "column", gap: dp(28) };
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "search-view-root", style: outerStyle, children: [
+      /* @__PURE__ */ jsxs("div", { "data-testid": "search-query-col", style: queryColStyle, children: [
+        tvMode ? (
+          // TvKeyboard visar ingen text själv — den här raden är fältets enda
+          // display i TV-läge. Utanför TV visar `TvTextField`s riktiga
+          // <input> texten själv, så raden hade bara dublett:at den.
+          /* @__PURE__ */ jsxs("div", { style: { height: dp(64), borderRadius: dp(14), background: TV2.s10, display: "flex", alignItems: "center", padding: `0 ${dp(20)}px`, fontSize: dp(28), color: query ? TV2.text : "rgba(243,244,248,0.5)" }, children: [
+            query || /* @__PURE__ */ jsx("span", { style: { fontSize: dp(18) }, children: tt("searchPlaceholder") }),
+            /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { width: 2, height: dp(32), background: TV2.acc, marginLeft: dp(4) } })
+          ] })
+        ) : null,
+        /* @__PURE__ */ jsx("div", { "data-row": "", style: { display: "flex", gap: dp(8), overflowX: "auto", minHeight: dp(44) }, children: hints.map((hint) => /* @__PURE__ */ jsx("div", { "data-testid": "search-suggestion", ...station(() => setQuery(hint)), style: { height: dp(44), minHeight: dp(44), padding: `0 ${dp(18)}px`, borderRadius: 999, background: TV2.s08, display: "inline-flex", alignItems: "center", fontSize: dp(18), whiteSpace: "nowrap", cursor: "pointer" }, children: hint }, hint)) }),
         /* @__PURE__ */ jsx(TvTextField, { value: query, onChange: setQuery, onSubmit: focusFirstResult, placeholder: tt("searchPlaceholder"), autoFocus: true })
       ] }),
-      /* @__PURE__ */ jsxs("div", { "data-live-tv-search-results": "", "data-scroll": "", style: { flex: 1, minWidth: 0, overflowY: "auto", padding: `${dp(34)}px ${dp(48)}px 0 ${dp(40)}px`, display: "flex", flexDirection: "column", gap: dp(28) }, children: [
+      /* @__PURE__ */ jsxs("div", { "data-live-tv-search-results": "", "data-scroll": "", style: resultsStyle, children: [
         vodHidden ? null : /* @__PURE__ */ jsx("div", { "data-row": "", style: { display: "flex", gap: dp(10) }, children: [["all", tt("scopeAll")], ["ch", tt("scopeChannels")], ["vod", tt("scopeVod")]].map(([key, label2]) => /* @__PURE__ */ jsx(
           "div",
           {
@@ -201769,7 +205882,7 @@ ${cue.text}`).join("\n\n")}
           query && channels.length === 0 ? /* @__PURE__ */ jsx("div", { style: { color: TV2.dim, fontSize: dp(18) }, children: model.channelsLoading ? tt("loadingChannels") : tt("noResults") }) : null,
           channels.map((channel) => {
             const info = model.nowFor(channel);
-            return /* @__PURE__ */ jsxs("div", { ...station(() => nav.openChannel(channel), (el) => nav.channelMenu(channel, el)), style: { height: dp(80), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(12)}px`, cursor: "pointer" }, children: [
+            return /* @__PURE__ */ jsxs("div", { ...station(() => nav.openChannel(channel), (el) => nav.channelMenu(channel, el)), style: { height: dp(80), minHeight: dp(80), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(12)}px`, cursor: "pointer" }, children: [
               /* @__PURE__ */ jsx("span", { style: { width: dp(44), fontSize: dp(16), color: "rgba(243,244,248,0.5)", textAlign: "right" }, children: model.channelNumber(channel) ?? "" }),
               /* @__PURE__ */ jsx(ChannelArt, { channel, style: { width: dp(76), height: dp(50), flexShrink: 0 }, radius: dp(8) }),
               /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: 1 }, children: [
@@ -201786,7 +205899,7 @@ ${cue.text}`).join("\n\n")}
             /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: "rgba(243,244,248,0.5)" }, children: tt("hits", { count: programmes.length }) })
           ] }),
           query && programmes.length === 0 ? /* @__PURE__ */ jsx("div", { "data-testid": "search-programmes-empty", style: { color: TV2.dim, fontSize: dp(18) }, children: programmesLoading ? tt("loadingGuide") : tt("noResults") }) : null,
-          programmes.map((hit) => /* @__PURE__ */ jsxs("div", { ...station(() => nav.openChannel(hit.channel, hit.programme.start)), style: { height: dp(64), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(16), padding: `0 ${dp(12)}px`, cursor: "pointer" }, children: [
+          programmes.map((hit) => /* @__PURE__ */ jsxs("div", { ...station(() => nav.openChannel(hit.channel, hit.programme.start)), style: { height: dp(64), minHeight: dp(64), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(16), padding: `0 ${dp(12)}px`, cursor: "pointer" }, children: [
             /* @__PURE__ */ jsx("span", { style: { width: dp(80), fontSize: dp(18), color: "rgba(243,244,248,0.6)", fontVariantNumeric: "tabular-nums" }, children: formatClock(hit.programme.start, locale) }),
             /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, fontSize: dp(20), whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: hit.programme.title }),
             /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: "rgba(243,244,248,0.5)" }, children: hit.channel.name })
@@ -201808,6 +205921,18 @@ ${cue.text}`).join("\n\n")}
   init_live_tv_data();
   init_tv_ui();
   init_tv_strings();
+  init_useNarrowSurface();
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/multiview-slots.ts
+  function narrowVisibleIndices(state) {
+    const count = state.tiles.length;
+    const audioIdx = state.audioIndex;
+    const others = Array.from({ length: count }, (_, i) => i).filter((i) => i !== audioIdx);
+    const second = others.find((i) => state.tiles[i] !== null) ?? others.find((i) => state.tiles[i] === null) ?? others[0] ?? audioIdx;
+    return [audioIdx, second];
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_video_surface();
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-channel-picker.tsx
@@ -201841,14 +205966,14 @@ ${cue.text}`).join("\n\n")}
     }, []);
     return /* @__PURE__ */ jsxs("div", { ref: rootRef, "data-testid": "channel-picker", "data-panel-root": "", "data-live-tv-layer": "", style: { position: "fixed", top: 0, right: 0, bottom: 0, width: `min(${dp(640)}px, 100%)`, zIndex: 60, background: TV2.panel, borderLeft: `1px solid ${TV2.line}`, padding: `${dp(34)}px ${dp(32)}px`, display: "flex", flexDirection: "column", gap: dp(18) }, children: [
       /* @__PURE__ */ jsx("div", { style: { fontSize: dp(28), fontWeight: 600 }, children: title }),
-      /* @__PURE__ */ jsx("div", { "data-row": "", style: { display: "flex", gap: dp(8), overflowX: "auto" }, children: groups.map((chip) => /* @__PURE__ */ jsx(Chip, { active: group === chip.key, ...station(() => setGroup(chip.key)), style: { height: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }, children: chip.label }, chip.id)) }),
+      /* @__PURE__ */ jsx("div", { "data-row": "", style: { display: "flex", gap: dp(8), overflowX: "auto" }, children: groups.map((chip) => /* @__PURE__ */ jsx(Chip, { active: group === chip.key, ...station(() => setGroup(chip.key)), style: { height: dp(40), minHeight: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }, children: chip.label }, chip.id)) }),
       /* @__PURE__ */ jsx("div", { "data-scroll": "", style: { flex: 1, minHeight: 0, overflowY: "auto" }, children: rows.map((channel, index3) => {
         const info = model.nowFor(channel);
         return /* @__PURE__ */ jsxs("div", { "data-testid": `picker-row-${channel.name}`, ...station(() => {
           onPick(channel);
           onCloseRef.current();
           window.setTimeout(() => openerRef.current?.focus({ preventScroll: true }), 0);
-        }, void 0, index3 === 0 ? { "data-init": "" } : void 0), style: { height: dp(74), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(12)}px`, cursor: "pointer" }, children: [
+        }, void 0, index3 === 0 ? { "data-init": "" } : void 0), style: { height: dp(74), minHeight: dp(74), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(12)}px`, cursor: "pointer" }, children: [
           /* @__PURE__ */ jsx("span", { style: { width: dp(40), fontSize: dp(16), color: "rgba(243,244,248,0.5)", textAlign: "right" }, children: model.channelNumber(channel) ?? "" }),
           /* @__PURE__ */ jsx(ChannelArt, { channel, style: { width: dp(70), height: dp(46), flexShrink: 0 }, radius: dp(8) }),
           /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
@@ -201860,6 +205985,174 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/multiview-phone.tsx
+  init_react_shim();
+  init_live_tv_data();
+  init_tv_ui();
+  init_tv_strings();
+  init_video_surface();
+  init_mobile_tokens();
+  init_mobile_icons();
+  init_mobile_sheet();
+  init_mobile_channel_row();
+  init_jsx_runtime_shim();
+  var MAX_PICKER_ROWS = 200;
+  function TvMultiviewPhone({ model, nav }) {
+    const { tt, locale } = useTvText();
+    const state = useMultiviewState();
+    const groups = useGuideGroups(model, tt);
+    const [pickerTile, setPickerTile] = useState(null);
+    const [group, setGroup] = useState(null);
+    const caps = videoSurfaceCapabilities();
+    const update = (next2) => setMultiviewState(next2);
+    const channelFor = (key) => key ? model.byKey.get(key) ?? model.allChannels.find((c) => channelKey(c) === key) ?? null : null;
+    const [a, b] = narrowVisibleIndices(state);
+    const visible = [a, b];
+    const audioChannel = channelFor(state.tiles[state.audioIndex]);
+    const openPicker = (index3) => {
+      setGroup(null);
+      setPickerTile(index3);
+    };
+    const swap = () => {
+      const tiles = [...state.tiles];
+      [tiles[a], tiles[b]] = [tiles[b], tiles[a]];
+      let audioIndex = state.audioIndex;
+      if (audioIndex === a) audioIndex = b;
+      else if (audioIndex === b) audioIndex = a;
+      update({ ...state, tiles, audioIndex });
+    };
+    const liveBudget = Math.max(0, caps.maxLive - 1);
+    let liveLeft = liveBudget;
+    const noProgrammeLabel = model.epgLoading ? tt("loadingGuide") : tt("noProgramme");
+    const pickerRows = pickerTile !== null ? filterByGroup(model, group).slice(0, MAX_PICKER_ROWS) : [];
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "multiview-phone", "data-scroll": "", style: { flex: 1, overflowY: "auto", padding: `0 ${MT.PAD}px`, paddingBottom: MT.SCROLL_PAD_BOTTOM, display: "flex", flexDirection: "column", gap: 14 }, children: [
+      /* @__PURE__ */ jsx("div", { style: { margin: `0 -${MT.PAD}px` }, children: /* @__PURE__ */ jsx(
+        MobileHeader,
+        {
+          title: tt("multiview"),
+          right: /* @__PURE__ */ jsx("div", { "data-testid": "mv-swap", ...station(swap), style: { minHeight: 36, padding: "0 16px", borderRadius: 999, background: MT.s10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 600, cursor: "pointer" }, children: tt("swap") })
+        }
+      ) }),
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: 6, fontSize: 13 }, children: [
+        /* @__PURE__ */ jsx("span", { style: { color: MT.dim }, children: tt("audioLabel") }),
+        audioChannel ? /* @__PURE__ */ jsx("span", { style: { fontWeight: 600, ...ellipsis }, children: audioChannel.name }) : null
+      ] }),
+      /* @__PURE__ */ jsx("div", { style: { display: "flex", flexDirection: "column", gap: 12 }, children: visible.map((realIndex) => {
+        const key = state.tiles[realIndex];
+        const channel = channelFor(key);
+        const hasAudio = realIndex === state.audioIndex && channel !== null;
+        const live2 = hasAudio || channel !== null && liveLeft-- > 0;
+        return /* @__PURE__ */ jsx(
+          PhoneTile,
+          {
+            channel,
+            hasAudio,
+            live: live2,
+            nowTitle: channel ? model.nowFor(channel).now?.title ?? null : null,
+            number: channel ? model.channelNumber(channel) : null,
+            onTap: () => {
+              if (!channel) {
+                openPicker(realIndex);
+                return;
+              }
+              update({ ...state, audioIndex: realIndex });
+            },
+            onHold: (el) => {
+              if (!channel) {
+                openPicker(realIndex);
+                return;
+              }
+              nav.openMenu({
+                title: channel.name,
+                element: el,
+                actions: [
+                  { key: "audio", label: tt("menuAudioHere"), run: () => update({ ...state, audioIndex: realIndex }) },
+                  { key: "switch", label: tt("menuSwitchChannel"), run: () => openPicker(realIndex) },
+                  { key: "full", label: tt("menuFullscreen"), run: () => nav.play({ channel }) },
+                  { key: "remove", label: tt("menuRemoveTile"), run: () => update(removeTile(state, realIndex)) }
+                ]
+              });
+            }
+          },
+          `${realIndex}:${key ?? "empty"}`
+        );
+      }) }),
+      /* @__PURE__ */ jsxs("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }, children: [
+        /* @__PURE__ */ jsx("div", { "data-testid": "mv-change-channel", ...station(() => openPicker(state.audioIndex)), style: { minHeight: 46, borderRadius: 12, background: MT.s08, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 600, cursor: "pointer" }, children: tt("changeChannel") }),
+        /* @__PURE__ */ jsx("div", { "data-testid": "mv-fullscreen", ...station(() => {
+          if (audioChannel) nav.play({ channel: audioChannel });
+        }), style: { minHeight: 46, borderRadius: 12, background: MT.s08, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 600, cursor: "pointer" }, children: tt("menuFullscreen") })
+      ] }),
+      pickerTile !== null ? /* @__PURE__ */ jsx(
+        MobileSheet,
+        {
+          testId: "mv-picker-sheet",
+          title: tt("selectChannel"),
+          body: /* @__PURE__ */ jsxs(Fragment2, { children: [
+            /* @__PURE__ */ jsx(MobileChips, { items: groups, value: group, onChange: setGroup, testId: "mv-picker-groups" }),
+            /* @__PURE__ */ jsx("div", { children: pickerRows.map((channel) => {
+              const key = channelKey(channel);
+              return /* @__PURE__ */ jsx(
+                MobileChannelRow,
+                {
+                  testId: "mv-picker-row",
+                  channel,
+                  number: model.channelNumber(channel),
+                  now: model.nowFor(channel),
+                  nowMs: model.nowMs,
+                  locale,
+                  variant: "sheet",
+                  noProgrammeLabel,
+                  onPress: () => {
+                    if (pickerTile === null) return;
+                    update(assignTile(state, pickerTile, key));
+                    setPickerTile(null);
+                  }
+                },
+                key
+              );
+            }) })
+          ] }),
+          items: [],
+          onClose: () => setPickerTile(null),
+          pushLayer: nav.pushLayer
+        }
+      ) : null
+    ] });
+  }
+  function PhoneTile({ channel, hasAudio, live: live2, nowTitle, number: number2, onTap, onHold }) {
+    const { tt } = useTvText();
+    const ref = useRef(null);
+    const surface = useVideoSurface(ref, channel && live2 ? { channel, url: channel.url } : null, { muted: !hasAudio, audio: hasAudio, enabled: live2 });
+    const showsVideo = live2 && surface.live && !surface.failed;
+    return /* @__PURE__ */ jsxs(
+      "div",
+      {
+        ref,
+        "data-testid": "mv-tile",
+        ...station(onTap, onHold),
+        style: { position: "relative", height: 220, borderRadius: 16, border: `1px solid ${hasAudio ? MT.accMix(55) : MT.line10}`, overflow: "hidden", background: showsVideo ? "transparent" : "#05070d", cursor: "pointer" },
+        children: [
+          channel && !showsVideo ? /* @__PURE__ */ jsx(ChannelArt, { channel, style: { position: "absolute", inset: 0, borderRadius: 0 } }) : null,
+          channel ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+            /* @__PURE__ */ jsxs("div", { style: { position: "absolute", left: 0, right: 0, bottom: 0, padding: "32px 14px 12px", background: "linear-gradient(180deg, transparent, rgba(0,0,0,0.85))", display: "flex", alignItems: "baseline", gap: 8, overflow: "hidden" }, children: [
+              /* @__PURE__ */ jsx("span", { style: { fontSize: 13, color: MT.dim, flexShrink: 0 }, children: number2 ?? "" }),
+              /* @__PURE__ */ jsx("span", { style: { fontSize: 15, fontWeight: 600, flex: 1, minWidth: 0, ...ellipsis }, children: channel.name }),
+              nowTitle ? /* @__PURE__ */ jsxs("span", { style: { fontSize: 13, color: MT.muted, flexShrink: 0, maxWidth: "40%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: [
+                "\xB7 ",
+                nowTitle
+              ] }) : null
+            ] }),
+            hasAudio ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: 8, right: 8, height: 24, padding: "0 8px", borderRadius: 999, background: MT.acc, color: "#fff", fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", display: "flex", alignItems: "center" }, children: tt("audioLabel") }) : /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: 8, right: 8, width: 34, height: 34, borderRadius: 999, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }, children: /* @__PURE__ */ jsx(MIcons.SpeakerSlash, { size: 18 }) })
+          ] }) : /* @__PURE__ */ jsxs("div", { style: { position: "absolute", inset: 0, background: "rgba(0,0,0,0.55)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, color: "#fff" }, children: [
+            /* @__PURE__ */ jsx(MIcons.Plus, { size: 32 }),
+            /* @__PURE__ */ jsx("span", { style: { fontSize: 15 }, children: tt("selectChannel") })
+          ] })
+        ]
+      }
+    );
+  }
+
   // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_jsx_runtime_shim();
   var GRID = {
@@ -201868,14 +206161,11 @@ ${cue.text}`).join("\n\n")}
     4: { columns: "1fr 1fr", rows: "1fr 1fr" }
   };
   var NARROW_GRID = { columns: "1fr", rows: "1fr 1fr" };
-  function narrowVisibleIndices(state) {
-    const count = state.tiles.length;
-    const audioIdx = state.audioIndex;
-    const others = Array.from({ length: count }, (_, i) => i).filter((i) => i !== audioIdx);
-    const second = others.find((i) => state.tiles[i] !== null) ?? others.find((i) => state.tiles[i] === null) ?? others[0] ?? audioIdx;
-    return [audioIdx, second];
+  function TvMultiview(props) {
+    return props.phone ? /* @__PURE__ */ jsx(TvMultiviewPhone, { ...props }) : /* @__PURE__ */ jsx(TvMultiviewDesktop, { ...props });
   }
-  function TvMultiview({ model, nav }) {
+  function TvMultiviewDesktop(props) {
+    const { model, nav } = props;
     const { tt } = useTvText();
     const state = useMultiviewState();
     const rootRef = useRef(null);
@@ -201906,17 +206196,13 @@ ${cue.text}`).join("\n\n")}
             onChange: (key) => update(setLayout(state, Number(key)))
           }
         ),
-        /* @__PURE__ */ jsxs("span", { style: { marginLeft: "auto", fontSize: dp(18), color: "rgba(243,244,248,0.6)", textAlign: "right" }, children: [
-          audioChannel ? /* @__PURE__ */ jsxs(Fragment2, { children: [
-            /* @__PURE__ */ jsxs("span", { children: [
-              tt("audioLabel"),
-              ": "
-            ] }),
-            /* @__PURE__ */ jsx("strong", { style: { color: TV2.text }, children: audioChannel.name }),
-            " \xB7 "
-          ] }) : null,
-          tt("multiviewHelp")
-        ] })
+        /* @__PURE__ */ jsx("span", { "data-testid": "mv-audio-help", style: { marginLeft: "auto", fontSize: dp(18), color: "rgba(243,244,248,0.6)", textAlign: "right" }, children: audioChannel ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsxs("span", { children: [
+            tt("audioLabel"),
+            ": "
+          ] }),
+          /* @__PURE__ */ jsx("strong", { style: { color: TV2.text }, children: audioChannel.name })
+        ] }) : null })
       ] }),
       /* @__PURE__ */ jsx("div", { style: { flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: (narrow ? NARROW_GRID : GRID[state.layout]).columns, gridTemplateRows: (narrow ? NARROW_GRID : GRID[state.layout]).rows, gap: dp(16) }, children: slots.map(({ realIndex, key }) => {
         const channel = key ? model.byKey.get(key) ?? model.allChannels.find((c) => channelKey(c) === key) ?? null : null;
@@ -202002,6 +206288,7 @@ ${cue.text}`).join("\n\n")}
   // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-library.tsx
   init_react_shim();
   init_plugin_sdk();
+  init_useNarrowSurface();
   init_tv_ui();
   init_tv_strings();
   init_jsx_runtime_shim();
@@ -202143,7 +206430,7 @@ ${cue.text}`).join("\n\n")}
     const sortLabel = (key) => key === "az" ? tt("librarySortAz") : key === "rating" ? tt("librarySortRating") : tt("librarySortNew");
     const grouped = useMemo(() => groupByKind(cats.categories), [cats.categories]);
     const initInGrid = page.items.length > 0;
-    const card = (item, index3) => /* @__PURE__ */ jsxs(
+    const card2 = (item, index3) => /* @__PURE__ */ jsxs(
       "div",
       {
         "data-testid": "library-card",
@@ -202248,7 +206535,7 @@ ${cue.text}`).join("\n\n")}
               alignContent: "start"
             },
             children: [
-              page.items.map(card),
+              page.items.map(card2),
               status
             ]
           }
@@ -202384,7 +206671,7 @@ ${cue.text}`).join("\n\n")}
               alignContent: "start"
             },
             children: [
-              page.items.map(card),
+              page.items.map(card2),
               status
             ]
           }
@@ -202568,13 +206855,13 @@ ${cue.text}`).join("\n\n")}
     const [watched, setWatched2] = useState(false);
     useEffect(() => {
       if (!watchKey) return;
-      const read8 = () => {
+      const read9 = () => {
         setInList(isWatching(watchKey));
         setWatched2(isMovieWatched({ tmdbId: watchKey }));
       };
-      read8();
-      const offList = onWatchlistChanged(read8);
-      const offWatched = onWatchedMoviesChanged(read8);
+      read9();
+      const offList = onWatchlistChanged(read9);
+      const offWatched = onWatchedMoviesChanged(read9);
       return () => {
         offList();
         offWatched();
@@ -202909,252 +207196,50 @@ ${cue.text}`).join("\n\n")}
   // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-settings.tsx
   init_react_shim();
   init_plugin_sdk();
-  init_live_tv_data();
-  init_live_tv_ui();
-  init_live_tv_data();
+  init_tv_ui();
+  init_tv_strings();
+  init_tv_settings_store();
 
-  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-list-picker.tsx
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/settings-tabs.tsx
   init_react_shim();
   init_live_tv_data();
+  init_index_client();
+  init_channel_locks();
+  init_live_tv_ui();
   init_tv_ui();
-  init_tv_strings();
+  init_mobile_tokens();
+  init_mobile_icons();
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-toggle.tsx
+  init_mobile_tokens();
   init_jsx_runtime_shim();
-  function PickerPanel({
-    nav,
-    title,
-    chips,
-    rows,
-    onClose
-  }) {
-    const rootRef = useRef(null);
-    const openerRef = useRef(null);
-    const navRef = useRef(nav);
-    const onCloseRef = useRef(onClose);
-    useEffect(() => {
-      navRef.current = nav;
-      onCloseRef.current = onClose;
-    });
-    useEffect(() => {
-      openerRef.current = document.activeElement;
-      const close = () => {
-        onCloseRef.current();
-        window.setTimeout(() => openerRef.current?.focus({ preventScroll: true }), 0);
-      };
-      const off = navRef.current.pushLayer(close);
-      window.setTimeout(() => rootRef.current?.querySelector("[data-init]")?.focus({ preventScroll: true }), 0);
-      return off;
-    }, []);
-    return /* @__PURE__ */ jsxs(
-      "div",
-      {
-        ref: rootRef,
-        "data-testid": "list-picker",
-        "data-panel-root": "",
-        "data-live-tv-layer": "",
-        style: { position: "fixed", top: 0, right: 0, bottom: 0, width: `min(${dp(640)}px, 100%)`, zIndex: 60, background: TV2.panel, borderLeft: `1px solid ${TV2.line}`, padding: `${dp(34)}px ${dp(32)}px`, display: "flex", flexDirection: "column", gap: dp(18) },
-        children: [
-          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(28), fontWeight: 600 }, children: title }),
-          chips,
-          /* @__PURE__ */ jsx("div", { "data-scroll": "", style: { flex: 1, minHeight: 0, overflowY: "auto" }, children: rows })
-        ]
-      }
-    );
-  }
-  function Check({ on, label: label2 }) {
-    if (!on) return /* @__PURE__ */ jsx("span", { style: { width: dp(28), flexShrink: 0 } });
-    return /* @__PURE__ */ jsx("span", { "data-testid": `picker-check-${label2}`, style: { width: dp(28), flexShrink: 0, color: TV2.acc, fontSize: dp(22), textAlign: "center" }, children: "\u2713" });
-  }
-  function TvListPicker({ model, nav, title, selected, onToggle, onClose }) {
-    const { tt } = useTvText();
-    const groups = useGuideGroups(model, tt);
-    const [group, setGroup] = useState(null);
-    const rows = useMemo(() => filterByGroup(model, group).slice(0, 200), [model, group]);
-    return /* @__PURE__ */ jsx(
-      PickerPanel,
-      {
-        nav,
-        title,
-        onClose,
-        chips: /* @__PURE__ */ jsx("div", { "data-row": "", style: { display: "flex", gap: dp(8), overflowX: "auto" }, children: groups.map((chip, index3) => /* @__PURE__ */ jsx(Chip, { active: group === chip.key, ...station(() => setGroup(chip.key), void 0, rows.length === 0 && index3 === 0 ? { "data-init": "" } : void 0), style: { height: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }, children: chip.label }, chip.id)) }),
-        rows: rows.map((channel, index3) => {
-          const on = selected.has(channelKey(channel));
-          return /* @__PURE__ */ jsxs(
-            "div",
-            {
-              "data-testid": `picker-row-${channel.name}`,
-              ...station(() => onToggle(channel), void 0, index3 === 0 ? { "data-init": "" } : void 0),
-              style: { height: dp(74), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(12)}px`, cursor: "pointer" },
-              children: [
-                /* @__PURE__ */ jsx(Check, { on, label: channel.name }),
-                /* @__PURE__ */ jsx(ChannelArt, { channel, style: { width: dp(70), height: dp(46), flexShrink: 0 }, radius: dp(8) }),
-                /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
-                  /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: channel.name }),
-                  /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: "rgba(243,244,248,0.6)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: channel.group })
-                ] })
-              ]
-            },
-            channelKey(channel)
-          );
-        })
-      }
-    );
-  }
-  function TvCategoryPicker({ nav, title, categories, selected, onToggle, onSelectAll, onClose }) {
-    const { tt } = useTvText();
-    const all = selected.size === 0;
-    return /* @__PURE__ */ jsx(
-      PickerPanel,
-      {
-        nav,
-        title,
-        onClose,
-        chips: null,
-        rows: /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsxs(
-            "div",
-            {
-              "data-testid": "picker-row-all",
-              ...station(onSelectAll, void 0, { "data-init": "" }),
-              style: { height: dp(64), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(12)}px`, fontSize: dp(19), cursor: "pointer" },
-              children: [
-                /* @__PURE__ */ jsx(Check, { on: all, label: "all" }),
-                tt("xtreamAllCategories")
-              ]
-            }
-          ),
-          categories === null ? /* @__PURE__ */ jsx("div", { style: { padding: dp(12), fontSize: dp(17), color: TV2.dim }, children: tt("loadingChannels") }) : categories.map((category) => /* @__PURE__ */ jsxs(
-            "div",
-            {
-              "data-testid": `picker-row-${category.name}`,
-              ...station(() => onToggle(category)),
-              style: { height: dp(64), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(12)}px`, fontSize: dp(19), cursor: "pointer" },
-              children: [
-                /* @__PURE__ */ jsx(Check, { on: selected.has(category.id), label: category.name }),
-                /* @__PURE__ */ jsx("span", { style: { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: category.name })
-              ]
-            },
-            category.id
-          ))
-        ] })
-      }
-    );
+  function MobileToggle({ on }) {
+    return /* @__PURE__ */ jsx("span", { "data-on": on ? "1" : "0", style: { width: 44, height: 26, borderRadius: 999, background: on ? MT.acc : MT.s16, position: "relative", display: "inline-block", flexShrink: 0 }, children: /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: 3, left: on ? 21 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 120ms" } }) });
   }
 
-  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-settings.tsx
-  init_tv_ui();
-  init_tv_strings();
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/settings-tabs.tsx
   init_jsx_runtime_shim();
-  var TABS = ["appearance", "content", "playlists", "epg", "parental"];
-  var accentApi = plugin_sdk_exports;
-  var hasAccent = typeof accentApi.getAccent === "function" && typeof accentApi.setAccent === "function" && !!accentApi.ACCENT_PRESETS;
-  function Row({ label: label2, right, onOk, testId }) {
-    return /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onOk), style: { height: dp(64), borderRadius: dp(12), background: TV2.s06, padding: `0 ${dp(18)}px`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: dp(16), fontSize: dp(19), cursor: "pointer" }, children: [
+  function Row({ label: label2, right, onOk, testId, phone = false }) {
+    if (phone) {
+      return /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onOk), style: { minHeight: 52, padding: "10px 14px", borderRadius: 0, background: "transparent", borderBottom: `1px solid ${MT.line07}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 15, cursor: "pointer" }, children: [
+        /* @__PURE__ */ jsx("span", { style: ellipsis, children: label2 }),
+        /* @__PURE__ */ jsx("span", { style: { flexShrink: 0, color: MT.muted, display: "inline-flex", alignItems: "center", gap: 8, fontSize: 14 }, children: right })
+      ] });
+    }
+    return /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onOk), style: { height: dp(64), minHeight: dp(64), borderRadius: dp(12), background: TV2.s06, padding: `0 ${dp(18)}px`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: dp(16), fontSize: dp(19), cursor: "pointer" }, children: [
       /* @__PURE__ */ jsx("span", { style: { minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: label2 }),
       /* @__PURE__ */ jsx("span", { style: { flexShrink: 0, color: "rgba(243,244,248,0.6)", display: "inline-flex", alignItems: "center", gap: dp(10) }, children: right })
     ] });
   }
-  function Heading({ children, hint }) {
+  var PhoneCaret = () => /* @__PURE__ */ jsx("span", { style: { color: MT.dim, display: "inline-flex", flexShrink: 0 }, children: /* @__PURE__ */ jsx(MIcons.CaretRight, { size: 16 }) });
+  function Heading({ children, hint, phone = false }) {
+    if (phone) return /* @__PURE__ */ jsxs("div", { style: { padding: "14px 14px 6px" }, children: [
+      /* @__PURE__ */ jsx("div", { style: sectionLabel, children }),
+      hint ? /* @__PURE__ */ jsx("div", { style: { fontSize: 13, color: MT.dim, marginTop: 4 }, children: hint }) : null
+    ] });
     return /* @__PURE__ */ jsxs("div", { children: [
       /* @__PURE__ */ jsx("div", { style: { fontSize: dp(26), fontWeight: 600 }, children }),
       hint ? /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: "rgba(243,244,248,0.5)" }, children: hint }) : null
-    ] });
-  }
-  function TvSettingsView({ model, nav, params, settings }) {
-    const { tt, locale } = useTvText();
-    const initial = TABS.includes(params.tab ?? "") ? params.tab : "appearance";
-    const [tab, setTab] = useState(initial);
-    const labels = { appearance: tt("tabAppearance"), content: tt("tabContent"), playlists: tt("tabPlaylists"), epg: tt("tabEpg"), parental: tt("tabParental") };
-    return /* @__PURE__ */ jsxs("div", { style: { flex: 1, minHeight: 0, display: "flex" }, children: [
-      /* @__PURE__ */ jsxs("div", { style: { width: dp(340), flexShrink: 0, borderRight: `1px solid ${TV2.line}`, padding: `${dp(34)}px ${dp(20)}px 0 ${dp(48)}px`, display: "flex", flexDirection: "column", gap: dp(6) }, children: [
-        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(30), fontWeight: 600, marginBottom: dp(16) }, children: tt("liveTv") }),
-        TABS.map((t) => /* @__PURE__ */ jsx("div", { "data-testid": `tab-${t}`, ...station(() => setTab(t), void 0, { ...t === tab ? { "data-init": "" } : {}, "data-f-right": "[data-live-tv-settings-content] [data-f]" }), style: { height: dp(60), borderRadius: dp(12), padding: `0 ${dp(18)}px`, display: "flex", alignItems: "center", fontSize: dp(20), background: t === tab ? TV2.s12 : "transparent", color: t === tab ? TV2.text : TV2.muted, cursor: "pointer" }, children: labels[t] }, t))
-      ] }),
-      /* @__PURE__ */ jsxs("div", { "data-live-tv-settings-content": "", "data-scroll": "", style: { flex: 1, minWidth: 0, overflowY: "auto", padding: `${dp(40)}px ${dp(48)}px`, display: "flex", flexDirection: "column", gap: dp(36) }, children: [
-        tab === "appearance" ? /* @__PURE__ */ jsx(AppearanceTab, { settings, tt }) : null,
-        tab === "content" ? /* @__PURE__ */ jsx(ContentTab, { model, tt }) : null,
-        tab === "playlists" ? /* @__PURE__ */ jsx(PlaylistsTab, { model, nav, lists: model.lists, tt, locale, toast: nav.toast }) : null,
-        tab === "epg" ? /* @__PURE__ */ jsx(EpgTab, { lists: model.lists, nav, tt, locale }) : null,
-        tab === "parental" ? /* @__PURE__ */ jsx(ParentalTab, { model, tt }) : null
-      ] })
-    ] });
-  }
-  function ContentTab({ model, tt }) {
-    const source = model.activeSource;
-    const playlistId = model.activePlaylistId;
-    const cats = useVodCategories(source);
-    const [mode, setModeState] = useState(() => getVodMode(playlistId));
-    useEffect(() => setModeState(getVodMode(playlistId)), [playlistId]);
-    const choose = (next2) => {
-      setVodMode(playlistId, next2);
-      setModeState(next2);
-    };
-    const options = [
-      { key: "link", title: tt("vodModeLinkTitle"), body: tt("vodModeLinkBody") },
-      { key: "rows", title: tt("vodModeRowsTitle"), body: tt("vodModeRowsBody") },
-      { key: "off", title: tt("vodModeOffTitle"), body: tt("vodModeOffBody") }
-    ];
-    return /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: dp(14) }, "data-testid": "settings-content", children: [
-      /* @__PURE__ */ jsx(Heading, { hint: cats.total > 0 ? tt("vodHint", { count: cats.total }) : tt("vodHintEmpty"), children: tt("vodHeading") }),
-      /* @__PURE__ */ jsx("div", { style: { display: "flex", gap: dp(16), flexWrap: "wrap" }, children: options.map((option) => {
-        const active2 = option.key === mode;
-        return /* @__PURE__ */ jsxs(
-          "div",
-          {
-            "data-testid": `vod-mode-${option.key}`,
-            "data-active": active2 ? "" : void 0,
-            ...station(() => choose(option.key)),
-            style: {
-              width: dp(340),
-              padding: `${dp(16)}px ${dp(18)}px`,
-              borderRadius: dp(14),
-              background: TV2.s07,
-              border: `1px solid ${active2 ? TV2.acc : TV2.lineCard}`,
-              cursor: "pointer",
-              textAlign: "left"
-            },
-            children: [
-              /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), fontWeight: 600 }, children: option.title }),
-              /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: "rgba(243,244,248,0.6)", marginTop: dp(4) }, children: option.body })
-            ]
-          },
-          option.key
-        );
-      }) })
-    ] });
-  }
-  function AppearanceTab({ settings, tt }) {
-    const guideMode = useGuideMode();
-    const [accent, setAccentState] = useState(() => hasAccent ? accentApi.getAccent() : "");
-    const modes = [{ key: "now", label: tt("modeNow") }, { key: "tl", label: tt("modeTimeline") }, { key: "grid", label: tt("modeGrid") }, { key: "playlists", label: tt("modePlaylists") }];
-    const nextBanner = (current2) => BANNER_HIDE_OPTIONS[(BANNER_HIDE_OPTIONS.indexOf(current2) + 1) % BANNER_HIDE_OPTIONS.length];
-    return /* @__PURE__ */ jsxs(Fragment2, { children: [
-      hasAccent ? /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: dp(14) }, children: [
-        /* @__PURE__ */ jsx(Heading, { children: tt("accentColour") }),
-        /* @__PURE__ */ jsx("div", { style: { display: "flex", gap: dp(12), flexWrap: "wrap" }, children: Object.entries(accentApi.ACCENT_PRESETS).map(([id4, preset]) => {
-          const color2 = `rgb(${preset.shades[1]})`;
-          return /* @__PURE__ */ jsxs("div", { ...station(() => {
-            accentApi.setAccent(id4);
-            setAccentState(id4);
-          }), style: { height: dp(60), padding: `0 ${dp(22)}px 0 ${dp(14)}px`, borderRadius: 999, border: `1px solid ${accent === id4 ? color2 : TV2.lineCard}`, background: TV2.s06, display: "inline-flex", alignItems: "center", gap: dp(12), fontSize: dp(19), cursor: "pointer" }, children: [
-            /* @__PURE__ */ jsx("span", { style: { width: dp(28), height: dp(28), borderRadius: 999, background: color2 } }),
-            preset.label
-          ] }, id4);
-        }) })
-      ] }) : null,
-      /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: dp(14) }, children: [
-        /* @__PURE__ */ jsx(Heading, { hint: tt("guideDefaultHint"), children: tt("guideDefault") }),
-        /* @__PURE__ */ jsx("div", { style: { display: "flex", gap: dp(16), flexWrap: "wrap" }, children: modes.map((m2) => /* @__PURE__ */ jsxs("div", { "data-testid": `guide-default-${m2.key}`, ...station(() => setGuideMode(m2.key)), style: { width: dp(300), borderRadius: dp(14), border: `1px solid ${guideMode === m2.key ? TV2.acc : TV2.lineCard}`, background: TV2.s06, padding: dp(16), display: "flex", flexDirection: "column", gap: dp(12), cursor: "pointer" }, children: [
-          /* @__PURE__ */ jsx("div", { style: { height: dp(110), borderRadius: dp(10), background: TV2.s05, display: "grid", gridTemplateColumns: m2.key === "playlists" ? "1fr 2fr 1fr" : m2.key === "tl" ? "1fr 3fr" : m2.key === "grid" ? "1fr 1fr 1fr" : "1fr 1.2fr 1fr 1fr", gridTemplateRows: m2.key === "grid" ? "1fr 1fr" : void 0, gap: dp(6), padding: dp(10) }, children: Array.from({ length: m2.key === "playlists" ? 3 : m2.key === "tl" ? 2 : m2.key === "grid" ? 6 : 4 }).map((_, i) => /* @__PURE__ */ jsx("div", { style: { borderRadius: dp(4), background: i === 1 ? TV2.accMix(35) : TV2.s12 } }, i)) }),
-          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), fontWeight: 600 }, children: m2.label })
-        ] }, m2.key)) })
-      ] }),
-      /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: dp(10) }, children: [
-        /* @__PURE__ */ jsx(Heading, { children: tt("behaviour") }),
-        /* @__PURE__ */ jsx(Row, { testId: "setting-previewEnabled", label: tt("settingPreview"), right: /* @__PURE__ */ jsx(Toggle, { on: settings.previewEnabled }), onOk: () => setTvSettings({ previewEnabled: !settings.previewEnabled }) }),
-        /* @__PURE__ */ jsx(Row, { testId: "setting-startOnLastChannel", label: tt("settingStartLast"), right: /* @__PURE__ */ jsx(Toggle, { on: settings.startOnLastChannel }), onOk: () => setTvSettings({ startOnLastChannel: !settings.startOnLastChannel }) }),
-        /* @__PURE__ */ jsx(Row, { testId: "setting-numericZap", label: tt("settingNumericZap"), right: /* @__PURE__ */ jsx(Toggle, { on: settings.numericZap }), onOk: () => setTvSettings({ numericZap: !settings.numericZap }) }),
-        /* @__PURE__ */ jsx(Row, { testId: "setting-bannerHideMs", label: tt("settingBannerHide"), right: settings.bannerHideMs === 0 ? tt("never") : tt("seconds", { s: settings.bannerHideMs / 1e3 }), onOk: () => setTvSettings({ bannerHideMs: nextBanner(settings.bannerHideMs) }) })
-      ] })
     ] });
   }
   function hostOf2(url) {
@@ -203166,8 +207251,8 @@ ${cue.text}`).join("\n\n")}
   }
   function removeListAndSourceUrl(list) {
     const urls = getM3uUrls();
-    const remaining = urls.filter((url) => !url.startsWith("xtream://") && hostOf2(url) !== list.name);
-    if (remaining.length !== urls.length) applyM3uUrls(remaining);
+    const remaining2 = urls.filter((url) => !url.startsWith("xtream://") && hostOf2(url) !== list.name);
+    if (remaining2.length !== urls.length) applyM3uUrls(remaining2);
     deleteLiveTvList(list.id);
   }
   function xtreamLoginMissing(list) {
@@ -203179,7 +207264,7 @@ ${cue.text}`).join("\n\n")}
     if (progress3.state === "writing") return tt("importWriting");
     return progress3.total ? tt("importProgress", { received: progress3.received.toLocaleString(locale), total: progress3.total.toLocaleString(locale) }) : tt("importProgressUnknown");
   }
-  function Action({ label: label2, onOk, testId, disabled }) {
+  function Action({ label: label2, onOk, testId, disabled, phone = false }) {
     return /* @__PURE__ */ jsx(
       "div",
       {
@@ -203188,7 +207273,7 @@ ${cue.text}`).join("\n\n")}
         ...station(() => {
           if (!disabled) onOk();
         }),
-        style: { height: dp(48), padding: `0 ${dp(20)}px`, borderRadius: 999, background: TV2.s12, display: "inline-flex", alignItems: "center", fontSize: dp(17), whiteSpace: "nowrap", cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.5 : 1 },
+        style: phone ? { minHeight: 36, padding: "0 12px", borderRadius: 999, background: MT.s12, display: "inline-flex", alignItems: "center", fontSize: 14, whiteSpace: "nowrap", cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.5 : 1 } : { height: dp(48), minHeight: dp(48), padding: `0 ${dp(20)}px`, borderRadius: 999, background: TV2.s12, display: "inline-flex", alignItems: "center", fontSize: dp(17), whiteSpace: "nowrap", cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.5 : 1 },
         children: label2
       }
     );
@@ -203207,39 +207292,121 @@ ${cue.text}`).join("\n\n")}
     needsLogin,
     onRefetch,
     onRemove,
-    onEditChannels
+    onEditChannels,
+    phone = false
   }) {
     const importable = list.kind === "m3u" || list.kind === "xtream";
+    const logoEnabled = isLogoFallbackEnabled(list);
+    const [logoBusy, setLogoBusy] = useState(false);
+    const [logoResult, setLogoResult] = useState(null);
+    const [logoError, setLogoError] = useState(null);
+    async function handleCompleteLogos() {
+      setLogoBusy(true);
+      setLogoError(null);
+      try {
+        const result = await completeLogos(list.source ?? "");
+        setLogoResult(result);
+      } catch (err) {
+        setLogoError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setLogoBusy(false);
+      }
+    }
+    const sub = phone ? 13 : dp(15);
+    const meta = phone ? 13 : dp(16);
     return /* @__PURE__ */ jsxs(
       "div",
       {
         "data-testid": `list-row-${list.id}`,
-        style: { minHeight: dp(64), borderRadius: dp(12), background: TV2.s06, padding: `${dp(12)}px ${dp(18)}px`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: dp(16), fontSize: dp(19) },
+        style: phone ? { padding: "10px 14px", borderBottom: `1px solid ${MT.line07}`, display: "flex", flexDirection: "column", gap: 4, fontSize: 15 } : { minHeight: dp(64), borderRadius: dp(12), background: TV2.s06, padding: `${dp(12)}px ${dp(18)}px`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: dp(16), fontSize: dp(19) },
         children: [
-          /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, display: "flex", flexDirection: "column", gap: dp(4) }, children: [
-            /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(10), minWidth: 0 }, children: [
-              /* @__PURE__ */ jsx("strong", { style: { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: list.name }),
-              list.needsReimport ? /* @__PURE__ */ jsx("span", { style: { flexShrink: 0, fontSize: dp(14), fontWeight: 600, padding: `${dp(3)}px ${dp(10)}px`, borderRadius: dp(8), background: "rgba(244,132,95,0.18)", color: "#f4845f" }, children: tt("needsReimport") }) : null
+          /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, display: "flex", flexDirection: "column", gap: phone ? 4 : dp(4) }, children: [
+            /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: phone ? 8 : dp(10), minWidth: 0 }, children: [
+              /* @__PURE__ */ jsx("strong", { style: phone ? { fontSize: 15, fontWeight: 600, ...ellipsis } : { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: list.name }),
+              list.needsReimport ? /* @__PURE__ */ jsx("span", { style: phone ? { flexShrink: 0, fontSize: 11, fontWeight: 600, minHeight: 22, padding: "0 8px", borderRadius: 999, background: MT.warnSoft, color: MT.warnText, display: "inline-flex", alignItems: "center" } : { flexShrink: 0, fontSize: dp(14), fontWeight: 600, padding: `${dp(3)}px ${dp(10)}px`, borderRadius: dp(8), background: "rgba(244,132,95,0.18)", color: "#f4845f" }, children: tt("needsReimport") }) : null
             ] }),
-            /* @__PURE__ */ jsxs("div", { style: { fontSize: dp(16), color: TV2.dim }, children: [
+            /* @__PURE__ */ jsxs("div", { style: { fontSize: meta, color: phone ? MT.dim : TV2.dim }, children: [
               tt("channelsCount", { count: (list.channelCount ?? list.channels?.length ?? 0).toLocaleString(locale) }),
               list.fetchedAt ? ` \xB7 ${tt("fetchedAt", { time: formatFetchedAt2(list.fetchedAt, locale) })}` : ""
             ] }),
-            busy ? /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: TV2.muted }, children: progressText(tt, locale, busy) }) : null,
-            !busy && needsLogin ? /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: TV2.muted }, children: tt("xtreamNeedsLogin") }) : null,
-            list.truncated ? /* @__PURE__ */ jsx("div", { "data-testid": `list-truncated-${list.id}`, style: { fontSize: dp(15), color: "#fbbf24" }, children: tt("truncated") }) : null,
-            !busy && list.lastImportError ? /* @__PURE__ */ jsx("div", { "data-testid": `list-error-${list.id}`, style: { fontSize: dp(15), color: "#fca5a5", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: list.lastImportError }) : null
+            busy ? /* @__PURE__ */ jsx("div", { style: { fontSize: meta, color: TV2.muted }, children: progressText(tt, locale, busy) }) : null,
+            !busy && needsLogin ? /* @__PURE__ */ jsx("div", { style: { fontSize: sub, color: TV2.muted }, children: tt("xtreamNeedsLogin") }) : null,
+            list.truncated ? /* @__PURE__ */ jsx("div", { "data-testid": `list-truncated-${list.id}`, style: { fontSize: sub, color: "#fbbf24" }, children: tt("truncated") }) : null,
+            !busy && list.lastImportError ? /* @__PURE__ */ jsx("div", { "data-testid": `list-error-${list.id}`, style: { fontSize: sub, color: "#fca5a5", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: list.lastImportError }) : null,
+            logoResult ? /* @__PURE__ */ jsx("div", { "data-testid": `list-logo-complete-result-${list.id}`, style: { fontSize: sub, color: TV2.dim }, children: tt("logoCompleteResult", { matched: logoResult.matched, total: logoResult.total }) }) : null,
+            logoError ? /* @__PURE__ */ jsx("div", { "data-testid": `list-logo-complete-error-${list.id}`, style: { fontSize: sub, color: "#fca5a5", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: logoError }) : null
           ] }),
-          /* @__PURE__ */ jsxs("div", { style: { flexShrink: 0, display: "flex", alignItems: "center", gap: dp(10) }, children: [
-            importable ? /* @__PURE__ */ jsx(Action, { testId: `list-refetch-${list.id}`, label: busy ? tt("refetching") : tt("refetch"), onOk: () => onRefetch(list) }) : null,
-            list.kind === "custom" ? /* @__PURE__ */ jsx(Action, { testId: `list-channels-${list.id}`, label: tt("listChannels"), onOk: () => onEditChannels(list) }) : null,
-            /* @__PURE__ */ jsx(Action, { testId: `list-remove-${list.id}`, label: tt("remove"), onOk: () => onRemove(list) })
-          ] })
+          /* @__PURE__ */ jsxs(
+            "div",
+            {
+              ...phone ? { "data-list-actions": "" } : {},
+              style: phone ? { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 } : { flexShrink: 0, display: "flex", alignItems: "center", gap: dp(10) },
+              children: [
+                importable ? /* @__PURE__ */ jsx(Action, { phone, testId: `list-refetch-${list.id}`, label: busy ? tt("refetching") : tt("refetch"), onOk: () => onRefetch(list) }) : null,
+                list.kind === "custom" ? /* @__PURE__ */ jsx(Action, { phone, testId: `list-channels-${list.id}`, label: tt("listChannels"), onOk: () => onEditChannels(list) }) : null,
+                /* @__PURE__ */ jsxs(
+                  "div",
+                  {
+                    "data-testid": `list-logo-fallback-${list.id}`,
+                    "aria-disabled": list.kind === "custom" ? "true" : void 0,
+                    ...station(() => {
+                      if (list.kind !== "custom") setLogoFallbackEnabled(list.id, !logoEnabled);
+                    }),
+                    style: phone ? {
+                      minHeight: 36,
+                      padding: "0 12px",
+                      borderRadius: 999,
+                      background: MT.s06,
+                      border: `1px solid ${MT.line10}`,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 8,
+                      fontSize: 14,
+                      whiteSpace: "nowrap",
+                      cursor: list.kind === "custom" ? "default" : "pointer",
+                      opacity: list.kind === "custom" ? 0.5 : 1
+                    } : {
+                      height: dp(48),
+                      minHeight: dp(48),
+                      padding: `0 ${dp(16)}px`,
+                      borderRadius: 999,
+                      background: TV2.s06,
+                      border: `1px solid ${TV2.line}`,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: dp(10),
+                      fontSize: dp(15),
+                      whiteSpace: "nowrap",
+                      cursor: list.kind === "custom" ? "default" : "pointer",
+                      opacity: list.kind === "custom" ? 0.5 : 1
+                    },
+                    children: [
+                      /* @__PURE__ */ jsx("span", { children: tt("logoFallback") }),
+                      phone ? /* @__PURE__ */ jsx(MobileToggle, { on: logoEnabled }) : /* @__PURE__ */ jsx(Toggle, { on: logoEnabled })
+                    ]
+                  }
+                ),
+                /* @__PURE__ */ jsx(
+                  Action,
+                  {
+                    phone,
+                    testId: `list-logo-complete-${list.id}`,
+                    label: logoBusy ? tt("logoCompleteRunning") : tt("logoComplete"),
+                    disabled: !logoEnabled || list.kind === "custom" || logoBusy,
+                    onOk: () => {
+                      void handleCompleteLogos();
+                    }
+                  }
+                ),
+                /* @__PURE__ */ jsx(Action, { phone, testId: `list-remove-${list.id}`, label: tt("remove"), onOk: () => onRemove(list) })
+              ]
+            }
+          )
         ]
       }
     );
   });
-  function PlaylistsTab({ model, nav, lists, tt, locale, toast }) {
+  function PlaylistsTab({ model, nav, lists, tt, locale, toast, phone = false }) {
     const keyboard = useTextPrompt({ pushLayer: nav.pushLayer });
     const [progress3, setProgress] = useState(null);
     async function runImport(list, existedBefore) {
@@ -203385,8 +207552,11 @@ ${cue.text}`).join("\n\n")}
         setRefetchingAll(false);
       }
     }
-    return /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: dp(10) }, children: [
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: dp(16) }, children: [
+    const plus = phone ? /* @__PURE__ */ jsx(PhoneCaret, {}) : "+";
+    return /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: phone ? 0 : dp(10) }, children: [
+      phone ? importable.length > 0 ? /* @__PURE__ */ jsx("div", { style: { padding: "10px 14px", borderBottom: `1px solid ${MT.line07}`, display: "flex", justifyContent: "flex-end" }, children: /* @__PURE__ */ jsx(Action, { phone: true, testId: "lists-refetch-all", label: refetchingAll ? tt("refetching") : tt("refetchAll"), disabled: refetchingAll || progress3 !== null, onOk: () => {
+        void refetchAll();
+      } }) }) : null : /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: dp(16) }, children: [
         /* @__PURE__ */ jsx(Heading, { children: tt("tabPlaylists") }),
         importable.length > 0 ? /* @__PURE__ */ jsx(Action, { testId: "lists-refetch-all", label: refetchingAll ? tt("refetching") : tt("refetchAll"), disabled: refetchingAll || progress3 !== null, onOk: () => {
           void refetchAll();
@@ -203402,14 +207572,15 @@ ${cue.text}`).join("\n\n")}
           needsLogin: xtreamLoginMissing(list),
           onRefetch,
           onRemove,
-          onEditChannels: openPicker
+          onEditChannels: openPicker,
+          phone
         },
         list.id
       )),
-      keyboard.available ? /* @__PURE__ */ jsx(Row, { label: tt("addM3u"), right: "+", onOk: addUrl }) : null,
-      keyboard.available ? /* @__PURE__ */ jsx(Row, { label: tt("addXtream"), right: "+", onOk: () => askXtream("", null) }) : null,
-      keyboard.available ? /* @__PURE__ */ jsx(Row, { testId: "create-list", label: tt("createList"), right: "+", onOk: createList }) : null,
-      /* @__PURE__ */ jsx(XtreamAccounts, { nav, tt, locale, toast, onReimport: (list) => {
+      keyboard.available ? /* @__PURE__ */ jsx(Row, { phone, label: tt("addM3u"), right: plus, onOk: addUrl }) : null,
+      keyboard.available ? /* @__PURE__ */ jsx(Row, { phone, label: tt("addXtream"), right: plus, onOk: () => askXtream("", null) }) : null,
+      keyboard.available ? /* @__PURE__ */ jsx(Row, { phone, testId: "create-list", label: tt("createList"), right: plus, onOk: createList }) : null,
+      /* @__PURE__ */ jsx(XtreamAccounts, { nav, tt, locale, phone, onReimport: (list) => {
         void runImport(list, true);
       } }),
       pickerList ? /* @__PURE__ */ jsx(
@@ -203432,7 +207603,7 @@ ${cue.text}`).join("\n\n")}
     if (Number.isNaN(when.getTime())) return null;
     return when.toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" });
   }
-  function XtreamAccounts({ nav, tt, locale, onReimport, toast }) {
+  function XtreamAccounts({ nav, tt, locale, onReimport, phone = false }) {
     const [logins, setLogins] = useState(getXtreamLogins);
     useEffect(() => onXtreamLoginsChanged(() => setLogins(getXtreamLogins())), []);
     const [pickerLoginId, setPickerLoginId] = useState(null);
@@ -203476,23 +207647,11 @@ ${cue.text}`).join("\n\n")}
     function removeLogin(login) {
       deleteXtreamLoginAndData(login.id);
       setLogins(getXtreamLogins());
-      toast(tt("orphanRemoved"));
     }
     if (logins.length === 0) return null;
     return /* @__PURE__ */ jsxs(Fragment2, { children: [
-      /* @__PURE__ */ jsx(Heading, { hint: orphanIds.size > 0 ? tt("orphanLoginsHint") : void 0, children: tt("xtreamAccount") }),
-      logins.map((login) => /* @__PURE__ */ jsx(
-        XtreamAccountCard,
-        {
-          login,
-          tt,
-          locale,
-          orphan: orphanIds.has(login.id),
-          onCategories: () => openCategories(login),
-          onRemove: () => removeLogin(login)
-        },
-        login.id
-      )),
+      /* @__PURE__ */ jsx(Heading, { phone, hint: orphanIds.size > 0 ? tt("orphanLoginsHint") : void 0, children: tt("xtreamAccount") }),
+      logins.map((login) => /* @__PURE__ */ jsx(XtreamAccountCard, { login, tt, locale, phone, orphan: orphanIds.has(login.id), onCategories: () => openCategories(login), onRemove: () => removeLogin(login) }, login.id)),
       pickerLogin ? /* @__PURE__ */ jsx(
         TvCategoryPicker,
         {
@@ -203512,7 +207671,7 @@ ${cue.text}`).join("\n\n")}
       ) : null
     ] });
   }
-  function XtreamAccountCard({ login, tt, locale, orphan, onCategories, onRemove }) {
+  function XtreamAccountCard({ login, tt, locale, onCategories, onRemove, orphan = false, phone = false }) {
     const [account, setAccount] = useState(null);
     const [failed, setFailed] = useState(false);
     useEffect(() => {
@@ -203538,13 +207697,24 @@ ${cue.text}`).join("\n\n")}
       "div",
       {
         "data-testid": `xtream-account-${login.id}`,
-        style: { minHeight: dp(64), borderRadius: dp(12), background: TV2.s06, padding: `${dp(12)}px ${dp(18)}px`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: dp(16), fontSize: dp(19) },
+        style: phone ? { padding: "10px 14px", borderBottom: `1px solid ${MT.line07}`, display: "flex", flexDirection: "column", gap: 4, fontSize: 15 } : { minHeight: dp(64), borderRadius: dp(12), background: TV2.s06, padding: `${dp(12)}px ${dp(18)}px`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: dp(16), fontSize: dp(19) },
         children: [
-          /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, display: "flex", flexDirection: "column", gap: dp(4) }, children: [
-            /* @__PURE__ */ jsx("strong", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: host2 }),
-            /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: failed ? "#fca5a5" : TV2.dim }, children: orphan ? `${tt("orphanLogins")} \xB7 ${meta}` : meta })
+          /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, display: "flex", flexDirection: "column", gap: phone ? 4 : dp(4) }, children: [
+            /* @__PURE__ */ jsx("strong", { style: phone ? { fontSize: 15, fontWeight: 600, ...ellipsis } : { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: host2 }),
+            /* @__PURE__ */ jsx("span", { style: { fontSize: phone ? 13 : dp(16), color: failed ? "#fca5a5" : phone ? MT.dim : TV2.dim }, children: orphan ? `${tt("orphanLogins")} \xB7 ${meta}` : meta })
           ] }),
-          /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(10), flexShrink: 0 }, children: [
+          phone ? /* @__PURE__ */ jsxs("div", { "data-list-actions": "", style: { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }, children: [
+            /* @__PURE__ */ jsx(
+              Action,
+              {
+                phone: true,
+                testId: `xtream-categories-${login.id}`,
+                label: `${tt("xtreamCategories")}${login.categoryIds.length > 0 ? ` (${login.categoryIds.length})` : ""}`,
+                onOk: onCategories
+              }
+            ),
+            /* @__PURE__ */ jsx(Action, { phone: true, testId: `xtream-remove-${login.id}`, label: tt("orphanRemove"), onOk: onRemove })
+          ] }) : /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(10), flexShrink: 0 }, children: [
             /* @__PURE__ */ jsx(
               Action,
               {
@@ -203559,27 +207729,64 @@ ${cue.text}`).join("\n\n")}
       }
     );
   }
-  function EpgTab({ lists, nav, tt, locale }) {
+  function ContentTab({ model, tt, phone = false }) {
+    const source = model.activeSource;
+    const playlistId = model.activePlaylistId;
+    const cats = useVodCategories(source);
+    const [mode, setModeState] = useState(() => getVodMode(playlistId));
+    useEffect(() => setModeState(getVodMode(playlistId)), [playlistId]);
+    const choose = (next2) => {
+      setVodMode(playlistId, next2);
+      setModeState(next2);
+    };
+    const options = [
+      { key: "link", title: tt("vodModeLinkTitle"), body: tt("vodModeLinkBody") },
+      { key: "rows", title: tt("vodModeRowsTitle"), body: tt("vodModeRowsBody") },
+      { key: "off", title: tt("vodModeOffTitle"), body: tt("vodModeOffBody") }
+    ];
+    return /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: phone ? 12 : dp(14) }, "data-testid": "settings-content", children: [
+      /* @__PURE__ */ jsx(Heading, { phone, hint: cats.total > 0 ? tt("vodHint", { count: cats.total }) : tt("vodHintEmpty"), children: tt("vodHeading") }),
+      /* @__PURE__ */ jsx("div", { style: { display: "flex", gap: phone ? 10 : dp(16), flexWrap: "wrap" }, children: options.map((option) => {
+        const active2 = option.key === mode;
+        return /* @__PURE__ */ jsxs(
+          "div",
+          {
+            "data-testid": `vod-mode-${option.key}`,
+            "data-active": active2 ? "" : void 0,
+            ...station(() => choose(option.key)),
+            style: phone ? { width: "100%", padding: "12px 14px", borderRadius: 12, background: MT.s07, border: `1px solid ${active2 ? TV2.acc : MT.line10}`, cursor: "pointer" } : { width: dp(340), padding: `${dp(16)}px ${dp(18)}px`, borderRadius: dp(14), background: TV2.s07, border: `1px solid ${active2 ? TV2.acc : TV2.lineCard}`, cursor: "pointer", textAlign: "left" },
+            children: [
+              /* @__PURE__ */ jsx("div", { style: { fontSize: phone ? 15 : dp(19), fontWeight: 600 }, children: option.title }),
+              /* @__PURE__ */ jsx("div", { style: { fontSize: phone ? 13 : dp(16), color: phone ? MT.dim : "rgba(243,244,248,0.6)", marginTop: 4 }, children: option.body })
+            ]
+          },
+          option.key
+        );
+      }) })
+    ] });
+  }
+  function EpgTab({ lists, nav, tt, locale, phone = false }) {
     const keyboard = useTextPrompt({ pushLayer: nav.pushLayer });
     const { status, urls: statusUrls, refreshing, refresh } = useEpgStatus();
     const urls = useMemo(() => lists.flatMap((list) => list.epgUrls.map((url) => ({ listId: list.id, url }))), [lists]);
+    const sectionGap = phone ? 0 : dp(10);
     return /* @__PURE__ */ jsxs(Fragment2, { children: [
-      /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: dp(10) }, children: [
-        /* @__PURE__ */ jsx(Heading, { children: tt("tabEpg") }),
+      /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: sectionGap }, children: [
+        /* @__PURE__ */ jsx(Heading, { phone, children: tt("tabEpg") }),
         urls.map(({ listId, url }) => {
           const list = lists.find((l) => l.id === listId);
-          return /* @__PURE__ */ jsx(Row, { label: url, right: tt("remove"), onOk: () => updateLiveTvListEpg(listId, { epgUrls: list.epgUrls.filter((u) => u !== url) }) }, `${listId}:${url}`);
+          return /* @__PURE__ */ jsx(Row, { phone, label: url, right: tt("remove"), onOk: () => updateLiveTvListEpg(listId, { epgUrls: list.epgUrls.filter((u) => u !== url) }) }, `${listId}:${url}`);
         }),
-        keyboard.available && lists[0] ? /* @__PURE__ */ jsx(Row, { label: tt("addEpgUrl"), right: "+", onOk: () => keyboard.ask(tt("addEpgUrl"), "", (value) => {
+        keyboard.available && lists[0] ? /* @__PURE__ */ jsx(Row, { phone, label: tt("addEpgUrl"), right: phone ? /* @__PURE__ */ jsx(PhoneCaret, {}) : "+", onOk: () => keyboard.ask(tt("addEpgUrl"), "", (value) => {
           const url = value.trim();
           if (url) updateLiveTvListEpg(lists[0].id, { epgUrls: [...lists[0].epgUrls, url] });
         }, "url") }) : null,
         keyboard.node
       ] }),
-      statusUrls.length > 0 ? /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: dp(10) }, children: [
-        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: dp(16) }, children: [
-          /* @__PURE__ */ jsx(Heading, { children: tt("epgStatusTitle") }),
-          /* @__PURE__ */ jsx(Action, { testId: "epg-refresh", label: refreshing ? tt("epgRefreshing") : tt("epgRefresh"), disabled: refreshing, onOk: () => {
+      statusUrls.length > 0 ? /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: sectionGap }, children: [
+        /* @__PURE__ */ jsxs("div", { style: phone ? { display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, paddingRight: 14 } : { display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: dp(16) }, children: [
+          /* @__PURE__ */ jsx(Heading, { phone, children: tt("epgStatusTitle") }),
+          /* @__PURE__ */ jsx(Action, { phone, testId: "epg-refresh", label: refreshing ? tt("epgRefreshing") : tt("epgRefresh"), disabled: refreshing, onOk: () => {
             void refresh();
           } })
         ] }),
@@ -203590,10 +207797,10 @@ ${cue.text}`).join("\n\n")}
             "div",
             {
               "data-testid": `epg-status-${url}`,
-              style: { minHeight: dp(64), borderRadius: dp(12), background: TV2.s06, padding: `${dp(12)}px ${dp(18)}px`, display: "flex", flexDirection: "column", gap: dp(4), fontSize: dp(18) },
+              style: phone ? { minHeight: 52, padding: "10px 14px", borderBottom: `1px solid ${MT.line07}`, display: "flex", flexDirection: "column", gap: 4, fontSize: 15 } : { minHeight: dp(64), borderRadius: dp(12), background: TV2.s06, padding: `${dp(12)}px ${dp(18)}px`, display: "flex", flexDirection: "column", gap: dp(4), fontSize: dp(18) },
               children: [
                 /* @__PURE__ */ jsx("span", { style: { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: url }),
-                stat?.error ? /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: "#fca5a5", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: stat.error }) : /* @__PURE__ */ jsxs("span", { style: { fontSize: dp(16), color: TV2.dim }, children: [
+                stat?.error ? /* @__PURE__ */ jsx("span", { style: { fontSize: phone ? 13 : dp(16), color: "#fca5a5", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: stat.error }) : /* @__PURE__ */ jsxs("span", { style: { fontSize: phone ? 13 : dp(16), color: phone ? MT.dim : TV2.dim }, children: [
                   stat ? tt("epgSourceStats", { channels: stat.channels.toLocaleString(locale), programmes: stat.programmes.toLocaleString(locale) }) : tt("epgNeverFetched"),
                   fetched ? ` \xB7 ${tt("fetchedAt", { time: fetched })}` : ""
                 ] })
@@ -203605,7 +207812,7 @@ ${cue.text}`).join("\n\n")}
       ] }) : null
     ] });
   }
-  function ParentalTab({ model, tt }) {
+  function ParentalTab({ model, tt, phone = false }) {
     const [keys3, setKeys] = useState(getLockedChannelKeys);
     useEffect(() => onChannelLocksChanged(() => setKeys(getLockedChannelKeys())), []);
     const channels = keys3.map((key) => model.allChannels.find((c) => channelKey(c) === key)).filter((c) => Boolean(c));
@@ -203618,10 +207825,10 @@ ${cue.text}`).join("\n\n")}
       }
       setPinTarget(channel);
     };
-    return /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: dp(10) }, children: [
-      /* @__PURE__ */ jsx(Heading, { children: tt("lockedChannels") }),
-      channels.length === 0 ? /* @__PURE__ */ jsx("div", { style: { fontSize: dp(18), color: TV2.dim }, children: tt("noLocked") }) : null,
-      channels.map((channel) => /* @__PURE__ */ jsx(Row, { label: channel.name, right: tt("unlock"), onOk: () => requestUnlock(channel) }, channelKey(channel))),
+    return /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: phone ? 0 : dp(10) }, children: [
+      /* @__PURE__ */ jsx(Heading, { phone, children: tt("lockedChannels") }),
+      channels.length === 0 ? /* @__PURE__ */ jsx("div", { style: phone ? { fontSize: 15, color: MT.dim, padding: "4px 14px 14px" } : { fontSize: dp(18), color: TV2.dim }, children: tt("noLocked") }) : null,
+      channels.map((channel) => /* @__PURE__ */ jsx(Row, { phone, label: channel.name, right: tt("unlock"), onOk: () => requestUnlock(channel) }, channelKey(channel))),
       /* @__PURE__ */ jsx(
         PinGate,
         {
@@ -203642,6 +207849,133 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/settings-phone.tsx
+  init_tv_ui();
+  init_tv_strings();
+  init_tv_settings_store();
+  init_mobile_tokens();
+  init_jsx_runtime_shim();
+  function TvSettingsPhone(props) {
+    const { model, nav, params, settings } = props;
+    const { tt, locale } = useTvText();
+    const guideMode = useGuideMode();
+    if (params.tab === "epg" || params.tab === "parental") {
+      const epg = params.tab === "epg";
+      return /* @__PURE__ */ jsx(PhonePage, { header: /* @__PURE__ */ jsx(MobileHeader, { title: tt(epg ? "tabEpg" : "tabParental"), back: true, onBack: () => nav.go("settings") }), children: /* @__PURE__ */ jsx(Card3, { children: epg ? /* @__PURE__ */ jsx(EpgTab, { lists: model.lists, nav, tt, locale, phone: true }) : /* @__PURE__ */ jsx(ParentalTab, { model, tt, phone: true }) }) });
+    }
+    const modes = [
+      { key: "now", label: tt("phoneModeNow") },
+      { key: "grid", label: tt("phoneModeTimeline") },
+      { key: "playlists", label: tt("phoneModeLists") }
+    ];
+    return /* @__PURE__ */ jsxs(PhonePage, { header: /* @__PURE__ */ jsx(MobileHeader, { title: tt("railSettings") }), children: [
+      /* @__PURE__ */ jsx(Section2, { label: tt("sectionPlaylists"), children: /* @__PURE__ */ jsx(Card3, { children: /* @__PURE__ */ jsx(PlaylistsTab, { model, nav, lists: model.lists, tt, locale, toast: nav.toast, phone: true }) }) }),
+      /* @__PURE__ */ jsx(Section2, { label: tt("sectionGuide"), children: /* @__PURE__ */ jsx(MobileSegment, { height: 38, options: modes, value: phoneGuideMode(guideMode), onChange: setGuideMode, testId: "guide-default" }) }),
+      /* @__PURE__ */ jsx(Section2, { label: tt("sectionBehaviour"), children: /* @__PURE__ */ jsxs(Card3, { children: [
+        /* @__PURE__ */ jsx(ToggleRow, { testId: "setting-startOnLastChannel", label: tt("settingStartLast"), on: settings.startOnLastChannel, onOk: () => setTvSettings({ startOnLastChannel: !settings.startOnLastChannel }) }),
+        /* @__PURE__ */ jsx(ToggleRow, { testId: "setting-keepAwake", label: tt("settingKeepAwake"), on: settings.keepAwake, onOk: () => setTvSettings({ keepAwake: !settings.keepAwake }) }),
+        /* @__PURE__ */ jsx(ToggleRow, { testId: "setting-fullscreenOnRotate", label: tt("settingFullscreenOnRotate"), on: settings.fullscreenOnRotate, onOk: () => setTvSettings({ fullscreenOnRotate: !settings.fullscreenOnRotate }) })
+      ] }) }),
+      /* @__PURE__ */ jsx(Section2, { label: tt("sectionMore"), children: /* @__PURE__ */ jsxs(Card3, { children: [
+        /* @__PURE__ */ jsx(NavRow, { testId: "settings-epg", label: tt("tabEpg"), onOk: () => nav.go("settings", { tab: "epg" }) }),
+        /* @__PURE__ */ jsx(NavRow, { testId: "settings-parental", label: tt("tabParental"), onOk: () => nav.go("settings", { tab: "parental" }) })
+      ] }) })
+    ] });
+  }
+  function PhonePage({ header, children }) {
+    return /* @__PURE__ */ jsxs("div", { "data-scroll": "", style: { flex: 1, minHeight: 0, overflowY: "auto", padding: `0 ${MT.PAD}px`, paddingBottom: MT.SCROLL_PAD_BOTTOM, display: "flex", flexDirection: "column", gap: 22 }, children: [
+      /* @__PURE__ */ jsx("div", { style: { margin: `0 -${MT.PAD}px` }, children: header }),
+      children
+    ] });
+  }
+  function Section2({ label: label2, children }) {
+    return /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: 8 }, children: [
+      /* @__PURE__ */ jsx("div", { style: sectionLabel, children: label2 }),
+      children
+    ] });
+  }
+  function Card3({ children }) {
+    return /* @__PURE__ */ jsx("div", { style: { borderRadius: 14, background: MT.s06, border: `1px solid ${MT.line08}`, overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { marginBottom: -1 }, children }) });
+  }
+  function ToggleRow({ label: label2, on, onOk, testId }) {
+    return /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onOk), style: { minHeight: 56, padding: "10px 14px", borderBottom: `1px solid ${MT.line07}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 15, cursor: "pointer" }, children: [
+      /* @__PURE__ */ jsx("span", { style: { minWidth: 0 }, children: label2 }),
+      /* @__PURE__ */ jsx(MobileToggle, { on })
+    ] });
+  }
+  function NavRow({ label: label2, onOk, testId }) {
+    return /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onOk), style: { minHeight: 52, padding: "10px 14px", borderBottom: `1px solid ${MT.line07}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 15, cursor: "pointer" }, children: [
+      /* @__PURE__ */ jsx("span", { style: ellipsis, children: label2 }),
+      /* @__PURE__ */ jsx(PhoneCaret, {})
+    ] });
+  }
+
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-settings.tsx
+  init_guide_surface();
+  init_jsx_runtime_shim();
+  var TABS = ["appearance", "content", "playlists", "epg", "parental"];
+  var accentApi = plugin_sdk_exports;
+  var hasAccent = typeof accentApi.getAccent === "function" && typeof accentApi.setAccent === "function" && !!accentApi.ACCENT_PRESETS;
+  function TvSettingsView(props) {
+    if (props.phone) return /* @__PURE__ */ jsx(TvSettingsPhone, { ...props });
+    return /* @__PURE__ */ jsx(TvSettingsDesktop, { ...props });
+  }
+  function TvSettingsDesktop({ model, nav, params, settings }) {
+    const { tt, locale } = useTvText();
+    const initial = TABS.includes(params.tab ?? "") ? params.tab : "appearance";
+    const [tab, setTab] = useState(initial);
+    const labels = { appearance: tt("tabAppearance"), content: tt("tabContent"), playlists: tt("tabPlaylists"), epg: tt("tabEpg"), parental: tt("tabParental") };
+    return /* @__PURE__ */ jsxs("div", { style: { flex: 1, minHeight: 0, display: "flex" }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { width: dp(340), flexShrink: 0, borderRight: `1px solid ${TV2.line}`, padding: `${dp(34)}px ${dp(20)}px 0 ${dp(48)}px`, display: "flex", flexDirection: "column", gap: dp(6) }, children: [
+        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(30), fontWeight: 600, marginBottom: dp(16) }, children: tt("liveTv") }),
+        TABS.map((t) => /* @__PURE__ */ jsx("div", { "data-testid": `tab-${t}`, ...station(() => setTab(t), void 0, { ...t === tab ? { "data-init": "" } : {}, "data-f-right": "[data-live-tv-settings-content] [data-f]" }), style: { height: dp(60), minHeight: dp(60), borderRadius: dp(12), padding: `0 ${dp(18)}px`, display: "flex", alignItems: "center", fontSize: dp(20), background: t === tab ? TV2.s12 : "transparent", color: t === tab ? TV2.text : TV2.muted, cursor: "pointer" }, children: labels[t] }, t))
+      ] }),
+      /* @__PURE__ */ jsxs("div", { "data-live-tv-settings-content": "", "data-scroll": "", style: { flex: 1, minWidth: 0, overflowY: "auto", padding: `${dp(40)}px ${dp(48)}px`, display: "flex", flexDirection: "column", gap: dp(36) }, children: [
+        tab === "appearance" ? /* @__PURE__ */ jsx(AppearanceTab, { settings, tt }) : null,
+        tab === "content" ? /* @__PURE__ */ jsx(ContentTab, { model, tt }) : null,
+        tab === "playlists" ? /* @__PURE__ */ jsx(PlaylistsTab, { model, nav, lists: model.lists, tt, locale, toast: nav.toast }) : null,
+        tab === "epg" ? /* @__PURE__ */ jsx(EpgTab, { lists: model.lists, nav, tt, locale }) : null,
+        tab === "parental" ? /* @__PURE__ */ jsx(ParentalTab, { model, tt }) : null
+      ] })
+    ] });
+  }
+  function AppearanceTab({ settings, tt }) {
+    const guideMode = useGuideMode();
+    const [accent, setAccentState] = useState(() => hasAccent ? accentApi.getAccent() : "");
+    const newGuide = useNewGuideSurface(false);
+    const modes = newGuide ? [{ key: "grid", label: tt("modeGrid") }, { key: "nownext", label: tt("modeNowNext") }, { key: "timeline", label: tt("modeTimelineDay") }] : [{ key: "now", label: tt("modeNow") }, { key: "tl", label: tt("modeTimeline") }, { key: "grid", label: tt("modeGrid") }, { key: "playlists", label: tt("modePlaylists") }];
+    const nextBanner = (current2) => BANNER_HIDE_OPTIONS[(BANNER_HIDE_OPTIONS.indexOf(current2) + 1) % BANNER_HIDE_OPTIONS.length];
+    return /* @__PURE__ */ jsxs(Fragment2, { children: [
+      hasAccent ? /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: dp(14) }, children: [
+        /* @__PURE__ */ jsx(Heading, { children: tt("accentColour") }),
+        /* @__PURE__ */ jsx("div", { style: { display: "flex", gap: dp(12), flexWrap: "wrap" }, children: Object.entries(accentApi.ACCENT_PRESETS).map(([id4, preset]) => {
+          const color2 = `rgb(${preset.shades[1]})`;
+          return /* @__PURE__ */ jsxs("div", { ...station(() => {
+            accentApi.setAccent(id4);
+            setAccentState(id4);
+          }), style: { height: dp(60), minHeight: dp(60), padding: `0 ${dp(22)}px 0 ${dp(14)}px`, borderRadius: 999, border: `1px solid ${accent === id4 ? color2 : TV2.lineCard}`, background: TV2.s06, display: "inline-flex", alignItems: "center", gap: dp(12), fontSize: dp(19), cursor: "pointer" }, children: [
+            /* @__PURE__ */ jsx("span", { style: { width: dp(28), height: dp(28), borderRadius: 999, background: color2 } }),
+            preset.label
+          ] }, id4);
+        }) })
+      ] }) : null,
+      /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: dp(14) }, children: [
+        /* @__PURE__ */ jsx(Heading, { hint: tt("guideDefaultHint"), children: tt("guideDefault") }),
+        /* @__PURE__ */ jsx("div", { style: { display: "flex", gap: dp(16), flexWrap: "wrap" }, children: modes.map((m2) => /* @__PURE__ */ jsxs("div", { "data-testid": `guide-default-${m2.key}`, ...station(() => setGuideMode(m2.key)), style: { width: dp(300), borderRadius: dp(14), border: `1px solid ${guideMode === m2.key ? TV2.acc : TV2.lineCard}`, background: TV2.s06, padding: dp(16), display: "flex", flexDirection: "column", gap: dp(12), cursor: "pointer" }, children: [
+          /* @__PURE__ */ jsx("div", { style: { height: dp(110), borderRadius: dp(10), background: TV2.s05, display: "grid", gridTemplateColumns: m2.key === "playlists" ? "1fr 2fr 1fr" : m2.key === "tl" || m2.key === "timeline" ? "1fr 3fr" : m2.key === "grid" ? "1fr 1fr 1fr" : "1fr 1.2fr 1fr 1fr", gridTemplateRows: m2.key === "grid" ? "1fr 1fr" : void 0, gap: dp(6), padding: dp(10) }, children: Array.from({ length: m2.key === "playlists" ? 3 : m2.key === "tl" || m2.key === "timeline" ? 2 : m2.key === "grid" ? 6 : 4 }).map((_, i) => /* @__PURE__ */ jsx("div", { style: { borderRadius: dp(4), background: i === 1 ? TV2.accMix(35) : TV2.s12 } }, i)) }),
+          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), fontWeight: 600 }, children: m2.label })
+        ] }, m2.key)) })
+      ] }),
+      /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: dp(10) }, children: [
+        /* @__PURE__ */ jsx(Heading, { children: tt("behaviour") }),
+        /* @__PURE__ */ jsx(Row, { testId: "setting-previewEnabled", label: tt("settingPreview"), right: /* @__PURE__ */ jsx(Toggle, { on: settings.previewEnabled }), onOk: () => setTvSettings({ previewEnabled: !settings.previewEnabled }) }),
+        /* @__PURE__ */ jsx(Row, { testId: "setting-startOnLastChannel", label: tt("settingStartLast"), right: /* @__PURE__ */ jsx(Toggle, { on: settings.startOnLastChannel }), onOk: () => setTvSettings({ startOnLastChannel: !settings.startOnLastChannel }) }),
+        /* @__PURE__ */ jsx(Row, { testId: "setting-numericZap", label: tt("settingNumericZap"), right: /* @__PURE__ */ jsx(Toggle, { on: settings.numericZap }), onOk: () => setTvSettings({ numericZap: !settings.numericZap }) }),
+        /* @__PURE__ */ jsx(Row, { testId: "setting-bannerHideMs", label: tt("settingBannerHide"), right: settings.bannerHideMs === 0 ? tt("never") : tt("seconds", { s: settings.bannerHideMs / 1e3 }), onOk: () => setTvSettings({ bannerHideMs: nextBanner(settings.bannerHideMs) }) })
+      ] })
+    ] });
+  }
+
   // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-views.tsx
   var TV_VIEWS = {
     hub: TvHub,
@@ -203656,7 +207990,81 @@ ${cue.text}`).join("\n\n")}
     settings: TvSettingsView
   };
 
+  // ../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-tab-bar.tsx
+  init_tv_ui();
+  init_tv_strings();
+  init_mobile_tokens();
+  init_mobile_icons();
+  init_jsx_runtime_shim();
+  var TABS2 = [
+    { key: "hub", icon: MIcons.House, label: "tabHome" },
+    { key: "guide", icon: MIcons.List, label: "tabGuide" },
+    { key: "favs", icon: MIcons.Heart, label: "tabFavourites" },
+    { key: "search", icon: MIcons.MagnifyingGlass, label: "tabSearch" },
+    { key: "more", icon: MIcons.DotsThree, label: "tabMore" }
+  ];
+  function tabForView(view) {
+    if (view === "channel") return "guide";
+    if (view === "multi" || view === "settings") return "more";
+    return view;
+  }
+  function MobileTabBar({ view, onGo, onMore }) {
+    const { tt } = useTvText();
+    const active2 = tabForView(view);
+    return /* @__PURE__ */ jsx(
+      "nav",
+      {
+        "data-testid": "mobile-tab-bar",
+        "aria-label": tt("liveTv"),
+        style: {
+          position: "fixed",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 50,
+          boxSizing: "border-box",
+          height: `calc(${MT.TAB_BAR}px + ${MT.SAFE_BOTTOM})`,
+          paddingBottom: MT.SAFE_BOTTOM,
+          borderTop: `1px solid ${MT.line08}`,
+          background: "linear-gradient(180deg, transparent, rgba(0,0,0,0.92) 45%)",
+          backdropFilter: "blur(18px)",
+          WebkitBackdropFilter: "blur(18px)",
+          display: "flex"
+        },
+        children: TABS2.map(({ key, icon: Icon2, label: label2 }) => {
+          const isActive = key === active2;
+          return /* @__PURE__ */ jsxs(
+            "div",
+            {
+              "data-testid": `tab-${key}`,
+              ...station(() => key === "more" ? onMore() : onGo(key), void 0, { ...isActive ? { "aria-current": "page" } : {}, "aria-label": tt(label2) }),
+              style: {
+                flex: 1,
+                minHeight: MT.TAB_BAR,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 3,
+                color: isActive ? MT.acc : "rgba(243,244,248,0.55)",
+                fontSize: 11,
+                fontWeight: isActive ? 600 : 400,
+                cursor: "pointer"
+              },
+              children: [
+                /* @__PURE__ */ jsx(Icon2, { size: 22 }),
+                /* @__PURE__ */ jsx("span", { children: tt(label2) })
+              ]
+            },
+            key
+          );
+        })
+      }
+    );
+  }
+
   // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-shell.tsx
+  init_mobile_sheet();
   init_jsx_runtime_shim();
   function SurfaceBackdrop({ cutouts: cutouts2 }) {
     const ref = useRef(null);
@@ -203726,8 +208134,11 @@ ${cue.text}`).join("\n\n")}
     const TvGlassMenu = getTvGlassMenu();
     const isTv = useTvMode();
     const narrow = useNarrowSurface(rootRef) && !isTv;
+    const phone = usePhoneSurface(rootRef) && !isTv;
+    const desktopSurface = isDesktopTauri() && !isTv && !phone;
     const railWidth = isTv ? RAIL_W_TV : narrow ? RAIL_W_NARROW : RAIL_W_DESKTOP;
     const railItemSize = narrow ? RAIL_ITEM_NARROW : RAIL_ITEM_WIDE;
+    const [moreOpen, setMoreOpen] = useState(false);
     useEffect(() => {
       if (active2) return;
       let frame2 = 0;
@@ -203832,17 +208243,17 @@ ${cue.text}`).join("\n\n")}
         setMenu(null);
         return;
       }
-      const top = layersRef.current[layersRef.current.length - 1];
-      if (top) {
-        top();
-        return;
-      }
       if (pending2) {
         setPending(null);
         return;
       }
       if (active2) {
         setActive(null);
+        return;
+      }
+      const top = layersRef.current[layersRef.current.length - 1];
+      if (top) {
+        top();
         return;
       }
       if (view === "channel") {
@@ -203858,7 +208269,7 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       const onKey = (event) => {
         if (!BACK_KEYS.has(event.key)) return;
-        if (menu) return;
+        if (menu && !phone) return;
         if (pending2) {
           event.preventDefault();
           event.stopPropagation();
@@ -203875,7 +208286,7 @@ ${cue.text}`).join("\n\n")}
       };
       window.addEventListener("keydown", onKey, true);
       return () => window.removeEventListener("keydown", onKey, true);
-    }, [back, menu, active2, Player, pending2]);
+    }, [back, menu, phone, active2, Player, pending2]);
     const favourites = model.favouriteChannels;
     const channels = model.channels;
     const zapDepsRef = useRef({ favourites, channels, play, toast, tt });
@@ -203901,7 +208312,7 @@ ${cue.text}`).join("\n\n")}
       };
     }, []);
     useEffect(() => {
-      if (!settings.numericZap) return;
+      if (!settings.numericZap || phone) return;
       const onKey = (event) => {
         if (menu || layersRef.current.length > 0) return;
         const target2 = event.target;
@@ -203920,7 +208331,7 @@ ${cue.text}`).join("\n\n")}
       };
       window.addEventListener("keydown", onKey, true);
       return () => window.removeEventListener("keydown", onKey, true);
-    }, [settings.numericZap, menu, zapDigits]);
+    }, [settings.numericZap, menu, zapDigits, phone]);
     const startedRef = useRef(false);
     useEffect(() => {
       if (startedRef.current || !settings.startOnLastChannel || view !== "hub" || params?.url) return;
@@ -203945,7 +208356,7 @@ ${cue.text}`).join("\n\n")}
       toast,
       playerOpen: active2 !== null
     }), [view, viewParams, go, back, play, openChannel, channelMenu, addToMultiview, pushLayer, toast, active2]);
-    useSwipeBack(back, !menu && pending2 === null);
+    useSwipeBack(back, (!menu || phone) && pending2 === null);
     const View = TV_VIEWS[view];
     const activeChannel = active2 ? active2.url ? { ...active2.channel, url: active2.url, name: active2.label ?? active2.channel.name } : active2.channel : null;
     const rail = [
@@ -203973,6 +208384,7 @@ ${cue.text}`).join("\n\n")}
       settings,
       channel: activeChannel,
       locale,
+      phone,
       // Kanalbyte till en LÅST kanal lämnar `active` orörd och öppnar
       // grinden ovanpå spelaren (se `play` ovan) — kromet måste då stå
       // tillbaka helt (Enter/Back) så att PIN-grinden äger dem.
@@ -204001,17 +208413,40 @@ ${cue.text}`).join("\n\n")}
       {
         ref: rootRef,
         "data-live-tv-tv-root": "",
-        style: { display: "flex", position: "relative", height: "100%", minHeight: 0, background: hasCutouts ? "transparent" : TV2.bg, color: TV2.text, fontFamily: TV2.font, fontSize: dp(22), lineHeight: 1.3, ...hasCutouts ? { zIndex: 0 } : null },
+        ...phone ? { "data-lt-phone": "1" } : {},
+        ...desktopSurface ? { "data-live-tv-desktop": "1" } : {},
+        style: { display: "flex", position: "relative", height: "100%", minHeight: 0, background: hasCutouts ? "transparent" : TV2.bg, color: TV2.text, fontFamily: TV2.font, fontSize: phone ? 15 : dp(22), lineHeight: phone ? 1.4 : 1.3, ...hasCutouts ? { zIndex: 0 } : null },
         children: [
           hasCutouts ? /* @__PURE__ */ jsx(SurfaceBackdrop, { cutouts: cutouts2 }) : null,
           /* @__PURE__ */ jsx(TvFocusStyle, {}),
-          /* @__PURE__ */ jsxs("nav", { "aria-label": tt("liveTv"), style: { width: dp(railWidth), flexShrink: 0, borderRight: `1px solid ${TV2.line}`, background: "linear-gradient(180deg, rgba(252,252,255,0.05), rgba(252,252,255,0.02))", padding: `${dp(narrow ? 16 : 36)}px 0 ${dp(narrow ? 16 : 32)}px`, display: "flex", flexDirection: "column", alignItems: "center", gap: dp(narrow ? 8 : 14) }, children: [
-            narrow ? null : /* @__PURE__ */ jsx("div", { "data-live-tv-rail-badge": "", "aria-hidden": "true", style: { width: dp(44), height: dp(44), borderRadius: dp(12), background: TV2.acc, color: TV2.onAcc, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: dp(22), marginBottom: dp(24) }, children: "L" }),
-            isTv ? null : railItem({ key: "back", label: tt("railBack"), icon: /* @__PURE__ */ jsx(Icons.ChevronLeft, {}), run: back }),
-            rail.map((item) => railItem(item)),
-            railItem({ key: "settings", label: tt("railSettings"), icon: /* @__PURE__ */ jsx(Icons.Gear, {}) }, { marginTop: "auto" })
-          ] }),
-          /* @__PURE__ */ jsx("main", { ref: mainRef, style: { flex: 1, minWidth: 0, minHeight: 0, position: "relative", display: "flex", flexDirection: "column" }, children: /* @__PURE__ */ jsx(View, { model, nav, params: viewParams, settings }, view) }),
+          phone ? null : (
+            /* Ikonrad: pluginets egen navigation inne i Live TV. Inte data-col="side" —
+                värdens Back-regel hade då flyttat fokus hit i stället för att gå bakåt.
+                OFÖRÄNDRAD ovanför telefonbredden (spec §1/krav 3) — se
+                "utan telefonattribut: ikonraden som förut" i tv-shell-phone.test.tsx.
+                På telefon finns ingen rad alls: flik-raden nedan tar över. */
+            /* @__PURE__ */ jsxs("nav", { "data-testid": "tv-rail", "aria-label": tt("liveTv"), style: { width: dp(railWidth), flexShrink: 0, borderRight: `1px solid ${TV2.line}`, background: "linear-gradient(180deg, rgba(252,252,255,0.05), rgba(252,252,255,0.02))", padding: `${dp(narrow ? 16 : 36)}px 0 ${dp(narrow ? 16 : 32)}px`, display: "flex", flexDirection: "column", alignItems: "center", gap: dp(narrow ? 8 : 14) }, children: [
+              narrow ? null : /* @__PURE__ */ jsx("div", { "data-live-tv-rail-badge": "", "aria-hidden": "true", style: { width: dp(44), height: dp(44), borderRadius: dp(12), background: TV2.acc, color: TV2.onAcc, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: dp(22), marginBottom: dp(24) }, children: "L" }),
+              isTv ? null : railItem({ key: "back", label: tt("railBack"), icon: /* @__PURE__ */ jsx(Icons.ChevronLeft, {}), run: requestBrowseBack }),
+              rail.map((item) => railItem(item)),
+              railItem({ key: "settings", label: tt("railSettings"), icon: /* @__PURE__ */ jsx(Icons.Gear, {}) }, { marginTop: "auto" })
+            ] })
+          ),
+          /* @__PURE__ */ jsx("main", { ref: mainRef, style: { flex: 1, minWidth: 0, minHeight: 0, position: "relative", display: "flex", flexDirection: "column" }, children: /* @__PURE__ */ jsx(View, { model, nav, params: viewParams, settings, phone }, view) }),
+          phone && active2 === null ? /* @__PURE__ */ jsx(MobileTabBar, { view, onGo: (v) => go(v), onMore: () => setMoreOpen(true) }) : null,
+          phone && moreOpen ? /* @__PURE__ */ jsx(
+            MobileSheet,
+            {
+              title: tt("moreActions"),
+              items: [
+                { key: "multi", label: tt("sheetMultiview"), run: () => go("multi") },
+                { key: "settings", label: tt("sheetSettings"), run: () => go("settings") }
+              ],
+              onClose: () => setMoreOpen(false),
+              pushLayer,
+              testId: "more-sheet"
+            }
+          ) : null,
           activeChannel && Player ? /* @__PURE__ */ jsx(Player, { channel: activeChannel, onClose: () => setActive(null), listId: model.epgListId, epgUrls: model.epgUrls, onSwitchChannel: (channel) => play({ channel }), tv: tvPlayerProps }) : null,
           stream && StreamPlayer ? /* @__PURE__ */ jsx("div", { "data-testid": "tv-stream-player", "data-live-tv-layer": "", children: /* @__PURE__ */ jsx(
             StreamPlayer,
@@ -204053,9 +208488,9 @@ ${cue.text}`).join("\n\n")}
               }
             }
           ),
-          /* @__PURE__ */ jsx(TvHoldAffordance, { rootRef, enabled: !isTv }, view),
-          TvGlassMenu && menu ? /* @__PURE__ */ jsx(TvGlassMenu, { target: menu, onClose: () => setMenu(null) }) : null,
-          zapDigits ? /* @__PURE__ */ jsx("div", { "data-testid": "zap-digits", style: { position: "fixed", top: dp(36), right: dp(48), zIndex: 80, padding: `${dp(10)}px ${dp(22)}px`, borderRadius: dp(12), background: TV2.glass, fontSize: dp(34), fontWeight: 600, letterSpacing: "0.1em" }, children: zapDigits }) : null,
+          /* @__PURE__ */ jsx(TvHoldAffordance, { rootRef, enabled: !isTv && !phone }, view),
+          menu ? phone ? /* @__PURE__ */ jsx(MobileSheet, { title: menu.title, items: menu.actions, onClose: () => setMenu(null), pushLayer, testId: "channel-sheet" }) : TvGlassMenu ? /* @__PURE__ */ jsx(TvGlassMenu, { target: menu, onClose: () => setMenu(null) }) : null : null,
+          zapDigits && !phone ? /* @__PURE__ */ jsx("div", { "data-testid": "zap-digits", style: { position: "fixed", top: dp(36), right: dp(48), zIndex: 80, padding: `${dp(10)}px ${dp(22)}px`, borderRadius: dp(12), background: TV2.glass, fontSize: dp(34), fontWeight: 600, letterSpacing: "0.1em" }, children: zapDigits }) : null,
           toastText ? /* @__PURE__ */ jsx("div", { role: "status", "data-live-tv-layer": "", style: { position: "fixed", bottom: dp(40), left: "50%", transform: "translateX(-50%)", zIndex: 80, padding: `${dp(12)}px ${dp(24)}px`, borderRadius: 999, background: TV2.glass, fontSize: dp(19) }, children: toastText }) : null
         ]
       }
@@ -204112,6 +208547,8 @@ ${cue.text}`).join("\n\n")}
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/hooks/useChannelSchedule.ts
   init_react_shim();
+  init_schedule_cache();
+  init_lookup();
   init_live_tv_data();
   function useChannelSchedule(channel, listId, urls, hoursAhead = 12, hoursBack = 1) {
     const [programmes, setProgrammes] = useState([]);
@@ -204156,7 +208593,7 @@ ${cue.text}`).join("\n\n")}
       useEpgNowNextLater,
       useEpgLoadStatus,
       useChannelSchedule,
-      version: "0.6.0"
+      version: "0.10.0"
     };
     try {
       window.dispatchEvent(new CustomEvent("lumio-live-tv-bridge-ready"));
@@ -204170,7 +208607,7 @@ ${cue.text}`).join("\n\n")}
   var LiveTvPlugin = {
     id: "com.lumio.live-tv",
     name: { en: "Live TV", sv: "Live TV" },
-    version: "0.6.0",
+    version: "0.10.0",
     description: {
       en: "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",
       sv: "Hantera M3U-k\xE4llor, bl\xE4ddra bland live-TV-kanaler och se EPG (nu/h\xE4rn\xE4st) i Lumio."

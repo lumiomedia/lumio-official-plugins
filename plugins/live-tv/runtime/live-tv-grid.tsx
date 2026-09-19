@@ -26,6 +26,7 @@ import {
   getM3uUrls,
   getXtreamLogins,
   importList,
+  isLogoFallbackEnabled,
   onXtreamLoginsChanged,
   xtreamPseudoUrl,
   LIVE_TV_GLOBAL_EPG_ID,
@@ -41,6 +42,7 @@ import {
   type LiveTvList,
   type M3uChannel as DataChannel,
 } from './live-tv-data'
+import { completeLogos } from './index-client'
 import { LIVE_TV_BROWSE_PAGE_ID, encodeChannelParams } from './live-tv-shell'
 import { useTvSettings } from './tv/tv-settings-store'
 import { buildTvPlayerProps } from './tv/tv-player-props'
@@ -212,6 +214,18 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavi
   const [groupDropdownOpen, setGroupDropdownOpen] = useState(false)
   const [pinVersion, setPinVersion] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
+  // Komplettera-knappens eget tillstånd — samma form som skrivbordets
+  // inställningar (`live-tv-settings-section.tsx`), men utan `listId`: den
+  // här knappen kör en eller flera listor på en gång (se `handleCompleteLogos`
+  // nedan), inte en enda rad.
+  const [logoComplete, setLogoComplete] = useState<
+    // `current`/`listCount` är listnumret i körningen, inte kanalräkningen —
+    // se granskningsfyndet i `handleCompleteLogos` nedan.
+    | { status: 'running'; current: number; listCount: number }
+    | { status: 'done'; matched: number; total: number }
+    | { status: 'error'; error: string }
+    | null
+  >(null)
   const [refreshing, setRefreshing] = useState(false)
   const [loadedLogoUrls, setLoadedLogoUrls] = useState<Record<string, string>>({})
   const [lists, setLists] = useState<LiveTvList[]>([])
@@ -550,6 +564,69 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavi
     : null
 
   /**
+   * Samma "aktiv flik eller alla" som `refreshLists`/`handleRefreshChannels`
+   * nedan: en vald flik kompletterar BARA den listan, annars körs varje lista
+   * vars switch är på. `custom`-listor och listor utan reserven aktiverad
+   * hoppas tyst över — precis de villkor som redan gäller för
+   * Komplettera-knappen i inställningarna (`isLogoFallbackEnabled`,
+   * `kind !== 'custom'`). Knappen nedan spärras när listan blir tom.
+   */
+  const logoCompleteTargets = useMemo(
+    () => (activeList ? [activeList] : lists).filter(
+      (list) => list.kind !== 'custom' && Boolean(list.source) && isLogoFallbackEnabled(list),
+    ),
+    [activeList, lists],
+  )
+
+  /**
+   * Kompletterar logotyperna direkt från vyn — Jerrys ord efter test: knappen
+   * ska gå att nå "direkt på appvyn", inte bara via inställningarna.
+   * `completeLogos` sänder `emitIndexChanged()` själv (se `index-client.ts`)
+   * — ropas INTE här igen, det hade blivit en dubbelsändning.
+   *
+   * Granskningsfynd (flerlistefallet): utan en vald flik körs varje lista
+   * vars switch är på, sekventiellt, en efter en. Med flera stora Xtream-
+   * /M3U-listor kan det klicket dra i gång en körning över tusentals kanaler
+   * medan knappen bara sa "pågår" — omöjligt att se hur mycket som återstod,
+   * eller att skilja "hänger" från "jobbar". Knappens egen text bär nu
+   * omfattningen OCH framsteget ("lista 2 av 4"); en enda lista (det vanliga
+   * fallet) ser fortfarande ut som förut, ingen "1 av 1".
+   *
+   * Loopen är fortsatt sekventiell och avbryts vid första `throw` — de listor
+   * som redan hann klart har redan skrivit sitt resultat till indexet
+   * (`completeLogos` per lista), så det delresultatet redovisas TILLSAMMANS
+   * med appens egen feltext i stället för att försvinna bakom den.
+   */
+  async function handleCompleteLogos(): Promise<void> {
+    const targets = logoCompleteTargets
+    if (targets.length === 0) return
+    const listCount = targets.length
+    let matched = 0
+    let total = 0
+    let completed = 0
+    try {
+      for (const list of targets) {
+        setLogoComplete({ status: 'running', current: completed + 1, listCount })
+        const result = await completeLogos(list.source as string)
+        matched += result.matched
+        total += result.total
+        completed += 1
+      }
+      setLogoComplete({ status: 'done', matched, total })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      setLogoComplete({
+        status: 'error',
+        // En enda lista har inget delresultat att redovisa (0 av 1 säger
+        // inget) — bara flerlistefallet får den sammansatta texten.
+        error: listCount > 1
+          ? h('logoCompletePartialError', { completed, total: listCount, error: message })
+          : message,
+      })
+    }
+  }
+
+  /**
    * "Lägg till i lista" gäller BARA manuellt skapade listor.
    *
    * `addChannelToLiveTvList` skriver kanalen inbäddad i listan — det är rätt
@@ -696,19 +773,35 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavi
 
   useEffect(() => {
     let cancelled = false
+    // Bär primär- och reservkällan var för sig hela vägen genom kön: om
+    // leverantörens logotyp fallerar (502/404/timeout) ska reserven få en
+    // egen chans, inte bara när kanalen saknar leverantörslogotyp helt.
     const logoEntries = pagedChannels
-      .map((channel) => ({ key: channel.url, src: getLiveTvLogoSrc(channel.logo) }))
-      .filter((entry): entry is { key: string; src: string } => Boolean(entry.src))
+      .map((channel) => ({
+        key: channel.url,
+        primarySrc: getLiveTvLogoSrc(channel.logo),
+        fallbackSrc: getLiveTvLogoSrc(channel.logoFallback),
+      }))
+      .filter((entry) => Boolean(entry.primarySrc || entry.fallbackSrc))
 
     if (logoEntries.length === 0) {
       setLoadedLogoUrls({})
       return
     }
 
+    // Snabbväg: primären vinner om båda källorna råkar vara klara sedan
+    // tidigare (cache eller en föregående rendering av samma kanal).
     const initialLoaded = Object.fromEntries(
       logoEntries
-        .filter((entry) => rememberedChannelLogoSrcs.get(entry.key) === entry.src || isLiveTvLogoLoaded(entry.src))
-        .map((entry) => [entry.key, entry.src]),
+        .map((entry): [string, string] | null => {
+          const candidate = [entry.primarySrc, entry.fallbackSrc].find(
+            (candidateSrc): candidateSrc is string =>
+              Boolean(candidateSrc) &&
+              (rememberedChannelLogoSrcs.get(entry.key) === candidateSrc || isLiveTvLogoLoaded(candidateSrc)),
+          )
+          return candidate ? [entry.key, candidate] : null
+        })
+        .filter((pair): pair is [string, string] => pair !== null),
     ) as Record<string, string>
 
     Object.entries(initialLoaded).forEach(([key, src]) => rememberedChannelLogoSrcs.set(key, src))
@@ -722,17 +815,25 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavi
         if (cancelled) break
         const batch = pendingEntries.slice(i, i + batchSize)
         const results = await Promise.all(
-          batch.map(async (entry) => ({
-            key: entry.key,
-            src: entry.src,
-            ok: await preloadLiveTvLogo(entry.src),
-          })),
+          batch.map(async (entry) => {
+            if (entry.primarySrc && (await preloadLiveTvLogo(entry.primarySrc))) {
+              return { key: entry.key, src: entry.primarySrc as string | null }
+            }
+            // Leverantörens logotyp saknas eller kunde inte laddas — reserven
+            // får ta över innan kortet ger upp helt.
+            if (entry.fallbackSrc && (await preloadLiveTvLogo(entry.fallbackSrc))) {
+              return { key: entry.key, src: entry.fallbackSrc as string | null }
+            }
+            return { key: entry.key, src: null as string | null }
+          }),
         )
 
         if (cancelled) break
 
         const batchLoaded = Object.fromEntries(
-          results.filter((result) => result.ok).map((result) => [result.key, result.src]),
+          results
+            .filter((result): result is { key: string; src: string } => Boolean(result.src))
+            .map((result) => [result.key, result.src]),
         ) as Record<string, string>
 
         Object.entries(batchLoaded).forEach(([key, src]) => rememberedChannelLogoSrcs.set(key, src))
@@ -1070,6 +1171,32 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavi
           >
             {t('liveTvCreateList')}
           </button>}
+          {/* Direkt i vyn, inte bara i inställningarna (Jerrys ord efter test).
+              Samma administrationsrad som Skapa lista/Uppdatera — det är
+              precis vad det här är: en handling man gör då och då, inte en
+              inställning. Riktar sig mot den aktiva fliken om en är vald,
+              annars mot varje lista vars switch redan är på (samma mönster
+              som `handleRefreshChannels`). */}
+          {isTv ? null : <button
+            type="button"
+            {...tvStation}
+            data-testid="live-tv-logo-complete"
+            onClick={() => void handleCompleteLogos()}
+            disabled={logoComplete?.status === 'running' || logoCompleteTargets.length === 0}
+            className={`flex h-9 items-center px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] ${neutralPillClass} disabled:cursor-default disabled:opacity-50`}
+          >
+            {logoComplete?.status === 'running'
+              ? (logoComplete.listCount > 1
+                  ? h('logoCompleteRunningProgress', { current: logoComplete.current, total: logoComplete.listCount })
+                  : h('logoCompleteRunning'))
+              : h('logoCompleteButton')}
+          </button>}
+          {!isTv && logoComplete?.status === 'done' ? (
+            <span className="text-xs text-slate-500">{h('logoCompleteResult', { matched: logoComplete.matched, total: logoComplete.total })}</span>
+          ) : null}
+          {!isTv && logoComplete?.status === 'error' ? (
+            <span role="alert" className="max-w-[22rem] truncate text-xs text-red-400" title={logoComplete.error}>{logoComplete.error}</span>
+          ) : null}
           <div className="ml-auto flex items-center gap-3">
             {isTv ? null : <span className="text-xs text-white">{filtered.length} / {visibleChannels.length} {t('m3uChannels')}</span>}
             {refreshing && visibleChannels.length > 0 ? <span className="text-xs text-slate-500">{t('liveTvRefreshing')}</span> : null}
@@ -1246,6 +1373,11 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavi
             <div className="live-tv-channel-grid grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-3 2xl:grid-cols-4">
               {pagedChannels.map((channel, i) => {
                 const logoSrc = loadedLogoUrls[channel.url] ?? null
+                const primaryLogoSrc = getLiveTvLogoSrc(channel.logo)
+                const reserveLogoSrc = getLiveTvLogoSrc(channel.logoFallback)
+                // Reserven skickas bara med när det som faktiskt laddades ÄR
+                // primärkällan — annars skulle samma URL provas två gånger.
+                const cardFallbackSrc = logoSrc && logoSrc === primaryLogoSrc ? reserveLogoSrc : undefined
                 const channelListKey = `${channel.name}::${channel.url}`
                 const isListPickerOpen = listPickerChannelKey === channelListKey
                 const isInAnyList = customLists.some((list) => isChannelInLiveTvList(list.id, channel))
@@ -1260,6 +1392,7 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavi
                       {logoSrc ? (
                         <LiveTvLogoImage
                           src={logoSrc}
+                          fallbackSrc={cardFallbackSrc}
                           alt={channel.name}
                           className="h-full w-full object-contain p-2"
                           onError={() => {}}
@@ -1487,6 +1620,8 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavi
             locale,
             // Rutnätet har ingen PIN-grind över spelaren.
             gateOpen: false,
+            // Rutnätet lever utanför TV-scenen — ingen telefonmätning finns.
+            phone: false,
             onOpenGuide: () => { setActiveChannel(null); goBrowse('guide') },
             onOpenMultiview: () => { setActiveChannel(null); goBrowse('multi') },
             onOpenChannelDetails: () => { setActiveChannel(null); goBrowse('channel', encodeChannelParams(activeChannel as DataChannel)) },

@@ -9,16 +9,23 @@ import { Chip, Progress, Segment, Tag, TV, dp, station, useTvClockNode } from '.
 import { useTvText } from './tv-strings'
 import { setGuideMode, useGuideMode, type GuideMode } from './tv-settings-store'
 import { blockGeometry, nowLinePct, scheduleWindow, timeTicks } from './tv-schedule-window'
-import { ChannelCell, FAVS_GROUP, filterByGroup, useDebouncedChannel, useGuideGroups } from './tv-guide-shared'
+import { ChannelCell, FAVS_GROUP, channelColumnStyle, filterByGroup, useDebouncedChannel, useGuideGroups } from './tv-guide-shared'
 import { TvPreview } from './tv-preview'
 import { TvGuidePlaylists } from './tv-guide-playlists'
 import { TvGuideGrid } from './tv-guide-grid'
 import { useSchedules } from '../hooks/useSchedules'
+import { TvGuideNowPhone, phoneGuideMode, type PhoneGuideMode } from './mobile/guide-phone'
+import { useNewGuideSurface } from './guide-surface'
+import { TvGuideShell } from './guide-shell'
 
 const ROW_STEP = 40
 
 export function TvGuide(props: TvViewProps) {
   const { nav } = props
+  // Ytgrinden (spec "Beslut", Var): TV-läget och skrivbordsappen (Tauri,
+  // inte telefon) delar den städade guiden. Hooken anropas ovillkorligt
+  // (hooks-reglerna) före grenarna nedan.
+  const newGuide = useNewGuideSurface(props.phone)
   const storedMode = useGuideMode()
   // Lokalt speglat läge: skrivningen sker via storage (för andra vyer/
   // omstarter) men uppdaterar inte sig själv i samma instans (stubben notifierar
@@ -62,9 +69,11 @@ export function TvGuide(props: TvViewProps) {
   useEffect(() => { navRef.current = nav })
   const popRef = useRef(popMode)
   useEffect(() => { popRef.current = popMode })
-  // Spelaren äger Back helt medan den är öppen — guiden får inte stjäla det
-  // trycket och byta läge bakom spelaren.
-  const claimBack = modeStack.length > 0 && !nav.playerOpen
+  // Lagret står kvar medan spelaren är öppen: skalets `back()` stänger
+  // spelaren FÖRE lagren, så guiden kan inte stjäla trycket — och en av-/
+  // återregistrering runt uppspelningen hade kastat om ordningen mot
+  // listornas nivå 2-lager (barnets effekt kör före förälderns).
+  const claimBack = modeStack.length > 0
   useEffect(() => {
     if (!claimBack) return
     return navRef.current.pushLayer(() => popRef.current())
@@ -92,17 +101,43 @@ export function TvGuide(props: TvViewProps) {
     frame = window.requestAnimationFrame(() => { frame = window.requestAnimationFrame(focusInit) })
     return () => window.cancelAnimationFrame(frame)
   }, [mode])
+  if (props.phone) {
+    // Telefonen (fas 3, handoffen §2) har tre lägen: Now / Timeline / Lists.
+    // TV:ns `'tl'` visas som Now, och ett byte från telefonen skriver bara
+    // `'now' | 'grid' | 'playlists'`. Lägesstacken och Bakåt ovan är
+    // oförändrade — ett tryck på det redan aktiva segmentet rör inte stacken
+    // (annars hade ett lagrat `'tl'` + tryck på Now lagt ett lager i skalet).
+    const pm = phoneGuideMode(mode)
+    const changePhone = (next: PhoneGuideMode) => { if (next !== pm) changeMode(next) }
+    // Rutnätet och spellistorna grenar själva till sina telefonfiler
+    // (`mobile/guide-grid-phone.tsx`, `mobile/guide-lists-phone.tsx`) och
+    // tar där `PhoneGuideModeBar`; de får redan här det telefonnormaliserade läget.
+    if (pm === 'playlists') return <TvGuidePlaylists {...props} mode={pm} onModeChange={changeMode} />
+    if (pm === 'grid') return <TvGuideGrid {...props} mode={pm} onModeChange={changeMode} />
+    return <TvGuideNowPhone {...props} mode="now" onModeChange={changePhone} />
+  }
+  // Den städade guiden (skrivbord/TV, spec §1): skalet äger läge, stack och
+  // Bakåt själv — grenen ovanför (spegel, stack, fokusräddning) gäller bara
+  // LAN/fjärr nedan. `guide-shell.tsx` importerar aldrig tillbaka hit.
+  if (newGuide) return <TvGuideShell {...props} />
+  // Säkerhetsnät: lagringen delas mellan ytorna och skriver ingen migrering
+  // (spec "Beslut", Lagring) — `nownext`/`timeline` kan alltså dyka upp här
+  // om samma profil nyss körde den städade guiden på en annan yta. Den gamla
+  // vyn känner bara `now`/`tl`, så de faller tillbaka till sin närmsta
+  // motsvarighet (samma tanke som `phoneGuideMode`).
+  const legacyMode: 'now' | 'tl' = mode === 'tl' ? 'tl' : 'now'
   if (mode === 'playlists') return <TvGuidePlaylists {...props} mode={mode} onModeChange={changeMode} />
   // Rutnätet är skrivbordets tablå i TV-trädet (spec 4.3). Den delar inte
   // komponent med Nu/Sen och Tablå, så lägesbytet hit går genom samma
   // fokusräddning som spellistevyn — se effekten på `mode` ovan.
-  if (mode === 'grid') return <TvGuideGrid {...props} mode={mode} onModeChange={changeMode} />
-  return <TvGuideStandard {...props} mode={mode} onModeChange={changeMode} />
+  if (mode === 'grid' || mode === 'timeline') return <TvGuideGrid {...props} mode="grid" onModeChange={changeMode} />
+  return <TvGuideStandard {...props} mode={legacyMode} onModeChange={changeMode} />
 }
 
 function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: TvViewProps & { mode: 'now' | 'tl'; onModeChange: (mode: GuideMode) => void }) {
   const { tt, locale } = useTvText()
   const clock = useTvClockNode(locale)
+  const channelColStyle = channelColumnStyle()
   const groups = useGuideGroups(model, tt)
   // params.group kan vara en föråldrad eller manipulerad query-parameter
   // (t.ex. ett borttaget spellistnamn) — validera mot de faktiska grupperna
@@ -209,7 +244,6 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
           ) : null}
           <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'baseline', gap: dp(12), fontSize: dp(18), color: 'rgba(243,244,248,0.55)' }}>
             {info.next ? <><span style={{ color: TV.accText, fontWeight: 600 }}>{tt('next')}</span><span>{info.next.title} · {formatClock(info.next.start, locale)}</span></> : null}
-            <span style={{ marginLeft: 'auto', fontSize: dp(16), color: TV.faint }}>{tt('helpGuide')}</span>
           </div>
         </div>
       </div>
@@ -226,9 +260,9 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
 
       {/* Kolumnrubriker */}
       <div style={{ padding: `0 ${dp(48)}px`, display: 'flex', gap: dp(16), fontSize: dp(15), letterSpacing: '0.1em', textTransform: 'uppercase', color: TV.faint, flexShrink: 0 }}>
-        <div style={{ width: dp(520), flexShrink: 0, padding: `0 ${dp(12)}px` }}>{tt('colChannel')}</div>
+        <div data-testid="guide-channel-col-header" style={{ ...channelColStyle, padding: `0 ${dp(12)}px` }}>{tt('colChannel')}</div>
         {mode === 'now' ? (
-          <><div style={{ flex: 1.2 }}>{tt('colNow')}</div><div style={{ flex: 1 }}>{tt('colNext')}</div><div style={{ flex: 1 }}>{tt('colLater')}</div></>
+          <><div style={{ flex: 1.2, minWidth: 0 }}>{tt('colNow')}</div><div style={{ flex: 1, minWidth: 0 }}>{tt('colNext')}</div><div style={{ flex: 1, minWidth: 0 }}>{tt('colLater')}</div></>
         ) : (
           <div style={{ flex: 1, position: 'relative', height: dp(20) }}>
             {timeTicks(win).map((tick, i) => <span key={tick} style={{ position: 'absolute', left: `${i * 25}%` }}>{formatClock(tick, locale)}</span>)}
@@ -292,9 +326,9 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
                 {...rowStation}
                 onKeyDown={onKeyDown}
                 onFocus={() => setSelectedKey(key)}
-                style={{ cursor: 'pointer', borderRadius: dp(12) }}
+                style={{ ...channelColStyle, cursor: 'pointer', borderRadius: dp(12), minHeight: dp(86) }}
               >
-                <ChannelCell channel={channel} number={model.channelNumber(channel)} pinned={model.pinnedSet.has(key)} locked={model.locked.has(key)} quality={qualityFromName(channel.name)} focused={focused} />
+                <ChannelCell channel={channel} number={model.channelNumber(channel)} pinned={model.pinnedSet.has(key)} locked={model.locked.has(key)} quality={qualityFromName(channel.name)} focused={focused} width="100%" />
               </div>
               {mode === 'now' ? (
                 <>
@@ -330,7 +364,7 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
           )
         })}
         {rows.length > visible ? (
-          <div {...station(() => setVisible((v) => v + ROW_STEP))} style={{ margin: `${dp(20)}px auto 0`, width: 'fit-content', height: dp(48), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.s10, display: 'flex', alignItems: 'center', fontSize: dp(18), cursor: 'pointer' }}>{tt('showMore')}</div>
+          <div {...station(() => setVisible((v) => v + ROW_STEP))} style={{ margin: `${dp(20)}px auto 0`, width: 'fit-content', height: dp(48), minHeight: dp(48), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.s10, display: 'flex', alignItems: 'center', fontSize: dp(18), cursor: 'pointer' }}>{tt('showMore')}</div>
         ) : null}
       </div>
     </div>

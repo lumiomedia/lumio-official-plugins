@@ -13,9 +13,15 @@ import {
   TwitchChannelsRow,
 } from './twitch-browser'
 
-/** Mobil: Twitch-sidorna visar ingen hero — Tillbaka-pillret bredvid Live är
- *  vägen ut (Jerry 2026-09-07). Läses vid varje layoutpass av värden. */
-const twitchHidesHeroOnMobile = () => typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 639px)').matches
+/** Twitch-sidorna visar ingen hero — på NÅGON bredd (Jerry 2026-09-19:
+ *  "Twitch i desktop visar hero, det ska den ej").
+ *
+ *  Mobilen har varit utan sedan 2026-09-07; skrivbordet fick den kvar, och en
+ *  filmkarusell ovanför en lista med live-kanaler hör inte ihop med något på
+ *  sidan. Ett konstant värde och inte längre en matchMedia-funktion: värden
+ *  läser flaggan vid varje layoutpass, och det finns inte längre något att
+ *  fråga fönstret om. */
+const twitchHidesHero = true
 
 export const TwitchPlugin: LumioPlugin = {
   id: 'com.lumio.twitch',
@@ -48,9 +54,9 @@ export const TwitchPlugin: LumioPlugin = {
       label: { en: 'Twitch: Live now', sv: 'Twitch: Live nu' },
       rowId: 'twitch-live-row',
     })
-    ctx.registerBrowsePage({ id: 'twitch-live', label: { en: 'Live', sv: 'Live' }, Page: TwitchBrowsePage, hideHero: twitchHidesHeroOnMobile })
-    ctx.registerBrowsePage({ id: 'twitch-categories', label: { en: 'Categories', sv: 'Kategorier' }, Page: TwitchCategoriesPage, hideHero: twitchHidesHeroOnMobile })
-    ctx.registerBrowsePage({ id: 'twitch-search', label: { en: 'Search', sv: 'Sök' }, Page: TwitchSearchPage, hideHero: twitchHidesHeroOnMobile })
+    ctx.registerBrowsePage({ id: 'twitch-live', label: { en: 'Live', sv: 'Live' }, Page: TwitchBrowsePage, hideHero: twitchHidesHero })
+    ctx.registerBrowsePage({ id: 'twitch-categories', label: { en: 'Categories', sv: 'Kategorier' }, Page: TwitchCategoriesPage, hideHero: twitchHidesHero })
+    ctx.registerBrowsePage({ id: 'twitch-search', label: { en: 'Search', sv: 'Sök' }, Page: TwitchSearchPage, hideHero: twitchHidesHero })
 
     ctx.registerHomeRow({
       id: 'twitch-following-row',
@@ -63,7 +69,7 @@ export const TwitchPlugin: LumioPlugin = {
       label: { en: 'Twitch: Following', sv: 'Twitch: Följer' },
       rowId: 'twitch-following-row',
     })
-    ctx.registerBrowsePage({ id: 'twitch-following', label: { en: 'Following', sv: 'Följer' }, Page: TwitchFollowingPage, hideHero: twitchHidesHeroOnMobile })
+    ctx.registerBrowsePage({ id: 'twitch-following', label: { en: 'Following', sv: 'Följer' }, Page: TwitchFollowingPage, hideHero: twitchHidesHero })
 
     // Configurable rows: which category / channels they show is set under
     // Settings → Twitch (getTwitchHomeCategory / getTwitchHomeChannels).

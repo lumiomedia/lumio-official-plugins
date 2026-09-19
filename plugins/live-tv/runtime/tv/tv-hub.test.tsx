@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
+import { TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR, TV_SCENE_PHONE_ATTR, __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, channelKey, type LiveTvList } from '../live-tv-data'
 
@@ -42,5 +42,114 @@ describe('TvHub', () => {
     fireEvent.click(screen.getByTestId('playlist-pill'))
     fireEvent.click(screen.getByTestId('playlist-l1'))
     expect(screen.getByTestId('playlist-pill')).toHaveTextContent('Xtream')
+  })
+})
+
+// Jerrys uppföljning: fjärrhjälpen ("OK = watch · hold OK = menu") ska bort
+// HELT — även i TV-läge, ingen ersättningstext någonstans.
+describe('TvHub fjärrhjälp (borttagen, Jerrys uppföljning)', () => {
+  it('renderas aldrig, varken i TV-läge eller utanför', () => {
+    __setTvModeForTests(true)
+    render(<LiveTvTvShell pageId="live-tv-browse" params={{}} onNavigate={() => {}} onOpenDetails={() => {}} />)
+    expect(screen.queryByText('OK = watch · hold OK = menu')).not.toBeInTheDocument()
+    cleanup()
+    __setTvModeForTests(false)
+    render(<LiveTvTvShell pageId="live-tv-browse" params={{}} onNavigate={() => {}} onOpenDetails={() => {}} />)
+    expect(screen.queryByText('OK = watch · hold OK = menu')).not.toBeInTheDocument()
+  })
+})
+
+// Ändring 2: rubriken utanför TV-läget blir bara antalet ("All 3 channels"),
+// spellistnamnet och fjärrhjälpen (del av `allChannelsSub`) utgår — och
+// filterraden flyttar ner på egen rad med glasyta. TV-designen (godkänd)
+// rörs inte.
+describe('TvHub rubrikrad (Jerrys återkoppling 2026-09-14)', () => {
+  it('TV-läge: behåller rubriken, underraden och chippen på samma rad', () => {
+    __setTvModeForTests(true)
+    render(<LiveTvTvShell pageId="live-tv-browse" params={{}} onNavigate={() => {}} onOpenDetails={() => {}} />)
+    expect(screen.getByText('All channels')).toBeInTheDocument()
+    expect(screen.getByText('All playlists · 3 channels · OK = watch · hold OK = menu')).toBeInTheDocument()
+  })
+  it('utanför TV-läge: rubriken är bara antalet, ingen spellista/fjärrhjälp kvar av den gamla underraden', () => {
+    __setTvModeForTests(false)
+    render(<LiveTvTvShell pageId="live-tv-browse" params={{}} onNavigate={() => {}} onOpenDetails={() => {}} />)
+    expect(screen.getByText('All 3 channels')).toBeInTheDocument()
+    expect(screen.queryByText(/All playlists · 3 channels/)).not.toBeInTheDocument()
+  })
+  it('utanför TV-läge: filterraden ligger på egen rad (fyller bredden, inte tryckt intill rubriken)', () => {
+    __setTvModeForTests(false)
+    render(<LiveTvTvShell pageId="live-tv-browse" params={{}} onNavigate={() => {}} onOpenDetails={() => {}} />)
+    const row = screen.getByTestId('all-channels-filter-row')
+    expect(row).toHaveStyle({ width: '100%' })
+    expect(row.style.marginLeft).not.toBe('auto')
+  })
+  it('utanför TV-läge: filterchippen har glasytan (samma yta som Bakåt-knappen/toasten)', () => {
+    __setTvModeForTests(false)
+    render(<LiveTvTvShell pageId="live-tv-browse" params={{}} onNavigate={() => {}} onOpenDetails={() => {}} />)
+    expect(screen.getByTestId('chip-all')).toHaveAttribute('data-live-tv-chip-glass')
+  })
+  it('TV-läge: filterchippen rör sig inte — ingen glasyta', () => {
+    __setTvModeForTests(true)
+    render(<LiveTvTvShell pageId="live-tv-browse" params={{}} onNavigate={() => {}} onOpenDetails={() => {}} />)
+    expect(screen.getByTestId('chip-all')).not.toHaveAttribute('data-live-tv-chip-glass')
+  })
+  it('formaterar antalet med tusentalsavgränsare enligt språk (teststubbens useLang: en)', () => {
+    __setTvModeForTests(false)
+    const big: LiveTvList = { id: 'l2', name: 'Big', channels: Array.from({ length: 1234 }, (_, i) => ch(`C${i}`, 'Grp')), createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null }
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [big])
+    seedLiveTvIndex()
+    render(<LiveTvTvShell pageId="live-tv-browse" params={{}} onNavigate={() => {}} onOpenDetails={() => {}} />)
+    expect(screen.getByText('All 1,234 channels')).toBeInTheDocument()
+  })
+})
+
+describe('TvHub i porträtt (telefon)', () => {
+  // En telefon är aldrig en TV: skalet gatar `phone` med `!isTv` (fas 3 ger
+  // vyerna `phone` som prop därifrån i stället för en egen mätning), så
+  // telefonblocket kör utanför TV-läget som filens beforeEach annars slår på.
+  beforeEach(() => __setTvModeForTests(false))
+  // Lådan som `render(page, { container })` skriver in i — måste bort i
+  // `afterEach`, precis som i M-P2:s skaltest.
+  let box: HTMLElement | null = null
+  afterEach(() => { box?.remove(); box = null })
+
+  function renderHubOnPhone() {
+    box = document.createElement('div')
+    box.setAttribute(TV_SCENE_BOX_ATTR, '1')
+    box.setAttribute(TV_SCENE_NARROW_ATTR, '1')
+    box.setAttribute(TV_SCENE_PHONE_ATTR, '1')
+    document.body.appendChild(box)
+    return render(<LiveTvTvShell pageId="live-tv-browse" params={{}} onNavigate={() => {}} onOpenDetails={() => {}} />, { container: box })
+  }
+  function renderHubOnDesktop() {
+    box = document.createElement('div')
+    box.setAttribute(TV_SCENE_BOX_ATTR, '1')
+    document.body.appendChild(box)
+    return render(<LiveTvTvShell pageId="live-tv-browse" params={{}} onNavigate={() => {}} onOpenDetails={() => {}} />, { container: box })
+  }
+
+  // Fas 3: telefonen har en egen gren (`mobile/hub-phone.tsx`) med ETT
+  // spotlightkort i full bredd — inte fas 2:s tvåkolumnsrutnät. Detaljerna
+  // testas i `mobile/hub-phone.test.tsx`; här bara att grenen tar över.
+  it('visar ett enda spotlightkort på telefon (ingen rutnätsgren)', () => {
+    renderHubOnPhone()
+    const card = screen.getByTestId('hub-spotlight')
+    expect(card.style.display).not.toBe('grid')
+    expect(card).toHaveAttribute('data-f')
+  })
+  it('behåller tre kolumner i spotlighten på skrivbordet', () => {
+    renderHubOnDesktop()
+    expect(screen.getByTestId('hub-spotlight')).toHaveStyle({ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' })
+  })
+  // Den gamla specen kallade det här rutnätet "hubbens sexkolumnsrutnät" —
+  // spotlighten har alltid varit 3. Samma behandling gäller ändå: två
+  // kolumner på telefon, sex kvar på skrivbord/TV.
+  it('lägger "alla kanaler" i två kolumner på telefon', () => {
+    renderHubOnPhone()
+    expect(screen.getByTestId('all-channels')).toHaveStyle({ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' })
+  })
+  it('behåller sex kolumner i "alla kanaler" på skrivbordet', () => {
+    renderHubOnDesktop()
+    expect(screen.getByTestId('all-channels')).toHaveStyle({ gridTemplateColumns: 'repeat(6, minmax(0, 1fr))' })
   })
 })

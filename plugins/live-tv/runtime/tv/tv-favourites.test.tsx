@@ -47,3 +47,17 @@ describe('TvFavourites', () => {
     expect(onNavigate).toHaveBeenCalledWith({ pageId: 'live-tv-browse', params: { view: 'guide', group: 'all' } })
   })
 })
+
+// Jerrys uppföljning: fjärrhjälpen ska bort HELT — även i TV-läge, ingen
+// ersättningstext någonstans.
+describe('TvFavourites fjärrhjälp (borttagen, Jerrys uppföljning)', () => {
+  it('renderas aldrig, varken i TV-läge eller utanför', () => {
+    __setTvModeForTests(true)
+    mount()
+    expect(screen.queryByText(/OK = watch · hold OK = move up\/down/)).not.toBeInTheDocument()
+    cleanup()
+    __setTvModeForTests(false)
+    mount()
+    expect(screen.queryByText(/OK = watch · hold OK = move up\/down/)).not.toBeInTheDocument()
+  })
+})

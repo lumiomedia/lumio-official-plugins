@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
-import { __resetForTests, __setTvModeForTests, getPluginMemoryCache, writePluginJson } from '@/lib/plugin-sdk'
-import { LIVE_TV_PLUGIN_ID, type LiveTvList } from './live-tv-data'
+import { __resetForTests, __setDesktopTauriEnvForTests, __setTvModeForTests, getPluginMemoryCache, writePluginJson } from '@/lib/plugin-sdk'
+import { LIVE_TV_PLUGIN_ID, setLogoFallbackEnabled, type LiveTvList } from './live-tv-data'
 import type { IndexChannel } from './index-client'
 import type { NowNextLater } from './epg/types'
 
@@ -38,7 +38,7 @@ vi.mock('./index-client', () => ({
 }))
 
 import { epgNow, loadAllChannels, lookupChannels, refreshEpg, waitForJob } from './index-client'
-import { __resetLiveTvModelForTests, useLiveTvModel } from './live-tv-model'
+import { __resetLiveTvModelForTests, loadChannelsShared, useLiveTvModel } from './live-tv-model'
 import { __resetScheduleCacheForTests } from './epg/schedule-cache'
 import { __resetNowSnapshotForTests } from './epg/now-snapshot'
 import { __resetChannelResolverForTests } from './channel-resolver'
@@ -142,6 +142,39 @@ describe('useLiveTvModel: kanaler ur indexet', () => {
     expect(lookupChannels).toHaveBeenCalledWith(['C::http://x/C'])
   })
 
+  it('en favorit ur en ANNAN lista vars switch är av visas utan reserven, trots TV-skopningen', async () => {
+    // C hör till l2/s2 (se `loadAllChannels`-mocken ovan). Aktiv spellista är
+    // l1/s1 — precis den TV-skopning som gör C till en "extra" via
+    // `resolveChannelKeys`, en väg som INTE går genom `applyLogoFallbackSwitch`.
+    const cWithFallback = { ...C, logoFallback: 'http://logo/c-fallback.png' }
+    vi.mocked(lookupChannels).mockResolvedValue([cWithFallback])
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [
+      lists[0],
+      { ...lists[1], logoFallbackEnabled: false },
+    ])
+    writePluginJson(LIVE_TV_PLUGIN_ID, ACTIVE_PLAYLIST_KEY, 'l1')
+
+    const { result } = renderHook(() => useLiveTvModel())
+    await waitFor(() => expect(result.current.channels.map((c) => c.name)).toEqual(['A', 'B']))
+    await waitFor(() => expect(result.current.favouriteChannels.map((c) => c.name)).toEqual(['C', 'A']))
+
+    const favouriteC = result.current.favouriteChannels.find((c) => c.name === 'C')
+    expect(favouriteC?.logoFallback ?? null).toBeNull()
+  })
+
+  it('behåller reserven för en favorit i en annan lista när ingen lista har switchen av', async () => {
+    const cWithFallback = { ...C, logoFallback: 'http://logo/c-fallback.png' }
+    vi.mocked(lookupChannels).mockResolvedValue([cWithFallback])
+    writePluginJson(LIVE_TV_PLUGIN_ID, ACTIVE_PLAYLIST_KEY, 'l1')
+
+    const { result } = renderHook(() => useLiveTvModel())
+    await waitFor(() => expect(result.current.channels.map((c) => c.name)).toEqual(['A', 'B']))
+    await waitFor(() => {
+      const favouriteC = result.current.favouriteChannels.find((c) => c.name === 'C')
+      expect(favouriteC?.logoFallback).toBe('http://logo/c-fallback.png')
+    })
+  })
+
   it('INDEX_CHANGED_EVENT laddar om kanalerna, en gång för flera modeller', async () => {
     const first = renderHook(() => useLiveTvModel())
     const second = renderHook(() => useLiveTvModel())
@@ -177,6 +210,84 @@ describe('useLiveTvModel: kanaler ur indexet', () => {
     expect(result.current.groups).toEqual(['Sport', 'News'])
     expect(result.current.activePlaylistId).toBeNull()
     expect(loadedSources()).toEqual(['s1', 's2'])
+  })
+
+  it('skrivbordsappen (Tauri) delar TV-lägets källväljare även utanför TV-läget', async () => {
+    // Spec "Beslut", Källa: `activeList`-grinden lyfts till `tvMode || isDesktopTauri()`.
+    __setTvModeForTests(false)
+    __setDesktopTauriEnvForTests(true)
+    const { result } = renderHook(() => useLiveTvModel())
+    await waitFor(() => expect(result.current.channelsLoading).toBe(false))
+    expect(result.current.activePlaylistId).toBeNull()
+
+    await act(async () => result.current.setActivePlaylist('l2'))
+    await waitFor(() => expect(result.current.channels.map((c) => c.name)).toEqual(['C']))
+    expect(result.current.activePlaylistName).toBe('Nordic')
+  })
+})
+
+describe('loadChannelsShared: reservlogotypens switch per lista', () => {
+  it('tar bort reserven när listans switch är av', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [
+      { id: 'a', name: 'A', createdAt: '', urlTvg: null, epgUrls: [], source: 'http://lista', kind: 'm3u', logoFallbackEnabled: false },
+    ])
+    vi.mocked(loadAllChannels).mockResolvedValue([
+      { name: 'K', url: 'u', group: '', tvgId: null, key: 'K::u', number: 1, tvgIdResolved: null, logo: null, logoFallback: 'http://x/a.png' },
+    ])
+
+    const channels = await loadChannelsShared('http://lista')
+
+    expect(channels[0].logoFallback ?? null).toBeNull()
+  })
+
+  it('behåller reserven när switchen är på', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [
+      { id: 'a', name: 'A', createdAt: '', urlTvg: null, epgUrls: [], source: 'http://lista', kind: 'm3u' },
+    ])
+    vi.mocked(loadAllChannels).mockResolvedValue([
+      { name: 'K', url: 'u', group: '', tvgId: null, key: 'K::u', number: 1, tvgIdResolved: null, logo: null, logoFallback: 'http://x/a.png' },
+    ])
+
+    const channels = await loadChannelsShared('http://lista')
+
+    expect(channels[0].logoFallback).toBe('http://x/a.png')
+  })
+
+  it('rensar minnescachen direkt när switchen ändras — utan att någon indexhändelse skickas', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [
+      { id: 'a', name: 'A', createdAt: '', urlTvg: null, epgUrls: [], source: 'http://lista', kind: 'm3u' },
+    ])
+    vi.mocked(loadAllChannels).mockResolvedValue([
+      { name: 'K', url: 'u', group: '', tvgId: null, key: 'K::u', number: 1, tvgIdResolved: null, logo: null, logoFallback: 'http://x/a.png' },
+    ])
+
+    const first = await loadChannelsShared('http://lista')
+    expect(first[0].logoFallback).toBe('http://x/a.png')
+
+    // Ingen import, ingen EPG-uppdatering, ingen omstart — bara switchen.
+    setLogoFallbackEnabled('a', false)
+
+    const second = await loadChannelsShared('http://lista')
+    expect(second[0].logoFallback ?? null).toBeNull()
+  })
+
+  it('en skrivning som INTE ändrar switchens värde tömmer inte minnescachen', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [
+      { id: 'a', name: 'A', createdAt: '', urlTvg: null, epgUrls: [], source: 'http://lista', kind: 'm3u' },
+    ])
+    vi.mocked(loadAllChannels).mockResolvedValue([
+      { name: 'K', url: 'u', group: '', tvgId: null, key: 'K::u', number: 1, tvgIdResolved: null, logo: null, logoFallback: 'http://x/a.png' },
+    ])
+
+    const first = await loadChannelsShared('http://lista')
+    vi.mocked(loadAllChannels).mockClear()
+
+    // Samma värde som redan gäller (på) — ska INTE räknas som en ändring.
+    setLogoFallbackEnabled('a', true)
+
+    const second = await loadChannelsShared('http://lista')
+    expect(loadAllChannels).not.toHaveBeenCalled()
+    expect(second).toBe(first)
   })
 })
 

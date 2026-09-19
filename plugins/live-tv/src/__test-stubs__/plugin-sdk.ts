@@ -1,7 +1,7 @@
 // Test-only stub of @/lib/plugin-sdk. Mirrors the surface the live-tv plugin
 // uses, with no real persistence. Spies should re-mock per test via vi.spyOn.
 
-import { createElement, type ReactNode } from 'react'
+import { createElement, type ComponentType, type ReactNode } from 'react'
 
 type Listener = () => void
 
@@ -202,6 +202,8 @@ export function __resetForTests(): void {
   pluginMemoryCache.clear()
   pinForTests = null
   sceneBoxPortalTargetForTests = null
+  hostClockForTests = null
+  isDesktopTauriEnv = false
 }
 
 // ---- Profil-PIN (föräldrakontroll) ----
@@ -252,6 +254,18 @@ export const BROWSE_BACK_EVENT = 'lumio-browse-back'
 export function requestBrowseBack(): void {
   window.dispatchEvent(new CustomEvent(BROWSE_BACK_EVENT))
 }
+
+// `getTvClock` är `undefined` som standard (precis som en riktig äldre värd
+// utan klockan): `useTvClockNode` i tv-ui.tsx probar den defensivt och ska
+// falla tillbaka på sin egen dp()-klocka. Tester som vill bevisa VILKEN gren
+// som väljs (scenlåda vs. inte) sätter en dubbelgångare här.
+let hostClockForTests: ComponentType<{ variant?: 'tv' | 'desktop' }> | null = null
+export function __setHostClockForTests(component: ComponentType<{ variant?: 'tv' | 'desktop' }> | null): void {
+  hostClockForTests = component
+}
+export function getTvClock(): ComponentType<{ variant?: 'tv' | 'desktop' }> | null {
+  return hostClockForTests
+}
 export function onTvFocusEdge(_handler: (dir: string, meta?: { claimed: boolean; claim(): void }) => void): () => void {
   return () => {}
 }
@@ -272,6 +286,13 @@ export const TV_SCENE_NARROW_ATTR = 'data-tv-scene-narrow'
  * mätning — aldrig av scenens egen bredd.
  */
 export const TV_SCENE_NARROW_PX = 1024
+/**
+ * Attributet lådan sätter när ytan är FYSISKT telefonsmal (< 700 css-px).
+ * Precis som `TV_SCENE_NARROW_ATTR` är det INGEN garanti för vilken
+ * designbredd scenen räknade mot — bara att den fysiska ytan var smal nog
+ * för att aspektjämförelsen kunnat välja telefongrenen.
+ */
+export const TV_SCENE_PHONE_ATTR = 'data-tv-scene-phone'
 
 /** Attributet lådans inre lager (= portalmålet) bär. */
 const TV_SCENE_PORTAL_ATTR = 'data-tv-scene-portal'
@@ -566,7 +587,10 @@ export function getTvKeyboardPanel(): typeof TvKeyboardPanelStub | null {
 
 // ---- Motorer (ingen riktig uppspelning i test) ----
 export const isTauriEnv = false
-export const isDesktopTauriEnv = false
+export let isDesktopTauriEnv = false
+export function __setDesktopTauriEnvForTests(on: boolean): void {
+  isDesktopTauriEnv = on
+}
 export const isAndroidTauriEnv = false
 export const surfaceCalls: string[] = []
 export async function openMpvPlayer(args: { url: string }): Promise<void> { surfaceCalls.push(`mpv:open:${args.url}`) }
@@ -690,7 +714,7 @@ const watchedListeners = new Set<Listener>()
 export function isMovieWatched(target: { tmdbId?: string | null }): boolean {
   return Boolean(target.tmdbId && watchedMovies.has(target.tmdbId))
 }
-export function toggleMovieWatched(entry: { tmdbId?: string | null }): boolean {
+export function toggleMovieWatched(entry: { tmdbId?: string | null; imdbId?: string | null; title?: string | null; year?: number | null }): boolean {
   const id = entry.tmdbId
   if (!id) return false
   const next = !watchedMovies.has(id)

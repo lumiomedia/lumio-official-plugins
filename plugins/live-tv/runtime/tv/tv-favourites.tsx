@@ -7,12 +7,25 @@ import { formatClock, progressOf } from '../live-tv-ui'
 import type { TvViewProps } from './tv-shell'
 import { ChannelArt, Progress, Tag, TV, cardStyle, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
+import { TvFavouritesPhone } from './mobile/favourites-phone'
 
 function escapeKey(key: string): string {
   return typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(key) : key.replace(/"/g, '\\"')
 }
 
-export function TvFavourites({ model, nav }: TvViewProps) {
+/**
+ * Tidig gren för telefonen: ett EGET komponentträd, inte en `if` inne i
+ * skrivbordsvyn (samma mönster som `TvPlayerChrome`). `phone` läses ur lådans
+ * bredd och kan slå om vid körning (rotation, fönster som breddas); två
+ * separata komponenter monteras om rent, och grenen själv anropar inga krokar
+ * — så kan ingen krok hamna före returen och ge "rendered more/fewer hooks".
+ */
+export function TvFavourites(props: TvViewProps) {
+  return props.phone ? <TvFavouritesPhone {...props} /> : <TvFavouritesDesktop {...props} />
+}
+
+function TvFavouritesDesktop(props: TvViewProps) {
+  const { model, nav } = props
   const { tt, locale } = useTvText()
   const favourites = model.favouriteChannels
   const gridRef = useRef<HTMLDivElement | null>(null)
@@ -36,7 +49,7 @@ export function TvFavourites({ model, nav }: TvViewProps) {
       <div style={{ display: 'flex', alignItems: 'center', gap: dp(16) }}>
         <span style={{ fontSize: dp(34), fontWeight: 600 }}>{tt('favourites')}</span>
         <span style={{ fontSize: dp(18), color: 'rgba(243,244,248,0.5)' }}>{tt('favouritesSub', { count: favourites.length })}</span>
-        <div {...station(() => nav.go('guide', { group: 'all' }), undefined, favourites.length === 0 ? { 'data-init': '' } : {})} style={{ marginLeft: 'auto', height: dp(48), padding: `0 ${dp(22)}px`, borderRadius: 999, border: `1px solid ${TV.lineStrong}`, background: TV.s06, display: 'inline-flex', alignItems: 'center', fontSize: dp(18), cursor: 'pointer' }}>{tt('addFromGuide')}</div>
+        <div {...station(() => nav.go('guide', { group: 'all' }), undefined, favourites.length === 0 ? { 'data-init': '' } : {})} style={{ marginLeft: 'auto', height: dp(48), minHeight: dp(48), padding: `0 ${dp(22)}px`, borderRadius: 999, border: `1px solid ${TV.lineStrong}`, background: TV.s06, display: 'inline-flex', alignItems: 'center', fontSize: dp(18), cursor: 'pointer' }}>{tt('addFromGuide')}</div>
       </div>
       {favourites.length === 0 ? <div style={{ fontSize: dp(20), color: TV.muted }}>{tt('favouritesEmpty')}</div> : null}
       <div ref={gridRef} style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: dp(16) }}>
@@ -73,7 +86,6 @@ export function TvFavourites({ model, nav }: TvViewProps) {
           )
         })}
       </div>
-      <div style={{ fontSize: dp(16), color: TV.faint, paddingBottom: dp(32) }}>{tt('helpFavourites')}</div>
     </div>
   )
 }

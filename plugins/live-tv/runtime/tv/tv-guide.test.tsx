@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { TV_SCENE_BOX_ATTR, __resetForTests, __setDesktopTauriEnvForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { flushLiveTvIndex, seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
 import { getGuideMode } from './tv-settings-store'
+import { dp } from './tv-ui'
 import type { EpgCacheEntry } from '../epg/types'
 
 vi.mock('../live-tv-player', () => ({ LiveTvPlayer: ({ channel }: { channel: { name: string } }) => <div data-testid="player">{channel.name}</div> }))
@@ -21,10 +22,21 @@ const cache: EpgCacheEntry = {
   fetchedAt: now, sources: ['http://x/epg'],
 }
 
-afterEach(cleanup)
+afterEach(() => { cleanup(); __setDesktopTauriEnvForTests(false) })
+/**
+ * LAN/FJÄRR-SVITEN. "Kanalguiden städad på skrivbord och TV" (0.10.0) lade
+ * TV-läget och skrivbordsappen bakom `useNewGuideSurface` (`guide-surface.ts`)
+ * → `TvGuideShell`, vars beteende (lägesstack, Bakåt, paneler, TV-rester)
+ * bor i `guide-shell.test.tsx` och vy-testerna. Den gamla Nu/Sen · Tablå ·
+ * Rutnät · Spellistor-guiden (`TvGuideStandard`) lever orört kvar på
+ * LAN/fjärr-webbklienten (spec "Beslut", Var; "Avgränsningar"), och det är
+ * DEN som testas här: inget TV-läge, ingen Tauri-flagga. `TvGuide: ny yta`
+ * längst ner täcker själva ytgrinden.
+ */
 beforeEach(() => {
   __resetForTests()
-  __setTvModeForTests(true)
+  __setTvModeForTests(false)
+  __setDesktopTauriEnvForTests(false)
   writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list])
   writePluginJson(LIVE_TV_PLUGIN_ID, 'pins', [])
   seedLiveTvIndex({ cache: cache })
@@ -37,7 +49,16 @@ const mount = async (params: Record<string, string> = { view: 'guide' }) => {
   return rendered
 }
 
-describe('TvGuide', () => {
+describe('TvGuideStandard (LAN/fjärr)', () => {
+  it('den gamla guiden finns kvar: fyra lägen i segmentet, toppband och förhandsvisning — inget nytt skal', async () => {
+    await mount()
+    expect(screen.queryByTestId('guide-control-row')).not.toBeInTheDocument()
+    const options = screen.getAllByTestId('tv-segment-option')
+    expect(options.map((o) => o.textContent)).toEqual(['Now / Next', 'Timeline', 'Grid', 'Playlists'])
+    expect(screen.getByTestId('guide-headline')).toBeInTheDocument()
+    // `TvPreview` (sparad bildruta när förhandsvisningen är av) med sin OK-etikett.
+    expect(screen.getByText(/OK = fullscreen/)).toBeInTheDocument()
+  })
   it('visar Nu/Sen/Senare för kanalen med tablå och tomtext för de utan', async () => {
     await mount()
     // "Nu" står både på raden och i toppbandet för den valda kanalen.
@@ -124,6 +145,22 @@ describe('TvGuide', () => {
     expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
     expect(screen.getAllByTestId('guide-row')).toHaveLength(3)
   })
+  // Lagringen delas med den städade guiden (spec "Beslut", Lagring): dess
+  // `nownext`/`timeline` kan ligga kvar från en annan yta på samma profil.
+  it('lagrat nownext (den städade guidens) ritar Nu/Sen', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'nownext')
+    await mount()
+    expect(screen.getByTestId('guide-headline')).toBeInTheDocument()
+    expect(screen.getAllByTestId('guide-row')).toHaveLength(3)
+    expect(screen.queryByTestId('grid-scroll')).not.toBeInTheDocument()
+  })
+  it('lagrat timeline (den städade guidens) ritar Rutnät', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'timeline')
+    await mount()
+    expect(screen.getByTestId('grid-scroll')).toBeInTheDocument()
+    expect(screen.queryByTestId('guide-headline')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('guide-control-row')).not.toBeInTheDocument()
+  })
 })
 
 /**
@@ -132,8 +169,11 @@ describe('TvGuide', () => {
  * guiden, och eftersom läget sparas landade nästa besök i samma bytta läge —
  * spellistevyn hade dessutom ingen växel alls, så vägen tillbaka till den nya
  * guidevyn fanns helt enkelt inte (Jerry, riktig TV, plugin 0.5.0).
+ *
+ * Den städade guidens stack (två byten = två Bakåt, tom stack lämnar guiden)
+ * testas i `guide-shell.test.tsx`; här står LAN-grenens egen stack kvar.
  */
-describe('TvGuide: lägesbyte och Bakåt', () => {
+describe('TvGuideStandard (LAN/fjärr): lägesbyte och Bakåt', () => {
   const mountWithNav = async (onNavigate: (arg: unknown) => void, params: Record<string, string> = { view: 'guide' }) => {
     const rendered = render(<LiveTvTvShell pageId="live-tv-browse" params={params} onNavigate={onNavigate} onOpenDetails={() => {}} />)
     await flushLiveTvIndex()
@@ -169,30 +209,110 @@ describe('TvGuide: lägesbyte och Bakåt', () => {
     expect(onNavigate).toHaveBeenCalledTimes(1)
     expect((onNavigate.mock.calls[0][0] as { params: Record<string, string> }).params.view).toBe('hub')
   })
+})
 
-  it('två byten kräver två Bakåt — ett läge per tryck', async () => {
-    await mount()
-    fireEvent.click(screen.getByText('Timeline'))
+describe('TvGuideStandard (LAN/fjärr): kanalkolumnens layoutkontext (fixrunda 1)', () => {
+  // Lådan måste bort i `afterEach` — se M-P2:s skaltest/rapport.
+  let box: HTMLElement | null = null
+  afterEach(() => { box?.remove(); box = null })
+
+  const mountInBox = async () => {
+    box = document.createElement('div')
+    box.setAttribute(TV_SCENE_BOX_ATTR, '1')
+    document.body.appendChild(box)
+    const rendered = render(<LiveTvTvShell pageId="live-tv-browse" params={{ view: 'guide' }} onNavigate={() => {}} onOpenDetails={() => {}} />, { container: box })
     await flushLiveTvIndex()
-    fireEvent.click(screen.getByText('Playlists'))
-    await flushLiveTvIndex()
-    fireEvent.keyDown(window, { key: 'Backspace' })
-    await flushLiveTvIndex()
-    expect(screen.getByTestId('now-line')).toBeInTheDocument()
-    expect(getGuideMode()).toBe('tl')
-    fireEvent.keyDown(window, { key: 'Backspace' })
-    await flushLiveTvIndex()
-    expect(screen.queryByTestId('now-line')).toBeNull()
-    expect(getGuideMode()).toBe('now')
+    return rendered
+  }
+
+  // FYND 1 (granskning): ett gemensamt TAL räckte inte — `ChannelCell` fyller
+  // alltid ut till 100 %, så det som faktiskt avgör bredden är layouten på
+  // wrappern (`guide-row`) och rubrikkolumnen. Testerna nedan läser DEN
+  // stilen, inte cellens egen (som alltid är '100%'). Fas 2:s telefongren
+  // (flex 1 + breddgolv) är borta sedan fas 3 — telefonen får en egen guide.
+  it('rubrikkolumnen bär EXAKT samma layout som raden', async () => {
+    await mountInBox()
+    const header = screen.getByTestId('guide-channel-col-header')
+    const row = screen.getAllByTestId('guide-row')[0]
+    for (const prop of ['flexGrow', 'flexShrink', 'flexBasis', 'minWidth', 'width'] as const) {
+      expect(header.style[prop]).toBe(row.style[prop])
+    }
   })
 
-  it('utan lägesbyte i sessionen lämnar Bakåt guiden precis som förut', async () => {
+  it('raden och rubrikkolumnen behåller 520 dp och ingen krympning på skrivbordet/TV', async () => {
+    await mountInBox()
+    const row = screen.getAllByTestId('guide-row')[0]
+    const header = screen.getByTestId('guide-channel-col-header')
+    expect(row.style.width).toBe(`${dp(520)}px`)
+    expect(row.style.flexShrink).toBe('0')
+    expect(header.style.width).toBe(`${dp(520)}px`)
+    expect(header.style.flexShrink).toBe('0')
+  })
+})
+
+describe('TvGuideStandard (LAN/fjärr): orimligt långa kanalnamn klipps', () => {
+  // FYND 2 (granskning): `width: '100%'` i en osizead wrapper triggar
+  // sannolikt aldrig ellipsen — cellen växer med namnet i stället för att
+  // klippa. Egen kanallista med ett orimligt långt namn, isolerad till detta
+  // describe-block så den inte stör de andra testernas A/B/C-antaganden.
+  const longName = 'X'.repeat(180) + ' Ett Orimligt Långt Kanalnamn Som Aldrig Ska Få Spränga Raden'
+  let box: HTMLElement | null = null
+  afterEach(() => { box?.remove(); box = null })
+  beforeEach(() => {
+    const longList: LiveTvList = { id: 'l1', name: 'Xtream', channels: [ch(longName, 'Sport')], createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null }
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [longList])
+    seedLiveTvIndex()
+  })
+
+  it('kanalcellens namnrad klipper i stället för att sprängas', async () => {
+    box = document.createElement('div')
+    box.setAttribute(TV_SCENE_BOX_ATTR, '1')
+    document.body.appendChild(box)
+    render(<LiveTvTvShell pageId="live-tv-browse" params={{ view: 'guide' }} onNavigate={() => {}} onOpenDetails={() => {}} />, { container: box })
+    await flushLiveTvIndex()
+    const cell = screen.getByTestId('guide-channel-cell')
+    const nameEl = within(cell).getByText(longName)
+    expect(nameEl).toHaveStyle({ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' })
+    // Raden som håller cellen bär den delade layoutkontexten (fast bredd,
+    // ingen krympning) — inte en bredd som sväller med innehållet.
+    const row = screen.getByTestId('guide-row')
+    expect(row.style.width).toBe(`${dp(520)}px`)
+    expect(row.style.flexShrink).toBe('0')
+  })
+})
+
+// Jerrys uppföljning: fjärrhjälpen ("OK watch · hold OK menu · ◂▸ category")
+// ska bort HELT, ingen ersättningstext någonstans. På TV/skrivbord når ingen
+// längre den här guiden (skalet har egen grind i `guide-shell.test.tsx`).
+describe('TvGuideStandard (LAN/fjärr) fjärrhjälp (borttagen, Jerrys uppföljning)', () => {
+  it('renderas aldrig', async () => {
+    await mount()
+    expect(screen.queryByText('OK watch · hold OK menu · ◂▸ category')).not.toBeInTheDocument()
+  })
+})
+
+/**
+ * Ytgrinden (spec 1, "Guidens skal"): TV-läget OCH skrivbordsappen (Tauri,
+ * inte telefon) går via `useNewGuideSurface` → `TvGuideShell`. Skalets egen
+ * svit (`guide-shell.test.tsx`) täcker normalisering, paneler, Bakåt och
+ * TV-resterna — här bara att grenen tas och att den gamla guiden inte
+ * ritas bredvid.
+ */
+describe('TvGuide: ny yta (newGuide → TvGuideShell)', () => {
+  it('TV-läget grenar till skalet: kontrollrad, inga gamla spellistkolumner', async () => {
+    __setTvModeForTests(true)
     writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'playlists')
-    const onNavigate = vi.fn()
-    await mountWithNav(onNavigate)
-    expect(screen.getAllByTestId('pl-row').length).toBeGreaterThan(0)
-    fireEvent.keyDown(window, { key: 'Backspace' })
-    expect(onNavigate).toHaveBeenCalledTimes(1)
-    expect((onNavigate.mock.calls[0][0] as { params: Record<string, string> }).params.view).toBe('hub')
+    await mount()
+    expect(screen.getByTestId('guide-control-row')).toBeInTheDocument()
+    expect(screen.queryByTestId('playlists-column')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('guide-headline')).not.toBeInTheDocument()
+  })
+
+  it('skrivbordsappen (Tauri, inte TV-läge) grenar också till skalet — utan toppband och förhandsvisning', async () => {
+    __setDesktopTauriEnvForTests(true)
+    await mount()
+    expect(screen.getByTestId('guide-control-row')).toBeInTheDocument()
+    expect(screen.queryByTestId('guide-headline')).not.toBeInTheDocument()
+    expect(screen.queryByText(/OK = fullscreen/)).not.toBeInTheDocument()
   })
 })

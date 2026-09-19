@@ -1,7 +1,21 @@
 import { useState } from 'react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, createEvent, fireEvent, render, screen } from '@testing-library/react'
-import { ChannelArt, Chip, Progress, RoundBtn, Tag, TvFocusStyle, dp, station } from './tv-ui'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { act, cleanup, createEvent, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import * as sdk from '@/lib/plugin-sdk'
+import { TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR, __setHostClockForTests } from '@/lib/plugin-sdk'
+import { ChannelArt, Chip, Progress, RoundBtn, Tag, TvFocusStyle, dp, station, useTvClockNode } from './tv-ui'
+import { __resetLogoQueueForTests } from '../live-tv-logo-image'
+
+// happy-dom har en riktig IntersectionObserver som aldrig rapporterar
+// intersection i test — utan den odefinierad hänger ChannelArts logotyp i
+// laddkön för evigt och `src`-attributet sätts aldrig.
+vi.stubGlobal('IntersectionObserver', undefined)
+
+// Laddkön är modulglobal (se live-tv-logo-image.tsx) — utan nollställning tar
+// återanvända URL:er cache-genvägen i stället för att gå genom kön.
+beforeEach(() => {
+  __resetLogoQueueForTests()
+})
 
 afterEach(cleanup)
 
@@ -46,6 +60,29 @@ describe('tv-ui', () => {
   it('ChannelArt visar initialer utan logotyp och bildruta', () => {
     render(<ChannelArt channel={{ name: 'Sky Sports', logo: null }} />)
     expect(screen.getByText('SS')).toBeInTheDocument()
+  })
+
+  it('ChannelArt kanalkortet skickar med reserven', () => {
+    render(
+      <ChannelArt channel={{ name: 'K', logo: 'http://p/a.png', logoFallback: 'http://p/b.png' }} />,
+    )
+    const img = document.querySelector('img.lumio-tv-logo-img') as HTMLImageElement
+    fireEvent.error(img)
+    expect(img.getAttribute('src')).toContain(encodeURIComponent('http://p/b.png'))
+  })
+
+  it('ChannelArt: kanal utan leverantörslogotyp går direkt på reserven', () => {
+    render(
+      <ChannelArt channel={{ name: 'K', logo: null, logoFallback: 'http://p/b.png' }} />,
+    )
+    const img = document.querySelector('img.lumio-tv-logo-img') as HTMLImageElement
+    expect(img.getAttribute('src')).toContain(encodeURIComponent('http://p/b.png'))
+  })
+
+  it('ChannelArt: kanal utan både och visar initialerna', () => {
+    render(<ChannelArt channel={{ name: 'Kanal Ett', logo: null, logoFallback: null }} />)
+    expect(document.querySelector('img.lumio-tv-logo-img')).toBeNull()
+    expect(screen.getByText('KE')).toBeInTheDocument()
   })
 })
 
@@ -262,5 +299,149 @@ describe('verktygstips på trunkerade titlar', () => {
   it('Tag släpper igenom title', () => {
     render(<Tag variant="neutral" title="Hela taggen">Ta…</Tag>)
     expect(screen.getByText('Ta…')).toHaveAttribute('title', 'Hela taggen')
+  })
+})
+
+// Jerrys återkoppling 2026-09-14: "Välkomstmeddelandet i högra hörnet har
+// förminskats i desktop" — värdens klocka (HostClock) är skriven i äkta
+// rem/px och krymper med scenlådans `transform: scale()` om den hamnar
+// INUTI lådan. Commit 2541690 bytte i det läget ut HostClock mot pluginets
+// egen dp()-klocka — men granskningen visade att bytet tog bort HÄLSNINGEN
+// ("God natt Jerry" + kontextrad), inte bara storleken, för pluginets egen
+// klocka visar bara tid/datum/veckodag. Uppföljningen nedan kompenserar i
+// stället HostClock med inversen av lådans skala, och faller bara tillbaka
+// på 2541690:s lösning när inversen inte går att räkna fram.
+function HostClockMarker({ variant }: { variant?: 'tv' | 'desktop' }) {
+  return <span data-testid="host-clock">host:{variant}</span>
+}
+
+function ClockProbe() {
+  return <>{useTvClockNode('en-GB')}</>
+}
+
+afterEach(() => {
+  __setHostClockForTests(null)
+  // Lådor som testerna nedan monterar direkt i `document.body` (utanför
+  // `render`s egen container) städas inte av `cleanup()` — en kvarglömd låda
+  // hade fått ETT senare tests `useInSceneBox()` (som frågar hela dokumentet)
+  // att svara fel.
+  document.querySelectorAll(`[${TV_SCENE_BOX_ATTR}]`).forEach((el) => el.remove())
+})
+
+describe('useTvClockNode i en scenlåda (Jerrys återkoppling 2026-09-14)', () => {
+  it('använder värdens klocka oskalad — ingen låda', () => {
+    __setHostClockForTests(HostClockMarker)
+    render(<ClockProbe />)
+    expect(screen.getByTestId('host-clock')).toBeInTheDocument()
+  })
+
+  it('kompenserar värdens klocka med INVERSEN av lådans skala, i stället för att byta bort hälsningen', () => {
+    __setHostClockForTests(HostClockMarker)
+    const box = document.createElement('div')
+    box.setAttribute(TV_SCENE_BOX_ATTR, '1')
+    box.style.setProperty('--tv-scene-box-scale', '0.6')
+    document.body.appendChild(box)
+    render(<ClockProbe />, { container: box })
+    // Fortfarande värdens klocka — hälsningen är kvar.
+    const clock = screen.getByTestId('host-clock')
+    expect(clock).toBeInTheDocument()
+    // ...men lindad i inversen av lådans skala, så den ritas i äkta storlek.
+    const wrapper = clock.parentElement as HTMLElement
+    expect(wrapper.style.transform).toBe(`scale(${1 / 0.6})`)
+    expect(wrapper.style.transformOrigin).toBe('top right')
+  })
+
+  it('följer med när lådan mäter om sig (fönsterändring)', async () => {
+    __setHostClockForTests(HostClockMarker)
+    const box = document.createElement('div')
+    box.setAttribute(TV_SCENE_BOX_ATTR, '1')
+    box.style.setProperty('--tv-scene-box-scale', '0.6')
+    document.body.appendChild(box)
+    render(<ClockProbe />, { container: box })
+    box.style.setProperty('--tv-scene-box-scale', '0.75')
+    await waitFor(() => {
+      const clock = screen.getByTestId('host-clock')
+      expect((clock.parentElement as HTMLElement).style.transform).toBe(`scale(${1 / 0.75})`)
+    })
+  })
+
+  it('faller tillbaka på pluginets EGEN dp()-klocka (2541690) om SDK:t saknar tvSceneBoxScale (äldre app)', () => {
+    __setHostClockForTests(HostClockMarker)
+    const box = document.createElement('div')
+    box.setAttribute(TV_SCENE_BOX_ATTR, '1')
+    box.style.setProperty('--tv-scene-box-scale', '0.6')
+    document.body.appendChild(box)
+    const original = sdk.tvSceneBoxScale
+    // @ts-expect-error simulerar en äldre värd vars plugin-sdk aldrig
+    // exporterat funktionen — `useSceneBoxScale` ska svara `null`, inte kasta.
+    delete sdk.tvSceneBoxScale
+    try {
+      render(<ClockProbe />, { container: box })
+      expect(screen.queryByTestId('host-clock')).not.toBeInTheDocument()
+      expect(screen.getByText(/^\d{2}:\d{2} \| /)).toBeInTheDocument()
+    } finally {
+      // @ts-expect-error återställer den borttagna exporten efter testet
+      sdk.tvSceneBoxScale = original
+    }
+  })
+
+  it('faller tillbaka på pluginets EGEN dp()-klocka om skalan är odefinierad', () => {
+    __setHostClockForTests(HostClockMarker)
+    const box = document.createElement('div')
+    box.setAttribute(TV_SCENE_BOX_ATTR, '1')
+    document.body.appendChild(box)
+    const spy = vi.spyOn(sdk, 'tvSceneBoxScale').mockReturnValue(undefined as unknown as number)
+    render(<ClockProbe />, { container: box })
+    expect(screen.queryByTestId('host-clock')).not.toBeInTheDocument()
+    expect(screen.getByText(/^\d{2}:\d{2} \| /)).toBeInTheDocument()
+    spy.mockRestore()
+  })
+
+  it('faller tillbaka på pluginets EGEN dp()-klocka om skalan är 0', () => {
+    // SDK:ts EGEN `tvSceneBoxScale` självläker redan ett rått 0/NaN till sitt
+    // fallbackvärde 1 (se plugin-sdk.ts) — testet mockar funktionen direkt
+    // för att bevisa att `useTvClockNode` inte litar blint på SDK:t heller.
+    __setHostClockForTests(HostClockMarker)
+    const box = document.createElement('div')
+    box.setAttribute(TV_SCENE_BOX_ATTR, '1')
+    document.body.appendChild(box)
+    const spy = vi.spyOn(sdk, 'tvSceneBoxScale').mockReturnValue(0)
+    render(<ClockProbe />, { container: box })
+    expect(screen.queryByTestId('host-clock')).not.toBeInTheDocument()
+    expect(screen.getByText(/^\d{2}:\d{2} \| /)).toBeInTheDocument()
+    spy.mockRestore()
+  })
+
+  // Jerrys uppföljning samma dag: inversen ovan reserverar ingen layoutplats
+  // (bara MÅLNINGEN växer med 1/skala) — klockan sitter som sista flex-item
+  // med `marginLeft: 'auto'` bland andra chips, och vid en smal låda (låg
+  // skala → invers uppåt 1,3–1,7×) målas den över grannchipsen. `useNarrowSurface`
+  // läser SAMMA lådas `data-tv-scene-narrow` (< 1024 css-px, precis det spannet
+  // där inversen blir stor) — så en smal låda ska hellre visa pluginets EGEN
+  // kompakta dp()-klocka än riskera överlappet, medan en bred låda fortsatt
+  // får hälsningen.
+  it('smal låda (< 1024 css-px): kompakta dp()-klockan i stället för inversskalad HostClock (överlappsrisk)', () => {
+    __setHostClockForTests(HostClockMarker)
+    const box = document.createElement('div')
+    box.setAttribute(TV_SCENE_BOX_ATTR, '1')
+    box.setAttribute(TV_SCENE_NARROW_ATTR, '1')
+    box.style.setProperty('--tv-scene-box-scale', '0.6')
+    document.body.appendChild(box)
+    render(<ClockProbe />, { container: box })
+    expect(screen.queryByTestId('host-clock')).not.toBeInTheDocument()
+    expect(screen.getByText(/^\d{2}:\d{2} \| /)).toBeInTheDocument()
+  })
+
+  it('bred låda (data-tv-scene-narrow ej satt): behåller inversskalad HostClock (hälsningen)', () => {
+    __setHostClockForTests(HostClockMarker)
+    const box = document.createElement('div')
+    box.setAttribute(TV_SCENE_BOX_ATTR, '1')
+    box.style.setProperty('--tv-scene-box-scale', '0.6')
+    document.body.appendChild(box)
+    render(<ClockProbe />, { container: box })
+    const clock = screen.getByTestId('host-clock')
+    expect(clock).toBeInTheDocument()
+    const wrapper = clock.parentElement as HTMLElement
+    expect(wrapper.style.transform).toBe(`scale(${1 / 0.6})`)
   })
 })

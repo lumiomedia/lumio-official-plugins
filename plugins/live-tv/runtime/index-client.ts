@@ -224,6 +224,34 @@ export async function resetSource(source: string): Promise<void> {
   await postJson('/api/live-tv/reset', { source })
 }
 
+/**
+ * Ber appen komplettera reservlogotyper (`logoFallback`) för en källas
+ * kanaler mot iptv-org-registret ("Komplettera"-knappen). Går INTE via
+ * `postJson`/`requestJson`: ett fel-svar här bär appens feltext rakt i
+ * kroppen (inte JSON), så den läses som text och blir felmeddelandet — annars
+ * hade anroparen bara sett "returned 502" utan att veta varför.
+ *
+ * Avviker medvetet från filens mönster för händelsen: `resetSource` och
+ * `batchChannels` sänder INTE `emitIndexChanged()` själva — det gör deras
+ * anropare (`live-tv-data.ts` respektive `storage-v2-migration.ts`). Här
+ * sänder funktionen den själv, eftersom indexet faktiskt är ändrat så fort
+ * svaret kommer — en anropare ska alltså INTE sända den igen.
+ */
+export async function completeLogos(source: string): Promise<{ matched: number; total: number }> {
+  const res = await fetch('/api/live-tv/logo-fallback', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ source }),
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(text || `/api/live-tv/logo-fallback returned ${res.status}`)
+  }
+  const data = (await res.json()) as { matched?: number; total?: number }
+  emitIndexChanged()
+  return { matched: data.matched ?? 0, total: data.total ?? 0 }
+}
+
 export async function startImport(body: {
   source: string
   m3u?: { url: string }

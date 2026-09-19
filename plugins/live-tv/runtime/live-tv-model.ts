@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  clearPluginMemoryCache,
   clearPluginMemoryCacheByPrefix,
   getPluginMemoryCache,
   setPluginMemoryCache,
@@ -23,6 +24,7 @@ import {
   type IndexChannel,
 } from './index-client'
 import { clearResolvedChannels, getResolvedChannels, resolveChannelKeys } from './channel-resolver'
+import { isDesktopTauri } from './tv/guide-surface'
 import { migrateStorageV2 } from './storage-v2-migration'
 import { getChannelHistory, onChannelHistoryChanged, type ChannelHistoryEntry } from './channel-history'
 import { useReminders, type Reminder } from './reminders'
@@ -36,6 +38,7 @@ import {
   getLiveTvLists,
   getPinnedLiveTvKeys,
   importMissingSources,
+  isLogoFallbackEnabled,
   onLiveTvListsChanged,
   onPinnedLiveTvKeysChanged,
   togglePinnedLiveTvChannel,
@@ -270,6 +273,52 @@ export function invalidateChannels(): void {
 }
 
 /**
+ * Switchens värde per källa, senast sedd. Bara diffen mot den här (inte
+ * "listorna ändrades") avgör om minnescachen ska kastas — `lists` skrivs om
+ * av mycket annat (import, kvitto, EPG-inställning), och en sådan skrivning
+ * ska inte tömma redan varma kanaler bara för att den råkar trigga samma
+ * händelse som switchen.
+ */
+let logoFallbackStateBySource: Map<string, boolean> | null = null
+let logoFallbackSwitchSubscription: (() => void) | null = null
+
+function logoFallbackStateSnapshot(): Map<string, boolean> {
+  const lists = getLiveTvLists()
+  const sources = new Set(lists.map((list) => list.source).filter((source): source is string => Boolean(source)))
+  const snapshot = new Map<string, boolean>()
+  for (const source of sources) {
+    // Samma "första listan för källan vinner"-upplösning som
+    // `applyLogoFallbackSwitch` använder vid laddning.
+    const list = lists.find((entry) => entry.source === source)
+    if (list) snapshot.set(source, isLogoFallbackEnabled(list))
+  }
+  return snapshot
+}
+
+/**
+ * Utan den här väcktes bara `onLiveTvListsChanged` (rätt lagringshändelse,
+ * men ingen lyssnare gjorde något med den för minnescachen) — kanalerna som
+ * redan låg varma i minnet behöll sitt gamla `logoFallback` tills nästa
+ * indexhändelse (import/EPG-uppdatering) eller omstart råkade tömma cachen.
+ * Att slå av/på switchen skulle alltså se ut att fungera men inte göra
+ * något förrän något helt orelaterat hände.
+ */
+function ensureLogoFallbackSwitchSubscription(): void {
+  if (logoFallbackSwitchSubscription || typeof window === 'undefined') return
+  logoFallbackStateBySource = logoFallbackStateSnapshot()
+  logoFallbackSwitchSubscription = onLiveTvListsChanged(() => {
+    const next = logoFallbackStateSnapshot()
+    const previous = logoFallbackStateBySource
+    logoFallbackStateBySource = next
+    for (const [source, enabled] of next) {
+      if (previous?.get(source) === enabled) continue
+      clearPluginMemoryCache(LIVE_TV_PLUGIN_ID, channelsCacheKey(source))
+      clearPluginMemoryCache(LIVE_TV_PLUGIN_ID, channelsCacheKey(null))
+    }
+  })
+}
+
+/**
  * "Alla kanaler" = UNIONEN av källorna, inte en egen hämtning.
  *
  * `/query` utan `source` svarar med hela indexet — men svaret bär ingen
@@ -310,10 +359,55 @@ async function loadEveryChannel(signal?: AbortSignal): Promise<IndexChannel[]> {
 }
 
 /**
+ * Nollar `logoFallback` på kanalerna från en källa vars lista har switchen
+ * av (spec 2026-09-14-live-tv-logos-v2). Kanalerna är färska ur svaret och
+ * inte cachade än, så en mutation är rätt ställe — ingen kopia av potentiellt
+ * tiotusentals kanalobjekt bara för att nolla ett fält.
+ */
+function applyLogoFallbackSwitch(source: string, items: IndexChannel[]): void {
+  const list = getLiveTvLists().find((entry) => entry.source === source)
+  if (!list || isLogoFallbackEnabled(list)) return
+  for (const item of items) {
+    if (item.logoFallback != null) item.logoFallback = null
+  }
+}
+
+/**
+ * Samma switch, för en kanal utanför den laddade uppsättningen (favorit/
+ * historik i TV-läget, spec P1-fynd 1). `applyLogoFallbackSwitch` ovan
+ * tillämpas bara på det en enskild `loadChannelsShared(source)` just laddat —
+ * favoriter/historik i andra listor slås i stället upp EN OCH EN via
+ * `channel-resolver.ts`, en väg som aldrig gick genom switchen.
+ *
+ * Kanalobjekt bär ingen källa (samma begränsning som modellens `listFor`), så
+ * en säker attribuering finns bara för EMBEDDADE kanaler (manuella listor,
+ * `listByUrl` — exakt den grund `listFor` redan använder). För indexerade
+ * listor går det inte att veta vilken av dem en enskild uppslagen kanal hör
+ * till: så länge NÅGON av dem har switchen av kan just den kanalen komma
+ * därifrån, så reserven nollas hellre än att visas utan täckning. Först när
+ * INGEN indexerad lista har switchen av är det bevisat säkert att låta den
+ * vara.
+ */
+function applyLogoFallbackSwitchToExtra<T extends M3uChannel>(
+  channel: T,
+  lists: LiveTvList[],
+  listByUrl: Map<string, LiveTvList>,
+): T {
+  if (channel.logoFallback == null) return channel
+  const owner = listByUrl.get(channel.url)
+  if (owner) return isLogoFallbackEnabled(owner) ? channel : { ...channel, logoFallback: null }
+  const anyIndexedListDisabled = lists.some(
+    (list) => list.kind !== 'custom' && Boolean(list.source) && !isLogoFallbackEnabled(list),
+  )
+  return anyIndexedListDisabled ? { ...channel, logoFallback: null } : channel
+}
+
+/**
  * Kanalerna för en källa. Returnerar minnescachen direkt när den är varm,
  * annars den pågående hämtningen (eller startar den).
  */
 export function loadChannelsShared(source: string | null): Promise<IndexChannel[]> {
+  ensureLogoFallbackSwitchSubscription()
   const cacheKey = channelsCacheKey(source)
   const cached = getPluginMemoryCache<IndexChannel[]>(LIVE_TV_PLUGIN_ID, cacheKey)
   if (cached) return Promise.resolve(cached)
@@ -328,6 +422,7 @@ export function loadChannelsShared(source: string | null): Promise<IndexChannel[
     const items = source === null
       ? await loadEveryChannel(controller?.signal)
       : await loadAllChannels(source, undefined, controller?.signal)
+    if (source !== null) applyLogoFallbackSwitch(source, items)
     setPluginMemoryCache(LIVE_TV_PLUGIN_ID, cacheKey, items)
     return items
   })()
@@ -366,6 +461,9 @@ export function __resetLiveTvModelForTests(): void {
   indexSubscription?.()
   indexSubscription = null
   generationListeners.clear()
+  logoFallbackSwitchSubscription?.()
+  logoFallbackSwitchSubscription = null
+  logoFallbackStateBySource = null
 }
 
 export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
@@ -398,12 +496,18 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
    *
    * Hooken kallas ovillkorligt (hooks-reglerna) — det är bara dess RESULTAT
    * som grindar filtret.
+   *
+   * Skrivbordsappen (Tauri) delar samma källväljare sedan den städade guiden
+   * (spec "Beslut", Källa): `isDesktopTauri()` är ingen hook (läser bara en
+   * modulflagga), så den får läggas till i samma villkor utan att bryta
+   * hooks-reglerna.
    */
   const tvMode = useTvMode()
+  const activeListGate = tvMode || isDesktopTauri()
   // Vald spellista som inte längre finns → tillbaka till alla.
   const activeList = useMemo(
-    () => (tvMode ? lists.find((list) => list.id === activePlaylistId) ?? null : null),
-    [tvMode, lists, activePlaylistId],
+    () => (activeListGate ? lists.find((list) => list.id === activePlaylistId) ?? null : null),
+    [activeListGate, lists, activePlaylistId],
   )
   const activeSource = activeList?.source ?? null
 
@@ -479,22 +583,6 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
     () => new Map(channels.map((channel, index) => [channelKey(channel), index + 1])),
     [channels],
   )
-  const byKey = useMemo(() => {
-    const map = new Map<string, M3uChannel>()
-    for (const channel of Object.values(extras)) map.set(channel.key, channel)
-    for (const channel of channels) map.set(channelKey(channel), channel)
-    return map
-  }, [channels, extras])
-  const byUrl = useMemo(() => {
-    const map = new Map<string, M3uChannel>()
-    for (const channel of byKey.values()) if (!map.has(channel.url)) map.set(channel.url, channel)
-    return map
-  }, [byKey])
-  const groups = useMemo(() => topGroups(channels), [channels])
-  const playlists = useMemo(
-    () => lists.map((list) => ({ id: list.id, name: list.name, count: list.channelCount ?? list.channels?.length ?? 0 })),
-    [lists],
-  )
   /**
    * Listan en kanal kom från. Efter v2 bär listorna inga kanaler, så kopplingen
    * går via den aktiva källan (TV) eller — när det bara finns en lista — den.
@@ -505,6 +593,36 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
     for (const list of lists) for (const channel of list.channels ?? []) if (!map.has(channel.url)) map.set(channel.url, list)
     return map
   }, [lists])
+  /**
+   * Reservlogotypens switch för de kanaler `extras` bär (favoriter/historik
+   * utanför den laddade uppsättningen, se `applyLogoFallbackSwitchToExtra`).
+   * Ligger i ett eget minne — inte i själva `extras`-tillståndet — så en
+   * switch som ändras EFTER uppslaget klipps direkt vid nästa render, utan
+   * att behöva slå upp kanalen igen.
+   */
+  const extrasWithLogoFallbackSwitch = useMemo(() => {
+    const out: Record<string, IndexChannel> = {}
+    for (const [key, channel] of Object.entries(extras)) {
+      out[key] = applyLogoFallbackSwitchToExtra(channel, lists, listByUrl)
+    }
+    return out
+  }, [extras, lists, listByUrl])
+  const byKey = useMemo(() => {
+    const map = new Map<string, M3uChannel>()
+    for (const channel of Object.values(extrasWithLogoFallbackSwitch)) map.set(channel.key, channel)
+    for (const channel of channels) map.set(channelKey(channel), channel)
+    return map
+  }, [channels, extrasWithLogoFallbackSwitch])
+  const byUrl = useMemo(() => {
+    const map = new Map<string, M3uChannel>()
+    for (const channel of byKey.values()) if (!map.has(channel.url)) map.set(channel.url, channel)
+    return map
+  }, [byKey])
+  const groups = useMemo(() => topGroups(channels), [channels])
+  const playlists = useMemo(
+    () => lists.map((list) => ({ id: list.id, name: list.name, count: list.channelCount ?? list.channels?.length ?? 0 })),
+    [lists],
+  )
 
   /** Favoriter och historik kan peka på kanaler utanför den laddade uppsättningen. */
   const loadedKeys = useMemo(() => new Set(channels.map((channel) => channelKey(channel))), [channels])
@@ -657,8 +775,33 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
          * programantalet som "hämtar 480 000 av 17 000 kanaler".
          */
         epgRefreshRequested.add(listId)
-        const job = await refreshEpg(listId, epgUrls, sources)
-        await waitForJob(job)
+        try {
+          const job = await refreshEpg(listId, epgUrls, sources)
+          await waitForJob(job)
+        } catch (error) {
+          /*
+            EN MISSLYCKAD HÄMTNING RÄKNAS INTE SOM GJORD (Jerry 2026-09-19:
+            "första gången jag öppnade Live TV stod det att epg hade failat
+            att fetcha, och ingen epg visades … efter jag gick ur/in funkade
+            det").
+
+            Flaggan sätts FÖRE anropet med flit — den hindrar att varje
+            monterad modell startar sitt eget jobb. Men den togs aldrig bort
+            igen: setet rensas bara av testhjälparen, så ett fel här (nätet,
+            eller appen upptagen med importerna precis vid start) gjorde att
+            listan var utkvitterad för resten av sidladdningen och INGEN
+            senare montering försökte om. Tablån blev alltså tom tills appen
+            startades om — precis det läget som självläkte när jobbet ändå
+            gick klart i Rust och nästa ögonblicksbild råkade hitta färsk
+            data.
+
+            Nu släpps flaggan vid fel, så nästa montering får försöka. Herden
+            är fortfarande skyddad: så länge anropet är i luften står flaggan
+            kvar.
+          */
+          epgRefreshRequested.delete(listId)
+          throw error
+        }
         if (!live) return
         const next = await fetchNowSnapshot(listId, activeSource, { force: true })
         if (!live) return

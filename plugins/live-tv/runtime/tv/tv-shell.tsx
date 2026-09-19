@@ -8,8 +8,10 @@ import { LIVE_TV_BROWSE_PAGE_ID, encodeChannelParams, type PlayRequest } from '.
 import { PinGate } from '../live-tv-ui'
 import { activeProfileHasPin, isUnlockedThisSession, markUnlockedThisSession, pinSupportAvailable, toggleChannelLock, verifyActiveProfilePin } from '../channel-locks'
 import { useNarrowSurface } from '../hooks/useNarrowSurface'
+import { usePhoneSurface } from '../hooks/usePhoneSurface'
 import { useSwipeBack } from '../hooks/useSwipeBack'
 import { useTvText } from './tv-strings'
+import { isDesktopTauri } from './guide-surface'
 import { TV, TvFocusStyle, dp, station, Icons } from './tv-ui'
 import { TvHoldAffordance } from './tv-hold-affordance'
 import { useTvSettings, type TvSettings } from './tv-settings-store'
@@ -20,6 +22,8 @@ import { cutoutClipPath, useSurfaceCutouts, type SurfaceCutout } from './surface
 import { buildTvPlayerProps } from './tv-player-props'
 import type { LiveTvPlayerTvProps } from './tv-player-types'
 import { TV_VIEWS } from './tv-views'
+import { MobileTabBar } from './mobile/mobile-tab-bar'
+import { MobileSheet } from './mobile/mobile-sheet'
 
 /**
  * TV-SKALETS BAKGRUND MED HÅL.
@@ -110,7 +114,7 @@ export interface TvNav {
   playerOpen: boolean
 }
 
-export interface TvViewProps { model: LiveTvModel; nav: TvNav; params: Record<string, string>; settings: TvSettings }
+export interface TvViewProps { model: LiveTvModel; nav: TvNav; params: Record<string, string>; settings: TvSettings; phone: boolean }
 
 /**
  * Vad PIN-grinden väntar på.
@@ -145,12 +149,15 @@ const ZAP_TIMEOUT_MS = 1500
  * appens sidomeny i stället för i stället för den, och 104 px blev en tom
  * marginal mellan två menyer — därför 84 (Jerry 2026-09-14).
  *
- * FAS 2: här ersätts den komprimerade ikonraden av en bottenrad (spec §2).
- * Villkoret (`useNarrowSurface`) och måttet (`RAIL_W_NARROW`) samlas här så
- * fas 2 har ett ställe att ändra på.
+ * FAS 1 (smal yta som INTE är en telefon, t.ex. ett smalt skrivbordsfönster):
+ * raden komprimeras till `RAIL_W_NARROW`, den döljs inte — se
+ * `usePhoneSurface`-kommentaren nedan för varför en TELEFON hanteras
+ * annorlunda.
  *
- * Raden DÖLJS inte på en smal yta i fas 1 (koordinatorbeslut 2026-09-14): en
- * telefon utan rad har ingen navigering alls. Den komprimeras i stället.
+ * TELEFON (`usePhoneSurface`, fas 3): raden finns inte alls — telefonen får
+ * en flik-rad i botten (`MobileTabBar`) och ett bottenark för det som inte
+ * ryms där (`MobileSheet`). Måtten här gäller därför bara TV, skrivbord och
+ * en smal-men-inte-telefon yta.
  */
 const RAIL_W_TV = 104
 const RAIL_W_DESKTOP = 84
@@ -208,8 +215,34 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
    * är ändå med så en kvarglömd låda aldrig kan krympa TV-raden.
    */
   const narrow = useNarrowSurface(rootRef) && !isTv
+  /**
+   * Telefon = värdens mätning av lådan, aldrig ett eget breddtal — precis som
+   * `narrow` ovan. En telefon är ALLTID också smal (spec), men det omvända
+   * gäller inte: ett smalt SKRIVBORDSFÖNSTER är `narrow` utan att vara
+   * `phone`, och ska fortsatt få fas 1:s komprimerade rad, inte flik-raden.
+   *
+   * Det här är skalets ENDA anrop av `usePhoneSurface`: vyerna och deras
+   * underkomponenter får `phone` som prop härifrån (`TvViewProps`), så att
+   * hela trädet svarar på samma mätning.
+   */
+  const phone = usePhoneSurface(rootRef) && !isTv
+  /**
+   * TV-rester bort på skrivbordet (spec "Beslut", TV-rester): den städade
+   * guiden ritas i skrivbordsappen (Tauri), inte i TV-läget och inte på
+   * telefonen — TV behåller glöd, håll-OK och glasmenyn (fjärren behöver
+   * dem). Attributet är bara en CSS-krok (`TvFocusStyle`); routinggrinden
+   * för själva guiden är `useNewGuideSurface` i `guide-surface.ts`.
+   */
+  const desktopSurface = isDesktopTauri() && !isTv && !phone
   const railWidth = isTv ? RAIL_W_TV : narrow ? RAIL_W_NARROW : RAIL_W_DESKTOP
   const railItemSize = narrow ? RAIL_ITEM_NARROW : RAIL_ITEM_WIDE
+
+  /**
+   * More-arket (telefon): flik-raden har fyra vyer; multivy och inställningar
+   * ligger i ett bottenark bakom "Mer". Arket registrerar sig självt som
+   * lager i Bakåt-kedjan via `pushLayer` (se `MobileSheet`).
+   */
+  const [moreOpen, setMoreOpen] = useState(false)
 
   /**
    * Fokus på vyns startstation vid varje vybyte.
@@ -352,17 +385,25 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     // utan den här nivån stängde ett klick vyn BAKOM en öppen meny och lämnade
     // menyn hängande över en ny sida.
     if (menu) { setMenu(null); return }
+    // PIN-grinden ligger över spelaren (den öppnas utan att röra `active`).
+    if (pending) { setPending(null); return }
+    // Spelaren äger Bakåt före lagren. Vyernas lager (guidens lägesstack,
+    // listornas nivå 2) står KVAR registrerade medan spelaren är öppen —
+    // av- och återregistrering runt uppspelningen kastade om deras ordning
+    // (barnets effekt kör före förälderns), så Bakåt efter spelningen hoppade
+    // fel nivå. Här stängs spelaren först; lagren rörs inte.
+    if (active) { setActive(null); return }
     const top = layersRef.current[layersRef.current.length - 1]
     if (top) { top(); return }
-    if (pending) { setPending(null); return }
-    if (active) { setActive(null); return }
     if (view === 'channel') { go('guide'); return }
     if (view !== 'hub') { go('hub'); return }
     requestBrowseBack()
   }, [menu, pending, active, view, go])
 
-  // Back i capture-fas. Glasmenyn sköter sin egen Back, därför avstår skalet
-  // medan den är öppen.
+  // Back i capture-fas. Värdens glasmeny sköter sin egen Back, därför avstår
+  // skalet medan den är öppen. På telefon är kanalmenyn i stället skalets EGET
+  // bottenark (`MobileSheet`, utan egen lyssnare) — då tar skalet Back och
+  // `back()` stänger arket som sin första nivå.
   //
   // Spelaren äger Back helt medan den är öppen (Fix round 1, Task 16-review):
   // med `active !== null` renderas `<Player>`, som har sin egen capture-fas-
@@ -391,7 +432,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (!BACK_KEYS.has(event.key)) return
-      if (menu) return
+      if (menu && !phone) return
       if (pending) {
         event.preventDefault()
         event.stopPropagation()
@@ -409,7 +450,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     }
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
-  }, [back, menu, active, Player, pending])
+  }, [back, menu, phone, active, Player, pending])
 
   // Nummertangenter: favoriter 1–N först, sedan listnummer.
   const favourites = model.favouriteChannels
@@ -437,7 +478,8 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     return () => { buffer.dispose(); zapRef.current = null }
   }, [])
   useEffect(() => {
-    if (!settings.numericZap) return
+    // Telefonen har inga sifferknappar för zapp (systemtangentbordet skriver i fält).
+    if (!settings.numericZap || phone) return
     const onKey = (event: KeyboardEvent) => {
       if (menu || layersRef.current.length > 0) return
       const target = event.target as HTMLElement | null
@@ -458,7 +500,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     }
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
-  }, [settings.numericZap, menu, zapDigits])
+  }, [settings.numericZap, menu, zapDigits, phone])
 
   // Starta på senaste kanalen: bara när hubben öppnas utan parametrar.
   const startedRef = useRef(false)
@@ -483,9 +525,10 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
    *
    * `enabled`: glasmenyn och PIN-grinden täcker skärmen men ligger kvar i
    * sidans DOM — utan flaggan hade ett drag bakom dem navigerat undan sidan
-   * under dem. Glasmenyn äger dessutom sin egen Back.
+   * under dem. Glasmenyn äger dessutom sin egen Back. Telefonens kanalark
+   * är däremot skalets eget lager: där tar svepet ett steg och stänger arket.
    */
-  useSwipeBack(back, !menu && pending === null)
+  useSwipeBack(back, (!menu || phone) && pending === null)
 
   const View = TV_VIEWS[view]
   const activeChannel: M3uChannel | null = active
@@ -525,6 +568,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
         settings,
         channel: activeChannel,
         locale,
+        phone,
         // Kanalbyte till en LÅST kanal lämnar `active` orörd och öppnar
         // grinden ovanpå spelaren (se `play` ovan) — kromet måste då stå
         // tillbaka helt (Enter/Back) så att PIN-grinden äger dem.
@@ -554,30 +598,59 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
       // `zIndex: 0` bara när hål finns: DÅ blir roten en stackningskontext, så
       // att bakgrundens `zIndex: -1` hamnar under skalets innehåll men inte
       // rymmer ut ur pluginet.
-      style={{ display: 'flex', position: 'relative', height: '100%', minHeight: 0, background: hasCutouts ? 'transparent' : TV.bg, color: TV.text, fontFamily: TV.font, fontSize: dp(22), lineHeight: 1.3, ...(hasCutouts ? { zIndex: 0 } : null) }}
+      // `data-lt-phone`: telefonens CSS-krok (fokusring/hovring av, se
+      // `TvFocusStyle`). Telefonen ritas i äkta px (skala 1 under 640 px),
+      // därför en egen grundstorlek i stället för scenens 22 designpixlar.
+      {...(phone ? { 'data-lt-phone': '1' } : {})}
+      // `data-live-tv-desktop`: skrivbordets CSS-krok (tunn fokuskant i
+      // stället för glöden, se `TvFocusStyle`) — bara i skrivbordsappen.
+      {...(desktopSurface ? { 'data-live-tv-desktop': '1' } : {})}
+      style={{ display: 'flex', position: 'relative', height: '100%', minHeight: 0, background: hasCutouts ? 'transparent' : TV.bg, color: TV.text, fontFamily: TV.font, fontSize: phone ? 15 : dp(22), lineHeight: phone ? 1.4 : 1.3, ...(hasCutouts ? { zIndex: 0 } : null) }}
     >
       {hasCutouts ? <SurfaceBackdrop cutouts={cutouts} /> : null}
       <TvFocusStyle />
-      {/* Ikonrad: pluginets egen navigation inne i Live TV. Inte data-col="side" —
-          värdens Back-regel hade då flyttat fokus hit i stället för att gå bakåt. */}
-      <nav aria-label={tt('liveTv')} style={{ width: dp(railWidth), flexShrink: 0, borderRight: `1px solid ${TV.line}`, background: 'linear-gradient(180deg, rgba(252,252,255,0.05), rgba(252,252,255,0.02))', padding: `${dp(narrow ? 16 : 36)}px 0 ${dp(narrow ? 16 : 32)}px`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(narrow ? 8 : 14) }}>
-        {/* Märket är ren dekor och det enda "etiketten" raden har. På en smal
-            yta går den bort tillsammans med luften ovanför — posterna ska nå
-            ner i skärmen, inte trängas under en logotyp. */}
-        {narrow ? null : (
-          <div data-live-tv-rail-badge="" aria-hidden="true" style={{ width: dp(44), height: dp(44), borderRadius: dp(12), background: TV.acc, color: TV.onAcc, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: dp(22), marginBottom: dp(24) }}>L</div>
-        )}
-        {/* Bakåt med pekaren: SAMMA `back()` som tangenten, så alla fyra
-            nivåerna (lager → spelare → vy → requestBrowseBack) nås med musen.
-            Aldrig på TV — där finns fjärrens egen Bakåt-knapp, och TV-designen
-            är godkänd som den är. */}
-        {isTv ? null : railItem({ key: 'back', label: tt('railBack'), icon: <Icons.ChevronLeft />, run: back })}
-        {rail.map((item) => railItem(item))}
-        {railItem({ key: 'settings', label: tt('railSettings'), icon: <Icons.Gear /> }, { marginTop: 'auto' })}
-      </nav>
+      {phone ? null : (
+        /* Ikonrad: pluginets egen navigation inne i Live TV. Inte data-col="side" —
+            värdens Back-regel hade då flyttat fokus hit i stället för att gå bakåt.
+            OFÖRÄNDRAD ovanför telefonbredden (spec §1/krav 3) — se
+            "utan telefonattribut: ikonraden som förut" i tv-shell-phone.test.tsx.
+            På telefon finns ingen rad alls: flik-raden nedan tar över. */
+        <nav data-testid="tv-rail" aria-label={tt('liveTv')} style={{ width: dp(railWidth), flexShrink: 0, borderRight: `1px solid ${TV.line}`, background: 'linear-gradient(180deg, rgba(252,252,255,0.05), rgba(252,252,255,0.02))', padding: `${dp(narrow ? 16 : 36)}px 0 ${dp(narrow ? 16 : 32)}px`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(narrow ? 8 : 14) }}>
+          {/* Märket är ren dekor och det enda "etiketten" raden har. På en smal
+              yta går den bort tillsammans med luften ovanför — posterna ska nå
+              ner i skärmen, inte trängas under en logotyp. */}
+          {narrow ? null : (
+            <div data-live-tv-rail-badge="" aria-hidden="true" style={{ width: dp(44), height: dp(44), borderRadius: dp(12), background: TV.acc, color: TV.onAcc, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: dp(22), marginBottom: dp(24) }}>L</div>
+          )}
+          {/* Bakåt med pekaren: SAMMA `back()` som tangenten, så alla fyra
+              nivåerna (lager → spelare → vy → requestBrowseBack) nås med musen.
+              Aldrig på TV — där finns fjärrens egen Bakåt-knapp, och TV-designen
+              är godkänd som den är. */}
+          {/* Bakåt-pilen i ikonraden lämnar Live TV DIREKT (Jerry 2026-09-17) —
+              inte ett steg i taget genom lager/vy/hubb som tangenten gör. */}
+          {isTv ? null : railItem({ key: 'back', label: tt('railBack'), icon: <Icons.ChevronLeft />, run: requestBrowseBack })}
+          {rail.map((item) => railItem(item))}
+          {railItem({ key: 'settings', label: tt('railSettings'), icon: <Icons.Gear /> }, { marginTop: 'auto' })}
+        </nav>
+      )}
       <main ref={mainRef} style={{ flex: 1, minWidth: 0, minHeight: 0, position: 'relative', display: 'flex', flexDirection: 'column' }}>
-        <View key={view} model={model} nav={nav} params={viewParams} settings={settings} />
+        <View key={view} model={model} nav={nav} params={viewParams} settings={settings} phone={phone} />
       </main>
+      {/* Flik-raden (telefon): borta medan spelaren är öppen — den ligger
+          `position: fixed` och hade annars legat över bilden. */}
+      {phone && active === null ? <MobileTabBar view={view} onGo={(v) => go(v)} onMore={() => setMoreOpen(true)} /> : null}
+      {phone && moreOpen ? (
+        <MobileSheet
+          title={tt('moreActions')}
+          items={[
+            { key: 'multi', label: tt('sheetMultiview'), run: () => go('multi') },
+            { key: 'settings', label: tt('sheetSettings'), run: () => go('settings') },
+          ]}
+          onClose={() => setMoreOpen(false)}
+          pushLayer={pushLayer}
+          testId="more-sheet"
+        />
+      ) : null}
 
       {activeChannel && Player ? (
         <Player channel={activeChannel} onClose={() => setActive(null)} listId={model.epgListId} epgUrls={model.epgUrls} onSwitchChannel={(channel) => play({ channel })} tv={tvPlayerProps} />
@@ -628,9 +701,21 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
           scenlådans transform gäller båda, så måtten förblir designpixlar. */}
       {/* `key={view}` monterar om knappen vid vybyte: stationen den pekade på
           är borta ur DOM:en, och en knapp kvar i luften pekar på ingenting. */}
-      <TvHoldAffordance key={view} rootRef={rootRef} enabled={!isTv} />
-      {TvGlassMenu && menu ? <TvGlassMenu target={menu} onClose={() => setMenu(null)} /> : null}
-      {zapDigits ? (
+      {/* Aldrig på telefon: där finns ingen hovring, och långtrycket är vägen
+          till kanalmenyn (spec §5). */}
+      <TvHoldAffordance key={view} rootRef={rootRef} enabled={!isTv && !phone} />
+      {/* Kanalmenyn: värdens glasmeny är TV-scenens; på telefon landar SAMMA
+          `menu`-mål i ett bottenark. `back()` läser `menu` först och stänger
+          den där — arket registrerar sig dessutom som lager via `pushLayer`,
+          men `back()` returnerar efter `setMenu(null)` och når aldrig lagrets
+          close i samma anrop. */}
+      {menu ? (
+        phone
+          ? <MobileSheet title={menu.title} items={menu.actions} onClose={() => setMenu(null)} pushLayer={pushLayer} testId="channel-sheet" />
+          : TvGlassMenu ? <TvGlassMenu target={menu} onClose={() => setMenu(null)} /> : null
+      ) : null}
+      {/* Sifferzappningens ruta hör till fjärr/tangentbord — inte telefonen. */}
+      {zapDigits && !phone ? (
         <div data-testid="zap-digits" style={{ position: 'fixed', top: dp(36), right: dp(48), zIndex: 80, padding: `${dp(10)}px ${dp(22)}px`, borderRadius: dp(12), background: TV.glass, fontSize: dp(34), fontWeight: 600, letterSpacing: '0.1em' }}>{zapDigits}</div>
       ) : null}
       {toastText ? (

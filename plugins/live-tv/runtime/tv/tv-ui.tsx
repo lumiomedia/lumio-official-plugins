@@ -1,11 +1,14 @@
 'use client'
 
-import { createElement, useEffect, useState, type ComponentType, type CSSProperties, type ReactNode } from 'react'
+import { createElement, useEffect, useRef, useState, type ComponentType, type CSSProperties, type ReactNode } from 'react'
 import * as sdk from '@/lib/plugin-sdk'
 import { tvHoldHandlers, tvPointerHoldHandlers } from '@/lib/plugin-sdk'
 import { channelKey, getLiveTvLogoSrc, type M3uChannel } from '../live-tv-data'
 import { LiveTvLogoImage } from '../live-tv-logo-image'
 import { initialsOf } from '../live-tv-ui'
+import { useInSceneBox } from '../hooks/useInSceneBox'
+import { useNarrowSurface } from '../hooks/useNarrowSurface'
+import { useSceneBoxScale } from '../hooks/useSceneBoxScale'
 
 /**
  * Designpx (1920-scenen) → pluginpx. Identitet, och det är mätt.
@@ -99,7 +102,20 @@ export const cardStyle: CSSProperties = {
  * står EFTER (lika specificitet, sista vinner) och sätts där texterna bor:
  * program- och kanalbeskrivningar i `tv-channel.tsx`, `tv-guide-shared.tsx`
  * och rutnätets detaljremsa (P6/P9). Spec 4.5.
+ *
+ * TELEFON (`data-lt-phone`, fas 3): ingen fokusring och ingen hovringsyta —
+ * fingret har varken fokus att följa eller en pekare att vila.
+ *
+ * SKRIVBORD (`data-live-tv-desktop`, den städade guiden): TV:ns glöd byts mot
+ * en tunn inre kant — skrivbordsappen har ingen fjärr att läsa glödet på
+ * avstånd för, och glöden är för TV-skalans mått, inte skrivbordets.
  */
+// GUIDENS BLOCK (Jerry 2026-09-17): grå grund (s08), ljusare grå vid hover,
+// ingen blå kant vid hover/klick på skrivbordet; pågående block är kvar i
+// accent. TV får en grå fokuskant i stället för accentglöd. Samma regler för
+// kanalcellen och Now/Next-raderna (`data-guide-row`). Ligger som
+// JS-kommentar: <style>-textens innehåll räknas som textContent och skulle
+// fälla strängvakten mot fjärrkontrollsord.
 export function TvFocusStyle() {
   return (
     <style>{`
@@ -116,6 +132,26 @@ export function TvFocusStyle() {
   [data-live-tv-tv-root] [data-f]:hover { background-image: linear-gradient(rgba(252,252,255,0.06), rgba(252,252,255,0.06)) !important; }
   [data-live-tv-tv-root] [data-live-tv-chip][data-f]:hover { border-color: rgba(255,255,255,0.22) !important; }
 }
+[data-live-tv-tv-root][data-lt-phone="1"] [data-f]:focus,
+[data-live-tv-tv-root][data-lt-phone="1"] [data-f][data-fcur="1"] { outline: none !important; box-shadow: none !important; }
+[data-live-tv-tv-root][data-lt-phone="1"] [data-f]:hover { background-image: none !important; }
+[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-f]:focus,
+[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-f][data-fcur="1"] {
+  outline: 1px solid rgb(var(--accent-500)) !important;
+  outline-offset: -1px;
+  box-shadow: none !important;
+}
+[data-live-tv-tv-root] [data-guide-block]:not([data-live]):hover { background: rgba(252,252,255,0.14) !important; background-image: none !important; }
+[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-guide-block][data-f]:focus,
+[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-guide-block][data-f][data-fcur="1"] { outline: none !important; }
+[data-live-tv-tv-root]:not([data-live-tv-desktop="1"]) [data-guide-block][data-f]:focus,
+[data-live-tv-tv-root]:not([data-live-tv-desktop="1"]) [data-guide-block][data-f][data-fcur="1"] { outline: 2px solid rgba(255,255,255,0.45) !important; outline-offset: -2px; box-shadow: none !important; }
+[data-live-tv-tv-root] [data-guide-row]:hover { background: rgba(252,252,255,0.14) !important; background-image: none !important; }
+[data-live-tv-tv-root] [data-guide-row][data-sticky]:hover { background: #232324 !important; }
+[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-guide-row][data-f]:focus,
+[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-guide-row][data-f][data-fcur="1"] { outline: none !important; }
+[data-live-tv-tv-root]:not([data-live-tv-desktop="1"]) [data-guide-row][data-f]:focus,
+[data-live-tv-tv-root]:not([data-live-tv-desktop="1"]) [data-guide-row][data-f][data-fcur="1"] { outline: 2px solid rgba(255,255,255,0.45) !important; outline-offset: -2px; box-shadow: none !important; }
 [data-live-tv-tv-root] [data-live-tv-menu-item][data-f]:focus,
 [data-live-tv-tv-root] [data-live-tv-menu-item][data-f][data-fcur="1"] { outline-offset: -4px; border-radius: ${dp(12)}px; }
 [data-live-tv-tv-root] [data-scroll]::-webkit-scrollbar, [data-live-tv-tv-root] [data-row]::-webkit-scrollbar { display: none; }
@@ -241,8 +277,13 @@ export function Progress({ value, height = dp(5), track = TV.s14, style }: { val
  * Kanalbild: sparad bildruta (playerFrameUrl) → logotyp → initialer. Barnen
  * ritas ovanpå (taggar, text, gradient).
  */
+/** Sparade bildrutor som kanalbild — av sedan 2026-09-17, se ChannelArt. */
+export const USE_PLAYER_FRAMES = false
+
 export function ChannelArt({ channel, frameVersion, height, aspect, radius, children, style }: {
-  channel: Pick<M3uChannel, 'name' | 'logo' | 'url'> | Pick<M3uChannel, 'name' | 'logo'>
+  channel:
+    | Pick<M3uChannel, 'name' | 'logo' | 'logoFallback' | 'url'>
+    | Pick<M3uChannel, 'name' | 'logo' | 'logoFallback'>
   frameVersion?: number | string | null
   height?: number
   aspect?: string
@@ -257,16 +298,27 @@ export function ChannelArt({ channel, frameVersion, height, aspect, radius, chil
   // Bildrutan är cachad under channelKey (namn + url). Utan url kan vi inte
   // forma en tillförlitlig nyckel, så vi hoppar rakt till logotyp/initialer
   // i stället för att chansa med en ostabil nyckel.
-  const frameSrc = !frameFailed && 'url' in channel ? sdk.playerFrameUrl(channelKey(channel), frameVersion ?? null) : null
-  const logo = logoFailed ? null : getLiveTvLogoSrc(channel.logo)
+  // Sparade bildrutor är AV (Jerry 2026-09-17): en gammal screengrab som inte
+  // matchar det som faktiskt sänds förvirrar mer än en logotyp. Kedjan
+  // (bildruta → logotyp → initialer) står kvar bakom flaggan om den ska på igen.
+  const frameSrc = USE_PLAYER_FRAMES && !frameFailed && 'url' in channel ? sdk.playerFrameUrl(channelKey(channel), frameVersion ?? null) : null
+  const primaryLogo = getLiveTvLogoSrc(channel.logo)
+  const fallbackLogo = getLiveTvLogoSrc(channel.logoFallback)
+  const logo = logoFailed ? null : primaryLogo ?? fallbackLogo
   return (
     <div style={{ position: 'relative', height, aspectRatio: aspect, background: 'rgba(252,252,255,0.06)', borderRadius: radius, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', ...style }}>
       {frameSrc ? (
         <img src={frameSrc} alt="" onError={() => setFrameFailed(true)} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
       ) : logo ? (
-        <LiveTvLogoImage src={logo} alt="" className="lumio-tv-logo-img" onError={() => setLogoFailed(true)} />
+        <LiveTvLogoImage
+          src={logo}
+          fallbackSrc={primaryLogo ? fallbackLogo : undefined}
+          alt=""
+          className="lumio-tv-logo-img"
+          onError={() => setLogoFailed(true)}
+        />
       ) : (
-        <span style={{ fontSize: dp(22), fontWeight: 600, color: TV.dim, letterSpacing: '0.04em' }}>{initialsOf(channel.name)}</span>
+        <span data-initials="" aria-hidden="true" style={{ fontSize: dp(22), fontWeight: 600, color: TV.dim, letterSpacing: '0.04em' }}>{initialsOf(channel.name)}</span>
       )}
       {children}
     </div>
@@ -278,12 +330,20 @@ export function ChannelArt({ channel, frameVersion, height, aspect, radius, chil
  * kantfärg i stället för att lysa upp hela ytan. `title` är genomsläppet för
  * verktygstips på trunkerade kategorinamn (spec 4.5); det går via `rest`.
  */
-export function Chip({ active, children, style, ...rest }: { active: boolean; children: ReactNode; style?: CSSProperties; title?: string } & StationProps) {
+/**
+ * `glass` (Jerrys återkoppling 2026-09-14): återanvänder samma glasyta som
+ * Bakåt-knappen/hold-affordansen/toasten (`TV.glass` + `TV.line`) i stället
+ * för chipets vanliga svaga overlay — bara startsidans filterrad utanför
+ * TV-läget ber om det, se `tv-hub.tsx`. TV-chippet (och guidens/favoriternas
+ * chip) rörs inte.
+ */
+export function Chip({ active, children, style, glass = false, ...rest }: { active: boolean; children: ReactNode; style?: CSSProperties; title?: string; glass?: boolean } & StationProps) {
   return (
     <div
       data-live-tv-chip=""
+      data-live-tv-chip-glass={glass ? '' : undefined}
       {...rest}
-      style={{ height: dp(46), padding: `0 ${dp(22)}px`, borderRadius: 999, display: 'inline-flex', alignItems: 'center', fontSize: dp(19), whiteSpace: 'nowrap', cursor: 'pointer', flexShrink: 0, background: active ? TV.s16 : TV.s05, color: active ? TV.text : TV.muted, fontWeight: active ? 600 : 400, border: `1px solid ${active ? TV.lineStrong : 'transparent'}`, ...style }}
+      style={{ height: dp(46), minHeight: dp(46), padding: `0 ${dp(22)}px`, borderRadius: 999, display: 'inline-flex', alignItems: 'center', fontSize: dp(19), whiteSpace: 'nowrap', cursor: 'pointer', flexShrink: 0, background: glass ? TV.glass : (active ? TV.s16 : TV.s05), color: active ? TV.text : TV.muted, fontWeight: active ? 600 : 400, border: `1px solid ${glass ? (active ? TV.lineStrong : TV.line) : (active ? TV.lineStrong : 'transparent')}`, ...style }}
     >
       {children}
     </div>
@@ -313,7 +373,7 @@ export function Segment<K extends string>({ options, value, onChange, style }: {
           key={option.key}
           data-testid="tv-segment-option"
           {...station(() => onChange(option.key))}
-          style={{ height: dp(38), padding: `0 ${dp(18)}px`, borderRadius: 999, display: 'inline-flex', alignItems: 'center', fontSize: dp(16), whiteSpace: 'nowrap', cursor: 'pointer', background: option.key === value ? TV.s16 : 'transparent', color: option.key === value ? TV.text : TV.muted }}
+          style={{ height: dp(38), minHeight: dp(38), padding: `0 ${dp(18)}px`, borderRadius: 999, display: 'inline-flex', alignItems: 'center', fontSize: dp(16), whiteSpace: 'nowrap', cursor: 'pointer', background: option.key === value ? TV.s16 : 'transparent', color: option.key === value ? TV.text : TV.muted }}
         >
           {option.label}
         </div>
@@ -331,9 +391,10 @@ export function Segment<K extends string>({ options, value, onChange, style }: {
  * `marginLeft: 'auto'` och hamnade ändå direkt efter kategorichipet (x=556 i
  * en 918 px bred rad) i stället för vid radens högerkant som i handoffen.
  */
-export function RoundBtn({ size = dp(52), children, background = TV.s12, style, ...rest }: { size?: number; children: ReactNode; background?: string; style?: CSSProperties } & StationProps) {
+export function RoundBtn({ size, children, background = TV.s12, style, ...rest }: { size?: number; children: ReactNode; background?: string; style?: CSSProperties } & StationProps) {
+  const resolvedSize = size ?? dp(52)
   return (
-    <div {...rest} style={{ width: size, height: size, borderRadius: 999, background, border: `1px solid ${TV.lineCard}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: TV.text, cursor: 'pointer', flexShrink: 0, ...style }}>
+    <div {...rest} style={{ width: resolvedSize, height: resolvedSize, minHeight: resolvedSize, borderRadius: 999, background, border: `1px solid ${TV.lineCard}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: TV.text, cursor: 'pointer', flexShrink: 0, ...style }}>
       {children}
     </div>
   )
@@ -367,6 +428,7 @@ export const Icons = {
   Heart: ({ size = dp(26), filled = false }: IconProps) => svg(size, <path d="M12 21s-7-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 12C19 16.4 12 21 12 21z" />, filled),
   Gear: ({ size = dp(26) }: IconProps) => svg(size, <><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></>),
   ChevronLeft: ({ size = dp(24) }: IconProps) => svg(size, <path d="M15 18l-6-6 6-6" />),
+  /** Öppningsknappen för telefonens meny-låda (spec §2) — tre linjer. */
   ChevronDown: ({ size = dp(20) }: IconProps) => svg(size, <path d="m6 9 6 6 6-6" />),
   Play: ({ size = dp(24) }: IconProps) => svg(size, <path d="M8 5v14l11-7z" />, true),
   Pause: ({ size = dp(24) }: IconProps) => svg(size, <path d="M7 5h4v14H7zM13 5h4v14h-4z" />, true),
@@ -377,12 +439,69 @@ export const Icons = {
   Calendar: ({ size = dp(20) }: IconProps) => svg(size, <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></>),
 }
 
-/** Värdens klocka när SDK:t har den, annars enkel lokal klocka. */
+/**
+ * Värdens klocka när SDK:t har den, annars pluginets egen lokala klocka.
+ *
+ * VÄRDENS KLOCKA I EN SCENLÅDA (Jerrys återkoppling 2026-09-14, uppföljning
+ * samma dag): HostClock är medvetet skriven i äkta rem/px — dess ordinarie
+ * hem är appens egen ORESKALADE topprad. Skrivbordets scenlåda (`tvSceneBox`)
+ * skalar sitt inre lager med `transform: scale()`, och en HostClock som
+ * hamnar DÄR krymper med scenens faktor i stället för att stå still.
+ *
+ * Första fixen (commit 2541690) bytte i det läget ut HostClock mot pluginets
+ * egen dp()-klocka. Granskningen visade att bytet tog bort mer än storleken:
+ * HostClock visar värdens HÄLSNING (profilnamn, t.ex. "God natt Jerry") plus
+ * korta kontextmeddelanden — det Jerry kallar "välkomstmeddelandet" — och
+ * pluginets egen klocka har bara tid/datum/veckodag. I stället kompenseras
+ * HostClock nu med INVERSEN av lådans skala (`useSceneBoxScale`, samma
+ * läsmönster som `useInSceneBox`/`usePhoneSurface`): en `span` runt den
+ * skalas med `1 / skala` och `transform-origin: top right` håller den kvar i
+ * sitt hörn i stället för att glida. Appens HostClock-kontrakt (äkta pixlar)
+ * rörs inte — bara VISNINGEN skalas.
+ *
+ * Går inversen inte att räkna fram (skalan 0, odefinierad, eller SDK:t
+ * saknar `tvSceneBoxScale` i en äldre app — `useSceneBoxScale` svarar då
+ * `null`) faller koden tillbaka på 2541690:s lösning: pluginets egen
+ * dp()-klocka. Ingen kompensation utan en skala vi litar på.
+ *
+ * ÖVERLAPPSFÄLLAN (Jerrys uppföljning samma dag): en CSS-transform reserverar
+ * ingen layoutplats — bara MÅLNINGEN växer med `1 / skala`. Klockan sitter
+ * som sista flex-item med `marginLeft: 'auto'` i en rad med andra chips, så
+ * vid en SMAL låda (låg skala → invers uppåt 1,3–1,7×) målas den större än
+ * sin egen flex-ruta och kan lägga sig över grannchipsen — särskilt runt
+ * 1280-designpixelbrytpunkten (se `Segment` ovan) som redan är trång.
+ * `useNarrowSurface` läser SAMMA lådas `data-tv-scene-narrow` (< 1024
+ * css-px, precis det spannet där inversen blir stor nog för att krocka), så
+ * en smal låda väljer hellre pluginets EGEN kompakta dp()-klocka — mindre
+ * text, ingen risk för överlapp — och bara en tillräckligt BRED låda får
+ * den inversskalade hälsningen. Gränsen finns för att förhindra krocken, inte
+ * av estetiska skäl.
+ */
 export function useTvClockNode(locale: string): ReactNode {
   const HostClock = (sdk as unknown as { getTvClock?: () => ComponentType<{ variant?: 'tv' | 'desktop' }> | null }).getTvClock?.() ?? null
+  const inSceneBox = useInSceneBox()
+  const sceneBoxScale = useSceneBoxScale()
+  const narrowSurface = useNarrowSurface()
+  const canCompensate = inSceneBox && sceneBoxScale !== null && !narrowSurface
+  /* Klockans OSKALADE bredd — se kommentaren vid returen: den målade bredden
+     är den här gånger inversen, och det är den yttre lådan måste vara. En
+     ResizeObserver och inte en engångsmätning: klockans text byter bredd vid
+     varje minuttick (17:59 → 18:00 är samma, men 9:59 → 10:00 är inte det). */
+  const clockRef = useRef<HTMLSpanElement | null>(null)
+  const [naturalWidth, setNaturalWidth] = useState(0)
+  useEffect(() => {
+    const el = clockRef.current
+    if (!el) return
+    const mat = () => setNaturalWidth(el.offsetWidth)
+    mat()
+    const vakt = new ResizeObserver(mat)
+    vakt.observe(el)
+    return () => vakt.disconnect()
+  }, [canCompensate])
+  const useHostClock = HostClock !== null && (!inSceneBox || canCompensate)
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
-    if (HostClock) return
+    if (useHostClock) return
     let timer = 0
     const tick = () => {
       const next = new Date()
@@ -391,8 +510,43 @@ export function useTvClockNode(locale: string): ReactNode {
     }
     tick()
     return () => window.clearTimeout(timer)
-  }, [HostClock])
-  if (HostClock) return <HostClock variant="desktop" />
+  }, [useHostClock])
+  if (useHostClock) {
+    if (inSceneBox) {
+      /*
+        PLATSEN RESERVERAS (Jerry 2026-09-19: "på now/next ligger
+        detailsknappen över klockan i högra hörnet").
+
+        Se ÖVERLAPPSFÄLLAN i doc-kommentaren ovan: transformen målar klockan
+        `1 / skala` större men reserverar ingen layoutplats, så grannchipset
+        till vänster ritas ovanpå den målade ytan. `useNarrowSurface`-grinden
+        fångade bara lådor under 1024 css-px — överlappet uppstår vid VARJE
+        skala under 1, alltså även i ett brett fönster.
+
+        Yttre lådan får därför den MÅLADE bredden som riktig bredd: den mäts
+        på den oskalade klockan och multipliceras med samma invers. Då vet
+        flexraden hur mycket plats klockan tar och `gap` håller isär chipsen
+        som vanligt. Innehållet högerställs eftersom transformen utgår från
+        det hörnet — annars hade den skalade texten glidit inåt i den nya,
+        bredare lådan.
+
+        Före första mätningen (bredden 0) sätts ingen bredd alls: det är
+        exakt dagens beteende, och en bildruta senare står talet där.
+      */
+      const bredd = naturalWidth > 0 ? naturalWidth / sceneBoxScale! : undefined
+      return (
+        <span style={{ display: 'inline-block', width: bredd, textAlign: 'right' }}>
+          <span
+            ref={clockRef}
+            style={{ display: 'inline-block', transform: `scale(${1 / sceneBoxScale!})`, transformOrigin: 'top right' }}
+          >
+            <HostClock variant="desktop" />
+          </span>
+        </span>
+      )
+    }
+    return <HostClock variant="desktop" />
+  }
   const time = now.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
   const date = now.toLocaleDateString(locale, { day: 'numeric', month: 'short' }).replace('.', '').toUpperCase()
   const day = now.toLocaleDateString(locale, { weekday: 'short' }).replace('.', '').toUpperCase()

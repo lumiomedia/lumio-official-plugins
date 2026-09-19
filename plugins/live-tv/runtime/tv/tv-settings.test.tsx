@@ -1,12 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
+import { __resetForTests, __setDesktopTauriEnvForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, channelKey, getLiveTvLists, getM3uUrls, getXtreamLogins, isChannelInLiveTvList, type LiveTvList, type XtreamLogin } from '../live-tv-data'
 import { getLockedChannelKeys } from '../channel-locks'
 import { getTvSettings, getGuideMode } from './tv-settings-store'
 
 vi.mock('../live-tv-player', () => ({ LiveTvPlayer: () => <div data-testid="player" /> }))
+// completeLogos gör ett riktigt nätverksanrop i produktionskoden — testerna
+// ersätter den med en spion, samma mönster som skrivbordets
+// `live-tv-settings-section.test.tsx`.
+vi.mock('../index-client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../index-client')>()
+  return { ...actual, completeLogos: vi.fn() }
+})
 // Föräldrakontrollens PIN-grind (channel-locks.ts) läser PIN-stödet dynamiskt
 // från plugin-sdk:t; teststubben saknar de funktionerna helt (ingen PIN-motor
 // i test), så utan den här utökningen skulle lockAvailable alltid vara
@@ -19,6 +26,9 @@ vi.mock('@/lib/plugin-sdk', async (importOriginal) => {
   return { ...actual, getAccent: undefined, setAccent: undefined, ACCENT_PRESETS: undefined, activeProfileHasPin: () => true, verifyActiveProfilePin: async () => true }
 })
 import { LiveTvTvShell } from './tv-shell'
+import { ListRow } from './settings-tabs'
+import { tvText } from './tv-strings'
+import { completeLogos } from '../index-client'
 
 const list: LiveTvList = { id: 'l1', name: 'Xtream', channels: [{ name: 'A', logo: null, group: 'Sport', url: 'http://x/A', tvgId: null }], createdAt: '', urlTvg: null, epgUrls: ['http://x/epg.xml'], autoEpgDisabled: false, fetchedAt: '2026-09-12T10:00:00Z' }
 const urlList: LiveTvList = { id: 'l2', name: 'iptv.example.com', channels: [], createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null }
@@ -118,15 +128,34 @@ describe('TvSettingsView', () => {
     mount()
     expect(screen.getByTestId('tab-appearance')).toHaveAttribute('data-init')
     expect(screen.queryByText('Accent colour')).toBeNull()
-    fireEvent.click(screen.getByTestId('guide-default-tl'))
-    expect(getGuideMode()).toBe('tl')
-    // Fjärde läget sedan 0.6.0 (P6): Rutnät ska gå att välja som standardvy.
+    // Den städade guiden (TV/skrivbord, Task 6): tre lägen i kontrollradens
+    // ordning, de gamla fyra finns inte som val här.
+    expect(screen.queryByTestId('guide-default-tl')).toBeNull()
+    expect(screen.queryByTestId('guide-default-playlists')).toBeNull()
+    fireEvent.click(screen.getByTestId('guide-default-timeline'))
+    expect(getGuideMode()).toBe('timeline')
+    fireEvent.click(screen.getByTestId('guide-default-nownext'))
+    expect(getGuideMode()).toBe('nownext')
     fireEvent.click(screen.getByTestId('guide-default-grid'))
     expect(getGuideMode()).toBe('grid')
     fireEvent.click(screen.getByTestId('setting-previewEnabled'))
     expect(getTvSettings().previewEnabled).toBe(false)
     fireEvent.click(screen.getByTestId('setting-bannerHideMs'))
     expect(getTvSettings().bannerHideMs).toBe(6000)
+  })
+  it('Utseende på LAN/fjärr: de fyra gamla lägena står kvar som standardvy', () => {
+    __setTvModeForTests(false)
+    __setDesktopTauriEnvForTests(false)
+    mount()
+    expect(screen.queryByTestId('guide-default-nownext')).toBeNull()
+    expect(screen.queryByTestId('guide-default-timeline')).toBeNull()
+    fireEvent.click(screen.getByTestId('guide-default-tl'))
+    expect(getGuideMode()).toBe('tl')
+    // Fjärde läget sedan 0.6.0 (P6): Rutnät ska gå att välja som standardvy.
+    fireEvent.click(screen.getByTestId('guide-default-grid'))
+    expect(getGuideMode()).toBe('grid')
+    fireEvent.click(screen.getByTestId('guide-default-playlists'))
+    expect(getGuideMode()).toBe('playlists')
   })
   it('Spellistor: listar listor med kvitto och har Lägg till', () => {
     mount('playlists')
@@ -412,5 +441,68 @@ describe('TvSettingsView: snabbknapparna (spec 4.4)', () => {
     const input = screen.getByTestId('text-prompt-input') as HTMLInputElement
     // Adressfält: ingen autoversalisering, ingen rättstavning.
     expect(input.type).toBe('url')
+  })
+})
+
+describe('ListRow — logotypreserv i TV-läget (P6)', () => {
+  // `tt` byggs direkt mot `tvText('en', ...)` i stället för `useTvText()`:
+  // ListRow renderas här helt fristående (ingen skalkontext runt), och 'en'
+  // är ändå det enda testmiljön någonsin visar — teststubbens `useLang()`
+  // ligger fast på 'en' (se plugin-sdk-stubben).
+  const baseProps = {
+    tt: (key: Parameters<typeof tvText>[1], vars?: Record<string, string | number>) => tvText('en', key, vars),
+    locale: 'en-GB',
+    busy: null,
+    needsLogin: false,
+    onRefetch: () => {},
+    onRemove: () => {},
+    onEditChannels: () => {},
+  }
+
+  afterEach(() => {
+    vi.mocked(completeLogos).mockReset()
+  })
+
+  it('raden har en logotypswitch som går att nå med fjärren', () => {
+    render(<ListRow list={{ id: 'a', name: 'A', createdAt: '', urlTvg: null, epgUrls: [], source: 'http://lista', kind: 'm3u' }} {...baseProps} />)
+    expect(screen.getByTestId('list-logo-fallback-a')).toBeInTheDocument()
+  })
+
+  it('kompletterar från TV och visar kvittot', async () => {
+    vi.mocked(completeLogos).mockResolvedValue({ matched: 3, total: 9 })
+    render(<ListRow list={{ id: 'a', name: 'A', createdAt: '', urlTvg: null, epgUrls: [], source: 'http://lista', kind: 'm3u' }} {...baseProps} />)
+    fireEvent.click(screen.getByTestId('list-logo-complete-a'))
+    // Briefens assertion är skriven mot den svenska texten ("3 av 9"), men
+    // teststubbens useLang() ligger fast på 'en' (se ovan) — samma fälla som
+    // redan dokumenterats i `live-tv-settings-section.test.tsx` för
+    // skrivbordets motsvarande test. Den engelska texten ("3 of 9") är vad
+    // som faktiskt renderas här, så testet skrivs mot den i stället.
+    expect(await screen.findByText(/3 of 9/)).toBeInTheDocument()
+  })
+
+  it('switchen ser inte längre ut som Komplettera-knappen — läget står i en växel, inte i etiketten', () => {
+    // Före den här ändringen var switchen en `Action`-pill vars EGEN etikett
+    // bar läget ("Logos: on"/"Logos: off") — exakt samma sorts pill som
+    // Komplettera bredvid. Jerrys ord efter test: den ska inte se ut som en
+    // och samma kontroll. Etiketten är nu bara "Logos"; själva läget syns i
+    // en riktig `Toggle`.
+    render(<ListRow list={{ id: 'a', name: 'A', createdAt: '', urlTvg: null, epgUrls: [], source: 'http://lista', kind: 'm3u' }} {...baseProps} />)
+    const toggle = screen.getByTestId('list-logo-fallback-a')
+    expect(toggle).toHaveTextContent('Logos')
+    expect(toggle).not.toHaveTextContent('Logos: on')
+    expect(toggle).not.toHaveTextContent('Logos: off')
+  })
+
+  it('switchen är spärrad för en egen lista — den gör ingenting där (P1-fynd 2)', () => {
+    // Egna listors kanaler renderas via tvillingar som bär URSPRUNGSLISTANS
+    // switch-tillstånd; den egna listans egen switch filtrerar ingenting.
+    // Komplettera-knappen är redan spärrad för `kind: 'custom'` ovanför.
+    render(
+      <ListRow
+        list={{ id: 'c', name: 'Mina kanaler', createdAt: '', urlTvg: null, epgUrls: [], source: 'custom:c', kind: 'custom', channels: [] }}
+        {...baseProps}
+      />,
+    )
+    expect(screen.getByTestId('list-logo-fallback-c')).toHaveAttribute('aria-disabled', 'true')
   })
 })

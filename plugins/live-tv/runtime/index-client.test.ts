@@ -15,6 +15,7 @@ import {
   epgSearch,
   indexStatus,
   batchChannels,
+  completeLogos,
   INDEX_CHANGED_EVENT,
   emitIndexChanged,
   onIndexChanged,
@@ -420,6 +421,24 @@ describe('batchChannels', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
     const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body))
     expect(body).toEqual({ source: 'src1', replace: true, channels: [] })
+  })
+})
+
+describe('completeLogos', () => {
+  it('postar källan och lämnar tillbaka kvittot', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ matched: 12, total: 40 }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const out = await completeLogos('http://lista')
+
+    expect(fetchMock.mock.calls[0][0]).toContain('/api/live-tv/logo-fallback')
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ source: 'http://lista' })
+    expect(out).toEqual({ matched: 12, total: 40 })
+  })
+
+  it('kastar med appens feltext när svaret inte är ok', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('registret kunde inte hämtas', { status: 502 })))
+    await expect(completeLogos('http://lista')).rejects.toThrow(/registret/)
   })
 })
 

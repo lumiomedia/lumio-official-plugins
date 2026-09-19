@@ -74,6 +74,21 @@ const EN = {
   listFull: 'The list is full — 500 channels at most',
   xtreamNeedsLogin: 'Sign in again to fetch channels',
   xtreamRelogin: 'Sign in again',
+  // Logotypreserv (P5)
+  logoFallbackToggle: 'Fill in missing logos from iptv-org',
+  logoFallbackHint: 'Lets the list use the iptv-org logo registry when a channel has none of its own.',
+  logoComplete: 'Complete',
+  logoCompleteRunning: 'Completing…',
+  logoCompleteResult: '{matched} of {total} completed',
+  // Flerlistekörningen (Jerrys granskningsfynd): scope + framsteg syns i
+  // knappens egen text, en enda lista ser fortfarande ut som `logoCompleteRunning`.
+  logoCompleteRunningProgress: 'Completing list {current} of {total}…',
+  // Delresultatet innan ett fel mitt i en flerlistekörning — `{error}` är
+  // appens egen feltext, ordagrant, inte en omskriven variant.
+  logoCompletePartialError: '{completed} of {total} lists completed — then: {error}',
+  // Komplettera-knappen i själva Live TV-vyn — en egen handling, skild från
+  // ovanstående switch (som bara styr OM reserven får användas).
+  logoCompleteButton: 'Complete logos',
   // P8
   xtreamAccountUnavailable: 'Could not read the account',
   xtreamExpires: 'expires {date}',
@@ -139,6 +154,14 @@ const SV: Record<keyof typeof EN, string> = {
   listFull: 'Listan är full — högst 500 kanaler',
   xtreamNeedsLogin: 'Logga in på nytt för att hämta kanaler',
   xtreamRelogin: 'Logga in på nytt',
+  logoFallbackToggle: 'Fyll i saknade logotyper från iptv-org',
+  logoFallbackHint: 'Låter listan använda iptv-orgs logotypregister när en kanal saknar egen logotyp.',
+  logoComplete: 'Komplettera',
+  logoCompleteRunning: 'Kompletterar…',
+  logoCompleteResult: '{matched} av {total} kompletterade',
+  logoCompleteRunningProgress: 'Kompletterar lista {current} av {total}…',
+  logoCompletePartialError: '{completed} av {total} listor klara — sedan: {error}',
+  logoCompleteButton: 'Komplettera logotyper',
   // P8
   xtreamAccountUnavailable: 'Kunde inte läsa kontot',
   xtreamExpires: 'giltigt till {date}',

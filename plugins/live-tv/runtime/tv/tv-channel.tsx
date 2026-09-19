@@ -1,104 +1,32 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { channelKey, type M3uChannel } from '../live-tv-data'
-import { qualityFromName, startOfLocalDay } from '../live-tv-model'
+import { useState } from 'react'
+import { qualityFromName } from '../live-tv-model'
 import { PinGate, formatClock } from '../live-tv-ui'
-import { buildTimeshiftUrl, catchUpForChannel } from '../catch-up'
-import { isReminded, toggleReminder } from '../reminders'
-import { activeProfileHasPin, pinSupportAvailable, toggleChannelLock, verifyActiveProfilePin } from '../channel-locks'
-import type { EpgProgramme } from '../epg/types'
-import { sliceSchedule } from '../epg/lookup'
-import { useSchedules } from '../hooks/useSchedules'
+import { toggleChannelLock, verifyActiveProfilePin } from '../channel-locks'
+import { DAY_OFFSETS, kindOf, useChannelDetail } from './channel-detail'
 import type { TvViewProps } from './tv-shell'
 import { ChannelArt, Icons, RoundBtn, Tag, TV, Toggle, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
 import { TvPreview } from './tv-preview'
+import { isReminded } from '../reminders'
+import { TvChannelPhone } from './mobile/channel-phone'
 
-const DAY_OFFSETS = [-2, -1, 0, 1, 2] as const
-const DAY_MS = 86_400_000
-
-/** Slår upp i model.byUrl först; sidans params är reservvägen. */
-function channelFromParams(params: Record<string, string>, byUrl: Map<string, M3uChannel>): M3uChannel | null {
-  const url = params.url?.trim()
-  if (!url) return null
-  return byUrl.get(url) ?? {
-    name: params.name?.trim() || 'Unknown',
-    logo: params.logo?.trim() || null,
-    group: params.group?.trim() || 'Other',
-    url,
-    tvgId: params.tvgId?.trim() || null,
-  }
+/**
+ * Telefongrenen (Task 8) har egen layout och egna testid:n — routas härifrån
+ * innan skrivbordets tre kolumner ritas. `channelFromParams`/`kindOf`/
+ * `DAY_OFFSETS` och hela datalagret bor i `channel-detail.ts`, delat av båda
+ * grenarna (ingen importcykel: ingen av grenarna importerar den andra).
+ */
+export function TvChannel(props: TvViewProps) {
+  if (props.phone) return <TvChannelPhone {...props} />
+  return <TvChannelDesktop {...props} />
 }
 
-type Kind = 'past' | 'now' | 'future'
-function kindOf(p: EpgProgramme, nowMs: number): Kind {
-  if (p.stop <= nowMs) return 'past'
-  if (p.start > nowMs) return 'future'
-  return 'now'
-}
-
-export function TvChannel({ model, nav, params, settings }: TvViewProps) {
+function TvChannelDesktop({ model, nav, params, settings }: TvViewProps) {
   const { tt, locale } = useTvText()
-  const channel = useMemo(() => channelFromParams(params, model.byUrl), [params, model.byUrl])
-  const [dayOffset, setDayOffset] = useState(0)
-  const [selectedStart, setSelectedStart] = useState<number | null>(params.programme ? Number(params.programme) : null)
   const [lockGate, setLockGate] = useState(false)
-
-  const dayStart = startOfLocalDay(model.nowMs, dayOffset)
-  /**
-   * Tablån hämtas från appen per fönster (spec 4.2). Ett fönster täcker både
-   * dagen, gårdagens sista rader och — för arkivkanaler — hela reprisfönstret,
-   * så kanalsidan gör EN hämtning i stället för tre.
-   */
-  const archiveDays = channel?.archive?.days ?? 0
-  const windowFrom = dayStart - Math.max(1, archiveDays) * DAY_MS
-  const windowTo = dayStart + DAY_MS
-  const scheduleChannels = useMemo(() => (channel ? [channel] : []), [channel])
-  const { schedules, loading: scheduleLoading } = useSchedules(scheduleChannels, windowFrom, windowTo)
-  const schedule = channel ? schedules[channelKey(channel)] ?? [] : []
-  const programmes = useMemo(
-    () => sliceSchedule(schedule, dayStart, dayStart + DAY_MS),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [schedule, dayStart],
-  )
-  // Igårs sista rader syns bara på "Idag" (samma fönster som guidens tablå) —
-  // ingen egen "Igår"-rubrik behövs för andra dagar eftersom dagväljaren redan
-  // bytt hela tablån till den dagen.
-  const yesterday = useMemo(
-    () => (dayOffset === 0 ? sliceSchedule(schedule, dayStart - DAY_MS, dayStart).slice(-2) : []),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [schedule, dayStart, dayOffset],
-  )
-  const rows = useMemo(() => [...yesterday.map((p) => ({ p, day: 'yesterday' as const })), ...programmes.map((p) => ({ p, day: 'today' as const }))], [yesterday, programmes])
-
-  // Repriser är begränsade till arkivfönstret (channel.archive.days), inte
-  // bara "kanalen har tv_archive": ett program utanför fönstret ger ingen
-  // giltig timeshift-URL hos panelen även om kanalen i övrigt stöder catch-up.
-  const catchUpByStart = useMemo(() => {
-    if (!channel) return new Map<number, true>()
-    const items = catchUpForChannel(channel, schedule, model.nowMs, 500)
-    return new Map(items.map((item) => [item.programme.start, true as const]))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [channel, schedule, model.nowMs])
-
-  const selected = useMemo(() => rows.find((r) => r.p.start === selectedStart)?.p ?? rows.find((r) => kindOf(r.p, model.nowMs) === 'now')?.p ?? rows[0]?.p ?? null, [rows, selectedStart, model.nowMs])
-  const kind = selected ? kindOf(selected, model.nowMs) : null
-  const canReplaySelected = selected ? catchUpByStart.has(selected.start) : false
-  const reminded = channel && selected && kind === 'future' ? isReminded(channel, selected) : false
-  const key = channel ? channelKey(channel) : ''
-  const pinned = model.pinnedSet.has(key)
-  const locked = model.locked.has(key)
-  const lockAvailable = pinSupportAvailable() && activeProfileHasPin()
-
-  // Bytt dag → rensa valet, men inte vid första monteringen: annars slår
-  // effekten (som körs efter initialrendret också) omedelbart bort
-  // `programme`-parameterns förval innan användaren hunnit se det.
-  const mountedRef = useRef(false)
-  useEffect(() => {
-    if (!mountedRef.current) { mountedRef.current = true; return }
-    setSelectedStart(null)
-  }, [dayOffset])
+  const { channel, dayOffset, setDayOffset, rows, selected, setSelectedStart, kind, canReplaySelected, reminded, pinned, locked, lockAvailable, scheduleLoading, catchUpByStart, primary, primaryLabel, dayLabel } = useChannelDetail(model, nav, params)
 
   // Oupplösbar kanal (tom `url` i parametrarna): vyn har inget att visa, och
   // utan en enda station fanns heller ingen `data-init` — värdens fokusmotor
@@ -111,7 +39,7 @@ export function TvChannel({ model, nav, params, settings }: TvViewProps) {
         <div
           data-testid="channel-unresolved"
           {...station(() => nav.back(), undefined, { 'data-init': '' })}
-          style={{ height: dp(52), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.s10, display: 'inline-flex', alignItems: 'center', gap: dp(10), fontSize: dp(19), color: TV.dim, cursor: 'pointer' }}
+          style={{ height: dp(52), minHeight: dp(52), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.s10, display: 'inline-flex', alignItems: 'center', gap: dp(10), fontSize: dp(19), color: TV.dim, cursor: 'pointer' }}
         >
           <Icons.ChevronLeft />{tt('noProgramme')}
         </div>
@@ -119,24 +47,7 @@ export function TvChannel({ model, nav, params, settings }: TvViewProps) {
     )
   }
 
-  const primary = () => {
-    if (!selected) { nav.play({ channel }); return }
-    if (kind === 'now') { nav.play({ channel }); return }
-    if (kind === 'past') {
-      const url = canReplaySelected ? buildTimeshiftUrl(channel, selected.start, selected.stop - selected.start) : null
-      if (url) nav.play({ channel, url, label: selected.title })
-      else nav.play({ channel })
-      return
-    }
-    toggleReminder(channel, selected, model.nowMs)
-  }
-  const primaryLabel = kind === 'past' ? (canReplaySelected ? tt('playReplay') : tt('watchNow')) : kind === 'future' ? (reminded ? tt('removeReminder') : tt('remindMe')) : tt('watchNow')
   const previewLabel = kind === 'past' ? tt('replayAvailable', { days: channel.archive?.days ?? 0 }) : kind === 'future' && selected ? tt('startsAt', { time: formatClock(selected.start, locale) }) : tt('onNow')
-
-  const dayLabel = (offset: number) => {
-    const d = new Date(model.nowMs + offset * DAY_MS)
-    return { top: offset === 0 ? tt('today') : offset === -1 ? tt('yesterday') : offset === 1 ? tt('tomorrow') : d.toLocaleDateString(locale, { weekday: 'short' }), bottom: d.toLocaleDateString(locale, { day: 'numeric', month: 'short' }) }
-  }
 
   const requestLockToggle = () => {
     // Låsning och upplåsning kräver profilens PIN i båda riktningarna —
@@ -148,10 +59,16 @@ export function TvChannel({ model, nav, params, settings }: TvViewProps) {
     setLockGate(true)
   }
 
+  const outerStyle = { flex: 1, minHeight: 0, display: 'flex' } as const
+  const scheduleStyle = { flex: 1, minWidth: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(34)}px ${dp(40)}px 0 ${dp(48)}px`, display: 'flex', flexDirection: 'column' } as const
+  const scheduleListStyle = { flex: 1, minHeight: 0, overflowY: 'auto' } as const
+  const dayPickerStyle = { width: dp(150), flexShrink: 0, padding: `${dp(120)}px ${dp(14)}px 0`, display: 'flex', flexDirection: 'column', gap: dp(10) } as const
+  const detailStyle = { width: dp(560), flexShrink: 0, padding: `${dp(34)}px ${dp(48)}px ${dp(32)}px ${dp(36)}px`, display: 'flex', flexDirection: 'column', gap: dp(16) } as const
+
   return (
-    <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
+    <div data-testid="channel-view-root" style={outerStyle}>
       {/* Tablå */}
-      <div style={{ flex: 1, minWidth: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(34)}px ${dp(40)}px 0 ${dp(48)}px`, display: 'flex', flexDirection: 'column' }}>
+      <div data-testid="channel-schedule" style={scheduleStyle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: dp(16), marginBottom: dp(16) }}>
           <RoundBtn {...station(() => nav.back())}><Icons.ChevronLeft /></RoundBtn>
           <ChannelArt channel={channel} style={{ width: dp(88), height: dp(56) }} radius={dp(8)} />
@@ -159,7 +76,7 @@ export function TvChannel({ model, nav, params, settings }: TvViewProps) {
           {channel.group ? <Tag variant="neutral">{channel.group}</Tag> : null}
           <RoundBtn {...station(() => model.togglePin(channel))} background={pinned ? TV.accMix(22) : TV.s12} style={{ marginLeft: 'auto' }}><span style={{ color: pinned ? TV.acc : TV.text }}><Icons.Heart size={dp(24)} filled={pinned} /></span></RoundBtn>
         </div>
-        <div data-scroll="" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+        <div data-scroll="" style={scheduleListStyle}>
           {rows.length === 0 ? <div style={{ padding: dp(24), color: TV.dim, fontSize: dp(19) }}>{scheduleLoading ? tt('loadingGuide') : tt('noProgramme')}</div> : null}
           {rows.map((row, index) => {
             const k = kindOf(row.p, model.nowMs)
@@ -177,7 +94,7 @@ export function TvChannel({ model, nav, params, settings }: TvViewProps) {
                 <div
                   {...station(primary, undefined, isSelected ? { 'data-init': '' } : undefined)}
                   onFocus={() => setSelectedStart(row.p.start)}
-                  style={{ height: dp(66), borderRadius: dp(12), padding: `0 ${dp(16)}px`, display: 'flex', alignItems: 'center', gap: dp(16), background: isSelected ? TV.s10 : 'transparent', color: k === 'past' ? 'rgba(243,244,248,0.55)' : TV.text, cursor: 'pointer' }}
+                  style={{ height: dp(66), minHeight: dp(66), borderRadius: dp(12), padding: `0 ${dp(16)}px`, display: 'flex', alignItems: 'center', gap: dp(16), background: isSelected ? TV.s10 : 'transparent', color: k === 'past' ? 'rgba(243,244,248,0.55)' : TV.text, cursor: 'pointer' }}
                 >
                   <span style={{ width: dp(80), fontSize: dp(21), fontVariantNumeric: 'tabular-nums' }}>{formatClock(row.p.start, locale)}</span>
                   <span style={{ flex: 1, minWidth: 0, fontSize: dp(21), fontWeight: k === 'now' ? 600 : 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.p.title}</span>
@@ -190,13 +107,13 @@ export function TvChannel({ model, nav, params, settings }: TvViewProps) {
       </div>
 
       {/* Dagväljare */}
-      <div style={{ width: dp(150), flexShrink: 0, padding: `${dp(120)}px ${dp(14)}px 0`, display: 'flex', flexDirection: 'column', gap: dp(10) }}>
+      <div data-testid="day-picker" style={dayPickerStyle}>
         {DAY_OFFSETS.map((offset) => {
           const active = offset === dayOffset
           const label = dayLabel(offset)
           return (
             <div key={offset} data-testid={offset === 0 ? 'day-btn-0' : undefined}>
-              <div {...station(() => setDayOffset(offset), undefined, { 'data-testid': 'day-btn' })} style={{ height: dp(74), borderRadius: dp(12), display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: active ? '#f3f4f8' : 'transparent', color: active ? '#111' : offset > 0 ? TV.accText : 'rgba(243,244,248,0.6)', cursor: 'pointer' }}>
+              <div {...station(() => setDayOffset(offset), undefined, { 'data-testid': 'day-btn' })} style={{ height: dp(74), minHeight: dp(74), borderRadius: dp(12), display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: active ? '#f3f4f8' : 'transparent', color: active ? '#111' : offset > 0 ? TV.accText : 'rgba(243,244,248,0.6)', cursor: 'pointer' }}>
                 <span style={{ fontSize: dp(17), fontWeight: 600 }}>{label.top}</span>
                 <span style={{ fontSize: dp(15), opacity: 0.75 }}>{label.bottom}</span>
               </div>
@@ -206,7 +123,7 @@ export function TvChannel({ model, nav, params, settings }: TvViewProps) {
       </div>
 
       {/* Detalj */}
-      <div data-testid="detail" style={{ width: dp(560), flexShrink: 0, padding: `${dp(34)}px ${dp(48)}px ${dp(32)}px ${dp(36)}px`, display: 'flex', flexDirection: 'column', gap: dp(16) }}>
+      <div data-testid="detail" style={detailStyle}>
         <TvPreview channel={channel} enabled={settings.previewEnabled && kind === 'now'} live={kind === 'now'} width="100%" height={dp(268)} label={previewLabel} onOk={primary} />
         <div style={{ fontSize: dp(28), fontWeight: 600 }}>{selected?.title ?? channel.name}</div>
         {selected ? <div style={{ fontSize: dp(18), color: 'rgba(243,244,248,0.6)' }}>{tt('airedAt', { time: formatClock(selected.start, locale), channel: channel.name })}</div> : null}
@@ -215,7 +132,7 @@ export function TvChannel({ model, nav, params, settings }: TvViewProps) {
           <div
             data-testid="primary-action"
             {...station(primary, undefined, rows.length === 0 ? { 'data-init': '' } : undefined)}
-            style={{ height: dp(52), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.acc, color: TV.onAcc, display: 'inline-flex', alignItems: 'center', gap: dp(10), fontSize: dp(19), fontWeight: 600, cursor: 'pointer' }}
+            style={{ height: dp(52), minHeight: dp(52), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.acc, color: TV.onAcc, display: 'inline-flex', alignItems: 'center', gap: dp(10), fontSize: dp(19), fontWeight: 600, cursor: 'pointer' }}
           >
             {kind === 'future' ? <Icons.Bell filled={reminded} /> : <Icons.Play size={dp(20)} />}{primaryLabel}
           </div>

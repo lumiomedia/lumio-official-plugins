@@ -7,8 +7,10 @@ import { ChannelArt, Icons, Segment, Tag, TV, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
 import { useNarrowSurface } from '../hooks/useNarrowSurface'
 import { assignTile, enlargeTile, removeTile, setLayout, setMultiviewState, useMultiviewState, type MultiviewLayout, type MultiviewState } from './tv-multiview-store'
+import { narrowVisibleIndices } from './multiview-slots'
 import { useVideoSurface, videoSurfaceCapabilities } from './video-surface'
 import { TvChannelPicker } from './tv-channel-picker'
+import { TvMultiviewPhone } from './mobile/multiview-phone'
 
 const GRID: Record<MultiviewLayout, { columns: string; rows: string }> = {
   2: { columns: '1fr 1fr', rows: '1fr' },
@@ -19,23 +21,18 @@ const GRID: Record<MultiviewLayout, { columns: string; rows: string }> = {
 const NARROW_GRID = { columns: '1fr', rows: '1fr 1fr' }
 
 /**
- * NARROW-VISNINGSORDNING (granskningsfynd på b6c7a69/307608e): ljudrutan
- * (`state.audioIndex`) MÅSTE alltid vara en av de två synliga — annars
- * tystnar ingenting men rubriken påstår att en kanal spelar, och ingen ruta
- * bär `data-init`. Audio-rutan visas därför alltid FÖRST; den andra platsen
- * är nästa tilldelade ruta, annars första tomma — bara VISNINGSordningen
- * ändras (verkliga index skickas oförändrade in i `update()`/`assignTile()`
- * osv.), så det sparade laget rörs aldrig.
+ * Tidig gren för telefonen: ett EGET komponentträd, inte en `if` inne i
+ * skrivbordsvyn (samma mönster som `TvPlayerChrome`). `phone` läses ur lådans
+ * bredd och kan slå om vid körning (rotation, fönster som breddas); två
+ * separata komponenter monteras om rent, och grenen själv anropar inga krokar
+ * — så kan ingen krok hamna före returen och ge "rendered more/fewer hooks".
  */
-function narrowVisibleIndices(state: MultiviewState): [number, number] {
-  const count = state.tiles.length
-  const audioIdx = state.audioIndex
-  const others = Array.from({ length: count }, (_, i) => i).filter((i) => i !== audioIdx)
-  const second = others.find((i) => state.tiles[i] !== null) ?? others.find((i) => state.tiles[i] === null) ?? others[0] ?? audioIdx
-  return [audioIdx, second]
+export function TvMultiview(props: TvViewProps) {
+  return props.phone ? <TvMultiviewPhone {...props} /> : <TvMultiviewDesktop {...props} />
 }
 
-export function TvMultiview({ model, nav }: TvViewProps) {
+function TvMultiviewDesktop(props: TvViewProps) {
+  const { model, nav } = props
   const { tt } = useTvText()
   const state = useMultiviewState()
   const rootRef = useRef<HTMLDivElement | null>(null)
@@ -115,8 +112,10 @@ export function TvMultiview({ model, nav }: TvViewProps) {
             onChange={(key) => update(setLayout(state, Number(key) as MultiviewLayout))}
           />
         )}
-        <span style={{ marginLeft: 'auto', fontSize: dp(18), color: 'rgba(243,244,248,0.6)', textAlign: 'right' }}>
-          {audioChannel ? <><span>{tt('audioLabel')}: </span><strong style={{ color: TV.text }}>{audioChannel.name}</strong> · </> : null}{tt('multiviewHelp')}
+        {/* Fjärrhjälpen ("OK on a tile = ...") är borttagen helt (Jerrys
+            uppföljning): bara ljudetiketten är innehåll och blir kvar. */}
+        <span data-testid="mv-audio-help" style={{ marginLeft: 'auto', fontSize: dp(18), color: 'rgba(243,244,248,0.6)', textAlign: 'right' }}>
+          {audioChannel ? <><span>{tt('audioLabel')}: </span><strong style={{ color: TV.text }}>{audioChannel.name}</strong></> : null}
         </span>
       </div>
       <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: (narrow ? NARROW_GRID : GRID[state.layout]).columns, gridTemplateRows: (narrow ? NARROW_GRID : GRID[state.layout]).rows, gap: dp(16) }}>
