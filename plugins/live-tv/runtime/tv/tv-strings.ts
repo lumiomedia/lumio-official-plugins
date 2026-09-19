@@ -256,6 +256,11 @@ const EN = {
   scopeVod: 'Film & series',
   searchVod: 'Film & series',
   searchVodSub: 'from {playlist} · opens in the Library',
+  // Konton utan spellista
+  orphanLogins: 'Accounts without a playlist',
+  orphanLoginsHint: 'These Xtream accounts are saved but have no playlist. They still hold a username and password.',
+  orphanRemove: 'Remove account',
+  orphanRemoved: 'Account removed',
   // Tomma
   guideEmpty: 'No channels in this category',
 } as const
@@ -490,6 +495,10 @@ const SV: Record<keyof typeof EN, string> = {
   scopeVod: 'Film & serier',
   searchVod: 'Film & serier',
   searchVodSub: 'ur {playlist} · öppnas i Biblioteket',
+  orphanLogins: 'Konton utan spellista',
+  orphanLoginsHint: 'De här Xtream-kontona är sparade men har ingen spellista. De bär fortfarande användarnamn och lösenord.',
+  orphanRemove: 'Ta bort konto',
+  orphanRemoved: 'Kontot borttaget',
   guideEmpty: 'Inga kanaler i kategorin',
 }
 

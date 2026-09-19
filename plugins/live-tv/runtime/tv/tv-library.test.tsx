@@ -5,6 +5,7 @@ import { seedLiveTvIndex, type VodItemFixture } from '../../src/__test-stubs__/l
 import { getLiveTvUrlsKey, LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
 import { ACTIVE_PLAYLIST_KEY } from './tv-settings-store'
 import { getVodMode, setVodMode } from '../vod-data'
+import { getLiveTvLists, getXtreamLogins } from '../live-tv-data'
 
 vi.mock('../live-tv-player', () => ({ LiveTvPlayer: () => <div data-testid="player" /> }))
 import { LiveTvTvShell } from './tv-shell'
@@ -380,5 +381,58 @@ describe('Biblioteket på smal yta', () => {
     } finally {
       box.remove()
     }
+  })
+})
+
+describe('Radera Xtream-konto', () => {
+  const ORPHAN_LOGIN = { id: 'login-orphan', base: 'http://gammal.example', username: 'u', password: 'p', format: 'ts', categoryIds: [] }
+  const USED_LOGIN = { id: 'login-used', base: 'http://panel', username: 'u', password: 'p', format: 'ts', categoryIds: [] }
+
+  function mountPlaylists() {
+    seedLiveTvIndex({ vod: { [SOURCE]: LIBRARY } })
+    render(
+      <LiveTvTvShell
+        pageId="live-tv-browse"
+        params={{ view: 'settings', tab: 'playlists' }}
+        onNavigate={vi.fn()}
+        onOpenDetails={() => {}}
+      />,
+    )
+  }
+
+  beforeEach(() => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ ...list, kind: 'xtream', xtreamLoginId: 'login-used' }])
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'xtream_logins', [USED_LOGIN, ORPHAN_LOGIN])
+  })
+
+  it('visar även konton som inte har någon spellista', async () => {
+    mountPlaylists()
+    await waitFor(() => expect(screen.getByTestId('xtream-account-login-orphan')).toBeTruthy())
+    // Det var precis de här som inte gick att bli av med.
+    expect(screen.getByTestId('xtream-account-login-orphan').textContent).toMatch(/without a playlist|utan spellista/i)
+    expect(screen.getByTestId('xtream-account-login-used').textContent).not.toMatch(/without a playlist|utan spellista/i)
+  })
+
+  it('varje konto har en raderingsknapp', async () => {
+    mountPlaylists()
+    await waitFor(() => expect(screen.getByTestId('xtream-remove-login-orphan')).toBeTruthy())
+    expect(screen.getByTestId('xtream-remove-login-used')).toBeTruthy()
+  })
+
+  it('raderingen tar bort kontot ur lagringen', async () => {
+    mountPlaylists()
+    await waitFor(() => expect(screen.getByTestId('xtream-remove-login-orphan')).toBeTruthy())
+    fireEvent.click(screen.getByTestId('xtream-remove-login-orphan'))
+    await waitFor(() => expect(screen.queryByTestId('xtream-account-login-orphan')).toBeNull())
+    expect(getXtreamLogins().map((l) => l.id)).toEqual(['login-used'])
+  })
+
+  it('raderar man kontot med spellista följer spellistan med', async () => {
+    mountPlaylists()
+    await waitFor(() => expect(screen.getByTestId('xtream-remove-login-used')).toBeTruthy())
+    fireEvent.click(screen.getByTestId('xtream-remove-login-used'))
+    await waitFor(() => expect(getXtreamLogins().map((l) => l.id)).toEqual(['login-orphan']))
+    // Ett konto utan sin lista lämnar en lista som inte går att hämta.
+    expect(getLiveTvLists().filter((entry) => entry.xtreamLoginId === 'login-used')).toHaveLength(0)
   })
 })

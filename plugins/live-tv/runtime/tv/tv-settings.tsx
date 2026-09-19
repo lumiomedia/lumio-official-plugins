@@ -37,6 +37,7 @@ import { PinGate } from '../live-tv-ui'
 import { useEpgStatus } from '../hooks/useEpgStatus'
 import { useVodCategories } from '../hooks/useVodLibrary'
 import { getVodMode, setVodMode, type VodMode } from '../vod-data'
+import { deleteXtreamLoginAndData, getOrphanXtreamLogins } from '../live-tv-data'
 import type { LiveTvModel } from '../live-tv-model'
 import type { TvNav, TvViewProps } from './tv-shell'
 import { TvCategoryPicker, TvListPicker } from './tv-list-picker'
@@ -568,7 +569,7 @@ function PlaylistsTab({ model, nav, lists, tt, locale, toast }: { model: TvViewP
       {keyboard.available ? <Row label={tt('addM3u')} right="+" onOk={addUrl} /> : null}
       {keyboard.available ? <Row label={tt('addXtream')} right="+" onOk={() => askXtream('', null)} /> : null}
       {keyboard.available ? <Row testId="create-list" label={tt('createList')} right="+" onOk={createList} /> : null}
-      <XtreamAccounts nav={nav} tt={tt} locale={locale} onReimport={(list) => { void runImport(list, true) }} />
+      <XtreamAccounts nav={nav} tt={tt} locale={locale} toast={toast} onReimport={(list) => { void runImport(list, true) }} />
       {pickerList ? (
         <TvListPicker
           model={model}
@@ -598,7 +599,7 @@ function formatExpiry(expDate: number | null, locale: string): string | null {
  * `fetchXtreamCategories`, och valet skrivs till `login.categoryIds` — exakt
  * samma fält som importjobbet läser.
  */
-function XtreamAccounts({ nav, tt, locale, onReimport }: { nav: TvNav; tt: TT; locale: string; onReimport: (list: LiveTvList) => void }) {
+function XtreamAccounts({ nav, tt, locale, onReimport, toast }: { nav: TvNav; tt: TT; locale: string; onReimport: (list: LiveTvList) => void; toast: (text: string) => void }) {
   const [logins, setLogins] = useState<XtreamLogin[]>(getXtreamLogins)
   useEffect(() => onXtreamLoginsChanged(() => setLogins(getXtreamLogins())), [])
   const [pickerLoginId, setPickerLoginId] = useState<string | null>(null)
@@ -656,12 +657,32 @@ function XtreamAccounts({ nav, tt, locale, onReimport }: { nav: TvNav; tt: TT; l
     void importList(list).catch((err) => recordListImportOutcome(list.id, err instanceof Error ? err.message : String(err)))
   }, [])
 
+  /**
+   * Raderingen tar kontot OCH allt som hänger på det — spellistan, kanalerna i
+   * indexet, biblioteket. Ett konto utan spellista gick tidigare inte att bli
+   * av med härifrån alls, och det är just de som ligger kvar längst.
+   */
+  const orphanIds = new Set(getOrphanXtreamLogins().map((entry) => entry.id))
+  function removeLogin(login: XtreamLogin): void {
+    deleteXtreamLoginAndData(login.id)
+    setLogins(getXtreamLogins())
+    toast(tt('orphanRemoved'))
+  }
+
   if (logins.length === 0) return null
   return (
     <>
-      <Heading>{tt('xtreamAccount')}</Heading>
+      <Heading hint={orphanIds.size > 0 ? tt('orphanLoginsHint') : undefined}>{tt('xtreamAccount')}</Heading>
       {logins.map((login) => (
-        <XtreamAccountCard key={login.id} login={login} tt={tt} locale={locale} onCategories={() => openCategories(login)} />
+        <XtreamAccountCard
+          key={login.id}
+          login={login}
+          tt={tt}
+          locale={locale}
+          orphan={orphanIds.has(login.id)}
+          onCategories={() => openCategories(login)}
+          onRemove={() => removeLogin(login)}
+        />
       ))}
       {pickerLogin ? (
         <TvCategoryPicker
@@ -683,7 +704,7 @@ function XtreamAccounts({ nav, tt, locale, onReimport }: { nav: TvNav; tt: TT; l
   )
 }
 
-function XtreamAccountCard({ login, tt, locale, onCategories }: { login: XtreamLogin; tt: TT; locale: string; onCategories: () => void }) {
+function XtreamAccountCard({ login, tt, locale, orphan, onCategories, onRemove }: { login: XtreamLogin; tt: TT; locale: string; orphan: boolean; onCategories: () => void; onRemove: () => void }) {
   const [account, setAccount] = useState<XtreamAccount | null>(null)
   const [failed, setFailed] = useState(false)
   useEffect(() => {
@@ -710,13 +731,18 @@ function XtreamAccountCard({ login, tt, locale, onCategories }: { login: XtreamL
     >
       <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: dp(4) }}>
         <strong style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{host}</strong>
-        <span style={{ fontSize: dp(16), color: failed ? '#fca5a5' : TV.dim }}>{meta}</span>
+        <span style={{ fontSize: dp(16), color: failed ? '#fca5a5' : TV.dim }}>
+          {orphan ? `${tt('orphanLogins')} · ${meta}` : meta}
+        </span>
       </div>
-      <Action
-        testId={`xtream-categories-${login.id}`}
-        label={`${tt('xtreamCategories')}${login.categoryIds.length > 0 ? ` (${login.categoryIds.length})` : ''}`}
-        onOk={onCategories}
-      />
+      <div style={{ display: 'flex', alignItems: 'center', gap: dp(10), flexShrink: 0 }}>
+        <Action
+          testId={`xtream-categories-${login.id}`}
+          label={`${tt('xtreamCategories')}${login.categoryIds.length > 0 ? ` (${login.categoryIds.length})` : ''}`}
+          onOk={onCategories}
+        />
+        <Action testId={`xtream-remove-${login.id}`} label={tt('orphanRemove')} onOk={onRemove} />
+      </div>
     </div>
   )
 }

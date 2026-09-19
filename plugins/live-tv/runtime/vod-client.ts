@@ -215,3 +215,16 @@ export async function fetchVodEpisodes(
   })
   return data.episodes ?? []
 }
+
+/**
+ * Slänger en källas bibliotek i värden. Speglar `resetSource` för kanalerna
+ * och anropas när en spellista eller en inloggning raderas — annars ligger
+ * titlarna kvar på disk för en källa som inte finns.
+ */
+export async function forgetVod(source: string): Promise<void> {
+  await requestJson('/api/live-tv/vod/forget', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ source }),
+  })
+}

@@ -20,6 +20,7 @@ import {
   type ImportStatus,
   type XtreamImportSource,
 } from './index-client'
+import { forgetVod } from './vod-client'
 
 export interface M3uChannel {
   name: string
@@ -453,6 +454,12 @@ export function deleteLiveTvList(listId: string): void {
   const source = removed?.source
   if (!source || removed?.kind === 'custom') return
   if (remaining.some((list) => list.source === source)) return
+  // Biblioteket hör till källan och ska gå med den. Utan det blev 16 000
+  // titlar kvar i indexet för en spellista användaren just raderat.
+  void forgetVod(source).catch(() => {
+    // Samma resonemang som kanalerna nedan: ett nätfel lämnar titlarna kvar,
+    // och nästa radering eller import städar. Listan är borta ur lagringen.
+  })
   void resetSource(source)
     .catch(() => {
       // Ett nätfel lämnar kanalerna i indexet. Vyerna läser ändå om: nästa
@@ -654,6 +661,47 @@ export function saveXtreamLogin(login: XtreamLogin): void {
 
 export function deleteXtreamLogin(id: string): void {
   writePluginJson(LIVE_TV_PLUGIN_ID, XTREAM_LOGINS_KEY, getXtreamLogins().filter((entry) => entry.id !== id))
+}
+
+/**
+ * Inloggningar som INTE hör till någon spellista.
+ *
+ * De uppstår när en lista raderas men kontot blir kvar, eller när en
+ * inloggning sparas och importen aldrig går igenom. De syns ingenstans i
+ * TV-läget — "Spellistor" listar ju spellistor — och gick därför inte att bli
+ * av med. Ett gammalt konto som ligger kvar är inte oskyldigt: det bär
+ * användarnamn och lösenord.
+ */
+export function getOrphanXtreamLogins(): XtreamLogin[] {
+  const lists = readLists()
+  return getXtreamLogins().filter((login) => !lists.some((list) => list.xtreamLoginId === login.id))
+}
+
+/**
+ * Raderar en Xtream-inloggning OCH allt som hänger på den: spellistan (om
+ * någon), kanalerna i indexet och biblioteket.
+ *
+ * Att bara ta bort inloggningen lämnade en lista som inte gick att hämta och
+ * ett index fullt av kanaler ingen kunde spela.
+ */
+export function deleteXtreamLoginAndData(loginId: string): void {
+  const login = getXtreamLogins().find((entry) => entry.id === loginId) ?? null
+  const list = readLists().find((entry) => entry.xtreamLoginId === loginId) ?? null
+
+  deleteXtreamLogin(loginId)
+
+  if (list) {
+    // Städar index och bibliotek åt oss.
+    deleteLiveTvList(list.id)
+    return
+  }
+  // Ingen lista: källan kan ändå ligga kvar i indexen från en tidigare import.
+  if (!login) return
+  const source = xtreamPseudoUrl(login)
+  void forgetVod(source).catch(() => {})
+  void resetSource(source)
+    .catch(() => {})
+    .finally(() => emitIndexChanged())
 }
 
 export function onXtreamLoginsChanged(listener: () => void): () => void {
