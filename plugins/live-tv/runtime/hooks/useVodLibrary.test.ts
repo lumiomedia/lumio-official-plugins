@@ -45,10 +45,20 @@ describe('useVodCategories', () => {
     expect(result.current.known).toBe(true)
   })
 
-  it('frågar inte alls utan källa', async () => {
+  it('utan källa frågar den efter ALLA spellistor', async () => {
+    // Regressionen 2026-09-19: `model.activeSource` är null utanför TV-läget,
+    // och ett tidigt return här gjorde Biblioteket tomt på skrivbordet fast
+    // titlarna låg i indexet. Null betyder alla spellistor, inte ingen.
+    listVodCategories.mockResolvedValue({
+      categories: [cat('5', 'MOVIE: Swedish', 'movie', 3)],
+      total: 3,
+      known: true,
+      importing: false,
+    })
     const { result } = renderHook(() => useVodCategories(null))
     await waitFor(() => expect(result.current.loading).toBe(false))
-    expect(listVodCategories).not.toHaveBeenCalled()
+    expect(listVodCategories).toHaveBeenCalledWith(null, expect.anything())
+    expect(result.current.total).toBe(3)
   })
 
   it('fortsätter fråga medan värden importerar, och slutar när den är klar', async () => {

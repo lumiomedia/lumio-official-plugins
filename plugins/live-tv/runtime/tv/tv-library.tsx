@@ -122,7 +122,8 @@ export function TvLibrary({ model, nav }: TvViewProps) {
   const narrow = useNarrowSurface()
   const source = model.activeSource
   const playlistId = model.activePlaylistId
-  const playlistName = model.activePlaylistName ?? ''
+  // Utan aktiv spellista (allt utom TV-läge) spänner Biblioteket hela indexet.
+  const playlistName = model.activePlaylistName ?? tt('allPlaylists')
 
   const cats = useVodCategories(source)
   const [sort, setSortState] = useState<VodSort>(() => getVodSort())
@@ -147,8 +148,9 @@ export function TvLibrary({ model, nav }: TvViewProps) {
     categoryId: validSelected,
     sort,
     // Utan kategori finns inget att hämta ännu — vänta in listan i stället
-    // för att be om hela biblioteket osorterat.
-    enabled: Boolean(source && validSelected),
+    // för att be om hela biblioteket osorterat. Källan får däremot vara null:
+    // det betyder alla spellistor.
+    enabled: Boolean(validSelected),
   })
 
   const chooseCategory = (id: string) => {

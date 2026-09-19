@@ -436,3 +436,52 @@ describe('Radera Xtream-konto', () => {
     expect(getLiveTvLists().filter((entry) => entry.xtreamLoginId === 'login-used')).toHaveLength(0)
   })
 })
+
+describe('Biblioteket utanför TV-läget (skrivbord och telefon)', () => {
+  /**
+   * REGRESSIONEN Jerry såg 2026-09-19: biblioteket var tomt i skrivbordsappen
+   * fast 16 697 titlar låg i indexet.
+   *
+   * `model.activeSource` sätts BARA i TV-läge (live-tv-model.ts) — utanför det
+   * är den alltid null. Vyerna tolkade null som "ingen källa" och frågade
+   * aldrig. Rätt tolkning är "alla spellistor", precis som kanallistan gör.
+   */
+  beforeEach(() => __setTvModeForTests(false))
+  afterEach(() => __setTvModeForTests(true))
+
+  it('visar titlarna trots att ingen spellista är aktiv', async () => {
+    seedLiveTvIndex({ vod: { [SOURCE]: LIBRARY } })
+    render(
+      <LiveTvTvShell pageId="live-tv-browse" params={{ view: 'library' }} onNavigate={vi.fn()} onOpenDetails={() => {}} />,
+    )
+    await waitFor(() => expect(screen.getAllByTestId('library-category').length).toBe(3))
+    expect(screen.getAllByTestId('library-card').length).toBeGreaterThan(0)
+  })
+
+  it('hubbens hänvisningsrad hittar också titlarna', async () => {
+    seedLiveTvIndex({ vod: { [SOURCE]: LIBRARY } })
+    render(
+      <LiveTvTvShell pageId="live-tv-browse" params={{ view: 'hub' }} onNavigate={vi.fn()} onOpenDetails={() => {}} />,
+    )
+    await waitFor(() => expect(screen.getByTestId('hub-vod-link')).toBeTruthy())
+    expect(screen.getByTestId('hub-vod-link').textContent).toContain('4')
+  })
+
+  it('inställningen går att ändra utan aktiv spellista', async () => {
+    // setVodMode returnerade tidigare utan att skriva när playlistId var null,
+    // så valet gick inte att göra alls på skrivbordet.
+    seedLiveTvIndex({ vod: { [SOURCE]: LIBRARY } })
+    render(
+      <LiveTvTvShell
+        pageId="live-tv-browse"
+        params={{ view: 'settings', tab: 'content' }}
+        onNavigate={vi.fn()}
+        onOpenDetails={() => {}}
+      />,
+    )
+    await waitFor(() => expect(screen.getByTestId('vod-mode-rows')).toBeTruthy())
+    fireEvent.click(screen.getByTestId('vod-mode-rows'))
+    await waitFor(() => expect(screen.getByTestId('vod-mode-rows').hasAttribute('data-active')).toBe(true))
+    expect(getVodMode(null)).toBe('rows')
+  })
+})

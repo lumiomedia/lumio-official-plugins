@@ -51,10 +51,14 @@ export function useVodCategories(source: string | null): VodLibraryCategories {
   const reload = useCallback(() => setNonce((n) => n + 1), [])
 
   useEffect(() => {
-    if (!source) {
-      setState({ categories: [], total: 0, known: false, importing: false, loading: false, error: null })
-      return
-    }
+    /**
+     * `null` betyder ALLA spellistor, inte "ingen".
+     *
+     * `model.activeSource` sätts bara i TV-läge (live-tv-model.ts) — på
+     * skrivbordet och telefonen är den alltid null, precis som kanallistan
+     * där visar hela indexet. Ett tidigt `return` här gjorde Biblioteket tomt
+     * på varje yta utom TV, fast titlarna låg i indexet hela tiden.
+     */
     let cancelled = false
     let timer: ReturnType<typeof setTimeout> | null = null
     const controller = new AbortController()
@@ -143,7 +147,8 @@ export function useVodPage(opts: {
   }
 
   useEffect(() => {
-    if (!source || !enabled) {
+    // Samma regel som kategorierna: ingen källa = alla spellistor.
+    if (!enabled) {
       setItems([])
       setTotal(0)
       setKnown(false)
@@ -159,7 +164,7 @@ export function useVodPage(opts: {
     void (async () => {
       try {
         const page = await queryVod({
-          source,
+          source: source ?? undefined,
           categoryId: categoryId ?? undefined,
           kind: kind ?? undefined,
           q: q?.trim() || undefined,

@@ -27,7 +27,9 @@ export function TvVodHubSection({ mode, source, playlistName, nav }: {
   nav: TvNav
 }) {
   const { tt } = useTvText()
-  const enabled = mode !== 'off' && Boolean(source)
+  // Källan är null utanför TV-läget och betyder då alla spellistor — samma
+  // regel som Biblioteket och kanallistan.
+  const enabled = mode !== 'off'
   const cats = useVodCategories(enabled ? source : null)
   const page = useVodPage({
     source,
@@ -53,7 +55,7 @@ export function TvVodHubSection({ mode, source, playlistName, nav }: {
     return [...movies, ...series].slice(0, ROW_MAX)
   }, [page.items])
 
-  if (mode === 'off' || !source) return null
+  if (mode === 'off') return null
   // Inget att visa förrän vi VET att panelen har VOD: en hänvisningsrad som
   // säger "0 titlar" är värre än ingen rad alls.
   if (cats.total === 0) return null

@@ -45,14 +45,27 @@ function readRecord(key: string): Record<string, string> {
 
 /* ---------- Läget per spellista ---------- */
 
+/**
+ * Nyckeln valet sparas under.
+ *
+ * `activePlaylistId` finns bara i TV-läge — på skrivbordet och telefonen är
+ * den null, och då spänner Biblioteket alla spellistor. Det läget får en egen,
+ * delad nyckel i stället för att valet tyst inte går att spara (vilket det
+ * inte gjorde: `setVodMode` returnerade utan att skriva).
+ */
+const ALL_PLAYLISTS_KEY = '*'
+
+function modeKey(playlistId: string | null): string {
+  return playlistId || ALL_PLAYLISTS_KEY
+}
+
 export function getVodMode(playlistId: string | null): VodMode {
-  if (!playlistId) return VOD_MODE_DEFAULT
-  const value = readRecord(VOD_MODE_KEY)[playlistId]
+  const value = readRecord(VOD_MODE_KEY)[modeKey(playlistId)]
   return isVodMode(value) ? value : VOD_MODE_DEFAULT
 }
 
-export function setVodMode(playlistId: string, mode: VodMode): void {
-  writePluginJson(LIVE_TV_PLUGIN_ID, VOD_MODE_KEY, { ...readRecord(VOD_MODE_KEY), [playlistId]: mode })
+export function setVodMode(playlistId: string | null, mode: VodMode): void {
+  writePluginJson(LIVE_TV_PLUGIN_ID, VOD_MODE_KEY, { ...readRecord(VOD_MODE_KEY), [modeKey(playlistId)]: mode })
 }
 
 export function onVodModeChanged(listener: () => void): () => void {
@@ -75,14 +88,13 @@ export function setVodSort(sort: VodSort): void {
  * inte finns i nästa panel, och rutnätet hade öppnat sig tomt.
  */
 export function getVodCategory(playlistId: string | null): string | null {
-  if (!playlistId) return null
-  return readRecord(VOD_CATEGORY_KEY)[playlistId] ?? null
+  return readRecord(VOD_CATEGORY_KEY)[modeKey(playlistId)] ?? null
 }
 
-export function setVodCategory(playlistId: string, categoryId: string): void {
+export function setVodCategory(playlistId: string | null, categoryId: string): void {
   writePluginJson(LIVE_TV_PLUGIN_ID, VOD_CATEGORY_KEY, {
     ...readRecord(VOD_CATEGORY_KEY),
-    [playlistId]: categoryId,
+    [modeKey(playlistId)]: categoryId,
   })
 }
 

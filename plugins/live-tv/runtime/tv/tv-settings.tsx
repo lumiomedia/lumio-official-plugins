@@ -113,8 +113,9 @@ function ContentTab({ model, tt }: { model: LiveTvModel; tt: TT }) {
   const [mode, setModeState] = useState<VodMode>(() => getVodMode(playlistId))
   useEffect(() => setModeState(getVodMode(playlistId)), [playlistId])
 
+  // Ingen grind på `playlistId`: den är null utanför TV-läget, och valet ska
+  // gå att göra där också — `setVodMode` sparar det då för alla spellistor.
   const choose = (next: VodMode) => {
-    if (!playlistId) return
     setVodMode(playlistId, next)
     setModeState(next)
   }
