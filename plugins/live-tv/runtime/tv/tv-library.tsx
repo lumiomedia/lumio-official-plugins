@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useTvMode } from '@/lib/plugin-sdk'
 import { useNarrowSurface } from '../hooks/useNarrowSurface'
 import { useVodCategories, useVodPage } from '../hooks/useVodLibrary'
 import { canOpenDetails, getVodCategory, getVodSort, openVodItem, setVodCategory, setVodSort } from '../vod-data'
@@ -22,8 +23,19 @@ import { useTvText } from './tv-strings'
  * skalas som helhet (se `tv-ui.tsx`).
  */
 
+/**
+ * TV SITTER TRE METER BORT.
+ *
+ * Handoffen ritade 1920×1080 och 7 kolumner, men den ritade en bild — inte ett
+ * tittavstånd. Samma designpixlar skalas NER på skrivbordet (scenlådan pressar
+ * in 1080 i innehållsytan) och visas i full storlek på TV, där man läser dem
+ * från soffan. Därför två uppsättningar: skrivbordet behåller handoffens mått,
+ * TV får färre kolumner och grövre text.
+ */
 const LEFT_W = 380
+const LEFT_W_TV = 440
 const GRID_COLUMNS = 7
+const GRID_COLUMNS_TV = 5
 /**
  * Telefonen får TVÅ kolumner, inte tre.
  *
@@ -120,6 +132,8 @@ export function TvLibrary({ model, nav }: TvViewProps) {
    * scenlådan skalar TV-layouten till innehållsytan.
    */
   const narrow = useNarrowSurface()
+  const isTv = useTvMode()
+  const columns = isTv ? GRID_COLUMNS_TV : GRID_COLUMNS
   const source = model.activeSource
   const playlistId = model.activePlaylistId
   // Utan aktiv spellista (allt utom TV-läge) spänner Biblioteket hela indexet.
@@ -221,7 +235,7 @@ export function TvLibrary({ model, nav }: TvViewProps) {
       </div>
       <div
         style={{
-          fontSize: dp(narrow ? 15 : 17),
+          fontSize: dp(narrow ? 15 : isTv ? 20 : 17),
           fontWeight: 600,
           marginTop: dp(8),
           whiteSpace: 'nowrap',
@@ -231,7 +245,7 @@ export function TvLibrary({ model, nav }: TvViewProps) {
       >
         {item.title}
       </div>
-      <div style={{ fontSize: dp(narrow ? 13 : 15), color: 'rgba(243,244,248,0.55)' }}>{metaLine(item)}</div>
+      <div style={{ fontSize: dp(narrow ? 13 : isTv ? 17 : 15), color: 'rgba(243,244,248,0.55)' }}>{metaLine(item)}</div>
     </div>
   )
 
@@ -322,14 +336,14 @@ export function TvLibrary({ model, nav }: TvViewProps) {
       <div
         data-scroll=""
         style={{
-          width: dp(LEFT_W),
+          width: dp(isTv ? LEFT_W_TV : LEFT_W),
           flexShrink: 0,
           borderRight: `1px solid ${TV.line}`,
           padding: `${dp(30)}px ${dp(14)}px 0 ${dp(24)}px`,
           overflowY: 'auto',
         }}
       >
-        <div style={{ fontSize: dp(30), fontWeight: 600 }}>{tt('library')}</div>
+        <div style={{ fontSize: dp(isTv ? 36 : 30), fontWeight: 600 }}>{tt('library')}</div>
         <div style={{ fontSize: dp(16), color: 'rgba(243,244,248,0.5)', marginBottom: dp(16) }}>
           {tt('librarySub', { playlist: playlistName, count: cats.total })}
         </div>
@@ -337,7 +351,7 @@ export function TvLibrary({ model, nav }: TvViewProps) {
           <div key={group.kind}>
             <div
               style={{
-                fontSize: dp(14),
+                fontSize: dp(isTv ? 17 : 14),
                 fontWeight: 600,
                 textTransform: 'uppercase',
                 letterSpacing: '0.12em',
@@ -360,7 +374,7 @@ export function TvLibrary({ model, nav }: TvViewProps) {
                     isActive && !initInGrid ? { 'data-init': '' } : undefined,
                   )}
                   style={{
-                    minHeight: dp(52),
+                    minHeight: dp(isTv ? 62 : 52),
                     padding: `${dp(8)}px ${dp(14)}px`,
                     borderRadius: dp(10),
                     display: 'flex',
@@ -371,10 +385,10 @@ export function TvLibrary({ model, nav }: TvViewProps) {
                     color: isActive ? TV.text : 'rgba(243,244,248,0.65)',
                   }}
                 >
-                  <span style={{ fontSize: dp(18), flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <span style={{ fontSize: dp(isTv ? 22 : 18), flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {category.name}
                   </span>
-                  <span style={{ fontSize: dp(14), color: 'rgba(243,244,248,0.4)' }}>{category.count}</span>
+                  <span style={{ fontSize: dp(isTv ? 17 : 14), color: 'rgba(243,244,248,0.4)' }}>{category.count}</span>
                 </div>
               )
             })}
@@ -384,8 +398,8 @@ export function TvLibrary({ model, nav }: TvViewProps) {
 
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: dp(14), padding: `${dp(30)}px ${dp(48)}px ${dp(16)}px` }}>
-          <span style={{ fontSize: dp(28), fontWeight: 600 }}>{active?.name ?? tt('library')}</span>
-          <span style={{ fontSize: dp(17), color: 'rgba(243,244,248,0.5)' }}>
+          <span style={{ fontSize: dp(isTv ? 34 : 28), fontWeight: 600 }}>{active?.name ?? tt('library')}</span>
+          <span style={{ fontSize: dp(isTv ? 20 : 17), color: 'rgba(243,244,248,0.5)' }}>
             {tt('libraryTitlesCount', { count: page.total })}
           </span>
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: dp(10) }}>
@@ -396,12 +410,12 @@ export function TvLibrary({ model, nav }: TvViewProps) {
                 data-active={key === sort ? '' : undefined}
                 {...station(() => chooseSort(key))}
                 style={{
-                  height: dp(44),
-                  padding: `0 ${dp(20)}px`,
+                  height: dp(isTv ? 54 : 44),
+                  padding: `0 ${dp(isTv ? 26 : 20)}px`,
                   borderRadius: 999,
                   display: 'inline-flex',
                   alignItems: 'center',
-                  fontSize: dp(17),
+                  fontSize: dp(isTv ? 20 : 17),
                   cursor: 'pointer',
                   background: key === sort ? TV.s16 : TV.s06,
                   color: key === sort ? '#fff' : 'rgba(243,244,248,0.6)',
@@ -414,14 +428,14 @@ export function TvLibrary({ model, nav }: TvViewProps) {
               data-testid="library-search"
               {...station(() => nav.go('search', { scope: 'vod' }))}
               style={{
-                height: dp(44),
-                padding: `0 ${dp(20)}px`,
+                height: dp(isTv ? 54 : 44),
+                padding: `0 ${dp(isTv ? 26 : 20)}px`,
                 borderRadius: 999,
                 border: `1px solid ${TV.s12}`,
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: dp(8),
-                fontSize: dp(17),
+                fontSize: dp(isTv ? 20 : 17),
                 cursor: 'pointer',
               }}
             >
@@ -435,10 +449,13 @@ export function TvLibrary({ model, nav }: TvViewProps) {
           style={{
             flex: 1,
             overflowY: 'auto',
-            padding: `0 ${dp(48)}px ${dp(40)}px`,
+            // Toppadding, inte noll: fokusringen är 2 px med 3 px offset och
+            // en glöd utanför det. Utan utrymme klippte scroll-containern
+            // ringen på ÖVERSTA raden — den såg ut att sakna överkant.
+            padding: `${dp(12)}px ${dp(48)}px ${dp(40)}px`,
             display: 'grid',
-            gridTemplateColumns: `repeat(${GRID_COLUMNS}, minmax(0, 1fr))`,
-            gap: dp(18),
+            gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+            gap: dp(isTv ? 22 : 18),
             alignContent: 'start',
           }}
         >

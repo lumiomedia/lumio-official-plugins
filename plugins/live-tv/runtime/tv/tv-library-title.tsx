@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { isMovieWatched, isWatching, onWatchedMoviesChanged, onWatchlistChanged, toggleMovieWatched, toggleWatchlist } from '@/lib/plugin-sdk'
+import { isMovieWatched, isWatching, onWatchedMoviesChanged, onWatchlistChanged, toggleMovieWatched, toggleWatchlist, useTvMode } from '@/lib/plugin-sdk'
 import { fetchVodEpisodes, lookupVod, type VodEpisode, type VodItem } from '../vod-client'
 import { findXtreamLoginByPseudoUrl, getLiveTvLists, getXtreamLogins } from '../live-tv-data'
 import { fetchTitleLogo, fetchVodTitleInfo, formatRuntime, type VodTitleInfo } from '../vod-title'
@@ -22,11 +22,17 @@ import { useTvText } from './tv-strings'
  * uttryckligen att slippa resten.
  */
 
-/** Ikonknapparna efter Play, i appens ordning. */
+/**
+ * Knapphöjden efter Play. TV får en grövre rad av samma skäl som rutnätet
+ * (tv-library.tsx): samma designpixlar, tre meters tittavstånd.
+ */
 const ICON_SIZE = 44
+const ICON_SIZE_TV = 60
 
 export function TvLibraryTitle({ model, nav, params }: TvViewProps) {
   const { tt } = useTvText()
+  const isTv = useTvMode()
+  const iconSize = isTv ? ICON_SIZE_TV : ICON_SIZE
   const itemKey = params.key ?? ''
   const source = model.activeSource
 
@@ -234,22 +240,22 @@ export function TvLibraryTitle({ model, nav, params }: TvViewProps) {
             src={logoUrl}
             alt={title}
             data-testid="title-logo"
-            style={{ maxWidth: dp(420), maxHeight: dp(120), objectFit: 'contain', display: 'block', marginBottom: dp(12) }}
+            style={{ maxWidth: dp(isTv ? 520 : 420), maxHeight: dp(isTv ? 150 : 120), objectFit: 'contain', display: 'block', marginBottom: dp(12) }}
           />
         ) : (
-          <div style={{ fontSize: dp(46), fontWeight: 700, lineHeight: 1.1, marginBottom: dp(8) }}>{title}</div>
+          <div style={{ fontSize: dp(isTv ? 58 : 46), fontWeight: 700, lineHeight: 1.1, marginBottom: dp(8) }}>{title}</div>
         )}
 
         {meta.length > 0 ? (
-          <div style={{ fontSize: dp(17), color: 'rgba(243,244,248,0.85)' }}>{meta.join('  |  ')}</div>
+          <div style={{ fontSize: dp(isTv ? 21 : 17), color: 'rgba(243,244,248,0.85)' }}>{meta.join('  |  ')}</div>
         ) : null}
         {info?.tagline ? (
-          <div style={{ fontSize: dp(17), color: TV.dim, marginTop: dp(6), fontStyle: 'italic' }}>{info.tagline}</div>
+          <div style={{ fontSize: dp(isTv ? 20 : 17), color: TV.dim, marginTop: dp(6), fontStyle: 'italic' }}>{info.tagline}</div>
         ) : null}
         {info?.overview ? (
           <p
             style={{
-              fontSize: dp(18),
+              fontSize: dp(isTv ? 22 : 18),
               lineHeight: 1.45,
               color: 'rgba(243,244,248,0.9)',
               marginTop: dp(12),
@@ -270,12 +276,12 @@ export function TvLibraryTitle({ model, nav, params }: TvViewProps) {
               data-testid="title-play"
               {...station(() => openPlayer(playUrl as string, item.kind === 'series' ? firstEpisode ?? undefined : undefined), undefined, { 'data-init': '' })}
               style={{
-                height: dp(ICON_SIZE),
-                padding: `0 ${dp(24)}px`,
+                height: dp(iconSize),
+                padding: `0 ${dp(isTv ? 34 : 24)}px`,
                 borderRadius: 999,
                 background: TV.acc,
                 color: '#fff',
-                fontSize: dp(18),
+                fontSize: dp(isTv ? 22 : 18),
                 fontWeight: 600,
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -283,7 +289,7 @@ export function TvLibraryTitle({ model, nav, params }: TvViewProps) {
                 cursor: 'pointer',
               }}
             >
-              <Icons.Play size={dp(18)} />
+              <Icons.Play size={dp(isTv ? 22 : 18)} />
               {playLabel}
             </div>
           ) : null}
@@ -300,8 +306,8 @@ export function TvLibraryTitle({ model, nav, params }: TvViewProps) {
               aria-label={action.label}
               {...station(action.run, undefined, !canPlay && index === 0 ? { 'data-init': '' } : undefined)}
               style={{
-                height: dp(ICON_SIZE),
-                minWidth: dp(ICON_SIZE),
+                height: dp(iconSize),
+                minWidth: dp(iconSize),
                 borderRadius: 999,
                 background: action.active ? TV.accMix(18) : TV.s10,
                 border: `1px solid ${action.active ? TV.acc : 'transparent'}`,
@@ -315,8 +321,8 @@ export function TvLibraryTitle({ model, nav, params }: TvViewProps) {
             >
               <span
                 style={{
-                  width: dp(ICON_SIZE),
-                  height: dp(ICON_SIZE),
+                  width: dp(iconSize),
+                  height: dp(iconSize),
                   flexShrink: 0,
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -325,7 +331,7 @@ export function TvLibraryTitle({ model, nav, params }: TvViewProps) {
               >
                 {action.icon}
               </span>
-              <span data-hero-icon-label="" style={{ fontSize: dp(16), fontWeight: 500 }}>
+              <span data-hero-icon-label="" style={{ fontSize: dp(isTv ? 20 : 16), fontWeight: 500 }}>
                 {action.label}
               </span>
             </div>

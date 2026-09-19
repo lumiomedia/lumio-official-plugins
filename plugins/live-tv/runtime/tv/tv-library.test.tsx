@@ -488,3 +488,34 @@ describe('Biblioteket utanför TV-läget (skrivbord och telefon)', () => {
     expect(getVodMode(null)).toBe('rows')
   })
 })
+
+describe('Rutnätet i TV-läge kontra skrivbord', () => {
+  const gridOf = () => screen.getAllByTestId('library-card')[0].parentElement as HTMLElement
+
+  it('TV får färre och större kort än skrivbordet', async () => {
+    mount({ vod: LIBRARY })
+    await waitFor(() => expect(screen.getAllByTestId('library-card').length).toBeGreaterThan(0))
+    // Samma designpixlar visas i full storlek på TV, där man sitter tre meter
+    // bort — färre kolumner ger läsbara affischer.
+    expect(gridOf().style.gridTemplateColumns).toBe('repeat(5, minmax(0, 1fr))')
+    cleanup()
+
+    __setTvModeForTests(false)
+    try {
+      mount({ vod: LIBRARY })
+      await waitFor(() => expect(screen.getAllByTestId('library-card').length).toBeGreaterThan(0), { timeout: 4000 })
+      expect(gridOf().style.gridTemplateColumns).toBe('repeat(7, minmax(0, 1fr))')
+    } finally {
+      __setTvModeForTests(true)
+    }
+  })
+
+  it('lämnar plats i toppen så fokusringen inte kapas', async () => {
+    mount({ vod: LIBRARY })
+    await waitFor(() => expect(screen.getAllByTestId('library-card').length).toBeGreaterThan(0))
+    // Ringen är 2 px med 3 px offset plus glöd. Noll toppadding klippte den
+    // på översta raden — korten såg ut att sakna överkant.
+    expect(gridOf().style.paddingTop).not.toBe('0px')
+    expect(parseInt(gridOf().style.paddingTop, 10)).toBeGreaterThanOrEqual(8)
+  })
+})
