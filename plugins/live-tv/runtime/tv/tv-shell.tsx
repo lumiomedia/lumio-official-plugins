@@ -23,6 +23,8 @@ import { buildTvPlayerProps } from './tv-player-props'
 import type { LiveTvPlayerTvProps } from './tv-player-types'
 import { TV_VIEWS } from './tv-views'
 import { MobileTabBar } from './mobile/mobile-tab-bar'
+import { useVodCategories } from '../hooks/useVodLibrary'
+import { getVodMode } from '../vod-data'
 import { MobileSheet } from './mobile/mobile-sheet'
 
 /**
@@ -298,6 +300,16 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
   }, [stream, StreamPlayer])
 
   const playStream = useCallback((request: StreamPlayRequest) => setStream(request), [])
+
+  /**
+   * Ska telefonens flik-rad ha en Bibliotek-flik?
+   *
+   * Bara när spellistan faktiskt har film eller serier, och bara när läget inte
+   * är `off`. En tom flik kostar bredd för den som bara har kanaler, och `off`
+   * betyder uttryckligen att VOD inte ska synas i Live TV.
+   */
+  const vodCats = useVodCategories(phone ? model.activeSource : null)
+  const showLibraryTab = phone && vodCats.total > 0 && getVodMode(model.activePlaylistId) !== 'off'
 
   const go = useCallback((next: TvView, extra: Record<string, string> = {}) => {
     onNavigate({ pageId: LIVE_TV_BROWSE_PAGE_ID, params: { view: next, ...extra } })
@@ -638,7 +650,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
       </main>
       {/* Flik-raden (telefon): borta medan spelaren är öppen — den ligger
           `position: fixed` och hade annars legat över bilden. */}
-      {phone && active === null ? <MobileTabBar view={view} onGo={(v) => go(v)} onMore={() => setMoreOpen(true)} /> : null}
+      {phone && active === null ? <MobileTabBar view={view} onGo={(v) => go(v)} onMore={() => setMoreOpen(true)} showLibrary={showLibraryTab} /> : null}
       {phone && moreOpen ? (
         <MobileSheet
           title={tt('moreActions')}

@@ -29,6 +29,8 @@ export const MIcons = {
   SpeakerSlash: ({ size = 22 }: IconProps) => svg(size, <><path d="M4 9v6h4l6 5V4l-6 5H4z" /><path d="m16 9 5 6M21 9l-5 6" /></>),
   Bell: ({ size = 22, filled = false }: IconProps) => svg(size, <><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z" /><path d="M10 20a2 2 0 0 0 4 0" /></>, filled),
   Lock: ({ size = 22, filled = false }: IconProps) => svg(size, <><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></>, filled),
+  /** Filmremsa — Biblioteket. Samma form som ikonraden på TV. */
+  FilmStrip: ({ size = 22 }: { size?: number }) => svg(size, <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4" /></>),
   SquaresFour: ({ size = 22 }: IconProps) => svg(size, <><rect x="4" y="4" width="7" height="7" rx="1.5" /><rect x="13" y="4" width="7" height="7" rx="1.5" /><rect x="4" y="13" width="7" height="7" rx="1.5" /><rect x="13" y="13" width="7" height="7" rx="1.5" /></>),
   ArrowsOut: ({ size = 22 }: IconProps) => svg(size, <><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5" /></>),
   DotsThree: ({ size = 22 }: IconProps) => svg(size, <><circle cx="6" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="18" cy="12" r="1.6" /></>, true),

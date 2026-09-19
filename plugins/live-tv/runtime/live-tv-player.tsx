@@ -18,6 +18,7 @@ import {
   openMpvPlayer,
   openNativePlayer,
   setAndroidImmersive,
+  setAndroidOrientation,
   setMpvVideoGeometry,
   setWindowNativeFullscreen,
   unlockBodyScroll,
@@ -228,7 +229,13 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
   useEffect(() => {
     if (!isDroidEngine) return
     setAndroidImmersive(true)
-    return () => setAndroidImmersive(false)
+    return () => {
+      setAndroidImmersive(false)
+      // Orienteringen MÅSTE släppas med. Helskärmsknappen låser aktiviteten i
+      // liggande, och utan den här raden blir hela appen kvar där när spelaren
+      // stängs — inte bara Live TV.
+      setAndroidOrientation('auto')
+    }
   }, [isDroidEngine])
   const {
     fileLoaded: mpvFileLoaded,
@@ -945,6 +952,27 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
         media.webkitEnterFullscreen()
         setDesktopFullscreen(true)
       }
+      return
+    }
+    /**
+     * ANDROID: orienteringen ÄR helskärmen.
+     *
+     * Webviewn svarar `Fullscreen is not supported` på requestFullscreen() och
+     * `not available on this device` på screen.orientation.lock() (mätt på en
+     * S10e 2026-09-19), så webbvägen ovan är stängd. Och det finns inget
+     * Tauri-fönster att växla i vägen nedanför — knappen gjorde därför
+     * ingenting alls, och man fick vrida telefonen för hand.
+     *
+     * Nativa bryggan låser aktiviteten i liggande och gömmer systemfälten.
+     * `auto` på vägen tillbaka, inte `portrait`: den som höll telefonen
+     * liggande innan ska inte tvingas upp i stående.
+     */
+    if (isAndroidTauriEnv) {
+      const next = !desktopFullscreen
+      setAndroidOrientation(next ? 'landscape' : 'auto')
+      setAndroidImmersive(next, 'live-tv-fullscreen')
+      setDesktopFullscreen(next)
+      syncMpvBoundsSoon()
       return
     }
     const wasPlaying = !mpvPaused

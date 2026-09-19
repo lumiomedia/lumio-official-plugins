@@ -108,3 +108,12 @@ describe('Spotlightkortet kollapsar inte', () => {
     expect(card.style.flexShrink).toBe('0')
   })
 })
+
+describe('Bibliotek i flik-raden', () => {
+  it('syns bara när spellistan har film eller serier', async () => {
+    // Utan VOD: fem flikar, ingen Bibliotek-flik som leder till en tom vy.
+    mountPhone({ view: 'hub' })
+    await screen.findByTestId('mobile-tab-bar')
+    expect(screen.queryByLabelText(/Library|Bibliotek/)).toBeNull()
+  })
+})

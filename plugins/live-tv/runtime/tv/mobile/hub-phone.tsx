@@ -14,6 +14,8 @@ import type { SpotlightReason } from '../tv-spotlight'
 import { MT, clamp2, ellipsis } from './mobile-tokens'
 import { MIcons } from './mobile-icons'
 import { MobileHeader } from './mobile-header'
+import { VodRowPhone } from './vod-row-phone'
+import { getVodMode } from '../../vod-data'
 import { MobileSheet } from './mobile-sheet'
 import { MobileLogo } from './mobile-logo'
 import { MobileChips } from './mobile-chips'
@@ -222,6 +224,14 @@ export function TvHubPhone({ model, nav }: TvViewProps) {
           </div>
         </section>
       ) : null}
+
+      {/* Film & serier — under Fortsätt titta, över Alla kanaler, som på TV. */}
+      <VodRowPhone
+        mode={getVodMode(model.activePlaylistId)}
+        source={model.activeSource}
+        playlistName={model.activePlaylistName ?? tt('allPlaylists')}
+        nav={nav}
+      />
 
       {/* Alla kanaler: chips i sidoscroll, rutnät i två kolumner, Visa fler i steg. */}
       <section style={{ display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 }}>
