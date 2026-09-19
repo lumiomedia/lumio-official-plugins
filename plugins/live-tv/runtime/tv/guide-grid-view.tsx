@@ -316,6 +316,29 @@ function GridBlock({ box, programme, locale, live, init, selected, reminded, onF
 }) {
   const times = `${box.clippedStart ? '…' : formatClock(programme.start, locale)}–${box.clippedEnd ? '…' : formatClock(programme.stop, locale)}`
   const marker = box.shape === 'marker'
+  /*
+    INGEN TEXT SOM ÄNDÅ INTE RYMS (Jerry 2026-09-19: "det ligger program
+    emellan andra program som inte visas helt" — i bild syns ett block med
+    bara "|" och ett med bara ":").
+
+    Formtrösklarna här är rutnätets (GRID_THRESHOLDS) mot skalan
+    PX_PER_MIN_GRID: marker under ~3,8 min, titel under ~15. Ett
+    5-minutersprogram blir alltså 23 px brett och får formen `title` — men
+    blocket har gp(10) padding på VARJE sida, så det återstår ~3 px åt en
+    13-px text. Kvar blev en enda halv glyf ur titeln eller tiden, vilket
+    läses som en trasig ruta och inte som ett program.
+
+    Blocket rörs inte i övrigt: samma bredd (det är programmets riktiga
+    längd), samma färg, samma hörn, samma klickyta och samma hovertips
+    (`title`-attributet ovan bär namn + tid). Det enda som utgår är texten
+    som inte går att läsa. Gränsen är paddingen (2 × gp(10)) plus ungefär tre
+    tecken i gp(13) — under det finns ingen läsbar text att rita.
+
+    Tröskeln bor HÄR och inte i epg-grid-geometry: den handlar om den här
+    vyns padding och typsnittsstorlek, inte om geometrin, och telefonens och
+    TV:ns egna former ska inte följa med.
+  */
+  const textFits = box.width >= gp(44)
   return (
     <div
       data-testid="grid-block"
@@ -343,8 +366,10 @@ function GridBlock({ box, programme, locale, live, init, selected, reminded, onF
       >
         {marker ? null : (
           <>
-            <div style={{ fontSize: gp(13), fontWeight: live ? 600 : 400, color: live ? TV.text : TV.muted, paddingRight: reminded ? gp(14) : 0, ...ellipsis }}>{programme.title}</div>
-            {box.shape === 'full' ? <div style={{ fontSize: gp(11), color: live ? 'rgba(243,244,248,0.6)' : TV.faint, ...ellipsis }}>{times}</div> : null}
+            {textFits ? (
+              <div style={{ fontSize: gp(13), fontWeight: live ? 600 : 400, color: live ? TV.text : TV.muted, paddingRight: reminded ? gp(14) : 0, ...ellipsis }}>{programme.title}</div>
+            ) : null}
+            {textFits && box.shape === 'full' ? <div style={{ fontSize: gp(11), color: live ? 'rgba(243,244,248,0.6)' : TV.faint, ...ellipsis }}>{times}</div> : null}
             {reminded ? <span style={{ position: 'absolute', right: gp(4), top: gp(4), color: TV.acc }}><Icons.Bell size={gp(11)} filled /></span> : null}
           </>
         )}

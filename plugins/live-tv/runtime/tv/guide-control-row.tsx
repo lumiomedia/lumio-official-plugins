@@ -135,15 +135,17 @@ export function GuideControlRow(props: GuideControls) {
         value={mode}
         onChange={props.onMode}
       />
-      {showZoom ? (
-        <ControlSegment<TimelineZoom>
-          testId="guide-zoom"
-          options={[{ key: '2h', label: tt('zoom2h') }, { key: '6h', label: tt('zoom6h') }, { key: 'day', label: tt('zoomDay') }]}
-          value={props.zoom ?? 'day'}
-          onChange={(z) => props.onZoom?.(z)}
-        />
-      ) : null}
-      <span style={{ flex: 1 }} />
+      {/*
+        DETALJER BREDVID LÄGESVÄXLAREN, INTE LÄNGST TILL HÖGER (Jerry
+        2026-09-19: "sätt detaljerchippet bredvid tablå-chippet ... klockans
+        meddelande är dynamiskt och kan bli bredare").
+
+        Chippet låg efter utfyllnaden, alltså granne med klockan. Klockan bär
+        värdens hälsning, och den texten växer med innehållet ("26 min kvar av
+        …"): på en lång rad trängdes chippet in i den. Här hör det dessutom
+        hemma — det är ett val som gäller Nu/Näst-läget, och lägesväxlaren är
+        det som byter dit.
+      */}
       {showDetails ? (
         <div
           data-testid="guide-details"
@@ -154,6 +156,15 @@ export function GuideControlRow(props: GuideControls) {
           {tt('details')}
         </div>
       ) : null}
+      {showZoom ? (
+        <ControlSegment<TimelineZoom>
+          testId="guide-zoom"
+          options={[{ key: '2h', label: tt('zoom2h') }, { key: '6h', label: tt('zoom6h') }, { key: 'day', label: tt('zoomDay') }]}
+          value={props.zoom ?? 'day'}
+          onChange={(z) => props.onZoom?.(z)}
+        />
+      ) : null}
+      <span style={{ flex: 1 }} />
       {/* Egen blocklåda (inte span): värdens klocka kan vara ett blockelement,
           och ett block i en inline-låda ritades förut ovanpå grannen. */}
       <div data-testid="guide-clock" style={{ display: 'inline-flex', alignItems: 'center', fontSize: gp(13), color: TV.dim, letterSpacing: '0.06em', whiteSpace: 'nowrap', flexShrink: 0 }}>{props.clock}</div>

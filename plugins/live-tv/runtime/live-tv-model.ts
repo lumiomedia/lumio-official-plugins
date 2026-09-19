@@ -769,8 +769,33 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
          * programantalet som "hämtar 480 000 av 17 000 kanaler".
          */
         epgRefreshRequested.add(listId)
-        const job = await refreshEpg(listId, epgUrls, sources)
-        await waitForJob(job)
+        try {
+          const job = await refreshEpg(listId, epgUrls, sources)
+          await waitForJob(job)
+        } catch (error) {
+          /*
+            EN MISSLYCKAD HÄMTNING RÄKNAS INTE SOM GJORD (Jerry 2026-09-19:
+            "första gången jag öppnade Live TV stod det att epg hade failat
+            att fetcha, och ingen epg visades … efter jag gick ur/in funkade
+            det").
+
+            Flaggan sätts FÖRE anropet med flit — den hindrar att varje
+            monterad modell startar sitt eget jobb. Men den togs aldrig bort
+            igen: setet rensas bara av testhjälparen, så ett fel här (nätet,
+            eller appen upptagen med importerna precis vid start) gjorde att
+            listan var utkvitterad för resten av sidladdningen och INGEN
+            senare montering försökte om. Tablån blev alltså tom tills appen
+            startades om — precis det läget som självläkte när jobbet ändå
+            gick klart i Rust och nästa ögonblicksbild råkade hitta färsk
+            data.
+
+            Nu släpps flaggan vid fel, så nästa montering får försöka. Herden
+            är fortfarande skyddad: så länge anropet är i luften står flaggan
+            kvar.
+          */
+          epgRefreshRequested.delete(listId)
+          throw error
+        }
         if (!live) return
         const next = await fetchNowSnapshot(listId, activeSource, { force: true })
         if (!live) return

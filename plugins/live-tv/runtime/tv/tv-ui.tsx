@@ -1,6 +1,6 @@
 'use client'
 
-import { createElement, useEffect, useState, type ComponentType, type CSSProperties, type ReactNode } from 'react'
+import { createElement, useEffect, useRef, useState, type ComponentType, type CSSProperties, type ReactNode } from 'react'
 import * as sdk from '@/lib/plugin-sdk'
 import { tvHoldHandlers, tvPointerHoldHandlers } from '@/lib/plugin-sdk'
 import { channelKey, getLiveTvLogoSrc, type M3uChannel } from '../live-tv-data'
@@ -450,6 +450,21 @@ export function useTvClockNode(locale: string): ReactNode {
   const sceneBoxScale = useSceneBoxScale()
   const narrowSurface = useNarrowSurface()
   const canCompensate = inSceneBox && sceneBoxScale !== null && !narrowSurface
+  /* Klockans OSKALADE bredd — se kommentaren vid returen: den målade bredden
+     är den här gånger inversen, och det är den yttre lådan måste vara. En
+     ResizeObserver och inte en engångsmätning: klockans text byter bredd vid
+     varje minuttick (17:59 → 18:00 är samma, men 9:59 → 10:00 är inte det). */
+  const clockRef = useRef<HTMLSpanElement | null>(null)
+  const [naturalWidth, setNaturalWidth] = useState(0)
+  useEffect(() => {
+    const el = clockRef.current
+    if (!el) return
+    const mat = () => setNaturalWidth(el.offsetWidth)
+    mat()
+    const vakt = new ResizeObserver(mat)
+    vakt.observe(el)
+    return () => vakt.disconnect()
+  }, [canCompensate])
   const useHostClock = HostClock !== null && (!inSceneBox || canCompensate)
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
@@ -465,9 +480,35 @@ export function useTvClockNode(locale: string): ReactNode {
   }, [useHostClock])
   if (useHostClock) {
     if (inSceneBox) {
+      /*
+        PLATSEN RESERVERAS (Jerry 2026-09-19: "på now/next ligger
+        detailsknappen över klockan i högra hörnet").
+
+        Se ÖVERLAPPSFÄLLAN i doc-kommentaren ovan: transformen målar klockan
+        `1 / skala` större men reserverar ingen layoutplats, så grannchipset
+        till vänster ritas ovanpå den målade ytan. `useNarrowSurface`-grinden
+        fångade bara lådor under 1024 css-px — överlappet uppstår vid VARJE
+        skala under 1, alltså även i ett brett fönster.
+
+        Yttre lådan får därför den MÅLADE bredden som riktig bredd: den mäts
+        på den oskalade klockan och multipliceras med samma invers. Då vet
+        flexraden hur mycket plats klockan tar och `gap` håller isär chipsen
+        som vanligt. Innehållet högerställs eftersom transformen utgår från
+        det hörnet — annars hade den skalade texten glidit inåt i den nya,
+        bredare lådan.
+
+        Före första mätningen (bredden 0) sätts ingen bredd alls: det är
+        exakt dagens beteende, och en bildruta senare står talet där.
+      */
+      const bredd = naturalWidth > 0 ? naturalWidth / sceneBoxScale! : undefined
       return (
-        <span style={{ display: 'inline-block', transform: `scale(${1 / sceneBoxScale!})`, transformOrigin: 'top right' }}>
-          <HostClock variant="desktop" />
+        <span style={{ display: 'inline-block', width: bredd, textAlign: 'right' }}>
+          <span
+            ref={clockRef}
+            style={{ display: 'inline-block', transform: `scale(${1 / sceneBoxScale!})`, transformOrigin: 'top right' }}
+          >
+            <HostClock variant="desktop" />
+          </span>
         </span>
       )
     }
