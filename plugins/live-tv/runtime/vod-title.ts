@@ -104,3 +104,23 @@ export function formatRuntime(minutes: number | null): string | null {
   const rest = minutes % 60
   return hours > 0 ? `${hours} h ${rest}` : `${rest} min`
 }
+
+/**
+ * Titelns logotyp (TMDB `images.logos`), samma som appens detaljsida ritar i
+ * stället för en textrubrik. Saknas för många titlar — då är `null` svaret och
+ * anroparen skriver titeln som text.
+ */
+export async function fetchTitleLogo(
+  tmdbId: number,
+  mediaType: 'movie' | 'tv',
+  signal?: AbortSignal,
+): Promise<string | null> {
+  try {
+    const res = await fetch(`/api/title-logo?tmdbId=${tmdbId}&type=${mediaType}`, signal ? { signal } : undefined)
+    if (!res.ok) return null
+    const data = (await res.json()) as { logoUrl?: unknown }
+    return typeof data.logoUrl === 'string' && data.logoUrl ? data.logoUrl : null
+  } catch {
+    return null
+  }
+}

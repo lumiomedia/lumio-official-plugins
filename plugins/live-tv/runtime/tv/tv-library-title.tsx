@@ -1,28 +1,29 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { isWatching, onWatchlistChanged, toggleWatchlist } from '@/lib/plugin-sdk'
+import { isMovieWatched, isWatching, onWatchedMoviesChanged, onWatchlistChanged, toggleMovieWatched, toggleWatchlist } from '@/lib/plugin-sdk'
 import { fetchVodEpisodes, lookupVod, type VodEpisode, type VodItem } from '../vod-client'
 import { findXtreamLoginByPseudoUrl, getLiveTvLists, getXtreamLogins } from '../live-tv-data'
-import { fetchVodTitleInfo, formatRuntime, type VodTitleInfo } from '../vod-title'
+import { fetchTitleLogo, fetchVodTitleInfo, formatRuntime, type VodTitleInfo } from '../vod-title'
 import type { TvViewProps } from './tv-shell'
-import { TV, dp, station } from './tv-ui'
+import { Icons, TV, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
 
 /**
- * Bibliotekets egen detaljvy — INNE i Live TV, med ikonraden kvar.
+ * Bibliotekets detaljvy — appens detaljsida, men inne i Live TV.
  *
- * Jerrys krav 2026-09-19: bakgrundsbild, spelknapp, Min lista, skådespelare,
- * och uppspelning härifrån. Uttryckligen INTE rekommendationer eller
- * kommentarer. Appens detaljsida (`media-details-panel`, 6 000 rader) bär allt
- * det och kan inte ritas i en Live TV-vy ändå — den äger sin egen sida. Här
- * hämtas bara DATAN ur samma endpoint appens sida använder (`/api/wiki`) och
- * ritas i TV-lägets egna primitiver.
+ * Formen är tagen ur appens egen sida (Jerrys skärmdump 2026-09-19):
+ * bakgrunden fyller HELA ytan bredvid ikonraden på 70 % opacitet, och
+ * informationsblocket ligger nere till vänster — titellogotyp, metarad,
+ * handling, och ett accentfärgat Play-piller följt av runda ikonknappar.
  *
- * Panelens egna uppgifter (affisch, titel, år) ritas direkt; TMDB-svaret fyller
- * på när det kommer. En titel utan TMDB-id visas alltså också — den blir bara
- * mager.
+ * Det som medvetet INTE följer med från appens sida: rekommendationer,
+ * kommentarer och strömväljaren. Källan är alltid panelen här, och Jerry bad
+ * uttryckligen att slippa resten.
  */
+
+/** Ikonknapparna efter Play, i appens ordning. */
+const ICON_SIZE = 44
 
 export function TvLibraryTitle({ model, nav, params }: TvViewProps) {
   const { tt } = useTvText()
@@ -31,6 +32,7 @@ export function TvLibraryTitle({ model, nav, params }: TvViewProps) {
 
   const [item, setItem] = useState<VodItem | null>(null)
   const [info, setInfo] = useState<VodTitleInfo | null>(null)
+  const [logoUrl, setLogoUrl] = useState<string | null>(null)
   const [episodes, setEpisodes] = useState<VodEpisode[] | null>(null)
   const [season, setSeason] = useState<number | null>(null)
 
@@ -46,15 +48,23 @@ export function TvLibraryTitle({ model, nav, params }: TvViewProps) {
     return () => { cancelled = true }
   }, [itemKey, source])
 
+  const mediaType = item?.kind === 'series' ? 'tv' : 'movie'
+
   useEffect(() => {
     setInfo(null)
+    setLogoUrl(null)
     if (!item?.tmdbId) return
     const controller = new AbortController()
-    void fetchVodTitleInfo(item.tmdbId, item.kind === 'series' ? 'tv' : 'movie', controller.signal).then((next) => {
+    void fetchVodTitleInfo(item.tmdbId, mediaType, controller.signal).then((next) => {
       if (!controller.signal.aborted) setInfo(next)
     })
+    // Logotypen är egen hämtning: den saknas för många titlar, och vyn ska
+    // inte vänta på den för att rita rubriken.
+    void fetchTitleLogo(item.tmdbId, mediaType, controller.signal).then((url) => {
+      if (!controller.signal.aborted) setLogoUrl(url)
+    })
     return () => controller.abort()
-  }, [item?.tmdbId, item?.kind])
+  }, [item?.tmdbId, mediaType])
 
   // Avsnitten hämtas bara för serier, och bara när vyn öppnas — ett anrop per
   // serie man faktiskt tittar på (värden cachar det en halvtimme).
@@ -62,7 +72,7 @@ export function TvLibraryTitle({ model, nav, params }: TvViewProps) {
     setEpisodes(null)
     setSeason(null)
     if (item?.kind !== 'series' || !item.seriesId) return
-    const login = sourceLoginFor(item)
+    const login = firstXtreamSource()
     if (!login) return
     let cancelled = false
     void fetchVodEpisodes(login.source, item.seriesId, login.xtream)
@@ -77,10 +87,17 @@ export function TvLibraryTitle({ model, nav, params }: TvViewProps) {
 
   const watchKey = item?.tmdbId ? String(item.tmdbId) : null
   const [inList, setInList] = useState(false)
+  const [watched, setWatched] = useState(false)
   useEffect(() => {
     if (!watchKey) return
-    setInList(isWatching(watchKey))
-    return onWatchlistChanged(() => setInList(isWatching(watchKey)))
+    const read = () => {
+      setInList(isWatching(watchKey))
+      setWatched(isMovieWatched({ tmdbId: watchKey }))
+    }
+    read()
+    const offList = onWatchlistChanged(read)
+    const offWatched = onWatchedMoviesChanged(read)
+    return () => { offList(); offWatched() }
   }, [watchKey])
 
   const seasons = useMemo(
@@ -104,127 +121,196 @@ export function TvLibraryTitle({ model, nav, params }: TvViewProps) {
   const year = info?.year ?? item.year ?? null
   const runtime = formatRuntime(info?.runtime ?? null)
   const seasonCount = info?.numberOfSeasons ?? (seasons.length || null)
+  const firstEpisode = seasonEpisodes[0] ?? episodes?.[0] ?? null
+
+  /** Metaraden, i appens ordning: genrer / år / längd / betyg. */
   const meta = [
+    info?.genres.length ? info.genres.join(' / ') : null,
     year ? String(year) : null,
     item.kind === 'series'
       ? seasonCount
         ? seasonCount === 1 ? tt('librarySeason') : tt('librarySeasons', { count: seasonCount })
         : null
       : runtime,
-    info?.genres.slice(0, 3).join(' · ') || null,
     info?.voteAverage ? info.voteAverage.toFixed(1) : item.rating ? item.rating.toFixed(1) : null,
   ].filter((part): part is string => Boolean(part))
 
-  const play = (url: string, label: string) => {
-    // Filmen spelas i Live TV:s egen spelare genom att ge den en kanal-form.
-    // Spelaren bryr sig bara om namn och URL; `group`/`tvgId` är tomma för att
-    // ingen EPG-matchning ska försöka sig på en film.
-    nav.play({ channel: { name: label, logo: item.posterUrl ?? null, group: '', url, tvgId: null }, url, label })
+  const playLabel = item.kind === 'series' && firstEpisode
+    ? tt('playEpisode', { season: firstEpisode.season, episode: String(firstEpisode.episode).padStart(2, '0') })
+    : tt('menuPlay')
+
+  const playUrl = item.url ?? firstEpisode?.url ?? null
+  const canPlay = Boolean(playUrl)
+
+  const openPlayer = (url: string, episode?: VodEpisode) => {
+    nav.playStream({
+      url,
+      title,
+      tmdbId: item.tmdbId ? String(item.tmdbId) : null,
+      mediaType,
+      posterUrl: info?.posterUrl ?? item.posterUrl ?? null,
+      backdropUrl: info?.backdropUrl ?? null,
+      year,
+      ...(episode ? { season: episode.season, episode: episode.episode } : {}),
+    })
   }
 
-  const onPlay = () => {
-    if (item.url) return play(item.url, title)
-    const first = seasonEpisodes[0] ?? episodes?.[0]
-    if (first) play(first.url, `${title} · S${first.season}E${first.episode}`)
-  }
-
-  const canPlay = Boolean(item.url) || Boolean(episodes && episodes.length > 0)
+  const actions: { key: string; label: string; icon: React.ReactNode; active?: boolean; run: () => void }[] = [
+    ...(item.tmdbId
+      ? [{
+          key: 'cast',
+          label: tt('fullCast'),
+          icon: <Icons.Users />,
+          run: () => nav.go('cast', { key: item.key, tmdbId: String(item.tmdbId), type: mediaType }),
+        }]
+      : []),
+    ...(watchKey
+      ? [{
+          key: 'list',
+          label: inList ? tt('inMyList') : tt('addToMyList'),
+          icon: <Icons.Bookmark filled={inList} />,
+          active: inList,
+          run: () => {
+            toggleWatchlist({
+              tmdbId: watchKey,
+              imdbId: info?.imdbId ?? item.imdbId ?? null,
+              title,
+              posterUrl: info?.posterUrl ?? item.posterUrl ?? null,
+            })
+            setInList(isWatching(watchKey))
+          },
+        }]
+      : []),
+    ...(watchKey && item.kind === 'movie'
+      ? [{
+          key: 'watched',
+          label: watched ? tt('watched') : tt('markWatched'),
+          icon: <Icons.Eye filled={watched} />,
+          active: watched,
+          run: () => {
+            toggleMovieWatched({ tmdbId: watchKey, imdbId: info?.imdbId ?? null, title, year })
+            setWatched(isMovieWatched({ tmdbId: watchKey }))
+          },
+        }]
+      : []),
+  ]
 
   return (
-    <div data-testid="tv-library-title" data-scroll="" style={{ flex: 1, minHeight: 0, overflowY: 'auto', position: 'relative' }}>
+    <div
+      data-testid="tv-library-title"
+      data-scroll=""
+      style={{ flex: 1, minHeight: 0, overflowY: 'auto', position: 'relative', display: 'flex', flexDirection: 'column' }}
+    >
+      {/* Bakgrunden fyller HELA ytan bredvid ikonraden, på 70 % som appens
+          sida. Fast position i flödet: den ska inte rulla med innehållet. */}
       {info?.backdropUrl ? (
         <div
           aria-hidden="true"
+          data-testid="title-backdrop"
           style={{
             position: 'absolute',
             inset: 0,
-            height: dp(620),
             backgroundImage: `url(${info.backdropUrl})`,
             backgroundSize: 'cover',
-            backgroundPosition: 'center 20%',
+            backgroundPosition: 'center',
+            opacity: 0.7,
           }}
         />
       ) : null}
-      {/* Skärmen som gör texten läsbar oavsett bild. Alltid ritad, även utan
-          bakgrund, så layouten inte hoppar när bilden landar. */}
       <div
         aria-hidden="true"
         style={{
           position: 'absolute',
           inset: 0,
-          height: dp(620),
-          background: `linear-gradient(90deg, ${TV.bg} 18%, rgba(0,0,0,0.55) 58%, rgba(0,0,0,0.15) 100%),
-                       linear-gradient(0deg, ${TV.bg} 2%, rgba(0,0,0,0) 60%)`,
+          background: `linear-gradient(0deg, ${TV.bg} 4%, rgba(0,0,0,0.75) 32%, rgba(0,0,0,0.15) 70%, rgba(0,0,0,0.35) 100%)`,
         }}
       />
 
-      <div style={{ position: 'relative', padding: `${dp(56)}px ${dp(48)}px ${dp(40)}px`, maxWidth: dp(1100) }}>
-        <div style={{ fontSize: dp(46), fontWeight: 700, lineHeight: 1.1 }}>{title}</div>
+      {/* Informationsblocket nere till vänster — `marginTop:auto` trycker ned
+          det oavsett hur hög ytan är. */}
+      <div style={{ position: 'relative', marginTop: 'auto', padding: `${dp(40)}px ${dp(48)}px ${dp(36)}px`, maxWidth: dp(1000) }}>
+        {logoUrl ? (
+          <img
+            src={logoUrl}
+            alt={title}
+            data-testid="title-logo"
+            style={{ maxWidth: dp(420), maxHeight: dp(120), objectFit: 'contain', display: 'block', marginBottom: dp(12) }}
+          />
+        ) : (
+          <div style={{ fontSize: dp(46), fontWeight: 700, lineHeight: 1.1, marginBottom: dp(8) }}>{title}</div>
+        )}
+
         {meta.length > 0 ? (
-          <div style={{ fontSize: dp(18), color: 'rgba(243,244,248,0.7)', marginTop: dp(10) }}>{meta.join(' · ')}</div>
+          <div style={{ fontSize: dp(17), color: 'rgba(243,244,248,0.85)' }}>{meta.join('  |  ')}</div>
         ) : null}
         {info?.tagline ? (
-          <div style={{ fontSize: dp(19), color: TV.dim, marginTop: dp(10), fontStyle: 'italic' }}>{info.tagline}</div>
+          <div style={{ fontSize: dp(17), color: TV.dim, marginTop: dp(6), fontStyle: 'italic' }}>{info.tagline}</div>
         ) : null}
         {info?.overview ? (
-          <p style={{ fontSize: dp(19), lineHeight: 1.5, color: 'rgba(243,244,248,0.85)', marginTop: dp(16), maxWidth: dp(760) }}>
+          <p
+            style={{
+              fontSize: dp(18),
+              lineHeight: 1.45,
+              color: 'rgba(243,244,248,0.9)',
+              marginTop: dp(12),
+              maxWidth: dp(700),
+              display: '-webkit-box',
+              WebkitLineClamp: 3,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+            }}
+          >
             {info.overview}
           </p>
         ) : null}
 
-        <div style={{ display: 'flex', gap: dp(12), marginTop: dp(26), flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: dp(10), marginTop: dp(20) }}>
           {canPlay ? (
             <div
               data-testid="title-play"
-              {...station(onPlay, undefined, { 'data-init': '' })}
+              {...station(() => openPlayer(playUrl as string, item.kind === 'series' ? firstEpisode ?? undefined : undefined), undefined, { 'data-init': '' })}
               style={{
-                height: dp(56),
-                padding: `0 ${dp(30)}px`,
+                height: dp(ICON_SIZE),
+                padding: `0 ${dp(24)}px`,
                 borderRadius: 999,
                 background: TV.acc,
                 color: '#fff',
-                fontSize: dp(20),
+                fontSize: dp(18),
                 fontWeight: 600,
                 display: 'inline-flex',
                 alignItems: 'center',
+                gap: dp(8),
                 cursor: 'pointer',
               }}
             >
-              {tt('menuPlay')}
+              <Icons.Play size={dp(18)} />
+              {playLabel}
             </div>
           ) : null}
-          {watchKey ? (
+          {actions.map((action, index) => (
             <div
-              data-testid="title-watchlist"
-              data-active={inList ? '' : undefined}
-              {...station(
-                () => {
-                  toggleWatchlist({
-                    tmdbId: watchKey,
-                    imdbId: info?.imdbId ?? item.imdbId ?? null,
-                    title,
-                    posterUrl: info?.posterUrl ?? item.posterUrl ?? null,
-                  })
-                  setInList(isWatching(watchKey))
-                },
-                undefined,
-                canPlay ? undefined : { 'data-init': '' },
-              )}
+              key={action.key}
+              data-testid={`title-action-${action.key}`}
+              data-active={action.active ? '' : undefined}
+              title={action.label}
+              aria-label={action.label}
+              {...station(action.run, undefined, !canPlay && index === 0 ? { 'data-init': '' } : undefined)}
               style={{
-                height: dp(56),
-                padding: `0 ${dp(26)}px`,
+                width: dp(ICON_SIZE),
+                height: dp(ICON_SIZE),
                 borderRadius: 999,
-                border: `1px solid ${inList ? TV.acc : TV.lineStrong}`,
-                background: inList ? TV.accMix(18) : TV.s08,
-                fontSize: dp(20),
+                background: action.active ? TV.accMix(18) : TV.s10,
+                border: `1px solid ${action.active ? TV.acc : 'transparent'}`,
+                color: TV.text,
                 display: 'inline-flex',
                 alignItems: 'center',
+                justifyContent: 'center',
                 cursor: 'pointer',
               }}
             >
-              {inList ? tt('inMyList') : tt('addToMyList')}
+              {action.icon}
             </div>
-          ) : null}
+          ))}
         </div>
 
         {item.kind === 'series' ? (
@@ -236,37 +322,8 @@ export function TvLibraryTitle({ model, nav, params }: TvViewProps) {
             loading={episodes === null}
             emptyLabel={tt('libraryNoEpisodes')}
             seasonLabel={(n) => tt('librarySeasonNumber', { count: n })}
-            onPlay={(entry) => play(entry.url, `${title} · S${entry.season}E${entry.episode}`)}
+            onPlay={(entry) => openPlayer(entry.url, entry)}
           />
-        ) : null}
-
-        {info && info.cast.length > 0 ? (
-          <section style={{ marginTop: dp(36) }} data-testid="title-cast">
-            <div style={{ fontSize: dp(24), fontWeight: 600, marginBottom: dp(14) }}>{tt('cast')}</div>
-            <div data-row="" style={{ display: 'flex', gap: dp(14), overflowX: 'auto', paddingBottom: dp(6) }}>
-              {info.cast.map((person) => (
-                <div key={person.id} style={{ width: dp(130), flexShrink: 0 }}>
-                  <div
-                    style={{
-                      aspectRatio: '2 / 3',
-                      borderRadius: dp(10),
-                      background: TV.s07,
-                      border: `1px solid ${TV.lineCard}`,
-                      backgroundImage: person.profileUrl ? `url(${person.profileUrl})` : undefined,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                    }}
-                  />
-                  <div style={{ fontSize: dp(16), fontWeight: 600, marginTop: dp(6), whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {person.name}
-                  </div>
-                  <div style={{ fontSize: dp(14), color: 'rgba(243,244,248,0.55)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {person.character}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
         ) : null}
       </div>
     </div>
@@ -294,11 +351,11 @@ function SeasonPicker({
 }) {
   if (loading) return null
   if (seasons.length === 0) {
-    return <div style={{ marginTop: dp(28), fontSize: dp(18), color: TV.dim }}>{emptyLabel}</div>
+    return <div style={{ marginTop: dp(20), fontSize: dp(17), color: TV.dim }}>{emptyLabel}</div>
   }
   return (
-    <section style={{ marginTop: dp(32) }} data-testid="title-seasons">
-      <div data-row="" style={{ display: 'flex', gap: dp(10), overflowX: 'auto', marginBottom: dp(14) }}>
+    <section style={{ marginTop: dp(24) }} data-testid="title-seasons">
+      <div data-row="" style={{ display: 'flex', gap: dp(10), overflowX: 'auto', marginBottom: dp(12) }}>
         {seasons.map((number) => (
           <div
             key={number}
@@ -306,13 +363,13 @@ function SeasonPicker({
             data-active={number === season ? '' : undefined}
             {...station(() => onSeason(number))}
             style={{
-              height: dp(44),
-              padding: `0 ${dp(20)}px`,
+              height: dp(40),
+              padding: `0 ${dp(18)}px`,
               borderRadius: 999,
               flexShrink: 0,
               display: 'inline-flex',
               alignItems: 'center',
-              fontSize: dp(17),
+              fontSize: dp(16),
               cursor: 'pointer',
               background: number === season ? TV.s16 : TV.s06,
               color: number === season ? '#fff' : 'rgba(243,244,248,0.6)',
@@ -322,32 +379,25 @@ function SeasonPicker({
           </div>
         ))}
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: dp(6) }}>
+      <div data-row="" style={{ display: 'flex', gap: dp(10), overflowX: 'auto', paddingBottom: dp(4) }}>
         {episodes.map((entry) => (
           <div
             key={`${entry.season}:${entry.episode}`}
             data-testid="title-episode"
             {...station(() => onPlay(entry))}
             style={{
-              minHeight: dp(60),
+              width: dp(260),
+              flexShrink: 0,
               borderRadius: dp(12),
-              padding: `${dp(10)}px ${dp(16)}px`,
+              padding: `${dp(10)}px ${dp(14)}px`,
               background: TV.s06,
-              display: 'flex',
-              alignItems: 'center',
-              gap: dp(16),
               cursor: 'pointer',
             }}
           >
-            <span style={{ width: dp(64), fontSize: dp(18), color: 'rgba(243,244,248,0.5)', fontVariantNumeric: 'tabular-nums' }}>
-              {`E${entry.episode}`}
-            </span>
-            <span style={{ flex: 1, minWidth: 0, fontSize: dp(19), whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ fontSize: dp(15), color: 'rgba(243,244,248,0.5)' }}>{`E${entry.episode}`}</div>
+            <div style={{ fontSize: dp(17), whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {entry.title || `Episode ${entry.episode}`}
-            </span>
-            {entry.runtimeMin ? (
-              <span style={{ fontSize: dp(16), color: 'rgba(243,244,248,0.5)' }}>{`${entry.runtimeMin} min`}</span>
-            ) : null}
+            </div>
           </div>
         ))}
       </div>
@@ -356,14 +406,13 @@ function SeasonPicker({
 }
 
 /**
- * Källan och inloggningen som titeln kom ur.
+ * Första Xtream-källan med en giltig inloggning.
  *
  * Titeln bär inte sin källa (indexet svarar med titlar, inte med var de låg),
- * så den letas upp bland Xtream-listorna. Med EN panel är det första träffen;
- * med flera väljs den vars konto finns kvar — avsnittshämtningen behöver just
- * DEN inloggningen för att bygga spelbara URL:er.
+ * och avsnittshämtningen behöver en inloggning för att bygga spelbara URL:er.
+ * Med flera paneler tas den första som har ett konto kvar.
  */
-function sourceLoginFor(item: VodItem): { source: string; xtream: { base: string; username: string; password: string; format: string } } | null {
+function firstXtreamSource(): { source: string; xtream: { base: string; username: string; password: string; format: string } } | null {
   const logins = getXtreamLogins()
   for (const list of getLiveTvLists()) {
     if (list.kind !== 'xtream' || !list.source) continue
@@ -374,6 +423,5 @@ function sourceLoginFor(item: VodItem): { source: string; xtream: { base: string
       xtream: { base: login.base, username: login.username, password: login.password, format: login.format },
     }
   }
-  void item
   return null
 }

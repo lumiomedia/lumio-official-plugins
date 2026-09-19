@@ -267,6 +267,10 @@ const EN = {
   inMyList: '✓ In my list',
   librarySeasonNumber: 'Season {count}',
   libraryNoEpisodes: 'The provider sent no episodes for this series',
+  fullCast: 'Full cast',
+  watched: 'Watched',
+  markWatched: 'Mark as watched',
+  playEpisode: 'Play S{season}E{episode}',
   // Tomma
   guideEmpty: 'No channels in this category',
 } as const
@@ -510,6 +514,10 @@ const SV: Record<keyof typeof EN, string> = {
   inMyList: '✓ I min lista',
   librarySeasonNumber: 'Säsong {count}',
   libraryNoEpisodes: 'Leverantören skickade inga avsnitt för den här serien',
+  fullCast: 'Rollista',
+  watched: 'Sedd',
+  markWatched: 'Markera som sedd',
+  playEpisode: 'Spela S{season}E{episode}',
   guideEmpty: 'Inga kanaler i kategorin',
 }
 

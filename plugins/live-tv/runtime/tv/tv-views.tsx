@@ -10,6 +10,7 @@ import { TvSearch } from './tv-search'
 import { TvMultiview } from './tv-multiview'
 import { TvLibrary } from './tv-library'
 import { TvLibraryTitle } from './tv-library-title'
+import { TvLibraryCast } from './tv-library-cast'
 import { TvSettingsView } from './tv-settings'
 
 export const TV_VIEWS: Record<TvView, ComponentType<TvViewProps>> = {
@@ -21,5 +22,6 @@ export const TV_VIEWS: Record<TvView, ComponentType<TvViewProps>> = {
   multi: TvMultiview,
   library: TvLibrary,
   title: TvLibraryTitle,
+  cast: TvLibraryCast,
   settings: TvSettingsView,
 }

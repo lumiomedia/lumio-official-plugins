@@ -682,3 +682,40 @@ export function onWatchlistChanged(cb: Listener): () => void {
 export function __resetWatchlistForTests(): void {
   watchlist.clear()
 }
+
+/** Sett-tillstånd för film. I appen `lib/watched-movies`. */
+const watchedMovies = new Set<string>()
+const watchedListeners = new Set<Listener>()
+
+export function isMovieWatched(target: { tmdbId?: string | null }): boolean {
+  return Boolean(target.tmdbId && watchedMovies.has(target.tmdbId))
+}
+export function toggleMovieWatched(entry: { tmdbId?: string | null }): boolean {
+  const id = entry.tmdbId
+  if (!id) return false
+  const next = !watchedMovies.has(id)
+  if (next) watchedMovies.add(id)
+  else watchedMovies.delete(id)
+  for (const cb of watchedListeners) cb()
+  return next
+}
+export function onWatchedMoviesChanged(cb: Listener): () => void {
+  watchedListeners.add(cb)
+  return () => watchedListeners.delete(cb)
+}
+export function getWatchedMovies(): { tmdbId: string }[] {
+  return [...watchedMovies].map((tmdbId) => ({ tmdbId }))
+}
+export function __resetWatchedForTests(): void {
+  watchedMovies.clear()
+}
+
+/** Appens riktiga spelare. Stubben bevisar bara VILKEN url den fick. */
+export function VideoPlayerModal(props: { url: string; title: string }) {
+  return createElement('div', { 'data-testid': 'app-player', 'data-url': props.url }, props.title)
+}
+
+/** Appens rollista, monterad av Live TV:s cast-vy. */
+export function FullCastPage(props: { tmdbId: string; mediaType: string }) {
+  return createElement('div', { 'data-testid': 'app-full-cast', 'data-tmdb': props.tmdbId, 'data-type': props.mediaType })
+}

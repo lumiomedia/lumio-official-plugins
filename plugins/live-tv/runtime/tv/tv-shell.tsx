@@ -70,8 +70,28 @@ function SurfaceBackdrop({ cutouts }: { cutouts: SurfaceCutout[] }) {
   )
 }
 
-export type TvView = 'hub' | 'guide' | 'favs' | 'channel' | 'search' | 'multi' | 'library' | 'title' | 'settings'
-const VIEWS: TvView[] = ['hub', 'guide', 'favs', 'channel', 'search', 'multi', 'library', 'title', 'settings']
+export type TvView = 'hub' | 'guide' | 'favs' | 'channel' | 'search' | 'multi' | 'library' | 'title' | 'cast' | 'settings'
+const VIEWS: TvView[] = ['hub', 'guide', 'favs', 'channel', 'search', 'multi', 'library', 'title', 'cast', 'settings']
+
+/**
+ * En VOD-uppspelning i APPENS spelare, inte Live TV:s.
+ *
+ * Kanalspelaren saknar tidslinje, längd och position — den är byggd för
+ * kanaler. En film behöver spolning och återupptagning, och appens
+ * `VideoPlayerModal` har allt det plus Trakt och fortsätt-titta. Strömmen är
+ * fortfarande panelens: `url` går rakt in, ingen källupplösning på vägen.
+ */
+export interface StreamPlayRequest {
+  url: string
+  title: string
+  tmdbId?: string | null
+  mediaType?: 'movie' | 'tv'
+  posterUrl?: string | null
+  backdropUrl?: string | null
+  year?: number | null
+  season?: number
+  episode?: number
+}
 
 export interface TvNav {
   view: TvView
@@ -79,6 +99,8 @@ export interface TvNav {
   go(view: TvView, params?: Record<string, string>): void
   back(): void
   play(request: PlayRequest): void
+  /** VOD: spela i appens vanliga spelare (tidslinje, återupptagning). */
+  playStream(request: StreamPlayRequest): void
   openChannel(channel: M3uChannel, programmeStart?: number): void
   openMenu(target: TvGlassMenuTarget): void
   channelMenu(channel: M3uChannel, element: HTMLElement, extra?: TvGlassMenuAction[]): void
@@ -160,6 +182,10 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
 
   const [Player, setPlayer] = useState<PlayerComponent | null>(null)
   const [active, setActive] = useState<PlayRequest | null>(null)
+  // Appens spelare laddas först när en VOD-titel faktiskt spelas — den drar in
+  // hela uppspelningskedjan och ska inte kosta något för den som bara zappar.
+  const [stream, setStream] = useState<StreamPlayRequest | null>(null)
+  const [StreamPlayer, setStreamPlayer] = useState<ComponentType<Record<string, unknown>> | null>(null)
   const [pending, setPending] = useState<PendingGate | null>(null)
   const [menu, setMenu] = useState<TvGlassMenuTarget | null>(null)
   const [zapDigits, setZapDigits] = useState('')
@@ -221,6 +247,24 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     void import('../live-tv-player').then((mod) => { if (!cancelled) setPlayer(() => mod.LiveTvPlayer as PlayerComponent) }).catch(() => { if (!cancelled) setActive(null) })
     return () => { cancelled = true }
   }, [active, Player])
+
+  useEffect(() => {
+    if (!stream || StreamPlayer) return
+    let cancelled = false
+    void import('@/lib/plugin-sdk')
+      .then((mod) => {
+        const component = (mod as unknown as { VideoPlayerModal?: ComponentType<Record<string, unknown>> }).VideoPlayerModal
+        if (cancelled) return
+        // En äldre app utan exporten ska inte lämna en död skärm: släpp
+        // begäran så vyn står kvar som den var.
+        if (component) setStreamPlayer(() => component)
+        else setStream(null)
+      })
+      .catch(() => { if (!cancelled) setStream(null) })
+    return () => { cancelled = true }
+  }, [stream, StreamPlayer])
+
+  const playStream = useCallback((request: StreamPlayRequest) => setStream(request), [])
 
   const go = useCallback((next: TvView, extra: Record<string, string> = {}) => {
     onNavigate({ pageId: LIVE_TV_BROWSE_PAGE_ID, params: { view: next, ...extra } })
@@ -428,7 +472,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
   }, [settings.startOnLastChannel, view, params, model.history, model.byUrl, play])
 
   const nav: TvNav = useMemo(() => ({
-    view, params: viewParams, go, back, play, openChannel, openMenu: setMenu, channelMenu, addToMultiview, pushLayer, toast, playerOpen: active !== null,
+    view, params: viewParams, go, back, play, playStream, openChannel, openMenu: setMenu, channelMenu, addToMultiview, pushLayer, toast, playerOpen: active !== null,
   }), [view, viewParams, go, back, play, openChannel, channelMenu, addToMultiview, pushLayer, toast, active])
 
   /**
@@ -537,6 +581,27 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
 
       {activeChannel && Player ? (
         <Player channel={activeChannel} onClose={() => setActive(null)} listId={model.epgListId} epgUrls={model.epgUrls} onSwitchChannel={(channel) => play({ channel })} tv={tvPlayerProps} />
+      ) : null}
+      {/* VOD i appens spelare. Den lägger sig över hela appen, som när man
+          spelar en ström från detaljsidan — Live TV står kvar under och är
+          tillbaka när man stänger. */}
+      {stream && StreamPlayer ? (
+        <div data-testid="tv-stream-player" data-live-tv-layer="">
+          <StreamPlayer
+            url={stream.url}
+            title={stream.title}
+            mediaTitle={stream.title}
+            tmdbId={stream.tmdbId ?? undefined}
+            mediaType={stream.mediaType ?? 'movie'}
+            mediaId={stream.tmdbId ? `${stream.mediaType === 'tv' ? 'tv' : 'movie'}-${stream.tmdbId}` : undefined}
+            posterUrl={stream.posterUrl ?? undefined}
+            backdropUrl={stream.backdropUrl ?? undefined}
+            year={stream.year ?? undefined}
+            season={stream.season}
+            episode={stream.episode}
+            onClose={() => setStream(null)}
+          />
+        </div>
       ) : null}
       <PinGate
         open={pending !== null}

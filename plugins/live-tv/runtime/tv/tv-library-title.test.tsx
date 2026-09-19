@@ -10,11 +10,7 @@ import {
 import { seedLiveTvIndex, type VodItemFixture } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
 
-vi.mock('../live-tv-player', () => ({
-  LiveTvPlayer: ({ channel }: { channel: { name: string; url: string } }) => (
-    <div data-testid="player" data-url={channel.url}>{channel.name}</div>
-  ),
-}))
+vi.mock('../live-tv-player', () => ({ LiveTvPlayer: () => <div data-testid="channel-player" /> }))
 import { LiveTvTvShell } from './tv-shell'
 
 const SOURCE = 'xtream://panel/login-1'
@@ -141,36 +137,59 @@ describe('TvLibraryTitle', () => {
     expect(panel.textContent).toContain('8.4')
   })
 
-  it('visar skådespelarna men varken rekommendationer eller kommentarer', async () => {
+  it('har appens ikonrad efter Play, men inga rekommendationer', async () => {
     mount(MOVIE)
-    await waitFor(() => expect(screen.getByTestId('title-cast')).toBeTruthy())
-    expect(screen.getByText('Joan Cusack')).toBeTruthy()
-    expect(screen.getByText('Woody (voice)')).toBeTruthy()
+    await waitFor(() => expect(screen.getByTestId('title-play')).toBeTruthy())
+    expect(screen.getByTestId('title-action-cast')).toBeTruthy()
+    expect(screen.getByTestId('title-action-list')).toBeTruthy()
+    expect(screen.getByTestId('title-action-watched')).toBeTruthy()
     // Jerrys krav: den magra vyn har inget av det appens sida bär.
     expect(screen.queryByTestId('title-recommendations')).toBeNull()
     expect(screen.queryByTestId('title-comments')).toBeNull()
   })
 
-  it('spelar panelens ström, inte någon annan källa', async () => {
+  it('bakgrunden fyller hela ytan bredvid ikonraden', async () => {
+    mount(MOVIE)
+    await waitFor(() => expect(screen.getByTestId('title-backdrop')).toBeTruthy())
+    const backdrop = screen.getByTestId('title-backdrop')
+    expect(backdrop.style.position).toBe('absolute')
+    // `inset: 0` — inte en fast höjd i överkanten som första utkastet hade.
+    expect(backdrop.style.inset).toBe('0')
+    expect(backdrop.style.backgroundImage).toContain('backdrop.jpg')
+  })
+
+  it('rollista-ikonen öppnar appens rollista inne i Live TV', async () => {
+    const onNavigate = mount(MOVIE)
+    await waitFor(() => expect(screen.getByTestId('title-action-cast')).toBeTruthy())
+    fireEvent.click(screen.getByTestId('title-action-cast'))
+    expect(onNavigate).toHaveBeenCalledWith({
+      pageId: 'live-tv-browse',
+      params: { view: 'cast', key: 'vod:1', tmdbId: '1084244', type: 'movie' },
+    })
+  })
+
+  it('spelar panelens ström i APPENS spelare, inte kanalspelaren', async () => {
     mount(MOVIE)
     await waitFor(() => expect(screen.getByTestId('title-play')).toBeTruthy())
     fireEvent.click(screen.getByTestId('title-play'))
-    await waitFor(() => expect(screen.getByTestId('player')).toBeTruthy())
+    // Appens spelare har tidslinje och återupptagning; kanalspelaren har det inte.
+    await waitFor(() => expect(screen.getByTestId('app-player')).toBeTruthy())
+    expect(screen.queryByTestId('channel-player')).toBeNull()
     // Exakt Xtream-URL:en — ingen debrid-upplösning på vägen.
-    expect(screen.getByTestId('player').getAttribute('data-url')).toBe('http://panel/movie/u/p/1.mkv')
+    expect(screen.getByTestId('app-player').getAttribute('data-url')).toBe('http://panel/movie/u/p/1.mkv')
   })
 
   it('Min lista går att slå på och av och hamnar i appens lista', async () => {
     mount(MOVIE)
-    await waitFor(() => expect(screen.getByTestId('title-watchlist')).toBeTruthy())
-    expect(screen.getByTestId('title-watchlist').hasAttribute('data-active')).toBe(false)
+    await waitFor(() => expect(screen.getByTestId('title-action-list')).toBeTruthy())
+    expect(screen.getByTestId('title-action-list').hasAttribute('data-active')).toBe(false)
 
-    fireEvent.click(screen.getByTestId('title-watchlist'))
-    await waitFor(() => expect(screen.getByTestId('title-watchlist').hasAttribute('data-active')).toBe(true))
+    fireEvent.click(screen.getByTestId('title-action-list'))
+    await waitFor(() => expect(screen.getByTestId('title-action-list').hasAttribute('data-active')).toBe(true))
     expect(getWatchlist().map((entry) => entry.tmdbId)).toEqual(['1084244'])
 
-    fireEvent.click(screen.getByTestId('title-watchlist'))
-    await waitFor(() => expect(screen.getByTestId('title-watchlist').hasAttribute('data-active')).toBe(false))
+    fireEvent.click(screen.getByTestId('title-action-list'))
+    await waitFor(() => expect(screen.getByTestId('title-action-list').hasAttribute('data-active')).toBe(false))
     expect(getWatchlist()).toHaveLength(0)
   })
 
@@ -186,17 +205,17 @@ describe('TvLibraryTitle', () => {
     await waitFor(() => expect(screen.getAllByTestId('title-episode')).toHaveLength(1))
 
     fireEvent.click(screen.getAllByTestId('title-episode')[0])
-    await waitFor(() => expect(screen.getByTestId('player')).toBeTruthy())
-    expect(screen.getByTestId('player').getAttribute('data-url')).toBe('http://panel/series/u/p/201.mkv')
+    await waitFor(() => expect(screen.getByTestId('app-player')).toBeTruthy())
+    expect(screen.getByTestId('app-player').getAttribute('data-url')).toBe('http://panel/series/u/p/201.mkv')
   })
 
   it('en titel utan tmdb-id visar panelens uppgifter och går ändå att spela', async () => {
     mount({ ...MOVIE, tmdbId: undefined, title: 'UFC 244 PPV' })
     await waitFor(() => expect(screen.getByText('UFC 244 PPV')).toBeTruthy())
     // Ingen TMDB-identitet = ingen Min lista-knapp, men strömmen finns.
-    expect(screen.queryByTestId('title-watchlist')).toBeNull()
+    expect(screen.queryByTestId('title-action-list')).toBeNull()
     fireEvent.click(screen.getByTestId('title-play'))
-    await waitFor(() => expect(screen.getByTestId('player')).toBeTruthy())
+    await waitFor(() => expect(screen.getByTestId('app-player')).toBeTruthy())
   })
 
   it('säger ifrån när panelen inte skickade några avsnitt', async () => {
