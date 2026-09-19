@@ -11,6 +11,8 @@ import { useSchedules } from '../hooks/useSchedules'
 import type { TvViewProps } from './tv-shell'
 import { ChannelArt, Chip, Icons, Progress, Tag, TV, cardStyle, dp, station, useTvClockNode } from './tv-ui'
 import { useTvText } from './tv-strings'
+import { TvVodHubSection } from './tv-vod-hub'
+import { getVodMode } from '../vod-data'
 import { pickSpotlight, type SpotlightReason } from './tv-spotlight'
 
 const SPOTLIGHT_COUNT = 3
@@ -221,6 +223,14 @@ export function TvHub({ model, nav }: TvViewProps) {
           </div>
         </section>
       ) : null}
+
+      {/* Film & serier (VOD) — under Fortsätt titta, över Alla kanaler */}
+      <TvVodHubSection
+        mode={getVodMode(model.activePlaylistId)}
+        source={model.activeSource}
+        playlistName={model.activePlaylistName ?? ''}
+        nav={nav}
+      />
 
       {/* Alla kanaler */}
       <section style={{ display: 'flex', flexDirection: 'column', gap: dp(14) }}>

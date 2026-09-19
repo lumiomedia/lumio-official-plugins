@@ -42,6 +42,29 @@ export interface SeedOptions {
   cache?: EpgCacheEntry | null
   /** När appen senast hämtade EPG:t. Default "nyss", så ingen omhämtning begärs. */
   epgFetchedAt?: number | null
+  /**
+   * Bibliotekets titlar per KÄLLA — samma nyckel som kanalerna ligger på.
+   * Utelämnad = panelen har ingen VOD, och `/vod/*` svarar `known: false`
+   * precis som en källa som aldrig importerats.
+   */
+  vod?: Record<string, VodItemFixture[]>
+  /** Sant = värden håller på att hämta biblioteket (vyn ska visa "hämtar"). */
+  vodImporting?: boolean
+}
+
+/** Bibliotekstitel som fixtur — samma form som `VodItem` över tråden. */
+export interface VodItemFixture {
+  key: string
+  kind: 'movie' | 'series'
+  title: string
+  categoryId: string
+  categoryName: string
+  posterUrl?: string
+  year?: number
+  rating?: number
+  addedAt?: number
+  tmdbId?: number
+  url?: string
 }
 
 /** Nollställer allt modulminne som modellen och EPG-hookarna delar. */
@@ -62,6 +85,8 @@ export function seedLiveTvIndex(opts: SeedOptions = {}): void {
   const cache = opts.cache ?? null
   const nameIndex = cache ? buildNameToTvgIdIndex(cache) : new Map<string, string>()
   const fetchedAt = opts.epgFetchedAt === undefined ? Date.now() : opts.epgFetchedAt
+  const vodBySource: Record<string, VodItemFixture[]> = opts.vod ?? {}
+  const vodImporting = opts.vodImporting === true
 
   const bySource = new Map<string, IndexChannel[]>()
   const all: IndexChannel[] = []
@@ -179,6 +204,69 @@ export function seedLiveTvIndex(opts: SeedOptions = {}): void {
     }
     if (path === '/api/live-tv/batch') {
       return json({ ok: true })
+    }
+    if (path === '/api/live-tv/vod/categories') {
+      const source = params.get('source')
+      const items = source ? vodBySource[source] : Object.values(vodBySource).flat()
+      if (!items) return json({ categories: [], total: 0, known: false, importing: vodImporting })
+      const counts = new Map<string, { id: string; name: string; kind: string; count: number }>()
+      for (const item of items) {
+        const key = `${item.kind}:${item.categoryId}`
+        const seen = counts.get(key)
+        if (seen) seen.count += 1
+        else counts.set(key, { id: item.categoryId, name: item.categoryName, kind: item.kind, count: 1 })
+      }
+      // Film före serier, sedan namn — samma ordning som värden svarar med.
+      const categories = [...counts.values()].sort(
+        (left, right) =>
+          (left.kind === 'movie' ? 0 : 1) - (right.kind === 'movie' ? 0 : 1) || left.name.localeCompare(right.name),
+      )
+      return json({ categories, total: items.length, known: true, importing: vodImporting })
+    }
+    if (path === '/api/live-tv/vod/query') {
+      const source = params.get('source')
+      const all = source ? vodBySource[source] : Object.values(vodBySource).flat()
+      if (!all) return json({ items: [], total: 0, known: false })
+      const categoryId = params.get('categoryId')
+      const kind = params.get('kind')
+      const q = (params.get('q') ?? '').toLowerCase()
+      let hits = all.filter(
+        (item) =>
+          (!categoryId || item.categoryId === categoryId)
+          && (!kind || item.kind === kind)
+          && (!q || item.title.toLowerCase().includes(q)),
+      )
+      const sort = params.get('sort') ?? 'new'
+      hits = [...hits].sort((left, right) =>
+        sort === 'az'
+          ? left.title.localeCompare(right.title)
+          : sort === 'rating'
+            ? (right.rating ?? 0) - (left.rating ?? 0)
+            : (right.addedAt ?? 0) - (left.addedAt ?? 0),
+      )
+      const offset = Number(params.get('offset') ?? 0)
+      const limit = Number(params.get('limit') ?? 120)
+      return json({ items: hits.slice(offset, offset + limit), total: hits.length, known: true })
+    }
+    if (path === '/api/live-tv/vod/status') {
+      return json({
+        sources: Object.entries(vodBySource).map(([id, items]) => ({
+          id,
+          total: items.length,
+          movies: items.filter((item) => item.kind === 'movie').length,
+          series: items.filter((item) => item.kind === 'series').length,
+          updatedAt: 0,
+          importing: vodImporting,
+        })),
+      })
+    }
+    if (path === '/api/live-tv/vod/lookup') {
+      const keys: string[] = JSON.parse(String(init?.body ?? '{}')).keys ?? []
+      const all = Object.values(vodBySource).flat()
+      return json({ items: keys.map((key) => all.find((item) => item.key === key)).filter(Boolean) })
+    }
+    if (path === '/api/live-tv/vod/import') {
+      return json({ importing: true, started: true })
     }
     return Promise.resolve({ ok: false, status: 404, json: async () => ({}) } as unknown as Response)
   }) as typeof fetch

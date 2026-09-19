@@ -35,6 +35,9 @@ import { recordListImportOutcome } from '../list-import-flags'
 import { activeProfileHasPin, getLockedChannelKeys, onChannelLocksChanged, pinSupportAvailable, toggleChannelLock, verifyActiveProfilePin } from '../channel-locks'
 import { PinGate } from '../live-tv-ui'
 import { useEpgStatus } from '../hooks/useEpgStatus'
+import { useVodCategories } from '../hooks/useVodLibrary'
+import { getVodMode, setVodMode, type VodMode } from '../vod-data'
+import type { LiveTvModel } from '../live-tv-model'
 import type { TvNav, TvViewProps } from './tv-shell'
 import { TvCategoryPicker, TvListPicker } from './tv-list-picker'
 import { useTextPrompt } from './tv-text-entry'
@@ -42,8 +45,8 @@ import { TV, Toggle, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
 import { BANNER_HIDE_OPTIONS, setGuideMode, setTvSettings, useGuideMode, type BannerHideMs, type GuideMode, type TvSettings } from './tv-settings-store'
 
-type Tab = 'appearance' | 'playlists' | 'epg' | 'parental'
-const TABS: Tab[] = ['appearance', 'playlists', 'epg', 'parental']
+type Tab = 'appearance' | 'content' | 'playlists' | 'epg' | 'parental'
+const TABS: Tab[] = ['appearance', 'content', 'playlists', 'epg', 'parental']
 
 type AccentApi = { getAccent?: () => string; setAccent?: (id: string) => void; ACCENT_PRESETS?: Record<string, { label: string; shades: string[] }> }
 const accentApi = sdk as unknown as AccentApi
@@ -72,7 +75,7 @@ export function TvSettingsView({ model, nav, params, settings }: TvViewProps) {
   const { tt, locale } = useTvText()
   const initial = (TABS as string[]).includes(params.tab ?? '') ? (params.tab as Tab) : 'appearance'
   const [tab, setTab] = useState<Tab>(initial)
-  const labels: Record<Tab, string> = { appearance: tt('tabAppearance'), playlists: tt('tabPlaylists'), epg: tt('tabEpg'), parental: tt('tabParental') }
+  const labels: Record<Tab, string> = { appearance: tt('tabAppearance'), content: tt('tabContent'), playlists: tt('tabPlaylists'), epg: tt('tabEpg'), parental: tt('tabParental') }
   return (
     <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
       <div style={{ width: dp(340), flexShrink: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(34)}px ${dp(20)}px 0 ${dp(48)}px`, display: 'flex', flexDirection: 'column', gap: dp(6) }}>
@@ -83,6 +86,7 @@ export function TvSettingsView({ model, nav, params, settings }: TvViewProps) {
       </div>
       <div data-live-tv-settings-content="" data-scroll="" style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: `${dp(40)}px ${dp(48)}px`, display: 'flex', flexDirection: 'column', gap: dp(36) }}>
         {tab === 'appearance' ? <AppearanceTab settings={settings} tt={tt} /> : null}
+        {tab === 'content' ? <ContentTab model={model} tt={tt} /> : null}
         {tab === 'playlists' ? <PlaylistsTab model={model} nav={nav} lists={model.lists} tt={tt} locale={locale} toast={nav.toast} /> : null}
         {tab === 'epg' ? <EpgTab lists={model.lists} nav={nav} tt={tt} locale={locale} /> : null}
         {tab === 'parental' ? <ParentalTab model={model} tt={tt} /> : null}
@@ -92,6 +96,67 @@ export function TvSettingsView({ model, nav, params, settings }: TvViewProps) {
 }
 
 type TT = ReturnType<typeof useTvText>['tt']
+
+/**
+ * "Innehåll från spellistan" — vad VOD får göra i Live TV.
+ *
+ * Valet är PER SPELLISTA: ett konto kan vara en ren kanalpanel och nästa
+ * mest film, och ett delat läge hade tvingat samma svar på båda. Antalet
+ * läses ur bibliotekets index, inte ur en gissning — står det 1 240 ska det
+ * vara 1 240.
+ */
+function ContentTab({ model, tt }: { model: LiveTvModel; tt: TT }) {
+  const source = model.activeSource
+  const playlistId = model.activePlaylistId
+  const cats = useVodCategories(source)
+  const [mode, setModeState] = useState<VodMode>(() => getVodMode(playlistId))
+  useEffect(() => setModeState(getVodMode(playlistId)), [playlistId])
+
+  const choose = (next: VodMode) => {
+    if (!playlistId) return
+    setVodMode(playlistId, next)
+    setModeState(next)
+  }
+
+  const options: { key: VodMode; title: string; body: string }[] = [
+    { key: 'link', title: tt('vodModeLinkTitle'), body: tt('vodModeLinkBody') },
+    { key: 'rows', title: tt('vodModeRowsTitle'), body: tt('vodModeRowsBody') },
+    { key: 'off', title: tt('vodModeOffTitle'), body: tt('vodModeOffBody') },
+  ]
+
+  return (
+    <section style={{ display: 'flex', flexDirection: 'column', gap: dp(14) }} data-testid="settings-content">
+      <Heading hint={cats.total > 0 ? tt('vodHint', { count: cats.total }) : tt('vodHintEmpty')}>
+        {tt('vodHeading')}
+      </Heading>
+      <div style={{ display: 'flex', gap: dp(16), flexWrap: 'wrap' }}>
+        {options.map((option) => {
+          const active = option.key === mode
+          return (
+            <div
+              key={option.key}
+              data-testid={`vod-mode-${option.key}`}
+              data-active={active ? '' : undefined}
+              {...station(() => choose(option.key))}
+              style={{
+                width: dp(340),
+                padding: `${dp(16)}px ${dp(18)}px`,
+                borderRadius: dp(14),
+                background: TV.s07,
+                border: `1px solid ${active ? TV.acc : TV.lineCard}`,
+                cursor: 'pointer',
+                textAlign: 'left',
+              }}
+            >
+              <div style={{ fontSize: dp(19), fontWeight: 600 }}>{option.title}</div>
+              <div style={{ fontSize: dp(16), color: 'rgba(243,244,248,0.6)', marginTop: dp(4) }}>{option.body}</div>
+            </div>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
 
 function AppearanceTab({ settings, tt }: { settings: TvSettings; tt: TT }) {
   const guideMode = useGuideMode()

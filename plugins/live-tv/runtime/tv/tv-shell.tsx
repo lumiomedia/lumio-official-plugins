@@ -70,8 +70,8 @@ function SurfaceBackdrop({ cutouts }: { cutouts: SurfaceCutout[] }) {
   )
 }
 
-export type TvView = 'hub' | 'guide' | 'favs' | 'channel' | 'search' | 'multi' | 'settings'
-const VIEWS: TvView[] = ['hub', 'guide', 'favs', 'channel', 'search', 'multi', 'settings']
+export type TvView = 'hub' | 'guide' | 'favs' | 'channel' | 'search' | 'multi' | 'library' | 'settings'
+const VIEWS: TvView[] = ['hub', 'guide', 'favs', 'channel', 'search', 'multi', 'library', 'settings']
 
 export interface TvNav {
   view: TvView
@@ -458,6 +458,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     { key: 'search', label: tt('railSearch'), icon: <Icons.Search /> },
     { key: 'hub', label: tt('railHome'), icon: <Icons.Home /> },
     { key: 'guide', label: tt('railGuide'), icon: <Icons.Tv /> },
+    { key: 'library', label: tt('railLibrary'), icon: <Icons.FilmStrip /> },
     { key: 'multi', label: tt('railMultiview'), icon: <Icons.SquaresFour /> },
     { key: 'favs', label: tt('railFavourites'), icon: <Icons.Heart /> },
   ]

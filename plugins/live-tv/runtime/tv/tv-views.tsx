@@ -8,6 +8,7 @@ import { TvFavourites } from './tv-favourites'
 import { TvChannel } from './tv-channel'
 import { TvSearch } from './tv-search'
 import { TvMultiview } from './tv-multiview'
+import { TvLibrary } from './tv-library'
 import { TvSettingsView } from './tv-settings'
 
 export const TV_VIEWS: Record<TvView, ComponentType<TvViewProps>> = {
@@ -17,5 +18,6 @@ export const TV_VIEWS: Record<TvView, ComponentType<TvViewProps>> = {
   channel: TvChannel,
   search: TvSearch,
   multi: TvMultiview,
+  library: TvLibrary,
   settings: TvSettingsView,
 }

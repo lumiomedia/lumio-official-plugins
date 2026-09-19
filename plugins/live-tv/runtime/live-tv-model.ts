@@ -118,6 +118,12 @@ export interface LiveTvModel {
   playlists: { id: string; name: string; count: number }[]
   activePlaylistId: string | null
   activePlaylistName: string | null
+  /**
+   * Den aktiva spellistans KÄLLA (`urlsKey` eller `xtream://…`) — nyckeln
+   * indexen är ordnade på. `activePlaylistId` är listans id i pluginlagringen
+   * och duger inte: biblioteket och kanalerna slås båda upp på källan.
+   */
+  activeSource: string | null
   setActivePlaylist: (id: string | null) => void
   /** Kanalens nummer ur indexet (aktiv källa), annars dess plats i den laddade listan. */
   channelNumber: (channel: M3uChannel) => number | null
@@ -697,6 +703,7 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
     togglePin: (channel) => setPinnedKeys(togglePinnedLiveTvChannel(channel)),
     playlists,
     activePlaylistId: activeList ? activeList.id : null,
+    activeSource,
     activePlaylistName: activeList ? activeList.name : null,
     setActivePlaylist: (id) => {
       setActivePlaylistId(id)

@@ -22,6 +22,11 @@ export function writePluginJson<T>(pluginId: string, k: string, value: T, option
   if (options?.emitChange !== false) emitPluginStorageChanged(pluginId, k)
 }
 
+/** Tömmer lagringen mellan test — annars läcker ett läge in i nästa test. */
+export function __resetPluginStorageForTests(): void {
+  memory.clear()
+}
+
 export function emitPluginStorageChanged(pluginId: string, k: string): void {
   const set = listeners.get(key(pluginId, k))
   if (set) for (const cb of set) cb()
@@ -623,3 +628,13 @@ export async function setWindowNativeFullscreen(on: boolean): Promise<boolean> {
 export function setAndroidImmersive(_on: boolean): void {}
 export function setMpvVideoGeometry(_geometry: Record<string, unknown>): void {}
 export function nativeSetVideoGeometry(_geometry: Record<string, unknown>): void {}
+
+/**
+ * Appens seam "öppna den här titelns detaljsida". I appen går den över ett
+ * fönster-event så alla buntar hör den; stubben gör detsamma, så ett test kan
+ * lyssna på `lumio-open-media-item` i stället för att spionera på en modul.
+ */
+export function requestOpenMediaItem(request: { item: unknown; source?: string; autoPlay?: boolean }): void {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new CustomEvent('lumio-open-media-item', { detail: request }))
+}

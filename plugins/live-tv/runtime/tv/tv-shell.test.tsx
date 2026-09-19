@@ -44,10 +44,28 @@ function mount(params: Record<string, string> = {}) {
 }
 
 describe('LiveTvTvShell', () => {
-  it('ritar ikonraden med sex stationer och exakt en data-init', () => {
+  it('ritar ikonraden med sju stationer och exakt en data-init', () => {
     mount()
-    expect(screen.getAllByTestId(/rail-/)).toHaveLength(6)
+    expect(screen.getAllByTestId(/rail-/)).toHaveLength(7)
     expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
+  })
+  it('ikonradens Bibliotek ligger mellan Kanalguide och Multivy', () => {
+    mount()
+    const keys = screen.getAllByTestId(/rail-/).map((el) => el.getAttribute('data-testid'))
+    expect(keys).toEqual([
+      'rail-search',
+      'rail-hub',
+      'rail-guide',
+      'rail-library',
+      'rail-multi',
+      'rail-favs',
+      'rail-settings',
+    ])
+  })
+  it('ikonradens Bibliotek navigerar', () => {
+    const { onNavigate } = mount()
+    fireEvent.click(screen.getByTestId('rail-library'))
+    expect(onNavigate).toHaveBeenCalledWith({ pageId: 'live-tv-browse', params: { view: 'library' } })
   })
   it('Back på hubben lämnar Live TV', () => {
     mount()
