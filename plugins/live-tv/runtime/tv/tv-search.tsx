@@ -12,7 +12,7 @@ import { TvTextField } from './tv-text-entry'
 import { searchChannels, suggestions } from './tv-search-logic'
 import { useProgrammeSearch } from '../hooks/useProgrammeSearch'
 import { useVodPage } from '../hooks/useVodLibrary'
-import { getVodMode, openVodItem } from '../vod-data'
+import { getVodMode } from '../vod-data'
 import type { VodItem } from '../vod-client'
 
 /**
@@ -108,7 +108,9 @@ export function TvSearch({ model, nav, params }: TvViewProps) {
             ) : null}
             <div data-row="" style={{ display: 'flex', gap: dp(12), overflowX: 'auto', paddingBottom: dp(4) }}>
               {vod.items.map((item) => (
-                <VodHit key={item.key} item={item} onOpen={() => { if (!openVodItem(item)) nav.toast(tt('libraryNoDetails')) }} />
+                // Samma väg som Biblioteket och hubbens rad: Live TV:s egen
+                // detaljvy, inte appens sida.
+                <VodHit key={item.key} item={item} onOpen={() => nav.go('title', { key: item.key })} />
               ))}
             </div>
           </section>

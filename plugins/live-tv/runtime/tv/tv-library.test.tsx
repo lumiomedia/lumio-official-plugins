@@ -330,22 +330,27 @@ describe('Sök med film & serier', () => {
     expect(screen.getByTestId('search-channels')).toBeTruthy()
   })
 
-  it('söker i biblioteket och öppnar träffen i detaljvyn', async () => {
-    mountSearch(LIBRARY)
+  it('söker i biblioteket och öppnar träffen i Live TV:s detaljvy', async () => {
+    const onNavigate = mountSearch(LIBRARY)
     await waitFor(() => expect(screen.getByTestId('search-vod')).toBeTruthy())
     // TV-läget har inget <input> — frågan skrivs på skärmtangentbordet.
     for (const letter of ['d', 'u', 'n', 'e']) fireEvent.click(screen.getByText(letter))
     await waitFor(() => expect(screen.getAllByTestId('search-vod-hit')).toHaveLength(1))
 
     const opened: unknown[] = []
-    const handler = (event: Event) => opened.push((event as CustomEvent).detail)
+    const handler = () => opened.push(1)
     window.addEventListener('lumio-open-media-item', handler)
     try {
       fireEvent.click(screen.getByTestId('search-vod-hit'))
     } finally {
       window.removeEventListener('lumio-open-media-item', handler)
     }
-    expect(opened[0]).toMatchObject({ item: { id: 'movie-438631' } })
+    // Alla tre vägar in till en titel landar på samma ställe.
+    expect(opened).toHaveLength(0)
+    expect(onNavigate).toHaveBeenCalledWith({
+      pageId: 'live-tv-browse',
+      params: { view: 'title', key: 'vod:1' },
+    })
   })
 
   it('läget off tar bort både chips och VOD-avsnitt', async () => {
@@ -517,5 +522,34 @@ describe('Rutnätet i TV-läge kontra skrivbord', () => {
     // på översta raden — korten såg ut att sakna överkant.
     expect(gridOf().style.paddingTop).not.toBe('0px')
     expect(parseInt(gridOf().style.paddingTop, 10)).toBeGreaterThanOrEqual(8)
+  })
+})
+
+describe('Hubbens VOD-rad öppnar samma detaljvy som Biblioteket', () => {
+  it('OK på ett kort i raden stannar i Live TV', async () => {
+    // Regressionen Jerry såg: kortet i Biblioteket gick till Live TV:s egen
+    // detaljvy, men samma titel i hubbens rad kastade ut honom till appens
+    // detaljsida. Två vägar in ska landa på samma ställe.
+    setVodMode('l1', 'rows')
+    seedLiveTvIndex({ vod: { [SOURCE]: LIBRARY } })
+    const onNavigate = vi.fn()
+    render(
+      <LiveTvTvShell pageId="live-tv-browse" params={{ view: 'hub' }} onNavigate={onNavigate} onOpenDetails={() => {}} />,
+    )
+    await waitFor(() => expect(screen.getAllByTestId('hub-vod-card').length).toBeGreaterThan(0))
+
+    const opened: unknown[] = []
+    const handler = () => opened.push(1)
+    window.addEventListener('lumio-open-media-item', handler)
+    try {
+      fireEvent.click(screen.getAllByTestId('hub-vod-card')[0])
+    } finally {
+      window.removeEventListener('lumio-open-media-item', handler)
+    }
+    expect(opened).toHaveLength(0)
+    expect(onNavigate).toHaveBeenCalledWith({
+      pageId: 'live-tv-browse',
+      params: { view: 'title', key: expect.any(String) },
+    })
   })
 })

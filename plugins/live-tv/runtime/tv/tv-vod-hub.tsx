@@ -123,13 +123,30 @@ export function TvVodHubSection({ mode, source, playlistName, nav }: {
 
 function VodRowCard({ item, nav }: { item: VodItem; nav: TvNav }) {
   const { tt } = useTvText()
-  const open = () => {
-    if (!openVodItem(item)) nav.toast(tt('libraryNoDetails'))
-  }
+  /**
+   * OK går till bibliotekets EGNA detaljvy, inne i Live TV — samma väg som
+   * korten i Biblioteket. Raden härifrån gick tidigare till appens detaljsida
+   * och slängde ut användaren ur Live TV, fast kortet bredvid i Biblioteket
+   * stannade kvar. Två vägar in till samma titel ska landa på samma ställe.
+   */
+  const open = () => nav.go('title', { key: item.key })
   const hold = (element: HTMLElement) => {
     const actions = [
-      ...(item.url ? [{ key: 'play', label: tt('menuPlay'), run: () => openVodItem(item, { autoPlay: true }) }] : []),
-      { key: 'info', label: tt('menuMoreInfo'), run: open },
+      ...(item.url
+        ? [{
+            key: 'play',
+            label: tt('menuPlay'),
+            run: () => nav.playStream({
+              url: item.url as string,
+              title: item.title,
+              tmdbId: item.tmdbId ? String(item.tmdbId) : null,
+              mediaType: item.kind === 'series' ? 'tv' as const : 'movie' as const,
+              posterUrl: item.posterUrl ?? null,
+              year: item.year ?? null,
+            }),
+          }]
+        : []),
+      { key: 'details', label: tt('menuMoreInfo'), run: () => { if (!openVodItem(item)) nav.toast(tt('libraryNoDetails')) } },
     ]
     nav.openMenu({ title: item.title, element, actions })
   }
