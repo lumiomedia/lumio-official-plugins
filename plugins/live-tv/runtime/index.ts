@@ -6,6 +6,7 @@ import { LiveTvSettingsSection } from './live-tv-settings-section'
 import { LiveTvHomeOverride } from './live-tv-home-override'
 import { LiveTvRemindersMount } from './live-tv-reminders-mount'
 import { LiveTvTvShell } from './tv/tv-shell'
+import { getVodStreams } from './vod-streams'
 import { useEpgNowNextLater } from './hooks/useEpgNowNextLater'
 import { useEpgLoadStatus } from './hooks/useEpgLoadStatus'
 import { useChannelSchedule } from './hooks/useChannelSchedule'
@@ -103,6 +104,39 @@ export const LiveTvPlugin: LumioPlugin = {
       // minAppVersion höjd i plugin.json i stället för att gissa här.
       tvSceneBox: true,
     } as Parameters<typeof ctx.registerBrowsePage>[0])
+    /**
+     * Spellistans film och serier som en strömkälla i appens detaljvy.
+     *
+     * Biblioteket öppnar `movie-<tmdb>`/`tv-<tmdb>` och appen ritar sin
+     * vanliga TMDB-sida; Spela-knappen där frågar registrerade leverantörer,
+     * inte pluginet. Utan den här registreringen hade detaljvyn varit ett
+     * uppslagsverk man inte kunde spela ur.
+     *
+     * Registreringen är VALFRI: `registerMediaStreamCatalogProvider` kom i en
+     * senare SDK, och ett äldre värd ska köra biblioteket ändå — utan
+     * Spela-knapp, men med allt annat.
+     */
+    const registerStreams = (ctx as unknown as {
+      registerMediaStreamCatalogProvider?: (provider: {
+        id: string
+        label: { en: string; sv: string }
+        pluginId?: string
+        getStreams: (query: {
+          mediaType: 'movie' | 'tv'
+          tmdbId?: string | null
+          season?: number | null
+          episode?: number | null
+        }) => Promise<{ id: string; label: string; directUrl: string }[]>
+      }) => void
+    }).registerMediaStreamCatalogProvider
+    if (typeof registerStreams === 'function') {
+      registerStreams({
+        id: 'live-tv-vod',
+        label: { en: 'Playlist library', sv: 'Spellistans bibliotek' },
+        pluginId: 'com.lumio.live-tv',
+        getStreams: (query) => getVodStreams(query),
+      })
+    }
     if (typeof window !== 'undefined') {
       onLiveTvHideHeroChanged(() => {
         const notify = (sdk as unknown as { notifyPluginRegistryChanged?: () => void }).notifyPluginRegistryChanged

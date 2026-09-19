@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
+import { __resetForTests, __setTvModeForTests, writePluginJson, TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR } from '@/lib/plugin-sdk'
 import { seedLiveTvIndex, type VodItemFixture } from '../../src/__test-stubs__/live-tv-index'
 import { getLiveTvUrlsKey, LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
 import { ACTIVE_PLAYLIST_KEY } from './tv-settings-store'
@@ -287,5 +287,98 @@ describe('Hubbens VOD-avsnitt', () => {
     await waitFor(() => expect(screen.getByTestId('rail-hub')).toBeTruthy())
     // En hänvisningsrad som säger "0 titlar" är värre än ingen rad.
     expect(screen.queryByTestId('hub-vod-link')).toBeNull()
+  })
+})
+
+describe('Sök med film & serier', () => {
+  function mountSearch(vod: VodItemFixture[], params: Record<string, string> = {}) {
+    seedLiveTvIndex({ vod: { [SOURCE]: vod } })
+    const onNavigate = vi.fn()
+    render(
+      <LiveTvTvShell
+        pageId="live-tv-browse"
+        params={{ view: 'search', ...params }}
+        onNavigate={onNavigate}
+        onOpenDetails={() => {}}
+      />,
+    )
+    return onNavigate
+  }
+
+  it('visar de tre omfången', async () => {
+    mountSearch(LIBRARY)
+    await waitFor(() => expect(screen.getByTestId('search-scope-all')).toBeTruthy())
+    expect(screen.getByTestId('search-scope-ch')).toBeTruthy()
+    expect(screen.getByTestId('search-scope-vod')).toBeTruthy()
+    expect(screen.getByTestId('search-scope-all').hasAttribute('data-active')).toBe(true)
+  })
+
+  it('öppnas med film & serier förvalt från Biblioteket', async () => {
+    mountSearch(LIBRARY, { scope: 'vod' })
+    await waitFor(() => expect(screen.getByTestId('search-scope-vod').hasAttribute('data-active')).toBe(true))
+    // Omfånget "Film & serier" döljer kanalerna helt.
+    expect(screen.queryByTestId('search-channels')).toBeNull()
+  })
+
+  it('Kanaler döljer VOD-avsnittet', async () => {
+    mountSearch(LIBRARY)
+    await waitFor(() => expect(screen.getByTestId('search-vod')).toBeTruthy())
+    fireEvent.click(screen.getByTestId('search-scope-ch'))
+    await waitFor(() => expect(screen.queryByTestId('search-vod')).toBeNull())
+    expect(screen.getByTestId('search-channels')).toBeTruthy()
+  })
+
+  it('söker i biblioteket och öppnar träffen i detaljvyn', async () => {
+    mountSearch(LIBRARY)
+    await waitFor(() => expect(screen.getByTestId('search-vod')).toBeTruthy())
+    // TV-läget har inget <input> — frågan skrivs på skärmtangentbordet.
+    for (const letter of ['d', 'u', 'n', 'e']) fireEvent.click(screen.getByText(letter))
+    await waitFor(() => expect(screen.getAllByTestId('search-vod-hit')).toHaveLength(1))
+
+    const opened: unknown[] = []
+    const handler = (event: Event) => opened.push((event as CustomEvent).detail)
+    window.addEventListener('lumio-open-media-item', handler)
+    try {
+      fireEvent.click(screen.getByTestId('search-vod-hit'))
+    } finally {
+      window.removeEventListener('lumio-open-media-item', handler)
+    }
+    expect(opened[0]).toMatchObject({ item: { id: 'movie-438631' } })
+  })
+
+  it('läget off tar bort både chips och VOD-avsnitt', async () => {
+    setVodMode('l1', 'off')
+    mountSearch(LIBRARY)
+    await waitFor(() => expect(screen.getByTestId('search-channels')).toBeTruthy())
+    expect(screen.queryByTestId('search-scope-all')).toBeNull()
+    expect(screen.queryByTestId('search-vod')).toBeNull()
+  })
+})
+
+describe('Biblioteket på smal yta', () => {
+  it('byter kategorikolumnen mot en chipsrad och rutnätet till två kolumner', async () => {
+    // Smal yta signaleras av värdens scenlåda, inte av window.innerWidth.
+    const box = document.createElement('div')
+    box.setAttribute(TV_SCENE_BOX_ATTR, '1')
+    box.setAttribute(TV_SCENE_NARROW_ATTR, '1')
+    document.body.appendChild(box)
+    try {
+      seedLiveTvIndex({ vod: { [SOURCE]: LIBRARY } })
+      render(
+        <LiveTvTvShell
+          pageId="live-tv-browse"
+          params={{ view: 'library' }}
+          onNavigate={vi.fn()}
+          onOpenDetails={() => {}}
+        />,
+      )
+      await waitFor(() => expect(screen.getAllByTestId('library-card').length).toBeGreaterThan(0))
+      const grid = screen.getAllByTestId('library-card')[0].parentElement as HTMLElement
+      expect(grid.style.gridTemplateColumns).toBe('repeat(2, minmax(0, 1fr))')
+      // Sektionsrubrikerna faller bort på telefonen — höjden är dyrast där.
+      expect(screen.queryByText('FILM')).toBeNull()
+    } finally {
+      box.remove()
+    }
   })
 })

@@ -250,6 +250,12 @@ const EN = {
   vodLinkTitle: 'Film & series are in the Library',
   vodLinkBody: '{count} titles from {playlist} are not shown here. Want them as rows in Live TV?',
   vodLinkAction: 'Settings',
+  // Sökets omfång
+  scopeAll: 'All',
+  scopeChannels: 'Channels',
+  scopeVod: 'Film & series',
+  searchVod: 'Film & series',
+  searchVodSub: 'from {playlist} · opens in the Library',
   // Tomma
   guideEmpty: 'No channels in this category',
 } as const
@@ -479,6 +485,11 @@ const SV: Record<keyof typeof EN, string> = {
   vodLinkTitle: 'Film & serier ligger i Biblioteket',
   vodLinkBody: '{count} titlar från {playlist} visas inte här. Vill du ha dem som rader i Live TV?',
   vodLinkAction: 'Inställningar',
+  scopeAll: 'Allt',
+  scopeChannels: 'Kanaler',
+  scopeVod: 'Film & serier',
+  searchVod: 'Film & serier',
+  searchVodSub: 'ur {playlist} · öppnas i Biblioteket',
   guideEmpty: 'Inga kanaler i kategorin',
 }
 

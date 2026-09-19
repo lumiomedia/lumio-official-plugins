@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNarrowSurface } from '../hooks/useNarrowSurface'
 import { useVodCategories, useVodPage } from '../hooks/useVodLibrary'
 import { canOpenDetails, getVodCategory, getVodSort, openVodItem, setVodCategory, setVodSort } from '../vod-data'
 import type { VodCategory, VodItem, VodSort } from '../vod-client'
@@ -23,6 +24,13 @@ import { useTvText } from './tv-strings'
 
 const LEFT_W = 380
 const GRID_COLUMNS = 7
+/**
+ * Telefonen får TVÅ kolumner, inte tre.
+ *
+ * Handoffens uttryckliga val: affischerna ska vara läsbara. På 390 px ger tre
+ * kolumner 110 px breda affischer, och titeln under dem blir en ellips.
+ */
+const GRID_COLUMNS_NARROW = 2
 const SORTS: VodSort[] = ['new', 'az', 'rating']
 
 /** Affischens platshållare tills bilden är laddad — eller för alltid, när panelen inte har någon. */
@@ -106,6 +114,12 @@ function KindTag({ kind, label }: { kind: VodItem['kind']; label: string }) {
 
 export function TvLibrary({ model, nav }: TvViewProps) {
   const { tt } = useTvText()
+  /**
+   * Smal yta = telefon. Kategorikolumnen blir en rad med chips, rutnätet två
+   * kolumner och marginalerna mindre. Skrivbordet behöver ingen egen gren:
+   * scenlådan skalar TV-layouten till innehållsytan.
+   */
+  const narrow = useNarrowSurface()
   const source = model.activeSource
   const playlistId = model.activePlaylistId
   const playlistName = model.activePlaylistName ?? ''
@@ -167,6 +181,119 @@ export function TvLibrary({ model, nav }: TvViewProps) {
   // fokusera där, annars på den valda kategorin. Ett tomt rutnät utan
   // startpunkt lämnar fjärren utan fokus alls.
   const initInGrid = page.items.length > 0
+
+  const card = (item: VodItem, index: number) => (
+    <div
+      key={item.key}
+      data-testid="library-card"
+      {...station(
+        () => openItem(item),
+        (element) => holdMenu(item, element),
+        index === 0 && initInGrid ? { 'data-init': '' } : undefined,
+      )}
+      style={{ cursor: 'pointer' }}
+    >
+      <div style={{ position: 'relative' }}>
+        <Poster item={item} radius={12} />
+        <KindTag kind={item.kind} label={item.kind === 'series' ? tt('libraryKindSeries') : tt('libraryKindMovie')} />
+      </div>
+      <div
+        style={{
+          fontSize: dp(narrow ? 15 : 17),
+          fontWeight: 600,
+          marginTop: dp(8),
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}
+      >
+        {item.title}
+      </div>
+      <div style={{ fontSize: dp(narrow ? 13 : 15), color: 'rgba(243,244,248,0.55)' }}>{metaLine(item)}</div>
+    </div>
+  )
+
+  const status = (
+    <LibraryStatus
+      cats={cats}
+      page={page}
+      onLoadMore={page.loadMore}
+      text={{
+        loading: tt('libraryLoading'),
+        emptyCategory: tt('libraryEmptyCategory'),
+        emptySource: tt('libraryEmptySource'),
+      }}
+    />
+  )
+
+  /**
+   * TELEFONEN: en kolumn, kategorierna som en sidoscrollande chipsrad.
+   *
+   * Sektionsrubrikerna FILM/SERIER faller bort här — de kostar en rad var i
+   * en vy där höjden är dyrast — men ORDNINGEN behålls, film först, så
+   * chipsraden fortfarande läses som två grupper.
+   */
+  if (narrow) {
+    return (
+      <div data-scroll="" data-testid="tv-library" style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: dp(24) }}>
+        <div style={{ padding: `${dp(20)}px ${dp(20)}px 0` }}>
+          <div style={{ fontSize: dp(26), fontWeight: 600 }}>{tt('library')}</div>
+          <div style={{ fontSize: dp(13), color: 'rgba(243,244,248,0.5)' }}>
+            {tt('librarySub', { playlist: playlistName, count: cats.total })}
+          </div>
+        </div>
+        <div
+          data-row=""
+          style={{ display: 'flex', gap: dp(8), overflowX: 'auto', padding: `${dp(14)}px ${dp(20)}px` }}
+        >
+          {cats.categories.map((category) => {
+            const isActive = category.id === validSelected
+            return (
+              <div
+                key={`${category.kind}:${category.id}`}
+                data-testid="library-category"
+                data-active={isActive ? '' : undefined}
+                {...station(
+                  () => chooseCategory(category.id),
+                  undefined,
+                  isActive && !initInGrid ? { 'data-init': '' } : undefined,
+                )}
+                style={{
+                  height: dp(36),
+                  padding: `0 ${dp(16)}px`,
+                  borderRadius: 999,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: dp(8),
+                  flexShrink: 0,
+                  whiteSpace: 'nowrap',
+                  fontSize: dp(14),
+                  cursor: 'pointer',
+                  background: isActive ? TV.accMix(18) : TV.s06,
+                  color: isActive ? TV.text : 'rgba(243,244,248,0.65)',
+                }}
+              >
+                {category.name}
+                <span style={{ color: 'rgba(243,244,248,0.4)' }}>{category.count}</span>
+              </div>
+            )
+          })}
+        </div>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: `repeat(${GRID_COLUMNS_NARROW}, minmax(0, 1fr))`,
+            gap: dp(12),
+            padding: `0 ${dp(20)}px`,
+            alignContent: 'start',
+          }}
+        >
+          {page.items.map(card)}
+          {status}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div style={{ flex: 1, display: 'flex', minHeight: 0 }} data-testid="tv-library">
@@ -293,46 +420,8 @@ export function TvLibrary({ model, nav }: TvViewProps) {
             alignContent: 'start',
           }}
         >
-          {page.items.map((item, index) => (
-            <div
-              key={item.key}
-              data-testid="library-card"
-              {...station(
-                () => openItem(item),
-                (element) => holdMenu(item, element),
-                index === 0 && initInGrid ? { 'data-init': '' } : undefined,
-              )}
-              style={{ cursor: 'pointer' }}
-            >
-              <div style={{ position: 'relative' }}>
-                <Poster item={item} radius={12} />
-                <KindTag kind={item.kind} label={item.kind === 'series' ? tt('libraryKindSeries') : tt('libraryKindMovie')} />
-              </div>
-              <div
-                style={{
-                  fontSize: dp(17),
-                  fontWeight: 600,
-                  marginTop: dp(8),
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {item.title}
-              </div>
-              <div style={{ fontSize: dp(15), color: 'rgba(243,244,248,0.55)' }}>{metaLine(item)}</div>
-            </div>
-          ))}
-          <LibraryStatus
-            cats={cats}
-            page={page}
-            onLoadMore={page.loadMore}
-            text={{
-              loading: tt('libraryLoading'),
-              emptyCategory: tt('libraryEmptyCategory'),
-              emptySource: tt('libraryEmptySource'),
-            }}
-          />
+          {page.items.map(card)}
+          {status}
         </div>
       </div>
     </div>

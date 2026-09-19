@@ -109,6 +109,8 @@ export async function queryVod(opts: {
   categoryId?: string
   kind?: VodKind
   q?: string
+  /** Uppslag från appens detaljvy tillbaka till en spelbar titel. */
+  tmdbId?: number
   sort?: VodSort
   offset: number
   limit: number
@@ -119,6 +121,7 @@ export async function queryVod(opts: {
     categoryId: opts.categoryId,
     kind: opts.kind,
     q: opts.q,
+    tmdbId: opts.tmdbId,
     sort: opts.sort,
     offset: opts.offset,
     limit: opts.limit,
@@ -180,4 +183,35 @@ export async function startVodImport(source: string, xtream: XtreamVodImportSour
     body: JSON.stringify({ source, xtream }),
   })
   return { started: Boolean(data.started) }
+}
+
+/** Ett avsnitt ur `get_series_info` — speglar `VodEpisode` i Rust. */
+export interface VodEpisode {
+  season: number
+  episode: number
+  title: string
+  url: string
+  plot?: string
+  stillUrl?: string
+  runtimeMin?: number
+}
+
+/**
+ * Avsnitten i EN serie, hämtade lat.
+ *
+ * Panelen har 8 550 serier; avsnitten hämtas för den som faktiskt öppnas, och
+ * värden håller svaret en halvtimme så att bläddra mellan säsonger inte
+ * kostar ett anrop per klick.
+ */
+export async function fetchVodEpisodes(
+  source: string,
+  seriesId: number,
+  xtream: XtreamVodImportSource,
+): Promise<VodEpisode[]> {
+  const data = await requestJson<{ episodes?: VodEpisode[] }>('/api/live-tv/vod/series', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ source, seriesId, xtream }),
+  })
+  return data.episodes ?? []
 }

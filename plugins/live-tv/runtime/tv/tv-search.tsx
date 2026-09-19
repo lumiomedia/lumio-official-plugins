@@ -11,11 +11,34 @@ import { useTvText } from './tv-strings'
 import { TvTextField } from './tv-text-entry'
 import { searchChannels, suggestions } from './tv-search-logic'
 import { useProgrammeSearch } from '../hooks/useProgrammeSearch'
+import { useVodPage } from '../hooks/useVodLibrary'
+import { getVodMode, openVodItem } from '../vod-data'
+import type { VodItem } from '../vod-client'
 
-export function TvSearch({ model, nav }: TvViewProps) {
+/**
+ * Sökets omfång. Sessionstillstånd med flit — den som sökte film igår vill
+ * inte att nästa kanalsökning tyst filtreras bort.
+ */
+type SearchScope = 'all' | 'ch' | 'vod'
+
+export function TvSearch({ model, nav, params }: TvViewProps) {
   const { tt, locale } = useTvText()
   const tvMode = useTvMode()
   const [query, setQuery] = useState('')
+  // Bibliotekets Sök-knapp öppnar söket med film och serier förvalt.
+  const [scope, setScope] = useState<SearchScope>(() => (params.scope === 'vod' ? 'vod' : 'all'))
+  // `off` betyder att VOD inte ska synas i Live TV alls — då finns varken
+  // chips eller VOD-avsnitt att välja.
+  const vodHidden = getVodMode(model.activePlaylistId) === 'off'
+  const showChannels = vodHidden || scope !== 'vod'
+  const showVod = !vodHidden && scope !== 'ch'
+  const vod = useVodPage({
+    source: model.activeSource,
+    q: query,
+    sort: 'new',
+    enabled: showVod && query.trim().length > 0,
+    limit: 20,
+  })
   /**
    * Programsökningen är fördröjd, kanalsökningen inte.
    *
@@ -57,6 +80,40 @@ export function TvSearch({ model, nav }: TvViewProps) {
         <TvTextField value={query} onChange={setQuery} onSubmit={focusFirstResult} placeholder={tt('searchPlaceholder')} autoFocus />
       </div>
       <div data-live-tv-search-results="" data-scroll="" style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: `${dp(34)}px ${dp(48)}px 0 ${dp(40)}px`, display: 'flex', flexDirection: 'column', gap: dp(28) }}>
+        {vodHidden ? null : (
+          <div data-row="" style={{ display: 'flex', gap: dp(10) }}>
+            {([['all', tt('scopeAll')], ['ch', tt('scopeChannels')], ['vod', tt('scopeVod')]] as const).map(([key, label]) => (
+              <div
+                key={key}
+                data-testid={`search-scope-${key}`}
+                data-active={key === scope ? '' : undefined}
+                {...station(() => setScope(key))}
+                style={{ height: dp(44), padding: `0 ${dp(20)}px`, borderRadius: 999, display: 'inline-flex', alignItems: 'center', fontSize: dp(18), cursor: 'pointer', background: key === scope ? TV.s16 : TV.s06, color: key === scope ? '#fff' : 'rgba(243,244,248,0.6)' }}
+              >
+                {label}
+              </div>
+            ))}
+          </div>
+        )}
+        {showVod ? (
+          <section data-testid="search-vod" style={{ display: 'flex', flexDirection: 'column', gap: dp(10) }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(12) }}>
+              <span style={{ fontSize: dp(24), fontWeight: 600 }}>{tt('searchVod')}</span>
+              <span style={{ fontSize: dp(16), color: 'rgba(243,244,248,0.5)' }}>
+                {tt('searchVodSub', { playlist: model.activePlaylistName ?? '' })}
+              </span>
+            </div>
+            {query && vod.items.length === 0 ? (
+              <div style={{ color: TV.dim, fontSize: dp(18) }}>{vod.loading ? tt('libraryLoading') : tt('noResults')}</div>
+            ) : null}
+            <div data-row="" style={{ display: 'flex', gap: dp(12), overflowX: 'auto', paddingBottom: dp(4) }}>
+              {vod.items.map((item) => (
+                <VodHit key={item.key} item={item} onOpen={() => { if (!openVodItem(item)) nav.toast(tt('libraryNoDetails')) }} />
+              ))}
+            </div>
+          </section>
+        ) : null}
+        {showChannels ? (
         <section data-testid="search-channels" style={{ display: 'flex', flexDirection: 'column', gap: dp(8) }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(12) }}><span style={{ fontSize: dp(24), fontWeight: 600 }}>{tt('searchChannels')}</span><span style={{ fontSize: dp(16), color: 'rgba(243,244,248,0.5)' }}>{tt('hits', { count: channels.length })}</span></div>
           {query && channels.length === 0 ? <div style={{ color: TV.dim, fontSize: dp(18) }}>{model.channelsLoading ? tt('loadingChannels') : tt('noResults')}</div> : null}
@@ -75,6 +132,8 @@ export function TvSearch({ model, nav }: TvViewProps) {
             )
           })}
         </section>
+        ) : null}
+        {showChannels ? (
         <section data-testid="search-programmes" style={{ display: 'flex', flexDirection: 'column', gap: dp(6) }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(12) }}><span style={{ fontSize: dp(24), fontWeight: 600 }}>{tt('searchProgrammes')}</span><span style={{ fontSize: dp(16), color: 'rgba(243,244,248,0.5)' }}>{tt('hits', { count: programmes.length })}</span></div>
           {/* Sökningen går till appen: en tom lista betyder "hämtar" tills
@@ -88,7 +147,23 @@ export function TvSearch({ model, nav }: TvViewProps) {
             </div>
           ))}
         </section>
+        ) : null}
       </div>
+    </div>
+  )
+}
+
+/** En VOD-träff i söket: liten affisch, titel och år. */
+function VodHit({ item, onOpen }: { item: VodItem; onOpen: () => void }) {
+  return (
+    <div data-testid="search-vod-hit" {...station(onOpen)} style={{ width: dp(130), flexShrink: 0, cursor: 'pointer' }}>
+      <div style={{ position: 'relative', aspectRatio: '2 / 3', borderRadius: dp(10), border: `1px solid ${TV.lineCard}`, background: TV.s07, overflow: 'hidden' }}>
+        {item.posterUrl ? (
+          <img src={item.posterUrl} alt="" loading="lazy" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+        ) : null}
+      </div>
+      <div style={{ fontSize: dp(16), fontWeight: 600, marginTop: dp(6), whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</div>
+      <div style={{ fontSize: dp(14), color: 'rgba(243,244,248,0.55)' }}>{item.year ?? ''}</div>
     </div>
   )
 }
