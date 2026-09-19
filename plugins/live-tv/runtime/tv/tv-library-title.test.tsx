@@ -227,3 +227,26 @@ describe('TvLibraryTitle', () => {
     expect(screen.queryByTestId('title-play')).toBeNull()
   })
 })
+
+describe('Åtgärdsknapparnas namn', () => {
+  it('bär appens kontrakt, så både hovring och inställningen träffar dem', async () => {
+    mount(MOVIE)
+    await waitFor(() => expect(screen.getByTestId('title-action-list')).toBeTruthy())
+    const button = screen.getByTestId('title-action-list')
+    // Appens regel i index.css söker på precis de här attributen. Utan dem
+    // gjorde inställningen "visa namn alltid" ingenting för Live TV.
+    expect(button.hasAttribute('data-hero-icon-action')).toBe(true)
+    const label = button.querySelector('[data-hero-icon-label]')
+    expect(label).toBeTruthy()
+    expect(label?.textContent).toMatch(/My list|Min lista/)
+  })
+
+  it('har ett namn på varje knapp, inte bara en ikon', async () => {
+    mount(MOVIE)
+    await waitFor(() => expect(screen.getByTestId('title-action-cast')).toBeTruthy())
+    for (const key of ['cast', 'list', 'watched']) {
+      const label = screen.getByTestId(`title-action-${key}`).querySelector('[data-hero-icon-label]')
+      expect(label?.textContent?.trim()).toBeTruthy()
+    }
+  })
+})

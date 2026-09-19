@@ -455,8 +455,10 @@ describe('Biblioteket utanför TV-läget (skrivbord och telefon)', () => {
     render(
       <LiveTvTvShell pageId="live-tv-browse" params={{ view: 'library' }} onNavigate={vi.fn()} onOpenDetails={() => {}} />,
     )
-    await waitFor(() => expect(screen.getAllByTestId('library-category').length).toBe(3))
-    expect(screen.getAllByTestId('library-card').length).toBeGreaterThan(0)
+    // Två hämtningar i följd (kategorier, sedan sidan) hinner passera 1 s när
+    // hela sviten kör parallellt — det gav ett falskt larm.
+    await waitFor(() => expect(screen.getAllByTestId('library-category').length).toBe(3), { timeout: 4000 })
+    await waitFor(() => expect(screen.getAllByTestId('library-card').length).toBeGreaterThan(0), { timeout: 4000 })
   })
 
   it('hubbens hänvisningsrad hittar också titlarna', async () => {

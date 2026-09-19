@@ -122,6 +122,31 @@ export function TvFocusStyle() {
 [data-live-tv-tv-root] .lumio-tv-logo-img { max-width: 60%; max-height: 60%; object-fit: contain; }
 @keyframes lumio-livetv-fade { from { opacity: 0; transform: translateY(${dp(6)}px); } to { opacity: 1; transform: none; } }
 [data-live-tv-tv-root] [data-live-tv-layer] { animation: lumio-livetv-fade 160ms ease-out; }
+
+/* ÅTGÄRDSKNAPPARNAS UTFÄLLBARA NAMN.
+   Samma kontrakt som appens hero-icon-action: knappen bär
+   [data-hero-icon-action] och namnet [data-hero-icon-label]. Appens egen regel
+   i spa/src/index.css fäller ut namnet när <html data-hero-action-labels="open">
+   — alltså när inställningen är på — och den träffar de här elementen också,
+   eftersom markeringen är densamma. Det som INTE kommer därifrån är hovring
+   och fokus: appens variant gör det med Tailwinds group-hover-klasser, och de
+   finns inte i pluginets inline-stilar. Måtten är medvetet identiska
+   (9rem/1rem), så de två inte kan glida isär utan att det syns. */
+[data-live-tv-tv-root] [data-hero-icon-label] {
+  max-width: 0;
+  padding-right: 0;
+  opacity: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: max-width 200ms ease-out, padding 200ms ease-out, opacity 200ms ease-out;
+}
+[data-live-tv-tv-root] [data-hero-icon-action]:hover [data-hero-icon-label],
+[data-live-tv-tv-root] [data-hero-icon-action]:focus [data-hero-icon-label],
+[data-live-tv-tv-root] [data-hero-icon-action][data-fcur="1"] [data-hero-icon-label] {
+  max-width: 9rem;
+  padding-right: 1rem;
+  opacity: 1;
+}
 `}</style>
   )
 }

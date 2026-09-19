@@ -291,13 +291,17 @@ export function TvLibraryTitle({ model, nav, params }: TvViewProps) {
             <div
               key={action.key}
               data-testid={`title-action-${action.key}`}
+              // Appens kontrakt för utfällbara namn: markeringen gör att BÅDE
+              // hovring (pluginets egen regel) och inställningen "visa namn
+              // alltid" (appens regel på <html>) träffar de här knapparna.
+              data-hero-icon-action=""
               data-active={action.active ? '' : undefined}
               title={action.label}
               aria-label={action.label}
               {...station(action.run, undefined, !canPlay && index === 0 ? { 'data-init': '' } : undefined)}
               style={{
-                width: dp(ICON_SIZE),
                 height: dp(ICON_SIZE),
+                minWidth: dp(ICON_SIZE),
                 borderRadius: 999,
                 background: action.active ? TV.accMix(18) : TV.s10,
                 border: `1px solid ${action.active ? TV.acc : 'transparent'}`,
@@ -306,9 +310,24 @@ export function TvLibraryTitle({ model, nav, params }: TvViewProps) {
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
+                overflow: 'hidden',
               }}
             >
-              {action.icon}
+              <span
+                style={{
+                  width: dp(ICON_SIZE),
+                  height: dp(ICON_SIZE),
+                  flexShrink: 0,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {action.icon}
+              </span>
+              <span data-hero-icon-label="" style={{ fontSize: dp(16), fontWeight: 500 }}>
+                {action.label}
+              </span>
             </div>
           ))}
         </div>
