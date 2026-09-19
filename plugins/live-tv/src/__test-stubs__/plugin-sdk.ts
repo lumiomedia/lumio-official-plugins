@@ -743,3 +743,12 @@ export function VideoPlayerModal(props: { url: string; title: string }) {
 export function FullCastPage(props: { tmdbId: string; mediaType: string }) {
   return createElement('div', { 'data-testid': 'app-full-cast', 'data-tmdb': props.tmdbId, 'data-type': props.mediaType })
 }
+
+/** Orienteringslåsning på Android. Stubben minns bara vad som begärdes. */
+export const ANDROID_ORIENTATION: { mode: 'landscape' | 'portrait' | 'auto' | null } = { mode: null }
+export function setAndroidOrientation(mode: 'landscape' | 'portrait' | 'auto'): void {
+  ANDROID_ORIENTATION.mode = mode
+}
+export function __resetAndroidOrientationForTests(): void {
+  ANDROID_ORIENTATION.mode = null
+}
