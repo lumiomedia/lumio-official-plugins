@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { LibraryBatch } from '@/lib/library/types'
 import {
   scanVodSource,
+  vodPlaybackUrl,
   vodDeltaNeeded,
   vodSourceFromLibraryId,
   VOD_SCAN_PAGE,
@@ -111,5 +112,20 @@ describe('vodDeltaNeeded', () => {
   it('kör när vi inte vet', () => {
     expect(vodDeltaNeeded(null, 4242)).toBe(true)
     expect(vodDeltaNeeded('4242', undefined)).toBe(true)
+  })
+})
+
+describe('vodPlaybackUrl', () => {
+  it('lämnar tillbaka panelens färdiga adress', () => {
+    expect(vodPlaybackUrl('http://panel/movie/u/p/4211.mkv')).toBe('http://panel/movie/u/p/4211.mkv')
+    expect(vodPlaybackUrl('https://panel/4211.mkv')).toBe('https://panel/4211.mkv')
+  })
+
+  it('säger nej i stället för att skicka skräp till spelaren', () => {
+    expect(vodPlaybackUrl('')).toBeNull()
+    expect(vodPlaybackUrl(null)).toBeNull()
+    expect(vodPlaybackUrl('  ')).toBeNull()
+    // En playRef som inte är en adress hör till en annan leverantör.
+    expect(vodPlaybackUrl('/library/parts/99/file.mkv')).toBeNull()
   })
 })

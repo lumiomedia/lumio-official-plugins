@@ -101,3 +101,62 @@ export function vodDeltaNeeded(cursor: string | null, updatedAt: number | null |
   if (!cursor) return true
   return String(updatedAt) !== cursor
 }
+
+/**
+ * Spelbar adress för en version.
+ *
+ * VOD-filmer har en färdig URL i indexet, så det normala fallet är att lämna
+ * tillbaka den. Kroken finns ändå kvar som leverantörens chans att hämta en
+ * FÄRSK adress — panelernas länkar kan bära token som går ut, och då är det
+ * här den nya hämtas i fas B.
+ */
+export function vodPlaybackUrl(playRef: string | null | undefined): string | null {
+  const ref = typeof playRef === 'string' ? playRef.trim() : ''
+  // Bara en riktig adress. En tom eller trasig `playRef` ska ge "ingen
+  // uppspelning" i stället för att skicka skräp till spelaren.
+  if (!/^https?:\/\//i.test(ref)) return null
+  return ref
+}
+
+/**
+ * Leverantörsobjektet.
+ *
+ * Typen kommer ur appens SDK; i pluginets tester pekar `@/lib/plugin-sdk` på
+ * en stubb utan den, men en `import type` raderas vid körning så testerna rörs
+ * inte. Formen kontrolleras vid pluginbygget, mot appens riktiga SDK.
+ */
+export const vodLibraryProvider = {
+  id: VOD_LIBRARY_PROVIDER_ID,
+  label: { en: 'Xtream VOD', sv: 'Xtream VOD' },
+  pluginId: 'com.lumio.live-tv',
+  async scanAll(
+    source: { id: string },
+    emit: (batch: LibraryBatch) => Promise<void>,
+    progress: (state: LibraryScanProgress) => void,
+    signal: AbortSignal,
+  ) {
+    const out = await scanVodSource(source.id, emit, progress, signal)
+    return { titles: out.titles, cursor: out.cursor }
+  },
+  async scanDelta(
+    source: { id: string },
+    cursor: string | null,
+    emit: (batch: LibraryBatch) => Promise<void>,
+    progress: (state: LibraryScanProgress) => void,
+    signal: AbortSignal,
+  ) {
+    // Panelen ger ingen finare granularitet än "indexet ändrades". Är det
+    // oförändrat finns inget att göra — se `vodDeltaNeeded`.
+    const account = vodSourceFromLibraryId(source.id)
+    const updatedAt = account
+      ? (await vodStatus()).find((entry) => entry.id === account)?.updatedAt ?? null
+      : null
+    if (!vodDeltaNeeded(cursor, updatedAt)) return { titles: 0, cursor }
+    const out = await scanVodSource(source.id, emit, progress, signal)
+    return { titles: out.titles, cursor: out.cursor }
+  },
+  async resolvePlayback(_source: unknown, media: { playRef?: string | null }) {
+    const url = vodPlaybackUrl(media.playRef)
+    return url ? { url } : null
+  },
+}

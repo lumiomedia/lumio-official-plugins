@@ -10,6 +10,7 @@ import { getVodStreams } from './vod-streams'
 import { useEpgNowNextLater } from './hooks/useEpgNowNextLater'
 import { useEpgLoadStatus } from './hooks/useEpgLoadStatus'
 import { useChannelSchedule } from './hooks/useChannelSchedule'
+import { vodLibraryProvider } from './vod-library-provider'
 
 declare global {
   interface Window {
@@ -116,6 +117,21 @@ export const LiveTvPlugin: LumioPlugin = {
      * senare SDK, och ett äldre värd ska köra biblioteket ändå — utan
      * Spela-knapp, men med allt annat.
      */
+    /*
+      VOD SOM BIBLIOTEKSKÄLLA.
+
+      Registreringen är VALFRI på samma sätt som strömkatalogen nedan:
+      `registerLibraryProvider` kom i en senare SDK, och ett äldre värd ska
+      köra Live TV ändå — utan biblioteksläge, med allt annat.
+
+      Leverantören gör ingenting av sig själv. Källan finns först när någon
+      startar en genomgång; tills dess är det här bara ett erbjudande.
+    */
+    const registerLibrary = (ctx as unknown as {
+      registerLibraryProvider?: (provider: unknown) => void
+    }).registerLibraryProvider
+    if (typeof registerLibrary === 'function') registerLibrary.call(ctx, vodLibraryProvider)
+
     const registerStreams = (ctx as unknown as {
       registerMediaStreamCatalogProvider?: (provider: {
         id: string
