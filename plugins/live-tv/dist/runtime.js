@@ -197461,8 +197461,19 @@ ${cue.text}`).join("\n\n")}
     } else {
       video.src = src;
     }
-    void video.play().catch(() => {
-    });
+    const playOrFallBackToMuted = () => {
+      void video.play().catch(() => {
+        if (video.muted) {
+          onFail();
+          return;
+        }
+        video.muted = true;
+        void video.play().catch(() => {
+          onFail();
+        });
+      });
+    };
+    playOrFallBackToMuted();
     return {
       setBounds(rect) {
         if (anchored) return;

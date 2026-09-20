@@ -218,7 +218,31 @@ function createHtmlSession(url: string, muted: boolean, onReady: () => void, onF
   } else {
     video.src = src
   }
-  void video.play().catch(() => {})
+  /*
+    AUTOPLAY MED LJUD ÄR BLOCKERAT UTAN EN GEST.
+
+    Rutan startas i en effekt, inte i tryckhanteraren, så gesttoken är redan
+    förbrukad när `play()` körs. iOS (och Chrome) avvisar då uppspelning så
+    fort videon INTE är tyst — och avslaget sveptes under mattan av ett tomt
+    `catch`. Följden på en fjärrklient: ljudrutan startade aldrig, varken med
+    bild eller ljud, medan den andra rutan ändå inte får någon yta när
+    kapaciteten är en (Jerry 2026-09-20: "multiview på fjärr verkar ej funka,
+    inga av dom två valda kanalerna startar … inget ljud alls").
+
+    Andra försöket är TYST. Tyst autoplay är alltid tillåten, så rutan får
+    åtminstone bild i stället för en svart låda, och användaren kan välja
+    ljudruta med ett tryck — det trycket ÄR en gest och får ljudet med sig.
+    Misslyckas även det är det ett riktigt uppspelningsfel: `onFail` låter
+    rutan falla tillbaka till kanalbilden i stället för att stå svart.
+  */
+  const playOrFallBackToMuted = () => {
+    void video.play().catch(() => {
+      if (video.muted) { onFail(); return }
+      video.muted = true
+      void video.play().catch(() => { onFail() })
+    })
+  }
+  playOrFallBackToMuted()
   return {
     setBounds(rect: Rect) {
       // Ett barn följer sin förälder: inget att räkna, och inget att räkna fel.

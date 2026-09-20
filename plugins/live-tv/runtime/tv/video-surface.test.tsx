@@ -28,6 +28,32 @@ function StaticProbe() {
 afterEach(cleanup)
 beforeEach(() => { surfaceCalls.length = 0 })
 
+describe('blockerad autoplay (fjärrklient/iOS)', () => {
+  /*
+    jsdom implementerar inte HTMLMediaElement.play, så testet stoppar in en
+    egen som avvisar MED ljud och lyckas TYST — exakt iOS regel. Vakten finns
+    för att avslaget en gång sveptes under ett tomt catch: ljudrutan startade
+    aldrig på en fjärrklient och multivyn blev två svarta rutor.
+  */
+  it('faller tillbaka till tyst uppspelning i stället för att ge upp', async () => {
+    const forsok: boolean[] = []
+    const proto = window.HTMLMediaElement.prototype as unknown as { play: () => Promise<void> }
+    const original = proto.play
+    proto.play = function playStub(this: HTMLVideoElement) {
+      forsok.push(this.muted)
+      return this.muted ? Promise.resolve() : Promise.reject(new Error('NotAllowedError'))
+    }
+    try {
+      render(<Probe audio onHandle={() => {}} />)
+      // Första försöket med ljud, andra tyst — och videon blir kvar i rutan.
+      await waitFor(() => expect(forsok).toEqual([false, true]))
+      await waitFor(() => expect(document.querySelector('video')?.muted).toBe(true))
+    } finally {
+      proto.play = original
+    }
+  })
+})
+
 describe('useVideoSurface v1 (HTML-motor i test)', () => {
   it('rapporterar en levande yta', () => {
     expect(videoSurfaceCapabilities()).toEqual({ maxLive: 1, engine: 'html', nativeBehindDom: false })
