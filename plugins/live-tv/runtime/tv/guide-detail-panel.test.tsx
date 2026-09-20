@@ -26,6 +26,20 @@ const base = {
 afterEach(cleanup)
 
 describe('GuideDetailPanel', () => {
+  it('låter bara beskrivningen ge med sig — panelen rullar, den klämmer inte ihop raderna', () => {
+    // Panelen är en rullande flex-kolumn. Utan flex-shrink: 0 krympte flex
+    // varje barn när innehållet inte fick plats, och eftersom raderna har
+    // fasta höjder och overflow: hidden blev resultatet AVKLIPPT text i
+    // stället för en rullningslist: kanalraden och titeln låg halva bakom
+    // bildrutan (Jerry 2026-09-20, ett markerat program i Grid).
+    render(<GuideDetailPanel {...base} selection={{ channel: ch('A'), programme: live }} />)
+    for (const id of ['detail-channel', 'detail-title', 'detail-time']) {
+      expect(screen.getByTestId(id).style.flexShrink).toBe('0')
+    }
+    // Beskrivningen är undantaget: den är det enda som får krympa/rulla.
+    expect(screen.getByTestId('detail-description').style.flexShrink).toBe('')
+  })
+
   it('finns utan markering och visar tomtexten', () => {
     render(<GuideDetailPanel {...base} selection={null} />)
     const panel = screen.getByTestId('guide-detail-panel')

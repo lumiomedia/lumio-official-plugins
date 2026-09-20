@@ -204467,6 +204467,7 @@ ${cue.text}`).join("\n\n")}
       gap: gp(14),
       overflow: "auto"
     };
+    const fixed = { flexShrink: 0 };
     if (!selection) {
       return /* @__PURE__ */ jsx("div", { "data-testid": "guide-detail-panel", style: frame2, children: /* @__PURE__ */ jsx("div", { style: { fontSize: gp(13), color: TV2.faint, lineHeight: 1.5 }, children: tt("detailEmpty") }) });
     }
@@ -204477,13 +204478,13 @@ ${cue.text}`).join("\n\n")}
     const timeLine = programme ? `${formatClock(programme.start, locale)}\u2013${formatClock(programme.stop, locale)}${live2 ? ` \xB7 ${tt("minutesLeft", { min: minutesLeft })}` : ""}` : "";
     const secondary = { height: gp(38), flex: 1, minWidth: 0, borderRadius: gp(10), background: TV2.s08, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: gp(8), fontSize: gp(13), cursor: "pointer", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
     return /* @__PURE__ */ jsxs("div", { "data-testid": "guide-detail-panel", style: frame2, children: [
-      /* @__PURE__ */ jsx(LivePreviewArt, { channel, live: live2, enabled: previewEnabled, height: gp(180), radius: gp(12), style: { width: "100%" }, children: live2 ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", left: gp(12), bottom: gp(12) }, children: /* @__PURE__ */ jsx(Tag2, { variant: "live", style: { height: gp(24), padding: `0 ${gp(10)}px`, fontSize: gp(11) }, children: tt("live") }) }) : null }),
-      /* @__PURE__ */ jsx("div", { "data-testid": "detail-channel", style: { fontSize: gp(12), color: "rgba(243,244,248,0.45)", letterSpacing: "0.12em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: [channelNumber, channel.name].filter((part) => part !== null && part !== "").join(" \xB7 ") }),
-      /* @__PURE__ */ jsx("div", { "data-testid": "detail-title", style: { fontSize: gp(20), fontWeight: 600, lineHeight: 1.25, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }, children: programme ? programme.title : tt("noProgramme") }),
-      programme ? /* @__PURE__ */ jsx("div", { "data-testid": "detail-time", style: { fontSize: gp(13), color: "rgba(243,244,248,0.6)" }, children: timeLine }) : null,
-      live2 && programme ? /* @__PURE__ */ jsx(Progress, { value: progressOf(programme.start, programme.stop, nowMs), height: gp(4) }) : null,
+      /* @__PURE__ */ jsx(LivePreviewArt, { channel, live: live2, enabled: previewEnabled, height: gp(180), radius: gp(12), style: { width: "100%", ...fixed }, children: live2 ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", left: gp(12), bottom: gp(12) }, children: /* @__PURE__ */ jsx(Tag2, { variant: "live", style: { height: gp(24), padding: `0 ${gp(10)}px`, fontSize: gp(11) }, children: tt("live") }) }) : null }),
+      /* @__PURE__ */ jsx("div", { "data-testid": "detail-channel", style: { ...fixed, fontSize: gp(12), color: "rgba(243,244,248,0.45)", letterSpacing: "0.12em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: [channelNumber, channel.name].filter((part) => part !== null && part !== "").join(" \xB7 ") }),
+      /* @__PURE__ */ jsx("div", { "data-testid": "detail-title", style: { ...fixed, fontSize: gp(20), fontWeight: 600, lineHeight: 1.25, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }, children: programme ? programme.title : tt("noProgramme") }),
+      programme ? /* @__PURE__ */ jsx("div", { "data-testid": "detail-time", style: { ...fixed, fontSize: gp(13), color: "rgba(243,244,248,0.6)" }, children: timeLine }) : null,
+      live2 && programme ? /* @__PURE__ */ jsx("div", { style: fixed, children: /* @__PURE__ */ jsx(Progress, { value: progressOf(programme.start, programme.stop, nowMs), height: gp(4) }) }) : null,
       programme ? /* @__PURE__ */ jsx("div", { "data-testid": "detail-description", "data-selectable-text": "", style: { fontSize: gp(13), color: TV2.muted, lineHeight: 1.5 }, children: programme.description ?? "" }) : null,
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: gp(8), marginTop: "auto" }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { ...fixed, display: "flex", flexDirection: "column", gap: gp(8), marginTop: "auto" }, children: [
         /* @__PURE__ */ jsxs(
           "div",
           {
