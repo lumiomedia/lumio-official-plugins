@@ -2,7 +2,9 @@
 
 import type { CSSProperties, JSX } from 'react'
 import { formatClock, progressOf } from '../live-tv-ui'
-import { ChannelArt, Icons, Progress, TV, Tag, station } from './tv-ui'
+import { Icons, Progress, TV, Tag, station } from './tv-ui'
+import { LivePreviewArt } from './live-preview-art'
+import { useTvSettings } from './tv-settings-store'
 import { useTvText } from './tv-strings'
 import { gp } from './guide-view-shared'
 import type { GuideSelection } from './guide-types'
@@ -33,6 +35,9 @@ export function GuideDetailPanel({ selection, nowMs, locale, channelNumber, onWa
   reminded: boolean
 }): JSX.Element {
   const { tt } = useTvText()
+  /* Förhandsvisningen följer Live TV:s egen inställning, precis som den
+     gjorde i den gamla guiden (tv-guide.tsx). */
+  const previewEnabled = useTvSettings().previewEnabled
   const frame: CSSProperties = {
     flex: `0 0 ${DETAIL_PANEL_WIDTH_PX}px`,
     width: DETAIL_PANEL_WIDTH_PX,
@@ -62,13 +67,13 @@ export function GuideDetailPanel({ selection, nowMs, locale, channelNumber, onWa
   const secondary: CSSProperties = { height: gp(38), flex: 1, minWidth: 0, borderRadius: gp(10), background: TV.s08, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: gp(8), fontSize: gp(13), cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }
   return (
     <div data-testid="guide-detail-panel" style={frame}>
-      <ChannelArt channel={channel} height={gp(180)} radius={gp(12)} style={{ width: '100%' }}>
+      <LivePreviewArt channel={channel} live={live} enabled={previewEnabled} height={gp(180)} radius={gp(12)} style={{ width: '100%' }}>
         {live ? (
           <span style={{ position: 'absolute', left: gp(12), bottom: gp(12) }}>
             <Tag variant="live" style={{ height: gp(24), padding: `0 ${gp(10)}px`, fontSize: gp(11) }}>{tt('live')}</Tag>
           </span>
         ) : null}
-      </ChannelArt>
+      </LivePreviewArt>
       <div data-testid="detail-channel" style={{ fontSize: gp(12), color: 'rgba(243,244,248,0.45)', letterSpacing: '0.12em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
         {[channelNumber, channel.name].filter((part) => part !== null && part !== '').join(' · ')}
       </div>

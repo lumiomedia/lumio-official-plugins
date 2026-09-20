@@ -65,7 +65,7 @@ describe('GuideNowNextView (TV-läge)', () => {
     expect(screen.queryByTestId('guide-nownext-placeholder')).not.toBeInTheDocument()
   })
 
-  it('nowNextDetails=false → ingen banner; true → banner utan video/TvPreview och utan "OK ="', async () => {
+  it('nowNextDetails=false → ingen banner; true → banner MED live-förhandsvisning och utan "OK ="', async () => {
     writePluginJson(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, { nowNextDetails: false })
     await mount()
     expect(screen.queryByTestId('nownext-banner')).not.toBeInTheDocument()
@@ -73,7 +73,16 @@ describe('GuideNowNextView (TV-läge)', () => {
     writePluginJson(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, { nowNextDetails: true })
     await mount()
     const banner = screen.getByTestId('nownext-banner')
-    expect(banner.querySelector('video')).toBeNull()
+    /*
+      Förhandsvisningen SKA finnas. Det här testet låste tidigare fast
+      motsatsen ("banner utan video"), efter handoffens formulering "ingen
+      TvPreview, ingen ström — det är en stillbild". Men bara den sparade
+      BILDRUTAN skulle bort, aldrig live-bilden (Jerry 2026-09-20: "det var
+      ett misstag som jag vill ha fixat, live preview ska finnas"). Kanalen
+      sänder i fixturen, så rutan ska spela.
+    */
+    expect(banner.querySelector('video')).not.toBeNull()
+    // Rutan är fortfarande ingen station: ingen "OK ="-text.
     expect(banner.textContent).not.toMatch(/OK =/)
     expect(banner.textContent).not.toMatch(/saved frame/i)
     // Bannern visar första raden (A har tablå och sorteras först): titel,

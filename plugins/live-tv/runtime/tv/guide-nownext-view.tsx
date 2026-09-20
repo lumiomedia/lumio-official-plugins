@@ -6,7 +6,9 @@ import type { EpgProgramme, NowNextLater } from '../epg/types'
 import { formatClock, progressOf } from '../live-tv-ui'
 import { qualityFromName } from '../live-tv-model'
 import { isReminded, toggleReminder } from '../reminders'
-import { ChannelArt, Icons, Progress, TV, Tag, station } from './tv-ui'
+import { Icons, Progress, TV, Tag, station } from './tv-ui'
+import { LivePreviewArt } from './live-preview-art'
+import { useTvSettings } from './tv-settings-store'
 import { useTvText } from './tv-strings'
 import { GuideChannelCell, filterByGroup, guideCellStyle } from './tv-guide-shared'
 import { GuidePaginationRow, ROWS_STEP, ellipsis, gp, initAttr, useHoverSelect, withPointerLeave } from './guide-view-shared'
@@ -240,10 +242,13 @@ function UpcomingCell({ testId, programme, locale, titleColor, timeColor, weight
 
 /**
  * Infobannern (handoffen §2) — den enda platsen där något ligger "ovanpå"
- * listan, och bara bakom Detaljer. Sparad bildruta 200×112 via `ChannelArt`
- * (`playerFrameUrl` → logotyp → initialer): INGEN `TvPreview`, ingen ström,
- * ingen `OK = …`-text — det är en stillbild. Påminn mig gäller SEN-programmet
- * och göms när det saknas.
+ * listan, och bara bakom Detaljer. Rutan är 200×112 och SPELAR när kanalen
+ * sänder (`LivePreviewArt`); gör den inte det faller den tillbaka på
+ * kanalbilden — logotyp eller initialer. Handoffen §2 skrev "stillbild, ingen
+ * ström", och det följdes ordagrant, men bara den sparade BILDRUTAN skulle
+ * bort — inte förhandsvisningen (Jerry 2026-09-20). Ingen `OK = …`-text:
+ * rutan är fortfarande ingen station. Påminn mig gäller SEN-programmet och
+ * göms när det saknas.
  */
 function NowNextBanner({ selection, info, nowMs, locale, channelNumber, init, onWatch, onRemind }: {
   selection: GuideSelection
@@ -263,6 +268,8 @@ function NowNextBanner({ selection, info, nowMs, locale, channelNumber, init, on
   const minutesLeft = programme ? Math.max(0, Math.ceil((programme.stop - nowMs) / 60_000)) : 0
   const meta = [channel.group, qualityFromName(channel.name)].filter(Boolean).join(' · ')
   const reminded = next ? isReminded(channel, next) : false
+  /* Förhandsvisningen följer Live TV:s egen inställning, som i gamla guiden. */
+  const previewEnabled = useTvSettings().previewEnabled
   const button = (testId: string, height: number, accent: boolean, onOk: () => void, children: ReactNode, extra?: Record<string, string>) => (
     <div
       data-testid={testId}
@@ -278,13 +285,13 @@ function NowNextBanner({ selection, info, nowMs, locale, channelNumber, init, on
   )
   return (
     <div data-testid="nownext-banner" style={{ display: 'flex', gap: gp(20), padding: `${gp(18)}px ${gp(20)}px`, borderBottom: `1px solid ${TV.line}`, background: 'rgba(252,252,255,0.03)', alignItems: 'center' }}>
-      <ChannelArt channel={channel} height={gp(112)} radius={gp(10)} style={{ width: gp(200), flexShrink: 0, border: '1px solid rgba(255,255,255,0.08)', boxSizing: 'border-box' }}>
+      <LivePreviewArt channel={channel} live={live} enabled={previewEnabled} height={gp(112)} radius={gp(10)} style={{ width: gp(200), flexShrink: 0, border: '1px solid rgba(255,255,255,0.08)', boxSizing: 'border-box' }}>
         {live ? (
           <span style={{ position: 'absolute', left: gp(10), bottom: gp(10) }}>
             <Tag variant="live" style={{ height: gp(22), padding: `0 ${gp(9)}px`, fontSize: gp(11) }}>{tt('live')}</Tag>
           </span>
         ) : null}
-      </ChannelArt>
+      </LivePreviewArt>
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: gp(6) }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: gp(8), minWidth: 0 }}>
           {channelNumber !== null ? <span style={{ fontSize: gp(13), color: 'rgba(243,244,248,0.45)', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{channelNumber}</span> : null}
