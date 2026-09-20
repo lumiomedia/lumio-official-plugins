@@ -199,12 +199,13 @@ export function GuideGridView({ model, nav, category, dayOffset, windowStart, no
                     <div key={key} data-testid="grid-row" style={{ display: 'flex', height: ROW_H_PX, minHeight: ROW_H_PX, borderBottom: '1px solid rgba(255,255,255,0.06)', boxSizing: 'border-box' }}>
                       {channelCell(channel, rowInit && initKey.start === null)}
                       <div data-testid="grid-track" style={{ width: trackWidth, flexShrink: 0, position: 'relative' }}>
-                        {entries.map(({ box, programme }) => {
+                        {entries.map(({ box, programme }, blockIndex) => {
                           const live = isLive(programme)
                           const sel: GuideSelection = { channel, programme }
                           return (
                             <GridBlock
                               key={programme.start}
+                              lastInRow={detailPanel && blockIndex === entries.length - 1}
                               box={box}
                               programme={programme}
                               locale={locale}
@@ -299,7 +300,7 @@ export function GuideGridView({ model, nav, category, dayOffset, windowStart, no
  * `title` (bara titeln) och `full` (titel + tid). Klippta kanter skrivs
  * som "…" i stället för en falsk start-/sluttid.
  */
-function GridBlock({ box, programme, locale, live, init, selected, reminded, onFocus, onEnter, onLeave, onOk, onHold }: {
+function GridBlock({ box, programme, locale, live, init, selected, reminded, lastInRow, onFocus, onEnter, onLeave, onOk, onHold }: {
   box: EpgBlockBox
   programme: EpgProgramme
   locale: string
@@ -307,6 +308,18 @@ function GridBlock({ box, programme, locale, live, init, selected, reminded, onF
   init: boolean
   selected: boolean
   reminded: boolean
+  /**
+   * Sista blocket i raden: ▶ därifrån går till detaljpanelen i stället för
+   * ingenstans.
+   *
+   * ▶ är UPPTAGET i rutnätet — det bläddrar genom dygnets program — så
+   * panelen kan inte ta riktningen generellt (uppmätt 2026-09-20: ▶ vandrar
+   * 12:45 → 13:25 → 14:55 …). Vid radens slut är riktningen däremot död, och
+   * där blir den vägen in. Panelens åtgärder finns dessutom en hållning bort
+   * på varje block (glasmenyn bär Titta nu, Favorit och Påminn mig), så det
+   * här är genvägen — inte enda vägen.
+   */
+  lastInRow?: boolean
   /** TV: fokus styr markeringen. Skrivbord: hovring (`onEnter`) + klick. */
   onFocus?: () => void
   onEnter?: () => void
@@ -347,6 +360,7 @@ function GridBlock({ box, programme, locale, live, init, selected, reminded, onF
       data-guide-block=""
       data-selected={selected ? '' : undefined}
       title={`${programme.title} ${times}`}
+      {...(lastInRow ? { 'data-f-right': '[data-testid="detail-watch"]' } : {})}
       {...withPointerLeave(station(onOk, onHold, init ? { 'data-init': '' } : undefined), onLeave)}
       onFocus={onFocus}
       onPointerEnter={onEnter}

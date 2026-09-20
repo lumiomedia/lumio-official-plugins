@@ -116,6 +116,28 @@ export const cardStyle: CSSProperties = {
 // kanalcellen och Now/Next-raderna (`data-guide-row`). Ligger som
 // JS-kommentar: <style>-textens innehåll räknas som textContent och skulle
 // fälla strängvakten mot fjärrkontrollsord.
+// SKRIVBORDSREGELN MÅSTE VINNA ÖVER TV-REGELN — annars gäller den aldrig.
+//
+// Båda är `!important`, så specificiteten avgör. TV-regeln bär
+// `:root:not([data-focus-source="pointer"])` och vägde därmed TYNGRE än
+// skrivbordsregeln, som bara hade två attribut. Följden: skrivbordet fick
+// TV:ns ring — 2 px bred, ritad 3 px UTANFÖR elementet — trots att en tunn
+// inre kant var vad som stod i koden. Uppmätt 2026-09-20: `outlineWidth: 2px,
+// outlineOffset: 3px` på en fokuserad filterchip med `data-live-tv-desktop=1`
+// satt.
+//
+// Och 3 px utanför är precis vad som klipps bort. Kanalkorten, filterchipsen,
+// favoritraden och programblocken ligger alla kant i kant med en rullande
+// behållare (uppmätt: 0 px luft upptill och nedtill), och en ring utanför
+// elementet hamnar då utanför klippytan — därav de kapade ramarna Jerry såg.
+// Med skrivbordsregeln aktiv ritas ringen 1 px INNANFÖR kanten och kan inte
+// klippas av någon förälder.
+//
+// `scroll-margin` vore fel verktyg: appens fokusmotor rullar med
+// `scrollLeft`/`scrollTop` (lib/tv-reveal.ts) och läser aldrig scroll-margin.
+//
+// Kommentaren ligger HÄR och inte i CSS-texten: den är en template-sträng, och
+// en backtick i en CSS-kommentar stänger strängen mitt i regeln.
 export function TvFocusStyle() {
   return (
     <style>{`
@@ -135,8 +157,8 @@ export function TvFocusStyle() {
 [data-live-tv-tv-root][data-lt-phone="1"] [data-f]:focus,
 [data-live-tv-tv-root][data-lt-phone="1"] [data-f][data-fcur="1"] { outline: none !important; box-shadow: none !important; }
 [data-live-tv-tv-root][data-lt-phone="1"] [data-f]:hover { background-image: none !important; }
-[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-f]:focus,
-[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-f][data-fcur="1"] {
+:root:not([data-focus-source="pointer"]) [data-live-tv-tv-root][data-live-tv-desktop="1"] [data-f]:focus,
+:root:not([data-focus-source="pointer"]) [data-live-tv-tv-root][data-live-tv-desktop="1"] [data-f][data-fcur="1"] {
   outline: 1px solid rgb(var(--accent-500)) !important;
   outline-offset: -1px;
   box-shadow: none !important;

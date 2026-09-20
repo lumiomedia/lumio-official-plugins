@@ -88,6 +88,9 @@ export function GuideDetailPanel({ selection, nowMs, locale, channelNumber, onWa
       <div style={{ display: 'flex', flexDirection: 'column', gap: gp(8), marginTop: 'auto' }}>
         <div
           data-testid="detail-watch"
+          /* ◀ tillbaka till rutnätet: panelen nås med ▶ från radens sista
+             block, och utan vägen tillbaka blir den en återvändsgränd. */
+          data-f-left="[data-guide-block][data-selected], [data-guide-block]"
           {...station(onWatch)}
           style={{ height: gp(40), borderRadius: gp(10), background: TV.acc, color: TV.onAcc, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: gp(8), fontSize: gp(14), fontWeight: 600, cursor: 'pointer' }}
         >
@@ -95,11 +98,11 @@ export function GuideDetailPanel({ selection, nowMs, locale, channelNumber, onWa
         </div>
         <div style={{ display: 'flex', gap: gp(8) }}>
           {future ? (
-            <div data-testid="detail-remind" {...station(onRemind)} style={{ ...secondary, color: reminded ? TV.accText : TV.text }} {...(reminded ? { 'data-active': '' } : {})}>
+            <div data-testid="detail-remind" data-f-left="[data-guide-block][data-selected], [data-guide-block]" {...station(onRemind)} style={{ ...secondary, color: reminded ? TV.accText : TV.text }} {...(reminded ? { 'data-active': '' } : {})}>
               <Icons.Bell size={gp(14)} filled={reminded} /> {reminded ? tt('reminderSet') : tt('remindMe')}
             </div>
           ) : null}
-          <div data-testid="detail-favourite" {...station(onToggleFavourite)} style={{ ...secondary, color: favourite ? TV.accText : TV.text }} {...(favourite ? { 'data-active': '' } : {})}>
+          <div data-testid="detail-favourite" data-f-left="[data-guide-block][data-selected], [data-guide-block]" {...station(onToggleFavourite)} style={{ ...secondary, color: favourite ? TV.accText : TV.text }} {...(favourite ? { 'data-active': '' } : {})}>
             <Icons.Heart size={gp(14)} filled={favourite} /> {tt('favouriteShort')}
           </div>
         </div>

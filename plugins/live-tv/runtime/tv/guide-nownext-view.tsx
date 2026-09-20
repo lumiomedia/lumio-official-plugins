@@ -105,6 +105,17 @@ export function GuideNowNextView({ model, nav, category, selection, onSelect, is
     return {
       'data-guide-row': '',
       'data-selected': isSelected(channel) ? '' : undefined,
+      /*
+        ▶ GÅR TILL BANNERNS ÅTGÄRDER.
+
+        Bannerns "Titta nu" och "Påminn mig" var stationer men gick inte att
+        NÅ: raderna spänner hela bredden, knapparna sitter längst till höger
+        ovanför dem, och motorns geometriska sökning hoppade förbi bannern rakt
+        ut i rälsen (uppmätt 2026-09-20 — ▲ från första raden landade på
+        `rail-guide`). ▶ är ledigt här: en rad har ingen vågrät navigering alls,
+        så riktningen kostar ingenting och pekar på raden man står på.
+      */
+      'data-f-right': '[data-testid="nownext-banner-watch"], [data-testid="nownext-banner-remind"]',
       ...withPointerLeave(station(() => { onSelect(sel); nav.play({ channel }) }, (element) => nav.channelMenu(channel, element), initAttr(init)), hover.leave),
       onFocus: isTv ? () => onSelect(sel) : undefined,
       onPointerEnter: hover.enter ? () => hover.enter?.(sel) : undefined,
@@ -255,6 +266,10 @@ function NowNextBanner({ selection, info, nowMs, locale, channelNumber, init, on
   const button = (testId: string, height: number, accent: boolean, onOk: () => void, children: ReactNode, extra?: Record<string, string>) => (
     <div
       data-testid={testId}
+      /* ◀ och ▼ tillbaka till listan: utan vägen tillbaka blir bannern en
+         återvändsgränd när man väl tagit sig dit med ▶ ovan. */
+      data-f-left="[data-guide-row][data-selected], [data-guide-row]"
+      data-f-down="[data-guide-row][data-selected], [data-guide-row]"
       {...station(onOk, undefined, extra)}
       style={{ height, minHeight: height, padding: `0 ${gp(16)}px`, borderRadius: gp(10), background: accent ? TV.acc : TV.s08, color: accent ? TV.onAcc : TV.text, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: gp(8), fontSize: accent ? gp(14) : gp(13), fontWeight: accent ? 600 : 400, cursor: 'pointer', whiteSpace: 'nowrap' }}
     >
