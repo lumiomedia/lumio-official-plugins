@@ -10,6 +10,14 @@ export default defineConfig({
   resolve: {
     alias: {
       '@/lib/plugin-sdk': resolve(__dirname, 'src/__test-stubs__/plugin-sdk.ts'),
+      /*
+        Bibliotekets typer läses ur APPENS träd, inte kopieras hit.
+        `LibraryTitle` är kärnans kontrakt (`library_index.rs` speglat i
+        `lib/library/types.ts`); en kopia i pluginet hade glidit isär första
+        gången ett fält lades till, och batchen hade börjat tappa data tyst.
+        Bygget löser `@/` mot appen ändå — det här gör att TESTERNA gör det med.
+      */
+      '@/lib/library/types': resolve(__dirname, '../../../Moviefinder/lib/library/types.ts'),
     },
   },
   test: {

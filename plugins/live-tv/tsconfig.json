@@ -12,7 +12,8 @@
     "noEmit": true,
     "resolveJsonModule": true,
     "paths": {
-      "@/lib/plugin-sdk": ["./src/__test-stubs__/plugin-sdk.ts"]
+      "@/lib/plugin-sdk": ["./src/__test-stubs__/plugin-sdk.ts"],
+      "@/lib/library/types": ["../../../Moviefinder/lib/library/types.ts"]
     }
   },
   "include": ["runtime/**/*", "src/**/*", "vitest.config.ts"]
