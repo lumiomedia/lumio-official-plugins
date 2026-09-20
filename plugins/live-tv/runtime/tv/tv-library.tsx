@@ -8,6 +8,7 @@ import { canOpenDetails, getVodCategory, getVodSort, openVodItem, setVodCategory
 import type { VodCategory, VodItem, VodSort } from '../vod-client'
 import type { TvViewProps } from './tv-shell'
 import { TV, dp, station } from './tv-ui'
+import { MT } from './mobile/mobile-tokens'
 import { useTvText } from './tv-strings'
 
 /**
@@ -272,7 +273,14 @@ export function TvLibrary({ model, nav }: TvViewProps) {
   if (narrow) {
     return (
       <div data-scroll="" data-testid="tv-library" style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: dp(24) }}>
-        <div style={{ padding: `${dp(20)}px ${dp(20)}px 0` }}>
+        {/*
+          SYSTEMRADEN MÅSTE RÄKNAS IN. Den smala grenen började på 20 px rakt
+          av, och på en telefon med kamerahål la sig rubriken UNDER klockan och
+          statusikonerna (Jerry 2026-09-20: "Library sidan på live TV går för
+          högt upp och överlappar menyn"). Samma vakt som telefonens sidhuvud
+          använder — MT.SAFE_TOP_GUARD — så måttet bor på ett ställe.
+        */}
+        <div style={{ padding: `calc(${MT.SAFE_TOP_GUARD} + ${dp(20)}px) ${dp(20)}px 0` }}>
           <div style={{ fontSize: dp(26), fontWeight: 600 }}>{tt('library')}</div>
           <div style={{ fontSize: dp(13), color: 'rgba(243,244,248,0.5)' }}>
             {tt('librarySub', { playlist: playlistName, count: cats.total })}

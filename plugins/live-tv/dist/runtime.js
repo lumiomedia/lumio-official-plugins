@@ -195589,6 +195589,7 @@ ${cue.text}`).join("\n\n")}
         remind: "Remind",
         watchNow: "Watch now",
         back: "Back",
+        closeLiveTv: "Close Live TV",
         showMore: "Show more",
         minutesLeft: "{min} min left",
         /** Now / Next-radens korta rest (handoffen `N m`). */
@@ -195930,6 +195931,7 @@ ${cue.text}`).join("\n\n")}
         remind: "P\xE5minn",
         watchNow: "Titta nu",
         back: "Tillbaka",
+        closeLiveTv: "St\xE4ng Live TV",
         showMore: "Visa fler",
         minutesLeft: "{min} min kvar",
         minShort: "{min} m",
@@ -202032,6 +202034,7 @@ ${cue.text}`).join("\n\n")}
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
   init_react_shim();
+  init_plugin_sdk();
   init_live_tv_data();
   init_live_tv_ui();
   init_live_tv_model();
@@ -202043,10 +202046,11 @@ ${cue.text}`).join("\n\n")}
   // ../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-header.tsx
   init_tv_ui();
   init_tv_strings();
+  init_tv_ui();
   init_mobile_tokens();
   init_mobile_icons();
   init_jsx_runtime_shim();
-  function MobileHeader({ title, right, back, onBack, testId }) {
+  function MobileHeader({ title, right, back, onBack, close, onClose, testId }) {
     const { tt } = useTvText();
     return /* @__PURE__ */ jsxs(
       "div",
@@ -202063,6 +202067,15 @@ ${cue.text}`).join("\n\n")}
           gap: 10
         },
         children: [
+          close ? /* @__PURE__ */ jsx(
+            "div",
+            {
+              ...station(onClose ?? (() => {
+              }), void 0, { "aria-label": tt("closeLiveTv"), "data-testid": "header-close" }),
+              style: { width: 40, height: 40, minHeight: 40, borderRadius: 999, background: TV2.glass, border: `1px solid ${MT.line14}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: "pointer" },
+              children: /* @__PURE__ */ jsx(MIcons.X, {})
+            }
+          ) : null,
           back ? /* @__PURE__ */ jsx(
             "div",
             {
@@ -202428,8 +202441,19 @@ ${cue.text}`).join("\n\n")}
             fontSize: 14,
             whiteSpace: "nowrap",
             flexShrink: 0,
-            background: emphasis ? "#f3f4f8" : active2 ? MT.s16 : MT.s05,
-            border: active2 && !emphasis ? `1px solid ${MT.line20}` : "1px solid transparent",
+            /*
+                            OVALD CHIP LÅG PÅ 5 % VITT — på en helsvart sida är det
+                            nästan ingenting, och raden lästes som tom (Jerry 2026-09-20:
+                            "dessa filter på live tv, svår att se, skulle behöva standard
+                            grå/glass"). 12 % är appens vanliga glasyta för ett
+                            ovalt piller och syns utan att konkurrera med det valda, som
+                            ligger kvar på 16 % med sin ljusare kant.
+            
+                            Kanten sitter kvar på BÅDA lägena nu: en osynlig kant på det
+                            ovalda gjorde att chippen bytte storlek när man valde dem.
+                          */
+            background: emphasis ? "#f3f4f8" : active2 ? MT.s16 : MT.s12,
+            border: emphasis ? "1px solid transparent" : `1px solid ${active2 ? MT.line20 : MT.line10}`,
             color: emphasis ? "#111" : active2 ? MT.text : MT.muted70,
             fontWeight: active2 ? 600 : 400,
             opacity: dim ? 0.65 : void 0,
@@ -202495,7 +202519,7 @@ ${cue.text}`).join("\n\n")}
       /* @__PURE__ */ jsx("span", { style: { flexShrink: 0, display: "inline-flex" }, children: /* @__PURE__ */ jsx(MIcons.CaretDown, { size: 16 }) })
     ] });
     const sheet = playlistOpen ? /* @__PURE__ */ jsx(MobileSheet, { title: tt("playlists"), items: playlistItems, onClose: () => setPlaylistOpen(false), pushLayer: nav.pushLayer, testId: "playlist-sheet" }) : null;
-    const header = /* @__PURE__ */ jsx("div", { style: { margin: `0 -${MT.PAD}px` }, children: /* @__PURE__ */ jsx(MobileHeader, { title: tt("liveTv"), right: pill }) });
+    const header = /* @__PURE__ */ jsx("div", { style: { margin: `0 -${MT.PAD}px` }, children: /* @__PURE__ */ jsx(MobileHeader, { title: tt("liveTv"), right: pill, close: true, onClose: requestBrowseBack }) });
     if (model.allChannels.length === 0) {
       return /* @__PURE__ */ jsxs("div", { "data-scroll": "", style: { flex: 1, overflowY: "auto", padding: `0 ${MT.PAD}px`, paddingBottom: MT.SCROLL_PAD_BOTTOM, display: "flex", flexDirection: "column", gap: 14 }, children: [
         header,
@@ -206775,6 +206799,7 @@ ${cue.text}`).join("\n\n")}
   init_plugin_sdk();
   init_useNarrowSurface();
   init_tv_ui();
+  init_mobile_tokens();
   init_tv_strings();
   init_jsx_runtime_shim();
   var LEFT_W = 380;
@@ -206964,7 +206989,7 @@ ${cue.text}`).join("\n\n")}
     );
     if (narrow) {
       return /* @__PURE__ */ jsxs("div", { "data-scroll": "", "data-testid": "tv-library", style: { flex: 1, minHeight: 0, overflowY: "auto", paddingBottom: dp(24) }, children: [
-        /* @__PURE__ */ jsxs("div", { style: { padding: `${dp(20)}px ${dp(20)}px 0` }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { padding: `calc(${MT.SAFE_TOP_GUARD} + ${dp(20)}px) ${dp(20)}px 0` }, children: [
           /* @__PURE__ */ jsx("div", { style: { fontSize: dp(26), fontWeight: 600 }, children: tt("library") }),
           /* @__PURE__ */ jsx("div", { style: { fontSize: dp(13), color: "rgba(243,244,248,0.5)" }, children: tt("librarySub", { playlist: playlistName, count: cats.total }) })
         ] }),
@@ -207275,6 +207300,7 @@ ${cue.text}`).join("\n\n")}
   }
 
   // ../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-library-title.tsx
+  init_useNarrowSurface();
   init_tv_ui();
   init_tv_strings();
   init_jsx_runtime_shim();
@@ -207283,6 +207309,7 @@ ${cue.text}`).join("\n\n")}
   function TvLibraryTitle({ model, nav, params }) {
     const { tt } = useTvText();
     const isTv = useTvMode();
+    const narrow = useNarrowSurface();
     const iconSize = isTv ? ICON_SIZE_TV : ICON_SIZE;
     const itemKey = params.key ?? "";
     const source = model.activeSource;
@@ -207455,29 +207482,29 @@ ${cue.text}`).join("\n\n")}
               }
             }
           ),
-          /* @__PURE__ */ jsxs("div", { style: { position: "relative", marginTop: "auto", padding: `${dp(40)}px ${dp(48)}px ${dp(36)}px`, maxWidth: dp(1e3) }, children: [
+          /* @__PURE__ */ jsxs("div", { style: { position: "relative", marginTop: "auto", padding: narrow ? "24px 16px 28px" : `${dp(40)}px ${dp(48)}px ${dp(36)}px`, maxWidth: dp(1e3) }, children: [
             logoUrl ? /* @__PURE__ */ jsx(
               "img",
               {
                 src: logoUrl,
                 alt: title,
                 "data-testid": "title-logo",
-                style: { maxWidth: dp(isTv ? 520 : 420), maxHeight: dp(isTv ? 150 : 120), objectFit: "contain", display: "block", marginBottom: dp(12) }
+                style: { maxWidth: narrow ? "68%" : dp(isTv ? 520 : 420), maxHeight: narrow ? 84 : dp(isTv ? 150 : 120), objectFit: "contain", display: "block", marginBottom: dp(12) }
               }
-            ) : /* @__PURE__ */ jsx("div", { style: { fontSize: dp(isTv ? 58 : 46), fontWeight: 700, lineHeight: 1.1, marginBottom: dp(8) }, children: title }),
-            meta.length > 0 ? /* @__PURE__ */ jsx("div", { style: { fontSize: dp(isTv ? 21 : 17), color: "rgba(243,244,248,0.85)" }, children: meta.join("  |  ") }) : null,
-            info?.tagline ? /* @__PURE__ */ jsx("div", { style: { fontSize: dp(isTv ? 20 : 17), color: TV2.dim, marginTop: dp(6), fontStyle: "italic" }, children: info.tagline }) : null,
+            ) : /* @__PURE__ */ jsx("div", { style: { fontSize: narrow ? 30 : dp(isTv ? 58 : 46), fontWeight: 700, lineHeight: 1.1, marginBottom: dp(8) }, children: title }),
+            meta.length > 0 ? /* @__PURE__ */ jsx("div", { style: { fontSize: narrow ? 14 : dp(isTv ? 21 : 17), color: "rgba(243,244,248,0.85)" }, children: meta.join("  |  ") }) : null,
+            info?.tagline ? /* @__PURE__ */ jsx("div", { style: { fontSize: narrow ? 14 : dp(isTv ? 20 : 17), color: TV2.dim, marginTop: dp(6), fontStyle: "italic" }, children: info.tagline }) : null,
             info?.overview ? /* @__PURE__ */ jsx(
               "p",
               {
                 style: {
-                  fontSize: dp(isTv ? 22 : 18),
+                  fontSize: narrow ? 14 : dp(isTv ? 22 : 18),
                   lineHeight: 1.45,
                   color: "rgba(243,244,248,0.9)",
                   marginTop: dp(12),
                   maxWidth: dp(700),
                   display: "-webkit-box",
-                  WebkitLineClamp: 3,
+                  WebkitLineClamp: narrow ? 2 : 3,
                   WebkitBoxOrient: "vertical",
                   overflow: "hidden"
                 },

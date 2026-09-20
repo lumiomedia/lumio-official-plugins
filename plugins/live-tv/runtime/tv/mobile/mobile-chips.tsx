@@ -29,8 +29,19 @@ export function MobileChips<K>({ items, value, onChange, testId, emphasisKey, di
             style={{
               minHeight: 34, padding: '0 14px', borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 14, whiteSpace: 'nowrap', flexShrink: 0,
-              background: emphasis ? '#f3f4f8' : active ? MT.s16 : MT.s05,
-              border: active && !emphasis ? `1px solid ${MT.line20}` : '1px solid transparent',
+              /*
+                OVALD CHIP LÅG PÅ 5 % VITT — på en helsvart sida är det
+                nästan ingenting, och raden lästes som tom (Jerry 2026-09-20:
+                "dessa filter på live tv, svår att se, skulle behöva standard
+                grå/glass"). 12 % är appens vanliga glasyta för ett
+                ovalt piller och syns utan att konkurrera med det valda, som
+                ligger kvar på 16 % med sin ljusare kant.
+
+                Kanten sitter kvar på BÅDA lägena nu: en osynlig kant på det
+                ovalda gjorde att chippen bytte storlek när man valde dem.
+              */
+              background: emphasis ? '#f3f4f8' : active ? MT.s16 : MT.s12,
+              border: emphasis ? '1px solid transparent' : `1px solid ${active ? MT.line20 : MT.line10}`,
               color: emphasis ? '#111' : active ? MT.text : MT.muted70,
               fontWeight: active ? 600 : 400,
               opacity: dim ? 0.65 : undefined,

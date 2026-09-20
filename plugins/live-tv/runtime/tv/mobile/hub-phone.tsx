@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, type ReactNode } from 'react'
+import { requestBrowseBack } from '@/lib/plugin-sdk'
 import type { TvGlassMenuAction } from '@/lib/plugin-sdk'
 import { channelKey, type M3uChannel } from '../../live-tv-data'
 import type { CatchUpItem } from '../../catch-up'
@@ -107,7 +108,10 @@ export function TvHubPhone({ model, nav }: TvViewProps) {
   const sheet = playlistOpen ? <MobileSheet title={tt('playlists')} items={playlistItems} onClose={() => setPlaylistOpen(false)} pushLayer={nav.pushLayer} testId="playlist-sheet" /> : null
   // Sidhuvudet äger sina egna kanter (60 px vänster för värdens menychip,
   // 16 höger) — kolumnens 16 px-luft dras tillbaka runt det.
-  const header = <div style={{ margin: `0 -${MT.PAD}px` }}><MobileHeader title={tt('liveTv')} right={pill} /></div>
+  /* Startsidans enda synliga väg UT ur pluginet. `requestBrowseBack` är samma
+     anrop som skalets Bakåt gör på hub-nivån (tv-shell.tsx) — ingen andra väg,
+     bara en som syns på telefonen. */
+  const header = <div style={{ margin: `0 -${MT.PAD}px` }}><MobileHeader title={tt('liveTv')} right={pill} close onClose={requestBrowseBack} /></div>
 
   if (model.allChannels.length === 0) {
     return (

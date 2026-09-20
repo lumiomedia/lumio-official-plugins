@@ -27,6 +27,7 @@ const EN = {
   remind: 'Remind',
   watchNow: 'Watch now',
   back: 'Back',
+  closeLiveTv: 'Close Live TV',
   showMore: 'Show more',
   minutesLeft: '{min} min left',
   /** Now / Next-radens korta rest (handoffen `N m`). */
@@ -367,6 +368,7 @@ const SV: Record<keyof typeof EN, string> = {
   remind: 'Påminn',
   watchNow: 'Titta nu',
   back: 'Tillbaka',
+  closeLiveTv: 'Stäng Live TV',
   showMore: 'Visa fler',
   minutesLeft: '{min} min kvar',
   minShort: '{min} m',

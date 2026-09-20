@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { station } from '../tv-ui'
 import { useTvText } from '../tv-strings'
+import { TV } from '../tv-ui'
 import { MT, ellipsis } from './mobile-tokens'
 import { MIcons } from './mobile-icons'
 
@@ -10,7 +11,22 @@ import { MIcons } from './mobile-icons'
  * in: den ligger direkt efter (station() flyttar den inte till vänster om
  * menychipet, den delar bara raden med titeln).
  */
-export function MobileHeader({ title, right, back, onBack, testId }: { title: ReactNode; right?: ReactNode; back?: boolean; onBack?: () => void; testId?: string }) {
+export function MobileHeader({ title, right, back, onBack, close, onClose, testId }: {
+  title: ReactNode
+  right?: ReactNode
+  back?: boolean
+  onBack?: () => void
+  /**
+   * Stäng-knapp i stället för Bakåt: en rund glasknapp med kryss, till vänster
+   * om titeln. Startsidan har ingen nivå att gå tillbaka TILL inom pluginet —
+   * den enda vägen ut var värdens meny, och på telefonen syntes inte att Live
+   * TV är en egen sida man kan lämna (Jerry 2026-09-20: "ha en rund glass X
+   * till vänster om loggan som stänger live TV-appen").
+   */
+  close?: boolean
+  onClose?: () => void
+  testId?: string
+}) {
   const { tt } = useTvText()
   return (
     <div
@@ -26,6 +42,14 @@ export function MobileHeader({ title, right, back, onBack, testId }: { title: Re
         gap: 10,
       }}
     >
+      {close ? (
+        <div
+          {...station(onClose ?? (() => {}), undefined, { 'aria-label': tt('closeLiveTv'), 'data-testid': 'header-close' })}
+          style={{ width: 40, height: 40, minHeight: 40, borderRadius: 999, background: TV.glass, border: `1px solid ${MT.line14}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer' }}
+        >
+          <MIcons.X />
+        </div>
+      ) : null}
       {back ? (
         <div
           {...station(onBack ?? (() => {}), undefined, { 'aria-label': tt('back'), 'data-testid': 'header-back' })}

@@ -5,6 +5,7 @@ import { isMovieWatched, isWatching, onWatchedMoviesChanged, onWatchlistChanged,
 import { fetchVodEpisodes, lookupVod, type VodEpisode, type VodItem } from '../vod-client'
 import { findXtreamLoginByPseudoUrl, getLiveTvLists, getXtreamLogins } from '../live-tv-data'
 import { fetchTitleLogo, fetchVodTitleInfo, formatRuntime, type VodTitleInfo } from '../vod-title'
+import { useNarrowSurface } from '../hooks/useNarrowSurface'
 import type { TvViewProps } from './tv-shell'
 import { Icons, TV, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
@@ -32,6 +33,12 @@ const ICON_SIZE_TV = 60
 export function TvLibraryTitle({ model, nav, params }: TvViewProps) {
   const { tt } = useTvText()
   const isTv = useTvMode()
+  /* Telefonen är en SMAL yta, och måtten här är skrivna för en tv-duk.
+     `dp()` är identitet, så 48 px sidpadding och en 46 px titel gällde
+     ordagrant på en 393 px bred skärm — informationsblocket blev högre än
+     vyn och handlingen försvann bakom flikraden (Jerry 2026-09-20: "hero
+     när jag väljer en VOD-film är för stor, går utanför viewporten"). */
+  const narrow = useNarrowSurface()
   const iconSize = isTv ? ICON_SIZE_TV : ICON_SIZE
   const itemKey = params.key ?? ''
   const source = model.activeSource
@@ -234,34 +241,34 @@ export function TvLibraryTitle({ model, nav, params }: TvViewProps) {
 
       {/* Informationsblocket nere till vänster — `marginTop:auto` trycker ned
           det oavsett hur hög ytan är. */}
-      <div style={{ position: 'relative', marginTop: 'auto', padding: `${dp(40)}px ${dp(48)}px ${dp(36)}px`, maxWidth: dp(1000) }}>
+      <div style={{ position: 'relative', marginTop: 'auto', padding: narrow ? '24px 16px 28px' : `${dp(40)}px ${dp(48)}px ${dp(36)}px`, maxWidth: dp(1000) }}>
         {logoUrl ? (
           <img
             src={logoUrl}
             alt={title}
             data-testid="title-logo"
-            style={{ maxWidth: dp(isTv ? 520 : 420), maxHeight: dp(isTv ? 150 : 120), objectFit: 'contain', display: 'block', marginBottom: dp(12) }}
+            style={{ maxWidth: narrow ? '68%' : dp(isTv ? 520 : 420), maxHeight: narrow ? 84 : dp(isTv ? 150 : 120), objectFit: 'contain', display: 'block', marginBottom: dp(12) }}
           />
         ) : (
-          <div style={{ fontSize: dp(isTv ? 58 : 46), fontWeight: 700, lineHeight: 1.1, marginBottom: dp(8) }}>{title}</div>
+          <div style={{ fontSize: narrow ? 30 : dp(isTv ? 58 : 46), fontWeight: 700, lineHeight: 1.1, marginBottom: dp(8) }}>{title}</div>
         )}
 
         {meta.length > 0 ? (
-          <div style={{ fontSize: dp(isTv ? 21 : 17), color: 'rgba(243,244,248,0.85)' }}>{meta.join('  |  ')}</div>
+          <div style={{ fontSize: narrow ? 14 : dp(isTv ? 21 : 17), color: 'rgba(243,244,248,0.85)' }}>{meta.join('  |  ')}</div>
         ) : null}
         {info?.tagline ? (
-          <div style={{ fontSize: dp(isTv ? 20 : 17), color: TV.dim, marginTop: dp(6), fontStyle: 'italic' }}>{info.tagline}</div>
+          <div style={{ fontSize: narrow ? 14 : dp(isTv ? 20 : 17), color: TV.dim, marginTop: dp(6), fontStyle: 'italic' }}>{info.tagline}</div>
         ) : null}
         {info?.overview ? (
           <p
             style={{
-              fontSize: dp(isTv ? 22 : 18),
+              fontSize: narrow ? 14 : dp(isTv ? 22 : 18),
               lineHeight: 1.45,
               color: 'rgba(243,244,248,0.9)',
               marginTop: dp(12),
               maxWidth: dp(700),
               display: '-webkit-box',
-              WebkitLineClamp: 3,
+              WebkitLineClamp: narrow ? 2 : 3,
               WebkitBoxOrient: 'vertical',
               overflow: 'hidden',
             }}
