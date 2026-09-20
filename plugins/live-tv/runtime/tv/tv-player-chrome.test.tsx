@@ -8,7 +8,25 @@ import type { EpgCacheEntry } from '../epg/types'
 import { TvPlayerChrome } from './tv-player-chrome'
 import type { LiveTvPlayerTvProps } from './tv-player-types'
 
-const now = Date.now()
+/*
+  MITT PÅ DAGEN, INTE "NU".
+
+  Fixturerna ligger på `now ± 3 h`, och EPG-överlägget visar DAGENS tablå.
+  Med `Date.now()` föll "Morning" (now − 3 h) på gårdagen så fort sviten kördes
+  mellan midnatt och 03:00 — då försvann raden ur tablån och testet fällde på
+  2 rader i stället för 3. Uppmätt 2026-09-21 kl. 00:34; samma svit var grön
+  kl. 21:00 samma kväll.
+
+  Ankaret är därför kl. 12 samma dag: alla tre programmen hamnar inom ett och
+  samma dygn oavsett när sviten körs. Systemklockan rörs INTE — två test i
+  filen sätter sina egna fejkade timers, och `vi.setSystemTime` här hade
+  krockat med dem. Överlägget läser `tv.nowMs`, som testet redan styr.
+*/
+const now = (() => {
+  const noon = new Date()
+  noon.setHours(12, 0, 0, 0)
+  return noon.getTime()
+})()
 const H = 3_600_000
 const ch = (name: string) => ({ name, logo: null, group: 'Sport', url: `http://x/${name}`, tvgId: null })
 const channels = [ch('A'), ch('B'), ch('C')]
