@@ -50,6 +50,15 @@ export function GuideDetailPanel({ selection, nowMs, locale, channelNumber, onWa
     gap: gp(14),
     overflow: 'auto',
   }
+  /*
+    Panelen är en kolumn som RULLAR. Utan `flexShrink: 0` krymper flex varje
+    barn när innehållet inte får plats, och eftersom raderna har fasta höjder
+    och `overflow: hidden` blir resultatet avklippt text i stället för en
+    rullningslist: en lång beskrivning tryckte ihop kanalraden och titeln så
+    att de låg halva bakom bildrutan (Jerry 2026-09-20, ett markerat program i
+    Grid). Beskrivningen är det enda som får ge med sig — den rullar.
+  */
+  const fixed: CSSProperties = { flexShrink: 0 }
   if (!selection) {
     return (
       <div data-testid="guide-detail-panel" style={frame}>
@@ -67,21 +76,21 @@ export function GuideDetailPanel({ selection, nowMs, locale, channelNumber, onWa
   const secondary: CSSProperties = { height: gp(38), flex: 1, minWidth: 0, borderRadius: gp(10), background: TV.s08, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: gp(8), fontSize: gp(13), cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }
   return (
     <div data-testid="guide-detail-panel" style={frame}>
-      <LivePreviewArt channel={channel} live={live} enabled={previewEnabled} height={gp(180)} radius={gp(12)} style={{ width: '100%' }}>
+      <LivePreviewArt channel={channel} live={live} enabled={previewEnabled} height={gp(180)} radius={gp(12)} style={{ width: '100%', ...fixed }}>
         {live ? (
           <span style={{ position: 'absolute', left: gp(12), bottom: gp(12) }}>
             <Tag variant="live" style={{ height: gp(24), padding: `0 ${gp(10)}px`, fontSize: gp(11) }}>{tt('live')}</Tag>
           </span>
         ) : null}
       </LivePreviewArt>
-      <div data-testid="detail-channel" style={{ fontSize: gp(12), color: 'rgba(243,244,248,0.45)', letterSpacing: '0.12em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+      <div data-testid="detail-channel" style={{ ...fixed, fontSize: gp(12), color: 'rgba(243,244,248,0.45)', letterSpacing: '0.12em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
         {[channelNumber, channel.name].filter((part) => part !== null && part !== '').join(' · ')}
       </div>
-      <div data-testid="detail-title" style={{ fontSize: gp(20), fontWeight: 600, lineHeight: 1.25, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+      <div data-testid="detail-title" style={{ ...fixed, fontSize: gp(20), fontWeight: 600, lineHeight: 1.25, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
         {programme ? programme.title : tt('noProgramme')}
       </div>
-      {programme ? <div data-testid="detail-time" style={{ fontSize: gp(13), color: 'rgba(243,244,248,0.6)' }}>{timeLine}</div> : null}
-      {live && programme ? <Progress value={progressOf(programme.start, programme.stop, nowMs)} height={gp(4)} /> : null}
+      {programme ? <div data-testid="detail-time" style={{ ...fixed, fontSize: gp(13), color: 'rgba(243,244,248,0.6)' }}>{timeLine}</div> : null}
+      {live && programme ? <div style={fixed}><Progress value={progressOf(programme.start, programme.stop, nowMs)} height={gp(4)} /></div> : null}
       {/* `data-selectable-text` är undantaget från `user-select: none` —
           beskrivningar är text man vill kunna markera. Noden ritas alltid
           när ett program finns, så undantaget finns även utan beskrivning. */}
@@ -90,7 +99,7 @@ export function GuideDetailPanel({ selection, nowMs, locale, channelNumber, onWa
           {programme.description ?? ''}
         </div>
       ) : null}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: gp(8), marginTop: 'auto' }}>
+      <div style={{ ...fixed, display: 'flex', flexDirection: 'column', gap: gp(8), marginTop: 'auto' }}>
         <div
           data-testid="detail-watch"
           /* ◀ tillbaka till rutnätet: panelen nås med ▶ från radens sista
