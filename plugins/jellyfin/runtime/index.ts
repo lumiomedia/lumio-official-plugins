@@ -1,5 +1,6 @@
 import type { LumioPlugin } from '@/lib/plugin-sdk'
-import { LIBRARY_BROWSE_PAGE_ID } from '@/lib/plugin-sdk'
+import { LIBRARY_BROWSE_PAGE_ID, notifyPluginRegistryChanged } from '@/lib/plugin-sdk'
+import { isJellyfinConnected, onJellyfinSettingsChanged } from './jellyfin-storage'
 import { jellyfinLibraryProvider } from './jellyfin-library-provider'
 import { JellyfinSection } from './jellyfin-section'
 import { JellyfinFallbackPage } from './jellyfin-fallback-page'
@@ -39,8 +40,17 @@ export const JellyfinPlugin: LumioPlugin = {
       id: 'jellyfin',
       label: { en: 'Jellyfin', sv: 'Jellyfin' },
       defaultEnabled: true,
+      /* Bara med en ANSLUTEN server. Registret är statiskt per aktivering, så
+         posten låg kvar i menyn efter att servern kopplats bort och ledde då
+         bara till inloggningssidan (Jerry 2026-09-20). Anslutningen görs i
+         inställningarna, inte genom en menypost som inte visar något. */
+      visible: () => isJellyfinConnected(),
       target: { pageId: LIBRARY_BROWSE_PAGE_ID, params: { provider: 'jellyfin', fallbackPageId: 'jellyfin-setup' } },
     })
+    /* Menyn läser `visible` vid varje rendering, men den ritar bara om när
+       registret säger till. Utan den här bryggan försvann posten först vid
+       nästa omstart. */
+    onJellyfinSettingsChanged(() => notifyPluginRegistryChanged())
   },
 }
 
