@@ -863,7 +863,7 @@ function VodLibrarySection({ tt, phone }: { tt: TT; phone: boolean }) {
             : { minHeight: dp(64), borderRadius: dp(12), background: TV.s06, padding: `${dp(12)}px ${dp(18)}px`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: dp(16) }}
         >
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: phone ? 15 : dp(19), ...ellipsis }}>{row.vodSource}</div>
+            <div style={{ fontSize: phone ? 15 : dp(19), ...ellipsis }}>{row.label}</div>
             <div style={{ fontSize: phone ? 13 : dp(16), color: phone ? MT.dim : TV.dim }}>{statusText(row)}</div>
           </div>
           <Action

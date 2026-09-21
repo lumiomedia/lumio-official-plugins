@@ -74,7 +74,7 @@ export function useVodLibrarySources(): VodLibraryController {
       const cursor = library?.sources.find((entry) => entry.id === row.libraryId)?.cursor ?? null
       await runLibraryScan(
         vodLibraryProvider,
-        { id: row.libraryId, name: row.vodSource, cursor },
+        { id: row.libraryId, name: row.label, cursor },
         { mode: 'full', onProgress: (state) => setProgress({ libraryId: row.libraryId, done: state.done }) },
       )
     } catch (err) {

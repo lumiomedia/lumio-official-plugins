@@ -199191,6 +199191,9 @@ ${cue.text}`).join("\n\n")}
   init_plugin_sdk();
   init_vod_client();
 
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-library-rows.ts
+  init_live_tv_data();
+
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-library-map.ts
   var VOD_LIBRARY_PROVIDER_ID = "xtream-vod";
   function vodLibrarySourceId(vodSource) {
@@ -199251,12 +199254,16 @@ ${cue.text}`).join("\n\n")}
       const entry = library?.sources.find((item) => item.id === libraryId);
       return {
         vodSource: source.id,
+        label: vodSourceLabel(source.id),
         libraryId,
         vodTitles: source.total,
         indexedTitles: entry ? entry.titles : null,
         importing: source.importing
       };
     });
+  }
+  function vodSourceLabel(vodSource) {
+    return parseXtreamSource(vodSource)?.host ?? vodSource;
   }
   function vodLibraryBuildDisabled(row, scanning) {
     return scanning || row.importing;
@@ -199356,7 +199363,7 @@ ${cue.text}`).join("\n\n")}
         const cursor = library?.sources.find((entry) => entry.id === row.libraryId)?.cursor ?? null;
         await runLibraryScan2(
           vodLibraryProvider,
-          { id: row.libraryId, name: row.vodSource, cursor },
+          { id: row.libraryId, name: row.label, cursor },
           { mode: "full", onProgress: (state) => setProgress({ libraryId: row.libraryId, done: state.done }) }
         );
       } catch (err) {
@@ -199393,7 +199400,7 @@ ${cue.text}`).join("\n\n")}
           style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 },
           children: [
             /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
-              /* @__PURE__ */ jsx("div", { style: { fontSize: 14, color: TOKENS.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: row.vodSource }),
+              /* @__PURE__ */ jsx("div", { style: { fontSize: 14, color: TOKENS.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: row.label }),
               /* @__PURE__ */ jsx("div", { style: { fontSize: 12.5, color: TOKENS.textDim }, children: statusText(row) })
             ] }),
             /* @__PURE__ */ jsx(
@@ -208633,7 +208640,7 @@ ${cue.text}`).join("\n\n")}
           style: phone ? { padding: "12px 14px", borderBottom: `1px solid ${MT.line07}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 } : { minHeight: dp(64), borderRadius: dp(12), background: TV2.s06, padding: `${dp(12)}px ${dp(18)}px`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: dp(16) },
           children: [
             /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
-              /* @__PURE__ */ jsx("div", { style: { fontSize: phone ? 15 : dp(19), ...ellipsis }, children: row.vodSource }),
+              /* @__PURE__ */ jsx("div", { style: { fontSize: phone ? 15 : dp(19), ...ellipsis }, children: row.label }),
               /* @__PURE__ */ jsx("div", { style: { fontSize: phone ? 13 : dp(16), color: phone ? MT.dim : TV2.dim }, children: statusText(row) })
             ] }),
             /* @__PURE__ */ jsx(

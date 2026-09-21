@@ -11,11 +11,14 @@
 
 import type { LibraryStatus } from '@/lib/plugin-sdk'
 import type { VodSourceStatus } from './vod-client'
+import { parseXtreamSource } from './live-tv-data'
 import { vodLibrarySourceId } from './vod-library-map'
 
 export interface VodLibraryRow {
   /** Xtream-kontots nyckel i VOD-indexet. */
   vodSource: string
+  /** Vad raden ska heta på skärmen — värden, inte pseudo-URL:en. */
+  label: string
   /** Samma källa i biblioteksindexet, `xtream-vod:<konto>`. */
   libraryId: string
   /** Antal titlar panelen importerat. */
@@ -41,12 +44,26 @@ export function vodLibraryRows(sources: readonly VodSourceStatus[], library: Lib
       const entry = library?.sources.find((item) => item.id === libraryId)
       return {
         vodSource: source.id,
+        label: vodSourceLabel(source.id),
         libraryId,
         vodTitles: source.total,
         indexedTitles: entry ? entry.titles : null,
         importing: source.importing,
       }
     })
+}
+
+/**
+ * Radens etikett.
+ *
+ * Källnyckeln är en pseudo-URL, `xtream://<värd>/<login-id>`, där login-id är
+ * en LOKAL referens till den sparade inloggningen (`findXtreamLoginByPseudoUrl`)
+ * — inte ett användarnamn och inte en hemlighet. Men som etikett säger den
+ * ingenting, så raden visar värden. Går den inte att tolka visas nyckeln rå
+ * hellre än en tom rad.
+ */
+export function vodSourceLabel(vodSource: string): string {
+  return parseXtreamSource(vodSource)?.host ?? vodSource
 }
 
 /**

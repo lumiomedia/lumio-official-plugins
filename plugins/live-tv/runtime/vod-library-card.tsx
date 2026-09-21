@@ -43,7 +43,7 @@ export function VodLibraryCard() {
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}
           >
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 14, color: TOKENS.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.vodSource}</div>
+              <div style={{ fontSize: 14, color: TOKENS.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.label}</div>
               <div style={{ fontSize: 12.5, color: TOKENS.textDim }}>{statusText(row)}</div>
             </div>
             <PillBtn

@@ -29,6 +29,15 @@ describe('vodLibraryRows', () => {
     expect(rader[0]).toMatchObject({ vodSource: 'kkzbigserver', libraryId: 'xtream-vod:kkzbigserver', vodTitles: 41_000 })
   })
 
+  it('visar värden som etikett, inte pseudo-URL:en', () => {
+    const rader = vodLibraryRows([source({ id: 'xtream://tv.kkzbigserver.iptv.uno/8bc57014-9dae-4ce3-9660-1e37e17a4429' })], null)
+    expect(rader[0].label).toBe('tv.kkzbigserver.iptv.uno')
+  })
+
+  it('faller tillbaka på nyckeln när den inte går att tolka', () => {
+    expect(vodLibraryRows([source({ id: 'kkzbigserver' })], null)[0].label).toBe('kkzbigserver')
+  })
+
   it('utelämnar källor utan VOD-poster', () => {
     expect(vodLibraryRows([source({ id: 'bara-kanaler', total: 0 })], null)).toEqual([])
   })
