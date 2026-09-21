@@ -9,7 +9,7 @@
  * känner till den andra, och UI:t ska inte behöva para ihop dem själv.
  */
 
-import type { LibraryStatus } from '@/lib/library/types'
+import type { LibraryStatus } from '@/lib/plugin-sdk'
 import type { VodSourceStatus } from './vod-client'
 import { vodLibrarySourceId } from './vod-library-map'
 

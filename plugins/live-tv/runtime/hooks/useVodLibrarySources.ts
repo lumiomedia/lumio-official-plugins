@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchLibraryStatus, isLibraryScanRunning, runLibraryScan } from '@/lib/plugin-sdk'
-import type { LibraryStatus } from '@/lib/library/types'
+import type { LibraryStatus } from '@/lib/plugin-sdk'
 import { onVodChanged, vodStatus, type VodSourceStatus } from '../vod-client'
 import { vodLibraryBuildDisabled, vodLibraryRows, type VodLibraryRow } from '../vod-library-rows'
 import { vodLibraryProvider } from '../vod-library-provider'

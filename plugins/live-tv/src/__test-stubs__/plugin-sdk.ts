@@ -786,3 +786,13 @@ export function __resetLibraryStubForTests(): void {
   LIBRARY_STUB.status = { sources: [] }
   LIBRARY_STUB.scans = []
 }
+
+/*
+  BIBLIOTEKETS TYPER kommer ur APPENS träd, inte ur en kopia här.
+
+  Pluginkoden importerar dem från `@/lib/plugin-sdk` (gränsregeln: bara SDK:t
+  eller relativa filer), och i test pekar det aliaset hit. En egen kopia hade
+  glidit isär första gången kärnan fick ett fält, och batcharna hade börjat
+  tappa data tyst. `export type *` ger noll körtidskoppling.
+*/
+export type * from '../../../../../Moviefinder/lib/library/types'

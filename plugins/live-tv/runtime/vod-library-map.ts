@@ -15,7 +15,7 @@
  * Task A1.
  */
 
-import type { LibraryMedia, LibraryTitle } from '@/lib/library/types'
+import type { LibraryMedia, LibraryTitle } from '@/lib/plugin-sdk'
 import type { VodItem } from './vod-client'
 
 /** Leverantörens id i `LibrarySource.provider`. */

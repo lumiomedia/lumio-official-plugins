@@ -15,7 +15,7 @@
  * här (`getXtreamLogins()`), och värden sparar dem aldrig.
  */
 
-import type { LibraryBatch, LibraryScanProgress, LibraryTitle } from '@/lib/library/types'
+import type { LibraryBatch, LibraryScanProgress, LibraryTitle } from '@/lib/plugin-sdk'
 import { queryVod, vodStatus, type VodItem } from './vod-client'
 import { vodItemToLibraryTitle, VOD_LIBRARY_PROVIDER_ID } from './vod-library-map'
 

@@ -4,7 +4,7 @@
 // paneluppslag. Testerna matar in `query`/`status` som beroenden, så de
 // verifierar sidhanteringen och avbrottet utan nät.
 import { describe, expect, it, vi } from 'vitest'
-import type { LibraryBatch } from '@/lib/library/types'
+import type { LibraryBatch } from '@/lib/plugin-sdk'
 import {
   scanVodSource,
   vodPlaybackUrl,

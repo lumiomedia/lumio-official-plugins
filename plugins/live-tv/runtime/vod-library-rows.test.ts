@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { LibraryStatus } from '@/lib/library/types'
+import type { LibraryStatus } from '@/lib/plugin-sdk'
 import type { VodSourceStatus } from './vod-client'
 import { vodLibraryBuildDisabled, vodLibraryRows } from './vod-library-rows'
 
