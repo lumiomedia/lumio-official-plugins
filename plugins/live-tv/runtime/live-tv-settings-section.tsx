@@ -44,6 +44,7 @@ import {
 import { useHubText } from './hub-strings'
 import { EpgSourcesSection, EpgStatusCard } from './epg-sources-section'
 import { XtreamLoginSection, prefillXtreamLogin } from './xtream-login-section'
+import { VodLibraryCard } from './vod-library-card'
 
 
 const settingsActionButtonClass =
@@ -224,6 +225,8 @@ export function LiveTvSettingsSection() {
           />
         </div>
       </Card>
+
+      <VodLibraryCard />
 
       <Card>
         <style>{'@keyframes lumio-livetv-spin{to{transform:rotate(360deg)}}'}</style>

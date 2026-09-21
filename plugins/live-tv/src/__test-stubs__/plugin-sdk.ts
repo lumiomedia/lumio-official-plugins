@@ -752,3 +752,37 @@ export function setAndroidOrientation(mode: 'landscape' | 'portrait' | 'auto'): 
 export function __resetAndroidOrientationForTests(): void {
   ANDROID_ORIENTATION.mode = null
 }
+
+/*
+  BIBLIOTEKSINDEXET.
+
+  Genomgången hålls av ett lås i värden (`lib/library/scan.ts` bakom
+  SDK-bryggan). Stubben speglar bara kontraktet: testerna styr låset och
+  spelar in vad som skannats.
+*/
+export const LIBRARY_STUB: {
+  scanning: boolean
+  status: { sources: Array<{ id: string; provider: string; titles: number; cursor?: string | null }> }
+  scans: Array<{ provider: unknown; source: { id: string; name?: string; cursor?: string | null }; mode: string }>
+} = { scanning: false, status: { sources: [] }, scans: [] }
+
+export function isLibraryScanRunning(): boolean {
+  return LIBRARY_STUB.scanning
+}
+export async function fetchLibraryStatus(): Promise<{ sources: Array<{ id: string; provider: string; titles: number; cursor?: string | null }>; movies: number; series: number; unmatched: number; total: number }> {
+  return { ...LIBRARY_STUB.status, movies: 0, series: 0, unmatched: 0, total: 0 }
+}
+export async function runLibraryScan(
+  provider: unknown,
+  source: { id: string; name?: string; cursor?: string | null },
+  options: { mode: string; onProgress?: (state: { phase: string; done: number }) => void },
+): Promise<{ titles: number }> {
+  LIBRARY_STUB.scans.push({ provider, source, mode: options.mode })
+  options.onProgress?.({ phase: 'titles', done: 200 })
+  return { titles: 200 }
+}
+export function __resetLibraryStubForTests(): void {
+  LIBRARY_STUB.scanning = false
+  LIBRARY_STUB.status = { sources: [] }
+  LIBRARY_STUB.scans = []
+}

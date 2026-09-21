@@ -41,6 +41,8 @@ import { PinGate } from '../live-tv-ui'
 import { useEpgStatus } from '../hooks/useEpgStatus'
 import { useVodCategories } from '../hooks/useVodLibrary'
 import { getVodMode, setVodMode, type VodMode } from '../vod-data'
+import type { VodLibraryRow } from '../vod-library-rows'
+import { useVodLibrarySources } from '../hooks/useVodLibrarySources'
 import type { TvNav, TvViewProps } from './tv-shell'
 import { TvCategoryPicker, TvListPicker } from './tv-list-picker'
 import { useTextPrompt } from './tv-text-entry'
@@ -820,6 +822,61 @@ export function ContentTab({ model, tt, phone = false }: { model: TvViewProps['m
             </div>
           )
         })}
+      </div>
+      <VodLibrarySection tt={tt} phone={phone} />
+    </section>
+  )
+}
+
+/**
+ * "Använd som bibliotek" — fas A3.
+ *
+ * Bygger ett biblioteksindex av spellistans VOD. Knappen gör INTE biblioteket
+ * till startsida: det valet bor i KÄRNANS inställningar (Jerry 2026-09-03,
+ * "startsidevalet hör hemma i appen, inte i pluginet"). Pluginet bygger
+ * indexet och pekar vidare; gränsen står kvar.
+ *
+ * Raderna kommer ur `vodLibraryRows`, inte ur `model.activeSource`: den senare
+ * är null utanför TV-läget, och en källa ska gå att bygga från vilken yta som
+ * helst.
+ */
+function VodLibrarySection({ tt, phone }: { tt: TT; phone: boolean }) {
+  const { rows, progress, error, build, disabled } = useVodLibrarySources()
+  if (rows.length === 0) return null
+
+  const statusText = (row: VodLibraryRow) => {
+    if (progress?.libraryId === row.libraryId) return tt('vodLibraryBuilding', { count: progress.done.toLocaleString() })
+    if (row.importing) return tt('vodLibraryImporting')
+    if (row.indexedTitles === null) return tt('vodLibraryNotBuilt', { count: row.vodTitles.toLocaleString() })
+    return tt('vodLibraryBuilt', { count: row.indexedTitles.toLocaleString() })
+  }
+
+  return (
+    <section style={{ display: 'flex', flexDirection: 'column', gap: phone ? 8 : dp(10) }} data-testid="vod-library">
+      <Heading phone={phone} hint={tt('vodLibraryHint')}>{tt('vodLibraryHeading')}</Heading>
+      {rows.map((row) => (
+        <div
+          key={row.libraryId}
+          data-testid={`vod-library-${row.vodSource}`}
+          style={phone
+            ? { padding: '12px 14px', borderBottom: `1px solid ${MT.line07}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }
+            : { minHeight: dp(64), borderRadius: dp(12), background: TV.s06, padding: `${dp(12)}px ${dp(18)}px`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: dp(16) }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: phone ? 15 : dp(19), ...ellipsis }}>{row.vodSource}</div>
+            <div style={{ fontSize: phone ? 13 : dp(16), color: phone ? MT.dim : TV.dim }}>{statusText(row)}</div>
+          </div>
+          <Action
+            phone={phone}
+            testId={`vod-library-build-${row.vodSource}`}
+            label={row.indexedTitles === null ? tt('vodLibraryBuild') : tt('vodLibraryRebuild')}
+            disabled={disabled(row)}
+            onOk={() => { void build(row) }}
+          />
+        </div>
+      ))}
+      <div style={{ fontSize: phone ? 13 : dp(16), color: phone ? MT.dim : TV.dim, padding: phone ? '0 14px' : undefined }}>
+        {error ? tt('vodLibraryFailed', { error }) : tt('vodLibraryWhereToEnable')}
       </div>
     </section>
   )
