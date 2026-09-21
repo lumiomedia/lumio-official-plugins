@@ -16,8 +16,9 @@
  */
 
 import type { LibraryBatch, LibraryScanProgress, LibraryTitle } from '@/lib/plugin-sdk'
-import { queryVod, vodStatus, type VodItem } from './vod-client'
-import { vodItemToLibraryTitle, VOD_LIBRARY_PROVIDER_ID } from './vod-library-map'
+import { fetchVodEpisodes, queryVod, vodStatus, type VodItem } from './vod-client'
+import { findXtreamLoginByPseudoUrl } from './live-tv-data'
+import { seriesIdFromKey, vodEpisodeToLibrary, vodItemToLibraryTitle, VOD_LIBRARY_PROVIDER_ID } from './vod-library-map'
 
 /**
  * Batchstorlek.
@@ -154,6 +155,48 @@ export const vodLibraryProvider = {
     if (!vodDeltaNeeded(cursor, updatedAt)) return { titles: 0, cursor }
     const out = await scanVodSource(source.id, emit, progress, signal)
     return { titles: out.titles, cursor: out.cursor }
+  },
+  /**
+   * AVSNITTEN, LATA (fas B).
+   *
+   * Panelen har 4 402 serier och listan kostar ett uppslag per serie, så de
+   * indexeras tomma och fylls här — första gången någon öppnar serien.
+   *
+   * Det här är enda stället i biblioteksvägen som rör en INLOGGNING. Katalogen
+   * läses ur värdens redan importerade index; avsnitten kräver panelen, och
+   * lösenordet går till `/api/live-tv/vod/series` och ingen annanstans. Det
+   * når aldrig `/api/library/*` och hamnar aldrig i biblioteksindexet.
+   *
+   * Saknas inloggningen (kontot raderat) returneras `null`: biblioteket ska
+   * tappa en serie, inte fällas.
+   */
+  async loadEpisodes(
+    source: { id: string },
+    title: { key: string },
+    _signal: AbortSignal,
+  ) {
+    const account = vodSourceFromLibraryId(source.id)
+    if (!account) return null
+    // Titelnyckeln är `<bibliotekskälla>:<panelens nyckel>`, och panelens
+    // nyckel bär serie-id:t (`series:<id>`). Talet parsas tillbaka i stället
+    // för att lagras i ett eget fält — kärnan äger titelkontraktet.
+    const seriesId = seriesIdFromKey(title.key.slice(`${source.id}:`.length))
+    if (seriesId === null) return null
+    const login = findXtreamLoginByPseudoUrl(account)
+    if (!login) return null
+    let episodes
+    try {
+      episodes = await fetchVodEpisodes(account, seriesId, {
+        base: login.base,
+        username: login.username,
+        password: login.password,
+        format: login.format,
+      })
+    } catch {
+      return null
+    }
+    const mapped = episodes.map((ep) => vodEpisodeToLibrary(ep, title.key))
+    return { episodes: mapped.map((m) => m.episode), media: mapped.map((m) => m.media) }
   },
   async resolvePlayback(_source: unknown, media: { playRef?: string | null }) {
     const url = vodPlaybackUrl(media.playRef)

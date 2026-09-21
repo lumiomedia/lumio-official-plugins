@@ -199199,9 +199199,29 @@ ${cue.text}`).join("\n\n")}
   function vodLibrarySourceId(vodSource) {
     return `${VOD_LIBRARY_PROVIDER_ID}:${vodSource}`;
   }
+  function seriesIdFromKey(key) {
+    const match = /^series:(\d+)$/.exec(key);
+    if (!match) return null;
+    const id4 = Number(match[1]);
+    return Number.isSafeInteger(id4) && id4 > 0 ? id4 : null;
+  }
   function movieMedia(item) {
     if (!item.url) return [];
     return [{ key: item.key, label: item.categoryName ?? "", playRef: item.url }];
+  }
+  function vodEpisodeToLibrary(ep, titleKey) {
+    const key = `${titleKey}:s${ep.season}e${ep.episode}`;
+    return {
+      episode: {
+        key,
+        season: ep.season,
+        episode: ep.episode,
+        title: ep.title ?? "",
+        runtimeMin: ep.runtimeMin ?? null,
+        stillUrl: ep.stillUrl ?? null
+      },
+      media: { key, label: "", playRef: ep.url, episodeKey: key }
+    };
   }
   function vodItemToLibraryTitle(item, vodSource) {
     const key = typeof item.key === "string" ? item.key.trim() : "";
@@ -199271,6 +199291,7 @@ ${cue.text}`).join("\n\n")}
 
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-library-provider.ts
   init_vod_client();
+  init_live_tv_data();
   var VOD_SCAN_PAGE = 200;
   function vodSourceFromLibraryId(libraryId) {
     const prefix = `${VOD_LIBRARY_PROVIDER_ID}:`;
@@ -199323,6 +199344,41 @@ ${cue.text}`).join("\n\n")}
       if (!vodDeltaNeeded(cursor, updatedAt)) return { titles: 0, cursor };
       const out = await scanVodSource(source.id, emit, progress3, signal);
       return { titles: out.titles, cursor: out.cursor };
+    },
+    /**
+     * AVSNITTEN, LATA (fas B).
+     *
+     * Panelen har 4 402 serier och listan kostar ett uppslag per serie, så de
+     * indexeras tomma och fylls här — första gången någon öppnar serien.
+     *
+     * Det här är enda stället i biblioteksvägen som rör en INLOGGNING. Katalogen
+     * läses ur värdens redan importerade index; avsnitten kräver panelen, och
+     * lösenordet går till `/api/live-tv/vod/series` och ingen annanstans. Det
+     * når aldrig `/api/library/*` och hamnar aldrig i biblioteksindexet.
+     *
+     * Saknas inloggningen (kontot raderat) returneras `null`: biblioteket ska
+     * tappa en serie, inte fällas.
+     */
+    async loadEpisodes(source, title, _signal) {
+      const account = vodSourceFromLibraryId(source.id);
+      if (!account) return null;
+      const seriesId = seriesIdFromKey(title.key.slice(`${source.id}:`.length));
+      if (seriesId === null) return null;
+      const login = findXtreamLoginByPseudoUrl(account);
+      if (!login) return null;
+      let episodes;
+      try {
+        episodes = await fetchVodEpisodes(account, seriesId, {
+          base: login.base,
+          username: login.username,
+          password: login.password,
+          format: login.format
+        });
+      } catch {
+        return null;
+      }
+      const mapped = episodes.map((ep) => vodEpisodeToLibrary(ep, title.key));
+      return { episodes: mapped.map((m2) => m2.episode), media: mapped.map((m2) => m2.media) };
     },
     async resolvePlayback(_source, media) {
       const url = vodPlaybackUrl(media.playRef);

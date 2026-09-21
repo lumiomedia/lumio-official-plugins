@@ -3,13 +3,15 @@
 // Katalogskanningen läser VÄRDENS redan importerade VOD-index och gör noll
 // paneluppslag. Testerna matar in `query`/`status` som beroenden, så de
 // verifierar sidhanteringen och avbrottet utan nät.
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { __resetForTests, writePluginJson } from '@/lib/plugin-sdk'
 import type { LibraryBatch } from '@/lib/plugin-sdk'
 import {
   scanVodSource,
   vodPlaybackUrl,
   vodDeltaNeeded,
   vodSourceFromLibraryId,
+  vodLibraryProvider,
   VOD_SCAN_PAGE,
 } from './vod-library-provider'
 
@@ -127,5 +129,91 @@ describe('vodPlaybackUrl', () => {
     expect(vodPlaybackUrl('  ')).toBeNull()
     // En playRef som inte är en adress hör till en annan leverantör.
     expect(vodPlaybackUrl('/library/parts/99/file.mkv')).toBeNull()
+  })
+})
+
+/*
+  FAS B — avsnitten, lata.
+
+  `loadEpisodes` är enda stället i biblioteksvägen som rör en inloggning.
+  Testerna låser tre saker: rätt avsnitt och versioner ut, tyst null när
+  inloggningen är borta, och att `resolvePlayback` väljer avsnittets egen
+  adress.
+*/
+describe('loadEpisodes', () => {
+  const KÄLLA = { id: 'xtream-vod:xtream://panel.example/login-1' }
+  const TITEL = { key: 'xtream-vod:xtream://panel.example/login-1:series:77' }
+
+  const avsnittssvar = [
+    { season: 1, episode: 1, title: 'Pilot', url: 'http://panel.example/s1e1.mkv', runtimeMin: 42 },
+    { season: 1, episode: 2, title: 'Nästa', url: 'http://panel.example/s1e2.mkv' },
+  ]
+
+  beforeEach(() => {
+    __resetForTests()
+    writePluginJson('com.lumio.live-tv', 'xtream_logins', [
+      { id: 'login-1', base: 'http://panel.example', username: 'u', password: 'p', format: 'ts', categoryIds: [] },
+    ])
+  })
+
+  afterEach(() => { vi.unstubAllGlobals() })
+
+  const medPanel = (svar: unknown, spion?: (body: unknown) => void) => {
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(typeof input === 'string' ? input : input instanceof URL ? input.href : input.url)
+      if (url.includes('/api/live-tv/vod/series')) {
+        spion?.(JSON.parse(String(init?.body ?? '{}')))
+        return { ok: true, status: 200, json: async () => svar, text: async () => JSON.stringify(svar) } as unknown as Response
+      }
+      throw new Error(`oväntat anrop: ${url}`)
+    }))
+  }
+
+  it('avsnitt mappas med egen playRef, knuten till sitt avsnitt', async () => {
+    medPanel({ episodes: avsnittssvar })
+    const ut = await vodLibraryProvider.loadEpisodes!(KÄLLA, TITEL, new AbortController().signal)
+    expect(ut).not.toBeNull()
+    expect(ut!.episodes.map((e) => `${e.season}x${e.episode}`)).toEqual(['1x1', '1x2'])
+    expect(ut!.media).toHaveLength(2)
+    // Varje version pekar på SITT avsnitt, annars hänger de löst i vyn.
+    for (const m of ut!.media) {
+      expect(ut!.episodes.some((e) => e.key === m.episodeKey)).toBe(true)
+    }
+    expect(ut!.media[0].playRef).toBe('http://panel.example/s1e1.mkv')
+  })
+
+  it('lösenordet går till panelen och ingen annanstans', async () => {
+    let skickat: unknown = null
+    medPanel({ episodes: avsnittssvar }, (body) => { skickat = body })
+    await vodLibraryProvider.loadEpisodes!(KÄLLA, TITEL, new AbortController().signal)
+    expect((skickat as { xtream: { password: string } }).xtream.password).toBe('p')
+    const ut = await vodLibraryProvider.loadEpisodes!(KÄLLA, TITEL, new AbortController().signal)
+    // Inget av det som går vidare till biblioteket får bära inloggningen.
+    expect(JSON.stringify(ut)).not.toContain('password')
+    expect(JSON.stringify(ut)).not.toMatch(/[?&]password=/)
+  })
+
+  it('saknad inloggning ger null i stället för ett kastat fel', async () => {
+    writePluginJson('com.lumio.live-tv', 'xtream_logins', [])
+    medPanel({ episodes: avsnittssvar })
+    expect(await vodLibraryProvider.loadEpisodes!(KÄLLA, TITEL, new AbortController().signal)).toBeNull()
+  })
+
+  it('en titel som inte är en serie ger null', async () => {
+    medPanel({ episodes: avsnittssvar })
+    const film = { key: 'xtream-vod:xtream://panel.example/login-1:vod:9' }
+    expect(await vodLibraryProvider.loadEpisodes!(KÄLLA, film, new AbortController().signal)).toBeNull()
+  })
+
+  it('fel från panelen ger null, inte ett kast', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('nätet nere') }))
+    expect(await vodLibraryProvider.loadEpisodes!(KÄLLA, TITEL, new AbortController().signal)).toBeNull()
+  })
+
+  it('resolvePlayback väljer avsnittets egen adress', async () => {
+    medPanel({ episodes: avsnittssvar })
+    const ut = await vodLibraryProvider.loadEpisodes!(KÄLLA, TITEL, new AbortController().signal)
+    const spelbar = await vodLibraryProvider.resolvePlayback(KÄLLA, ut!.media[1])
+    expect(spelbar).toEqual({ url: 'http://panel.example/s1e2.mkv' })
   })
 })

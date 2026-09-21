@@ -15,8 +15,8 @@
  * Task A1.
  */
 
-import type { LibraryMedia, LibraryTitle } from '@/lib/plugin-sdk'
-import type { VodItem } from './vod-client'
+import type { LibraryEpisode, LibraryMedia, LibraryTitle } from '@/lib/plugin-sdk'
+import type { VodEpisode, VodItem } from './vod-client'
 
 /** Leverantörens id i `LibrarySource.provider`. */
 export const VOD_LIBRARY_PROVIDER_ID = 'xtream-vod'
@@ -54,6 +54,29 @@ export function seriesIdFromKey(key: string): number | null {
 function movieMedia(item: VodItem): LibraryMedia[] {
   if (!item.url) return []
   return [{ key: item.key, label: item.categoryName ?? '', playRef: item.url }]
+}
+
+/**
+ * Ett avsnitt ur panelen → bibliotekets avsnitt PLUS dess version.
+ *
+ * `LibraryEpisode` bär inga versioner själv — de ligger i titelns `media` med
+ * `episodeKey`. Nyckeln byggs på titelns nyckel + säsong/avsnitt, så den är
+ * stabil mellan hämtningar: samma avsnitt hämtat två gånger ger samma nyckel,
+ * och upserten skriver över i stället för att dubblera.
+ */
+export function vodEpisodeToLibrary(ep: VodEpisode, titleKey: string): { episode: LibraryEpisode; media: LibraryMedia } {
+  const key = `${titleKey}:s${ep.season}e${ep.episode}`
+  return {
+    episode: {
+      key,
+      season: ep.season,
+      episode: ep.episode,
+      title: ep.title ?? '',
+      runtimeMin: ep.runtimeMin ?? null,
+      stillUrl: ep.stillUrl ?? null,
+    },
+    media: { key, label: '', playRef: ep.url, episodeKey: key },
+  }
 }
 
 export function vodItemToLibraryTitle(item: VodItem, vodSource: string): LibraryTitle | null {
