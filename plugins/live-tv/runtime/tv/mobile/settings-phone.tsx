@@ -5,7 +5,7 @@ import type { TvViewProps } from '../tv-shell'
 import { station } from '../tv-ui'
 import { useTvText } from '../tv-strings'
 import { setGuideMode, setTvSettings, useGuideMode } from '../tv-settings-store'
-import { EpgTab, ParentalTab, PhoneCaret, PlaylistsTab } from '../settings-tabs'
+import { ContentTab, EpgTab, ParentalTab, PhoneCaret, PlaylistsTab } from '../settings-tabs'
 import { MT, ellipsis, sectionLabel } from './mobile-tokens'
 import { MobileHeader } from './mobile-header'
 import { MobileSegment } from './mobile-segment'
@@ -28,14 +28,26 @@ export function TvSettingsPhone(props: TvViewProps) {
   const { tt, locale } = useTvText()
   const guideMode = useGuideMode()
 
-  if (params.tab === 'epg' || params.tab === 'parental') {
-    const epg = params.tab === 'epg'
+  /* INNEHÅLL ÄR EN UNDERSIDA HÄR OCKSÅ (Jerry 2026-09-22).
+
+     Hänvisningsrutan "Film & serier ligger i Biblioteket" skickar till
+     `settings` med `tab: 'content'` — samma anrop på telefon som på TV (se
+     vod-row-phone.tsx och tv-vod-hub.tsx). Men den här vyn kände bara igen
+     'epg' och 'parental', så telefonen föll tillbaka på inställningarnas rot
+     och VOD-valet gick inte att nå alls. Rutan lovade något som inte fanns.
+
+     ContentTab har redan en telefonvariant (`phone`); den renderades bara
+     aldrig. */
+  if (params.tab === 'epg' || params.tab === 'parental' || params.tab === 'content') {
+    const rubrik = params.tab === 'epg' ? 'tabEpg' : params.tab === 'parental' ? 'tabParental' : 'tabContent'
     return (
-      <PhonePage header={<MobileHeader title={tt(epg ? 'tabEpg' : 'tabParental')} back onBack={() => nav.go('settings')} />}>
+      <PhonePage header={<MobileHeader title={tt(rubrik)} back onBack={() => nav.go('settings')} />}>
         <Card>
-          {epg
+          {params.tab === 'epg'
             ? <EpgTab lists={model.lists} nav={nav} tt={tt} locale={locale} phone />
-            : <ParentalTab model={model} tt={tt} phone />}
+            : params.tab === 'parental'
+              ? <ParentalTab model={model} tt={tt} phone />
+              : <ContentTab model={model} tt={tt} phone />}
         </Card>
       </PhonePage>
     )
@@ -69,6 +81,9 @@ export function TvSettingsPhone(props: TvViewProps) {
 
       <Section label={tt('sectionMore')}>
         <Card>
+          {/* Innehåll först: det är valet man skickas hit för från hubbens
+              hänvisningsruta, och det ska gå att hitta även utan den. */}
+          <NavRow testId="settings-content-nav" label={tt('tabContent')} onOk={() => nav.go('settings', { tab: 'content' })} />
           <NavRow testId="settings-epg" label={tt('tabEpg')} onOk={() => nav.go('settings', { tab: 'epg' })} />
           <NavRow testId="settings-parental" label={tt('tabParental')} onOk={() => nav.go('settings', { tab: 'parental' })} />
         </Card>
@@ -89,7 +104,7 @@ function PhonePage({ header, children }: { header: ReactNode; children: ReactNod
 
 function Section({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <section style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div style={sectionLabel}>{label}</div>
       {children}
     </section>
@@ -104,7 +119,13 @@ function Section({ label, children }: { label: string; children: ReactNode }) {
  */
 function Card({ children }: { children: ReactNode }) {
   return (
-    <div style={{ borderRadius: 14, background: MT.s06, border: `1px solid ${MT.line08}`, overflow: 'hidden' }}>
+    /* flexShrink: 0 — PhonePage är en flex-KOLUMN, och ett flexbarn krymper
+       som standard i stället för att flöda över. Kortet har dessutom
+       `overflow: hidden` för att klippa sista radens linje, så när det krymptes
+       klippte det sitt eget innehåll i stället för att låta sidan rulla:
+       innehållssidans kort är högre än rutan och fick botten avskuren (Jerry
+       2026-09-22). Rotsidan märkte inget, där är varje sektion kort. */
+    <div style={{ flexShrink: 0, borderRadius: 14, background: MT.s06, border: `1px solid ${MT.line08}`, overflow: 'hidden' }}>
       <div style={{ marginBottom: -1 }}>{children}</div>
     </div>
   )

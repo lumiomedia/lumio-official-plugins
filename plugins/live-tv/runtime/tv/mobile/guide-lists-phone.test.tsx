@@ -4,6 +4,7 @@ import { flushLiveTvIndex } from '../../../src/__test-stubs__/live-tv-index'
 import { computeGroups, type LiveTvList } from '../../live-tv-data'
 import { mountPhone, phoneChannel, phoneList, phonePins } from './__phone-mount'
 import { getGuideMode } from '../tv-settings-store'
+import { MT } from './mobile-tokens'
 
 // Spelaren (runtime/live-tv-player, två steg upp) mockas till en markör så
 // att "tryck på rad spelar" kan läsas av. Som den riktiga spelaren äger
@@ -55,7 +56,7 @@ describe('Guiden · Lists på telefon — nivå 1', () => {
 
   it('scrollytan har bottenluft för flikraden', async () => {
     await mountLists()
-    expect(screen.getByTestId('lists-phone')).toHaveStyle({ paddingBottom: '96px' })
+    expect(screen.getByTestId('lists-phone')).toHaveStyle({ paddingBottom: MT.SCROLL_PAD_BOTTOM })
   })
 
   it('kategoriraden är minst 52 px, namnet krymper med ellips och antalet står högerställt', async () => {

@@ -21,6 +21,23 @@ describe('Inställningar på telefon', () => {
     expect(screen.queryByTestId('setting-bannerHideMs')).toBeNull()
   })
 
+  /* Hänvisningsrutan "Film & serier ligger i Biblioteket" går till
+     settings/tab=content på BÅDA ytorna. Telefonvyn kände bara igen epg och
+     parental, så klicket landade på roten och VOD-valet gick inte att nå
+     (Jerry 2026-09-22). */
+  it('Innehåll nås från Mer på inställningarnas rot', async () => {
+    mountPhone({ view: 'settings' })
+    expect(await screen.findByTestId('settings-content-nav')).toBeInTheDocument()
+    // Själva VOD-valet ritas INTE på roten — det är en undersida.
+    expect(screen.queryByTestId('settings-content')).toBeNull()
+  })
+
+  it('tab=content renderar VOD-valet, inte inställningarnas rot', async () => {
+    mountPhone({ view: 'settings', tab: 'content' })
+    expect(await screen.findByTestId('settings-content')).toBeInTheDocument()
+    expect(screen.queryByTestId('setting-startOnLastChannel')).toBeNull()
+  })
+
   it('Håll skärmen tänd och Helskärm vid rotation finns och skriver till lagret', async () => {
     mountPhone({ view: 'settings' })
     expect(getTvSettings().keepAwake).toBe(true)

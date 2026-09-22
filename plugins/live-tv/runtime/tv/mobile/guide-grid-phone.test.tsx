@@ -6,6 +6,7 @@ import { startOfLocalDay } from '../../live-tv-model'
 import type { EpgCacheEntry } from '../../epg/types'
 import { PHONE_CHANNEL_COL_PX, PHONE_PX_PER_MIN, nowLinePx } from '../epg-grid-geometry'
 import { mountPhone, phoneChannel, phonePins } from './__phone-mount'
+import { MT } from './mobile-tokens'
 
 // Spelaren (runtime/live-tv-player, två steg upp) mockas bort — tablån
 // öppnar kanalvyn, den spelar inte direkt.
@@ -46,7 +47,7 @@ describe('Guiden · Tablå (Timeline) på telefon', () => {
     await mountGrid()
     const scroll = screen.getByTestId('grid-phone-scroll')
     expect(scroll).toHaveAttribute('data-scroll')
-    expect(scroll).toHaveStyle({ paddingBottom: '96px' })
+    expect(scroll).toHaveStyle({ paddingBottom: MT.SCROLL_PAD_BOTTOM })
     expect(screen.getByTestId('grid-now-line')).toBeInTheDocument()
     expect(screen.getByTestId('guide-mode')).toBeInTheDocument()
     expect(screen.getByTestId('guide-groups')).toBeInTheDocument()

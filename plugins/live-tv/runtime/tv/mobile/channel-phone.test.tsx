@@ -5,6 +5,7 @@ import { channelKey, getPinnedLiveTvKeys, type LiveTvList } from '../../live-tv-
 import type { EpgCacheEntry } from '../../epg/types'
 import { getReminders } from '../../reminders'
 import { mountPhone, phoneList, phonePins } from './__phone-mount'
+import { MT } from './mobile-tokens'
 
 // Spelaren (runtime/live-tv-player, två steg upp) mockas till en markör så
 // att "primärknappen spelar" och timeshift-URL:en kan läsas av.
@@ -139,7 +140,7 @@ describe('Kanaldetalj på telefon — utan tablå', () => {
   it('scrollytan har sidluft 16 px, bottenluft för flikraden och inga fjärrkontrollsord', async () => {
     await mountA()
     const root = screen.getByTestId('channel-phone')
-    expect(root).toHaveStyle({ paddingBottom: '96px', paddingLeft: '16px', paddingRight: '16px', overflowY: 'auto' })
+    expect(root).toHaveStyle({ paddingBottom: MT.SCROLL_PAD_BOTTOM, paddingLeft: '16px', paddingRight: '16px', overflowY: 'auto' })
     expect(root.textContent).not.toMatch(/\bOK\b/)
   })
 })

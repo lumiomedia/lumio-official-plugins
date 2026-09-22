@@ -30,8 +30,26 @@ export const MT = {
    * gjorde på en S10e: 39 px inset, sidhuvudet på y=0.
    */
   SAFE_TOP_GUARD: 'max(env(safe-area-inset-top, 0px), var(--android-inset-top, 0px))',
-  /** Innehållets bottenluft så att sista raden inte hamnar under flik-raden. */
-  SCROLL_PAD_BOTTOM: 96,
+  /**
+   * BOTTENMARGINALEN MOT SYSTEMRADEN, samma resonemang som SAFE_TOP_GUARD.
+   * env() ensam räcker inte på Android; värdens --android-inset-bottom gör.
+   */
+  SAFE_BOTTOM_GUARD: 'max(env(safe-area-inset-bottom, 0px), var(--android-inset-bottom, 0px))',
+  /**
+   * Innehållets bottenluft så att sista raden inte hamnar under flik-raden.
+   *
+   * Var 96 — ett fast tal — medan flik-raden är `TAB_BAR + SAFE_BOTTOM` och
+   * alltså VÄXER med enhetens navigeringsfält. På en Galaxy S10e (inset 48) är
+   * raden 100 px hög, och uppmätt i Live TV-inställningarna vid full rullning:
+   *
+   *   sista sektionen slutar   648
+   *   flik-raden börjar        644
+   *
+   * Innehållet gick alltså 4 px IN under raden, utan någon luft alls kvar
+   * (Jerry 2026-09-22). Måttet räknas därför ur radens egna delar plus 24 px
+   * andrum, så det följer med oavsett hur högt systemfältet är.
+   */
+  SCROLL_PAD_BOTTOM: 'calc(52px + max(env(safe-area-inset-bottom, 0px), var(--android-inset-bottom, 0px)) + 24px)',
 } as const
 
 /** Ett textblock i en rad: krymper, klipps med ellips, tar aldrig fast bredd. */

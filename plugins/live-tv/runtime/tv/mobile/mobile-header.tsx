@@ -6,10 +6,9 @@ import { MT, ellipsis } from './mobile-tokens'
 import { MIcons } from './mobile-icons'
 
 /**
- * Sidhuvudet i telefongrenen. `HEADER_LEFT` (60 px) är värdens menychip —
- * `back`-knappen läggs FÖRE titeln men INOM det utrymmet räknas den inte
- * in: den ligger direkt efter (station() flyttar den inte till vänster om
- * menychipet, den delar bara raden med titeln).
+ * Sidhuvudet i telefongrenen. Knapparna (X respektive Bakåt) läggs FÖRE
+ * titeln och delar rad med den. Sidluften är sidans vanliga `PAD` — se noten
+ * vid `padding` nedan om varför värdens menychip inte reserveras plats här.
  */
 export function MobileHeader({ title, right, back, onBack, close, onClose, testId }: {
   title: ReactNode
@@ -36,7 +35,15 @@ export function MobileHeader({ title, right, back, onBack, close, onClose, testI
         // hade lagt rubriken under kamerahålet (se MT.SAFE_TOP_GUARD).
         minHeight: `calc(${MT.HEADER_H}px + ${MT.SAFE_TOP_GUARD})`,
         flexShrink: 0,
-        padding: `${MT.SAFE_TOP_GUARD} ${MT.PAD}px 0 ${MT.HEADER_LEFT}px`,
+        /* INGET VÄNSTERINDRAG PÅ TELEFON.
+
+           HEADER_LEFT (60 px) reserverade plats åt VÄRDENS menychip. Men
+           chipet är dolt på Live TV-sidorna (Jerry 2026-09-22), så platsen
+           hölls tom åt något som aldrig kommer — och både startsidans runda X
+           och undersidornas bakåtpil såg ut att ligga med en obefogad
+           marginal. Sidhuvudet använder nu samma sidluft som allt annat
+           innehåll, så knappen står i linje med raderna under den. */
+        padding: `${MT.SAFE_TOP_GUARD} ${MT.PAD}px 0 ${MT.PAD}px`,
         display: 'flex',
         alignItems: 'center',
         gap: 10,

@@ -875,7 +875,9 @@ function VodLibrarySection({ tt, phone }: { tt: TT; phone: boolean }) {
           />
         </div>
       ))}
-      <div style={{ fontSize: phone ? 13 : dp(16), color: phone ? MT.dim : TV.dim, padding: phone ? '0 14px' : undefined }}>
+      {/* 5 px under texten på telefon: raden är sektionens sista, och utan den
+          låg den kant i kant med kortets underkant (Jerry 2026-09-22). */}
+      <div style={{ fontSize: phone ? 13 : dp(16), color: phone ? MT.dim : TV.dim, padding: phone ? '0 14px 5px' : undefined }}>
         {error ? tt('vodLibraryFailed', { error }) : tt('vodLibraryWhereToEnable')}
       </div>
     </section>

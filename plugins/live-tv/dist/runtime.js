@@ -2934,6 +2934,7 @@
           settingsPagePlayer: "Player & quality",
           settingsPageHome: "Home & appearance",
           settingsPageBinge: "Binge!",
+          settingsPageCustomPages: "Custom pages",
           settingsPageTheme: "Theme & scale",
           trailersEnabledLabel: "Show trailers",
           trailersEnabledHint: 'Trailers come from YouTube. On some networks YouTube blocks them ("Sign in to confirm you\u2019re not a bot") \u2014 turn this off to hide every trailer instead of hitting a dead player.',
@@ -3141,6 +3142,21 @@
           libContentTitle: "What may appear on Home",
           libContentHint: "Watched and unreleased titles can be kept out of the catalog rows.",
           libCardsEyebrow: "Card badges",
+          // Profilsidan enligt wireframen: WHO IS WATCHING NOW + ett redigeringskort.
+          profilesWatchingEyebrow: "Who is watching now",
+          profilesDeviceEyebrow: "On this device",
+          profileColorDesc: "Used for the avatar ring and the initial.",
+          profileAvatarDesc: "621 avatars in the built-in catalog. Without one the profile shows its initial.",
+          profilePinNoneDesc: "Optional \u2014 four digits. No PIN set.",
+          profilePinSetDesc: "Optional \u2014 four digits. A PIN is set.",
+          profileChooseAvatar: "Choose avatar",
+          profileResetDesc: "History, watchlist and settings for {name} are removed. The Trakt account is untouched.",
+          // Förhandsvisningen av posterkortet: den ritar det RIKTIGA kortet, så
+          // texterna här är bara innehållet i exemplet.
+          settingsPreviewEyebrow: "Preview",
+          posterPreviewTitle: "The Long Winter",
+          posterPreviewGenreA: "Drama",
+          posterPreviewGenreB: "Thriller",
           libCardsTitle: "Poster card badges",
           libCardsHint: "Tags and markers shown on poster cards across Home and grids.",
           profilesEyebrow: "Profiles",
@@ -3329,6 +3345,8 @@
           menuScaleDesc: "Scales only the side menu \u2014 icons and labels \u2014 independently of the interface scale.",
           reduceMotion: "Reduce motion",
           reduceMotionDesc: "Turns off animations and soft transitions throughout the app.",
+          performanceMode: "Performance mode",
+          performanceModeDesc: "For weaker TV boxes: removes blur and shadows behind menus and cards, and stops the hero trailer from playing by itself. Nothing disappears from the interface.",
           heroActionsExpanded: "Always show action labels",
           heroActionsExpandedDesc: "On the hero and on a title\u2019s details page, the icon buttons next to Play keep their names visible instead of revealing them on hover.",
           settingsPagePluginManage: "Manage plugins",
@@ -3568,6 +3586,117 @@
           bingeIncludeWatchlistDesc: "Series you follow join the stream without being saved to the list.",
           bingeSkipWatched: "Skip watched material",
           bingeSkipWatchedDesc: "Episodes marked as watched are never drawn.",
+          cpMetricPages: "Own pages",
+          cpMetricRows: "Rows in page",
+          cpNoPageOpen: "No page open",
+          cpGeneratorEyebrow: "GENERATOR",
+          cpGeneratorTitle: "Create a page from a theme",
+          cpGeneratorPlaceholder: "Star Wars, 80s, Netflix\u2026",
+          cpGenerate: "Generate",
+          cpTemplate_franchise: "Franchise",
+          cpTemplate_decade: "Decade",
+          cpTemplate_mood: "Mood",
+          cpTemplate_streaming: "Streaming service",
+          cpTemplate_network: "Network (TMDb id)",
+          cpTemplate_director: "Director (TMDb id)",
+          cpTemplate_actor: "Actor (TMDb id)",
+          cpTemplate_collection: "Collection (TMDb id)",
+          cpTemplate_trakt: "Trakt list (id)",
+          cpPagesEyebrow: "PAGES",
+          cpPagesTitle: "Your pages",
+          cpNoPages: "No pages yet. Write a theme above and generate one.",
+          cpNoRows: "This page has no rows yet.",
+          cpRowCount: "{n} rows",
+          cpUseAsStart: "Open the app on this page",
+          cpUseAsStartDesc: "The app starts here instead of the home view. The home view stays in the side menu.",
+          cpRowTitle: "Row name",
+          cpRowMediaType: "Type",
+          cpRowSort: "Sort",
+          cpRowLayout: "Layout",
+          cpRowRuntime: "Runtime (min)",
+          cpRowCertification: "Age rating + country",
+          cpFrom: "From",
+          cpTo: "To",
+          cpRowShowAll: "Show all opens",
+          cpEmptyPage: "Empty page",
+          cpAddRow: "+ Add row",
+          cpRowSource: "Source",
+          cpSourceDiscover: "TMDb search (discover)",
+          cpSourceManual: "Hand-picked titles",
+          cpManualEyebrow: "HAND-PICKED",
+          cpManualSearch: "Search for a title to add\u2026",
+          cpSourceTrakt: "Trakt list",
+          cpSourceCollection: "TMDb collection",
+          cpSourceContinue: "Continue watching",
+          cpSourceWatchlist: "Watchlist",
+          cpRowTitleQuery: "Title contains",
+          cpRowKeywords: "Keywords (TMDb tags)",
+          cpRowKeywordsHint: "star wars, space opera",
+          cpRowGenres: "Genres",
+          cpRowYears: "Year",
+          cpRowRatingMin: "Rating from",
+          cpRowPeople: "People",
+          cpRowIdHint: "e.g. 1893",
+          cpRowCollectionId: "Collection (TMDb id)",
+          cpRowTraktList: "Trakt list (id or slug)",
+          cpRowShowAllLabel: "Show all says",
+          cpRowShowAllLabelHint: "Empty = the usual wording.",
+          cpProviderHint: "Streaming service needs an exact name: {list}",
+          cpInMenu: "In menu",
+          cpMetricInMenu: "In the side menu",
+          cpSearchPerson: "Search for an actor or director\u2026",
+          cpSearchCompany: "Search for a studio\u2026",
+          cpSearchCollection: "Search for a collection, e.g. Star Wars\u2026",
+          cpRowCollection: "Collection",
+          cpNoEntity: "Nothing found by that name.",
+          cpEnterToAdd: "Enter",
+          cpPickSuggestion: "Pick one of the suggestions \u2014 typing alone does not filter.",
+          cpNoKeyword: "No TMDb keyword by that name. A person is filtered with People, not Keywords.",
+          cpPreviewEyebrow: "IN THE ROW",
+          cpPreviewCount: "{n} shown",
+          cpPreviewSpares: "{n} spare",
+          cpLoadMore: "Load more",
+          cpEmptyVotes: "No hits \u2014 the vote floor is too high for this narrow a filter. Remove the Votes chip.",
+          cpPreviewEmpty: "No hits. Loosen a filter, or check that the keyword is a real TMDb keyword.",
+          cpPin: "Pin to the front",
+          cpExclude: "Leave out of the row",
+          cpInclude: "Put back in the row",
+          cpOnlyMovies: "People and age rating only exist for films, so the row shows films.",
+          cpOnlySeries: "Network only exists for series, so the row shows series.",
+          cpImpossibleMix: "People/age rating (films) and network (series) cannot be combined \u2014 the row will be empty.",
+          cpFilterEyebrow: "TMDB FILTERS",
+          cpCallLabel: "CALL",
+          cpHits: "{n} hits",
+          cpRowCardShape: "Card shape",
+          cpShapePoster: "Poster 2:3",
+          cpShapeLandscape: "Landscape 16:9",
+          cpCountCards: "{n} cards",
+          cpRowCardCount: "Count",
+          cpFieldYear: "Year",
+          cpFieldRating: "Rating",
+          cpFieldVotes: "Votes",
+          cpFieldLanguages: "Language",
+          cpFieldCompanies: "Studio",
+          cpFieldNetworks: "Network (TMDb id)",
+          cpFieldProviders: "Service",
+          cpFieldCertCountry: "Country",
+          cpShowAllGrid: "The results grid",
+          cpTypeAll: "Film & series",
+          cpTypeMovie: "Film",
+          cpTypeSeries: "Series",
+          cpSortRelevance: "Relevance",
+          cpSortRating: "Highest rated",
+          cpSortNewest: "Newest",
+          cpSortOldest: "Oldest",
+          cpLayoutSlider: "Slider",
+          cpLayoutGrid: "Grid",
+          settingsTabCustomPages: "My pages",
+          bingeAutoNewEpisodes: "New episodes",
+          bingeEpisodeRun: "Episodes in a row from the same series",
+          bingeEpisodeRunDesc: "How long the stream stays with one series before moving on.",
+          bingeRunOne: "One, then switch",
+          bingeRunCount: "A set number",
+          bingeRunAll: "The whole series",
           bingeEpisodesPerSeries: "Episodes per series before switching \u2014 {n}",
           bingeEpisodesPerSeriesDesc: "How many episodes in a row from the same series.",
           bingeDefaultList: "Default list",
@@ -4439,6 +4568,7 @@
           onboardingWillInstall: "{count} plugin(s) will be enabled \u2014 latest runtime fetched \u2014 when you finish.",
           onboardingInstallFailed: "{names} could not be installed right now \u2014 you can find them under Settings \u2192 Plugins.",
           onboardingOpenAppNow: "Open Lumio",
+          startupOfflineNote: "No connection to TMDb \u2014 rows are empty until it is reachable. Settings, Plex, Jellyfin and Live TV work as usual.",
           onboardingInstallProgress: "Enabling plugins and fetching latest runtimes {done} / {total}",
           onboardingInstallQueued: "Queued",
           onboardingInstallWorking: "Enabling \xB7 fetching latest\u2026",
@@ -5610,6 +5740,7 @@
           settingsPagePlayer: "Spelare & kvalitet",
           settingsPageHome: "Hem & utseende",
           settingsPageBinge: "Binge!",
+          settingsPageCustomPages: "Egna sidor",
           settingsPageTheme: "Tema & skala",
           trailersEnabledLabel: "Visa trailers",
           trailersEnabledHint: 'Trailers kommer fr\xE5n YouTube. P\xE5 vissa n\xE4tverk blockerar YouTube dem ("Logga in f\xF6r att bekr\xE4fta att du inte \xE4r en robot") \u2014 st\xE4ng av det h\xE4r f\xF6r att g\xF6mma alla trailers i st\xE4llet f\xF6r att m\xF6tas av en d\xF6d spelare.',
@@ -5817,6 +5948,18 @@
           libContentTitle: "Vad som f\xE5r synas p\xE5 Hem",
           libContentHint: "Sedda och ej sl\xE4ppta titlar kan h\xE5llas borta fr\xE5n katalograderna.",
           libCardsEyebrow: "Kortm\xE4rkning",
+          profilesWatchingEyebrow: "Vem tittar nu",
+          profilesDeviceEyebrow: "P\xE5 den h\xE4r enheten",
+          profileColorDesc: "Anv\xE4nds till avatarens ring och initialen.",
+          profileAvatarDesc: "621 avatarer i den inbyggda katalogen. Utan en visar profilen sin initial.",
+          profilePinNoneDesc: "Valfri \u2014 fyra siffror. Ingen PIN satt.",
+          profilePinSetDesc: "Valfri \u2014 fyra siffror. En PIN \xE4r satt.",
+          profileChooseAvatar: "V\xE4lj avatar",
+          profileResetDesc: "Historik, bevakning och inst\xE4llningar f\xF6r {name} tas bort. Trakt-kontot r\xF6rs inte.",
+          settingsPreviewEyebrow: "F\xF6rhandsvisning",
+          posterPreviewTitle: "Den l\xE5nga vintern",
+          posterPreviewGenreA: "Drama",
+          posterPreviewGenreB: "Thriller",
           libCardsTitle: "M\xE4rken p\xE5 posterkort",
           libCardsHint: "Taggar och mark\xF6rer som visas p\xE5 posterkort p\xE5 Hem och i rutn\xE4t.",
           profilesEyebrow: "Profiler",
@@ -6005,6 +6148,8 @@
           menuScaleDesc: "Skalar bara sidomenyn \u2014 ikoner och etiketter \u2014 oberoende av gr\xE4nssnittsskalan.",
           reduceMotion: "Minska r\xF6relse",
           reduceMotionDesc: "St\xE4nger av animationer och mjuka \xF6verg\xE5ngar i hela appen.",
+          performanceMode: "Prestandal\xE4ge",
+          performanceModeDesc: "F\xF6r svagare tv-boxar: tar bort osk\xE4rpa och skuggor bakom menyer och kort, och l\xE5ter inte heron spela trailern av sig sj\xE4lv. Inget f\xF6rsvinner ur gr\xE4nssnittet.",
           heroActionsExpanded: "Visa alltid \xE5tg\xE4rdernas namn",
           heroActionsExpandedDesc: "P\xE5 heron och p\xE5 en titels detaljsida h\xE5ller ikonknapparna vid Spela sina namn synliga i st\xE4llet f\xF6r att f\xE4lla ut dem vid hovring.",
           settingsPagePluginManage: "Hantera plugins",
@@ -6243,6 +6388,117 @@
           bingeIncludeWatchlistDesc: "Serier du bevakar l\xE4ggs till i str\xF6mmen utan att sparas i listan.",
           bingeSkipWatched: "Hoppa \xF6ver sett material",
           bingeSkipWatchedDesc: "Avsnitt markerade som sedda dras aldrig.",
+          cpMetricPages: "Egna sidor",
+          cpMetricRows: "Rader i sidan",
+          cpNoPageOpen: "Ingen sida \xF6ppen",
+          cpGeneratorEyebrow: "GENERATOR",
+          cpGeneratorTitle: "Skapa en sida fr\xE5n ett tema",
+          cpGeneratorPlaceholder: "Star Wars, 80-tal, Netflix\u2026",
+          cpGenerate: "Generera",
+          cpTemplate_franchise: "Filmserie",
+          cpTemplate_decade: "\xC5rtionde",
+          cpTemplate_mood: "St\xE4mning",
+          cpTemplate_streaming: "Streamingtj\xE4nst",
+          cpTemplate_network: "N\xE4tverk (TMDb-id)",
+          cpTemplate_director: "Regiss\xF6r (TMDb-id)",
+          cpTemplate_actor: "Sk\xE5despelare (TMDb-id)",
+          cpTemplate_collection: "Samling (TMDb-id)",
+          cpTemplate_trakt: "Trakt-lista (id)",
+          cpPagesEyebrow: "SIDOR",
+          cpPagesTitle: "Dina sidor",
+          cpNoPages: "Inga sidor \xE4n. Skriv ett tema ovan och generera en.",
+          cpNoRows: "Den h\xE4r sidan har inga rader \xE4n.",
+          cpRowCount: "{n} rader",
+          cpUseAsStart: "\xD6ppna appen p\xE5 den h\xE4r sidan",
+          cpUseAsStartDesc: "Appen startar h\xE4r i st\xE4llet f\xF6r hemvyn. Hemvyn ligger kvar i sidomenyn.",
+          cpRowTitle: "Radnamn",
+          cpRowMediaType: "Typ",
+          cpRowSort: "Sortering",
+          cpRowLayout: "Layout",
+          cpRowRuntime: "Speltid (min)",
+          cpRowCertification: "\xC5ldersgr\xE4ns + land",
+          cpFrom: "Fr\xE5n",
+          cpTo: "Till",
+          cpRowShowAll: "Visa alla \xF6ppnar",
+          cpEmptyPage: "Tom sida",
+          cpAddRow: "+ L\xE4gg till rad",
+          cpRowSource: "K\xE4lla",
+          cpSourceDiscover: "TMDb-s\xF6kning (discover)",
+          cpSourceManual: "Handplockade titlar",
+          cpManualEyebrow: "HANDPLOCKAT",
+          cpManualSearch: "S\xF6k en titel att l\xE4gga till\u2026",
+          cpSourceTrakt: "Trakt-lista",
+          cpSourceCollection: "TMDb-samling",
+          cpSourceContinue: "Forts\xE4tt titta",
+          cpSourceWatchlist: "Att se",
+          cpRowTitleQuery: "Titeln inneh\xE5ller",
+          cpRowKeywords: "Nyckelord (TMDb-taggar)",
+          cpRowKeywordsHint: "star wars, rymdopera",
+          cpRowGenres: "Genrer",
+          cpRowYears: "\xC5r",
+          cpRowRatingMin: "Betyg fr\xE5n",
+          cpRowPeople: "Personer",
+          cpRowIdHint: "t.ex. 1893",
+          cpRowCollectionId: "Samling (TMDb-id)",
+          cpRowTraktList: "Trakt-lista (id eller slug)",
+          cpRowShowAllLabel: "Visa alla heter",
+          cpRowShowAllLabelHint: "Tomt = den vanliga texten.",
+          cpProviderHint: "Streamingtj\xE4nst kr\xE4ver ett exakt namn: {list}",
+          cpInMenu: "I menyn",
+          cpMetricInMenu: "I sidomenyn",
+          cpSearchPerson: "S\xF6k sk\xE5despelare eller regiss\xF6r\u2026",
+          cpSearchCompany: "S\xF6k studio\u2026",
+          cpSearchCollection: "S\xF6k en samling, t.ex. Star Wars\u2026",
+          cpRowCollection: "Samling",
+          cpNoEntity: "Hittade ingen med det namnet.",
+          cpEnterToAdd: "Enter",
+          cpPickSuggestion: "V\xE4lj ett av f\xF6rslagen \u2014 att bara skriva filtrerar inte.",
+          cpNoKeyword: "Inget TMDb-nyckelord heter s\xE5. En person filtreras med Personer, inte med Nyckelord.",
+          cpPreviewEyebrow: "I RADEN",
+          cpPreviewCount: "{n} visas",
+          cpPreviewSpares: "{n} i reserv",
+          cpLoadMore: "H\xE4mta fler",
+          cpEmptyVotes: "Inga tr\xE4ffar \u2014 r\xF6stgolvet \xE4r f\xF6r h\xF6gt f\xF6r ett s\xE5 smalt filter. Ta bort Votes-chipet.",
+          cpPreviewEmpty: "Inga tr\xE4ffar. L\xE4tta p\xE5 ett filter, eller kolla att nyckelordet \xE4r ett riktigt TMDb-nyckelord.",
+          cpPin: "F\xE4st \xF6verst",
+          cpExclude: "Utanf\xF6r raden",
+          cpInclude: "Tillbaka i raden",
+          cpOnlyMovies: "Person och \xE5ldersgr\xE4ns finns bara f\xF6r film, s\xE5 raden visar filmer.",
+          cpOnlySeries: "N\xE4tverk finns bara f\xF6r serier, s\xE5 raden visar serier.",
+          cpImpossibleMix: "Person/\xE5ldersgr\xE4ns (film) och n\xE4tverk (serier) g\xE5r inte att kombinera \u2014 raden blir tom.",
+          cpFilterEyebrow: "TMDB-FILTER",
+          cpCallLabel: "ANROP",
+          cpHits: "{n} tr\xE4ffar",
+          cpRowCardShape: "Kortform",
+          cpShapePoster: "Affisch 2:3",
+          cpShapeLandscape: "Liggande 16:9",
+          cpCountCards: "{n} kort",
+          cpRowCardCount: "Antal",
+          cpFieldYear: "\xC5r",
+          cpFieldRating: "Betyg",
+          cpFieldVotes: "R\xF6ster",
+          cpFieldLanguages: "Spr\xE5k",
+          cpFieldCompanies: "Studio",
+          cpFieldNetworks: "N\xE4tverk (TMDb-id)",
+          cpFieldProviders: "Tj\xE4nst",
+          cpFieldCertCountry: "Land",
+          cpShowAllGrid: "Tr\xE4ffrutn\xE4tet",
+          cpTypeAll: "Film & serier",
+          cpTypeMovie: "Film",
+          cpTypeSeries: "Serier",
+          cpSortRelevance: "Relevans",
+          cpSortRating: "H\xF6gst betyg",
+          cpSortNewest: "Nyast",
+          cpSortOldest: "\xC4ldst",
+          cpLayoutSlider: "Karusell",
+          cpLayoutGrid: "Rutn\xE4t",
+          settingsTabCustomPages: "Mina sidor",
+          bingeAutoNewEpisodes: "Nya avsnitt",
+          bingeEpisodeRun: "Avsnitt i rad ur samma serie",
+          bingeEpisodeRunDesc: "Hur l\xE4nge str\xF6mmen stannar i en serie innan den byter.",
+          bingeRunOne: "Ett, sedan byte",
+          bingeRunCount: "Ett best\xE4mt antal",
+          bingeRunAll: "Hela serien",
           bingeEpisodesPerSeries: "Avsnitt per serie innan byte \u2014 {n}",
           bingeEpisodesPerSeriesDesc: "Hur m\xE5nga avsnitt i rad ur samma serie.",
           bingeDefaultList: "Standardlista",
@@ -7097,6 +7353,7 @@
           onboardingWillInstall: "{count} till\xE4gg aktiveras \u2014 senaste runtime h\xE4mtas \u2014 n\xE4r du \xE4r klar.",
           onboardingInstallFailed: "{names} kunde inte installeras just nu \u2014 du hittar dem under Inst\xE4llningar \u2192 Plugins.",
           onboardingOpenAppNow: "\xD6ppna Lumio",
+          startupOfflineNote: "Ingen kontakt med TMDb \u2014 raderna \xE4r tomma tills den svarar. Inst\xE4llningar, Plex, Jellyfin och Live TV fungerar som vanligt.",
           onboardingInstallProgress: "Aktiverar till\xE4gg och h\xE4mtar senaste runtime {done} / {total}",
           onboardingInstallQueued: "I k\xF6",
           onboardingInstallWorking: "Aktiverar \xB7 h\xE4mtar senaste\u2026",
@@ -8318,6 +8575,10 @@
     if (typeof window === "undefined") return false;
     return getScopedStorageItem(MOTION_KEY) === "1";
   }
+  function getPerformanceMode() {
+    if (typeof window === "undefined") return false;
+    return getScopedStorageItem(PERF_KEY) === "1";
+  }
   function getHeroActionsExpanded() {
     if (typeof window === "undefined") return false;
     return getScopedStorageItem(HERO_ACTIONS_KEY) === "1";
@@ -8387,6 +8648,8 @@
     else root.style.setProperty("--corner-scale", String(cornerScale / 100));
     if (getReduceMotion()) root.dataset.reduceMotion = "1";
     else delete root.dataset.reduceMotion;
+    if (getPerformanceMode()) root.dataset.perf = "1";
+    else delete root.dataset.perf;
     if (getHeroActionsExpanded()) root.dataset.heroActionLabels = "open";
     else delete root.dataset.heroActionLabels;
     if (getAppTheme() === "custom") {
@@ -8418,7 +8681,7 @@
       root.style.setProperty("--accent-600", a600);
     }
   }
-  var THEME_KEY, SCALE_KEY, MOTION_KEY, ACCENT_KEY, FONT_KEY, RADIUS_KEY, RADIUS_KEY_V2, EVENT2, UI_SCALE_OPTIONS, MENU_SCALE_KEY, MENU_SCALE_OPTIONS, TV_FONT_SCALE_KEY, TV_FONT_SCALE_OPTIONS, TV_MENU_SCALE_KEY, TV_MENU_SCALE_OPTIONS, CORNER_SCALE_KEY, CORNER_SCALE_OPTIONS, HERO_ACTIONS_KEY, ACCENT_PRESETS, FONT_PAIRS, CARD_RADIUS_OPTIONS;
+  var THEME_KEY, SCALE_KEY, MOTION_KEY, PERF_KEY, ACCENT_KEY, FONT_KEY, RADIUS_KEY, RADIUS_KEY_V2, EVENT2, UI_SCALE_OPTIONS, MENU_SCALE_KEY, MENU_SCALE_OPTIONS, TV_FONT_SCALE_KEY, TV_FONT_SCALE_OPTIONS, TV_MENU_SCALE_KEY, TV_MENU_SCALE_OPTIONS, CORNER_SCALE_KEY, CORNER_SCALE_OPTIONS, HERO_ACTIONS_KEY, ACCENT_PRESETS, FONT_PAIRS, CARD_RADIUS_OPTIONS;
   var init_appearance_settings = __esm({
     "lib/appearance-settings.ts"() {
       "use strict";
@@ -8428,6 +8691,7 @@
       THEME_KEY = "appearance_theme_v2";
       SCALE_KEY = "appearance_ui_scale";
       MOTION_KEY = "appearance_reduce_motion";
+      PERF_KEY = "appearance_performance_mode";
       ACCENT_KEY = "appearance_accent";
       FONT_KEY = "appearance_font_pair";
       RADIUS_KEY = "appearance_card_radius";
@@ -15325,12 +15589,12 @@
         return `rgba(${guard(0, 255, red).toFixed()}, ${guard(0, 255, green).toFixed()}, ${guard(0, 255, blue).toFixed()}, ${parseFloat(guard(0, 1, alpha2).toFixed(3))})`;
       }
       function mix2(color1, color2, weight) {
-        const normalize3 = (n, index3) => (
+        const normalize4 = (n, index3) => (
           // 3rd index is alpha channel which is already normalized
           index3 === 3 ? n : n / 255
         );
-        const [r1, g1, b1, a1] = parseToRgba(color1).map(normalize3);
-        const [r2, g2, b2, a2] = parseToRgba(color2).map(normalize3);
+        const [r1, g1, b1, a1] = parseToRgba(color1).map(normalize4);
+        const [r2, g2, b2, a2] = parseToRgba(color2).map(normalize4);
         const alphaDelta = a2 - a1;
         const normalizedWeight = weight * 2 - 1;
         const combinedWeight = normalizedWeight * alphaDelta === -1 ? normalizedWeight : normalizedWeight + alphaDelta / (1 + normalizedWeight * alphaDelta);
@@ -177909,6 +178173,32 @@
     window.addEventListener(EVENT10, listener);
     return () => window.removeEventListener(EVENT10, listener);
   }
+  function seekBarAppearance(layout2) {
+    return {
+      heightClass: layout2.seekBarHeight === "slim" ? "h-1" : layout2.seekBarHeight === "chunky" ? "h-2.5" : "h-1.5",
+      // Färgen ligger i variabeln, inte i en klass: hela spelarlagret läser samma
+      // värde, och förhandsvisningen sätter den på sin egen låda.
+      fillClass: "bg-[rgb(var(--player-accent))]",
+      overlayClass: layout2.seekBarStyle === "glass" ? "shadow-[0_0_14px_rgba(255,255,255,0.35)]" : layout2.seekBarStyle === "pinstripe" ? "bg-[repeating-linear-gradient(45deg,transparent,transparent_4px,rgba(0,0,0,0.25)_4px,rgba(0,0,0,0.25)_8px)]" : "",
+      dot: layout2.seekBarDot
+    };
+  }
+  function playerAccentRgb(layout2, themeAccentRgb2) {
+    switch (layout2.seekBarColor) {
+      case "white":
+        return "255 255 255";
+      case "red":
+        return "239 68 68";
+      case "amber":
+        return "251 191 36";
+      default:
+        return themeAccentRgb2;
+    }
+  }
+  function themeAccentRgb() {
+    if (typeof document === "undefined") return "244 132 95";
+    return getComputedStyle(document.documentElement).getPropertyValue("--accent-500").trim() || "244 132 95";
+  }
   var PLAYER_CONTROL_IDS, LAYOUT_KEY, EVENT10;
   var init_player_layout = __esm({
     "lib/player-layout.ts"() {
@@ -181887,8 +182177,7 @@ ${cue.text}`).join("\n\n")}
       });
       return () => window.cancelAnimationFrame(raf);
     }, [isTv, openSurface]);
-    const themeAccentRgb = (typeof document !== "undefined" ? getComputedStyle(document.documentElement).getPropertyValue("--accent-500").trim() : "") || "244 132 95";
-    const playerAccentRgb = playerLayout.seekBarColor === "white" ? "255 255 255" : playerLayout.seekBarColor === "red" ? "239 68 68" : playerLayout.seekBarColor === "amber" ? "251 191 36" : themeAccentRgb;
+    const playerAccentRgb2 = playerAccentRgb(playerLayout, themeAccentRgb());
     const hiddenControls = useMemo(() => new Set(playerLayout.hidden), [playerLayout.hidden]);
     const showsControl = (id4) => !hiddenControls.has(id4);
     const [videoTuning, setVideoTuningState] = useState(() => getVideoTuning());
@@ -185943,9 +186232,10 @@ ${cue.text}`).join("\n\n")}
         group.map((id4) => /* @__PURE__ */ jsx(react_shim_default.Fragment, { children: desktopControls[id4] }, id4))
       ] }, group.join("+")));
     };
-    const seekHeightClass = playerLayout.seekBarHeight === "slim" ? "h-1" : playerLayout.seekBarHeight === "chunky" ? "h-2.5" : "h-1.5";
-    const seekFillColorClass = "bg-[rgb(var(--player-accent))]";
-    const seekFillStyleClass = playerLayout.seekBarStyle === "glass" ? "shadow-[0_0_14px_rgba(255,255,255,0.35)]" : playerLayout.seekBarStyle === "pinstripe" ? "bg-[repeating-linear-gradient(45deg,transparent,transparent_4px,rgba(0,0,0,0.25)_4px,rgba(0,0,0,0.25)_8px)]" : "";
+    const seekLook = seekBarAppearance(playerLayout);
+    const seekHeightClass = seekLook.heightClass;
+    const seekFillColorClass = seekLook.fillClass;
+    const seekFillStyleClass = seekLook.overlayClass;
     const tvSeekHoldStartedAtRef = useRef(0);
     const handleTvSeekKey = (event) => {
       if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
@@ -186491,7 +186781,7 @@ ${cue.text}`).join("\n\n")}
         "data-panel-root": isTv ? "1" : void 0,
         "data-tv-player": tvChrome ? "1" : void 0,
         "data-tv-fullbleed": "",
-        style: { "--player-accent": playerAccentRgb },
+        style: { "--player-accent": playerAccentRgb2 },
         className: `fixed inset-x-0 top-0 z-[60] flex h-[var(--tv-scene-vh,100dvh)] flex-col !mt-0 ${useMpv ? "" : "bg-black"}`,
         children: [
           !hasEverStarted && (!hideStartSplash || clientOwnsSplash) && /* @__PURE__ */ jsxs(
@@ -187710,9 +188000,10 @@ ${cue.text}`).join("\n\n")}
                         ] })
                       ) : /* @__PURE__ */ jsxs(Fragment2, { children: [
                         (() => {
-                          const heightClass = playerLayout.seekBarHeight === "slim" ? "h-1" : playerLayout.seekBarHeight === "chunky" ? "h-2.5" : "h-1.5";
-                          const fillColorClass = playerLayout.seekBarColor === "white" ? "bg-white" : playerLayout.seekBarColor === "red" ? "bg-red-500" : playerLayout.seekBarColor === "amber" ? "bg-amber-400" : "bg-aurora-400";
-                          const styleClass = playerLayout.seekBarStyle === "glass" ? "opacity-80 backdrop-blur-sm shadow-[0_0_12px_rgba(255,255,255,0.25)]" : playerLayout.seekBarStyle === "pinstripe" ? "bg-[repeating-linear-gradient(45deg,transparent,transparent_4px,rgba(0,0,0,0.25)_4px,rgba(0,0,0,0.25)_8px)]" : "";
+                          const look = seekBarAppearance(playerLayout);
+                          const heightClass = look.heightClass;
+                          const fillColorClass = look.fillClass;
+                          const styleClass = look.overlayClass;
                           return (
                             // TV mode: the seek bar is a focus station. Left/right seek
                             // while it has focus and are swallowed (stopPropagation) so the
@@ -189707,6 +189998,24 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
+  // lib/settings-heading.ts
+  function normalize2(value) {
+    if (typeof value === "string") return value.trim().toLowerCase().replace(/\s+/g, " ");
+    if (typeof value === "number") return String(value);
+    return null;
+  }
+  function eyebrowRepeatsTitle(eyebrow, title) {
+    const a = normalize2(eyebrow);
+    const b = normalize2(title);
+    if (a === null || b === null || a === "" || b === "") return false;
+    return a === b;
+  }
+  var init_settings_heading = __esm({
+    "lib/settings-heading.ts"() {
+      "use client";
+    }
+  });
+
   // components/settings/redesigned/primitives.tsx
   function Icon({
     name,
@@ -189754,33 +190063,41 @@ ${cue.text}`).join("\n\n")}
           userSelect: "none"
         },
         children: [
-          /* @__PURE__ */ jsx(
+          /* @__PURE__ */ jsxs(
             "span",
             {
               onClick: (e) => {
                 e.preventDefault();
                 if (!disabled && onChange) onChange(!checked);
               },
-              style: {
-                width: 22,
-                height: 22,
-                borderRadius: 6,
-                background: checked ? TOKENS.accent : TOKENS.surface2,
-                border: `1.5px solid ${checked ? TOKENS.accent : TOKENS.borderStrong}`,
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                transition: "all .14s ease",
-                flexShrink: 0,
-                marginTop: hint ? 2 : 0
-              },
-              children: checked ? /* @__PURE__ */ jsx(Icon, { name: "check", size: 14, color: TOKENS.surface0 }) : null
+              style: { display: "flex", alignItems: hint ? "flex-start" : "center", gap: 12, flex: 1, minWidth: 0 },
+              children: [
+                /* @__PURE__ */ jsx(
+                  "span",
+                  {
+                    style: {
+                      width: 22,
+                      height: 22,
+                      borderRadius: 6,
+                      background: checked ? TOKENS.accent : TOKENS.surface2,
+                      border: `1.5px solid ${checked ? TOKENS.accent : TOKENS.borderStrong}`,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "all .14s ease",
+                      flexShrink: 0,
+                      marginTop: hint ? 2 : 0
+                    },
+                    children: checked ? /* @__PURE__ */ jsx(Icon, { name: "check", size: 14, color: TOKENS.surface0 }) : null
+                  }
+                ),
+                label2 ? /* @__PURE__ */ jsxs("span", { style: { flex: 1, display: "flex", flexDirection: "column", gap: 2 }, children: [
+                  /* @__PURE__ */ jsx("span", { style: { fontSize: TYPE.body, color: TOKENS.text, fontWeight: 500 }, children: label2 }),
+                  hint ? /* @__PURE__ */ jsx("span", { style: { fontSize: TYPE.small, color: TOKENS.textMute, lineHeight: 1.4 }, children: hint }) : null
+                ] }) : null
+              ]
             }
           ),
-          label2 ? /* @__PURE__ */ jsxs("span", { style: { flex: 1, display: "flex", flexDirection: "column", gap: 2 }, children: [
-            /* @__PURE__ */ jsx("span", { style: { fontSize: TYPE.body, color: TOKENS.text, fontWeight: 500 }, children: label2 }),
-            hint ? /* @__PURE__ */ jsx("span", { style: { fontSize: TYPE.small, color: TOKENS.textMute, lineHeight: 1.4 }, children: hint }) : null
-          ] }) : null,
           right
         ]
       }
@@ -190070,9 +190387,8 @@ ${cue.text}`).join("\n\n")}
       "div",
       {
         style: {
-          background: "rgba(255, 255, 255, 0.055)",
-          border: "1px solid rgba(255, 255, 255, 0.12)",
-          borderRadius: 14,
+          background: "var(--st-box)",
+          borderRadius: 10,
           padding,
           marginBottom: 10,
           ...style2
@@ -190088,7 +190404,7 @@ ${cue.text}`).join("\n\n")}
     children,
     action
   }) {
-    const eyebrowRepeats = useRepeatsTvTabHeading(eyebrow);
+    const eyebrowRepeats = useRepeatsTvTabHeading(eyebrow) || eyebrowRepeatsTitle(eyebrow, title);
     const titleRepeats = useRepeatsTvTabHeading(title);
     return /* @__PURE__ */ jsxs("section", { style: { marginBottom: 32 }, children: [
       /* @__PURE__ */ jsxs(
@@ -190104,7 +190420,7 @@ ${cue.text}`).join("\n\n")}
           children: [
             /* @__PURE__ */ jsxs("div", { children: [
               eyebrow && !eyebrowRepeats ? /* @__PURE__ */ jsx("div", { style: { ...eyebrowStyle, marginBottom: 4 }, children: eyebrow }) : null,
-              !titleRepeats ? /* @__PURE__ */ jsx(
+              title && !titleRepeats ? /* @__PURE__ */ jsx(
                 "h3",
                 {
                   style: {
@@ -190131,25 +190447,41 @@ ${cue.text}`).join("\n\n")}
     value,
     sub
   }) {
-    return /* @__PURE__ */ jsxs(Card, { padding: 16, children: [
-      /* @__PURE__ */ jsx("div", { style: { ...eyebrowStyle, marginBottom: 8 }, children: label2 }),
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: 6 }, children: [
-        /* @__PURE__ */ jsx(
-          "div",
-          {
-            style: {
-              fontSize: TYPE.h1,
-              fontWeight: 600,
-              letterSpacing: -0.5,
-              fontFamily: monoFont,
-              color: TOKENS.text
-            },
-            children: value
-          }
-        ),
-        sub ? /* @__PURE__ */ jsx("div", { style: { fontSize: TYPE.small, color: TOKENS.textMute }, children: sub }) : null
+    return (
+      /*
+            MÅTTET FÅR INTE SVÄMMA UT I GRANNKORTET (Jerry 2026-09-21).
+      
+            Värdet ritas i h1 med monofont, och ett långt värde — bibliotekets namn
+            är `tv.kkzbigserver.iptv.uno` — sköt rakt igenom kortet och lade sig
+            ovanpå nästa kolumns siffra. `minWidth: 0` behövs på BÅDA nivåerna:
+            utan det vägrar både rutnätscellen och flexbarnet krympa under sitt
+            innehåll, och `text-overflow` får aldrig något att klippa.
+          */
+      /* @__PURE__ */ jsxs(Card, { padding: 16, children: [
+        /* @__PURE__ */ jsx("div", { style: { ...eyebrowStyle, marginBottom: 8 }, children: label2 }),
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: 6, minWidth: 0 }, children: [
+          /* @__PURE__ */ jsx(
+            "div",
+            {
+              title: typeof value === "string" || typeof value === "number" ? String(value) : void 0,
+              style: {
+                fontSize: TYPE.h1,
+                fontWeight: 600,
+                letterSpacing: -0.5,
+                fontFamily: monoFont,
+                color: TOKENS.text,
+                minWidth: 0,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap"
+              },
+              children: value
+            }
+          ),
+          sub ? /* @__PURE__ */ jsx("div", { style: { fontSize: TYPE.small, color: TOKENS.textMute, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 0 }, children: sub }) : null
+        ] })
       ] })
-    ] });
+    );
   }
   function FieldGroup({
     label: label2,
@@ -190181,6 +190513,7 @@ ${cue.text}`).join("\n\n")}
       "use client";
       init_react_shim();
       init_tv_tab_heading();
+      init_settings_heading();
       import_react_dom2 = __toESM(require_react_dom());
       init_jsx_runtime_shim();
       TOKENS = {
@@ -190194,8 +190527,8 @@ ${cue.text}`).join("\n\n")}
         text: "#EAEEF6",
         textDim: "#9AA5BC",
         textMute: "#6B7691",
-        accent: "#7C8CFF",
-        accentSoft: "rgba(124,140,255,0.22)",
+        accent: "var(--color-accent)",
+        accentSoft: "rgb(var(--accent-500) / 0.22)",
         mint: "#3CD6A3",
         orange: "#FF8B5A",
         red: "#FF5A6A",
@@ -190689,13 +191022,13 @@ ${cue.text}`).join("\n\n")}
         bg: "#161826",
         surface: "#232532",
         text: "#e9e9ed",
-        accent: "#9184d9",
-        accent100: "#f5f4ff",
-        accent200: "#e7e5fe",
-        accent300: "#d2cefd",
-        accent700: "#5d5294",
-        accent800: "#423a6a",
-        accent900: "#2b2741",
+        accent: "var(--color-accent)",
+        accent100: "var(--color-accent-100)",
+        accent200: "var(--color-accent-200)",
+        accent300: "var(--color-accent-300)",
+        accent700: "var(--color-accent-700)",
+        accent800: "var(--color-accent-800)",
+        accent900: "var(--color-accent-900)",
         neutral100: "#f3f5fe",
         neutral300: "#cfd3e5",
         neutral400: "#b2b6ca",
@@ -196313,8 +196646,26 @@ ${cue.text}`).join("\n\n")}
          * gjorde på en S10e: 39 px inset, sidhuvudet på y=0.
          */
         SAFE_TOP_GUARD: "max(env(safe-area-inset-top, 0px), var(--android-inset-top, 0px))",
-        /** Innehållets bottenluft så att sista raden inte hamnar under flik-raden. */
-        SCROLL_PAD_BOTTOM: 96
+        /**
+         * BOTTENMARGINALEN MOT SYSTEMRADEN, samma resonemang som SAFE_TOP_GUARD.
+         * env() ensam räcker inte på Android; värdens --android-inset-bottom gör.
+         */
+        SAFE_BOTTOM_GUARD: "max(env(safe-area-inset-bottom, 0px), var(--android-inset-bottom, 0px))",
+        /**
+         * Innehållets bottenluft så att sista raden inte hamnar under flik-raden.
+         *
+         * Var 96 — ett fast tal — medan flik-raden är `TAB_BAR + SAFE_BOTTOM` och
+         * alltså VÄXER med enhetens navigeringsfält. På en Galaxy S10e (inset 48) är
+         * raden 100 px hög, och uppmätt i Live TV-inställningarna vid full rullning:
+         *
+         *   sista sektionen slutar   648
+         *   flik-raden börjar        644
+         *
+         * Innehållet gick alltså 4 px IN under raden, utan någon luft alls kvar
+         * (Jerry 2026-09-22). Måttet räknas därför ur radens egna delar plus 24 px
+         * andrum, så det följer med oavsett hur högt systemfältet är.
+         */
+        SCROLL_PAD_BOTTOM: "calc(52px + max(env(safe-area-inset-bottom, 0px), var(--android-inset-bottom, 0px)) + 24px)"
       };
       ellipsis = { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
       clamp2 = { overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" };
@@ -199901,7 +200252,7 @@ ${cue.text}`).join("\n\n")}
     return layout2;
   }
   var DEFAULT_STATE = { layout: 4, tiles: [null, null, null, null], audioIndex: 0 };
-  function normalize2(state) {
+  function normalize3(state) {
     const count = tileCount(state.layout);
     const tiles = Array.from({ length: count }, (_, i) => state.tiles[i] ?? null);
     let audioIndex = state.audioIndex;
@@ -199915,13 +200266,13 @@ ${cue.text}`).join("\n\n")}
     const r = raw && typeof raw === "object" ? raw : {};
     const layout2 = r.layout === 2 || r.layout === 3 || r.layout === 4 ? r.layout : 4;
     const tiles = Array.isArray(r.tiles) ? r.tiles.map((t) => typeof t === "string" && t ? t : null) : [];
-    return normalize2({ layout: layout2, tiles, audioIndex: typeof r.audioIndex === "number" ? r.audioIndex : 0 });
+    return normalize3({ layout: layout2, tiles, audioIndex: typeof r.audioIndex === "number" ? r.audioIndex : 0 });
   }
   function getMultiviewState() {
     return sanitize6(readPluginJson(LIVE_TV_PLUGIN_ID, MULTIVIEW_KEY, DEFAULT_STATE));
   }
   function setMultiviewState(next2) {
-    writePluginJson(LIVE_TV_PLUGIN_ID, MULTIVIEW_KEY, normalize2(next2));
+    writePluginJson(LIVE_TV_PLUGIN_ID, MULTIVIEW_KEY, normalize3(next2));
   }
   function useMultiviewState() {
     const [value, setValue] = useState(getMultiviewState);
@@ -199932,25 +200283,25 @@ ${cue.text}`).join("\n\n")}
     const tiles = [...state.tiles];
     tiles[index3] = key;
     const hadAny = state.tiles.some((t) => t !== null);
-    return normalize2({ ...state, tiles, audioIndex: hadAny ? state.audioIndex : index3 });
+    return normalize3({ ...state, tiles, audioIndex: hadAny ? state.audioIndex : index3 });
   }
   function removeTile(state, index3) {
     const tiles = [...state.tiles];
     tiles[index3] = null;
-    return normalize2({ ...state, tiles });
+    return normalize3({ ...state, tiles });
   }
   function setLayout(state, layout2) {
     const filled = state.tiles.filter((t) => t !== null);
     const audioKey = state.tiles[state.audioIndex];
     const tiles = filled.slice(0, tileCount(layout2));
     const audioIndex = audioKey ? Math.max(0, tiles.indexOf(audioKey)) : 0;
-    return normalize2({ layout: layout2, tiles, audioIndex });
+    return normalize3({ layout: layout2, tiles, audioIndex });
   }
   function enlargeTile(state, index3) {
     const key = state.tiles[index3];
     const rest = state.tiles.filter((t, i) => t !== null && i !== index3);
     const tiles = key ? [key, ...rest] : rest;
-    return normalize2({ layout: 3, tiles, audioIndex: key ? 0 : state.audioIndex });
+    return normalize3({ layout: 3, tiles, audioIndex: key ? 0 : state.audioIndex });
   }
   function addToFirstFree(state, key) {
     const free = state.tiles.findIndex((t) => t === null);
@@ -202409,7 +202760,15 @@ ${cue.text}`).join("\n\n")}
           // hade lagt rubriken under kamerahålet (se MT.SAFE_TOP_GUARD).
           minHeight: `calc(${MT.HEADER_H}px + ${MT.SAFE_TOP_GUARD})`,
           flexShrink: 0,
-          padding: `${MT.SAFE_TOP_GUARD} ${MT.PAD}px 0 ${MT.HEADER_LEFT}px`,
+          /* INGET VÄNSTERINDRAG PÅ TELEFON.
+          
+                     HEADER_LEFT (60 px) reserverade plats åt VÄRDENS menychip. Men
+                     chipet är dolt på Live TV-sidorna (Jerry 2026-09-22), så platsen
+                     hölls tom åt något som aldrig kommer — och både startsidans runda X
+                     och undersidornas bakåtpil såg ut att ligga med en obefogad
+                     marginal. Sidhuvudet använder nu samma sidluft som allt annat
+                     innehåll, så knappen står i linje med raderna under den. */
+          padding: `${MT.SAFE_TOP_GUARD} ${MT.PAD}px 0 ${MT.PAD}px`,
           display: "flex",
           alignItems: "center",
           gap: 10
@@ -208715,7 +209074,7 @@ ${cue.text}`).join("\n\n")}
         },
         row.libraryId
       )),
-      /* @__PURE__ */ jsx("div", { style: { fontSize: phone ? 13 : dp(16), color: phone ? MT.dim : TV2.dim, padding: phone ? "0 14px" : void 0 }, children: error ? tt("vodLibraryFailed", { error }) : tt("vodLibraryWhereToEnable") })
+      /* @__PURE__ */ jsx("div", { style: { fontSize: phone ? 13 : dp(16), color: phone ? MT.dim : TV2.dim, padding: phone ? "0 14px 5px" : void 0 }, children: error ? tt("vodLibraryFailed", { error }) : tt("vodLibraryWhereToEnable") })
     ] });
   }
   function EpgTab({ lists, nav, tt, locale, phone = false }) {
@@ -208812,9 +209171,9 @@ ${cue.text}`).join("\n\n")}
     const { model, nav, params, settings } = props;
     const { tt, locale } = useTvText();
     const guideMode = useGuideMode();
-    if (params.tab === "epg" || params.tab === "parental") {
-      const epg = params.tab === "epg";
-      return /* @__PURE__ */ jsx(PhonePage, { header: /* @__PURE__ */ jsx(MobileHeader, { title: tt(epg ? "tabEpg" : "tabParental"), back: true, onBack: () => nav.go("settings") }), children: /* @__PURE__ */ jsx(Card3, { children: epg ? /* @__PURE__ */ jsx(EpgTab, { lists: model.lists, nav, tt, locale, phone: true }) : /* @__PURE__ */ jsx(ParentalTab, { model, tt, phone: true }) }) });
+    if (params.tab === "epg" || params.tab === "parental" || params.tab === "content") {
+      const rubrik = params.tab === "epg" ? "tabEpg" : params.tab === "parental" ? "tabParental" : "tabContent";
+      return /* @__PURE__ */ jsx(PhonePage, { header: /* @__PURE__ */ jsx(MobileHeader, { title: tt(rubrik), back: true, onBack: () => nav.go("settings") }), children: /* @__PURE__ */ jsx(Card3, { children: params.tab === "epg" ? /* @__PURE__ */ jsx(EpgTab, { lists: model.lists, nav, tt, locale, phone: true }) : params.tab === "parental" ? /* @__PURE__ */ jsx(ParentalTab, { model, tt, phone: true }) : /* @__PURE__ */ jsx(ContentTab, { model, tt, phone: true }) }) });
     }
     const modes = [
       { key: "now", label: tt("phoneModeNow") },
@@ -208830,6 +209189,7 @@ ${cue.text}`).join("\n\n")}
         /* @__PURE__ */ jsx(ToggleRow, { testId: "setting-fullscreenOnRotate", label: tt("settingFullscreenOnRotate"), on: settings.fullscreenOnRotate, onOk: () => setTvSettings({ fullscreenOnRotate: !settings.fullscreenOnRotate }) })
       ] }) }),
       /* @__PURE__ */ jsx(Section2, { label: tt("sectionMore"), children: /* @__PURE__ */ jsxs(Card3, { children: [
+        /* @__PURE__ */ jsx(NavRow, { testId: "settings-content-nav", label: tt("tabContent"), onOk: () => nav.go("settings", { tab: "content" }) }),
         /* @__PURE__ */ jsx(NavRow, { testId: "settings-epg", label: tt("tabEpg"), onOk: () => nav.go("settings", { tab: "epg" }) }),
         /* @__PURE__ */ jsx(NavRow, { testId: "settings-parental", label: tt("tabParental"), onOk: () => nav.go("settings", { tab: "parental" }) })
       ] }) })
@@ -208842,13 +209202,21 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
   function Section2({ label: label2, children }) {
-    return /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: 8 }, children: [
+    return /* @__PURE__ */ jsxs("section", { style: { flexShrink: 0, display: "flex", flexDirection: "column", gap: 8 }, children: [
       /* @__PURE__ */ jsx("div", { style: sectionLabel, children: label2 }),
       children
     ] });
   }
   function Card3({ children }) {
-    return /* @__PURE__ */ jsx("div", { style: { borderRadius: 14, background: MT.s06, border: `1px solid ${MT.line08}`, overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { marginBottom: -1 }, children }) });
+    return (
+      /* flexShrink: 0 — PhonePage är en flex-KOLUMN, och ett flexbarn krymper
+         som standard i stället för att flöda över. Kortet har dessutom
+         `overflow: hidden` för att klippa sista radens linje, så när det krymptes
+         klippte det sitt eget innehåll i stället för att låta sidan rulla:
+         innehållssidans kort är högre än rutan och fick botten avskuren (Jerry
+         2026-09-22). Rotsidan märkte inget, där är varje sektion kort. */
+      /* @__PURE__ */ jsx("div", { style: { flexShrink: 0, borderRadius: 14, background: MT.s06, border: `1px solid ${MT.line08}`, overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { marginBottom: -1 }, children }) })
+    );
   }
   function ToggleRow({ label: label2, on, onOk, testId }) {
     return /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onOk), style: { minHeight: 56, padding: "10px 14px", borderBottom: `1px solid ${MT.line07}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 15, cursor: "pointer" }, children: [
